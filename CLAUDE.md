@@ -34,6 +34,11 @@ quella funzione, i test in `shared/__tests__/hosts.test.ts` coprono i casi
 limite (pages.dev, dominio di primo livello, host che finisce per caso col
 dominio configurato).
 
+**Le `[vars]` di `wrangler.toml` vincono su `.dev.vars` e su `--binding`.** Per
+cambiare in locale una variabile che sta anche in `wrangler.toml` (per esempio
+`EMAIL_VERIFICATION`) va modificato `wrangler.toml`: `.dev.vars` da solo non
+basta, e la cosa non da' nessun segnale.
+
 ## Invarianti da non rompere
 
 **Ogni soluzione deve essere anche un tentativo ammesso**, altrimenti il gioco
@@ -101,6 +106,17 @@ custom domain.
 **Il sottodominio Pages e' `game-hub-43l.pages.dev`, non `game-hub.pages.dev`**
 (quello e' già di qualcun altro). Conta quando si scrivono i CNAME: puntare al
 nome del progetto invece che al sottodominio vero lascia i domini in `pending`.
+
+**Il salt della password si deriva dal nickname.** Quindi il recupero password
+richiede il nickname e non l'email: un verifier derivato dall'email non
+corrisponderebbe a quello che il login produrra' dopo, e la password nuova
+risulterebbe subito sbagliata. Vale anche per qualunque futura funzione che
+reimposti una password.
+
+**La verifica dell'email resta spenta senza chiave Resend.**
+`emailVerificationEnabled` controlla entrambe le condizioni. Non accendere
+`EMAIL_VERIFICATION` senza la chiave: bloccherebbe ogni registrazione, perché
+il codice non partirebbe.
 
 ## Prima di aprire una PR
 

@@ -6,13 +6,14 @@ import Classifica from './pages/Classifica'
 import Hub from './pages/Hub'
 import NotFound from './pages/NotFound'
 import Profilo from './pages/Profilo'
+import VerifyEmail from './pages/VerifyEmail'
 import Welcome from './pages/Welcome'
 import Wordle from './pages/Wordle'
 import WordleInsieme from './pages/WordleInsieme'
 import { CoopGate } from './games/wordle/coop/CoopGate'
 
 export default function App() {
-  const { player, checking } = useAuth()
+  const { player, checking, config } = useAuth()
 
   // Arrivando da wordle.simonerecchia.com si entra direttamente nel gioco.
   useHostEntry()
@@ -25,6 +26,13 @@ export default function App() {
   // Nessuna rotta e' raggiungibile senza un giocatore: l'hub esiste per
   // tenere i punteggi, e senza nickname non ci sono punteggi da tenere.
   if (!player) return <Welcome />
+
+  /*
+   * Email da confermare: si mostra solo la schermata del codice. Il vincolo
+   * vero e' lato server (requireVerified): questo evita di far vedere un hub
+   * dove ogni cosa risponderebbe 403.
+   */
+  if (config?.emailVerificationRequired && !player.emailVerified) return <VerifyEmail />
 
   return (
     <>

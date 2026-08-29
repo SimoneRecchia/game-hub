@@ -67,6 +67,17 @@ export default function Profilo() {
           </span>
           <span className="card-row__value">{player.nickname}</span>
         </div>
+        {player.email && (
+          <div className="card-row">
+            <span className="card-row__body">
+              <span className="card-row__title">Email</span>
+              {!player.emailVerified && (
+                <span className="card-row__sub">Da confermare</span>
+              )}
+            </span>
+            <span className="card-row__value profilo__email">{player.email}</span>
+          </div>
+        )}
         <button type="button" className="card-row profilo__logout" onClick={() => setConfirming(true)}>
           <IconLogout size={20} />
           <span className="card-row__body">

@@ -1,0 +1,151 @@
+.verifica {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(var(--safe-top) + var(--sp-8)) max(var(--sp-4), var(--safe-left))
+    calc(var(--safe-bottom) + var(--sp-8)) max(var(--sp-4), var(--safe-right));
+  background:
+    radial-gradient(80% 55% at 50% -10%, color-mix(in srgb, var(--blue) 14%, transparent), transparent 70%),
+    var(--bg);
+}
+
+.verifica__theme {
+  position: absolute;
+  top: calc(var(--safe-top) + var(--sp-3));
+  right: max(var(--sp-3), var(--safe-right));
+}
+
+.verifica__inner {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.verifica__head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.verifica__busta {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  font-size: 34px;
+  color: var(--blue);
+}
+
+.verifica__title {
+  font-size: var(--text-title-1);
+  letter-spacing: var(--tracking-tight);
+}
+
+.verifica__lede {
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+  max-width: 34ch;
+}
+
+.verifica__lede strong {
+  color: var(--label);
+  /* Un'email lunga non deve allargare la colonna. */
+  overflow-wrap: anywhere;
+}
+
+.verifica__campo {
+  display: flex;
+  justify-content: center;
+}
+
+/* Il campo del codice: grande, spaziato, si legge da lontano. */
+.verifica__input {
+  width: 100%;
+  padding: var(--sp-4) var(--sp-3);
+  border: none;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm), inset 0 0 0 0.5px var(--separator);
+  font-family: var(--font-rounded);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 0.42em;
+  text-align: center;
+  text-indent: 0.42em;
+  outline: none;
+}
+
+.verifica__input:focus-visible {
+  box-shadow: var(--shadow-sm), inset 0 0 0 2px var(--blue);
+}
+
+.verifica__input::placeholder {
+  color: var(--label-quaternary);
+}
+
+.verifica__errore {
+  font-size: var(--text-footnote);
+  color: var(--red);
+  text-align: center;
+}
+
+.verifica__ok {
+  font-size: var(--text-footnote);
+  color: var(--tile-correct);
+  text-align: center;
+}
+
+.verifica__azioni {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.verifica__link {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-pill);
+  font-size: var(--text-subhead);
+  font-weight: 500;
+  color: var(--blue);
+}
+
+.verifica__link:disabled {
+  color: var(--label-tertiary);
+}
+
+.verifica__link--tenue {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.verifica__nota {
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.verifica__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.verifica__campi {
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}

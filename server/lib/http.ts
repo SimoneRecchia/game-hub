@@ -7,7 +7,11 @@ import type { ApiError } from '../../shared/types'
  * Il codice serve alla UI per decidere cosa mostrare (es. NICKNAME_TAKEN
  * evidenzia il campo nickname) senza dover interpretare il testo del messaggio.
  */
-export function fail(status: 400 | 401 | 403 | 404 | 409 | 429 | 500, code: string, message: string): never {
+export function fail(
+  status: 400 | 401 | 403 | 404 | 409 | 422 | 429 | 500 | 502 | 503,
+  code: string,
+  message: string,
+): never {
   const body: ApiError = { error: message, code }
   throw new HTTPException(status, {
     res: new Response(JSON.stringify(body), {
