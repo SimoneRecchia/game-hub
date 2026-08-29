@@ -8,6 +8,13 @@ describe('elenco dei tentativi ammessi', () => {
     expect(GUESS_WORDS.length).toBeGreaterThan(5000)
   })
 
+  it('usa solo le 21 lettere dell alfabeto italiano', () => {
+    // La tastiera del gioco mostra 21 tasti: se entrasse una parola con
+    // j/k/w/x/y non ci sarebbe modo di digitarla.
+    const foreign = GUESS_WORDS.filter((w) => /[jkwxy]/.test(w))
+    expect(foreign).toEqual([])
+  })
+
   it('sono tutte di cinque lettere minuscole a-z', () => {
     const invalid = GUESS_WORDS.filter((w) => !/^[a-z]{5}$/.test(w))
     expect(invalid).toEqual([])

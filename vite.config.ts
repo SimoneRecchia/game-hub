@@ -12,12 +12,12 @@ export default defineConfig({
   },
   build: {
     target: 'es2022',
-    // Il dizionario dei tentativi ammessi e' un chunk separato: viene caricato
-    // in parallelo al primo render invece di gonfiare il bundle iniziale.
     rollupOptions: {
       output: {
+        // React in un chunk a parte: cambia raramente, quindi resta in cache
+        // fra un deploy e l'altro. Il dizionario dei tentativi finisce da solo
+        // in un chunk suo, perché e' caricato con un import dinamico.
         manualChunks(id) {
-          if (id.includes('shared/words/guesses')) return 'dictionary'
           if (id.includes('node_modules/react')) return 'react'
         },
       },

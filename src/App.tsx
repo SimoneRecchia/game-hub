@@ -6,6 +6,7 @@ import NotFound from './pages/NotFound'
 import Placeholder from './pages/Placeholder'
 import Profilo from './pages/Profilo'
 import Welcome from './pages/Welcome'
+import Wordle from './pages/Wordle'
 
 export default function App() {
   const { player, checking } = useAuth()
@@ -22,10 +23,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Hub />} />
-      <Route
-        path="/wordle"
-        element={<Placeholder title="Wordle" message="Il gioco arriva nel prossimo passo." />}
-      />
+      <Route path="/wordle" element={<Wordle />} />
       <Route
         path="/classifica"
         element={
