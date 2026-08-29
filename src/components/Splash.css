@@ -1,0 +1,37 @@
+.splash {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-6);
+  background: var(--bg);
+}
+
+.splash__icon {
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
+  animation: splash-in var(--dur-slow) var(--ease-out);
+}
+
+.splash__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--label-quaternary);
+  border-top-color: var(--label-secondary);
+  border-radius: 50%;
+  animation: splash-spin 700ms linear infinite;
+}
+
+@keyframes splash-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@keyframes splash-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
