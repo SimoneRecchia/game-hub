@@ -88,3 +88,16 @@ export interface ApiError {
   /** Codice stabile per la UI (es. NICKNAME_TAKEN). */
   code: string
 }
+
+/**
+ * Riepilogo leggero della giornata, per la card nell'hub.
+ * `new` = il giocatore non ha ancora aperto la partita di oggi.
+ */
+export interface WordleSummary {
+  puzzleNumber: number
+  date: string
+  status: WordleStatus | 'new'
+  attempts: number
+  score: number | null
+  msToNextPuzzle: number
+}

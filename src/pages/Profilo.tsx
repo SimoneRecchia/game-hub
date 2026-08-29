@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppShell } from '@/components/AppShell'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
@@ -6,8 +6,11 @@ import { Card } from '@/components/Card'
 import { Sheet } from '@/components/Sheet'
 import { ThemeButton } from '@/components/ThemeButton'
 import { IconLogout } from '@/components/Icons'
+import { StatsPanel } from '@/games/wordle/StatsPanel'
 import { useAuth, usePlayer } from '@/lib/auth'
+import { api } from '@/lib/api'
 import { formatGameDate } from '@/lib/format'
+import type { PlayerStats } from '@shared/types'
 import './Profilo.css'
 
 export default function Profilo() {
@@ -15,6 +18,21 @@ export default function Profilo() {
   const { logout } = useAuth()
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [stats, setStats] = useState<PlayerStats | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    void api<PlayerStats>('/wordle/stats')
+      .then((fresh) => {
+        if (!cancelled) setStats(fresh)
+      })
+      .catch(() => {
+        /* le statistiche sono un contorno: il profilo resta utilizzabile */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <AppShell title="Profilo" trailing={<ThemeButton />}>
@@ -25,6 +43,18 @@ export default function Profilo() {
           Nel gruppo dal {formatGameDate(player.createdAt.slice(0, 10))}
         </p>
       </header>
+
+      <Card sectionTitle="Wordle">
+        {stats === null ? (
+          <p className="profilo__loading">Carico le statistiche…</p>
+        ) : stats.played === 0 ? (
+          <p className="profilo__loading">
+            Nessuna partita, per ora. La prima parola ti aspetta nell'hub.
+          </p>
+        ) : (
+          <StatsPanel stats={stats} />
+        )}
+      </Card>
 
       <Card
         sectionTitle="Account"

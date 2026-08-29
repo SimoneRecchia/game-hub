@@ -136,11 +136,17 @@ interface StatsRow {
 }
 
 /**
- * Streak viva: si conta a partire dall'ultima vittoria, ma solo se quella
- * vittoria e' di oggi o di ieri. Altrimenti la catena e' spezzata e vale zero,
- * anche se in passato era lunga.
+ * Streak viva. Due condizioni la spezzano:
+ *
+ *  - l'ultima vittoria e' piu' vecchia di ieri → giorno saltato. Il confronto
+ *    e' con ieri e non con oggi, altrimenti la streak si azzererebbe a
+ *    mezzanotte, prima che il giocatore abbia potuto giocare.
+ *  - la partita di oggi e' stata giocata e persa → la catena e' rotta adesso.
  */
 function liveStreak(rows: StatsRow[], todayNumber: number): number {
+  const lostToday = rows.some((r) => r.puzzle_number === todayNumber && r.status === 'lost')
+  if (lostToday) return 0
+
   const wins = rows.filter((r) => r.status === 'won').map((r) => r.puzzle_number)
   if (wins.length === 0) return 0
 
