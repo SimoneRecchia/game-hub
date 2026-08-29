@@ -1,0 +1,40 @@
+name: CI
+
+# Gira sui push verso main e su ogni pull request: sono le due occasioni in cui
+# un errore costerebbe caro (un deploy rotto o una revisione su codice che non
+# compila).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Tre progetti TypeScript separati (app, worker, script di build):
+      # `tsc -b` li verifica tutti.
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      # Lo stesso build che gira su Cloudflare Pages, con la variabile che
+      # attiva il controllo di configurazione: se qualcuno rimettesse il
+      # segnaposto del database_id, si scopre qui e non in produzione.
+      - name: Build
+        run: npm run build
+        env:
+          CF_PAGES: '1'
