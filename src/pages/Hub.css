@@ -107,3 +107,13 @@ a.gamecard:active {
   color: var(--label-secondary);
   white-space: nowrap;
 }
+
+.hub__me {
+  display: inline-flex;
+  border-radius: 50%;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.hub__me:active {
+  transform: scale(0.9);
+}
