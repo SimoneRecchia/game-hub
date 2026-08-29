@@ -1,22 +1,33 @@
 import { Link } from 'react-router-dom'
 import { AppShell } from '@/components/AppShell'
+import { Avatar } from '@/components/Avatar'
 import { IconChevronRight } from '@/components/Icons'
 import { ThemeButton } from '@/components/ThemeButton'
 import { GAMES } from '@/games/catalog'
 import { formatGameDate } from '@/lib/format'
+import { usePlayer } from '@/lib/auth'
 import { gameDate } from '@shared/daily'
 import './Hub.css'
 
 export default function Hub() {
+  const player = usePlayer()
   const today = gameDate()
   const available = GAMES.filter((g) => g.available)
   const upcoming = GAMES.filter((g) => !g.available)
 
   return (
-    <AppShell title="Game Hub" trailing={<ThemeButton />}>
+    <AppShell
+      title="Game Hub"
+      trailing={<ThemeButton />}
+      leading={
+        <Link to="/profilo" className="hub__me" aria-label="Il tuo profilo">
+          <Avatar nickname={player.nickname} color={player.avatarColor} size={30} />
+        </Link>
+      }
+    >
       <header className="hub__header">
         <p className="hub__date">{formatGameDate(today)}</p>
-        <h2 className="large-title">Giochi</h2>
+        <h2 className="large-title">Ciao {player.displayName}</h2>
         <p className="page-lede">
           Una sfida nuova ogni giorno, la stessa per tutti. Il punteggio finisce in classifica.
         </p>
