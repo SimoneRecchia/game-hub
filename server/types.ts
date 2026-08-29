@@ -1,8 +1,18 @@
 import type { Player } from '../shared/types'
 
-/** Binding disponibili nelle Pages Functions (vedi wrangler.toml). */
+/** Binding e variabili disponibili nelle Pages Functions (vedi wrangler.toml). */
 export interface Bindings {
   DB: D1Database
+  /**
+   * Dominio su cui vale il cookie di sessione, per esempio `esempio.it`.
+   *
+   * Va impostata quando hub e giochi stanno su sottodomini diversi: senza,
+   * il cookie resta legato al singolo host e chi accede su `giochi.esempio.it`
+   * risulterebbe sconosciuto su `wordle.esempio.it`.
+   *
+   * Se non c'e' (sviluppo locale, *.pages.dev) il cookie e' del solo host.
+   */
+  COOKIE_DOMAIN?: string
 }
 
 /** Variabili aggiunte al contesto Hono dai middleware. */
