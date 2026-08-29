@@ -1,0 +1,190 @@
+.insieme {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  flex: 1;
+  min-height: 0;
+}
+
+.insieme__banner {
+  flex: none;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  text-align: center;
+  line-height: 1.35;
+}
+
+/*
+ * Il messaggio si sovrappone invece di occupare una riga.
+ *
+ * Nella partita normale lo spazio e' riservato per non far saltare la griglia,
+ * ma qui la cornice e' già molta e il messaggio compare raramente: come
+ * sovrapposizione non sposta nulla e restituisce 26 px alla griglia, che su
+ * uno schermo basso sono tre punti di lato per ogni casella.
+ */
+.insieme__messaggio {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.insieme__pillola {
+  padding: var(--sp-1) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--label);
+  color: var(--label-inverted);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  animation: insieme-pillola var(--dur-base) var(--ease-spring);
+}
+
+@keyframes insieme-pillola {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+  }
+}
+
+.insieme__board {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 var(--sp-1);
+}
+
+@supports (width: 1cqh) {
+  .insieme__board {
+    container-type: size;
+  }
+
+  .insieme__board .board {
+    width: min(100%, 350px, 83.34cqh);
+  }
+}
+
+/* La riga del suggerimento: fuori dalla griglia dell'host, per non far
+   sembrare che sia un tentativo già giocato. */
+.insieme__proposta {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 0.5px var(--separator);
+}
+
+.insieme__proposta-etichetta {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+  flex: 1;
+  min-width: 0;
+}
+
+.insieme__proposta-caselle {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.insieme__casella {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 34px;
+  border-radius: var(--r-xs);
+  border: 1.5px dashed var(--tile-empty-border);
+  font-family: var(--font-rounded);
+  font-size: var(--text-callout);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.insieme__casella:not(:empty) {
+  border-style: solid;
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.insieme__fallback {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  text-align: center;
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+}
+
+/*
+ * Schermi bassi (iPhone SE, telefono in orizzontale): la cornice si stringe
+ * per lasciare spazio alla griglia. Senza questo, banner e riga del
+ * suggerimento su due righe ciascuno mangiavano l'altezza e la griglia si
+ * schiacciava.
+ */
+@media (max-height: 700px) {
+  .insieme {
+    gap: var(--sp-1);
+  }
+
+  .insieme__banner {
+    padding: 3px var(--sp-3);
+    font-size: var(--text-caption-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* L'etichetta si capisce dal contesto: le caselle vanno al centro. */
+  .insieme__proposta {
+    justify-content: center;
+    padding: var(--sp-1) var(--sp-2);
+  }
+
+  .insieme__proposta-etichetta {
+    display: none;
+  }
+
+  .insieme__casella {
+    width: 26px;
+    height: 28px;
+  }
+}
+
+/* Vedi AppShell.css: in orizzontale la pagina scorre e la griglia resta
+   leggibile invece di comprimersi. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .insieme {
+    height: auto;
+  }
+}
+
+/*
+ * In orizzontale la pagina scorre, quindi l'altezza dell'area non e' piu'
+ * definita — e senza un'altezza definita `container-type: size` fa risolvere
+ * `cqh` a zero, che collassava la griglia a caselle da quattro pixel.
+ * Qui il vincolo torna a essere la larghezza, che e' sempre definita.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .insieme__board {
+    container-type: normal;
+    min-height: 264px;
+  }
+
+  .insieme__board .board {
+    width: min(100%, 300px);
+  }
+}

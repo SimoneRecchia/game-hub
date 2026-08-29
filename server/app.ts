@@ -4,6 +4,7 @@ import type { AppEnv } from './types'
 import { authRoutes } from './routes/auth'
 import { wordleRoutes } from './routes/wordle'
 import { leaderboardRoutes } from './routes/leaderboard'
+import { coopRoutes } from './routes/coop'
 import { gameDate, msToNextPuzzle, puzzleNumberFor } from '../shared/daily'
 
 /**
@@ -33,6 +34,7 @@ export function createApp() {
   app.route('/auth', authRoutes)
   app.route('/wordle', wordleRoutes)
   app.route('/leaderboard', leaderboardRoutes)
+  app.route('/coop', coopRoutes)
 
   app.notFound((c) => c.json({ error: 'Endpoint non trovato.', code: 'NOT_FOUND' }, 404))
 

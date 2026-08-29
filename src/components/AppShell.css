@@ -142,6 +142,20 @@
   overflow: hidden;
 }
 
+/*
+ * Telefono in orizzontale: sei righe di caselle piu' la tastiera non stanno in
+ * 360 px di altezza. Ancorare la schermata al viewport schiaccerebbe la griglia
+ * fino a caselle da quattro pixel, quindi qui si torna a una pagina che scorre
+ * e la griglia mantiene una dimensione leggibile.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .shell--no-tabs {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+}
+
 .shell--no-tabs .shell__main {
   min-height: 0;
   padding-bottom: calc(var(--safe-bottom) + var(--sp-4));

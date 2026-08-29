@@ -52,6 +52,14 @@
   font-weight: 600;
 }
 
+/* Etichette lunghe come "Suggerisci": più spazio e un corpo più piccolo. */
+.key--wide-lungo {
+  flex: 2.1;
+  font-size: var(--text-caption-2);
+  letter-spacing: -0.01em;
+  padding: 0 2px;
+}
+
 .key.is-correct {
   background: var(--tile-correct);
   color: var(--tile-text-on-fill);

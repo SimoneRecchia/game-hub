@@ -21,6 +21,8 @@ export interface GameRow {
   duration_ms: number | null
   score: number | null
   streak_at_end: number | null
+  /** 1 se il giocatore ha visto la partita di un altro prima di giocare. */
+  spectated: number
 }
 
 export interface Today {

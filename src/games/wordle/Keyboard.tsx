@@ -28,9 +28,21 @@ interface Props {
   onEnter: () => void
   onBackspace: () => void
   disabled: boolean
+  /**
+   * Testo del tasto d'invio. Nella partita condivisa diventa "Suggerisci":
+   * l'invitato propone una parola, non la gioca.
+   */
+  enterLabel?: string
 }
 
-export function Keyboard({ states, onLetter, onEnter, onBackspace, disabled }: Props) {
+export function Keyboard({
+  states,
+  onLetter,
+  onEnter,
+  onBackspace,
+  disabled,
+  enterLabel = 'Invia',
+}: Props) {
   return (
     <div className="keyboard" role="group" aria-label="Tastiera">
       {ROWS.map((row, index) => (
@@ -41,12 +53,15 @@ export function Keyboard({ states, onLetter, onEnter, onBackspace, disabled }: P
                 <button
                   key={key}
                   type="button"
-                  className="key key--wide"
+                  /* "Suggerisci" non sta nello spazio di "Invia": il
+                     modificatore allarga il tasto e rimpicciolisce il testo,
+                     invece di lasciarlo tagliato. */
+                  className={`key key--wide${enterLabel.length > 6 ? ' key--wide-lungo' : ''}`}
                   onClick={onEnter}
                   disabled={disabled}
-                  aria-label="Invia il tentativo"
+                  aria-label={enterLabel === 'Invia' ? 'Invia il tentativo' : enterLabel}
                 >
-                  Invia
+                  {enterLabel}
                 </button>
               )
             }

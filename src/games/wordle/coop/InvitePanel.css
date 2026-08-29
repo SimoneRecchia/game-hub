@@ -1,0 +1,136 @@
+.invita {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.invita__lede {
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+}
+
+.invita__contatore {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.invita__posti {
+  font-weight: 500;
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+}
+
+.invita__blocco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.invita__titolo {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--label-secondary);
+}
+
+.invita__lista {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.invita__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  min-height: 56px;
+}
+
+.invita__riga + .invita__riga {
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+
+.invita__riga-corpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.invita__nome {
+  font-size: var(--text-callout);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.invita__stato {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+  line-height: 1.3;
+}
+
+.invita__stato.is-avviso {
+  color: var(--orange);
+}
+
+.invita__spunta {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--tile-correct);
+  color: #fff;
+  flex: none;
+}
+
+.invita__ritira {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--label-tertiary);
+  flex: none;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.invita__ritira:hover:not(:disabled) {
+  background: var(--fill-tertiary);
+  color: var(--red);
+}
+
+.invita__vuoto {
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  text-align: center;
+}
+
+.invita__errore {
+  font-size: var(--text-footnote);
+  color: var(--red);
+  text-align: center;
+}
+
+.invita__nota {
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+  line-height: 1.4;
+}
