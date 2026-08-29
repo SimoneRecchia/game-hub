@@ -1,0 +1,91 @@
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-md);
+  font-size: var(--text-headline);
+  font-weight: 600;
+  letter-spacing: var(--tracking-normal);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+  user-select: none;
+}
+
+.btn--lg {
+  min-height: 52px;
+  border-radius: var(--r-lg);
+  font-size: var(--text-body);
+}
+
+.btn--block {
+  width: 100%;
+}
+
+/* Il "premuto" iOS: leggera compressione, nessun cambio di colore brusco. */
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--filled {
+  background: var(--blue);
+  color: #fff;
+}
+
+.btn--filled:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--blue) 88%, #000);
+}
+
+.btn--tinted {
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  color: var(--blue);
+}
+
+.btn--tinted:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--blue) 22%, transparent);
+}
+
+.btn--plain {
+  background: transparent;
+  color: var(--blue);
+  padding: 0 var(--sp-3);
+}
+
+.btn--plain:hover:not(:disabled) {
+  background: var(--fill-quaternary);
+}
+
+.btn--destructive {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red);
+}
+
+.btn--destructive:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--red) 22%, transparent);
+}
+
+.btn__spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin 640ms linear infinite;
+  flex: none;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

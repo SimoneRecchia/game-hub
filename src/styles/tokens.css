@@ -1,0 +1,226 @@
+/*
+ * Design tokens — impianto ispirato alle Apple Human Interface Guidelines.
+ * Palette, tipografia e raggi seguono i valori di sistema iOS/macOS cosi' che
+ * l'app risulti "nativa" sia su iPhone che su desktop.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  /* ---- Tipografia ---- */
+  --font-text:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-rounded:
+    ui-rounded, -apple-system, BlinkMacSystemFont, 'SF Pro Rounded',
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+
+  --text-large-title: 2.125rem;  /* 34 */
+  --text-title-1: 1.75rem;       /* 28 */
+  --text-title-2: 1.375rem;      /* 22 */
+  --text-title-3: 1.25rem;       /* 20 */
+  --text-headline: 1.0625rem;    /* 17 semibold */
+  --text-body: 1.0625rem;        /* 17 */
+  --text-callout: 1rem;          /* 16 */
+  --text-subhead: 0.9375rem;     /* 15 */
+  --text-footnote: 0.8125rem;    /* 13 */
+  --text-caption-1: 0.75rem;     /* 12 */
+  --text-caption-2: 0.6875rem;   /* 11 */
+
+  --tracking-tight: -0.022em;
+  --tracking-normal: -0.01em;
+  --tracking-wide: 0.06em;
+
+  /* ---- Colori di sistema (light) ---- */
+  --blue: #007aff;
+  --green: #34c759;
+  --indigo: #5856d6;
+  --orange: #ff9500;
+  --pink: #ff2d55;
+  --purple: #af52de;
+  --red: #ff3b30;
+  --teal: #30b0c7;
+  --yellow: #ffcc00;
+  --mint: #00c7be;
+
+  /* ---- Superfici ---- */
+  --bg: #f2f2f7;
+  --bg-elevated: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f2f2f7;
+  --surface-3: #e5e5ea;
+  --fill-quaternary: rgba(116, 116, 128, 0.08);
+  --fill-tertiary: rgba(118, 118, 128, 0.12);
+  --fill-secondary: rgba(120, 120, 128, 0.16);
+  --separator: rgba(60, 60, 67, 0.12);
+  --separator-opaque: #c6c6c8;
+
+  /* ---- Testo ---- */
+  --label: #000000;
+  --label-secondary: rgba(60, 60, 67, 0.6);
+  --label-tertiary: rgba(60, 60, 67, 0.3);
+  --label-quaternary: rgba(60, 60, 67, 0.18);
+  --label-inverted: #ffffff;
+
+  /* ---- Materiali (glass) ---- */
+  --material-thick: rgba(255, 255, 255, 0.82);
+  --material-regular: rgba(247, 247, 250, 0.72);
+  --material-thin: rgba(255, 255, 255, 0.55);
+  --blur: saturate(180%) blur(20px);
+
+  /* ---- Ombre ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-key: 0 1px 0 rgba(0, 0, 0, 0.12);
+
+  /* ---- Raggi (continuous corners approssimati) ---- */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 22px;
+  --r-2xl: 28px;
+  --r-pill: 999px;
+
+  /* ---- Spaziature ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* ---- Motion: curve prese dalle transizioni UIKit ---- */
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 140ms;
+  --dur-base: 240ms;
+  --dur-slow: 420ms;
+
+  /* ---- Layout ---- */
+  --nav-h: 52px;
+  --tabbar-h: 56px;
+  --content-max: 720px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* ---- Tile Wordle ---- */
+  --tile-empty-border: rgba(60, 60, 67, 0.18);
+  --tile-active-border: rgba(60, 60, 67, 0.42);
+  --tile-correct: #34a853;
+  --tile-present: #e0a325;
+  --tile-absent: #93959a;
+  --tile-text-on-fill: #ffffff;
+  --key-bg: #d5d7dc;
+  --key-bg-active: #c3c6cc;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --blue: #0a84ff;
+    --green: #30d158;
+    --indigo: #5e5ce6;
+    --orange: #ff9f0a;
+    --pink: #ff375f;
+    --purple: #bf5af2;
+    --red: #ff453a;
+    --teal: #40c8e0;
+    --yellow: #ffd60a;
+    --mint: #63e6e2;
+
+    --bg: #000000;
+    --bg-elevated: #1c1c1e;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --surface-3: #3a3a3c;
+    --fill-quaternary: rgba(118, 118, 128, 0.12);
+    --fill-tertiary: rgba(118, 118, 128, 0.24);
+    --fill-secondary: rgba(120, 120, 128, 0.32);
+    --separator: rgba(84, 84, 88, 0.6);
+    --separator-opaque: #38383a;
+
+    --label: #ffffff;
+    --label-secondary: rgba(235, 235, 245, 0.6);
+    --label-tertiary: rgba(235, 235, 245, 0.3);
+    --label-quaternary: rgba(235, 235, 245, 0.16);
+    --label-inverted: #000000;
+
+    --material-thick: rgba(28, 28, 30, 0.86);
+    --material-regular: rgba(28, 28, 30, 0.74);
+    --material-thin: rgba(44, 44, 46, 0.6);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
+    --shadow-key: 0 1px 0 rgba(0, 0, 0, 0.5);
+
+    --tile-empty-border: rgba(235, 235, 245, 0.2);
+    --tile-active-border: rgba(235, 235, 245, 0.45);
+    --tile-correct: #2f9e4f;
+    --tile-present: #c9922b;
+    --tile-absent: #4a4a4d;
+    --key-bg: #48484a;
+    --key-bg-active: #5a5a5d;
+  }
+}
+
+/* Override manuale dal selettore tema (vince su prefers-color-scheme) */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --blue: #0a84ff;
+  --green: #30d158;
+  --indigo: #5e5ce6;
+  --orange: #ff9f0a;
+  --pink: #ff375f;
+  --purple: #bf5af2;
+  --red: #ff453a;
+  --teal: #40c8e0;
+  --yellow: #ffd60a;
+  --mint: #63e6e2;
+
+  --bg: #000000;
+  --bg-elevated: #1c1c1e;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --surface-3: #3a3a3c;
+  --fill-quaternary: rgba(118, 118, 128, 0.12);
+  --fill-tertiary: rgba(118, 118, 128, 0.24);
+  --fill-secondary: rgba(120, 120, 128, 0.32);
+  --separator: rgba(84, 84, 88, 0.6);
+  --separator-opaque: #38383a;
+
+  --label: #ffffff;
+  --label-secondary: rgba(235, 235, 245, 0.6);
+  --label-tertiary: rgba(235, 235, 245, 0.3);
+  --label-quaternary: rgba(235, 235, 245, 0.16);
+  --label-inverted: #000000;
+
+  --material-thick: rgba(28, 28, 30, 0.86);
+  --material-regular: rgba(28, 28, 30, 0.74);
+  --material-thin: rgba(44, 44, 46, 0.6);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-key: 0 1px 0 rgba(0, 0, 0, 0.5);
+
+  --tile-empty-border: rgba(235, 235, 245, 0.2);
+  --tile-active-border: rgba(235, 235, 245, 0.45);
+  --tile-correct: #2f9e4f;
+  --tile-present: #c9922b;
+  --tile-absent: #4a4a4d;
+  --key-bg: #48484a;
+  --key-bg-active: #5a5a5d;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+}
