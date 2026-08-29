@@ -2,16 +2,15 @@
 #
 # Configurazione Cloudflare Pages.
 #
-# ⚠️  PRIMA DEL PRIMO DEPLOY: sostituisci `database_id` qui sotto con l'ID del
-#     tuo database D1. Lo ottieni con `npx wrangler d1 create game-hub-db`.
-#     Vedi DEPLOY.md, passo 1. In sviluppo locale il valore non conta.
+# Perché il database_id sta qui e non nella dashboard: e' un identificativo
+# dell'account, non un segreto, e tenerlo versionato rende la configurazione
+# ricostruibile. Il rovescio e' che un ID sbagliato romperebbe la produzione,
+# quindi `npm run build` lo controlla quando CF_PAGES e' impostata
+# (scripts/check-config.mjs), cioe' nei build che finiscono davvero online.
 #
-# Perché l'ID sta qui e non nella dashboard: quando questo file contiene
-# `pages_build_output_dir`, Cloudflare Pages lo usa come unica fonte per i
-# binding e ignora quelli impostati nella dashboard. Tenerlo qui rende la
-# configurazione versionata e ricostruibile; il rovescio e' che un ID
-# sbagliato romperebbe la produzione, quindi `npm run build` lo controlla
-# durante i build su Pages (scripts/check-config.mjs).
+# In sviluppo locale l'ID non viene guardato: wrangler crea un SQLite dentro
+# .wrangler/state/ indicizzato per ID, quindi cambiarlo azzera il database
+# locale (non quello di produzione).
 
 name = "game-hub"
 compatibility_date = "2026-08-01"
@@ -20,7 +19,7 @@ pages_build_output_dir = "dist"
 [[d1_databases]]
 binding = "DB"
 database_name = "game-hub-db"
-database_id = "SOSTITUISCI_CON_IL_TUO_D1_DATABASE_ID"
+database_id = "5b224eb2-435b-459e-ac8a-13f34a972578"
 
 [vars]
 # Dominio su cui vale il cookie di sessione.

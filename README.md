@@ -1,5 +1,7 @@
 # Game Hub
 
+**→ [giochi.simonerecchia.com](https://giochi.simonerecchia.com)**
+
 Hub di giochi da browser per un gruppo di colleghi: si sceglie un nickname, si
 gioca la sfida del giorno e il punteggio finisce in classifica.
 
@@ -79,8 +81,8 @@ Un sottodominio per l'hub e uno per ogni gioco, sullo stesso progetto Pages:
 
 | | |
 | --- | --- |
-| `giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
-| `wordle.simonerecchia.com` | direttamente il Wordle di oggi |
+| [`giochi.simonerecchia.com`](https://giochi.simonerecchia.com) | l'hub, con l'elenco dei giochi |
+| [`wordle.simonerecchia.com`](https://wordle.simonerecchia.com) | direttamente il Wordle di oggi |
 
 Il sottodominio decide solo la schermata da cui si entra: la navigazione poi è
 libera. La sessione è condivisa fra i sottodomini, quindi si accede una volta
@@ -88,8 +90,13 @@ sola. Le regole stanno in [`shared/hosts.ts`](shared/hosts.ts).
 
 ## Deploy
 
-Cloudflare Pages, un push su `main` e il sito si aggiorna.
-La prima configurazione è in **[DEPLOY.md](DEPLOY.md)**.
+Cloudflare Pages. Ogni push su `main` esegue typecheck, test, build,
+migrazioni D1 e pubblicazione, e verifica che l'API risponda prima di
+considerare il deploy riuscito — vedi
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
+
+Configurazione, permessi del token e come ricostruire tutto da zero:
+**[DEPLOY.md](DEPLOY.md)**.
 
 ---
 
