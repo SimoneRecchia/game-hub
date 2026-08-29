@@ -32,3 +32,10 @@
   text-align: center;
   line-height: 1.4;
 }
+
+.profilo__loading {
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  text-align: center;
+  padding: var(--sp-4) 0;
+}
