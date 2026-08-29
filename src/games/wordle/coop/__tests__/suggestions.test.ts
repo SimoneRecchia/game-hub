@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ASSIST_PLAYED } from '@shared/scoring'
 import { latestPerGuest } from '../suggestions'
 import type { CoopSuggestion } from '@shared/types'
 
@@ -9,6 +10,8 @@ function s(id: string, guestId: string, word: string, usedAt: string | null = nu
     guestId,
     word,
     usedAt,
+    // I punti seguono `usedAt`: si assegnano quando l'host gioca la parola.
+    assistPoints: usedAt === null ? 0 : ASSIST_PLAYED,
     guestName: guestId,
     avatarColor: '#007aff',
     createdAt: `2026-08-29T10:00:${id.padStart(2, '0')}.000Z`,

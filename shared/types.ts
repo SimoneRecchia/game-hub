@@ -48,7 +48,8 @@ export interface WordleState {
   score: number | null
   /**
    * true se il giocatore ha guardato la partita di qualcun altro prima di
-   * giocare la propria: conosceva la parola, quindi la giornata non fa punti.
+   * giocare la propria: conosceva la parola, quindi la giornata non fa punti
+   * partita. I punti assist restano.
    */
   spectated: boolean
   /** Millisecondi al prossimo puzzle, per il countdown. */
@@ -68,7 +69,14 @@ export interface LeaderboardRow {
   nickname: string
   displayName: string
   avatarColor: string
+  /** Totale in classifica: punti partita + assist. */
   score: number
+  /** La parte guadagnata giocando. */
+  playScore: number
+  /** La parte guadagnata suggerendo agli altri: e' anche il primo spareggio. */
+  assistScore: number
+  /** Quanti suggerimenti sono stati giocati davvero. */
+  assists: number
   played: number
   wins: number
   /** Media tentativi sulle sole partite vinte, null se nessuna. */
@@ -80,7 +88,7 @@ export interface LeaderboardRow {
   todayStatus: WordleStatus | null
   /**
    * Solo per scope=today: ha guardato la partita di qualcun altro prima di
-   * giocare la propria, quindi la giornata non fa punti.
+   * giocare la propria, quindi la giornata non fa punti partita — solo assist.
    */
   todaySpectated: boolean | null
 }
@@ -99,7 +107,14 @@ export interface PlayerStats {
   winRate: number
   currentStreak: number
   bestStreak: number
+  /** Punti partita + assist: lo stesso totale che compare in classifica. */
   totalScore: number
+  /** La parte guadagnata giocando. */
+  playScore: number
+  /** La parte guadagnata suggerendo agli altri. */
+  assistScore: number
+  /** Quanti suggerimenti sono stati giocati davvero. */
+  assists: number
   avgAttempts: number | null
   /** Indice 0 = vinta al 1° tentativo … indice 5 = al 6°. */
   distribution: number[]
@@ -151,6 +166,8 @@ export interface CoopSuggestion {
   createdAt: string
   /** Valorizzato se l'host ha poi giocato quella parola. */
   usedAt: string | null
+  /** Punti assist assegnati: zero finché l'host non gioca la parola. */
+  assistPoints: number
 }
 
 /** Vista dell'host: chi ho invitato e cosa mi stanno suggerendo. */
@@ -174,7 +191,7 @@ export interface CoopInvite {
   /**
    * true se accettare svelerebbe la parola di oggi al guest, perché non ha
    * ancora finito la propria partita. In quel caso la sua giornata non farà
-   * punti, e la UI lo dice prima di far accettare.
+   * punti partita — solo assist — e la UI lo dice prima di far accettare.
    */
   wouldSpoil: boolean
 }
@@ -196,6 +213,10 @@ export interface CoopView {
   suggestions: CoopSuggestion[]
   /** L'invito e' ancora valido? Diventa false se l'host chiude la stanza. */
   active: boolean
+  /** Punti assist di chi guarda, oggi, col tetto giornaliero già applicato. */
+  myAssistPoints: number
+  /** Quanti suoi suggerimenti sono stati giocati oggi. */
+  myAssists: number
 }
 
 /** Un giocatore invitabile. */

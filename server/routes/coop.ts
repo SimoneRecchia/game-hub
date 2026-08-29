@@ -148,8 +148,9 @@ export const coopRoutes = new Hono<AppEnv>()
 
     /*
      * Accettando, il guest vedrà i tentativi dell'host e quindi la parola di
-     * oggi. La sua giornata resta giocabile ma non fa punti: lo sapeva prima
-     * di accettare (vedi `wouldSpoil` in /inbox).
+     * oggi. La sua giornata resta giocabile ma non fa punti partita: lo sapeva
+     * prima di accettare (vedi `wouldSpoil` in /inbox). I punti assist invece
+     * li fa, per ogni parola che l'host gioca su suo suggerimento.
      */
     const answer = await dailyAnswer(c.env.DB, when)
     await markSpectated(c.env.DB, guest.id, when, answer)
@@ -185,7 +186,7 @@ export const coopRoutes = new Hono<AppEnv>()
     const when = today()
     const answer = await dailyAnswer(c.env.DB, when)
     const hostGame = await openGame(c.env.DB, room.host_id, when, answer)
-    return c.json<CoopView>(await guestView(c.env.DB, room, hostGame))
+    return c.json<CoopView>(await guestView(c.env.DB, room, hostGame, guest.id))
   })
 
   .post('/room/:id/suggest', async (c) => {
@@ -214,12 +215,20 @@ export const coopRoutes = new Hono<AppEnv>()
       fail(409, 'GAME_OVER', 'La partita è già finita.')
     }
 
+    /*
+     * Un solo suggerimento per parola per invitato: riproporre la stessa parola
+     * ne aggiorna la data, e torna in cima alla lista dell'host. Serve anche a
+     * chiudere una scorciatoia sugli assist: cinque volte "carta" giocata una
+     * volta valeva cinque assist.
+     */
     await c.env.DB.prepare(
       `INSERT INTO coop_suggestions (id, room_id, guest_id, word, created_at)
-       VALUES (?, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (room_id, guest_id, word) DO UPDATE
+            SET created_at = excluded.created_at`,
     )
       .bind(newId('sug'), room.id, guest.id, word, nowIso())
       .run()
 
-    return c.json<CoopView>(await guestView(c.env.DB, room, hostGame), 201)
+    return c.json<CoopView>(await guestView(c.env.DB, room, hostGame, guest.id), 201)
   })
