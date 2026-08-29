@@ -1,0 +1,4 @@
+# SPA: ogni rotta non-file torna all'index, così /wordle e /classifica
+# funzionano anche se apri l'URL diretto o ricarichi la pagina.
+# Le rotte /api/* sono gestite dalle Pages Functions e non passano da qui.
+/*  /index.html  200

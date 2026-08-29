@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="it" data-theme="auto">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=5"
+    />
+    <title>Game Hub</title>
+    <meta name="description" content="Hub di giochi: Wordle italiano con parola giornaliera e classifica tra colleghi." />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- PWA / standalone su iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Game Hub" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <meta property="og:title" content="Game Hub" />
+    <meta property="og:description" content="Wordle italiano con parola giornaliera e classifica." />
+    <meta property="og:type" content="website" />
+
+    <script>
+      // Applica il tema salvato prima del primo paint: evita il lampo di bianco.
+      try {
+        var t = localStorage.getItem('gh.theme')
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+        else document.documentElement.removeAttribute('data-theme')
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
