@@ -1,0 +1,68 @@
+.wordle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  /* Griglia e tastiera devono entrare in una schermata senza scorrimento.
+     L'altezza arriva dal flex della shell: qui basta occuparla tutta. */
+  flex: 1;
+  min-height: 0;
+}
+
+.wordle__message {
+  /* Altezza fissa: il messaggio appare e sparisce senza far saltare la griglia. */
+  height: 30px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.wordle__message-pill {
+  padding: var(--sp-1) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--label);
+  color: var(--label-inverted);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  animation: wordle-pill var(--dur-base) var(--ease-spring);
+}
+
+@keyframes wordle-pill {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+  }
+}
+
+.wordle__board {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 var(--sp-1);
+}
+
+.wordle__reopen {
+  flex: none;
+  align-self: center;
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--blue);
+  border-radius: var(--r-pill);
+}
+
+.wordle__fallback {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  text-align: center;
+}
+
+.wordle__fallback-text {
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  max-width: 30ch;
+}

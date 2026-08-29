@@ -74,6 +74,13 @@
   background: color-mix(in srgb, var(--red) 22%, transparent);
 }
 
+/* Gli svg sono display:block: senza flex qui l'icona andrebbe a capo. */
+.btn__label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
 .btn__spinner {
   width: 16px;
   height: 16px;
