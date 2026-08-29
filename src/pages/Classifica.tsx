@@ -213,10 +213,15 @@ function describeShort(row: LeaderboardRow, scope: LeaderboardScope): string {
 /** Riga di dettaglio sotto il nome: cambia con il periodo scelto. */
 function describe(row: LeaderboardRow, scope: LeaderboardScope): string {
   if (scope === 'today') {
-    if (row.todayStatus === 'won') return `Indovinata al ${row.todayAttempts}º tentativo`
-    if (row.todayStatus === 'lost') return 'Non indovinata'
+    // Chi ha guardato la partita di un altro conosceva la parola: spiegare lo
+    // zero e' meglio che lasciarlo sembrare un errore di calcolo.
+    const visto = row.todaySpectated ? ' · ha guardato, niente punti' : ''
+    if (row.todayStatus === 'won') return `Indovinata al ${row.todayAttempts}º tentativo${visto}`
+    if (row.todayStatus === 'lost') return `Non indovinata${visto}`
     if (row.todayStatus === 'playing') {
-      return row.todayAttempts === 0 ? 'Ha appena iniziato' : `In corso · ${row.todayAttempts} tentativi`
+      const base =
+        row.todayAttempts === 0 ? 'Ha appena iniziato' : `In corso · ${row.todayAttempts} tentativi`
+      return base + visto
     }
     return 'Non ha ancora giocato'
   }

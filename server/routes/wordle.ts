@@ -8,6 +8,7 @@ import { GUESS_SET } from '../../shared/words/guesses'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
 import { requireAuth } from '../lib/session'
+import { findRoom, markSuggestionUsed } from '../lib/coopStore'
 import {
   dailyAnswer,
   openGame,
@@ -38,6 +39,7 @@ function toState(row: GameRow, now = new Date()): WordleState {
     status: row.status,
     answer: row.status === 'playing' ? null : row.answer,
     score: row.score,
+    spectated: row.spectated === 1,
     msToNextPuzzle: msToNextPuzzle(now),
   }
 }
@@ -101,7 +103,14 @@ export const wordleRoutes = new Hono<AppEnv>()
         status === 'won'
           ? (await streakBefore(c.env.DB, c.get('player').id, row.puzzle_number)) + 1
           : 0
-      score = scoreFor({ status, attempts: nextWords.length, durationMs, streak })
+      /*
+       * Chi ha guardato la partita di un altro prima di giocare conosceva la
+       * parola: la giornata resta giocabile ma non fa punti. Senza questo la
+       * classifica non misurerebbe piu' nulla.
+       */
+      score = row.spectated === 1
+        ? 0
+        : scoreFor({ status, attempts: nextWords.length, durationMs, streak })
     }
 
     // Aggiornamento condizionato al numero di tentativi che abbiamo letto:
@@ -130,6 +139,14 @@ export const wordleRoutes = new Hono<AppEnv>()
     if (update.meta.changes !== 1) {
       fail(409, 'CONFLICT', 'Un altro tentativo è arrivato prima. Ricarica la pagina.')
     }
+
+    /*
+     * Se qualcuno aveva suggerito questa parola, il suggerimento risulta usato:
+     * serve a far vedere all'host, e a chi lo ha aiutato, che il consiglio e'
+     * stato seguito.
+     */
+    const room = await findRoom(c.env.DB, c.get('player').id, row.puzzle_number)
+    if (room) await markSuggestionUsed(c.env.DB, room.id, raw)
 
     return c.json<WordleState>(
       toState(

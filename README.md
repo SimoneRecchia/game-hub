@@ -100,6 +100,24 @@ Configurazione, permessi del token e come ricostruire tutto da zero:
 
 ---
 
+## Giocare in compagnia
+
+Mentre giochi puoi invitare **fino a cinque persone**: vedono la tua griglia in
+diretta e possono suggerirti una parola. Il tasto d'invio, da loro, dice
+**Suggerisci** — la parola la giochi sempre tu, un suggerimento non può
+consumarti un tentativo.
+
+Non c'è realtime: le Durable Objects non sono garantite sul piano gratuito e i
+10 ms di CPU per richiesta rendono le connessioni lunghe una cattiva idea. Il
+client interroga il server ogni due secondi per la griglia condivisa, tre per i
+suggerimenti, otto per gli inviti. Per "qualcuno ti suggerisce una parola" non
+si nota la differenza.
+
+**Chi guarda senza aver giocato conosce la parola**, perché è la stessa per
+tutti. Non lo impediamo, ma quella giornata non fa punti — con l'avviso
+esplicito prima di accettare l'invito. Altrimenti la classifica non misurerebbe
+più nulla.
+
 ## Le tre decisioni che spiegano il resto
 
 ### La parola la valuta il server

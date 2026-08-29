@@ -8,14 +8,36 @@
   color: var(--label);
   font-family: var(--font-rounded);
   font-weight: 700;
-  /* La lettera si adatta al lato della casella: la griglia e' fluida. */
-  font-size: clamp(1.25rem, 7.2vw, 2rem);
+  /*
+   * Ripiego per i browser senza unita' di container query. Segue la larghezza
+   * del viewport, che su uno schermo largo e basso puo' dare lettere piu'
+   * grandi della casella: la regola vera e' quella in @supports qui sotto.
+   */
+  font-size: clamp(1.1rem, 7vw, 2rem);
   line-height: 1;
   letter-spacing: 0;
   user-select: none;
   transition: border-color var(--dur-fast) var(--ease-out);
   /* Necessario perché rotateX si veda come una rotazione e non come uno schiacciamento. */
   transform-style: preserve-3d;
+}
+
+/*
+ * La lettera in proporzione alla casella, non al viewport.
+ *
+ * La riga e' il contenitore di riferimento: cinque colonne, quindi il 10%
+ * della sua larghezza sta sempre dentro la casella, qualunque sia la
+ * dimensione della griglia. Senza questo, su uno schermo basso la griglia si
+ * rimpicciolisce ma le lettere restano grandi e sbordano.
+ */
+@supports (font-size: 1cqw) {
+  .board__row {
+    container-type: inline-size;
+  }
+
+  .board__row .tile {
+    font-size: 10cqw;
+  }
 }
 
 /* Casella appena riempita: bordo piu' marcato e un piccolo scatto. */

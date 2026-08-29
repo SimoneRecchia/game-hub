@@ -1,0 +1,63 @@
+.avviso {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.avviso__testa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: center;
+}
+
+.avviso__testo {
+  color: var(--label-secondary);
+  font-size: var(--text-callout);
+  line-height: 1.45;
+  max-width: 32ch;
+}
+
+.avviso__testo strong {
+  color: var(--label);
+}
+
+/* Il caso in cui accettare ha un costo: va letto, non scorso. */
+.avviso__attenzione {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--orange) 32%, transparent);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  line-height: 1.45;
+}
+
+.avviso__attenzione-titolo {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--orange) 76%, var(--label));
+}
+
+.avviso__attenzione strong {
+  color: var(--label);
+}
+
+.avviso__sereno {
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.avviso__azioni {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
