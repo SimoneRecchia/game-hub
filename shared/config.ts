@@ -52,3 +52,24 @@ export const COOP_POLL_VIEW_MS = 2_000
 export const COOP_POLL_ROOM_MS = 3_000
 /** Gli inviti non sono urgenti al secondo: si guardano più di rado. */
 export const COOP_POLL_INBOX_MS = 8_000
+
+/* ─────────────────────────  Email e verifica  ───────────────────────── */
+
+export const EMAIL_MAX = 254
+/**
+ * Controllo di forma, non di esistenza.
+ *
+ * Volutamente permissivo: le regole vere delle email sono barocche, e l'unica
+ * verifica che conta e' che il codice arrivi. Serve solo a intercettare i
+ * refusi evidenti prima di sprecare un invio.
+ */
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/
+
+/** Sei cifre: abbastanza da non indovinarsi, poche da ridigitarsi a memoria. */
+export const CODE_LENGTH = 6
+/** Quanto vale un codice. Oltre, se ne chiede un altro. */
+export const CODE_TTL_MINUTES = 15
+/** Tentativi sbagliati prima che il codice si bruci. */
+export const CODE_MAX_ATTEMPTS = 5
+/** Attesa minima fra due invii, per non trasformare il tasto in un megafono. */
+export const CODE_RESEND_COOLDOWN_SECONDS = 60

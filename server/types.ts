@@ -13,6 +13,32 @@ export interface Bindings {
    * Se non c'e' (sviluppo locale, *.pages.dev) il cookie e' del solo host.
    */
   COOKIE_DOMAIN?: string
+
+  /**
+   * Chiave API di Resend, per l'invio delle email. Va impostata come *secret*
+   * (`wrangler pages secret put RESEND_API_KEY`), non come variabile in
+   * chiaro in wrangler.toml.
+   */
+  RESEND_API_KEY?: string
+
+  /** Mittente delle email, per esempio `Game Hub <giochi@esempio.it>`. */
+  EMAIL_FROM?: string
+
+  /**
+   * Endpoint dell'API di invio. Vuoto significa Resend.
+   *
+   * Serve per puntare a un servizio compatibile diverso, e in sviluppo a un
+   * finto servizio locale da cui leggere il codice senza mandare email vere.
+   */
+  EMAIL_ENDPOINT?: string
+
+  /**
+   * `'on'` per pretendere l'email verificata prima di giocare.
+   *
+   * Resta spenta finché non c'e' una chiave Resend: attivarla senza il modo di
+   * spedire i codici bloccherebbe le registrazioni.
+   */
+  EMAIL_VERIFICATION?: 'on' | 'off'
 }
 
 /** Variabili aggiunte al contesto Hono dai middleware. */
@@ -37,6 +63,9 @@ export interface PlayerRow {
   avatar_color: string
   created_at: string
   last_seen_at: string
+  email: string | null
+  email_lower: string | null
+  email_verified_at: string | null
 }
 
 export function toPlayer(row: PlayerRow): Player {
@@ -46,5 +75,7 @@ export function toPlayer(row: PlayerRow): Player {
     displayName: row.display_name,
     avatarColor: row.avatar_color,
     createdAt: row.created_at,
+    email: row.email,
+    emailVerified: row.email_verified_at !== null,
   }
 }

@@ -5,7 +5,7 @@ import { GUESS_SET } from '../../shared/words/guesses'
 import type { CoopInvite, CoopRoom, CoopView, InvitablePlayer } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail, newId, nowIso } from '../lib/http'
-import { requireAuth } from '../lib/session'
+import { requireVerified } from '../lib/session'
 import { dailyAnswer, openGame, today } from '../lib/wordleStore'
 import {
   acceptedInvite,
@@ -23,7 +23,7 @@ import {
 
 export const coopRoutes = new Hono<AppEnv>()
 
-  .use('*', requireAuth)
+  .use('*', requireVerified)
 
   /* ─────────────────────────────  Lato host  ───────────────────────────── */
 

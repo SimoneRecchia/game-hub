@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import type { LeaderboardResponse, LeaderboardScope } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
-import { requireAuth } from '../lib/session'
+import { requireVerified } from '../lib/session'
 import { leaderboard } from '../lib/leaderboard'
 import { today } from '../lib/wordleStore'
 
@@ -16,7 +16,7 @@ function readScope(value: string | undefined): LeaderboardScope {
 }
 
 export const leaderboardRoutes = new Hono<AppEnv>()
-  .use('*', requireAuth)
+  .use('*', requireVerified)
   .get('/', async (c) => {
     const scope = readScope(c.req.query('scope'))
     const result = await leaderboard(

@@ -6,26 +6,32 @@ import { ThemeButton } from '@/components/ThemeButton'
 import { useAuth } from '@/lib/auth'
 import { ApiFetchError } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
-import { NICKNAME_MAX, NICKNAME_MIN, PASSWORD_MIN } from '@shared/config'
+import { EMAIL_PATTERN, NICKNAME_MAX, NICKNAME_MIN, PASSWORD_MIN } from '@shared/config'
 import { InsecureContextError } from '@shared/password'
+import { ForgotPassword } from './ForgotPassword'
 import './Welcome.css'
 
 type Mode = 'login' | 'register'
+type Campo = 'nickname' | 'email' | 'password' | 'conferma' | null
 
 /**
- * Schermata di ingresso: scelta del nickname e password.
+ * Schermata di ingresso: accesso o registrazione.
  *
- * L'autenticazione e' volutamente minima — nessuna email, nessun secondo
- * fattore — perché il suo unico scopo e' legare i punteggi a una persona.
+ * In registrazione la password si scrive due volte e l'email e' obbligatoria:
+ * serve al recupero, che prima non esisteva — chi dimenticava la password
+ * perdeva l'account.
  */
 export default function Welcome() {
-  const { login, register } = useAuth()
+  const { login, register, config } = useAuth()
   const [mode, setMode] = useState<Mode>('login')
   const [nickname, setNickname] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [conferma, setConferma] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [field, setField] = useState<'nickname' | 'password' | null>(null)
+  const [field, setField] = useState<Campo>(null)
   const [busy, setBusy] = useState(false)
+  const [recupero, setRecupero] = useState(false)
 
   const isRegister = mode === 'register'
 
@@ -33,6 +39,13 @@ export default function Welcome() {
     setMode(next)
     setError(null)
     setField(null)
+    setConferma('')
+  }
+
+  function errore(campo: Campo, testo: string) {
+    setField(campo)
+    setError(testo)
+    haptic('error')
   }
 
   async function onSubmit(event: FormEvent) {
@@ -42,19 +55,23 @@ export default function Welcome() {
 
     const name = nickname.trim()
     if (name.length < NICKNAME_MIN || name.length > NICKNAME_MAX) {
-      setField('nickname')
-      setError(`Il nickname deve avere fra ${NICKNAME_MIN} e ${NICKNAME_MAX} caratteri.`)
-      return
+      return errore('nickname', `Il nickname deve avere fra ${NICKNAME_MIN} e ${NICKNAME_MAX} caratteri.`)
+    }
+    if (isRegister && !EMAIL_PATTERN.test(email.trim())) {
+      return errore('email', 'Questa email non sembra valida.')
     }
     if (password.length < PASSWORD_MIN) {
-      setField('password')
-      setError(`La password deve avere almeno ${PASSWORD_MIN} caratteri.`)
-      return
+      return errore('password', `La password deve avere almeno ${PASSWORD_MIN} caratteri.`)
+    }
+    // Il controllo sta qui e non solo sul server: e' un refuso di battitura,
+    // non serve un viaggio in rete per accorgersene.
+    if (isRegister && conferma !== password) {
+      return errore('conferma', 'Le due password non coincidono.')
     }
 
     setBusy(true)
     try {
-      if (isRegister) await register(name, password)
+      if (isRegister) await register(name, email.trim(), password)
       else await login(name, password)
       haptic('success')
     } catch (err) {
@@ -62,10 +79,9 @@ export default function Welcome() {
       if (err instanceof ApiFetchError) {
         setError(err.message)
         if (err.code.startsWith('NICKNAME')) setField('nickname')
+        else if (err.code.startsWith('EMAIL')) setField('email')
         else if (err.code === 'BAD_CREDENTIALS') setField('password')
       } else if (err instanceof InsecureContextError) {
-        // Senza questo ramo il caso arriverebbe come "qualcosa e' andato
-        // storto", che non dice cosa fare.
         setError(err.message)
       } else {
         setError('Qualcosa è andato storto. Riprova.')
@@ -74,6 +90,8 @@ export default function Welcome() {
       setBusy(false)
     }
   }
+
+  if (recupero) return <ForgotPassword onDone={() => setRecupero(false)} />
 
   return (
     <div className="welcome">
@@ -112,11 +130,28 @@ export default function Welcome() {
               autoCapitalize="none"
               autoCorrect="off"
               spellCheck={false}
-              inputMode="text"
               maxLength={NICKNAME_MAX}
               required
               error={field === 'nickname' ? error : null}
             />
+
+            {isRegister && (
+              <Field
+                label="Email"
+                type="email"
+                placeholder="per ritrovare l'account"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                inputMode="email"
+                required
+                error={field === 'email' ? error : null}
+              />
+            )}
+
             <Field
               label="Password"
               type="password"
@@ -127,12 +162,20 @@ export default function Welcome() {
               minLength={PASSWORD_MIN}
               required
               error={field === 'password' ? error : null}
-              hint={
-                isRegister
-                  ? 'Serve solo a ritrovare i tuoi punteggi: non usare una password che usi altrove.'
-                  : undefined
-              }
             />
+
+            {isRegister && (
+              <Field
+                label="Ripeti"
+                type="password"
+                placeholder="la stessa password"
+                value={conferma}
+                onChange={(e) => setConferma(e.target.value)}
+                autoComplete="new-password"
+                required
+                error={field === 'conferma' ? error : null}
+              />
+            )}
           </div>
 
           {error && !field && (
@@ -142,16 +185,27 @@ export default function Welcome() {
           )}
 
           <Button type="submit" size="lg" fullWidth loading={busy}>
-            {busy
-              ? 'Un attimo…'
-              : isRegister
-                ? 'Crea il profilo'
-                : 'Entra'}
+            {busy ? 'Un attimo…' : isRegister ? 'Crea il profilo' : 'Entra'}
           </Button>
+
+          {!isRegister && (
+            <button
+              type="button"
+              className="welcome__link"
+              onClick={() => {
+                setError(null)
+                setRecupero(true)
+              }}
+            >
+              Password dimenticata
+            </button>
+          )}
 
           <p className="welcome__note">
             {isRegister
-              ? 'Nessuna email, nessuna verifica: il profilo serve solo per la classifica.'
+              ? config?.emailVerificationRequired
+                ? 'Ti mandiamo un codice per confermare l’email. Serve anche a recuperare la password.'
+                : 'L’email serve solo a recuperare la password, se la dimentichi.'
               : 'Il browser ti ricorda: la prossima volta entri diretto.'}
           </p>
         </form>
