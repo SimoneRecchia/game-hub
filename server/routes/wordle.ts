@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { MAX_ATTEMPTS, WORD_LENGTH } from '../../shared/config'
 import { msToNextPuzzle } from '../../shared/daily'
 import { scoreFor } from '../../shared/scoring'
-import type { PlayerStats, WordleState } from '../../shared/types'
+import type { PlayerStats, WordleState, WordleStatus, WordleSummary } from '../../shared/types'
 import { evaluateAll, isWellFormedGuess, statusAfter } from '../../shared/wordle'
 import { GUESS_SET } from '../../shared/words/guesses'
 import type { AppEnv } from '../types'
@@ -147,6 +147,31 @@ export const wordleRoutes = new Hono<AppEnv>()
         now,
       ),
     )
+  })
+
+  /**
+   * Riepilogo per la card dell'hub.
+   *
+   * Di sola lettura di proposito: aprire l'hub non deve creare la partita del
+   * giorno né fissare la parola, altrimenti comparirebbero partite mai giocate.
+   */
+  .get('/summary', async (c) => {
+    const when = today()
+    const row = await c.env.DB.prepare(
+      `SELECT status, attempts, score FROM wordle_games
+        WHERE player_id = ? AND puzzle_number = ?`,
+    )
+      .bind(c.get('player').id, when.puzzleNumber)
+      .first<{ status: WordleStatus; attempts: number; score: number | null }>()
+
+    return c.json<WordleSummary>({
+      puzzleNumber: when.puzzleNumber,
+      date: when.date,
+      status: row?.status ?? 'new',
+      attempts: row?.attempts ?? 0,
+      score: row?.score ?? null,
+      msToNextPuzzle: msToNextPuzzle(),
+    })
   })
 
   /** Statistiche personali: partite, vittorie, streak, distribuzione tentativi. */
