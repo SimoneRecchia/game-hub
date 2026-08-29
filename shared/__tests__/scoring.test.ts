@@ -1,14 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ASSIST_PLAYED,
+  ASSIST_SOLVED,
   ATTEMPT_POINTS,
   ATTEMPT_STEP,
   CONSOLATION_POINTS,
   MAX_SCORE,
   MAX_SPEED_BONUS,
   MAX_STREAK_BONUS,
+  MAX_ASSIST_PER_DAY,
+  MAX_ASSIST_PER_SUGGESTION,
   MAX_TIEBREAK,
   SPEED_FULL_MS,
   SPEED_ZERO_MS,
+  assistPoints,
+  assistTotal,
+  dailyAssist,
   scoreBreakdown,
   scoreFor,
   speedBonus,
@@ -140,5 +147,44 @@ describe('punteggio della partita', () => {
     expect(scoreFor({ status: 'won', attempts: 99, durationMs: null, streak: 0 })).toBe(
       ATTEMPT_POINTS[5],
     )
+  })
+})
+
+describe('punti assist', () => {
+  it('paga il suggerimento che l host ha giocato', () => {
+    expect(assistPoints('carta', 'porta')).toBe(ASSIST_PLAYED)
+  })
+
+  it('paga di piu il suggerimento che ha chiuso la partita', () => {
+    expect(assistPoints('porta', 'porta')).toBe(ASSIST_PLAYED + ASSIST_SOLVED)
+    expect(assistPoints('porta', 'porta')).toBe(MAX_ASSIST_PER_SUGGESTION)
+  })
+
+  it('il tetto giornaliero taglia il totale del giorno', () => {
+    expect(dailyAssist(12)).toBe(12)
+    expect(dailyAssist(MAX_ASSIST_PER_DAY)).toBe(MAX_ASSIST_PER_DAY)
+    expect(dailyAssist(500)).toBe(MAX_ASSIST_PER_DAY)
+  })
+
+  it('non produce punti negativi', () => {
+    expect(dailyAssist(-4)).toBe(0)
+  })
+
+  it('applica il tetto un giorno per volta', () => {
+    // Il punto di avere il tetto giornaliero: due giornate piene valgono il
+    // doppio di una. Se il tetto fosse sul totale, questo darebbe 30.
+    expect(assistTotal([100, 100])).toBe(MAX_ASSIST_PER_DAY * 2)
+    expect(assistTotal([10, 5, 1])).toBe(16)
+    expect(assistTotal([])).toBe(0)
+  })
+
+  it('un singolo suggerimento non puo sfondare il tetto del giorno', () => {
+    expect(MAX_ASSIST_PER_SUGGESTION).toBeLessThanOrEqual(MAX_ASSIST_PER_DAY)
+  })
+
+  it('una giornata di assist vale meno di due tentativi risparmiati', () => {
+    // Gli assist devono poter far scalare la classifica, non sostituire il
+    // gioco: e' la condizione che tiene onesto quel compromesso.
+    expect(MAX_ASSIST_PER_DAY).toBeLessThan(2 * ATTEMPT_STEP)
   })
 })

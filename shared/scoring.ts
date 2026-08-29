@@ -11,6 +11,12 @@
  *
  * Senza questo, un quinto tentativo veloce batterebbe un terzo tentativo
  * lento: matematicamente coerente, ma nessuno lo accetterebbe come giusto.
+ *
+ * L'invariante vale sul punteggio di **una partita**. In classifica al punteggio
+ * partita si somma quello degli assist (vedi in fondo al file), che e' un asse
+ * separato di proposito: aiutare gli altri deve poter far scalare la classifica,
+ * altrimenti non sarebbe un premio. Il tetto giornaliero degli assist tiene quel
+ * contributo sotto un tentativo e mezzo.
  */
 
 import { MAX_ATTEMPTS } from './config'
@@ -88,4 +94,59 @@ export function scoreBreakdown(input: ScoreInput): ScoreBreakdown {
 
 export function scoreFor(input: ScoreInput): number {
   return scoreBreakdown(input).total
+}
+
+/* ────────────────────────────────  Assist  ──────────────────────────────── */
+
+/**
+ * I punti di chi aiuta.
+ *
+ * La parola del giorno e' la stessa per tutti, quindi guardare la partita di un
+ * altro prima di aver giocato la propria la svela: quella giornata non fa punti
+ * partita. Ma il tempo speso a suggerire vale qualcosa, e sono punti di un tipo
+ * diverso — **assist** — tenuti separati dai punti partita per due motivi:
+ *
+ *  - il totale in classifica e' la somma dei due, quindi chi aiuta sale;
+ *  - a parità di totale vince chi ha più assist, che e' l'unico modo di
+ *    premiare la collaborazione senza svalutare una partita giocata bene.
+ *
+ * Un suggerimento conta solo se l'host lo gioca davvero: proporre venti parole
+ * a caso non e' un aiuto, e senza questa condizione lo sarebbe diventato.
+ */
+
+/** L'host ha giocato la parola suggerita. */
+export const ASSIST_PLAYED = 4
+
+/** In più, se quella parola era la soluzione: e' il suggerimento che ha chiuso la partita. */
+export const ASSIST_SOLVED = 8
+
+/** Il massimo per un singolo suggerimento: giocato e vincente. */
+export const MAX_ASSIST_PER_SUGGESTION = ASSIST_PLAYED + ASSIST_SOLVED
+
+/**
+ * Tetto giornaliero degli assist, sommando tutte le partite in cui si e' aiutato.
+ *
+ * Serve a tenere gli assist un contributo, non una scorciatoia: 30 punti valgono
+ * un tentativo e mezzo (`ATTEMPT_STEP` = 20), quindi aiutare fa scalare la
+ * classifica ma non batte da solo chi ha giocato bene. Il tetto si applica in
+ * lettura, un giorno per volta: se un domani si cambia questo numero, cambia
+ * per tutte le giornate insieme, che e' il comportamento giusto per un tetto.
+ */
+export const MAX_ASSIST_PER_DAY = 30
+
+/** Punti per un suggerimento che l'host ha giocato. `answer` decide il bonus. */
+export function assistPoints(word: string, answer: string): number {
+  return ASSIST_PLAYED + (word === answer ? ASSIST_SOLVED : 0)
+}
+
+/** Assist di una giornata, col tetto applicato. */
+export function dailyAssist(points: number): number {
+  return Math.min(Math.max(points, 0), MAX_ASSIST_PER_DAY)
+}
+
+/** Assist di più giornate: il tetto e' per giorno, non sul totale. */
+export function assistTotal(perDay: Iterable<number>): number {
+  let total = 0
+  for (const points of perDay) total += dailyAssist(points)
+  return total
 }
