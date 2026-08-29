@@ -66,6 +66,15 @@ export function HowToPlay({ open, onClose }: { open: boolean; onClose: () => voi
               indovinato prima.
             </li>
             <li>
+              Puoi <strong>invitare fino a cinque persone</strong> a guardare la tua partita: vedono
+              la griglia in diretta e possono suggerirti una parola, ma decidi sempre tu cosa
+              giocare.
+            </li>
+            <li>
+              Chi guarda senza aver ancora giocato scopre la parola di oggi, quindi la sua partita
+              di quel giorno <strong>non fa punti</strong>. Glielo diciamo prima che accetti.
+            </li>
+            <li>
               Le parole arrivano da dizionari italiani pubblici, filtrate per tenere solo quelle di
               uso comune.
             </li>

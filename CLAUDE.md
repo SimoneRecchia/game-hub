@@ -51,7 +51,24 @@ tasti e quelle lettere non sarebbero digitabili.
 
 **La soluzione non deve arrivare al client prima della fine.** `toState()` in
 `server/routes/wordle.ts` mette `answer: null` finché lo stato è `playing`; è
-l'unica cosa che rende la classifica significativa.
+l'unica cosa che rende la classifica significativa. Vale anche per la vista
+condivisa: `guestView()` applica la stessa regola.
+
+**Chi guarda la partita di un altro non fa punti.** `wordle_games.spectated`
+viene messo a 1 quando si accetta un invito senza aver finito la propria
+partita, e la rotta del tentativo azzera il punteggio in quel caso. Senza
+questo, guardare sarebbe il modo più rapido per vincere la classifica.
+
+**Le partite condivise vanno a polling, non in realtime.** Cadenze in
+`shared/config.ts`. Non introdurre WebSocket o SSE senza aver verificato che le
+Durable Objects siano disponibili sul piano in uso: i 10 ms di CPU per richiesta
+rendono le connessioni lunghe una cattiva idea.
+
+**`container-type: size` richiede un'altezza definita.** La griglia si
+dimensiona con `83.34cqh` per stare in altezza, ma dove la pagina scorre
+(telefono in orizzontale) l'altezza non e' definita e `cqh` si risolve a zero,
+collassando le caselle. Per questo la media query orizzontale rimette
+`container-type: normal` e torna a dimensionare sulla larghezza.
 
 ## Cose che sembrano sbagliate e non lo sono
 

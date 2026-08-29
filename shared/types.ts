@@ -33,6 +33,11 @@ export interface WordleState {
   /** Rivelata solo a partita conclusa. */
   answer: string | null
   score: number | null
+  /**
+   * true se il giocatore ha guardato la partita di qualcun altro prima di
+   * giocare la propria: conosceva la parola, quindi la giornata non fa punti.
+   */
+  spectated: boolean
   /** Millisecondi al prossimo puzzle, per il countdown. */
   msToNextPuzzle: number
 }
@@ -60,6 +65,11 @@ export interface LeaderboardRow {
   /** Solo per scope=today: tentativi usati oggi. */
   todayAttempts: number | null
   todayStatus: WordleStatus | null
+  /**
+   * Solo per scope=today: ha guardato la partita di qualcun altro prima di
+   * giocare la propria, quindi la giornata non fa punti.
+   */
+  todaySpectated: boolean | null
 }
 
 export interface LeaderboardResponse {
@@ -100,4 +110,89 @@ export interface WordleSummary {
   attempts: number
   score: number | null
   msToNextPuzzle: number
+}
+
+/* ─────────────────────────  Partite in compagnia  ───────────────────────── */
+
+export type InviteStatus = 'pending' | 'accepted' | 'declined'
+
+/** Un giocatore invitato, come lo vede l'host. */
+export interface CoopGuest {
+  inviteId: string
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  status: InviteStatus
+  /** Quanti suggerimenti ha mandato. */
+  suggestions: number
+}
+
+/** Un suggerimento arrivato all'host. */
+export interface CoopSuggestion {
+  id: string
+  word: string
+  guestId: string
+  guestName: string
+  avatarColor: string
+  createdAt: string
+  /** Valorizzato se l'host ha poi giocato quella parola. */
+  usedAt: string | null
+}
+
+/** Vista dell'host: chi ho invitato e cosa mi stanno suggerendo. */
+export interface CoopRoom {
+  roomId: string
+  puzzleNumber: number
+  maxGuests: number
+  guests: CoopGuest[]
+  /** Dal più recente. */
+  suggestions: CoopSuggestion[]
+}
+
+/** Un invito ricevuto, come lo vede il guest. */
+export interface CoopInvite {
+  inviteId: string
+  roomId: string
+  puzzleNumber: number
+  hostName: string
+  hostAvatarColor: string
+  createdAt: string
+  /**
+   * true se accettare svelerebbe la parola di oggi al guest, perché non ha
+   * ancora finito la propria partita. In quel caso la sua giornata non farà
+   * punti, e la UI lo dice prima di far accettare.
+   */
+  wouldSpoil: boolean
+}
+
+/** Vista del guest: la board dell'host, in sola lettura. */
+export interface CoopView {
+  roomId: string
+  puzzleNumber: number
+  hostName: string
+  hostAvatarColor: string
+  wordLength: number
+  maxAttempts: number
+  /** Gli stessi tentativi che vede l'host, con gli stessi colori. */
+  guesses: EvaluatedGuess[]
+  status: WordleStatus
+  /** Rivelata solo a partita conclusa, come per l'host. */
+  answer: string | null
+  /** I suggerimenti di tutti gli invitati, dal più recente. */
+  suggestions: CoopSuggestion[]
+  /** L'invito e' ancora valido? Diventa false se l'host chiude la stanza. */
+  active: boolean
+}
+
+/** Un giocatore invitabile. */
+export interface InvitablePlayer {
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Ha già concluso la partita di oggi: invitarlo non gli svela nulla. */
+  playedToday: boolean
+  /** Già invitato in questa stanza. */
+  invited: boolean
 }

@@ -8,6 +8,8 @@ import NotFound from './pages/NotFound'
 import Profilo from './pages/Profilo'
 import Welcome from './pages/Welcome'
 import Wordle from './pages/Wordle'
+import WordleInsieme from './pages/WordleInsieme'
+import { CoopGate } from './games/wordle/coop/CoopGate'
 
 export default function App() {
   const { player, checking } = useAuth()
@@ -25,12 +27,18 @@ export default function App() {
   if (!player) return <Welcome />
 
   return (
-    <Routes>
-      <Route path="/" element={<Hub />} />
-      <Route path="/wordle" element={<Wordle />} />
-      <Route path="/classifica" element={<Classifica />} />
-      <Route path="/profilo" element={<Profilo />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      {/* L'avviso degli inviti vive fuori dalle rotte: deve poter comparire
+          da qualunque schermata, non solo dall'hub. */}
+      <CoopGate />
+      <Routes>
+        <Route path="/" element={<Hub />} />
+        <Route path="/wordle" element={<Wordle />} />
+        <Route path="/insieme/:roomId" element={<WordleInsieme />} />
+        <Route path="/classifica" element={<Classifica />} />
+        <Route path="/profilo" element={<Profilo />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   )
 }

@@ -66,3 +66,96 @@
   font-size: var(--text-subhead);
   max-width: 30ch;
 }
+
+/* ---------- Partita in compagnia ---------- */
+
+.wordle__invita {
+  position: relative;
+}
+
+.wordle__invita-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--green);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--material-regular);
+}
+
+.wordle__spettatori {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  align-self: center;
+  max-width: 100%;
+}
+
+/* Gli avatar si sovrappongono: cinque nomi non ci starebbero. */
+.wordle__spettatori-avatar {
+  display: inline-flex;
+  flex: none;
+}
+
+.wordle__spettatori-avatar > * + * {
+  margin-left: -7px;
+}
+
+.wordle__spettatori-avatar > * {
+  box-shadow: 0 0 0 1.5px var(--bg);
+}
+
+.wordle__spettatori-testo {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wordle__senza-punti {
+  flex: none;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+  text-align: center;
+  line-height: 1.35;
+}
+
+/* Vedi AppShell.css: in orizzontale la pagina scorre e la griglia resta
+   leggibile invece di comprimersi. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .wordle {
+    height: auto;
+  }
+}
+
+/*
+ * In orizzontale la pagina scorre, quindi l'altezza dell'area non e' piu'
+ * definita — e senza un'altezza definita `container-type: size` fa risolvere
+ * `cqh` a zero, che collassava la griglia a caselle da quattro pixel.
+ * Qui il vincolo torna a essere la larghezza, che e' sempre definita.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .wordle__board {
+    container-type: normal;
+    min-height: 264px;
+  }
+
+  .wordle__board .board {
+    width: min(100%, 300px);
+  }
+}
