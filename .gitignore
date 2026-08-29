@@ -10,3 +10,6 @@ coverage
 .env
 .env.*
 !.env.example
+
+# Sorgenti dei dizionari scaricate da scripts/build-wordlist.mjs
+scripts/.cache/
