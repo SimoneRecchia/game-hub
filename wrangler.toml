@@ -1,0 +1,22 @@
+#:schema node_modules/wrangler/config-schema.json
+#
+# Configurazione Cloudflare Pages.
+#
+# Contiene solo quello che serve per lo sviluppo locale e per il build.
+# I binding di produzione (il database D1) si impostano nella dashboard di
+# Cloudflare: Workers & Pages → game-hub → Settings → Bindings.
+#
+# Perché non anche qui: il `database_id` di produzione e' un identificativo
+# specifico dell'account, e metterne uno finto nel repository farebbe fallire
+# il deploy con un errore poco chiaro. Vedi DEPLOY.md per la procedura.
+
+name = "game-hub"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "dist"
+
+# Database locale per `npm run dev:api`. Il `database_id` conta solo in
+# produzione: in locale wrangler crea un SQLite dentro .wrangler/state/.
+[[d1_databases]]
+binding = "DB"
+database_name = "game-hub-db"
+database_id = "local-development-only"

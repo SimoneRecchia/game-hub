@@ -13,3 +13,6 @@ coverage
 
 # Sorgenti dei dizionari scaricate da scripts/build-wordlist.mjs
 scripts/.cache/
+
+# Stato locale di wrangler (D1 di sviluppo)
+.wrangler/
