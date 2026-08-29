@@ -130,6 +130,21 @@ aprire gli strumenti per sviluppatori.
 Il controllo "questa parola non esiste" resta invece locale, così un tentativo
 sbagliato non fa aspettare nessuno.
 
+### L'email serve al recupero, non alla burocrazia
+
+Alla registrazione si scelgono nickname, email e password (due volte). L'email
+esiste per una ragione sola: **poter rientrare se si dimentica la password**.
+Prima non c'era via di recupero e l'account si perdeva.
+
+La **verifica con codice** è opzionale e si accende quando c'è un servizio di
+invio configurato (`EMAIL_VERIFICATION` in `wrangler.toml`). Con la verifica
+attiva la registrazione manda un codice di 6 cifre e il gioco resta chiuso
+finché non viene confermato — il controllo è lato server, non solo nella UI.
+Senza servizio di invio l'email viene comunque raccolta ma non verificata:
+pretendere un codice senza il modo di spedirlo bloccherebbe tutti.
+
+Dettagli e come accenderla: [DEPLOY.md](DEPLOY.md).
+
 ### Le password si derivano in due passaggi
 
 Le Pages Functions sul piano gratuito hanno **10 ms di CPU per richiesta**: un

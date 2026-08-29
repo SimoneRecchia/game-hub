@@ -76,3 +76,17 @@
   text-align: center;
   line-height: 1.4;
 }
+
+.welcome__link {
+  align-self: center;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-pill);
+  font-size: var(--text-subhead);
+  font-weight: 500;
+  color: var(--blue);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.welcome__link:hover {
+  background: var(--fill-quaternary);
+}

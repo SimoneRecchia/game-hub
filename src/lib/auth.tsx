@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { Player } from '@shared/types'
+import type { AuthConfig, Player } from '@shared/types'
 import { deriveVerifier } from '@shared/password'
 import { ApiFetchError, api } from './api'
 
@@ -18,10 +18,18 @@ interface AuthState {
   player: Player | null
   /** true finché non sappiamo se la sessione salvata e' ancora valida. */
   checking: boolean
-  register: (nickname: string, password: string) => Promise<void>
+  /** null finché la configurazione non e' arrivata dal server. */
+  config: AuthConfig | null
+  register: (nickname: string, email: string, password: string) => Promise<void>
   login: (nickname: string, password: string) => Promise<void>
   logout: () => Promise<void>
   refresh: () => Promise<void>
+  /** Conferma l'email col codice ricevuto. */
+  verify: (code: string) => Promise<void>
+  /** Rimanda il codice. Restituisce i secondi di attesa dichiarati. */
+  resendCode: () => Promise<number>
+  /** Applica un giocatore aggiornato (es. dopo il recupero password). */
+  apply: (player: Player) => void
 }
 
 const AuthContext = createContext<AuthState | null>(null)
@@ -57,6 +65,7 @@ function writeCache(player: Player | null) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [player, setPlayer] = useState<Player | null>(readCache)
   const [checking, setChecking] = useState(true)
+  const [config, setConfig] = useState<AuthConfig | null>(null)
   const mounted = useRef(true)
 
   useEffect(() => {
@@ -88,17 +97,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refresh()
   }, [refresh])
 
+  // La configurazione serve prima di disegnare la registrazione: decide se
+  // mostrare il passaggio del codice.
+  useEffect(() => {
+    void api<AuthConfig>('/auth/config')
+      .then((fresh) => {
+        if (mounted.current) setConfig(fresh)
+      })
+      .catch(() => {
+        // Senza risposta si assume la configurazione minima: l'email viene
+        // raccolta comunque, ma non si promette un codice che potrebbe non
+        // arrivare.
+        if (mounted.current) setConfig({ emailVerificationRequired: false })
+      })
+  }, [])
+
   const register = useCallback(
-    async (nickname: string, password: string) => {
+    async (nickname: string, email: string, password: string) => {
       const verifier = await deriveVerifier(nickname, password)
       const { player: created } = await api<{ player: Player }>('/auth/register', {
         method: 'POST',
-        body: { nickname: nickname.trim(), verifier },
+        body: { nickname: nickname.trim(), email: email.trim(), verifier },
       })
       apply(created)
     },
     [apply],
   )
+
+  const verify = useCallback(
+    async (code: string) => {
+      const { player: fresh } = await api<{ player: Player }>('/auth/verify', {
+        method: 'POST',
+        body: { code: code.trim() },
+      })
+      apply(fresh)
+    },
+    [apply],
+  )
+
+  const resendCode = useCallback(async () => {
+    const { cooldownSeconds } = await api<{ cooldownSeconds: number }>('/auth/verify/resend', {
+      method: 'POST',
+    })
+    return cooldownSeconds
+  }, [])
 
   const login = useCallback(
     async (nickname: string, password: string) => {
@@ -121,8 +163,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [apply])
 
   const value = useMemo<AuthState>(
-    () => ({ player, checking, register, login, logout, refresh }),
-    [player, checking, register, login, logout, refresh],
+    () => ({
+      player,
+      checking,
+      config,
+      register,
+      login,
+      logout,
+      refresh,
+      verify,
+      resendCode,
+      apply,
+    }),
+    [player, checking, config, register, login, logout, refresh, verify, resendCode, apply],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
