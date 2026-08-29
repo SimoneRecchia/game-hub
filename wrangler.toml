@@ -32,3 +32,20 @@ database_id = "5b224eb2-435b-459e-ac8a-13f34a972578"
 # *.pages.dev e in locale il cookie resta del singolo host: vedi
 # `cookieDomainFor` in shared/hosts.ts.
 COOKIE_DOMAIN = "simonerecchia.com"
+
+# Mittente delle email con i codici di verifica.
+EMAIL_FROM = "Game Hub <giochi@simonerecchia.com>"
+
+# Verifica dell'email al momento della registrazione.
+#
+# Resta "off" finché non c'e' una chiave Resend: accenderla senza il modo di
+# spedire i codici bloccherebbe ogni registrazione. Con "off" l'email viene
+# comunque raccolta, perché serve al recupero password, ma non viene verificata
+# e l'account nasce già attivo.
+#
+# Per accenderla:
+#   npx wrangler pages secret put RESEND_API_KEY --project-name game-hub
+#   poi EMAIL_VERIFICATION = "on" qui, commit e push.
+#
+# La chiave e' un segreto e non va in questo file: vedi DEPLOY.md.
+EMAIL_VERIFICATION = "off"

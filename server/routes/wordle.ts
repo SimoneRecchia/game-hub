@@ -7,7 +7,7 @@ import { evaluateAll, isWellFormedGuess, statusAfter } from '../../shared/wordle
 import { GUESS_SET } from '../../shared/words/guesses'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
-import { requireAuth } from '../lib/session'
+import { requireVerified } from '../lib/session'
 import { findRoom, markSuggestionUsed } from '../lib/coopStore'
 import {
   dailyAnswer,
@@ -46,7 +46,7 @@ function toState(row: GameRow, now = new Date()): WordleState {
 
 export const wordleRoutes = new Hono<AppEnv>()
 
-  .use('*', requireAuth)
+  .use('*', requireVerified)
 
   /** Stato della partita di oggi. La crea al primo accesso della giornata. */
   .get('/state', async (c) => {

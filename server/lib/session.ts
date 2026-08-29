@@ -3,6 +3,7 @@ import type { Context, MiddlewareHandler } from 'hono'
 import { generateSessionToken, hashSessionToken } from '../../shared/session'
 import { SESSION_TTL_DAYS } from '../../shared/config'
 import { cookieDomainFor } from '../../shared/hosts'
+import { emailVerificationEnabled } from './email'
 import { toPlayer, type AppEnv, type PlayerRow } from '../types'
 import { fail, nowIso } from './http'
 
@@ -153,6 +154,31 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   const resolved = await resolveSession(c)
   if (!resolved) fail(401, 'NOT_AUTHENTICATED', 'Serve accedere per continuare.')
   c.set('player', toPlayer(resolved.player))
+  await touchSession(c, resolved)
+  await next()
+}
+
+/**
+ * Richiede una sessione valida e l'email confermata.
+ *
+ * Il controllo sta anche qui e non solo nella UI: nascondere il gioco in
+ * facciata lascerebbe le rotte aperte a chiunque conosca l'indirizzo, e la
+ * verifica non servirebbe a niente.
+ *
+ * Quando l'invio delle email non e' configurato la verifica non e' attiva e
+ * questo middleware si comporta come `requireAuth`: pretendere una conferma
+ * senza il modo di spedire i codici bloccherebbe tutti.
+ */
+export const requireVerified: MiddlewareHandler<AppEnv> = async (c, next) => {
+  const resolved = await resolveSession(c)
+  if (!resolved) fail(401, 'NOT_AUTHENTICATED', 'Serve accedere per continuare.')
+
+  const player = toPlayer(resolved.player)
+  if (emailVerificationEnabled(c.env) && !player.emailVerified) {
+    fail(403, 'EMAIL_NOT_VERIFIED', 'Conferma la tua email per giocare.')
+  }
+
+  c.set('player', player)
   await touchSession(c, resolved)
   await next()
 }

@@ -166,6 +166,69 @@ viene toccato: il codice resta dov'è, se un giorno servisse.
 
 ---
 
+## Email: codici di verifica e recupero password
+
+L'email viene sempre raccolta alla registrazione, perché serve al recupero
+password. La **verifica con codice** invece si accende, e richiede un servizio
+di invio.
+
+Dalle Pages Functions non si può parlare SMTP, e Cloudflare Email Routing
+riceve ma non spedisce: serve un'API HTTP. La scelta è **Resend** — 3.000 email
+al mese gratis, più che sufficienti per un gruppo di colleghi.
+
+### Accenderla
+
+1. Crea un account su [resend.com](https://resend.com) e aggiungi il dominio
+   `simonerecchia.com`. Resend mostra tre record DNS (DKIM, SPF e un MX per i
+   rimbalzi): aggiungili nel pannello DNS di Cloudflare, **senza proxy**
+   (nuvoletta grigia — un record di posta proxato non funziona).
+2. Crea una API key e mettila fra i segreti del progetto Pages:
+
+   ```bash
+   npx wrangler pages secret put RESEND_API_KEY --project-name game-hub
+   ```
+
+   Va come **segreto**, non come variabile in `wrangler.toml`: quel file è
+   versionato.
+3. In `wrangler.toml`, `EMAIL_VERIFICATION = "on"`, poi commit e push.
+
+Da quel momento la registrazione manda un codice di 6 cifre e il gioco resta
+chiuso finché non viene confermato. Il recupero password si attiva insieme.
+
+### Com'è fatto
+
+| | |
+| --- | --- |
+| Codice | 6 cifre, valido 15 minuti, 5 tentativi poi si brucia |
+| Nel database | solo l'impronta SHA-256, legata al giocatore e allo scopo |
+| Attesa fra due invii | 60 secondi |
+| Mittente | `EMAIL_FROM` in `wrangler.toml` |
+| Endpoint | `EMAIL_ENDPOINT`, vuoto = Resend (serve per cambiare fornitore) |
+
+Il recupero password chiede il **nickname**, non l'email, anche se il codice si
+può richiedere con entrambi: il salt della password si deriva dal nickname
+(vedi `shared/password.ts`), quindi una password derivata dall'email non
+funzionerebbe al login successivo. La schermata lo spiega quando serve.
+
+`/auth/reset/request` risponde sempre allo stesso modo, anche per un nickname
+che non esiste: distinguere i due casi la trasformerebbe in un modo per
+scoprire chi è iscritto.
+
+### Provarla in locale
+
+Serve un finto servizio di posta da cui leggere il codice: qualunque cosa
+risponda `200` con un JSON va bene. Poi, in `wrangler.toml`,
+`EMAIL_VERIFICATION = "on"` e in `.dev.vars`:
+
+```
+RESEND_API_KEY=chiave-finta
+EMAIL_ENDPOINT=http://127.0.0.1:8899/emails
+```
+
+> **Attenzione alla precedenza.** Le `[vars]` di `wrangler.toml` **vincono** su
+> `.dev.vars` e su `--binding` da riga di comando. Per accendere la verifica in
+> locale va cambiato `wrangler.toml`, non basta `.dev.vars`.
+
 ## Manutenzione
 
 **Nuove migrazioni.** Aggiungi un file numerato in `migrations/` e applicalo
@@ -192,10 +255,11 @@ npx wrangler d1 execute game-hub-db --remote --command "
    GROUP BY p.id ORDER BY punti DESC"
 ```
 
-**Reimpostare la password di qualcuno.** Non c'è recupero via email: il modo
-più rapido è cancellare il giocatore e farlo registrare di nuovo — ma così
-perde i punteggi. In alternativa, cancellare le sue sessioni lo fa solo
-disconnettere:
+**Reimpostare la password di qualcuno.** Con la verifica accesa se la
+reimposta da sé, da *Password dimenticata*. Se il servizio di posta non è
+configurato, l'unica via è cancellare il giocatore e farlo registrare di nuovo
+— ma così perde i punteggi. Cancellare solo le sessioni lo fa disconnettere
+senza toccare nient'altro:
 
 ```bash
 npx wrangler d1 execute game-hub-db --remote \
@@ -222,6 +286,9 @@ npx wrangler d1 execute game-hub-db --remote \
 | Il build fallisce su una sintassi che in locale funziona | `NODE_VERSION` non impostata: Pages sta usando un Node più vecchio |
 | Le rotte dirette (`/wordle`, `/classifica`) danno 404 | `public/_redirects` non è finito in `dist/`: dev'esserci `/*  /index.html  200` |
 | L'accesso non resta memorizzato | Il sito è servito in `http`: il cookie è `Secure` e il browser lo scarta. Su Pages con dominio custom l'https c'è sempre |
+| Il codice non arriva | `RESEND_API_KEY` mancante, oppure il dominio non è verificato su Resend, oppure i record DKIM/SPF sono proxati (devono essere grigi) |
+| La registrazione non chiede il codice | `EMAIL_VERIFICATION` è `"off"`, o la chiave Resend non c'è: senza il modo di spedire, la verifica resta spenta di proposito |
+| La password reimpostata non funziona | È stata derivata dall'email invece che dal nickname: il salt viene dal nickname |
 | Si è collegati sull'hub ma non sul gioco | `COOKIE_DOMAIN` in `wrangler.toml` non copre l'host: deve valere `simonerecchia.com` per i sottodomini di quel dominio |
 | «Apri il sito in https» al momento dell'accesso | Il sito è aperto su un'origine http che non è localhost: WebCrypto non è disponibile |
 | `wordle.simonerecchia.com` apre l'hub invece del gioco | Manca la voce in `GAME_SUBDOMAINS` in `shared/hosts.ts` |

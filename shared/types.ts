@@ -8,6 +8,19 @@ export interface Player {
   displayName: string
   avatarColor: string
   createdAt: string
+  /** null per gli account creati prima dell'introduzione dell'email. */
+  email: string | null
+  emailVerified: boolean
+}
+
+/** Cosa il client deve sapere sulla configurazione, prima di disegnare la UI. */
+export interface AuthConfig {
+  /**
+   * true se il codice via email e' richiesto per giocare. Quando e' false
+   * l'email viene comunque raccolta, perché serve al recupero password, ma non
+   * viene verificata.
+   */
+  emailVerificationRequired: boolean
 }
 
 /** Colore di una casella dopo la valutazione del server. */
