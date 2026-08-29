@@ -105,8 +105,9 @@ export const wordleRoutes = new Hono<AppEnv>()
           : 0
       /*
        * Chi ha guardato la partita di un altro prima di giocare conosceva la
-       * parola: la giornata resta giocabile ma non fa punti. Senza questo la
-       * classifica non misurerebbe piu' nulla.
+       * parola: la giornata resta giocabile ma non fa punti partita. Senza
+       * questo la classifica non misurerebbe piu' nulla. I punti assist per
+       * quello che ha suggerito restano, e li somma la classifica.
        */
       score = row.spectated === 1
         ? 0
@@ -141,12 +142,12 @@ export const wordleRoutes = new Hono<AppEnv>()
     }
 
     /*
-     * Se qualcuno aveva suggerito questa parola, il suggerimento risulta usato:
-     * serve a far vedere all'host, e a chi lo ha aiutato, che il consiglio e'
-     * stato seguito.
+     * Se qualcuno aveva suggerito questa parola, il suggerimento risulta usato
+     * e chi l'ha proposta prende i punti assist. E' l'unico momento in cui
+     * vengono assegnati: un suggerimento che l'host non gioca non e' un aiuto.
      */
     const room = await findRoom(c.env.DB, c.get('player').id, row.puzzle_number)
-    if (room) await markSuggestionUsed(c.env.DB, room.id, raw)
+    if (room) await markSuggestionUsed(c.env.DB, room.id, raw, row.answer)
 
     return c.json<WordleState>(
       toState(

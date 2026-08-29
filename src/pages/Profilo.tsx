@@ -47,11 +47,13 @@ export default function Profilo() {
       <Card sectionTitle="Wordle">
         {stats === null ? (
           <p className="profilo__loading">Carico le statistiche…</p>
-        ) : stats.played === 0 ? (
+        ) : stats.played === 0 && stats.assistScore === 0 ? (
           <p className="profilo__loading">
             Nessuna partita, per ora. La prima parola ti aspetta nell'hub.
           </p>
         ) : (
+          /* Gli assist bastano a riempire il pannello: chi ha solo suggerito ha
+             punti in classifica, e vederli qui a zero sarebbe una smentita. */
           <StatsPanel stats={stats} />
         )}
       </Card>

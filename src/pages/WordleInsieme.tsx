@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { AppShell } from '@/components/AppShell'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { IconChevronLeft } from '@/components/Icons'
+import { IconChevronLeft, IconPeople } from '@/components/Icons'
 import { Board } from '@/games/wordle/Board'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
@@ -172,6 +172,30 @@ export default function WordleInsieme() {
                     : `Stai guardando ${view.hostName}. Puoi suggerire una parola.`}
             </div>
 
+            {/*
+              Quanto ha reso l'aiuto. Il guest non fa punti partita — la parola
+              l'ha già vista — quindi questa e' l'unica cosa che gli dice che
+              sta comunque giocando per qualcosa.
+
+              Compare solo quando c'e' qualcosa da dire: l'altezza qui e'
+              contata, e la griglia si dimensiona su quel che resta. Finché non
+              ci sono assist, il messaggio sta nell'etichetta del suggerimento,
+              che una riga la occupa comunque.
+            */}
+            {view.myAssists > 0 && (
+              <div className="insieme__assist">
+                <IconPeople size={14} />
+                <span>
+                  <strong>
+                    {view.myAssists}{' '}
+                    {view.myAssists === 1 ? 'suggerimento giocato' : 'suggerimenti giocati'}
+                  </strong>
+                  {' · '}
+                  <strong>+{view.myAssistPoints}</strong> assist in classifica
+                </span>
+              </div>
+            )}
+
             <div className="insieme__board">
               {/* Dentro l'area della griglia: si sovrappone senza spostarla. */}
               <div className="insieme__messaggio" aria-live="polite">
@@ -192,7 +216,11 @@ export default function WordleInsieme() {
                 è un tentativo, e mescolarla confonderebbe le due cose. */}
             {!chiuso && (
               <div className="insieme__proposta">
-                <span className="insieme__proposta-etichetta">Il tuo suggerimento</span>
+                <span className="insieme__proposta-etichetta">
+                  {view.myAssists > 0
+                    ? 'Suggerisci un’altra parola'
+                    : `Suggerisci: se ${view.hostName} la gioca, fai assist`}
+                </span>
                 <span className="insieme__proposta-caselle">
                   {Array.from({ length: WORD_LENGTH }, (_, i) => (
                     <span className="insieme__casella" key={i}>

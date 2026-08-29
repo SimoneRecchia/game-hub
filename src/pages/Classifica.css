@@ -1,14 +1,18 @@
 /* ---------- Podio ---------- */
 
 .podium {
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.podium__gradini {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   align-items: end;
   gap: var(--sp-2);
   padding: var(--sp-5) var(--sp-3) var(--sp-3);
-  border-radius: var(--r-xl);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
 }
 
 .podium__slot {
@@ -19,6 +23,12 @@
   padding: var(--sp-3) var(--sp-1) var(--sp-2);
   border-radius: var(--r-md);
   min-width: 0;
+  width: 100%;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.podium__slot.is-aperta {
+  background-color: var(--fill-quaternary);
 }
 
 /* Il primo posto sta al centro e più in alto. */
@@ -34,6 +44,11 @@
 .podium__slot.is-me {
   outline: 1.5px solid color-mix(in srgb, var(--blue) 45%, transparent);
   outline-offset: -1.5px;
+}
+
+/* Il gradiente del primo posto va sopra il fondo "aperta", non sostituito. */
+.podium__slot--1.is-aperta {
+  background-color: color-mix(in srgb, var(--yellow) 10%, var(--fill-quaternary));
 }
 
 .podium__name {
@@ -98,20 +113,35 @@
   overflow: hidden;
 }
 
+.lb__riga + .lb__riga {
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+
+.lb__riga.is-me {
+  background: color-mix(in srgb, var(--blue) 8%, transparent);
+}
+
+.lb__riga.is-aperta {
+  background: var(--fill-quaternary);
+}
+
+.lb__riga.is-me.is-aperta {
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
+}
+
+/* La riga intera e' il bersaglio del tocco: il dettaglio si apre da qualunque punto. */
 .lb__row {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
   padding: var(--sp-3) var(--sp-4);
   min-height: 56px;
+  width: 100%;
+  text-align: left;
 }
 
-.lb__row + .lb__row {
-  box-shadow: inset 0 0.5px 0 var(--separator);
-}
-
-.lb__row.is-me {
-  background: color-mix(in srgb, var(--blue) 8%, transparent);
+.lb__row:active {
+  background: var(--fill-quaternary);
 }
 
 .lb__rank {
@@ -258,4 +288,98 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-1);
+}
+
+/* ---------- Come e fatto un punteggio ---------- */
+
+.lb__assist {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+  color: var(--blue);
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lb__dettaglio {
+  padding: var(--sp-2) var(--sp-4) var(--sp-4);
+  box-shadow: inset 0 0.5px 0 var(--separator);
+  animation: lb-apri var(--dur-fast) var(--ease-out);
+}
+
+/* Nel podio il dettaglio esce dal fondo della card, quindi respira di piu'. */
+.podium .lb__dettaglio {
+  padding-top: var(--sp-3);
+}
+
+@keyframes lb-apri {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.lb__dettaglio-titolo {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.lb__voci {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lb__voce {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-1) 0;
+  font-size: var(--text-subhead);
+}
+
+.lb__voce dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--label-secondary);
+}
+
+.lb__voce dd {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-weight: 600;
+}
+
+.lb__voce--totale {
+  margin-top: var(--sp-1);
+  padding-top: var(--sp-2);
+  border-top: 0.5px solid var(--separator);
+  font-weight: 600;
+}
+
+.lb__voce--totale dt {
+  color: var(--label);
+  font-weight: 600;
+}
+
+.lb__voce--totale dd {
+  font-size: var(--text-headline);
+  font-weight: 700;
+}
+
+.lb__dettaglio-nota {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+  /* Testo lungo: qui l'ellissi delle righe sopra non serve, serve leggerlo. */
+  white-space: normal;
 }

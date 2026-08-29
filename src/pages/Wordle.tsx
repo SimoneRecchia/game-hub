@@ -85,7 +85,8 @@ export default function Wordle() {
             {game.state?.spectated && (
               <div className="wordle__senza-punti">
                 Hai guardato la partita di qualcun altro: oggi conoscevi già la parola, quindi
-                questa partita non fa punti.
+                questa partita non fa punti. I suggerimenti che ti hanno giocato valgono assist,
+                e quelli contano.
               </div>
             )}
 
