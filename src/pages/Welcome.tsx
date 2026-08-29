@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth'
 import { ApiFetchError } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { NICKNAME_MAX, NICKNAME_MIN, PASSWORD_MIN } from '@shared/config'
+import { InsecureContextError } from '@shared/password'
 import './Welcome.css'
 
 type Mode = 'login' | 'register'
@@ -62,6 +63,10 @@ export default function Welcome() {
         setError(err.message)
         if (err.code.startsWith('NICKNAME')) setField('nickname')
         else if (err.code === 'BAD_CREDENTIALS') setField('password')
+      } else if (err instanceof InsecureContextError) {
+        // Senza questo ramo il caso arriverebbe come "qualcosa e' andato
+        // storto", che non dice cosa fare.
+        setError(err.message)
       } else {
         setError('Qualcosa è andato storto. Riprova.')
       }

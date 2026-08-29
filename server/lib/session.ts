@@ -2,6 +2,7 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import type { Context, MiddlewareHandler } from 'hono'
 import { generateSessionToken, hashSessionToken } from '../../shared/session'
 import { SESSION_TTL_DAYS } from '../../shared/config'
+import { cookieDomainFor } from '../../shared/hosts'
 import { toPlayer, type AppEnv, type PlayerRow } from '../types'
 import { fail, nowIso } from './http'
 
@@ -15,6 +16,26 @@ const TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000
  */
 function isSecure(c: Context<AppEnv>): boolean {
   return new URL(c.req.url).protocol === 'https:'
+}
+
+/**
+ * Opzioni del cookie di sessione, in un posto solo.
+ *
+ * Il `domain` viene incluso solo quando copre davvero l'host della richiesta:
+ * un `Domain` non corrispondente viene scartato dal browser senza dire niente,
+ * e l'accesso smetterebbe di funzionare in un modo difficile da diagnosticare.
+ * Vedi `cookieDomainFor` in shared/hosts.ts.
+ */
+function cookieOptions(c: Context<AppEnv>) {
+  const domain = cookieDomainFor(new URL(c.req.url).hostname, c.env.COOKIE_DOMAIN)
+  return {
+    httpOnly: true,
+    secure: isSecure(c),
+    sameSite: 'Lax' as const,
+    path: '/',
+    maxAge: Math.floor(TTL_MS / 1000),
+    ...(domain ? { domain } : {}),
+  }
 }
 
 export async function issueSession(c: Context<AppEnv>, playerId: string): Promise<void> {
@@ -37,13 +58,7 @@ export async function issueSession(c: Context<AppEnv>, playerId: string): Promis
     )
     .run()
 
-  setCookie(c, COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: isSecure(c),
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: Math.floor(TTL_MS / 1000),
-  })
+  setCookie(c, COOKIE_NAME, token, cookieOptions(c))
 }
 
 export async function revokeSession(c: Context<AppEnv>): Promise<void> {
@@ -52,7 +67,10 @@ export async function revokeSession(c: Context<AppEnv>): Promise<void> {
     const tokenHash = await hashSessionToken(token)
     await c.env.DB.prepare('DELETE FROM sessions WHERE token_hash = ?').bind(tokenHash).run()
   }
-  deleteCookie(c, COOKIE_NAME, { path: '/', secure: isSecure(c) })
+  // Il `domain` deve combaciare con quello usato per scriverlo, altrimenti
+  // il browser cancellerebbe un cookie diverso e la sessione resterebbe viva.
+  const { domain } = cookieOptions(c)
+  deleteCookie(c, COOKIE_NAME, { path: '/', secure: isSecure(c), ...(domain ? { domain } : {}) })
 }
 
 /** Revoca tutte le sessioni del giocatore: usato dopo un cambio password. */
@@ -127,13 +145,7 @@ async function touchSession(c: Context<AppEnv>, resolved: Resolved): Promise<voi
     ),
   ])
 
-  setCookie(c, COOKIE_NAME, getCookie(c, COOKIE_NAME) ?? '', {
-    httpOnly: true,
-    secure: isSecure(c),
-    sameSite: 'Lax',
-    path: '/',
-    maxAge: Math.floor(TTL_MS / 1000),
-  })
+  setCookie(c, COOKIE_NAME, getCookie(c, COOKIE_NAME) ?? '', cookieOptions(c))
 }
 
 /** Richiede una sessione valida; risponde 401 se manca. */
