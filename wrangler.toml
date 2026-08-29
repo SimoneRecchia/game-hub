@@ -21,3 +21,15 @@ pages_build_output_dir = "dist"
 binding = "DB"
 database_name = "game-hub-db"
 database_id = "SOSTITUISCI_CON_IL_TUO_D1_DATABASE_ID"
+
+[vars]
+# Dominio su cui vale il cookie di sessione.
+#
+# Hub e giochi stanno su sottodomini diversi (giochi.simonerecchia.com,
+# wordle.simonerecchia.com): senza questo, il cookie resterebbe legato al
+# singolo host e chi accede sull'hub risulterebbe sconosciuto sul gioco.
+#
+# Viene applicato solo quando copre davvero l'host della richiesta, quindi su
+# *.pages.dev e in locale il cookie resta del singolo host: vedi
+# `cookieDomainFor` in shared/hosts.ts.
+COOKIE_DOMAIN = "simonerecchia.com"

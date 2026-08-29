@@ -20,6 +20,20 @@ il typecheck se ne accorga subito invece di lasciar fallire il build del deploy.
 `server/routes/wordle.ts`, che scrive `WHERE attempts = ?` col valore appena
 letto e considera un conflitto il caso `changes !== 1`.
 
+**WebCrypto esiste solo nei contesti sicuri.** La derivazione della password
+gira nel browser, quindi il sito funziona in https o su localhost, non su
+un'origine http qualsiasi. `deriveVerifier` solleva `InsecureContextError` in
+quel caso, e la schermata di accesso lo mostra: non toglierlo, altrimenti torna
+un generico "qualcosa e' andato storto" impossibile da diagnosticare.
+
+**Il cookie di sessione e' condiviso fra i sottodomini** tramite `COOKIE_DOMAIN`.
+`cookieDomainFor` lo applica solo se copre davvero l'host: un `Domain` non
+corrispondente viene scartato dal browser senza dire niente, e l'accesso
+smetterebbe di funzionare in un modo difficile da diagnosticare. Se si tocca
+quella funzione, i test in `shared/__tests__/hosts.test.ts` coprono i casi
+limite (pages.dev, dominio di primo livello, host che finisce per caso col
+dominio configurato).
+
 ## Invarianti da non rompere
 
 **Ogni soluzione deve essere anche un tentativo ammesso**, altrimenti il gioco
