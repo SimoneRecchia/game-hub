@@ -1,0 +1,69 @@
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  /* Nessuna selezione accidentale mentre si tocca ripetutamente. */
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.keyboard__row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.key {
+  flex: 1;
+  min-width: 0;
+  /* 46px e' il minimo comodo per un pollice; l'altezza cresce con lo spazio. */
+  height: clamp(46px, 7.2vh, 58px);
+  border-radius: var(--r-xs);
+  background: var(--key-bg);
+  color: var(--label);
+  font-family: var(--font-rounded);
+  font-size: var(--text-callout);
+  font-weight: 600;
+  letter-spacing: 0;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--shadow-key);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+}
+
+.key:active:not(:disabled) {
+  transform: scale(0.94);
+  background: var(--key-bg-active);
+}
+
+.key:disabled {
+  opacity: 0.5;
+}
+
+.key--wide {
+  flex: 1.6;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.key.is-correct {
+  background: var(--tile-correct);
+  color: var(--tile-text-on-fill);
+}
+
+.key.is-present {
+  background: var(--tile-present);
+  color: var(--tile-text-on-fill);
+}
+
+.key.is-absent {
+  background: var(--tile-absent);
+  color: var(--tile-text-on-fill);
+  opacity: 0.75;
+}
