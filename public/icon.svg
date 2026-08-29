@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Game Hub">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#4c9dff"/>
+      <stop offset="1" stop-color="#2f5ce0"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#5fe07f"/>
+      <stop offset="1" stop-color="#28a24c"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#ffd85e"/>
+      <stop offset="1" stop-color="#e09a1b"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="114" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="114" fill="url(#sheen)"/>
+
+  <g>
+    <rect x="106" y="106" width="140" height="140" rx="34" fill="url(#green)"/>
+    <rect x="266" y="106" width="140" height="140" rx="34" fill="#ffffff" fill-opacity="0.9"/>
+    <rect x="106" y="266" width="140" height="140" rx="34" fill="#ffffff" fill-opacity="0.9"/>
+    <rect x="266" y="266" width="140" height="140" rx="34" fill="url(#amber)"/>
+  </g>
+
+  <g font-family="ui-rounded, -apple-system, 'SF Pro Rounded', Helvetica, Arial, sans-serif" font-weight="700" font-size="92" text-anchor="middle">
+    <text x="176" y="208" fill="#ffffff">G</text>
+    <text x="336" y="208" fill="#2f5ce0">A</text>
+    <text x="176" y="368" fill="#2f5ce0">M</text>
+    <text x="336" y="368" fill="#ffffff">E</text>
+  </g>
+</svg>

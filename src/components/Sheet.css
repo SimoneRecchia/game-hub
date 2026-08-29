@@ -1,0 +1,86 @@
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  animation: sheet-scrim var(--dur-base) var(--ease-out);
+  cursor: default;
+}
+
+.sheet__panel {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92dvh;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border-radius: var(--r-2xl) var(--r-2xl) 0 0;
+  padding: var(--sp-3) var(--sp-5) calc(var(--sp-6) + var(--safe-bottom));
+  box-shadow: var(--shadow-lg);
+  animation: sheet-up var(--dur-slow) var(--ease-out);
+  outline: none;
+}
+
+/* Su schermi larghi diventa una card centrata, come i modali macOS. */
+@media (min-width: 640px) {
+  .sheet {
+    align-items: center;
+  }
+
+  .sheet__panel {
+    border-radius: var(--r-2xl);
+    max-height: 86dvh;
+    padding-bottom: var(--sp-6);
+    animation: sheet-pop var(--dur-base) var(--ease-spring);
+  }
+}
+
+.sheet__grabber {
+  display: block;
+  width: 36px;
+  height: 5px;
+  margin: 0 auto var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--label-quaternary);
+}
+
+.sheet__title {
+  font-size: var(--text-title-2);
+  text-align: center;
+  margin-bottom: var(--sp-4);
+}
+
+.sheet__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+@keyframes sheet-scrim {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}

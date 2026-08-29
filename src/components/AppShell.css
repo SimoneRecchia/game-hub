@@ -1,0 +1,202 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* ---------- Nav bar traslucida ---------- */
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding-top: var(--safe-top);
+  background: var(--material-regular);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: inset 0 -0.5px 0 var(--separator);
+}
+
+.navbar__inner {
+  display: grid;
+  grid-template-columns: minmax(56px, 1fr) auto minmax(56px, 1fr);
+  align-items: center;
+  gap: var(--sp-2);
+  height: var(--nav-h);
+  padding: 0 max(var(--sp-3), var(--safe-left)) 0 max(var(--sp-3), var(--safe-right));
+  max-width: calc(var(--content-max) + var(--sp-8));
+  margin: 0 auto;
+  width: 100%;
+}
+
+.navbar__title {
+  font-size: var(--text-headline);
+  font-weight: 600;
+  letter-spacing: var(--tracking-normal);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar__side {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.navbar__side--trailing {
+  justify-content: flex-end;
+}
+
+/* Bottone circolare per le azioni della nav bar */
+.navbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: var(--blue);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.navbtn:hover {
+  background: var(--fill-quaternary);
+}
+
+.navbtn:active {
+  transform: scale(0.9);
+}
+
+/* ---------- Tab: in alto su desktop ---------- */
+
+.navtabs {
+  display: none;
+}
+
+@media (min-width: 821px) {
+  .navtabs {
+    display: flex;
+    justify-content: center;
+    gap: var(--sp-1);
+    padding: 0 var(--sp-3) var(--sp-2);
+  }
+
+  .navtabs__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-4);
+    border-radius: var(--r-pill);
+    font-size: var(--text-subhead);
+    font-weight: 500;
+    color: var(--label-secondary);
+    transition:
+      background-color var(--dur-fast) var(--ease-out),
+      color var(--dur-fast) var(--ease-out);
+  }
+
+  .navtabs__item:hover {
+    background: var(--fill-quaternary);
+    color: var(--label);
+  }
+
+  .navtabs__item.is-active {
+    background: color-mix(in srgb, var(--blue) 14%, transparent);
+    color: var(--blue);
+    font-weight: 600;
+  }
+}
+
+/* ---------- Contenuto ---------- */
+
+.shell__main {
+  flex: 1;
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--sp-5) max(var(--sp-4), var(--safe-left)) calc(var(--tabbar-h) + var(--safe-bottom) + var(--sp-6));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+@media (min-width: 821px) {
+  .shell__main {
+    padding-bottom: var(--sp-10);
+  }
+}
+
+.shell--no-tabs .shell__main {
+  padding-bottom: calc(var(--safe-bottom) + var(--sp-4));
+  gap: var(--sp-4);
+}
+
+/* ---------- Tab bar: in basso su mobile ---------- */
+
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  padding-bottom: var(--safe-bottom);
+  background: var(--material-thick);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+
+@media (min-width: 821px) {
+  .tabbar {
+    display: none;
+  }
+}
+
+.tabbar__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: var(--tabbar-h);
+  color: var(--label-secondary);
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.tabbar__item:active {
+  transform: scale(0.94);
+}
+
+.tabbar__item.is-active {
+  color: var(--blue);
+}
+
+.tabbar__label {
+  font-size: var(--text-caption-2);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+/* ---------- Titolo grande in stile iOS ---------- */
+
+.large-title {
+  font-size: var(--text-large-title);
+  line-height: 1.12;
+  letter-spacing: var(--tracking-tight);
+}
+
+.page-lede {
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  margin-top: var(--sp-2);
+  max-width: 46ch;
+}
