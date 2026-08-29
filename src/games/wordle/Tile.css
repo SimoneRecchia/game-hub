@@ -1,0 +1,133 @@
+.tile {
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  border: 2px solid var(--tile-empty-border);
+  background: var(--surface);
+  color: var(--label);
+  font-family: var(--font-rounded);
+  font-weight: 700;
+  /* La lettera si adatta al lato della casella: la griglia e' fluida. */
+  font-size: clamp(1.25rem, 7.2vw, 2rem);
+  line-height: 1;
+  letter-spacing: 0;
+  user-select: none;
+  transition: border-color var(--dur-fast) var(--ease-out);
+  /* Necessario perché rotateX si veda come una rotazione e non come uno schiacciamento. */
+  transform-style: preserve-3d;
+}
+
+/* Casella appena riempita: bordo piu' marcato e un piccolo scatto. */
+.tile.is-filled {
+  border-color: var(--tile-active-border);
+  animation: tile-pop var(--dur-fast) var(--ease-spring);
+}
+
+.tile.is-correct {
+  --tile-bg: var(--tile-correct);
+}
+
+.tile.is-present {
+  --tile-bg: var(--tile-present);
+}
+
+.tile.is-absent {
+  --tile-bg: var(--tile-absent);
+}
+
+/* Stato finale, dopo la rotazione. */
+.tile.is-scored {
+  background: var(--tile-bg);
+  border-color: var(--tile-bg);
+  color: var(--tile-text-on-fill);
+  animation: none;
+}
+
+/*
+ * La rotazione: la casella gira sull'asse orizzontale e il colore cambia
+ * esattamente quando e' di taglio, quindi il passaggio non si vede mai.
+ * Il ritardo scalato per indice fa scoprire le lettere una dopo l'altra.
+ */
+.tile.is-revealing {
+  animation: tile-flip 540ms var(--ease-in-out) both;
+  animation-delay: calc(var(--i) * 200ms);
+}
+
+@keyframes tile-flip {
+  0% {
+    transform: rotateX(0deg);
+    background: var(--surface);
+    border-color: var(--tile-active-border);
+    color: var(--label);
+  }
+  49% {
+    transform: rotateX(-90deg);
+    background: var(--surface);
+    border-color: var(--tile-active-border);
+    color: var(--label);
+  }
+  51% {
+    transform: rotateX(-90deg);
+    background: var(--tile-bg);
+    border-color: var(--tile-bg);
+    color: var(--tile-text-on-fill);
+  }
+  100% {
+    transform: rotateX(0deg);
+    background: var(--tile-bg);
+    border-color: var(--tile-bg);
+    color: var(--tile-text-on-fill);
+  }
+}
+
+.tile.is-winning {
+  animation: tile-bounce 640ms var(--ease-spring) both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+
+@keyframes tile-pop {
+  from {
+    transform: scale(0.9);
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes tile-bounce {
+  0%,
+  18% {
+    transform: translateY(0);
+  }
+  42% {
+    transform: translateY(-22%);
+  }
+  58% {
+    transform: translateY(6%);
+  }
+  76% {
+    transform: translateY(-8%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Con le animazioni ridotte il colore compare subito, senza rotazione. */
+@media (prefers-reduced-motion: reduce) {
+  .tile.is-revealing {
+    animation: none;
+    background: var(--tile-bg);
+    border-color: var(--tile-bg);
+    color: var(--tile-text-on-fill);
+  }
+
+  .tile.is-winning,
+  .tile.is-filled {
+    animation: none;
+  }
+}

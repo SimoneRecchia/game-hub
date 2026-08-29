@@ -246,6 +246,20 @@ function fiveLetterWords(list) {
   return out
 }
 
+/**
+ * Toglie le parole con j, k, w, x, y.
+ *
+ * L'alfabeto italiano ha 21 lettere: quelle cinque compaiono solo nei prestiti
+ * (black, boxer, derby, banjo…). Escludendole, la tastiera del gioco può
+ * mostrare 21 tasti invece di 26 — su un telefono sono tasti sensibilmente
+ * piu' grandi — e non resta nessun tasto che non possa mai servire.
+ */
+function withoutForeignLetters(words) {
+  const out = new Set()
+  for (const word of words) if (!FOREIGN_LETTERS.test(word)) out.add(word)
+  return out
+}
+
 function parseFrequency(text) {
   const map = new Map()
   let rank = 0
@@ -297,12 +311,15 @@ async function main() {
     fetchSource(SOURCES.frequency, offline),
   ])
 
-  const guesses = fiveLetterWords(lines(wordsRaw))
+  const allFiveLetter = fiveLetterWords(lines(wordsRaw))
+  const guesses = withoutForeignLetters(allFiveLetter)
   const properNouns = fiveLetterWords(lines(properRaw))
   const badWords = fiveLetterWords(lines(badRaw))
   const frequency = parseFrequency(freqRaw)
 
-  console.log(`\n  tentativi ammessi            ${guesses.size}`)
+  console.log(`\n  parole da 5 lettere          ${allFiveLetter.size}`)
+  console.log(`  con j/k/w/x/y, escluse       ${allFiveLetter.size - guesses.size}`)
+  console.log(`  tentativi ammessi            ${guesses.size}`)
   console.log(`  nomi propri da 5 lettere     ${properNouns.size}`)
   console.log(`  parolacce da 5 lettere       ${badWords.size}`)
 
@@ -389,7 +406,8 @@ async function main() {
     tsHeader(
       `Parole italiane da ${WORD_LENGTH} lettere accettate come tentativo (${sortedGuesses.length}).`,
       `Fonte: napolux/paroleitaliane, 280000_parole_italiane.txt (MIT).
-Filtro: esattamente ${WORD_LENGTH} caratteri a-z, senza accenti ne' apostrofi.
+Filtro: esattamente ${WORD_LENGTH} caratteri, alfabeto italiano di 21 lettere
+        (niente j k w x y), senza accenti ne' apostrofi.
 Ordine alfabetico.`,
     ) +
       `export const GUESS_WORDS: readonly string[] = [\n${formatWordArray(sortedGuesses)}\n]\n\n` +

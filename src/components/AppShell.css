@@ -131,9 +131,21 @@
   }
 }
 
+/*
+ * Le schermate a tutto schermo (il gioco) non scorrono: la shell si ancora
+ * all'altezza del viewport e il contenuto prende lo spazio che resta dal flex.
+ * Cosi' non c'e' un calc() da tenere allineato a mano con nav bar, padding e
+ * safe area — era il motivo per cui la tastiera finiva tagliata.
+ */
+.shell--no-tabs {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .shell--no-tabs .shell__main {
+  min-height: 0;
   padding-bottom: calc(var(--safe-bottom) + var(--sp-4));
-  gap: var(--sp-4);
+  gap: var(--sp-3);
 }
 
 /* ---------- Tab bar: in basso su mobile ---------- */

@@ -1,0 +1,112 @@
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.stats__figures {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--sp-2);
+}
+
+.stats__figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--sp-3) var(--sp-1);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+}
+
+.stats__figure-value {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+.stats__figure-label {
+  font-size: var(--text-caption-2);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.stats__block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.stats__block--row {
+  flex-direction: row;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.stats__title {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+  color: var(--label-secondary);
+}
+
+.stats__empty {
+  font-size: var(--text-subhead);
+  color: var(--label-tertiary);
+}
+
+.stats__bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stats__bar-row {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.stats__bar-label {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats__bar-track {
+  display: block;
+}
+
+.stats__bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 22px;
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-xs);
+  background: var(--tile-absent);
+  color: var(--tile-text-on-fill);
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition: width var(--dur-slow) var(--ease-out);
+}
+
+.stats__bar.is-current {
+  background: var(--tile-correct);
+}
+
+.stats__meta {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.stats__meta strong {
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+}
