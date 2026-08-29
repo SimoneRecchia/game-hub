@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import { Splash } from './components/Splash'
 import { useAuth } from './lib/auth'
+import { useHostEntry } from './lib/useHostEntry'
 import Classifica from './pages/Classifica'
 import Hub from './pages/Hub'
 import NotFound from './pages/NotFound'
@@ -10,6 +11,9 @@ import Wordle from './pages/Wordle'
 
 export default function App() {
   const { player, checking } = useAuth()
+
+  // Arrivando da wordle.simonerecchia.com si entra direttamente nel gioco.
+  useHostEntry()
 
   // Prima di sapere se la sessione salvata e' valida non mostriamo nulla:
   // meglio un istante di splash che far lampeggiare la schermata di accesso

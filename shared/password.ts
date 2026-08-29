@@ -32,6 +32,30 @@ const CLIENT_SALT_PREFIX = 'game-hub/pwd/v1/'
 
 const encoder = new TextEncoder()
 
+/**
+ * Errore riconoscibile per quando il browser non offre WebCrypto.
+ *
+ * Capita per un motivo solo: `crypto.subtle` esiste unicamente nei contesti
+ * sicuri (https, oppure localhost). Aprire il sito su un'origine http che non
+ * sia localhost — un IP di rete locale, per esempio — lo rende indisponibile,
+ * e senza un errore dedicato l'accesso fallirebbe con un generico "qualcosa e'
+ * andato storto" impossibile da diagnosticare.
+ */
+export class InsecureContextError extends Error {
+  constructor() {
+    super(
+      'Questo browser non permette di cifrare la password su una connessione non sicura. ' +
+        'Apri il sito in https.',
+    )
+    this.name = 'InsecureContextError'
+  }
+}
+
+function subtle(): SubtleCrypto {
+  if (typeof crypto === 'undefined' || !crypto.subtle) throw new InsecureContextError()
+  return crypto.subtle
+}
+
 export function toBase64(bytes: Uint8Array): string {
   let binary = ''
   for (const byte of bytes) binary += String.fromCharCode(byte)
@@ -54,10 +78,9 @@ async function pbkdf2(
   salt: Uint8Array,
   iterations: number,
 ): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey('raw', secret as BufferSource, 'PBKDF2', false, [
-    'deriveBits',
-  ])
-  const bits = await crypto.subtle.deriveBits(
+  const api = subtle()
+  const key = await api.importKey('raw', secret as BufferSource, 'PBKDF2', false, ['deriveBits'])
+  const bits = await api.deriveBits(
     { name: 'PBKDF2', hash: 'SHA-256', salt: salt as BufferSource, iterations },
     key,
     KEY_BITS,
@@ -74,10 +97,7 @@ async function pbkdf2(
  * rivelare se un nickname esiste.
  */
 async function clientSalt(nicknameLower: string): Promise<Uint8Array> {
-  const digest = await crypto.subtle.digest(
-    'SHA-256',
-    encoder.encode(CLIENT_SALT_PREFIX + nicknameLower),
-  )
+  const digest = await subtle().digest('SHA-256', encoder.encode(CLIENT_SALT_PREFIX + nicknameLower))
   return new Uint8Array(digest).slice(0, SALT_BYTES)
 }
 

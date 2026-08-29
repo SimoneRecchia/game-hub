@@ -73,6 +73,19 @@ lavorare sullo stile, non per provare il gioco.
 
 ---
 
+## Indirizzi
+
+Un sottodominio per l'hub e uno per ogni gioco, sullo stesso progetto Pages:
+
+| | |
+| --- | --- |
+| `giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
+| `wordle.simonerecchia.com` | direttamente il Wordle di oggi |
+
+Il sottodominio decide solo la schermata da cui si entra: la navigazione poi è
+libera. La sessione è condivisa fra i sottodomini, quindi si accede una volta
+sola. Le regole stanno in [`shared/hosts.ts`](shared/hosts.ts).
+
 ## Deploy
 
 Cloudflare Pages, un push su `main` e il sito si aggiorna.

@@ -87,31 +87,62 @@ passo 1 e guarda i log del build.
 
 ---
 
-## Passo 3 · Il dominio
+## Passo 3 · I domini
 
-Nel progetto Pages: **Custom domains** → **Set up a custom domain** → scrivi il
-dominio (o il sottodominio) che vuoi usare.
+Il sito vive su sottodomini di **`simonerecchia.com`**: uno per l'hub e uno per
+ogni gioco. È sempre lo stesso progetto Pages — il sottodominio decide solo da
+quale schermata si entra.
 
-- Se il dominio è già su Cloudflare, il record DNS viene creato da solo: non
-  c'è altro da fare, il certificato arriva in pochi minuti.
-- Se il dominio è altrove, Cloudflare mostra il record `CNAME` da aggiungere dal
-  pannello del registrar.
+| Sottodominio | Apre |
+| --- | --- |
+| `giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
+| `wordle.simonerecchia.com` | direttamente il Wordle di oggi |
 
-Un sottodominio (`giochi.iltuodominio.it`) è la scelta comoda: lascia libero il
-dominio principale e si configura in un minuto.
+Nel progetto Pages: **Custom domains** → **Set up a custom domain**, una volta
+per ciascuno. Il dominio è già su Cloudflare, quindi il record DNS viene creato
+da solo e il certificato arriva in pochi minuti.
 
-Dopo l'attivazione controlla che l'API risponda anche dal dominio nuovo:
+### Perché funziona
+
+Due pezzi, entrambi nel codice e già in funzione:
+
+- **L'ingresso diretto.** `shared/hosts.ts` associa il primo livello dell'host
+  a una rotta (`wordle` → `/wordle`) e `src/lib/useHostEntry.ts` la apre al
+  primo caricamento. Scatta una volta sola: la navigazione interna verso l'hub
+  resta possibile, altrimenti toccare "Giochi" dal sottodominio del gioco
+  rimbalzerebbe subito indietro.
+- **La sessione condivisa.** Il cookie è normalmente legato al singolo host:
+  senza intervento, chi accede su `giochi.` risulterebbe sconosciuto su
+  `wordle.`. La variabile `COOKIE_DOMAIN` in `wrangler.toml` lo estende a tutto
+  il dominio. Viene applicata solo quando copre davvero l'host della richiesta,
+  quindi su `*.pages.dev` e in locale il cookie resta del singolo host.
+
+### Aggiungere il sottodominio di un gioco nuovo
+
+1. Una voce in `GAME_SUBDOMAINS` in `shared/hosts.ts`
+2. Il dominio fra i **Custom domains** del progetto Pages
+
+Nient'altro: il cookie e le rotte sono già a posto.
+
+### Dopo l'attivazione
+
+Controlla che l'API risponda da entrambi:
 
 ```
-https://giochi.iltuodominio.it/api/health
+https://giochi.simonerecchia.com/api/health
+https://wordle.simonerecchia.com/api/health
 ```
 
-> **Il cookie di sessione.** È `Secure` + `SameSite=Lax` e vale per il dominio
-> da cui viene servito il sito. Chi aveva già usato `game-hub.pages.dev` dovrà
-> rifare l'accesso una volta sul dominio nuovo: i punteggi non si perdono,
-> stanno sul database e sono legati al nickname.
+> **Un accesso in più, una volta sola.** Il cookie di sessione è legato al
+> dominio da cui viene servito il sito. Chi aveva già usato
+> `game-hub.pages.dev` dovrà rifare l'accesso una volta sul dominio nuovo: i
+> punteggi non si perdono, stanno sul database e sono legati al nickname.
 
----
+> **Serve https.** La password viene derivata nel browser con WebCrypto, che
+> esiste solo nei contesti sicuri. Su Pages l'https c'è sempre, quindi non è un
+> problema in produzione; se però si apre il sito da un IP di rete locale in
+> http, l'accesso non funziona — e lo dice esplicitamente invece di dare un
+> errore generico.
 
 ## Passo 4 · Dismettere la vecchia Vibe Gym web
 
@@ -125,7 +156,8 @@ Nella dashboard, sul progetto Pages di `vibe-gym`:
 
 1. **Custom domains** → rimuovi il dominio, se ne aveva uno. Va fatto **prima**:
    un dominio resta legato al progetto che lo tiene, e non può essere assegnato
-   a `game-hub` finché non è libero.
+   a `game-hub` finché non è libero. Se occupava un sottodominio di
+   `simonerecchia.com`, questo è il momento di liberarlo.
 2. **Settings → Delete project**, oppure disconnetti il repository da
    *Builds & deployments* se preferisci tenere il sito online e solo fermare i
    deploy automatici.
@@ -191,6 +223,9 @@ npx wrangler d1 execute game-hub-db --remote \
 | Il build fallisce su una sintassi che in locale funziona | `NODE_VERSION` non impostata: Pages sta usando un Node più vecchio |
 | Le rotte dirette (`/wordle`, `/classifica`) danno 404 | `public/_redirects` non è finito in `dist/`: dev'esserci `/*  /index.html  200` |
 | L'accesso non resta memorizzato | Il sito è servito in `http`: il cookie è `Secure` e il browser lo scarta. Su Pages con dominio custom l'https c'è sempre |
+| Si è collegati sull'hub ma non sul gioco | `COOKIE_DOMAIN` in `wrangler.toml` non copre l'host: deve valere `simonerecchia.com` per i sottodomini di quel dominio |
+| «Apri il sito in https» al momento dell'accesso | Il sito è aperto su un'origine http che non è localhost: WebCrypto non è disponibile |
+| `wordle.simonerecchia.com` apre l'hub invece del gioco | Manca la voce in `GAME_SUBDOMAINS` in `shared/hosts.ts` |
 | Il dominio non si può assegnare | È ancora legato a un altro progetto Pages: passo 4, punto 1 |
 
 ## Costi
