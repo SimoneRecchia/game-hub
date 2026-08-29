@@ -1,6 +1,7 @@
 /** Accesso ai dati delle partite in compagnia. */
 
 import { MAX_ATTEMPTS, MAX_COOP_GUESTS, WORD_LENGTH } from '../../shared/config'
+import { assistPoints, dailyAssist } from '../../shared/scoring'
 import { evaluateAll } from '../../shared/wordle'
 import type {
   CoopGuest,
@@ -31,6 +32,7 @@ interface SuggestionRow {
   word: string
   created_at: string
   used_at: string | null
+  assist_points: number
   nickname: string
   display_name: string
   avatar_color: string
@@ -45,6 +47,7 @@ function toSuggestion(row: SuggestionRow): CoopSuggestion {
     avatarColor: row.avatar_color,
     createdAt: row.created_at,
     usedAt: row.used_at,
+    assistPoints: row.assist_points,
   }
 }
 
@@ -128,7 +131,7 @@ async function guestsOf(db: D1Database, roomId: string): Promise<CoopGuest[]> {
 async function suggestionsOf(db: D1Database, roomId: string): Promise<CoopSuggestion[]> {
   const { results } = await db
     .prepare(
-      `SELECT s.id, s.guest_id, s.word, s.created_at, s.used_at,
+      `SELECT s.id, s.guest_id, s.word, s.created_at, s.used_at, s.assist_points,
               p.nickname, p.display_name, p.avatar_color
          FROM coop_suggestions s
          JOIN players p ON p.id = s.guest_id
@@ -297,8 +300,9 @@ export async function acceptedInvite(
  *
  * Chi guarda la partita di un altro prima di aver giocato la propria conosce la
  * soluzione, perché la parola del giorno e' la stessa per tutti. La giornata
- * resta giocabile ma non fa punti: altrimenti la classifica non misurerebbe
- * più nulla.
+ * resta giocabile ma non fa punti partita: altrimenti la classifica non
+ * misurerebbe più nulla. Fa però punti assist, per ogni parola suggerita che
+ * l'host gioca davvero — vedi `markSuggestionUsed`.
  */
 export async function markSpectated(
   db: D1Database,
@@ -321,11 +325,15 @@ export async function guestView(
   db: D1Database,
   room: RoomRow,
   hostGame: GameRow,
+  viewerId: string,
 ): Promise<CoopView> {
-  const host = await db
-    .prepare('SELECT nickname, display_name, avatar_color FROM players WHERE id = ?')
-    .bind(room.host_id)
-    .first<{ nickname: string; display_name: string; avatar_color: string }>()
+  const [host, tally] = await Promise.all([
+    db
+      .prepare('SELECT nickname, display_name, avatar_color FROM players WHERE id = ?')
+      .bind(room.host_id)
+      .first<{ nickname: string; display_name: string; avatar_color: string }>(),
+    assistTally(db, viewerId, room.puzzle_number),
+  ])
 
   const words = parseGuesses(hostGame)
 
@@ -342,20 +350,50 @@ export async function guestView(
     answer: hostGame.status === 'playing' ? null : hostGame.answer,
     suggestions: await suggestionsOf(db, room.id),
     active: room.closed_at === null,
+    myAssistPoints: tally.points,
+    myAssists: tally.count,
   }
 }
 
-/** Segna come usati i suggerimenti che corrispondono a una parola giocata. */
+/**
+ * Segna come usati i suggerimenti che corrispondono a una parola giocata, e
+ * assegna i punti assist a chi l'aveva proposta.
+ *
+ * Se due invitati hanno suggerito la stessa parola prendono entrambi i punti:
+ * l'hanno indovinata entrambi. Lo stesso invitato invece non puo' prenderli due
+ * volte, perché l'indice unico su (stanza, invitato, parola) gli tiene una sola
+ * riga — e `used_at IS NULL` esclude quelle già pagate.
+ */
 export async function markSuggestionUsed(
   db: D1Database,
   roomId: string,
   word: string,
+  answer: string,
 ): Promise<void> {
   await db
     .prepare(
-      `UPDATE coop_suggestions SET used_at = ?
+      `UPDATE coop_suggestions SET used_at = ?, assist_points = ?
         WHERE room_id = ? AND word = ? AND used_at IS NULL`,
     )
-    .bind(nowIso(), roomId, word)
+    .bind(nowIso(), assistPoints(word, answer), roomId, word)
     .run()
+}
+
+/** Quanto ha guadagnato oggi aiutando: punti col tetto già applicato, e quanti. */
+export async function assistTally(
+  db: D1Database,
+  playerId: string,
+  puzzleNumber: number,
+): Promise<{ points: number; count: number }> {
+  const row = await db
+    .prepare(
+      `SELECT COALESCE(SUM(s.assist_points), 0) AS points, COUNT(*) AS n
+         FROM coop_suggestions s
+         JOIN coop_rooms r ON r.id = s.room_id
+        WHERE s.guest_id = ? AND s.used_at IS NOT NULL AND r.puzzle_number = ?`,
+    )
+    .bind(playerId, puzzleNumber)
+    .first<{ points: number; n: number }>()
+
+  return { points: dailyAssist(row?.points ?? 0), count: row?.n ?? 0 }
 }

@@ -2,6 +2,7 @@
 
 import { MAX_ATTEMPTS, WORD_LENGTH } from '../../shared/config'
 import { gameDate, puzzleNumberFor, solutionIndexFor } from '../../shared/daily'
+import { assistTotal } from '../../shared/scoring'
 import { SOLUTION_WORDS } from '../../shared/words/solutions'
 import type { PlayerStats, WordleStatus } from '../../shared/types'
 import { newId, nowIso } from './http'
@@ -183,17 +184,37 @@ export async function playerStats(
   playerId: string,
   todayNumber: number,
 ): Promise<PlayerStats> {
-  const { results } = await db
-    .prepare(
-      `SELECT puzzle_number, status, attempts, score, date
-         FROM wordle_games
-        WHERE player_id = ?
-        ORDER BY puzzle_number DESC
-        LIMIT 1000`,
-    )
-    .bind(playerId)
-    .all<StatsRow>()
+  /*
+   * Gli assist si contano giornata per giornata perché il tetto e' giornaliero,
+   * la stessa regola della classifica: sommare tutto e tagliare alla fine
+   * darebbe un numero diverso da quello che il giocatore vede in classifica.
+   */
+  const [games, assists] = await Promise.all([
+    db
+      .prepare(
+        `SELECT puzzle_number, status, attempts, score, date
+           FROM wordle_games
+          WHERE player_id = ?
+          ORDER BY puzzle_number DESC
+          LIMIT 1000`,
+      )
+      .bind(playerId)
+      .all<StatsRow>(),
+    db
+      .prepare(
+        `SELECT r.puzzle_number AS puzzle_number,
+                SUM(s.assist_points) AS points,
+                COUNT(*)             AS assists
+           FROM coop_suggestions s
+           JOIN coop_rooms r ON r.id = s.room_id
+          WHERE s.guest_id = ? AND s.used_at IS NOT NULL
+          GROUP BY r.puzzle_number`,
+      )
+      .bind(playerId)
+      .all<{ puzzle_number: number; points: number; assists: number }>(),
+  ])
 
+  const results = games.results
   const finished = results.filter((r) => r.status !== 'playing')
   const wins = finished.filter((r) => r.status === 'won')
 
@@ -203,7 +224,9 @@ export async function playerStats(
     distribution[index] += 1
   }
 
-  const totalScore = finished.reduce((sum, r) => sum + (r.score ?? 0), 0)
+  const playScore = finished.reduce((sum, r) => sum + (r.score ?? 0), 0)
+  const assistScore = assistTotal(assists.results.map((r) => r.points))
+  const assistCount = assists.results.reduce((sum, r) => sum + r.assists, 0)
   const totalAttempts = wins.reduce((sum, r) => sum + r.attempts, 0)
 
   return {
@@ -213,7 +236,10 @@ export async function playerStats(
     winRate: finished.length === 0 ? 0 : wins.length / finished.length,
     currentStreak: liveStreak(results, todayNumber),
     bestStreak: bestStreak(results),
-    totalScore,
+    totalScore: playScore + assistScore,
+    playScore,
+    assistScore,
+    assists: assistCount,
     avgAttempts: wins.length === 0 ? null : totalAttempts / wins.length,
     distribution,
     lastPlayedDate: finished[0]?.date ?? null,

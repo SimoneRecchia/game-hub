@@ -4,10 +4,10 @@ import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { ThemeButton } from '@/components/ThemeButton'
-import { IconFlame } from '@/components/Icons'
+import { IconFlame, IconPeople } from '@/components/Icons'
 import { ApiFetchError, api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
-import { formatNumber, formatPercent } from '@/lib/format'
+import { formatNumber, formatPercent, pluralize } from '@/lib/format'
 import type { LeaderboardResponse, LeaderboardRow, LeaderboardScope } from '@shared/types'
 import './Classifica.css'
 
@@ -24,6 +24,16 @@ export default function Classifica() {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  /*
+   * Il totale e' quello che si guarda; la divisione fra punti partita e assist
+   * la si va a cercare, e serve solo per capire uno spareggio. Sta quindi
+   * dietro un tocco, una riga per volta.
+   */
+  const [aperta, setAperta] = useState<string | null>(null)
+
+  const apri = useCallback((playerId: string) => {
+    setAperta((corrente) => (corrente === playerId ? null : playerId))
+  }, [])
 
   const load = useCallback(
     async (which: LeaderboardScope) => {
@@ -44,6 +54,9 @@ export default function Classifica() {
 
   useEffect(() => {
     void load(scope)
+    // Cambiando periodo cambiano i numeri: tenere aperto un dettaglio di prima
+    // mostrerebbe la divisione di un totale che non c'e' piu'.
+    setAperta(null)
   }, [load, scope])
 
   const rows = data?.rows ?? []
@@ -58,7 +71,8 @@ export default function Classifica() {
         <h2 className="large-title">Classifica</h2>
         <p className="page-lede">
           Il punteggio dipende soprattutto dai tentativi usati. Velocità e giorni di fila valgono
-          qualche punto in più.
+          qualche punto in più, e chi suggerisce agli altri guadagna assist. Tocca una riga per
+          vedere come è fatto un punteggio.
         </p>
       </header>
 
@@ -92,11 +106,20 @@ export default function Classifica() {
         </div>
       ) : (
         <>
-          {podium.length >= 2 && <Podium rows={podium} meId={me.id} scope={scope} />}
+          {podium.length >= 2 && (
+            <Podium rows={podium} meId={me.id} scope={scope} aperta={aperta} onApri={apri} />
+          )}
 
           <ol className="lb__list">
             {(podium.length >= 2 ? rest : rows).map((row) => (
-              <Row key={row.playerId} row={row} scope={scope} isMe={row.playerId === me.id} />
+              <Row
+                key={row.playerId}
+                row={row}
+                scope={scope}
+                isMe={row.playerId === me.id}
+                aperta={aperta === row.playerId}
+                onApri={apri}
+              />
             ))}
           </ol>
 
@@ -104,7 +127,13 @@ export default function Classifica() {
             <>
               <p className="lb__divider">La tua posizione</p>
               <ol className="lb__list">
-                <Row row={meOutside} scope={scope} isMe />
+                <Row
+                  row={meOutside}
+                  scope={scope}
+                  isMe
+                  aperta={aperta === meOutside.playerId}
+                  onApri={apri}
+                />
               </ol>
             </>
           )}
@@ -122,77 +151,191 @@ function Podium({
   rows,
   meId,
   scope,
+  aperta,
+  onApri,
 }: {
   rows: LeaderboardRow[]
   meId: string
   scope: LeaderboardScope
+  aperta: string | null
+  onApri: (playerId: string) => void
 }) {
   const [first, second, third] = rows
   const order = [second, first, third].filter(Boolean)
+  const scelta = rows.find((r) => r.playerId === aperta) ?? null
 
   return (
     <div className="podium">
-      {order.map((row) => (
-        <div
-          key={row.playerId}
-          className={`podium__slot podium__slot--${row.rank}${row.playerId === meId ? ' is-me' : ''}`}
-        >
-          <Avatar
-            nickname={row.nickname}
-            color={row.avatarColor}
-            size={row.rank === 1 ? 64 : 52}
-            medal={row.rank as 1 | 2 | 3}
-          />
-          <span className="podium__name">
-            {row.displayName}
-            {row.playerId === meId && <span className="lb__you">tu</span>}
-          </span>
-          <span className="podium__score u-tabnum">{formatNumber(row.score)}</span>
-          {/* Le stesse informazioni delle righe sotto: senza, i primi tre
-              risulterebbero piu' poveri di chi li segue. */}
-          <span className="podium__detail">{describeShort(row, scope)}</span>
-          <span className="podium__foot">
-            <span className="podium__rank">{row.rank}º</span>
-            {row.currentStreak >= 2 && (
-              <span className="podium__streak" title={`${row.currentStreak} giorni di fila`}>
-                <IconFlame size={12} />
-                {row.currentStreak}
-              </span>
-            )}
-          </span>
-        </div>
-      ))}
+      <div className="podium__gradini">
+        {order.map((row) => (
+          <button
+            key={row.playerId}
+            type="button"
+            /*
+             * Anche i primi tre si aprono, ma il dettaglio esce sotto il podio
+             * invece che dentro la colonna: dentro sarebbero tre strisce di
+             * numeri larghe un terzo di schermo, illeggibili.
+             */
+            className={`podium__slot podium__slot--${row.rank}${
+              row.playerId === meId ? ' is-me' : ''
+            }${row.playerId === aperta ? ' is-aperta' : ''}`}
+            aria-expanded={row.playerId === aperta}
+            onClick={() => onApri(row.playerId)}
+          >
+            <Avatar
+              nickname={row.nickname}
+              color={row.avatarColor}
+              size={row.rank === 1 ? 64 : 52}
+              medal={row.rank as 1 | 2 | 3}
+            />
+            <span className="podium__name">
+              {row.displayName}
+              {row.playerId === meId && <span className="lb__you">tu</span>}
+            </span>
+            <span className="podium__score u-tabnum">{formatNumber(row.score)}</span>
+            {/* Le stesse informazioni delle righe sotto: senza, i primi tre
+                risulterebbero piu' poveri di chi li segue. */}
+            <span className="podium__detail">{describeShort(row, scope)}</span>
+            <span className="podium__foot">
+              <span className="podium__rank">{row.rank}º</span>
+              {row.currentStreak >= 2 && (
+                <span className="podium__streak" title={`${row.currentStreak} giorni di fila`}>
+                  <IconFlame size={12} />
+                  {row.currentStreak}
+                </span>
+              )}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {scelta && (
+        <Breakdown row={scelta} scope={scope} intestazione={`Punti di ${scelta.displayName}`} />
+      )}
     </div>
   )
+}
+
+/**
+ * Come e' fatto un punteggio: partita, assist, totale.
+ *
+ * E' la ragione per cui il totale viene diviso: fra due totali uguali passa
+ * avanti chi ha più assist, e senza vedere i due numeri quello spareggio
+ * sembrerebbe arbitrario.
+ */
+function Breakdown({
+  row,
+  scope,
+  intestazione,
+}: {
+  row: LeaderboardRow
+  scope: LeaderboardScope
+  intestazione?: string
+}) {
+  return (
+    <div className="lb__dettaglio">
+      {intestazione && <p className="lb__dettaglio-titolo">{intestazione}</p>}
+      <dl className="lb__voci">
+        <div className="lb__voce">
+          <dt>Punti partita</dt>
+          <dd className="u-tabnum">{formatNumber(row.playScore)}</dd>
+        </div>
+        <div className="lb__voce">
+          <dt>
+            <IconPeople size={13} />
+            Assist
+          </dt>
+          <dd className="u-tabnum">{formatNumber(row.assistScore)}</dd>
+        </div>
+        <div className="lb__voce lb__voce--totale">
+          <dt>Totale</dt>
+          <dd className="u-tabnum">{formatNumber(row.score)}</dd>
+        </div>
+      </dl>
+      <p className="lb__dettaglio-nota">{explainAssist(row, scope)}</p>
+    </div>
+  )
+}
+
+/**
+ * La riga di spiegazione sotto la divisione.
+ *
+ * `todaySpectated` racconta solo la giornata di oggi, quindi si cita solo
+ * nella vista di oggi: nella settimana spiegherebbe uno zero che nel totale
+ * settimanale non c'e'.
+ */
+function explainAssist(row: LeaderboardRow, scope: LeaderboardScope): string {
+  const guardato = scope === 'today' && row.todaySpectated === true
+
+  if (row.assists === 0) {
+    if (guardato) {
+      return 'Ha guardato la partita di qualcun altro prima di giocare: conosceva la parola, quindi oggi non fa punti partita. Suggerendo farebbe assist.'
+    }
+    return 'Gli assist si guadagnano suggerendo una parola a chi ti invita, quando la gioca davvero.'
+  }
+
+  const quanti = `${formatNumber(row.assists)} ${pluralize(row.assists, 'suggerimento giocato', 'suggerimenti giocati')}`
+  const coda = guardato
+    ? ' La partita di oggi non fa punti, perché la parola era già stata vista.'
+    : ''
+  return `${quanti} da chi ha ricevuto il consiglio.${coda}`
 }
 
 function Row({
   row,
   scope,
   isMe,
+  aperta,
+  onApri,
 }: {
   row: LeaderboardRow
   scope: LeaderboardScope
   isMe: boolean
+  aperta: boolean
+  onApri: (playerId: string) => void
 }) {
   return (
-    <li className={`lb__row${isMe ? ' is-me' : ''}`}>
-      <span className="lb__rank u-tabnum">{row.rank}</span>
-      <Avatar nickname={row.nickname} color={row.avatarColor} size={36} />
-      <span className="lb__body">
-        <span className="lb__name">
-          {row.displayName}
-          {isMe && <span className="lb__you">tu</span>}
+    <li className={`lb__riga${isMe ? ' is-me' : ''}${aperta ? ' is-aperta' : ''}`}>
+      <button
+        type="button"
+        className="lb__row"
+        aria-expanded={aperta}
+        onClick={() => onApri(row.playerId)}
+      >
+        <span className="lb__rank u-tabnum">{row.rank}</span>
+        <Avatar nickname={row.nickname} color={row.avatarColor} size={36} />
+        <span className="lb__body">
+          <span className="lb__name">
+            {row.displayName}
+            {isMe && <span className="lb__you">tu</span>}
+          </span>
+          <span className="lb__meta">{describe(row, scope)}</span>
         </span>
-        <span className="lb__meta">{describe(row, scope)}</span>
-      </span>
-      {row.currentStreak >= 2 && (
-        <span className="lb__streak" title={`${row.currentStreak} giorni di fila`}>
-          <IconFlame size={14} />
-          {row.currentStreak}
-        </span>
-      )}
-      <span className="lb__score u-tabnum">{formatNumber(row.score)}</span>
+        {/*
+          Il pallino degli assist: dice che quel totale non viene solo dalle
+          partite, ed e' l'unico invito a toccare la riga. Il numero preciso
+          sta nel dettaglio, qui non ci starebbe senza togliere spazio al nome.
+        */}
+        {row.assistScore > 0 && (
+          <span
+            className="lb__assist"
+            title={`${formatNumber(row.assistScore)} punti assist`}
+            aria-label={`${formatNumber(row.assistScore)} punti assist`}
+          >
+            <IconPeople size={13} />
+            {formatNumber(row.assistScore)}
+          </span>
+        )}
+        {row.currentStreak >= 2 && (
+          <span className="lb__streak" title={`${row.currentStreak} giorni di fila`}>
+            <IconFlame size={14} />
+            {row.currentStreak}
+          </span>
+        )}
+        <span className="lb__score u-tabnum">{formatNumber(row.score)}</span>
+      </button>
+
+      {aperta && <Breakdown row={row} scope={scope} />}
     </li>
   )
 }
@@ -214,8 +357,9 @@ function describeShort(row: LeaderboardRow, scope: LeaderboardScope): string {
 function describe(row: LeaderboardRow, scope: LeaderboardScope): string {
   if (scope === 'today') {
     // Chi ha guardato la partita di un altro conosceva la parola: spiegare lo
-    // zero e' meglio che lasciarlo sembrare un errore di calcolo.
-    const visto = row.todaySpectated ? ' · ha guardato, niente punti' : ''
+    // zero e' meglio che lasciarlo sembrare un errore di calcolo. Solo i punti
+    // partita: gli assist di quella giornata li fa comunque.
+    const visto = row.todaySpectated ? ' · ha guardato, solo assist' : ''
     if (row.todayStatus === 'won') return `Indovinata al ${row.todayAttempts}º tentativo${visto}`
     if (row.todayStatus === 'lost') return `Non indovinata${visto}`
     if (row.todayStatus === 'playing') {

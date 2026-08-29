@@ -31,11 +31,20 @@ export function SuggestionStrip({ suggestions, onPick, disabled }: Props) {
               className={`suggerimento${s.usedAt ? ' is-usato' : ''}`}
               onClick={() => onPick(s.word)}
               disabled={disabled}
-              title={`${s.guestName} suggerisce ${s.word.toUpperCase()}`}
+              title={
+                s.usedAt
+                  ? `${s.word.toUpperCase()}, suggerita da ${s.guestName}: giocata`
+                  : `${s.guestName} suggerisce ${s.word.toUpperCase()}`
+              }
             >
               <Avatar nickname={s.guestName} color={s.avatarColor} size={20} />
               <span className="suggerimento__nome">{s.guestName}</span>
               <span className="suggerimento__parola">{s.word.toUpperCase()}</span>
+              {/* Giocandola gli hai fatto fare punti: vederlo qui e' il modo
+                  piu' diretto di dire a cosa serve suggerire. */}
+              {s.assistPoints > 0 && (
+                <span className="suggerimento__assist">+{s.assistPoints}</span>
+              )}
             </button>
           </li>
         ))}
