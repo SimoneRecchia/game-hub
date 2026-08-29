@@ -55,7 +55,11 @@ azzererebbe la streak di tutti.
 
 Il segnaposto di `database_id` in `wrangler.toml` va bene
 in locale: wrangler crea un SQLite dentro `.wrangler/state` e l'ID non lo guarda
-nessuno. In produzione lo intercetta `scripts/check-config.mjs`.
+nessuno. In produzione lo intercetta `scripts/check-config.mjs`, che ha i suoi test in
+`scripts/__tests__`. La CI **non** imposta `CF_PAGES`: attivare il controllo lì
+lo renderebbe un cancello che deve fallire finché il progetto non e' collegato a
+un D1 reale, e non e' compito della CI stabilire se la produzione e'
+configurata.
 
 ## Prima di aprire una PR
 
