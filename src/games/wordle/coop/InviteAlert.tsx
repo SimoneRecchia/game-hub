@@ -49,7 +49,9 @@ export function InviteAlert({ invite, onAccept, onDecline }: Props) {
             <p>
               La parola è la stessa per tutti: guardando la partita di {invite.hostName} la
               scoprirai. La tua partita di oggi resterà giocabile, ma{' '}
-              <strong>non farà punti in classifica</strong>.
+              <strong>non farà punti partita</strong>. Ogni parola che suggerisci e che{' '}
+              {invite.hostName} gioca ti fa <strong>punti assist</strong>, e quelli vanno in
+              classifica.
             </p>
           </div>
         ) : (
