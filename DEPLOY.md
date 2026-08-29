@@ -1,93 +1,85 @@
 # Deploy su Cloudflare Pages
 
-Il progetto va su **Cloudflare Pages**, la stessa piattaforma dove stava la
-vecchia versione web di Vibe Gym. Una volta configurato, ogni push su `main`
-pubblica da solo: qui sotto c'è solo la prima volta.
+Il sito è **già online**:
 
-Servono i permessi sull'account Cloudflare e il repository su GitHub già
-collegato (lo è).
-
----
-
-## Passo 1 · Il database
-
-L'API salva giocatori, sessioni e partite su **D1**, il SQLite di Cloudflare.
-Va creato una volta e non si tocca più.
-
-```bash
-npx wrangler login          # apre il browser, chiede l'accesso a Cloudflare
-npx wrangler d1 create game-hub-db
-```
-
-Il comando stampa qualcosa come:
-
-```
-[[d1_databases]]
-binding = "DB"
-database_name = "game-hub-db"
-database_id = "a1b2c3d4-...."
-```
-
-**Copia `database_id` dentro `wrangler.toml`**, al posto del segnaposto
-`SOSTITUISCI_CON_IL_TUO_D1_DATABASE_ID`. Poi crea le tabelle e salva:
-
-```bash
-npx wrangler d1 migrations apply game-hub-db --remote
-git add wrangler.toml && git commit -m "Configura il database D1" && git push
-```
-
-> **Perché l'ID sta nel repository e non nella dashboard.** Quando
-> `wrangler.toml` contiene `pages_build_output_dir`, Cloudflare Pages lo usa
-> come unica fonte per i binding e ignora quelli impostati nella dashboard.
-> Tenerlo qui rende la configurazione versionata; il rovescio è che un ID
-> sbagliato romperebbe la produzione, quindi `npm run build` controlla il
-> segnaposto durante i build su Pages e si ferma con un messaggio esplicito.
->
-> L'ID di un database D1 non è un segreto: senza le credenziali dell'account
-> non serve a nulla.
-
-Fai questo passo **prima** del passo 2: così il primo deploy è già completo.
-
----
-
-## Passo 2 · Il progetto Pages
-
-Nella dashboard Cloudflare → **Workers & Pages** → **Create** →
-**Pages** → **Connect to Git** → repository `SimoneRecchia/game-hub`.
-
-Impostazioni del build:
-
-| Campo | Valore |
+| | |
 | --- | --- |
-| Project name | `game-hub` |
-| Production branch | `main` |
-| Framework preset | *None* |
-| Build command | `npm run build` |
-| Build output directory | `dist` |
+| `https://giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
+| `https://wordle.simonerecchia.com` | direttamente il Wordle di oggi |
+| `https://game-hub-43l.pages.dev` | il sottodominio Cloudflare del progetto |
 
-Poi, in **Settings → Environment variables → Production**, aggiungi:
+Ogni push su `main` ripubblica da solo tramite
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
 
-| Variabile | Valore | Perché |
+Questo documento serve a due cose: capire com'è configurato, e rimetterlo in
+piedi se serve.
+
+## Stato attuale
+
+| | |
+| --- | --- |
+| Account Cloudflare | `71fffd45bb2939fada1384f0a457d236` |
+| Progetto Pages | `game-hub` — **direct upload** (non collegato a Git) |
+| Sottodominio Pages | `game-hub-43l.pages.dev` — il suffisso c'è perché `game-hub.pages.dev` è già di qualcun altro |
+| Database D1 | `game-hub-db`, `5b224eb2-435b-459e-ac8a-13f34a972578` |
+| Variabile | `COOKIE_DOMAIN = simonerecchia.com` |
+| DNS | `giochi` e `wordle` → CNAME proxato verso il sottodominio Pages |
+
+## Ricostruire tutto da zero
+
+C'è uno script che fa l'intero giro, ed è idempotente: si può rilanciare su un
+ambiente già in piedi senza danni.
+
+```bash
+export CLOUDFLARE_API_TOKEN=...      # permessi nella tabella qui sotto
+node scripts/setup-cloudflare.mjs
+```
+
+Fa, in ordine: verifica il token, crea il database D1 (o riusa), scrive il
+`database_id` in `wrangler.toml`, applica le migrazioni **e controlla che le
+tabelle esistano davvero**, crea il progetto Pages (o riusa), pubblica il
+build, collega i sottodomini creando i record DNS, attende l'attivazione e
+verifica `/api/health` su ogni host.
+
+### Permessi del token
+
+| Tipo | Voce | Livello |
 | --- | --- | --- |
-| `NODE_VERSION` | `22` | Pages parte da una versione più vecchia di quella che serve al build |
+| Account | Cloudflare Pages | Edit |
+| Account | D1 | Edit |
+| Account | Account Settings | Read |
+| Zone | DNS | Edit |
+| Zone | Zone | Read |
 
-Salva e lascia partire il primo deploy. Al termine il sito risponde su
-`https://game-hub.pages.dev`.
+Zone resources: `simonerecchia.com`.
 
-**Verifica che l'API sia collegata al database** aprendo:
+## Il deploy automatico
 
+Il progetto Pages è di tipo **direct upload**: non è collegato a Git, e
+Cloudflare non permette di convertire un progetto direct-upload in
+Git-connected. Il deploy automatico passa quindi da GitHub Actions.
+
+Servono due segreti, una volta sola, in
+*Settings → Secrets and variables → Actions*:
+
+| Segreto | Valore |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | un token con Cloudflare Pages:Edit e D1:Edit |
+| `CLOUDFLARE_ACCOUNT_ID` | `71fffd45bb2939fada1384f0a457d236` |
+
+Il workflow esegue typecheck, test, build, **migrazioni D1 prima della
+pubblicazione** (il codice nuovo potrebbe cercare tabelle che ancora non
+esistono) e poi verifica che `/api/health` risponda su entrambi i sottodomini:
+se non risponde, il deploy è considerato fallito.
+
+Finché i segreti non ci sono, si pubblica a mano:
+
+```bash
+export CLOUDFLARE_API_TOKEN=...
+npm run build && npx wrangler pages deploy dist --project-name game-hub --branch main
 ```
-https://game-hub.pages.dev/api/health
-```
 
-Deve rispondere con un JSON tipo
-`{"ok":true,"date":"2026-08-29","puzzleNumber":1,...}`.
-Se invece torna un errore 500, il binding D1 non è arrivato: ricontrolla il
-passo 1 e guarda i log del build.
-
----
-
-## Passo 3 · I domini
+## I domini
 
 Il sito vive su sottodomini di **`simonerecchia.com`**: uno per l'hub e uno per
 ogni gioco. È sempre lo stesso progetto Pages — il sottodominio decide solo da
@@ -98,9 +90,14 @@ quale schermata si entra.
 | `giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
 | `wordle.simonerecchia.com` | direttamente il Wordle di oggi |
 
-Nel progetto Pages: **Custom domains** → **Set up a custom domain**, una volta
-per ciascuno. Il dominio è già su Cloudflare, quindi il record DNS viene creato
-da solo e il certificato arriva in pochi minuti.
+Sono già collegati. Per aggiungerne altri: **Custom domains** → **Set up a
+custom domain** nel progetto Pages, oppure rilanciare
+`scripts/setup-cloudflare.mjs` con `SUBDOMAINS` aggiornato.
+
+> **Il record DNS non si crea da solo.** Collegare il dominio al progetto lo
+> lascia in stato `pending`: serve anche un **CNAME proxato** verso il
+> sottodominio Pages (`game-hub-43l.pages.dev`, non `game-hub.pages.dev` — il
+> suffisso conta). Lo script lo crea; a mano va aggiunto dal pannello DNS.
 
 ### Perché funziona
 
@@ -144,26 +141,28 @@ https://wordle.simonerecchia.com/api/health
 > http, l'accesso non funziona — e lo dice esplicitamente invece di dare un
 > errore generico.
 
-## Passo 4 · Dismettere la vecchia Vibe Gym web
+## La vecchia Vibe Gym web
 
-La versione web di Vibe Gym (repository
-[`SimoneRecchia/vibe-gym`](https://github.com/SimoneRecchia/vibe-gym), PWA a
-singolo file) sta sullo stesso account Cloudflare. **L'app React Native
+La vecchia PWA è ancora online su **`vibe-gym.simonerecchia.com`** e va
+dismessa a mano. Il perché:
+
+- il **progetto Pages** `vibe-gym` non esiste più: sull'account c'è solo
+  `game-hub`;
+- il sito è servito da un **Worker**, non da Pages. Si vede dal record DNS:
+  `AAAA vibe-gym → 100::` proxato, e Cloudflare lo marca **read-only** —
+  è un *custom domain* gestito dal Worker, quindi il record si toglie soltanto
+  staccando il dominio dal Worker che lo tiene.
+
+Dalla dashboard: **Workers & Pages** → il Worker di Vibe Gym →
+*Settings → Domains & Routes* → rimuovi `vibe-gym.simonerecchia.com`. Poi, se
+il Worker non serve ad altro, *Settings → Delete*. Togliendo il dominio, il
+record DNS sparisce da solo.
+
+**L'app React Native
 ([`SimoneRecchia/VibeGym`](https://github.com/SimoneRecchia/VibeGym)) non è
-coinvolta: vive sui telefoni e non ha nulla su Cloudflare.**
-
-Nella dashboard, sul progetto Pages di `vibe-gym`:
-
-1. **Custom domains** → rimuovi il dominio, se ne aveva uno. Va fatto **prima**:
-   un dominio resta legato al progetto che lo tiene, e non può essere assegnato
-   a `game-hub` finché non è libero. Se occupava un sottodominio di
-   `simonerecchia.com`, questo è il momento di liberarlo.
-2. **Settings → Delete project**, oppure disconnetti il repository da
-   *Builds & deployments* se preferisci tenere il sito online e solo fermare i
-   deploy automatici.
-
-Cancellare il progetto Pages **non tocca il repository GitHub**: il codice della
-vecchia PWA resta dov'è, se un giorno servisse.
+coinvolta**: vive sui telefoni e non ha nulla su Cloudflare. Nemmeno il
+repository della PWA ([`SimoneRecchia/vibe-gym`](https://github.com/SimoneRecchia/vibe-gym))
+viene toccato: il codice resta dov'è, se un giorno servisse.
 
 ---
 

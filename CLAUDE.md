@@ -75,6 +75,16 @@ lo renderebbe un cancello che deve fallire finché il progetto non e' collegato 
 un D1 reale, e non e' compito della CI stabilire se la produzione e'
 configurata.
 
+**Il progetto Pages e' "direct upload", non collegato a Git.** Cloudflare non
+permette di convertirlo, quindi il deploy passa da
+`.github/workflows/deploy.yml` e non dal build integrato di Pages. Se un giorno
+si volesse il collegamento a Git, va creato un progetto nuovo e rifatti i
+custom domain.
+
+**Il sottodominio Pages e' `game-hub-43l.pages.dev`, non `game-hub.pages.dev`**
+(quello e' già di qualcun altro). Conta quando si scrivono i CNAME: puntare al
+nome del progetto invece che al sottodominio vero lascia i domini in `pending`.
+
 ## Prima di aprire una PR
 
 ```bash
