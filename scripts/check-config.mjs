@@ -4,33 +4,25 @@
  *
  * Serve a un errore preciso: se `database_id` in wrangler.toml e' ancora il
  * segnaposto, il deploy su Cloudflare Pages riuscirebbe ma l'API risponderebbe
- * 500 su ogni chiamata, con un messaggio incomprensibile nei log. Meglio
- * fermare il build dicendo esattamente cosa manca.
+ * 500 su ogni chiamata, con un messaggio incomprensibile nei log del Worker.
+ * Meglio fermare il build dicendo esattamente cosa manca.
  *
  * Il controllo scatta solo nei build su Pages (la variabile CF_PAGES esiste
  * solo lì): in locale il segnaposto va benissimo, perché wrangler crea un
  * SQLite dentro .wrangler/state e l'ID non lo guarda nessuno.
+ *
+ * La logica sta in una funzione esportata, non nel corpo dello script, così i
+ * test possono verificarla senza dover lanciare un processo — e senza che la
+ * CI debba mettersi in uno stato che deve fallire per forza.
  */
 
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const PLACEHOLDER = 'SOSTITUISCI_CON_IL_TUO_D1_DATABASE_ID'
+export const PLACEHOLDER = 'SOSTITUISCI_CON_IL_TUO_D1_DATABASE_ID'
 
-if (!process.env.CF_PAGES) process.exit(0)
-
-let config
-try {
-  config = readFileSync(join(ROOT, 'wrangler.toml'), 'utf8')
-} catch {
-  console.error('\nwrangler.toml non trovato: il binding D1 non verrebbe applicato.\n')
-  process.exit(1)
-}
-
-if (config.includes(PLACEHOLDER)) {
-  console.error(`
+const ISTRUZIONI = `
 ────────────────────────────────────────────────────────────────────────
  Configurazione incompleta: manca l'ID del database D1.
 ────────────────────────────────────────────────────────────────────────
@@ -48,8 +40,48 @@ if (config.includes(PLACEHOLDER)) {
  I passi completi sono in DEPLOY.md.
 
 ────────────────────────────────────────────────────────────────────────
-`)
-  process.exit(1)
+`
+
+/**
+ * Cerca problemi nel contenuto di wrangler.toml.
+ * Restituisce il messaggio da mostrare, oppure null se va tutto bene.
+ */
+export function configProblem(wranglerToml) {
+  if (typeof wranglerToml !== 'string' || wranglerToml.trim() === '') {
+    return "\nwrangler.toml e' vuoto o illeggibile: il binding D1 non verrebbe applicato.\n"
+  }
+  if (!wranglerToml.includes('[[d1_databases]]')) {
+    return "\nwrangler.toml non dichiara nessun database D1: l'API non avrebbe dove salvare.\n"
+  }
+  if (wranglerToml.includes(PLACEHOLDER)) {
+    return ISTRUZIONI
+  }
+  return null
 }
 
-console.log('✓ configurazione D1 presente')
+function main() {
+  // Fuori da Cloudflare Pages non c'e' nulla da controllare.
+  if (!process.env.CF_PAGES) return
+
+  const root = join(dirname(fileURLToPath(import.meta.url)), '..')
+  let contenuto = ''
+  try {
+    contenuto = readFileSync(join(root, 'wrangler.toml'), 'utf8')
+  } catch {
+    console.error('\nwrangler.toml non trovato: il binding D1 non verrebbe applicato.\n')
+    process.exit(1)
+  }
+
+  const problema = configProblem(contenuto)
+  if (problema) {
+    console.error(problema)
+    process.exit(1)
+  }
+
+  console.log('✓ configurazione D1 presente')
+}
+
+// Esegue solo se invocato da riga di comando, non quando importato dai test.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main()
+}

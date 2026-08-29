@@ -31,10 +31,11 @@ jobs:
       - name: Test
         run: npm run test
 
-      # Lo stesso build che gira su Cloudflare Pages, con la variabile che
-      # attiva il controllo di configurazione: se qualcuno rimettesse il
-      # segnaposto del database_id, si scopre qui e non in produzione.
+      # Il build senza CF_PAGES, cioe' quello che esegue un contributore in
+      # locale. Impostare CF_PAGES qui sarebbe sbagliato: attiverebbe il
+      # controllo di configurazione, che deve fallire finché il progetto non
+      # e' collegato a un database D1 reale — e non e' compito della CI
+      # decidere se l'ambiente di produzione e' configurato.
+      # Il controllo ha i suoi test in scripts/__tests__.
       - name: Build
         run: npm run build
-        env:
-          CF_PAGES: '1'
