@@ -34,10 +34,13 @@ quella funzione, i test in `shared/__tests__/hosts.test.ts` coprono i casi
 limite (pages.dev, dominio di primo livello, host che finisce per caso col
 dominio configurato).
 
-**Le `[vars]` di `wrangler.toml` vincono su `.dev.vars` e su `--binding`.** Per
-cambiare in locale una variabile che sta anche in `wrangler.toml` (per esempio
-`EMAIL_VERIFICATION`) va modificato `wrangler.toml`: `.dev.vars` da solo non
-basta, e la cosa non da' nessun segnale.
+**In locale `.dev.vars` vince sulle `[vars]` di `wrangler.toml`.** Verificato su
+wrangler 4.127.1: con `EMAIL_VERIFICATION = "on"` in `wrangler.toml` e
+`EMAIL_VERIFICATION=off` in `.dev.vars`, `pages dev` serve `off`. Il file vuole
+formato dotenv — nessuno spazio attorno a `=`, nessuna virgoletta, altrimenti
+finiscono nel valore — e non e' versionato, quindi un comportamento locale che
+non si spiega guardando `wrangler.toml` e' quasi sempre `.dev.vars`. Il cambio
+non ha effetto sul processo già avviato: va riavviato.
 
 ## Invarianti da non rompere
 
@@ -49,7 +52,25 @@ rifiuterebbe la parola giusta. Verificato da un test in
 (`MAX_TIEBREAK < ATTEMPT_STEP` in `shared/scoring.ts`). È ciò che garantisce che
 chi indovina in meno tentativi stia sempre davanti. Se si ritocca un punteggio,
 il test che verifica la condizione numerica cade prima di quello sull'ordine:
-guarda quello.
+guarda quello. L'invariante riguarda i bonus **di una partita**: gli assist sono
+un asse a parte e possono far scalare la classifica, di proposito.
+
+**Gli assist si pagano una volta sola, e solo se l'host gioca la parola.** Tre
+cose lo garantiscono e vanno insieme: l'assegnazione sta solo in
+`markSuggestionUsed`, che filtra su `used_at IS NULL`; l'indice unico
+`idx_coop_suggestions_parola` su `(room_id, guest_id, word)` impedisce allo
+stesso invitato di avere due righe per la stessa parola (prima suggerirla cinque
+volte e vederla giocata una valeva cinque assist — la rotta `/suggest` fa
+`ON CONFLICT ... DO UPDATE SET created_at` proprio per questo); e i punti sono
+**congelati** nella riga, come `streak_at_end`, così la classifica di ieri non
+cambia se domani si ritocca un numero.
+
+**Il tetto degli assist e' giornaliero e si applica in lettura**
+(`MAX_ASSIST_PER_DAY`). Per questo gli aggregati raggruppano anche per
+`puzzle_number` e non solo per giocatore: sommare tutto e tagliare alla fine
+darebbe un numero diverso. Vale sia in `server/lib/leaderboard.ts` sia in
+`playerStats`, e i due devono restare d'accordo — il totale del profilo e'
+quello che si vede in classifica.
 
 **Nessuna parola con j, k, w, x, y** negli elenchi: la tastiera del gioco ha 21
 tasti e quelle lettere non sarebbero digitabili.
@@ -59,10 +80,14 @@ tasti e quelle lettere non sarebbero digitabili.
 l'unica cosa che rende la classifica significativa. Vale anche per la vista
 condivisa: `guestView()` applica la stessa regola.
 
-**Chi guarda la partita di un altro non fa punti.** `wordle_games.spectated`
-viene messo a 1 quando si accetta un invito senza aver finito la propria
-partita, e la rotta del tentativo azzera il punteggio in quel caso. Senza
-questo, guardare sarebbe il modo più rapido per vincere la classifica.
+**Chi guarda la partita di un altro non fa punti partita.**
+`wordle_games.spectated` viene messo a 1 quando si accetta un invito senza aver
+finito la propria partita, e la rotta del tentativo azzera il punteggio in quel
+caso. Senza questo, guardare sarebbe il modo più rapido per vincere la
+classifica: la parola del giorno e' la stessa per tutti, quindi guardare la
+svela. Gli **assist** però li fa, ed e' quello che rende sensato accettare un
+invito: aiutare vale punti, giocare una partita di cui si conosce la risposta
+no.
 
 **Le partite condivise vanno a polling, non in realtime.** Cadenze in
 `shared/config.ts`. Non introdurre WebSocket o SSE senza aver verificato che le
@@ -83,6 +108,12 @@ giorno non cambia per una fonte che si sposta.
 
 Le partite in corso appaiono in classifica con **zero punti**: serve a vedere
 chi sta ancora giocando, non è un bug del calcolo.
+
+In classifica può comparire chi ha **zero partite**: sono i punti assist di chi
+ha solo suggerito. Per questo l'aggregato delle partite e quello degli assist
+vengono uniti in memoria invece di essere una sola query con `JOIN` — partendo
+dalle partite, chi ha solo aiutato sparirebbe. Per lo stesso motivo il profilo
+mostra il pannello statistiche anche con `played === 0`, se ci sono assist.
 
 La **streak resta viva** se l'ultima vittoria è di ieri e oggi non si è ancora
 giocato. Si azzera solo se si è saltato un giorno o se si è giocato oggi e

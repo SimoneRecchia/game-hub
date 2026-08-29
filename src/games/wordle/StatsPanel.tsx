@@ -54,6 +54,19 @@ export function StatsPanel({ stats, highlight = null }: Props) {
           </span>
         )}
       </div>
+
+      {/* La divisione del totale, quando c'e' qualcosa da dividere: e' lo stesso
+          numero della classifica, e senza la riga sembrerebbe un'altra cosa. */}
+      {stats.assistScore > 0 && (
+        <div className="stats__block stats__block--row">
+          <span className="stats__meta">
+            Partite <strong>{formatNumber(stats.playScore)}</strong>
+          </span>
+          <span className="stats__meta">
+            Assist <strong>{formatNumber(stats.assistScore)}</strong>
+          </span>
+        </div>
+      )}
     </div>
   )
 }
