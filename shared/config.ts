@@ -37,3 +37,18 @@ export const AVATAR_COLORS = [
   '#00c7be',
   '#ffcc00',
 ] as const
+
+/** Quante persone l'host può invitare a guardare la sua partita. */
+export const MAX_COOP_GUESTS = 5
+
+/**
+ * Ogni quanto il client ricontrolla lo stato condiviso.
+ *
+ * Non c'e' realtime: le Durable Objects non sono garantite sul piano gratuito
+ * e i 10 ms di CPU per richiesta rendono le connessioni lunghe una cattiva
+ * idea. Per "qualcuno ti suggerisce una parola" due secondi non si notano.
+ */
+export const COOP_POLL_VIEW_MS = 2_000
+export const COOP_POLL_ROOM_MS = 3_000
+/** Gli inviti non sono urgenti al secondo: si guardano più di rado. */
+export const COOP_POLL_INBOX_MS = 8_000

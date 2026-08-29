@@ -1,0 +1,73 @@
+.suggerimenti {
+  flex: none;
+  min-width: 0;
+}
+
+.suggerimenti__lista {
+  display: flex;
+  gap: var(--sp-2);
+  overflow-x: auto;
+  /* La striscia scorre da sola invece di far scorrere la pagina. */
+  padding: 2px var(--sp-1) var(--sp-1);
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.suggerimenti__lista::-webkit-scrollbar {
+  display: none;
+}
+
+.suggerimento {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 5px var(--sp-3) 5px 5px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm), inset 0 0 0 0.5px var(--separator);
+  white-space: nowrap;
+  scroll-snap-align: start;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+  animation: suggerimento-in var(--dur-base) var(--ease-spring);
+}
+
+.suggerimento:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.suggerimento:disabled {
+  opacity: 0.5;
+}
+
+.suggerimento__nome {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+  max-width: 9ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggerimento__parola {
+  font-family: var(--font-rounded);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Già giocata dall'host: resta visibile ma smette di chiedere attenzione. */
+.suggerimento.is-usato {
+  opacity: 0.5;
+}
+
+.suggerimento.is-usato .suggerimento__parola {
+  text-decoration: line-through;
+}
+
+@keyframes suggerimento-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.94);
+  }
+}

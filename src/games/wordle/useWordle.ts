@@ -40,6 +40,8 @@ export interface WordleController {
   resultOpen: boolean
   press: (letter: string) => void
   backspace: () => void
+  /** Riempie la riga con una parola intera, senza inviarla. */
+  fill: (word: string) => void
   submit: () => void
   openResult: () => void
   closeResult: () => void
@@ -143,6 +145,22 @@ export function useWordle(): WordleController {
     haptic('tap')
     setDraft((d) => d.slice(0, -1))
   }, [canType])
+
+  /**
+   * Scrive una parola intera nella riga senza inviarla.
+   *
+   * La usa il suggerimento di un invitato: la parola compare pronta, ma
+   * l'invio resta un gesto di chi sta giocando. Un suggerimento non deve
+   * poter consumare un tentativo.
+   */
+  const fill = useCallback(
+    (word: string) => {
+      if (!canType || !state) return
+      haptic('tap')
+      setDraft(word.slice(0, state.wordLength).toLowerCase())
+    },
+    [canType, state],
+  )
 
   const submit = useCallback(async () => {
     if (!canType || !state) return
@@ -248,6 +266,7 @@ export function useWordle(): WordleController {
     resultOpen,
     press,
     backspace,
+    fill,
     submit: () => void submit(),
     openResult: () => setResultOpen(true),
     closeResult: () => setResultOpen(false),

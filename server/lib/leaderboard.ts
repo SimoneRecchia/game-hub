@@ -40,6 +40,7 @@ interface TodayRow {
   player_id: string
   attempts: number
   status: WordleStatus
+  spectated: number
 }
 
 interface Streaks {
@@ -145,7 +146,9 @@ export async function leaderboard(
       .bind(todayNumber - STREAK_LOOKBACK)
       .all<WinRow>(),
     db
-      .prepare('SELECT player_id, attempts, status FROM wordle_games WHERE puzzle_number = ?')
+      .prepare(
+        'SELECT player_id, attempts, status, spectated FROM wordle_games WHERE puzzle_number = ?',
+      )
       .bind(todayNumber)
       .all<TodayRow>(),
   ])
@@ -173,6 +176,7 @@ export async function leaderboard(
       bestStreak: streak.best,
       todayAttempts: todayGame?.attempts ?? null,
       todayStatus: todayGame?.status ?? null,
+      todaySpectated: todayGame ? todayGame.spectated === 1 : null,
     }
   })
 

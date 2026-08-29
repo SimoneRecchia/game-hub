@@ -1,13 +1,17 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppShell } from '@/components/AppShell'
+import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { IconChevronLeft, IconChart, IconInfo } from '@/components/Icons'
+import { IconChevronLeft, IconChart, IconInfo, IconPeople } from '@/components/Icons'
 import { Board } from '@/games/wordle/Board'
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { ResultSheet } from '@/games/wordle/ResultSheet'
 import { useWordle } from '@/games/wordle/useWordle'
+import { InvitePanel } from '@/games/wordle/coop/InvitePanel'
+import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
+import { useCoopHost } from '@/games/wordle/coop/useCoopHost'
 import { MAX_ATTEMPTS, WORD_LENGTH } from '@shared/config'
 import './Wordle.css'
 
@@ -15,6 +19,12 @@ export default function Wordle() {
   const navigate = useNavigate()
   const game = useWordle()
   const [helpOpen, setHelpOpen] = useState(false)
+  const [invitiOpen, setInvitiOpen] = useState(false)
+
+  // Il hook decide da solo quando fare polling: qui basta dirgli se il
+  // pannello e' aperto.
+  const coop = useCoopHost(invitiOpen)
+  const attivi = coop.room?.guests.filter((g) => g.status === 'accepted') ?? []
 
   const title = game.state ? `Wordle #${game.state.puzzleNumber}` : 'Wordle'
   const finished = game.state && game.state.status !== 'playing'
@@ -30,6 +40,17 @@ export default function Wordle() {
       }
       trailing={
         <>
+          {!finished && (
+            <button
+              type="button"
+              className="navbtn wordle__invita"
+              onClick={() => setInvitiOpen(true)}
+              aria-label="Gioca in compagnia"
+            >
+              <IconPeople size={21} />
+              {attivi.length > 0 && <span className="wordle__invita-badge">{attivi.length}</span>}
+            </button>
+          )}
           {finished && (
             <button
               type="button"
@@ -61,6 +82,28 @@ export default function Wordle() {
           </div>
         ) : (
           <>
+            {game.state?.spectated && (
+              <div className="wordle__senza-punti">
+                Hai guardato la partita di qualcun altro: oggi conoscevi già la parola, quindi
+                questa partita non fa punti.
+              </div>
+            )}
+
+            {attivi.length > 0 && (
+              <div className="wordle__spettatori">
+                <span className="wordle__spettatori-avatar">
+                  {attivi.slice(0, 5).map((g) => (
+                    <Avatar key={g.playerId} nickname={g.nickname} color={g.avatarColor} size={22} />
+                  ))}
+                </span>
+                <span className="wordle__spettatori-testo">
+                  {attivi.length === 1
+                    ? `${attivi[0].displayName} sta guardando`
+                    : `${attivi.length} persone stanno guardando`}
+                </span>
+              </div>
+            )}
+
             {/* Messaggio effimero sopra la griglia: non sposta il layout. */}
             <div className="wordle__message" aria-live="polite">
               {game.message && <span className="wordle__message-pill">{game.message}</span>}
@@ -77,6 +120,16 @@ export default function Wordle() {
                 shakingRow={game.shakingRow}
               />
             </div>
+
+            {/* I suggerimenti degli invitati: toccarne uno riempie la riga,
+                non la invia. La parola la decide sempre l'host. */}
+            {!finished && (
+              <SuggestionStrip
+                suggestions={coop.room?.suggestions ?? []}
+                onPick={game.fill}
+                disabled={game.revealing !== null || game.submitting}
+              />
+            )}
 
             <Keyboard
               states={game.keyboard}
@@ -96,6 +149,18 @@ export default function Wordle() {
       </div>
 
       <HowToPlay open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      <InvitePanel
+        open={invitiOpen}
+        onClose={() => setInvitiOpen(false)}
+        room={coop.room}
+        players={coop.players}
+        busy={coop.busy}
+        error={coop.error}
+        onInvite={coop.invita}
+        onRevoke={coop.ritira}
+        onLoadPlayers={coop.caricaGiocatori}
+      />
 
       {game.state && (
         <ResultSheet
