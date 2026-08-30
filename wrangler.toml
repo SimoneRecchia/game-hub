@@ -34,18 +34,23 @@ database_id = "5b224eb2-435b-459e-ac8a-13f34a972578"
 COOKIE_DOMAIN = "simonerecchia.com"
 
 # Mittente delle email con i codici di verifica.
-EMAIL_FROM = "Game Hub <giochi@simonerecchia.com>"
+#
+# Il dominio verificato su Resend e' il sottodominio `mail.simonerecchia.com`,
+# non la radice: i record MX di Resend sulla radice impedirebbero di ricevere
+# posta su @simonerecchia.com. Il mittente deve stare nel dominio verificato,
+# quindi se un giorno si cambia dominio su Resend va cambiato anche qui.
+EMAIL_FROM = "Game Hub <giochi@mail.simonerecchia.com>"
 
 # Verifica dell'email al momento della registrazione.
 #
-# Resta "off" finché non c'e' una chiave Resend: accenderla senza il modo di
-# spedire i codici bloccherebbe ogni registrazione. Con "off" l'email viene
-# comunque raccolta, perché serve al recupero password, ma non viene verificata
-# e l'account nasce già attivo.
+# Accesa: la chiave Resend e' fra i secret del progetto Pages e il dominio
+# mittente e' verificato. Le due cose vanno insieme — `emailVerificationEnabled`
+# le controlla entrambe — perché accendere la verifica senza il modo di spedire
+# i codici bloccherebbe ogni registrazione.
 #
-# Per accenderla:
-#   npx wrangler pages secret put RESEND_API_KEY --project-name game-hub
-#   poi EMAIL_VERIFICATION = "on" qui, commit e push.
+# Per spegnerla in fretta, se la posta si rompe: "off" qui, commit e push. La
+# registrazione torna a raccogliere l'email senza verificarla, e il recupero
+# password risponde che l'invio non e' configurato.
 #
 # La chiave e' un segreto e non va in questo file: vedi DEPLOY.md.
-EMAIL_VERIFICATION = "off"
+EMAIL_VERIFICATION = "on"

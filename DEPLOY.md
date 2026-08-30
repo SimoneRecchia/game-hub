@@ -176,24 +176,53 @@ Dalle Pages Functions non si può parlare SMTP, e Cloudflare Email Routing
 riceve ma non spedisce: serve un'API HTTP. La scelta è **Resend** — 3.000 email
 al mese gratis, più che sufficienti per un gruppo di colleghi.
 
-### Accenderla
+### Com'è configurata
 
-1. Crea un account su [resend.com](https://resend.com) e aggiungi il dominio
-   `simonerecchia.com`. Resend mostra tre record DNS (DKIM, SPF e un MX per i
-   rimbalzi): aggiungili nel pannello DNS di Cloudflare, **senza proxy**
-   (nuvoletta grigia — un record di posta proxato non funziona).
-2. Crea una API key e mettila fra i segreti del progetto Pages:
+È attiva: la registrazione manda un codice di 6 cifre e il gioco resta chiuso
+finché non viene confermato. Il recupero password funziona con lo stesso
+meccanismo.
 
-   ```bash
-   npx wrangler pages secret put RESEND_API_KEY --project-name game-hub
-   ```
+Il dominio mittente è **`mail.simonerecchia.com`**, verificato su Resend nella
+regione `eu-west-1`. Un sottodominio e non la radice, così `@simonerecchia.com`
+resta libero per una casella vera: i record MX di Resend sulla radice lo
+impedirebbero.
 
-   Va come **segreto**, non come variabile in `wrangler.toml`: quel file è
-   versionato.
-3. In `wrangler.toml`, `EMAIL_VERIFICATION = "on"`, poi commit e push.
+Tre record sulla zona `simonerecchia.com`, **senza proxy** — i record di posta
+non passano dal proxy, la nuvoletta grigia non è una scelta ma l'unica cosa che
+funziona:
 
-Da quel momento la registrazione manda un codice di 6 cifre e il gioco resta
-chiuso finché non viene confermato. Il recupero password si attiva insieme.
+| Tipo | Nome | Cosa |
+| --- | --- | --- |
+| TXT | `resend._domainkey.mail` | la chiave DKIM |
+| MX | `send.mail` | i rimbalzi (`feedback-smtp.eu-west-1.amazonses.com`, priorità 10) |
+| TXT | `send.mail` | l'SPF (`v=spf1 include:amazonses.com ~all`) |
+
+> **I nomi che Resend mostra sono relativi all'apice della zona**, non al
+> dominio mittente: chiede `resend._domainkey.mail`, che sotto
+> `simonerecchia.com` diventa `resend._domainkey.mail.simonerecchia.com`.
+> Completandoli col dominio mittente invece che con la zona si ottiene
+> `resend._domainkey.mail.mail.simonerecchia.com` — Cloudflare lo accetta
+> volentieri, e Resend non lo trova mai.
+
+> **Chiamare di nuovo `/verify` rimette tutti i record a `pending`** e fa
+> ripartire il controllo da zero. Chiamarla dentro un ciclo di attesa impedisce
+> alla verifica di arrivare in fondo: si lancia una volta e poi si aspetta.
+
+La chiave sta fra i **segreti** del progetto Pages, non in `wrangler.toml` che è
+versionato:
+
+```bash
+npx wrangler pages secret put RESEND_API_KEY --project-name game-hub
+```
+
+Quella in produzione ha permesso **Sending access**: può spedire e non toccare
+la configurazione dell'account. Per aggiungere o cambiare un dominio serve una
+chiave **Full access** — conviene crearla per l'occasione e cancellarla appena
+il dominio è verificato.
+
+Se la posta si rompe, `EMAIL_VERIFICATION = "off"` in `wrangler.toml` con commit
+e push riporta tutto allo stato di prima: l'email viene raccolta e non
+verificata, e il recupero password risponde che l'invio non è configurato.
 
 ### Com'è fatto
 
@@ -225,9 +254,12 @@ RESEND_API_KEY=chiave-finta
 EMAIL_ENDPOINT=http://127.0.0.1:8899/emails
 ```
 
-> **Attenzione alla precedenza.** Le `[vars]` di `wrangler.toml` **vincono** su
-> `.dev.vars` e su `--binding` da riga di comando. Per accendere la verifica in
-> locale va cambiato `wrangler.toml`, non basta `.dev.vars`.
+> **Attenzione alla precedenza.** In locale `.dev.vars` **vince** sulle `[vars]`
+> di `wrangler.toml` — verificato su wrangler 4.127.1 mettendo i due in
+> contraddizione. Quindi per spegnere la verifica in locale basta `.dev.vars`, e
+> un comportamento locale che non si spiega guardando `wrangler.toml` è quasi
+> sempre lì. Il file vuole formato dotenv (nessuno spazio attorno a `=`, nessuna
+> virgoletta) e il cambio richiede il riavvio di `pages dev`.
 
 ## Manutenzione
 
