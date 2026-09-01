@@ -10,6 +10,7 @@ import VerifyEmail from './pages/VerifyEmail'
 import Welcome from './pages/Welcome'
 import Wordle from './pages/Wordle'
 import WordleInsieme from './pages/WordleInsieme'
+import WordlePercorso from './pages/WordlePercorso'
 import { CoopGate } from './games/wordle/coop/CoopGate'
 
 export default function App() {
@@ -41,7 +42,14 @@ export default function App() {
       <CoopGate />
       <Routes>
         <Route path="/" element={<Hub />} />
-        <Route path="/wordle" element={<Wordle />} />
+        {/*
+          Il gioco sono due schermate: il percorso delle cinque parole e la
+          griglia di una di esse. Lo slot sta nell'indirizzo, non in uno stato
+          interno, perché il tasto indietro del telefono debba tornare al
+          percorso — che e' quel che uno si aspetta uscendo da un livello.
+        */}
+        <Route path="/wordle" element={<WordlePercorso />} />
+        <Route path="/wordle/:slot" element={<Wordle />} />
         <Route path="/insieme/:roomId" element={<WordleInsieme />} />
         <Route path="/classifica" element={<Classifica />} />
         <Route path="/profilo" element={<Profilo />} />

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateAll, evaluateGuess, keyboardStates, shareText, statusAfter } from '../wordle'
+import {
+  ALFABETO,
+  KEYBOARD_ROWS,
+  evaluateAll,
+  evaluateGuess,
+  isGameLetter,
+  keyboardStates,
+  shareText,
+  statusAfter,
+} from '../wordle'
 import type { TileState } from '../types'
 
 /** "gpa" → ['correct','present','absent'], per test leggibili. */
@@ -123,5 +132,37 @@ describe('testo da condividere', () => {
     const six = evaluateAll(['tempo', 'volta', 'senza', 'primo', 'corsa', 'nuovo'], 'gatto')
     const text = shareText({ puzzleNumber: 7, guesses: six, status: 'lost', score: 5 })
     expect(text).toContain('X/6')
+  })
+})
+
+describe('lettere del gioco', () => {
+  it('sono le 21 dell’alfabeto italiano', () => {
+    expect(ALFABETO).toHaveLength(21)
+    for (const fuori of 'jkwxy') expect(ALFABETO).not.toContain(fuori)
+  })
+
+  it('accetta ogni tasto che c’è sulla tastiera', () => {
+    // L'invariante che mancava: il filtro dei tasti fisici usava `[a-hl-vz]`,
+    // che salta la i — sulla tastiera a schermo c'era, da computer non si
+    // poteva digitare, e "germi" era impossibile da scrivere.
+    for (const row of KEYBOARD_ROWS) {
+      for (const key of row) {
+        if (key === 'ENTER' || key === 'BACK') continue
+        expect(isGameLetter(key), `il tasto ${key} deve essere digitabile`).toBe(true)
+      }
+    }
+  })
+
+  it('mette sulla tastiera ogni lettera giocabile', () => {
+    const sulla = new Set<string>(KEYBOARD_ROWS.flat())
+    for (const letter of ALFABETO) {
+      expect(sulla.has(letter), `la lettera ${letter} deve stare sulla tastiera`).toBe(true)
+    }
+  })
+
+  it('rifiuta le lettere straniere e tutto quel che non e’ una lettera', () => {
+    for (const key of ['j', 'k', 'w', 'x', 'y', 'à', '1', '', 'ab', 'Enter', ' ']) {
+      expect(isGameLetter(key)).toBe(false)
+    }
   })
 })

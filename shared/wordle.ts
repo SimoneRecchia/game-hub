@@ -118,6 +118,34 @@ export function shareText({
   return `Game Hub · Wordle #${puzzleNumber} ${result}${points}\n\n${grid}`
 }
 
+/**
+ * Le 21 lettere dell'alfabeto italiano, in ordine.
+ *
+ * Niente J, K, W, X, Y: compaiono solo nei prestiti stranieri, che il dizionario
+ * del gioco non contiene. E' anche il motivo per cui la tastiera ha 21 tasti.
+ */
+export const ALFABETO = 'abcdefghilmnopqrstuvz'
+
+/**
+ * La disposizione della tastiera: la QWERTY senza le cinque lettere in meno.
+ *
+ * Sta qui e non nel componente perché e' la stessa cosa che decide quali tasti
+ * fisici il gioco accetta — e le due cose devono restare d'accordo. Non lo
+ * erano: il filtro dei tasti fisici usava `[a-hl-vz]`, che salta la **i**, e da
+ * un computer la parola "germi" non si poteva scrivere. Un test ora verifica
+ * che ogni tasto sulla tastiera si possa anche digitare.
+ */
+export const KEYBOARD_ROWS = [
+  ['q', 'e', 'r', 't', 'u', 'i', 'o', 'p'],
+  ['a', 's', 'd', 'f', 'g', 'h', 'l'],
+  ['ENTER', 'z', 'c', 'v', 'b', 'n', 'm', 'BACK'],
+] as const
+
+/** true se il tasto premuto e' una lettera giocabile. */
+export function isGameLetter(key: string): boolean {
+  return key.length === 1 && ALFABETO.includes(key)
+}
+
 /** Il tentativo ha la forma giusta? (non dice se la parola esiste) */
 export function isWellFormedGuess(guess: string): boolean {
   return new RegExp(`^[a-z]{${WORD_LENGTH}}$`).test(guess)
