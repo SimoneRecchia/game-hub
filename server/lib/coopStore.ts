@@ -1,7 +1,6 @@
 /** Accesso ai dati delle partite in compagnia. */
 
 import { MAX_ATTEMPTS, MAX_COOP_GUESTS, WORD_LENGTH } from '../../shared/config'
-import { assistPoints, dailyAssist } from '../../shared/scoring'
 import { evaluateAll } from '../../shared/wordle'
 import type {
   CoopGuest,
@@ -32,7 +31,6 @@ interface SuggestionRow {
   word: string
   created_at: string
   used_at: string | null
-  assist_points: number
   nickname: string
   display_name: string
   avatar_color: string
@@ -47,7 +45,6 @@ function toSuggestion(row: SuggestionRow): CoopSuggestion {
     avatarColor: row.avatar_color,
     createdAt: row.created_at,
     usedAt: row.used_at,
-    assistPoints: row.assist_points,
   }
 }
 
@@ -131,7 +128,7 @@ async function guestsOf(db: D1Database, roomId: string): Promise<CoopGuest[]> {
 async function suggestionsOf(db: D1Database, roomId: string): Promise<CoopSuggestion[]> {
   const { results } = await db
     .prepare(
-      `SELECT s.id, s.guest_id, s.word, s.created_at, s.used_at, s.assist_points,
+      `SELECT s.id, s.guest_id, s.word, s.created_at, s.used_at,
               p.nickname, p.display_name, p.avatar_color
          FROM coop_suggestions s
          JOIN players p ON p.id = s.guest_id
@@ -233,7 +230,10 @@ export async function pendingInvites(
               EXISTS (SELECT 1 FROM wordle_games g
                        WHERE g.player_id = ?1
                          AND g.puzzle_number = r.puzzle_number
-                         AND g.status != 'playing') AS ho_finito
+                         AND g.status != 'playing') AS ho_finito,
+              COALESCE((SELECT g.attempts FROM wordle_games g
+                         WHERE g.player_id = ?1
+                           AND g.puzzle_number = r.puzzle_number), 0) AS miei_tentativi
          FROM coop_invites i
          JOIN coop_rooms r ON r.id = i.room_id
          JOIN players p ON p.id = r.host_id
@@ -253,6 +253,7 @@ export async function pendingInvites(
       display_name: string
       avatar_color: string
       ho_finito: number
+      miei_tentativi: number
     }>()
 
   return results.map((r) => ({
@@ -263,6 +264,7 @@ export async function pendingInvites(
     hostAvatarColor: r.avatar_color,
     createdAt: r.created_at,
     wouldSpoil: r.ho_finito !== 1,
+    myAttempts: r.ho_finito === 1 ? 0 : r.miei_tentativi,
   }))
 }
 
@@ -296,28 +298,57 @@ export async function acceptedInvite(
 }
 
 /**
- * Marca la partita del guest come "vista".
+ * La giornata del guest diventa questa partita.
  *
- * Chi guarda la partita di un altro prima di aver giocato la propria conosce la
- * soluzione, perché la parola del giorno e' la stessa per tutti. La giornata
- * resta giocabile ma non fa punti partita: altrimenti la classifica non
- * misurerebbe più nulla. Fa però punti assist, per ogni parola suggerita che
- * l'host gioca davvero — vedi `markSuggestionUsed`.
+ * La parola del giorno e' la stessa per tutti: guardando quella dell'host la
+ * conosce, quindi la propria board si chiude — e' la stessa parola, l'ha già
+ * fatta. Il suo punteggio sarà quello dell'host (`payAssists`).
+ *
+ * Il `WHERE status = 'playing'` e' quello che distingue i due casi: chi ha già
+ * concluso la propria partita non viene toccato, perché la sua giornata e' già
+ * spesa. Puo' guardare e suggerire, ma non prende un secondo punteggio.
+ *
+ * Restituisce true se la giornata e' stata effettivamente presa in carico qui.
  */
 export async function markSpectated(
   db: D1Database,
   guestId: string,
   when: Today,
   answer: string,
-): Promise<void> {
+  roomId: string,
+): Promise<boolean> {
   await openGame(db, guestId, when, answer)
-  await db
+  const esito = await db
     .prepare(
-      `UPDATE wordle_games SET spectated = 1
-        WHERE player_id = ? AND puzzle_number = ? AND status = 'playing'`,
+      `UPDATE wordle_games SET spectated = 1, assist_room_id = ?
+        WHERE player_id = ? AND puzzle_number = ? AND status = 'playing'
+          AND (assist_room_id IS NULL OR assist_room_id = ?)`,
     )
-    .bind(guestId, when.puzzleNumber)
+    .bind(roomId, guestId, when.puzzleNumber, roomId)
     .run()
+  return esito.meta.changes === 1
+}
+
+/** La giornata del giocatore, per capire se e' già spesa e dove. */
+export async function participation(
+  db: D1Database,
+  playerId: string,
+  puzzleNumber: number,
+): Promise<{ spectated: boolean; roomId: string | null; ownFinished: boolean } | null> {
+  const row = await db
+    .prepare(
+      `SELECT status, spectated, assist_room_id FROM wordle_games
+        WHERE player_id = ? AND puzzle_number = ?`,
+    )
+    .bind(playerId, puzzleNumber)
+    .first<{ status: string; spectated: number; assist_room_id: string | null }>()
+
+  if (!row) return null
+  return {
+    spectated: row.spectated === 1,
+    roomId: row.assist_room_id,
+    ownFinished: row.spectated !== 1 && row.status !== 'playing',
+  }
 }
 
 /** Vista del guest: la board dell'host, con gli stessi colori. */
@@ -327,12 +358,18 @@ export async function guestView(
   hostGame: GameRow,
   viewerId: string,
 ): Promise<CoopView> {
-  const [host, tally] = await Promise.all([
+  const [host, mia] = await Promise.all([
     db
       .prepare('SELECT nickname, display_name, avatar_color FROM players WHERE id = ?')
       .bind(room.host_id)
       .first<{ nickname: string; display_name: string; avatar_color: string }>(),
-    assistTally(db, viewerId, room.puzzle_number),
+    db
+      .prepare(
+        `SELECT spectated, assist_score, assist_room_id FROM wordle_games
+          WHERE player_id = ? AND puzzle_number = ?`,
+      )
+      .bind(viewerId, room.puzzle_number)
+      .first<{ spectated: number; assist_score: number | null; assist_room_id: string | null }>(),
   ])
 
   const words = parseGuesses(hostGame)
@@ -350,50 +387,67 @@ export async function guestView(
     answer: hostGame.status === 'playing' ? null : hostGame.answer,
     suggestions: await suggestionsOf(db, room.id),
     active: room.closed_at === null,
-    myAssistPoints: tally.points,
-    myAssists: tally.count,
+    /*
+     * Se la giornata di chi guarda e' questa partita, il suo punteggio e' quello
+     * dell'host. Se invece aveva già giocato la propria, e' qui solo per dare
+     * una mano: `counts` false, e la UI lo dice invece di far sperare punti che
+     * non arriveranno.
+     */
+    counts: mia?.spectated === 1 && mia.assist_room_id === room.id,
+    myScore: mia?.assist_score ?? null,
   }
 }
 
 /**
- * Segna come usati i suggerimenti che corrispondono a una parola giocata, e
- * assegna i punti assist a chi l'aveva proposta.
+ * Segna come usati i suggerimenti che corrispondono a una parola giocata.
  *
- * Se due invitati hanno suggerito la stessa parola prendono entrambi i punti:
- * l'hanno indovinata entrambi. Lo stesso invitato invece non puo' prenderli due
- * volte, perché l'indice unico su (stanza, invitato, parola) gli tiene una sola
- * riga — e `used_at IS NULL` esclude quelle già pagate.
+ * Non assegna punti: l'assist e' il punteggio dell'host, non una somma di
+ * suggerimenti (vedi `payAssists`). Questo serve solo a far vedere, all'host e
+ * a chi lo ha aiutato, quali consigli sono stati seguiti.
  */
 export async function markSuggestionUsed(
   db: D1Database,
   roomId: string,
   word: string,
-  answer: string,
 ): Promise<void> {
   await db
     .prepare(
-      `UPDATE coop_suggestions SET used_at = ?, assist_points = ?
+      `UPDATE coop_suggestions SET used_at = ?
         WHERE room_id = ? AND word = ? AND used_at IS NULL`,
     )
-    .bind(nowIso(), assistPoints(word, answer), roomId, word)
+    .bind(nowIso(), roomId, word)
     .run()
 }
 
-/** Quanto ha guadagnato oggi aiutando: punti col tetto già applicato, e quanti. */
-export async function assistTally(
+/**
+ * Paga l'assist a chi ha giocato la giornata in questa stanza.
+ *
+ * Tutti prendono lo stesso punteggio dell'host: una parola indovinata al terzo
+ * tentativo da un gruppo di sei vale ottanta punti a testa, esattamente come
+ * varrebbe a chi la indovina da solo. E' l'unica cosa che rende accettare un
+ * invito una scelta neutra invece di una rinuncia.
+ *
+ * Il filtro su `assist_score IS NULL` la rende ripetibile senza raddoppiare
+ * niente: la rotta del tentativo la chiama a ogni chiusura di partita, e due
+ * richieste ravvicinate non devono pagare due volte.
+ */
+export async function payAssists(
   db: D1Database,
-  playerId: string,
+  roomId: string,
   puzzleNumber: number,
-): Promise<{ points: number; count: number }> {
-  const row = await db
+  score: number,
+  status: 'won' | 'lost',
+): Promise<number> {
+  const esito = await db
     .prepare(
-      `SELECT COALESCE(SUM(s.assist_points), 0) AS points, COUNT(*) AS n
-         FROM coop_suggestions s
-         JOIN coop_rooms r ON r.id = s.room_id
-        WHERE s.guest_id = ? AND s.used_at IS NOT NULL AND r.puzzle_number = ?`,
+      `UPDATE wordle_games
+          SET assist_score = ?, assist_status = ?
+        WHERE puzzle_number = ?
+          AND assist_room_id = ?
+          AND spectated = 1
+          AND assist_score IS NULL`,
     )
-    .bind(playerId, puzzleNumber)
-    .first<{ points: number; n: number }>()
-
-  return { points: dailyAssist(row?.points ?? 0), count: row?.n ?? 0 }
+    .bind(score, status, puzzleNumber, roomId)
+    .run()
+  return esito.meta.changes
 }

@@ -4,7 +4,7 @@ import { AppShell } from '@/components/AppShell'
 import { Avatar } from '@/components/Avatar'
 import { IconChevronRight, IconFlame, IconTrophy } from '@/components/Icons'
 import { ThemeButton } from '@/components/ThemeButton'
-import { wordleBadge } from '@/games/wordle/hubStatus'
+import { wordleBadge, wordleHref } from '@/games/wordle/hubStatus'
 import { GAMES } from '@/games/catalog'
 import { api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
@@ -57,7 +57,9 @@ export default function Hub() {
         </p>
       </header>
 
-      {me && me.played > 0 && (
+      {/* `assists` conta le giornate giocate in compagnia: chi ha solo quelle ha
+          `played` a zero ma un punteggio vero, e la card gli spetta. */}
+      {me && (me.played > 0 || me.assists > 0) && (
         <Link to="/classifica" className="hub__standing">
           <span className="hub__standing-rank">
             <IconTrophy size={18} />
@@ -84,7 +86,12 @@ export default function Hub() {
       <ul className="hub__grid">
         {available.map((game) => (
           <li key={game.id}>
-            <Link to={game.path ?? '/'} className="gamecard">
+            <Link
+              to={
+                game.id === 'wordle' ? wordleHref(summary, game.path ?? '/') : (game.path ?? '/')
+              }
+              className="gamecard"
+            >
               <span
                 className="gamecard__icon"
                 style={{

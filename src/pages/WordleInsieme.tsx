@@ -173,28 +173,35 @@ export default function WordleInsieme() {
             </div>
 
             {/*
-              Quanto ha reso l'aiuto. Il guest non fa punti partita — la parola
-              l'ha già vista — quindi questa e' l'unica cosa che gli dice che
-              sta comunque giocando per qualcosa.
+              Che cosa vale questa partita per chi guarda.
 
-              Compare solo quando c'e' qualcosa da dire: l'altezza qui e'
-              contata, e la griglia si dimensiona su quel che resta. Finché non
-              ci sono assist, il messaggio sta nell'etichetta del suggerimento,
-              che una riga la occupa comunque.
+              E' l'informazione che rende accettabile l'invito: la parola di oggi
+              la sta giocando qui, e prenderà lo stesso punteggio dell'host. Chi
+              invece aveva già giocato la propria vede scritto che e' qui solo
+              per dare una mano, invece di aspettare punti che non arriveranno.
+
+              La riga c'e' sempre quando la partita conta, perché il numero
+              cambia il senso di tutto lo schermo; costa una riga d'altezza alla
+              griglia, e in cambio dice l'unica cosa che serve sapere.
             */}
-            {view.myAssists > 0 && (
-              <div className="insieme__assist">
-                <IconPeople size={14} />
-                <span>
-                  <strong>
-                    {view.myAssists}{' '}
-                    {view.myAssists === 1 ? 'suggerimento giocato' : 'suggerimenti giocati'}
-                  </strong>
-                  {' · '}
-                  <strong>+{view.myAssistPoints}</strong> assist in classifica
-                </span>
-              </div>
-            )}
+            <div className={`insieme__assist${view.counts ? '' : ' is-spettatore'}`}>
+              <IconPeople size={14} />
+              {view.counts ? (
+                view.myScore !== null ? (
+                  <span>
+                    La tua parola di oggi era questa · <strong>+{view.myScore}</strong> in
+                    classifica
+                  </span>
+                ) : (
+                  <span>
+                    Oggi la tua parola è questa: prendi lo <strong>stesso punteggio</strong> di{' '}
+                    {view.hostName}
+                  </span>
+                )
+              ) : (
+                <span>Hai già giocato la tua parola di oggi: qui dai solo una mano</span>
+              )}
+            </div>
 
             <div className="insieme__board">
               {/* Dentro l'area della griglia: si sovrappone senza spostarla. */}
@@ -217,9 +224,9 @@ export default function WordleInsieme() {
             {!chiuso && (
               <div className="insieme__proposta">
                 <span className="insieme__proposta-etichetta">
-                  {view.myAssists > 0
-                    ? 'Suggerisci un’altra parola'
-                    : `Suggerisci: se ${view.hostName} la gioca, fai assist`}
+                  {view.counts
+                    ? `Suggerisci a ${view.hostName}`
+                    : `Dai una mano a ${view.hostName}`}
                 </span>
                 <span className="insieme__proposta-caselle">
                   {Array.from({ length: WORD_LENGTH }, (_, i) => (

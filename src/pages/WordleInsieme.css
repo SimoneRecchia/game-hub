@@ -223,3 +223,9 @@
     overflow: hidden;
   }
 }
+
+/* Chi e' qui solo per dare una mano: la sua giornata e' già spesa altrove. */
+.insieme__assist.is-spettatore {
+  background: var(--fill-quaternary);
+  color: var(--label-secondary);
+}

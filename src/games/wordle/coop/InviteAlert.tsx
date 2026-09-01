@@ -44,19 +44,25 @@ export function InviteAlert({ invite, onAccept, onDecline }: Props) {
         </div>
 
         {invite.wouldSpoil ? (
-          <div className="avviso__attenzione">
-            <p className="avviso__attenzione-titolo">Non hai ancora giocato oggi</p>
+          <div className="avviso__insieme">
+            <p className="avviso__insieme-titolo">La parola di oggi la giocate insieme</p>
             <p>
-              La parola è la stessa per tutti: guardando la partita di {invite.hostName} la
-              scoprirai. La tua partita di oggi resterà giocabile, ma{' '}
-              <strong>non farà punti partita</strong>. Ogni parola che suggerisci e che{' '}
-              {invite.hostName} gioca ti fa <strong>punti assist</strong>, e quelli vanno in
-              classifica.
+              La parola è la stessa per tutti, quindi diventa quella la tua di oggi: la tua
+              griglia si chiude e prendi lo <strong>stesso punteggio</strong> che fa{' '}
+              {invite.hostName}. Giocare in compagnia non vale meno che giocare da soli.
             </p>
+            {invite.myAttempts > 0 && (
+              <p className="avviso__insieme-costo">
+                Hai già {invite.myAttempts}{' '}
+                {invite.myAttempts === 1 ? 'tentativo' : 'tentativi'} sulla tua griglia:
+                accettando {invite.myAttempts === 1 ? 'lo lasci' : 'li lasci'} lì.
+              </p>
+            )}
           </div>
         ) : (
           <p className="avviso__sereno">
-            Hai già giocato la tua partita di oggi: non c’è niente da rovinare.
+            Hai già giocato la tua parola di oggi, quindi il punteggio è al sicuro. Qui puoi dare
+            una mano a {invite.hostName}, senza fare altri punti.
           </p>
         )}
 
@@ -68,7 +74,7 @@ export function InviteAlert({ invite, onAccept, onDecline }: Props) {
             disabled={busy !== null}
             onClick={() => void rispondi('accetta')}
           >
-            {invite.wouldSpoil ? 'Accetto, so cosa comporta' : 'Guarda la partita'}
+            {invite.wouldSpoil ? 'Giochiamo insieme' : 'Vado a dare una mano'}
           </Button>
           <Button
             variant="plain"

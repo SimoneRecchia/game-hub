@@ -82,11 +82,25 @@ export default function Wordle() {
           </div>
         ) : (
           <>
+            {/*
+              La parola di oggi la sta giocando altrove: qui non c'e' niente da
+              giocare, e' la stessa parola. Invece di lasciarlo davanti a una
+              griglia che rifiuta i tentativi, lo si riporta lì.
+            */}
             {game.state?.spectated && (
-              <div className="wordle__senza-punti">
-                Hai guardato la partita di qualcun altro: oggi conoscevi già la parola, quindi
-                questa partita non fa punti. I suggerimenti che ti hanno giocato valgono assist,
-                e quelli contano.
+              <div className="wordle__insieme">
+                <p className="wordle__insieme-testo">
+                  La parola di oggi la stai giocando in compagnia. Il punteggio è quello di quella
+                  partita.
+                </p>
+                {game.state.roomId && (
+                  <Button
+                    variant="tinted"
+                    onClick={() => navigate(`/insieme/${game.state!.roomId}`)}
+                  >
+                    Torna alla partita
+                  </Button>
+                )}
               </div>
             )}
 
