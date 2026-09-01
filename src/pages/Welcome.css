@@ -8,7 +8,7 @@
     calc(var(--safe-bottom) + var(--sp-8)) max(var(--sp-4), var(--safe-right));
   /* Un alone tenue dietro la card, come le schermate di setup di iOS. */
   background:
-    radial-gradient(80% 55% at 50% -10%, color-mix(in srgb, var(--blue) 16%, transparent), transparent 70%),
+    radial-gradient(80% 55% at 50% -10%, color-mix(in srgb, var(--brand) 16%, transparent), transparent 70%),
     var(--bg);
 }
 
@@ -83,7 +83,7 @@
   border-radius: var(--r-pill);
   font-size: var(--text-subhead);
   font-weight: 500;
-  color: var(--blue);
+  color: var(--brand);
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 

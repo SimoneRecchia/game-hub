@@ -72,7 +72,7 @@
   padding: var(--sp-2) var(--sp-4);
   font-size: var(--text-footnote);
   font-weight: 600;
-  color: var(--blue);
+  color: var(--brand);
   border-radius: var(--r-pill);
 }
 
@@ -163,7 +163,7 @@
   gap: var(--sp-2);
   padding: var(--sp-3);
   border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--blue) 10%, transparent);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
   text-align: center;
 }
 

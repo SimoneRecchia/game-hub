@@ -38,26 +38,26 @@
 }
 
 .btn--filled {
-  background: var(--blue);
+  background: var(--brand);
   color: #fff;
 }
 
 .btn--filled:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--blue) 88%, #000);
+  background: color-mix(in srgb, var(--brand) 88%, #000);
 }
 
 .btn--tinted {
-  background: color-mix(in srgb, var(--blue) 14%, transparent);
-  color: var(--blue);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand);
 }
 
 .btn--tinted:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--blue) 22%, transparent);
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
 }
 
 .btn--plain {
   background: transparent;
-  color: var(--blue);
+  color: var(--brand);
   padding: 0 var(--sp-3);
 }
 

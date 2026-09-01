@@ -42,7 +42,7 @@
 }
 
 .podium__slot.is-me {
-  outline: 1.5px solid color-mix(in srgb, var(--blue) 45%, transparent);
+  outline: 1.5px solid color-mix(in srgb, var(--brand) 45%, transparent);
   outline-offset: -1.5px;
 }
 
@@ -118,7 +118,7 @@
 }
 
 .lb__riga.is-me {
-  background: color-mix(in srgb, var(--blue) 8%, transparent);
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
 }
 
 .lb__riga.is-aperta {
@@ -126,7 +126,7 @@
 }
 
 .lb__riga.is-me.is-aperta {
-  background: color-mix(in srgb, var(--blue) 12%, transparent);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
 }
 
 /* La riga intera e' il bersaglio del tocco: il dettaglio si apre da qualunque punto. */
@@ -175,7 +175,7 @@
 .lb__you {
   padding: 1px 6px;
   border-radius: var(--r-pill);
-  background: var(--blue);
+  background: var(--brand);
   color: #fff;
   font-size: var(--text-caption-2);
   font-weight: 600;
@@ -299,8 +299,8 @@
   flex: none;
   padding: 2px 7px;
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--blue) 14%, transparent);
-  color: var(--blue);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand);
   font-size: var(--text-caption-1);
   font-weight: 600;
   font-variant-numeric: tabular-nums;

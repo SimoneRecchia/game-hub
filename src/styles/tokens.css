@@ -1,7 +1,28 @@
 /*
- * Design tokens — impianto ispirato alle Apple Human Interface Guidelines.
- * Palette, tipografia e raggi seguono i valori di sistema iOS/macOS cosi' che
- * l'app risulti "nativa" sia su iPhone che su desktop.
+ * Design tokens.
+ *
+ * L'impianto resta quello delle Apple Human Interface Guidelines — scala
+ * tipografica, spaziature a multipli di quattro, materiali translucidi, curve
+ * UIKit, safe area. Il **carattere** invece non e' piu' quello dei colori di
+ * sistema: con la palette iOS piatta e le card bianche su grigio, l'app
+ * sembrava Impostazioni. Questo e' un gioco, e deve vedersi.
+ *
+ * Tre scelte che spiegano il resto:
+ *
+ *  1. **Un solo posto per ogni colore.** Prima la palette scura era scritta due
+ *     volte identiche, in `@media (prefers-color-scheme: dark)` e in
+ *     `[data-theme='dark']`: novanta righe che sarebbero divergute alla prima
+ *     modifica. Ora ogni token e' un `light-dark()`, che segue `color-scheme` —
+ *     quindi sia la preferenza di sistema sia l'interruttore manuale, perché
+ *     quello imposta `color-scheme` sulla radice. Ogni dichiarazione ha sopra il
+ *     valore chiaro nudo: i browser che non conoscono `light-dark()` scartano la
+ *     seconda riga e restano sul tema chiaro invece di perdere il colore.
+ *  2. **Fondali profondi, non neri.** Il nero puro va bene per un elenco di
+ *     impostazioni; per un gioco sembra economico. Il fondo scuro e' un
+ *     blu-nero, e le superfici salgono di luminosita' invece di restare piatte.
+ *  3. **Il colore vuole dire una cosa sola.** Il verde e' "lettera giusta", e
+ *     quindi non e' anche il colore dei pulsanti; l'accento dell'interfaccia e'
+ *     un indaco, distinto dalle caselle.
  */
 
 :root {
@@ -15,6 +36,11 @@
     ui-rounded, -apple-system, BlinkMacSystemFont, 'SF Pro Rounded',
     'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+
+  /* Due misure sopra la scala di sistema: servono ai numeri del gioco, che
+     sono l'elemento grafico principale e non un titolo di sezione. */
+  --text-hero: 3.25rem;          /* 52 */
+  --text-display: 2.625rem;      /* 42 */
 
   --text-large-title: 2.125rem;  /* 34 */
   --text-title-1: 1.75rem;       /* 28 */
@@ -31,57 +57,120 @@
   --tracking-tight: -0.022em;
   --tracking-normal: -0.01em;
   --tracking-wide: 0.06em;
+  /* Per i numeri grandi: piu' strette stanno insieme come un logo. */
+  --tracking-display: -0.035em;
 
-  /* ---- Colori di sistema (light) ---- */
-  --blue: #007aff;
-  --green: #34c759;
-  --indigo: #5856d6;
-  --orange: #ff9500;
-  --pink: #ff2d55;
-  --purple: #af52de;
-  --red: #ff3b30;
-  --teal: #30b0c7;
-  --yellow: #ffcc00;
-  --mint: #00c7be;
+  /* ---- Accento dell'interfaccia ---- */
+  --brand: #4f46e5;
+  --brand: light-dark(#4f46e5, #8b85ff);
+  --brand-strong: #3730c4;
+  --brand-strong: light-dark(#3730c4, #a5a0ff);
+  --brand-soft: rgba(79, 70, 229, 0.12);
+  --brand-soft: light-dark(rgba(79, 70, 229, 0.12), rgba(139, 133, 255, 0.18));
+  --accent: #f59e0b;
+  --accent: light-dark(#f59e0b, #fbbf24);
 
-  /* ---- Superfici ---- */
-  --bg: #f2f2f7;
+  /* ---- Colori semantici ----
+     Restano vicini a quelli di sistema dove il significato e' convenzionale:
+     rosso = distruttivo, verde = riuscito. Cambiarli confonderebbe. */
+  --blue: #2563eb;
+  --blue: light-dark(#2563eb, #60a5fa);
+  --green: #16a34a;
+  --green: light-dark(#16a34a, #4ade80);
+  --indigo: #4f46e5;
+  --indigo: light-dark(#4f46e5, #8b85ff);
+  --orange: #ea7317;
+  --orange: light-dark(#ea7317, #fb923c);
+  --pink: #db2777;
+  --pink: light-dark(#db2777, #f472b6);
+  --purple: #9333ea;
+  --purple: light-dark(#9333ea, #c084fc);
+  --red: #dc2626;
+  --red: light-dark(#dc2626, #f87171);
+  --teal: #0d9488;
+  --teal: light-dark(#0d9488, #2dd4bf);
+  --yellow: #d97706;
+  --yellow: light-dark(#d97706, #fbbf24);
+  --mint: #0d9488;
+  --mint: light-dark(#0d9488, #2dd4bf);
+
+  /* ---- Superfici ----
+     Il chiaro ha una punta di blu invece del grigio neutro; lo scuro sale per
+     gradini di luminosita', così una card sopra una card si distingue. */
+  --bg: #f4f5f9;
+  --bg: light-dark(#f4f5f9, #0b0c11);
   --bg-elevated: #ffffff;
+  --bg-elevated: light-dark(#ffffff, #16181f);
   --surface: #ffffff;
-  --surface-2: #f2f2f7;
-  --surface-3: #e5e5ea;
-  --fill-quaternary: rgba(116, 116, 128, 0.08);
-  --fill-tertiary: rgba(118, 118, 128, 0.12);
-  --fill-secondary: rgba(120, 120, 128, 0.16);
-  --separator: rgba(60, 60, 67, 0.12);
-  --separator-opaque: #c6c6c8;
+  --surface: light-dark(#ffffff, #16181f);
+  --surface-2: #eef0f6;
+  --surface-2: light-dark(#eef0f6, #1e2029);
+  --surface-3: #e2e5ee;
+  --surface-3: light-dark(#e2e5ee, #282b36);
+
+  --fill-quaternary: rgba(60, 64, 82, 0.06);
+  --fill-quaternary: light-dark(rgba(60, 64, 82, 0.06), rgba(160, 168, 200, 0.1));
+  --fill-tertiary: rgba(60, 64, 82, 0.1);
+  --fill-tertiary: light-dark(rgba(60, 64, 82, 0.1), rgba(160, 168, 200, 0.16));
+  --fill-secondary: rgba(60, 64, 82, 0.15);
+  --fill-secondary: light-dark(rgba(60, 64, 82, 0.15), rgba(160, 168, 200, 0.24));
+  --separator: rgba(60, 64, 82, 0.12);
+  --separator: light-dark(rgba(60, 64, 82, 0.12), rgba(160, 168, 200, 0.18));
+  --separator-opaque: #d4d8e4;
+  --separator-opaque: light-dark(#d4d8e4, #2c2f3a);
 
   /* ---- Testo ---- */
-  --label: #000000;
-  --label-secondary: rgba(60, 60, 67, 0.6);
-  --label-tertiary: rgba(60, 60, 67, 0.3);
-  --label-quaternary: rgba(60, 60, 67, 0.18);
+  --label: #0d0f17;
+  --label: light-dark(#0d0f17, #f5f6fa);
+  --label-secondary: rgba(13, 15, 23, 0.6);
+  --label-secondary: light-dark(rgba(13, 15, 23, 0.6), rgba(245, 246, 250, 0.62));
+  --label-tertiary: rgba(13, 15, 23, 0.36);
+  --label-tertiary: light-dark(rgba(13, 15, 23, 0.36), rgba(245, 246, 250, 0.38));
+  --label-quaternary: rgba(13, 15, 23, 0.18);
+  --label-quaternary: light-dark(rgba(13, 15, 23, 0.18), rgba(245, 246, 250, 0.2));
   --label-inverted: #ffffff;
+  --label-inverted: light-dark(#ffffff, #0b0c11);
 
   /* ---- Materiali (glass) ---- */
-  --material-thick: rgba(255, 255, 255, 0.82);
-  --material-regular: rgba(247, 247, 250, 0.72);
-  --material-thin: rgba(255, 255, 255, 0.55);
+  --material-thick: rgba(255, 255, 255, 0.84);
+  --material-thick: light-dark(rgba(255, 255, 255, 0.84), rgba(22, 24, 31, 0.86));
+  --material-regular: rgba(246, 247, 251, 0.74);
+  --material-regular: light-dark(rgba(246, 247, 251, 0.74), rgba(22, 24, 31, 0.76));
+  --material-thin: rgba(255, 255, 255, 0.56);
+  --material-thin: light-dark(rgba(255, 255, 255, 0.56), rgba(30, 32, 41, 0.62));
   --blur: saturate(180%) blur(20px);
 
-  /* ---- Ombre ---- */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-key: 0 1px 0 rgba(0, 0, 0, 0.12);
+  /* ---- Ombre ----
+     Tinte di blu-viola invece di nero puro: un'ombra grigia su un fondo
+     leggermente blu si legge come sporco.
+
+     `light-dark()` sta **solo attorno al colore**: e' specificato per i colori,
+     e usato su un box-shadow intero il valore diventa invalido e l'ombra
+     sparisce del tutto. Verificato: dava `none` in entrambi i temi. Quindi la
+     geometria resta fuori e cambia solo la tinta. */
+  --shadow-tint: rgba(24, 26, 48, 0.07);
+  --shadow-tint: light-dark(rgba(24, 26, 48, 0.07), rgba(0, 0, 0, 0.5));
+  --shadow-tint-soft: rgba(24, 26, 48, 0.05);
+  --shadow-tint-soft: light-dark(rgba(24, 26, 48, 0.05), rgba(0, 0, 0, 0.34));
+
+  --shadow-sm: 0 1px 2px var(--shadow-tint-soft), 0 1px 3px var(--shadow-tint);
+  --shadow-md: 0 2px 8px var(--shadow-tint-soft), 0 10px 28px var(--shadow-tint);
+  --shadow-lg: 0 10px 36px var(--shadow-tint), 0 2px 10px var(--shadow-tint-soft);
+  --shadow-key: 0 2px 0 var(--shadow-tint);
+
+  /* Bordo luminoso interno: e' quello che fa sembrare un tasto un oggetto
+     invece di un rettangolo colorato. */
+  --edge-tint: rgba(255, 255, 255, 0.5);
+  --edge-tint: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.09));
+  --edge-light: inset 0 1px 0 var(--edge-tint);
 
   /* ---- Raggi (continuous corners approssimati) ---- */
-  --r-xs: 6px;
-  --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 18px;
-  --r-xl: 22px;
-  --r-2xl: 28px;
+  --r-xs: 7px;
+  --r-sm: 11px;
+  --r-md: 15px;
+  --r-lg: 20px;
+  --r-xl: 24px;
+  --r-2xl: 30px;
   --r-pill: 999px;
 
   /* ---- Spaziature ---- */
@@ -99,6 +188,9 @@
   --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Piu' elastica della precedente: per le cose che devono sembrare oggetti,
+     non pannelli. */
+  --ease-bounce: cubic-bezier(0.2, 1.9, 0.4, 1);
   --dur-fast: 140ms;
   --dur-base: 240ms;
   --dur-slow: 420ms;
@@ -112,113 +204,56 @@
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
 
-  /* ---- Tile Wordle ---- */
-  --tile-empty-border: rgba(60, 60, 67, 0.18);
-  --tile-active-border: rgba(60, 60, 67, 0.42);
-  --tile-correct: #34a853;
-  --tile-present: #e0a325;
-  --tile-absent: #93959a;
-  --tile-text-on-fill: #ffffff;
-  --key-bg: #d5d7dc;
-  --key-bg-active: #c3c6cc;
+  /* ---- Caselle e tastiera del Wordle ----
+     I tre colori del gioco vero sono desaturati (#6aaa64, #c9b458, #787c7e):
+     su schermo grande sembrano scoloriti. Questi sono piu' pieni, e le versioni
+     scure alzano la luminosita' invece di scurirsi — un verde scuro su fondo
+     scuro diventa fango, e la lettera bianca sopra perde contrasto. */
+  /* Piu' marcato di quel che sembrerebbe giusto: su fondo bianco un bordo al
+     16% spariva, e le caselle vuote diventavano macchie bianche invece di una
+     griglia. Il gioco vero il bordo lo fa vedere. */
+  --tile-empty-border: rgba(60, 64, 82, 0.26);
+  --tile-empty-border: light-dark(rgba(60, 64, 82, 0.26), rgba(160, 168, 200, 0.26));
+  --tile-active-border: rgba(60, 64, 82, 0.4);
+  --tile-active-border: light-dark(rgba(60, 64, 82, 0.4), rgba(160, 168, 200, 0.5));
+  --tile-correct: #1c8047;
+  --tile-correct: light-dark(#1c8047, #178a4b);
+  --tile-present: #dfa42b;
+  --tile-present: light-dark(#dfa42b, #efb63c);
+  --tile-absent: #7c8090;
+  --tile-absent: light-dark(#7c8090, #45495a);
+
+  /*
+   * Il colore della lettera sopra la casella piena, per stato.
+   *
+   * Non e' un vezzo: misurando il contrasto, il bianco sul giallo dava 2.21 in
+   * chiaro e 1.84 in scuro, sotto il minimo di 3:1 anche per testo grande — e il
+   * verde in scuro 2.35. Il gioco vero ha lo stesso difetto (bianco su #c9b458
+   * fa ~2.3) e saturando i colori l'avevo peggiorato.
+   *
+   * Un giallo abbastanza scuro da reggere il bianco non e' piu' giallo, e'
+   * marrone. Quindi sul giallo la lettera e' scura (8.6:1) e sul verde e' bianca
+   * con il verde abbassato quanto serve (5.0:1 in chiaro, 4.4:1 in scuro). Ogni
+   * stato prende il colore che legge meglio, invece di una regola unica che ne
+   * sacrifica uno.
+   */
+  --tile-text-on-correct: #ffffff;
+  --tile-text-on-present: #17130a;
+  --tile-text-on-absent: #ffffff;
+  --key-bg: #d3d7e2;
+  --key-bg: light-dark(#d3d7e2, #363a49);
+  --key-bg-active: #bcc2d1;
+  --key-bg-active: light-dark(#bcc2d1, #454a5c);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --blue: #0a84ff;
-    --green: #30d158;
-    --indigo: #5e5ce6;
-    --orange: #ff9f0a;
-    --pink: #ff375f;
-    --purple: #bf5af2;
-    --red: #ff453a;
-    --teal: #40c8e0;
-    --yellow: #ffd60a;
-    --mint: #63e6e2;
-
-    --bg: #000000;
-    --bg-elevated: #1c1c1e;
-    --surface: #1c1c1e;
-    --surface-2: #2c2c2e;
-    --surface-3: #3a3a3c;
-    --fill-quaternary: rgba(118, 118, 128, 0.12);
-    --fill-tertiary: rgba(118, 118, 128, 0.24);
-    --fill-secondary: rgba(120, 120, 128, 0.32);
-    --separator: rgba(84, 84, 88, 0.6);
-    --separator-opaque: #38383a;
-
-    --label: #ffffff;
-    --label-secondary: rgba(235, 235, 245, 0.6);
-    --label-tertiary: rgba(235, 235, 245, 0.3);
-    --label-quaternary: rgba(235, 235, 245, 0.16);
-    --label-inverted: #000000;
-
-    --material-thick: rgba(28, 28, 30, 0.86);
-    --material-regular: rgba(28, 28, 30, 0.74);
-    --material-thin: rgba(44, 44, 46, 0.6);
-
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
-    --shadow-key: 0 1px 0 rgba(0, 0, 0, 0.5);
-
-    --tile-empty-border: rgba(235, 235, 245, 0.2);
-    --tile-active-border: rgba(235, 235, 245, 0.45);
-    --tile-correct: #2f9e4f;
-    --tile-present: #c9922b;
-    --tile-absent: #4a4a4d;
-    --key-bg: #48484a;
-    --key-bg-active: #5a5a5d;
-  }
-}
-
-/* Override manuale dal selettore tema (vince su prefers-color-scheme) */
+/*
+ * L'interruttore del tema.
+ *
+ * Imposta solo `color-scheme`, e da lì `light-dark()` fa il resto: e' tutta la
+ * ragione per cui la palette scura non e' scritta una seconda volta.
+ */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --blue: #0a84ff;
-  --green: #30d158;
-  --indigo: #5e5ce6;
-  --orange: #ff9f0a;
-  --pink: #ff375f;
-  --purple: #bf5af2;
-  --red: #ff453a;
-  --teal: #40c8e0;
-  --yellow: #ffd60a;
-  --mint: #63e6e2;
-
-  --bg: #000000;
-  --bg-elevated: #1c1c1e;
-  --surface: #1c1c1e;
-  --surface-2: #2c2c2e;
-  --surface-3: #3a3a3c;
-  --fill-quaternary: rgba(118, 118, 128, 0.12);
-  --fill-tertiary: rgba(118, 118, 128, 0.24);
-  --fill-secondary: rgba(120, 120, 128, 0.32);
-  --separator: rgba(84, 84, 88, 0.6);
-  --separator-opaque: #38383a;
-
-  --label: #ffffff;
-  --label-secondary: rgba(235, 235, 245, 0.6);
-  --label-tertiary: rgba(235, 235, 245, 0.3);
-  --label-quaternary: rgba(235, 235, 245, 0.16);
-  --label-inverted: #000000;
-
-  --material-thick: rgba(28, 28, 30, 0.86);
-  --material-regular: rgba(28, 28, 30, 0.74);
-  --material-thin: rgba(44, 44, 46, 0.6);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.55);
-  --shadow-key: 0 1px 0 rgba(0, 0, 0, 0.5);
-
-  --tile-empty-border: rgba(235, 235, 245, 0.2);
-  --tile-active-border: rgba(235, 235, 245, 0.45);
-  --tile-correct: #2f9e4f;
-  --tile-present: #c9922b;
-  --tile-absent: #4a4a4d;
-  --key-bg: #48484a;
-  --key-bg-active: #5a5a5d;
 }
 
 :root[data-theme='light'] {
