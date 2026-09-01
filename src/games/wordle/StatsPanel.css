@@ -90,7 +90,7 @@
   padding: 2px var(--sp-2);
   border-radius: var(--r-xs);
   background: var(--tile-absent);
-  color: var(--tile-text-on-fill);
+  color: var(--tile-text-on-absent);
   font-size: var(--text-caption-1);
   font-weight: 600;
   font-variant-numeric: tabular-nums;

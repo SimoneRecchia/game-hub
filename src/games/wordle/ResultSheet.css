@@ -84,7 +84,7 @@
   min-height: 44px;
   font-size: var(--text-headline);
   font-weight: 600;
-  color: var(--blue);
+  color: var(--brand);
   border-radius: var(--r-md);
 }
 

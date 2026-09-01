@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '@/components/AppShell'
 import { Avatar } from '@/components/Avatar'
@@ -87,31 +87,57 @@ export default function Hub() {
       <ul className="hub__grid">
         {available.map((game) => (
           <li key={game.id}>
+            {/*
+              Il gioco giocabile e' una card grande col suo gradiente, non una
+              riga d'elenco: e' la prima cosa che si vede aprendo l'app, e da lì
+              si capisce se questo e' un gioco o un pannello di impostazioni. I
+              giochi non ancora disponibili restano righe quiete, così il
+              contrasto dice da sé dove si tocca.
+            */}
             <Link
               to={
                 game.id === 'wordle' ? wordleHref(summary, game.path ?? '/') : (game.path ?? '/')
               }
-              className="gamecard"
+              className="gamecard gamecard--hero"
+              style={
+                {
+                  '--carta-1': game.gradient[0],
+                  '--carta-2': game.gradient[1],
+                } as CSSProperties
+              }
             >
-              <span
-                className="gamecard__icon"
-                style={{
-                  background: `linear-gradient(150deg, ${game.gradient[0]}, ${game.gradient[1]})`,
-                }}
-                aria-hidden="true"
-              >
+              <span className="gamecard__glifo" aria-hidden="true">
                 {game.glyph}
               </span>
               <span className="gamecard__body">
                 <span className="gamecard__name">{game.name}</span>
                 <span className="gamecard__tagline">{game.tagline}</span>
-                {badge && game.id === 'wordle' && (
+              </span>
+              {badge && game.id === 'wordle' && (
+                <span className="gamecard__piede">
                   <span className={`gamecard__status gamecard__status--${badge.tone}`}>
                     {badge.text}
                   </span>
-                )}
-              </span>
-              <IconChevronRight size={20} className="gamecard__chevron" />
+                  {/* Le cinque parole come pallini: quante sono e quante fatte,
+                      senza dover leggere un numero. */}
+                  {summary && (
+                    <span
+                      className="gamecard__pallini"
+                      aria-label={`${summary.done} parole su ${summary.words}`}
+                    >
+                      {Array.from({ length: summary.words }, (_, i) => (
+                        <span
+                          key={i}
+                          className={`gamecard__pallino${i < summary.done ? ' is-fatta' : ''}`}
+                        />
+                      ))}
+                    </span>
+                  )}
+                </span>
+              )}
+              {/* Niente chevron: era un'affordance da riga d'elenco, e su una card
+                  che occupa mezzo schermo con il suo colore non dice niente che
+                  non sia già evidente. */}
             </Link>
           </li>
         ))}
