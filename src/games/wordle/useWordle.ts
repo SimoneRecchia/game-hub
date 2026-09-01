@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { PlayerStats, TileState, WordleState } from '@shared/types'
-import { keyboardStates } from '@shared/wordle'
+import { isGameLetter, keyboardStates } from '@shared/wordle'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 
@@ -27,15 +27,11 @@ function loadGuessSet(): Promise<ReadonlySet<string>> {
 
 export interface WordleController {
   state: WordleState | null
-  /** Quale delle cinque parole si sta giocando. */
-  slot: number
-  /** Passa a un'altra parola della giornata. */
-  chooseSlot: (slot: number) => void
-  /** Spiega perché una parola e' ancora chiusa, invece di non reagire al tocco. */
-  flashBlocked: (slot: number) => void
   stats: PlayerStats | null
   loading: boolean
   loadError: string | null
+  /** Il codice dell'errore di caricamento: la pagina decide cosa farne. */
+  loadCode: string | null
   draft: string
   revealing: number | null
   winningRow: number | null
@@ -54,17 +50,21 @@ export interface WordleController {
   reload: () => void
 }
 
-export function useWordle(): WordleController {
+/**
+ * La partita di una delle cinque parole della giornata.
+ *
+ * Lo slot arriva da chi chiama, cioe' dalla rotta: `/wordle/3` e' la terza
+ * parola. Prima stava in uno `useState` qui dentro, perché il selettore era una
+ * striscia sopra la griglia e cambiare parola era un gesto dentro la partita.
+ * Ora la scelta e' una schermata sua, quindi e' una navigazione — e il tasto
+ * indietro del telefono torna al percorso invece di uscire dal gioco.
+ */
+export function useWordle(slot: number): WordleController {
   const [state, setState] = useState<WordleState | null>(null)
-  /*
-   * La parola scelta sta qui e non nell'URL: cambiarla e' un gesto dentro la
-   * partita, non una navigazione, e col tasto indietro del browser si tornerebbe
-   * indietro fra le parole invece di uscire dal gioco.
-   */
-  const [slot, setSlot] = useState(1)
   const [stats, setStats] = useState<PlayerStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [loadCode, setLoadCode] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [revealing, setRevealing] = useState<number | null>(null)
   const [winningRow, setWinningRow] = useState<number | null>(null)
@@ -103,6 +103,7 @@ export function useWordle(): WordleController {
   const reload = useCallback(async () => {
     setLoading(true)
     setLoadError(null)
+    setLoadCode(null)
     try {
       const fresh = await api<WordleState>(`/wordle/state?slot=${slot}`)
       setState(fresh)
@@ -116,19 +117,11 @@ export function useWordle(): WordleController {
       setLoadError(
         error instanceof ApiFetchError ? error.message : 'Non riesco a caricare la partita.',
       )
+      setLoadCode(error instanceof ApiFetchError ? error.code : null)
     } finally {
       setLoading(false)
     }
   }, [fetchStats, slot])
-
-  /*
-   * Cambiare parola chiude il riepilogo: era quello della parola di prima, e
-   * lasciarlo aperto sopra una griglia nuova e' disorientante.
-   */
-  const chooseSlot = useCallback((next: number) => {
-    setSlot(next)
-    setResultOpen(false)
-  }, [])
 
   useEffect(() => {
     void reload()
@@ -142,22 +135,6 @@ export function useWordle(): WordleController {
       later(() => setMessage(null), 1_800)
     },
     [later],
-  )
-
-  /*
-   * Toccare una parola ancora chiusa dice perché, invece di non reagire.
-   *
-   * Un nodo che non fa niente al tocco sembra rotto: il messaggio e' l'unica
-   * cosa che distingue "e' chiusa" da "l'app si e' piantata".
-   */
-  const flashBlocked = useCallback(
-    (slot: number) => {
-      haptic('error')
-      flash(
-        slot === 2 ? 'Prima finisci la parola del giorno' : `Prima finisci la ${slot - 1}ª parola`,
-      )
-    },
-    [flash],
   )
 
   const shake = useCallback(
@@ -272,7 +249,7 @@ export function useWordle(): WordleController {
     } finally {
       setSubmitting(false)
     }
-  }, [canType, draft, fetchStats, flash, later, reload, shake, state])
+  }, [canType, draft, fetchStats, flash, later, reload, shake, slot, state])
 
   // Tastiera fisica: comoda da desktop.
   useEffect(() => {
@@ -288,9 +265,10 @@ export function useWordle(): WordleController {
         backspace()
         return
       }
+      // Le stesse 21 lettere della tastiera a schermo: la regola sta in un
+      // posto solo, perché quel che si tocca si deve anche poter digitare.
       const key = event.key.toLowerCase()
-      // Solo le 21 lettere dell'alfabeto italiano, come la tastiera a schermo.
-      if (/^[a-hl-vz]$/.test(key) && !'jkwxy'.includes(key)) {
+      if (isGameLetter(key)) {
         event.preventDefault()
         press(key)
       }
@@ -308,12 +286,10 @@ export function useWordle(): WordleController {
 
   return {
     state,
-    slot,
-    chooseSlot,
-    flashBlocked,
     stats,
     loading,
     loadError,
+    loadCode,
     draft,
     revealing,
     winningRow,

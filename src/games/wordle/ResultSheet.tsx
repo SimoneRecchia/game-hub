@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
 import { IconShare, IconTrophy } from '@/components/Icons'
 import { StatsPanel } from './StatsPanel'
+import { useCountdown } from './useCountdown'
 import { useToast } from '@/components/Toast'
 import { formatCountdown } from '@/lib/format'
 import { shareText } from '@shared/wordle'
@@ -145,16 +145,7 @@ export function ResultSheet({ open, onClose, state, stats, onNextWord }: Props) 
 
 /** Countdown alla prossima parola, aggiornato al secondo. */
 function Countdown({ ms }: { ms: number }) {
-  const [remaining, setRemaining] = useState(ms)
-
-  useEffect(() => {
-    setRemaining(ms)
-    const deadline = Date.now() + ms
-    const id = window.setInterval(() => {
-      setRemaining(Math.max(0, deadline - Date.now()))
-    }, 1_000)
-    return () => window.clearInterval(id)
-  }, [ms])
+  const remaining = useCountdown(ms)
 
   return (
     <div className="result__countdown">
