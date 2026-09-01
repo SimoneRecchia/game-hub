@@ -1,0 +1,125 @@
+/*
+ * Le cinque parole della giornata, sopra la griglia.
+ *
+ * L'altezza qui e' contata: la griglia si dimensiona su quel che resta, quindi
+ * questa barra deve stare in una riga sola a qualunque larghezza. Per questo i
+ * numeri sono tabulari e le etichette cortissime.
+ */
+.parole {
+  flex: none;
+  display: grid;
+  /* La principale prende una volta e mezzo lo spazio delle altre: e' la prima
+     cosa che dice che non valgono uguale. */
+  grid-template-columns: 1.5fr repeat(4, 1fr);
+  gap: 5px;
+}
+
+.parola {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: var(--sp-1) 2px;
+  border-radius: var(--r-sm);
+  background: var(--fill-quaternary);
+  color: var(--label-secondary);
+  min-width: 0;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.parola:active {
+  transform: scale(0.96);
+}
+
+.parola__testa {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-caption-2);
+  font-weight: 600;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/*
+ * Su schermo alto vince l'etichetta lunga.
+ *
+ * Va dichiarata **prima** della media query: a specificità pari decide l'ordine
+ * nel file, e messa in fondo spegneva l'etichetta corta anche dove serviva.
+ */
+.parola__corta {
+  display: none;
+}
+
+.parola__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Quella che si sta giocando: piena, non solo bordata. Su una barra di cinque
+   caselle un bordo sottile non si distingue a colpo d'occhio. */
+.parola.is-attiva {
+  background: var(--label);
+  color: var(--label-inverted);
+}
+
+/* Chiusa e vinta: il verde delle caselle, così il colore vuol dire una cosa
+   sola in tutta la schermata. */
+.parola--vinta {
+  background: color-mix(in srgb, var(--tile-correct) 20%, transparent);
+  color: color-mix(in srgb, var(--tile-correct) 88%, var(--label));
+}
+
+.parola--vinta.is-attiva {
+  background: var(--tile-correct);
+  color: #fff;
+}
+
+.parola--persa {
+  background: color-mix(in srgb, var(--label) 10%, transparent);
+  color: var(--label-tertiary);
+}
+
+.parola--persa.is-attiva {
+  background: var(--label-secondary);
+  color: var(--label-inverted);
+}
+
+/*
+ * Schermi bassi (iPhone SE, telefono in orizzontale): la barra passa a una riga
+ * sola, etichetta e punti affiancati.
+ *
+ * Non e' cosmetico: la griglia si dimensiona sull'altezza che resta, e la barra
+ * su due righe le costava una quindicina di punti di lato per casella. Su un
+ * 568 di altezza le caselle scendevano a 25 px, che e' meta' di quelle del gioco
+ * vero.
+ */
+@media (max-height: 700px) {
+  .parola {
+    flex-direction: row;
+    justify-content: center;
+    align-items: baseline;
+    gap: 4px;
+    padding: 3px 2px;
+  }
+
+  .parola__punti {
+    font-size: var(--text-caption-1);
+  }
+
+  .parola__lunga {
+    display: none;
+  }
+
+  .parola__corta {
+    display: inline;
+  }
+}

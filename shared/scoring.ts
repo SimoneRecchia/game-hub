@@ -18,7 +18,7 @@
  * mezza giornata, non cinque.
  */
 
-import { MAX_ATTEMPTS } from './config'
+import { MAX_ATTEMPTS, WORDS_PER_DAY } from './config'
 import type { WordleStatus } from './types'
 
 /** Punti per aver giocato e indovinato, indipendentemente dai tentativi. */
@@ -88,10 +88,16 @@ export interface ScoreBreakdown {
   total: number
 }
 
-/** Bonus velocità: pieno fino a 45s, poi in discesa lineare fino a 12 minuti. */
+/**
+ * Bonus velocità: pieno fino a 45s, poi in discesa lineare fino a 12 minuti.
+ *
+ * `null` vuol dire "non misurato" e vale zero. Lo **zero** invece e' un tempo
+ * vero: la durata si misura dal primo tentativo, quindi indovinare al primo
+ * colpo da' esattamente zero millisecondi. Trattarlo come "non misurato"
+ * togliva il bonus velocità proprio al risultato migliore possibile.
+ */
 export function speedBonus(durationMs: number | null): number {
-  // null e 0 significano "non misurato", non "istantaneo".
-  if (durationMs === null || durationMs <= 0) return 0
+  if (durationMs === null || durationMs < 0) return 0
   if (durationMs <= SPEED_FULL_MS) return MAX_SPEED_BONUS
   if (durationMs >= SPEED_ZERO_MS) return 0
   const span = SPEED_ZERO_MS - SPEED_FULL_MS
@@ -117,4 +123,71 @@ export function scoreBreakdown(input: ScoreInput): ScoreBreakdown {
 
 export function scoreFor(input: ScoreInput): number {
   return scoreBreakdown(input).total
+}
+
+/* ─────────────────────────  Le parole in piu'  ───────────────────────── */
+
+/**
+ * Quanto vale ciascuna parola della giornata, in ottavi.
+ *
+ * La prima e' *la* parola del giorno e vale piena. Le altre dimezzano —
+ * mezzo, un quarto, un ottavo — e l'ultima resta all'ottavo invece di
+ * scendere a un sedicesimo: cosi' la quinta non e' un premio di consolazione
+ * che non vale la pena di giocare.
+ *
+ * La somma delle quattro (4+2+1+1 = 8) fa esattamente quanto la prima. Quindi
+ * chi fa tutte e cinque le parole raddoppia al massimo la sua giornata, e chi
+ * gioca solo la principale non puo' essere superato da qualcuno che ha giocato
+ * peggio ma piu' a lungo — a meno che quello faccia davvero *tutto*.
+ */
+export const WORD_WEIGHTS = [8, 4, 2, 1, 1] as const
+export const WEIGHT_UNIT = 8
+
+/** Il peso della parola in posizione `slot` (1..WORDS_PER_DAY). */
+export function weightOf(slot: number): number {
+  return WORD_WEIGHTS[Math.min(Math.max(slot, 1), WORDS_PER_DAY) - 1]
+}
+
+/**
+ * Il punteggio di una parola, pesato per la sua posizione.
+ *
+ * **Arrotonda per difetto**, e non al piu' vicino, per una ragione che vale
+ * piu' della precisione: `floor(a) + floor(b) <= floor(a + b)`, quindi la somma
+ * delle quattro parole in piu' non puo' *mai* superare quella principale, a
+ * nessun punteggio. Arrotondando al piu' vicino, un 100 diventerebbe
+ * 50+25+13+13 = 101, e la garanzia salterebbe per un punto. C'e' un test che la
+ * verifica su tutti i punteggi possibili.
+ */
+export function weighted(score: number, slot: number): number {
+  return Math.floor((score * weightOf(slot)) / WEIGHT_UNIT)
+}
+
+/**
+ * Il punteggio di una parola: base pesata, e i bonus solo sulla principale.
+ *
+ * I bonus stanno sulla **parola del giorno** e non su tutte e cinque, e non e'
+ * un dettaglio di taratura: velocità e costanza sono proprietà della giornata,
+ * non di ogni singola parola. Dandoli a tutte, chi giocava tutte e cinque
+ * incassava fino a cinque volte il bonus velocità, e questo bastava a far
+ * superare chi aveva indovinato la principale al primo colpo — cioe' esattamente
+ * il ribaltamento che i pesi servono a impedire. Trovato provando l'API, non
+ * ragionando sui numeri: i pesi da soli erano giusti.
+ */
+export function scoreForWord(input: ScoreInput, slot: number): number {
+  const base =
+    slot === 1 ? scoreFor(input) : scoreFor({ ...input, durationMs: null, streak: 0 })
+  return weighted(base, slot)
+}
+
+/**
+ * Quanto vale al massimo una parola in posizione `slot`, **senza bonus**.
+ *
+ * Serve al selettore, e i bonus li lascia fuori di proposito: accanto a un 50
+ * scritto sulla seconda parola, un 109 sulla prima farebbe sembrare il rapporto
+ * peggiore di quello che e'. La scala che il giocatore deve leggere e'
+ * 100-50-25-12-12, cioe' i pesi; i quattro punti di velocità e i cinque di
+ * costanza sono un dettaglio che non cambia la scelta di quale parola giocare.
+ */
+export function maxScoreFor(slot: number): number {
+  return weighted(ATTEMPT_POINTS[0], slot)
 }
