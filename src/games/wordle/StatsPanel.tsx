@@ -60,10 +60,10 @@ export function StatsPanel({ stats, highlight = null }: Props) {
       {stats.assistScore > 0 && (
         <div className="stats__block stats__block--row">
           <span className="stats__meta">
-            Partite <strong>{formatNumber(stats.playScore)}</strong>
+            Da solo <strong>{formatNumber(stats.playScore)}</strong>
           </span>
           <span className="stats__meta">
-            Assist <strong>{formatNumber(stats.assistScore)}</strong>
+            In compagnia <strong>{formatNumber(stats.assistScore)}</strong>
           </span>
         </div>
       )}

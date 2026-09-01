@@ -2,9 +2,11 @@
  * Calcolo delle classifiche.
  *
  * Il punteggio di un giocatore e' la somma di due cose diverse: i punti delle
- * sue partite e i punti assist guadagnati suggerendo agli altri. In classifica
- * si vede il totale; la divisione si vede toccando la riga, e serve a spiegare
- * gli spareggi, perché **a parità di totale passa avanti chi ha più assist**.
+ * giornate che ha giocato per conto suo e quelli delle giornate che ha giocato
+ * nella stanza di qualcun altro — che valgono esattamente lo stesso, il
+ * punteggio dell'host. In classifica si vede il totale; la divisione si vede
+ * toccando la riga, e serve a spiegare gli spareggi, perché **a parità di
+ * totale passa avanti chi ha giocato più giornate in compagnia**.
  *
  * L'aggregazione la fa SQLite, l'ordinamento no: le righe sono poche (un
  * gruppo di colleghi) e la catena degli spareggi in SQL sarebbe illeggibile,
@@ -13,7 +15,6 @@
  * finestra su una tabella piccola.
  */
 
-import { dailyAssist } from '../../shared/scoring'
 import type {
   LeaderboardResponse,
   LeaderboardRow,
@@ -37,21 +38,12 @@ interface AggregateRow {
   nickname: string
   display_name: string
   avatar_color: string
-  score: number
+  play_score: number
+  assist_score: number
+  assists: number
   played: number
   wins: number
   avg_attempts: number | null
-}
-
-/** Assist di un giocatore in una singola giornata: il tetto e' per giorno. */
-interface AssistRow {
-  player_id: string
-  nickname: string
-  display_name: string
-  avatar_color: string
-  puzzle_number: number
-  points: number
-  assists: number
 }
 
 interface WinRow {
@@ -59,11 +51,14 @@ interface WinRow {
   puzzle_number: number
 }
 
+/** Righe di oggi, per il dettaglio della vista "oggi". */
+
 interface TodayRow {
   player_id: string
   attempts: number
   status: WordleStatus
   spectated: number
+  assist_status: WordleStatus | null
 }
 
 interface Streaks {
@@ -77,10 +72,11 @@ export interface PlayerTotals {
   nickname: string
   displayName: string
   avatarColor: string
-  /** Punti delle proprie partite. */
+  /** Punti delle giornate giocate per conto proprio. */
   playScore: number
-  /** Punti guadagnati suggerendo, col tetto giornaliero già applicato. */
+  /** Punti delle giornate giocate nella stanza di qualcun altro. */
   assistScore: number
+  /** Quante di quelle giornate. */
   assists: number
   played: number
   wins: number
@@ -142,14 +138,14 @@ export function streaksByPlayer(
  * L'ordine, dal criterio piu' forte al piu' debole:
  *
  *  1. **totale** (partite + assist);
- *  2. **assist**, che e' lo spareggio richiesto: fra due totali uguali passa
- *     avanti chi ha aiutato di piu';
+ *  2. **assist**, che e' lo spareggio: fra due totali uguali passa avanti chi
+ *     ha giocato piu' giornate in compagnia;
  *  3. vittorie, poi media tentativi piu' bassa;
  *  4. nickname, perché due righe identiche non devono cambiare posto a ogni
  *     ricarica.
  *
- * Chi ha solo assistito, senza giocare, e' in classifica come tutti: e' il
- * senso di dare punti a chi aiuta.
+ * Chi ha solo giocato in compagnia, senza mai una partita propria, e' in
+ * classifica come tutti: le due cose valgono lo stesso.
  */
 export function rankPlayers(players: PlayerTotals[]): LeaderboardRow[] {
   const byTotal = [...players].sort((a, b) => {
@@ -188,27 +184,6 @@ export function rankPlayers(players: PlayerTotals[]): LeaderboardRow[] {
   }))
 }
 
-/**
- * Assist per giocatore, sommando le giornate col tetto applicato a ognuna.
- *
- * Il tetto si applica qui e non alla scrittura perché e' un tetto: se un domani
- * si cambia il numero, deve cambiare per tutte le giornate insieme. I punti di
- * ogni singolo suggerimento invece restano congelati come li ha scritti la
- * partita, cosi' come la streak.
- */
-export function assistsByPlayer(
-  rows: AssistRow[],
-): Map<string, { points: number; assists: number }> {
-  const result = new Map<string, { points: number; assists: number }>()
-  for (const row of rows) {
-    const found = result.get(row.player_id) ?? { points: 0, assists: 0 }
-    found.points += dailyAssist(row.points)
-    found.assists += row.assists
-    result.set(row.player_id, found)
-  }
-  return result
-}
-
 export async function leaderboard(
   db: D1Database,
   scope: LeaderboardScope,
@@ -219,22 +194,36 @@ export async function leaderboard(
   const from = window === null ? Number.MIN_SAFE_INTEGER : todayNumber - window + 1
 
   /*
-   * Le partite ancora in corso entrano nel conteggio con punteggio zero
-   * (`score` e' NULL finché non finiscono): così nella vista di oggi si vede
-   * anche chi sta giocando, invece di farlo comparire solo a partita chiusa.
-   * `played` conta però solo le partite concluse.
+   * Una query sola su `wordle_games`: la riga della giornata di un giocatore
+   * porta il punteggio della sua partita oppure, se quel giorno ha giocato nella
+   * stanza di un altro, quello dell'host. Le due cose sono colonne diverse della
+   * stessa riga, quindi non serve unire due aggregati.
+   *
+   * Le partite ancora in corso entrano con punteggio zero (`score` e' NULL finché
+   * non finiscono): così nella vista di oggi si vede anche chi sta giocando.
+   * `played`, `wins` e la media contano invece solo le partite proprie concluse —
+   * i tentativi di una giornata in compagnia sono quelli dell'host, e contarli
+   * come propri falserebbe la media di tutti.
    */
-  const [aggregate, assists, winsResult, todayResult] = await Promise.all([
+  const [aggregate, winsResult, todayResult] = await Promise.all([
     db
       .prepare(
-        `SELECT p.id                                                     AS player_id,
-                p.nickname                                               AS nickname,
-                p.display_name                                           AS display_name,
-                p.avatar_color                                           AS avatar_color,
-                COALESCE(SUM(g.score), 0)                                AS score,
-                SUM(CASE WHEN g.status != 'playing' THEN 1 ELSE 0 END)   AS played,
-                SUM(CASE WHEN g.status  = 'won'     THEN 1 ELSE 0 END)   AS wins,
-                AVG(CASE WHEN g.status  = 'won' THEN g.attempts END)     AS avg_attempts
+        `SELECT p.id           AS player_id,
+                p.nickname     AS nickname,
+                p.display_name AS display_name,
+                p.avatar_color AS avatar_color,
+                COALESCE(SUM(CASE WHEN g.spectated = 1 THEN 0 ELSE g.score END), 0)
+                  AS play_score,
+                COALESCE(SUM(CASE WHEN g.spectated = 1 THEN g.assist_score END), 0)
+                  AS assist_score,
+                SUM(CASE WHEN g.spectated = 1 AND g.assist_score IS NOT NULL
+                         THEN 1 ELSE 0 END)                              AS assists,
+                SUM(CASE WHEN g.spectated != 1 AND g.status != 'playing'
+                         THEN 1 ELSE 0 END)                              AS played,
+                SUM(CASE WHEN g.spectated != 1 AND g.status = 'won'
+                         THEN 1 ELSE 0 END)                              AS wins,
+                AVG(CASE WHEN g.spectated != 1 AND g.status = 'won'
+                         THEN g.attempts END)                            AS avg_attempts
            FROM players p
            JOIN wordle_games g ON g.player_id = p.id AND g.puzzle_number >= ?
           GROUP BY p.id`,
@@ -242,100 +231,61 @@ export async function leaderboard(
       .bind(from)
       .all<AggregateRow>(),
     /*
-     * Gli assist si raggruppano anche per giornata, non solo per giocatore: il
-     * tetto e' giornaliero, quindi il totale della settimana non si puo'
-     * ottenere sommando prima e tagliando dopo.
+     * Per la streak vale anche una giornata giocata in compagnia e finita bene:
+     * se non contasse, accettare un invito spezzerebbe la serie e sarebbe una
+     * differenza fra giocare da soli e giocare in gruppo.
      */
     db
       .prepare(
-        `SELECT s.guest_id      AS player_id,
-                p.nickname      AS nickname,
-                p.display_name  AS display_name,
-                p.avatar_color  AS avatar_color,
-                r.puzzle_number AS puzzle_number,
-                SUM(s.assist_points) AS points,
-                COUNT(*)             AS assists
-           FROM coop_suggestions s
-           JOIN coop_rooms r ON r.id = s.room_id
-           JOIN players p    ON p.id = s.guest_id
-          WHERE s.used_at IS NOT NULL AND r.puzzle_number >= ?
-          GROUP BY s.guest_id, r.puzzle_number`,
-      )
-      .bind(from)
-      .all<AssistRow>(),
-    db
-      .prepare(
         `SELECT player_id, puzzle_number FROM wordle_games
-          WHERE status = 'won' AND puzzle_number >= ?`,
+          WHERE puzzle_number >= ?
+            AND ((spectated != 1 AND status = 'won')
+              OR (spectated  = 1 AND assist_status = 'won'))`,
       )
       .bind(todayNumber - STREAK_LOOKBACK)
       .all<WinRow>(),
     db
       .prepare(
-        'SELECT player_id, attempts, status, spectated FROM wordle_games WHERE puzzle_number = ?',
+        `SELECT player_id, attempts, status, spectated, assist_status
+           FROM wordle_games WHERE puzzle_number = ?`,
       )
       .bind(todayNumber)
       .all<TodayRow>(),
   ])
 
-  const assistTotals = assistsByPlayer(assists.results)
-
-  const totals = new Map<string, PlayerTotals>()
-  for (const row of aggregate.results) {
-    const assist = assistTotals.get(row.player_id)
-    totals.set(row.player_id, {
-      playerId: row.player_id,
-      nickname: row.nickname,
-      displayName: row.display_name || row.nickname,
-      avatarColor: row.avatar_color,
-      playScore: row.score,
-      assistScore: assist?.points ?? 0,
-      assists: assist?.assists ?? 0,
-      played: row.played,
-      wins: row.wins,
-      avgAttempts: row.avg_attempts,
-    })
-  }
-
-  /*
-   * Chi ha suggerito senza avere una partita nella finestra non e' nell'aggregato
-   * qui sopra, che parte dalle partite. Va aggiunto: i suoi assist sono punti a
-   * tutti gli effetti, e sparire dalla classifica dopo aver aiutato sarebbe il
-   * contrario di quel che gli assist vogliono ottenere.
-   */
-  for (const row of assists.results) {
-    if (totals.has(row.player_id)) continue
-    const assist = assistTotals.get(row.player_id)
-    totals.set(row.player_id, {
-      playerId: row.player_id,
-      nickname: row.nickname,
-      displayName: row.display_name || row.nickname,
-      avatarColor: row.avatar_color,
-      playScore: 0,
-      assistScore: assist?.points ?? 0,
-      assists: assist?.assists ?? 0,
-      played: 0,
-      wins: 0,
-      avgAttempts: null,
-    })
-  }
-
   const todayByPlayer = new Map(todayResult.results.map((r) => [r.player_id, r]))
   const lostToday = new Set(
-    todayResult.results.filter((r) => r.status === 'lost').map((r) => r.player_id),
+    todayResult.results
+      .filter((r) => (r.spectated === 1 ? r.assist_status === 'lost' : r.status === 'lost'))
+      .map((r) => r.player_id),
   )
   const streaks = streaksByPlayer(winsResult.results, todayNumber, lostToday)
 
-  const rows = rankPlayers([...totals.values()]).map((row) => {
+  const totals: PlayerTotals[] = aggregate.results.map((row) => ({
+    playerId: row.player_id,
+    nickname: row.nickname,
+    displayName: row.display_name || row.nickname,
+    avatarColor: row.avatar_color,
+    playScore: row.play_score,
+    assistScore: row.assist_score,
+    assists: row.assists,
+    played: row.played,
+    wins: row.wins,
+    avgAttempts: row.avg_attempts,
+  }))
+
+  const rows = rankPlayers(totals).map((row) => {
     const streak = streaks.get(row.playerId) ?? { current: 0, best: 0 }
     const todayGame = todayByPlayer.get(row.playerId)
+    const insieme = todayGame?.spectated === 1
     return {
       ...row,
       currentStreak: streak.current,
       bestStreak: streak.best,
-      todayAttempts: todayGame?.attempts ?? null,
-      todayStatus: todayGame?.status ?? null,
-      todaySpectated: todayGame ? todayGame.spectated === 1 : null,
+      // In compagnia i tentativi sono dell'host: mostrarli come propri sarebbe falso.
+      todayAttempts: insieme ? null : (todayGame?.attempts ?? null),
+      todayStatus: insieme ? (todayGame?.assist_status ?? 'playing') : (todayGame?.status ?? null),
+      todaySpectated: todayGame ? insieme : null,
     }
   })
 

@@ -8,7 +8,7 @@ import { GUESS_SET } from '../../shared/words/guesses'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
-import { findRoom, markSuggestionUsed } from '../lib/coopStore'
+import { findRoom, markSuggestionUsed, payAssists } from '../lib/coopStore'
 import {
   dailyAnswer,
   openGame,
@@ -38,8 +38,9 @@ function toState(row: GameRow, now = new Date()): WordleState {
     guesses,
     status: row.status,
     answer: row.status === 'playing' ? null : row.answer,
-    score: row.score,
+    score: row.spectated === 1 ? row.assist_score : row.score,
     spectated: row.spectated === 1,
+    roomId: row.assist_room_id,
     msToNextPuzzle: msToNextPuzzle(now),
   }
 }
@@ -70,6 +71,15 @@ export const wordleRoutes = new Hono<AppEnv>()
     const when = today()
     const answer = await dailyAnswer(c.env.DB, when)
     const row = await openGame(c.env.DB, c.get('player').id, when, answer)
+
+    /*
+     * La parola di oggi l'ha già giocata nella stanza di un altro: e' la stessa
+     * parola per tutti, quindi non c'e' niente da giocare qui. Il punteggio
+     * della giornata e' quello di quella partita.
+     */
+    if (row.spectated === 1) {
+      fail(409, 'GIOCATA_INSIEME', 'La parola di oggi l’hai già giocata in compagnia.')
+    }
 
     if (row.status !== 'playing') {
       fail(409, 'GAME_OVER', 'La partita di oggi è già chiusa.')
@@ -103,15 +113,7 @@ export const wordleRoutes = new Hono<AppEnv>()
         status === 'won'
           ? (await streakBefore(c.env.DB, c.get('player').id, row.puzzle_number)) + 1
           : 0
-      /*
-       * Chi ha guardato la partita di un altro prima di giocare conosceva la
-       * parola: la giornata resta giocabile ma non fa punti partita. Senza
-       * questo la classifica non misurerebbe piu' nulla. I punti assist per
-       * quello che ha suggerito restano, e li somma la classifica.
-       */
-      score = row.spectated === 1
-        ? 0
-        : scoreFor({ status, attempts: nextWords.length, durationMs, streak })
+      score = scoreFor({ status, attempts: nextWords.length, durationMs, streak })
     }
 
     // Aggiornamento condizionato al numero di tentativi che abbiamo letto:
@@ -141,13 +143,24 @@ export const wordleRoutes = new Hono<AppEnv>()
       fail(409, 'CONFLICT', 'Un altro tentativo è arrivato prima. Ricarica la pagina.')
     }
 
-    /*
-     * Se qualcuno aveva suggerito questa parola, il suggerimento risulta usato
-     * e chi l'ha proposta prende i punti assist. E' l'unico momento in cui
-     * vengono assegnati: un suggerimento che l'host non gioca non e' un aiuto.
-     */
     const room = await findRoom(c.env.DB, c.get('player').id, row.puzzle_number)
-    if (room) await markSuggestionUsed(c.env.DB, room.id, raw, row.answer)
+    if (room) {
+      /*
+       * Se qualcuno aveva suggerito questa parola, il suggerimento risulta
+       * usato: serve a far vedere quali consigli sono stati seguiti.
+       */
+      await markSuggestionUsed(c.env.DB, room.id, raw)
+
+      /*
+       * A partita chiusa, chi ha giocato la giornata in questa stanza prende lo
+       * stesso punteggio. E' quel che rende identico giocare da soli e giocare
+       * in compagnia: sei persone su una parola indovinata al terzo tentativo
+       * fanno ottanta punti a testa, come chi la indovina da solo.
+       */
+      if (status !== 'playing' && score !== null) {
+        await payAssists(c.env.DB, room.id, row.puzzle_number, score, status)
+      }
+    }
 
     return c.json<WordleState>(
       toState(
@@ -176,19 +189,35 @@ export const wordleRoutes = new Hono<AppEnv>()
   .get('/summary', async (c) => {
     const when = today()
     const row = await c.env.DB.prepare(
-      `SELECT status, attempts, score FROM wordle_games
+      `SELECT status, attempts, score, spectated, assist_score, assist_status, assist_room_id
+         FROM wordle_games
         WHERE player_id = ? AND puzzle_number = ?`,
     )
       .bind(c.get('player').id, when.puzzleNumber)
-      .first<{ status: WordleStatus; attempts: number; score: number | null }>()
+      .first<{
+        status: WordleStatus
+        attempts: number
+        score: number | null
+        spectated: number
+        assist_score: number | null
+        assist_status: WordleStatus | null
+        assist_room_id: string | null
+      }>()
 
+    /*
+     * Per chi gioca la giornata in compagnia la card racconta quella partita,
+     * non la propria: la propria e' chiusa e mostrarla "da giocare" mandarebbe
+     * su una board che rifiuta i tentativi.
+     */
+    const insieme = row?.spectated === 1
     return c.json<WordleSummary>({
       puzzleNumber: when.puzzleNumber,
       date: when.date,
-      status: row?.status ?? 'new',
-      attempts: row?.attempts ?? 0,
-      score: row?.score ?? null,
+      status: insieme ? (row?.assist_status ?? 'playing') : (row?.status ?? 'new'),
+      attempts: insieme ? 0 : (row?.attempts ?? 0),
+      score: insieme ? (row?.assist_score ?? null) : (row?.score ?? null),
       msToNextPuzzle: msToNextPuzzle(),
+      roomId: insieme ? (row?.assist_room_id ?? null) : null,
     })
   })
 

@@ -112,3 +112,33 @@ describe('estrazione della soluzione', () => {
     expect(solutionIndexFor(size + 1, size)).toBe(solutionIndexFor(1, size))
   })
 })
+
+describe('la parola del giorno e la stessa per tutti', () => {
+  it('dipende solo dal numero del puzzle, non da chi la chiede', () => {
+    /*
+     * E' l'invariante che rende sensata sia la classifica sia il gioco in
+     * compagnia: `dailyAnswer` deriva la parola dal solo numero del puzzle e poi
+     * la fissa in `daily_puzzles` con INSERT OR IGNORE, quindi il primo che apre
+     * il gioco la sceglie e tutti gli altri rileggono quella riga.
+     *
+     * Qui si verifica la derivazione, che e' la parte pura: a parità di numero
+     * di puzzle l'indice non cambia, mai, per nessuno.
+     */
+    for (const puzzle of [1, 2, 7, 100, 365, 1_000, 12_345]) {
+      const primo = solutionIndexFor(puzzle, 1_132)
+      for (let volta = 0; volta < 5; volta += 1) {
+        expect(solutionIndexFor(puzzle, 1_132)).toBe(primo)
+      }
+    }
+  })
+
+  it('giorni diversi danno parole diverse', () => {
+    // Il contrario dell'invariante di sopra: la stessa per tutti, ma non la
+    // stessa ogni giorno.
+    const visti = new Set<number>()
+    for (let puzzle = 1; puzzle <= 200; puzzle += 1) {
+      visti.add(solutionIndexFor(puzzle, 1_132))
+    }
+    expect(visti.size).toBe(200)
+  })
+})

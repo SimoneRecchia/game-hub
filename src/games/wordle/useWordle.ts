@@ -209,7 +209,18 @@ export function useWordle(): WordleController {
         shake(row)
         // Se il server dice che la partita e' chiusa o che e' arrivato un
         // altro tentativo, la verita' e' la sua: si rilegge.
-        if (error.code === 'GAME_OVER' || error.code === 'CONFLICT') void reload()
+        /*
+         * `GIOCATA_INSIEME` vuol dire che la parola di oggi e' stata giocata
+         * nella stanza di un altro: rileggere lo stato fa comparire il rimando
+         * a quella partita al posto della griglia.
+         */
+        if (
+          error.code === 'GAME_OVER' ||
+          error.code === 'CONFLICT' ||
+          error.code === 'GIOCATA_INSIEME'
+        ) {
+          void reload()
+        }
       } else {
         flash('Non riesco a inviare il tentativo.')
         shake(row)

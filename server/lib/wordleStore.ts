@@ -2,7 +2,6 @@
 
 import { MAX_ATTEMPTS, WORD_LENGTH } from '../../shared/config'
 import { gameDate, puzzleNumberFor, solutionIndexFor } from '../../shared/daily'
-import { assistTotal } from '../../shared/scoring'
 import { SOLUTION_WORDS } from '../../shared/words/solutions'
 import type { PlayerStats, WordleStatus } from '../../shared/types'
 import { newId, nowIso } from './http'
@@ -22,8 +21,20 @@ export interface GameRow {
   duration_ms: number | null
   score: number | null
   streak_at_end: number | null
-  /** 1 se il giocatore ha visto la partita di un altro prima di giocare. */
+  /**
+   * 1 se questa giornata il giocatore l'ha giocata nella stanza di un altro.
+   *
+   * Non e' "ha guardato": e' "la sua parola di oggi e' quella partita". La
+   * propria board resta chiusa — e' la stessa parola, l'ha già fatta — e il suo
+   * punteggio e' `assist_score`.
+   */
   spectated: number
+  /** Il punteggio dell'host, copiato quando la sua partita si chiude. */
+  assist_score: number | null
+  /** La stanza in cui ha giocato la giornata, se non ha giocato la propria. */
+  assist_room_id: string | null
+  /** Com'e' finita quella partita: serve alla streak. */
+  assist_status: 'won' | 'lost' | null
 }
 
 export interface Today {
@@ -136,6 +147,9 @@ interface StatsRow {
   attempts: number
   score: number | null
   date: string
+  spectated: number
+  assist_score: number | null
+  assist_status: 'won' | 'lost' | null
 }
 
 /**
@@ -146,11 +160,22 @@ interface StatsRow {
  *    mezzanotte, prima che il giocatore abbia potuto giocare.
  *  - la partita di oggi e' stata giocata e persa → la catena e' rotta adesso.
  */
+/**
+ * Com'e' andata una giornata, da qualunque parte l'abbia giocata.
+ *
+ * Una giornata giocata nella stanza di un altro vale l'esito di quella partita:
+ * se non contasse, accettare un invito spezzerebbe la streak, e sarebbe una
+ * differenza fra giocare da soli e giocare in compagnia.
+ */
+function esito(row: StatsRow): WordleStatus {
+  return row.spectated === 1 ? (row.assist_status ?? 'playing') : row.status
+}
+
 function liveStreak(rows: StatsRow[], todayNumber: number): number {
-  const lostToday = rows.some((r) => r.puzzle_number === todayNumber && r.status === 'lost')
+  const lostToday = rows.some((r) => r.puzzle_number === todayNumber && esito(r) === 'lost')
   if (lostToday) return 0
 
-  const wins = rows.filter((r) => r.status === 'won').map((r) => r.puzzle_number)
+  const wins = rows.filter((r) => esito(r) === 'won').map((r) => r.puzzle_number)
   if (wins.length === 0) return 0
 
   const last = Math.max(...wins)
@@ -164,7 +189,7 @@ function liveStreak(rows: StatsRow[], todayNumber: number): number {
 
 function bestStreak(rows: StatsRow[]): number {
   const wins = rows
-    .filter((r) => r.status === 'won')
+    .filter((r) => esito(r) === 'won')
     .map((r) => r.puzzle_number)
     .sort((a, b) => a - b)
 
@@ -185,37 +210,28 @@ export async function playerStats(
   todayNumber: number,
 ): Promise<PlayerStats> {
   /*
-   * Gli assist si contano giornata per giornata perché il tetto e' giornaliero,
-   * la stessa regola della classifica: sommare tutto e tagliare alla fine
-   * darebbe un numero diverso da quello che il giocatore vede in classifica.
+   * Una query sola: da quando l'assist e' il punteggio dell'host, sta sulla
+   * riga della giornata del giocatore come il punteggio della sua partita.
    */
-  const [games, assists] = await Promise.all([
-    db
-      .prepare(
-        `SELECT puzzle_number, status, attempts, score, date
-           FROM wordle_games
-          WHERE player_id = ?
-          ORDER BY puzzle_number DESC
-          LIMIT 1000`,
-      )
-      .bind(playerId)
-      .all<StatsRow>(),
-    db
-      .prepare(
-        `SELECT r.puzzle_number AS puzzle_number,
-                SUM(s.assist_points) AS points,
-                COUNT(*)             AS assists
-           FROM coop_suggestions s
-           JOIN coop_rooms r ON r.id = s.room_id
-          WHERE s.guest_id = ? AND s.used_at IS NOT NULL
-          GROUP BY r.puzzle_number`,
-      )
-      .bind(playerId)
-      .all<{ puzzle_number: number; points: number; assists: number }>(),
-  ])
+  const { results } = await db
+    .prepare(
+      `SELECT puzzle_number, status, attempts, score, date,
+              spectated, assist_score, assist_status
+         FROM wordle_games
+        WHERE player_id = ?
+        ORDER BY puzzle_number DESC
+        LIMIT 1000`,
+    )
+    .bind(playerId)
+    .all<StatsRow>()
 
-  const results = games.results
-  const finished = results.filter((r) => r.status !== 'playing')
+  /*
+   * Le giornate giocate nella stanza di un altro non entrano nelle statistiche
+   * di gioco: i tentativi sono quelli dell'host, contarli come propri
+   * falserebbe media e distribuzione. Contano solo nel punteggio.
+   */
+  const proprie = results.filter((r) => r.spectated !== 1)
+  const finished = proprie.filter((r) => r.status !== 'playing')
   const wins = finished.filter((r) => r.status === 'won')
 
   const distribution = new Array(MAX_ATTEMPTS).fill(0) as number[]
@@ -225,8 +241,9 @@ export async function playerStats(
   }
 
   const playScore = finished.reduce((sum, r) => sum + (r.score ?? 0), 0)
-  const assistScore = assistTotal(assists.results.map((r) => r.points))
-  const assistCount = assists.results.reduce((sum, r) => sum + r.assists, 0)
+  const insieme = results.filter((r) => r.spectated === 1)
+  const assistScore = insieme.reduce((sum, r) => sum + (r.assist_score ?? 0), 0)
+  const assistCount = insieme.length
   const totalAttempts = wins.reduce((sum, r) => sum + r.attempts, 0)
 
   return {

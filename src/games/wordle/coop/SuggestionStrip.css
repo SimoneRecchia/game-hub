@@ -71,15 +71,3 @@
     transform: translateY(6px) scale(0.94);
   }
 }
-
-/* I punti che il suggerimento ha fatto guadagnare, una volta giocato. */
-.suggerimento__assist {
-  flex: none;
-  padding: 0 5px;
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--green) 20%, transparent);
-  color: var(--green);
-  font-size: var(--text-caption-2);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
