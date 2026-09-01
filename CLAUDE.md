@@ -52,25 +52,31 @@ rifiuterebbe la parola giusta. Verificato da un test in
 (`MAX_TIEBREAK < ATTEMPT_STEP` in `shared/scoring.ts`). È ciò che garantisce che
 chi indovina in meno tentativi stia sempre davanti. Se si ritocca un punteggio,
 il test che verifica la condizione numerica cade prima di quello sull'ordine:
-guarda quello. L'invariante riguarda i bonus **di una partita**: gli assist sono
-un asse a parte e possono far scalare la classifica, di proposito.
+guarda quello.
 
-**Gli assist si pagano una volta sola, e solo se l'host gioca la parola.** Tre
-cose lo garantiscono e vanno insieme: l'assegnazione sta solo in
-`markSuggestionUsed`, che filtra su `used_at IS NULL`; l'indice unico
-`idx_coop_suggestions_parola` su `(room_id, guest_id, word)` impedisce allo
-stesso invitato di avere due righe per la stessa parola (prima suggerirla cinque
-volte e vederla giocata una valeva cinque assist — la rotta `/suggest` fa
-`ON CONFLICT ... DO UPDATE SET created_at` proprio per questo); e i punti sono
-**congelati** nella riga, come `streak_at_end`, così la classifica di ieri non
-cambia se domani si ritocca un numero.
+**La scala dei punti e' derivata, non scritta a mano**: base di partecipazione
+piu' gradino per tentativo risparmiato, cioe' `[100, 90, 80, 70, 60, 50]`. Il
+rapporto fra la giornata migliore e la peggiore e' **2:1** di proposito: con il
+6:1 di prima due giornate sfortunate decidevano la classifica, e una vittoria al
+sesto tentativo valeva un sesto di una perfetta. C'e' un test su entrambi i lati
+del compromesso — che sia recuperabile, e che il gradino non sia simbolico.
 
-**Il tetto degli assist e' giornaliero e si applica in lettura**
-(`MAX_ASSIST_PER_DAY`). Per questo gli aggregati raggruppano anche per
-`puzzle_number` e non solo per giocatore: sommare tutto e tagliare alla fine
-darebbe un numero diverso. Vale sia in `server/lib/leaderboard.ts` sia in
-`playerStats`, e i due devono restare d'accordo — il totale del profilo e'
-quello che si vede in classifica.
+**Una partecipazione al giorno, e vale lo stesso per tutti.** La giornata di un
+giocatore e' una sola: o la propria partita, o quella di chi lo ha invitato. Nel
+secondo caso `wordle_games.spectated = 1`, la propria board rifiuta i tentativi
+(`GIOCATA_INSIEME`) e `assist_score` porta **lo stesso punteggio dell'host**.
+Sei persone su una parola indovinata al terzo tentativo fanno ottanta punti a
+testa, come chi la indovina da solo: e' quello che rende accettare un invito una
+scelta neutra invece di una rinuncia. `payAssists` filtra su
+`assist_score IS NULL`, così due richieste ravvicinate non pagano due volte.
+
+**Una giornata giocata in compagnia conta per la streak** (`assist_status`).
+Senza, accettare un invito spezzerebbe la serie, e sarebbe di nuovo una
+differenza fra il solo e il gruppo. Non conta invece nelle statistiche di gioco:
+i tentativi sono dell'host, e contarli come propri falserebbe media e
+distribuzione. `server/lib/leaderboard.ts` e `playerStats` devono restare
+d'accordo su entrambe le regole — il totale del profilo e' quello che si vede in
+classifica.
 
 **Nessuna parola con j, k, w, x, y** negli elenchi: la tastiera del gioco ha 21
 tasti e quelle lettere non sarebbero digitabili.
@@ -80,14 +86,17 @@ tasti e quelle lettere non sarebbero digitabili.
 l'unica cosa che rende la classifica significativa. Vale anche per la vista
 condivisa: `guestView()` applica la stessa regola.
 
-**Chi guarda la partita di un altro non fa punti partita.**
-`wordle_games.spectated` viene messo a 1 quando si accetta un invito senza aver
-finito la propria partita, e la rotta del tentativo azzera il punteggio in quel
-caso. Senza questo, guardare sarebbe il modo più rapido per vincere la
-classifica: la parola del giorno e' la stessa per tutti, quindi guardare la
-svela. Gli **assist** però li fa, ed e' quello che rende sensato accettare un
-invito: aiutare vale punti, giocare una partita di cui si conosce la risposta
-no.
+**La parola del giorno e' la stessa per tutti.** `dailyAnswer` fa
+`INSERT OR IGNORE` di una riga per `puzzle_number` in `daily_puzzles` e poi la
+rilegge: il primo che apre il gioco la fissa, tutti gli altri leggono quella. È
+anche deterministica dal numero del puzzle, quindi la riga salvata e' una
+garanzia in piu' — se un domani si rigenerasse l'elenco, le parole già giocate
+non cambierebbero. Un test in `shared/__tests__/daily.test.ts` lo blocca.
+
+Ed e' anche il motivo per cui **chi gioca la giornata in compagnia non puo'
+rigiocarla per conto suo**: e' la stessa parola, l'ha già fatta. Quel divieto e'
+ciò che rende innocuo il fatto che guardare la sveli — prima serviva azzerare il
+punteggio, che era un rimedio peggiore del male.
 
 **Le partite condivise vanno a polling, non in realtime.** Cadenze in
 `shared/config.ts`. Non introdurre WebSocket o SSE senza aver verificato che le
@@ -109,11 +118,11 @@ giorno non cambia per una fonte che si sposta.
 Le partite in corso appaiono in classifica con **zero punti**: serve a vedere
 chi sta ancora giocando, non è un bug del calcolo.
 
-In classifica può comparire chi ha **zero partite**: sono i punti assist di chi
-ha solo suggerito. Per questo l'aggregato delle partite e quello degli assist
-vengono uniti in memoria invece di essere una sola query con `JOIN` — partendo
-dalle partite, chi ha solo aiutato sparirebbe. Per lo stesso motivo il profilo
-mostra il pannello statistiche anche con `played === 0`, se ci sono assist.
+In classifica può comparire chi ha **zero partite** e un punteggio pieno: sono
+le giornate giocate nella stanza di qualcun altro, che valgono come le proprie
+ma i cui tentativi non sono suoi. Per lo stesso motivo il profilo mostra il
+pannello statistiche anche con `played === 0`, se ci sono giornate in compagnia,
+e la card della posizione nell'hub non si nasconde.
 
 La **streak resta viva** se l'ultima vittoria è di ieri e oggi non si è ancora
 giocato. Si azzera solo se si è saltato un giorno o se si è giocato oggi e

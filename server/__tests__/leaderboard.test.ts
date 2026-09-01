@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAX_ASSIST_PER_DAY } from '../../shared/scoring'
-import {
-  assistsByPlayer,
-  rankPlayers,
-  streaksByPlayer,
-  type PlayerTotals,
-} from '../lib/leaderboard'
+import { rankPlayers, streaksByPlayer, type PlayerTotals } from '../lib/leaderboard'
 
 /** Aiuto: costruisce le righe delle vittorie da una mappa nickname → puzzle. */
 function wins(map: Record<string, number[]>) {
@@ -90,29 +84,41 @@ function player(nickname: string, over: Partial<PlayerTotals> = {}): PlayerTotal
 }
 
 describe('ordine della classifica', () => {
-  it('somma partite e assist nel totale', () => {
-    const [row] = rankPlayers([player('a', { playScore: 80, assistScore: 12 })])
-    expect(row.score).toBe(92)
+  it('somma le giornate proprie e quelle in compagnia', () => {
+    const [row] = rankPlayers([player('a', { playScore: 80, assistScore: 90, assists: 1 })])
+    expect(row.score).toBe(170)
     expect(row.playScore).toBe(80)
-    expect(row.assistScore).toBe(12)
+    expect(row.assistScore).toBe(90)
   })
 
   it('mette davanti il totale piu alto, non i soli punti partita', () => {
     const rows = rankPlayers([
       player('gioca', { playScore: 100 }),
-      player('aiuta', { playScore: 80, assistScore: 24 }),
+      player('aiuta', { playScore: 50, assistScore: 90, assists: 1 }),
     ])
     expect(rows.map((r) => r.nickname)).toEqual(['aiuta', 'gioca'])
   })
 
-  it('a parita di totale passa avanti chi ha piu assist', () => {
-    // Lo spareggio richiesto: e' il motivo per cui il totale viene diviso.
+  it('a parita di totale passa avanti chi ha giocato piu in compagnia', () => {
+    // Lo spareggio: e' il motivo per cui il totale viene diviso.
     const rows = rankPlayers([
-      player('solo', { playScore: 100, wins: 1 }),
-      player('insieme', { playScore: 88, assistScore: 12, wins: 1 }),
+      player('solo', { playScore: 160, wins: 2 }),
+      player('insieme', { playScore: 80, assistScore: 80, assists: 1, wins: 1 }),
     ])
     expect(rows.map((r) => r.nickname)).toEqual(['insieme', 'solo'])
     expect(rows.map((r) => r.rank)).toEqual([1, 2])
+  })
+
+  it('una giornata in compagnia vale come una giocata da soli', () => {
+    // La regola che tiene in piedi tutto: se una parola indovinata al terzo
+    // tentativo vale ottanta punti, vale ottanta a chi la gioca da solo e
+    // ottanta a ciascuno di quelli che la giocano insieme.
+    const rows = rankPlayers([
+      player('sola', { playScore: 80, played: 1, wins: 1, avgAttempts: 3 }),
+      player('host', { playScore: 80, played: 1, wins: 1, avgAttempts: 3 }),
+      player('ospite', { assistScore: 80, assists: 1 }),
+    ])
+    expect(rows.map((r) => r.score)).toEqual([80, 80, 80])
   })
 
   it('a parita di totale e di assist guarda vittorie e media tentativi', () => {
@@ -137,12 +143,13 @@ describe('ordine della classifica', () => {
     expect(rows.map((r) => r.nickname)).toEqual(['alfa', 'Beta', 'zeta'])
   })
 
-  it('tiene in classifica chi ha solo assistito', () => {
+  it('tiene in classifica chi ha giocato solo in compagnia', () => {
     const rows = rankPlayers([
-      player('gioca', { playScore: 20, played: 1 }),
-      player('assiste', { assistScore: 24 }),
+      player('gioca', { playScore: 50, played: 1 }),
+      player('insieme', { assistScore: 90, assists: 1 }),
     ])
-    expect(rows[0].nickname).toBe('assiste')
+    expect(rows[0].nickname).toBe('insieme')
+    // Le partite proprie sono zero, e va bene: i tentativi erano dell'host.
     expect(rows[0].played).toBe(0)
   })
 
@@ -157,38 +164,3 @@ describe('ordine della classifica', () => {
   })
 })
 
-describe('assist per giocatore', () => {
-  const row = (player_id: string, puzzle_number: number, points: number, assists: number) => ({
-    player_id,
-    nickname: player_id,
-    display_name: player_id,
-    avatar_color: '#007aff',
-    puzzle_number,
-    points,
-    assists,
-  })
-
-  it('somma le giornate', () => {
-    const totals = assistsByPlayer([row('a', 10, 12, 2), row('a', 11, 4, 1)])
-    expect(totals.get('a')).toEqual({ points: 16, assists: 3 })
-  })
-
-  it('applica il tetto a ogni giornata, non al totale', () => {
-    // Due giornate sfondate valgono due tetti: e' la ragione per cui la query
-    // raggruppa anche per numero di puzzle.
-    const totals = assistsByPlayer([row('a', 10, 90, 9), row('a', 11, 90, 9)])
-    expect(totals.get('a')?.points).toBe(MAX_ASSIST_PER_DAY * 2)
-    // I suggerimenti si contano tutti: il tetto e' sui punti, non sull'aiuto.
-    expect(totals.get('a')?.assists).toBe(18)
-  })
-
-  it('tiene i giocatori separati', () => {
-    const totals = assistsByPlayer([row('a', 10, 8, 2), row('b', 10, 4, 1)])
-    expect(totals.get('a')?.points).toBe(8)
-    expect(totals.get('b')?.points).toBe(4)
-  })
-
-  it('non inventa voci', () => {
-    expect(assistsByPlayer([]).size).toBe(0)
-  })
-})

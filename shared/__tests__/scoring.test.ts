@@ -1,21 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ASSIST_PLAYED,
-  ASSIST_SOLVED,
   ATTEMPT_POINTS,
   ATTEMPT_STEP,
-  CONSOLATION_POINTS,
+  LOSS_POINTS,
   MAX_SCORE,
   MAX_SPEED_BONUS,
   MAX_STREAK_BONUS,
-  MAX_ASSIST_PER_DAY,
-  MAX_ASSIST_PER_SUGGESTION,
   MAX_TIEBREAK,
+  PARTICIPATION_POINTS,
   SPEED_FULL_MS,
   SPEED_ZERO_MS,
-  assistPoints,
-  assistTotal,
-  dailyAssist,
   scoreBreakdown,
   scoreFor,
   speedBonus,
@@ -61,8 +55,8 @@ describe('bonus costanza', () => {
     expect(streakBonus(5)).toBe(5)
   })
 
-  it('si ferma a nove giorni', () => {
-    expect(streakBonus(9)).toBe(MAX_STREAK_BONUS)
+  it('si ferma al tetto', () => {
+    expect(streakBonus(MAX_STREAK_BONUS)).toBe(MAX_STREAK_BONUS)
     expect(streakBonus(400)).toBe(MAX_STREAK_BONUS)
   })
 
@@ -120,12 +114,12 @@ describe('punteggio della partita', () => {
       durationMs: 30_000,
       streak: 4,
     })
-    expect(breakdown).toEqual({ attempts: 100, speed: 10, streak: 4, total: 114 })
+    expect(breakdown).toEqual({ attempts: 90, speed: 4, streak: 4, total: 98 })
   })
 
   it('da i punti di consolazione a chi ha perso', () => {
     const lost = scoreBreakdown({ status: 'lost', attempts: 6, durationMs: 20_000, streak: 9 })
-    expect(lost.total).toBe(CONSOLATION_POINTS)
+    expect(lost.total).toBe(LOSS_POINTS)
     // Nessun bonus a chi non ha indovinato.
     expect(lost.speed).toBe(0)
     expect(lost.streak).toBe(0)
@@ -137,7 +131,7 @@ describe('punteggio della partita', () => {
 
   it('il massimo teorico corrisponde alla costante esposta', () => {
     expect(scoreFor({ status: 'won', attempts: 1, durationMs: 1_000, streak: 20 })).toBe(MAX_SCORE)
-    expect(MAX_SCORE).toBe(139)
+    expect(MAX_SCORE).toBe(109)
   })
 
   it('regge tentativi fuori scala senza esplodere', () => {
@@ -150,41 +144,37 @@ describe('punteggio della partita', () => {
   })
 })
 
-describe('punti assist', () => {
-  it('paga il suggerimento che l host ha giocato', () => {
-    expect(assistPoints('carta', 'porta')).toBe(ASSIST_PLAYED)
+
+describe('scala dei punti: giusta ma recuperabile', () => {
+  it('e la base di partecipazione piu un gradino per tentativo risparmiato', () => {
+    expect([...ATTEMPT_POINTS]).toEqual([100, 90, 80, 70, 60, 50])
+    // La scala e' derivata, non scritta a mano: se si ritocca uno dei due
+    // numeri, questo test dice subito cosa ne viene fuori.
+    const peggiore = ATTEMPT_POINTS[ATTEMPT_POINTS.length - 1]
+    expect(peggiore).toBe(PARTICIPATION_POINTS + ATTEMPT_STEP)
   })
 
-  it('paga di piu il suggerimento che ha chiuso la partita', () => {
-    expect(assistPoints('porta', 'porta')).toBe(ASSIST_PLAYED + ASSIST_SOLVED)
-    expect(assistPoints('porta', 'porta')).toBe(MAX_ASSIST_PER_SUGGESTION)
+  it('la giornata migliore vale al massimo il doppio della peggiore', () => {
+    // E' la condizione di "recuperabile": col rapporto 6:1 di prima, una
+    // vittoria al sesto valeva un sesto di una perfetta e due giornate
+    // sfortunate decidevano la classifica. Con 2:1, tutto il divario fra la
+    // giornata migliore e la peggiore vale una sola giornata: si recupera
+    // giocando, non serve sperare che l'altro sbagli per una settimana.
+    const migliore = ATTEMPT_POINTS[0]
+    const peggiore = ATTEMPT_POINTS[ATTEMPT_POINTS.length - 1]
+    expect(migliore / peggiore).toBeLessThanOrEqual(2)
+    expect(migliore - peggiore).toBeLessThanOrEqual(peggiore)
   })
 
-  it('il tetto giornaliero taglia il totale del giorno', () => {
-    expect(dailyAssist(12)).toBe(12)
-    expect(dailyAssist(MAX_ASSIST_PER_DAY)).toBe(MAX_ASSIST_PER_DAY)
-    expect(dailyAssist(500)).toBe(MAX_ASSIST_PER_DAY)
+  it('ma i tentativi contano ancora: il gradino non e simbolico', () => {
+    // L'altra meta' del compromesso. Un gradino troppo piccolo renderebbe
+    // indifferente indovinare al secondo o al sesto.
+    expect(ATTEMPT_STEP).toBeGreaterThanOrEqual(ATTEMPT_POINTS[0] / 20)
   })
 
-  it('non produce punti negativi', () => {
-    expect(dailyAssist(-4)).toBe(0)
-  })
-
-  it('applica il tetto un giorno per volta', () => {
-    // Il punto di avere il tetto giornaliero: due giornate piene valgono il
-    // doppio di una. Se il tetto fosse sul totale, questo darebbe 30.
-    expect(assistTotal([100, 100])).toBe(MAX_ASSIST_PER_DAY * 2)
-    expect(assistTotal([10, 5, 1])).toBe(16)
-    expect(assistTotal([])).toBe(0)
-  })
-
-  it('un singolo suggerimento non puo sfondare il tetto del giorno', () => {
-    expect(MAX_ASSIST_PER_SUGGESTION).toBeLessThanOrEqual(MAX_ASSIST_PER_DAY)
-  })
-
-  it('una giornata di assist vale meno di due tentativi risparmiati', () => {
-    // Gli assist devono poter far scalare la classifica, non sostituire il
-    // gioco: e' la condizione che tiene onesto quel compromesso.
-    expect(MAX_ASSIST_PER_DAY).toBeLessThan(2 * ATTEMPT_STEP)
+  it('chi non indovina sta sotto chi indovina al sesto, e sopra chi non gioca', () => {
+    const sesto = scoreFor({ status: 'won', attempts: 6, durationMs: null, streak: 0 })
+    expect(LOSS_POINTS).toBeLessThan(sesto)
+    expect(LOSS_POINTS).toBeGreaterThan(0)
   })
 })
