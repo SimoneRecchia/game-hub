@@ -8,6 +8,7 @@ import { Board } from '@/games/wordle/Board'
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { ResultSheet } from '@/games/wordle/ResultSheet'
+import { WordPicker } from '@/games/wordle/WordPicker'
 import { useWordle } from '@/games/wordle/useWordle'
 import { InvitePanel } from '@/games/wordle/coop/InvitePanel'
 import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
@@ -26,7 +27,11 @@ export default function Wordle() {
   const coop = useCoopHost(invitiOpen)
   const attivi = coop.room?.guests.filter((g) => g.status === 'accepted') ?? []
 
-  const title = game.state ? `Wordle #${game.state.puzzleNumber}` : 'Wordle'
+  const title = game.state
+    ? game.slot === 1
+      ? `Wordle #${game.state.puzzleNumber}`
+      : `${game.slot}ª parola · #${game.state.puzzleNumber}`
+    : 'Wordle'
   const finished = game.state && game.state.status !== 'playing'
 
   return (
@@ -40,7 +45,9 @@ export default function Wordle() {
       }
       trailing={
         <>
-          {!finished && (
+          {/* In compagnia si gioca la parola del giorno: sulle altre il
+              pulsante prometterebbe una cosa che non esiste. */}
+          {!finished && game.slot === 1 && (
             <button
               type="button"
               className="navbtn wordle__invita"
@@ -82,6 +89,15 @@ export default function Wordle() {
           </div>
         ) : (
           <>
+            {/*
+              Le cinque parole della giornata. Sta in cima perché e' anche il
+              modo di capire cosa si sta giocando: senza, la griglia della terza
+              parola sarebbe indistinguibile da quella della prima.
+            */}
+            {game.state && (
+              <WordPicker day={game.state.day} active={game.slot} onPick={game.chooseSlot} />
+            )}
+
             {/*
               La parola di oggi la sta giocando altrove: qui non c'e' niente da
               giocare, e' la stessa parola. Invece di lasciarlo davanti a una
@@ -183,6 +199,7 @@ export default function Wordle() {
           onClose={game.closeResult}
           state={game.state}
           stats={game.stats}
+          onNextWord={game.chooseSlot}
         />
       )}
     </AppShell>

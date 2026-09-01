@@ -27,6 +27,10 @@ function loadGuessSet(): Promise<ReadonlySet<string>> {
 
 export interface WordleController {
   state: WordleState | null
+  /** Quale delle cinque parole si sta giocando. */
+  slot: number
+  /** Passa a un'altra parola della giornata. */
+  chooseSlot: (slot: number) => void
   stats: PlayerStats | null
   loading: boolean
   loadError: string | null
@@ -50,6 +54,12 @@ export interface WordleController {
 
 export function useWordle(): WordleController {
   const [state, setState] = useState<WordleState | null>(null)
+  /*
+   * La parola scelta sta qui e non nell'URL: cambiarla e' un gesto dentro la
+   * partita, non una navigazione, e col tasto indietro del browser si tornerebbe
+   * indietro fra le parole invece di uscire dal gioco.
+   */
+  const [slot, setSlot] = useState(1)
   const [stats, setStats] = useState<PlayerStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -92,9 +102,13 @@ export function useWordle(): WordleController {
     setLoading(true)
     setLoadError(null)
     try {
-      const fresh = await api<WordleState>('/wordle/state')
+      const fresh = await api<WordleState>(`/wordle/state?slot=${slot}`)
       setState(fresh)
       setDraft('')
+      // Le animazioni della parola precedente non devono continuare su questa.
+      setRevealing(null)
+      setWinningRow(null)
+      setShakingRow(null)
       if (fresh.status !== 'playing') void fetchStats()
     } catch (error) {
       setLoadError(
@@ -103,7 +117,16 @@ export function useWordle(): WordleController {
     } finally {
       setLoading(false)
     }
-  }, [fetchStats])
+  }, [fetchStats, slot])
+
+  /*
+   * Cambiare parola chiude il riepilogo: era quello della parola di prima, e
+   * lasciarlo aperto sopra una griglia nuova e' disorientante.
+   */
+  const chooseSlot = useCallback((next: number) => {
+    setSlot(next)
+    setResultOpen(false)
+  }, [])
 
   useEffect(() => {
     void reload()
@@ -184,7 +207,10 @@ export function useWordle(): WordleController {
 
     setSubmitting(true)
     try {
-      const next = await api<WordleState>('/wordle/guess', { method: 'POST', body: { guess: word } })
+      const next = await api<WordleState>('/wordle/guess', {
+        method: 'POST',
+        body: { guess: word, slot },
+      })
       setState(next)
       setDraft('')
       setRevealing(row)
@@ -264,6 +290,8 @@ export function useWordle(): WordleController {
 
   return {
     state,
+    slot,
+    chooseSlot,
     stats,
     loading,
     loadError,

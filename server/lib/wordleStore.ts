@@ -1,7 +1,7 @@
 /** Accesso ai dati delle partite di Wordle. */
 
-import { MAX_ATTEMPTS, WORD_LENGTH } from '../../shared/config'
-import { gameDate, puzzleNumberFor, solutionIndexFor } from '../../shared/daily'
+import { MAX_ATTEMPTS, WORD_LENGTH, WORDS_PER_DAY } from '../../shared/config'
+import { dailySolutionIndexes, gameDate, puzzleNumberFor } from '../../shared/daily'
 import { SOLUTION_WORDS } from '../../shared/words/solutions'
 import type { PlayerStats, WordleStatus } from '../../shared/types'
 import { newId, nowIso } from './http'
@@ -10,6 +10,8 @@ export interface GameRow {
   id: string
   player_id: string
   puzzle_number: number
+  /** 1 = la parola del giorno, 2..5 = quelle in piu'. */
+  slot: number
   date: string
   answer: string
   status: WordleStatus
@@ -54,23 +56,47 @@ export function today(now: Date = new Date()): Today {
  * contemporanea: la seconda non sovrascrive, e la lettura successiva vede
  * comunque la parola scelta dalla prima.
  */
-export async function dailyAnswer(db: D1Database, { date, puzzleNumber }: Today): Promise<string> {
-  const computed = SOLUTION_WORDS[solutionIndexFor(puzzleNumber, SOLUTION_WORDS.length)]
+/**
+ * Le parole di una giornata, tutte e cinque, nell'ordine delle posizioni.
+ *
+ * Fissate alla prima richiesta e poi rilette dalla tabella: sono le stesse per
+ * tutti, e restano quelle anche se un domani si rigenerasse l'elenco delle
+ * soluzioni. L'`INSERT OR IGNORE` di cinque righe in un `batch` fa sì che due
+ * richieste contemporanee non possano fissarne un sottoinsieme diverso.
+ */
+export async function dailyAnswers(db: D1Database, { date, puzzleNumber }: Today): Promise<string[]> {
+  const calcolate = dailySolutionIndexes(puzzleNumber, SOLUTION_WORDS.length, WORDS_PER_DAY).map(
+    (i) => SOLUTION_WORDS[i],
+  )
 
-  await db
-    .prepare(
-      `INSERT OR IGNORE INTO daily_puzzles (puzzle_number, date, answer, created_at)
-       VALUES (?, ?, ?, ?)`,
-    )
-    .bind(puzzleNumber, date, computed, nowIso())
-    .run()
+  const inserimento = db.prepare(
+    `INSERT OR IGNORE INTO daily_puzzles (puzzle_number, slot, date, answer, created_at)
+     VALUES (?, ?, ?, ?, ?)`,
+  )
+  await db.batch(
+    calcolate.map((answer, i) =>
+      inserimento.bind(puzzleNumber, i + 1, date, answer, nowIso()),
+    ),
+  )
 
-  const row = await db
-    .prepare('SELECT answer FROM daily_puzzles WHERE puzzle_number = ?')
+  const { results } = await db
+    .prepare('SELECT slot, answer FROM daily_puzzles WHERE puzzle_number = ? ORDER BY slot')
     .bind(puzzleNumber)
-    .first<{ answer: string }>()
+    .all<{ slot: number; answer: string }>()
 
-  return row?.answer ?? computed
+  // Se per qualche ragione una riga mancasse, si ricade sul calcolo: meglio la
+  // parola giusta che un errore a metà giornata.
+  return calcolate.map((fallback, i) => results.find((r) => r.slot === i + 1)?.answer ?? fallback)
+}
+
+/** La parola di una singola posizione. */
+export async function dailyAnswer(
+  db: D1Database,
+  when: Today,
+  slot = 1,
+): Promise<string> {
+  const tutte = await dailyAnswers(db, when)
+  return tutte[Math.min(Math.max(slot, 1), WORDS_PER_DAY) - 1]
 }
 
 /** La partita di oggi del giocatore, creata al primo accesso. */
@@ -79,19 +105,22 @@ export async function openGame(
   playerId: string,
   when: Today,
   answer: string,
+  slot = 1,
 ): Promise<GameRow> {
   await db
     .prepare(
       `INSERT OR IGNORE INTO wordle_games
-         (id, player_id, puzzle_number, date, answer, status, attempts, guesses, started_at)
-       VALUES (?, ?, ?, ?, ?, 'playing', 0, '[]', ?)`,
+         (id, player_id, puzzle_number, slot, date, answer, status, attempts, guesses, started_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'playing', 0, '[]', ?)`,
     )
-    .bind(newId('gam'), playerId, when.puzzleNumber, when.date, answer, nowIso())
+    .bind(newId('gam'), playerId, when.puzzleNumber, slot, when.date, answer, nowIso())
     .run()
 
   const row = await db
-    .prepare('SELECT * FROM wordle_games WHERE player_id = ? AND puzzle_number = ?')
-    .bind(playerId, when.puzzleNumber)
+    .prepare(
+      'SELECT * FROM wordle_games WHERE player_id = ? AND puzzle_number = ? AND slot = ?',
+    )
+    .bind(playerId, when.puzzleNumber, slot)
     .first<GameRow>()
 
   if (!row) throw new Error('Partita non trovata subito dopo la creazione')
@@ -123,8 +152,15 @@ export async function streakBefore(
 ): Promise<number> {
   const { results } = await db
     .prepare(
+      /*
+       * Solo `slot = 1`: la streak e' la serie della **parola del giorno**. Le
+       * parole in piu' sono un extra, e non devono poter tenere in vita una
+       * serie che sulla principale si e' interrotta.
+       */
       `SELECT puzzle_number FROM wordle_games
-        WHERE player_id = ? AND status = 'won' AND puzzle_number < ?
+        WHERE player_id = ? AND slot = 1 AND puzzle_number < ?
+          AND ((spectated != 1 AND status = 'won')
+            OR (spectated  = 1 AND assist_status = 'won'))
         ORDER BY puzzle_number DESC
         LIMIT 400`,
     )
@@ -143,6 +179,7 @@ export async function streakBefore(
 
 interface StatsRow {
   puzzle_number: number
+  slot: number
   status: WordleStatus
   attempts: number
   score: number | null
@@ -172,10 +209,14 @@ function esito(row: StatsRow): WordleStatus {
 }
 
 function liveStreak(rows: StatsRow[], todayNumber: number): number {
-  const lostToday = rows.some((r) => r.puzzle_number === todayNumber && esito(r) === 'lost')
+  // La serie e' quella della parola del giorno: vedi `streakBefore`.
+  const principali = rows.filter((r) => r.slot === 1)
+  const lostToday = principali.some(
+    (r) => r.puzzle_number === todayNumber && esito(r) === 'lost',
+  )
   if (lostToday) return 0
 
-  const wins = rows.filter((r) => esito(r) === 'won').map((r) => r.puzzle_number)
+  const wins = principali.filter((r) => esito(r) === 'won').map((r) => r.puzzle_number)
   if (wins.length === 0) return 0
 
   const last = Math.max(...wins)
@@ -189,7 +230,7 @@ function liveStreak(rows: StatsRow[], todayNumber: number): number {
 
 function bestStreak(rows: StatsRow[]): number {
   const wins = rows
-    .filter((r) => esito(r) === 'won')
+    .filter((r) => r.slot === 1 && esito(r) === 'won')
     .map((r) => r.puzzle_number)
     .sort((a, b) => a - b)
 
@@ -215,12 +256,12 @@ export async function playerStats(
    */
   const { results } = await db
     .prepare(
-      `SELECT puzzle_number, status, attempts, score, date,
+      `SELECT puzzle_number, slot, status, attempts, score, date,
               spectated, assist_score, assist_status
          FROM wordle_games
         WHERE player_id = ?
-        ORDER BY puzzle_number DESC
-        LIMIT 1000`,
+        ORDER BY puzzle_number DESC, slot ASC
+        LIMIT 2000`,
     )
     .bind(playerId)
     .all<StatsRow>()

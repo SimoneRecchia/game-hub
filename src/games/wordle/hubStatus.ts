@@ -14,14 +14,24 @@ export function wordleBadge(summary: WordleSummary): HubBadge {
    */
   const insieme = summary.roomId !== null
 
+  /*
+   * Con cinque parole al giorno la card deve dire due cose: com'e' andata la
+   * parola del giorno, e quanto resta da fare. Il punteggio e' quello della
+   * giornata intera, non della sola principale.
+   */
+  const resta = summary.words - summary.done
+  const avanzamento = resta > 0 && summary.done > 0 ? ` · ${summary.done}/${summary.words}` : ''
+
   switch (summary.status) {
     case 'won':
       return {
-        text: insieme ? `In compagnia · +${summary.score ?? 0}` : `Fatto · +${summary.score ?? 0}`,
-        tone: 'done',
+        text: insieme
+          ? `In compagnia · +${summary.score ?? 0}${avanzamento}`
+          : `+${summary.score ?? 0}${avanzamento || ' · tutte fatte'}`,
+        tone: resta > 0 ? 'progress' : 'done',
       }
     case 'lost':
-      return { text: 'Non indovinata', tone: 'failed' }
+      return { text: `Non indovinata${avanzamento}`, tone: resta > 0 ? 'progress' : 'failed' }
     case 'playing':
       if (insieme) return { text: 'In corso, in compagnia', tone: 'progress' }
       return {

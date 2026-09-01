@@ -3,6 +3,8 @@ import {
   ATTEMPT_POINTS,
   ATTEMPT_STEP,
   LOSS_POINTS,
+  WEIGHT_UNIT,
+  WORD_WEIGHTS,
   MAX_SCORE,
   MAX_SPEED_BONUS,
   MAX_STREAK_BONUS,
@@ -10,12 +12,16 @@ import {
   PARTICIPATION_POINTS,
   SPEED_FULL_MS,
   SPEED_ZERO_MS,
+  maxScoreFor,
   scoreBreakdown,
   scoreFor,
+  scoreForWord,
   speedBonus,
   streakBonus,
+  weightOf,
+  weighted,
 } from '../scoring'
-import { MAX_ATTEMPTS } from '../config'
+import { MAX_ATTEMPTS, WORDS_PER_DAY } from '../config'
 
 describe('bonus velocita', () => {
   it('e pieno sotto i 45 secondi', () => {
@@ -41,10 +47,15 @@ describe('bonus velocita', () => {
     }
   })
 
-  it('vale zero se il tempo non e misurabile', () => {
+  it('vale zero se il tempo non e misurabile, ma zero millisecondi e un tempo', () => {
     expect(speedBonus(null)).toBe(0)
-    expect(speedBonus(0)).toBe(0)
     expect(speedBonus(-5)).toBe(0)
+    /*
+     * La durata si misura dal primo tentativo, quindi indovinare al primo colpo
+     * da' esattamente zero. Trattarlo come "non misurato" togliva il bonus al
+     * risultato migliore possibile: era un bug, e questo test lo tiene chiuso.
+     */
+    expect(speedBonus(0)).toBe(MAX_SPEED_BONUS)
   })
 })
 
@@ -176,5 +187,98 @@ describe('scala dei punti: giusta ma recuperabile', () => {
     const sesto = scoreFor({ status: 'won', attempts: 6, durationMs: null, streak: 0 })
     expect(LOSS_POINTS).toBeLessThan(sesto)
     expect(LOSS_POINTS).toBeGreaterThan(0)
+  })
+})
+
+describe('le cinque parole della giornata', () => {
+  it('dimezzano, e l ultima resta all ottavo', () => {
+    expect([...WORD_WEIGHTS]).toEqual([8, 4, 2, 1, 1])
+    expect(WORD_WEIGHTS).toHaveLength(WORDS_PER_DAY)
+    // L'ultima non scende a un sedicesimo: una quinta parola che valesse sei
+    // punti e mezzo non varrebbe la pena di giocarla.
+    expect(WORD_WEIGHTS[4]).toBe(WORD_WEIGHTS[3])
+  })
+
+  it('la somma delle quattro in piu fa quanto la principale', () => {
+    const extra = WORD_WEIGHTS.slice(1).reduce((a, b) => a + b, 0)
+    expect(extra).toBe(WORD_WEIGHTS[0])
+    expect(extra).toBe(WEIGHT_UNIT)
+  })
+
+  it('e la somma non supera la principale a NESSUN punteggio', () => {
+    /*
+     * L'invariante vera, ed e' il motivo per cui `weighted` arrotonda per
+     * difetto: al piu' vicino, un 100 darebbe 50+25+13+13 = 101, e le quattro
+     * parole in piu' batterebbero la principale per un punto. Verificato su
+     * tutti i punteggi possibili invece che su un esempio.
+     */
+    for (let punti = 0; punti <= 200; punti += 1) {
+      const principale = weighted(punti, 1)
+      const extra = [2, 3, 4, 5].reduce((sum, slot) => sum + weighted(punti, slot), 0)
+      expect(extra).toBeLessThanOrEqual(principale)
+    }
+  })
+
+  it('la principale vale piena', () => {
+    for (let punti = 0; punti <= 200; punti += 1) {
+      expect(weighted(punti, 1)).toBe(punti)
+    }
+  })
+
+  it('i punti scendono lungo le posizioni, senza risalire', () => {
+    const scala = [1, 2, 3, 4, 5].map((slot) => weighted(100, slot))
+    expect(scala).toEqual([100, 50, 25, 12, 12])
+    for (let i = 1; i < scala.length; i += 1) {
+      expect(scala[i]).toBeLessThanOrEqual(scala[i - 1])
+    }
+  })
+
+  it('il massimo per posizione e la scala dei pesi, senza bonus', () => {
+    // E' il numero che il selettore mostra: dev'essere leggibile come "meta',
+    // un quarto, un ottavo", non come 109 contro 50.
+    expect([1, 2, 3, 4, 5].map(maxScoreFor)).toEqual([100, 50, 25, 12, 12])
+  })
+
+  it('regge posizioni fuori scala senza esplodere', () => {
+    expect(weightOf(0)).toBe(WORD_WEIGHTS[0])
+    expect(weightOf(99)).toBe(WORD_WEIGHTS[WORDS_PER_DAY - 1])
+  })
+
+  it('una giornata intera vale al massimo il doppio della sola principale', () => {
+    // E' il tetto di quel che le extra possono aggiungere: chi fa tutto
+    // raddoppia, non decuplica.
+    const sola = weighted(ATTEMPT_POINTS[0], 1)
+    const tutte = [1, 2, 3, 4, 5].reduce((s, slot) => s + weighted(ATTEMPT_POINTS[0], slot), 0)
+    expect(tutte).toBeLessThanOrEqual(sola * 2)
+  })
+
+  it('i bonus stanno solo sulla principale', () => {
+    /*
+     * Senza questa regola i bonus si moltiplicavano per cinque: chi giocava
+     * tutte le parole incassava fino a cinque volte il bonus velocità, e tanto
+     * bastava a ribaltare chi aveva indovinato la principale al primo colpo.
+     * Trovato provando l'API, non ragionando sui pesi — che erano giusti.
+     */
+    const veloce = { status: 'won' as const, attempts: 6, durationMs: 0, streak: 5 }
+    expect(scoreForWord(veloce, 1)).toBe(ATTEMPT_POINTS[5] + MAX_SPEED_BONUS + MAX_STREAK_BONUS)
+    // Sulle altre, la sola base pesata.
+    expect(scoreForWord(veloce, 2)).toBe(weighted(ATTEMPT_POINTS[5], 2))
+    expect(scoreForWord(veloce, 5)).toBe(weighted(ATTEMPT_POINTS[5], 5))
+  })
+
+  it('la principale giocata bene batte tutte e cinque giocate male', () => {
+    /*
+     * La condizione che l'utente ha chiesto a parole: "senza ribaltarla". E' il
+     * caso peggiore possibile — giornata perfetta sulla sola principale contro
+     * cinque parole chiuse tutte all'ultimo tentativo, con tutti i bonus in
+     * palio — e regge per un punto, che e' esattamente quel che deve essere:
+     * la somma delle quattro extra *vale* quanto la principale, quindi fare
+     * tutto raddoppia la giornata senza mai passare davanti.
+     */
+    const migliore = { status: 'won' as const, attempts: 1, durationMs: 0, streak: 99 }
+    const peggiore = { status: 'won' as const, attempts: MAX_ATTEMPTS, durationMs: 0, streak: 99 }
+    const soloPrincipale = scoreForWord(migliore, 1)
+    const tuttoMale = [1, 2, 3, 4, 5].reduce((s, slot) => s + scoreForWord(peggiore, slot), 0)
+    expect(soloPrincipale).toBeGreaterThan(tuttoMale)
   })
 })

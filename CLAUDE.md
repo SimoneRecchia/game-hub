@@ -61,6 +61,32 @@ rapporto fra la giornata migliore e la peggiore e' **2:1** di proposito: con il
 sesto tentativo valeva un sesto di una perfetta. C'e' un test su entrambi i lati
 del compromesso — che sia recuperabile, e che il gradino non sia simbolico.
 
+**Cinque parole al giorno, con pesi `[8, 4, 2, 1, 1]` su otto.** La prima e' *la*
+parola del giorno e vale piena; le altre dimezzano, e la quinta resta all'ottavo
+invece di scendere a un sedicesimo perché altrimenti non varrebbe la pena di
+giocarla. La somma delle quattro fa esattamente otto ottavi, cioe' quanto la
+prima: chi fa tutto raddoppia la giornata, non la decuplica.
+
+`weighted` **arrotonda per difetto**, e non e' una scelta di precisione:
+`floor(a) + floor(b) <= floor(a+b)`, quindi la somma delle quattro extra non puo'
+mai superare la principale. Al piu' vicino, un 100 darebbe 50+25+13+13 = 101 e la
+garanzia salterebbe per un punto.
+
+**I bonus stanno solo sulla parola del giorno** (`scoreForWord`). Velocità e
+costanza sono proprietà della giornata, non di ogni parola: dandoli a tutte e
+cinque, chi le giocava tutte incassava fino a cinque volte il bonus velocità, e
+tanto bastava a superare chi aveva indovinato la principale al primo colpo — cioe'
+esattamente il ribaltamento che i pesi servono a impedire. Trovato provando
+l'API, non ragionando sui numeri: i pesi da soli erano giusti.
+
+**La streak e' quella della parola del giorno**, `slot = 1`, sia in
+`streakBefore` sia negli aggregati. Le parole in piu' non devono poter tenere in
+vita una serie interrotta sulla principale.
+
+**In compagnia si gioca la parola del giorno.** Tutte le query di
+`server/lib/coopStore.ts` filtrano su `slot = 1`, ed e' per questo che
+`coop_rooms` puo' restare con la sua "una stanza per host al giorno".
+
 **Una partecipazione al giorno, e vale lo stesso per tutti.** La giornata di un
 giocatore e' una sola: o la propria partita, o quella di chi lo ha invitato. Nel
 secondo caso `wordle_games.spectated = 1`, la propria board rifiuta i tentativi
@@ -86,12 +112,19 @@ tasti e quelle lettere non sarebbero digitabili.
 l'unica cosa che rende la classifica significativa. Vale anche per la vista
 condivisa: `guestView()` applica la stessa regola.
 
-**La parola del giorno e' la stessa per tutti.** `dailyAnswer` fa
-`INSERT OR IGNORE` di una riga per `puzzle_number` in `daily_puzzles` e poi la
-rilegge: il primo che apre il gioco la fissa, tutti gli altri leggono quella. È
-anche deterministica dal numero del puzzle, quindi la riga salvata e' una
+**Le parole del giorno sono le stesse per tutti.** `dailyAnswers` fa
+`INSERT OR IGNORE` di cinque righe per `puzzle_number` in un `batch` e poi le
+rilegge: il primo che apre il gioco le fissa, tutti gli altri leggono quelle. È
+anche deterministico dal numero del puzzle, quindi le righe salvate sono una
 garanzia in piu' — se un domani si rigenerasse l'elenco, le parole già giocate
 non cambierebbero. Un test in `shared/__tests__/daily.test.ts` lo blocca.
+
+**La sequenza della parola del giorno non si tocca.** `dailySolutionIndexes`
+tiene `slot = 1` esattamente su `solutionIndexFor`, e pesca le quattro extra da
+una permutazione con un altro seme. Non e' un vezzo: consumando cinque parole al
+giorno da un elenco solo, le 1.132 soluzioni finirebbero in 226 giorni invece di
+1.132. C'e' un test che verifica che la principale sia rimasta quella — se cade,
+chi gioca da settembre si trova la parola di un altro giorno.
 
 Ed e' anche il motivo per cui **chi gioca la giornata in compagnia non puo'
 rigiocarla per conto suo**: e' la stessa parola, l'ha già fatta. Quel divieto e'

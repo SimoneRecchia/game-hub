@@ -53,7 +53,8 @@ export default function Hub() {
         <p className="hub__date">{formatGameDate(today)}</p>
         <h2 className="large-title">Ciao {player.displayName}</h2>
         <p className="page-lede">
-          Una sfida nuova ogni giorno, la stessa per tutti. Il punteggio finisce in classifica.
+          Cinque parole nuove ogni giorno, le stesse per tutti. La prima vale piena, le altre a
+          scalare.
         </p>
       </header>
 

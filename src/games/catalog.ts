@@ -21,7 +21,7 @@ export const GAMES: GameEntry[] = [
   {
     id: 'wordle',
     name: 'Wordle',
-    tagline: 'Una parola italiana da cinque lettere, sei tentativi, una al giorno.',
+    tagline: 'Parole italiane da cinque lettere, sei tentativi. Cinque al giorno.',
     path: '/wordle',
     gradient: ['#34c759', '#0a9d4a'],
     glyph: 'W',

@@ -1,4 +1,11 @@
-/** Accesso ai dati delle partite in compagnia. */
+/**
+ * Accesso ai dati delle partite in compagnia.
+ *
+ * Si gioca in compagnia **la parola del giorno**, cioe' `slot = 1`: le altre
+ * quattro della giornata sono un extra personale. Per questo le query qui
+ * filtrano tutte su quella posizione, e `coop_rooms` puo' restare con la sua
+ * "una stanza per host al giorno".
+ */
 
 import { MAX_ATTEMPTS, MAX_COOP_GUESTS, WORD_LENGTH } from '../../shared/config'
 import { evaluateAll } from '../../shared/wordle'
@@ -186,6 +193,7 @@ export async function invitablePlayers(
               EXISTS (SELECT 1 FROM wordle_games g
                        WHERE g.player_id = p.id
                          AND g.puzzle_number = ?
+                         AND g.slot = 1
                          AND g.status != 'playing')                AS played_today,
               CASE WHEN ?2 IS NULL THEN 0 ELSE EXISTS (
                 SELECT 1 FROM coop_invites i
@@ -230,10 +238,12 @@ export async function pendingInvites(
               EXISTS (SELECT 1 FROM wordle_games g
                        WHERE g.player_id = ?1
                          AND g.puzzle_number = r.puzzle_number
+                         AND g.slot = 1
                          AND g.status != 'playing') AS ho_finito,
               COALESCE((SELECT g.attempts FROM wordle_games g
                          WHERE g.player_id = ?1
-                           AND g.puzzle_number = r.puzzle_number), 0) AS miei_tentativi
+                           AND g.puzzle_number = r.puzzle_number
+                           AND g.slot = 1), 0) AS miei_tentativi
          FROM coop_invites i
          JOIN coop_rooms r ON r.id = i.room_id
          JOIN players p ON p.id = r.host_id
@@ -321,7 +331,8 @@ export async function markSpectated(
   const esito = await db
     .prepare(
       `UPDATE wordle_games SET spectated = 1, assist_room_id = ?
-        WHERE player_id = ? AND puzzle_number = ? AND status = 'playing'
+        WHERE player_id = ? AND puzzle_number = ? AND slot = 1
+          AND status = 'playing'
           AND (assist_room_id IS NULL OR assist_room_id = ?)`,
     )
     .bind(roomId, guestId, when.puzzleNumber, roomId)
@@ -338,7 +349,7 @@ export async function participation(
   const row = await db
     .prepare(
       `SELECT status, spectated, assist_room_id FROM wordle_games
-        WHERE player_id = ? AND puzzle_number = ?`,
+        WHERE player_id = ? AND puzzle_number = ? AND slot = 1`,
     )
     .bind(playerId, puzzleNumber)
     .first<{ status: string; spectated: number; assist_room_id: string | null }>()
@@ -366,7 +377,7 @@ export async function guestView(
     db
       .prepare(
         `SELECT spectated, assist_score, assist_room_id FROM wordle_games
-          WHERE player_id = ? AND puzzle_number = ?`,
+          WHERE player_id = ? AND puzzle_number = ? AND slot = 1`,
       )
       .bind(viewerId, room.puzzle_number)
       .first<{ spectated: number; assist_score: number | null; assist_room_id: string | null }>(),
@@ -443,6 +454,7 @@ export async function payAssists(
       `UPDATE wordle_games
           SET assist_score = ?, assist_status = ?
         WHERE puzzle_number = ?
+          AND slot = 1
           AND assist_room_id = ?
           AND spectated = 1
           AND assist_score IS NULL`,
