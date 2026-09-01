@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { MAX_ATTEMPTS, WORD_LENGTH, WORDS_PER_DAY } from '../../shared/config'
 import { msToNextPuzzle } from '../../shared/daily'
-import { maxScoreFor, scoreForWord } from '../../shared/scoring'
+import { scoreForWord } from '../../shared/scoring'
 import type {
   DaySlot,
   PlayerStats,
@@ -79,23 +79,58 @@ async function dayOf(db: D1Database, playerId: string, puzzleNumber: number): Pr
       assist_status: WordleStatus | null
     }>()
 
+  /*
+   * `locked` si propaga in avanti: la prima parola e' sempre aperta, e ognuna
+   * delle altre lo e' solo se quella prima e' chiusa. Una giornata giocata in
+   * compagnia conta come chiusa quando l'host ha finito, non quando si accetta
+   * l'invito — altrimenti si potrebbe aprire la seconda mentre la prima e'
+   * ancora in corso da un'altra parte.
+   */
+  let precedenteChiusa = true
   return Array.from({ length: WORDS_PER_DAY }, (_, i) => {
     const slot = i + 1
     const row = results.find((r) => r.slot === slot)
+    const locked = !precedenteChiusa
+
     if (!row) {
-      return { slot, status: 'new' as const, attempts: 0, score: null, maxScore: maxScoreFor(slot), shared: false }
+      precedenteChiusa = false
+      return { slot, status: 'new' as const, attempts: 0, score: null, locked, shared: false }
     }
+
     const insieme = row.spectated === 1
+    // In compagnia i tentativi sono dell'host, e l'esito e' il suo.
+    const status = insieme ? (row.assist_status ?? 'playing') : row.status
+    precedenteChiusa = status !== 'playing'
+
     return {
       slot,
-      // In compagnia i tentativi sono dell'host, e l'esito e' il suo.
-      status: insieme ? (row.assist_status ?? 'playing') : row.status,
+      status,
       attempts: insieme ? 0 : row.attempts,
       score: insieme ? row.assist_score : row.score,
-      maxScore: maxScoreFor(slot),
+      locked,
       shared: insieme,
     }
   })
+}
+
+/**
+ * Rifiuta la parola se quella prima non e' chiusa.
+ *
+ * Il controllo sta sul server e non solo nel selettore: nascondere una parola in
+ * facciata lascerebbe la rotta aperta a chiunque passi `?slot=5`, e i punti
+ * delle parole in piu' sarebbero regalati a chi conosce l'indirizzo.
+ */
+function requireUnlocked(day: DaySlot[], slot: number): void {
+  const scelta = day.find((d) => d.slot === slot)
+  if (scelta?.locked) {
+    fail(
+      409,
+      'PAROLA_BLOCCATA',
+      slot === 2
+        ? 'Prima finisci la parola del giorno.'
+        : `Prima finisci la ${slot - 1}ª parola.`,
+    )
+  }
 }
 
 /** La posizione chiesta dal client, dentro i limiti. */
@@ -121,10 +156,20 @@ export const wordleRoutes = new Hono<AppEnv>()
   .get('/state', async (c) => {
     const when = today()
     const slot = readSlot(c.req.query('slot'))
+
+    /*
+     * Il quadro si legge **prima** di aprire la partita: `openGame` creerebbe la
+     * riga, e quella riga renderebbe la parola successiva sbloccata al prossimo
+     * giro anche se questa non e' stata giocata.
+     */
+    const day = await dayOf(c.env.DB, c.get('player').id, when.puzzleNumber)
+    requireUnlocked(day, slot)
+
     const answer = await dailyAnswer(c.env.DB, when, slot)
     const row = await openGame(c.env.DB, c.get('player').id, when, answer, slot)
-    const day = await dayOf(c.env.DB, c.get('player').id, when.puzzleNumber)
-    return c.json<WordleState>(toState(row, day))
+    return c.json<WordleState>(
+      toState(row, await dayOf(c.env.DB, c.get('player').id, when.puzzleNumber)),
+    )
   })
 
   .post('/guess', async (c) => {
@@ -142,6 +187,8 @@ export const wordleRoutes = new Hono<AppEnv>()
     }
 
     const when = today()
+    requireUnlocked(await dayOf(c.env.DB, c.get('player').id, when.puzzleNumber), slot)
+
     const answer = await dailyAnswer(c.env.DB, when, slot)
     const row = await openGame(c.env.DB, c.get('player').id, when, answer, slot)
 

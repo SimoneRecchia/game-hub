@@ -31,6 +31,8 @@ export interface WordleController {
   slot: number
   /** Passa a un'altra parola della giornata. */
   chooseSlot: (slot: number) => void
+  /** Spiega perché una parola e' ancora chiusa, invece di non reagire al tocco. */
+  flashBlocked: (slot: number) => void
   stats: PlayerStats | null
   loading: boolean
   loadError: string | null
@@ -140,6 +142,22 @@ export function useWordle(): WordleController {
       later(() => setMessage(null), 1_800)
     },
     [later],
+  )
+
+  /*
+   * Toccare una parola ancora chiusa dice perché, invece di non reagire.
+   *
+   * Un nodo che non fa niente al tocco sembra rotto: il messaggio e' l'unica
+   * cosa che distingue "e' chiusa" da "l'app si e' piantata".
+   */
+  const flashBlocked = useCallback(
+    (slot: number) => {
+      haptic('error')
+      flash(
+        slot === 2 ? 'Prima finisci la parola del giorno' : `Prima finisci la ${slot - 1}ª parola`,
+      )
+    },
+    [flash],
   )
 
   const shake = useCallback(
@@ -292,6 +310,7 @@ export function useWordle(): WordleController {
     state,
     slot,
     chooseSlot,
+    flashBlocked,
     stats,
     loading,
     loadError,

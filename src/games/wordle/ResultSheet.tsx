@@ -33,7 +33,15 @@ export function ResultSheet({ open, onClose, state, stats, onNextWord }: Props) 
    * solo nel selettore in cima, chi chiude la parola del giorno e chiude il
    * riepilogo non saprebbe mai che ce ne sono altre.
    */
-  const prossima = state.day.find((d) => d.slot !== state.slot && d.status !== 'won' && d.status !== 'lost')
+  /*
+   * Le parole si aprono una per volta, quindi la prossima e' semplicemente la
+   * prima non ancora chiusa. Il filtro su `locked` c'e' comunque: se un domani
+   * la progressione cambiasse, questo bottone non porterebbe su una parola che
+   * il server rifiuta.
+   */
+  const prossima = state.day.find(
+    (d) => d.status !== 'won' && d.status !== 'lost' && !d.locked && d.slot !== state.slot,
+  )
   const rimaste = state.day.filter((d) => d.status !== 'won' && d.status !== 'lost').length
   const puntiGiornata = state.day.reduce((sum, d) => sum + (d.score ?? 0), 0)
 
@@ -88,9 +96,12 @@ export function ResultSheet({ open, onClose, state, stats, onNextWord }: Props) 
                 onClose()
               }}
             >
+              {/* Niente punti nell'etichetta: la scala sta nel foglio informativo,
+                  e qui il numero sarebbe un'altra cifra da leggere in un foglio
+                  che ne ha già parecchie. */}
               {prossima.slot === 1
                 ? 'Gioca la parola del giorno'
-                : `Gioca la ${prossima.slot}ª parola · fino a ${prossima.maxScore} punti`}
+                : `Gioca la ${prossima.slot}ª parola`}
             </Button>
           )}
 

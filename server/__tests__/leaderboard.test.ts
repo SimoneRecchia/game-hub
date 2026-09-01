@@ -185,3 +185,33 @@ describe('le parole in piu come ultimo spareggio', () => {
     expect(rows.map((r) => r.nickname)).toEqual(['brava', 'tante'])
   })
 })
+
+describe('il pareggio fra la giornata perfetta e chi macina tutto', () => {
+  it('si scioglie sulla media tentativi, non sul numero di partite', () => {
+    /*
+     * Con la scala delle cinque parole il caso estremo e' un pareggio esatto:
+     * principale perfetta 109 contro cinque parole all'ultimo tentativo 109
+     * (vedi `shared/__tests__/scoring.test.ts`).
+     *
+     * Chi ha fatto la giornata perfetta deve stare davanti. Ci arriva perché
+     * `played`, `wins` e la media contano **solo la parola del giorno**: se
+     * contassero tutte e cinque, chi le gioca tutte avrebbe cinque vittorie al
+     * giorno e vincerebbe lo spareggio col numero invece che col merito.
+     */
+    const rows = rankPlayers([
+      player('perfetta', { playScore: 109, played: 1, wins: 1, avgAttempts: 1, extra: 0 }),
+      player('macina', { playScore: 109, played: 1, wins: 1, avgAttempts: 6, extra: 4 }),
+    ])
+    expect(rows.map((r) => r.nickname)).toEqual(['perfetta', 'macina'])
+  })
+
+  it('ma a parita anche di media, chi ha fatto piu parole passa avanti', () => {
+    // Le parole in piu' restano l'ultimo spareggio: fra due giornate identiche,
+    // averne fatte di piu' e' l'unica differenza che resta.
+    const rows = rankPlayers([
+      player('poche', { playScore: 100, played: 1, wins: 1, avgAttempts: 2, extra: 0 }),
+      player('tante', { playScore: 100, played: 1, wins: 1, avgAttempts: 2, extra: 4 }),
+    ])
+    expect(rows.map((r) => r.nickname)).toEqual(['tante', 'poche'])
+  })
+})

@@ -125,69 +125,83 @@ export function scoreFor(input: ScoreInput): number {
   return scoreBreakdown(input).total
 }
 
-/* ─────────────────────────  Le parole in piu'  ───────────────────────── */
+/* ────────────────────  Le cinque parole della giornata  ──────────────────── */
 
 /**
- * Quanto vale ciascuna parola della giornata, in ottavi.
+ * Quanto vale ciascuna parola, per numero di tentativi.
  *
- * La prima e' *la* parola del giorno e vale piena. Le altre dimezzano —
- * mezzo, un quarto, un ottavo — e l'ultima resta all'ottavo invece di
- * scendere a un sedicesimo: cosi' la quinta non e' un premio di consolazione
- * che non vale la pena di giocare.
+ * Ogni parola ha **base e gradino propri** invece di essere la principale
+ * moltiplicata per un peso. Il peso sembrava piu' elegante, ma costringeva ad
+ * arrotondare: `floor` era l'unico modo di garantire che la somma delle quattro
+ * non superasse la principale, e più in basso nella scala la coda si
+ * schiacciava — con una base piu' bassa la quinta parola sarebbe finita a uno o
+ * due punti, e nessuno l'avrebbe giocata.
  *
- * La somma delle quattro (4+2+1+1 = 8) fa esattamente quanto la prima. Quindi
- * chi fa tutte e cinque le parole raddoppia al massimo la sua giornata, e chi
- * gioca solo la principale non puo' essere superato da qualcuno che ha giocato
- * peggio ma piu' a lungo — a meno che quello faccia davvero *tutto*.
+ * Con base e gradino la somma torna **per costruzione, a ogni numero di
+ * tentativi**, senza arrotondamenti:
+ *
+ *     somma delle basi delle quattro   = 20 + 14 + 8 + 8 = 50 = base della prima
+ *     somma dei gradini delle quattro  =  4 +  2 + 2 + 2 = 10 = gradino della prima
+ *
+ * Da cui la tabella:
+ *
+ *     tentativi        1    2    3    4    5    6
+ *     del giorno     100   90   80   70   60   50
+ *     2ª              40   36   32   28   24   20
+ *     3ª              24   22   20   18   16   14
+ *     4ª              18   16   14   12   10    8
+ *     5ª              18   16   14   12   10    8
+ *     somma 2ª-5ª    100   90   80   70   60   50
+ *
+ * Le ultime due valgono uguale invece di continuare a scendere: la quinta deve
+ * valere la pena di essere giocata, e una progressione che finisce a tre punti
+ * la rende un dispetto. C'e' un test su ognuna di queste proprietà.
  */
-export const WORD_WEIGHTS = [8, 4, 2, 1, 1] as const
-export const WEIGHT_UNIT = 8
 
-/** Il peso della parola in posizione `slot` (1..WORDS_PER_DAY). */
-export function weightOf(slot: number): number {
-  return WORD_WEIGHTS[Math.min(Math.max(slot, 1), WORDS_PER_DAY) - 1]
+/** Punti di una parola indovinata all'ultimo tentativo, per posizione. */
+export const WORD_BASE = [50, 20, 14, 8, 8] as const
+/** Quanto vale un tentativo risparmiato, per posizione. */
+export const WORD_STEP = [10, 4, 2, 2, 2] as const
+/** Punti di una parola giocata e non indovinata, per posizione. */
+export const WORD_LOSS = [20, 8, 6, 3, 3] as const
+
+/** Indice della posizione, tenuto dentro i limiti. */
+function slotIndex(slot: number): number {
+  return Math.min(Math.max(slot, 1), WORDS_PER_DAY) - 1
+}
+
+/** Punti di una parola indovinata in `attempts` tentativi, alla posizione `slot`. */
+export function wordScore(slot: number, attempts: number): number {
+  const i = slotIndex(slot)
+  const usati = Math.min(Math.max(attempts, 1), MAX_ATTEMPTS)
+  return WORD_BASE[i] + WORD_STEP[i] * (MAX_ATTEMPTS - usati)
+}
+
+/** Il massimo che una parola puo' valere, bonus esclusi: serve a spiegare la scala. */
+export function maxScoreFor(slot: number): number {
+  return wordScore(slot, 1)
+}
+
+/** Il minimo di una parola indovinata: il fondo della scala, per la spiegazione. */
+export function minScoreFor(slot: number): number {
+  return wordScore(slot, MAX_ATTEMPTS)
 }
 
 /**
- * Il punteggio di una parola, pesato per la sua posizione.
+ * Il punteggio di una parola, con i bonus.
  *
- * **Arrotonda per difetto**, e non al piu' vicino, per una ragione che vale
- * piu' della precisione: `floor(a) + floor(b) <= floor(a + b)`, quindi la somma
- * delle quattro parole in piu' non puo' *mai* superare quella principale, a
- * nessun punteggio. Arrotondando al piu' vicino, un 100 diventerebbe
- * 50+25+13+13 = 101, e la garanzia salterebbe per un punto. C'e' un test che la
- * verifica su tutti i punteggi possibili.
- */
-export function weighted(score: number, slot: number): number {
-  return Math.floor((score * weightOf(slot)) / WEIGHT_UNIT)
-}
-
-/**
- * Il punteggio di una parola: base pesata, e i bonus solo sulla principale.
- *
- * I bonus stanno sulla **parola del giorno** e non su tutte e cinque, e non e'
- * un dettaglio di taratura: velocità e costanza sono proprietà della giornata,
- * non di ogni singola parola. Dandoli a tutte, chi giocava tutte e cinque
- * incassava fino a cinque volte il bonus velocità, e questo bastava a far
- * superare chi aveva indovinato la principale al primo colpo — cioe' esattamente
- * il ribaltamento che i pesi servono a impedire. Trovato provando l'API, non
- * ragionando sui numeri: i pesi da soli erano giusti.
+ * I bonus stanno solo sulla **parola del giorno**, e non e' una taratura:
+ * velocità e costanza sono proprietà della giornata, non di ogni parola. Dandoli
+ * a tutte e cinque, chi le giocava tutte incassava fino a cinque volte il bonus
+ * velocità, e tanto bastava a superare chi aveva indovinato la principale al
+ * primo colpo — cioe' esattamente il ribaltamento che la scala serve a impedire.
+ * Trovato provando l'API, non ragionando sui numeri.
  */
 export function scoreForWord(input: ScoreInput, slot: number): number {
-  const base =
-    slot === 1 ? scoreFor(input) : scoreFor({ ...input, durationMs: null, streak: 0 })
-  return weighted(base, slot)
-}
+  if (input.status === 'playing') return 0
+  if (input.status === 'lost') return WORD_LOSS[slotIndex(slot)]
 
-/**
- * Quanto vale al massimo una parola in posizione `slot`, **senza bonus**.
- *
- * Serve al selettore, e i bonus li lascia fuori di proposito: accanto a un 50
- * scritto sulla seconda parola, un 109 sulla prima farebbe sembrare il rapporto
- * peggiore di quello che e'. La scala che il giocatore deve leggere e'
- * 100-50-25-12-12, cioe' i pesi; i quattro punti di velocità e i cinque di
- * costanza sono un dettaglio che non cambia la scelta di quale parola giocare.
- */
-export function maxScoreFor(slot: number): number {
-  return weighted(ATTEMPT_POINTS[0], slot)
+  const punti = wordScore(slot, input.attempts)
+  if (slot !== 1) return punti
+  return punti + speedBonus(input.durationMs) + streakBonus(input.streak)
 }

@@ -3,8 +3,6 @@ import {
   ATTEMPT_POINTS,
   ATTEMPT_STEP,
   LOSS_POINTS,
-  WEIGHT_UNIT,
-  WORD_WEIGHTS,
   MAX_SCORE,
   MAX_SPEED_BONUS,
   MAX_STREAK_BONUS,
@@ -12,16 +10,19 @@ import {
   PARTICIPATION_POINTS,
   SPEED_FULL_MS,
   SPEED_ZERO_MS,
+  WORD_BASE,
+  WORD_LOSS,
+  WORD_STEP,
   maxScoreFor,
+  minScoreFor,
   scoreBreakdown,
   scoreFor,
   scoreForWord,
   speedBonus,
   streakBonus,
-  weightOf,
-  weighted,
+  wordScore,
 } from '../scoring'
-import { MAX_ATTEMPTS, WORDS_PER_DAY } from '../config'
+import { MAX_ATTEMPTS } from '../config'
 
 describe('bonus velocita', () => {
   it('e pieno sotto i 45 secondi', () => {
@@ -190,95 +191,131 @@ describe('scala dei punti: giusta ma recuperabile', () => {
   })
 })
 
-describe('le cinque parole della giornata', () => {
-  it('dimezzano, e l ultima resta all ottavo', () => {
-    expect([...WORD_WEIGHTS]).toEqual([8, 4, 2, 1, 1])
-    expect(WORD_WEIGHTS).toHaveLength(WORDS_PER_DAY)
-    // L'ultima non scende a un sedicesimo: una quinta parola che valesse sei
-    // punti e mezzo non varrebbe la pena di giocarla.
-    expect(WORD_WEIGHTS[4]).toBe(WORD_WEIGHTS[3])
+
+describe('la scala delle cinque parole', () => {
+  const tentativi = [1, 2, 3, 4, 5, 6]
+  const parole = [1, 2, 3, 4, 5]
+  const extra = [2, 3, 4, 5]
+
+  it('e la tabella attesa', () => {
+    expect(parole.map((s) => tentativi.map((t) => wordScore(s, t)))).toEqual([
+      [100, 90, 80, 70, 60, 50],
+      [40, 36, 32, 28, 24, 20],
+      [24, 22, 20, 18, 16, 14],
+      [18, 16, 14, 12, 10, 8],
+      [18, 16, 14, 12, 10, 8],
+    ])
   })
 
-  it('la somma delle quattro in piu fa quanto la principale', () => {
-    const extra = WORD_WEIGHTS.slice(1).reduce((a, b) => a + b, 0)
-    expect(extra).toBe(WORD_WEIGHTS[0])
-    expect(extra).toBe(WEIGHT_UNIT)
-  })
-
-  it('e la somma non supera la principale a NESSUN punteggio', () => {
+  it('la somma delle quattro in piu FA la principale, a ogni tentativo', () => {
     /*
-     * L'invariante vera, ed e' il motivo per cui `weighted` arrotonda per
-     * difetto: al piu' vicino, un 100 darebbe 50+25+13+13 = 101, e le quattro
-     * parole in piu' batterebbero la principale per un punto. Verificato su
-     * tutti i punteggi possibili invece che su un esempio.
+     * L'invariante centrale, ed e' la ragione per cui ogni parola ha base e
+     * gradino propri invece di essere la principale moltiplicata per un peso:
+     * col peso serviva arrotondare, e la somma tornava per fortuna. Qui torna
+     * per costruzione — le basi sommano alla base, i gradini al gradino.
      */
-    for (let punti = 0; punti <= 200; punti += 1) {
-      const principale = weighted(punti, 1)
-      const extra = [2, 3, 4, 5].reduce((sum, slot) => sum + weighted(punti, slot), 0)
-      expect(extra).toBeLessThanOrEqual(principale)
+    for (const t of tentativi) {
+      const somma = extra.reduce((acc, s) => acc + wordScore(s, t), 0)
+      expect(somma).toBe(wordScore(1, t))
     }
   })
 
-  it('la principale vale piena', () => {
-    for (let punti = 0; punti <= 200; punti += 1) {
-      expect(weighted(punti, 1)).toBe(punti)
+  it('le basi e i gradini delle quattro sommano a quelli della prima', () => {
+    // La condizione che rende vero il test qui sopra: se qualcuno ritocca un
+    // numero, cade prima questa, che dice subito dov'e' lo sbilancio.
+    expect(WORD_BASE.slice(1).reduce((a, b) => a + b, 0)).toBe(WORD_BASE[0])
+    expect(WORD_STEP.slice(1).reduce((a, b) => a + b, 0)).toBe(WORD_STEP[0])
+  })
+
+  it('i punti scendono lungo le posizioni, con le ultime due pari', () => {
+    for (const t of tentativi) {
+      const riga = parole.map((s) => wordScore(s, t))
+      expect(riga[0]).toBeGreaterThan(riga[1])
+      expect(riga[1]).toBeGreaterThan(riga[2])
+      expect(riga[2]).toBeGreaterThan(riga[3])
+      // Le ultime due valgono uguale di proposito: una quinta parola che vale
+      // tre punti non vale la pena di essere giocata.
+      expect(riga[3]).toBe(riga[4])
     }
   })
 
-  it('i punti scendono lungo le posizioni, senza risalire', () => {
-    const scala = [1, 2, 3, 4, 5].map((slot) => weighted(100, slot))
-    expect(scala).toEqual([100, 50, 25, 12, 12])
-    for (let i = 1; i < scala.length; i += 1) {
-      expect(scala[i]).toBeLessThanOrEqual(scala[i - 1])
+  it('meno tentativi vale piu punti, su ogni parola', () => {
+    for (const s of parole) {
+      for (let t = 2; t <= 6; t += 1) {
+        expect(wordScore(s, t)).toBeLessThan(wordScore(s, t - 1))
+      }
     }
   })
 
-  it('il massimo per posizione e la scala dei pesi, senza bonus', () => {
-    // E' il numero che il selettore mostra: dev'essere leggibile come "meta',
-    // un quarto, un ottavo", non come 109 contro 50.
-    expect([1, 2, 3, 4, 5].map(maxScoreFor)).toEqual([100, 50, 25, 12, 12])
+  it('nessuna parola scende sotto gli otto punti', () => {
+    // La condizione che il peso non riusciva a garantire: con la moltiplicazione
+    // la coda si schiacciava, e la quinta parola finiva a pochi punti.
+    for (const s of parole) {
+      for (const t of tentativi) {
+        expect(wordScore(s, t)).toBeGreaterThanOrEqual(8)
+      }
+    }
   })
 
-  it('regge posizioni fuori scala senza esplodere', () => {
-    expect(weightOf(0)).toBe(WORD_WEIGHTS[0])
-    expect(weightOf(99)).toBe(WORD_WEIGHTS[WORDS_PER_DAY - 1])
-  })
-
-  it('una giornata intera vale al massimo il doppio della sola principale', () => {
-    // E' il tetto di quel che le extra possono aggiungere: chi fa tutto
-    // raddoppia, non decuplica.
-    const sola = weighted(ATTEMPT_POINTS[0], 1)
-    const tutte = [1, 2, 3, 4, 5].reduce((s, slot) => s + weighted(ATTEMPT_POINTS[0], slot), 0)
-    expect(tutte).toBeLessThanOrEqual(sola * 2)
+  it('chi non indovina prende meno di chi indovina all ultimo, ma non zero', () => {
+    for (const s of parole) {
+      expect(WORD_LOSS[s - 1]).toBeLessThan(wordScore(s, 6))
+      expect(WORD_LOSS[s - 1]).toBeGreaterThan(0)
+    }
+    // Anche i punti di consolazione delle quattro sommano a quelli della prima.
+    expect(WORD_LOSS.slice(1).reduce((a, b) => a + b, 0)).toBe(WORD_LOSS[0])
   })
 
   it('i bonus stanno solo sulla principale', () => {
-    /*
-     * Senza questa regola i bonus si moltiplicavano per cinque: chi giocava
-     * tutte le parole incassava fino a cinque volte il bonus velocità, e tanto
-     * bastava a ribaltare chi aveva indovinato la principale al primo colpo.
-     * Trovato provando l'API, non ragionando sui pesi — che erano giusti.
-     */
-    const veloce = { status: 'won' as const, attempts: 6, durationMs: 0, streak: 5 }
-    expect(scoreForWord(veloce, 1)).toBe(ATTEMPT_POINTS[5] + MAX_SPEED_BONUS + MAX_STREAK_BONUS)
-    // Sulle altre, la sola base pesata.
-    expect(scoreForWord(veloce, 2)).toBe(weighted(ATTEMPT_POINTS[5], 2))
-    expect(scoreForWord(veloce, 5)).toBe(weighted(ATTEMPT_POINTS[5], 5))
+    const veloce = { status: 'won' as const, attempts: 6, durationMs: 0, streak: 99 }
+    expect(scoreForWord(veloce, 1)).toBe(wordScore(1, 6) + MAX_SPEED_BONUS + MAX_STREAK_BONUS)
+    expect(scoreForWord(veloce, 2)).toBe(wordScore(2, 6))
+    expect(scoreForWord(veloce, 5)).toBe(wordScore(5, 6))
   })
 
-  it('la principale giocata bene batte tutte e cinque giocate male', () => {
+  it('la principale giocata bene non viene superata da tutte e cinque giocate male', () => {
     /*
-     * La condizione che l'utente ha chiesto a parole: "senza ribaltarla". E' il
-     * caso peggiore possibile — giornata perfetta sulla sola principale contro
-     * cinque parole chiuse tutte all'ultimo tentativo, con tutti i bonus in
-     * palio — e regge per un punto, che e' esattamente quel che deve essere:
-     * la somma delle quattro extra *vale* quanto la principale, quindi fare
-     * tutto raddoppia la giornata senza mai passare davanti.
+     * "Senza ribaltarla", nel caso peggiore possibile: giornata perfetta sulla
+     * sola principale contro cinque parole chiuse all'ultimo tentativo, con
+     * tutti i bonus in palio.
+     *
+     * Il risultato e' un **pareggio esatto**, non un sorpasso, e non e' un caso:
+     * le quattro parole in piu' valgono per definizione quanto la principale, e
+     * i bonus sono gli stessi da entrambe le parti. Chi fa tutto arriva alla
+     * pari con chi fa una giornata perfetta — che e' esattamente il patto.
+     *
+     * Il pareggio poi si scioglie in classifica sulla media tentativi, dove
+     * vince la giornata perfetta: vedi la nota in `server/lib/leaderboard.ts`,
+     * e il test in `server/__tests__/leaderboard.test.ts`.
      */
     const migliore = { status: 'won' as const, attempts: 1, durationMs: 0, streak: 99 }
-    const peggiore = { status: 'won' as const, attempts: MAX_ATTEMPTS, durationMs: 0, streak: 99 }
+    const peggiore = { status: 'won' as const, attempts: 6, durationMs: 0, streak: 99 }
     const soloPrincipale = scoreForWord(migliore, 1)
-    const tuttoMale = [1, 2, 3, 4, 5].reduce((s, slot) => s + scoreForWord(peggiore, slot), 0)
-    expect(soloPrincipale).toBeGreaterThan(tuttoMale)
+    const tuttoMale = parole.reduce((acc, s) => acc + scoreForWord(peggiore, s), 0)
+    expect(soloPrincipale).toBeGreaterThanOrEqual(tuttoMale)
+  })
+
+  it('una giornata intera vale al massimo il doppio della sola principale', () => {
+    const migliore = { status: 'won' as const, attempts: 1, durationMs: 0, streak: 99 }
+    const sola = scoreForWord(migliore, 1)
+    const tutte = parole.reduce((acc, s) => acc + scoreForWord(migliore, s), 0)
+    expect(tutte).toBeLessThanOrEqual(sola * 2)
+  })
+
+  it('massimi e minimi per posizione', () => {
+    expect(parole.map(maxScoreFor)).toEqual([100, 40, 24, 18, 18])
+    expect(parole.map(minScoreFor)).toEqual([50, 20, 14, 8, 8])
+  })
+
+  it('regge posizioni e tentativi fuori scala', () => {
+    expect(wordScore(0, 1)).toBe(wordScore(1, 1))
+    expect(wordScore(99, 1)).toBe(wordScore(5, 1))
+    expect(wordScore(1, 0)).toBe(wordScore(1, 1))
+    expect(wordScore(1, 99)).toBe(wordScore(1, 6))
+  })
+
+  it('una partita in corso non vale niente', () => {
+    expect(scoreForWord({ status: 'playing', attempts: 2, durationMs: 5_000, streak: 3 }, 1)).toBe(0)
+    expect(scoreForWord({ status: 'playing', attempts: 2, durationMs: 5_000, streak: 3 }, 4)).toBe(0)
   })
 })

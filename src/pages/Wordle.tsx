@@ -95,7 +95,12 @@ export default function Wordle() {
               parola sarebbe indistinguibile da quella della prima.
             */}
             {game.state && (
-              <WordPicker day={game.state.day} active={game.slot} onPick={game.chooseSlot} />
+              <WordPicker
+                day={game.state.day}
+                active={game.slot}
+                onPick={game.chooseSlot}
+                onBlocked={game.flashBlocked}
+              />
             )}
 
             {/*
