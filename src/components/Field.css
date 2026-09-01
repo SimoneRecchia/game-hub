@@ -36,7 +36,7 @@
 }
 
 .field:focus-within .field__label {
-  color: var(--blue);
+  color: var(--brand);
 }
 
 .field__hint {

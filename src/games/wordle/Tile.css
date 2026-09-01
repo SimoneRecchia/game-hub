@@ -1,10 +1,20 @@
+/*
+ * La casella e' l'oggetto centrale del gioco, e prima era un rettangolo piatto.
+ *
+ * Tre cose la fanno sembrare una cosa che si puo' toccare: l'angolo piu' morbido
+ * (--r-md invece di --r-sm), il filo di luce in alto (--edge-light) che simula
+ * uno spigolo illuminato, e — quando e' colorata — una velatura verticale che
+ * dice da dove viene la luce. Nessuna delle tre si nota una per una; insieme
+ * cambiano il tono di tutta la schermata.
+ */
 .tile {
   position: relative;
   display: grid;
   place-items: center;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   border: 2px solid var(--tile-empty-border);
   background: var(--surface);
+  box-shadow: var(--edge-light);
   color: var(--label);
   font-family: var(--font-rounded);
   font-weight: 700;
@@ -17,7 +27,9 @@
   line-height: 1;
   letter-spacing: 0;
   user-select: none;
-  transition: border-color var(--dur-fast) var(--ease-out);
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
   /* Necessario perché rotateX si veda come una rotazione e non come uno schiacciamento. */
   transform-style: preserve-3d;
 }
@@ -43,33 +55,64 @@
 /* Casella appena riempita: bordo piu' marcato e un piccolo scatto. */
 .tile.is-filled {
   border-color: var(--tile-active-border);
-  animation: tile-pop var(--dur-fast) var(--ease-spring);
+  animation: tile-pop 180ms var(--ease-bounce);
 }
 
+/*
+ * Colore di fondo e della lettera per stato.
+ *
+ * `--tile-ink` va insieme a `--tile-bg` perché il contrasto dipende dai due:
+ * vedi la nota sui token. I keyframes usano `--tile-ink`, così cambiare il
+ * colore della lettera di uno stato non richiede di toccare l'animazione.
+ */
 .tile.is-correct {
   --tile-bg: var(--tile-correct);
+  --tile-ink: var(--tile-text-on-correct);
 }
 
 .tile.is-present {
   --tile-bg: var(--tile-present);
+  --tile-ink: var(--tile-text-on-present);
 }
 
 .tile.is-absent {
   --tile-bg: var(--tile-absent);
+  --tile-ink: var(--tile-text-on-absent);
 }
 
-/* Stato finale, dopo la rotazione. */
+/*
+ * Stato finale, dopo la rotazione.
+ *
+ * `background-image` invece di sostituire `background`: la velatura sta sopra il
+ * colore pieno, così `--tile-bg` resta l'unica fonte del colore e i keyframes
+ * possono animarlo senza doverla ripetere.
+ */
+.tile.is-scored,
+.tile.is-revealing {
+  background-image: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16),
+    rgba(0, 0, 0, 0.08)
+  );
+}
+
 .tile.is-scored {
-  background: var(--tile-bg);
+  background-color: var(--tile-bg);
   border-color: var(--tile-bg);
-  color: var(--tile-text-on-fill);
+  color: var(--tile-ink);
+  box-shadow: var(--edge-light), 0 2px 6px var(--shadow-tint-soft);
   animation: none;
 }
 
 /*
  * La rotazione: la casella gira sull'asse orizzontale e il colore cambia
  * esattamente quando e' di taglio, quindi il passaggio non si vede mai.
- * Il ritardo scalato per indice fa scoprire le lettere una dopo l'altra.
+ *
+ * Rispetto a prima la casella **scavalca** la posizione finale invece di
+ * fermarsi (-96° e poi +8°), e ridiscende: e' la differenza fra un pannello che
+ * ruota e una tessera che si ribalta. La durata e il ritardo restano quelli, e
+ * devono restare allineati a REVEAL_* in useWordle.ts — il codice deve sapere
+ * quando la rotazione e' finita per colorare la tastiera al momento giusto.
  */
 .tile.is-revealing {
   animation: tile-flip 540ms var(--ease-in-out) both;
@@ -79,27 +122,33 @@
 @keyframes tile-flip {
   0% {
     transform: rotateX(0deg);
-    background: var(--surface);
+    background-color: var(--surface);
     border-color: var(--tile-active-border);
     color: var(--label);
   }
   49% {
-    transform: rotateX(-90deg);
-    background: var(--surface);
+    transform: rotateX(-96deg) scale(1.04);
+    background-color: var(--surface);
     border-color: var(--tile-active-border);
     color: var(--label);
   }
   51% {
-    transform: rotateX(-90deg);
-    background: var(--tile-bg);
+    transform: rotateX(-96deg) scale(1.04);
+    background-color: var(--tile-bg);
     border-color: var(--tile-bg);
-    color: var(--tile-text-on-fill);
+    color: var(--tile-ink);
+  }
+  78% {
+    transform: rotateX(8deg) scale(1.01);
+    background-color: var(--tile-bg);
+    border-color: var(--tile-bg);
+    color: var(--tile-ink);
   }
   100% {
-    transform: rotateX(0deg);
-    background: var(--tile-bg);
+    transform: rotateX(0deg) scale(1);
+    background-color: var(--tile-bg);
     border-color: var(--tile-bg);
-    color: var(--tile-text-on-fill);
+    color: var(--tile-ink);
   }
 }
 
@@ -120,22 +169,29 @@
   }
 }
 
+/*
+ * Il rimbalzo della vittoria.
+ *
+ * Sale piu' di prima e cresce salendo, come una cosa che ha un peso; la
+ * rotazione di un grado e mezzo basta a togliergli l'aria di traslazione
+ * meccanica senza che si veda come "gira".
+ */
 @keyframes tile-bounce {
   0%,
-  18% {
-    transform: translateY(0);
+  14% {
+    transform: translateY(0) scale(1) rotate(0deg);
   }
-  42% {
-    transform: translateY(-22%);
+  40% {
+    transform: translateY(-30%) scale(1.06) rotate(-1.5deg);
   }
   58% {
-    transform: translateY(6%);
+    transform: translateY(8%) scale(0.97) rotate(0.8deg);
   }
   76% {
-    transform: translateY(-8%);
+    transform: translateY(-10%) scale(1.02) rotate(-0.4deg);
   }
   100% {
-    transform: translateY(0);
+    transform: translateY(0) scale(1) rotate(0deg);
   }
 }
 
@@ -143,9 +199,9 @@
 @media (prefers-reduced-motion: reduce) {
   .tile.is-revealing {
     animation: none;
-    background: var(--tile-bg);
+    background-color: var(--tile-bg);
     border-color: var(--tile-bg);
-    color: var(--tile-text-on-fill);
+    color: var(--tile-ink);
   }
 
   .tile.is-winning,

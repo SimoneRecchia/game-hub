@@ -7,7 +7,12 @@
   /* Cinque colonne per sei righe: il rapporto tiene le caselle quadrate
      mentre la griglia si adatta allo spazio disponibile. */
   aspect-ratio: 5 / 6;
-  width: min(100%, 350px);
+  /*
+   * Il tetto e' un limite estetico, per il desktop: senza, su uno schermo largo
+   * la griglia diventerebbe enorme. Era 350, che su un telefono da 390 lasciava
+   * spazio inutilizzato ai lati e caselle piu' piccole del necessario.
+   */
+  width: min(100%, 400px);
   max-height: 100%;
   margin: 0 auto;
 }
@@ -29,7 +34,7 @@
   }
 
   .board {
-    width: min(100%, 350px, 83.34cqh);
+    width: min(100%, 400px, 83.34cqh);
   }
 }
 

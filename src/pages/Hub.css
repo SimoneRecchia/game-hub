@@ -195,8 +195,8 @@ a.gamecard:active {
 }
 
 .gamecard__status--new {
-  background: color-mix(in srgb, var(--blue) 14%, transparent);
-  color: var(--blue);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  color: var(--brand);
 }
 
 .gamecard__status--progress {
@@ -212,4 +212,126 @@ a.gamecard:active {
 .gamecard__status--failed {
   background: var(--fill-tertiary);
   color: var(--label-secondary);
+}
+
+/* ---------- La card del gioco giocabile ---------- */
+
+/*
+ * Non una riga d'elenco: un pannello col suo colore.
+ *
+ * E' la prima cosa che si vede aprendo l'app, e prima era indistinguibile da una
+ * voce di Impostazioni — icona piccola a sinistra, testo, chevron. Ora il
+ * gradiente del gioco riempie la card, il testo e' bianco sopra, e il glifo e'
+ * un elemento grafico grande e sfumato invece di un quadratino.
+ *
+ * I colori arrivano dal catalogo come variabili inline (`--carta-1`,
+ * `--carta-2`), così aggiungere un gioco resta una voce in `catalog.ts` e non
+ * tocca il CSS.
+ */
+.gamecard--hero {
+  position: relative;
+  overflow: hidden;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-3) var(--sp-4);
+  padding: var(--sp-5);
+  border-radius: var(--r-2xl);
+  background-image: linear-gradient(145deg, var(--carta-1), var(--carta-2));
+  color: #fff;
+  box-shadow: var(--shadow-md);
+}
+
+/* Una velatura di luce dall'angolo in alto: il gradiente da solo resta piatto. */
+.gamecard--hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 90% at 12% -10%,
+    rgba(255, 255, 255, 0.3),
+    transparent 62%
+  );
+  pointer-events: none;
+}
+
+/*
+ * Il glifo come marchio: grande, sbordato, mezzo trasparente.
+ *
+ * Sta dietro al testo e non accanto, quindi non gli ruba larghezza — e su 320px
+ * quella larghezza serviva tutta al nome del gioco.
+ */
+.gamecard__glifo {
+  position: absolute;
+  right: -6px;
+  bottom: -34px;
+  font-family: var(--font-rounded);
+  font-size: 132px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: var(--tracking-display);
+  color: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+  user-select: none;
+}
+
+.gamecard--hero .gamecard__body {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.gamecard--hero .gamecard__name {
+  font-size: var(--text-title-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  color: #fff;
+}
+
+.gamecard--hero .gamecard__tagline {
+  color: rgba(255, 255, 255, 0.82);
+  /* Il claim puo' andare a capo: qui lo spazio c'e', e tagliarlo a metà frase
+     era peggio che usare due righe. */
+  white-space: normal;
+}
+
+.gamecard__piede {
+  position: relative;
+  flex: 1 0 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+/* Le pastiglie di stato, sopra il gradiente: vetro chiaro, non i colori di
+   sistema, che su un fondo colorato sparirebbero. */
+.gamecard--hero .gamecard__status {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  font-weight: 700;
+}
+
+/* Le cinque parole come pallini: quante sono, e quante fatte. */
+.gamecard__pallini {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+}
+
+.gamecard__pallino {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.gamecard__pallino.is-fatta {
+  background: #fff;
+}
+
+a.gamecard--hero:active {
+  transform: scale(0.985);
 }
