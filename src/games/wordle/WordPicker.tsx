@@ -1,59 +1,95 @@
 import type { DaySlot } from '@shared/types'
-import { IconCheck } from '@/components/Icons'
+import { IconCheck, IconLock } from '@/components/Icons'
 import './WordPicker.css'
 
 interface Props {
   day: DaySlot[]
   active: number
   onPick: (slot: number) => void
+  /** Chiamato quando si tocca una parola ancora chiusa. */
+  onBlocked: (slot: number) => void
+}
+
+type Stato = 'vinta' | 'persa' | 'corrente' | 'aperta' | 'bloccata'
+
+function statoDi(d: DaySlot, active: number): Stato {
+  if (d.status === 'won') return 'vinta'
+  if (d.status === 'lost') return 'persa'
+  if (d.locked) return 'bloccata'
+  return d.slot === active ? 'corrente' : 'aperta'
 }
 
 /**
- * Le cinque parole della giornata.
+ * Le cinque parole della giornata, come un percorso.
  *
- * La gerarchia si vede da tre cose insieme, non da un'etichetta: la prima
- * casella e' piu' larga e porta il nome, le altre solo il numero; sotto ognuna
- * c'e' quanto vale al massimo; e le chiuse mostrano i punti fatti invece del
- * massimo. Senza il "quanto vale", nessuno capirebbe perché la terza dovrebbe
- * interessargli meno della prima.
+ * La forma dice la regola senza spiegarla: nodi collegati da una linea, che e'
+ * piena fin dove si e' arrivati e tratteggiata dopo. Le parole si aprono una per
+ * volta, e un percorso e' l'unica figura che lo rende ovvio — cinque pastiglie
+ * affiancate suggerivano il contrario, che si potesse scegliere.
+ *
+ * Nessun punteggio scritto. Prima ogni parola portava il suo massimo sotto il
+ * nome: cinque numeri in fila sopra la griglia sono rumore, e chi gioca non ha
+ * bisogno di sceglierli — li fa in ordine. La scala sta nel foglio informativo,
+ * dove si va a cercarla una volta.
  */
-export function WordPicker({ day, active, onPick }: Props) {
+export function WordPicker({ day, active, onPick, onBlocked }: Props) {
   return (
-    <div className="parole" role="tablist" aria-label="Le parole di oggi">
-      {day.map((d) => {
-        const chiusa = d.status === 'won' || d.status === 'lost'
-        const stato = chiusa ? (d.status === 'won' ? 'vinta' : 'persa') : d.status
+    <div className="percorso" role="tablist" aria-label="Le parole di oggi">
+      {day.map((d, i) => {
+        const stato = statoDi(d, active)
+        const chiusa = stato === 'vinta' || stato === 'persa'
         return (
-          <button
-            key={d.slot}
-            type="button"
-            role="tab"
-            aria-selected={d.slot === active}
-            aria-label={
-              d.slot === 1 ? 'Parola del giorno' : `${d.slot}ª parola, vale fino a ${d.maxScore}`
-            }
-            className={`parola parola--${stato}${d.slot === active ? ' is-attiva' : ''}${
-              d.slot === 1 ? ' parola--principale' : ''
-            }`}
-            onClick={() => onPick(d.slot)}
-          >
-            <span className="parola__testa">
-              {/* Due etichette per la principale: su schermi bassi la barra passa
-                  a una riga sola e "Del giorno" non ci sta accanto al numero. */}
-              {d.slot === 1 ? (
-                <>
-                  <span className="parola__lunga">Del giorno</span>
-                  <span className="parola__corta">Oggi</span>
-                </>
+          <div className="percorso__tappa" key={d.slot}>
+            {/* Il tratto verso la tappa precedente: pieno se quella e' chiusa. */}
+            {i > 0 && (
+              <span
+                className={`percorso__tratto${
+                  day[i - 1].status === 'won' || day[i - 1].status === 'lost'
+                    ? ' is-percorsa'
+                    : ''
+                }`}
+                aria-hidden="true"
+              />
+            )}
+            <button
+              type="button"
+              role="tab"
+              aria-selected={d.slot === active}
+              /*
+               * Nessun `aria-disabled`: una parola chiusa non e' un controllo
+               * disabilitato, e' un controllo che spiega una precondizione.
+               * Marcandola disabilitata il tocco non arrivava piu' — verificato,
+               * il browser lo scartava — e chi usa uno screen reader sentiva
+               * "non disponibile" invece del motivo. Lo stato sta nell'etichetta.
+               */
+              aria-label={
+                (d.slot === 1 ? 'Parola del giorno' : `${d.slot}ª parola`) +
+                (stato === 'bloccata'
+                  ? ', ancora chiusa'
+                  : stato === 'vinta'
+                    ? ', indovinata'
+                    : stato === 'persa'
+                      ? ', non indovinata'
+                      : '')
+              }
+              /*
+               * `is-attiva` sta accanto allo stato, non al suo posto: guardando
+               * una parola già chiusa nessun nodo risultava "sei qui", e la
+               * posizione nel percorso diventava ambigua. Il colore dice com'e'
+               * andata, l'anello dice dove sei.
+               */
+              className={`nodo nodo--${stato}${d.slot === active ? ' is-attiva' : ''}`}
+              onClick={() => (stato === 'bloccata' ? onBlocked(d.slot) : onPick(d.slot))}
+            >
+              {stato === 'bloccata' ? (
+                <IconLock size={13} />
+              ) : chiusa ? (
+                <IconCheck size={15} />
               ) : (
-                `${d.slot}ª`
+                <span className="nodo__numero">{d.slot}</span>
               )}
-              {d.status === 'won' && <IconCheck size={11} />}
-            </span>
-            <span className="parola__punti u-tabnum">
-              {chiusa ? `+${d.score ?? 0}` : d.maxScore}
-            </span>
-          </button>
+            </button>
+          </div>
         )
       })}
     </div>
