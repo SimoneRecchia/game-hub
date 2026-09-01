@@ -1,0 +1,150 @@
+/*
+ * La schermata del percorso.
+ *
+ * Tre fasce in colonna: una riga di intestazione, la mappa, il bottone. La
+ * schermata non scorre (la shell senza tab bar e' ancorata al viewport), quindi
+ * la mappa e' l'unica fascia elastica: prende quel che resta e si dimensiona su
+ * quello. E' il motivo per cui esiste `.giornata__mappa` e non basta `.mappa`.
+ */
+.giornata {
+  /* La larghezza della scheda del percorso, condivisa col bottone sotto: su
+     desktop un bottone largo settecento sotto una scheda larga quattrocento
+     sembrava di un'altra schermata. */
+  --percorso-w: 400px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--sp-2);
+}
+
+.giornata__testa {
+  flex: none;
+  text-align: center;
+}
+
+.giornata__data {
+  margin: 0;
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-tertiary);
+}
+
+.giornata__stato {
+  margin: 2px 0 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  letter-spacing: var(--tracking-normal);
+  color: var(--label-secondary);
+}
+
+.giornata__mappa {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+
+.giornata__piede {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+  width: min(100%, var(--percorso-w));
+  margin-inline: auto;
+}
+
+/* Giornata finita: quanto manca alle prossime cinque. */
+.giornata__fine {
+  text-align: center;
+  padding: var(--sp-2) 0;
+}
+
+.giornata__fine-label {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.giornata__fine-valore {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.giornata__fallback {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  text-align: center;
+  color: var(--label-secondary);
+}
+
+/*
+ * Attesa del caricamento: cinque pastiglie dove staranno le tappe.
+ *
+ * Sfalsate come la serpentina, così il passaggio alla mappa vera non e' un
+ * salto: le forme sono già dove finiranno.
+ */
+.giornata__attesa {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  width: min(100%, 340px);
+  margin-inline: auto;
+}
+
+.giornata__attesa span {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  animation: giornata-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+.giornata__attesa span:nth-child(odd) {
+  transform: translateX(-22%);
+}
+
+.giornata__attesa span:nth-child(even) {
+  transform: translateX(22%);
+}
+
+.giornata__attesa span:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.giornata__attesa span:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.giornata__attesa span:nth-child(4) {
+  animation-delay: 360ms;
+}
+
+.giornata__attesa span:nth-child(5) {
+  animation-delay: 480ms;
+}
+
+@keyframes giornata-pulsa {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .giornata__attesa span {
+    animation: none;
+  }
+}

@@ -10,7 +10,7 @@ import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { COOP_POLL_VIEW_MS, WORD_LENGTH } from '@shared/config'
-import { keyboardStates } from '@shared/wordle'
+import { isGameLetter, keyboardStates } from '@shared/wordle'
 import type { CoopView } from '@shared/types'
 import './WordleInsieme.css'
 
@@ -119,7 +119,7 @@ export default function WordleInsieme() {
         return
       }
       const key = e.key.toLowerCase()
-      if (/^[a-z]$/.test(key) && !'jkwxy'.includes(key)) {
+      if (isGameLetter(key)) {
         e.preventDefault()
         setDraft((d) => (d.length >= WORD_LENGTH ? d : d + key))
       }

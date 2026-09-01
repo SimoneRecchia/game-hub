@@ -59,6 +59,26 @@ export interface DaySlot {
   shared: boolean
 }
 
+/**
+ * La giornata vista dal percorso, senza aprire nessuna partita.
+ *
+ * Esiste separata da `WordleState` perché la schermata del percorso non deve
+ * far partire niente: `openGame` scrive `started_at`, che e' l'istante da cui si
+ * misura il bonus velocita'. Se la mappa chiedesse lo stato della prima parola
+ * per disegnare i nodi, guardarla e poi andare a fare colazione costerebbe il
+ * bonus — e nessuno collegherebbe la cosa al fatto di aver aperto una mappa.
+ */
+export interface DayView {
+  puzzleNumber: number
+  date: string
+  /** Le cinque parole: stato, tentativi, punti, e quali sono ancora chiuse. */
+  day: DaySlot[]
+  /** La stanza in cui si sta giocando la giornata, se non e' la propria. */
+  roomId: string | null
+  /** Millisecondi al prossimo puzzle, per il countdown. */
+  msToNextPuzzle: number
+}
+
 export interface WordleState {
   /** Numero progressivo del puzzle: 1 = giorno di lancio. */
   puzzleNumber: number
