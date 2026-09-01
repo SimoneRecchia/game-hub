@@ -78,6 +78,7 @@ function player(nickname: string, over: Partial<PlayerTotals> = {}): PlayerTotal
     assists: 0,
     played: 0,
     wins: 0,
+    extra: 0,
     avgAttempts: null,
     ...over,
   }
@@ -164,3 +165,23 @@ describe('ordine della classifica', () => {
   })
 })
 
+
+describe('le parole in piu come ultimo spareggio', () => {
+  it('passa avanti chi ne ha chiuse di piu, a parita di tutto il resto', () => {
+    const rows = rankPlayers([
+      player('pigra', { playScore: 100, wins: 1, avgAttempts: 3, extra: 0 }),
+      player('sveglia', { playScore: 100, wins: 1, avgAttempts: 3, extra: 4 }),
+    ])
+    expect(rows.map((r) => r.nickname)).toEqual(['sveglia', 'pigra'])
+  })
+
+  it('ma non conta prima del punteggio: le extra non ribaltano', () => {
+    // La condizione che tiene onesto tutto l'impianto: le parole in piu' danno
+    // punti, e i punti contano; il numero di parole giocate no.
+    const rows = rankPlayers([
+      player('tante', { playScore: 90, extra: 4 }),
+      player('brava', { playScore: 100, extra: 0 }),
+    ])
+    expect(rows.map((r) => r.nickname)).toEqual(['brava', 'tante'])
+  })
+})

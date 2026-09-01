@@ -16,6 +16,31 @@
   flex: none;
 }
 
+/*
+ * Schermi bassi: il messaggio si sovrappone alla griglia invece di occupare una
+ * riga.
+ *
+ * Trenta punti riservati per una pillola che compare di rado, su un 568 di
+ * altezza, sono cinque punti di lato per ogni casella. La griglia non salta
+ * comunque, perché la sovrapposizione non occupa spazio — e' la stessa scelta
+ * fatta nella partita condivisa, per la stessa ragione.
+ */
+@media (max-height: 700px) {
+  .wordle {
+    position: relative;
+  }
+
+  .wordle__message {
+    position: absolute;
+    top: 34px;
+    left: 0;
+    right: 0;
+    height: auto;
+    pointer-events: none;
+    z-index: 5;
+  }
+}
+
 .wordle__message-pill {
   padding: var(--sp-1) var(--sp-4);
   border-radius: var(--r-pill);
