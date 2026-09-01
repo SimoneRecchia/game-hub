@@ -61,23 +61,50 @@ rapporto fra la giornata migliore e la peggiore e' **2:1** di proposito: con il
 sesto tentativo valeva un sesto di una perfetta. C'e' un test su entrambi i lati
 del compromesso — che sia recuperabile, e che il gradino non sia simbolico.
 
-**Cinque parole al giorno, con pesi `[8, 4, 2, 1, 1]` su otto.** La prima e' *la*
-parola del giorno e vale piena; le altre dimezzano, e la quinta resta all'ottavo
-invece di scendere a un sedicesimo perché altrimenti non varrebbe la pena di
-giocarla. La somma delle quattro fa esattamente otto ottavi, cioe' quanto la
-prima: chi fa tutto raddoppia la giornata, non la decuplica.
+**Cinque parole al giorno, ognuna con base e gradino propri** (`WORD_BASE`,
+`WORD_STEP` in `shared/scoring.ts`), non la principale moltiplicata per un peso.
+Il peso sembrava piu' elegante e costringeva ad arrotondare: `floor` era l'unico
+modo di garantire che la somma delle quattro non superasse la principale, e piu'
+in basso nella scala la coda si schiacciava — con una base bassa la quinta parola
+finiva a due o tre punti, e nessuno l'avrebbe giocata.
 
-`weighted` **arrotonda per difetto**, e non e' una scelta di precisione:
-`floor(a) + floor(b) <= floor(a+b)`, quindi la somma delle quattro extra non puo'
-mai superare la principale. Al piu' vicino, un 100 darebbe 50+25+13+13 = 101 e la
-garanzia salterebbe per un punto.
+Con base e gradino la somma torna **per costruzione, a ogni numero di
+tentativi**, perché le basi delle quattro sommano alla base della prima
+(20+14+8+8 = 50) e i gradini al gradino (4+2+2+2 = 10). Da cui:
+
+    tentativi        1    2    3    4    5    6
+    del giorno     100   90   80   70   60   50
+    2ª              40   36   32   28   24   20
+    3ª              24   22   20   18   16   14
+    4ª              18   16   14   12   10    8
+    5ª              18   16   14   12   10    8
+    somma 2ª-5ª    100   90   80   70   60   50
+
+Le ultime due valgono uguale invece di continuare a scendere: la quinta deve
+valere la pena di essere giocata. Nessuna parola scende sotto gli otto punti, e
+c'e' un test per ognuna di queste proprietà.
 
 **I bonus stanno solo sulla parola del giorno** (`scoreForWord`). Velocità e
 costanza sono proprietà della giornata, non di ogni parola: dandoli a tutte e
 cinque, chi le giocava tutte incassava fino a cinque volte il bonus velocità, e
 tanto bastava a superare chi aveva indovinato la principale al primo colpo — cioe'
-esattamente il ribaltamento che i pesi servono a impedire. Trovato provando
-l'API, non ragionando sui numeri: i pesi da soli erano giusti.
+esattamente il ribaltamento che la scala serve a impedire. Trovato provando
+l'API, non ragionando sui numeri: la scala da sola era giusta.
+
+**Il caso estremo e' un pareggio, e si scioglie sulla media tentativi.**
+Principale perfetta 109 contro cinque parole all'ultimo tentativo 109: non e' un
+difetto, e' la conseguenza diretta del fatto che le quattro extra valgono quanto
+la principale. Il pareggio si rompe in classifica perché `played`, `wins` e
+`avg_attempts` contano **solo `slot = 1`**: contando tutte e cinque, chi le gioca
+tutte accumulava cinque vittorie al giorno e vinceva lo spareggio col numero
+invece che col merito. `playerStats` deve restare d'accordo — quei numeri
+significano "giornate", che e' quel che uno intende leggendo "giocate".
+
+**Le parole si aprono una per volta.** La N si gioca solo quando la N-1 e'
+chiusa: `requireUnlocked` in `server/routes/wordle.ts` lo applica sia su `/state`
+sia su `/guess`, e `/state` legge il quadro **prima** di `openGame` — creando la
+riga, la parola successiva risulterebbe sbloccata al giro dopo. Il controllo non
+puo' stare solo nel selettore: `?slot=5` lo aggirerebbe.
 
 **La streak e' quella della parola del giorno**, `slot = 1`, sia in
 `streakBefore` sia negli aggregati. Le parole in piu' non devono poter tenere in

@@ -267,11 +267,19 @@ export async function playerStats(
     .all<StatsRow>()
 
   /*
-   * Le giornate giocate nella stanza di un altro non entrano nelle statistiche
-   * di gioco: i tentativi sono quelli dell'host, contarli come propri
-   * falserebbe media e distribuzione. Contano solo nel punteggio.
+   * Le statistiche di gioco guardano **la parola del giorno giocata per conto
+   * proprio**, e devono restare d'accordo con la classifica (vedi la nota in
+   * `server/lib/leaderboard.ts`):
+   *
+   *  - le giornate giocate nella stanza di un altro hanno i tentativi dell'host,
+   *    e contarli come propri falserebbe media e distribuzione;
+   *  - le parole in piu' non sono giornate: contandole, "giocate 5" dopo un
+   *    giorno solo vorrebbe dire una cosa che nessuno intende leggendo quella
+   *    parola.
+   *
+   * Le parole in piu' contano nel punteggio, che e' il numero che conta.
    */
-  const proprie = results.filter((r) => r.spectated !== 1)
+  const proprie = results.filter((r) => r.spectated !== 1 && r.slot === 1)
   const finished = proprie.filter((r) => r.status !== 'playing')
   const wins = finished.filter((r) => r.status === 'won')
 

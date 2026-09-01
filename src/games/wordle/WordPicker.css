@@ -1,125 +1,146 @@
 /*
- * Le cinque parole della giornata, sopra la griglia.
+ * Il percorso delle cinque parole.
  *
  * L'altezza qui e' contata: la griglia si dimensiona su quel che resta, quindi
- * questa barra deve stare in una riga sola a qualunque larghezza. Per questo i
- * numeri sono tabulari e le etichette cortissime.
+ * il percorso sta in una riga sola a qualunque larghezza. E' anche il motivo per
+ * cui i nodi portano un simbolo e non un numero di punti — cinque numeri in fila
+ * costringevano a due righe.
  */
-.parole {
+.percorso {
   flex: none;
-  display: grid;
-  /* La principale prende una volta e mezzo lo spazio delle altre: e' la prima
-     cosa che dice che non valgono uguale. */
-  grid-template-columns: 1.5fr repeat(4, 1fr);
-  gap: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-1) 0;
 }
 
-.parola {
+.percorso__tappa {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 1px;
-  padding: var(--sp-1) 2px;
-  border-radius: var(--r-sm);
+}
+
+/* Il tratto fra due tappe: pieno fin dove si e' arrivati, tratteggiato dopo. */
+.percorso__tratto {
+  width: clamp(18px, 6vw, 34px);
+  height: 2px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  /* Il tratteggio con un gradiente ripetuto: un `border-dashed` su 2px di
+     altezza in alcuni browser non si vede affatto. */
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--label-quaternary) 0 3px,
+    transparent 3px 6px
+  );
+  background-color: transparent;
+}
+
+.percorso__tratto.is-percorsa {
+  background-image: none;
+  background-color: color-mix(in srgb, var(--tile-correct) 55%, transparent);
+}
+
+.nodo {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-pill);
   background: var(--fill-quaternary);
-  color: var(--label-secondary);
-  min-width: 0;
+  color: var(--label-tertiary);
+  box-shadow: var(--edge-light);
   transition:
     background-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out);
+    transform var(--dur-fast) var(--ease-bounce);
 }
 
-.parola:active {
-  transform: scale(0.96);
+.nodo:active {
+  transform: scale(0.9);
 }
 
-.parola__testa {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  font-size: var(--text-caption-2);
-  font-weight: 600;
+.nodo__numero {
+  font-family: var(--font-rounded);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
   letter-spacing: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+}
+
+/* Indovinata: il verde delle caselle, così il colore vuol dire una cosa sola. */
+.nodo--vinta {
+  background: var(--tile-correct);
+  color: var(--tile-text-on-correct);
+}
+
+.nodo--persa {
+  background: var(--tile-absent);
+  color: var(--tile-text-on-absent);
 }
 
 /*
- * Su schermo alto vince l'etichetta lunga.
- *
- * Va dichiarata **prima** della media query: a specificità pari decide l'ordine
- * nel file, e messa in fondo spegneva l'etichetta corta anche dove serviva.
+ * La parola che si sta giocando: piena col colore dell'accento.
  */
-.parola__corta {
-  display: none;
-}
-
-.parola__punti {
-  font-family: var(--font-rounded);
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  letter-spacing: var(--tracking-tight);
-}
-
-/* Quella che si sta giocando: piena, non solo bordata. Su una barra di cinque
-   caselle un bordo sottile non si distingue a colpo d'occhio. */
-.parola.is-attiva {
-  background: var(--label);
-  color: var(--label-inverted);
-}
-
-/* Chiusa e vinta: il verde delle caselle, così il colore vuol dire una cosa
-   sola in tutta la schermata. */
-.parola--vinta {
-  background: color-mix(in srgb, var(--tile-correct) 20%, transparent);
-  color: color-mix(in srgb, var(--tile-correct) 88%, var(--label));
-}
-
-.parola--vinta.is-attiva {
-  background: var(--tile-correct);
+.nodo--corrente {
+  background: var(--brand);
   color: #fff;
 }
 
-.parola--persa {
-  background: color-mix(in srgb, var(--label) 10%, transparent);
-  color: var(--label-tertiary);
-}
-
-.parola--persa.is-attiva {
-  background: var(--label-secondary);
-  color: var(--label-inverted);
-}
-
 /*
- * Schermi bassi (iPhone SE, telefono in orizzontale): la barra passa a una riga
- * sola, etichetta e punti affiancati.
+ * Dove sei nel percorso: un anello, e un filo piu' grande.
  *
- * Non e' cosmetico: la griglia si dimensiona sull'altezza che resta, e la barra
- * su due righe le costava una quindicina di punti di lato per casella. Su un
- * 568 di altezza le caselle scendevano a 25 px, che e' meta' di quelle del gioco
- * vero.
+ * Separato dallo stato di proposito. Il colore del nodo dice com'e' andata la
+ * parola; l'anello dice quale stai guardando — e serve anche sulle parole già
+ * chiuse, che si possono rivedere. Su cinque nodi dello stesso diametro,
+ * nient'altro basta a dire "sei qui".
  */
+.nodo.is-attiva {
+  width: 34px;
+  height: 34px;
+  box-shadow:
+    var(--edge-light),
+    0 0 0 3px var(--brand-soft);
+}
+
+.nodo.is-attiva .nodo__numero {
+  font-size: var(--text-footnote);
+}
+
+/* Aperta ma non in corso: una tappa già raggiungibile, non ancora giocata. */
+.nodo--aperta {
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+}
+
+.nodo--bloccata {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--label-quaternary);
+  color: var(--label-quaternary);
+}
+
+/* Le tappe chiuse restano toccabili per rivedere la griglia. */
+.nodo--bloccata:active {
+  transform: none;
+}
+
 @media (max-height: 700px) {
-  .parola {
-    flex-direction: row;
-    justify-content: center;
-    align-items: baseline;
-    gap: 4px;
-    padding: 3px 2px;
+  .percorso {
+    padding: 0;
   }
 
-  .parola__punti {
-    font-size: var(--text-caption-1);
+  .nodo {
+    width: 26px;
+    height: 26px;
   }
 
-  .parola__lunga {
-    display: none;
+  .nodo.is-attiva {
+    width: 30px;
+    height: 30px;
   }
+}
 
-  .parola__corta {
-    display: inline;
+@media (prefers-reduced-motion: reduce) {
+  .nodo,
+  .nodo:active {
+    transform: none;
   }
 }
