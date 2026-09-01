@@ -70,9 +70,9 @@ export default function Classifica() {
       <header>
         <h2 className="large-title">Classifica</h2>
         <p className="page-lede">
-          Il punteggio dipende soprattutto dai tentativi usati. Velocità e giorni di fila valgono
-          qualche punto in più, e chi suggerisce agli altri guadagna assist. Tocca una riga per
-          vedere come è fatto un punteggio.
+          Il punteggio dipende dai tentativi usati; velocità e giorni di fila valgono qualche
+          punto in più. Una parola giocata in compagnia vale come una giocata da soli: tocca una
+          riga per vedere come è fatto un punteggio.
         </p>
       </header>
 
@@ -243,7 +243,7 @@ function Breakdown({
         <div className="lb__voce">
           <dt>
             <IconPeople size={13} />
-            Assist
+            In compagnia
           </dt>
           <dd className="u-tabnum">{formatNumber(row.assistScore)}</dd>
         </div>
@@ -265,20 +265,18 @@ function Breakdown({
  * settimanale non c'e'.
  */
 function explainAssist(row: LeaderboardRow, scope: LeaderboardScope): string {
-  const guardato = scope === 'today' && row.todaySpectated === true
+  const oggiInsieme = scope === 'today' && row.todaySpectated === true
 
   if (row.assists === 0) {
-    if (guardato) {
-      return 'Ha guardato la partita di qualcun altro prima di giocare: conosceva la parola, quindi oggi non fa punti partita. Suggerendo farebbe assist.'
-    }
-    return 'Gli assist si guadagnano suggerendo una parola a chi ti invita, quando la gioca davvero.'
+    return oggiInsieme
+      ? 'Oggi sta giocando la parola nella stanza di chi l’ha invitata: prenderà lo stesso punteggio.'
+      : 'Una parola giocata in compagnia vale come una giocata da soli, e finisce qui.'
   }
 
-  const quanti = `${formatNumber(row.assists)} ${pluralize(row.assists, 'suggerimento giocato', 'suggerimenti giocati')}`
-  const coda = guardato
-    ? ' La partita di oggi non fa punti, perché la parola era già stata vista.'
-    : ''
-  return `${quanti} da chi ha ricevuto il consiglio.${coda}`
+  const quante = `${formatNumber(row.assists)} ${pluralize(row.assists, 'giornata giocata', 'giornate giocate')} in compagnia`
+  const coda = oggiInsieme ? ' Anche quella di oggi.' : ''
+  // Senza pronome: "le ospitava" non concorda con una giornata sola.
+  return `${quante}, allo stesso punteggio di chi ospitava.${coda}`
 }
 
 function Row({
@@ -343,6 +341,7 @@ function Row({
 /** Versione compatta del dettaglio: nel podio c'e' un terzo della larghezza. */
 function describeShort(row: LeaderboardRow, scope: LeaderboardScope): string {
   if (scope === 'today') {
+    if (row.todaySpectated) return 'in compagnia'
     if (row.todayStatus === 'won') {
       return `${row.todayAttempts} ${row.todayAttempts === 1 ? 'tentativo' : 'tentativi'}`
     }
@@ -356,16 +355,22 @@ function describeShort(row: LeaderboardRow, scope: LeaderboardScope): string {
 /** Riga di dettaglio sotto il nome: cambia con il periodo scelto. */
 function describe(row: LeaderboardRow, scope: LeaderboardScope): string {
   if (scope === 'today') {
-    // Chi ha guardato la partita di un altro conosceva la parola: spiegare lo
-    // zero e' meglio che lasciarlo sembrare un errore di calcolo. Solo i punti
-    // partita: gli assist di quella giornata li fa comunque.
-    const visto = row.todaySpectated ? ' · ha guardato, solo assist' : ''
-    if (row.todayStatus === 'won') return `Indovinata al ${row.todayAttempts}º tentativo${visto}`
-    if (row.todayStatus === 'lost') return `Non indovinata${visto}`
+    /*
+     * Chi gioca la giornata in compagnia non ha tentativi propri da mostrare:
+     * quelli sono dell'host. Si dice dove sta giocando, che e' l'informazione
+     * vera.
+     */
+    if (row.todaySpectated) {
+      if (row.todayStatus === 'won') return 'Indovinata in compagnia'
+      if (row.todayStatus === 'lost') return 'Non indovinata, in compagnia'
+      return 'Sta giocando in compagnia'
+    }
+    if (row.todayStatus === 'won') return `Indovinata al ${row.todayAttempts}º tentativo`
+    if (row.todayStatus === 'lost') return 'Non indovinata'
     if (row.todayStatus === 'playing') {
-      const base =
-        row.todayAttempts === 0 ? 'Ha appena iniziato' : `In corso · ${row.todayAttempts} tentativi`
-      return base + visto
+      return row.todayAttempts === 0
+        ? 'Ha appena iniziato'
+        : `In corso · ${row.todayAttempts} tentativi`
     }
     return 'Non ha ancora giocato'
   }

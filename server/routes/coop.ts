@@ -16,6 +16,7 @@ import {
   inviteById,
   markSpectated,
   occupiedSlots,
+  participation,
   openRoom,
   pendingInvites,
   roomById,
@@ -118,7 +119,17 @@ export const coopRoutes = new Hono<AppEnv>()
 
   /** Gli inviti da accettare. Il client la interroga a polling. */
   .get('/inbox', async (c) => {
-    const invites = await pendingInvites(c.env.DB, c.get('player').id, today())
+    const when = today()
+    const mia = await participation(c.env.DB, c.get('player').id, when.puzzleNumber)
+
+    /*
+     * Chi sta già giocando la giornata in una stanza non riceve altri inviti:
+     * accettarli non gli darebbe un secondo punteggio, e la casella che continua
+     * a proporglieli sarebbe solo un modo di prometterglielo.
+     */
+    if (mia?.spectated) return c.json<{ invites: CoopInvite[] }>({ invites: [] })
+
+    const invites = await pendingInvites(c.env.DB, c.get('player').id, when)
     return c.json<{ invites: CoopInvite[] }>({ invites })
   })
 
@@ -147,15 +158,21 @@ export const coopRoutes = new Hono<AppEnv>()
       .run()
 
     /*
-     * Accettando, il guest vedrà i tentativi dell'host e quindi la parola di
-     * oggi. La sua giornata resta giocabile ma non fa punti partita: lo sapeva
-     * prima di accettare (vedi `wouldSpoil` in /inbox). I punti assist invece
-     * li fa, per ogni parola che l'host gioca su suo suggerimento.
+     * Da qui in poi la parola di oggi, per il guest, e' questa partita: vedrà i
+     * tentativi dell'host e quindi la soluzione, e la propria board si chiude —
+     * e' la stessa parola per tutti, non c'e' niente da rigiocare. In cambio
+     * prende lo stesso punteggio che fa l'host.
+     *
+     * Chi aveva già concluso la propria partita non viene toccato: la sua
+     * giornata e' già spesa, quindi puo' dare una mano ma non prende un secondo
+     * punteggio. `markSpectated` distingue i due casi e dice quale e' capitato,
+     * così la risposta puo' dirlo alla UI invece di far sperare punti che non
+     * arriveranno.
      */
     const answer = await dailyAnswer(c.env.DB, when)
-    await markSpectated(c.env.DB, guest.id, when, answer)
+    const conta = await markSpectated(c.env.DB, guest.id, when, answer, room.id)
 
-    return c.json({ ok: true, roomId: room.id })
+    return c.json({ ok: true, roomId: room.id, counts: conta })
   })
 
   .post('/invite/:id/decline', async (c) => {
