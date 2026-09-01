@@ -4,6 +4,7 @@ import { msToNextPuzzle } from '../../shared/daily'
 import { scoreForWord } from '../../shared/scoring'
 import type {
   DaySlot,
+  DayView,
   PlayerStats,
   WordleState,
   WordleStatus,
@@ -315,6 +316,41 @@ export const wordleRoutes = new Hono<AppEnv>()
         now,
       ),
     )
+  })
+
+  /**
+   * Le cinque parole della giornata, per la schermata del percorso.
+   *
+   * Di sola lettura, come `/summary`, e per un motivo che vale la pena scrivere:
+   * `openGame` mette `started_at`, cioe' l'istante da cui si conta il bonus
+   * velocita' della parola del giorno. Se la mappa passasse da `/state` per
+   * sapere come disegnare i nodi, aprirla e allontanarsi dal telefono
+   * costerebbe punti — e nessuno collegherebbe il conto a una schermata che non
+   * fa giocare. Qui non si crea niente: il cronometro parte quando si apre la
+   * parola.
+   */
+  .get('/day', async (c) => {
+    const when = today()
+    const day = await dayOf(c.env.DB, c.get('player').id, when.puzzleNumber)
+
+    /*
+     * La stanza serve al percorso per mandare "dov'e' la partita" invece di
+     * aprire una board che rifiuta i tentativi.
+     */
+    const insieme = await c.env.DB.prepare(
+      `SELECT assist_room_id FROM wordle_games
+        WHERE player_id = ? AND puzzle_number = ? AND slot = 1 AND spectated = 1`,
+    )
+      .bind(c.get('player').id, when.puzzleNumber)
+      .first<{ assist_room_id: string | null }>()
+
+    return c.json<DayView>({
+      puzzleNumber: when.puzzleNumber,
+      date: when.date,
+      day,
+      roomId: insieme?.assist_room_id ?? null,
+      msToNextPuzzle: msToNextPuzzle(),
+    })
   })
 
   /**

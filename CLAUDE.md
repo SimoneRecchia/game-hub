@@ -106,6 +106,22 @@ sia su `/guess`, e `/state` legge il quadro **prima** di `openGame` — creando 
 riga, la parola successiva risulterebbe sbloccata al giro dopo. Il controllo non
 puo' stare solo nel selettore: `?slot=5` lo aggirerebbe.
 
+**Il gioco sono due schermate, e lo slot sta nell'indirizzo.** `/wordle` e' il
+percorso delle cinque parole, `/wordle/:slot` la griglia di una di esse. Prima la
+parola scelta era uno `useState` dentro `useWordle`, perché il selettore era una
+striscia sopra la griglia; con una schermata sua, cambiare parola e' una
+navigazione — e il tasto indietro del telefono torna al percorso invece di
+uscire dal gioco. Un indirizzo che punta a una parola ancora chiusa non mostra un
+errore: il server risponde `PAROLA_BLOCCATA` e la pagina rimbalza sul percorso
+dicendo quale parola la apre.
+
+**`GET /wordle/day` non deve aprire nessuna partita.** E' la rotta che disegna il
+percorso, ed e' di sola lettura come `/summary`: `openGame` scrive `started_at`,
+che e' l'istante da cui si conta il bonus velocità della parola del giorno.
+Passando da `/state` per sapere come disegnare i nodi, aprire la mappa e
+allontanarsi dal telefono costerebbe punti — e nessuno collegherebbe il conto a
+una schermata che non fa giocare. Il cronometro parte quando si apre la parola.
+
 **La streak e' quella della parola del giorno**, `slot = 1`, sia in
 `streakBefore` sia negli aggregati. Le parole in piu' non devono poter tenere in
 vita una serie interrotta sulla principale.
@@ -133,6 +149,15 @@ classifica.
 
 **Nessuna parola con j, k, w, x, y** negli elenchi: la tastiera del gioco ha 21
 tasti e quelle lettere non sarebbero digitabili.
+
+**Quel che si tocca si deve poter digitare.** `ALFABETO` e `KEYBOARD_ROWS` stanno
+in `shared/wordle.ts` e `isGameLetter` decide sia i tasti fisici sia quelli a
+schermo. Erano due regole separate, e non erano d'accordo: il filtro della
+tastiera fisica usava `[a-hl-vz]`, che salta la **i** — sulla tastiera del gioco
+la i c'era, ma da un computer "germi" non si poteva scrivere. Trovato provando il
+giro completo con Playwright, non leggendo il codice. Un test in
+`shared/__tests__/wordle.test.ts` verifica le due direzioni: ogni tasto e'
+digitabile, ogni lettera giocabile sta sulla tastiera.
 
 **La soluzione non deve arrivare al client prima della fine.** `toState()` in
 `server/routes/wordle.ts` mette `answer: null` finché lo stato è `playing`; è
@@ -202,6 +227,33 @@ allontana.
 
 I keyframes delle caselle usano `background-color` e non `background`: la
 velatura sta in `background-image` e sostituirla in blocco la cancellerebbe.
+
+**La mappa del percorso e' un SVG stirato, non un rapporto fisso.** Le coordinate
+delle cinque tappe stanno in `src/games/wordle/percorso.ts`, in uno spazio
+100 x 168, e il riquadro le stira fino a riempire lo spazio che resta fra
+intestazione e bottone: `preserveAspectRatio="none"`. Serve perché i nodi sono
+posizionati in percentuale del riquadro — col comportamento normale l'SVG si
+centrerebbe con due bande vuote e la curva non passerebbe piu' per i nodi.
+Legando invece l'altezza alla larghezza, su un iPhone SE la scheda veniva larga
+217 punti su 320 di schermo e le etichette sbordavano. Lo spessore della linea si
+scala di un dieci per cento fra un tratto ripido e uno piatto: a tre pixel e
+mezzo non si vede.
+
+Tre dettagli di quella schermata che sembrano gusto e sono conseguenze:
+
+- **Le tappe a destra si ancorano con `right`, non con `left`.** La larghezza di
+  un elemento assoluto in shrink-to-fit e' limitata dallo spazio fra il lato
+  ancorato e il bordo opposto: con `left: 72%` l'etichetta aveva il 28% di
+  riquadro e "2ª parola" andava a capo.
+- **L'etichetta si ritaglia il colore del piano** (`--surface`). Il tracciato
+  arriva al nodo dal lato dove sta l'etichetta — inevitabile, e' la metà libera —
+  e senza quel ritaglio la linea passava in mezzo alle lettere. Per lo stesso
+  motivo il piano non ha la velatura verticale di caselle e tasti: su un pannello
+  alto seicento pixel schiarisce la parte alta, e lì le etichette comparivano
+  come targhette piu' scure.
+- **A giornata intatta il tratto pieno non si disegna affatto.** Un
+  `stroke-dasharray` di lunghezza zero con la punta arrotondata diventa un
+  puntino, e quel puntino compariva in mezzo al lucchetto dell'ultima tappa.
 
 **Le durate delle animazioni delle caselle sono replicate in
 `src/games/wordle/useWordle.ts`** (`REVEAL_*`, `BOUNCE_MS`, `SHAKE_MS`): il

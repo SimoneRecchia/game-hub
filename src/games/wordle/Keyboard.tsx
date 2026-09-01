@@ -1,4 +1,5 @@
 import type { TileState } from '@shared/types'
+import { KEYBOARD_ROWS } from '@shared/wordle'
 import { IconBackspace } from '@/components/Icons'
 import './Keyboard.css'
 
@@ -10,12 +11,6 @@ import './Keyboard.css'
  * su un telefono i tasti restano sensibilmente piu' grandi e non ce n'e'
  * nessuno che non possa mai servire.
  */
-const ROWS = [
-  ['q', 'e', 'r', 't', 'u', 'i', 'o', 'p'],
-  ['a', 's', 'd', 'f', 'g', 'h', 'l'],
-  ['ENTER', 'z', 'c', 'v', 'b', 'n', 'm', 'BACK'],
-] as const
-
 const STATE_CLASS: Record<TileState, string> = {
   correct: 'is-correct',
   present: 'is-present',
@@ -45,7 +40,7 @@ export function Keyboard({
 }: Props) {
   return (
     <div className="keyboard" role="group" aria-label="Tastiera">
-      {ROWS.map((row, index) => (
+      {KEYBOARD_ROWS.map((row, index) => (
         <div className="keyboard__row" key={index}>
           {row.map((key) => {
             if (key === 'ENTER') {
