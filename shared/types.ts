@@ -45,10 +45,16 @@ export interface DaySlot {
   slot: number
   status: WordleStatus | 'new'
   attempts: number
-  /** Punti fatti, già pesati per la posizione. null se non e' chiusa. */
+  /** Punti fatti. null se non e' chiusa. */
   score: number | null
-  /** Il massimo che questa parola puo' valere: e' la sua gerarchia, resa visibile. */
-  maxScore: number
+  /**
+   * true finché la parola precedente non e' chiusa.
+   *
+   * Le parole si aprono una per volta: non si passa alla seconda senza aver
+   * finito la prima. Il controllo vero sta sul server — questo campo serve al
+   * selettore per non proporre un percorso che verrebbe rifiutato.
+   */
+  locked: boolean
   /** true se questa parola e' stata giocata nella stanza di qualcun altro. */
   shared: boolean
 }

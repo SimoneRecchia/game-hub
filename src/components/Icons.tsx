@@ -150,3 +150,10 @@ export const IconCheck = (p: IconProps) => (
     <path d="M5 12.8 9.6 17.4 19 8" />
   </Svg>
 )
+
+export const IconLock = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="5" y="11" width="14" height="10" rx="2.6" />
+    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+  </Svg>
+)

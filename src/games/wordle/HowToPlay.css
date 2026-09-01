@@ -84,3 +84,94 @@
   border-radius: 50%;
   background: var(--label-tertiary);
 }
+
+/* ---------- Come si contano i punti ---------- */
+
+.howto__punti {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/*
+ * La tabella scorre dentro il suo contenitore.
+ *
+ * Sette colonne di numeri non stanno in 320 punti, e la pagina non deve scorrere
+ * in orizzontale per colpa sua: scorre la tabella, dentro il foglio.
+ */
+.howto__tabella-scroll {
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--sp-1));
+  padding: 0 var(--sp-1);
+  -webkit-overflow-scrolling: touch;
+}
+
+.howto__tabella {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-footnote);
+  font-variant-numeric: tabular-nums;
+}
+
+.howto__tabella th,
+.howto__tabella td {
+  padding: var(--sp-1) var(--sp-2);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.howto__tabella thead th {
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-tertiary);
+  border-bottom: 1px solid var(--separator);
+}
+
+/* La prima colonna resta ferma mentre le altre scorrono. */
+.howto__tabella th[scope='row'],
+.howto__tabella thead th:first-child {
+  position: sticky;
+  left: 0;
+  text-align: left;
+  font-weight: 600;
+  background: var(--bg-elevated);
+}
+
+.howto__tabella th[scope='row'] {
+  color: var(--label-secondary);
+  font-size: var(--text-caption-1);
+}
+
+.howto__tabella td {
+  color: var(--label);
+  font-weight: 600;
+}
+
+.howto__th-persa,
+.howto__td-persa {
+  color: var(--label-tertiary);
+  border-left: 1px solid var(--separator);
+}
+
+/*
+ * La riga della somma: e' il punto della tabella.
+ *
+ * Senza vederla accanto alla prima riga, "le quattro insieme valgono quanto la
+ * prima" resta un'affermazione da credere.
+ */
+.howto__somma {
+  border-top: 1px solid var(--separator);
+}
+
+.howto__somma th[scope='row'],
+.howto__somma td {
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.howto__nota {
+  margin: 0;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+  line-height: 1.45;
+}
