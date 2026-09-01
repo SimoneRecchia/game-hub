@@ -91,3 +91,21 @@
 .result__link:hover {
   background: var(--fill-quaternary);
 }
+
+/* Il totale della giornata, quando non coincide col punteggio di questa parola. */
+.result__score-day {
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+  font-weight: 600;
+}
+
+/* Quando restano parole, il countdown a domani non e' l'informazione utile. */
+.result__rimaste {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  text-align: center;
+}

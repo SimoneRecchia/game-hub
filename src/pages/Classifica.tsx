@@ -70,9 +70,9 @@ export default function Classifica() {
       <header>
         <h2 className="large-title">Classifica</h2>
         <p className="page-lede">
-          Il punteggio dipende dai tentativi usati; velocità e giorni di fila valgono qualche
-          punto in più. Una parola giocata in compagnia vale come una giocata da soli: tocca una
-          riga per vedere come è fatto un punteggio.
+          Cinque parole al giorno: la prima vale piena, le altre a scalare, e insieme non
+          arrivano a superarla. Una parola giocata in compagnia vale come una giocata da soli.
+          Tocca una riga per vedere come è fatto un punteggio.
         </p>
       </header>
 
