@@ -142,6 +142,46 @@ dimensiona con `83.34cqh` per stare in altezza, ma dove la pagina scorre
 collassando le caselle. Per questo la media query orizzontale rimette
 `container-type: normal` e torna a dimensionare sulla larghezza.
 
+## Il design
+
+**La palette scura non esiste come blocco separato.** Ogni token e' un
+`light-dark(chiaro, scuro)`, che segue `color-scheme` — quindi copre sia la
+preferenza di sistema sia l'interruttore manuale, perché quello imposta
+`color-scheme` sulla radice e nient'altro. Prima la palette scura era scritta due
+volte identiche (in `@media (prefers-color-scheme: dark)` e in
+`[data-theme='dark']`): novanta righe che sarebbero divergute alla prima
+modifica.
+
+Ogni dichiarazione ha sopra **il valore chiaro nudo**: i browser che non
+conoscono `light-dark()` scartano la seconda riga e restano sul tema chiaro
+invece di perdere il colore.
+
+**`light-dark()` va solo attorno a un colore.** Usato su un `box-shadow` intero
+il valore diventa invalido e l'ombra sparisce del tutto — verificato, dava `none`
+in entrambi i temi. Per le ombre il colore sta in `--shadow-tint` e la geometria
+resta fuori.
+
+**Il colore vuole dire una cosa sola.** Il verde e' "lettera giusta", quindi
+l'accento dell'interfaccia e' un indaco (`--brand`) e non un verde né l'azzurro
+di sistema. Se serve un accento nuovo, va aggiunto un token, non riusato uno del
+gioco.
+
+**Profondita' con tre livelli, non con le ombre grandi.** Caselle e tasti usano
+`--edge-light` (filo di luce in alto), una velatura verticale in
+`background-image`, e `--shadow-key` — un'ombra secca senza sfocatura. E' quel
+che fa sembrare un tasto un oggetto; premendo **scende** invece di
+rimpicciolirsi, perché lo `scale` fa sembrare il tasto un'immagine che si
+allontana.
+
+I keyframes delle caselle usano `background-color` e non `background`: la
+velatura sta in `background-image` e sostituirla in blocco la cancellerebbe.
+
+**Le durate delle animazioni delle caselle sono replicate in
+`src/games/wordle/useWordle.ts`** (`REVEAL_*`, `BOUNCE_MS`, `SHAKE_MS`): il
+codice deve sapere quando la rotazione e' finita per colorare la tastiera e
+aprire il riepilogo al momento giusto. Se si cambia una durata in `Tile.css` va
+cambiata anche lì.
+
 ## Cose che sembrano sbagliate e non lo sono
 
 `solutions.ts` e `guesses.ts` sono **generati** (`npm run words:build`) e

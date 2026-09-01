@@ -68,7 +68,7 @@
   }
 
   .insieme__board .board {
-    width: min(100%, 350px, 83.34cqh);
+    width: min(100%, 400px, 83.34cqh);
   }
 }
 
@@ -113,8 +113,8 @@
 
 .insieme__casella:not(:empty) {
   border-style: solid;
-  border-color: var(--blue);
-  color: var(--blue);
+  border-color: var(--brand);
+  color: var(--brand);
 }
 
 .insieme__fallback {
@@ -204,8 +204,8 @@
   gap: 5px;
   padding: var(--sp-1) var(--sp-3);
   border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--blue) 12%, transparent);
-  color: var(--blue);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--brand);
   font-size: var(--text-caption-1);
   line-height: 1.3;
   text-align: center;

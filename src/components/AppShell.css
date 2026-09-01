@@ -58,7 +58,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  color: var(--blue);
+  color: var(--brand);
   transition:
     background-color var(--dur-fast) var(--ease-out),
     transform var(--dur-fast) var(--ease-out);
@@ -106,8 +106,8 @@
   }
 
   .navtabs__item.is-active {
-    background: color-mix(in srgb, var(--blue) 14%, transparent);
-    color: var(--blue);
+    background: color-mix(in srgb, var(--brand) 14%, transparent);
+    color: var(--brand);
     font-weight: 600;
   }
 }
@@ -203,7 +203,7 @@
 }
 
 .tabbar__item.is-active {
-  color: var(--blue);
+  color: var(--brand);
 }
 
 .tabbar__label {
