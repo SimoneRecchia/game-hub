@@ -64,8 +64,11 @@ Servono due segreti, una volta sola, in
 
 | Segreto | Valore |
 | --- | --- |
-| `CLOUDFLARE_API_TOKEN` | un token con Cloudflare Pages:Edit e D1:Edit |
+| `CLOUDFLARE_API_TOKEN` | un token con Cloudflare Pages:Edit e D1:Edit — in questo account e' quello chiamato **pages-deploy** |
 | `CLOUDFLARE_ACCOUNT_ID` | `71fffd45bb2939fada1384f0a457d236` |
+
+Il token in uso non ha permessi su Workers, di proposito: qui non serve nulla di
+Workers, e un token che pubblica su Pages non deve poter toccare altri script.
 
 Il workflow esegue typecheck, test, build, **migrazioni D1 prima della
 pubblicazione** (il codice nuovo potrebbe cercare tabelle che ancora non
