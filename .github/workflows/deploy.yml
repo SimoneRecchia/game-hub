@@ -30,11 +30,17 @@ jobs:
       # un messaggio che dice cosa manca, che far fallire wrangler con un
       # errore di autenticazione — o, peggio, lasciare una X rossa su main che
       # sembra un problema del codice.
+      #
+      # Con un'eccezione: se la run e' stata chiesta a mano. Chi premi "Run
+      # workflow" si aspetta un deploy, e una spunta verde su una run che ha
+      # saltato tutto e' peggio di un errore — verificato di persona, il verde
+      # ci ha fatto credere per un giorno che il deploy automatico funzionasse.
       - name: Controllo dei segreti
         id: segreti
         env:
           TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          EVENTO: ${{ github.event_name }}
         run: |
           if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
             echo "pronto=si" >> "$GITHUB_OUTPUT"
@@ -54,6 +60,11 @@ jobs:
               echo "I valori sono in [DEPLOY.md](../blob/main/DEPLOY.md)."
               echo "Fino ad allora si pubblica a mano con \`npx wrangler pages deploy dist\`."
             } >> "$GITHUB_STEP_SUMMARY"
+
+            if [ "$EVENTO" = 'workflow_dispatch' ]; then
+              echo "::error::Deploy non eseguito: manca CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID fra i segreti del repository."
+              exit 1
+            fi
           fi
 
       - uses: actions/checkout@v4
