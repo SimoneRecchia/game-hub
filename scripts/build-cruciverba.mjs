@@ -132,6 +132,23 @@ for await (const riga of righe) {
 }
 
 /*
+ * Le interiezioni in fondo, per le parole da quattro lettere in su. Il dump
+ * elenca le voci nell'ordine in cui stanno nella pagina, e per "aria"
+ * l'interiezione ("Vattene via") arriva prima del nome: il generatore usa la
+ * prima definizione, e ARIA diventava un'esortazione — lo stesso per OCCHIO,
+ * CAVOLO, SVEGLIA. Le parole corte restano come sono: per AH e OH l'interiezione
+ * e' il senso principale.
+ *
+ * Fra nomi, aggettivi e verbi invece l'ordine resta quello del Wikizionario:
+ * mettere sempre prima il nome dava ad ADEGUATO un termine di contabilita' e ad
+ * AGITATO un "malato di mente", sensi veri ma non quelli a cui uno pensa.
+ */
+for (const [risposta, elenco] of definizioni) {
+  if (risposta.length <= 3) continue
+  elenco.sort((x, y) => (x.pos === 'intj' ? 1 : 0) - (y.pos === 'intj' ? 1 : 0))
+}
+
+/*
  * Le forme flesse prendono la prima definizione del loro lemma, con la nota
  * della forma. Vanno in coda alle definizioni proprie: "rosa" e' anche il
  * femminile plurale di "roso", ma prima e' un fiore.
