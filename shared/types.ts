@@ -1,6 +1,8 @@
 /** Tipi condivisi tra client React e Pages Functions. */
 
-export type GameId = 'wordle'
+import type { MossaGiocata } from './scarabeo'
+
+export type GameId = 'wordle' | 'scarabeo'
 
 export interface Player {
   id: string
@@ -110,6 +112,77 @@ export interface WordleState {
 export interface GuessResult {
   accepted: true
   state: WordleState
+}
+
+/* ─────────────────────────────────  Scarabeo  ──────────────────────────── */
+
+/** Una casella occupata del tabellone. Le vuote non viaggiano. */
+export interface CellaPiena {
+  r: number
+  c: number
+  lettera: string
+  jolly: boolean
+}
+
+export type ScarabeoStatus = 'playing' | 'done'
+
+export interface ScarabeoState {
+  puzzleNumber: number
+  date: string
+  /**
+   * Solo le caselle occupate.
+   *
+   * Il tabellone ha 225 caselle e a metà partita ne sono piene una cinquantina:
+   * mandare l'array intero vorrebbe dire tre kB di `null` a ogni mossa.
+   */
+  celle: CellaPiena[]
+  /** Le tessere in mano. Il jolly e' "*". */
+  leggio: string[]
+  /** Quante tessere restano nel sacchetto. */
+  restanti: number
+  /** La cronologia, con i punti di ogni mossa. */
+  mosse: MossaGiocata[]
+  mosseUsate: number
+  mosseTotali: number
+  punti: number
+  status: ScarabeoStatus
+  msToNextPuzzle: number
+}
+
+/** Riepilogo per la card dell'hub. */
+export interface ScarabeoSummary {
+  puzzleNumber: number
+  date: string
+  status: 'new' | ScarabeoStatus
+  punti: number
+  mosseUsate: number
+  mosseTotali: number
+  msToNextPuzzle: number
+}
+
+export interface ScarabeoRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo. */
+  punti: number
+  /** Quante giornate ha giocato nel periodo. */
+  giornate: number
+  /** La giornata migliore del periodo. */
+  migliore: number
+  /** I punti di oggi, se ha giocato oggi. */
+  oggi: number | null
+  /** true se la giornata di oggi e' ancora aperta. */
+  inCorso: boolean
+}
+
+export interface ScarabeoLeaderboard {
+  scope: LeaderboardScope
+  updatedAt: string
+  rows: ScarabeoRow[]
+  me: ScarabeoRow | null
 }
 
 export type LeaderboardScope = 'today' | 'week' | 'month' | 'all'

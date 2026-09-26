@@ -14,6 +14,7 @@
 /** Sottodomini che aprono direttamente un gioco, con la rotta di destinazione. */
 export const GAME_SUBDOMAINS: Readonly<Record<string, string>> = {
   wordle: '/wordle',
+  scarabeo: '/scarabeo',
 }
 
 function labels(hostname: string): string[] {

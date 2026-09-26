@@ -28,6 +28,15 @@ export const GAMES: GameEntry[] = [
     available: true,
   },
   {
+    id: 'scarabeo',
+    name: 'Scarabeo',
+    tagline: 'Dieci mosse sul tabellone. Le stesse tessere per tutti, ogni giorno.',
+    path: '/scarabeo',
+    gradient: ['#f0a12c', '#c2700d'],
+    glyph: 'S',
+    available: true,
+  },
+  {
     id: 'quiz',
     name: 'Quiz Lampo',
     tagline: 'Dieci domande a tempo, una sfida nuova ogni giorno.',
