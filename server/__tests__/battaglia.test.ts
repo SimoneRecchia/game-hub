@@ -22,8 +22,13 @@ const FLOTTA_B: Nave[] = FLOTTA_A.map((n) => ({ ...n, r: 9 - n.r - (n.verticale 
 function partita(colpi: number[], extra: Partial<PartitaRow> = {}): PartitaRow {
   return {
     id: 'bat_1',
+    modalita: 'amici',
     giocatore_a: 'pa',
     giocatore_b: 'pb',
+    livello: null,
+    seme: null,
+    puzzle_number: null,
+    punti: null,
     stato: 'battaglia',
     flotta_a: JSON.stringify(FLOTTA_A),
     flotta_b: JSON.stringify(FLOTTA_B),
@@ -94,12 +99,27 @@ describe('la vittoria a tavolino', () => {
 })
 
 describe('la classifica', () => {
-  it('vittorie prima, poi meno sconfitte: non la percentuale', () => {
+  const riga = (nickname: string, punti: number, vinte: number, colpi: number, giornate = 3) => ({
+    playerId: nickname,
+    nickname,
+    displayName: nickname,
+    avatarColor: '#000',
+    punti,
+    giornate,
+    vinte,
+    colpi,
+    oggi: null,
+    inCorso: false,
+  })
+
+  it('punti prima, poi le vittorie, poi meno colpi per vincere', () => {
     const righe = ordinaBattaglia([
-      { playerId: '1', nickname: 'poche', displayName: 'poche', avatarColor: '#000', vinte: 2, perse: 0 },
-      { playerId: '2', nickname: 'tante', displayName: 'tante', avatarColor: '#000', vinte: 7, perse: 3 },
-      { playerId: '3', nickname: 'pari', displayName: 'pari', avatarColor: '#000', vinte: 7, perse: 1 },
+      riga('poche', 180, 2, 90),
+      riga('tante', 240, 3, 160),
+      riga('precise', 240, 3, 130),
+      riga('fortunate', 240, 2, 60),
     ])
-    expect(righe.map((r) => r.nickname)).toEqual(['pari', 'tante', 'poche'])
+    expect(righe.map((r) => r.nickname)).toEqual(['precise', 'tante', 'fortunate', 'poche'])
+    expect(righe.map((r) => r.rank)).toEqual([1, 2, 3, 4])
   })
 })

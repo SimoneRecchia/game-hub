@@ -6,34 +6,57 @@ import {
   flottaValida,
   type Nave,
 } from '../../shared/battaglia'
-import type { BattagliaSummary, LobbyBattaglia, VistaBattaglia } from '../../shared/types'
+import { LIVELLI_BATTAGLIA, type LivelloBattaglia } from '../../shared/battaglia-computer'
+import { msToNextPuzzle } from '../../shared/daily'
+import type {
+  BattagliaSummary,
+  InvitoConLink,
+  LinkBattaglia,
+  LobbyBattaglia,
+  VistaBattaglia,
+} from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
+import { today } from '../lib/wordleStore'
 import {
+  accettaLink,
   accettaSfida,
   altro,
+  annullaLink,
+  apriClassificata,
   colpiDelLato,
   colpiDi,
+  colpoDelComputerIn,
+  controComputer,
+  creaLink,
   diTurno,
   eOnline,
   flottaDi,
   giocatoriOnline,
+  invitoConLink,
   invitoPerId,
   latoDi,
+  linkAttivo,
   mandaSfida,
+  nuovaControComputer,
   partitaAperta,
   partitaBreve,
+  partitaComputerAperta,
   partitaPerId,
-  quantiOnline,
+  puntiDellaClassificata,
   reclamo,
+  recordControComputer,
   recordDi,
   salvaPartita,
   sfideMandate,
+  statoClassificata,
   vistaPer,
+  type CambiPartita,
   type Lato,
   type PartitaRow,
 } from '../lib/battagliaStore'
+import { riepilogoBattaglia } from '../lib/riepiloghi'
 
 /** La partita richiesta, e il lato di chi chiede: chi non ci gioca non la vede. */
 async function partitaMia(c: Context<AppEnv>): Promise<{ row: PartitaRow; io: Lato }> {
@@ -73,50 +96,84 @@ function leggiFlotta(valore: unknown): Nave[] {
   return FLOTTA.map((t) => navi.find((n) => n.tipo === t.id)!)
 }
 
+function leggiLivello(valore: unknown): LivelloBattaglia {
+  if (!LIVELLI_BATTAGLIA.includes(valore as LivelloBattaglia)) {
+    fail(400, 'LIVELLO', 'Livello sconosciuto: facile, normale o difficile.')
+  }
+  return valore as LivelloBattaglia
+}
+
 async function rispondi(c: Context<AppEnv>, row: PartitaRow, io: Lato, stato = 200) {
   return c.json<VistaBattaglia>(await vistaPer(c.env.DB, row, io, Date.now()), stato as 200)
+}
+
+/**
+ * I cambi di una partita che finisce: chi vince, perché, e — nella
+ * classificata — i punti, contati sulla partita come sarà dopo la scrittura.
+ */
+function fine(row: PartitaRow, cambi: CambiPartita, vincitore: Lato, motivo: 'flotta' | 'resa' | 'assenza'): CambiPartita {
+  const finita: CambiPartita = { ...cambi, stato: 'finita', vincitore, motivo }
+  if (row.modalita === 'classificata') {
+    finita.punti = puntiDellaClassificata({ ...row, ...finita } as PartitaRow)
+  }
+  return finita
 }
 
 export const battagliaRoutes = new Hono<AppEnv>()
 
   .use('*', requireVerified)
 
-  /** La sala d'attesa: chi e' online, le sfide mandate, la partita aperta, il record. */
+  /**
+   * La sala: chi e' online, le sfide mandate, la partita aperta con un amico e
+   * quella col computer, l'invito col link, la classificata di oggi, i record.
+   */
   .get('/lobby', async (c) => {
     const db = c.env.DB
     const io = c.get('player').id
     const adesso = Date.now()
-    const [giocatori, inviti, aperta, record] = await Promise.all([
+    const [giocatori, inviti, aperta, computer, link, classificata, record, controComputer] = await Promise.all([
       giocatoriOnline(db, io, adesso),
       sfideMandate(db, io, adesso),
       partitaAperta(db, io),
+      partitaComputerAperta(db, io),
+      linkAttivo(db, io, adesso),
+      statoClassificata(db, io, today().puzzleNumber, msToNextPuzzle()),
       recordDi(db, io),
+      recordControComputer(db, io),
     ])
     const lato = aperta ? latoDi(aperta, io) : null
     return c.json<LobbyBattaglia>({
       giocatori,
       inviti,
       partita: aperta && lato ? await partitaBreve(db, aperta, lato) : null,
+      computer: computer ? await partitaBreve(db, computer, 'a') : null,
+      link,
+      classificata,
       ...record,
+      controComputer,
     })
   })
 
   /** Per la card dell'hub: di sola lettura, come gli altri riepiloghi. */
-  .get('/summary', async (c) => {
-    const db = c.env.DB
-    const io = c.get('player').id
-    const adesso = Date.now()
-    const [online, aperta, record] = await Promise.all([
-      quantiOnline(db, io, adesso),
-      partitaAperta(db, io),
-      recordDi(db, io),
-    ])
-    const lato = aperta ? latoDi(aperta, io) : null
-    return c.json<BattagliaSummary>({
-      online,
-      partita: aperta && lato ? await partitaBreve(db, aperta, lato) : null,
-      ...record,
-    })
+  .get('/summary', async (c) =>
+    c.json<BattagliaSummary>(await riepilogoBattaglia(c.env.DB, c.get('player').id)),
+  )
+
+  /**
+   * La classificata di oggi: contro il computer, con la sua flotta uguale per
+   * tutti. Aperta alla prima richiesta, una sola al giorno; da qui in poi e' una
+   * partita come le altre, al suo indirizzo.
+   */
+  .post('/classificata', async (c) => {
+    const row = await apriClassificata(c.env.DB, c.get('player').id, today().puzzleNumber)
+    return rispondi(c, row, 'a')
+  })
+
+  /** Una partita libera contro il computer, al livello scelto. */
+  .post('/computer', async (c) => {
+    const corpo = ((await c.req.json().catch(() => ({}))) ?? {}) as { livello?: unknown }
+    const row = await nuovaControComputer(c.env.DB, c.get('player').id, leggiLivello(corpo.livello))
+    return rispondi(c, row, 'a', 201)
   })
 
   /** Sfida un giocatore online. */
@@ -174,6 +231,31 @@ export const battagliaRoutes = new Hono<AppEnv>()
     return c.json({ partitaId })
   })
 
+  /* ──────────────────────  Gli inviti con un link  ────────────────────── */
+
+  /** Un invito nuovo da mandare a chi si vuole. Quello vecchio, se c'era, si annulla. */
+  .post('/link', async (c) => {
+    const link = await creaLink(c.env.DB, c.get('player').id, Date.now())
+    return c.json<LinkBattaglia>(link, 201)
+  })
+
+  .post('/link/annulla', async (c) => {
+    await annullaLink(c.env.DB, c.get('player').id)
+    return c.json({ ok: true })
+  })
+
+  /**
+   * Accetta l'invito del link: apre la partita con chi l'ha mandato. E' la rotta
+   * che chiama la pagina dell'invito appena c'e' un giocatore — anche uno che si
+   * e' appena registrato apposta.
+   */
+  .post('/link/:codice/accetta', async (c) => {
+    const partitaId = await accettaLink(c.env.DB, c.req.param('codice'), c.get('player').id, Date.now())
+    return c.json({ partitaId })
+  })
+
+  /* ────────────────────────────  La partita  ─────────────────────────── */
+
   /** La partita vista da chi la gioca. */
   .get('/partite/:id', async (c) => {
     const { row, io } = await partitaMia(c)
@@ -181,8 +263,9 @@ export const battagliaRoutes = new Hono<AppEnv>()
   })
 
   /**
-   * Mette in mare la flotta. Quando ci sono tutte e due, comincia la battaglia
-   * e si sorteggia chi spara per primo.
+   * Mette in mare la flotta. Fra amici, quando ci sono tutte e due comincia la
+   * battaglia e si sorteggia chi spara per primo; contro il computer — che ha la
+   * sua flotta dal principio — si comincia subito, e il primo colpo e' tuo.
    */
   .post('/partite/:id/flotta', async (c) => {
     const { row, io } = await partitaMia(c)
@@ -193,23 +276,26 @@ export const battagliaRoutes = new Hono<AppEnv>()
     const flotta = JSON.stringify(leggiFlotta(corpo.navi))
     const cambi = io === 'a' ? { flotta_a: flotta } : { flotta_b: flotta }
     const altraPronta = flottaDi(row, altro(io)) !== null
+    const primo: Lato = controComputer(row)
+      ? 'a'
+      : // A testa o croce, come al tavolo: un byte casuale del Worker.
+        crypto.getRandomValues(new Uint8Array(1))[0] % 2 === 0
+        ? 'a'
+        : 'b'
     const dopo = await salvaPartita(
       c.env.DB,
       row,
-      altraPronta
-        ? {
-            ...cambi,
-            stato: 'battaglia',
-            // A testa o croce, come al tavolo: un byte casuale del Worker.
-            primo: crypto.getRandomValues(new Uint8Array(1))[0] % 2 === 0 ? 'a' : 'b',
-          }
-        : cambi,
+      altraPronta ? { ...cambi, stato: 'battaglia', primo } : cambi,
       Date.now(),
     )
     return rispondi(c, dopo, io)
   })
 
-  /** Spara. */
+  /**
+   * Spara. Contro il computer, nella stessa richiesta risponde lui: il suo
+   * colpo costa qualche centesimo di millisecondo, e cosi' la partita e' una
+   * scrittura sola per turno invece di due.
+   */
   .post('/partite/:id/colpo', async (c) => {
     const { row, io } = await partitaMia(c)
     const { versione, corpo } = await versioneDal(c)
@@ -226,32 +312,32 @@ export const battagliaRoutes = new Hono<AppEnv>()
     }
 
     const colpi = [...colpiDi(row), casella]
-    const provvisoria = { ...row, colpi: JSON.stringify(colpi) }
-    const bersaglio = flottaDi(row, altro(io)) ?? []
-    const presi = new Set(colpiDelLato(provvisoria, io).map((colpo) => colpo.casella))
-    const vinta = flottaAffondata(bersaglio, presi)
+    let provvisoria: PartitaRow = { ...row, colpi: JSON.stringify(colpi) }
+    const affondata = (partita: PartitaRow, chi: Lato) =>
+      flottaAffondata(
+        flottaDi(partita, altro(chi)) ?? [],
+        new Set(colpiDelLato(partita, chi).map((colpo) => colpo.casella)),
+      )
 
-    const dopo = await salvaPartita(
-      c.env.DB,
-      row,
-      vinta
-        ? { colpi: JSON.stringify(colpi), stato: 'finita', vincitore: io, motivo: 'flotta' }
-        : { colpi: JSON.stringify(colpi) },
-      Date.now(),
-    )
+    let cambi: CambiPartita = { colpi: JSON.stringify(colpi) }
+    if (affondata(provvisoria, io)) {
+      cambi = fine(row, cambi, io, 'flotta')
+    } else if (controComputer(row)) {
+      colpi.push(colpoDelComputerIn(provvisoria))
+      provvisoria = { ...row, colpi: JSON.stringify(colpi) }
+      cambi = { colpi: JSON.stringify(colpi) }
+      if (affondata(provvisoria, 'b')) cambi = fine(row, cambi, 'b', 'flotta')
+    }
+
+    const dopo = await salvaPartita(c.env.DB, row, cambi, Date.now())
     return rispondi(c, dopo, io)
   })
 
-  /** Abbandona: vince l'altro. */
+  /** Abbandona: vince l'altro. Nella classificata valgono i colpi a segno fatti fin lì. */
   .post('/partite/:id/resa', async (c) => {
     const { row, io } = await partitaMia(c)
     if (row.stato === 'finita') return rispondi(c, row, io)
-    const dopo = await salvaPartita(
-      c.env.DB,
-      row,
-      { stato: 'finita', vincitore: altro(io), motivo: 'resa' },
-      Date.now(),
-    )
+    const dopo = await salvaPartita(c.env.DB, row, fine(row, {}, altro(io), 'resa'), Date.now())
     return rispondi(c, dopo, io)
   })
 
@@ -265,11 +351,18 @@ export const battagliaRoutes = new Hono<AppEnv>()
     if (!reclamo(row, io, Date.now()).puoi) {
       fail(409, 'ANCORA_PRESTO', 'L’avversario ha ancora tempo per muovere.')
     }
-    const dopo = await salvaPartita(
-      c.env.DB,
-      row,
-      { stato: 'finita', vincitore: io, motivo: 'assenza' },
-      Date.now(),
-    )
+    const dopo = await salvaPartita(c.env.DB, row, fine(row, {}, io, 'assenza'), Date.now())
     return rispondi(c, dopo, io)
   })
+
+/**
+ * Gli inviti con un link, visti da fuori: chi apre il link non ha ancora un
+ * account, e la pagina deve potergli dire chi lo sta sfidando prima di
+ * chiedergli di registrarsi. Solo il nome di chi invita e se l'invito vale
+ * ancora: niente che non si potrebbe leggere nel messaggio con cui e' arrivato.
+ */
+export const invitiPubblici = new Hono<AppEnv>().get('/:codice', async (c) => {
+  const invito = await invitoConLink(c.env.DB, c.req.param('codice'), Date.now())
+  if (!invito) fail(404, 'LINK_NON_TROVATO', 'Questo invito non esiste.')
+  return c.json<InvitoConLink>(invito)
+})

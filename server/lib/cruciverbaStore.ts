@@ -26,20 +26,28 @@ import type {
 } from '../../shared/types'
 import { fail, newId, nowIso } from './http'
 
-export interface SchemaRow {
-  puzzle_number: number
+/** Quel che serve di uno schema, del giorno o libero. */
+export interface Schema {
   righe: number
   colonne: number
   soluzione: string
   definizioni: string
+}
+
+export interface SchemaRow extends Schema {
+  puzzle_number: number
   created_at: string
 }
 
-export interface PartitaRow {
+export interface SchemaLiberoRow extends Schema {
+  id: number
+  created_at: string
+}
+
+/** Le colonne comuni alle due partite: quelle che la scrittura legge e cambia. */
+export interface Partita {
   id: string
   player_id: string
-  puzzle_number: number
-  date: string
   status: CruciverbaStatus
   lettere: string
   svelate: string
@@ -51,6 +59,26 @@ export interface PartitaRow {
   started_at: string
   updated_at: string
   finished_at: string | null
+}
+
+export interface PartitaRow extends Partita {
+  puzzle_number: number
+  date: string
+}
+
+export interface PartitaLiberaRow extends Partita {
+  schema_id: number
+}
+
+/** Le due tabelle delle partite: la scrittura e' la stessa, cambia dove. */
+export type TabellaPartite = 'cruciverba_games' | 'cruciverba_partite_libere'
+
+/** Chi e' la partita, per lo stato che va al client. */
+export interface Identita {
+  modalita: 'classificata' | 'libera'
+  /** Il numero del puzzle, o quello dello schema libero. */
+  numero: number
+  date: string
 }
 
 /** Una definizione come sta in D1: chiavi corte, perché sono quaranta per schema. */
@@ -132,7 +160,7 @@ function leggiJson<T>(testo: string, ripiego: T): T {
   }
 }
 
-export function svelateDi(row: PartitaRow): number[] {
+export function svelateDi(row: Pick<Partita, 'svelate'>): number[] {
   const valore = leggiJson<unknown>(row.svelate, [])
   return Array.isArray(valore) ? valore.filter((k): k is number => Number.isInteger(k)) : []
 }
@@ -144,7 +172,7 @@ export function svelateDi(row: PartitaRow): number[] {
  * segnalate: chi scrive A, la vede segnalata, scrive B, poi torna ad A e
  * ricontrolla, sa gia' che A e' sbagliata — e non la paga di nuovo.
  */
-export function segnalateDi(row: PartitaRow): Record<string, string> {
+export function segnalateDi(row: Pick<Partita, 'segnalate'>): Record<string, string> {
   const valore = leggiJson<unknown>(row.segnalate, {})
   return valore && typeof valore === 'object' && !Array.isArray(valore)
     ? (valore as Record<string, string>)
@@ -186,7 +214,7 @@ export function costoErrori(nuovi: number): number {
  * scrittura: il tempo dichiarato non puo' crescere piu' di così (con qualche
  * secondo di margine per la rete), né tornare indietro.
  */
-export function tempoDichiarato(row: PartitaRow, dichiarato: unknown, adesso: number): number {
+export function tempoDichiarato(row: Pick<Partita, 'tempo_ms' | 'updated_at'>, dichiarato: unknown, adesso: number): number {
   const precedente = row.tempo_ms
   const valore = Number(dichiarato)
   if (!Number.isFinite(valore)) return precedente
@@ -196,7 +224,12 @@ export function tempoDichiarato(row: PartitaRow, dichiarato: unknown, adesso: nu
 }
 
 /** Lo stato completo che va al client. */
-export function statoDa(row: PartitaRow, schema: SchemaRow, msToNextPuzzle: number): CruciverbaState {
+export function statoDa(
+  row: Partita,
+  schema: Schema,
+  identita: Identita,
+  msToNextPuzzle: number,
+): CruciverbaState {
   const finita = row.status === 'done'
   const salvate = leggiJson<Record<string, DefinizioneSalvata>>(schema.definizioni, {})
   const definizioni: DefinizioneCruciverba[] = sequenzeDelloSchema(
@@ -217,8 +250,10 @@ export function statoDa(row: PartitaRow, schema: SchemaRow, msToNextPuzzle: numb
   const segnalate = segnalateDi(row)
 
   return {
-    puzzleNumber: row.puzzle_number,
-    date: row.date,
+    partitaId: row.id,
+    modalita: identita.modalita,
+    puzzleNumber: identita.numero,
+    date: identita.date,
     righe: schema.righe,
     colonne: schema.colonne,
     schema: schemaVuoto(schema.soluzione),
@@ -241,6 +276,14 @@ export function statoDa(row: PartitaRow, schema: SchemaRow, msToNextPuzzle: numb
   }
 }
 
+export function identitaDelGiorno(row: PartitaRow): Identita {
+  return { modalita: 'classificata', numero: row.puzzle_number, date: row.date }
+}
+
+export function identitaLibera(row: PartitaLiberaRow): Identita {
+  return { modalita: 'libera', numero: row.schema_id, date: row.started_at.slice(0, 10) }
+}
+
 export interface Cambi {
   lettere: string
   svelate: number[]
@@ -259,12 +302,18 @@ export interface Cambi {
  * vicenda, soprattutto quando una delle due e' un aiuto che costa punti. Se la
  * versione non regge, chi chiama risponde 409 e il client rilegge lo stato.
  */
-export async function salvaPartita(db: D1Database, row: PartitaRow, cambi: Cambi): Promise<PartitaRow> {
+export async function salvaPartita<T extends Partita>(
+  db: D1Database,
+  tabella: TabellaPartite,
+  row: T,
+  cambi: Cambi,
+): Promise<T> {
   const adesso = nowIso()
   const finita = cambi.status === 'done'
   const esito = await db
     .prepare(
-      `UPDATE cruciverba_games
+      // La tabella viene da un tipo chiuso, non dal client: interpolarla e' sicuro.
+      `UPDATE ${tabella}
           SET lettere = ?, svelate = ?, segnalate = ?, errori = ?, tempo_ms = ?,
               status = ?, score = ?, versione = versione + 1, updated_at = ?,
               finished_at = COALESCE(finished_at, ?)
@@ -301,6 +350,122 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, cambi: Cambi
     versione: row.versione + 1,
     updated_at: adesso,
     finished_at: row.finished_at ?? (finita ? adesso : null),
+  }
+}
+
+/* ────────────────────────────  Gli schemi liberi  ─────────────────────────── */
+
+export async function schemaLibero(db: D1Database, id: number): Promise<SchemaLiberoRow | null> {
+  return db.prepare('SELECT * FROM cruciverba_schemi_liberi WHERE id = ?').bind(id).first<SchemaLiberoRow>()
+}
+
+export async function partitaLiberaPerId(
+  db: D1Database,
+  id: string,
+  playerId: string,
+): Promise<PartitaLiberaRow | null> {
+  return db
+    .prepare('SELECT * FROM cruciverba_partite_libere WHERE id = ? AND player_id = ?')
+    .bind(id, playerId)
+    .first<PartitaLiberaRow>()
+}
+
+/** Il cruciverba libero ancora aperto piu' recente, se c'e'. */
+export async function liberaAperta(db: D1Database, playerId: string): Promise<PartitaLiberaRow | null> {
+  return db
+    .prepare(
+      `SELECT * FROM cruciverba_partite_libere WHERE player_id = ? AND status = 'playing'
+        ORDER BY started_at DESC LIMIT 1`,
+    )
+    .bind(playerId)
+    .first<PartitaLiberaRow>()
+}
+
+/**
+ * Un cruciverba libero nuovo: uno schema a caso fra quelli che il giocatore non
+ * ha ancora aperto. Null se li ha fatti tutti — la scorta cresce ogni notte, e
+ * la schermata lo dice invece di riproporne uno vecchio.
+ */
+export async function nuovaLibera(
+  db: D1Database,
+  playerId: string,
+  caso: () => number,
+): Promise<{ row: PartitaLiberaRow; schema: SchemaLiberoRow } | null> {
+  const conta = await db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM cruciverba_schemi_liberi
+        WHERE id NOT IN (SELECT schema_id FROM cruciverba_partite_libere WHERE player_id = ?)`,
+    )
+    .bind(playerId)
+    .first<{ n: number }>()
+  const quanti = conta?.n ?? 0
+  if (quanti === 0) return null
+
+  const schema = await db
+    .prepare(
+      `SELECT * FROM cruciverba_schemi_liberi
+        WHERE id NOT IN (SELECT schema_id FROM cruciverba_partite_libere WHERE player_id = ?)
+        ORDER BY id LIMIT 1 OFFSET ?`,
+    )
+    .bind(playerId, Math.floor(caso() * quanti))
+    .first<SchemaLiberoRow>()
+  if (!schema) return null
+
+  const adesso = nowIso()
+  const row: PartitaLiberaRow = {
+    id: newId('crl'),
+    player_id: playerId,
+    schema_id: schema.id,
+    status: 'playing',
+    lettere: grigliaIniziale(schema.soluzione),
+    svelate: '[]',
+    segnalate: '{}',
+    errori: 0,
+    tempo_ms: 0,
+    score: 0,
+    versione: 0,
+    started_at: adesso,
+    updated_at: adesso,
+    finished_at: null,
+  }
+  // OR IGNORE: due richieste ravvicinate sullo stesso schema non fanno due righe.
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO cruciverba_partite_libere
+         (id, player_id, schema_id, status, lettere, started_at, updated_at)
+       VALUES (?, ?, ?, 'playing', ?, ?, ?)`,
+    )
+    .bind(row.id, playerId, schema.id, row.lettere, adesso, adesso)
+    .run()
+  const salvata = await db
+    .prepare('SELECT * FROM cruciverba_partite_libere WHERE player_id = ? AND schema_id = ?')
+    .bind(playerId, schema.id)
+    .first<PartitaLiberaRow>()
+  return { row: salvata ?? row, schema }
+}
+
+export async function statisticheLibere(
+  db: D1Database,
+  playerId: string,
+): Promise<{ giocate: number; completate: number; senzaAiuti: number; disponibili: number }> {
+  const [mie, scorta] = await Promise.all([
+    db
+      .prepare(
+        `SELECT COUNT(*) AS giocate,
+                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS completate,
+                SUM(CASE WHEN status = 'done' AND svelate = '[]' AND errori = 0 THEN 1 ELSE 0 END) AS perfetti
+           FROM cruciverba_partite_libere WHERE player_id = ?`,
+      )
+      .bind(playerId)
+      .first<{ giocate: number; completate: number | null; perfetti: number | null }>(),
+    db.prepare('SELECT COUNT(*) AS n FROM cruciverba_schemi_liberi').first<{ n: number }>(),
+  ])
+  const giocate = mie?.giocate ?? 0
+  return {
+    giocate,
+    completate: mie?.completate ?? 0,
+    senzaAiuti: mie?.perfetti ?? 0,
+    disponibili: Math.max(0, (scorta?.n ?? 0) - giocate),
   }
 }
 

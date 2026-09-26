@@ -5,10 +5,11 @@ import { authRoutes } from './routes/auth'
 import { wordleRoutes } from './routes/wordle'
 import { scarabeoRoutes } from './routes/scarabeo'
 import { cruciverbaRoutes } from './routes/cruciverba'
-import { battagliaRoutes } from './routes/battaglia'
+import { battagliaRoutes, invitiPubblici } from './routes/battaglia'
 import { presenzaRoutes } from './routes/presenza'
 import { leaderboardRoutes } from './routes/leaderboard'
 import { coopRoutes } from './routes/coop'
+import { oggiRoutes } from './routes/oggi'
 import { gameDate, msToNextPuzzle, puzzleNumberFor } from '../shared/daily'
 
 /**
@@ -40,9 +41,12 @@ export function createApp() {
   app.route('/scarabeo', scarabeoRoutes)
   app.route('/cruciverba', cruciverbaRoutes)
   app.route('/battaglia', battagliaRoutes)
+  // Senza sessione: chi apre un invito col link puo' non avere ancora un account.
+  app.route('/inviti', invitiPubblici)
   app.route('/presenza', presenzaRoutes)
   app.route('/leaderboard', leaderboardRoutes)
   app.route('/coop', coopRoutes)
+  app.route('/oggi', oggiRoutes)
 
   app.notFound((c) => c.json({ error: 'Endpoint non trovato.', code: 'NOT_FOUND' }, 404))
 

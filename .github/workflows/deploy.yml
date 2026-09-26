@@ -110,13 +110,23 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      # Il codice nuovo potrebbe servire il cruciverba di oggi: lo schema deve
-      # esserci prima. Qui bastano due settimane, la scorta lunga la tiene il
-      # workflow notturno (cruciverba.yml). Genera solo le giornate che mancano,
-      # quindi di solito non fa niente.
+      # Il codice nuovo potrebbe servire il cruciverba di oggi, uno schema
+      # libero o il computer dello Scarabeo di oggi: devono esserci prima. Qui
+      # bastano due settimane e sessanta schemi liberi, la scorta lunga la tiene
+      # il workflow notturno (cruciverba.yml). Gli script fanno solo quel che
+      # manca, quindi di solito non fanno niente.
       - name: Scorta dei cruciverba
         if: steps.segreti.outputs.pronto == 'si'
-        run: node scripts/genera-cruciverba.mjs --remote --giorni 14
+        run: |
+          node scripts/genera-cruciverba.mjs --remote --giorni 14
+          node scripts/genera-cruciverba.mjs --remote --liberi 60 --al-massimo 60
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Il computer dello Scarabeo
+        if: steps.segreti.outputs.pronto == 'si'
+        run: npx vite-node scripts/genera-computer-scarabeo.ts -- --remote --giorni 14
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

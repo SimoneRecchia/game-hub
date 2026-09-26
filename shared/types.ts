@@ -2,6 +2,7 @@
 
 import type { MossaGiocata } from './scarabeo'
 import type { Esito, IdNave, Nave } from './battaglia'
+import type { LivelloBattaglia } from './battaglia-computer'
 
 export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia'
 
@@ -115,6 +116,33 @@ export interface GuessResult {
   state: WordleState
 }
 
+/**
+ * Una partita libera del Wordle: una parola a caso, senza giornata e senza
+ * punti. La soluzione resta sul server finché si gioca, come nella classificata.
+ */
+export interface WordleLiberaState {
+  id: string
+  wordLength: number
+  maxAttempts: number
+  guesses: EvaluatedGuess[]
+  status: WordleStatus
+  answer: string | null
+}
+
+export interface StatisticheWordleLibero {
+  giocate: number
+  vinte: number
+  /** Vittorie di fila, dalla piu' recente. */
+  serie: number
+  /** Indice 0 = vinta al primo tentativo. */
+  distribuzione: number[]
+}
+
+export interface WordleLiberaRisposta {
+  partita: WordleLiberaState | null
+  statistiche: StatisticheWordleLibero
+}
+
 /* ─────────────────────────────────  Scarabeo  ──────────────────────────── */
 
 /** Una casella occupata del tabellone. Le vuote non viaggiano. */
@@ -145,7 +173,15 @@ export interface ScarabeoState {
   mosse: MossaGiocata[]
   mosseUsate: number
   mosseTotali: number
+  /** Il punteggio del tabellone. */
   punti: number
+  /** I punti in classifica: il punteggio in rapporto a quello del computer, fino a cento. */
+  puntiClassifica: number
+  /**
+   * Il computer, con le stesse tessere: il punteggio sempre — e' il traguardo —
+   * le sue mosse solo a giornata chiusa.
+   */
+  computer: { punti: number; mosse: MossaGiocata[] | null }
   status: ScarabeoStatus
   msToNextPuzzle: number
 }
@@ -156,9 +192,23 @@ export interface ScarabeoSummary {
   date: string
   status: 'new' | ScarabeoStatus
   punti: number
+  puntiClassifica: number
+  /** Il punteggio del computer sulle tessere di oggi. */
+  computer: number
   mosseUsate: number
   mosseTotali: number
   msToNextPuzzle: number
+}
+
+/** Le partite libere di Scarabeo contro il computer, per livello. */
+export interface StatisticheScarabeoLibero {
+  giocate: number
+  vinte: number
+  perse: number
+  pari: number
+  /** Il punteggio piu' alto fatto in una partita libera. */
+  migliore: number
+  perLivello: Record<'facile' | 'normale' | 'difficile', { giocate: number; vinte: number }>
 }
 
 export interface ScarabeoRow {
@@ -167,13 +217,15 @@ export interface ScarabeoRow {
   nickname: string
   displayName: string
   avatarColor: string
-  /** Punti nel periodo. */
+  /** Punti in classifica nel periodo. */
   punti: number
+  /** Il punteggio del tabellone nel periodo: e' lo spareggio. */
+  punteggio: number
   /** Quante giornate ha giocato nel periodo. */
   giornate: number
-  /** La giornata migliore del periodo. */
+  /** La giornata migliore del periodo, in punti del tabellone. */
   migliore: number
-  /** I punti di oggi, se ha giocato oggi. */
+  /** I punti in classifica di oggi, se ha giocato oggi. */
   oggi: number | null
   /** true se la giornata di oggi e' ancora aperta. */
   inCorso: boolean
@@ -208,6 +260,11 @@ export interface DefinizioneCruciverba {
 }
 
 export interface CruciverbaState {
+  /** La partita: le scritture di una libera la indicano nell'indirizzo. */
+  partitaId: string
+  /** La classificata del giorno, o uno schema libero. */
+  modalita: 'classificata' | 'libera'
+  /** Il numero del puzzle, o quello dello schema libero. */
   puzzleNumber: number
   date: string
   righe: number
@@ -251,6 +308,17 @@ export interface CruciverbaEsito {
   svelate?: number[]
   /** Lo stato intero, quando la partita si chiude: porta soluzione e fonti. */
   stato?: CruciverbaState
+}
+
+export interface CruciverbaLiberaRisposta {
+  /** Il cruciverba libero aperto piu' recente, se c'e'. */
+  partita: CruciverbaState | null
+  giocate: number
+  completate: number
+  /** Completati senza svelare niente e senza errori. */
+  senzaAiuti: number
+  /** Quanti schemi liberi restano da aprire. */
+  disponibili: number
 }
 
 export interface CruciverbaSummary {
@@ -335,12 +403,47 @@ export interface InvitoInviato {
 
 export type StatoBattaglia = 'disposizione' | 'battaglia' | 'finita'
 
+/**
+ * Contro chi, e per cosa: fra amici, contro il computer per giocare, o la
+ * classificata del giorno, contro il computer con la flotta uguale per tutti.
+ */
+export type ModalitaBattaglia = 'amici' | 'computer' | 'classificata'
+
 /** La partita aperta di un giocatore, in breve: per l'hub e per il giro di controllo. */
 export interface PartitaBreve {
   id: string
+  modalita: ModalitaBattaglia
   stato: StatoBattaglia
   avversario: GiocatoreBreve
   tuoTurno: boolean
+}
+
+/** La classificata di oggi, come la vedono l'hub e la sala. */
+export interface ClassificataBattaglia {
+  puzzleNumber: number
+  /** `nuova` finché non la si apre. */
+  stato: 'nuova' | StatoBattaglia
+  partitaId: string | null
+  /** A partita finita: i punti in classifica, e com'e' andata. */
+  punti: number | null
+  vinta: boolean | null
+  /** I colpi sparati finora. */
+  colpi: number
+  msToNextPuzzle: number
+}
+
+/** Un invito con un link, come lo vede chi l'ha creato. */
+export interface LinkBattaglia {
+  codice: string
+  createdAt: string
+  scadeTraMs: number
+}
+
+/** Un invito con un link, come lo vede chi lo apre: anche senza account. */
+export interface InvitoConLink {
+  codice: string
+  da: GiocatoreBreve
+  stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
 }
 
 /**
@@ -357,9 +460,18 @@ export interface PresenzaRisposta {
 export interface LobbyBattaglia {
   giocatori: GiocatoreOnline[]
   inviti: InvitoInviato[]
+  /** La partita aperta con un amico. */
   partita: PartitaBreve | null
+  /** La partita libera aperta contro il computer. */
+  computer: PartitaBreve | null
+  /** L'invito con un link ancora valido, se ce n'e' uno. */
+  link: LinkBattaglia | null
+  classificata: ClassificataBattaglia
+  /** Contro gli amici. */
   vinte: number
   perse: number
+  /** Contro il computer, nelle partite libere. */
+  controComputer: Record<LivelloBattaglia, { vinte: number; perse: number }>
 }
 
 /** Un colpo visto da chi guarda: dove, com'e' andato, e la nave solo se affondata. */
@@ -372,6 +484,13 @@ export interface ColpoVisto {
 
 export interface VistaBattaglia {
   id: string
+  modalita: ModalitaBattaglia
+  /** Il livello del computer; null fra amici. */
+  livello: LivelloBattaglia | null
+  /** La giornata, per la classificata. */
+  puzzleNumber: number | null
+  /** I punti della classificata, a partita finita. */
+  punti: number | null
   stato: StatoBattaglia
   avversario: GiocatoreBreve & { online: boolean }
   /** La mia flotta, se l'ho gia' messa in mare. */
@@ -399,19 +518,28 @@ export interface VistaBattaglia {
 export interface BattagliaSummary {
   /** Quanti altri giocatori sono online adesso. */
   online: number
+  /** La partita aperta con un amico. */
   partita: PartitaBreve | null
+  classificata: ClassificataBattaglia
   vinte: number
   perse: number
 }
 
+/** La classifica della battaglia: le classificate, contro il computer. */
 export interface BattagliaRow {
   rank: number
   playerId: string
   nickname: string
   displayName: string
   avatarColor: string
+  punti: number
+  giornate: number
   vinte: number
-  perse: number
+  /** Colpi sparati nelle vittorie: meno, a parita', e' meglio. */
+  colpi: number
+  /** I punti di oggi, se la classificata di oggi e' finita. */
+  oggi: number | null
+  inCorso: boolean
 }
 
 export interface BattagliaLeaderboard {
@@ -422,6 +550,50 @@ export interface BattagliaLeaderboard {
 }
 
 export type LeaderboardScope = 'today' | 'week' | 'month' | 'all'
+
+/* ──────────────────────────  La classifica generale  ───────────────────────── */
+
+/** I giochi che hanno una classificata, e quindi una classifica. */
+export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia'
+
+/**
+ * Una riga della classifica generale: la somma delle classificate di tutti i
+ * giochi. Si puo' sommare perché ogni classificata vale al massimo cento punti
+ * (vedi shared/punti.ts).
+ */
+export interface GeneraleRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  punti: number
+  perGioco: Record<GiocoClassificato, number>
+  /** La parte del Wordle fatta nella stanza di qualcun altro: e' lo spareggio. */
+  assist: number
+  /** Classificate chiuse nel periodo: una giornata di Wordle conta una. */
+  partite: number
+}
+
+export interface GeneraleLeaderboard {
+  scope: LeaderboardScope
+  updatedAt: string
+  rows: GeneraleRow[]
+  me: GeneraleRow | null
+}
+
+/** Tutto quel che serve alla schermata iniziale, in una richiesta. */
+export interface OggiRisposta {
+  date: string
+  puzzleNumber: number
+  msToNextPuzzle: number
+  wordle: WordleSummary
+  scarabeo: ScarabeoSummary
+  cruciverba: CruciverbaSummary
+  battaglia: BattagliaSummary
+  /** Come si sta oggi nella classifica generale. */
+  generale: { posizione: number | null; punti: number; giocatori: number }
+}
 
 export interface LeaderboardRow {
   rank: number
