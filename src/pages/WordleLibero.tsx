@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
-import { Coriandoli } from '@/components/Elementi'
+import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconChart, IconInfo, IconShuffle } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
@@ -29,6 +29,10 @@ const TITOLI_VITTORIA = ['Al primo colpo!', 'Splendido', 'Ottimo', 'Bene', 'Per 
 export default function WordleLibero() {
   const toast = useToast()
   const game = useWordleLibero()
+  const festa = useFesta(
+    game.state ? game.state.status === 'playing' : null,
+    game.state?.status === 'won' && game.resultOpen,
+  )
   const [aiuto, setAiuto] = useState(false)
   const [statistiche, setStatistiche] = useState<StatisticheWordleLibero | null>(null)
   const [cambio, setCambio] = useState(false)
@@ -169,7 +173,7 @@ export default function WordleLibero() {
         </Button>
       </Sheet>
 
-      {game.state?.status === 'won' && game.resultOpen && <Coriandoli />}
+      {festa && <Coriandoli />}
     </Pagina>
   )
 }

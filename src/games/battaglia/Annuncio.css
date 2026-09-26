@@ -1,0 +1,347 @@
+/*
+ * L'annuncio di un colpo, al centro dello schermo.
+ *
+ * Tutte le durate sono frazioni di `--durata`, che arriva da
+ * DURATA_ANNUNCIO_MS: la pagina aspetta quel tempo prima di mostrare il colpo
+ * dell'avversario, e l'annuncio deve essere finito quando arriva.
+ */
+.annuncio {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6);
+  pointer-events: none;
+  /* Un alone scuro dietro la carta: la separa dal mare senza spegnerlo. */
+  background: radial-gradient(circle at 50% 48%, rgba(8, 20, 34, 0.26), transparent 62%);
+  animation: annuncio-alone var(--durata) linear both;
+}
+
+@keyframes annuncio-alone {
+  0% {
+    opacity: 0;
+  }
+  12%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.annuncio__carta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 200px;
+  max-width: min(84vw, 320px);
+  padding: var(--sp-3) var(--sp-6) var(--sp-4);
+  border-radius: 30px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  animation:
+    annuncio-salta calc(var(--durata) * 0.4) var(--ease-out) both,
+    annuncio-via calc(var(--durata) * 0.22) ease-in calc(var(--durata) * 0.78) forwards;
+}
+
+/* I propri colpi: un adesivo che salta fuori, un po' storto. */
+@keyframes annuncio-salta {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-16deg);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.12) rotate(4deg);
+  }
+  70% {
+    transform: scale(0.96) rotate(-3deg);
+  }
+  100% {
+    transform: scale(1) rotate(-2deg);
+  }
+}
+
+@keyframes annuncio-via {
+  to {
+    opacity: 0;
+    transform: scale(0.82) translateY(-28px) rotate(-2deg);
+  }
+}
+
+.annuncio__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 2.125rem;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.annuncio__sotto {
+  margin: 4px 0 0;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  opacity: 0.92;
+}
+
+.annuncio__disegno {
+  display: block;
+  width: 118px;
+  height: auto;
+  margin-bottom: 2px;
+  overflow: visible;
+}
+
+/* Le caselle della nave affondata, che si accendono una dopo l'altra. */
+.annuncio__caselle {
+  display: flex;
+  gap: 4px;
+  margin-top: var(--sp-2);
+}
+
+.annuncio__caselle span {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: currentColor;
+  opacity: 0.95;
+  animation: annuncio-casella calc(var(--durata) * 0.2) var(--ease-bounce) both;
+  animation-delay: calc(var(--durata) * 0.22 + var(--i) * 70ms);
+}
+
+@keyframes annuncio-casella {
+  from {
+    opacity: 0;
+    transform: scale(0) translateY(6px);
+  }
+}
+
+/* ─────────────────────────  I colori  ───────────────────────── */
+
+.annuncio.is-mio.is-colpito .annuncio__carta {
+  background: linear-gradient(155deg, #ff9a3c, #e0322b 72%);
+  color: #fff;
+}
+
+.annuncio.is-mio.is-affondato .annuncio__carta {
+  background: linear-gradient(155deg, var(--battaglia-1), var(--battaglia-2) 80%);
+  color: #fff;
+  --onda: rgba(255, 255, 255, 0.92);
+  --scafo: #1f2a38;
+}
+
+/* I colpi presi: bianca, bordata di rosso, e trema invece di saltare. */
+.annuncio.is-suo .annuncio__carta {
+  background: var(--surface);
+  color: var(--label);
+  box-shadow:
+    0 0 0 3px var(--colpito),
+    var(--shadow-lg);
+  animation:
+    annuncio-trema calc(var(--durata) * 0.4) var(--ease-out) both,
+    annuncio-via calc(var(--durata) * 0.22) ease-in calc(var(--durata) * 0.78) forwards;
+  --onda: var(--mare);
+  --scafo: var(--nave);
+}
+
+.annuncio.is-suo .annuncio__titolo {
+  color: var(--colpito);
+}
+
+@keyframes annuncio-trema {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  25% {
+    opacity: 1;
+    transform: scale(1.06) translateX(-10px) rotate(-3deg);
+  }
+  45% {
+    transform: scale(1) translateX(9px) rotate(2deg);
+  }
+  65% {
+    transform: translateX(-5px) rotate(-1deg);
+  }
+  85% {
+    transform: translateX(3px);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+/* ─────────────────────────  L'esplosione  ───────────────────────── */
+
+.annuncio__scoppio,
+.annuncio__scoppio-dentro,
+.annuncio__scoppio-cuore {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.annuncio__scoppio {
+  fill: #ffd23f;
+  animation: annuncio-scoppia calc(var(--durata) * 0.5) var(--ease-bounce) both;
+}
+
+.annuncio__scoppio-dentro {
+  fill: #fff4c7;
+  animation: annuncio-scoppia calc(var(--durata) * 0.45) var(--ease-bounce) calc(var(--durata) * 0.06) both;
+}
+
+.annuncio__scoppio-cuore {
+  fill: #fff;
+  animation: annuncio-scoppia calc(var(--durata) * 0.4) var(--ease-bounce) calc(var(--durata) * 0.1) both;
+}
+
+.annuncio.is-suo .annuncio__scoppio {
+  fill: var(--colpito);
+}
+
+.annuncio.is-suo .annuncio__scoppio-dentro {
+  fill: #ffb224;
+}
+
+.annuncio.is-suo .annuncio__scoppio-cuore {
+  fill: #fff3c4;
+}
+
+@keyframes annuncio-scoppia {
+  from {
+    transform: scale(0) rotate(-40deg);
+  }
+}
+
+.annuncio__scintilla {
+  stroke: #fff4c7;
+  stroke-width: 5;
+  stroke-linecap: round;
+  animation: annuncio-scintilla calc(var(--durata) * 0.55) var(--ease-out) calc(var(--durata) * 0.08) both;
+}
+
+.annuncio.is-suo .annuncio__scintilla {
+  stroke: #ffb224;
+}
+
+@keyframes annuncio-scintilla {
+  0% {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+/* ─────────────────────────  L'affondamento  ───────────────────────── */
+
+.annuncio__nave {
+  transform-box: fill-box;
+  transform-origin: 50% 80%;
+  animation: annuncio-affonda calc(var(--durata) * 0.72) cubic-bezier(0.5, 0, 0.75, 0.6)
+    calc(var(--durata) * 0.12) both;
+}
+
+@keyframes annuncio-affonda {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  18% {
+    transform: translateY(-2px) rotate(4deg);
+  }
+  36% {
+    transform: translateY(2px) rotate(-6deg);
+  }
+  100% {
+    transform: translateY(40px) rotate(-26deg);
+  }
+}
+
+.annuncio__scafo {
+  fill: var(--scafo, var(--nave));
+}
+
+.annuncio__ponte,
+.annuncio__ciminiera {
+  fill: var(--scafo, var(--nave));
+  opacity: 0.75;
+}
+
+.annuncio__oblo {
+  fill: #ffd23f;
+}
+
+.annuncio__acqua-su {
+  stop-color: var(--onda, var(--mare));
+}
+
+.annuncio__acqua-giu {
+  stop-color: var(--onda, var(--mare));
+  stop-opacity: 0;
+}
+
+.annuncio__onde {
+  animation: annuncio-onde calc(var(--durata) * 0.5) linear infinite;
+}
+
+/* Un'onda intera, così il giro non si vede. */
+@keyframes annuncio-onde {
+  to {
+    transform: translateX(40px);
+  }
+}
+
+.annuncio__bolla {
+  fill: none;
+  stroke: var(--onda, var(--mare));
+  stroke-width: 1.6;
+  animation: annuncio-bolla calc(var(--durata) * 0.34) var(--ease-out) both;
+}
+
+.annuncio__bolla:nth-of-type(1) {
+  animation-delay: calc(var(--durata) * 0.52);
+}
+
+.annuncio__bolla:nth-of-type(2) {
+  animation-delay: calc(var(--durata) * 0.6);
+}
+
+.annuncio__bolla:nth-of-type(3) {
+  animation-delay: calc(var(--durata) * 0.66);
+}
+
+@keyframes annuncio-bolla {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+}
+
+/* Con il movimento ridotto la carta compare e sparisce, senza salti. */
+@media (prefers-reduced-motion: reduce) {
+  .annuncio__carta,
+  .annuncio.is-suo .annuncio__carta {
+    animation: annuncio-alone var(--durata) linear both;
+  }
+
+  .annuncio__disegno *,
+  .annuncio__onde,
+  .annuncio__caselle span {
+    animation: none !important;
+  }
+}

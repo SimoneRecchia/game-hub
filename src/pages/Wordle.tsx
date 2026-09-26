@@ -3,7 +3,7 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Coriandoli } from '@/components/Elementi'
+import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconChart, IconInfo, IconPeople } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Board } from '@/games/wordle/Board'
@@ -37,7 +37,11 @@ export default function Wordle() {
   const title = game.state ? `Wordle #${game.state.puzzleNumber}` : 'Parola del giorno'
   const finished = game.state && game.state.status !== 'playing'
 
-  const vinta = game.state?.status === 'won' && game.resultOpen
+  // La festa quando si apre il risultato di una vittoria appena fatta, non di una riaperta.
+  const festa = useFesta(
+    game.state ? game.state.status === 'playing' : null,
+    game.state?.status === 'won' && game.resultOpen,
+  )
 
   return (
     <Pagina
@@ -176,7 +180,7 @@ export default function Wordle() {
           onLibera={() => vai(ROTTE.libera('wordle'))}
         />
       )}
-      {vinta && <Coriandoli />}
+      {festa && <Coriandoli />}
     </Pagina>
   )
 }

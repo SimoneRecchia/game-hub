@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
-import { Coriandoli } from '@/components/Elementi'
+import { Coriandoli, useFesta } from '@/components/Elementi'
 import { Sheet } from '@/components/Sheet'
 import { IconChevronLeft, IconChevronRight, IconInfo, IconShuffle, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
@@ -49,7 +49,6 @@ export default function Cruciverba() {
   const libera = id !== undefined
   const indirizzi = useMemo(() => (id ? indirizziLiberi(id) : CRUCIVERBA_DEL_GIORNO), [id])
   const g = useCruciverba(indirizzi)
-  const [festa, setFesta] = useState(false)
   const [aiuto, setAiuto] = useState(false)
   const [elenco, setElenco] = useState(false)
   const [aiuti, setAiuti] = useState(false)
@@ -120,15 +119,7 @@ export default function Cruciverba() {
   }
 
   // Un cruciverba appena completato si festeggia, uno riaperto gia' finito no.
-  const [eraAperto, setEraAperto] = useState(false)
-  useEffect(() => {
-    if (stato && !g.finita) setEraAperto(true)
-    if (g.finita && eraAperto) {
-      setFesta(true)
-      const t = window.setTimeout(() => setFesta(false), 2200)
-      return () => window.clearTimeout(t)
-    }
-  }, [stato, g.finita, eraAperto])
+  const festa = useFesta(stato ? !g.finita : null, g.finita)
 
   return (
     <Pagina
@@ -165,12 +156,22 @@ export default function Cruciverba() {
                 <span className="cru__tempo u-tabnum" aria-label="Tempo di gioco">
                   {formatCronometro(g.tempoMs)}
                 </span>
-                <span className="cru__punti u-tabnum">
-                  {g.punti} <span className="cru__punti-label">punti</span>
-                </span>
-                <span className="cru__avanzamento u-tabnum">
-                  {scritte}/{bianche}
-                </span>
+                {/* Un messaggio prende il posto di punti e caselle, nella stessa riga:
+                    prima era una pillola sopra la griglia, e copriva le lettere. */}
+                {g.messaggio ? (
+                  <span key={g.messaggio} className="cru__avviso" aria-live="polite">
+                    {g.messaggio}
+                  </span>
+                ) : (
+                  <>
+                    <span className="cru__punti u-tabnum">
+                      {g.punti} <span className="cru__punti-label">punti</span>
+                    </span>
+                    <span className="cru__avanzamento u-tabnum">
+                      {scritte}/{bianche}
+                    </span>
+                  </>
+                )}
                 {!g.finita && (
                   <button
                     type="button"
@@ -196,10 +197,6 @@ export default function Cruciverba() {
                   segnalate={g.segnalate}
                   onTocca={g.tocca}
                 />
-              </div>
-
-              <div className="cru__messaggio" aria-live="polite">
-                {g.messaggio && <span className="cru__pillola">{g.messaggio}</span>}
               </div>
 
               {g.finita ? (

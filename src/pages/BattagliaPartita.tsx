@@ -1,20 +1,25 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Coriandoli, Numero, Vuoto } from '@/components/Elementi'
-import { IconComputer, IconFlag, IconInfo, IconRefresh, IconTrophy } from '@/components/Icons'
+import { Coriandoli, Numero, Vuoto, useFesta } from '@/components/Elementi'
+import { IconComputer, IconFlag, IconInfo, IconRefresh, IconTarget, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
+import { AnnuncioColpo } from '@/games/battaglia/Annuncio'
 import { ComeSiGiocaBattaglia } from '@/games/battaglia/ComeSiGioca'
 import { Mare } from '@/games/battaglia/Mare'
+import { Navi } from '@/games/battaglia/Navi'
 import { celleNemiche, celleProprie } from '@/games/battaglia/celle'
+import { naviNemiche, naviProprie, notiziaDi } from '@/games/battaglia/racconto'
 import { useBattaglia } from '@/games/battaglia/useBattaglia'
 import { ApiFetchError, api } from '@/lib/api'
+import { usePlayer } from '@/lib/auth'
 import { formatCronometro } from '@/lib/format'
 import {
+  CASELLE_FLOTTA,
   FLOTTA,
   LATO,
   caselleDellaNave,
@@ -63,6 +68,7 @@ export default function BattagliaPartita() {
   const [resa, setResa] = useState(false)
   const v = g.vista
   const classificata = v?.modalita === 'classificata'
+  const festa = useFesta(v ? v.stato !== 'finita' : null, v?.stato === 'finita' && v.vincitore === 'io')
 
   return (
     <Pagina
@@ -88,11 +94,6 @@ export default function BattagliaPartita() {
       }
     >
       <div className="bat">
-        {/* In alto, e non in fondo: li' copriva i bottoni di fine partita. */}
-        <div className="bat__messaggio" aria-live="polite">
-          {g.messaggio && <span className="bat__pillola">{g.messaggio}</span>}
-        </div>
-
         {g.errore && !v ? (
           <Vuoto
             titolo="La partita non si è aperta"
@@ -113,6 +114,8 @@ export default function BattagliaPartita() {
           <Combattimento
             vista={v}
             inviando={g.inviando}
+            avviso={g.avviso}
+            mirata={g.mirata}
             mira={g.mira}
             onSpara={g.spara}
             onReclama={g.reclama}
@@ -150,7 +153,8 @@ export default function BattagliaPartita() {
         </div>
       </Sheet>
 
-      {v?.stato === 'finita' && v.vincitore === 'io' && <Coriandoli />}
+      <AnnuncioColpo annuncio={g.annuncio} />
+      {festa && <Coriandoli />}
     </Pagina>
   )
 }
@@ -272,104 +276,197 @@ function Disposizione({
 function Combattimento({
   vista,
   inviando,
+  avviso,
+  mirata,
   mira,
   onSpara,
   onReclama,
 }: {
   vista: VistaBattaglia
   inviando: boolean
-  /** Il computer sta per rispondere. */
-  mira: boolean
+  /** Un errore dell'ultima azione, da dire al posto della notizia. */
+  avviso: string | null
+  /** Dove ho appena sparato, mentre la risposta arriva. */
+  mirata: number | null
+  /** Dove il computer sta per sparare: il suo mirino la sta cercando. */
+  mira: number | null
   onSpara: (k: number) => void
   onReclama: () => void
 }) {
+  const io = usePlayer()
   const nome = nomeAvversario(vista)
   const fraAmici = vista.modalita === 'amici'
   const inBattaglia = vista.stato === 'battaglia'
+  const miraInCorso = mira !== null
+  const mioTurno = inBattaglia && vista.tuoTurno && !miraInCorso
   const sparate = useMemo(() => new Set(vista.colpiMiei.map((c) => c.casella)), [vista.colpiMiei])
   const ultimo = vista.ultimo
 
-  const nemico = useMemo(() => {
-    const celle = celleNemiche(vista.colpiMiei, vista.affondateNemiche, null)
-    if (ultimo?.mio) celle[ultimo.casella] = { ...celle[ultimo.casella], nuovo: true }
-    return celle
-  }, [ultimo, vista.affondateNemiche, vista.colpiMiei])
+  const nemico = useMemo(
+    () =>
+      celleNemiche(vista.colpiMiei, vista.affondateNemiche, null, ultimo?.mio ? ultimo : null, mirata),
+    [mirata, ultimo, vista.affondateNemiche, vista.colpiMiei],
+  )
+  const mio = useMemo(
+    () => celleProprie(vista.miaFlotta ?? [], vista.colpiSubiti, null, ultimo && !ultimo.mio ? ultimo : null),
+    [ultimo, vista.colpiSubiti, vista.miaFlotta],
+  )
 
-  const mio = useMemo(() => {
-    const celle = celleProprie(vista.miaFlotta ?? [], vista.colpiSubiti)
-    if (ultimo && !ultimo.mio) celle[ultimo.casella] = { ...celle[ultimo.casella], nuovo: true }
-    return celle
-  }, [ultimo, vista.colpiSubiti, vista.miaFlotta])
+  const colpiPresi = useMemo(
+    () => new Set(vista.colpiSubiti.filter((c) => c.esito !== 'acqua').map((c) => c.casella)),
+    [vista.colpiSubiti],
+  )
+  const mieNavi = naviProprie(vista.miaFlotta ?? [], colpiPresi)
+  const aGalla = mieNavi.filter((n) => !n.affondata).length
+  const aSegno = vista.colpiMiei.filter((c) => c.esito !== 'acqua').length
+  const affondate = vista.affondateNemiche.length
 
-  const affondateNemiche = new Set(vista.affondateNemiche.map((n) => n.tipo))
-  const colpiPresi = new Set(vista.colpiSubiti.filter((c) => c.esito !== 'acqua').map((c) => c.casella))
-  const mieAfondo = (vista.miaFlotta ?? []).filter((n) =>
-    caselleDellaNave(n).every((k) => colpiPresi.has(k)),
-  ).length
+  // Il mare trema all'ultimo colpo andato a segno: poco se colpisce, di piu' se affonda.
+  const idColpo = vista.colpiMiei.length + vista.colpiSubiti.length
+  const scossa = ultimo && ultimo.esito !== 'acqua' ? { id: idColpo, forte: ultimo.esito === 'affondato' } : null
 
-  const stato = !inBattaglia
+  const turno = !inBattaglia
     ? vista.avversarioPronto
       ? 'Si comincia…'
       : `Aspetta che ${nome} disponga la flotta`
-    : mira
-      ? 'Il computer prende la mira…'
+    : miraInCorso
+      ? `${fraAmici ? nome : 'Il computer'} prende la mira…`
       : vista.tuoTurno
-        ? 'Tocca a te: scegli dove sparare'
-        : `Tocca a ${nome}`
+        ? 'Tocca a te'
+        : fraAmici
+          ? `Tocca a ${nome}`
+          : 'Tocca al computer'
+  const notizia = notiziaDi(vista)
+  const riga = avviso
+    ? { testo: avviso, tono: 'errore' }
+    : notizia ?? (mioTurno ? { testo: `Scegli una casella nel mare ${fraAmici ? `di ${nome}` : 'del computer'}`, tono: 'neutra' } : null)
 
   return (
     <div className="bat-combattimento">
-      <div className={`bat__stato${vista.tuoTurno && !mira ? ' is-tuo' : ''}${mira ? ' is-mira' : ''}`}>
+      <div
+        className={`bat-plancia${mioTurno ? ' is-tuo' : ''}${miraInCorso ? ' is-mira' : ''}`}
+        aria-live="polite"
+      >
+        <span className="bat-plancia__icona" aria-hidden="true">
+          {mioTurno ? (
+            <IconTarget size={20} />
+          ) : fraAmici ? (
+            <Avatar nickname={vista.avversario.nickname} color={vista.avversario.avatarColor} size={34} />
+          ) : (
+            <IconComputer size={18} />
+          )}
+        </span>
+        <span className="bat-plancia__testi">
+          <span className="bat-plancia__turno">{turno}</span>
+          <span className={`bat-plancia__notizia is-${riga?.tono ?? 'neutra'}`}>{riga?.testo ?? ' '}</span>
+        </span>
         {fraAmici ? (
-          <Avatar nickname={vista.avversario.nickname} color={vista.avversario.avatarColor} size={28} />
-        ) : (
-          <span className="bat__computer" aria-hidden="true">
-            <IconComputer size={17} />
-          </span>
-        )}
-        <span className="bat__stato-testo">{stato}</span>
-        {fraAmici && (
           <span
             className={`bat__online${vista.avversario.online ? ' is-online' : ''}`}
             title={vista.avversario.online ? `${nome} è online` : `${nome} non è online`}
           />
-        )}
-        {!fraAmici && (
-          <span className="bat__colpi u-tabnum" title="I colpi sparati">
-            {vista.colpiMiei.length} colpi
+        ) : (
+          <span className="bat-plancia__colpi u-tabnum" title="I colpi sparati">
+            <strong>{vista.colpiMiei.length}</strong> colpi
           </span>
         )}
       </div>
 
       <div className="bat-combattimento__mari">
-        <section className="bat__mare-grande" aria-label={`Il mare di ${nome}`}>
-          <Mare
-            celle={nemico}
-            onTocca={inBattaglia && vista.tuoTurno && !inviando && !mira ? onSpara : undefined}
-            bloccata={(k) => sparate.has(k)}
-            etichetta={`Il mare di ${nome}`}
-          />
-          <ul className="bat__flotta" aria-label={`Le navi di ${nome}`}>
-            {FLOTTA.map((t) => (
-              <li key={t.id} className={affondateNemiche.has(t.id) ? 'is-affondata' : ''}>
-                {t.nome}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="bat__mare-mio" aria-label="La tua flotta">
-          <div className="bat__mare-piccolo">
-            <Mare celle={mio} piccolo etichetta="La tua flotta" />
+        <Campo
+          className={`bat-campo--nemico${mioTurno ? ' is-attivo' : ''}`}
+          etichetta={fraAmici ? `Il mare di ${nome}` : 'Il mare del computer'}
+          chi={
+            fraAmici ? (
+              <Avatar nickname={vista.avversario.nickname} color={vista.avversario.avatarColor} size={26} />
+            ) : (
+              <span className="bat-campo__computer">
+                <IconComputer size={15} />
+              </span>
+            )
+          }
+          nota={
+            mioTurno
+              ? 'Tocca per sparare'
+              : `${aSegno} ${aSegno === 1 ? 'casella colpita' : 'caselle colpite'} su ${CASELLE_FLOTTA}`
+          }
+          notaViva={mioTurno}
+        >
+          <div className="bat-campo__mare">
+            <Mare
+              celle={nemico}
+              onTocca={mioTurno && !inviando ? onSpara : undefined}
+              bloccata={(k) => sparate.has(k)}
+              etichetta={fraAmici ? `Il mare di ${nome}` : 'Il mare del computer'}
+              scossa={ultimo?.mio ? scossa : null}
+            />
           </div>
-          <p className="bat__conto u-tabnum">
-            La tua flotta: {FLOTTA.length - mieAfondo} navi su {FLOTTA.length}
+          <Navi navi={naviNemiche(vista.affondateNemiche)} etichetta={`Le navi di ${nome}`} />
+          <p className="bat-campo__piede u-tabnum">
+            {affondate === 0
+              ? `Cinque navi da trovare, ${CASELLE_FLOTTA} caselle in tutto`
+              : affondate === FLOTTA.length
+                ? 'Tutte a fondo'
+                : `${affondate} ${affondate === 1 ? 'affondata' : 'affondate'}, ne ${FLOTTA.length - affondate === 1 ? 'resta una' : `restano ${FLOTTA.length - affondate}`}`}
           </p>
-        </section>
+        </Campo>
+
+        <Campo
+          className={`bat-campo--mio${miraInCorso ? ' is-sotto-tiro' : ''}${!mioTurno && inBattaglia && !miraInCorso ? ' is-attesa' : ''}`}
+          etichetta="Il tuo mare"
+          chi={<Avatar nickname={io.nickname} color={io.avatarColor} size={26} />}
+          nota={`${aGalla} ${aGalla === 1 ? 'nave' : 'navi'} su ${FLOTTA.length} a galla`}
+        >
+          <div className="bat-campo__corpo">
+            <div className="bat-campo__mare-piccolo">
+              <Mare
+                celle={mio}
+                piccolo
+                etichetta="Il tuo mare"
+                scossa={ultimo && !ultimo.mio ? scossa : null}
+                mirino={mira}
+              />
+            </div>
+            <Navi navi={mieNavi} etichetta="Le tue navi" colonna />
+          </div>
+        </Campo>
       </div>
 
       {fraAmici && <Attesa vista={vista} onReclama={onReclama} inviando={inviando} />}
     </div>
+  )
+}
+
+/**
+ * Uno dei due mari, con il suo nome e di chi e': "Il mare del computer" con
+ * la sua icona, "Il tuo mare" con il tuo avatar. Prima il tuo era un mare piu'
+ * piccolo in fondo, e non si capiva che fosse il tuo.
+ */
+function Campo({
+  className,
+  etichetta,
+  chi,
+  nota,
+  notaViva = false,
+  children,
+}: {
+  className: string
+  etichetta: string
+  chi: ReactNode
+  nota: string
+  /** La nota invita a fare qualcosa: si vede di piu'. */
+  notaViva?: boolean
+  children: ReactNode
+}) {
+  return (
+    <section className={`bat-campo ${className}`} aria-label={etichetta}>
+      <header className="bat-campo__testa">
+        {chi}
+        <h2 className="bat-campo__titolo">{etichetta}</h2>
+        <span className={`bat-campo__nota${notaViva ? ' is-viva' : ''}`}>{nota}</span>
+      </header>
+      {children}
+    </section>
   )
 }
 
@@ -426,9 +523,15 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
           ? `Vittoria a tavolino: ${nome} non ha più mosso.`
           : `Sconfitta a tavolino: non hai più mosso.`
 
+  const io = usePlayer()
   const aSegno = vista.colpiMiei.filter((c) => c.esito !== 'acqua').length
   const nemico = celleNemiche(vista.colpiMiei, vista.affondateNemiche, vista.flottaNemica)
   const mio = celleProprie(vista.miaFlotta ?? [], vista.colpiSubiti)
+  const mieNavi = naviProprie(
+    vista.miaFlotta ?? [],
+    new Set(vista.colpiSubiti.filter((c) => c.esito !== 'acqua').map((c) => c.casella)),
+  )
+  const aGalla = mieNavi.filter((n) => !n.affondata).length
 
   /** Fra amici una sfida nuova; contro il computer una partita nuova allo stesso livello. */
   const ancora = async () => {
@@ -476,18 +579,39 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
       {(vista.flottaNemica || vista.miaFlotta) && (
         <div className="bat-combattimento__mari">
           {vista.flottaNemica && (
-            <section className="bat__mare-grande" aria-label={`La flotta di ${nome}`}>
-              <p className="bat__didascalia">La flotta {fraAmici ? `di ${nome}` : 'del computer'}</p>
-              <Mare celle={nemico} etichetta={`La flotta di ${nome}`} />
-            </section>
+            <Campo
+              className="bat-campo--nemico"
+              etichetta={fraAmici ? `La flotta di ${nome}` : 'La flotta del computer'}
+              chi={
+                fraAmici ? (
+                  <Avatar nickname={vista.avversario.nickname} color={vista.avversario.avatarColor} size={26} />
+                ) : (
+                  <span className="bat-campo__computer">
+                    <IconComputer size={15} />
+                  </span>
+                )
+              }
+              nota={`${vista.affondateNemiche.length} su ${FLOTTA.length} a fondo`}
+            >
+              <div className="bat-campo__mare">
+                <Mare celle={nemico} etichetta={`La flotta di ${nome}`} />
+              </div>
+            </Campo>
           )}
           {vista.miaFlotta && (
-            <section className="bat__mare-mio" aria-label="La tua flotta">
-              <div className="bat__mare-piccolo">
-                <p className="bat__didascalia">La tua flotta</p>
-                <Mare celle={mio} piccolo etichetta="La tua flotta" />
+            <Campo
+              className="bat-campo--mio"
+              etichetta="Il tuo mare"
+              chi={<Avatar nickname={io.nickname} color={io.avatarColor} size={26} />}
+              nota={`${aGalla} ${aGalla === 1 ? 'nave' : 'navi'} su ${FLOTTA.length} a galla`}
+            >
+              <div className="bat-campo__corpo">
+                <div className="bat-campo__mare-piccolo">
+                  <Mare celle={mio} piccolo etichetta="Il tuo mare" />
+                </div>
+                <Navi navi={mieNavi} etichetta="Le tue navi" colonna />
               </div>
-            </section>
+            </Campo>
           )}
         </div>
       )}

@@ -36,20 +36,37 @@ export interface TipoNave {
   la: string
   /** Con l'indeterminativo: "un incrociatore". */
   una: string
+  /** Per accordare quel che se ne dice: "affondata" la corazzata, "affondato" il sottomarino. */
+  femminile: boolean
 }
 
 /** La flotta, dalla nave piu' grande alla piu' piccola: e' l'ordine in cui si dispone. */
 export const FLOTTA: readonly TipoNave[] = [
-  { id: 'portaerei', nome: 'Portaerei', lunghezza: 5, la: 'la portaerei', una: 'una portaerei' },
-  { id: 'corazzata', nome: 'Corazzata', lunghezza: 4, la: 'la corazzata', una: 'una corazzata' },
-  { id: 'incrociatore', nome: 'Incrociatore', lunghezza: 3, la: "l'incrociatore", una: 'un incrociatore' },
-  { id: 'sottomarino', nome: 'Sottomarino', lunghezza: 3, la: 'il sottomarino', una: 'un sottomarino' },
+  { id: 'portaerei', nome: 'Portaerei', lunghezza: 5, la: 'la portaerei', una: 'una portaerei', femminile: true },
+  { id: 'corazzata', nome: 'Corazzata', lunghezza: 4, la: 'la corazzata', una: 'una corazzata', femminile: true },
+  {
+    id: 'incrociatore',
+    nome: 'Incrociatore',
+    lunghezza: 3,
+    la: "l'incrociatore",
+    una: 'un incrociatore',
+    femminile: false,
+  },
+  {
+    id: 'sottomarino',
+    nome: 'Sottomarino',
+    lunghezza: 3,
+    la: 'il sottomarino',
+    una: 'un sottomarino',
+    femminile: false,
+  },
   {
     id: 'cacciatorpediniere',
     nome: 'Cacciatorpediniere',
     lunghezza: 2,
     la: 'il cacciatorpediniere',
     una: 'un cacciatorpediniere',
+    femminile: false,
   },
 ]
 

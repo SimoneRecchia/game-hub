@@ -249,42 +249,92 @@
 
 /* ─────────────────────────  Coriandoli  ───────────────────────── */
 
+/* Sopra il foglio del risultato (100), sotto i messaggi (120). */
 .coriandoli {
   position: fixed;
   inset: 0;
   z-index: 110;
   pointer-events: none;
   overflow: hidden;
+  perspective: 600px;
 }
 
+/* Di lato: parte da un angolo in basso e va verso il centro. */
 .coriandoli__pezzo {
   position: absolute;
-  top: 38%;
-  left: 50%;
-  width: 7px;
-  height: 11px;
-  border-radius: 2px;
-  opacity: 0;
-  animation: coriandolo 1300ms cubic-bezier(0.2, 0.7, 0.4, 1) var(--ritardo) forwards;
+  bottom: -16px;
+  left: -8px;
+  animation: coriandolo-lato var(--durata) cubic-bezier(0.15, 0.55, 0.35, 1) var(--ritardo) both;
 }
 
-.coriandoli__pezzo.is-largo {
-  width: 10px;
-  height: 6px;
+.coriandoli__pezzo.is-destra {
+  left: auto;
+  right: -8px;
 }
 
-@keyframes coriandolo {
+@keyframes coriandolo-lato {
   0% {
     opacity: 1;
-    transform: translate(0, 0) rotate(0deg);
+    transform: translateX(0);
   }
-  45% {
+  88% {
     opacity: 1;
-    transform: translate(calc(var(--x) * 42vw), -32vh) rotate(calc(var(--giro) * 0.5));
   }
   100% {
     opacity: 0;
-    transform: translate(calc(var(--x) * 56vw), 40vh) rotate(var(--giro));
+    transform: translateX(var(--dx));
+  }
+}
+
+/* In alto, piano piano, e poi giu' sempre piu' in fretta. */
+.coriandoli__salto {
+  display: block;
+  animation: coriandolo-salto var(--durata) linear var(--ritardo) both;
+}
+
+@keyframes coriandolo-salto {
+  0% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.15, 0.7, 0.35, 1);
+  }
+  38% {
+    transform: translateY(var(--su));
+    animation-timing-function: cubic-bezier(0.45, 0, 0.85, 0.55);
+  }
+  100% {
+    transform: translateY(12vh);
+  }
+}
+
+/* Su se stesso, come un foglietto che cade. */
+.coriandoli__forma {
+  display: block;
+  width: 9px;
+  height: 13px;
+  border-radius: 2px;
+  animation: coriandolo-giro var(--giro) linear infinite;
+}
+
+.coriandoli__forma.is-quadrato {
+  width: 10px;
+  height: 10px;
+}
+
+.coriandoli__forma.is-tondo {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.coriandoli__forma.is-nastro {
+  width: 5px;
+  height: 20px;
+  border-radius: 3px;
+}
+
+@keyframes coriandolo-giro {
+  to {
+    transform: rotate3d(var(--asse), 360deg);
   }
 }
 
