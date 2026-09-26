@@ -78,3 +78,35 @@ volta. Conseguenze:
 
 Il cambio scatta a **mezzanotte italiana** (`Europe/Rome`), non a mezzanotte
 locale: chi gioca dall'estero resta allineato ai colleghi.
+
+## Il cruciverba
+
+Le definizioni del cruciverba non sono scritte da noi: vengono dal
+**[Wikizionario](https://it.wiktionary.org)**, il dizionario libero dei
+volontari di Wikimedia, attraverso l'estrazione strutturata di
+[kaikki.org](https://kaikki.org/itwiktionary/) (wiktextract).
+
+| Fonte | Cosa dà | Licenza |
+| --- | --- | --- |
+| Wikizionario italiano, estrazione di kaikki.org | Le voci italiane con le loro definizioni | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it) |
+| [`hermitdave/FrequencyWords`](https://github.com/hermitdave/FrequencyWords) — `it_50k.txt` | Quanto è comune una parola: lo schema preferisce quelle d'uso | MIT |
+| [`napolux/paroleitaliane`](https://github.com/napolux/paroleitaliane) — `lista_badwords.txt` | Le parole da non mettere in uno schema | MIT |
+
+Il file che ne esce, `scripts/data/cruciverba-definizioni.tsv.gz`, contiene
+testo del Wikizionario ed è quindi anch'esso sotto **CC BY-SA 4.0**. Nel gioco
+la fonte è citata nelle regole, e a cruciverba finito ogni definizione porta
+alla sua voce.
+
+Le definizioni si **scelgono e si accorciano, non si riscrivono**
+(`scripts/cruciverba/definizioni.mjs`): si tiene la prima proposizione, si
+taglia a una virgola o prima di un complemento quando non sta in due righe, e
+si scarta tutto quello che non definisce — rimandi ("variante di…"),
+segnaposto ("definizione mancante"), nomi propri generici, glosse rimaste in
+inglese, e le definizioni che contengono la risposta o la sua radice.
+
+Le forme flesse (ALI, OCHE, CARI) prendono la definizione del loro lemma con la
+nota "plurale" o "femminile": la definizione del Wikizionario di una forma
+flessa è "plurale di ala", che darebbe la risposta.
+
+Rigenerare: `node scripts/build-cruciverba.mjs` (scarica circa 45 MB in
+`scripts/.cache/`, non versionata).

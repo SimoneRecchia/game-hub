@@ -12,6 +12,7 @@ import Wordle from './pages/Wordle'
 import WordleInsieme from './pages/WordleInsieme'
 import WordlePercorso from './pages/WordlePercorso'
 import Scarabeo from './pages/Scarabeo'
+import Cruciverba from './pages/Cruciverba'
 import { CoopGate } from './games/wordle/coop/CoopGate'
 
 export default function App() {
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="/wordle/:slot" element={<Wordle />} />
         <Route path="/insieme/:roomId" element={<WordleInsieme />} />
         <Route path="/scarabeo" element={<Scarabeo />} />
+        <Route path="/cruciverba" element={<Cruciverba />} />
         <Route path="/classifica" element={<Classifica />} />
         <Route path="/profilo" element={<Profilo />} />
         <Route path="*" element={<NotFound />} />

@@ -24,14 +24,19 @@ interface Props {
   leading?: ReactNode
   /** Nasconde la tab bar: usato dal gioco a tutto schermo. */
   hideTabBar?: boolean
+  /**
+   * Contenuto piu' largo su desktop: il cruciverba mette le definizioni
+   * accanto alla griglia, e in 720 punti le due cose non stanno.
+   */
+  wide?: boolean
   children: ReactNode
 }
 
-export function AppShell({ title, trailing, leading, hideTabBar = false, children }: Props) {
+export function AppShell({ title, trailing, leading, hideTabBar = false, wide = false, children }: Props) {
   const { pathname } = useLocation()
 
   return (
-    <div className={`shell${hideTabBar ? ' shell--no-tabs' : ''}`}>
+    <div className={`shell${hideTabBar ? ' shell--no-tabs' : ''}${wide ? ' shell--wide' : ''}`}>
       <header className="navbar">
         <div className="navbar__inner">
           <div className="navbar__side navbar__side--leading">{leading}</div>

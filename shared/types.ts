@@ -2,7 +2,7 @@
 
 import type { MossaGiocata } from './scarabeo'
 
-export type GameId = 'wordle' | 'scarabeo'
+export type GameId = 'wordle' | 'scarabeo' | 'cruciverba'
 
 export interface Player {
   id: string
@@ -183,6 +183,108 @@ export interface ScarabeoLeaderboard {
   updatedAt: string
   rows: ScarabeoRow[]
   me: ScarabeoRow | null
+}
+
+/* ────────────────────────────────  Cruciverba  ─────────────────────────── */
+
+export type CruciverbaStatus = 'playing' | 'done'
+
+export interface DefinizioneCruciverba {
+  /** `o12` o `v3`: direzione e prima casella. */
+  chiave: string
+  numero: number
+  direzione: 'o' | 'v'
+  caselle: number[]
+  /** Il testo del Wikizionario, accorciato ma non riscritto. */
+  testo: string
+  /** "sigla", "plurale", "femminile", "femminile plurale", oppure vuota. */
+  nota: string
+  /**
+   * La voce del Wikizionario da cui viene la definizione. Arriva solo a
+   * partita chiusa: prima direbbe la risposta ("Milano" per MILANO).
+   */
+  voce: string | null
+}
+
+export interface CruciverbaState {
+  puzzleNumber: number
+  date: string
+  righe: number
+  colonne: number
+  /** `#` per le nere, `.` per le bianche: le lettere giuste restano sul server. */
+  schema: string
+  definizioni: DefinizioneCruciverba[]
+  /** La griglia del giocatore: `#`, lettere, e spazi per le caselle vuote. */
+  lettere: string
+  /** Le caselle svelate: le lettere lì sono giuste per forza e non si cambiano. */
+  svelate: number[]
+  /** Le caselle segnalate come sbagliate da un controllo, finché non cambiano. */
+  segnalate: number[]
+  /** Errori segnalati finora: ognuno e' costato un punto. */
+  errori: number
+  /** Tempo di gioco, a pagina visibile. */
+  tempoMs: number
+  /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni scrittura. */
+  versione: number
+  status: CruciverbaStatus
+  /** A partita chiusa i punti fatti, prima quelli che varrebbe finirla adesso. */
+  punti: number
+  /** La soluzione, solo a partita chiusa. */
+  soluzione: string | null
+  msToNextPuzzle: number
+}
+
+/** La risposta a una scrittura: poco, perché si salva a ogni parola. */
+export interface CruciverbaEsito {
+  versione: number
+  status: CruciverbaStatus
+  punti: number
+  tempoMs: number
+  /** Griglia piena ma con almeno un errore: si dice, ma non dove. */
+  pienaConErrori: boolean
+  /** Le caselle sbagliate, dopo un controllo. */
+  errate?: number[]
+  /** Le lettere svelate, dopo una richiesta di aiuto. */
+  rivelate?: Record<number, string>
+  /** Tutte le caselle svelate finora, dopo una richiesta di aiuto. */
+  svelate?: number[]
+  /** Lo stato intero, quando la partita si chiude: porta soluzione e fonti. */
+  stato?: CruciverbaState
+}
+
+export interface CruciverbaSummary {
+  puzzleNumber: number
+  date: string
+  /** `assente` se lo schema di oggi non e' stato generato. */
+  status: 'new' | 'assente' | CruciverbaStatus
+  scritte: number
+  bianche: number
+  punti: number
+  tempoMs: number
+  msToNextPuzzle: number
+}
+
+export interface CruciverbaRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: solo i cruciverba completati. */
+  punti: number
+  /** Cruciverba completati nel periodo. */
+  giornate: number
+  /** Tempo totale dei completati: e' lo spareggio. */
+  tempoMs: number
+  /** true se oggi ha un cruciverba aperto e non ancora finito. */
+  inCorso: boolean
+}
+
+export interface CruciverbaLeaderboard {
+  scope: LeaderboardScope
+  updatedAt: string
+  rows: CruciverbaRow[]
+  me: CruciverbaRow | null
 }
 
 export type LeaderboardScope = 'today' | 'week' | 'month' | 'all'
