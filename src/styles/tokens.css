@@ -289,6 +289,30 @@
   --cruci-attiva: light-dark(#a9a3ff, #5b54e0);
   --cruci-attiva-ink: #0d0f17;
   --cruci-attiva-ink: light-dark(#0d0f17, #ffffff);
+
+  /* ---- La battaglia navale ----
+     Il mare e' un azzurro verde, lontano dall'indaco dell'interfaccia: la
+     casella scelta per spostare una nave prende l'indaco, e i due non devono
+     confondersi. Il rosso e' "colpito", come ovunque; la nave a fondo e' un
+     rosso scuro, perché un affondamento resta un colpo ma chiuso. */
+  --mare: #dcecf2;
+  --mare: light-dark(#dcecf2, #13293a);
+  --mare-sopra: #c8e1ea;
+  --mare-sopra: light-dark(#c8e1ea, #1a3a52);
+  --mare-linea: rgba(20, 70, 100, 0.14);
+  --mare-linea: light-dark(rgba(20, 70, 100, 0.14), rgba(150, 200, 230, 0.12));
+  --nave: #6b7789;
+  --nave: light-dark(#6b7789, #8791a3);
+  --colpito: #dc2626;
+  --colpito: light-dark(#dc2626, #f87171);
+  --colpito-fondo: #fbd5d0;
+  --colpito-fondo: light-dark(#fbd5d0, #4a1f22);
+  --affondato: #8f1d1d;
+  --affondato: light-dark(#8f1d1d, #7f1d1d);
+  --affondato-ink: #ffd9d4;
+  --affondato-ink: light-dark(#ffd9d4, #fecaca);
+  --acqua-segno: #5a8aa3;
+  --acqua-segno: light-dark(#5a8aa3, #7fb2cc);
 }
 
 /*
