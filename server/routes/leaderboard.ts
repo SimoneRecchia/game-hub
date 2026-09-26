@@ -1,9 +1,14 @@
 import { Hono } from 'hono'
-import type { LeaderboardResponse, LeaderboardScope } from '../../shared/types'
+import type {
+  LeaderboardResponse,
+  LeaderboardScope,
+  ScarabeoLeaderboard,
+} from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
 import { leaderboard } from '../lib/leaderboard'
+import { classificaScarabeo } from '../lib/scarabeoStore'
 import { today } from '../lib/wordleStore'
 
 const SCOPES: LeaderboardScope[] = ['today', 'week', 'month', 'all']
@@ -26,4 +31,25 @@ export const leaderboardRoutes = new Hono<AppEnv>()
       c.get('player').id,
     )
     return c.json<LeaderboardResponse>(result)
+  })
+
+  /**
+   * La classifica dello Scarabeo, separata da quella del Wordle.
+   *
+   * Non e' pigrizia: i due punteggi non sono commensurabili. Una giornata di
+   * Wordle vale al massimo 209 punti per costruzione, una di Scarabeo qualche
+   * centinaio, e sommarli richiederebbe un tasso di cambio inventato; mentre
+   * normalizzare per giornata ("il migliore prende cento") cambierebbe le
+   * classifiche di ieri ogni volta che qualcuno gioca. Due classifiche dicono
+   * la verita' e non chiedono di crederci.
+   */
+  .get('/scarabeo', async (c) => {
+    const scope = readScope(c.req.query('scope'))
+    const result = await classificaScarabeo(
+      c.env.DB,
+      scope,
+      today().puzzleNumber,
+      c.get('player').id,
+    )
+    return c.json<ScarabeoLeaderboard>(result)
   })

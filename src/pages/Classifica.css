@@ -383,3 +383,84 @@
   /* Testo lungo: qui l'ellissi delle righe sopra non serve, serve leggerlo. */
   white-space: normal;
 }
+
+/* ---------- Classifica dello Scarabeo ---------- */
+
+/*
+ * Una riga per giocatore, senza podio: qui il numero che conta e' uno — i punti
+ * — mentre le tre colonne del podio del Wordle servono a far stare una
+ * divisione (partita e assist) che in questo gioco non esiste.
+ */
+.lbs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.lbs__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+}
+
+.lbs__riga.is-me {
+  background: color-mix(in srgb, var(--brand) 8%, var(--surface));
+  box-shadow: var(--edge-light), 0 0 0 1.5px var(--brand-soft);
+}
+
+.lbs__rank {
+  flex: none;
+  min-width: 26px;
+  font-family: var(--font-rounded);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--label-tertiary);
+}
+
+.lbs__chi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.lbs__nome {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label);
+}
+
+.lbs__sotto {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+/* Giornata ancora aperta: il punteggio puo' ancora salire. */
+.lbs__incorso {
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+  font-size: var(--text-caption-2);
+  font-weight: 600;
+}
+
+.lbs__punti {
+  flex: none;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}

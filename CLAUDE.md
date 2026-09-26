@@ -159,6 +159,49 @@ giro completo con Playwright, non leggendo il codice. Un test in
 `shared/__tests__/wordle.test.ts` verifica le due direzioni: ogni tasto e'
 digitabile, ogni lettera giocabile sta sulla tastiera.
 
+**Il sacchetto dello Scarabeo e' lo stesso per tutti, e non si salva.**
+`sacchettoDelGiorno(puzzleNumber)` mescola le 120 tessere con il PRNG condiviso:
+stesso giorno, stesso ordine, per chiunque. E' l'unica cosa che rende
+confrontabili due punteggi, ed e' anche il motivo per cui — al contrario della
+parola del Wordle — non c'e' una tabella che lo fissi: quella dipende da un
+elenco di parole che potrebbe essere rigenerato, questo da una tabella di
+costanti nel codice. Cambiare `DISTRIBUZIONE` o il seme cambierebbe le mani di
+tutte le giornate passate.
+
+**La verita' di una partita sono le mosse.** `scarabeo_games.mosse` salva solo le
+decisioni del giocatore; tabellone, leggio e punti di ogni mossa si ricalcolano
+con `rigioca` e `leggioDa`. Cosi' non esiste il caso in cui la riga dice una mano
+e le mosse ne implicano un'altra — la stessa ragione per cui le partite di Wordle
+salvano le parole e non i colori. `score` in colonna e' l'eccezione, e sta lì
+perché la classifica lo somma in SQL senza rigiocare le partite di tutti.
+
+**Un premio vale solo la prima volta.** In `validaPosa` i moltiplicatori si
+applicano alle sole caselle **appena coperte**: una parola che passa su una
+tripla già usata non la riusa. Senza quel controllo la stessa casella pagherebbe
+per tutta la partita, e il tabellone diventerebbe una macchina da punti.
+
+**Passare e cambiare costano una mossa.** Altrimenti il limite di dieci mosse non
+vorrebbe dire niente e il cambio diventerebbe un modo gratuito di scegliersi il
+leggio. Le tessere cambiate tornano **in fondo alla coda** e non rimescolate: il
+leggio deve restare una funzione delle sole mosse, e rimescolare richiederebbe di
+salvare lo stato del generatore.
+
+**Il dizionario dello Scarabeo sta in D1, a secchi.** Due vincoli indipendenti lo
+tengono fuori dal Worker: 271.055 parole sono 2,8 MB e il bundle del piano
+gratuito ne ammette 1 MiB compresso, e costruire un insieme da centomila voci a
+ogni avvio a freddo costerebbe da solo piu' dei 10 ms di CPU. E non una riga per
+parola, perché il piano gratuito concede 100.000 scritture al giorno: le parole
+sono raggruppate per lunghezza e prime due lettere (`chiaveDizionario`), 2.309
+righe, e una verifica legge al massimo un secchio per parola formata. Se si
+cambia quella chiave **va ricaricata la tabella** — c'e' un test che fissa il
+formato perché il cambio non passi inosservato.
+
+**Le due classifiche restano separate.** Una giornata di Wordle vale al massimo
+209 punti per costruzione, una di Scarabeo qualche centinaio: sommarle
+richiederebbe un tasso di cambio inventato, e normalizzare per giornata ("il
+migliore prende cento") cambierebbe le classifiche di ieri ogni volta che
+qualcuno gioca. `/leaderboard` resta il Wordle, `/leaderboard/scarabeo` e' l'altro.
+
 **La soluzione non deve arrivare al client prima della fine.** `toState()` in
 `server/routes/wordle.ts` mette `answer: null` finché lo stato è `playing`; è
 l'unica cosa che rende la classifica significativa. Vale anche per la vista
@@ -255,6 +298,21 @@ Tre dettagli di quella schermata che sembrano gusto e sono conseguenze:
   `stroke-dasharray` di lunghezza zero con la punta arrotondata diventa un
   puntino, e quel puntino compariva in mezzo al lucchetto dell'ultima tappa.
 
+**I colori dello Scarabeo sono token scritti a mano, non mescole.** `--tessera`,
+`--tessera-ink` e i quattro `--premio-*` stanno in `tokens.css` come tutto il
+resto. La prima versione li ricavava con `color-mix` dai colori di sistema, e la
+mescola cadeva dove capitava: in chiaro i premi erano quasi invisibili, in scuro
+la tessera veniva verde oliva. Le due famiglie dicono due cose — **caldo =
+moltiplica la parola**, **freddo = moltiplica la lettera** — e la saturazione
+dice se e' tripla o doppia.
+
+**Il tabellone si misura anche sull'altezza** (`width: min(100%, 420px, 100cqh)`
+dentro `@supports`): su un iPhone SE restano 240 punti fra intestazione e leggio,
+e un tabellone largo 288 ci finiva con l'ultima riga tagliata. Nella media query
+orizzontale `container-type` torna `normal`, perché lì la pagina scorre e senza
+un'altezza definita `cqh` si risolve a zero — la stessa trappola documentata per
+la griglia del Wordle.
+
 **Le durate delle animazioni delle caselle sono replicate in
 `src/games/wordle/useWordle.ts`** (`REVEAL_*`, `BOUNCE_MS`, `SHAKE_MS`): il
 codice deve sapere quando la rotazione e' finita per colorare la tastiera e
@@ -266,6 +324,13 @@ cambiata anche lì.
 `solutions.ts` e `guesses.ts` sono **generati** (`npm run words:build`) e
 versionati di proposito: così il build non dipende dalla rete e la parola del
 giorno non cambia per una fonte che si sposta.
+
+**Il dizionario dello Scarabeo si carica a mano, una volta per ambiente:**
+`node scripts/seed-dizionario.mjs [--remote]`, dopo le migrazioni. Non sta nelle
+migrazioni perché sono 2,3 MB di SQL che non cambiano mai, e rieseguirli a ogni
+deploy sarebbe tempo e scritture buttate. Se la tabella `dizionario` e' vuota il
+gioco rifiuta **ogni** parola: e' il primo posto da guardare se "non accetta
+niente".
 
 Le partite in corso appaiono in classifica con **zero punti**: serve a vedere
 chi sta ancora giocando, non è un bug del calcolo.

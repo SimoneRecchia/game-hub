@@ -125,8 +125,14 @@ export function msToNextPuzzle(now: Date = new Date()): number {
   return Math.max(0, zonedTimeToUtc(year, month, day) - now.getTime())
 }
 
-/** PRNG deterministico a 32 bit (mulberry32): stesso seed, stessa sequenza. */
-function mulberry32(seed: number): () => number {
+/**
+ * PRNG deterministico a 32 bit (mulberry32): stesso seed, stessa sequenza.
+ *
+ * Esportato perché in tutto il progetto ce ne sia **uno**: lo usa la sequenza
+ * della parola del giorno e lo usa il sacchetto dello Scarabeo. Due generatori
+ * diversi vorrebbero dire due comportamenti da verificare invece di uno.
+ */
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0
   return () => {
     a = (a + 0x6d2b79f5) >>> 0
