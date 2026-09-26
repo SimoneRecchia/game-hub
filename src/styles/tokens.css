@@ -244,6 +244,29 @@
   --key-bg: light-dark(#d3d7e2, #363a49);
   --key-bg-active: #bcc2d1;
   --key-bg-active: light-dark(#bcc2d1, #454a5c);
+
+  /* ---- Tessere e caselle dello Scarabeo ----
+     Scritti a mano e non ricavati con `color-mix` dai colori di sistema: la
+     mescola cadeva dove capitava — in chiaro i premi erano quasi invisibili e in
+     scuro la tessera veniva verde oliva. Qui il tono e' scelto per tema, che e'
+     il motivo per cui questo file esiste.
+
+     Le due famiglie dicono due cose: **caldo = moltiplica la parola**,
+     **freddo = moltiplica la lettera**, e la saturazione dice se e' tripla o
+     doppia. Nessun colore del gioco vero entra qui: il verde vuol dire "lettera
+     giusta" nel Wordle e l'indaco e' l'accento dell'interfaccia. */
+  --tessera: #f1e2c1;
+  --tessera: light-dark(#f1e2c1, #4d442f);
+  --tessera-ink: #241c0d;
+  --tessera-ink: light-dark(#241c0d, #f4ead5);
+  --premio-tp: #f2b3a9;
+  --premio-tp: light-dark(#f2b3a9, #5d2c2a);
+  --premio-dp: #f8d2de;
+  --premio-dp: light-dark(#f8d2de, #4d2639);
+  --premio-tl: #a8c7ef;
+  --premio-tl: light-dark(#a8c7ef, #223c62);
+  --premio-dl: #d8e5f8;
+  --premio-dl: light-dark(#d8e5f8, #1c2d45);
 }
 
 /*

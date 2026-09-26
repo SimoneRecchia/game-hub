@@ -1,0 +1,308 @@
+/*
+ * Lo Scarabeo: una schermata, quattro fasce.
+ *
+ * Riga di stato, tabellone, leggio, comandi. Il tabellone e' l'unica fascia
+ * elastica **e l'unica che scorre**: su un telefono basso il leggio e i bottoni
+ * devono restare sotto il pollice, perché sono quel che si tocca a ogni mossa,
+ * mentre del tabellone basta vedere la parte dove si sta giocando.
+ */
+.scr {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--sp-2);
+}
+
+/* ---------- Riga di stato ---------- */
+
+.scr__stato {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.scr__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.scr__punti-label {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.scr__mosse {
+  margin-left: auto;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.scr__sacchetto {
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+}
+
+/* ---------- Il campo ---------- */
+
+.scr__campo {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  /* Centrato: su un telefono alto avanzano tre centimetri, e metterli tutti
+     sotto al tabellone lo incollava all'intestazione. */
+  place-items: center;
+  padding: var(--sp-1) 0;
+}
+
+/*
+ * La misura del tabellone tiene conto anche dell'altezza che resta.
+ *
+ * `100cqh` e' l'altezza di questa fascia, quindi il tabellone non puo' essere
+ * piu' alto dello spazio che ha: su un iPhone SE restano 240 punti e un
+ * tabellone largo 288 ci finiva tagliato. Sta dentro @supports perché e'
+ * l'unica cosa che i browser senza container query non possono fare, e senza il
+ * blocco resterebbero con la larghezza piena — che e' il comportamento di prima,
+ * non un errore.
+ */
+@supports (width: 1cqh) {
+  .scr__campo {
+    container-type: size;
+  }
+
+  .tabellone {
+    width: min(100%, 420px, 100cqh);
+  }
+}
+
+/* ---------- Messaggio ---------- */
+
+.scr__messaggio {
+  flex: none;
+  position: relative;
+  height: 0;
+  display: grid;
+  place-items: center;
+}
+
+/*
+ * Si sovrappone al tabellone invece di occupare una riga: una fascia riservata
+ * a un messaggio che compare di rado costerebbe altezza alle caselle, che e' la
+ * stessa scelta fatta nel Wordle per lo stesso motivo.
+ */
+.scr__pillola {
+  position: absolute;
+  bottom: var(--sp-2);
+  z-index: 5;
+  max-width: 92%;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--label);
+  color: var(--label-inverted);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  animation: scr-pillola var(--dur-base) var(--ease-spring);
+}
+
+@keyframes scr-pillola {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+
+/* ---------- Comandi ---------- */
+
+.scr__comandi {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: min(100%, 420px);
+  margin-inline: auto;
+}
+
+.scr__comandi .btn {
+  flex: 1;
+}
+
+.scr__gioca {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--sp-1);
+  width: min(100%, 420px);
+  margin-inline: auto;
+  padding-bottom: var(--sp-1);
+}
+
+/* ---------- Giornata chiusa ---------- */
+
+.scr__chiusa {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-3) 0;
+}
+
+.scr__chiusa-punti {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.scr__chiusa-attesa {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.scr__chiusa-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ---------- Attesa e ripieghi ---------- */
+
+.scr__attesa {
+  flex: 1;
+  min-height: 0;
+  width: min(100%, 420px);
+  margin-inline: auto;
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  animation: scr-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes scr-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.scr__fallback {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  text-align: center;
+  color: var(--label-secondary);
+}
+
+/* ---------- Cronologia ---------- */
+
+.scr-storia {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.scr-storia__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+  border-bottom: 1px solid var(--separator);
+  font-size: var(--text-subhead);
+}
+
+.scr-storia__riga:last-child {
+  border-bottom: none;
+}
+
+.scr-storia__riga--totale {
+  font-weight: 700;
+  color: var(--label);
+}
+
+.scr-storia__numero {
+  flex: none;
+  width: 22px;
+  color: var(--label-tertiary);
+  font-size: var(--text-footnote);
+}
+
+.scr-storia__parole {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--label);
+  letter-spacing: 0.02em;
+}
+
+.scr-storia__scarabeo {
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: var(--text-caption-2);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.scr-storia__punti {
+  flex: none;
+  font-family: var(--font-rounded);
+  font-weight: 700;
+  color: var(--label);
+}
+
+.scr-storia__vuota {
+  margin: 0;
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+}
+
+/*
+ * Telefono in orizzontale: tabellone e leggio non stanno in 400 punti di
+ * altezza. La shell torna a scorrere (vedi AppShell.css) e qui si lascia al
+ * tabellone una misura leggibile invece di schiacciarlo.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  /*
+   * Qui la pagina scorre (vedi AppShell.css), quindi questa fascia non ha
+   * un'altezza definita e `100cqh` si risolverebbe a zero: e' la stessa trappola
+   * documentata per la griglia del Wordle. Si torna a dimensionare sulla
+   * larghezza.
+   */
+  .scr__campo {
+    container-type: normal;
+  }
+
+  .tabellone {
+    width: min(100%, 360px);
+  }
+}

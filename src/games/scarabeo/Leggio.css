@@ -1,0 +1,118 @@
+/*
+ * Il leggio e le sue tessere.
+ *
+ * Otto tessere in fila su un telefono largo 358 punti fanno 40 punti di lato:
+ * sotto il bersaglio dei 44 delle linee guida, ma non di molto, e con quattro
+ * punti di spazio fra una e l'altra il dito non sbaglia. Andare a capo su due
+ * righe costerebbe altezza al tabellone, che e' la cosa che va guardata.
+ */
+.leggio {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: var(--sp-1);
+  width: min(100%, 420px);
+  margin-inline: auto;
+}
+
+/*
+ * Una tessera: la ricetta di profondita' del progetto — filo di luce, velatura
+ * verticale, ombra secca — sopra un tono caldo di legno. Premendo **scende**
+ * invece di rimpicciolirsi, come i tasti del Wordle.
+ */
+.tessera {
+  position: relative;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: var(--r-sm);
+  background-color: var(--tessera);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(0, 0, 0, 0.08));
+  color: var(--tessera-ink);
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-key),
+    0 3px 8px var(--shadow-tint-soft);
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+
+.tessera:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--edge-light), 0 1px 4px var(--shadow-tint-soft);
+}
+
+.tessera__lettera {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* Il valore nell'angolo, come sulla tessera di legno. */
+.tessera__valore {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-size: var(--text-caption-2);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--tessera-ink) 55%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Già sul tabellone: resta al suo posto, spenta. */
+.tessera.is-usata {
+  opacity: 0.32;
+  box-shadow: none;
+  background-image: none;
+}
+
+/* Scelta per il cambio. */
+.tessera.is-scelta {
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-key),
+    0 0 0 2.5px var(--brand);
+}
+
+.tessera--jolly .tessera__lettera {
+  color: var(--brand);
+}
+
+.tessera:disabled {
+  cursor: default;
+}
+
+.leggio__vuoto {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--sp-3) 0;
+  text-align: center;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* ---------- Scelta della lettera del jolly ---------- */
+
+.jolly__lede {
+  margin: 0 0 var(--sp-4);
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.jolly__griglia {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--sp-2);
+}
+
+/* Nella scelta del jolly non c'e' un valore da mostrare: vale zero comunque. */
+.tessera--scelta-jolly .tessera__lettera {
+  font-size: var(--text-headline);
+}

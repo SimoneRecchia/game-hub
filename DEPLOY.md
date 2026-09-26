@@ -92,6 +92,7 @@ quale schermata si entra.
 | --- | --- |
 | `giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
 | `wordle.simonerecchia.com` | direttamente il Wordle di oggi |
+| `scarabeo.simonerecchia.com` | direttamente lo Scarabeo di oggi |
 
 Sono già collegati. Per aggiungerne altri: **Custom domains** → **Set up a
 custom domain** nel progetto Pages, oppure rilanciare
@@ -271,6 +272,22 @@ prima del push, altrimenti il codice nuovo cerca tabelle che non esistono:
 
 ```bash
 npx wrangler d1 migrations apply game-hub-db --remote
+```
+
+**Caricare il dizionario dello Scarabeo.** Una volta per ambiente, dopo le
+migrazioni. Non sta nelle migrazioni perché sono 2,3 MB di SQL che non cambiano
+mai: rieseguirli a ogni deploy sarebbe tempo e scritture buttate.
+
+```bash
+node scripts/seed-dizionario.mjs --remote     # 2.309 righe, ~271.000 parole
+```
+
+Se la tabella `dizionario` è vuota lo Scarabeo rifiuta **ogni** parola: è il
+primo posto da guardare se "non accetta niente". Per controllare:
+
+```bash
+npx wrangler d1 execute game-hub-db --remote \
+  --command "SELECT COUNT(*) AS secchi, SUM(quante) AS parole FROM dizionario"
 ```
 
 **Guardare i dati.**

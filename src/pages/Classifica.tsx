@@ -1,15 +1,28 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '@/components/AppShell'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { ThemeButton } from '@/components/ThemeButton'
 import { IconFlame, IconPeople } from '@/components/Icons'
+import { ClassificaScarabeo } from './ClassificaScarabeo'
 import { ApiFetchError, api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
 import { formatNumber, formatPercent, pluralize } from '@/lib/format'
 import type { LeaderboardResponse, LeaderboardRow, LeaderboardScope } from '@shared/types'
 import './Classifica.css'
+
+/**
+ * Quale gioco. Due classifiche e non una: vedi ClassificaScarabeo — i punti dei
+ * due giochi non sono commensurabili, e sommarli richiederebbe un tasso di
+ * cambio inventato.
+ */
+type Gioco = 'wordle' | 'scarabeo'
+const GIOCHI: { value: Gioco; label: string }[] = [
+  { value: 'wordle', label: 'Wordle' },
+  { value: 'scarabeo', label: 'Scarabeo' },
+]
 
 /** Il periodo "month" esiste nell'API ma qui tre voci bastano e stanno larghe. */
 const SCOPES: { value: LeaderboardScope; label: string }[] = [
@@ -20,6 +33,10 @@ const SCOPES: { value: LeaderboardScope; label: string }[] = [
 
 export default function Classifica() {
   const me = usePlayer()
+  const [query, setQuery] = useSearchParams()
+  const [gioco, setGioco] = useState<Gioco>(
+    query.get('gioco') === 'scarabeo' ? 'scarabeo' : 'wordle',
+  )
   const [scope, setScope] = useState<LeaderboardScope>('today')
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -53,11 +70,12 @@ export default function Classifica() {
   )
 
   useEffect(() => {
+    if (gioco !== 'wordle') return
     void load(scope)
     // Cambiando periodo cambiano i numeri: tenere aperto un dettaglio di prima
     // mostrerebbe la divisione di un totale che non c'e' piu'.
     setAperta(null)
-  }, [load, scope])
+  }, [gioco, load, scope])
 
   const rows = data?.rows ?? []
   const podium = rows.slice(0, 3)
@@ -70,10 +88,23 @@ export default function Classifica() {
       <header>
         <h2 className="large-title">Classifica</h2>
         <p className="page-lede">
-          Cinque parole al giorno: la prima vale piena, le altre a scalare. Tocca una riga per
-          vedere com'è fatto un punteggio.
+          {gioco === 'wordle'
+            ? "Cinque parole al giorno: la prima vale piena, le altre a scalare. Tocca una riga per vedere com'è fatto un punteggio."
+            : 'Dieci mosse al giorno con le stesse tessere per tutti. Vince chi le sfrutta meglio.'}
         </p>
       </header>
+
+      <SegmentedControl
+        ariaLabel="Gioco"
+        options={GIOCHI}
+        value={gioco}
+        onChange={(scelto) => {
+          setGioco(scelto)
+          // L'indirizzo segue la scelta: così la classifica di Scarabeo si può
+          // linkare, ed e' quel che fa la schermata del gioco a fine giornata.
+          setQuery(scelto === 'scarabeo' ? { gioco: 'scarabeo' } : {}, { replace: true })
+        }}
+      />
 
       <SegmentedControl
         ariaLabel="Periodo della classifica"
@@ -82,7 +113,9 @@ export default function Classifica() {
         onChange={setScope}
       />
 
-      {error ? (
+      {gioco === 'scarabeo' ? (
+        <ClassificaScarabeo scope={scope} meId={me.id} />
+      ) : error ? (
         <div className="lb__fallback">
           <p>{error}</p>
           <Button variant="tinted" onClick={() => void load(scope)}>

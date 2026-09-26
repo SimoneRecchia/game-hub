@@ -5,18 +5,20 @@ import { Avatar } from '@/components/Avatar'
 import { IconChevronRight, IconFlame, IconTrophy } from '@/components/Icons'
 import { ThemeButton } from '@/components/ThemeButton'
 import { wordleBadge, wordleHref } from '@/games/wordle/hubStatus'
+import { scarabeoBadge } from '@/games/scarabeo/hubStatus'
 import { GAMES } from '@/games/catalog'
 import { api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
 import { formatGameDate, formatNumber } from '@/lib/format'
 import { gameDate } from '@shared/daily'
-import type { LeaderboardResponse, WordleSummary } from '@shared/types'
+import type { LeaderboardResponse, ScarabeoSummary, WordleSummary } from '@shared/types'
 import './Hub.css'
 
 export default function Hub() {
   const player = usePlayer()
   const today = gameDate()
   const [summary, setSummary] = useState<WordleSummary | null>(null)
+  const [scarabeo, setScarabeo] = useState<ScarabeoSummary | null>(null)
   const [standing, setStanding] = useState<LeaderboardResponse | null>(null)
 
   useEffect(() => {
@@ -25,6 +27,9 @@ export default function Hub() {
     // e la card del gioco resta cliccabile in ogni caso.
     void api<WordleSummary>('/wordle/summary')
       .then((s) => !cancelled && setSummary(s))
+      .catch(() => {})
+    void api<ScarabeoSummary>('/scarabeo/summary')
+      .then((s) => !cancelled && setScarabeo(s))
       .catch(() => {})
     void api<LeaderboardResponse>('/leaderboard?scope=today')
       .then((s) => !cancelled && setStanding(s))
@@ -37,6 +42,7 @@ export default function Hub() {
   const available = GAMES.filter((g) => g.available)
   const upcoming = GAMES.filter((g) => !g.available)
   const badge = summary ? wordleBadge(summary) : null
+  const badgeScarabeo = scarabeo ? scarabeoBadge(scarabeo) : null
   const me = standing?.me ?? null
 
   return (
@@ -53,8 +59,7 @@ export default function Hub() {
         <p className="hub__date">{formatGameDate(today)}</p>
         <h2 className="large-title">Ciao {player.displayName}</h2>
         <p className="page-lede">
-          Cinque parole nuove ogni giorno, le stesse per tutti. La prima vale piena, le altre a
-          scalare.
+          Due giochi al giorno, gli stessi per tutti: cinque parole e un tabellone di Scarabeo.
         </p>
       </header>
 
@@ -113,6 +118,28 @@ export default function Hub() {
                 <span className="gamecard__name">{game.name}</span>
                 <span className="gamecard__tagline">{game.tagline}</span>
               </span>
+              {badgeScarabeo && game.id === 'scarabeo' && (
+                <span className="gamecard__piede">
+                  <span className={`gamecard__status gamecard__status--${badgeScarabeo.tone}`}>
+                    {badgeScarabeo.text}
+                  </span>
+                  {/* Le dieci mosse come pallini: a che punto e' la giornata,
+                      senza leggere un numero. */}
+                  {scarabeo && (
+                    <span
+                      className="gamecard__pallini"
+                      aria-label={`${scarabeo.mosseUsate} mosse su ${scarabeo.mosseTotali}`}
+                    >
+                      {Array.from({ length: scarabeo.mosseTotali }, (_, i) => (
+                        <span
+                          key={i}
+                          className={`gamecard__pallino${i < scarabeo.mosseUsate ? ' is-fatta' : ''}`}
+                        />
+                      ))}
+                    </span>
+                  )}
+                </span>
+              )}
               {badge && game.id === 'wordle' && (
                 <span className="gamecard__piede">
                   <span className={`gamecard__status gamecard__status--${badge.tone}`}>
