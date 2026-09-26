@@ -46,6 +46,15 @@ export const GAMES: GameEntry[] = [
     available: true,
   },
   {
+    id: 'battaglia',
+    name: 'Battaglia navale',
+    tagline: 'Sfida un collega online: cinque navi a testa, un colpo per volta.',
+    path: '/battaglia',
+    gradient: ['#1e88a8', '#0b4f6c'],
+    glyph: 'B',
+    available: true,
+  },
+  {
     id: 'quiz',
     name: 'Quiz Lampo',
     tagline: 'Dieci domande a tempo, una sfida nuova ogni giorno.',

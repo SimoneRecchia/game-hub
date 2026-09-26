@@ -1,63 +1,55 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { COOP_POLL_INBOX_MS } from '@shared/config'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CoopInvite } from '@shared/types'
 import { api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
+import { usePresenza } from '@/lib/presenza'
 
 /**
- * Gli inviti ricevuti, controllati a polling.
+ * Gli inviti ricevuti per il Wordle in compagnia.
  *
- * È il sostituto delle notifiche push: senza un service worker registrato per
- * il push (che richiederebbe chiavi VAPID e il permesso del browser), otto
- * secondi di attesa sono un compromesso ragionevole per un invito.
+ * Arrivano dal giro di controllo comune (vedi src/lib/presenza.tsx), che porta
+ * anche le sfide a battaglia navale: una richiesta sola ogni otto secondi invece
+ * di una per gioco. Qui restano la vibrazione per gli inviti nuovi e le due
+ * risposte.
  */
 export function useCoopInbox(attivo: boolean) {
-  const [invites, setInvites] = useState<CoopInvite[]>([])
+  const { dati, aggiorna } = usePresenza()
+  // Quelli a cui si e' appena risposto: il giro successivo li togliera', ma
+  // intanto non devono ricomparire.
+  const [risposti, setRisposti] = useState<Set<string>>(new Set())
   const conosciuti = useRef(new Set<string>())
-  const vivo = useRef(true)
+
+  const invites = useMemo<CoopInvite[]>(
+    () => (attivo ? (dati?.coop ?? []).filter((i) => !risposti.has(i.inviteId)) : []),
+    [attivo, dati, risposti],
+  )
 
   useEffect(() => {
-    vivo.current = true
-    return () => {
-      vivo.current = false
-    }
-  }, [])
-
-  const carica = useCallback(async () => {
-    try {
-      const { invites: fresh } = await api<{ invites: CoopInvite[] }>('/coop/inbox')
-      if (!vivo.current) return
-      // Vibra solo per gli inviti mai visti, non a ogni giro di polling.
-      if (fresh.some((i) => !conosciuti.current.has(i.inviteId))) haptic('success')
-      conosciuti.current = new Set(fresh.map((i) => i.inviteId))
-      setInvites(fresh)
-    } catch {
-      /* il polling resta silenzioso: si riprova al giro dopo */
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!attivo) return
-    void carica()
-    const id = window.setInterval(() => void carica(), COOP_POLL_INBOX_MS)
-    return () => window.clearInterval(id)
-  }, [attivo, carica])
+    // Vibra solo per gli inviti mai visti, non a ogni giro.
+    if (invites.some((i) => !conosciuti.current.has(i.inviteId))) haptic('success')
+    conosciuti.current = new Set(invites.map((i) => i.inviteId))
+  }, [invites])
 
   const accetta = useCallback(
     async (inviteId: string) => {
       const { roomId } = await api<{ roomId: string }>(`/coop/invite/${inviteId}/accept`, {
         method: 'POST',
       })
-      setInvites((prev) => prev.filter((i) => i.inviteId !== inviteId))
+      setRisposti((prima) => new Set(prima).add(inviteId))
+      aggiorna()
       return roomId
     },
-    [],
+    [aggiorna],
   )
 
-  const rifiuta = useCallback(async (inviteId: string) => {
-    await api(`/coop/invite/${inviteId}/decline`, { method: 'POST' })
-    setInvites((prev) => prev.filter((i) => i.inviteId !== inviteId))
-  }, [])
+  const rifiuta = useCallback(
+    async (inviteId: string) => {
+      await api(`/coop/invite/${inviteId}/decline`, { method: 'POST' })
+      setRisposti((prima) => new Set(prima).add(inviteId))
+      aggiorna()
+    },
+    [aggiorna],
+  )
 
-  return { invites, accetta, rifiuta, carica }
+  return { invites, accetta, rifiuta, carica: aggiorna }
 }

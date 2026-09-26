@@ -16,6 +16,7 @@ export const GAME_SUBDOMAINS: Readonly<Record<string, string>> = {
   wordle: '/wordle',
   scarabeo: '/scarabeo',
   cruciverba: '/cruciverba',
+  battaglia: '/battaglia',
 }
 
 function labels(hostname: string): string[] {

@@ -63,6 +63,42 @@ export const COOP_POLL_ROOM_MS = 3_000
 /** Gli inviti non sono urgenti al secondo: si guardano più di rado. */
 export const COOP_POLL_INBOX_MS = 8_000
 
+/* ─────────────────────────  Presenza e battaglia navale  ───────────────────────── */
+
+/**
+ * Online vuol dire aver fatto il giro di controllo da poco. Il giro parte ogni
+ * otto secondi a pagina visibile e scrive al massimo ogni venti: quarantacinque
+ * secondi lasciano passare due scritture mancate prima di dare qualcuno per
+ * andato.
+ */
+export const PRESENZA_ONLINE_MS = 45_000
+export const PRESENZA_SCRITTURA_MS = 20_000
+
+/** Quanto aspetta una sfida: chi sfida sta guardando lo schermo, non torna fra un'ora. */
+export const SFIDA_SCADENZA_MS = 120_000
+
+/**
+ * Dopo quanto si puo' chiedere la vittoria a tavolino: tre minuti senza un
+ * colpo quando tocca all'avversario, cinque se non ha ancora disposto la flotta.
+ * Senza, chi sta perdendo potrebbe chiudere l'app e tenere l'altro in sospeso.
+ */
+export const BATTAGLIA_ATTESA_TURNO_MS = 180_000
+export const BATTAGLIA_ATTESA_FLOTTA_MS = 300_000
+
+/**
+ * Una partita senza mosse da mezz'ora non tiene piu' occupato nessuno: se i due
+ * hanno chiuso l'app a meta', devono poter sfidare ed essere sfidati di nuovo.
+ * La partita resta li' e si puo' riprendere dal suo indirizzo; smette solo di
+ * contare come "in corso".
+ */
+export const BATTAGLIA_ABBANDONATA_MS = 30 * 60_000
+
+/** Il ritmo del polling in partita: stretto quando si aspetta l'altro, largo quando tocca a te. */
+export const BATTAGLIA_POLL_ATTESA_MS = 1_500
+export const BATTAGLIA_POLL_TURNO_MS = 5_000
+/** In sala d'attesa: quanto spesso si guarda chi e' online e com'e' andata la sfida. */
+export const BATTAGLIA_POLL_LOBBY_MS = 3_000
+
 /* ─────────────────────────  Email e verifica  ───────────────────────── */
 
 export const EMAIL_MAX = 254

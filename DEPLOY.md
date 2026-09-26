@@ -94,6 +94,7 @@ quale schermata si entra.
 | `wordle.simonerecchia.com` | direttamente il Wordle di oggi |
 | `scarabeo.simonerecchia.com` | direttamente lo Scarabeo di oggi |
 | `cruciverba.simonerecchia.com` | direttamente il cruciverba di oggi |
+| `battaglia.simonerecchia.com` | la sala della battaglia navale |
 
 Sono già collegati. Per aggiungerne altri: **Custom domains** → **Set up a
 custom domain** nel progetto Pages, oppure rilanciare

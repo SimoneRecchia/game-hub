@@ -257,6 +257,39 @@ porta la `versione` restituita dalla precedente. Il server rifiuta quelle con
 una versione vecchia (`CONFLITTO`), e il client rilegge lo stato: due
 dispositivi aperti sulla stessa partita non si sovrascrivono un aiuto pagato.
 
+**La presenza e' un giro solo per tutta l'app.** `PresenzaProvider`
+(`src/lib/presenza.tsx`) chiama `POST /api/presenza` ogni otto secondi a pagina
+visibile: dice al server dove si trova il giocatore e riporta gli inviti del
+Wordle in compagnia, le sfide a battaglia navale e la partita aperta. Prima gli
+inviti del Wordle avevano il loro polling: due giri separati avrebbero
+raddoppiato le richieste, e le Pages Functions gratuite ne contano centomila al
+giorno per tutto il sito. La scrittura in `presenza` passa solo ogni venti
+secondi o al cambio di attivita' (`segnaPresenza`), e a pagina nascosta il giro
+si ferma: un telefono in tasca non e' "online" per chi vuole sfidarlo.
+
+**Nella battaglia navale la flotta dell'avversario non esce dal server.**
+`vistaPer` manda la propria flotta, i colpi con il loro esito e le navi gia'
+affondate; il resto solo a partita finita. Come nello Scarabeo la verita' sono
+le mosse: `colpi` e' l'elenco delle caselle, chi ha sparato si ricava dal turno
+(i pari sono di chi ha cominciato) e l'esito dalla flotta colpita. Ogni
+scrittura e' condizionata alla `versione`, così un doppio tocco non spara due
+volte nello stesso turno.
+
+**Le regole della battaglia sono quelle italiane del gioco su carta**: navi
+dritte che **non si toccano, nemmeno d'angolo**, un colpo a testa, il nome della
+nave detto solo all'affondamento. Le navi hanno il loro articolo in `FLOTTA`
+(`la`, `una`): due su cinque sono maschili, e "la cacciatorpediniere" e'
+comparso davvero in un annuncio prima che ci fosse.
+
+**Una sfida accettata apre la partita in un `batch`.** L'`INSERT` della
+partita e' condizionato — sfida in attesa, non scaduta, nessuno dei due in
+un'altra partita — e nello stesso batch la sfida passa ad accettata e le altre
+dei due si annullano: due accettazioni ravvicinate non aprono due partite. Una
+partita ferma da mezz'ora (`BATTAGLIA_ABBANDONATA_MS`) smette di tenere
+occupati i due giocatori, altrimenti chi chiude l'app a meta' non potrebbe piu'
+essere sfidato. Chi resta ad aspettare puo' chiedere la vittoria a tavolino
+dopo tre minuti senza colpi, o cinque senza flotta.
+
 **Le due classifiche restano separate.** Una giornata di Wordle vale al massimo
 209 punti per costruzione, una di Scarabeo qualche centinaio: sommarle
 richiederebbe un tasso di cambio inventato, e normalizzare per giornata ("il

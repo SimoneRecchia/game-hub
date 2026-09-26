@@ -8,6 +8,7 @@ import { ThemeButton } from '@/components/ThemeButton'
 import { IconFlame, IconPeople } from '@/components/Icons'
 import { ClassificaScarabeo } from './ClassificaScarabeo'
 import { ClassificaCruciverba } from './ClassificaCruciverba'
+import { ClassificaBattaglia } from './ClassificaBattaglia'
 import { ApiFetchError, api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
 import { formatNumber, formatPercent, pluralize } from '@/lib/format'
@@ -19,11 +20,12 @@ import './Classifica.css'
  * — i punti dei giochi non sono commensurabili, e sommarli richiederebbe un
  * tasso di cambio inventato.
  */
-type Gioco = 'wordle' | 'scarabeo' | 'cruciverba'
+type Gioco = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia'
 const GIOCHI: { value: Gioco; label: string }[] = [
   { value: 'wordle', label: 'Wordle' },
   { value: 'scarabeo', label: 'Scarabeo' },
   { value: 'cruciverba', label: 'Cruciverba' },
+  { value: 'battaglia', label: 'Battaglia' },
 ]
 
 const LEDE: Record<Gioco, string> = {
@@ -32,6 +34,7 @@ const LEDE: Record<Gioco, string> = {
   scarabeo: 'Dieci mosse al giorno con le stesse tessere per tutti. Vince chi le sfrutta meglio.',
   cruciverba:
     'Cento punti a chi lo completa senza aiuti. A parità di punti passa avanti chi ci ha messo meno.',
+  battaglia: 'Le battaglie vinte contro i colleghi. A parità di vittorie, passa avanti chi ne ha perse meno.',
 }
 
 function giocoDa(valore: string | null): Gioco {
@@ -125,6 +128,8 @@ export default function Classifica() {
         <ClassificaScarabeo scope={scope} meId={me.id} />
       ) : gioco === 'cruciverba' ? (
         <ClassificaCruciverba scope={scope} meId={me.id} />
+      ) : gioco === 'battaglia' ? (
+        <ClassificaBattaglia scope={scope} meId={me.id} />
       ) : error ? (
         <div className="lb__fallback">
           <p>{error}</p>

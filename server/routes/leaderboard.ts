@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import type {
+  BattagliaLeaderboard,
   CruciverbaLeaderboard,
   LeaderboardResponse,
   LeaderboardScope,
@@ -11,6 +12,8 @@ import { requireVerified } from '../lib/session'
 import { leaderboard } from '../lib/leaderboard'
 import { classificaScarabeo } from '../lib/scarabeoStore'
 import { classificaCruciverba } from '../lib/cruciverbaStore'
+import { classificaBattaglia } from '../lib/battagliaStore'
+import { msToNextPuzzle } from '../../shared/daily'
 import { today } from '../lib/wordleStore'
 
 const SCOPES: LeaderboardScope[] = ['today', 'week', 'month', 'all']
@@ -66,4 +69,17 @@ export const leaderboardRoutes = new Hono<AppEnv>()
       c.get('player').id,
     )
     return c.json<CruciverbaLeaderboard>(result)
+  })
+
+  /** La battaglia navale: vittorie, poi meno sconfitte. */
+  .get('/battaglia', async (c) => {
+    const scope = readScope(c.req.query('scope'))
+    const result = await classificaBattaglia(
+      c.env.DB,
+      scope,
+      msToNextPuzzle(),
+      c.get('player').id,
+      Date.now(),
+    )
+    return c.json<BattagliaLeaderboard>(result)
   })
