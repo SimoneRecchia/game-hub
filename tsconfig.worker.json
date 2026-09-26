@@ -23,5 +23,11 @@
     "functions",
     "server",
     "shared"
+  ],
+  // I test di shared/ girano in Node con Vitest, non nel Worker: li verifica
+  // tsconfig.app.json, che ha i tipi di Node. Qui leggerebbero `node:fs` con i
+  // tipi del Worker, che non li conoscono.
+  "exclude": [
+    "shared/__tests__"
   ]
 }
