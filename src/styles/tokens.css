@@ -236,6 +236,37 @@
   --battaglia-2: #0d5f82;
   --generale-1: #6d5fff;
   --generale-2: #3d2fc4;
+  --quiz-1: #f25f8f;
+  --quiz-2: #c2266a;
+
+  /* ---- La cartina muta del quiz ----
+     Un atlante di scuola: mare azzurro chiaro, terre color carta, confini
+     bianchi. In scuro le terre restano piu' chiare del mare, altrimenti i paesi
+     sparirebbero nel buio. La scelta e' indaco come ogni selezione dell'app;
+     giusto e sbagliato sono il verde e il rosso di sempre. */
+  --carta-mare: #d4eaf5;
+  --carta-mare: light-dark(#d4eaf5, #0f2536);
+  --carta-onda: rgba(255, 255, 255, 0.45);
+  --carta-onda: light-dark(rgba(255, 255, 255, 0.45), rgba(140, 200, 235, 0.07));
+  --carta-terra: #f5ecd9;
+  --carta-terra: light-dark(#f5ecd9, #334250);
+  --carta-terra-sopra: #ecdfc2;
+  --carta-terra-sopra: light-dark(#ecdfc2, #3e5061);
+  --carta-confine: #ffffff;
+  --carta-confine: light-dark(#ffffff, #1b2733);
+  --carta-costa: rgba(40, 90, 120, 0.35);
+  --carta-costa: light-dark(rgba(40, 90, 120, 0.35), rgba(150, 205, 235, 0.25));
+
+  /* ---- La carta delle domande del quiz ----
+     Il reticolo di un atlante sulla carta della domanda, appena accennato, e
+     il tondo delle lettere delle risposte: rosa del gioco, non l'indaco, che
+     nel quiz vuol dire "la risposta che hai scelto". */
+  --quiz-reticolo: rgba(194, 38, 106, 0.06);
+  --quiz-reticolo: light-dark(rgba(194, 38, 106, 0.06), rgba(242, 95, 143, 0.07));
+  --quiz-lettera: #fde4ed;
+  --quiz-lettera: light-dark(#fde4ed, #4a1f33);
+  --quiz-lettera-ink: #b0205f;
+  --quiz-lettera-ink: light-dark(#b0205f, #ff9cc0);
 
   /* ---- Caselle e tastiera del Wordle ----
      I tre colori del gioco vero sono desaturati (#6aaa64, #c9b458, #787c7e):

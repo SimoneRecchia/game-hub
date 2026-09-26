@@ -10,16 +10,16 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
     nickname,
     displayName: nickname,
     avatarColor: '#000',
-    perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, battaglia: 0, ...perGioco },
+    perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, battaglia: 0, quiz: 0, ...perGioco },
     assist,
     partite,
   }
 }
 
 describe('l’ordine della classifica generale', () => {
-  it('somma i quattro giochi', () => {
-    const [riga] = ordinaGenerale([totali('a', { wordle: 80, scarabeo: 70, cruciverba: 95, battaglia: 84 })])
-    expect(riga.punti).toBe(329)
+  it('somma tutti i giochi', () => {
+    const [riga] = ordinaGenerale([totali('a', { wordle: 80, scarabeo: 70, cruciverba: 95, battaglia: 84, quiz: 76 })])
+    expect(riga.punti).toBe(405)
   })
 
   it('a pari punti passa avanti chi ha meno punti assist, poi chi ha giocato meno partite', () => {
@@ -41,7 +41,7 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     const adesso = new Date().toISOString()
     const sql = (q: string, ...p: unknown[]) => db.sqlite.prepare(q).run(...p)
 
-    // Anna: Wordle 45 + 20, Scarabeo 70, cruciverba 97 (finito), battaglia 84.
+    // Anna: Wordle 45 + 20, Scarabeo 70, cruciverba 97 (finito), battaglia 84, quiz 76.
     sql(`INSERT INTO wordle_games (id, player_id, puzzle_number, slot, date, answer, status, attempts, guesses, started_at, score)
          VALUES ('w1', ?, ?, 1, 'x', 'carta', 'won', 2, '[]', ?, 45)`, anna.id, n, adesso)
     sql(`INSERT INTO wordle_games (id, player_id, puzzle_number, slot, date, answer, status, attempts, guesses, started_at, score)
@@ -52,30 +52,33 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
          VALUES ('c1', ?, ?, 'x', 'done', 'x', 97, ?, ?)`, anna.id, n, adesso, adesso)
     sql(`INSERT INTO battaglia_partite (id, modalita, giocatore_a, giocatore_b, puzzle_number, stato, colpi, punti, vincitore, created_at, updated_at)
          VALUES ('b1', 'classificata', ?, NULL, ?, 'finita', '[]', 84, 'a', ?, ?)`, anna.id, n, adesso, adesso)
+    sql(`INSERT INTO quiz_partite (id, player_id, puzzle_number, date, status, giuste, score, started_at, updated_at)
+         VALUES ('q1', ?, ?, 'x', 'done', 7, 76, ?, ?)`, anna.id, n, adesso, adesso)
     // Bruno: solo un cruciverba ancora aperto, che vale zero.
     sql(`INSERT INTO cruciverba_games (id, player_id, puzzle_number, date, status, lettere, score, started_at, updated_at)
          VALUES ('c2', ?, ?, 'x', 'playing', 'x', 0, ?, ?)`, bruno.id, n, adesso, adesso)
 
     const g = (await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', anna)).dati
     expect(g.rows.map((r) => [r.nickname, r.punti])).toEqual([
-      ['anna', 45 + 20 + 70 + 97 + 84],
+      ['anna', 45 + 20 + 70 + 97 + 84 + 76],
       ['bruno', 0],
     ])
-    expect(g.me?.perGioco).toEqual({ wordle: 65, scarabeo: 70, cruciverba: 97, battaglia: 84 })
-    expect(g.me?.partite).toBe(4)
+    expect(g.me?.perGioco).toEqual({ wordle: 65, scarabeo: 70, cruciverba: 97, battaglia: 84, quiz: 76 })
+    expect(g.me?.partite).toBe(5)
 
     const oggi = (await chiama<OggiRisposta>('GET', '/oggi', bruno)).dati
     expect(oggi.generale).toEqual({ posizione: 2, punti: 0, giocatori: 2 })
     expect(oggi.cruciverba.status).toBe('assente')
     expect(oggi.wordle.status).toBe('new')
     expect(oggi.battaglia.classificata.stato).toBe('nuova')
+    expect(oggi.quiz.status).toBe('assente')
   })
 
   it('la schermata di oggi non apre nessuna partita', async () => {
     const { chiama, giocatore, db } = banco()
     const io = await giocatore('carla')
     const conta = () =>
-      ['wordle_games', 'scarabeo_games', 'cruciverba_games', 'battaglia_partite', 'scarabeo_computer'].map(
+      ['wordle_games', 'scarabeo_games', 'cruciverba_games', 'battaglia_partite', 'scarabeo_computer', 'quiz_partite'].map(
         (t) => db.sqlite.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get()?.n,
       )
     const prima = conta()

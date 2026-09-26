@@ -3,8 +3,10 @@ import { Copertina } from './Copertina'
 import './Marchio.css'
 
 /**
- * Il marchio dell'app: le quattro copertine dei giochi, una accanto all'altra
- * come le icone di una cartella sulla schermata Home.
+ * Il marchio dell'app: le copertine dei primi quattro giochi, una accanto
+ * all'altra come le icone di una cartella sulla schermata Home. Il quiz, che e'
+ * arrivato dopo, non c'e': una cartella ne mostra quattro, e l'icona dell'app
+ * e' disegnata cosi'.
  *
  * E' il disegno dell'icona dell'app (public/icon.svg), fatto con i pezzi veri:
  * cambia colore con il tema e con i giochi, invece di restare un'immagine.

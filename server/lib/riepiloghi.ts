@@ -9,8 +9,8 @@
  * del computer dello Scarabeo) e compare in classifica come "in corso".
  *
  * Stanno qui e non nelle rotte perché li usa anche `GET /api/oggi`, che li
- * manda tutti insieme: una richiesta per la schermata iniziale invece di
- * quattro, e il piano gratuito le conta.
+ * manda tutti insieme: una richiesta per la schermata iniziale invece di una
+ * per gioco, e il piano gratuito le conta.
  */
 
 import { caselleBianche, caselleScritte, punteggio } from '../../shared/cruciverba'
@@ -20,6 +20,7 @@ import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
 import type {
   BattagliaSummary,
   CruciverbaSummary,
+  QuizSummary,
   ScarabeoSummary,
   WordleStatus,
   WordleSummary,
@@ -28,6 +29,8 @@ import { today } from './wordleStore'
 import { giornata as giornataScarabeo } from './scarabeoStore'
 import { giornata as giornataCruciverba, schemaDelGiorno, svelateDi, type PartitaRow } from './cruciverbaStore'
 import { latoDi, partitaAperta, partitaBreve, quantiOnline, recordDi, statoClassificata } from './battagliaStore'
+import { giornata as giornataQuiz, giornataQuiz as domandeDelGiorno, partitaDi as partitaQuiz, risposteDi } from './quizStore'
+import { puntiQuiz } from '../../shared/quiz'
 
 export async function riepilogoWordle(db: D1Database, playerId: string): Promise<WordleSummary> {
   const when = today()
@@ -134,5 +137,31 @@ export async function riepilogoBattaglia(db: D1Database, playerId: string): Prom
     partita: aperta && lato ? await partitaBreve(db, aperta, lato) : null,
     classificata,
     ...record,
+  }
+}
+
+/**
+ * Il quiz di oggi: la categoria, e a che punto si e'. Non apre niente e non
+ * chiude le domande scadute: e' di sola lettura, e una domanda lasciata aperta
+ * la chiude la pagina del quiz quando la si riapre.
+ */
+export async function riepilogoQuiz(db: D1Database, playerId: string): Promise<QuizSummary> {
+  const quando = giornataQuiz()
+  const [g, row] = await Promise.all([
+    domandeDelGiorno(db, quando.puzzleNumber),
+    partitaQuiz(db, playerId, quando.puzzleNumber),
+  ])
+  const totale = g?.domande.length ?? 0
+  const giuste = row?.giuste ?? 0
+  return {
+    puzzleNumber: quando.puzzleNumber,
+    date: quando.date,
+    status: !g ? 'assente' : !row ? 'nuova' : row.status,
+    categoria: g?.categoria ?? null,
+    fatte: risposteDi(row).length,
+    giuste,
+    totale,
+    punti: row?.status === 'done' ? row.score : puntiQuiz(giuste, totale),
+    msToNextPuzzle: msToNextPuzzle(),
   }
 }

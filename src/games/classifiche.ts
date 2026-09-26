@@ -14,6 +14,7 @@ import type {
   GiocoClassificato,
   LeaderboardResponse,
   LeaderboardScope,
+  QuizLeaderboard,
   ScarabeoLeaderboard,
 } from '@shared/types'
 
@@ -38,6 +39,7 @@ type Qualunque =
   | ScarabeoLeaderboard
   | CruciverbaLeaderboard
   | BattagliaLeaderboard
+  | QuizLeaderboard
   | GeneraleLeaderboard
 
 export function righeComuni(risposta: Qualunque): RigaComune[] {

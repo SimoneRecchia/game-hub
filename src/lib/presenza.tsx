@@ -20,6 +20,7 @@ export function attivitaDa(pathname: string): Attivita {
   if (pathname.startsWith('/scarabeo')) return 'scarabeo'
   if (pathname.startsWith('/cruciverba')) return 'cruciverba'
   if (pathname.startsWith('/battaglia')) return 'battaglia'
+  if (pathname.startsWith('/quiz')) return 'quiz'
   if (pathname.startsWith('/classifica')) return 'classifica'
   if (pathname.startsWith('/profilo')) return 'profilo'
   return 'altro'

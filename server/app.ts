@@ -6,6 +6,7 @@ import { wordleRoutes } from './routes/wordle'
 import { scarabeoRoutes } from './routes/scarabeo'
 import { cruciverbaRoutes } from './routes/cruciverba'
 import { battagliaRoutes, invitiPubblici } from './routes/battaglia'
+import { quizRoutes } from './routes/quiz'
 import { presenzaRoutes } from './routes/presenza'
 import { leaderboardRoutes } from './routes/leaderboard'
 import { coopRoutes } from './routes/coop'
@@ -41,6 +42,7 @@ export function createApp() {
   app.route('/scarabeo', scarabeoRoutes)
   app.route('/cruciverba', cruciverbaRoutes)
   app.route('/battaglia', battagliaRoutes)
+  app.route('/quiz', quizRoutes)
   // Senza sessione: chi apre un invito col link puo' non avere ancora un account.
   app.route('/inviti', invitiPubblici)
   app.route('/presenza', presenzaRoutes)

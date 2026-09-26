@@ -53,6 +53,14 @@ export const GIOCHI: readonly Gioco[] = [
     libera: 'Contro il computer a tre livelli, o contro un amico.',
     liberaBreve: 'Contro chi vuoi',
   },
+  {
+    id: 'quiz',
+    nome: 'Quiz',
+    motto: 'Capitali, bandiere, mari e cartina muta',
+    classificata: 'Dieci domande di geografia, le stesse per tutti, su una categoria che cambia ogni giorno.',
+    libera: 'Scegli tu la categoria, il continente o il paese, e quante domande.',
+    liberaBreve: 'Quiz libero',
+  },
 ]
 
 export function giocoDi(id: GiocoClassificato): Gioco {
