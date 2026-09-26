@@ -10,6 +10,7 @@ import type {
 import { isGameLetter, keyboardStates } from '@shared/wordle'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
+import { ADESIVO_FINE_MS, type FinaleWordle } from './fine'
 
 /**
  * Tempi delle animazioni. Devono restare allineati a Tile.css: sono qui
@@ -72,6 +73,12 @@ export interface WordleController<T extends Griglia = WordleState> {
   keyboard: Map<string, TileState>
   message: string | null
   resultOpen: boolean
+  /**
+   * La fine appena arrivata, per l'adesivo al centro: c'e' per il tempo
+   * dell'adesivo, e poi si apre il riepilogo. Una partita riaperta a cose fatte
+   * non ce l'ha.
+   */
+  finale: (FinaleWordle & { id: number }) | null
   press: (letter: string) => void
   backspace: () => void
   /** Riempie la riga con una parola intera, senza inviarla. */
@@ -153,6 +160,8 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [resultOpen, setResultOpen] = useState(false)
+  const [finale, setFinale] = useState<(FinaleWordle & { id: number }) | null>(null)
+  const idFinale = useRef(0)
 
   const timers = useRef<number[]>([])
   const alive = useRef(true)
@@ -190,6 +199,7 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
     setWinningRow(null)
     setShakingRow(null)
     setResultOpen(false)
+    setFinale(null)
   }, [])
 
   const reload = useCallback(async () => {
@@ -298,13 +308,24 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
       later(() => {
         // Solo ora la tastiera si colora: prima sarebbe uno spoiler.
         setRevealing(null)
+        // La fine: la riga salta, poi l'adesivo con la parola, poi il riepilogo.
+        const concludi = (esito: FinaleWordle['esito'], dopo: number) => {
+          later(() => {
+            idFinale.current += 1
+            setFinale({ id: idFinale.current, esito, tentativi: row + 1, parola: next.answer })
+          }, dopo)
+          later(() => {
+            setFinale(null)
+            setResultOpen(true)
+          }, dopo + ADESIVO_FINE_MS)
+        }
         if (next.status === 'won') {
           haptic('success')
           setWinningRow(row)
-          later(() => setResultOpen(true), BOUNCE_MS)
+          concludi('won', BOUNCE_MS * 0.5)
         } else if (next.status === 'lost') {
           haptic('error')
-          later(() => setResultOpen(true), 400)
+          concludi('lost', 400)
         }
         if (next.status !== 'playing') void fetchStats()
       }, revealMs)
@@ -382,6 +403,7 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
     keyboard,
     message,
     resultOpen,
+    finale,
     press,
     backspace,
     fill,

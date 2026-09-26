@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react'
-import { createPortal } from 'react-dom'
+import { Adesivo } from '@/components/Adesivo'
 import { DURATA_ANNUNCIO_MS, type Annuncio } from './racconto'
 import './Annuncio.css'
 
@@ -7,38 +7,37 @@ import './Annuncio.css'
  * Il colpo che conta, al centro dello schermo e per un attimo: "Colpito!" con
  * un'esplosione, "Affondata!" con la nave che va giu' fra le onde.
  *
- * I propri colpi sono un adesivo colorato che salta fuori; quelli presi sono una
- * carta bianca bordata di rosso che trema. Si capisce chi ha colpito chi prima
- * di leggere. Non si tocca e non ferma niente: passa da sola, e sotto la
- * partita continua.
- *
- * E' fuori dalla pagina, nel body, perché la pagina durante le transizioni fa
- * da contenitore e un `position: fixed` al suo interno si fermerebbe li'.
+ * E' un `Adesivo`: i propri colpi sono la carta colorata che salta fuori,
+ * quelli presi la carta bianca bordata di rosso che trema. Si capisce chi ha
+ * colpito chi prima di leggere.
  */
 export function AnnuncioColpo({ annuncio }: { annuncio: Annuncio | null }) {
-  if (!annuncio || typeof document === 'undefined') return null
-  const durata = DURATA_ANNUNCIO_MS[annuncio.esito]
-  return createPortal(
-    <div
-      key={annuncio.id}
-      className={`annuncio is-${annuncio.esito} ${annuncio.mio ? 'is-mio' : 'is-suo'}`}
-      style={{ '--durata': `${durata}ms` } as CSSProperties}
-      aria-hidden="true"
-    >
-      <div className="annuncio__carta">
-        {annuncio.esito === 'colpito' ? <Esplosione /> : <Affondamento />}
-        <p className="annuncio__titolo">{annuncio.titolo}</p>
-        <p className="annuncio__sotto">{annuncio.sotto}</p>
-        {annuncio.nave && (
+  if (!annuncio) return <Adesivo adesivo={null} />
+  const colore = !annuncio.mio
+    ? undefined
+    : annuncio.esito === 'colpito'
+      ? 'linear-gradient(155deg, #ff9a3c, #e0322b 72%)'
+      : 'linear-gradient(155deg, var(--battaglia-1), var(--battaglia-2) 80%)'
+  return (
+    <Adesivo
+      adesivo={{
+        id: annuncio.id,
+        tono: annuncio.mio ? 'vivace' : 'bordato',
+        titolo: annuncio.titolo,
+        sotto: annuncio.sotto,
+        colore,
+        durata: DURATA_ANNUNCIO_MS[annuncio.esito],
+        classe: `annuncio is-${annuncio.esito} ${annuncio.mio ? 'is-mio' : 'is-suo'}`,
+        disegno: annuncio.esito === 'colpito' ? <Esplosione /> : <Affondamento />,
+        piede: annuncio.nave ? (
           <span className="annuncio__caselle">
             {Array.from({ length: annuncio.nave.lunghezza }, (_, i) => (
               <span key={i} style={{ '--i': i } as CSSProperties} />
             ))}
           </span>
-        )}
-      </div>
-    </div>,
-    document.body,
+        ) : undefined,
+      }}
+    />
   )
 }
 
@@ -53,9 +52,10 @@ function stella(punte: number, fuori: number, dentro: number, giro = 0): string 
 
 const SCINTILLE = [0, 45, 90, 135, 180, 225, 270, 315]
 
-function Esplosione() {
+/** Lo scoppio di un colpo andato a segno. Serve anche alla schermata di fine. */
+export function Esplosione() {
   return (
-    <svg className="annuncio__disegno annuncio__esplosione" viewBox="0 0 120 120">
+    <svg className="adesivo__disegno annuncio__disegno annuncio__esplosione" viewBox="0 0 120 120">
       {SCINTILLE.map((a) => (
         <g key={a} transform={`rotate(${a + 22} 60 60)`}>
           <line className="annuncio__scintilla" x1="60" y1="14" x2="60" y2="4" />
@@ -68,9 +68,10 @@ function Esplosione() {
   )
 }
 
-function Affondamento() {
+/** La nave che va giu' fra le onde. Serve anche alla schermata di fine. */
+export function Affondamento() {
   return (
-    <svg className="annuncio__disegno annuncio__affondamento" viewBox="0 0 120 90">
+    <svg className="adesivo__disegno annuncio__disegno annuncio__affondamento" viewBox="0 0 120 90">
       <defs>
         <clipPath id="annuncio-sopra-acqua">
           <rect x="0" y="0" width="120" height="62" />

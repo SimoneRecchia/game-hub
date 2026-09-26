@@ -1,25 +1,24 @@
 /*
  * La battaglia navale: la sala delle partite libere e la partita.
  *
- * La partita e' la sola schermata a tutto schermo che scorre: due mari, lo stato
- * e i comandi non stanno sempre in un telefono basso, e tagliarne uno sarebbe
- * peggio che scorrere. Il mare dove si spara resta comunque il primo, subito
- * sotto l'intestazione.
+ * La partita sta tutta nello schermo, senza scorrere. `.bat` e' un contenitore
+ * di misura (`container: bat / size`), e le misure dei mari si ricavano da lì:
+ * quanto e' larga la scheda, quanto resta in altezza tolte testate, file di
+ * navi e piedi. I numeri fissi qui sotto sono quelli di Scheda.css — padding 10,
+ * testata 28 — e se si cambia uno dei due va rifatto il conto dell'altro.
  */
 
 /* ---------- Comuni ---------- */
 
 .bat {
+  container: bat / size;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
   width: min(100%, 720px);
   margin-inline: auto;
-  /* Un filo di spazio per l'ombra dei bottoni in fondo quando si scorre. */
-  padding-bottom: var(--sp-2);
 }
 
 .bat__attesa {
@@ -44,16 +43,6 @@
   gap: var(--sp-4);
   text-align: center;
   color: var(--label-secondary);
-}
-
-.bat__istruzioni,
-.bat__nota {
-  margin: 0;
-  font-size: var(--text-footnote);
-  line-height: 1.4;
-  color: var(--label-secondary);
-  text-align: center;
-  min-height: 1.4em;
 }
 
 .bat-resa {
@@ -274,135 +263,234 @@
 /* ---------- La partita ---------- */
 
 /*
- * La plancia: di chi e' il turno, e sotto com'e' andato l'ultimo colpo. Sta al
- * suo posto e non si sovrappone a niente — prima la notizia era una pillola che
- * galleggiava sopra il mare e copriva proprio le caselle da guardare.
+ * Le misure dei due mari.
+ *
+ * In colonna, su un telefono: la scheda avversaria e' alta il suo mare piu' 106
+ * punti (padding 20, testata 28, file delle navi 24, piede 16, tre spazi da 6),
+ * la propria il suo mare piu' 54, e fra le due ci sono 10 punti: 170 in tutto.
+ * Il mare avversario prende quel che puo' lasciando al proprio almeno 136
+ * punti, e il proprio prende il resto, fino a lasciare posto alla lista delle
+ * navi accanto.
  */
-.bat-plancia {
+.bat-combattimento {
+  --interno: calc(100cqw - 20px);
+  --libero: calc(100cqh - 170px - var(--extra, 0px));
+  --lato-nemico: min(var(--interno), 460px, calc(var(--libero) - 136px));
+  --lato-mio: max(0px, min(calc(var(--interno) - 166px), 220px, calc(var(--libero) - var(--lato-nemico))));
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Fra amici, quando l'altro non risponde: una riga in piu' da togliere al mare. */
+.bat-combattimento.has-avviso {
+  --extra: 54px;
+}
+
+.bat-combattimento__mari {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bat-campo__mare {
+  width: var(--lato-nemico);
+  align-self: center;
+}
+
+.bat-campo__piede {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  height: 16px;
+  margin: 0;
+  font-size: var(--text-caption-1);
+  line-height: 16px;
+  color: var(--label-tertiary);
+  white-space: nowrap;
+}
+
+.bat-campo__colpi {
+  flex: none;
+  color: var(--label-secondary);
+}
+
+.bat-campo__colpi strong {
+  color: var(--label);
+}
+
+.bat-campo__notizia {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+  font-weight: 600;
+}
+
+/* Quando non c'e' il conto dei colpi la notizia si legge meglio al centro. */
+.bat-campo__notizia:only-child {
+  text-align: center;
+}
+
+.bat-campo__notizia.is-buona {
+  color: var(--colpito);
+  font-weight: 800;
+}
+
+.bat-campo__notizia.is-cattiva {
+  color: var(--label);
+  font-weight: 800;
+}
+
+.bat-campo__notizia.is-errore {
+  color: var(--red);
+}
+
+.bat-campo__nota {
+  flex: none;
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-tertiary);
+  transition: color var(--dur-base) var(--ease-out);
+}
+
+.bat-campo__nota.is-mira {
+  color: var(--mirino);
+  font-weight: 800;
+}
+
+/* Il proprio mare, in piccolo, con le navi una per riga accanto. */
+.bat-campo__corpo {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  min-height: 56px;
-  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-2);
-  border-radius: var(--r-lg);
-  background: var(--fill-quaternary);
-  transition: background-color var(--dur-base) var(--ease-out);
+  justify-content: center;
+  gap: var(--sp-4);
 }
 
-.bat-plancia__icona {
+.bat-campo__mare-piccolo {
   flex: none;
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--label-secondary);
-  color: var(--bg);
+  width: var(--lato-mio);
 }
 
-.bat-plancia__icona:has(.avatar) {
-  background: none;
+/*
+ * Il proprio mare ripiegato: sugli schermi troppo bassi per due mari, una riga
+ * alta 48 punti che dice come sta la flotta e si apre in un foglio. Di norma
+ * non c'e': la accende la query qui sotto.
+ */
+.bat-mio-ripiegato {
+  display: none;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 48px;
+  padding: 0 var(--sp-3) 0 11px;
+  border: none;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  color: var(--label-tertiary);
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow var(--dur-base) var(--ease-out);
 }
 
-.bat-plancia__testi {
+.bat-mio-ripiegato:active {
+  transform: scale(0.99);
+}
+
+.bat-mio-ripiegato__testo {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  line-height: 1.2;
 }
 
-.bat-plancia__turno {
-  font-size: var(--text-headline);
-  font-weight: 700;
+.bat-mio-ripiegato__testo strong {
+  font-size: var(--text-subhead);
   color: var(--label);
 }
 
-.bat-plancia__notizia {
-  font-size: var(--text-footnote);
-  font-weight: 500;
-  color: var(--label-secondary);
+.bat-mio-ripiegato__testo span {
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-tertiary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.bat-plancia__notizia.is-buona {
-  color: var(--colpito);
-  font-weight: 700;
+/* Su un telefono stretto le caselline non ci stanno accanto al nome: resta il testo. */
+@container bat (max-width: 340px) {
+  .bat-mio-ripiegato .navi--mini {
+    display: none;
+  }
 }
 
-.bat-plancia__notizia.is-cattiva {
-  color: var(--label);
-  font-weight: 700;
+.bat-mio-ripiegato.is-mira {
+  box-shadow:
+    0 0 0 2px var(--mirino),
+    0 6px 24px color-mix(in srgb, var(--mirino) 24%, transparent);
+  animation: scheda-allerta 850ms var(--ease-in-out);
 }
 
-.bat-plancia__notizia.is-errore {
-  color: var(--red);
-  font-weight: 600;
+.bat-mio-ripiegato.is-mira .bat-mio-ripiegato__testo span {
+  color: var(--mirino);
+  font-weight: 800;
 }
 
-.bat-plancia__colpi {
-  flex: none;
+/* Il proprio mare nel foglio: grande, con le navi sotto. */
+.bat-mio-foglio {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  font-size: var(--text-caption-1);
-  font-weight: 600;
-  color: var(--label-tertiary);
-  line-height: 1.1;
+  gap: var(--sp-4);
+  width: min(100%, 420px);
+  margin-inline: auto;
 }
 
-.bat-plancia__colpi strong {
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
-  color: var(--label);
-}
-
-/* Tocca a te: la plancia prende l'indaco, e il mirino respira. */
-.bat-plancia.is-tuo {
-  background: var(--brand-soft);
-}
-
-.bat-plancia.is-tuo .bat-plancia__turno {
-  color: var(--brand);
-}
-
-.bat-plancia.is-tuo .bat-plancia__icona {
-  background: var(--brand);
-  color: #fff;
-}
-
-.bat-plancia.is-tuo .bat-plancia__icona::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  box-shadow: 0 0 0 0 var(--brand);
-  animation: bat-onde 1.8s var(--ease-out) infinite;
-}
-
-/* L'avversario prende la mira: arancione, come il suo mirino sul tuo mare. */
-.bat-plancia.is-mira {
-  background: color-mix(in srgb, var(--mirino) 15%, transparent);
-}
-
-.bat-plancia.is-mira .bat-plancia__turno {
-  color: var(--mirino);
-}
-
-.bat-plancia.is-mira .bat-plancia__icona {
-  background: var(--mirino);
-  color: #fff;
-  animation: bat-mira 700ms var(--ease-in-out) infinite;
-}
-
-@keyframes bat-mira {
-  50% {
-    transform: scale(0.9);
+/*
+ * Troppo basso per due mari (un iPhone SE con le barre di Safari, un telefono
+ * piccolo): il proprio mare si ripiega, e quello avversario prende l'altezza.
+ * 104 + 10 + 48 punti sono la scheda avversaria senza il mare, lo spazio e la
+ * riga ripiegata.
+ */
+@container bat (max-height: 560px) {
+  .bat-combattimento {
+    --lato-nemico: min(var(--interno), 460px, calc(100cqh - 168px - var(--extra, 0px)));
   }
+
+  /* Il selettore doppio batte `.scheda`, che sta in un altro foglio e potrebbe venire dopo. */
+  .bat-combattimento .bat-campo--mio {
+    display: none;
+  }
+
+  .bat-combattimento .bat-mio-ripiegato {
+    display: flex;
+  }
+}
+
+.bat__reclamo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  height: 44px;
+  padding: 0 6px 0 var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+}
+
+.bat__reclamo p {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
 }
 
 .bat__online {
@@ -417,171 +505,65 @@
   background: #22c55e;
 }
 
-.bat-combattimento,
-.bat-disposizione,
-.bat-fine {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.bat-combattimento__mari {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.bat__mare-grande {
-  width: min(100%, 440px);
-  margin-inline: auto;
-}
+/* ---------- Disposizione ---------- */
 
 /*
- * I due mari sono due schede, ognuna con il suo nome e il suo padrone. Quella
- * dove si deve fare qualcosa si accende: il mare dell'avversario quando tocca
- * a te, il tuo quando l'avversario sta mirando.
+ * Anche la disposizione sta nello schermo: la scheda e' alta il mare piu' 96
+ * punti (testata, spazi e due righe di nota), le navi da scegliere due file da
+ * 42, i comandi 44, e fra le fasce 10 punti: 256 in tutto oltre al mare.
  */
-.bat-campo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  width: min(100%, 480px);
-  margin-inline: auto;
-  padding: var(--sp-3);
-  border-radius: var(--r-xl);
-  background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
-  transition: box-shadow var(--dur-base) var(--ease-out);
-}
-
-.bat-campo.is-attivo {
-  box-shadow:
-    0 0 0 2px var(--brand),
-    0 6px 24px color-mix(in srgb, var(--brand) 22%, transparent);
-}
-
-.bat-campo.is-sotto-tiro {
-  box-shadow:
-    0 0 0 2px var(--mirino),
-    0 6px 24px color-mix(in srgb, var(--mirino) 24%, transparent);
-  animation: bat-sotto-tiro 850ms var(--ease-in-out);
-}
-
-@keyframes bat-sotto-tiro {
-  30% {
-    box-shadow:
-      0 0 0 4px var(--mirino),
-      0 6px 28px color-mix(in srgb, var(--mirino) 34%, transparent);
-  }
-}
-
-.bat-campo__testa {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  min-height: 28px;
-}
-
-.bat-campo__titolo {
+.bat-disposizione {
+  --lato-disposizione: min(calc(100cqw - 20px), 440px, calc(100cqh - 256px));
   flex: 1;
-  min-width: 0;
-  margin: 0;
-  font-size: var(--text-headline);
-  font-weight: 700;
-  color: var(--label);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bat-campo__computer {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: var(--label-secondary);
-  color: var(--bg);
-}
-
-.bat-campo__nota {
-  flex: none;
-  font-size: var(--text-caption-1);
-  font-weight: 600;
-  color: var(--label-tertiary);
-}
-
-.bat-campo__nota.is-viva {
-  padding: 2px var(--sp-2);
-  border-radius: var(--r-pill);
-  background: var(--brand);
-  color: #fff;
-  animation: bat-invito 1.6s var(--ease-in-out) infinite;
-}
-
-@keyframes bat-invito {
-  50% {
-    transform: scale(1.06);
-  }
-}
-
-.bat-campo__mare {
-  width: 100%;
-}
-
-.bat-campo__piede {
-  margin: 0;
-  font-size: var(--text-caption-1);
-  color: var(--label-tertiary);
-  text-align: center;
-}
-
-/* Il tuo mare, in piccolo, con le navi una per riga accanto. */
-.bat-campo__corpo {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-}
-
-.bat-campo__mare-piccolo {
-  flex: none;
-  width: 48%;
-  max-width: 220px;
-}
-
-.bat__reclamo {
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-3);
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
+  gap: 10px;
+}
+
+.bat-disposizione__scheda {
+  width: min(100%, 480px);
+}
+
+.bat-disposizione__mare {
+  width: var(--lato-disposizione);
+  align-self: center;
+}
+
+.bat-disposizione__scheda .bat__nota {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bat__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  line-height: 1.35;
+  color: var(--label-secondary);
   text-align: center;
 }
-
-.bat__reclamo p {
-  margin: 0;
-  font-size: var(--text-subhead);
-  color: var(--label-secondary);
-}
-
-/* ---------- Disposizione ---------- */
 
 .bat-disposizione__navi {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--sp-2);
+  align-content: flex-start;
+  gap: 8px;
+  height: 92px;
+  width: min(100%, 460px);
 }
 
 .bat-nave {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 3px;
-  padding: var(--sp-2) var(--sp-3);
+  height: 42px;
+  padding: 0 var(--sp-3);
   border: none;
   border-radius: var(--r-md);
   background: var(--fill-quaternary);
@@ -589,6 +571,13 @@
   font-size: var(--text-caption-1);
   font-weight: 600;
   cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.bat-nave:active {
+  transform: scale(0.96);
 }
 
 .bat-nave.is-scelta {
@@ -615,8 +604,8 @@
 .bat-disposizione__comandi {
   display: flex;
   gap: var(--sp-2);
-  width: min(100%, 440px);
-  margin-inline: auto;
+  width: min(100%, 460px);
+  height: 44px;
 }
 
 .bat-disposizione__comandi .btn {
@@ -625,20 +614,75 @@
 
 /* ---------- Fine ---------- */
 
+/*
+ * A partita finita i due mari stanno affiancati, della stessa misura: si
+ * guardano insieme, e con la loro scheda (testata 28, piede 16, padding 20,
+ * due spazi da 6) stanno anche sul telefono piu' basso. Il resto dell'altezza
+ * va alla testa, che si allarga con il disegno: 132 punti almeno, piu' i
+ * bottoni e gli spazi fanno 272.
+ */
+.bat-fine {
+  --lato-fine: min(calc((100cqw - 10px) / 2 - 20px), 300px, calc(100cqh - 272px));
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .bat-fine__testa {
+  flex: 1;
+  min-height: 132px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
+  justify-content: center;
+  gap: 2px;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-xl);
   background: var(--fill-quaternary);
   text-align: center;
+  overflow: hidden;
 }
 
 .bat-fine__testa.is-vinta {
-  background: linear-gradient(150deg, #1e88a8, #0b4f6c);
+  background: linear-gradient(150deg, var(--battaglia-1), var(--battaglia-2));
   color: #fff;
+  --onda: rgba(255, 255, 255, 0.9);
+}
+
+/* Il disegno di fine: c'e' solo se avanza altezza. */
+.bat-fine__disegno {
+  --durata: 1600ms;
+  display: block;
+  width: 96px;
+  margin-bottom: 2px;
+}
+
+.bat-fine__disegno .annuncio__disegno {
+  width: 100%;
+  margin: 0;
+}
+
+/* La nave sconfitta resta a mezz'acqua, invece di sparire come nell'annuncio. */
+.bat-fine__disegno .annuncio__nave {
+  animation: bat-fine-nave 2.4s var(--ease-in-out) 200ms both;
+}
+
+.bat-fine__disegno .annuncio__bolla {
+  animation-iteration-count: infinite;
+}
+
+@keyframes bat-fine-nave {
+  to {
+    transform: translateY(12px) rotate(-14deg);
+  }
+}
+
+@container bat (max-height: 620px) {
+  .bat-fine__disegno {
+    display: none;
+  }
 }
 
 .bat-fine__titolo {
@@ -650,7 +694,7 @@
 }
 
 .bat-fine__punti {
-  margin: var(--sp-1) 0;
+  margin: 2px 0;
   font-family: var(--font-rounded);
   font-size: var(--text-large-title);
   font-weight: 800;
@@ -667,31 +711,48 @@
 .bat-fine__perche,
 .bat-fine__conto {
   margin: 0;
-  font-size: var(--text-subhead);
+  font-size: var(--text-footnote);
   opacity: 0.85;
 }
 
+.bat-fine__mari {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.bat-fine__mare {
+  width: calc(var(--lato-fine) + 20px);
+}
+
+.bat-fine__mare .scheda__titolo {
+  font-size: var(--text-subhead);
+}
+
+.bat-fine__piede {
+  justify-content: center;
+  font-weight: 600;
+}
+
 .bat-fine__azioni {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--sp-3);
+  height: 44px;
 }
 
-.bat-fine__sala {
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-  color: var(--brand);
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-/* Su un computer i due mari stanno affiancati: c'e' posto, e si guardano insieme. */
-@media (min-width: 900px) {
-  .bat {
-    width: min(100%, 1000px);
+/*
+ * Su un computer i due mari stanno affiancati: c'e' posto, e si guardano
+ * insieme. Il mare avversario prende l'altezza, il proprio sta in una colonna
+ * di 300 punti con le navi sotto.
+ */
+@container bat (min-width: 860px) {
+  .bat-combattimento {
+    --lato-nemico: min(460px, calc(100cqh - 106px - var(--extra, 0px)), calc(100cqw - 360px));
+    --lato-mio: min(280px, calc(100cqh - 180px - var(--extra, 0px)));
   }
 
   .bat-combattimento__mari {
@@ -701,11 +762,8 @@
     gap: var(--sp-6);
   }
 
-  .bat-campo {
-    margin-inline: 0;
-  }
-
-  .bat-campo--mio {
+  .bat-combattimento .bat-campo--mio {
+    display: flex;
     width: 300px;
   }
 
@@ -715,8 +773,60 @@
   }
 
   .bat-campo--mio .bat-campo__mare-piccolo {
-    width: 100%;
-    max-width: none;
+    align-self: center;
+  }
+
+  .bat-combattimento .bat-mio-ripiegato {
+    display: none;
+  }
+
+  .bat-fine {
+    --lato-fine: min(360px, calc(100cqh - 272px), calc((100cqw - 10px) / 2 - 20px));
+  }
+}
+
+@media (min-width: 900px) {
+  .bat {
+    width: min(100%, 1000px);
+  }
+}
+
+/*
+ * Telefono in orizzontale: la pagina torna a scorrere (Pagina.css), quindi qui
+ * non c'e' un'altezza su cui misurare — `container-type: size` la farebbe
+ * risolvere a zero. I due mari si affiancano e si misurano sul viewport.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .bat {
+    container-type: inline-size;
+    overflow: visible;
+  }
+
+  .bat-combattimento {
+    --lato-nemico: min(calc(100svh - 150px), calc(50cqw - 40px));
+    --lato-mio: min(calc(100svh - 150px), calc(50cqw - 200px));
+  }
+
+  .bat-combattimento__mari {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .bat-combattimento .bat-campo--mio {
+    display: flex;
+  }
+
+  .bat-combattimento .bat-mio-ripiegato {
+    display: none;
+  }
+
+  .bat-disposizione {
+    --lato-disposizione: min(calc(100svh - 150px), 440px);
+  }
+
+  .bat-fine {
+    --lato-fine: min(calc(100svh - 120px), calc(50cqw - 30px));
   }
 }
 
@@ -847,10 +957,8 @@
 @media (prefers-reduced-motion: reduce) {
   .bat-riga__onda::after,
   .bat-sala__onde::after,
-  .bat-plancia.is-tuo .bat-plancia__icona::after,
-  .bat-plancia.is-mira .bat-plancia__icona,
-  .bat-campo.is-sotto-tiro,
-  .bat-campo__nota.is-viva {
-    animation: none;
+  .bat-mio-ripiegato.is-mira,
+  .bat-fine__disegno * {
+    animation: none !important;
   }
 }

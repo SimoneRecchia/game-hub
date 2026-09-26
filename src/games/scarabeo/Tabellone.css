@@ -14,7 +14,16 @@
   /* Il fondo che si vede fra le caselle: sono le linee del tabellone. */
   background: var(--separator-opaque);
   border-radius: var(--r-md);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  /*
+   * La cornice di legno: due anelli d'ombra, che seguono l'angolo e stanno
+   * fuori dal tabellone — per questo la misura qui sotto toglie i 10 punti che
+   * aggiungono.
+   */
+  box-shadow:
+    0 0 0 4px var(--legno-1),
+    0 0 0 5px var(--legno-2),
+    0 6px 18px var(--shadow-tint);
+  margin: 5px;
   /*
    * Larghezza piena fin dove ci sta. La misura vera e' quella nel blocco
    * @supports qui sotto, che tiene conto anche dell'altezza: su un iPhone SE il

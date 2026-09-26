@@ -433,20 +433,20 @@ I keyframes delle caselle usano `background-color` e non `background`: la
 velatura sta in `background-image` e sostituirla in blocco la cancellerebbe.
 
 **I messaggi non galleggiano sopra griglie e tabelloni.** Ogni gioco ha il suo
-posto in pagina: una riga riservata nel Wordle, la riga di mezzo del tabellino
-nello Scarabeo, la riga di stato nel cruciverba, la riga del suggerimento in
-compagnia, la plancia nella battaglia. Erano pillole scure sovrapposte — e
-coprivano proprio le caselle che si stavano guardando. Le notizie della
-battaglia stanno in una riga della plancia, e un test ne misura la lunghezza:
-una riga che va a capo sposterebbe i due mari a ogni colpo.
+posto in pagina: il piede della tavoletta nel Wordle, la riga di mezzo del
+tabellino nello Scarabeo, la capsula di stato nel cruciverba, la riga del
+suggerimento in compagnia, il piede del mare nemico nella battaglia. Erano
+pillole scure sovrapposte — e coprivano proprio le caselle che si stavano
+guardando. Le notizie della battaglia stanno in quel piede, accanto al conto
+dei colpi, e un test ne misura la lunghezza: una riga che va a capo sposterebbe
+i due mari a ogni colpo. L'eccezione sono gli adesivi, che passano da soli e
+non fermano niente (vedi sotto).
 
 **La festa della vittoria sta nel body, e solo per una vittoria appena fatta.**
 `Coriandoli` e' un portale: dentro la pagina restava sotto il velo del foglio
 del risultato, che si apre nello stesso momento, e non la vedeva nessuno.
 `useFesta` la accende solo se la partita era stata vista in corso: riaprire una
-vittoria di ieri, o riaprire il risultato, non la rifà. Nel Wordle, nello
-Scarabeo e nel cruciverba e' l'unica animazione che non serve a giocare; la
-battaglia ne ha di piu', perché e' il gioco d'azione.
+vittoria di ieri, o riaprire il risultato, non la rifà.
 
 **Nella battaglia i tre esiti sono tre segni, non tre rossi.** Lo spruzzo per
 l'acqua, il fuoco su un pezzo colpito e ancora a galla, il relitto scuro con
@@ -456,10 +456,57 @@ colpito e affondato erano due rossi, e non si capiva quale fosse quale.
 **Gli annunci al centro sono solo per i colpi che contano**: colpito e
 affondato, mai l'acqua — succede quasi sempre, e un annuncio a ogni colpo
 smetterebbe di dire qualcosa. La durata sta in `DURATA_ANNUNCIO_MS`
-(`racconto.ts`) e `Annuncio.css` divide le sue animazioni in frazioni di
-`--durata`: il colpo del computer aspetta che l'annuncio sia finito. I propri
-colpi sono un adesivo colorato che salta fuori, quelli presi una carta bordata
-di rosso che trema: si capisce chi ha colpito chi prima di leggere.
+(`racconto.ts`): il colpo del computer aspetta che l'annuncio sia finito.
+L'annuncio e' un `Adesivo` come quelli degli altri giochi; `Annuncio.css` ha
+solo i disegni dell'esplosione e dell'affondamento.
+
+**Lo stile della battaglia e' di tutti i giochi: schede, pillole, adesivi.**
+`Scheda` (`src/components/Scheda.tsx`) e' la carta con la testata — icona,
+titolo, e a destra una `Pillola` che dice lo stato: "Tocca a te", i tentativi,
+"Non indovinata". `Adesivo` e' il momento che conta al centro dello schermo, in
+due toni che si riconoscono prima di leggere: **vivace**, una carta nel colore
+del gioco che salta fuori storta (una cosa bella, mia), e **bordato**, una
+carta chiara bordata di colore che trema (una cosa brutta, o dell'avversario).
+Sta nel body, non ferma niente e passa da solo; le sue animazioni sono frazioni
+di `--durata`. `useCodaAdesivi` li mette in fila — la mossa e poi la fine
+della partita, il mio colpo e poi quello del computer — perché due adesivi
+insieme si coprirebbero. Ogni gioco ha il suo carattere dentro lo stesso
+stile, senza prendere quello degli altri: il Wordle una tavoletta con gli
+alloggi incavati (`--slot`) e le stelle della vittoria, lo Scarabeo il legno
+della cornice e del leggio (`--legno-*`) e lo scarabeo d'oro quando si posano
+tutte e otto le tessere, il cruciverba la matita e il quaderno a righe.
+
+**Un adesivo di fine partita viene prima del riepilogo, non sopra.** Nel Wordle
+`useWordle` tiene il foglio del risultato chiuso finché l'adesivo non e' finito
+(`ADESIVO_FINE_MS` in `fine.tsx`), nello Scarabeo libero il risultato aspetta
+l'adesivo della fine e quello dell'ultima mossa. Chi decide se mostrarlo deve
+aver visto la partita **in corso**, e per saperlo l'effetto dipende dallo stato
+a tre valori (`null` finché non c'e' una partita, poi in corso o finita), non
+da `finita`: con `finita` l'effetto non ripartiva quando la partita compariva,
+non vedeva mai "in corso", e la partita finiva senza adesivo. Le mosse del
+computer dello Scarabeo lo hanno solo da `MOSSA_DEL_COMPUTER_DA_ADESIVO` punti
+in su: le altre bastano nel tabellino.
+
+**Ogni schermata di gioco sta nello schermo, senza scorrere.** Le misure non
+sono in pixel ma in unita' del contenitore: la fascia di gioco e' un
+`container-type: size` che prende l'altezza lasciata da intestazione e
+tastiera, e griglie, tabelloni e mari si misurano su `cqw` e `cqh`. Il lato dei
+due mari della battaglia viene da una formula sola (`--lato-nemico`,
+`--lato-mio` in `Battaglia.css`): il mare nemico prende quel che serve, il mio
+quel che resta. Quando la fascia di gioco e' piu' bassa di 560 punti
+(`@container bat (max-height: 560px)`) il mio mare non ci sta piu' con
+dignita' e diventa una riga — avatar, navi a galla, freccia — che lo apre in un
+foglio. Verificato con Playwright da 320×460 a 1280×800, con le aree sicure di
+un'app installata.
+
+**Dentro una griglia CSS le percentuali mentono, su Safari.** Il Wordle era
+tagliato ai lati su iPhone: `width: min(100%, ..., 83.34cqh)` dentro un
+riquadro centrato con `display: grid; place-items: center`, dove il `100%` si
+risolve contro una traccia `auto` che dipende dal contenuto stesso — un
+riferimento circolare che WebKit risolve con la larghezza intrinseca, e la
+griglia sforava. Per questo le misure usano `100cqw` e non `100%`, e il
+centraggio e' con flex: le unita' del contenitore non dipendono da chi sta
+dentro.
 
 **Il mare e' un'acqua sola sotto caselle trasparenti.** Un livello
 (`.mare__acque`) con un'animazione sola, invece di cento caselle animate; le
@@ -481,9 +528,12 @@ la tessera veniva verde oliva. Le due famiglie dicono due cose — **caldo =
 moltiplica la parola**, **freddo = moltiplica la lettera** — e la saturazione
 dice se e' tripla o doppia.
 
-**Il tabellone si misura anche sull'altezza** (`width: min(100%, 420px, 100cqh)`
-dentro `@supports`): su un iPhone SE restano 240 punti fra intestazione e leggio,
-e un tabellone largo 288 ci finiva con l'ultima riga tagliata. Nella media query
+**Il tabellone si misura anche sull'altezza**
+(`width: min(100cqw - 10px, 420px, 100cqh - 10px)` dentro `@supports`): su un
+iPhone SE restano 240 punti fra intestazione e leggio, e un tabellone largo 288
+ci finiva con l'ultima riga tagliata. I dieci punti sono la cornice di legno,
+che e' un `box-shadow` fuori dal bordo — non occupa spazio nel layout, e senza
+toglierla uscirebbe dallo schermo. Nella media query
 orizzontale `container-type` torna `normal`, perché lì la pagina scorre e senza
 un'altezza definita `cqh` si risolve a zero — la stessa trappola documentata per
 la griglia del Wordle.

@@ -8,52 +8,143 @@
   min-height: 0;
 }
 
-.wordle__message {
-  /*
-   * Una riga sua, sempre: il messaggio appare e sparisce senza far saltare la
-   * griglia e senza coprirne le caselle. Prima, sugli schermi bassi, si
-   * sovrapponeva alla prima riga di tentativi per risparmiare trenta punti — e
-   * copriva proprio le lettere che si stavano guardando.
-   */
-  height: 30px;
-  display: grid;
-  place-items: center;
-  flex: none;
+/*
+ * La tavoletta: la scheda con la griglia, nello stile delle schede della
+ * battaglia. Prende tutta l'altezza che la tastiera lascia; la griglia dentro
+ * si misura su quel che resta tolte testata e piede.
+ */
+.wordle__tavola {
+  flex: 1;
+  min-height: 0;
+  /* Larga quanto la tastiera: su un computer una scheda da parete a parete
+     lascerebbe la griglia sola in mezzo al vuoto. */
+  width: 100%;
+  max-width: 520px;
+  margin-inline: auto;
 }
 
-@media (max-height: 700px) {
-  .wordle__message {
-    height: 24px;
-  }
-}
-
-.wordle__message-pill {
-  max-width: 100%;
-  padding: 3px var(--sp-4);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  border-radius: var(--r-pill);
-  background: var(--label);
-  color: var(--label-inverted);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  animation: wordle-pill var(--dur-base) var(--ease-spring);
-}
-
-@keyframes wordle-pill {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.94);
-  }
-}
-
+/* Flex e non grid per centrare: vedi Board.css sul perché la griglia sforava. */
 .wordle__board {
   flex: 1;
   min-height: 0;
-  display: grid;
-  place-items: center;
-  padding: 0 var(--sp-1);
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * La riga sotto la griglia: com'e' andato l'ultimo tentativo, o il messaggio
+ * del momento. Alta sempre uguale, cosi' la griglia non salta.
+ */
+.wordle__piede {
+  flex: none;
+  height: 18px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--label-tertiary);
+  text-align: center;
+}
+
+.wordle__piede.is-messaggio {
+  color: var(--label);
+  font-weight: 800;
+  animation: wordle-piede var(--dur-base) var(--ease-spring);
+}
+
+@keyframes wordle-piede {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+}
+
+.wordle-icona {
+  font-family: var(--font-rounded);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* I tentativi nella testata: sei caselline e il conto. */
+.tentativi {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+}
+
+.tentativi__casella {
+  width: 9px;
+  height: 9px;
+  border-radius: 2.5px;
+  box-shadow: inset 0 0 0 1.5px var(--tile-empty-border);
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+
+.tentativi__casella.is-usata {
+  background: var(--tile-absent);
+  box-shadow: none;
+}
+
+.tentativi__casella.is-vicina {
+  background: var(--tile-correct);
+  box-shadow: none;
+}
+
+.tentativi__casella.is-corrente {
+  box-shadow: inset 0 0 0 2px var(--brand);
+  animation: tentativi-respira 1.6s var(--ease-in-out) infinite;
+}
+
+@keyframes tentativi-respira {
+  50% {
+    transform: scale(1.25);
+  }
+}
+
+.tentativi__conto {
+  margin-left: 4px;
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+/* Le stelle dell'adesivo di vittoria: scoppiano una dopo l'altra. */
+.wordle-stelle__stella {
+  fill: #fff6c2;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wordle-stella calc(var(--durata) * 0.35) var(--ease-bounce) both;
+  animation-delay: calc(var(--durata) * 0.08 + var(--i) * 110ms);
+}
+
+.wordle-stelle__stella:first-child {
+  fill: #ffe066;
+}
+
+@keyframes wordle-stella {
+  from {
+    opacity: 0;
+    transform: scale(0) rotate(-90deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tentativi__casella.is-corrente,
+  .wordle-stelle__stella,
+  .wordle__piede.is-messaggio {
+    animation: none;
+  }
 }
 
 .wordle__reopen {

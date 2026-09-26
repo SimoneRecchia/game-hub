@@ -187,10 +187,15 @@ export function Tabellino({
   avviso = null,
   avanzamento,
   onApri,
+  iconaIo,
+  iconaAltro,
 }: {
   io: number
   altro: number
   nomeAltro: string
+  /** L'avatar di chi gioca e l'icona dell'avversario, accanto ai nomi. */
+  iconaIo?: ReactNode
+  iconaAltro?: ReactNode
   notaAltro?: string
   turno?: 'io' | 'altro' | null
   sotto: ReactNode
@@ -207,7 +212,10 @@ export function Tabellino({
   return (
     <button type="button" className="scr-tab" onClick={onApri} aria-label="Le mosse della partita">
       <span className={`scr-tab__lato${turno === 'io' ? ' is-turno' : ''}`}>
-        <span className="scr-tab__nome">Tu</span>
+        <span className="scr-tab__nome">
+          {iconaIo}
+          Tu
+        </span>
         <span className="scr-tab__punti u-tabnum">{io}</span>
       </span>
       <span className="scr-tab__mezzo">
@@ -225,7 +233,10 @@ export function Tabellino({
         )}
       </span>
       <span className={`scr-tab__lato scr-tab__lato--altro${turno === 'altro' ? ' is-turno' : ''}`}>
-        <span className="scr-tab__nome">{nomeAltro}</span>
+        <span className="scr-tab__nome">
+          {nomeAltro}
+          {iconaAltro}
+        </span>
         <span className="scr-tab__punti u-tabnum">{altro}</span>
         {notaAltro && <span className="scr-tab__nota">{notaAltro}</span>}
       </span>

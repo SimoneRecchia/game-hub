@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { MossaAppena } from './adesivi'
 import { LATO, sacchettoDaSeme, type Mossa } from '@shared/scarabeo'
 import {
   caselleDi,
@@ -25,6 +26,8 @@ export interface ScarabeoLiberoController extends Composizione {
   pensa: boolean
   /** Le caselle dell'ultima mossa del computer: si illuminano per un attimo. */
   ultimaDelComputer: Set<number>
+  /** L'ultima mossa con una parola, mia o del computer: l'adesivo al centro la racconta. */
+  ultimaMossa: MossaAppena | null
   sconosciute: string[] | null
   /** Il dizionario non si e' scaricato: senza, qui non si gioca. */
   guasto: string | null
@@ -64,6 +67,12 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
   const [partita, setPartita] = useState<PartitaLibera | null>(() => leggiPartitaLibera())
   const [pensa, setPensa] = useState(false)
   const [ultimaDelComputer, setUltima] = useState<Set<number>>(new Set())
+  const [ultimaMossa, setUltimaMossa] = useState<MossaAppena | null>(null)
+  const idMossa = useRef(0)
+  const racconta = useCallback((m: Omit<MossaAppena, 'id'>) => {
+    idMossa.current += 1
+    setUltimaMossa({ ...m, id: idMossa.current })
+  }, [])
   const [guasto, setGuasto] = useState<string | null>(null)
   const [statistiche, setStatistiche] = useState<StatisticheScarabeoLibero | null>(null)
   const inviata = useRef<number | null>(null)
@@ -109,6 +118,11 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
         if (resto > 0) await new Promise((r) => setTimeout(r, resto))
         if (annullato || !mossa) return
         avvisa(annuncio(partita, mossa, sacchetto))
+        const giocata = statoLibera({ ...partita, mosse: [...partita.mosse, mossa] }, sacchetto).giocate.at(-1)
+        if (giocata?.tipo === 'posa') {
+          const parola = [...giocata.parole].sort((a, b) => b.length - a.length)[0] ?? ''
+          racconta({ mia: false, parola, punti: giocata.punti, scarabeo: giocata.scarabeo })
+        }
         aggiungi(mossa)
         const caselle = caselleDi(mossa)
         setUltima(new Set(caselle))
@@ -126,7 +140,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
       setPensa(false)
     }
     // `pensa` resta fuori di proposito: e' questo effetto ad accenderlo.
-  }, [aggiungi, avvisa, partita, sacchetto, stato?.turno])
+  }, [aggiungi, avvisa, partita, racconta, sacchetto, stato?.turno])
 
   // A partita finita: al server per le statistiche, una volta, e via dal browser.
   useEffect(() => {
@@ -174,10 +188,14 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
       return
     }
     const punti = anteprima?.ok ? anteprima.punti : 0
+    const parola = anteprima?.ok
+      ? ([...anteprima.parole].sort((a, b) => b.parola.length - a.parola.length)[0]?.parola ?? '')
+      : ''
     aggiungi({ tipo: 'posa', posa: sospese })
     annulla()
-    avvisa(anteprima?.ok && anteprima.scarabeo ? `Scarabeo! +${punti}` : `+${punti} punti`)
-  }, [aggiungi, anteprima, annulla, avvisa, sconosciute, sospese])
+    haptic('success')
+    racconta({ mia: true, parola, punti, scarabeo: anteprima?.ok ? anteprima.scarabeo : false })
+  }, [aggiungi, anteprima, annulla, avvisa, racconta, sconosciute, sospese])
 
   return {
     ...composizione,
@@ -185,6 +203,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     stato,
     pensa,
     ultimaDelComputer,
+    ultimaMossa,
     sconosciute,
     guasto,
     statistiche,
