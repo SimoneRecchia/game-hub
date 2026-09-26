@@ -1,0 +1,151 @@
+/*
+ * La scheda di gioco e la pillola di stato: lo stile della battaglia navale,
+ * condiviso da tutti i giochi.
+ *
+ * Le misure sono strette di proposito — padding 10, testata 28 — perché nelle
+ * schermate di gioco ogni punto d'altezza va al mare, alla griglia, al
+ * tabellone: i giochi che le usano contano su questi numeri per stare nello
+ * schermo senza scorrere.
+ */
+.scheda {
+  --scheda-padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: var(--scheda-padding);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+
+/* La scheda dove si deve agire. */
+.scheda.is-accesa {
+  box-shadow:
+    0 0 0 2px var(--brand),
+    0 6px 24px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+/* La scheda sotto minaccia: il mirino di chi sta per colpire. */
+.scheda.is-allerta {
+  box-shadow:
+    0 0 0 2px var(--mirino),
+    0 6px 24px color-mix(in srgb, var(--mirino) 24%, transparent);
+  animation: scheda-allerta 850ms var(--ease-in-out);
+}
+
+@keyframes scheda-allerta {
+  30% {
+    box-shadow:
+      0 0 0 4px var(--mirino),
+      0 6px 28px color-mix(in srgb, var(--mirino) 34%, transparent);
+  }
+}
+
+.scheda__testa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 28px;
+  min-width: 0;
+}
+
+.scheda__titolo {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-headline);
+  font-weight: 700;
+  color: var(--label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scheda__icona {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--scheda-icona, var(--label-secondary));
+  color: #fff;
+}
+
+/* ───────────────────────────  La pillola  ─────────────────────────── */
+
+.pillola {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 62%;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+}
+
+.pillola__testo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pillola__icona {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+/* Tocca a te: indaco pieno, e respira. */
+.pillola.is-turno {
+  background: var(--brand);
+  color: #fff;
+  animation: pillola-respira 1.8s var(--ease-in-out) infinite;
+}
+
+.pillola.is-mira {
+  background: var(--mirino);
+  color: #fff;
+  animation: pillola-mira 700ms var(--ease-in-out) infinite;
+}
+
+.pillola.is-buona {
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+}
+
+.pillola.is-cattiva {
+  background: color-mix(in srgb, var(--colpito) 14%, transparent);
+  color: var(--colpito);
+}
+
+@keyframes pillola-respira {
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent);
+  }
+}
+
+@keyframes pillola-mira {
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scheda.is-allerta,
+  .pillola.is-turno,
+  .pillola.is-mira {
+    animation: none;
+  }
+}

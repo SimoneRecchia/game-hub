@@ -73,6 +73,13 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
   const [punti, setPunti] = useState(100)
   const [finita, setFinita] = useState(false)
   const [messaggio, setMessaggio] = useState<string | null>(null)
+  /** L'esito dell'ultimo controllo, per l'adesivo al centro: quante lettere erano sbagliate. */
+  const [ultimoControllo, setUltimoControllo] = useState<{
+    id: number
+    ambito: 'parola' | 'tutto'
+    errate: number
+  } | null>(null)
+  const idControllo = useRef(0)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [inviando, setInviando] = useState(false)
 
@@ -421,6 +428,8 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
           return s
         })
         if (!esito.stato) {
+          idControllo.current += 1
+          setUltimoControllo({ id: idControllo.current, ambito, errate: errate.length })
           mostra(
             errate.length === 0
               ? ambito === 'parola'
@@ -485,6 +494,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
     punti,
     finita,
     messaggio,
+    ultimoControllo,
     inviando,
     tocca,
     seleziona,

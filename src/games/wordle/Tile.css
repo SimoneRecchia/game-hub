@@ -11,10 +11,18 @@
   position: relative;
   display: grid;
   place-items: center;
-  border-radius: var(--r-md);
-  border: 2px solid var(--tile-empty-border);
-  background: var(--surface);
-  box-shadow: var(--edge-light);
+  /*
+   * L'angolo in proporzione alla casella: con un raggio fisso, su uno schermo
+   * piccolo le caselle da trenta punti diventavano cerchi.
+   */
+  border-radius: min(var(--r-md), 22%);
+  /*
+   * Vuota e' un alloggio incavato nella tavoletta; piena, una tessera che ci si
+   * posa sopra. E' la differenza che fa sembrare la griglia un oggetto.
+   */
+  border: 2px solid transparent;
+  background: var(--slot);
+  box-shadow: inset 0 2px 4px var(--slot-ombra);
   color: var(--label);
   font-family: var(--font-rounded);
   font-weight: 700;
@@ -52,10 +60,15 @@
   }
 }
 
-/* Casella appena riempita: bordo piu' marcato e un piccolo scatto. */
+/* Casella appena riempita: la tessera si posa, con un piccolo scatto. */
 .tile.is-filled {
+  background: var(--surface);
   border-color: var(--tile-active-border);
-  animation: tile-pop 180ms var(--ease-bounce);
+  box-shadow:
+    var(--edge-light),
+    0 2px 0 var(--shadow-tint),
+    0 4px 10px var(--shadow-tint-soft);
+  animation: tile-pop 220ms var(--ease-bounce);
 }
 
 /*
@@ -158,14 +171,14 @@
 }
 
 @keyframes tile-pop {
-  from {
-    transform: scale(0.9);
+  0% {
+    transform: scale(0.62) translateY(5px);
   }
   60% {
-    transform: scale(1.06);
+    transform: scale(1.1) translateY(-1px);
   }
-  to {
-    transform: scale(1);
+  100% {
+    transform: none;
   }
 }
 
@@ -207,5 +220,43 @@
   .tile.is-winning,
   .tile.is-filled {
     animation: none;
+  }
+}
+
+/*
+ * La lettera giusta, appena girata: un anello di luce che si allarga. Parte a
+ * meta' della rotazione, quando il verde compare.
+ */
+.tile.is-correct.is-revealing::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  box-shadow:
+    0 0 0 2px var(--tile-correct),
+    0 0 14px 2px color-mix(in srgb, var(--tile-correct) 55%, transparent);
+  opacity: 0;
+  animation: tile-luce 620ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 200ms + 270ms);
+  pointer-events: none;
+}
+
+@keyframes tile-luce {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile.is-correct.is-revealing::after {
+    display: none;
   }
 }

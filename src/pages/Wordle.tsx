@@ -3,10 +3,13 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
+import { Adesivo } from '@/components/Adesivo'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconChart, IconInfo, IconPeople } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { Scheda } from '@/components/Scheda'
 import { Board } from '@/games/wordle/Board'
+import { IconaWordle, Tentativi, adesivoFine, notaWordle } from '@/games/wordle/fine'
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { ResultSheet } from '@/games/wordle/ResultSheet'
@@ -37,11 +40,8 @@ export default function Wordle() {
   const title = game.state ? `Wordle #${game.state.puzzleNumber}` : 'Parola del giorno'
   const finished = game.state && game.state.status !== 'playing'
 
-  // La festa quando si apre il risultato di una vittoria appena fatta, non di una riaperta.
-  const festa = useFesta(
-    game.state ? game.state.status === 'playing' : null,
-    game.state?.status === 'won' && game.resultOpen,
-  )
+  // La festa con l'adesivo di una vittoria appena fatta, non di una riaperta.
+  const festa = useFesta(game.state ? game.state.status === 'playing' : null, game.finale?.esito === 'won')
 
   return (
     <Pagina
@@ -113,22 +113,43 @@ export default function Wordle() {
               </div>
             )}
 
-            {/* Messaggio effimero sopra la griglia: non sposta il layout. */}
-            <div className="wordle__message" aria-live="polite">
-              {game.message && <span className="wordle__message-pill">{game.message}</span>}
-            </div>
-
-            <div className="wordle__board">
-              <Board
-                guesses={game.state?.guesses ?? []}
-                draft={game.draft}
-                wordLength={game.state?.wordLength ?? WORD_LENGTH}
-                maxAttempts={game.state?.maxAttempts ?? MAX_ATTEMPTS}
-                revealing={game.revealing}
-                winningRow={game.winningRow}
-                shakingRow={game.shakingRow}
-              />
-            </div>
+            <Scheda
+              className="wordle__tavola"
+              titolo="La parola del giorno"
+              icona={<IconaWordle />}
+              destra={
+                game.state && (
+                  <Tentativi
+                    guesses={game.state.guesses}
+                    maxAttempts={game.state.maxAttempts}
+                    status={game.state.status}
+                  />
+                )
+              }
+            >
+              <div className="wordle__board">
+                <Board
+                  guesses={game.state?.guesses ?? []}
+                  draft={game.draft}
+                  wordLength={game.state?.wordLength ?? WORD_LENGTH}
+                  maxAttempts={game.state?.maxAttempts ?? MAX_ATTEMPTS}
+                  revealing={game.revealing}
+                  winningRow={game.winningRow}
+                  shakingRow={game.shakingRow}
+                />
+              </div>
+              {/* I messaggi stanno qui, sotto la griglia: prima erano una pillola che la copriva. */}
+              <p className={`wordle__piede${game.message ? ' is-messaggio' : ''}`} aria-live="polite">
+                {game.message ??
+                  (game.state
+                    ? notaWordle(
+                        game.revealing === null ? game.state.guesses : game.state.guesses.slice(0, game.revealing),
+                        game.revealing === null ? game.state.status : 'playing',
+                        game.state.answer,
+                      )
+                    : ' ')}
+              </p>
+            </Scheda>
 
             {/* I suggerimenti degli invitati: toccarne uno riempie la riga,
                 non la invia. La parola la decide sempre l'host. */}
@@ -147,12 +168,6 @@ export default function Wordle() {
               onBackspace={game.backspace}
               disabled={game.loading || !!finished || game.revealing !== null}
             />
-
-            {finished && (
-              <button type="button" className="wordle__reopen" onClick={game.openResult}>
-                Rivedi il riepilogo
-              </button>
-            )}
           </>
         )}
       </div>
@@ -180,6 +195,7 @@ export default function Wordle() {
           onLibera={() => vai(ROTTE.libera('wordle'))}
         />
       )}
+      <Adesivo adesivo={game.finale ? adesivoFine(game.finale, game.finale.id) : null} />
       {festa && <Coriandoli />}
     </Pagina>
   )

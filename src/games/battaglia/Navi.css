@@ -9,24 +9,32 @@
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--sp-1) var(--sp-2);
+  justify-content: space-between;
+  gap: 4px;
+  /* Una fila sola, alta 24: il conto delle misure della battaglia la aspetta così. */
+  height: 24px;
 }
 
+/* Sotto il mare: le caselle sopra, il nome sotto, cinque colonne. */
 .navi__nave {
-  display: inline-flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 3px var(--sp-2) 3px 6px;
-  border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
+  gap: 3px;
   font-size: var(--text-caption-2);
   font-weight: 600;
+  line-height: 13px;
   color: var(--label-secondary);
-  transition:
-    background-color var(--dur-base) var(--ease-out),
-    color var(--dur-base) var(--ease-out);
+  transition: color var(--dur-base) var(--ease-out);
+}
+
+.navi__nome {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .navi__scafo {
@@ -35,8 +43,8 @@
 }
 
 .navi__pezzo {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 1.5px;
   background: var(--nave);
 }
@@ -69,7 +77,6 @@
 }
 
 .navi__nave.is-affondata {
-  background: color-mix(in srgb, var(--relitto) 14%, transparent);
   color: var(--label-tertiary);
 }
 
@@ -89,31 +96,64 @@
   }
 }
 
-/* Accanto al mare piccolo: una nave per riga, allineate a sinistra. */
-.navi--colonna {
-  flex-direction: column;
-  flex-wrap: nowrap;
-  align-items: flex-start;
+/* Un telefono da 375 punti: i nomi ci stanno, un corpo piu' piccolo. */
+@container bat (max-width: 352px) {
+  .navi:not(.navi--colonna) .navi__nave {
+    font-size: 10px;
+  }
+}
+
+/* Su uno schermo stretto i nomi non ci stanno: restano le caselle, che dicono la lunghezza. */
+@container bat (max-width: 300px) {
+  .navi:not(.navi--colonna) .navi__nome {
+    display: none;
+  }
+
+  .navi:not(.navi--colonna) {
+    height: auto;
+    justify-content: center;
+    gap: 10px;
+  }
+}
+
+/* La riga del mare ripiegato: solo le caselle, piccole, una nave dopo l'altra. */
+.navi--mini {
+  flex: none;
+  height: auto;
   gap: 5px;
 }
 
-.navi--colonna .navi__nave {
-  padding: 0;
-  background: none;
-  font-size: var(--text-caption-1);
+.navi--mini .navi__pezzo {
+  width: 6px;
+  height: 6px;
 }
 
-.navi--colonna .navi__nave.is-affondata {
-  background: none;
+/* Accanto al mare piccolo: una nave per riga, allineate a sinistra. */
+.navi--colonna {
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 5px;
+  height: auto;
+  min-width: 0;
+}
+
+.navi--colonna .navi__nave {
+  flex-direction: row;
+  gap: 6px;
+  max-width: 100%;
+  font-size: var(--text-caption-1);
+  line-height: 15px;
 }
 
 .navi--colonna .navi__scafo {
-  width: 52px;
+  flex: none;
+  width: 46px;
 }
 
 .navi--colonna .navi__pezzo {
-  width: 9px;
-  height: 9px;
+  width: 8px;
+  height: 8px;
 }
 
 @media (prefers-reduced-motion: reduce) {

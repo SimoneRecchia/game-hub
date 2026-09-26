@@ -63,9 +63,17 @@
 }
 
 .scr-tab__nome {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: var(--text-caption-1);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--label-secondary);
+}
+
+.scr-tab__nome .scheda__icona {
+  width: 20px;
+  height: 20px;
 }
 
 .scr-tab__punti {
@@ -78,6 +86,10 @@
 }
 
 .scr-tab__nota {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--text-caption-2);
   color: var(--label-tertiary);
 }
@@ -144,10 +156,14 @@
 .scr__campo {
   flex: 1;
   min-height: 0;
-  display: grid;
+  min-width: 0;
   /* Centrato: su un telefono alto avanzano tre centimetri, e metterli tutti
-     sotto al tabellone lo incollava all'intestazione. */
-  place-items: center;
+     sotto al tabellone lo incollava all'intestazione. Flex e non grid: dentro
+     una traccia `auto` la larghezza in percentuale del tabellone era
+     circolare, e Safari lo lasciava uscire dallo schermo. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: var(--sp-1) 0;
 }
 
@@ -166,8 +182,9 @@
     container-type: size;
   }
 
+  /* Meno 10 punti per lato: la cornice di legno sta fuori dal tabellone. */
   .tabellone {
-    width: min(100%, 420px, 100cqh);
+    width: min(100cqw - 10px, 420px, 100cqh - 10px);
   }
 }
 
@@ -468,7 +485,7 @@
   }
 
   .tabellone {
-    width: min(100%, 360px);
+    width: min(100% - 10px, 360px);
   }
 }
 

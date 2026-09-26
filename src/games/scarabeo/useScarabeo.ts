@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { MossaAppena } from './adesivi'
 import type { CellaPiena, ScarabeoState } from '@shared/types'
 import type { EsitoPosa } from '@shared/scarabeo'
 import { ApiFetchError, api } from '@/lib/api'
@@ -14,6 +15,8 @@ const NESSUNO: readonly string[] = []
 
 export interface ScarabeoController extends Composizione {
   stato: ScarabeoState | null
+  /** L'ultima mossa giocata in questa visita: l'adesivo al centro la racconta. */
+  ultimaMossa: MossaAppena | null
   loading: boolean
   loadError: string | null
   inviando: boolean
@@ -69,6 +72,8 @@ export function useScarabeo(): ScarabeoController {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [inviando, setInviando] = useState(false)
+  const [ultimaMossa, setUltimaMossa] = useState<MossaAppena | null>(null)
+  const idMossa = useRef(0)
 
   const composizione = useComposizione({
     celle: stato?.celle ?? NESSUNA,
@@ -98,7 +103,7 @@ export function useScarabeo(): ScarabeoController {
 
   /** Invio comune a mossa, passo, cambio e chiusura. */
   const invia = useCallback(
-    async (path: string, body?: unknown, successo?: string) => {
+    async (path: string, body?: unknown, successo?: string, fatta?: Omit<MossaAppena, 'id'>) => {
       if (inviando) return
       setInviando(true)
       try {
@@ -107,6 +112,11 @@ export function useScarabeo(): ScarabeoController {
         annulla()
         dimentica('/oggi')
         if (successo) avvisa(successo)
+        if (fatta) {
+          idMossa.current += 1
+          setUltimaMossa({ ...fatta, id: idMossa.current })
+          haptic('success')
+        }
       } catch (errore) {
         if (errore instanceof ApiFetchError) {
           haptic('error')
@@ -141,16 +151,17 @@ export function useScarabeo(): ScarabeoController {
     }
     const punti = anteprima?.ok ? anteprima.punti : 0
     const scarabeo = anteprima?.ok ? anteprima.scarabeo : false
-    void invia(
-      '/scarabeo/mossa',
-      { posa: sospese },
-      scarabeo ? `Scarabeo! +${punti} punti` : `+${punti} punti`,
-    )
+    // La parola da mostrare e' la piu' lunga fra quelle formate: e' quella che si e' voluta fare.
+    const parola = anteprima?.ok
+      ? ([...anteprima.parole].sort((a, b) => b.parola.length - a.parola.length)[0]?.parola ?? '')
+      : ''
+    void invia('/scarabeo/mossa', { posa: sospese }, undefined, { mia: true, parola, punti, scarabeo })
   }, [anteprima, avvisa, invia, sconosciute, sospese])
 
   return {
     ...composizione,
     stato,
+    ultimaMossa,
     loading,
     loadError,
     inviando,
