@@ -93,6 +93,7 @@ quale schermata si entra.
 | `giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
 | `wordle.simonerecchia.com` | direttamente il Wordle di oggi |
 | `scarabeo.simonerecchia.com` | direttamente lo Scarabeo di oggi |
+| `cruciverba.simonerecchia.com` | direttamente il cruciverba di oggi |
 
 Sono già collegati. Per aggiungerne altri: **Custom domains** → **Set up a
 custom domain** nel progetto Pages, oppure rilanciare
@@ -289,6 +290,39 @@ primo posto da guardare se "non accetta niente". Per controllare:
 npx wrangler d1 execute game-hub-db --remote \
   --command "SELECT COUNT(*) AS secchi, SUM(quante) AS parole FROM dizionario"
 ```
+
+**Gli schemi del cruciverba.** Non si generano nel Worker — riempire una
+griglia non sta nei 10 ms di CPU — ma in anticipo, con
+`scripts/genera-cruciverba.mjs`. In produzione lo fa da solo il workflow
+**Cruciverba** (`.github/workflows/cruciverba.yml`), ogni notte alle 03:17 UTC:
+tiene pronti due mesi di giornate e genera solo quelle che mancano, di solito
+una. Il deploy ne controlla due settimane dopo le migrazioni, così un deploy
+fatto con il workflow fermo non lascia il gioco senza schema. Usa gli stessi
+segreti del deploy.
+
+```bash
+node scripts/genera-cruciverba.mjs                 # anteprima di oggi, senza database
+node scripts/genera-cruciverba.mjs --local         # due settimane nel D1 locale
+node scripts/genera-cruciverba.mjs --remote        # due mesi in produzione
+```
+
+Se lo schema di oggi manca, il gioco risponde "non ancora pronto" invece di
+rompersi, e la card nell'hub non mostra lo stato. Per controllare la scorta:
+
+```bash
+npx wrangler d1 execute game-hub-db --remote \
+  --command "SELECT MIN(puzzle_number), MAX(puzzle_number), COUNT(*) FROM cruciverba_schemi"
+```
+
+GitHub sospende i workflow programmati di un repository senza attività per
+sessanta giorni: è il motivo per cui la scorta è di due mesi. Se succede, basta
+riattivarlo da **Actions → Cruciverba → Enable workflow**.
+
+**Le definizioni del cruciverba** stanno in
+`scripts/data/cruciverba-definizioni.tsv.gz`, versionate. Vengono dal
+Wikizionario e si rigenerano con `node scripts/build-cruciverba.mjs`, che scarica
+l'estrazione di kaikki.org (circa 45 MB). Rigenerarle non cambia gli schemi già
+scritti: cambia solo quelli delle giornate ancora da generare.
 
 **Guardare i dati.**
 

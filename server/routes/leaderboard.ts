@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import type {
+  CruciverbaLeaderboard,
   LeaderboardResponse,
   LeaderboardScope,
   ScarabeoLeaderboard,
@@ -9,6 +10,7 @@ import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
 import { leaderboard } from '../lib/leaderboard'
 import { classificaScarabeo } from '../lib/scarabeoStore'
+import { classificaCruciverba } from '../lib/cruciverbaStore'
 import { today } from '../lib/wordleStore'
 
 const SCOPES: LeaderboardScope[] = ['today', 'week', 'month', 'all']
@@ -52,4 +54,16 @@ export const leaderboardRoutes = new Hono<AppEnv>()
       c.get('player').id,
     )
     return c.json<ScarabeoLeaderboard>(result)
+  })
+
+  /** La classifica del cruciverba: punti dei completati, poi il tempo. */
+  .get('/cruciverba', async (c) => {
+    const scope = readScope(c.req.query('scope'))
+    const result = await classificaCruciverba(
+      c.env.DB,
+      scope,
+      today().puzzleNumber,
+      c.get('player').id,
+    )
+    return c.json<CruciverbaLeaderboard>(result)
   })
