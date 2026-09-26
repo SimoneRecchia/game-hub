@@ -234,6 +234,31 @@ export default function Scarabeo() {
         ) : (
           <p className="scr-storia__vuota">Nessuna mossa, per ora.</p>
         )}
+
+        {/*
+          Chiudere prima delle dieci mosse: sta qui e non fra i comandi perché
+          e' una decisione che si prende una volta, guardando quel che si e'
+          fatto — mentre un bottone accanto a "Passa" si preme per sbaglio.
+        */}
+        {stato && !finita && stato.mosseUsate > 0 && (
+          <div className="scr-storia__chiudi">
+            <p className="scr-storia__chiudi-nota">
+              Ti restano {stato.mosseTotali - stato.mosseUsate} mosse. Se hai finito le idee puoi
+              chiudere la giornata: il punteggio diventa definitivo e in classifica non risulti
+              più &ldquo;in corso&rdquo;.
+            </p>
+            <Button
+              variant="tinted"
+              onClick={() => {
+                setCronologia(false)
+                g.chiudiGiornata()
+              }}
+              disabled={g.inviando}
+            >
+              Chiudi la giornata
+            </Button>
+          </div>
+        )}
       </Sheet>
     </AppShell>
   )
