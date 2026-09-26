@@ -264,7 +264,8 @@ Prima una giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche
 centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
 gioco misura quel che gli e' proprio dentro lo stesso tetto (`shared/punti.ts`,
 che ha la tabella di tutti): il Wordle i tentativi, lo Scarabeo il punteggio in
-rapporto al computer, il cruciverba gli aiuti, la battaglia i colpi. Tutti
+rapporto al computer, il cruciverba gli aiuti, la battaglia i colpi, il quiz
+le risposte giuste (venti per aver giocato, otto per ogni giusta). Tutti
 tengono il principio del Wordle — **giocarla bene vale circa il doppio di
 giocarla male**, non dieci volte tanto — e `shared/__tests__/punti.test.ts`
 verifica i tetti e i due lati del compromesso per ogni gioco. La
@@ -284,7 +285,8 @@ partite.
 giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
 punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
 Wordle con una parola a caso, Scarabeo a turni contro il computer, cruciverba
-da una scorta di schemi, battaglia contro il computer o contro un amico. Gli
+da una scorta di schemi, battaglia contro il computer o contro un amico, quiz
+sulla categoria, la zona e il numero di domande che si sceglie. Gli
 indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 (`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
 nuovi in `App.tsx`).
@@ -347,6 +349,57 @@ risposta. L'accettazione e' un `batch` condizionato come quello delle sfide,
 quindi due persone con lo stesso link non aprono due partite. La presenza
 riporta solo le partite fra amici: una partita col computer lasciata a meta' non
 deve comparire come "la battaglia con X e' in corso".
+
+**Le domande del quiz si fanno la notte, e la classificata e' una categoria
+sola.** `scripts/genera-quiz.ts` (il passo "Il quiz" di `cruciverba.yml`, e il
+deploy per le prossime due settimane) scrive in `quiz_giornate` le dieci
+domande di ogni giornata, risposte comprese, con `INSERT OR IGNORE`: come gli
+schemi del cruciverba, una giornata scritta non cambia piu'. Sono
+deterministiche dal numero del giorno, evitano i soggetti della stessa
+categoria delle cinque settimane prima, e la categoria la decide
+`categoriaDelGiorno`: giri di sette giorni mescolati, tutte le categorie in una
+settimana e mai la stessa due giorni di fila. Se la giornata manca il gioco
+risponde `QUIZ_ASSENTE` (503) e la card dell'hub dice "Non ancora pronto": in
+locale, `npm run quiz:locale`.
+
+**Nel quiz il tempo lo tiene il server, e la risposta resta li'.** Il telefono
+riceve una domanda alla volta senza la risposta (`senzaRisposta`), e l'orologio
+parte quando la chiede (`POST /quiz/domanda` scrive `aperta_at`). Una risposta
+vale entro il limite piu' `MARGINE_RETE_MS`; dopo, e' "tempo scaduto" anche se
+arriva, e una domanda lasciata aperta la chiude la prima `GET /state`
+(`chiudiScaduta`). La scrittura e' condizionata al numero di risposte gia' date
+(`json_array_length(risposte) = ?`): un doppio tocco non risponde due volte.
+
+**Chi bagna chi lo dice la cartina, non Wikidata.** Su Wikidata l'Italia era
+bagnata da due mari e la Grecia da nessuno. `scripts/quiz/coste.ts` dipinge i
+mari di Natural Earth su una griglia di un decimo di grado, percorre la costa
+di ogni paese e conta i contatti con ogni acqua: sotto `COSTA_MINIMA` non la
+bagna, e ogni tipo d'acqua ha il suo peso (un oceano chiede piu' costa di un
+golfo: il Cile non e' "atlantico"). Chi la tocca poco sta in una zona grigia
+(`vicine`) e non viene proposto ne' come risposta giusta ne' come sbagliata. Un
+mare bagna anche il mare che lo contiene (il Tirreno e' Mediterraneo), i
+territori d'oltremare non contano (`partiPrincipali`: la Francia non e'
+bagnata dall'Indiano), e un lato che passa il 180 si percorre dalla parte
+corta — altrimenti la Russia toccava la baia di Baffin. `controllaRiassunto`
+ferma lo script se i conti di controllo non tornano (l'Italia bagnata da
+Tirreno, Adriatico e Ionio; l'Austria da niente).
+
+**Il riassunto del quiz e' l'unico dato che sta sul server, e pesa cento kB.**
+Paesi, capitali, confini, acque, fiumi e laghi, a chiavi corte, in quattro
+righe di `quiz_dati` — una per sezione, perché D1 non accetta istruzioni oltre
+i cento kB — riscritte solo quando cambia la versione, che e' l'hash del
+contenuto. Il browser lo scarica una volta e lo tiene nel `localStorage` con la
+sua versione (`src/games/quiz/dati.ts`); le libere si fanno tutte lì, con lo
+stesso `generaDomande` della notte e un seme a caso, e le loro statistiche non
+lasciano il telefono. Le bandiere vengono da flagcdn e le geometrie della
+cartina da jsDelivr, a versioni fisse: il Worker non le vede mai.
+
+**Le domande del quiz parlano italiano, e la grammatica e' una tabella.**
+`shared/quiz-lingua.ts` ha il genere e il numero di ogni paese — "dell'Italia",
+"degli Stati Uniti", "nei Paesi Bassi", "in Israele" — e lo script si ferma se
+nel riassunto c'e' un paese che non ci sta. Le etichette di Wikidata si
+prendono in italiano, poi `mul`, poi inglese: la capitale della Norvegia ha solo
+`mul`.
 
 **La soluzione non deve arrivare al client prima della fine.** `toState()` in
 `server/routes/wordle.ts` mette `answer: null` finché lo stato è `playing`; è
@@ -499,6 +552,25 @@ dignita' e diventa una riga — avatar, navi a galla, freccia — che lo apre in
 foglio. Verificato con Playwright da 320×460 a 1280×800, con le aree sicure di
 un'app installata.
 
+**Chi ritaglia deve lasciare posto agli anelli.** `.bat` e `.quiz` hanno
+`overflow: hidden` per restare nello schermo, e tagliavano ai lati e in cima
+l'anello della scheda dove tocca a te e quello della carta del quiz a risposta
+data. I due contenitori si allargano di `--anelli` e rientrano dello stesso
+tanto, con `align-self: center` al posto dei margini automatici (che con un
+figlio piu' largo del padre lo spingerebbero a destra): il contenuto resta
+largo com'era, e le misure in `cqw` e `cqh` non cambiano perché contano il
+contenuto e non il riquadro. Un contenitore nuovo che ritaglia vuole lo stesso
+margine.
+
+**La cartina muta e' un SVG, non una libreria.** Gradi dritti con le longitudini
+accorciate del coseno della latitudine di mezzo (`cartina/geometria.ts`): regge
+a scala di continente e tornare da un tocco ai gradi e' una divisione. Si
+sposta e si ingrandisce con i pointer event, e un tocco cerca il paese anche
+attorno al dito (`elementsFromPoint` su due anelli di punti): un dito e' piu'
+grande di Malta. Sotto `SUPERFICIE_MINIMA_CARTINA` un paese non si chiede; a
+risposta data la cartina si avvicina a un paese giusto troppo piccolo per
+vederlo.
+
 **Dentro una griglia CSS le percentuali mentono, su Safari.** Il Wordle era
 tagliato ai lati su iPhone: `width: min(100%, ..., 83.34cqh)` dentro un
 riquadro centrato con `display: grid; place-items: center`, dove il `100%` si
@@ -607,6 +679,20 @@ a richiesta, per la stessa ragione di quelli del giorno: la notte
 `--al-massimo`), e ognuno ha un seme suo (`semeLibero`), diverso da quello di
 qualunque giornata. Se la scorta finisce il gioco lo dice invece di rifare uno
 schema gia' fatto da chi gioca.
+
+**Non c'e' un formattatore.** Il codice e' scritto a mano nello stile di
+prettier — apici singoli, niente punti e virgola, virgole finali, righe fino a
+centoventi colonne — ma non c'e' un file di configurazione né un controllo, e i
+file non sono allineati a nessuna larghezza: lanciare prettier, con o senza
+opzioni, riformatterebbe mezzo repository.
+
+**Le risposte del quiz stanno in chiaro in `quiz_giornate`.** E' giusto cosi':
+la tabella non esce dal server, e le rotte mandano una domanda solo quando si
+apre, senza la risposta. Le domande di domani esistono gia' da stanotte, come
+gli schemi del cruciverba.
+
+**Il quiz non ha un sottodominio.** Quelli dei primi giochi sono scorciatoie
+rimaste dagli indirizzi di prima; il quiz e' nato sotto `giochi.<dominio>/quiz`.
 
 **Il sottodominio Pages e' `game-hub-43l.pages.dev`, non `game-hub.pages.dev`**
 (quello e' già di qualcun altro). Conta quando si scrivono i CNAME: puntare al

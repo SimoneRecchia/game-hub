@@ -8,11 +8,13 @@
  */
 
 import { CASELLE_FLOTTA } from '@shared/battaglia'
+import { NOMI_CATEGORIE } from '@shared/quiz'
 import type {
   BattagliaSummary,
   CruciverbaSummary,
   GiocoClassificato,
   OggiRisposta,
+  QuizSummary,
   ScarabeoSummary,
   WordleSummary,
 } from '@shared/types'
@@ -204,11 +206,59 @@ export function statoBattaglia(s: BattagliaSummary): StatoOggi {
   }
 }
 
+export function statoQuiz(s: QuizSummary): StatoOggi {
+  const base = {
+    gioco: 'quiz' as const,
+    avanzamento: s.status === 'done' ? 1 : s.totale > 0 ? s.fatte / s.totale : 0,
+    a: ROTTE.classificata('quiz'),
+  }
+  const categoria = s.categoria ? NOMI_CATEGORIE[s.categoria] : 'Geografia'
+  switch (s.status) {
+    case 'assente':
+      return {
+        ...base,
+        fase: 'non-pronta',
+        titolo: 'Non ancora pronto',
+        dettaglio: 'Le domande di oggi arrivano a momenti',
+        punti: null,
+        azione: 'Aspetta',
+      }
+    case 'nuova':
+      return {
+        ...base,
+        fase: 'da-giocare',
+        titolo: 'Da giocare',
+        dettaglio: `Oggi: ${categoria}, ${s.totale} domande`,
+        punti: null,
+        azione: 'Gioca',
+      }
+    case 'done':
+      return {
+        ...base,
+        fase: 'fatta',
+        titolo: `${s.giuste} su ${s.totale}`,
+        dettaglio: `${categoria} · ${s.punti} punti`,
+        punti: s.punti,
+        azione: 'Rivedi',
+      }
+    default:
+      return {
+        ...base,
+        fase: 'in-corso',
+        titolo: `${s.fatte} ${s.fatte === 1 ? 'domanda' : 'domande'} su ${s.totale}`,
+        dettaglio: `${categoria} · ${s.giuste} ${s.giuste === 1 ? 'giusta' : 'giuste'} finora`,
+        punti: null,
+        azione: 'Continua',
+      }
+  }
+}
+
 export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, StatoOggi> {
   return {
     wordle: statoWordle(oggi.wordle),
     scarabeo: statoScarabeo(oggi.scarabeo),
     cruciverba: statoCruciverba(oggi.cruciverba),
     battaglia: statoBattaglia(oggi.battaglia),
+    quiz: statoQuiz(oggi.quiz),
   }
 }

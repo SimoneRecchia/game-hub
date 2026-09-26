@@ -10,15 +10,26 @@
 
 /* ---------- Comuni ---------- */
 
+/*
+ * Il margine degli anelli. La scheda dove tocca a te ha un anello e un alone
+ * fuori dal bordo, e l'overflow li tagliava ai lati e in cima: il contenitore
+ * si allarga di tanto quanto rientra, cosi' il contenuto resta largo com'era.
+ * Le misure in `cqw` e `cqh` non cambiano, perché contano il contenuto e non
+ * il riquadro. Lo stesso fa il quiz (PartitaQuiz.css).
+ */
 .bat {
+  --anelli: 10px;
   container: bat / size;
   flex: 1;
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  width: min(100%, 720px);
-  margin-inline: auto;
+  width: calc(min(100%, 720px) + 2 * var(--anelli));
+  /* Sotto qualcosa di piu': l'alone del bottone principale scende di un dito. */
+  padding: 4px var(--anelli) 8px;
+  /* Al centro anche se e' piu' largo del corpo della pagina: i margini automatici lo spingerebbero a destra. */
+  align-self: center;
 }
 
 .bat__attesa {

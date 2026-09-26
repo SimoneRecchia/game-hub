@@ -9,10 +9,12 @@ import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
 import { GIOCHI } from '@/games/catalog'
 import { StatsPanel } from '@/games/wordle/StatsPanel'
+import { leggiStatistiche } from '@/games/quiz/usePartita'
 import { useAuth, usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatGameDate, formatNumber } from '@/lib/format'
 import { useTheme, type ThemePreference } from '@/lib/theme'
+import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
 import type {
   BattagliaLeaderboard,
   CruciverbaLeaderboard,
@@ -21,6 +23,7 @@ import type {
   GiocoClassificato,
   LobbyBattaglia,
   PlayerStats,
+  QuizLeaderboard,
   ScarabeoLeaderboard,
   StatisticheScarabeoLibero,
   WordleLiberaRisposta,
@@ -113,7 +116,7 @@ export default function Profilo() {
           <Riga
             icona={<IconBook size={18} />}
             titolo="Fonti e licenze"
-            sotto="Da dove vengono parole e definizioni"
+            sotto="Da dove vengono parole, definizioni e cartine"
             onClick={() => setFonti(true)}
           />
         </Elenco>
@@ -128,6 +131,7 @@ export default function Profilo() {
         {aperto === 'scarabeo' && <ContiScarabeo />}
         {aperto === 'cruciverba' && <ContiCruciverba />}
         {aperto === 'battaglia' && <ContiBattaglia />}
+        {aperto === 'quiz' && <ContiQuiz />}
       </Sheet>
 
       <Sheet open={fonti} onClose={() => setFonti(false)} title="Fonti e licenze">
@@ -322,6 +326,50 @@ function ContiBattaglia() {
   )
 }
 
+function ContiQuiz() {
+  const { dati } = useDati<QuizLeaderboard>('/leaderboard/quiz?scope=all')
+  // Le libere del quiz non vanno al server: i loro conti stanno in questo browser.
+  const [libere] = useState(leggiStatistiche)
+  const me = dati?.me
+  const domande = (me?.giornate ?? 0) * DOMANDE_PER_PARTITA
+  return (
+    <div className="profilo-sheet">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Quiz finiti', valore: formatNumber(me?.giornate ?? 0) },
+            {
+              etichetta: 'Risposte giuste',
+              valore: me && domande > 0 ? `${formatNumber(me.giuste)} su ${formatNumber(domande)}` : '—',
+            },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {libere.partite > 0 && (
+        <Conti
+          titolo="Quiz liberi, su questo dispositivo"
+          voci={[
+            { etichetta: 'Partite', valore: formatNumber(libere.partite) },
+            {
+              etichetta: 'Risposte giuste',
+              valore: `${formatNumber(libere.giuste)} su ${formatNumber(libere.domande)}`,
+            },
+            ...CATEGORIE.filter((c) => libere.migliori[c] !== undefined).map((c) => ({
+              etichetta: NOMI_CATEGORIE[c],
+              valore: `record ${libere.migliori[c]}%`,
+            })),
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
 /* ─────────────────────────────  Fonti  ───────────────────────────── */
 
 /** Da dove vengono le parole: le licenze lo chiedono, e chi gioca ha diritto di saperlo. */
@@ -358,6 +406,21 @@ function Fonti() {
           CC BY-SA 4.0
         </a>
         : sono accorciate, non riscritte, e a schema finito ognuna porta alla sua voce.
+      </p>
+      <p>
+        <strong>Quiz.</strong> Paesi, capitali, confini, fiumi e laghi vengono da{' '}
+        <a href="https://www.wikidata.org" target="_blank" rel="noreferrer">
+          Wikidata
+        </a>{' '}
+        (CC0); la cartina e le coste da{' '}
+        <a href="https://www.naturalearthdata.com" target="_blank" rel="noreferrer">
+          Natural Earth
+        </a>{' '}
+        (pubblico dominio); le bandiere da{' '}
+        <a href="https://flagcdn.com" target="_blank" rel="noreferrer">
+          flagcdn
+        </a>
+        . Quale mare bagna quale paese è misurato sulla cartina, costa per costa.
       </p>
     </div>
   )

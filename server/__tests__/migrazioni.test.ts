@@ -43,10 +43,13 @@ describe('le migrazioni', () => {
       'scarabeo_partite_libere',
       'battaglia_partite',
       'battaglia_link',
+      'quiz_giornate',
+      'quiz_partite',
+      'quiz_dati',
     ]) {
       expect(tabelle).toContain(t)
     }
-    expect(migrazioni().length).toBeGreaterThanOrEqual(13)
+    expect(migrazioni().length).toBeGreaterThanOrEqual(15)
   })
 })
 

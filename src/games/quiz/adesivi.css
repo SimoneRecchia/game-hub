@@ -1,0 +1,109 @@
+/*
+ * I disegni degli adesivi del quiz: il mappamondo con lo spillo, la clessidra.
+ * Le durate sono frazioni di `--durata`, che mette l'adesivo.
+ */
+
+.quiz-globo {
+  overflow: visible;
+}
+
+.quiz-globo__sfera {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: quiz-globo-entra calc(var(--durata) * 0.35) var(--ease-bounce) both;
+}
+
+@keyframes quiz-globo-entra {
+  from {
+    transform: scale(0.3) rotate(-30deg);
+    opacity: 0;
+  }
+}
+
+.quiz-globo__mare {
+  fill: rgba(255, 255, 255, 0.22);
+  stroke: #fff;
+  stroke-width: 3.5;
+}
+
+.quiz-globo__meridiani {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.5);
+  stroke-width: 2;
+}
+
+/* Le terre girano con il mondo: scorrono da sinistra a destra dentro la sfera. */
+.quiz-globo__terra {
+  fill: #fff;
+  opacity: 0.92;
+  animation: quiz-globo-gira calc(var(--durata) * 0.9) var(--ease-in-out) both;
+}
+
+@keyframes quiz-globo-gira {
+  from {
+    transform: translateX(-10px);
+  }
+  to {
+    transform: translateX(6px);
+  }
+}
+
+/* Lo spillo cade dall'alto e rimbalza sul posto giusto. */
+.quiz-globo__spillo {
+  fill: #fff6c2;
+  stroke: rgba(120, 20, 60, 0.35);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: quiz-spillo calc(var(--durata) * 0.45) var(--ease-bounce) calc(var(--durata) * 0.18) both;
+}
+
+.quiz-globo__spillo circle {
+  fill: var(--quiz-2);
+  stroke: none;
+}
+
+@keyframes quiz-spillo {
+  0% {
+    transform: translateY(-40px) scaleY(1.1);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(4px) scaleY(0.88);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.quiz-clessidra__corpo {
+  fill: none;
+  stroke: var(--orange);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: quiz-clessidra calc(var(--durata) * 0.5) var(--ease-in-out) both;
+}
+
+.quiz-clessidra__sabbia {
+  fill: var(--orange);
+  stroke: none;
+}
+
+@keyframes quiz-clessidra {
+  from {
+    transform: rotate(-180deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz-globo__sfera,
+  .quiz-globo__terra,
+  .quiz-globo__spillo,
+  .quiz-clessidra__corpo {
+    animation: none;
+  }
+}

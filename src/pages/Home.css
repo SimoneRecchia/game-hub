@@ -79,23 +79,37 @@
   min-height: 1.4em;
 }
 
+/*
+ * Un anello per gioco, nella parte sinistra della carta: a destra c'e' il
+ * podio del fondo. Con cinque giochi quaranta punti l'uno non ci stanno piu' su
+ * un telefono piccolo, quindi il lato si ricava dalla larghezza della carta
+ * (`--giochi` lo mette la pagina), fino a un tetto.
+ */
+.riepilogo {
+  container-type: inline-size;
+}
+
 .riepilogo__anelli {
+  --spazio: 6px;
   display: flex;
-  gap: var(--sp-2);
+  gap: var(--spazio);
   margin-top: auto;
 }
 
 .riepilogo__anelli .anello {
+  --lato: min(40px, calc((58cqw - (var(--giochi, 5) - 1) * var(--spazio)) / var(--giochi, 5)));
   color: #fff;
   padding: 3px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.14);
-  width: 40px !important;
-  height: 40px !important;
+  width: var(--lato) !important;
+  height: var(--lato) !important;
 }
 
 .riepilogo__anelli .anello svg {
   inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
 }
 
 .riepilogo__freccia {

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { CASELLE, CASELLE_FLOTTA } from '../battaglia'
 import { COSTO_SVELATA, PUNTI_COMPLETO, punteggio as puntiCruciverba } from '../cruciverba'
-import { MASSIMI, PUNTI_MASSIMI, RIFERIMENTO_SCARABEO, puntiBattaglia, puntiScarabeo } from '../punti'
+import { MASSIMI, PUNTI_MASSIMI, RIFERIMENTO_SCARABEO, puntiBattaglia, puntiQuiz, puntiScarabeo } from '../punti'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
 /**
- * I punti dei quattro giochi stanno sulla stessa scala, ed e' quel che rende
+ * I punti di tutti i giochi stanno sulla stessa scala, ed e' quel che rende
  * sommabile la classifica generale: se uno dei tetti si sposta da solo, la
  * generale comincia a pesare un gioco piu' degli altri senza che nessuno lo
  * abbia deciso.
@@ -39,6 +39,13 @@ describe('una classificata vale al massimo cento punti', () => {
     expect(PUNTI_COMPLETO).toBe(100)
     expect(puntiCruciverba(0, 0)).toBe(100)
   })
+
+  it('nel quiz dieci risposte giuste su dieci valgono cento', () => {
+    expect(puntiQuiz(10, 10)).toBe(100)
+    expect(puntiQuiz(12, 10)).toBe(100)
+    // Le partite libere possono avere un altro numero di domande: il tetto e' lo stesso.
+    expect(puntiQuiz(15, 15)).toBe(100)
+  })
 })
 
 /**
@@ -67,5 +74,14 @@ describe('una giornata storta si recupera', () => {
   it('nel cruciverba ogni aiuto costa poco, non tutto', () => {
     expect(puntiCruciverba(1, 0)).toBe(100 - COSTO_SVELATA)
     expect(puntiCruciverba(0, 5)).toBeGreaterThan(90)
+  })
+
+  it('nel quiz una partita storta vale circa la metà di una perfetta, e finirla vale sempre qualcosa', () => {
+    const storta = puntiQuiz(3, 10)
+    expect(storta / puntiQuiz(10, 10)).toBeGreaterThan(0.4)
+    expect(storta / puntiQuiz(10, 10)).toBeLessThan(0.5)
+    expect(puntiQuiz(0, 10)).toBe(20)
+    // Ogni risposta giusta conta, e conta uguale.
+    for (let g = 0; g < 10; g += 1) expect(puntiQuiz(g + 1, 10) - puntiQuiz(g, 10)).toBe(8)
   })
 })

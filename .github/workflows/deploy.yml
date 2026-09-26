@@ -111,7 +111,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       # Il codice nuovo potrebbe servire il cruciverba di oggi, uno schema
-      # libero o il computer dello Scarabeo di oggi: devono esserci prima. Qui
+      # libero, il computer dello Scarabeo o il quiz di oggi: devono esserci prima. Qui
       # bastano due settimane e sessanta schemi liberi, la scorta lunga la tiene
       # il workflow notturno (cruciverba.yml). Gli script fanno solo quel che
       # manca, quindi di solito non fanno niente.
@@ -127,6 +127,18 @@ jobs:
       - name: Il computer dello Scarabeo
         if: steps.segreti.outputs.pronto == 'si'
         run: npx vite-node scripts/genera-computer-scarabeo.ts -- --remote --giorni 14
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Le domande del quiz vengono da Wikidata e da Natural Earth: servizi di
+      # altri, che possono non rispondere. Se manca qualcosa ci prova; se non ci
+      # riesce la pubblicazione va avanti lo stesso — il quiz dice "non ancora
+      # pronto" finché il workflow notturno non ci riesce lui.
+      - name: Il quiz
+        if: steps.segreti.outputs.pronto == 'si'
+        continue-on-error: true
+        run: npx vite-node scripts/genera-quiz.ts -- --remote --giorni 14 --se-manca
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

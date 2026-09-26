@@ -14,6 +14,7 @@ import { percorsoClassifica, type ChiaveClassifica } from '@/games/classifiche'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatNumber, formatPercent } from '@/lib/format'
+import { DOMANDE_PER_PARTITA } from '@shared/quiz'
 import type {
   BattagliaLeaderboard,
   CruciverbaLeaderboard,
@@ -21,6 +22,7 @@ import type {
   GiocoClassificato,
   LeaderboardResponse,
   LeaderboardScope,
+  QuizLeaderboard,
   ScarabeoLeaderboard,
 } from '@shared/types'
 import './Classifica.css'
@@ -43,6 +45,7 @@ const SCHEDE: { chiave: ChiaveClassifica; nome: string }[] = [
   { chiave: 'scarabeo', nome: 'Scarabeo' },
   { chiave: 'cruciverba', nome: 'Cruciverba' },
   { chiave: 'battaglia', nome: 'Battaglia' },
+  { chiave: 'quiz', nome: 'Quiz' },
 ]
 
 const PERIODI: { value: LeaderboardScope; label: string }[] = [
@@ -58,6 +61,7 @@ const LEDE: Record<ChiaveClassifica, string> = {
   scarabeo: 'Il tuo punteggio contro quello del computer, con le stesse tessere.',
   cruciverba: 'Cento punti a chi lo completa senza aiuti.',
   battaglia: 'La battaglia del giorno contro il computer: meno colpi, più punti.',
+  quiz: 'Dieci domande al giorno: venti punti per aver giocato, otto per ogni risposta giusta.',
 }
 
 function periodoDa(valore: string | null): LeaderboardScope {
@@ -273,6 +277,7 @@ type Risposta =
   | ScarabeoLeaderboard
   | CruciverbaLeaderboard
   | BattagliaLeaderboard
+  | QuizLeaderboard
 
 /** Una riga di qualunque classifica, pronta da mostrare: ogni gioco dice le sue cose a modo suo. */
 interface Voce {
@@ -297,6 +302,7 @@ const NOMI_GIOCHI: Record<GiocoClassificato, string> = {
   scarabeo: 'Scarabeo',
   cruciverba: 'Cruciverba',
   battaglia: 'Battaglia navale',
+  quiz: 'Quiz',
 }
 
 const partite = (n: number) => `${formatNumber(n)} ${n === 1 ? 'partita' : 'partite'}`
@@ -421,6 +427,29 @@ function vociDi(chiave: ChiaveClassifica, risposta: Risposta, periodo: Leaderboa
         ],
         nota: 'Vincendo, cento punti meno uno ogni due colpi in acqua; perdendo, tre per ogni casella colpita. A pari punti passa avanti chi ha sparato meno.',
       }))
+
+    case 'quiz':
+      return (risposta as QuizLeaderboard).rows.map((r) => {
+        const domande = r.giornate * DOMANDE_PER_PARTITA
+        return {
+          ...r,
+          sotto:
+            r.inCorso && r.giornate === 0
+              ? 'In corso'
+              : oggi
+                ? `${r.giuste} giuste su ${DOMANDE_PER_PARTITA} · ${formatDuration(r.tempoMs)}`
+                : `${giornate(r.giornate)} · ${formatPercent(domande > 0 ? r.giuste / domande : 0)} giuste`,
+          breve: r.giornate > 0 ? `${r.giuste}/${domande} giuste` : 'in corso',
+          segni: r.inCorso ? <Etichetta tono="arancio">in corso</Etichetta> : undefined,
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            { etichetta: 'Quiz finiti', valore: formatNumber(r.giornate) },
+            { etichetta: 'Risposte giuste', valore: `${formatNumber(r.giuste)} su ${formatNumber(domande)}` },
+            { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
+          ],
+          nota: 'Venti punti per aver giocato e otto per ogni risposta giusta. A pari punti passa avanti chi ci ha messo meno.',
+        }
+      })
   }
 }
 
