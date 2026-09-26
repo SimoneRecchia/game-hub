@@ -1,0 +1,570 @@
+/*
+ * La battaglia navale: la sala d'attesa e la partita.
+ *
+ * La partita e' la sola schermata a tutto schermo che scorre: due mari, lo stato
+ * e i comandi non stanno sempre in un telefono basso, e tagliarne uno sarebbe
+ * peggio che scorrere. Il mare dove si spara resta comunque il primo, subito
+ * sotto l'intestazione.
+ */
+
+/* ---------- Comuni ---------- */
+
+.bat,
+.bat-sala {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  width: min(100%, 720px);
+  margin-inline: auto;
+  /* Un filo di spazio per l'ombra dei bottoni in fondo quando si scorre. */
+  padding-bottom: var(--sp-2);
+}
+
+.bat__attesa {
+  flex: 1;
+  min-height: 240px;
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  animation: bat-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes bat-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.bat__ripiego {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  text-align: center;
+  color: var(--label-secondary);
+}
+
+.bat__istruzioni,
+.bat__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--label-secondary);
+  text-align: center;
+  min-height: 1.4em;
+}
+
+.bat__didascalia {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-tertiary);
+}
+
+/* Resta in cima alla parte visibile anche scorrendo, e non occupa una riga. */
+.bat__messaggio {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 0;
+  margin-bottom: calc(-1 * var(--sp-4));
+  display: grid;
+  place-items: center;
+}
+
+.bat__pillola {
+  position: absolute;
+  top: var(--sp-1);
+  max-width: 92%;
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--label);
+  color: var(--label-inverted);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  animation: bat-pillola var(--dur-base) var(--ease-spring);
+}
+
+@keyframes bat-pillola {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+.bat__resa {
+  align-self: center;
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: none;
+  background: none;
+  color: var(--label-tertiary);
+  font-size: var(--text-footnote);
+  cursor: pointer;
+}
+
+.bat-resa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.bat-resa p {
+  margin: 0 0 var(--sp-2);
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+}
+
+.avviso__errore {
+  margin: 0;
+  color: var(--red);
+  font-size: var(--text-footnote);
+  text-align: center;
+}
+
+/* ---------- La sala d'attesa ---------- */
+
+.bat-sala__testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.bat-sala__record {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.bat-sala__classifica {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.bat-sala__partita {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  background: linear-gradient(150deg, #1e88a8, #0b4f6c);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+}
+
+.bat-sala__partita-testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.bat-sala__partita-titolo {
+  font-weight: 700;
+}
+
+.bat-sala__partita-stato {
+  font-size: var(--text-footnote);
+  opacity: 0.85;
+}
+
+.bat-sala__riprendi {
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.22);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+.bat-sala__in-attesa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--brand-soft);
+}
+
+.bat-sala__in-attesa-testo {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-subhead);
+  color: var(--label);
+}
+
+.bat-sala__scadenza {
+  color: var(--label-secondary);
+}
+
+/* Tre cerchi che si allargano: la sfida e' partita, e si aspetta. */
+.bat-sala__onde {
+  position: relative;
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.bat-sala__onde::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 var(--brand);
+  animation: bat-onde 1.6s var(--ease-out) infinite;
+}
+
+@keyframes bat-onde {
+  to {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+
+.bat-sala__esito,
+.bat-sala__avviso {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+}
+
+.bat-sala__sezione {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.bat-sala__titolo {
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-tertiary);
+}
+
+.bat-sala__vuoto {
+  margin: 0;
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--fill-quaternary);
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.bat-sala__elenco {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.bat-sala__giocatore {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--separator);
+}
+
+.bat-sala__giocatore:last-child {
+  border-bottom: none;
+}
+
+.bat-sala__chi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.bat-sala__nome {
+  font-weight: 600;
+  color: var(--label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bat-sala__dove {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* ---------- La partita ---------- */
+
+.bat__stato {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.bat__stato.is-tuo {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.bat__stato-testo {
+  flex: 1;
+}
+
+.bat__online {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--label-quaternary);
+}
+
+.bat__online.is-online {
+  background: #22c55e;
+}
+
+.bat-combattimento,
+.bat-disposizione,
+.bat-fine {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.bat-combattimento__mari {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.bat__mare-grande {
+  width: min(100%, 440px);
+  margin-inline: auto;
+}
+
+.bat__mare-mio {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  width: min(100%, 440px);
+  margin-inline: auto;
+}
+
+.bat__mare-piccolo {
+  flex: none;
+  width: 44%;
+  max-width: 200px;
+}
+
+.bat__conto {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* Le navi nemiche: quelle a fondo barrate, le altre da cercare. */
+.bat__flotta {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-1) var(--sp-2);
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+.bat__flotta li {
+  padding: 1px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+}
+
+.bat__flotta li.is-affondata {
+  text-decoration: line-through;
+  color: var(--colpito);
+  background: var(--colpito-fondo);
+}
+
+.bat__reclamo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  text-align: center;
+}
+
+.bat__reclamo p {
+  margin: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+/* ---------- Disposizione ---------- */
+
+.bat-disposizione__navi {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.bat-nave {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: var(--sp-2) var(--sp-3);
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  color: var(--label-secondary);
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bat-nave.is-scelta {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.bat-nave__pezzi {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.bat-nave__pezzi span {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--nave);
+}
+
+.bat-nave.is-scelta .bat-nave__pezzi span {
+  background: var(--brand);
+}
+
+.bat-disposizione__comandi {
+  display: flex;
+  gap: var(--sp-2);
+  width: min(100%, 440px);
+  margin-inline: auto;
+}
+
+.bat-disposizione__comandi .btn {
+  flex: 1;
+}
+
+/* ---------- Fine ---------- */
+
+.bat-fine__testa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--fill-quaternary);
+  text-align: center;
+}
+
+.bat-fine__testa.is-vinta {
+  background: linear-gradient(150deg, #1e88a8, #0b4f6c);
+  color: #fff;
+}
+
+.bat-fine__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+
+.bat-fine__perche,
+.bat-fine__conto {
+  margin: 0;
+  font-size: var(--text-subhead);
+  opacity: 0.85;
+}
+
+.bat-fine__azioni {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.bat-fine__sala {
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Su un computer i due mari stanno affiancati: c'e' posto, e si guardano insieme. */
+@media (min-width: 900px) {
+  .bat {
+    width: min(100%, 1000px);
+  }
+
+  .bat-combattimento__mari {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--sp-8);
+  }
+
+  .bat__mare-grande {
+    margin-inline: 0;
+  }
+
+  .bat__mare-mio {
+    flex-direction: column;
+    align-items: stretch;
+    width: 280px;
+    margin-inline: 0;
+  }
+
+  .bat__mare-piccolo {
+    width: 100%;
+    max-width: none;
+  }
+}

@@ -13,7 +13,11 @@ import WordleInsieme from './pages/WordleInsieme'
 import WordlePercorso from './pages/WordlePercorso'
 import Scarabeo from './pages/Scarabeo'
 import Cruciverba from './pages/Cruciverba'
+import BattagliaLobby from './pages/BattagliaLobby'
+import BattagliaPartita from './pages/BattagliaPartita'
 import { CoopGate } from './games/wordle/coop/CoopGate'
+import { BattagliaGate } from './games/battaglia/BattagliaGate'
+import { PresenzaProvider } from './lib/presenza'
 
 export default function App() {
   const { player, checking, config } = useAuth()
@@ -38,10 +42,12 @@ export default function App() {
   if (config?.emailVerificationRequired && !player.emailVerified) return <VerifyEmail />
 
   return (
-    <>
-      {/* L'avviso degli inviti vive fuori dalle rotte: deve poter comparire
-          da qualunque schermata, non solo dall'hub. */}
+    <PresenzaProvider>
+      {/* Gli avvisi degli inviti vivono fuori dalle rotte: devono poter
+          comparire da qualunque schermata, non solo dall'hub. Leggono lo
+          stesso giro di controllo, che fa anche da presenza. */}
       <CoopGate />
+      <BattagliaGate />
       <Routes>
         <Route path="/" element={<Hub />} />
         {/*
@@ -55,10 +61,12 @@ export default function App() {
         <Route path="/insieme/:roomId" element={<WordleInsieme />} />
         <Route path="/scarabeo" element={<Scarabeo />} />
         <Route path="/cruciverba" element={<Cruciverba />} />
+        <Route path="/battaglia" element={<BattagliaLobby />} />
+        <Route path="/battaglia/:id" element={<BattagliaPartita />} />
         <Route path="/classifica" element={<Classifica />} />
         <Route path="/profilo" element={<Profilo />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </>
+    </PresenzaProvider>
   )
 }

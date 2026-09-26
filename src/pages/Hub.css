@@ -332,6 +332,14 @@ a.gamecard:active {
   background: #fff;
 }
 
+/* Il record della battaglia navale: vinte e perse, piccolo, in fondo alla card. */
+.gamecard__record {
+  flex: none;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+
 /* La griglia del cruciverba: la parte scritta, come i pallini ma continua. */
 .gamecard__barra {
   flex: none;
