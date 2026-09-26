@@ -169,13 +169,24 @@ const SEME_SACCHETTO = 0x5ca2_ab30
  * parole che potrebbe essere rigenerato, questa da una tabella di costanti.
  */
 export function sacchettoDelGiorno(puzzleNumber: number): string[] {
+  return sacchettoDaSeme((SEME_SACCHETTO ^ (puzzleNumber * 0x9e37_79b9)) >>> 0)
+}
+
+/**
+ * Un sacchetto mescolato da un seme qualunque: quello delle partite libere.
+ *
+ * E' lo stesso mescolamento del sacchetto del giorno — la giornata e' solo un
+ * seme ricavato dal numero del puzzle — quindi una partita libera si rigioca
+ * dalle sole mosse, esattamente come quella classificata.
+ */
+export function sacchettoDaSeme(seme: number): string[] {
   const tessere: string[] = []
   for (const [lettera, quante] of DISTRIBUZIONE) {
     for (let i = 0; i < quante; i += 1) tessere.push(lettera)
   }
 
-  // Fisher-Yates col PRNG condiviso: stesso numero di puzzle, stesso ordine.
-  const random = mulberry32((SEME_SACCHETTO ^ (puzzleNumber * 0x9e37_79b9)) >>> 0)
+  // Fisher-Yates col PRNG condiviso: stesso seme, stesso ordine.
+  const random = mulberry32(seme >>> 0)
   for (let i = tessere.length - 1; i > 0; i -= 1) {
     const j = Math.floor(random() * (i + 1))
     ;[tessere[i], tessere[j]] = [tessere[j], tessere[i]]
@@ -265,39 +276,58 @@ export interface StatoLeggio {
  * ha anche il rimescolamento.
  */
 export function leggioDa(sacchetto: readonly string[], mosse: readonly Mossa[]): StatoLeggio {
+  const { leggii, restanti } = leggiiDa(sacchetto, mosse, 1)
+  return { leggio: leggii[0], restanti }
+}
+
+/**
+ * I leggii di una partita a piu' giocatori che pescano dallo stesso sacchetto.
+ *
+ * Le mosse si alternano: la mossa `i` e' del giocatore `i % giocatori`. Alla
+ * partenza pesca per primo chi gioca per primo, poi gli altri, otto tessere a
+ * testa — come al tavolo. Da lì valgono le stesse regole del leggio singolo: si
+ * pesca dopo ogni posa e dopo ogni cambio, e le tessere cambiate tornano in
+ * fondo alla coda.
+ */
+export function leggiiDa(
+  sacchetto: readonly string[],
+  mosse: readonly Mossa[],
+  giocatori: number,
+): { leggii: string[][]; restanti: number } {
   const coda = [...sacchetto]
   let prossima = 0
-  const leggio: string[] = []
+  const leggii: string[][] = Array.from({ length: giocatori }, () => [])
 
-  const pesca = () => {
+  const pesca = (leggio: string[]) => {
     while (leggio.length < TESSERE_LEGGIO && prossima < coda.length) {
       leggio.push(coda[prossima])
       prossima += 1
     }
   }
 
-  const togli = (tessera: string) => {
+  const togli = (leggio: string[], tessera: string) => {
     const i = leggio.indexOf(tessera)
     if (i >= 0) leggio.splice(i, 1)
   }
 
-  pesca()
-  for (const mossa of mosse) {
+  for (const leggio of leggii) pesca(leggio)
+  mosse.forEach((mossa, i) => {
+    const leggio = leggii[i % giocatori]
     if (mossa.tipo === 'posa') {
-      for (const p of mossa.posa) togli(p.jolly ? JOLLY : p.lettera)
-      pesca()
+      for (const p of mossa.posa) togli(leggio, p.jolly ? JOLLY : p.lettera)
+      pesca(leggio)
     } else if (mossa.tipo === 'cambio') {
       for (const t of mossa.tessere) {
         if (leggio.includes(t)) {
-          togli(t)
+          togli(leggio, t)
           coda.push(t)
         }
       }
-      pesca()
+      pesca(leggio)
     }
-  }
+  })
 
-  return { leggio, restanti: coda.length - prossima }
+  return { leggii, restanti: coda.length - prossima }
 }
 
 /* ────────────────────────  Validazione e punteggio  ───────────────────── */
