@@ -8,9 +8,7 @@
   background: var(--bg);
 }
 
-.splash__icon {
-  border-radius: var(--r-lg);
-  box-shadow: var(--shadow-md);
+.splash .marchio {
   animation: splash-in var(--dur-slow) var(--ease-out);
 }
 

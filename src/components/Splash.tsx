@@ -1,3 +1,4 @@
+import { Marchio } from './Marchio'
 import './Splash.css'
 
 /**
@@ -8,7 +9,7 @@ import './Splash.css'
 export function Splash() {
   return (
     <div className="splash">
-      <img src="/icon.svg" alt="" width={72} height={72} className="splash__icon" />
+      <Marchio lato={72} animato={false} />
       <span className="splash__spinner" aria-label="Caricamento" role="status" />
     </div>
   )

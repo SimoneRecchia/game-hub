@@ -7,7 +7,7 @@
  *  - /api/*                      → sempre rete, mai cache (punteggi e sessioni)
  */
 
-const VERSION = 'gh-v1'
+const VERSION = 'giochi-v2'
 const SHELL_CACHE = `${VERSION}-shell`
 const ASSET_CACHE = `${VERSION}-assets`
 const SHELL_URL = '/index.html'

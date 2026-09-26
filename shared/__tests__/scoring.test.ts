@@ -13,6 +13,7 @@ import {
   WORD_BASE,
   WORD_LOSS,
   WORD_STEP,
+  MAX_DAY_SCORE,
   maxScoreFor,
   minScoreFor,
   scoreBreakdown,
@@ -64,7 +65,7 @@ describe('bonus costanza', () => {
   it('cresce di un punto al giorno', () => {
     expect(streakBonus(0)).toBe(0)
     expect(streakBonus(1)).toBe(1)
-    expect(streakBonus(5)).toBe(5)
+    expect(streakBonus(3)).toBe(3)
   })
 
   it('si ferma al tetto', () => {
@@ -126,7 +127,7 @@ describe('punteggio della partita', () => {
       durationMs: 30_000,
       streak: 4,
     })
-    expect(breakdown).toEqual({ attempts: 90, speed: 4, streak: 4, total: 98 })
+    expect(breakdown).toEqual({ attempts: 45, speed: 1, streak: 3, total: 49 })
   })
 
   it('da i punti di consolazione a chi ha perso', () => {
@@ -143,7 +144,7 @@ describe('punteggio della partita', () => {
 
   it('il massimo teorico corrisponde alla costante esposta', () => {
     expect(scoreFor({ status: 'won', attempts: 1, durationMs: 1_000, streak: 20 })).toBe(MAX_SCORE)
-    expect(MAX_SCORE).toBe(109)
+    expect(MAX_SCORE).toBe(54)
   })
 
   it('regge tentativi fuori scala senza esplodere', () => {
@@ -159,7 +160,7 @@ describe('punteggio della partita', () => {
 
 describe('scala dei punti: giusta ma recuperabile', () => {
   it('e la base di partecipazione piu un gradino per tentativo risparmiato', () => {
-    expect([...ATTEMPT_POINTS]).toEqual([100, 90, 80, 70, 60, 50])
+    expect([...ATTEMPT_POINTS]).toEqual([50, 45, 40, 35, 30, 25])
     // La scala e' derivata, non scritta a mano: se si ritocca uno dei due
     // numeri, questo test dice subito cosa ne viene fuori.
     const peggiore = ATTEMPT_POINTS[ATTEMPT_POINTS.length - 1]
@@ -199,11 +200,11 @@ describe('la scala delle cinque parole', () => {
 
   it('e la tabella attesa', () => {
     expect(parole.map((s) => tentativi.map((t) => wordScore(s, t)))).toEqual([
-      [100, 90, 80, 70, 60, 50],
-      [40, 36, 32, 28, 24, 20],
-      [24, 22, 20, 18, 16, 14],
-      [18, 16, 14, 12, 10, 8],
-      [18, 16, 14, 12, 10, 8],
+      [50, 45, 40, 35, 30, 25],
+      [20, 18, 16, 14, 12, 10],
+      [12, 11, 10, 9, 8, 7],
+      [9, 8, 7, 6, 5, 4],
+      [9, 8, 7, 6, 5, 4],
     ])
   })
 
@@ -247,12 +248,12 @@ describe('la scala delle cinque parole', () => {
     }
   })
 
-  it('nessuna parola scende sotto gli otto punti', () => {
+  it('nessuna parola scende sotto i quattro punti', () => {
     // La condizione che il peso non riusciva a garantire: con la moltiplicazione
     // la coda si schiacciava, e la quinta parola finiva a pochi punti.
     for (const s of parole) {
       for (const t of tentativi) {
-        expect(wordScore(s, t)).toBeGreaterThanOrEqual(8)
+        expect(wordScore(s, t)).toBeGreaterThanOrEqual(4)
       }
     }
   })
@@ -302,9 +303,15 @@ describe('la scala delle cinque parole', () => {
     expect(tutte).toBeLessThanOrEqual(sola * 2)
   })
 
+  it('una giornata perfetta vale cento punti, come la classificata di ogni gioco', () => {
+    expect(MAX_DAY_SCORE).toBe(100)
+    const perfetta = { status: 'won' as const, attempts: 1, durationMs: null, streak: 0 }
+    expect(parole.reduce((acc, s) => acc + scoreForWord(perfetta, s), 0)).toBe(100)
+  })
+
   it('massimi e minimi per posizione', () => {
-    expect(parole.map(maxScoreFor)).toEqual([100, 40, 24, 18, 18])
-    expect(parole.map(minScoreFor)).toEqual([50, 20, 14, 8, 8])
+    expect(parole.map(maxScoreFor)).toEqual([50, 20, 12, 9, 9])
+    expect(parole.map(minScoreFor)).toEqual([25, 10, 7, 4, 4])
   })
 
   it('regge posizioni e tentativi fuori scala', () => {

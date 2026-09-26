@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { useNavigazione } from '@/app/navigazione'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
@@ -9,6 +10,7 @@ import { formatCronometro } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { usePresenza } from '@/lib/presenza'
 import type { InvitoBattaglia, PartitaBreve } from '@shared/types'
+import { ROTTE } from '@/app/rotte'
 import '@/games/wordle/coop/InviteAlert.css'
 
 const CHIAVE_ANNUNCIATE = 'battaglia:annunciate'
@@ -33,16 +35,16 @@ function leggiAnnunciate(): Set<string> {
  * partita e per sessione.
  */
 export function BattagliaGate() {
-  const navigate = useNavigate()
+  const { vai } = useNavigazione()
   const { pathname } = useLocation()
   const { dati, aggiorna } = usePresenza()
   const [risposte, setRisposte] = useState<Set<string>>(new Set())
   const [annunciate, setAnnunciate] = useState<Set<string>>(leggiAnnunciate)
 
-  const inBattaglia = pathname.startsWith('/battaglia')
-  const coopAperto = (dati?.coop.length ?? 0) > 0 && !pathname.startsWith('/insieme/')
+  const inBattaglia = pathname.startsWith('/battaglia-navale')
+  const coopAperto = (dati?.coop.length ?? 0) > 0 && !pathname.startsWith('/wordle/insieme/')
   const sfida =
-    !pathname.startsWith('/battaglia/') && !coopAperto
+    !pathname.startsWith('/battaglia-navale/partita/') && !coopAperto
       ? (dati?.battaglia.find((s) => !risposte.has(s.id)) ?? null)
       : null
   const partita = dati?.partita ?? null
@@ -72,7 +74,7 @@ export function BattagliaGate() {
           setRisposte((prima) => new Set(prima).add(sfida.id))
           segnaAnnunciata(partitaId)
           aggiorna()
-          navigate(`/battaglia/${partitaId}`)
+          vai(ROTTE.partitaBattaglia(partitaId))
         }}
         onRifiuta={async () => {
           setRisposte((prima) => new Set(prima).add(sfida.id))
@@ -89,7 +91,7 @@ export function BattagliaGate() {
         partita={daAnnunciare}
         onVai={() => {
           segnaAnnunciata(daAnnunciare.id)
-          navigate(`/battaglia/${daAnnunciare.id}`)
+          vai(ROTTE.partitaBattaglia(daAnnunciare.id))
         }}
         onDopo={() => segnaAnnunciata(daAnnunciare.id)}
       />

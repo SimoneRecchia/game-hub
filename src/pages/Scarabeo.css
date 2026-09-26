@@ -14,44 +14,106 @@
   gap: var(--sp-2);
 }
 
-/* ---------- Riga di stato ---------- */
+/* ---------- Il punteggio ---------- */
 
-.scr__stato {
+/*
+ * Due lati, uno per chi gioca, e in mezzo a che punto si e'. Si tocca e apre
+ * le mosse: le parole fatte sono la cosa che si vuole rivedere, e non meritano
+ * spazio fisso in una schermata dove l'altezza serve al tabellone.
+ */
+.scr-tab {
   flex: none;
-  display: flex;
-  align-items: baseline;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
   gap: var(--sp-2);
-  padding: 0;
-  border: none;
-  background: none;
+  width: min(100%, 420px);
+  margin-inline: auto;
+  padding: var(--sp-1);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
   color: inherit;
-  cursor: pointer;
   text-align: left;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.scr__punti {
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 700;
-  letter-spacing: var(--tracking-tight);
-  color: var(--label);
+.scr-tab:active {
+  transform: scale(0.985);
 }
 
-.scr__punti-label {
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
+.scr-tab__lato {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: calc(var(--r-lg) - 4px);
+  transition: background-color var(--dur-base) var(--ease-out);
 }
 
-.scr__mosse {
-  margin-left: auto;
-  font-size: var(--text-footnote);
+.scr-tab__lato--altro {
+  align-items: flex-end;
+  text-align: right;
+}
+
+/* Chi deve muovere: il suo lato si accende. */
+.scr-tab__lato.is-turno {
+  background: var(--brand-soft);
+}
+
+.scr-tab__nome {
+  font-size: var(--text-caption-1);
   font-weight: 600;
   color: var(--label-secondary);
 }
 
-.scr__sacchetto {
-  font-size: var(--text-caption-1);
+.scr-tab__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.scr-tab__nota {
+  font-size: var(--text-caption-2);
   color: var(--label-tertiary);
+}
+
+.scr-tab__mezzo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 132px;
+}
+
+.scr-tab__sotto {
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.scr-tab__barra {
+  position: relative;
+  width: 88px;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  overflow: hidden;
+}
+
+.scr-tab__pieno {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--brand);
+  transform-origin: left center;
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 /* ---------- Il campo ---------- */
@@ -124,7 +186,14 @@
   }
 }
 
-/* ---------- Comandi ---------- */
+/* ---------- Leggio e comandi ---------- */
+
+.scr__mano {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
 
 .scr__comandi {
   flex: none;
@@ -150,44 +219,130 @@
   padding-bottom: var(--sp-1);
 }
 
-/* ---------- Giornata chiusa ---------- */
+/* ---------- Partita chiusa ---------- */
 
-.scr__chiusa {
+.scr-fine {
   flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-1);
-  padding: var(--sp-3) 0;
+  width: min(100%, 420px);
+  margin-inline: auto;
+  padding: var(--sp-3) 0 var(--sp-1);
+  text-align: center;
+  animation: scr-sale var(--dur-slow) var(--ease-spring) both;
 }
 
-.scr__chiusa-punti {
-  margin: 0;
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-1);
+@keyframes scr-sale {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.scr-fine__titolo {
+  font-size: var(--text-headline);
   font-weight: 700;
+  color: var(--label);
+}
+
+.scr-fine__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-large-title);
+  font-weight: 800;
+  line-height: 1.05;
   letter-spacing: var(--tracking-tight);
   color: var(--label);
 }
 
-.scr__chiusa-attesa {
-  margin: 0;
+.scr-fine__su {
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  color: var(--label-tertiary);
+}
+
+.scr-fine__nota {
   font-size: var(--text-footnote);
   color: var(--label-secondary);
 }
 
-.scr__chiusa-link {
-  display: inline-flex;
-  align-items: center;
+.scr-fine__azioni {
+  display: flex;
   gap: var(--sp-2);
   margin-top: var(--sp-2);
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-pill);
+}
+
+.scr-fine__attesa {
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+}
+
+/* ---------- Il risultato di una partita libera ---------- */
+
+.scr-esito {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.scr-esito__punteggi {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
   background: var(--fill-quaternary);
-  color: var(--brand);
-  font-size: var(--text-subhead);
+}
+
+.scr-esito__lato {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.6;
+}
+
+.scr-esito__lato.is-vincitore {
+  opacity: 1;
+}
+
+.scr-esito__nome {
+  font-size: var(--text-footnote);
   font-weight: 600;
-  text-decoration: none;
+  color: var(--label-secondary);
+}
+
+.scr-esito__valore {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.scr-esito__vs {
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+}
+
+.scr-esito__statistiche,
+.scr-esito__nota {
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+.scr-esito__nota {
+  font-size: var(--text-footnote);
+  color: var(--label-tertiary);
+}
+
+/* ---------- La scelta del livello ---------- */
+
+.livelli__guasto {
+  font-size: var(--text-footnote);
+  color: var(--red);
 }
 
 /* ---------- Attesa e ripieghi ---------- */
@@ -280,6 +435,31 @@
   color: var(--label);
 }
 
+/* Le mosse dell'altro, nelle partite a due: un filo piu' spente. */
+.scr-storia__riga.is-altro .scr-storia__testo {
+  color: var(--label-secondary);
+}
+
+.scr-storia__autore {
+  flex: none;
+  min-width: 68px;
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-tertiary);
+}
+
+.scr-storia__testo {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.scr-storia__lede {
+  margin-bottom: var(--sp-3);
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
 .scr-storia__vuota {
   margin: 0;
   color: var(--label-secondary);
@@ -288,12 +468,12 @@
 
 /*
  * Telefono in orizzontale: tabellone e leggio non stanno in 400 punti di
- * altezza. La shell torna a scorrere (vedi AppShell.css) e qui si lascia al
+ * altezza. La schermata torna a scorrere (vedi Pagina.css) e qui si lascia al
  * tabellone una misura leggibile invece di schiacciarlo.
  */
 @media (orientation: landscape) and (max-height: 560px) {
   /*
-   * Qui la pagina scorre (vedi AppShell.css), quindi questa fascia non ha
+   * Qui la pagina scorre (vedi Pagina.css), quindi questa fascia non ha
    * un'altezza definita e `100cqh` si risolverebbe a zero: e' la stessa trappola
    * documentata per la griglia del Wordle. Si torna a dimensionare sulla
    * larghezza.

@@ -6,7 +6,8 @@
  * nella stanza di qualcun altro — che valgono esattamente lo stesso, il
  * punteggio dell'host. In classifica si vede il totale; la divisione si vede
  * toccando la riga, e serve a spiegare gli spareggi, perché **a parità di
- * totale passa avanti chi ha giocato più giornate in compagnia**.
+ * totale passa avanti chi ha meno punti assist**: a pari merito, conta di piu'
+ * quel che si e' fatto con le proprie partite.
  *
  * L'aggregazione la fa SQLite, l'ordinamento no: le righe sono poche (un
  * gruppo di colleghi) e la catena degli spareggi in SQL sarebbe illeggibile,
@@ -142,7 +143,7 @@ export function streaksByPlayer(
  *
  *  1. **totale** (partite + assist);
  *  2. **assist**, che e' lo spareggio: fra due totali uguali passa avanti chi
- *     ha giocato piu' giornate in compagnia;
+ *     ne ha di meno, cioe' chi ha fatto piu' punti con le proprie partite;
  *  3. vittorie, poi media tentativi piu' bassa;
  *  4. parole in piu' chiuse, che e' l'unico posto in cui "aver giocato di piu'"
  *     conta: nel punteggio non deve, o le extra ribalterebbero la classifica;
@@ -156,7 +157,7 @@ export function rankPlayers(players: PlayerTotals[]): LeaderboardRow[] {
   const byTotal = [...players].sort((a, b) => {
     const total = a.playScore + a.assistScore - (b.playScore + b.assistScore)
     if (total !== 0) return -total
-    if (a.assistScore !== b.assistScore) return b.assistScore - a.assistScore
+    if (a.assistScore !== b.assistScore) return a.assistScore - b.assistScore
     if (a.wins !== b.wins) return b.wins - a.wins
     // I null in fondo: "nessuna vittoria" non e' una media buona.
     if (a.avgAttempts !== b.avgAttempts) {

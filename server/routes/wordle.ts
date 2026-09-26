@@ -6,6 +6,8 @@ import type {
   DaySlot,
   DayView,
   PlayerStats,
+  WordleLiberaRisposta,
+  WordleLiberaState,
   WordleState,
   WordleStatus,
   WordleSummary,
@@ -16,6 +18,15 @@ import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
 import { findRoom, markSuggestionUsed, payAssists } from '../lib/coopStore'
+import { riepilogoWordle } from '../lib/riepiloghi'
+import {
+  liberaAperta,
+  liberaPerId,
+  nuovaLibera,
+  paroleDi,
+  statisticheLibere,
+  statoLibero,
+} from '../lib/wordleLibera'
 import {
   dailyAnswer,
   openGame,
@@ -134,6 +145,21 @@ function requireUnlocked(day: DaySlot[], slot: number): void {
   }
 }
 
+/**
+ * Il tentativo arrivato dal client: una parola di cinque lettere del gioco,
+ * che stia nel dizionario. Vale per la classificata e per la libera.
+ */
+function leggiTentativo(valore: unknown): string {
+  const raw = typeof valore === 'string' ? valore.trim().toLowerCase() : ''
+  if (!isWellFormedGuess(raw)) {
+    fail(400, 'BAD_GUESS', `Serve una parola di ${WORD_LENGTH} lettere, senza accenti.`)
+  }
+  if (!GUESS_SET.has(raw)) {
+    fail(400, 'NOT_A_WORD', `"${raw.toUpperCase()}" non è nel dizionario.`)
+  }
+  return raw
+}
+
 /** La posizione chiesta dal client, dentro i limiti. */
 function readSlot(value: string | undefined): number {
   if (value === undefined) return 1
@@ -177,15 +203,8 @@ export const wordleRoutes = new Hono<AppEnv>()
     const body = (await c.req.json().catch(() => null)) as
       | { guess?: unknown; slot?: unknown }
       | null
-    const raw = typeof body?.guess === 'string' ? body.guess.trim().toLowerCase() : ''
+    const raw = leggiTentativo(body?.guess)
     const slot = readSlot(body?.slot === undefined ? undefined : String(body.slot))
-
-    if (!isWellFormedGuess(raw)) {
-      fail(400, 'BAD_GUESS', `Serve una parola di ${WORD_LENGTH} lettere, senza accenti.`)
-    }
-    if (!GUESS_SET.has(raw)) {
-      fail(400, 'NOT_A_WORD', `"${raw.toUpperCase()}" non è nel dizionario.`)
-    }
 
     const when = today()
     requireUnlocked(await dayOf(c.env.DB, c.get('player').id, when.puzzleNumber), slot)
@@ -359,58 +378,65 @@ export const wordleRoutes = new Hono<AppEnv>()
    * Di sola lettura di proposito: aprire l'hub non deve creare la partita del
    * giorno né fissare la parola, altrimenti comparirebbero partite mai giocate.
    */
-  .get('/summary', async (c) => {
-    const when = today()
-    const { results } = await c.env.DB.prepare(
-      `SELECT slot, status, attempts, score, spectated,
-              assist_score, assist_status, assist_room_id
-         FROM wordle_games
-        WHERE player_id = ? AND puzzle_number = ?`,
-    )
-      .bind(c.get('player').id, when.puzzleNumber)
-      .all<{
-        slot: number
-        status: WordleStatus
-        attempts: number
-        score: number | null
-        spectated: number
-        assist_score: number | null
-        assist_status: WordleStatus | null
-        assist_room_id: string | null
-      }>()
-
-    const principale = results.find((r) => r.slot === 1)
-    /*
-     * Per chi gioca la giornata in compagnia la card racconta quella partita,
-     * non la propria: la propria e' chiusa e mostrarla "da giocare" manderebbe
-     * su una board che rifiuta i tentativi.
-     */
-    const insieme = principale?.spectated === 1
-
-    const esito = (r: (typeof results)[number]) =>
-      r.spectated === 1 ? (r.assist_status ?? 'playing') : r.status
-    const punti = (r: (typeof results)[number]) =>
-      r.spectated === 1 ? r.assist_score : r.score
-
-    // Il punteggio della card e' quello di tutta la giornata: cinque parole.
-    const totale = results.reduce((sum, r) => sum + (punti(r) ?? 0), 0)
-    const chiuse = results.filter((r) => esito(r) !== 'playing').length
-
-    return c.json<WordleSummary>({
-      puzzleNumber: when.puzzleNumber,
-      date: when.date,
-      status: principale ? esito(principale) : 'new',
-      attempts: insieme ? 0 : (principale?.attempts ?? 0),
-      score: results.length === 0 ? null : totale,
-      msToNextPuzzle: msToNextPuzzle(),
-      roomId: insieme ? (principale?.assist_room_id ?? null) : null,
-      done: chiuse,
-      words: WORDS_PER_DAY,
-    })
-  })
+  .get('/summary', async (c) => c.json<WordleSummary>(await riepilogoWordle(c.env.DB, c.get('player').id)))
 
   /** Statistiche personali: partite, vittorie, streak, distribuzione tentativi. */
   .get('/stats', async (c) => {
     const stats = await playerStats(c.env.DB, c.get('player').id, today().puzzleNumber)
     return c.json<PlayerStats>(stats)
+  })
+
+  /* ─────────────────────────  La partita libera  ───────────────────────── */
+
+  /** La partita libera aperta, se c'e', e le statistiche delle libere. */
+  .get('/libera', async (c) => {
+    const io = c.get('player').id
+    const [aperta, statistiche] = await Promise.all([
+      liberaAperta(c.env.DB, io),
+      statisticheLibere(c.env.DB, io),
+    ])
+    return c.json<WordleLiberaRisposta>({
+      partita: aperta ? statoLibero(aperta) : null,
+      statistiche,
+    })
+  })
+
+  /** Una parola nuova. Quella aperta, se era gia' cominciata, conta come persa. */
+  .post('/libera', async (c) => {
+    const row = await nuovaLibera(c.env.DB, c.get('player').id, today().puzzleNumber)
+    return c.json<WordleLiberaState>(statoLibero(row), 201)
+  })
+
+  .get('/libera/:id', async (c) => {
+    const row = await liberaPerId(c.env.DB, c.req.param('id'), c.get('player').id)
+    if (!row) fail(404, 'PARTITA_NON_TROVATA', 'Partita non trovata.')
+    return c.json<WordleLiberaState>(statoLibero(row))
+  })
+
+  .post('/libera/:id/guess', async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { guess?: unknown } | null
+    const raw = leggiTentativo(body?.guess)
+    const row = await liberaPerId(c.env.DB, c.req.param('id'), c.get('player').id)
+    if (!row) fail(404, 'PARTITA_NON_TROVATA', 'Partita non trovata.')
+    if (row.status !== 'playing') fail(409, 'GAME_OVER', 'Questa partita è già chiusa.')
+
+    const parole = paroleDi(row)
+    if (parole.includes(raw)) fail(400, 'ALREADY_TRIED', `"${raw.toUpperCase()}" l'hai già provata.`)
+
+    const dopo = [...parole, raw]
+    const status = statusAfter(evaluateAll(dopo, row.answer), row.answer)
+    const finita = status !== 'playing' ? new Date().toISOString() : null
+    // Come nella classificata: condizionato ai tentativi letti, contro i doppi invii.
+    const esito = await c.env.DB.prepare(
+      `UPDATE wordle_libere SET guesses = ?, attempts = ?, status = ?, finished_at = ?
+        WHERE id = ? AND attempts = ?`,
+    )
+      .bind(JSON.stringify(dopo), dopo.length, status, finita, row.id, parole.length)
+      .run()
+    if (esito.meta.changes !== 1) {
+      fail(409, 'CONFLICT', 'Un altro tentativo è arrivato prima. Ricarica la pagina.')
+    }
+    return c.json<WordleLiberaState>(
+      statoLibero({ ...row, guesses: JSON.stringify(dopo), attempts: dopo.length, status, finished_at: finita }),
+    )
   })

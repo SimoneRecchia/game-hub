@@ -99,6 +99,14 @@ export const BATTAGLIA_POLL_TURNO_MS = 5_000
 /** In sala d'attesa: quanto spesso si guarda chi e' online e com'e' andata la sfida. */
 export const BATTAGLIA_POLL_LOBBY_MS = 3_000
 
+/**
+ * Quanto vale un invito con un link: un giorno. Il link si manda in una chat e
+ * chi lo riceve magari deve ancora registrarsi, quindi non puo' durare due
+ * minuti come una sfida; ma un invito dimenticato non deve aprire una partita
+ * la settimana dopo.
+ */
+export const LINK_SCADENZA_MS = 24 * 60 * 60_000
+
 /* ─────────────────────────  Email e verifica  ───────────────────────── */
 
 export const EMAIL_MAX = 254

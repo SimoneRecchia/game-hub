@@ -592,6 +592,14 @@ export function semeDelGiorno(numero) {
 }
 
 /**
+ * Il seme di uno schema libero: una sequenza sua, con un altro moltiplicatore,
+ * perché lo schema libero numero 30 non sia il cruciverba del giorno 30.
+ */
+export function semeLibero(numero) {
+  return (0x11be7a ^ Math.imul(numero, 0x85ebca6b)) >>> 0
+}
+
+/**
  * Le parole di una soluzione salvata, per tenerle lontane dagli schemi dei
  * giorni dopo. Solo quelle da quattro lettere in su: le corte tornano per
  * forza, e contarle come ripetizioni vorrebbe dire non poter usare "re".
@@ -603,16 +611,21 @@ export function paroleDellaSoluzione(soluzione, righe, colonne) {
     .filter((p) => p.length >= 4)
 }
 
-/** L'istruzione SQL che salva uno schema. `INSERT OR IGNORE`: uno schema scritto non cambia. */
-export function istruzioneSql(numero, cruciverba, adesso) {
+/**
+ * L'istruzione SQL che salva uno schema. `INSERT OR IGNORE`: uno schema scritto
+ * non cambia. `libero` lo scrive fra gli schemi liberi, col suo numero.
+ */
+export function istruzioneSql(numero, cruciverba, adesso, libero = false) {
   const definizioni = {}
   for (const [chiave, d] of Object.entries(cruciverba.definizioni)) {
     definizioni[chiave] = d.nota ? { t: d.testo, v: d.voce, n: d.nota } : { t: d.testo, v: d.voce }
   }
   const cita = (s) => `'${String(s).replace(/'/g, "''")}'`
   return (
-    'INSERT OR IGNORE INTO cruciverba_schemi ' +
-    '(puzzle_number, righe, colonne, soluzione, definizioni, created_at) VALUES (' +
+    (libero
+      ? 'INSERT OR IGNORE INTO cruciverba_schemi_liberi (id, '
+      : 'INSERT OR IGNORE INTO cruciverba_schemi (puzzle_number, ') +
+    'righe, colonne, soluzione, definizioni, created_at) VALUES (' +
     [
       numero,
       cruciverba.righe,

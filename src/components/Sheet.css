@@ -10,44 +10,76 @@
 .sheet__scrim {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  background: rgba(8, 10, 20, 0.36);
   animation: sheet-scrim var(--dur-base) var(--ease-out);
   cursor: default;
+  transition: opacity var(--dur-fast) linear;
 }
 
 .sheet__panel {
   position: relative;
   width: 100%;
-  max-width: 480px;
+  max-width: 520px;
   max-height: 92dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--bg-elevated);
-  border-radius: var(--r-2xl) var(--r-2xl) 0 0;
-  padding: var(--sp-3) var(--sp-5) calc(var(--sp-6) + var(--safe-bottom));
-  box-shadow: var(--shadow-lg);
-  animation: sheet-up var(--dur-slow) var(--ease-out);
+  border-radius: 34px 34px 0 0;
+  padding: var(--sp-2) var(--sp-5) calc(var(--sp-6) + var(--safe-bottom));
+  box-shadow:
+    0 -1px 0 var(--glass-edge),
+    0 -12px 48px var(--shadow-tint);
+  animation: sheet-up 480ms var(--ease-push);
   outline: none;
+  transition: transform 260ms var(--ease-push);
 }
 
-/* Su schermi larghi diventa una card centrata, come i modali macOS. */
+.sheet__panel.is-trascinato {
+  transition: none;
+}
+
+.sheet.is-chiudendo .sheet__panel {
+  transform: translateY(105%) !important;
+  transition: transform 220ms var(--ease-in-out);
+}
+
+.sheet.is-chiudendo .sheet__scrim {
+  opacity: 0 !important;
+  transition: opacity 220ms var(--ease-in-out);
+}
+
+/* Su schermi larghi diventa una card centrata, come i modali del Mac. */
 @media (min-width: 640px) {
   .sheet {
     align-items: center;
+    padding: var(--sp-6);
   }
 
   .sheet__panel {
-    border-radius: var(--r-2xl);
+    border-radius: 30px;
     max-height: 86dvh;
     padding-bottom: var(--sp-6);
-    animation: sheet-pop var(--dur-base) var(--ease-spring);
+    animation: sheet-pop 340ms var(--ease-spring);
   }
+
+  .sheet.is-chiudendo .sheet__panel {
+    transform: scale(0.94) !important;
+    opacity: 0;
+    transition:
+      transform 200ms var(--ease-in-out),
+      opacity 200ms var(--ease-in-out);
+  }
+}
+
+.sheet__maniglia {
+  touch-action: none;
+  padding-top: var(--sp-1);
+  cursor: grab;
 }
 
 .sheet__grabber {
   display: block;
-  width: 36px;
+  width: 38px;
   height: 5px;
   margin: 0 auto var(--sp-3);
   border-radius: var(--r-pill);
@@ -55,7 +87,9 @@
 }
 
 .sheet__title {
+  font-family: var(--font-rounded);
   font-size: var(--text-title-2);
+  font-weight: 800;
   text-align: center;
   margin-bottom: var(--sp-4);
 }
@@ -81,6 +115,6 @@
 @keyframes sheet-pop {
   from {
     opacity: 0;
-    transform: scale(0.94);
+    transform: scale(0.92);
   }
 }

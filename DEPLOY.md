@@ -4,8 +4,8 @@ Il sito è **già online**:
 
 | | |
 | --- | --- |
-| `https://giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
-| `https://wordle.simonerecchia.com` | direttamente il Wordle di oggi |
+| `https://giochi.simonerecchia.com` | l'app: i giochi, le classifiche, il profilo |
+| `https://wordle.simonerecchia.com` e gli altri giochi | scorciatoie: portano a `giochi.simonerecchia.com/<gioco>` |
 | `https://game-hub-43l.pages.dev` | il sottodominio Cloudflare del progetto |
 
 Ogni push su `main` ripubblica da solo tramite
@@ -72,8 +72,11 @@ Workers, e un token che pubblica su Pages non deve poter toccare altri script.
 
 Il workflow esegue typecheck, test, build, **migrazioni D1 prima della
 pubblicazione** (il codice nuovo potrebbe cercare tabelle che ancora non
-esistono) e poi verifica che `/api/health` risponda su entrambi i sottodomini:
-se non risponde, il deploy è considerato fallito.
+esistono), poi rifornisce quel che il Worker non puo' calcolare da solo — gli
+schemi del cruciverba delle prossime due settimane, una scorta di schemi liberi,
+il traguardo del computer dello Scarabeo — e infine verifica che `/api/health`
+risponda su entrambi i sottodomini: se non risponde, il deploy è considerato
+fallito. Il rifornimento di tutte le notti lo fa `cruciverba.yml`.
 
 Finché i segreti non ci sono, si pubblica a mano:
 
@@ -84,17 +87,24 @@ npm run build && npx wrangler pages deploy dist --project-name game-hub --branch
 
 ## I domini
 
-Il sito vive su sottodomini di **`simonerecchia.com`**: uno per l'hub e uno per
-ogni gioco. È sempre lo stesso progetto Pages — il sottodominio decide solo da
-quale schermata si entra.
+L'app ha **un indirizzo solo**, `giochi.simonerecchia.com`, e ogni gioco ci sta
+dentro con il suo nome. I sottodomini dei giochi restano come scorciatoie — un
+link vecchio o un'icona sulla Home non si rompono — e portano all'indirizzo
+vero. È sempre lo stesso progetto Pages.
 
-| Sottodominio | Apre |
+| Sottodominio | Porta a |
 | --- | --- |
-| `giochi.simonerecchia.com` | l'hub, con l'elenco dei giochi |
-| `wordle.simonerecchia.com` | direttamente il Wordle di oggi |
-| `scarabeo.simonerecchia.com` | direttamente lo Scarabeo di oggi |
-| `cruciverba.simonerecchia.com` | direttamente il cruciverba di oggi |
-| `battaglia.simonerecchia.com` | la sala della battaglia navale |
+| `giochi.simonerecchia.com` | l'app |
+| `wordle.simonerecchia.com` | `giochi.simonerecchia.com/wordle` |
+| `scarabeo.simonerecchia.com` | `giochi.simonerecchia.com/scarabeo` |
+| `cruciverba.simonerecchia.com` | `giochi.simonerecchia.com/cruciverba` |
+| `battaglia.simonerecchia.com` | `giochi.simonerecchia.com/battaglia-navale` |
+
+Gli indirizzi dentro l'app dicono sempre dove si è: `/<gioco>` è la pagina del
+gioco, `/<gioco>/classificata` la partita del giorno, `/<gioco>/libera` quella
+libera, `/classifica/<gioco>` la sua classifica. L'elenco completo è in
+[`src/app/rotte.ts`](src/app/rotte.ts); i vecchi indirizzi (`/wordle/3`,
+`/insieme/...`, `/battaglia/...`, `/classifica?gioco=...`) portano ai nuovi.
 
 Sono già collegati. Per aggiungerne altri: **Custom domains** → **Set up a
 custom domain** nel progetto Pages, oppure rilanciare
@@ -109,11 +119,12 @@ custom domain** nel progetto Pages, oppure rilanciare
 
 Due pezzi, entrambi nel codice e già in funzione:
 
-- **L'ingresso diretto.** `shared/hosts.ts` associa il primo livello dell'host
-  a una rotta (`wordle` → `/wordle`) e `src/lib/useHostEntry.ts` la apre al
-  primo caricamento. Scatta una volta sola: la navigazione interna verso l'hub
-  resta possibile, altrimenti toccare "Giochi" dal sottodominio del gioco
-  rimbalzerebbe subito indietro.
+- **Le scorciatoie.** Uno script in testa a `index.html` riconosce il
+  sottodominio di un gioco e porta subito a `giochi.<dominio>/<gioco>`, prima
+  che parta l'app. Sta lì e non in una Function perché le Pages non fanno
+  redirect per host, e una Function davanti a ogni richiesta consumerebbe il
+  tetto di richieste del piano gratuito. La stessa regola è in
+  `indirizzoCanonico` (`shared/hosts.ts`), e un test le confronta.
 - **La sessione condivisa.** Il cookie è normalmente legato al singolo host:
   senza intervento, chi accede su `giochi.` risulterebbe sconosciuto su
   `wordle.`. La variabile `COOKIE_DOMAIN` in `wrangler.toml` lo estende a tutto
@@ -122,7 +133,9 @@ Due pezzi, entrambi nel codice e già in funzione:
 
 ### Aggiungere il sottodominio di un gioco nuovo
 
-1. Una voce in `GAME_SUBDOMAINS` in `shared/hosts.ts`
+1. Una voce in `GAME_SUBDOMAINS` in `shared/hosts.ts` **e** nello script in
+   testa a `index.html` (il test in `shared/__tests__/hosts.test.ts` cade se ne
+   manca una)
 2. Il dominio fra i **Custom domains** del progetto Pages
 
 Nient'altro: il cookie e le rotte sono già a posto.

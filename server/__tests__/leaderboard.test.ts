@@ -100,14 +100,24 @@ describe('ordine della classifica', () => {
     expect(rows.map((r) => r.nickname)).toEqual(['aiuta', 'gioca'])
   })
 
-  it('a parita di totale passa avanti chi ha giocato piu in compagnia', () => {
-    // Lo spareggio: e' il motivo per cui il totale viene diviso.
+  it('a parita di totale passa avanti chi ha meno punti assist', () => {
+    // Lo spareggio: e' il motivo per cui il totale viene diviso. A parita' di
+    // punti, chi li ha fatti giocando le proprie partite sta davanti a chi li ha
+    // fatti nella stanza di qualcun altro.
     const rows = rankPlayers([
-      player('solo', { playScore: 160, wins: 2 }),
       player('insieme', { playScore: 80, assistScore: 80, assists: 1, wins: 1 }),
+      player('solo', { playScore: 160, wins: 2 }),
     ])
-    expect(rows.map((r) => r.nickname)).toEqual(['insieme', 'solo'])
+    expect(rows.map((r) => r.nickname)).toEqual(['solo', 'insieme'])
     expect(rows.map((r) => r.rank)).toEqual([1, 2])
+  })
+
+  it('lo spareggio sugli assist viene prima di vittorie e media', () => {
+    const rows = rankPlayers([
+      player('aiutata', { playScore: 60, assistScore: 40, assists: 1, wins: 3, avgAttempts: 2 }),
+      player('da-sola', { playScore: 90, assistScore: 10, assists: 1, wins: 1, avgAttempts: 5 }),
+    ])
+    expect(rows.map((r) => r.nickname)).toEqual(['da-sola', 'aiutata'])
   })
 
   it('una giornata in compagnia vale come una giocata da soli', () => {

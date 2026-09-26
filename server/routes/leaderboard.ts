@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import type {
   BattagliaLeaderboard,
+  GeneraleLeaderboard,
   CruciverbaLeaderboard,
   LeaderboardResponse,
   LeaderboardScope,
@@ -13,7 +14,7 @@ import { leaderboard } from '../lib/leaderboard'
 import { classificaScarabeo } from '../lib/scarabeoStore'
 import { classificaCruciverba } from '../lib/cruciverbaStore'
 import { classificaBattaglia } from '../lib/battagliaStore'
-import { msToNextPuzzle } from '../../shared/daily'
+import { classificaGenerale } from '../lib/generale'
 import { today } from '../lib/wordleStore'
 
 const SCOPES: LeaderboardScope[] = ['today', 'week', 'month', 'all']
@@ -39,15 +40,16 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   })
 
   /**
-   * La classifica dello Scarabeo, separata da quella del Wordle.
-   *
-   * Non e' pigrizia: i due punteggi non sono commensurabili. Una giornata di
-   * Wordle vale al massimo 209 punti per costruzione, una di Scarabeo qualche
-   * centinaio, e sommarli richiederebbe un tasso di cambio inventato; mentre
-   * normalizzare per giornata ("il migliore prende cento") cambierebbe le
-   * classifiche di ieri ogni volta che qualcuno gioca. Due classifiche dicono
-   * la verita' e non chiedono di crederci.
+   * La classifica generale: la somma delle classificate di tutti i giochi.
+   * Ha senso perché ognuna vale al massimo cento punti (shared/punti.ts).
    */
+  .get('/generale', async (c) => {
+    const scope = readScope(c.req.query('scope'))
+    const result = await classificaGenerale(c.env.DB, scope, today().puzzleNumber, c.get('player').id)
+    return c.json<GeneraleLeaderboard>(result)
+  })
+
+  /** La classifica dello Scarabeo: punti in rapporto al computer, poi il tabellone. */
   .get('/scarabeo', async (c) => {
     const scope = readScope(c.req.query('scope'))
     const result = await classificaScarabeo(
@@ -71,15 +73,9 @@ export const leaderboardRoutes = new Hono<AppEnv>()
     return c.json<CruciverbaLeaderboard>(result)
   })
 
-  /** La battaglia navale: vittorie, poi meno sconfitte. */
+  /** La battaglia navale: le classificate contro il computer, a punti. */
   .get('/battaglia', async (c) => {
     const scope = readScope(c.req.query('scope'))
-    const result = await classificaBattaglia(
-      c.env.DB,
-      scope,
-      msToNextPuzzle(),
-      c.get('player').id,
-      Date.now(),
-    )
+    const result = await classificaBattaglia(c.env.DB, scope, today().puzzleNumber, c.get('player').id)
     return c.json<BattagliaLeaderboard>(result)
   })

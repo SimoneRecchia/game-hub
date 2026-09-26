@@ -38,7 +38,32 @@ function sostituisci(testo: string, k: number, lettera: string): string {
  * con se' la griglia: il server controlla quel che si vede a schermo, non
  * l'ultima versione salvata.
  */
-export function useCruciverba() {
+/**
+ * Dove sta la partita: quella del giorno, o uno schema libero.
+ *
+ * Le scritture sono le stesse — `lettere`, `controlla`, `svela` — sotto un
+ * indirizzo diverso: `/cruciverba` per la classificata, `/cruciverba/libera/:id`
+ * per una libera. Lo stato del giorno si legge da `/cruciverba/state`, quello di
+ * una libera dal suo indirizzo stesso.
+ */
+export interface IndirizziCruciverba {
+  stato: string
+  scritture: string
+}
+
+export const CRUCIVERBA_DEL_GIORNO: IndirizziCruciverba = {
+  stato: '/cruciverba/state',
+  scritture: '/cruciverba',
+}
+
+export function indirizziLiberi(id: string): IndirizziCruciverba {
+  return { stato: `/cruciverba/libera/${id}`, scritture: `/cruciverba/libera/${id}` }
+}
+
+export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GIORNO) {
+  // Le scritture in coda partono dopo: devono usare l'indirizzo di adesso.
+  const indirizziRef = useRef(indirizzi)
+  indirizziRef.current = indirizzi
   const [stato, setStato] = useState<CruciverbaState | null>(null)
   const [lettere, setLettere] = useState('')
   const [svelate, setSvelate] = useState<Set<number>>(new Set())
@@ -115,13 +140,13 @@ export function useCruciverba() {
   const ricarica = useCallback(async () => {
     setLoadError(null)
     try {
-      applicaStato(await api<CruciverbaState>('/cruciverba/state'))
+      applicaStato(await api<CruciverbaState>(indirizzi.stato))
     } catch (err) {
       setLoadError(
         err instanceof ApiFetchError ? err.message : 'Non riesco a caricare il cruciverba.',
       )
     }
-  }, [applicaStato])
+  }, [applicaStato, indirizzi.stato])
 
   useEffect(() => {
     void ricarica()
@@ -172,7 +197,7 @@ export function useCruciverba() {
       accoda(async () => {
         const griglia = lettereRef.current
         if (griglia === salvateRef.current && !keepalive) return
-        const esito = await api<CruciverbaEsito>('/cruciverba/lettere', {
+        const esito = await api<CruciverbaEsito>(`${indirizziRef.current.scritture}/lettere`, {
           method: 'PUT',
           body: { lettere: griglia, tempoMs: tempoRef.current, versione: versioneRef.current },
           keepalive,
@@ -383,7 +408,7 @@ export function useCruciverba() {
       setInviando(true)
       void accoda(async () => {
         const griglia = lettereRef.current
-        const esito = await api<CruciverbaEsito>('/cruciverba/controlla', {
+        const esito = await api<CruciverbaEsito>(`${indirizziRef.current.scritture}/controlla`, {
           method: 'POST',
           body: { lettere: griglia, tempoMs: tempoRef.current, versione: versioneRef.current, caselle },
         })
@@ -418,7 +443,7 @@ export function useCruciverba() {
       const caselle = ambito === 'lettera' ? [selezione.casella] : corrente.caselle
       setInviando(true)
       void accoda(async () => {
-        const esito = await api<CruciverbaEsito>('/cruciverba/svela', {
+        const esito = await api<CruciverbaEsito>(`${indirizziRef.current.scritture}/svela`, {
           method: 'POST',
           body: {
             lettere: lettereRef.current,

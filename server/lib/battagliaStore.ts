@@ -11,21 +11,35 @@ import {
   BATTAGLIA_ABBANDONATA_MS,
   BATTAGLIA_ATTESA_FLOTTA_MS,
   BATTAGLIA_ATTESA_TURNO_MS,
+  LINK_SCADENZA_MS,
   PRESENZA_ONLINE_MS,
   PRESENZA_SCRITTURA_MS,
   SFIDA_SCADENZA_MS,
 } from '../../shared/config'
-import { esitoDelColpo, naviAffondate, type Nave } from '../../shared/battaglia'
+import { disponiACaso, esitoDelColpo, naviAffondate, type Nave } from '../../shared/battaglia'
+import {
+  casoDelColpo,
+  colpoDelComputer,
+  flottaDelGiorno,
+  semeDelGiorno,
+  type LivelloBattaglia,
+} from '../../shared/battaglia-computer'
+import { mulberry32 } from '../../shared/daily'
+import { puntiBattaglia } from '../../shared/punti'
 import type {
   Attivita,
   BattagliaLeaderboard,
   BattagliaRow,
+  ClassificataBattaglia,
   ColpoVisto,
   GiocatoreBreve,
   GiocatoreOnline,
   InvitoBattaglia,
+  InvitoConLink,
   InvitoInviato,
   LeaderboardScope,
+  LinkBattaglia,
+  ModalitaBattaglia,
   PartitaBreve,
   StatoBattaglia,
   VistaBattaglia,
@@ -47,8 +61,14 @@ export const ATTIVITA: readonly Attivita[] = [
 
 export interface PartitaRow {
   id: string
+  modalita: ModalitaBattaglia
   giocatore_a: string
-  giocatore_b: string
+  /** NULL contro il computer: il lato `b` e' lui. */
+  giocatore_b: string | null
+  livello: LivelloBattaglia | null
+  seme: number | null
+  puzzle_number: number | null
+  punti: number | null
   stato: StatoBattaglia
   flotta_a: string | null
   flotta_b: string | null
@@ -67,6 +87,14 @@ interface GiocatoreRow {
   nickname: string
   display_name: string
   avatar_color: string
+}
+
+/** Il computer, quando e' l'avversario: non e' un giocatore, ma si mostra come uno. */
+export const COMPUTER: GiocatoreBreve = {
+  playerId: 'computer',
+  nickname: 'computer',
+  displayName: 'Il computer',
+  avatarColor: '#5b6475',
 }
 
 function breve(r: GiocatoreRow): GiocatoreBreve {
@@ -127,8 +155,12 @@ export async function eOnline(db: D1Database, playerId: string, adesso: number):
  * oltre il quale una partita ferma non conta piu' (vedi BATTAGLIA_ABBANDONATA_MS).
  */
 function aperte(soglia: string): string {
-  return `SELECT giocatore_a AS g FROM battaglia_partite WHERE stato != 'finita' AND updated_at >= ${soglia}
-          UNION SELECT giocatore_b FROM battaglia_partite WHERE stato != 'finita' AND updated_at >= ${soglia}`
+  // Solo fra amici: chi gioca contro il computer puo' essere sfidato, e la
+  // partita col computer resta li' ad aspettarlo.
+  return `SELECT giocatore_a AS g FROM battaglia_partite
+           WHERE modalita = 'amici' AND stato != 'finita' AND updated_at >= ${soglia}
+          UNION SELECT giocatore_b FROM battaglia_partite
+           WHERE modalita = 'amici' AND stato != 'finita' AND updated_at >= ${soglia}`
 }
 
 function sogliaAbbandono(adesso: number): string {
@@ -303,8 +335,8 @@ export async function accettaSfida(
     db
       .prepare(
         `INSERT INTO battaglia_partite
-           (id, giocatore_a, giocatore_b, stato, colpi, versione, created_at, updated_at)
-         SELECT ?1, i.da_id, i.a_id, 'disposizione', '[]', 0, ?2, ?2
+           (id, modalita, giocatore_a, giocatore_b, stato, colpi, versione, created_at, updated_at)
+         SELECT ?1, 'amici', i.da_id, i.a_id, 'disposizione', '[]', 0, ?2, ?2
            FROM battaglia_inviti i
           WHERE i.id = ?3 AND i.stato = 'attesa' AND i.created_at >= ?4
             AND i.da_id NOT IN (${aperte('?5')}) AND i.a_id NOT IN (${aperte('?5')})`,
@@ -352,7 +384,8 @@ export async function partitaAperta(
   return db
     .prepare(
       `SELECT * FROM battaglia_partite
-        WHERE stato != 'finita' AND (giocatore_a = ?1 OR giocatore_b = ?1) AND updated_at >= ?2
+        WHERE modalita = 'amici' AND stato != 'finita'
+          AND (giocatore_a = ?1 OR giocatore_b = ?1) AND updated_at >= ?2
         ORDER BY created_at DESC LIMIT 1`,
     )
     .bind(playerId, sogliaAbbandono(adesso))
@@ -361,8 +394,13 @@ export async function partitaAperta(
 
 export function latoDi(row: PartitaRow, playerId: string): Lato | null {
   if (row.giocatore_a === playerId) return 'a'
-  if (row.giocatore_b === playerId) return 'b'
+  if (row.giocatore_b !== null && row.giocatore_b === playerId) return 'b'
   return null
+}
+
+/** Contro il computer? Allora il lato `b` e' suo, e risponde da solo. */
+export function controComputer(row: PartitaRow): boolean {
+  return row.modalita !== 'amici'
 }
 
 export function flottaDi(row: PartitaRow, lato: Lato): Nave[] | null {
@@ -411,6 +449,8 @@ export function colpiDelLato(row: PartitaRow, lato: Lato): ColpoVisto[] {
 
 /** Quanto aspettare, e se si puo' gia' chiedere la vittoria a tavolino. */
 export function reclamo(row: PartitaRow, io: Lato, adesso: number): { attesaMs: number; puoi: boolean } {
+  // Il computer risponde nella stessa richiesta: non c'e' mai da aspettarlo.
+  if (controComputer(row)) return { attesaMs: 0, puoi: false }
   const attesaMs = Math.max(0, adesso - Date.parse(row.updated_at))
   if (row.stato === 'battaglia') {
     return { attesaMs, puoi: diTurno(row) === altro(io) && attesaMs >= BATTAGLIA_ATTESA_TURNO_MS }
@@ -440,10 +480,9 @@ export async function vistaPer(
   adesso: number,
 ): Promise<VistaBattaglia> {
   const idAvversario = io === 'a' ? row.giocatore_b : row.giocatore_a
-  const [avversario, online] = await Promise.all([
-    giocatore(db, idAvversario),
-    eOnline(db, idAvversario, adesso),
-  ])
+  const [avversario, online] = idAvversario
+    ? await Promise.all([giocatore(db, idAvversario), eOnline(db, idAvversario, adesso)])
+    : [COMPUTER, true]
 
   const mia = flottaDi(row, io)
   const sua = flottaDi(row, altro(io))
@@ -462,6 +501,10 @@ export async function vistaPer(
   const { attesaMs, puoi } = reclamo(row, io, adesso)
   return {
     id: row.id,
+    modalita: row.modalita,
+    livello: row.livello,
+    puzzleNumber: row.puzzle_number,
+    punti: row.stato === 'finita' ? row.punti : null,
     stato: row.stato,
     avversario: { ...avversario, online },
     miaFlotta: mia,
@@ -482,10 +525,12 @@ export async function vistaPer(
 
 /** La partita in breve, per l'hub e per il giro di controllo. */
 export async function partitaBreve(db: D1Database, row: PartitaRow, io: Lato): Promise<PartitaBreve> {
+  const idAvversario = io === 'a' ? row.giocatore_b : row.giocatore_a
   return {
     id: row.id,
+    modalita: row.modalita,
     stato: row.stato,
-    avversario: await giocatore(db, io === 'a' ? row.giocatore_b : row.giocatore_a),
+    avversario: idAvversario ? await giocatore(db, idAvversario) : COMPUTER,
     tuoTurno: diTurno(row) === io,
   }
 }
@@ -498,6 +543,7 @@ export interface CambiPartita {
   colpi?: string
   vincitore?: Lato | null
   motivo?: PartitaRow['motivo']
+  punti?: number | null
 }
 
 /**
@@ -518,7 +564,7 @@ export async function salvaPartita(
     .prepare(
       `UPDATE battaglia_partite
           SET stato = ?, flotta_a = ?, flotta_b = ?, primo = ?, colpi = ?, vincitore = ?,
-              motivo = ?, versione = ?, updated_at = ?, finita_at = ?
+              motivo = ?, punti = ?, versione = ?, updated_at = ?, finita_at = ?
         WHERE id = ? AND versione = ?`,
     )
     .bind(
@@ -529,6 +575,7 @@ export async function salvaPartita(
       dopo.colpi,
       dopo.vincitore,
       dopo.motivo,
+      dopo.punti,
       dopo.versione,
       dopo.updated_at,
       dopo.finita_at,
@@ -543,8 +590,182 @@ export async function salvaPartita(
   return dopo
 }
 
+/* ──────────────────────────  Il computer  ─────────────────────────── */
+
+/**
+ * Il prossimo colpo del computer, dati i colpi che ha gia' sparato: sa quel che
+ * saprebbe un giocatore — gli esiti, e il nome delle navi che ha affondato.
+ */
+export function colpoDelComputerIn(row: PartitaRow): number {
+  const suoi = colpiDelLato(row, 'b')
+  return colpoDelComputer(
+    suoi,
+    row.livello ?? 'facile',
+    casoDelColpo(row.seme ?? 0, suoi.length),
+  )
+}
+
+/**
+ * La classificata di oggi del giocatore: aperta alla prima richiesta, con la
+ * flotta del computer uguale per tutti e il computer al livello facile. Una
+ * sola per giornata — l'indice unico lo garantisce anche con due richieste
+ * ravvicinate.
+ */
+export async function apriClassificata(
+  db: D1Database,
+  playerId: string,
+  puzzleNumber: number,
+): Promise<PartitaRow> {
+  const adesso = nowIso()
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO battaglia_partite
+         (id, modalita, giocatore_a, giocatore_b, livello, seme, puzzle_number, stato,
+          flotta_b, colpi, versione, created_at, updated_at)
+       VALUES (?, 'classificata', ?, NULL, 'facile', ?, ?, 'disposizione', ?, '[]', 0, ?, ?)`,
+    )
+    .bind(
+      newId('bat'),
+      playerId,
+      semeDelGiorno(puzzleNumber),
+      puzzleNumber,
+      JSON.stringify(flottaDelGiorno(puzzleNumber)),
+      adesso,
+      adesso,
+    )
+    .run()
+  const row = await classificataDi(db, playerId, puzzleNumber)
+  if (!row) throw new Error('Classificata non trovata subito dopo la creazione')
+  return row
+}
+
+export async function classificataDi(
+  db: D1Database,
+  playerId: string,
+  puzzleNumber: number,
+): Promise<PartitaRow | null> {
+  return db
+    .prepare(
+      `SELECT * FROM battaglia_partite
+        WHERE modalita = 'classificata' AND giocatore_a = ? AND puzzle_number = ?`,
+    )
+    .bind(playerId, puzzleNumber)
+    .first<PartitaRow>()
+}
+
+/** La partita libera aperta contro il computer, se c'e'. */
+export async function partitaComputerAperta(db: D1Database, playerId: string): Promise<PartitaRow | null> {
+  return db
+    .prepare(
+      `SELECT * FROM battaglia_partite
+        WHERE modalita = 'computer' AND giocatore_a = ? AND stato != 'finita'
+        ORDER BY created_at DESC LIMIT 1`,
+    )
+    .bind(playerId)
+    .first<PartitaRow>()
+}
+
+/**
+ * Una partita libera contro il computer, al livello scelto.
+ *
+ * Quella aperta, se c'e', si riusa quando non e' ancora cominciata — basta
+ * cambiarle il livello — e conta come persa se era gia' in battaglia:
+ * ricominciare non deve essere un modo di cancellare una sconfitta.
+ */
+export async function nuovaControComputer(
+  db: D1Database,
+  playerId: string,
+  livello: LivelloBattaglia,
+): Promise<PartitaRow> {
+  const aperta = await partitaComputerAperta(db, playerId)
+  const adesso = nowIso()
+  if (aperta && aperta.stato === 'disposizione') {
+    await db
+      .prepare('UPDATE battaglia_partite SET livello = ?, updated_at = ? WHERE id = ?')
+      .bind(livello, adesso, aperta.id)
+      .run()
+    return { ...aperta, livello, updated_at: adesso }
+  }
+  if (aperta) {
+    await db
+      .prepare(
+        `UPDATE battaglia_partite SET stato = 'finita', vincitore = 'b', motivo = 'resa',
+                versione = versione + 1, updated_at = ?, finita_at = ?
+          WHERE id = ? AND stato != 'finita'`,
+      )
+      .bind(adesso, adesso, aperta.id)
+      .run()
+  }
+
+  const seme = crypto.getRandomValues(new Uint32Array(1))[0]
+  const row: PartitaRow = {
+    id: newId('bat'),
+    modalita: 'computer',
+    giocatore_a: playerId,
+    giocatore_b: null,
+    livello,
+    seme,
+    puzzle_number: null,
+    punti: null,
+    stato: 'disposizione',
+    flotta_a: null,
+    flotta_b: JSON.stringify(disponiACaso(mulberry32(seme ^ 0x5eed))),
+    primo: null,
+    colpi: '[]',
+    vincitore: null,
+    motivo: null,
+    versione: 0,
+    created_at: adesso,
+    updated_at: adesso,
+    finita_at: null,
+  }
+  await db
+    .prepare(
+      `INSERT INTO battaglia_partite
+         (id, modalita, giocatore_a, giocatore_b, livello, seme, stato, flotta_b, colpi, versione,
+          created_at, updated_at)
+       VALUES (?, 'computer', ?, NULL, ?, ?, 'disposizione', ?, '[]', 0, ?, ?)`,
+    )
+    .bind(row.id, playerId, livello, seme, row.flotta_b, adesso, adesso)
+    .run()
+  return row
+}
+
+/**
+ * I punti della classificata a partita finita: vedi `puntiBattaglia`. Il
+ * giocatore spara per primo, quindi i suoi colpi sono i pari.
+ */
+export function puntiDellaClassificata(row: PartitaRow): number {
+  const miei = colpiDelLato(row, 'a')
+  return puntiBattaglia({
+    vinta: row.vincitore === 'a',
+    colpi: miei.length,
+    aSegno: miei.filter((c) => c.esito !== 'acqua').length,
+  })
+}
+
+/** Com'e' messa la classificata di oggi: per l'hub e per la sala. */
+export async function statoClassificata(
+  db: D1Database,
+  playerId: string,
+  puzzleNumber: number,
+  msToNextPuzzle: number,
+): Promise<ClassificataBattaglia> {
+  const row = await classificataDi(db, playerId, puzzleNumber)
+  return {
+    puzzleNumber,
+    stato: row ? row.stato : 'nuova',
+    partitaId: row?.id ?? null,
+    punti: row && row.stato === 'finita' ? row.punti : null,
+    vinta: row && row.stato === 'finita' ? row.vincitore === 'a' : null,
+    colpi: row ? colpiDelLato(row, 'a').length : 0,
+    msToNextPuzzle,
+  }
+}
+
 /* ───────────────────────  Il record e la classifica  ───────────────────── */
 
+/** Contro gli amici: le partite contro il computer non entrano qui. */
 export async function recordDi(db: D1Database, playerId: string): Promise<{ vinte: number; perse: number }> {
   const riga = await db
     .prepare(
@@ -554,32 +775,57 @@ export async function recordDi(db: D1Database, playerId: string): Promise<{ vint
          SUM(CASE WHEN (giocatore_a = ?1 AND vincitore = 'b') OR (giocatore_b = ?1 AND vincitore = 'a')
                   THEN 1 ELSE 0 END) AS perse
          FROM battaglia_partite
-        WHERE stato = 'finita' AND (giocatore_a = ?1 OR giocatore_b = ?1)`,
+        WHERE modalita = 'amici' AND stato = 'finita' AND (giocatore_a = ?1 OR giocatore_b = ?1)`,
     )
     .bind(playerId)
     .first<{ vinte: number | null; perse: number | null }>()
   return { vinte: riga?.vinte ?? 0, perse: riga?.perse ?? 0 }
 }
 
-/** Da quando conta ogni vista della classifica. `today` e' da mezzanotte italiana. */
-function inizioFinestra(scope: LeaderboardScope, msAllaMezzanotte: number, adesso: number): string {
-  const giorno = 86_400_000
-  const oggi = adesso + msAllaMezzanotte - giorno
-  const giorni = { today: 1, week: 7, month: 30, all: null }[scope]
-  if (giorni === null) return '0000'
-  return new Date(oggi - (giorni - 1) * giorno).toISOString()
+/** Contro il computer, nelle partite libere, per livello. */
+export async function recordControComputer(
+  db: D1Database,
+  playerId: string,
+): Promise<Record<LivelloBattaglia, { vinte: number; perse: number }>> {
+  const { results } = await db
+    .prepare(
+      `SELECT livello,
+              SUM(CASE WHEN vincitore = 'a' THEN 1 ELSE 0 END) AS vinte,
+              SUM(CASE WHEN vincitore = 'b' THEN 1 ELSE 0 END) AS perse
+         FROM battaglia_partite
+        WHERE modalita = 'computer' AND giocatore_a = ? AND stato = 'finita'
+        GROUP BY livello`,
+    )
+    .bind(playerId)
+    .all<{ livello: LivelloBattaglia; vinte: number; perse: number }>()
+  const record = {
+    facile: { vinte: 0, perse: 0 },
+    normale: { vinte: 0, perse: 0 },
+    difficile: { vinte: 0, perse: 0 },
+  }
+  for (const r of results) if (r.livello in record) record[r.livello] = { vinte: r.vinte, perse: r.perse }
+  return record
 }
 
+/** Finestra di puzzle coperta da ogni vista, in giorni. null = tutto. */
+const FINESTRA: Record<LeaderboardScope, number | null> = { today: 1, week: 7, month: 30, all: null }
+
 /**
- * La classifica della battaglia navale: vittorie, poi meno sconfitte, poi il
- * nickname. Le vittorie e non la percentuale: con due partite in tutto, un
- * cento per cento vale meno di sette vittorie su dieci.
+ * La classifica della battaglia navale: le classificate contro il computer.
+ *
+ * L'ordine: **punti** del periodo, poi le **vittorie**, poi **meno colpi**
+ * sparati per vincere, poi meno giornate — lo stesso totale in meno partite e'
+ * un gioco migliore — e il nickname, perché due righe identiche non si
+ * scambino di posto. Le partite fra amici non entrano: quelle si giocano per
+ * il gusto di giocarle, e il loro conto sta nella sala.
  */
 export function ordinaBattaglia(righe: Omit<BattagliaRow, 'rank'>[]): BattagliaRow[] {
   return [...righe]
     .sort((x, y) => {
+      if (x.punti !== y.punti) return y.punti - x.punti
       if (x.vinte !== y.vinte) return y.vinte - x.vinte
-      if (x.perse !== y.perse) return x.perse - y.perse
+      if (x.colpi !== y.colpi) return x.colpi - y.colpi
+      if (x.giornate !== y.giornate) return x.giornate - y.giornate
       return x.nickname.localeCompare(y.nickname, 'it', { sensitivity: 'base' })
     })
     .map((r, i) => ({ rank: i + 1, ...r }))
@@ -588,27 +834,172 @@ export function ordinaBattaglia(righe: Omit<BattagliaRow, 'rank'>[]): BattagliaR
 export async function classificaBattaglia(
   db: D1Database,
   scope: LeaderboardScope,
-  msAllaMezzanotte: number,
+  numeroDiOggi: number,
   viewerId: string,
-  adesso: number,
 ): Promise<BattagliaLeaderboard> {
+  const finestra = FINESTRA[scope]
+  const da = finestra === null ? Number.MIN_SAFE_INTEGER : numeroDiOggi - finestra + 1
+  /*
+   * Chi spara per primo e' il giocatore, quindi i suoi colpi sono la meta' per
+   * eccesso di tutti quelli della partita.
+   */
   const { results } = await db
     .prepare(
-      `WITH esiti AS (
-         SELECT giocatore_a AS player_id, CASE WHEN vincitore = 'a' THEN 1 ELSE 0 END AS vinta
-           FROM battaglia_partite WHERE stato = 'finita' AND finita_at >= ?1
-         UNION ALL
-         SELECT giocatore_b, CASE WHEN vincitore = 'b' THEN 1 ELSE 0 END
-           FROM battaglia_partite WHERE stato = 'finita' AND finita_at >= ?1
-       )
-       SELECT p.id, p.nickname, p.display_name, p.avatar_color,
-              SUM(e.vinta) AS vinte, SUM(1 - e.vinta) AS perse
-         FROM esiti e JOIN players p ON p.id = e.player_id
+      `SELECT p.id, p.nickname, p.display_name, p.avatar_color,
+              COALESCE(SUM(CASE WHEN b.stato = 'finita' THEN b.punti END), 0)        AS punti,
+              SUM(CASE WHEN b.stato = 'finita' THEN 1 ELSE 0 END)                   AS giornate,
+              SUM(CASE WHEN b.stato = 'finita' AND b.vincitore = 'a' THEN 1 ELSE 0 END) AS vinte,
+              COALESCE(SUM(CASE WHEN b.stato = 'finita' AND b.vincitore = 'a'
+                                THEN (json_array_length(b.colpi) + 1) / 2 END), 0)   AS colpi,
+              MAX(CASE WHEN b.puzzle_number = ?1 AND b.stato = 'finita' THEN b.punti END) AS oggi,
+              MAX(CASE WHEN b.puzzle_number = ?1 AND b.stato != 'finita' THEN 1 ELSE 0 END) AS in_corso
+         FROM battaglia_partite b
+         JOIN players p ON p.id = b.giocatore_a
+        WHERE b.modalita = 'classificata' AND b.puzzle_number >= ?2
         GROUP BY p.id`,
     )
-    .bind(inizioFinestra(scope, msAllaMezzanotte, adesso))
-    .all<GiocatoreRow & { vinte: number; perse: number }>()
+    .bind(numeroDiOggi, da)
+    .all<GiocatoreRow & { punti: number; giornate: number; vinte: number; colpi: number; oggi: number | null; in_corso: number }>()
 
-  const rows = ordinaBattaglia(results.map((r) => ({ ...breve(r), vinte: r.vinte, perse: r.perse })))
+  const rows = ordinaBattaglia(
+    results.map((r) => ({
+      ...breve(r),
+      punti: r.punti,
+      giornate: r.giornate,
+      vinte: r.vinte,
+      colpi: r.colpi,
+      oggi: r.oggi,
+      inCorso: r.in_corso === 1,
+    })),
+  )
   return { scope, updatedAt: nowIso(), rows, me: rows.find((r) => r.playerId === viewerId) ?? null }
+}
+
+/* ───────────────────────────  Gli inviti col link  ─────────────────────── */
+
+interface LinkRow {
+  codice: string
+  da_id: string
+  stato: 'attesa' | 'usato' | 'annullato'
+  partita_id: string | null
+  usato_da: string | null
+  created_at: string
+  usato_at: string | null
+}
+
+/** Senza lettere che si confondono (0/O, 1/I/L): il codice a volte si detta. */
+const ALFABETO_LINK = 'abcdefghjkmnpqrstuvwxyz23456789'
+const LUNGHEZZA_LINK = 10
+
+export function nuovoCodice(): string {
+  const casuali = crypto.getRandomValues(new Uint8Array(LUNGHEZZA_LINK))
+  return [...casuali].map((b) => ALFABETO_LINK[b % ALFABETO_LINK.length]).join('')
+}
+
+function scadenzaLink(row: Pick<LinkRow, 'created_at'>, adesso: number): number {
+  return Math.max(0, Date.parse(row.created_at) + LINK_SCADENZA_MS - adesso)
+}
+
+/** L'invito col link ancora valido di un giocatore, se ne ha uno. */
+export async function linkAttivo(db: D1Database, playerId: string, adesso: number): Promise<LinkBattaglia | null> {
+  const row = await db
+    .prepare(
+      `SELECT * FROM battaglia_link WHERE da_id = ? AND stato = 'attesa' AND created_at >= ?
+        ORDER BY created_at DESC LIMIT 1`,
+    )
+    .bind(playerId, prima(adesso, LINK_SCADENZA_MS))
+    .first<LinkRow>()
+  return row ? { codice: row.codice, createdAt: row.created_at, scadeTraMs: scadenzaLink(row, adesso) } : null
+}
+
+/** Un invito nuovo: uno alla volta, quello vecchio si annulla. */
+export async function creaLink(db: D1Database, playerId: string, adesso: number): Promise<LinkBattaglia> {
+  const codice = nuovoCodice()
+  const quando = new Date(adesso).toISOString()
+  await db.batch([
+    db
+      .prepare(`UPDATE battaglia_link SET stato = 'annullato' WHERE da_id = ? AND stato = 'attesa'`)
+      .bind(playerId),
+    db
+      .prepare(`INSERT INTO battaglia_link (codice, da_id, stato, created_at) VALUES (?, ?, 'attesa', ?)`)
+      .bind(codice, playerId, quando),
+  ])
+  return { codice, createdAt: quando, scadeTraMs: LINK_SCADENZA_MS }
+}
+
+export async function annullaLink(db: D1Database, playerId: string): Promise<void> {
+  await db
+    .prepare(`UPDATE battaglia_link SET stato = 'annullato' WHERE da_id = ? AND stato = 'attesa'`)
+    .bind(playerId)
+    .run()
+}
+
+async function linkPerCodice(db: D1Database, codice: string): Promise<LinkRow | null> {
+  return db.prepare('SELECT * FROM battaglia_link WHERE codice = ?').bind(codice).first<LinkRow>()
+}
+
+/** L'invito come lo vede chi apre il link: chi invita e se vale ancora. Anche senza account. */
+export async function invitoConLink(db: D1Database, codice: string, adesso: number): Promise<InvitoConLink | null> {
+  const row = await linkPerCodice(db, codice)
+  if (!row) return null
+  const da = await giocatore(db, row.da_id)
+  const scaduto = row.stato === 'attesa' && scadenzaLink(row, adesso) === 0
+  return { codice: row.codice, da, stato: scaduto ? 'scaduto' : row.stato }
+}
+
+/**
+ * Accetta un invito col link e apre la partita, in un colpo solo.
+ *
+ * Come per le sfide: un `batch` atomico che crea la partita solo se il link e'
+ * ancora in attesa e valido e nessuno dei due e' in un'altra battaglia fra
+ * amici, poi segna il link come usato e annulla le sfide in sospeso dei due.
+ * Chi riapre un link che ha gia' usato ritrova la sua partita.
+ */
+export async function accettaLink(
+  db: D1Database,
+  codice: string,
+  ospiteId: string,
+  adesso: number,
+): Promise<string> {
+  const link = await linkPerCodice(db, codice)
+  if (!link) fail(404, 'LINK_NON_TROVATO', 'Questo invito non esiste.')
+  if (link.stato === 'usato' && link.usato_da === ospiteId && link.partita_id) return link.partita_id
+  if (link.da_id === ospiteId) fail(409, 'LINK_TUO', 'È il tuo invito: mandalo a chi vuoi sfidare.')
+  if (link.stato === 'usato') fail(409, 'LINK_USATO', 'Questo invito l’ha già accettato qualcun altro.')
+  if (link.stato === 'annullato') fail(409, 'LINK_ANNULLATO', 'Questo invito è stato ritirato.')
+  if (scadenzaLink(link, adesso) === 0) fail(409, 'LINK_SCADUTO', 'Questo invito è scaduto: chiedine uno nuovo.')
+
+  const partitaId = newId('bat')
+  const quando = new Date(adesso).toISOString()
+  const [creata] = await db.batch([
+    db
+      .prepare(
+        `INSERT INTO battaglia_partite
+           (id, modalita, giocatore_a, giocatore_b, stato, colpi, versione, created_at, updated_at)
+         SELECT ?1, 'amici', l.da_id, ?2, 'disposizione', '[]', 0, ?3, ?3
+           FROM battaglia_link l
+          WHERE l.codice = ?4 AND l.stato = 'attesa' AND l.created_at >= ?5
+            AND l.da_id NOT IN (${aperte('?6')}) AND ?2 NOT IN (${aperte('?6')})`,
+      )
+      .bind(partitaId, ospiteId, quando, codice, prima(adesso, LINK_SCADENZA_MS), sogliaAbbandono(adesso)),
+    db
+      .prepare(
+        `UPDATE battaglia_link SET stato = 'usato', usato_da = ?1, partita_id = ?2, usato_at = ?3
+          WHERE codice = ?4 AND stato = 'attesa'
+            AND EXISTS (SELECT 1 FROM battaglia_partite WHERE id = ?2)`,
+      )
+      .bind(ospiteId, partitaId, quando, codice),
+    db
+      .prepare(
+        `UPDATE battaglia_inviti SET stato = 'annullato', risposto_at = ?1
+          WHERE stato = 'attesa' AND (da_id IN (?2, ?3) OR a_id IN (?2, ?3))
+            AND EXISTS (SELECT 1 FROM battaglia_partite WHERE id = ?4)`,
+      )
+      .bind(quando, link.da_id, ospiteId, partitaId),
+  ])
+
+  if (creata.meta.changes !== 1) {
+    fail(409, 'OCCUPATO', 'Uno dei due sta già giocando un’altra battaglia: riprova fra poco.')
+  }
+  return partitaId
 }

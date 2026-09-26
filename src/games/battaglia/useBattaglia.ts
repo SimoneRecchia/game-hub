@@ -3,7 +3,42 @@ import { BATTAGLIA_POLL_ATTESA_MS, BATTAGLIA_POLL_TURNO_MS } from '@shared/confi
 import { coordinata, tipoDi, type Nave } from '@shared/battaglia'
 import type { VistaBattaglia } from '@shared/types'
 import { ApiFetchError, api } from '@/lib/api'
+import { dimentica } from '@/lib/dati'
 import { haptic } from '@/lib/haptics'
+
+/**
+ * Quanto aspetta il computer prima di rispondere.
+ *
+ * Il suo colpo arriva nella stessa risposta del mio — una richiesta sola per
+ * turno — ma mostrarli insieme toglierebbe il momento in cui si guarda com'e'
+ * andato il proprio. Prima il mio colpo, poi, dopo un respiro, il suo.
+ */
+const RISPOSTA_COMPUTER_MS = 1_100
+
+/**
+ * La vista com'era dopo il mio colpo e prima di quello del computer.
+ *
+ * Il server manda la partita dopo tutti e due: qui si toglie il suo ultimo
+ * colpo, e se e' stato lui a chiudere la partita si torna alla battaglia in
+ * corso. Null se il computer non ha risposto — il mio colpo ha affondato
+ * l'ultima nave — e non c'e' niente da rimandare.
+ */
+export function primaDelComputer(prima: VistaBattaglia, dopo: VistaBattaglia): VistaBattaglia | null {
+  if (dopo.modalita === 'amici') return null
+  if (dopo.colpiSubiti.length <= prima.colpiSubiti.length || !dopo.ultimo || dopo.ultimo.mio) return null
+  const mio = dopo.colpiMiei.at(-1)
+  if (!mio) return null
+  const chiusaDaLui = dopo.stato === 'finita' && dopo.vincitore === 'avversario' && dopo.motivo === 'flotta'
+  return {
+    ...dopo,
+    colpiSubiti: dopo.colpiSubiti.slice(0, -1),
+    ultimo: { ...mio, mio: true },
+    tuoTurno: false,
+    ...(chiusaDaLui
+      ? { stato: 'battaglia' as const, vincitore: null, motivo: null, flottaNemica: null, punti: null }
+      : {}),
+  }
+}
 
 /** Quel che si annuncia dopo un colpo, come al tavolo. */
 export function annuncio(vista: VistaBattaglia): string | null {
@@ -22,20 +57,26 @@ export function annuncio(vista: VistaBattaglia): string | null {
 }
 
 /**
- * Una partita di battaglia navale, a polling.
+ * Una partita di battaglia navale.
  *
- * Il ritmo cambia con la situazione: stretto quando si aspetta l'altro — il suo
- * colpo deve comparire subito — largo quando tocca a te, perché lì si guarda
- * solo se l'altro si e' arreso. A partita finita il polling si ferma, e a
- * pagina nascosta non parte: le richieste sono contate.
+ * Fra amici va a polling, e il ritmo cambia con la situazione: stretto quando
+ * si aspetta l'altro — il suo colpo deve comparire subito — largo quando tocca
+ * a te, perché lì si guarda solo se l'altro si e' arreso. A partita finita il
+ * polling si ferma, e a pagina nascosta non parte: le richieste sono contate.
+ *
+ * Contro il computer non c'e' niente da aspettare, quindi nessun polling: il
+ * suo colpo arriva nella risposta al mio.
  */
 export function useBattaglia(id: string) {
   const [vista, setVista] = useState<VistaBattaglia | null>(null)
   const [errore, setErrore] = useState<string | null>(null)
   const [inviando, setInviando] = useState(false)
   const [messaggio, setMessaggio] = useState<string | null>(null)
+  /** Il computer "sta mirando": il suo colpo e' arrivato ma non si e' ancora visto. */
+  const [mira, setMira] = useState(false)
   const colpiVisti = useRef<number | null>(null)
   const timerMessaggio = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const timerComputer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const mostra = useCallback((testo: string) => {
     setMessaggio(testo)
@@ -73,9 +114,10 @@ export function useBattaglia(id: string) {
   }, [carica])
 
   const finita = vista?.stato === 'finita'
+  const fraAmici = vista?.modalita === 'amici'
   const ritmo = vista?.tuoTurno ? BATTAGLIA_POLL_TURNO_MS : BATTAGLIA_POLL_ATTESA_MS
   useEffect(() => {
-    if (!vista || finita) return
+    if (!vista || finita || !fraAmici) return
     const giro = setInterval(() => {
       if (document.visibilityState === 'visible') void carica()
     }, ritmo)
@@ -87,11 +129,12 @@ export function useBattaglia(id: string) {
       clearInterval(giro)
       document.removeEventListener('visibilitychange', onVisibilita)
     }
-  }, [carica, finita, ritmo, vista])
+  }, [carica, finita, fraAmici, ritmo, vista])
 
   useEffect(
     () => () => {
       if (timerMessaggio.current) clearTimeout(timerMessaggio.current)
+      if (timerComputer.current) clearTimeout(timerComputer.current)
     },
     [],
   )
@@ -101,12 +144,22 @@ export function useBattaglia(id: string) {
       if (!vista) return
       setInviando(true)
       try {
-        applica(
-          await api<VistaBattaglia>(`/battaglia/partite/${id}/${percorso}`, {
-            method: 'POST',
-            body: { ...corpo, versione: vista.versione },
-          }),
-        )
+        const dopo = await api<VistaBattaglia>(`/battaglia/partite/${id}/${percorso}`, {
+          method: 'POST',
+          body: { ...corpo, versione: vista.versione },
+        })
+        if (dopo.stato === 'finita') dimentica('/oggi')
+        const intermedia = primaDelComputer(vista, dopo)
+        if (intermedia) {
+          // Prima il mio colpo; il suo dopo un respiro, e intanto non si spara.
+          applica(intermedia)
+          setMira(true)
+          await new Promise<void>((risolvi) => {
+            timerComputer.current = setTimeout(risolvi, RISPOSTA_COMPUTER_MS)
+          })
+          setMira(false)
+        }
+        applica(dopo)
       } catch (err) {
         if (err instanceof ApiFetchError) {
           mostra(err.message)
@@ -125,6 +178,7 @@ export function useBattaglia(id: string) {
     vista,
     errore,
     inviando,
+    mira,
     messaggio,
     ricarica: carica,
     disponi: (navi: Nave[]) => azione('flotta', { navi }),

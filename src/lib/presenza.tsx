@@ -16,7 +16,7 @@ import { api } from '@/lib/api'
 /** Dove si trova il giocatore, dall'indirizzo: e' quel che vedono gli altri nella sala. */
 export function attivitaDa(pathname: string): Attivita {
   if (pathname === '/') return 'hub'
-  if (pathname.startsWith('/wordle') || pathname.startsWith('/insieme')) return 'wordle'
+  if (pathname.startsWith('/wordle')) return 'wordle'
   if (pathname.startsWith('/scarabeo')) return 'scarabeo'
   if (pathname.startsWith('/cruciverba')) return 'cruciverba'
   if (pathname.startsWith('/battaglia')) return 'battaglia'
