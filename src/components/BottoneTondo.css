@@ -1,0 +1,46 @@
+/*
+ * I bottoni tondi della barra: info, invita, statistiche, il tema.
+ *
+ * Stanno in un file loro perché li usano anche le schermate senza barra —
+ * l'accesso, il codice dell'email — per il bottone del tema.
+ */
+
+.bottone-barra {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.bottone-barra:hover {
+  background: var(--fill-tertiary);
+}
+
+.bottone-barra:active {
+  transform: scale(0.88);
+}
+
+.bottone-barra__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--bg);
+}

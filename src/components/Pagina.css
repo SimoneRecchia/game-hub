@@ -1,0 +1,223 @@
+/*
+ * Lo scheletro di una schermata: la barra in alto, il titolo grande, il corpo.
+ */
+.pagina {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* Senza View Transitions la schermata nuova entra da sé, con un movimento breve. */
+html:not([data-transizione]) .pagina {
+  animation: pagina-entra 360ms var(--ease-push) both;
+}
+
+@keyframes pagina-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* ───────────────────────────  La barra  ─────────────────────────── */
+
+.pagina__barra {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  padding-top: var(--safe-top);
+  background: transparent;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    backdrop-filter var(--dur-base) var(--ease-out);
+}
+
+/* Si fa vetro quando sotto scorre il contenuto, e non prima: in cima non c'e' niente da coprire. */
+.pagina__barra.is-scorsa {
+  background: var(--glass-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 -0.5px 0 var(--separator);
+}
+
+.pagina--intera .pagina__barra {
+  background: var(--bg);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.pagina__barra-dentro {
+  display: grid;
+  /*
+   * Il titolo al centro, e i lati uguali finché c'e' posto. Quando non c'e', a
+   * cedere sono il titolo e la freccia indietro, che si accorciano con i
+   * puntini: i bottoni a destra restano interi, perché un bottone tagliato non
+   * si puo' toccare.
+   */
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content) minmax(max-content, 1fr);
+  align-items: center;
+  gap: var(--sp-2);
+  height: var(--nav-h);
+  width: 100%;
+  max-width: calc(var(--content-max) + 2 * var(--sp-4));
+  margin: 0 auto;
+  padding: 0 max(var(--sp-2), var(--safe-left)) 0 max(var(--sp-2), var(--safe-right));
+}
+
+.pagina--larga .pagina__barra-dentro,
+.pagina--intera .pagina__barra-dentro {
+  max-width: 1152px;
+}
+
+.pagina__lato {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.pagina__lato--destra {
+  justify-content: flex-end;
+}
+
+.pagina__titolo-barra {
+  margin: 0;
+  font-size: var(--text-headline);
+  font-weight: 600;
+  letter-spacing: var(--tracking-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-out);
+}
+
+.pagina__barra.is-scorsa .pagina__titolo-barra,
+.pagina--intera .pagina__titolo-barra {
+  opacity: 1;
+  transform: none;
+}
+
+/* La freccia indietro con il nome della schermata di prima, come in iOS. */
+.pagina__indietro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0 var(--sp-2) 0 0;
+  margin-left: -4px;
+  border-radius: var(--r-pill);
+  color: var(--brand);
+  font-size: var(--text-body);
+  font-weight: 500;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.pagina__indietro:active {
+  opacity: 0.5;
+}
+
+.pagina__indietro svg {
+  flex: none;
+}
+
+.pagina__indietro-nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ───────────────────────────  Il corpo  ─────────────────────────── */
+
+.pagina__corpo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  width: 100%;
+  max-width: calc(var(--content-max) + 2 * var(--sp-4));
+  margin: 0 auto;
+  padding: 0 max(var(--sp-4), var(--safe-left)) calc(var(--tabbar-spazio) + var(--safe-bottom))
+    max(var(--sp-4), var(--safe-right));
+}
+
+@media (min-width: 900px) {
+  .pagina__corpo {
+    padding-bottom: var(--sp-12);
+  }
+}
+
+.pagina--larga .pagina__corpo {
+  max-width: 1152px;
+}
+
+.pagina__testa {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: var(--sp-1);
+}
+
+.pagina__sopra {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.pagina__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-large-title);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+}
+
+.pagina__sotto {
+  margin-top: 2px;
+  font-size: var(--text-body);
+  color: var(--label-secondary);
+}
+
+.pagina__testa > .copertina--eroe {
+  margin-bottom: var(--sp-4);
+}
+
+.pagina__sentinella {
+  height: 1px;
+}
+
+/* ─────────────────────  Schermo intero, per giocare  ───────────────────── */
+
+.pagina--intera {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.pagina--intera .pagina__corpo {
+  min-height: 0;
+  gap: var(--sp-3);
+  max-width: 1152px;
+  padding-bottom: calc(var(--safe-bottom) + var(--sp-3));
+}
+
+/*
+ * Telefono in orizzontale: una griglia e una tastiera non stanno in 360 punti di
+ * altezza, e ancorarle al viewport le schiaccerebbe. La schermata torna a
+ * scorrere, e ogni gioco dimensiona la sua griglia sulla larghezza.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .pagina--intera {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+}

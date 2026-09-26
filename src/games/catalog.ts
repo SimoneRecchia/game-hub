@@ -1,73 +1,60 @@
-import type { GameId } from '@shared/types'
+import type { GiocoClassificato } from '@shared/types'
 
-export interface GameEntry {
-  id: GameId | string
-  name: string
-  tagline: string
-  /** Rotta interna; assente per i giochi non ancora disponibili. */
-  path?: string
-  /** Gradiente dell'icona nella card. */
-  gradient: [string, string]
-  /** Glifo mostrato dentro l'icona. */
-  glyph: string
-  available: boolean
+export interface Gioco {
+  id: GiocoClassificato
+  nome: string
+  /** Una riga, sotto il nome. */
+  motto: string
+  /** Cosa e' la classificata di questo gioco, in una frase. */
+  classificata: string
+  /** Cosa e' la libera. */
+  libera: string
+  /** Il nome della partita libera, come si legge su un bottone. */
+  liberaBreve: string
 }
 
 /**
- * Catalogo dei giochi dell'hub. Aggiungere un gioco = aggiungere una voce
- * qui e una rotta in App.tsx.
+ * I giochi dell'app, nell'ordine in cui si mostrano.
+ *
+ * Il colore di ogni gioco non sta qui: sta nei token (`--wordle-1`, ...), e la
+ * copertina lo prende da lì. Aggiungere un gioco = una voce qui, una copertina
+ * in Copertina.tsx, le sue rotte in App.tsx.
  */
-export const GAMES: GameEntry[] = [
+export const GIOCHI: readonly Gioco[] = [
   {
     id: 'wordle',
-    name: 'Wordle',
-    tagline: 'Parole italiane da cinque lettere, sei tentativi. Cinque al giorno.',
-    path: '/wordle',
-    gradient: ['#34c759', '#0a9d4a'],
-    glyph: 'W',
-    available: true,
+    nome: 'Wordle',
+    motto: 'Cinque lettere, sei tentativi',
+    classificata: 'Cinque parole al giorno, le stesse per tutti. Puoi farti aiutare da un collega.',
+    libera: 'Una parola a caso, quante ne vuoi.',
+    liberaBreve: 'Parola libera',
   },
   {
     id: 'scarabeo',
-    name: 'Scarabeo',
-    tagline: 'Dieci mosse sul tabellone. Le stesse tessere per tutti, ogni giorno.',
-    path: '/scarabeo',
-    gradient: ['#f0a12c', '#c2700d'],
-    glyph: 'S',
-    available: true,
+    nome: 'Scarabeo',
+    motto: 'Le tessere di oggi contro il computer',
+    classificata: 'Dieci mosse con le tessere del giorno. Il computer ha giocato le stesse: battilo.',
+    libera: 'Una partita a turni contro il computer, con un sacchetto nuovo.',
+    liberaBreve: 'Contro il computer',
   },
   {
     id: 'cruciverba',
-    name: 'Cruciverba',
-    tagline: 'Uno schema nuovo ogni notte, con le definizioni vere del Wikizionario.',
-    path: '/cruciverba',
-    gradient: ['#3a7bd5', '#1f4aa8'],
-    glyph: 'C',
-    available: true,
+    nome: 'Cruciverba',
+    motto: 'Definizioni vere, dal Wikizionario',
+    classificata: 'Uno schema nuovo ogni notte, lo stesso per tutti.',
+    libera: 'Uno schema tutto per te, dalla scorta.',
+    liberaBreve: 'Schema libero',
   },
   {
     id: 'battaglia',
-    name: 'Battaglia navale',
-    tagline: 'Sfida un collega online: cinque navi a testa, un colpo per volta.',
-    path: '/battaglia',
-    gradient: ['#1e88a8', '#0b4f6c'],
-    glyph: 'B',
-    available: true,
-  },
-  {
-    id: 'quiz',
-    name: 'Quiz Lampo',
-    tagline: 'Dieci domande a tempo, una sfida nuova ogni giorno.',
-    gradient: ['#5856d6', '#3634a3'],
-    glyph: '?',
-    available: false,
-  },
-  {
-    id: 'numeri',
-    name: 'Numeri',
-    tagline: 'Raggiungi il bersaglio combinando sei numeri.',
-    gradient: ['#ff9500', '#d97a00'],
-    glyph: '7',
-    available: false,
+    nome: 'Battaglia navale',
+    motto: 'Cinque navi, un colpo per volta',
+    classificata: 'Contro il computer, con la sua flotta del giorno uguale per tutti.',
+    libera: 'Contro il computer a tre livelli, o contro un amico.',
+    liberaBreve: 'Contro chi vuoi',
   },
 ]
+
+export function giocoDi(id: GiocoClassificato): Gioco {
+  return GIOCHI.find((g) => g.id === id)!
+}

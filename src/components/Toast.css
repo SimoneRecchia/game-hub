@@ -1,43 +1,63 @@
+/*
+ * Gli avvisi: una capsula scura che scende dall'alto, come la Dynamic Island
+ * quando dice qualcosa. Scura in entrambi i temi, perché deve staccarsi da
+ * qualunque cosa ci sia sotto.
+ */
 .toasts {
   position: fixed;
   left: 50%;
-  top: calc(var(--safe-top) + var(--nav-h) + var(--sp-3));
+  top: calc(var(--safe-top) + 10px);
   transform: translateX(-50%);
-  z-index: 90;
+  z-index: 120;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
   pointer-events: none;
   width: max-content;
-  max-width: min(92vw, 420px);
+  max-width: min(92vw, 440px);
 }
 
 .toast {
-  padding: var(--sp-3) var(--sp-5);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 11px var(--sp-5);
   border-radius: var(--r-pill);
-  background: var(--material-thick);
-  backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
-  box-shadow: var(--shadow-lg), inset 0 0 0 0.5px var(--separator);
+  background: rgba(18, 19, 26, 0.92);
+  color: #fff;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.28),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
   font-size: var(--text-subhead);
   font-weight: 600;
   text-align: center;
-  animation: toast-in var(--dur-base) var(--ease-spring);
+  animation: toast-in 420ms var(--ease-spring);
 }
 
-.toast--success {
-  color: var(--green);
+.toast::before {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #8b85ff;
 }
 
-.toast--error {
-  color: var(--red);
+.toast--success::before {
+  background: #4ade80;
+}
+
+.toast--error::before {
+  background: #f87171;
 }
 
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateY(-10px) scale(0.96);
+    transform: translateY(-16px) scale(0.8);
   }
   to {
     opacity: 1;

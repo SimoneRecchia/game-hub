@@ -1,13 +1,16 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Field } from '@/components/Field'
+import { Marchio } from '@/components/Marchio'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { ThemeButton } from '@/components/ThemeButton'
 import { useAuth } from '@/lib/auth'
-import { ApiFetchError } from '@/lib/api'
+import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { EMAIL_PATTERN, NICKNAME_MAX, NICKNAME_MIN, PASSWORD_MIN } from '@shared/config'
 import { InsecureContextError } from '@shared/password'
+import type { InvitoConLink } from '@shared/types'
 import { ForgotPassword } from './ForgotPassword'
 import './Welcome.css'
 
@@ -20,10 +23,16 @@ type Campo = 'nickname' | 'email' | 'password' | 'conferma' | null
  * In registrazione la password si scrive due volte e l'email e' obbligatoria:
  * serve al recupero, che prima non esisteva — chi dimenticava la password
  * perdeva l'account.
+ *
+ * Chi arriva da un **invito a battaglia navale** vede prima chi lo sta
+ * sfidando, e la schermata parte dalla registrazione: e' quasi certamente la
+ * prima volta che apre l'app. L'indirizzo resta quello dell'invito, quindi
+ * appena entra la pagina dell'invito lo porta nella partita.
  */
-export default function Welcome() {
+export default function Welcome({ invito = null }: { invito?: string | null }) {
   const { login, register, config } = useAuth()
-  const [mode, setMode] = useState<Mode>('login')
+  const [mode, setMode] = useState<Mode>(invito ? 'register' : 'login')
+  const [sfida, setSfida] = useState<InvitoConLink | null>(null)
   const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -34,6 +43,19 @@ export default function Welcome() {
   const [recupero, setRecupero] = useState(false)
 
   const isRegister = mode === 'register'
+
+  useEffect(() => {
+    if (!invito) return
+    let valido = true
+    api<InvitoConLink>(`/inviti/${invito}`)
+      .then((i) => valido && setSfida(i))
+      .catch(() => {
+        /* un invito che non si legge non impedisce di entrare */
+      })
+    return () => {
+      valido = false
+    }
+  }, [invito])
 
   function switchMode(next: Mode) {
     setMode(next)
@@ -101,13 +123,34 @@ export default function Welcome() {
 
       <div className="welcome__inner">
         <header className="welcome__head">
-          <img className="welcome__icon" src="/icon.svg" alt="" width={84} height={84} />
-          <h1 className="welcome__title">Game Hub</h1>
+          <Marchio lato={96} />
+          <h1 className="welcome__title">Giochi</h1>
           <p className="welcome__lede">
-            Una sfida nuova ogni giorno, la stessa per tutti. Scegli un nickname e il punteggio
-            finisce in classifica.
+            Wordle, Scarabeo, Cruciverba e Battaglia navale. Ogni giorno una partita classificata per
+            gioco, la stessa per tutti, e quante partite libere vuoi.
           </p>
         </header>
+
+        {sfida && (
+          <div className="welcome__invito" role="status">
+            <Avatar nickname={sfida.da.nickname} color={sfida.da.avatarColor} size={44} />
+            <p className="welcome__invito-testo">
+              {sfida.stato === 'attesa' ? (
+                <>
+                  <strong>{sfida.da.displayName}</strong> ti sfida a battaglia navale.{' '}
+                  {isRegister
+                    ? 'Crea il tuo profilo: appena entri, la partita comincia.'
+                    : 'Entra e la partita comincia.'}
+                </>
+              ) : (
+                <>
+                  L’invito di <strong>{sfida.da.displayName}</strong> non vale più, ma puoi entrare lo stesso
+                  e chiedergliene un altro.
+                </>
+              )}
+            </p>
+          </div>
+        )}
 
         <form className="welcome__form" onSubmit={onSubmit} noValidate>
           <SegmentedControl
@@ -185,7 +228,13 @@ export default function Welcome() {
           )}
 
           <Button type="submit" size="lg" fullWidth loading={busy}>
-            {busy ? 'Un attimo…' : isRegister ? 'Crea il profilo' : 'Entra'}
+            {busy
+              ? 'Un attimo…'
+              : isRegister
+                ? sfida?.stato === 'attesa'
+                  ? 'Crea il profilo e gioca'
+                  : 'Crea il profilo'
+                : 'Entra'}
           </Button>
 
           {!isRegister && (

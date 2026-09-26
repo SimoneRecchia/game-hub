@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
+import { TransizioniProvider } from './app/navigazione'
 import { AuthProvider } from './lib/auth'
 import { ToastProvider } from './components/Toast'
 import './styles/tokens.css'
@@ -13,11 +14,13 @@ if (!root) throw new Error('#root non trovato')
 createRoot(root).render(
   <StrictMode>
     <BrowserRouter>
-      <ToastProvider>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
-      </ToastProvider>
+      <TransizioniProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
+        </ToastProvider>
+      </TransizioniProvider>
     </BrowserRouter>
   </StrictMode>,
 )

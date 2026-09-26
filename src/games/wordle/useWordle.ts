@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { PlayerStats, TileState, WordleState } from '@shared/types'
+import type {
+  EvaluatedGuess,
+  PlayerStats,
+  TileState,
+  WordleLiberaState,
+  WordleState,
+  WordleStatus,
+} from '@shared/types'
 import { isGameLetter, keyboardStates } from '@shared/wordle'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
@@ -25,8 +32,33 @@ function loadGuessSet(): Promise<ReadonlySet<string>> {
   return guessSetPromise
 }
 
-export interface WordleController {
-  state: WordleState | null
+/** Quel che serve alla griglia, dalla classificata o dalla libera. */
+export interface Griglia {
+  wordLength: number
+  maxAttempts: number
+  guesses: EvaluatedGuess[]
+  status: WordleStatus
+  answer: string | null
+}
+
+/**
+ * Da dove viene la partita: come la si carica e come si manda un tentativo.
+ *
+ * E' l'unica cosa che distingue la classificata dalla libera — la griglia, la
+ * tastiera, le animazioni e i controlli sono gli stessi, e restano in un posto
+ * solo.
+ */
+export interface Sorgente<T extends Griglia> {
+  /** Cambia quando la partita e' un'altra: la classificata di un'altra parola, una libera nuova. */
+  chiave: string
+  carica: () => Promise<T>
+  invia: (parola: string) => Promise<T>
+  /** A partita chiusa, per il riepilogo. */
+  statistiche?: () => Promise<PlayerStats>
+}
+
+export interface WordleController<T extends Griglia = WordleState> {
+  state: T | null
   stats: PlayerStats | null
   loading: boolean
   loadError: string | null
@@ -48,6 +80,8 @@ export interface WordleController {
   openResult: () => void
   closeResult: () => void
   reload: () => void
+  /** Sostituisce lo stato senza passare dal server: la libera nuova, per esempio. */
+  adotta: (stato: T) => void
 }
 
 /**
@@ -59,8 +93,64 @@ export interface WordleController {
  * Ora la scelta e' una schermata sua, quindi e' una navigazione — e il tasto
  * indietro del telefono torna al percorso invece di uscire dal gioco.
  */
-export function useWordle(slot: number): WordleController {
-  const [state, setState] = useState<WordleState | null>(null)
+export function useWordle(slot: number): WordleController<WordleState> {
+  const sorgente = useMemo<Sorgente<WordleState>>(
+    () => ({
+      chiave: `classificata-${slot}`,
+      carica: () => api<WordleState>(`/wordle/state?slot=${slot}`),
+      invia: (parola) =>
+        api<WordleState>('/wordle/guess', { method: 'POST', body: { guess: parola, slot } }),
+      statistiche: () => api<PlayerStats>('/wordle/stats'),
+    }),
+    [slot],
+  )
+  return usePartita(sorgente)
+}
+
+/**
+ * La parola libera: si apre quella in corso, o una nuova se non ce n'e'.
+ *
+ * `nuova` chiede una parola nuova al server — che conta come persa quella in
+ * corso, se era cominciata — e la mette in griglia.
+ */
+export function useWordleLibero(): WordleController<WordleLiberaState> & { nuova: () => Promise<void> } {
+  const idRef = useRef<string | null>(null)
+  const sorgente = useMemo<Sorgente<WordleLiberaState>>(
+    () => ({
+      chiave: 'libera',
+      carica: async () => {
+        const { partita } = await api<{ partita: WordleLiberaState | null }>('/wordle/libera')
+        const stato = partita ?? (await api<WordleLiberaState>('/wordle/libera', { method: 'POST' }))
+        idRef.current = stato.id
+        return stato
+      },
+      invia: (parola) =>
+        api<WordleLiberaState>(`/wordle/libera/${idRef.current}/guess`, {
+          method: 'POST',
+          body: { guess: parola },
+        }),
+    }),
+    [],
+  )
+  const partita = usePartita(sorgente)
+  const { adotta } = partita
+  const nuova = useCallback(async () => {
+    const stato = await api<WordleLiberaState>('/wordle/libera', { method: 'POST' })
+    idRef.current = stato.id
+    adotta(stato)
+  }, [adotta])
+  return { ...partita, nuova }
+}
+
+/**
+ * La partita di una griglia di Wordle, da qualunque sorgente.
+ *
+ * Tiene quel che il server non sa: la riga che si sta scrivendo, le
+ * animazioni, i messaggi. La verita' — i tentativi, i colori, la soluzione a
+ * fine partita — arriva dalla sorgente, e il client non la calcola mai.
+ */
+function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<T> {
+  const [state, setState] = useState<T | null>(null)
   const [stats, setStats] = useState<PlayerStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -93,11 +183,22 @@ export function useWordle(slot: number): WordleController {
   }, [])
 
   const fetchStats = useCallback(async () => {
+    if (!sorgente.statistiche) return
     try {
-      setStats(await api<PlayerStats>('/wordle/stats'))
+      setStats(await sorgente.statistiche())
     } catch {
       /* le statistiche sono un contorno: se non arrivano, il gioco resta giocabile */
     }
+  }, [sorgente])
+
+  /** Una partita nuova in griglia: niente riga a meta', niente animazioni della precedente. */
+  const adotta = useCallback((fresh: T) => {
+    setState(fresh)
+    setDraft('')
+    setRevealing(null)
+    setWinningRow(null)
+    setShakingRow(null)
+    setResultOpen(false)
   }, [])
 
   const reload = useCallback(async () => {
@@ -105,13 +206,8 @@ export function useWordle(slot: number): WordleController {
     setLoadError(null)
     setLoadCode(null)
     try {
-      const fresh = await api<WordleState>(`/wordle/state?slot=${slot}`)
-      setState(fresh)
-      setDraft('')
-      // Le animazioni della parola precedente non devono continuare su questa.
-      setRevealing(null)
-      setWinningRow(null)
-      setShakingRow(null)
+      const fresh = await sorgente.carica()
+      adotta(fresh)
       if (fresh.status !== 'playing') void fetchStats()
     } catch (error) {
       setLoadError(
@@ -121,7 +217,7 @@ export function useWordle(slot: number): WordleController {
     } finally {
       setLoading(false)
     }
-  }, [fetchStats, slot])
+  }, [adotta, fetchStats, sorgente])
 
   useEffect(() => {
     void reload()
@@ -202,10 +298,7 @@ export function useWordle(slot: number): WordleController {
 
     setSubmitting(true)
     try {
-      const next = await api<WordleState>('/wordle/guess', {
-        method: 'POST',
-        body: { guess: word, slot },
-      })
+      const next = await sorgente.invia(word)
       setState(next)
       setDraft('')
       setRevealing(row)
@@ -249,7 +342,7 @@ export function useWordle(slot: number): WordleController {
     } finally {
       setSubmitting(false)
     }
-  }, [canType, draft, fetchStats, flash, later, reload, shake, slot, state])
+  }, [canType, draft, fetchStats, flash, later, reload, shake, sorgente, state])
 
   // Tastiera fisica: comoda da desktop.
   useEffect(() => {
@@ -305,5 +398,6 @@ export function useWordle(slot: number): WordleController {
     openResult: () => setResultOpen(true),
     closeResult: () => setResultOpen(false),
     reload: () => void reload(),
+    adotta,
   }
 }

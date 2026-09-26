@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { AppShell } from '@/components/AppShell'
+import { useParams } from 'react-router-dom'
+import { useNavigazione } from '@/app/navigazione'
+import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
+import { Coriandoli, Numero, Vuoto } from '@/components/Elementi'
+import { IconComputer, IconFlag, IconInfo, IconRefresh, IconTrophy } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
-import { IconChevronLeft, IconInfo } from '@/components/Icons'
 import { ComeSiGiocaBattaglia } from '@/games/battaglia/ComeSiGioca'
 import { Mare } from '@/games/battaglia/Mare'
 import { celleNemiche, celleProprie } from '@/games/battaglia/celle'
@@ -24,39 +27,64 @@ import {
 import type { VistaBattaglia } from '@shared/types'
 import './Battaglia.css'
 
+const LIVELLI_NOME = { facile: 'facile', normale: 'normale', difficile: 'difficile' } as const
+
+/** Contro chi si gioca, detto in mezzo a una frase: "il computer", "Giada". */
+export function nomeAvversario(v: VistaBattaglia): string {
+  return v.modalita === 'amici' ? v.avversario.displayName : 'il computer'
+}
+
+function maiuscola(testo: string): string {
+  return testo.charAt(0).toUpperCase() + testo.slice(1)
+}
+
+/** Il titolo in alto: la giornata per la classificata, l'avversario per le altre. */
+function titoloDi(v: VistaBattaglia | null): string {
+  if (!v) return 'Battaglia navale'
+  if (v.modalita === 'classificata') return `Battaglia #${v.puzzleNumber ?? ''}`
+  if (v.modalita === 'computer') return `Contro il computer`
+  return `Contro ${v.avversario.displayName}`
+}
+
 /**
  * Una partita di battaglia navale: prima si dispone la flotta, poi si spara, poi
  * si guarda com'e' andata. Tre fasi nella stessa rotta, perché l'indirizzo
  * resti quello della partita dall'inizio alla fine — e chi riapre l'app ci
  * torna dentro.
+ *
+ * La stessa schermata fa le tre modalità: la classificata del giorno e la
+ * libera contro il computer — che risponde subito, nella stessa richiesta — e
+ * la partita con un amico, che va a polling.
  */
 export default function BattagliaPartita() {
   const { id = '' } = useParams()
-  const navigate = useNavigate()
   const g = useBattaglia(id)
   const [aiuto, setAiuto] = useState(false)
   const [resa, setResa] = useState(false)
   const v = g.vista
+  const classificata = v?.modalita === 'classificata'
 
   return (
-    <AppShell
-      title={v ? `Contro ${v.avversario.displayName}` : 'Battaglia navale'}
-      hideTabBar
-      wide
-      leading={
-        <button
-          type="button"
-          className="navbtn"
-          onClick={() => navigate('/battaglia')}
-          aria-label="Torna alla sala"
-        >
-          <IconChevronLeft size={22} />
-        </button>
+    <Pagina
+      titolo={titoloDi(v)}
+      intera
+      larga
+      indietro={
+        classificata
+          ? { a: ROTTE.gioco('battaglia'), etichetta: 'Battaglia' }
+          : { a: ROTTE.libera('battaglia'), etichetta: 'Libera' }
       }
-      trailing={
-        <button type="button" className="navbtn" onClick={() => setAiuto(true)} aria-label="Come si gioca">
-          <IconInfo size={21} />
-        </button>
+      azioni={
+        <>
+          {v && v.stato !== 'finita' && (
+            <BottoneBarra etichetta="Abbandona la partita" onClick={() => setResa(true)}>
+              <IconFlag size={19} />
+            </BottoneBarra>
+          )}
+          <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
+            <IconInfo size={21} />
+          </BottoneBarra>
+        </>
       }
     >
       <div className="bat">
@@ -66,12 +94,15 @@ export default function BattagliaPartita() {
         </div>
 
         {g.errore && !v ? (
-          <div className="bat__ripiego">
-            <p>{g.errore}</p>
-            <Button variant="tinted" onClick={() => void g.ricarica()}>
-              Riprova
-            </Button>
-          </div>
+          <Vuoto
+            titolo="La partita non si è aperta"
+            testo={g.errore}
+            azione={
+              <Button variant="tinted" onClick={() => void g.ricarica()}>
+                Riprova
+              </Button>
+            }
+          />
         ) : !v ? (
           <div className="bat__attesa" aria-hidden="true" />
         ) : v.stato === 'disposizione' && !v.miaFlotta ? (
@@ -79,13 +110,13 @@ export default function BattagliaPartita() {
         ) : v.stato === 'finita' ? (
           <Fine vista={v} />
         ) : (
-          <Combattimento vista={v} inviando={g.inviando} onSpara={g.spara} onReclama={g.reclama} />
-        )}
-
-        {v && v.stato !== 'finita' && (
-          <button type="button" className="bat__resa" onClick={() => setResa(true)}>
-            Abbandona la partita
-          </button>
+          <Combattimento
+            vista={v}
+            inviando={g.inviando}
+            mira={g.mira}
+            onSpara={g.spara}
+            onReclama={g.reclama}
+          />
         )}
       </div>
 
@@ -94,7 +125,13 @@ export default function BattagliaPartita() {
       <Sheet open={resa} onClose={() => setResa(false)} title="Abbandonare?">
         <div className="bat-resa">
           <p>
-            La partita finisce subito e vince {v?.avversario.displayName}. Conta come una sconfitta.
+            {!v
+              ? ''
+              : v.modalita === 'classificata'
+                ? 'La battaglia di oggi finisce qui, e non si rigioca. In classifica valgono le navi che hai colpito finora.'
+                : v.modalita === 'computer'
+                  ? 'La partita finisce subito e conta come una sconfitta contro il computer.'
+                  : `La partita finisce subito e vince ${v.avversario.displayName}. Conta come una sconfitta.`}
           </p>
           <Button
             variant="destructive"
@@ -112,7 +149,9 @@ export default function BattagliaPartita() {
           </Button>
         </div>
       </Sheet>
-    </AppShell>
+
+      {v?.stato === 'finita' && v.vincitore === 'io' && <Coriandoli />}
+    </Pagina>
   )
 }
 
@@ -197,7 +236,14 @@ function Disposizione({
         ))}
       </div>
       <p className="bat__nota" aria-live="polite">
-        {nota ?? (vista.avversarioPronto ? `${vista.avversario.displayName} è già pronto.` : ' ')}
+        {nota ??
+          (vista.modalita !== 'amici'
+            ? vista.modalita === 'classificata'
+              ? 'La flotta del computer è la stessa per tutti, oggi.'
+              : `Il computer gioca a livello ${LIVELLI_NOME[vista.livello ?? 'normale']}.`
+            : vista.avversarioPronto
+              ? `${vista.avversario.displayName} è già pronto.`
+              : ' ')}
       </p>
       <div className="bat-disposizione__comandi">
         <Button variant="plain" onClick={ruota} disabled={!scelta}>
@@ -214,7 +260,7 @@ function Disposizione({
           A caso
         </Button>
         <Button onClick={() => onConferma(navi)} loading={inviando}>
-          Pronto
+          {vista.modalita === 'amici' ? 'Pronto' : 'Si comincia'}
         </Button>
       </div>
     </div>
@@ -226,15 +272,19 @@ function Disposizione({
 function Combattimento({
   vista,
   inviando,
+  mira,
   onSpara,
   onReclama,
 }: {
   vista: VistaBattaglia
   inviando: boolean
+  /** Il computer sta per rispondere. */
+  mira: boolean
   onSpara: (k: number) => void
   onReclama: () => void
 }) {
-  const nome = vista.avversario.displayName
+  const nome = nomeAvversario(vista)
+  const fraAmici = vista.modalita === 'amici'
   const inBattaglia = vista.stato === 'battaglia'
   const sparate = useMemo(() => new Set(vista.colpiMiei.map((c) => c.casella)), [vista.colpiMiei])
   const ultimo = vista.ultimo
@@ -261,26 +311,41 @@ function Combattimento({
     ? vista.avversarioPronto
       ? 'Si comincia…'
       : `Aspetta che ${nome} disponga la flotta`
-    : vista.tuoTurno
-      ? 'Tocca a te: scegli dove sparare'
-      : `Tocca a ${nome}`
+    : mira
+      ? 'Il computer prende la mira…'
+      : vista.tuoTurno
+        ? 'Tocca a te: scegli dove sparare'
+        : `Tocca a ${nome}`
 
   return (
     <div className="bat-combattimento">
-      <div className={`bat__stato${vista.tuoTurno ? ' is-tuo' : ''}`}>
-        <Avatar nickname={vista.avversario.nickname} color={vista.avversario.avatarColor} size={28} />
+      <div className={`bat__stato${vista.tuoTurno && !mira ? ' is-tuo' : ''}${mira ? ' is-mira' : ''}`}>
+        {fraAmici ? (
+          <Avatar nickname={vista.avversario.nickname} color={vista.avversario.avatarColor} size={28} />
+        ) : (
+          <span className="bat__computer" aria-hidden="true">
+            <IconComputer size={17} />
+          </span>
+        )}
         <span className="bat__stato-testo">{stato}</span>
-        <span
-          className={`bat__online${vista.avversario.online ? ' is-online' : ''}`}
-          title={vista.avversario.online ? `${nome} è online` : `${nome} non è online`}
-        />
+        {fraAmici && (
+          <span
+            className={`bat__online${vista.avversario.online ? ' is-online' : ''}`}
+            title={vista.avversario.online ? `${nome} è online` : `${nome} non è online`}
+          />
+        )}
+        {!fraAmici && (
+          <span className="bat__colpi u-tabnum" title="I colpi sparati">
+            {vista.colpiMiei.length} colpi
+          </span>
+        )}
       </div>
 
       <div className="bat-combattimento__mari">
         <section className="bat__mare-grande" aria-label={`Il mare di ${nome}`}>
           <Mare
             celle={nemico}
-            onTocca={inBattaglia && vista.tuoTurno && !inviando ? onSpara : undefined}
+            onTocca={inBattaglia && vista.tuoTurno && !inviando && !mira ? onSpara : undefined}
             bloccata={(k) => sparate.has(k)}
             etichetta={`Il mare di ${nome}`}
           />
@@ -303,7 +368,7 @@ function Combattimento({
         </section>
       </div>
 
-      <Attesa vista={vista} onReclama={onReclama} inviando={inviando} />
+      {fraAmici && <Attesa vista={vista} onReclama={onReclama} inviando={inviando} />}
     </div>
   )
 }
@@ -341,20 +406,21 @@ function Attesa({
 /* ─────────────────────────────────  Fine  ──────────────────────────────── */
 
 function Fine({ vista }: { vista: VistaBattaglia }) {
-  const navigate = useNavigate()
+  const { vai } = useNavigazione()
   const [errore, setErrore] = useState<string | null>(null)
   const [invio, setInvio] = useState(false)
-  const nome = vista.avversario.displayName
+  const nome = nomeAvversario(vista)
   const vinta = vista.vincitore === 'io'
+  const fraAmici = vista.modalita === 'amici'
 
   const perche =
     vista.motivo === 'flotta'
       ? vinta
-        ? `Hai affondato tutta la flotta di ${nome}.`
-        : `${nome} ha affondato tutta la tua flotta.`
+        ? `Hai affondato tutta la flotta ${fraAmici ? `di ${nome}` : 'del computer'}.`
+        : `${maiuscola(nome)} ha affondato tutta la tua flotta.`
       : vista.motivo === 'resa'
         ? vinta
-          ? `${nome} ha abbandonato la partita.`
+          ? `${maiuscola(nome)} ha abbandonato la partita.`
           : 'Hai abbandonato la partita.'
         : vinta
           ? `Vittoria a tavolino: ${nome} non ha più mosso.`
@@ -364,14 +430,23 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
   const nemico = celleNemiche(vista.colpiMiei, vista.affondateNemiche, vista.flottaNemica)
   const mio = celleProprie(vista.miaFlotta ?? [], vista.colpiSubiti)
 
-  const rivincita = async () => {
+  /** Fra amici una sfida nuova; contro il computer una partita nuova allo stesso livello. */
+  const ancora = async () => {
     setInvio(true)
     setErrore(null)
     try {
-      await api('/battaglia/sfida', { method: 'POST', body: { playerId: vista.avversario.playerId } })
-      navigate('/battaglia')
+      if (fraAmici) {
+        await api('/battaglia/sfida', { method: 'POST', body: { playerId: vista.avversario.playerId } })
+        vai(ROTTE.libera('battaglia'), { replace: true, direzione: 'indietro' })
+      } else {
+        const nuova = await api<VistaBattaglia>('/battaglia/computer', {
+          method: 'POST',
+          body: { livello: vista.livello ?? 'normale' },
+        })
+        vai(ROTTE.partitaBattaglia(nuova.id), { replace: true, direzione: 'nessuna' })
+      }
     } catch (err) {
-      setErrore(err instanceof ApiFetchError ? err.message : 'La sfida non è partita.')
+      setErrore(err instanceof ApiFetchError ? err.message : 'Non riesco a cominciare.')
     } finally {
       setInvio(false)
     }
@@ -382,6 +457,12 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
       <header className={`bat-fine__testa${vinta ? ' is-vinta' : ''}`}>
         <p className="bat-fine__titolo">{vinta ? 'Hai vinto!' : `Ha vinto ${nome}`}</p>
         <p className="bat-fine__perche">{perche}</p>
+        {vista.modalita === 'classificata' && vista.punti !== null && (
+          <p className="bat-fine__punti">
+            <Numero valore={vista.punti} />
+            <span className="bat-fine__su"> / 100 in classifica</span>
+          </p>
+        )}
         {vista.colpiMiei.length > 0 && (
           <p className="bat-fine__conto u-tabnum">
             {vista.colpiMiei.length} colpi sparati, {aSegno} a segno (
@@ -396,7 +477,7 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
         <div className="bat-combattimento__mari">
           {vista.flottaNemica && (
             <section className="bat__mare-grande" aria-label={`La flotta di ${nome}`}>
-              <p className="bat__didascalia">La flotta di {nome}</p>
+              <p className="bat__didascalia">La flotta {fraAmici ? `di ${nome}` : 'del computer'}</p>
               <Mare celle={nemico} etichetta={`La flotta di ${nome}`} />
             </section>
           )}
@@ -413,12 +494,38 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
 
       {errore && <p className="bat__nota">{errore}</p>}
       <div className="bat-fine__azioni">
-        <Button onClick={() => void rivincita()} loading={invio} disabled={!vista.avversario.online}>
-          {vista.avversario.online ? 'Rivincita' : `${nome} non è online`}
-        </Button>
-        <Link to="/battaglia" className="bat-fine__sala">
-          Torna alla sala
-        </Link>
+        {vista.modalita === 'classificata' ? (
+          <>
+            <Button variant="tinted" onClick={() => vai(ROTTE.classifica('battaglia'))}>
+              <IconTrophy size={18} /> Classifica
+            </Button>
+            <Button onClick={() => vai(ROTTE.libera('battaglia'))}>Partita libera</Button>
+          </>
+        ) : fraAmici ? (
+          <>
+            <Button onClick={() => void ancora()} loading={invio} disabled={!vista.avversario.online}>
+              {vista.avversario.online ? 'Rivincita' : `${nome} non è online`}
+            </Button>
+            <Button
+              variant="tinted"
+              onClick={() => vai(ROTTE.libera('battaglia'), { replace: true, direzione: 'indietro' })}
+            >
+              Altre partite
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={() => void ancora()} loading={invio}>
+              <IconRefresh size={18} /> Un’altra
+            </Button>
+            <Button
+              variant="tinted"
+              onClick={() => vai(ROTTE.libera('battaglia'), { replace: true, direzione: 'indietro' })}
+            >
+              Cambia livello
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

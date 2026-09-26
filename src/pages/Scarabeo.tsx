@@ -1,238 +1,101 @@
-import { useCallback, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { AppShell } from '@/components/AppShell'
+import { useState } from 'react'
+import { useNavigazione } from '@/app/navigazione'
+import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
+import { Coriandoli, Numero, Vuoto } from '@/components/Elementi'
+import { IconComputer, IconInfo, IconList, IconTrophy } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
-import { IconChevronLeft, IconInfo, IconTrophy } from '@/components/Icons'
+import { Campo, ElencoMosse, Tabellino } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
-import { Leggio, ScegliJolly } from '@/games/scarabeo/Leggio'
-import { Tabellone } from '@/games/scarabeo/Tabellone'
 import { useScarabeo } from '@/games/scarabeo/useScarabeo'
 import { useCountdown } from '@/games/wordle/useCountdown'
-import { formatCountdown, formatNumber } from '@/lib/format'
+import { formatCountdown } from '@/lib/format'
+import type { ScarabeoState } from '@shared/types'
 import './Scarabeo.css'
 
 /**
- * Lo Scarabeo del giorno.
+ * Lo Scarabeo classificato: le dieci mosse di oggi.
  *
- * Una schermata sola: tabellone, leggio, comandi. Il tabellone prende lo spazio
- * che resta ed e' l'unica parte che scorre, così leggio e bottoni stanno sempre
- * sotto il pollice anche su un telefono basso — sono le due cose che si toccano
- * a ogni mossa.
+ * Le tessere sono le stesse per tutti, e il computer le ha già giocate: il suo
+ * punteggio sta sempre in vista a destra, come il traguardo da raggiungere —
+ * pareggiarlo vale cento punti in classifica. Le sue mosse invece si vedono
+ * solo a giornata chiusa: sarebbero la soluzione.
  */
 export default function Scarabeo() {
-  const navigate = useNavigate()
   const g = useScarabeo()
   const [aiuto, setAiuto] = useState(false)
-  const [cronologia, setCronologia] = useState(false)
-  const [cambio, setCambio] = useState(false)
-  const [selezione, setSelezione] = useState<Set<number>>(new Set())
+  const [storia, setStoria] = useState(false)
+  const [delComputer, setDelComputer] = useState(false)
 
   const stato = g.stato
   const finita = stato?.status === 'done'
 
-  const esciDalCambio = useCallback(() => {
-    setCambio(false)
-    setSelezione(new Set())
-  }, [])
-
-  const tocca = useCallback(
-    (indice: number) => {
-      if (!cambio) {
-        g.usaTessera(indice)
-        return
-      }
-      setSelezione((prima) => {
-        const dopo = new Set(prima)
-        if (dopo.has(indice)) dopo.delete(indice)
-        else dopo.add(indice)
-        return dopo
-      })
-    },
-    [cambio, g],
-  )
-
-  const confermaCambio = useCallback(() => {
-    const tessere = [...selezione].map((i) => g.mano[i])
-    esciDalCambio()
-    g.cambia(tessere)
-  }, [esciDalCambio, g, selezione])
-
-  const anteprima = g.anteprima
-  const puntiPosa = anteprima?.ok ? anteprima.punti : null
-
   return (
-    <AppShell
-      title={stato ? `Scarabeo #${stato.puzzleNumber}` : 'Scarabeo'}
-      hideTabBar
-      leading={
-        <button
-          type="button"
-          className="navbtn"
-          onClick={() => navigate('/')}
-          aria-label="Torna all'hub"
-        >
-          <IconChevronLeft size={22} />
-        </button>
-      }
-      trailing={
-        <button
-          type="button"
-          className="navbtn"
-          onClick={() => setAiuto(true)}
-          aria-label="Come si gioca"
-        >
-          <IconInfo size={21} />
-        </button>
+    <Pagina
+      titolo={stato ? `Scarabeo #${stato.puzzleNumber}` : 'Scarabeo'}
+      intera
+      indietro={{ a: ROTTE.gioco('scarabeo'), etichetta: 'Scarabeo' }}
+      azioni={
+        <>
+          <BottoneBarra etichetta="Le tue mosse" onClick={() => setStoria(true)}>
+            <IconList size={20} />
+          </BottoneBarra>
+          <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
+            <IconInfo size={21} />
+          </BottoneBarra>
+        </>
       }
     >
-      <div className="scr">
-        {g.loadError ? (
-          <div className="scr__fallback">
-            <p>{g.loadError}</p>
+      {g.loadError ? (
+        <Vuoto
+          titolo="Il tabellone non si è aperto"
+          testo={g.loadError}
+          azione={
             <Button variant="tinted" onClick={g.ricarica}>
               Riprova
             </Button>
-          </div>
-        ) : !stato ? (
-          <div className="scr__attesa" aria-hidden="true" />
-        ) : (
-          <>
-            {/*
-              La riga di stato: punteggio, mosse, tessere che restano. Il
-              punteggio si tocca e apre la cronologia — le parole fatte sono la
-              cosa che si vuole rivedere, e non meritano spazio fisso in una
-              schermata dove l'altezza serve al tabellone.
-            */}
-            <button
-              type="button"
-              className="scr__stato"
-              onClick={() => setCronologia(true)}
-              aria-label="Le tue mosse"
-            >
-              <span className="scr__punti u-tabnum">{formatNumber(stato.punti)}</span>
-              <span className="scr__punti-label">punti</span>
-              <span className="scr__mosse u-tabnum">
-                mossa {Math.min(stato.mosseUsate + (finita ? 0 : 1), stato.mosseTotali)}/
-                {stato.mosseTotali}
-              </span>
-              <span className="scr__sacchetto u-tabnum">{stato.restanti} nel sacchetto</span>
-            </button>
-
-            <div className="scr__campo">
-              <Tabellone
-                tabellone={g.tabellone}
-                sospese={g.sospese}
-                cursore={g.cursore}
-                bloccato={finita || g.inviando}
-                onTocca={g.tocca}
-              />
-            </div>
-
-            {/* Messaggio effimero: si sovrappone, non sposta il tabellone. */}
-            <div className="scr__messaggio" aria-live="polite">
-              {g.messaggio && <span className="scr__pillola">{g.messaggio}</span>}
-            </div>
-
-            {finita ? (
-              <Chiusa punti={stato.punti} ms={stato.msToNextPuzzle} />
-            ) : (
-              <>
-                <Leggio
-                  mano={g.mano}
-                  impegnate={g.impegnate}
-                  cambio={cambio}
-                  selezione={selezione}
-                  bloccato={g.inviando}
-                  onUsa={tocca}
-                />
-
-                {cambio ? (
-                  <div className="scr__comandi">
-                    <Button variant="plain" onClick={esciDalCambio}>
-                      Annulla
-                    </Button>
-                    <Button
-                      variant="tinted"
-                      disabled={selezione.size === 0 || g.inviando}
-                      onClick={confermaCambio}
-                    >
-                      Cambia {selezione.size > 0 ? selezione.size : ''}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="scr__comandi">
-                    <Button variant="plain" onClick={g.mischia} disabled={g.sospese.length > 0}>
-                      Mischia
-                    </Button>
-                    <Button
-                      variant="plain"
-                      onClick={() => setCambio(true)}
-                      disabled={g.inviando || stato.restanti === 0 || g.mano.length === 0}
-                    >
-                      Cambia
-                    </Button>
-                    <Button variant="plain" onClick={g.passa} disabled={g.inviando}>
-                      Passa
-                    </Button>
-                  </div>
-                )}
-
-                <div className="scr__gioca">
-                  {g.sospese.length > 0 && (
-                    <Button variant="plain" onClick={g.annulla}>
-                      Rimetti in mano
-                    </Button>
-                  )}
-                  <Button
-                    size="lg"
-                    fullWidth
-                    onClick={g.gioca}
-                    disabled={g.sospese.length === 0 || g.inviando}
-                  >
-                    {puntiPosa !== null
-                      ? `Gioca · +${puntiPosa}${anteprima?.ok && anteprima.scarabeo ? ' scarabeo!' : ''}`
-                      : 'Gioca'}
-                  </Button>
-                </div>
-              </>
-            )}
-          </>
-        )}
-      </div>
+          }
+        />
+      ) : !stato ? (
+        <div className="scr__attesa" aria-hidden="true" />
+      ) : (
+        <Campo
+          c={g}
+          sconosciute={g.sconosciute}
+          bloccato={finita || g.inviando}
+          restanti={stato.restanti}
+          testa={
+            <Tabellino
+              io={stato.punti}
+              altro={stato.computer.punti}
+              nomeAltro="Computer"
+              notaAltro="stesse tessere"
+              sotto={
+                finita
+                  ? 'Giornata chiusa'
+                  : `Mossa ${Math.min(stato.mosseUsate + 1, stato.mosseTotali)} di ${stato.mosseTotali} · ${stato.restanti} nel sacchetto`
+              }
+              avanzamento={stato.computer.punti > 0 ? stato.punti / stato.computer.punti : 0}
+              onApri={() => setStoria(true)}
+            />
+          }
+          fine={finita ? <Chiusa stato={stato} onMosseComputer={() => setDelComputer(true)} /> : undefined}
+          onGioca={g.gioca}
+          onPassa={g.passa}
+          onCambia={g.cambia}
+        />
+      )}
 
       <ComeSiGiocaScarabeo open={aiuto} onClose={() => setAiuto(false)} />
-      <ScegliJolly
-        aperto={g.jollyAperto !== null}
-        onScegli={g.scegliJolly}
-        onChiudi={g.chiudiJolly}
-      />
 
-      <Sheet open={cronologia} onClose={() => setCronologia(false)} title="Le tue mosse">
-        {stato && stato.mosse.length > 0 ? (
-          <ol className="scr-storia">
-            {stato.mosse.map((m) => (
-              <li className="scr-storia__riga" key={m.numero}>
-                <span className="scr-storia__numero u-tabnum">{m.numero}</span>
-                <span className="scr-storia__parole">
-                  {m.tipo === 'posa'
-                    ? m.parole.map((p) => p.toUpperCase()).join(' · ')
-                    : m.tipo === 'passo'
-                      ? 'passata'
-                      : 'tessere cambiate'}
-                  {m.scarabeo && <span className="scr-storia__scarabeo">scarabeo</span>}
-                </span>
-                <span className="scr-storia__punti u-tabnum">{m.punti > 0 ? `+${m.punti}` : '—'}</span>
-              </li>
-            ))}
-            <li className="scr-storia__riga scr-storia__riga--totale">
-              <span className="scr-storia__numero" />
-              <span className="scr-storia__parole">Totale</span>
-              <span className="scr-storia__punti u-tabnum">{stato.punti}</span>
-            </li>
-          </ol>
-        ) : (
-          <p className="scr-storia__vuota">Nessuna mossa, per ora.</p>
+      <Sheet open={storia} onClose={() => setStoria(false)} title="Le tue mosse">
+        {stato && (
+          <ElencoMosse
+            mosse={stato.mosse}
+            totale={stato.mosse.length > 0 ? stato.punti : undefined}
+            vuoto="Nessuna mossa, per ora."
+          />
         )}
 
         {/*
@@ -243,14 +106,13 @@ export default function Scarabeo() {
         {stato && !finita && stato.mosseUsate > 0 && (
           <div className="scr-storia__chiudi">
             <p className="scr-storia__chiudi-nota">
-              Ti restano {stato.mosseTotali - stato.mosseUsate} mosse. Se hai finito le idee puoi
-              chiudere la giornata: il punteggio diventa definitivo e in classifica non risulti
-              più &ldquo;in corso&rdquo;.
+              Ti restano {stato.mosseTotali - stato.mosseUsate} mosse. Se hai finito le idee puoi chiudere la
+              giornata: il punteggio diventa definitivo e in classifica non risulti più &ldquo;in corso&rdquo;.
             </p>
             <Button
               variant="tinted"
               onClick={() => {
-                setCronologia(false)
+                setStoria(false)
                 g.chiudiGiornata()
               }}
               disabled={g.inviando}
@@ -260,24 +122,51 @@ export default function Scarabeo() {
           </div>
         )}
       </Sheet>
-    </AppShell>
+
+      <Sheet open={delComputer} onClose={() => setDelComputer(false)} title="Le mosse del computer">
+        <p className="scr-storia__lede">Con le tue stesse tessere, prima di tutti.</p>
+        {stato?.computer.mosse && (
+          <ElencoMosse mosse={stato.computer.mosse} totale={stato.computer.punti} vuoto="Il computer non ha mosso." />
+        )}
+      </Sheet>
+
+      {finita && stato.punti >= stato.computer.punti && stato.punti > 0 && <Coriandoli />}
+    </Pagina>
   )
 }
 
-/** Giornata chiusa: quanto ha reso, quanto manca alla prossima, la classifica. */
-function Chiusa({ punti, ms }: { punti: number; ms: number }) {
-  const restano = useCountdown(ms)
+/** Giornata chiusa: com'e' andata contro il computer, i punti in classifica, e cosa fare adesso. */
+function Chiusa({ stato, onMosseComputer }: { stato: ScarabeoState; onMosseComputer: () => void }) {
+  const { vai } = useNavigazione()
+  const restano = useCountdown(stato.msToNextPuzzle)
+  const scarto = stato.punti - stato.computer.punti
+  const titolo =
+    scarto > 0 ? 'Hai battuto il computer' : scarto === 0 ? 'Pari con il computer' : 'Il computer ha fatto di più'
 
   return (
-    <div className="scr__chiusa">
-      <p className="scr__chiusa-punti u-tabnum">{formatNumber(punti)} punti</p>
-      <p className="scr__chiusa-attesa">
+    <div className="scr-fine">
+      <p className="scr-fine__titolo">{titolo}</p>
+      <p className="scr-fine__punti">
+        <Numero valore={stato.puntiClassifica} />
+        <span className="scr-fine__su"> / 100</span>
+      </p>
+      <p className="scr-fine__nota">
+        punti in classifica · {stato.punti} contro {stato.computer.punti}
+      </p>
+      <div className="scr-fine__azioni">
+        <Button variant="tinted" onClick={onMosseComputer}>
+          <IconComputer size={18} /> Le sue mosse
+        </Button>
+        <Button variant="tinted" onClick={() => vai(ROTTE.classifica('scarabeo'))}>
+          <IconTrophy size={18} /> Classifica
+        </Button>
+      </div>
+      <Button variant="plain" onClick={() => vai(ROTTE.libera('scarabeo'))}>
+        Gioca una partita libera
+      </Button>
+      <p className="scr-fine__attesa">
         Tessere nuove fra <span className="u-tabnum">{formatCountdown(restano)}</span>
       </p>
-      <Link to="/classifica?gioco=scarabeo" className="scr__chiusa-link">
-        <IconTrophy size={18} />
-        Vedi la classifica
-      </Link>
     </div>
   )
 }

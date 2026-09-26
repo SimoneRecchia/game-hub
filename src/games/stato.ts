@@ -1,0 +1,208 @@
+/**
+ * A che punto e' la classificata di oggi di ogni gioco, detto nello stesso modo
+ * per tutti: la schermata iniziale e le pagine dei giochi lo mostrano uguale.
+ *
+ * Una fase — da giocare, in corso, fatta — un titolo e un dettaglio da leggere,
+ * quanto e' fatto (per l'anello), e dove porta il bottone. Ogni gioco misura
+ * l'avanzamento con la sua unità: le parole, le mosse, le caselle, i colpi.
+ */
+
+import { CASELLE_FLOTTA } from '@shared/battaglia'
+import type {
+  BattagliaSummary,
+  CruciverbaSummary,
+  GiocoClassificato,
+  OggiRisposta,
+  ScarabeoSummary,
+  WordleSummary,
+} from '@shared/types'
+import { ROTTE } from '@/app/rotte'
+
+export type Fase = 'da-giocare' | 'in-corso' | 'fatta' | 'non-pronta'
+
+export interface StatoOggi {
+  gioco: GiocoClassificato
+  fase: Fase
+  titolo: string
+  dettaglio: string
+  /** I punti in classifica fatti finora, se ce ne sono. */
+  punti: number | null
+  /** Da 0 a 1. */
+  avanzamento: number
+  azione: string
+  a: string
+}
+
+const parole = (n: number) => (n === 1 ? 'parola' : 'parole')
+
+export function statoWordle(s: WordleSummary): StatoOggi {
+  const base = { gioco: 'wordle' as const, avanzamento: s.done / s.words, punti: s.score }
+  if (s.roomId && s.status === 'playing') {
+    return {
+      ...base,
+      fase: 'in-corso',
+      titolo: 'In compagnia',
+      dettaglio: 'La parola del giorno la stai giocando con un collega',
+      azione: 'Torna alla partita',
+      a: ROTTE.insieme(s.roomId),
+    }
+  }
+  if (s.done >= s.words) {
+    return {
+      ...base,
+      fase: 'fatta',
+      titolo: 'Fatta',
+      dettaglio: `${s.score ?? 0} punti con cinque parole`,
+      azione: 'Rivedi',
+      a: ROTTE.classificata('wordle'),
+    }
+  }
+  if (s.status === 'new' || (s.done === 0 && s.attempts === 0)) {
+    return {
+      ...base,
+      fase: 'da-giocare',
+      titolo: 'Da giocare',
+      dettaglio: 'Cinque parole, una alla volta',
+      azione: 'Gioca',
+      a: ROTTE.classificata('wordle'),
+    }
+  }
+  return {
+    ...base,
+    fase: 'in-corso',
+    titolo: `${s.done} di ${s.words} ${parole(s.words)}`,
+    dettaglio: s.score ? `${s.score} punti finora` : 'La parola del giorno è in corso',
+    azione: 'Continua',
+    a: ROTTE.classificata('wordle'),
+  }
+}
+
+export function statoScarabeo(s: ScarabeoSummary): StatoOggi {
+  const base = {
+    gioco: 'scarabeo' as const,
+    avanzamento: s.status === 'done' ? 1 : s.mosseUsate / s.mosseTotali,
+    a: ROTTE.classificata('scarabeo'),
+  }
+  if (s.status === 'new') {
+    return {
+      ...base,
+      fase: 'da-giocare',
+      titolo: 'Da giocare',
+      dettaglio: `Il computer ha fatto ${s.computer} punti con queste tessere`,
+      punti: null,
+      azione: 'Gioca',
+    }
+  }
+  if (s.status === 'done') {
+    return {
+      ...base,
+      fase: 'fatta',
+      titolo: 'Fatta',
+      dettaglio: `${s.puntiClassifica} punti · ${s.punti} sul tabellone`,
+      punti: s.puntiClassifica,
+      azione: 'Rivedi',
+    }
+  }
+  const restano = s.mosseTotali - s.mosseUsate
+  return {
+    ...base,
+    fase: 'in-corso',
+    titolo: `${s.punti} contro ${s.computer}`,
+    dettaglio: `Restano ${restano} ${restano === 1 ? 'mossa' : 'mosse'}`,
+    punti: s.puntiClassifica,
+    azione: 'Continua',
+  }
+}
+
+export function statoCruciverba(s: CruciverbaSummary): StatoOggi {
+  const base = {
+    gioco: 'cruciverba' as const,
+    avanzamento: s.status === 'done' ? 1 : s.bianche > 0 ? s.scritte / s.bianche : 0,
+    a: ROTTE.classificata('cruciverba'),
+  }
+  switch (s.status) {
+    case 'assente':
+      return {
+        ...base,
+        fase: 'non-pronta',
+        titolo: 'Non ancora pronto',
+        dettaglio: 'Lo schema di oggi arriva a momenti',
+        punti: null,
+        azione: 'Aspetta',
+      }
+    case 'new':
+      return {
+        ...base,
+        fase: 'da-giocare',
+        titolo: 'Da giocare',
+        dettaglio: 'Uno schema nuovo, lo stesso per tutti',
+        punti: null,
+        azione: 'Gioca',
+      }
+    case 'done':
+      return {
+        ...base,
+        fase: 'fatta',
+        titolo: 'Fatto',
+        dettaglio: `${s.punti} punti`,
+        punti: s.punti,
+        azione: 'Rivedi',
+      }
+    default: {
+      const restano = s.bianche - s.scritte
+      return {
+        ...base,
+        fase: 'in-corso',
+        titolo: `${Math.round(base.avanzamento * 100)}% scritto`,
+        dettaglio: restano > 0 ? `${restano} ${restano === 1 ? 'casella' : 'caselle'} da scrivere` : 'Da controllare',
+        punti: null,
+        azione: 'Continua',
+      }
+    }
+  }
+}
+
+export function statoBattaglia(s: BattagliaSummary): StatoOggi {
+  const c = s.classificata
+  const base = { gioco: 'battaglia' as const, a: ROTTE.classificata('battaglia') }
+  if (c.stato === 'finita') {
+    return {
+      ...base,
+      fase: 'fatta',
+      titolo: c.vinta ? 'Vinta' : 'Persa',
+      dettaglio: `${c.punti ?? 0} punti in ${c.colpi} colpi`,
+      punti: c.punti,
+      avanzamento: 1,
+      azione: 'Rivedi',
+    }
+  }
+  if (c.stato === 'nuova') {
+    return {
+      ...base,
+      fase: 'da-giocare',
+      titolo: 'Da giocare',
+      dettaglio: 'La flotta del computer è la stessa per tutti',
+      punti: null,
+      avanzamento: 0,
+      azione: 'Gioca',
+    }
+  }
+  return {
+    ...base,
+    fase: 'in-corso',
+    titolo: c.stato === 'disposizione' ? 'Disponi la flotta' : 'In battaglia',
+    dettaglio: c.colpi > 0 ? `${c.colpi} colpi sparati` : 'Il computer aspetta',
+    punti: null,
+    avanzamento: c.stato === 'disposizione' ? 0.1 : Math.min(0.95, c.colpi / (CASELLE_FLOTTA * 3)),
+    azione: 'Continua',
+  }
+}
+
+export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, StatoOggi> {
+  return {
+    wordle: statoWordle(oggi.wordle),
+    scarabeo: statoScarabeo(oggi.scarabeo),
+    cruciverba: statoCruciverba(oggi.cruciverba),
+    battaglia: statoBattaglia(oggi.battaglia),
+  }
+}

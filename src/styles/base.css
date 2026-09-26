@@ -7,6 +7,9 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Il fondo sta anche sulla radice: le View Transitions fotografano lei, e un
+     fondo solo sul body lascerebbe intravedere il bianco durante lo scorrimento. */
+  background: var(--bg);
 }
 
 body {
@@ -24,6 +27,23 @@ body {
      durante il tap ripetuto sulla tastiera del gioco. */
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
+  /*
+   * Un'app, non un sito: il testo dell'interfaccia non si seleziona tenendo il
+   * dito sopra, e un tocco lungo su un link non apre il menu del browser. Nei
+   * campi di testo, e dove serve copiare, si riabilita.
+   */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+input,
+textarea,
+[data-selezionabile] {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 h1,
@@ -142,4 +162,149 @@ svg {
 
 .u-rounded {
   font-family: var(--font-rounded);
+}
+
+/* ─────────────────────  Le transizioni fra le schermate  ───────────────────── */
+
+/*
+ * Le View Transitions: il browser fotografa la schermata prima e dopo, e qui si
+ * dice come passare dall'una all'altra. La direzione la scrive la navigazione
+ * sulla radice (vedi src/app/navigazione.tsx).
+ *
+ * avanti   la nuova entra da destra, la vecchia arretra di un terzo e si scurisce
+ * indietro il contrario, con la vecchia sopra che esce a destra
+ * scheda   una dissolvenza breve: fra le sezioni non c'e' un prima e un dopo
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-push);
+  animation-timing-function: var(--ease-push);
+  animation-fill-mode: both;
+}
+
+html[data-transizione='avanti']::view-transition-old(root) {
+  animation-name: vt-arretra;
+}
+
+html[data-transizione='avanti']::view-transition-new(root) {
+  animation-name: vt-entra-da-destra;
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.12);
+}
+
+html[data-transizione='indietro']::view-transition-old(root) {
+  z-index: 2;
+  animation-name: vt-esce-a-destra;
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.12);
+}
+
+html[data-transizione='indietro']::view-transition-new(root) {
+  animation-name: vt-torna-da-sinistra;
+}
+
+html[data-transizione='scheda']::view-transition-old(root) {
+  animation: vt-sfuma 180ms var(--ease-out) both;
+}
+
+html[data-transizione='scheda']::view-transition-new(root) {
+  animation: vt-appare 260ms var(--ease-out) both;
+}
+
+/* Le copertine condivise si spostano da un posto all'altro con la stessa molla della pagina. */
+::view-transition-group(*) {
+  animation-duration: var(--dur-push);
+  animation-timing-function: var(--ease-push);
+}
+
+@keyframes vt-entra-da-destra {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes vt-arretra {
+  to {
+    transform: translateX(-28%);
+    filter: brightness(0.86);
+  }
+}
+
+@keyframes vt-esce-a-destra {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes vt-torna-da-sinistra {
+  from {
+    transform: translateX(-28%);
+    filter: brightness(0.86);
+  }
+}
+
+@keyframes vt-sfuma {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-appare {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+/* ─────────────────────  Le entrate di contenuto, a cascata  ───────────────────── */
+
+/*
+ * Gli elementi di un elenco che arrivano insieme entrano uno dopo l'altro, di
+ * poco: `--n` e' la posizione. E' il dettaglio che fa sembrare viva una
+ * schermata che si carica.
+ */
+.entra {
+  animation: entra 460ms var(--ease-push) both;
+  animation-delay: calc(var(--n, 0) * 45ms);
+}
+
+@keyframes entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+
+/* Il riflesso che scorre sopra uno scheletro mentre arrivano i dati. */
+.scheletro {
+  position: relative;
+  overflow: hidden;
+  background: var(--fill-quaternary);
+  border-radius: var(--r-lg);
+}
+
+.scheletro::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    100deg,
+    transparent 20%,
+    color-mix(in srgb, var(--label) 7%, transparent) 50%,
+    transparent 80%
+  );
+  animation: riflesso 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes riflesso {
+  to {
+    transform: translateX(100%);
+  }
 }

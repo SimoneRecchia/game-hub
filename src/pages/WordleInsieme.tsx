@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { AppShell } from '@/components/AppShell'
+import { useParams } from 'react-router-dom'
+import { useNavigazione } from '@/app/navigazione'
+import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { IconChevronLeft, IconPeople } from '@/components/Icons'
+import { IconPeople } from '@/components/Icons'
+import { Pagina } from '@/components/Pagina'
 import { Board } from '@/games/wordle/Board'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
@@ -23,7 +25,7 @@ import './WordleInsieme.css'
  */
 export default function WordleInsieme() {
   const { roomId = '' } = useParams()
-  const navigate = useNavigate()
+  const { vai } = useNavigazione()
   const [view, setView] = useState<CoopView | null>(null)
   const [draft, setDraft] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -131,29 +133,18 @@ export default function WordleInsieme() {
   const titolo = view ? `Con ${view.hostName}` : 'Partita condivisa'
 
   return (
-    <AppShell
-      title={titolo}
-      hideTabBar
-      leading={
-        <button
-          type="button"
-          className="navbtn"
-          onClick={() => navigate('/')}
-          aria-label="Torna all'hub"
-        >
-          <IconChevronLeft size={22} />
-        </button>
-      }
-      trailing={
-        view && <Avatar nickname={view.hostName} color={view.hostAvatarColor} size={28} />
-      }
+    <Pagina
+      titolo={titolo}
+      intera
+      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+      azioni={view && <Avatar nickname={view.hostName} color={view.hostAvatarColor} size={32} />}
     >
       <div className="insieme">
         {error ? (
           <div className="insieme__fallback">
             <p>{error}</p>
-            <Button variant="tinted" onClick={() => navigate('/')}>
-              Torna all’hub
+            <Button variant="tinted" onClick={() => vai(ROTTE.home, { direzione: 'indietro' })}>
+              Torna ai giochi
             </Button>
           </div>
         ) : view === null ? (
@@ -251,6 +242,6 @@ export default function WordleInsieme() {
           </>
         )}
       </div>
-    </AppShell>
+    </Pagina>
   )
 }

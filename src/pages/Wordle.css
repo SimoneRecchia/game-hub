@@ -174,7 +174,7 @@
   line-height: 1.35;
 }
 
-/* Vedi AppShell.css: in orizzontale la pagina scorre e la griglia resta
+/* Vedi Pagina.css: in orizzontale la pagina scorre e la griglia resta
    leggibile invece di comprimersi. */
 @media (orientation: landscape) and (max-height: 560px) {
   .wordle {
@@ -197,4 +197,41 @@
   .wordle__board .board {
     width: min(100%, 300px);
   }
+}
+
+/* ─────────────────────────  La parola libera  ───────────────────────── */
+
+.wordle__fine-libera {
+  flex: none;
+  width: min(100%, 420px);
+  margin: 0 auto;
+  padding-bottom: var(--sp-2);
+  animation: entra 420ms var(--ease-push) both;
+}
+
+.libero-conti {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--r-xl);
+  background: var(--fill-quaternary);
+}
+
+.libero-conti__voce {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.libero-conti__valore {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 800;
+}
+
+.libero-conti__etichetta {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
 }

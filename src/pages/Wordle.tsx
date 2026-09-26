@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { AppShell } from '@/components/AppShell'
+import { useParams } from 'react-router-dom'
+import { useNavigazione } from '@/app/navigazione'
+import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { IconChevronLeft, IconChart, IconInfo, IconPeople } from '@/components/Icons'
+import { Coriandoli } from '@/components/Elementi'
+import { IconChart, IconInfo, IconPeople } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Board } from '@/games/wordle/Board'
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Keyboard } from '@/games/wordle/Keyboard'
@@ -19,13 +22,13 @@ import './Wordle.css'
 /**
  * La griglia di una delle cinque parole della giornata.
  *
- * Quale, lo dice la rotta: `/wordle/3` e' la terza. La scelta sta nella
- * schermata del percorso, quindi qui sopra la griglia non c'e' piu' nessun
- * selettore — il chevron in alto a sinistra torna alla mappa, che e' anche il
+ * Quale, lo dice la rotta: `/wordle/classificata/3` e' la terza. La scelta sta
+ * nella schermata del percorso, quindi qui sopra la griglia non c'e' nessun
+ * selettore — la freccia in alto a sinistra torna alla mappa, che e' anche il
  * gesto che il tasto indietro del telefono fa da solo.
  */
 export default function Wordle() {
-  const navigate = useNavigate()
+  const { vai } = useNavigazione()
   const toast = useToast()
   const { slot: param } = useParams()
   const slot = slotValido(param)
@@ -45,8 +48,8 @@ export default function Wordle() {
     toast.show(
       slot === 2 ? 'Prima finisci la parola del giorno' : `Prima finisci la ${slot - 1}ª parola`,
     )
-    navigate('/wordle', { replace: true })
-  }, [game.loadCode, navigate, slot, toast])
+    vai(ROTTE.classificata('wordle'), { replace: true, direzione: 'indietro' })
+  }, [game.loadCode, vai, slot, toast])
 
   // Il hook decide da solo quando fare polling: qui basta dirgli se il
   // pannello e' aperto.
@@ -56,53 +59,30 @@ export default function Wordle() {
   const title = slot === 1 ? 'Parola del giorno' : `${slot}ª parola`
   const finished = game.state && game.state.status !== 'playing'
 
+  const vinta = game.state?.status === 'won' && game.resultOpen
+
   return (
-    <AppShell
-      title={title}
-      hideTabBar
-      leading={
-        <button
-          type="button"
-          className="navbtn"
-          onClick={() => navigate('/wordle')}
-          aria-label="Torna alle parole di oggi"
-        >
-          <IconChevronLeft size={22} />
-        </button>
-      }
-      trailing={
+    <Pagina
+      titolo={title}
+      intera
+      indietro={{ a: ROTTE.classificata('wordle'), etichetta: 'Oggi' }}
+      azioni={
         <>
           {/* In compagnia si gioca la parola del giorno: sulle altre il
               pulsante prometterebbe una cosa che non esiste. */}
           {!finished && slot === 1 && (
-            <button
-              type="button"
-              className="navbtn wordle__invita"
-              onClick={() => setInvitiOpen(true)}
-              aria-label="Gioca in compagnia"
-            >
+            <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setInvitiOpen(true)} badge={attivi.length}>
               <IconPeople size={21} />
-              {attivi.length > 0 && <span className="wordle__invita-badge">{attivi.length}</span>}
-            </button>
+            </BottoneBarra>
           )}
           {finished && (
-            <button
-              type="button"
-              className="navbtn"
-              onClick={game.openResult}
-              aria-label="Rivedi il risultato"
-            >
+            <BottoneBarra etichetta="Rivedi il risultato" onClick={game.openResult}>
               <IconChart size={20} />
-            </button>
+            </BottoneBarra>
           )}
-          <button
-            type="button"
-            className="navbtn"
-            onClick={() => setHelpOpen(true)}
-            aria-label="Come si gioca"
-          >
+          <BottoneBarra etichetta="Come si gioca" onClick={() => setHelpOpen(true)}>
             <IconInfo size={21} />
-          </button>
+          </BottoneBarra>
         </>
       }
     >
@@ -130,7 +110,7 @@ export default function Wordle() {
                 {game.state.roomId && (
                   <Button
                     variant="tinted"
-                    onClick={() => navigate(`/insieme/${game.state!.roomId}`)}
+                    onClick={() => vai(ROTTE.insieme(game.state!.roomId!))}
                   >
                     Torna alla partita
                   </Button>
@@ -217,10 +197,11 @@ export default function Wordle() {
           onClose={game.closeResult}
           state={game.state}
           stats={game.stats}
-          onNextWord={(next) => navigate(`/wordle/${next}`)}
+          onNextWord={(next) => vai(ROTTE.parola(next), { replace: true })}
         />
       )}
-    </AppShell>
+      {vinta && <Coriandoli />}
+    </Pagina>
   )
 }
 

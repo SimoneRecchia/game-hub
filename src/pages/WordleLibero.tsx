@@ -1,0 +1,184 @@
+import { useEffect, useState } from 'react'
+import { ROTTE } from '@/app/rotte'
+import { Button } from '@/components/Button'
+import { Coriandoli } from '@/components/Elementi'
+import { IconChart, IconInfo, IconShuffle } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { Sheet } from '@/components/Sheet'
+import { useToast } from '@/components/Toast'
+import { Board } from '@/games/wordle/Board'
+import { HowToPlay } from '@/games/wordle/HowToPlay'
+import { Keyboard } from '@/games/wordle/Keyboard'
+import { useWordleLibero } from '@/games/wordle/useWordle'
+import { api } from '@/lib/api'
+import { MAX_ATTEMPTS, WORD_LENGTH } from '@shared/config'
+import type { StatisticheWordleLibero, WordleLiberaRisposta } from '@shared/types'
+import '@/games/wordle/ResultSheet.css'
+import './Wordle.css'
+
+const TITOLI_VITTORIA = ['Al primo colpo!', 'Splendido', 'Ottimo', 'Bene', 'Per un pelo', 'In extremis']
+
+/**
+ * Il Wordle libero: una parola a caso, e poi un'altra.
+ *
+ * La griglia e la tastiera sono quelle della classificata, e anche la regola
+ * che la parola resta sul server finché non si indovina. Cambia quel che c'e'
+ * intorno: niente giornata, niente punti, e alla fine il bottone che conta e'
+ * "un'altra parola".
+ */
+export default function WordleLibero() {
+  const toast = useToast()
+  const game = useWordleLibero()
+  const [aiuto, setAiuto] = useState(false)
+  const [statistiche, setStatistiche] = useState<StatisticheWordleLibero | null>(null)
+  const [cambio, setCambio] = useState(false)
+  const finita = !!game.state && game.state.status !== 'playing'
+
+  // Le statistiche delle libere, rilette a ogni partita chiusa.
+  useEffect(() => {
+    if (!finita) return
+    void api<WordleLiberaRisposta>('/wordle/libera')
+      .then((r) => setStatistiche(r.statistiche))
+      .catch(() => {})
+  }, [finita])
+
+  const nuova = async () => {
+    try {
+      await game.nuova()
+      setCambio(false)
+    } catch {
+      toast.show('Non riesco a cominciare una parola nuova.', 'error')
+    }
+  }
+
+  const avviata = (game.state?.guesses.length ?? 0) > 0
+
+  return (
+    <Pagina
+      titolo="Parola libera"
+      intera
+      indietro={{ a: ROTTE.gioco('wordle'), etichetta: 'Wordle' }}
+      azioni={
+        <>
+          {finita ? (
+            <BottoneBarra etichetta="Rivedi il risultato" onClick={game.openResult}>
+              <IconChart size={20} />
+            </BottoneBarra>
+          ) : (
+            <BottoneBarra
+              etichetta="Cambia parola"
+              onClick={() => (avviata ? setCambio(true) : void nuova())}
+            >
+              <IconShuffle size={20} />
+            </BottoneBarra>
+          )}
+          <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
+            <IconInfo size={21} />
+          </BottoneBarra>
+        </>
+      }
+    >
+      <div className="wordle">
+        {game.loadError ? (
+          <div className="wordle__fallback">
+            <p className="wordle__fallback-text">{game.loadError}</p>
+            <Button variant="tinted" onClick={game.reload}>
+              Riprova
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="wordle__message" aria-live="polite">
+              {game.message && <span className="wordle__message-pill">{game.message}</span>}
+            </div>
+            <div className="wordle__board">
+              <Board
+                guesses={game.state?.guesses ?? []}
+                draft={game.draft}
+                wordLength={game.state?.wordLength ?? WORD_LENGTH}
+                maxAttempts={game.state?.maxAttempts ?? MAX_ATTEMPTS}
+                revealing={game.revealing}
+                winningRow={game.winningRow}
+                shakingRow={game.shakingRow}
+              />
+            </div>
+            {finita ? (
+              <div className="wordle__fine-libera">
+                <Button size="lg" fullWidth onClick={() => void nuova()}>
+                  <IconShuffle size={18} /> Un’altra parola
+                </Button>
+              </div>
+            ) : (
+              <Keyboard
+                states={game.keyboard}
+                onLetter={game.press}
+                onEnter={game.submit}
+                onBackspace={game.backspace}
+                disabled={game.loading || finita || game.revealing !== null}
+              />
+            )}
+          </>
+        )}
+      </div>
+
+      <HowToPlay open={aiuto} onClose={() => setAiuto(false)} />
+
+      {game.state && (
+        <Sheet
+          open={game.resultOpen}
+          onClose={game.closeResult}
+          title={game.state.status === 'won' ? TITOLI_VITTORIA[game.state.guesses.length - 1] : 'Niente da fare'}
+        >
+          <div className="result">
+            {game.state.status === 'won' ? (
+              <p className="result__lede">
+                Indovinata in <strong>{game.state.guesses.length}</strong>{' '}
+                {game.state.guesses.length === 1 ? 'tentativo' : 'tentativi'}.
+              </p>
+            ) : (
+              <p className="result__lede">
+                La parola era <strong className="result__answer">{game.state.answer?.toUpperCase()}</strong>.
+              </p>
+            )}
+            {statistiche && (
+              <div className="libero-conti">
+                <Conto valore={statistiche.giocate} etichetta="Giocate" />
+                <Conto valore={statistiche.vinte} etichetta="Indovinate" />
+                <Conto valore={statistiche.serie} etichetta="Di fila" />
+              </div>
+            )}
+            <p className="result__rimaste">Le parole libere non contano per la classifica.</p>
+            <div className="result__actions">
+              <Button size="lg" fullWidth onClick={() => void nuova()}>
+                <IconShuffle size={18} /> Un’altra parola
+              </Button>
+            </div>
+          </div>
+        </Sheet>
+      )}
+
+      <Sheet open={cambio} onClose={() => setCambio(false)} title="Cambiare parola?">
+        <p className="result__lede">
+          Questa l’hai già cominciata: cambiandola conta come non indovinata.
+        </p>
+        <Button size="lg" fullWidth variant="destructive" onClick={() => void nuova()}>
+          Cambia parola
+        </Button>
+        <Button size="lg" fullWidth variant="plain" onClick={() => setCambio(false)}>
+          Continua questa
+        </Button>
+      </Sheet>
+
+      {game.state?.status === 'won' && game.resultOpen && <Coriandoli />}
+    </Pagina>
+  )
+}
+
+function Conto({ valore, etichetta }: { valore: number; etichetta: string }) {
+  return (
+    <div className="libero-conti__voce">
+      <span className="libero-conti__valore u-tabnum">{valore}</span>
+      <span className="libero-conti__etichetta">{etichetta}</span>
+    </div>
+  )
+}

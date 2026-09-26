@@ -30,7 +30,7 @@ export function SegmentedControl<T extends string>({
         className="segmented__thumb"
         aria-hidden="true"
         style={{
-          width: `calc((100% - 4px) / ${options.length})`,
+          width: `calc((100% - 6px) / ${options.length})`,
           transform: `translateX(calc(${activeIndex} * 100%))`,
         }}
       />

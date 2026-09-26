@@ -1,15 +1,51 @@
-# Game Hub
+# Giochi
 
 **→ [giochi.simonerecchia.com](https://giochi.simonerecchia.com)**
 
-Hub di giochi da browser per un gruppo di colleghi: si sceglie un nickname, si
-gioca la sfida del giorno e il punteggio finisce in classifica.
+Quattro giochi in italiano per un gruppo di colleghi, in un'app da browser che si
+installa sulla Home come un'app vera: **Wordle**, **Scarabeo**, **Cruciverba** e
+**Battaglia navale**. Si entra con un nickname, e il browser se lo ricorda.
 
-Il primo gioco è un **Wordle italiano**: una parola di cinque lettere, sei
-tentativi, la stessa parola per tutti, nuova a mezzanotte.
+Ogni gioco ha due partite:
 
-Pensato prima per il telefono, ma su desktop non è una pagina mobile ingrandita:
-i tab si spostano nella barra in alto e il layout usa la larghezza disponibile.
+| | Classificata | Libera |
+| --- | --- | --- |
+| Quante | una al giorno | quante vuoi |
+| Uguale per tutti | sì | no, a caso |
+| Punti in classifica | fino a **100** | no |
+| **Wordle** | cinque parole, si aprono una per volta; puoi farti aiutare da un collega | una parola a caso |
+| **Scarabeo** | dieci mosse con le tessere del giorno, contro il punteggio del computer sulle stesse tessere | a turni contro il computer, tre livelli |
+| **Cruciverba** | lo schema del giorno, definizioni dal Wikizionario | uno schema dalla scorta |
+| **Battaglia navale** | contro il computer, con la sua flotta del giorno uguale per tutti | contro il computer a tre livelli, o contro un amico — online o con un link |
+
+Pensata prima per il telefono, con tab bar di vetro e schermate di gioco a tutto
+schermo; su computer le sezioni diventano una barra laterale.
+
+---
+
+## I punti
+
+Ogni classificata vale **al massimo cento punti**, qualunque sia il gioco: è
+quel che permette la **classifica generale**, che è la loro somma. Dentro quel
+tetto ogni gioco misura quel che gli è proprio, e tutti tengono lo stesso
+principio: **giocarla bene vale circa il doppio di giocarla male**, non dieci
+volte tanto. Una giornata storta si recupera.
+
+| Gioco | Cosa misura | Perfetta | Giocata male |
+| --- | --- | --- | --- |
+| Wordle | i tentativi, su cinque parole | 100 (+4 di spareggio) | 50 con tutte al sesto |
+| Scarabeo | il tuo punteggio in rapporto a quello del computer | 100 se lo pareggi | 50 con metà |
+| Cruciverba | gli aiuti usati | 100 senza aiuti | −3 a lettera svelata, −1 a errore |
+| Battaglia | i colpi per affondare la flotta | 100 senza acqua | 59 vincendo col mare intero |
+
+Le formule stanno in un posto solo, [`shared/punti.ts`](shared/punti.ts), e
+[`shared/__tests__/punti.test.ts`](shared/__tests__/punti.test.ts) verifica i
+tetti e i due lati del compromesso per ogni gioco.
+
+**Giocare in compagnia vale uguale.** Nel Wordle classificato puoi invitare fino
+a cinque colleghi sulla parola del giorno: la vedono in diretta, suggeriscono, e
+prendono il tuo stesso punteggio. A pari punti in classifica passa avanti chi ne
+ha fatti meno in compagnia.
 
 ---
 
@@ -17,191 +53,94 @@ i tab si spostano nella barra in alto e il layout usa la larghezza disponibile.
 
 | | |
 | --- | --- |
-| Front-end | React 19 + TypeScript, build con Vite |
-| Stile | CSS con design token, nessun framework |
+| Front-end | React 19 + TypeScript, build con Vite, View Transitions |
+| Stile | CSS con design token (`light-dark()`), nessun framework |
 | API | Hono su Cloudflare Pages Functions |
 | Dati | Cloudflare D1 (SQLite) |
 | Hosting | Cloudflare Pages, deploy automatico a ogni push su `main` |
 
-Bundle iniziale: **~14 kB gzip** più React. Il dizionario dei tentativi (17 kB
-gzip) si carica solo quando si entra nel gioco.
-
-### Struttura
-
 ```
-shared/       codice usato sia dal browser sia dal Worker
-              (regole del gioco, punteggio, calendario, dizionari, password)
-server/       implementazione dell'API — import relativi, vedi nota sotto
+shared/       codice usato sia dal browser sia dal Worker: regole dei giochi,
+              punti, calendario, dizionari, i motori del computer
+server/       l'API — import relativi, vedi CLAUDE.md
 functions/    punto d'ingresso delle Pages Functions
-src/          applicazione React
+src/          l'app React: app/ (rotte, navigazione), components/, games/, pages/
 migrations/   schema D1, in ordine
-scripts/      generatore dei dizionari, controllo di configurazione
+scripts/      generatori: dizionari, schemi del cruciverba, traguardo dello Scarabeo
 ```
 
-Il codice sotto `server/` usa **import relativi** e non l'alias `@shared`: il
-bundler delle Pages Functions non legge i path di `tsconfig`, e un import
-aliasato farebbe fallire il build del deploy. L'alias è stato tolto da
-`tsconfig.worker.json` così il typecheck se ne accorge subito.
+Quattro scelte spiegano il resto:
+
+- **Il server tiene la verità.** Parole, soluzioni, flotte del computer e
+  traguardi restano sul server finché la partita non è chiusa; il browser manda
+  mosse e riceve esiti. Le partite si salvano come mosse, e il resto si rigioca.
+- **Dieci millisecondi di CPU per richiesta.** È il limite del piano gratuito, e
+  decide dove sta il lavoro: la password si deriva nel browser, gli schemi del
+  cruciverba e il traguardo dello Scarabeo si calcolano la notte prima, il
+  computer dello Scarabeo libero gira in un Web Worker con il dizionario intero.
+- **A polling, non in realtime.** Le partite condivise si rileggono a ritmo
+  variabile, e un solo giro di presenza per tutta l'app porta gli inviti: le
+  richieste sono contate.
+- **Un indirizzo solo.** Tutto sta su `giochi.simonerecchia.com`, e gli
+  indirizzi dicono dove si è: `/scarabeo/classificata`, `/battaglia-navale/libera`.
+  I sottodomini dei giochi (`wordle.simonerecchia.com`) portano lì.
+
+Le regole che non si vedono dal codice — e perché sono così — sono in
+**[CLAUDE.md](CLAUDE.md)**.
 
 ---
 
 ## Sviluppo
 
-Serve Node 20 o più recente.
+Serve Node 22.
 
 ```bash
 npm install
 
 # database locale (una volta sola, e a ogni nuova migrazione)
 npm run db:migrate:local
+node scripts/seed-dizionario.mjs     # il dizionario dello Scarabeo
+npm run cruciverba:locale            # gli schemi del cruciverba
+npm run scarabeo:locale              # il traguardo del computer
 
 # tutto insieme su http://127.0.0.1:8788 — front-end + API + D1
-npm run dev:api
+npm run build && npm run dev:api
 ```
 
-`npm run dev` avvia solo Vite, con ricarica immediata ma senza API: utile per
-lavorare sullo stile, non per provare il gioco.
+`npm run dev` avvia solo Vite, con ricarica immediata ma senza API: utile per lo
+stile, non per giocare.
 
 | Comando | Cosa fa |
 | --- | --- |
 | `npm run dev:api` | Front-end, API e D1 locale insieme |
-| `npm run dev` | Solo Vite, senza API |
 | `npm run build` | Typecheck e build di produzione |
 | `npm run test` | Suite di test (Vitest) |
-| `npm run typecheck` | Solo il typecheck dei tre progetti TS |
-| `npm run words:build` | Rigenera i dizionari dalle fonti |
-| `npm run db:migrate:local` | Applica le migrazioni al D1 locale |
+| `npm run typecheck` | Solo il typecheck dei progetti TS |
+| `npm run words:build` | Rigenera gli elenchi del Wordle dalle fonti |
+| `npm run dawg:build` | Rigenera il dizionario compatto del computer dello Scarabeo |
 | `npm run db:migrate:remote` | Applica le migrazioni al D1 di produzione |
 
----
-
-## Indirizzi
-
-Un sottodominio per l'hub e uno per ogni gioco, sullo stesso progetto Pages:
-
-| | |
-| --- | --- |
-| [`giochi.simonerecchia.com`](https://giochi.simonerecchia.com) | l'hub, con l'elenco dei giochi |
-| [`wordle.simonerecchia.com`](https://wordle.simonerecchia.com) | direttamente il Wordle di oggi |
-
-Il sottodominio decide solo la schermata da cui si entra: la navigazione poi è
-libera. La sessione è condivisa fra i sottodomini, quindi si accede una volta
-sola. Le regole stanno in [`shared/hosts.ts`](shared/hosts.ts).
+Prima di una PR: `npm run typecheck && npm run test && npm run build`.
 
 ## Deploy
 
-Cloudflare Pages. Ogni push su `main` esegue typecheck, test, build,
-migrazioni D1 e pubblicazione, e verifica che l'API risponda prima di
-considerare il deploy riuscito — vedi
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml).
-
-Configurazione, permessi del token e come ricostruire tutto da zero:
+Ogni push su `main` esegue typecheck, test, build, migrazioni D1, il
+rifornimento di schemi e traguardi, la pubblicazione, e verifica che l'API
+risponda. Configurazione, domini e come ricostruire tutto:
 **[DEPLOY.md](DEPLOY.md)**.
 
 ---
 
-## Giocare in compagnia
+## Da dove vengono le parole
 
-Mentre giochi puoi invitare **fino a cinque persone**: vedono la tua griglia in
-diretta e possono suggerirti una parola. Il tasto d'invio, da loro, dice
-**Suggerisci** — la parola la giochi sempre tu, un suggerimento non può
-consumarti un tentativo.
+- **Wordle** e **Scarabeo**: [napolux/paroleitaliane](https://github.com/napolux/paroleitaliane)
+  (MIT), con le frequenze d'uso di
+  [hermitdave/FrequencyWords](https://github.com/hermitdave/FrequencyWords)
+  (MIT, dai sottotitoli di OpenSubtitles 2018) per scegliere le parole del giorno.
+- **Cruciverba**: le definizioni del [Wikizionario](https://it.wiktionary.org),
+  estratte da [kaikki.org](https://kaikki.org/itwiktionary/), sotto
+  [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it).
 
-Non c'è realtime: le Durable Objects non sono garantite sul piano gratuito e i
-10 ms di CPU per richiesta rendono le connessioni lunghe una cattiva idea. Il
-client interroga il server ogni due secondi per la griglia condivisa, tre per i
-suggerimenti, otto per gli inviti. Per "qualcuno ti suggerisce una parola" non
-si nota la differenza.
-
-**Chi guarda senza aver giocato conosce la parola**, perché è la stessa per
-tutti. Non lo impediamo, ma quella giornata non fa punti — con l'avviso
-esplicito prima di accettare l'invito. Altrimenti la classifica non misurerebbe
-più nulla.
-
-## Le tre decisioni che spiegano il resto
-
-### La parola la valuta il server
-
-Finché la partita è aperta il browser non conosce la soluzione: manda il
-tentativo e riceve i colori. Costa un viaggio in rete per tentativo, ma è la
-differenza fra una classifica che misura qualcosa e una che misura la voglia di
-aprire gli strumenti per sviluppatori.
-
-Il controllo "questa parola non esiste" resta invece locale, così un tentativo
-sbagliato non fa aspettare nessuno.
-
-### L'email serve al recupero, non alla burocrazia
-
-Alla registrazione si scelgono nickname, email e password (due volte). L'email
-esiste per una ragione sola: **poter rientrare se si dimentica la password**.
-Prima non c'era via di recupero e l'account si perdeva.
-
-La **verifica con codice** è opzionale e si accende quando c'è un servizio di
-invio configurato (`EMAIL_VERIFICATION` in `wrangler.toml`). Con la verifica
-attiva la registrazione manda un codice di 6 cifre e il gioco resta chiuso
-finché non viene confermato — il controllo è lato server, non solo nella UI.
-Senza servizio di invio l'email viene comunque raccolta ma non verificata:
-pretendere un codice senza il modo di spedirlo bloccherebbe tutti.
-
-Dettagli e come accenderla: [DEPLOY.md](DEPLOY.md).
-
-### Le password si derivano in due passaggi
-
-Le Pages Functions sul piano gratuito hanno **10 ms di CPU per richiesta**: un
-PBKDF2 robusto lato server li sfonderebbe da solo. Le 210.000 iterazioni girano
-quindi nel browser e il Worker ne applica altre 12.000 su un salt casuale.
-
-Due effetti collaterali graditi: la password in chiaro non lascia mai il
-dispositivo, e chi rubasse il database dovrebbe rompere 222.000 iterazioni per
-giocatore. Dettagli in [`shared/password.ts`](shared/password.ts).
-
-L'autenticazione resta volutamente minima — nickname e password, nessuna email,
-nessun secondo fattore: serve solo a legare i punteggi a una persona.
-
-### I tentativi contano più di tutto il resto
-
-Il tetto complessivo dei bonus (19 punti) sta sotto il gradino fra due
-tentativi (20), quindi **chi indovina prima sta davanti, sempre**. Velocità e
-giorni consecutivi fanno solo da spareggio. Due test verificano l'invariante e
-la condizione numerica che la sostiene, perché è il tipo di vincolo che si
-rompe da solo la prima volta che si ritocca una costante.
-
-```
-tentativi   120 · 100 · 80 · 60 · 40 · 20     (gradino 20)
-velocità    fino a +10   (pieno sotto i 45s, zero dopo 12 minuti)
-costanza    fino a  +9   (un punto per giorno consecutivo)
-sconfitta         5      (aver giocato conta comunque)
-```
-
----
-
-## Le parole
-
-Da due elenchi pubblici con licenza MIT, generati da uno script riproducibile
-(`npm run words:build`):
-
-- **6.453 tentativi ammessi** — permissivo di proposito
-- **1.132 parole del giorno** — oltre tre anni di gioco, solo parole di uso
-  comune
-
-Fonti, filtri e criteri sono documentati in
-**[`shared/words/SOURCES.md`](shared/words/SOURCES.md)** — compreso il motivo
-per cui la sola frequenza d'uso non basta a scegliere le soluzioni (i
-sottotitoli italiani scrivono `potro` quasi quanto `potrò`).
-
-La tastiera ha le **21 lettere** dell'alfabeto italiano: niente accenti e
-niente J K W X Y, che compaiono solo nei prestiti. Tasti più grandi sul
-telefono e nessun tasto che non possa mai servire.
-
----
-
-## Aggiungere un gioco
-
-1. Una voce in [`src/games/catalog.ts`](src/games/catalog.ts)
-2. Una cartella sotto `src/games/`
-3. Le rotte API in `server/routes/`, montate in `server/app.ts`
-4. Una migrazione in `migrations/` per le sue tabelle
-5. Una rotta in `src/App.tsx`
-
-Punteggio e classifica sono già scritti in termini di partite: un gioco nuovo
-che salva `score` e `status` entra in classifica senza altro lavoro.
+Fonti, filtri e licenze nel dettaglio: [`shared/words/SOURCES.md`](shared/words/SOURCES.md).
+Le tastiere hanno le **21 lettere** dell'alfabeto italiano: niente accenti e
+niente J K W X Y.

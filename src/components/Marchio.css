@@ -1,0 +1,54 @@
+.marchio {
+  --lato: calc(var(--marchio) * 0.44);
+  display: grid;
+  grid-template-columns: repeat(2, var(--lato));
+  gap: calc(var(--marchio) * 0.08);
+  padding: calc(var(--marchio) * 0.02);
+}
+
+.marchio .copertina--icona {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 6px 16px var(--shadow-tint-soft);
+}
+
+/*
+ * Entrano una alla volta, con un rimbalzo, e poi galleggiano appena: e' la
+ * prima cosa che si vede dell'app, e deve sembrare un giocattolo, non un logo.
+ */
+.marchio--animato .copertina--icona {
+  animation:
+    marchio-entra 620ms var(--ease-spring) both,
+    marchio-galleggia 5.6s var(--ease-in-out) 900ms infinite;
+}
+
+.marchio--animato .copertina--icona:nth-child(2) {
+  animation-delay: 70ms, 1.3s;
+}
+
+.marchio--animato .copertina--icona:nth-child(3) {
+  animation-delay: 140ms, 1.7s;
+}
+
+.marchio--animato .copertina--icona:nth-child(4) {
+  animation-delay: 210ms, 2.1s;
+}
+
+@keyframes marchio-entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6) rotate(-8deg);
+  }
+}
+
+@keyframes marchio-galleggia {
+  50% {
+    transform: translateY(-3px) rotate(1.5deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marchio--animato .copertina--icona {
+    animation: none;
+  }
+}

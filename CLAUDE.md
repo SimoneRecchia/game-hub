@@ -26,6 +26,14 @@ un'origine http qualsiasi. `deriveVerifier` solleva `InsecureContextError` in
 quel caso, e la schermata di accesso lo mostra: non toglierlo, altrimenti torna
 un generico "qualcosa e' andato storto" impossibile da diagnosticare.
 
+**L'app ha un indirizzo solo, `giochi.<dominio>`, e i sottodomini dei giochi
+sono scorciatoie.** `wordle.<dominio>` porta a `giochi.<dominio>/wordle` prima
+ancora che parta l'app: lo fa lo script in testa a `index.html`, perché le
+Pages non sanno fare redirect per host e una Function su ogni richiesta
+costerebbe richieste contate. La regola e' anche in `indirizzoCanonico`
+(`shared/hosts.ts`), e un test esegue lo script di `index.html` con una
+`location` finta per verificare che portino nello stesso posto.
+
 **Il cookie di sessione e' condiviso fra i sottodomini** tramite `COOKIE_DOMAIN`.
 `cookieDomainFor` lo applica solo se copre davvero l'host: un `Domain` non
 corrispondente viene scartato dal browser senza dire niente, e l'accesso
@@ -55,7 +63,7 @@ il test che verifica la condizione numerica cade prima di quello sull'ordine:
 guarda quello.
 
 **La scala dei punti e' derivata, non scritta a mano**: base di partecipazione
-piu' gradino per tentativo risparmiato, cioe' `[100, 90, 80, 70, 60, 50]`. Il
+piu' gradino per tentativo risparmiato, cioe' `[50, 45, 40, 35, 30, 25]`. Il
 rapporto fra la giornata migliore e la peggiore e' **2:1** di proposito: con il
 6:1 di prima due giornate sfortunate decidevano la classifica, e una vittoria al
 sesto tentativo valeva un sesto di una perfetta. C'e' un test su entrambi i lati
@@ -70,18 +78,23 @@ finiva a due o tre punti, e nessuno l'avrebbe giocata.
 
 Con base e gradino la somma torna **per costruzione, a ogni numero di
 tentativi**, perché le basi delle quattro sommano alla base della prima
-(20+14+8+8 = 50) e i gradini al gradino (4+2+2+2 = 10). Da cui:
+(10+7+4+4 = 25) e i gradini al gradino (2+1+1+1 = 5). Da cui:
 
     tentativi        1    2    3    4    5    6
-    del giorno     100   90   80   70   60   50
-    2ª              40   36   32   28   24   20
-    3ª              24   22   20   18   16   14
-    4ª              18   16   14   12   10    8
-    5ª              18   16   14   12   10    8
-    somma 2ª-5ª    100   90   80   70   60   50
+    del giorno      50   45   40   35   30   25
+    2ª              20   18   16   14   12   10
+    3ª              12   11   10    9    8    7
+    4ª               9    8    7    6    5    4
+    5ª               9    8    7    6    5    4
+    somma 2ª-5ª     50   45   40   35   30   25
 
-Le ultime due valgono uguale invece di continuare a scendere: la quinta deve
-valere la pena di essere giocata. Nessuna parola scende sotto gli otto punti, e
+E' la tabella di prima divisa a meta' — esatta, perché ogni numero era pari —
+cosi' che la giornata perfetta valga **cento**, come la classificata di ogni
+altro gioco (vedi sotto). La migrazione `0013_punti_bilanciati.sql` ha
+ricalcolato con questa scala anche le giornate gia' giocate, assist compresi:
+un Wordle di agosto e uno di oggi stanno sulla stessa scala. Le ultime due
+valgono uguale invece di continuare a scendere: la quinta deve valere la pena
+di essere giocata. Nessuna parola indovinata scende sotto i quattro punti, e
 c'e' un test per ognuna di queste proprietà.
 
 **I bonus stanno solo sulla parola del giorno** (`scoreForWord`). Velocità e
@@ -92,7 +105,7 @@ esattamente il ribaltamento che la scala serve a impedire. Trovato provando
 l'API, non ragionando sui numeri: la scala da sola era giusta.
 
 **Il caso estremo e' un pareggio, e si scioglie sulla media tentativi.**
-Principale perfetta 109 contro cinque parole all'ultimo tentativo 109: non e' un
+Principale perfetta 54 contro cinque parole all'ultimo tentativo 54: non e' un
 difetto, e' la conseguenza diretta del fatto che le quattro extra valgono quanto
 la principale. Il pareggio si rompe in classifica perché `played`, `wins` e
 `avg_attempts` contano **solo `slot = 1`**: contando tutte e cinque, chi le gioca
@@ -106,8 +119,9 @@ sia su `/guess`, e `/state` legge il quadro **prima** di `openGame` — creando 
 riga, la parola successiva risulterebbe sbloccata al giro dopo. Il controllo non
 puo' stare solo nel selettore: `?slot=5` lo aggirerebbe.
 
-**Il gioco sono due schermate, e lo slot sta nell'indirizzo.** `/wordle` e' il
-percorso delle cinque parole, `/wordle/:slot` la griglia di una di esse. Prima la
+**Il gioco sono due schermate, e lo slot sta nell'indirizzo.** `/wordle/classificata`
+e' il percorso delle cinque parole, `/wordle/classificata/:slot` la griglia di una
+di esse (`/wordle` e' la pagina del gioco, con le due modalità). Prima la
 parola scelta era uno `useState` dentro `useWordle`, perché il selettore era una
 striscia sopra la griglia; con una schermata sua, cambiare parola e' una
 navigazione — e il tasto indietro del telefono torna al percorso invece di
@@ -290,11 +304,81 @@ occupati i due giocatori, altrimenti chi chiude l'app a meta' non potrebbe piu'
 essere sfidato. Chi resta ad aspettare puo' chiedere la vittoria a tavolino
 dopo tre minuti senza colpi, o cinque senza flotta.
 
-**Le due classifiche restano separate.** Una giornata di Wordle vale al massimo
-209 punti per costruzione, una di Scarabeo qualche centinaio: sommarle
-richiederebbe un tasso di cambio inventato, e normalizzare per giornata ("il
-migliore prende cento") cambierebbe le classifiche di ieri ogni volta che
-qualcuno gioca. `/leaderboard` resta il Wordle, `/leaderboard/scarabeo` e' l'altro.
+**Ogni classificata vale al massimo cento punti, e la generale e' la somma.**
+Prima una giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche
+centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
+gioco misura quel che gli e' proprio dentro lo stesso tetto (`shared/punti.ts`,
+che ha la tabella di tutti): il Wordle i tentativi, lo Scarabeo il punteggio in
+rapporto al computer, il cruciverba gli aiuti, la battaglia i colpi. Tutti
+tengono il principio del Wordle — **giocarla bene vale circa il doppio di
+giocarla male**, non dieci volte tanto — e `shared/__tests__/punti.test.ts`
+verifica i tetti e i due lati del compromesso per ogni gioco. La
+classifica di ogni gioco resta (`/leaderboard`, `/leaderboard/scarabeo`, ...), la
+generale e' `/leaderboard/generale`. Non si normalizza per giornata ("il
+migliore prende cento"): cambierebbe le classifiche di ieri ogni volta che
+qualcuno gioca.
+
+**A pari punti passa avanti chi ne ha fatti meno in compagnia.** Nel Wordle e
+nella generale lo spareggio sono gli assist, **al contrario** di prima: una
+giornata in compagnia vale quanto una da soli, ma fra due totali uguali vince chi
+li ha fatti con le proprie partite. `rankPlayers` e `ordinaGenerale` devono
+restare d'accordo; poi, nella generale, conta chi ci e' arrivato con meno
+partite.
+
+**Ogni gioco ha una classificata e una libera.** La **classificata** e' una al
+giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
+punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
+Wordle con una parola a caso, Scarabeo a turni contro il computer, cruciverba
+da una scorta di schemi, battaglia contro il computer o contro un amico. Gli
+indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
+(`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
+nuovi in `App.tsx`).
+
+**Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
+esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso
+diventerebbe un modo di vedere in anticipo la classificata di un giorno che
+arriva, e chi gioca tanto partirebbe avvantaggiato.
+
+**Il traguardo dello Scarabeo lo gioca il computer, la notte prima.**
+`scripts/genera-computer-scarabeo.ts` fa giocare al computer normale le dieci
+mosse di ogni giornata con le tessere del giorno, e scrive il punteggio in
+`scarabeo_computer` con `INSERT OR IGNORE`: il riferimento di una giornata non
+cambia, altrimenti due giocatori dello stesso giorno avrebbero punti su scale
+diverse. I punti sono `100 × punteggio / riferimento`, fino a cento
+(`puntiScarabeo`): il rapporto invece di una scala fissa tiene conto della
+fortuna del sacchetto. Non si fa nel Worker — una mossa del computer costa
+decine di millisecondi — e se la riga manca si usa `RIFERIMENTO_SCARABEO`. Le
+mosse del computer si mostrano solo a giornata chiusa: prima sarebbero la
+soluzione.
+
+**Lo Scarabeo libero gira tutto nel browser.** Il computer e' un Web Worker con
+il dizionario intero in un DAWG (`src/games/scarabeo/dizionario.dawg`, 600 kB,
+versionato: un test verifica che sia quello che si ricostruisce dall'elenco con
+`npm run dawg:build`). La partita si salva come mosse nel `localStorage` a ogni
+turno, e a fine partita va al server, che la rigioca con le stesse regole per le
+statistiche. Il computer usa lo stesso motore (`shared/scarabeo-motore.ts`) del
+traguardo della classificata, con tre fasce di scelta: facile, normale,
+difficile.
+
+**Nella battaglia classificata la flotta del computer e' la stessa per tutti.**
+`flottaDelGiorno(numero)` la ricava dal numero del giorno, come il sacchetto
+dello Scarabeo: e' l'unica cosa che rende i colpi di due giocatori
+confrontabili. Il livello del computer della classificata e' il facile, e il
+suo colpo arriva nella stessa richiesta del tuo — una scrittura sola per turno;
+la pagina lo mostra dopo un respiro (`primaDelComputer` in `useBattaglia.ts`).
+Nella classificata **non si invitano amici**: sarebbe una partita diversa per
+chi ce l'ha. Contro il computer non c'e' polling: non c'e' niente da aspettare.
+
+**Un amico si invita anche con un link.** `POST /battaglia/link` crea un invito
+valido `LINK_SCADENZA_MS` (un giorno), uno per volta; `/battaglia-navale/invito/:codice`
+lo apre. Chi non ha un account passa dalla registrazione, che lo dice
+(`Welcome` riceve il codice e legge chi invita da `GET /api/inviti/:codice`,
+l'unica rotta di gioco senza sessione, che dice solo il nome di chi invita), e
+appena entra la pagina dell'invito accetta da sola: aprire il link e' gia' la
+risposta. L'accettazione e' un `batch` condizionato come quello delle sfide,
+quindi due persone con lo stesso link non aprono due partite. La presenza
+riporta solo le partite fra amici: una partita col computer lasciata a meta' non
+deve comparire come "la battaglia con X e' in corso".
 
 **La soluzione non deve arrivare al client prima della fine.** `toState()` in
 `server/routes/wordle.ts` mette `answer: null` finché lo stato è `playing`; è
@@ -332,6 +416,22 @@ collassando le caselle. Per questo la media query orizzontale rimette
 `container-type: normal` e torna a dimensionare sulla larghezza.
 
 ## Il design
+
+**Deve sembrare un'app, non un sito.** Ogni schermata e' una `Pagina`
+(`src/components/Pagina.tsx`): titolo grande che scivola nella barra, freccia
+indietro con il nome della schermata di prima, e `intera` per le schermate di
+gioco, che nascondono tab bar e barra laterale da sole (`body:has(.pagina--intera)`
+in `Shell.css`: una schermata non deve avvisare nessuno). Le navigazioni passano
+da `useNavigazione().vai` o da `Collegamento`, mai da `navigate` o `Link` nudi,
+perché e' lì che partono le transizioni: avanti, indietro, scheda, con le View
+Transitions dove ci sono. React Router aggiorna lo stato dentro una transizione
+di React, quindi `TransizioniProvider` fa aspettare la View Transition finché la
+rotta nuova e' montata (guarda la chiave della location), con un tetto di 700 ms.
+
+**Le icone SVG di `public/` devono essere XML valido.** Un doppio trattino in un
+commento basta a non far caricare l'immagine, mentre la stessa icona messa nella
+pagina si vede lo stesso: e' cosi' che il marchio della barra laterale era
+rotto senza che nessuno se ne accorgesse. C'e' un test.
 
 **La palette scura non esiste come blocco separato.** Ogni token e' un
 `light-dark(chiaro, scuro)`, che segue `color-scheme` — quindi copre sia la
@@ -469,6 +569,13 @@ permette di convertirlo, quindi il deploy passa da
 `.github/workflows/deploy.yml` e non dal build integrato di Pages. Se un giorno
 si volesse il collegamento a Git, va creato un progetto nuovo e rifatti i
 custom domain.
+
+**Gli schemi liberi del cruciverba vengono da una scorta.** Non se ne genera uno
+a richiesta, per la stessa ragione di quelli del giorno: la notte
+`cruciverba.yml` tiene `cruciverba_schemi_liberi` rifornita (`--liberi`, fino a
+`--al-massimo`), e ognuno ha un seme suo (`semeLibero`), diverso da quello di
+qualunque giornata. Se la scorta finisce il gioco lo dice invece di rifare uno
+schema gia' fatto da chi gioca.
 
 **Il sottodominio Pages e' `game-hub-43l.pages.dev`, non `game-hub.pages.dev`**
 (quello e' già di qualcun altro). Conta quando si scrivono i CNAME: puntare al
