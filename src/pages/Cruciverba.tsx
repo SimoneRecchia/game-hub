@@ -1,15 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
+import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { Sheet } from '@/components/Sheet'
-import { IconChevronLeft, IconChevronRight, IconInfo, IconShuffle, IconTrophy } from '@/components/Icons'
+import { IconChevronLeft, IconChevronRight, IconClock, IconInfo, IconShuffle, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/Toast'
 import { ComeSiGiocaCruciverba } from '@/games/cruciverba/ComeSiGioca'
+import { adesivoCompletato, adesivoControllo } from '@/games/cruciverba/adesivi'
 import { ElencoDefinizioni } from '@/games/cruciverba/ElencoDefinizioni'
 import { Griglia } from '@/games/cruciverba/Griglia'
 import { Tastiera } from '@/games/cruciverba/Tastiera'
@@ -121,6 +123,18 @@ export default function Cruciverba() {
   // Un cruciverba appena completato si festeggia, uno riaperto gia' finito no.
   const festa = useFesta(stato ? !g.finita : null, g.finita)
 
+  // I controlli e il completamento, al centro dello schermo.
+  const { adesivo, accoda } = useCodaAdesivi()
+  const controllo = g.ultimoControllo
+  useEffect(() => {
+    if (controllo) accoda(adesivoControllo(controllo))
+  }, [accoda, controllo])
+  const puntiRef = useRef(g.punti)
+  puntiRef.current = g.punti
+  useEffect(() => {
+    if (festa) accoda(adesivoCompletato(puntiRef.current))
+  }, [accoda, festa])
+
   return (
     <Pagina
       titolo={
@@ -154,6 +168,7 @@ export default function Cruciverba() {
             <div className="cru__principale">
               <div className="cru__stato">
                 <span className="cru__tempo u-tabnum" aria-label="Tempo di gioco">
+                  <IconClock size={14} />
                   {formatCronometro(g.tempoMs)}
                 </span>
                 {/* Un messaggio prende il posto di punti e caselle, nella stessa riga:
@@ -167,7 +182,10 @@ export default function Cruciverba() {
                     <span className="cru__punti u-tabnum">
                       {g.punti} <span className="cru__punti-label">punti</span>
                     </span>
-                    <span className="cru__avanzamento u-tabnum">
+                    <span className="cru__avanzamento u-tabnum" aria-label={`${scritte} caselle scritte su ${bianche}`}>
+                      <span className="cru__avanzamento-barra" aria-hidden="true">
+                        <span style={{ transform: `scaleX(${bianche > 0 ? scritte / bianche : 0})` }} />
+                      </span>
                       {scritte}/{bianche}
                     </span>
                   </>
@@ -325,6 +343,7 @@ export default function Cruciverba() {
           </button>
         </div>
       </Sheet>
+      <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
   )

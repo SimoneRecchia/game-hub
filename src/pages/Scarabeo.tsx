@@ -1,15 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
+import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
+import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, Numero, Vuoto, useFesta } from '@/components/Elementi'
 import { IconComputer, IconInfo, IconList, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { IconaScheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { Campo, ElencoMosse, Tabellino } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
+import { adesivoFineScarabeo, adesivoMossa } from '@/games/scarabeo/adesivi'
 import { useScarabeo } from '@/games/scarabeo/useScarabeo'
 import { useCountdown } from '@/games/wordle/useCountdown'
+import { usePlayer } from '@/lib/auth'
 import { formatCountdown } from '@/lib/format'
 import type { ScarabeoState } from '@shared/types'
 import './Scarabeo.css'
@@ -35,6 +40,22 @@ export default function Scarabeo() {
     stato ? !finita : null,
     finita && stato.punti >= stato.computer.punti && stato.punti > 0,
   )
+  const io = usePlayer()
+
+  // La mossa appena giocata al centro dello schermo, e poi, se era l'ultima, come e' finita.
+  const { adesivo, accoda } = useCodaAdesivi()
+  const mossa = g.ultimaMossa
+  useEffect(() => {
+    if (mossa) accoda(adesivoMossa(mossa))
+  }, [accoda, mossa])
+  const eraInCorso = useRef<boolean | null>(null)
+  useEffect(() => {
+    if (!stato) return
+    if (eraInCorso.current === true && finita && stato.punti > 0) {
+      accoda(adesivoFineScarabeo(0, stato.punti >= stato.computer.punti, stato.punti, stato.computer.punti))
+    }
+    eraInCorso.current = !finita
+  }, [accoda, finita, stato])
 
   return (
     <Pagina
@@ -72,6 +93,12 @@ export default function Scarabeo() {
           restanti={stato.restanti}
           testa={
             <Tabellino
+              iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
+              iconaAltro={
+                <IconaScheda>
+                  <IconComputer size={12} />
+                </IconaScheda>
+              }
               avviso={g.messaggio}
               io={stato.punti}
               altro={stato.computer.punti}
@@ -136,6 +163,7 @@ export default function Scarabeo() {
         )}
       </Sheet>
 
+      <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
   )

@@ -1,13 +1,24 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ROTTE } from '@/app/rotte'
+import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
+import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, Elenco, Riga, Sezione, Tacche, Vuoto, useFesta } from '@/components/Elementi'
 import { IconComputer, IconFlag, IconInfo, IconList, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { IconaScheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { Campo, ElencoMosse, Tabellino } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
+import {
+  ADESIVO_FINE_SCARABEO_MS,
+  ADESIVO_MOSSA_MS,
+  MOSSA_DEL_COMPUTER_DA_ADESIVO,
+  adesivoFineScarabeo,
+  adesivoMossa,
+} from '@/games/scarabeo/adesivi'
 import { useScarabeoLibero, type ScarabeoLiberoController } from '@/games/scarabeo/useScarabeoLibero'
+import { usePlayer } from '@/lib/auth'
 import { LIVELLI, MOSSE_A_TESTA, type Livello } from '@shared/scarabeo-computer'
 import './Scarabeo.css'
 
@@ -41,10 +52,41 @@ export default function ScarabeoLibero() {
   const finita = stato?.finita ?? false
   const festa = useFesta(stato ? !stato.finita : null, risultato && finita && stato?.esito === 'vinta')
 
-  // A partita finita si apre il risultato, una volta.
+  const io = usePlayer()
+  const { adesivo, accoda } = useCodaAdesivi()
+
+  // Le mosse al centro: tutte le mie, e quelle del computer che fanno male.
+  const mossa = g.ultimaMossa
   useEffect(() => {
-    if (finita) setRisultato(true)
-  }, [finita])
+    if (!mossa) return
+    if (mossa.mia || mossa.scarabeo || mossa.punti >= MOSSA_DEL_COMPUTER_DA_ADESIVO) accoda(adesivoMossa(mossa))
+  }, [accoda, mossa])
+
+  // A partita finita: l'adesivo della fine, e dopo il risultato, una volta. Una
+  // partita riaperta gia' finita va dritta al risultato. La dipendenza e' lo
+  // stato a tre valori e non `finita`: con `finita` l'effetto non ripartiva
+  // quando la partita compariva, non vedeva mai "in corso", e la fine arrivava
+  // senza adesivo.
+  const inCorso = stato ? !stato.finita : null
+  const eraInCorso = useRef<boolean | null>(null)
+  const statoRef = useRef(stato)
+  statoRef.current = stato
+  useEffect(() => {
+    const s = statoRef.current
+    if (inCorso === null || !s) return
+    if (inCorso) {
+      eraInCorso.current = true
+      return
+    }
+    if (eraInCorso.current !== true) {
+      setRisultato(true)
+      return
+    }
+    eraInCorso.current = false
+    accoda(adesivoFineScarabeo(0, s.esito === 'vinta', s.mieiPunti, s.puntiComputer))
+    const t = window.setTimeout(() => setRisultato(true), ADESIVO_FINE_SCARABEO_MS + ADESIVO_MOSSA_MS)
+    return () => window.clearTimeout(t)
+  }, [accoda, inCorso])
 
   if (!g.partita || !stato) {
     return (
@@ -105,6 +147,12 @@ export default function ScarabeoLibero() {
           evidenziate={g.ultimaDelComputer}
           testa={
             <Tabellino
+              iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
+              iconaAltro={
+                <IconaScheda>
+                  <IconComputer size={12} />
+                </IconaScheda>
+              }
               avviso={g.messaggio}
               io={stato.mieiPunti}
               altro={stato.puntiComputer}
@@ -200,6 +248,7 @@ export default function ScarabeoLibero() {
         </div>
       </Sheet>
 
+      <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
   )

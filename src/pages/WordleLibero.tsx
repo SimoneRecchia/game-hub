@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
+import { Adesivo } from '@/components/Adesivo'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconChart, IconInfo, IconShuffle } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { Scheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { Board } from '@/games/wordle/Board'
+import { IconaWordle, TITOLI_VITTORIA, Tentativi, adesivoFine, notaWordle } from '@/games/wordle/fine'
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { useWordleLibero } from '@/games/wordle/useWordle'
@@ -15,8 +18,6 @@ import { MAX_ATTEMPTS, WORD_LENGTH } from '@shared/config'
 import type { StatisticheWordleLibero, WordleLiberaRisposta } from '@shared/types'
 import '@/games/wordle/ResultSheet.css'
 import './Wordle.css'
-
-const TITOLI_VITTORIA = ['Al primo colpo!', 'Splendido', 'Ottimo', 'Bene', 'Per un pelo', 'In extremis']
 
 /**
  * Il Wordle libero: una parola a caso, e poi un'altra.
@@ -29,10 +30,7 @@ const TITOLI_VITTORIA = ['Al primo colpo!', 'Splendido', 'Ottimo', 'Bene', 'Per 
 export default function WordleLibero() {
   const toast = useToast()
   const game = useWordleLibero()
-  const festa = useFesta(
-    game.state ? game.state.status === 'playing' : null,
-    game.state?.status === 'won' && game.resultOpen,
-  )
+  const festa = useFesta(game.state ? game.state.status === 'playing' : null, game.finale?.esito === 'won')
   const [aiuto, setAiuto] = useState(false)
   const [statistiche, setStatistiche] = useState<StatisticheWordleLibero | null>(null)
   const [cambio, setCambio] = useState(false)
@@ -92,20 +90,42 @@ export default function WordleLibero() {
           </div>
         ) : (
           <>
-            <div className="wordle__message" aria-live="polite">
-              {game.message && <span className="wordle__message-pill">{game.message}</span>}
-            </div>
-            <div className="wordle__board">
-              <Board
-                guesses={game.state?.guesses ?? []}
-                draft={game.draft}
-                wordLength={game.state?.wordLength ?? WORD_LENGTH}
-                maxAttempts={game.state?.maxAttempts ?? MAX_ATTEMPTS}
-                revealing={game.revealing}
-                winningRow={game.winningRow}
-                shakingRow={game.shakingRow}
-              />
-            </div>
+            <Scheda
+              className="wordle__tavola"
+              titolo="Parola libera"
+              icona={<IconaWordle />}
+              destra={
+                game.state && (
+                  <Tentativi
+                    guesses={game.state.guesses}
+                    maxAttempts={game.state.maxAttempts}
+                    status={game.state.status}
+                  />
+                )
+              }
+            >
+              <div className="wordle__board">
+                <Board
+                  guesses={game.state?.guesses ?? []}
+                  draft={game.draft}
+                  wordLength={game.state?.wordLength ?? WORD_LENGTH}
+                  maxAttempts={game.state?.maxAttempts ?? MAX_ATTEMPTS}
+                  revealing={game.revealing}
+                  winningRow={game.winningRow}
+                  shakingRow={game.shakingRow}
+                />
+              </div>
+              <p className={`wordle__piede${game.message ? ' is-messaggio' : ''}`} aria-live="polite">
+                {game.message ??
+                  (game.state
+                    ? notaWordle(
+                        game.revealing === null ? game.state.guesses : game.state.guesses.slice(0, game.revealing),
+                        game.revealing === null ? game.state.status : 'playing',
+                        game.state.answer,
+                      )
+                    : ' ')}
+              </p>
+            </Scheda>
             {finita ? (
               <div className="wordle__fine-libera">
                 <Button size="lg" fullWidth onClick={() => void nuova()}>
@@ -173,6 +193,7 @@ export default function WordleLibero() {
         </Button>
       </Sheet>
 
+      <Adesivo adesivo={game.finale ? adesivoFine(game.finale, game.finale.id) : null} />
       {festa && <Coriandoli />}
     </Pagina>
   )

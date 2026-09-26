@@ -1,0 +1,103 @@
+/*
+ * Gli adesivi dello Scarabeo: le tessere di legno della parola e lo scarabeo.
+ * Le durate sono frazioni di `--durata`, che mette l'adesivo.
+ */
+
+/* Le lettere della parola sono tessere del gioco, non caselle bianche. */
+.adesivo__lettere.is-legno span {
+  background-color: var(--tessera);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.08));
+  color: var(--tessera-ink);
+  box-shadow: 0 2px 0 rgba(90, 50, 10, 0.35);
+}
+
+/* Parole lunghe: le tessere si stringono invece di uscire dalla carta. */
+.adesivo__lettere.is-legno {
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 270px;
+}
+
+.scarabeo-disegno {
+  overflow: visible;
+}
+
+.scarabeo-disegno__corpo {
+  transform-box: fill-box;
+  transform-origin: 50% 90%;
+  animation: scarabeo-salta calc(var(--durata, 1.6s) * 0.5) var(--ease-bounce) both;
+}
+
+@keyframes scarabeo-salta {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.5) rotate(-12deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.06) rotate(4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.scarabeo-disegno__zampe path,
+.scarabeo-disegno__antenna {
+  fill: none;
+  stroke: #4a2c0c;
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.scarabeo-disegno__antenna {
+  stroke-width: 3;
+}
+
+.scarabeo-disegno__zampe {
+  transform-box: fill-box;
+  animation: scarabeo-zampe 260ms var(--ease-in-out) infinite alternate;
+}
+
+.scarabeo-disegno__zampe--sx {
+  transform-origin: 100% 50%;
+}
+
+.scarabeo-disegno__zampe--dx {
+  transform-origin: 0% 50%;
+  animation-delay: 130ms;
+}
+
+@keyframes scarabeo-zampe {
+  to {
+    transform: rotate(8deg);
+  }
+}
+
+.scarabeo-disegno__testa {
+  fill: #5a3510;
+}
+
+.scarabeo-disegno__riga {
+  stroke: #8a4b0b;
+  stroke-width: 2;
+  opacity: 0.55;
+}
+
+.scarabeo-disegno__lucido {
+  fill: #fff7d6;
+  opacity: 0.75;
+}
+
+.scarabeo-disegno__punto {
+  fill: #8a4b0b;
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scarabeo-disegno__corpo,
+  .scarabeo-disegno__zampe {
+    animation: none;
+  }
+}
