@@ -7,6 +7,7 @@ import { SegmentedControl } from '@/components/SegmentedControl'
 import { ThemeButton } from '@/components/ThemeButton'
 import { IconFlame, IconPeople } from '@/components/Icons'
 import { ClassificaScarabeo } from './ClassificaScarabeo'
+import { ClassificaCruciverba } from './ClassificaCruciverba'
 import { ApiFetchError, api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
 import { formatNumber, formatPercent, pluralize } from '@/lib/format'
@@ -14,15 +15,28 @@ import type { LeaderboardResponse, LeaderboardRow, LeaderboardScope } from '@sha
 import './Classifica.css'
 
 /**
- * Quale gioco. Due classifiche e non una: vedi ClassificaScarabeo — i punti dei
- * due giochi non sono commensurabili, e sommarli richiederebbe un tasso di
- * cambio inventato.
+ * Quale gioco. Una classifica per gioco e non una sola: vedi ClassificaScarabeo
+ * — i punti dei giochi non sono commensurabili, e sommarli richiederebbe un
+ * tasso di cambio inventato.
  */
-type Gioco = 'wordle' | 'scarabeo'
+type Gioco = 'wordle' | 'scarabeo' | 'cruciverba'
 const GIOCHI: { value: Gioco; label: string }[] = [
   { value: 'wordle', label: 'Wordle' },
   { value: 'scarabeo', label: 'Scarabeo' },
+  { value: 'cruciverba', label: 'Cruciverba' },
 ]
+
+const LEDE: Record<Gioco, string> = {
+  wordle:
+    "Cinque parole al giorno: la prima vale piena, le altre a scalare. Tocca una riga per vedere com'è fatto un punteggio.",
+  scarabeo: 'Dieci mosse al giorno con le stesse tessere per tutti. Vince chi le sfrutta meglio.',
+  cruciverba:
+    'Cento punti a chi lo completa senza aiuti. A parità di punti passa avanti chi ci ha messo meno.',
+}
+
+function giocoDa(valore: string | null): Gioco {
+  return GIOCHI.find((g) => g.value === valore)?.value ?? 'wordle'
+}
 
 /** Il periodo "month" esiste nell'API ma qui tre voci bastano e stanno larghe. */
 const SCOPES: { value: LeaderboardScope; label: string }[] = [
@@ -34,9 +48,7 @@ const SCOPES: { value: LeaderboardScope; label: string }[] = [
 export default function Classifica() {
   const me = usePlayer()
   const [query, setQuery] = useSearchParams()
-  const [gioco, setGioco] = useState<Gioco>(
-    query.get('gioco') === 'scarabeo' ? 'scarabeo' : 'wordle',
-  )
+  const [gioco, setGioco] = useState<Gioco>(giocoDa(query.get('gioco')))
   const [scope, setScope] = useState<LeaderboardScope>('today')
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -87,11 +99,7 @@ export default function Classifica() {
     <AppShell title="Classifica" trailing={<ThemeButton />}>
       <header>
         <h2 className="large-title">Classifica</h2>
-        <p className="page-lede">
-          {gioco === 'wordle'
-            ? "Cinque parole al giorno: la prima vale piena, le altre a scalare. Tocca una riga per vedere com'è fatto un punteggio."
-            : 'Dieci mosse al giorno con le stesse tessere per tutti. Vince chi le sfrutta meglio.'}
-        </p>
+        <p className="page-lede">{LEDE[gioco]}</p>
       </header>
 
       <SegmentedControl
@@ -100,9 +108,9 @@ export default function Classifica() {
         value={gioco}
         onChange={(scelto) => {
           setGioco(scelto)
-          // L'indirizzo segue la scelta: così la classifica di Scarabeo si può
+          // L'indirizzo segue la scelta: così la classifica di un gioco si puo'
           // linkare, ed e' quel che fa la schermata del gioco a fine giornata.
-          setQuery(scelto === 'scarabeo' ? { gioco: 'scarabeo' } : {}, { replace: true })
+          setQuery(scelto === 'wordle' ? {} : { gioco: scelto }, { replace: true })
         }}
       />
 
@@ -115,6 +123,8 @@ export default function Classifica() {
 
       {gioco === 'scarabeo' ? (
         <ClassificaScarabeo scope={scope} meId={me.id} />
+      ) : gioco === 'cruciverba' ? (
+        <ClassificaCruciverba scope={scope} meId={me.id} />
       ) : error ? (
         <div className="lb__fallback">
           <p>{error}</p>

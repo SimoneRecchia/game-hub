@@ -196,6 +196,67 @@ righe, e una verifica legge al massimo un secchio per parola formata. Se si
 cambia quella chiave **va ricaricata la tabella** — c'e' un test che fissa il
 formato perché il cambio non passi inosservato.
 
+**Gli schemi del cruciverba non si fanno nel Worker.** Riempire una griglia e'
+una ricerca con ritorni all'indietro, e i 10 ms di CPU non bastano nemmeno a
+costruire gli indici. Li genera `scripts/genera-cruciverba.mjs` — ogni notte il
+workflow `cruciverba.yml` tiene pronti due mesi, il deploy ne controlla due
+settimane — e li scrive in `cruciverba_schemi` con `INSERT OR IGNORE`: uno
+schema scritto non cambia piu', come le parole del Wordle. E' deterministico
+dal numero del giorno, e il budget si conta in nodi e non in millisecondi,
+così una macchina piu' lenta non cambia lo schema. Se la tabella non ha la
+giornata di oggi il gioco risponde `SCHEMA_ASSENTE` (503) e la card dell'hub
+non mostra lo stato: in locale, `npm run cruciverba:locale`.
+
+**Le definizioni del cruciverba si scelgono, non si scrivono.** Vengono dal
+Wikizionario (CC BY-SA, estrazione di kaikki.org) e
+`scripts/cruciverba/definizioni.mjs` fa solo due cose: accorcia — la prima
+proposizione, un taglio a una virgola o prima di un complemento — e **scarta**.
+Via i rimandi, i segnaposto, i nomi propri generici, le glosse inglesi, e ogni
+definizione che contiene la risposta o la sua radice ("che regola" per
+REGOLATORE, "cani" per CANE). Le forme flesse prendono la definizione del loro
+lemma **della stessa parte del discorso** con la nota "plurale": ORE e' il
+plurale del nome "ora", non dell'avverbio "in questo momento", e la definizione
+del Wikizionario di una forma flessa ("plurale di ala") darebbe la risposta. La
+licenza chiede di citare la fonte: la citano le regole, e a partita chiusa ogni
+definizione porta alla sua voce.
+
+**Ogni casella del cruciverba sta in due parole.** E' la convenzione del
+cruciverba italiano, e `disegnaSchema` la garantisce: nessun tratto bianco di
+una casella sola, nere mai a quadrato. Le nere sono isolate, tranne una coppia
+per lato che entra dal bordo: senza, la seconda riga non potrebbe averne
+nessuna (lascerebbe sopra una lettera isolata) e ogni schema avrebbe quattro
+parole da dieci lettere incrociate fra loro, che non si riempiono con parole
+comuni — il primo generatore falliva il 99% degli schemi per questo. Il tetto
+e' `TRATTO_MASSIMO = 8`.
+
+**Il generatore copia tre cose del gioco, e i test le tengono d'accordo.** Gli
+script girano in Node senza compilare TypeScript, quindi il PRNG, il calendario
+(`scripts/cruciverba/giorno.mjs`) e il calcolo delle parole di uno schema sono
+riscritti lì. Un test in `scripts/__tests__/cruciverba-generatore.test.ts`
+verifica che diano gli stessi risultati di `shared/daily.ts` e
+`shared/cruciverba.ts`: le chiavi delle definizioni salvate (`o12`, `v3`) sono
+direzione piu' prima casella, e se i due calcoli divergessero le definizioni
+finirebbero sulle parole sbagliate.
+
+**La soluzione del cruciverba e le voci restano sul server finché non e'
+finito.** `statoDa` manda lo schema con i punti al posto delle lettere, e la
+`voce` di ogni definizione solo a partita chiusa: "Milano" accanto a "Città
+dell'Italia settentrionale" sarebbe la risposta.
+
+**Nel cruciverba il tempo non da' punti.** Cento a chi lo completa senza
+aiuti, tre in meno per ogni lettera svelata, uno per ogni errore segnalato da
+un controllo — e ricontrollare lo stesso errore non costa (`registraControllo`).
+Il tempo e' lo spareggio in classifica: lo conta il browser a pagina visibile,
+perché un cruciverba si fa a pezzi, e il server lo limita a quanto e' passato
+davvero fra due scritture (`tempoDichiarato`).
+
+**Le scritture del cruciverba passano da una coda.** La griglia si scrive in
+locale e si salva dopo un attimo di pausa — una richiesta per tasto sarebbero
+cento scritture a partita sulle centomila al giorno di D1 — e ogni scrittura
+porta la `versione` restituita dalla precedente. Il server rifiuta quelle con
+una versione vecchia (`CONFLITTO`), e il client rilegge lo stato: due
+dispositivi aperti sulla stessa partita non si sovrascrivono un aiuto pagato.
+
 **Le due classifiche restano separate.** Una giornata di Wordle vale al massimo
 209 punti per costruzione, una di Scarabeo qualche centinaio: sommarle
 richiederebbe un tasso di cambio inventato, e normalizzare per giornata ("il
@@ -313,6 +374,16 @@ orizzontale `container-type` torna `normal`, perché lì la pagina scorre e senz
 un'altezza definita `cqh` si risolve a zero — la stessa trappola documentata per
 la griglia del Wordle.
 
+**Nel cruciverba la selezione e' indaco, non verde né gialla.** Parola e
+casella che si stanno scrivendo prendono i toni del `--brand`: verde e giallo
+qui direbbero "giusta" e "quasi" come nel Wordle. In scuro le bianche non sono
+bianche (una griglia chiara in una schermata scura abbaglia), ma restano piu'
+chiare delle nere. Le righe della griglia sono `minmax(0, 1fr)` e non `auto`:
+lasciate al contenuto, una riga con le lettere scritte cresceva di qualche
+punto e le caselle non restavano quadrate. Su computer — largo e con un
+puntatore fine — la tastiera a schermo sparisce e le definizioni vanno accanto
+alla griglia; un tablet in orizzontale e' largo uguale ma ha solo le dita.
+
 **Le durate delle animazioni delle caselle sono replicate in
 `src/games/wordle/useWordle.ts`** (`REVEAL_*`, `BOUNCE_MS`, `SHAKE_MS`): il
 codice deve sapere quando la rotazione e' finita per colorare la tastiera e
@@ -324,6 +395,12 @@ cambiata anche lì.
 `solutions.ts` e `guesses.ts` sono **generati** (`npm run words:build`) e
 versionati di proposito: così il build non dipende dalla rete e la parola del
 giorno non cambia per una fonte che si sposta.
+
+**Le definizioni del cruciverba sono sotto CC BY-SA, non MIT.**
+`scripts/data/cruciverba-definizioni.tsv.gz` contiene testo del Wikizionario,
+quindi ne eredita la licenza: vedi `shared/words/SOURCES.md`. Il dump da cui
+nasce (45 MB) non e' versionato: sta in `scripts/.cache/`, e
+`npm run cruciverba:dati` lo riscarica.
 
 **Il dizionario dello Scarabeo si carica a mano, una volta per ambiente:**
 `node scripts/seed-dizionario.mjs [--remote]`, dopo le migrazioni. Non sta nelle

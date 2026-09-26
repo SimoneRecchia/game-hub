@@ -4,6 +4,7 @@ import type { AppEnv } from './types'
 import { authRoutes } from './routes/auth'
 import { wordleRoutes } from './routes/wordle'
 import { scarabeoRoutes } from './routes/scarabeo'
+import { cruciverbaRoutes } from './routes/cruciverba'
 import { leaderboardRoutes } from './routes/leaderboard'
 import { coopRoutes } from './routes/coop'
 import { gameDate, msToNextPuzzle, puzzleNumberFor } from '../shared/daily'
@@ -35,6 +36,7 @@ export function createApp() {
   app.route('/auth', authRoutes)
   app.route('/wordle', wordleRoutes)
   app.route('/scarabeo', scarabeoRoutes)
+  app.route('/cruciverba', cruciverbaRoutes)
   app.route('/leaderboard', leaderboardRoutes)
   app.route('/coop', coopRoutes)
 

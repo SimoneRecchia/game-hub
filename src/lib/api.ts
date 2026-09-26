@@ -21,9 +21,14 @@ export class ApiFetchError extends Error {
 const NETWORK_MESSAGE = 'Connessione assente. Controlla la rete e riprova.'
 
 interface Options {
-  method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
   signal?: AbortSignal
+  /**
+   * La richiesta sopravvive alla pagina: serve al salvataggio che parte quando
+   * il telefono va in tasca, altrimenti il browser la interrompe a metà.
+   */
+  keepalive?: boolean
 }
 
 /**
@@ -33,7 +38,7 @@ interface Options {
  * sessione: senza, ogni richiesta risulterebbe anonima.
  */
 export async function api<T>(path: string, options: Options = {}): Promise<T> {
-  const { method = 'GET', body, signal } = options
+  const { method = 'GET', body, signal, keepalive } = options
 
   let response: Response
   try {
@@ -43,6 +48,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
       headers: body === undefined ? undefined : { 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
       signal,
+      keepalive,
     })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error

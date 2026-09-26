@@ -6,12 +6,18 @@ import { IconChevronRight, IconFlame, IconTrophy } from '@/components/Icons'
 import { ThemeButton } from '@/components/ThemeButton'
 import { wordleBadge, wordleHref } from '@/games/wordle/hubStatus'
 import { scarabeoBadge } from '@/games/scarabeo/hubStatus'
+import { cruciverbaBadge } from '@/games/cruciverba/hubStatus'
 import { GAMES } from '@/games/catalog'
 import { api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
 import { formatGameDate, formatNumber } from '@/lib/format'
 import { gameDate } from '@shared/daily'
-import type { LeaderboardResponse, ScarabeoSummary, WordleSummary } from '@shared/types'
+import type {
+  CruciverbaSummary,
+  LeaderboardResponse,
+  ScarabeoSummary,
+  WordleSummary,
+} from '@shared/types'
 import './Hub.css'
 
 export default function Hub() {
@@ -19,6 +25,7 @@ export default function Hub() {
   const today = gameDate()
   const [summary, setSummary] = useState<WordleSummary | null>(null)
   const [scarabeo, setScarabeo] = useState<ScarabeoSummary | null>(null)
+  const [cruciverba, setCruciverba] = useState<CruciverbaSummary | null>(null)
   const [standing, setStanding] = useState<LeaderboardResponse | null>(null)
 
   useEffect(() => {
@@ -30,6 +37,9 @@ export default function Hub() {
       .catch(() => {})
     void api<ScarabeoSummary>('/scarabeo/summary')
       .then((s) => !cancelled && setScarabeo(s))
+      .catch(() => {})
+    void api<CruciverbaSummary>('/cruciverba/summary')
+      .then((s) => !cancelled && setCruciverba(s))
       .catch(() => {})
     void api<LeaderboardResponse>('/leaderboard?scope=today')
       .then((s) => !cancelled && setStanding(s))
@@ -43,6 +53,7 @@ export default function Hub() {
   const upcoming = GAMES.filter((g) => !g.available)
   const badge = summary ? wordleBadge(summary) : null
   const badgeScarabeo = scarabeo ? scarabeoBadge(scarabeo) : null
+  const badgeCruciverba = cruciverba ? cruciverbaBadge(cruciverba) : null
   const me = standing?.me ?? null
 
   return (
@@ -59,7 +70,8 @@ export default function Hub() {
         <p className="hub__date">{formatGameDate(today)}</p>
         <h2 className="large-title">Ciao {player.displayName}</h2>
         <p className="page-lede">
-          Due giochi al giorno, gli stessi per tutti: cinque parole e un tabellone di Scarabeo.
+          Tre giochi al giorno, gli stessi per tutti: cinque parole, un tabellone di Scarabeo e
+          un cruciverba.
         </p>
       </header>
 
@@ -136,6 +148,28 @@ export default function Hub() {
                           className={`gamecard__pallino${i < scarabeo.mosseUsate ? ' is-fatta' : ''}`}
                         />
                       ))}
+                    </span>
+                  )}
+                </span>
+              )}
+              {badgeCruciverba && cruciverba && game.id === 'cruciverba' && (
+                <span className="gamecard__piede">
+                  <span className={`gamecard__status gamecard__status--${badgeCruciverba.tone}`}>
+                    {badgeCruciverba.text}
+                  </span>
+                  {/* Quanta griglia e' scritta: una barra, perché le caselle
+                      sono ottanta e i pallini non si contano. */}
+                  {cruciverba.bianche > 0 && (
+                    <span
+                      className="gamecard__barra"
+                      aria-label={`${cruciverba.scritte} caselle su ${cruciverba.bianche}`}
+                    >
+                      <span
+                        className="gamecard__barra-piena"
+                        style={{
+                          width: `${Math.round((cruciverba.scritte / cruciverba.bianche) * 100)}%`,
+                        }}
+                      />
                     </span>
                   )}
                 </span>

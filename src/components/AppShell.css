@@ -156,6 +156,10 @@
   }
 }
 
+.shell--wide .shell__main {
+  max-width: 1120px;
+}
+
 .shell--no-tabs .shell__main {
   min-height: 0;
   padding-bottom: calc(var(--safe-bottom) + var(--sp-4));

@@ -1,0 +1,104 @@
+.celenco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.celenco__titolo {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+/* Blocchi e non flex: con `display: flex` i marcatori delle liste spariscono,
+   e qui il numero e' gia' un elemento suo. */
+.celenco__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.celenco__voce {
+  border-bottom: 1px solid var(--separator);
+}
+
+.celenco__voce:last-child {
+  border-bottom: none;
+}
+
+.celenco__riga {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-2);
+  border: none;
+  border-radius: var(--r-xs);
+  background: none;
+  color: var(--label);
+  font-size: var(--text-subhead);
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.celenco__riga:hover {
+  background: var(--fill-quaternary);
+}
+
+.celenco__riga.is-corrente {
+  background: var(--cruci-parola);
+}
+
+/* Le parole gia' scritte si fanno da parte: resta da guardare quel che manca. */
+.celenco__riga.is-scritta {
+  color: var(--label-tertiary);
+}
+
+.celenco__numero {
+  flex: none;
+  min-width: 1.6em;
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
+.celenco__testo {
+  flex: 1;
+  min-width: 0;
+}
+
+.celenco__nota,
+.cbarra__nota {
+  margin-left: 0.45em;
+  padding: 0 0.45em;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+  font-size: 0.82em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.celenco__risposta {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-rounded);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--label);
+}
+
+.celenco__fonte {
+  display: inline-block;
+  margin: 0 0 var(--sp-2) calc(1.6em + var(--sp-3) + var(--sp-2));
+  font-size: var(--text-caption-1);
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.celenco__fonte:hover {
+  text-decoration: underline;
+}

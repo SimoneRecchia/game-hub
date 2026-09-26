@@ -1,0 +1,58 @@
+.cru-aiuto {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.cru-aiuto__lede {
+  margin: 0;
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+  color: var(--label-secondary);
+}
+
+.cru-aiuto__sezione {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.cru-aiuto__titolo {
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-tertiary);
+}
+
+/* Blocchi, non flex: i numeri dei passi sono l'informazione. */
+.cru-aiuto__passi,
+.cru-aiuto__elenco {
+  margin: 0;
+  padding-left: var(--sp-5);
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+.cru-aiuto__passi li + li,
+.cru-aiuto__elenco li + li {
+  margin-top: var(--sp-2);
+}
+
+.cru-aiuto__passi li::marker,
+.cru-aiuto__elenco li::marker {
+  color: var(--label-tertiary);
+}
+
+.cru-aiuto__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  line-height: 1.45;
+  color: var(--label-secondary);
+}
+
+.cru-aiuto a {
+  color: var(--brand);
+}
