@@ -9,40 +9,30 @@
 }
 
 .wordle__message {
-  /* Altezza fissa: il messaggio appare e sparisce senza far saltare la griglia. */
+  /*
+   * Una riga sua, sempre: il messaggio appare e sparisce senza far saltare la
+   * griglia e senza coprirne le caselle. Prima, sugli schermi bassi, si
+   * sovrapponeva alla prima riga di tentativi per risparmiare trenta punti — e
+   * copriva proprio le lettere che si stavano guardando.
+   */
   height: 30px;
   display: grid;
   place-items: center;
   flex: none;
 }
 
-/*
- * Schermi bassi: il messaggio si sovrappone alla griglia invece di occupare una
- * riga.
- *
- * Trenta punti riservati per una pillola che compare di rado, su un 568 di
- * altezza, sono cinque punti di lato per ogni casella. La griglia non salta
- * comunque, perché la sovrapposizione non occupa spazio — e' la stessa scelta
- * fatta nella partita condivisa, per la stessa ragione.
- */
 @media (max-height: 700px) {
-  .wordle {
-    position: relative;
-  }
-
   .wordle__message {
-    position: absolute;
-    top: 34px;
-    left: 0;
-    right: 0;
-    height: auto;
-    pointer-events: none;
-    z-index: 5;
+    height: 24px;
   }
 }
 
 .wordle__message-pill {
-  padding: var(--sp-1) var(--sp-4);
+  max-width: 100%;
+  padding: 3px var(--sp-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   border-radius: var(--r-pill);
   background: var(--label);
   color: var(--label-inverted);

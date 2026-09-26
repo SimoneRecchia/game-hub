@@ -25,7 +25,7 @@ export const GIOCHI: readonly Gioco[] = [
     id: 'wordle',
     nome: 'Wordle',
     motto: 'Cinque lettere, sei tentativi',
-    classificata: 'Cinque parole al giorno, le stesse per tutti. Puoi farti aiutare da un collega.',
+    classificata: 'Una parola al giorno, la stessa per tutti. Puoi farti aiutare da un collega.',
     libera: 'Una parola a caso, quante ne vuoi.',
     liberaBreve: 'Parola libera',
   },

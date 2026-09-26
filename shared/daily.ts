@@ -153,8 +153,6 @@ const permutationCache = new Map<string, number[]>()
 
 /** Seme della sequenza della parola del giorno. Non si tocca: la cambierebbe. */
 const MAIN_SEED = 0x5eed_1701
-/** Seme delle parole in piu': una sequenza sua, indipendente dalla prima. */
-const EXTRA_SEED = 0x1ce_c0de
 
 export function solutionPermutation(size: number, seed = MAIN_SEED): number[] {
   const key = `${size}:${seed}`
@@ -180,56 +178,4 @@ export function solutionIndexFor(puzzleNumber: number, size: number): number {
   if (size <= 0) throw new Error("L'elenco delle soluzioni e' vuoto")
   const order = solutionPermutation(size)
   return order[wrap(puzzleNumber - 1, size)]
-}
-
-/**
- * Gli indici delle parole di una giornata: la principale e le altre.
- *
- * La principale resta esattamente quella di prima — la sequenza della parola
- * del giorno e' l'identità del gioco e non va spostata perché se ne aggiungono
- * altre. Le extra pescano da una **permutazione loro**, con un altro seme, per
- * due motivi:
- *
- *  - consumando cinque parole al giorno da un elenco solo, l'elenco si
- *    esaurirebbe in un quinto del tempo: 226 giorni invece di 1.132. Separando
- *    le due sequenze, la parola del giorno mantiene il suo ciclo lungo.
- *  - le due sequenze sono indipendenti, quindi la principale di oggi puo'
- *    capitare fra le extra di oggi. Quando succede si scorre di una posizione
- *    nell'ordine delle extra, e si continua finche' l'indice e' libero:
- *    deterministico, e garantisce **cinque parole diverse ogni giorno**.
- *
- * Lo scorrimento sconfina nel blocco del giorno dopo, quindi una parola in piu'
- * puo' ricomparire due giorni di fila: misurato, capita lo 0.15% dei giorni.
- * Eliminarlo richiederebbe di perturbare la sequenza per giornata, che
- * introdurrebbe lo stesso fenomeno da un'altra parte; il doppione dentro la
- * stessa giornata — l'unico che si noterebbe — non capita mai. C'e' un test che
- * fissa entrambe le cose.
- */
-export function dailySolutionIndexes(
-  puzzleNumber: number,
-  size: number,
-  count: number,
-): number[] {
-  if (size <= 0) throw new Error("L'elenco delle soluzioni e' vuoto")
-  if (count > size) throw new Error('Piu parole al giorno che parole disponibili')
-
-  const principale = solutionIndexFor(puzzleNumber, size)
-  const presi = new Set([principale])
-  const indici = [principale]
-
-  const extra = solutionPermutation(size, EXTRA_SEED)
-  const base = (puzzleNumber - 1) * (count - 1)
-  for (let i = 0; i < count - 1; i += 1) {
-    let posizione = wrap(base + i, size)
-    let candidato = extra[posizione]
-    // Al massimo `presi.size` scorrimenti, e presi.size < size: termina sempre.
-    while (presi.has(candidato)) {
-      posizione = wrap(posizione + 1, size)
-      candidato = extra[posizione]
-    }
-    presi.add(candidato)
-    indici.push(candidato)
-  }
-
-  return indici
 }

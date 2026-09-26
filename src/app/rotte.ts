@@ -6,8 +6,7 @@
  *
  *   /                                   i giochi, e le classificate di oggi
  *   /wordle                             la pagina del Wordle
- *   /wordle/classificata                le cinque parole di oggi
- *   /wordle/classificata/3              la terza parola
+ *   /wordle/classificata                la parola di oggi
  *   /wordle/libera                      una parola a caso
  *   /wordle/insieme/:stanza             la partita di un collega che ti ha invitato
  *   /scarabeo/classificata              le dieci mosse di oggi
@@ -51,7 +50,6 @@ export const ROTTE = {
   classificata: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/classificata`,
   libera: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/libera`,
 
-  parola: (slot: number) => `/wordle/classificata/${slot}`,
   insieme: (stanza: string) => `/wordle/insieme/${stanza}`,
   cruciverbaLibero: (partita: string) => `/cruciverba/libera/${partita}`,
   partitaBattaglia: (id: string) => `/battaglia-navale/partita/${id}`,

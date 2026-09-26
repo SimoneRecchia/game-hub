@@ -16,10 +16,10 @@ function sbagliate(soluzione: string, quante: number): string[] {
 }
 
 describe('la scelta della parola libera', () => {
-  it('non pesca mai una parola dei prossimi giorni, principale o in piu’', () => {
+  it('non pesca mai la parola di uno dei prossimi giorni', () => {
     const protette = paroleProtette(today().puzzleNumber)
-    // Sessanta giorni da cinque parole: al piu' trecento, qualche doppione fra le extra.
-    expect(protette.size).toBeGreaterThan(GIORNI_PROTETTI * 4)
+    // Sessanta giorni, sessanta parole: la sequenza non si ripete prima di finire l'elenco.
+    expect(protette.size).toBe(GIORNI_PROTETTI)
     for (let i = 0; i < 200; i += 1) {
       expect(protette.has(scegliParola(protette, new Set(), Math.random))).toBe(false)
     }

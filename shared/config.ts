@@ -4,16 +4,6 @@ export const WORD_LENGTH = 5
 export const MAX_ATTEMPTS = 6
 
 /**
- * Quante parole per giornata.
- *
- * La prima e' *la* parola del giorno; le altre quattro valgono a scalare e
- * insieme non arrivano a quanto vale la prima (vedi `WORD_WEIGHTS` in
- * `scoring.ts`). Servono a chi vuole recuperare qualche punto, non a ribaltare
- * la classifica.
- */
-export const WORDS_PER_DAY = 5
-
-/**
  * Fuso di riferimento per il cambio di parola: la mezzanotte italiana.
  * Tutti i giocatori vedono lo stesso puzzle nello stesso momento,
  * indipendentemente dal fuso del dispositivo.

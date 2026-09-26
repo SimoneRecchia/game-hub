@@ -1,11 +1,9 @@
 /**
- * Punteggio di una giornata di Wordle.
+ * Punteggio della parola del giorno.
  *
- * La giornata intera — la parola del giorno e le quattro in piu' — vale al
- * massimo cento punti, come la classificata di ogni altro gioco (vedi
- * shared/punti.ts): meta' la parola del giorno, meta' le altre quattro. Prima
- * ne valeva duecento, e nella classifica generale un Wordle sarebbe contato il
- * doppio di un cruciverba.
+ * Una parola sola al giorno, la stessa per tutti, e vale al massimo cento
+ * punti: come la classificata di ogni altro gioco (vedi shared/punti.ts), cosi'
+ * la classifica generale puo' sommarle.
  *
  * Due principi, e sono in tensione fra loro:
  *
@@ -22,16 +20,19 @@
  * tentativi (principio 1) ma il rapporto fra il massimo e il minimo e' 2:1
  * invece di 6:1 (principio 2). In pratica una giornata al sesto tentativo costa
  * mezza giornata, non cinque.
+ *
+ *     tentativi     1    2    3    4    5    6    non indovinata
+ *     punti       100   90   80   70   60   50    20
  */
 
-import { MAX_ATTEMPTS, WORDS_PER_DAY } from './config'
+import { MAX_ATTEMPTS } from './config'
 import type { WordleStatus } from './types'
 
 /** Punti per aver giocato e indovinato, indipendentemente dai tentativi. */
-export const PARTICIPATION_POINTS = 20
+export const PARTICIPATION_POINTS = 40
 
 /** Quanto vale ogni tentativo risparmiato. E' anche il gradino della scala. */
-export const ATTEMPT_STEP = 5
+export const ATTEMPT_STEP = 10
 
 /**
  * Punti base per tentativo usato: indice 0 = indovinata al primo colpo.
@@ -51,12 +52,12 @@ export const ATTEMPT_POINTS = Array.from(
  * indovinare; sopra lo zero, perché aver giocato conta e chi non gioca affatto
  * non deve stare alla pari di chi ci ha provato.
  */
-export const LOSS_POINTS = 10
+export const LOSS_POINTS = 20
 
 /**
  * Bonus velocità. Piccolo di proposito: il tempo non e' una cosa che il gioco
  * vero misuri, e trasformare il Wordle in una gara di rapidità lo rovinerebbe.
- * Un punto a chi chiude la parola del giorno in meno di sei minuti e mezzo.
+ * Un punto a chi chiude la parola in meno di sei minuti e mezzo.
  */
 export const MAX_SPEED_BONUS = 1
 /** Sotto questo tempo il bonus velocità e' pieno. */
@@ -75,8 +76,14 @@ export const MAX_STREAK_BONUS = STREAK_POINTS_EACH * STREAK_CAP
 /** Tetto complessivo degli spareggi. Deve restare sotto ATTEMPT_STEP. */
 export const MAX_TIEBREAK = MAX_SPEED_BONUS + MAX_STREAK_BONUS
 
-/** Massimo teorico della parola del giorno: primo tentativo, subito, con tre giorni di fila. */
+/** Massimo teorico: primo tentativo, subito, con tre giorni di fila. */
 export const MAX_SCORE = ATTEMPT_POINTS[0] + MAX_TIEBREAK
+
+/**
+ * La giornata perfetta senza gli spareggi: e' il tetto che conta per la
+ * classifica generale, lo stesso di ogni classificata.
+ */
+export const MAX_DAY_SCORE = ATTEMPT_POINTS[0]
 
 export interface ScoreInput {
   status: WordleStatus
@@ -130,90 +137,4 @@ export function scoreBreakdown(input: ScoreInput): ScoreBreakdown {
 
 export function scoreFor(input: ScoreInput): number {
   return scoreBreakdown(input).total
-}
-
-/* ────────────────────  Le cinque parole della giornata  ──────────────────── */
-
-/**
- * Quanto vale ciascuna parola, per numero di tentativi.
- *
- * Ogni parola ha **base e gradino propri** invece di essere la principale
- * moltiplicata per un peso. Il peso sembrava piu' elegante, ma costringeva ad
- * arrotondare: `floor` era l'unico modo di garantire che la somma delle quattro
- * non superasse la principale, e più in basso nella scala la coda si
- * schiacciava — con una base piu' bassa la quinta parola sarebbe finita a uno o
- * due punti, e nessuno l'avrebbe giocata.
- *
- * Con base e gradino la somma torna **per costruzione, a ogni numero di
- * tentativi**, senza arrotondamenti:
- *
- *     somma delle basi delle quattro   = 10 + 7 + 4 + 4 = 25 = base della prima
- *     somma dei gradini delle quattro  =  2 + 1 + 1 + 1 =  5 = gradino della prima
- *
- * Da cui la tabella:
- *
- *     tentativi        1    2    3    4    5    6
- *     del giorno      50   45   40   35   30   25
- *     2ª              20   18   16   14   12   10
- *     3ª              12   11   10    9    8    7
- *     4ª               9    8    7    6    5    4
- *     5ª               9    8    7    6    5    4
- *     somma 2ª-5ª     50   45   40   35   30   25
- *
- * E' la tabella di prima divisa a meta', esatta perché ogni numero era pari: la
- * giornata perfetta vale cento invece di duecento, e tutti i rapporti restano
- * quelli. Le ultime due valgono uguale invece di continuare a scendere: la
- * quinta deve valere la pena di essere giocata, e una progressione che finisce
- * a un punto la rende un dispetto. C'e' un test su ognuna di queste proprietà.
- */
-
-/** Punti di una parola indovinata all'ultimo tentativo, per posizione. */
-export const WORD_BASE = [25, 10, 7, 4, 4] as const
-/** Quanto vale un tentativo risparmiato, per posizione. */
-export const WORD_STEP = [5, 2, 1, 1, 1] as const
-/** Punti di una parola giocata e non indovinata, per posizione. */
-export const WORD_LOSS = [10, 4, 2, 2, 2] as const
-
-/** La giornata intera, bonus esclusi: cinque parole al primo tentativo. */
-export const MAX_DAY_SCORE = WORD_BASE.reduce((somma, base, i) => somma + base + WORD_STEP[i] * (MAX_ATTEMPTS - 1), 0)
-
-/** Indice della posizione, tenuto dentro i limiti. */
-function slotIndex(slot: number): number {
-  return Math.min(Math.max(slot, 1), WORDS_PER_DAY) - 1
-}
-
-/** Punti di una parola indovinata in `attempts` tentativi, alla posizione `slot`. */
-export function wordScore(slot: number, attempts: number): number {
-  const i = slotIndex(slot)
-  const usati = Math.min(Math.max(attempts, 1), MAX_ATTEMPTS)
-  return WORD_BASE[i] + WORD_STEP[i] * (MAX_ATTEMPTS - usati)
-}
-
-/** Il massimo che una parola puo' valere, bonus esclusi: serve a spiegare la scala. */
-export function maxScoreFor(slot: number): number {
-  return wordScore(slot, 1)
-}
-
-/** Il minimo di una parola indovinata: il fondo della scala, per la spiegazione. */
-export function minScoreFor(slot: number): number {
-  return wordScore(slot, MAX_ATTEMPTS)
-}
-
-/**
- * Il punteggio di una parola, con i bonus.
- *
- * I bonus stanno solo sulla **parola del giorno**, e non e' una taratura:
- * velocità e costanza sono proprietà della giornata, non di ogni parola. Dandoli
- * a tutte e cinque, chi le giocava tutte incassava fino a cinque volte il bonus
- * velocità, e tanto bastava a superare chi aveva indovinato la principale al
- * primo colpo — cioe' esattamente il ribaltamento che la scala serve a impedire.
- * Trovato provando l'API, non ragionando sui numeri.
- */
-export function scoreForWord(input: ScoreInput, slot: number): number {
-  if (input.status === 'playing') return 0
-  if (input.status === 'lost') return WORD_LOSS[slotIndex(slot)]
-
-  const punti = wordScore(slot, input.attempts)
-  if (slot !== 1) return punti
-  return punti + speedBonus(input.durationMs) + streakBonus(input.streak)
 }
