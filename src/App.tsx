@@ -43,14 +43,15 @@ export default function App() {
    * i punteggi. L'indirizzo pero' resta quello aperto — per esempio un invito a
    * una battaglia — e dopo l'accesso o la registrazione si arriva lì.
    */
-  if (!player) return <Welcome invito={INVITO.exec(pathname)?.[1] ?? null} />
+  const invito = INVITO.exec(pathname)?.[1] ?? null
+  if (!player) return <Welcome invito={invito} />
 
   /*
    * Email da confermare: si mostra solo la schermata del codice. Il vincolo
    * vero e' lato server (requireVerified): questo evita di far vedere un'app
    * dove ogni cosa risponderebbe 403.
    */
-  if (config?.emailVerificationRequired && !player.emailVerified) return <VerifyEmail />
+  if (config?.emailVerificationRequired && !player.emailVerified) return <VerifyEmail invito={invito} />
 
   return (
     <PresenzaProvider>
