@@ -31,6 +31,7 @@ import {
 import { consumeCode, issueCode, resendWaitSeconds, type CodePurpose } from '../lib/codes'
 import {
   emailVerificationEnabled,
+  nicknameMessage,
   resetPasswordMessage,
   sendEmail,
   verifyEmailMessage,
@@ -374,6 +375,49 @@ export const authRoutes = new Hono<AppEnv>()
       { id: row.id, nickname: row.nickname, email: row.email },
       'reset_password',
     )
+    return c.json(generico)
+  })
+
+  /**
+   * Manda il nickname a chi lo ha dimenticato, all'email con cui si e' iscritto.
+   *
+   * Come la richiesta del codice, risponde sempre allo stesso modo: che l'email
+   * sia registrata o no, la schermata dice "se c'e', ti abbiamo scritto". Il
+   * nickname lo legge solo chi apre quella casella di posta, cioe' il suo
+   * proprietario. Uno al minuto per persona, con un `UPDATE` condizionato: due
+   * richieste ravvicinate non mandano due email.
+   */
+  .post('/nickname/request', async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { email?: unknown } | null
+    const email = readEmail(body?.email)
+    if (!emailVerificationEnabled(c.env)) {
+      fail(
+        503,
+        'EMAIL_DISABLED',
+        'Il recupero del nickname richiede l’invio delle email, che non è ancora configurato.',
+      )
+    }
+
+    const generico = { ok: true as const, cooldownSeconds: CODE_RESEND_COOLDOWN_SECONDS }
+    const row = await c.env.DB.prepare(
+      'SELECT id, nickname, email FROM players WHERE email_lower = ?',
+    )
+      .bind(email.toLowerCase())
+      .first<{ id: string; nickname: string; email: string }>()
+    if (!row) return c.json(generico)
+
+    const adesso = new Date()
+    const soglia = new Date(adesso.getTime() - CODE_RESEND_COOLDOWN_SECONDS * 1000).toISOString()
+    const presa = await c.env.DB.prepare(
+      `UPDATE players SET nickname_email_at = ?
+        WHERE id = ? AND (nickname_email_at IS NULL OR nickname_email_at < ?)`,
+    )
+      .bind(adesso.toISOString(), row.id, soglia)
+      .run()
+    if (presa.meta.changes !== 1) return c.json(generico)
+
+    const esito = await sendEmail(c.env, { to: row.email, ...nicknameMessage(row.nickname) })
+    if (!esito.ok) console.error(`Invio del nickname fallito (${esito.reason}): ${esito.detail}`)
     return c.json(generico)
   })
 
