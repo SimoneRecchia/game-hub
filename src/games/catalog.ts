@@ -37,6 +37,15 @@ export const GAMES: GameEntry[] = [
     available: true,
   },
   {
+    id: 'cruciverba',
+    name: 'Cruciverba',
+    tagline: 'Uno schema nuovo ogni notte, con le definizioni vere del Wikizionario.',
+    path: '/cruciverba',
+    gradient: ['#3a7bd5', '#1f4aa8'],
+    glyph: 'C',
+    available: true,
+  },
+  {
     id: 'quiz',
     name: 'Quiz Lampo',
     tagline: 'Dieci domande a tempo, una sfida nuova ogni giorno.',

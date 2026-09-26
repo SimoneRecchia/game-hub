@@ -267,6 +267,28 @@
   --premio-tl: light-dark(#a8c7ef, #223c62);
   --premio-dl: #d8e5f8;
   --premio-dl: light-dark(#d8e5f8, #1c2d45);
+
+  /* ---- Il cruciverba ----
+     Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:
+     una griglia chiara in mezzo a una schermata scura abbaglia, e le nere
+     devono restare piu' scure delle bianche, non sparire nel fondo. La parola
+     e la casella che si stanno scrivendo prendono l'indaco dell'interfaccia,
+     perché il verde e il giallo qui direbbero "giusta" e "quasi" come nel
+     Wordle, e non e' quel che vogliono dire. */
+  --cruci-bianca: #ffffff;
+  --cruci-bianca: light-dark(#ffffff, #282b37);
+  --cruci-nera: #1b1e2b;
+  --cruci-nera: light-dark(#1b1e2b, #07080c);
+  --cruci-bordo: #1b1e2b;
+  --cruci-bordo: light-dark(#1b1e2b, #3a3e4d);
+  --cruci-linea: rgba(27, 30, 43, 0.28);
+  --cruci-linea: light-dark(rgba(27, 30, 43, 0.28), rgba(160, 168, 200, 0.16));
+  --cruci-parola: #e0defd;
+  --cruci-parola: light-dark(#e0defd, #2c2a55);
+  --cruci-attiva: #a9a3ff;
+  --cruci-attiva: light-dark(#a9a3ff, #5b54e0);
+  --cruci-attiva-ink: #0d0f17;
+  --cruci-attiva-ink: light-dark(#0d0f17, #ffffff);
 }
 
 /*

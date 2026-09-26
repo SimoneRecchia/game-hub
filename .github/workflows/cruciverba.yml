@@ -1,0 +1,50 @@
+name: Cruciverba
+
+# Gli schemi del cruciverba si generano qui, non nel Worker: riempire una
+# griglia e' una ricerca con ritorni all'indietro che non sta nei 10 ms di CPU
+# di una richiesta. Ogni notte si allunga la scorta fino a due mesi da oggi, e
+# lo script genera solo le giornate che mancano: di solito una.
+#
+# Due mesi perché un workflow programmato puo' fermarsi — GitHub sospende quelli
+# dei repository senza attivita' dopo sessanta giorni — e in quel caso nessuno
+# deve accorgersene aprendo il gioco.
+on:
+  schedule:
+    # 03:17 UTC: dopo la mezzanotte italiana sia con l'ora solare sia con
+    # quella legale, e fuori dall'ora piena in cui partono tutti i cron.
+    - cron: '17 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: cruciverba-scorta
+  cancel-in-progress: false
+
+jobs:
+  scorta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Controllo dei segreti
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ]; then
+            echo "::error::Manca CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID fra i segreti del repository (vedi DEPLOY.md)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Genera le giornate che mancano
+        run: node scripts/genera-cruciverba.mjs --remote --giorni 60
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
