@@ -13,7 +13,6 @@
  * quattro, e il piano gratuito le conta.
  */
 
-import { WORDS_PER_DAY } from '../../shared/config'
 import { caselleBianche, caselleScritte, punteggio } from '../../shared/cruciverba'
 import { msToNextPuzzle } from '../../shared/daily'
 import { MOSSE_PER_GIORNATA } from '../../shared/scarabeo'
@@ -32,16 +31,14 @@ import { latoDi, partitaAperta, partitaBreve, quantiOnline, recordDi, statoClass
 
 export async function riepilogoWordle(db: D1Database, playerId: string): Promise<WordleSummary> {
   const when = today()
-  const { results } = await db
+  const row = await db
     .prepare(
-      `SELECT slot, status, attempts, score, spectated,
-              assist_score, assist_status, assist_room_id
+      `SELECT status, attempts, score, spectated, assist_score, assist_status, assist_room_id
          FROM wordle_games
-        WHERE player_id = ? AND puzzle_number = ?`,
+        WHERE player_id = ? AND puzzle_number = ? AND slot = 1`,
     )
     .bind(playerId, when.puzzleNumber)
-    .all<{
-      slot: number
+    .first<{
       status: WordleStatus
       attempts: number
       score: number | null
@@ -51,32 +48,20 @@ export async function riepilogoWordle(db: D1Database, playerId: string): Promise
       assist_room_id: string | null
     }>()
 
-  const principale = results.find((r) => r.slot === 1)
   /*
    * Per chi gioca la giornata in compagnia la card racconta quella partita,
    * non la propria: la propria e' chiusa e mostrarla "da giocare" manderebbe
    * su una board che rifiuta i tentativi.
    */
-  const insieme = principale?.spectated === 1
-
-  const esito = (r: (typeof results)[number]) =>
-    r.spectated === 1 ? (r.assist_status ?? 'playing') : r.status
-  const punti = (r: (typeof results)[number]) => (r.spectated === 1 ? r.assist_score : r.score)
-
-  // Il punteggio della card e' quello di tutta la giornata: cinque parole.
-  const totale = results.reduce((sum, r) => sum + (punti(r) ?? 0), 0)
-  const chiuse = results.filter((r) => esito(r) !== 'playing').length
-
+  const insieme = row?.spectated === 1
   return {
     puzzleNumber: when.puzzleNumber,
     date: when.date,
-    status: principale ? esito(principale) : 'new',
-    attempts: insieme ? 0 : (principale?.attempts ?? 0),
-    score: results.length === 0 ? null : totale,
+    status: !row ? 'new' : insieme ? (row.assist_status ?? 'playing') : row.status,
+    attempts: insieme ? 0 : (row?.attempts ?? 0),
+    score: !row ? null : insieme ? row.assist_score : row.score,
     msToNextPuzzle: msToNextPuzzle(),
-    roomId: insieme ? (principale?.assist_room_id ?? null) : null,
-    done: chiuse,
-    words: WORDS_PER_DAY,
+    roomId: insieme ? (row?.assist_room_id ?? null) : null,
   }
 }
 

@@ -56,49 +56,6 @@
   min-height: 1.4em;
 }
 
-.bat__didascalia {
-  margin: 0 0 var(--sp-1);
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--label-tertiary);
-}
-
-/* Resta in cima alla parte visibile anche scorrendo, e non occupa una riga. */
-.bat__messaggio {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  height: 0;
-  margin-bottom: calc(-1 * var(--sp-4));
-  display: grid;
-  place-items: center;
-}
-
-.bat__pillola {
-  position: absolute;
-  /* Sotto la riga di stato, non sopra: "il computer prende la mira" deve restare leggibile. */
-  top: 64px;
-  max-width: 92%;
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-pill);
-  background: var(--label);
-  color: var(--label-inverted);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  text-align: center;
-  box-shadow: var(--shadow-md);
-  animation: bat-pillola var(--dur-base) var(--ease-spring);
-}
-
-@keyframes bat-pillola {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.96);
-  }
-}
-
 .bat-resa {
   display: flex;
   flex-direction: column;
@@ -316,60 +273,142 @@
 
 /* ---------- La partita ---------- */
 
-.bat__stato {
+/*
+ * La plancia: di chi e' il turno, e sotto com'e' andato l'ultimo colpo. Sta al
+ * suo posto e non si sovrappone a niente — prima la notizia era una pillola che
+ * galleggiava sopra il mare e copriva proprio le caselle da guardare.
+ */
+.bat-plancia {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--r-pill);
+  gap: var(--sp-3);
+  min-height: 56px;
+  padding: var(--sp-2) var(--sp-4) var(--sp-2) var(--sp-2);
+  border-radius: var(--r-lg);
   background: var(--fill-quaternary);
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  color: var(--label-secondary);
+  transition: background-color var(--dur-base) var(--ease-out);
 }
 
-.bat__stato.is-tuo {
-  background: var(--brand-soft);
-  color: var(--brand);
-}
-
-.bat__stato-testo {
-  flex: 1;
-}
-
-/* Il computer sta per rispondere: lo stato pulsa, come chi prende la mira. */
-.bat__stato.is-mira {
-  background: color-mix(in srgb, var(--orange) 16%, transparent);
-  color: var(--orange);
-  animation: bat-mira 900ms var(--ease-in-out) infinite;
-}
-
-@keyframes bat-mira {
-  50% {
-    opacity: 0.6;
-  }
-}
-
-.bat__computer {
+.bat-plancia__icona {
+  flex: none;
+  position: relative;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  flex: none;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background: var(--label-secondary);
   color: var(--bg);
 }
 
-.bat__colpi {
+.bat-plancia__icona:has(.avatar) {
+  background: none;
+}
+
+.bat-plancia__testi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.bat-plancia__turno {
+  font-size: var(--text-headline);
+  font-weight: 700;
+  color: var(--label);
+}
+
+.bat-plancia__notizia {
   font-size: var(--text-footnote);
+  font-weight: 500;
+  color: var(--label-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bat-plancia__notizia.is-buona {
+  color: var(--colpito);
+  font-weight: 700;
+}
+
+.bat-plancia__notizia.is-cattiva {
+  color: var(--label);
+  font-weight: 700;
+}
+
+.bat-plancia__notizia.is-errore {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.bat-plancia__colpi {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: var(--text-caption-1);
   font-weight: 600;
   color: var(--label-tertiary);
+  line-height: 1.1;
+}
+
+.bat-plancia__colpi strong {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  color: var(--label);
+}
+
+/* Tocca a te: la plancia prende l'indaco, e il mirino respira. */
+.bat-plancia.is-tuo {
+  background: var(--brand-soft);
+}
+
+.bat-plancia.is-tuo .bat-plancia__turno {
+  color: var(--brand);
+}
+
+.bat-plancia.is-tuo .bat-plancia__icona {
+  background: var(--brand);
+  color: #fff;
+}
+
+.bat-plancia.is-tuo .bat-plancia__icona::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 var(--brand);
+  animation: bat-onde 1.8s var(--ease-out) infinite;
+}
+
+/* L'avversario prende la mira: arancione, come il suo mirino sul tuo mare. */
+.bat-plancia.is-mira {
+  background: color-mix(in srgb, var(--mirino) 15%, transparent);
+}
+
+.bat-plancia.is-mira .bat-plancia__turno {
+  color: var(--mirino);
+}
+
+.bat-plancia.is-mira .bat-plancia__icona {
+  background: var(--mirino);
+  color: #fff;
+  animation: bat-mira 700ms var(--ease-in-out) infinite;
+}
+
+@keyframes bat-mira {
+  50% {
+    transform: scale(0.9);
+  }
 }
 
 .bat__online {
-  width: 9px;
-  height: 9px;
+  flex: none;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--label-quaternary);
 }
@@ -389,7 +428,7 @@
 .bat-combattimento__mari {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
 }
 
 .bat__mare-grande {
@@ -397,49 +436,118 @@
   margin-inline: auto;
 }
 
-.bat__mare-mio {
+/*
+ * I due mari sono due schede, ognuna con il suo nome e il suo padrone. Quella
+ * dove si deve fare qualcosa si accende: il mare dell'avversario quando tocca
+ * a te, il tuo quando l'avversario sta mirando.
+ */
+.bat-campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(100%, 480px);
+  margin-inline: auto;
+  padding: var(--sp-3);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+
+.bat-campo.is-attivo {
+  box-shadow:
+    0 0 0 2px var(--brand),
+    0 6px 24px color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+.bat-campo.is-sotto-tiro {
+  box-shadow:
+    0 0 0 2px var(--mirino),
+    0 6px 24px color-mix(in srgb, var(--mirino) 24%, transparent);
+  animation: bat-sotto-tiro 850ms var(--ease-in-out);
+}
+
+@keyframes bat-sotto-tiro {
+  30% {
+    box-shadow:
+      0 0 0 4px var(--mirino),
+      0 6px 28px color-mix(in srgb, var(--mirino) 34%, transparent);
+  }
+}
+
+.bat-campo__testa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 28px;
+}
+
+.bat-campo__titolo {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--text-headline);
+  font-weight: 700;
+  color: var(--label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bat-campo__computer {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--label-secondary);
+  color: var(--bg);
+}
+
+.bat-campo__nota {
+  flex: none;
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-tertiary);
+}
+
+.bat-campo__nota.is-viva {
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: var(--brand);
+  color: #fff;
+  animation: bat-invito 1.6s var(--ease-in-out) infinite;
+}
+
+@keyframes bat-invito {
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+.bat-campo__mare {
+  width: 100%;
+}
+
+.bat-campo__piede {
+  margin: 0;
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+  text-align: center;
+}
+
+/* Il tuo mare, in piccolo, con le navi una per riga accanto. */
+.bat-campo__corpo {
   display: flex;
   align-items: center;
   gap: var(--sp-4);
-  width: min(100%, 440px);
-  margin-inline: auto;
 }
 
-.bat__mare-piccolo {
+.bat-campo__mare-piccolo {
   flex: none;
-  width: 44%;
-  max-width: 200px;
-}
-
-.bat__conto {
-  margin: 0;
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
-}
-
-/* Le navi nemiche: quelle a fondo barrate, le altre da cercare. */
-.bat__flotta {
-  list-style: none;
-  margin: var(--sp-2) 0 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--sp-1) var(--sp-2);
-  font-size: var(--text-caption-1);
-  color: var(--label-secondary);
-}
-
-.bat__flotta li {
-  padding: 1px var(--sp-2);
-  border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-}
-
-.bat__flotta li.is-affondata {
-  text-decoration: line-through;
-  color: var(--colpito);
-  background: var(--colpito-fondo);
+  width: 48%;
+  max-width: 220px;
 }
 
 .bat__reclamo {
@@ -590,21 +698,23 @@
     flex-direction: row;
     align-items: flex-start;
     justify-content: center;
-    gap: var(--sp-8);
+    gap: var(--sp-6);
   }
 
-  .bat__mare-grande {
+  .bat-campo {
     margin-inline: 0;
   }
 
-  .bat__mare-mio {
+  .bat-campo--mio {
+    width: 300px;
+  }
+
+  .bat-campo--mio .bat-campo__corpo {
     flex-direction: column;
     align-items: stretch;
-    width: 280px;
-    margin-inline: 0;
   }
 
-  .bat__mare-piccolo {
+  .bat-campo--mio .bat-campo__mare-piccolo {
     width: 100%;
     max-width: none;
   }
@@ -736,7 +846,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .bat-riga__onda::after,
-  .bat-sala__onde::after {
+  .bat-sala__onde::after,
+  .bat-plancia.is-tuo .bat-plancia__icona::after,
+  .bat-plancia.is-mira .bat-plancia__icona,
+  .bat-campo.is-sotto-tiro,
+  .bat-campo__nota.is-viva {
     animation: none;
   }
 }

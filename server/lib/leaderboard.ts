@@ -44,7 +44,6 @@ interface AggregateRow {
   assists: number
   played: number
   wins: number
-  extra: number
   avg_attempts: number | null
 }
 
@@ -82,8 +81,6 @@ export interface PlayerTotals {
   assists: number
   played: number
   wins: number
-  /** Quante parole in piu' ha chiuso: e' l'ultimo spareggio. */
-  extra: number
   avgAttempts: number | null
 }
 
@@ -145,9 +142,7 @@ export function streaksByPlayer(
  *  2. **assist**, che e' lo spareggio: fra due totali uguali passa avanti chi
  *     ne ha di meno, cioe' chi ha fatto piu' punti con le proprie partite;
  *  3. vittorie, poi media tentativi piu' bassa;
- *  4. parole in piu' chiuse, che e' l'unico posto in cui "aver giocato di piu'"
- *     conta: nel punteggio non deve, o le extra ribalterebbero la classifica;
- *  5. nickname, perché due righe identiche non devono cambiare posto a ogni
+ *  4. nickname, perché due righe identiche non devono cambiare posto a ogni
  *     ricarica.
  *
  * Chi ha solo giocato in compagnia, senza mai una partita propria, e' in
@@ -165,7 +160,6 @@ export function rankPlayers(players: PlayerTotals[]): LeaderboardRow[] {
       if (b.avgAttempts === null) return -1
       return a.avgAttempts - b.avgAttempts
     }
-    if (a.extra !== b.extra) return b.extra - a.extra
     return a.nickname.localeCompare(b.nickname, 'it', { sensitivity: 'base' })
   })
 
@@ -209,17 +203,12 @@ export async function leaderboard(
    * Le partite ancora in corso entrano con punteggio zero (`score` e' NULL finché
    * non finiscono): così nella vista di oggi si vede anche chi sta giocando.
    *
-   * `played`, `wins` e la media contano **solo la parola del giorno giocata per
-   * conto proprio**, e per due ragioni diverse:
-   *
-   *  - i tentativi di una giornata in compagnia sono quelli dell'host: contarli
-   *    come propri falserebbe la media di tutti;
-   *  - contando tutte e cinque le parole, chi le gioca tutte accumula cinque
-   *    vittorie al giorno, e nello spareggio quel numero batteva chi aveva
-   *    indovinato la principale al primo colpo. Con la sola principale il
-   *    conteggio misura le **giornate**, che e' quel che uno intende leggendo
-   *    "giocate", e lo spareggio passa alla media tentativi — dove vince chi ha
-   *    giocato meglio, non chi ha giocato di piu'.
+   * `played`, `wins` e la media contano **solo la parola giocata per conto
+   * proprio**: i tentativi di una giornata in compagnia sono quelli dell'host, e
+   * contarli come propri falserebbe la media di tutti. Il conteggio misura le
+   * **giornate**, che e' quel che uno intende leggendo "giocate". Il filtro su
+   * `slot = 1` e' di quando le parole erano cinque al giorno: ora lo slot e'
+   * sempre 1, e il filtro resta perché non costa niente.
    */
   const [aggregate, winsResult, todayResult] = await Promise.all([
     db
@@ -238,8 +227,6 @@ export async function leaderboard(
                          THEN 1 ELSE 0 END)                              AS played,
                 SUM(CASE WHEN g.slot = 1 AND g.spectated != 1 AND g.status = 'won'
                          THEN 1 ELSE 0 END)                              AS wins,
-                SUM(CASE WHEN g.slot > 1 AND g.status != 'playing'
-                         THEN 1 ELSE 0 END)                              AS extra,
                 AVG(CASE WHEN g.slot = 1 AND g.spectated != 1 AND g.status = 'won'
                          THEN g.attempts END)                            AS avg_attempts
            FROM players p
@@ -289,7 +276,6 @@ export async function leaderboard(
     assists: row.assists,
     played: row.played,
     wins: row.wins,
-    extra: row.extra,
     avgAttempts: row.avg_attempts,
   }))
 

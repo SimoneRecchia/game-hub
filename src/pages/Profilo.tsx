@@ -201,7 +201,7 @@ function ContiWordle() {
       {!stats ? (
         <Attesa />
       ) : stats.played === 0 && stats.assistScore === 0 ? (
-        <p className="profilo__testo">Nessuna classificata, per ora: le cinque parole di oggi ti aspettano.</p>
+        <p className="profilo__testo">Nessuna classificata, per ora: la parola di oggi ti aspetta.</p>
       ) : (
         // Gli assist bastano a riempire il pannello: chi ha giocato solo in
         // compagnia ha punti in classifica, e vederli qui a zero sarebbe una smentita.

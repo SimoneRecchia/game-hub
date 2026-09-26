@@ -326,26 +326,40 @@
   /* ---- La battaglia navale ----
      Il mare e' un azzurro verde, lontano dall'indaco dell'interfaccia: la
      casella scelta per spostare una nave prende l'indaco, e i due non devono
-     confondersi. Il rosso e' "colpito", come ovunque; la nave a fondo e' un
-     rosso scuro, perché un affondamento resta un colpo ma chiuso. */
-  --mare: #dcecf2;
-  --mare: light-dark(#dcecf2, #13293a);
-  --mare-sopra: #c8e1ea;
-  --mare-sopra: light-dark(#c8e1ea, #1a3a52);
-  --mare-linea: rgba(20, 70, 100, 0.14);
-  --mare-linea: light-dark(rgba(20, 70, 100, 0.14), rgba(150, 200, 230, 0.12));
-  --nave: #6b7789;
-  --nave: light-dark(#6b7789, #8791a3);
-  --colpito: #dc2626;
-  --colpito: light-dark(#dc2626, #f87171);
-  --colpito-fondo: #fbd5d0;
-  --colpito-fondo: light-dark(#fbd5d0, #4a1f22);
-  --affondato: #8f1d1d;
-  --affondato: light-dark(#8f1d1d, #7f1d1d);
-  --affondato-ink: #ffd9d4;
-  --affondato-ink: light-dark(#ffd9d4, #fecaca);
-  --acqua-segno: #5a8aa3;
-  --acqua-segno: light-dark(#5a8aa3, #7fb2cc);
+     confondersi. Tre esiti, tre segni che si distinguono anche senza colori:
+     lo spruzzo azzurro dell'acqua, il rosso con il fuoco per una nave colpita
+     e ancora a galla, il relitto scuro con le croci per una nave a fondo. Prima
+     colpito e affondato erano due rossi, e non si capiva quale fosse quale. */
+  --mare: #cfe7f1;
+  --mare: light-dark(#cfe7f1, #12293b);
+  --mare-luce: rgba(255, 255, 255, 0.5);
+  --mare-luce: light-dark(rgba(255, 255, 255, 0.5), rgba(140, 200, 235, 0.09));
+  --mare-linea: rgba(20, 80, 115, 0.16);
+  --mare-linea: light-dark(rgba(20, 80, 115, 0.16), rgba(150, 200, 230, 0.13));
+  /* Le caselle sono trasparenti sopra l'acqua: questi sono veli, non colori pieni. */
+  --mare-libera: rgba(255, 255, 255, 0.3);
+  --mare-libera: light-dark(rgba(255, 255, 255, 0.3), rgba(160, 215, 245, 0.07));
+  --mare-sopra: rgba(35, 166, 201, 0.22);
+  --mare-sopra: light-dark(rgba(35, 166, 201, 0.22), rgba(90, 200, 240, 0.2));
+  --mare-premuta: rgba(35, 166, 201, 0.36);
+  --mare-premuta: light-dark(rgba(35, 166, 201, 0.36), rgba(90, 200, 240, 0.32));
+  --nave: #66758a;
+  --nave: light-dark(#66758a, #8b96a8);
+  --colpito: #e0322b;
+  --colpito: light-dark(#e0322b, #ef4444);
+  --fuoco: #ffb224;
+  --fuoco-cuore: #fff3c4;
+  --relitto: #273140;
+  --relitto: light-dark(#273140, #05090f);
+  --relitto-ink: #ff9c90;
+  --relitto-ink: light-dark(#ff9c90, #f87171);
+  --acqua-segno: #4f86a3;
+  --acqua-segno: light-dark(#4f86a3, #86bdd8);
+  --acqua-alone: rgba(79, 134, 163, 0.25);
+  --acqua-alone: light-dark(rgba(79, 134, 163, 0.25), rgba(134, 189, 216, 0.22));
+  /* Il mirino di chi ti sta per sparare: l'arancione di "prende la mira". */
+  --mirino: #f2770d;
+  --mirino: light-dark(#f2770d, #ff9f40);
 }
 
 /*

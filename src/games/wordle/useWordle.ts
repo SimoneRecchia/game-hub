@@ -49,7 +49,7 @@ export interface Griglia {
  * solo.
  */
 export interface Sorgente<T extends Griglia> {
-  /** Cambia quando la partita e' un'altra: la classificata di un'altra parola, una libera nuova. */
+  /** Cambia quando la partita e' un'altra: una libera nuova, per esempio. */
   chiave: string
   carica: () => Promise<T>
   invia: (parola: string) => Promise<T>
@@ -84,25 +84,16 @@ export interface WordleController<T extends Griglia = WordleState> {
   adotta: (stato: T) => void
 }
 
-/**
- * La partita di una delle cinque parole della giornata.
- *
- * Lo slot arriva da chi chiama, cioe' dalla rotta: `/wordle/3` e' la terza
- * parola. Prima stava in uno `useState` qui dentro, perché il selettore era una
- * striscia sopra la griglia e cambiare parola era un gesto dentro la partita.
- * Ora la scelta e' una schermata sua, quindi e' una navigazione — e il tasto
- * indietro del telefono torna al percorso invece di uscire dal gioco.
- */
-export function useWordle(slot: number): WordleController<WordleState> {
+/** La parola del giorno: una sola, la stessa per tutti. */
+export function useWordle(): WordleController<WordleState> {
   const sorgente = useMemo<Sorgente<WordleState>>(
     () => ({
-      chiave: `classificata-${slot}`,
-      carica: () => api<WordleState>(`/wordle/state?slot=${slot}`),
-      invia: (parola) =>
-        api<WordleState>('/wordle/guess', { method: 'POST', body: { guess: parola, slot } }),
+      chiave: 'classificata',
+      carica: () => api<WordleState>('/wordle/state'),
+      invia: (parola) => api<WordleState>('/wordle/guess', { method: 'POST', body: { guess: parola } }),
       statistiche: () => api<PlayerStats>('/wordle/stats'),
     }),
-    [slot],
+    [],
   )
   return usePartita(sorgente)
 }

@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useState } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Coriandoli } from '@/components/Elementi'
+import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconChart, IconInfo, IconPeople } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Board } from '@/games/wordle/Board'
@@ -15,62 +14,43 @@ import { useWordle } from '@/games/wordle/useWordle'
 import { InvitePanel } from '@/games/wordle/coop/InvitePanel'
 import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
 import { useCoopHost } from '@/games/wordle/coop/useCoopHost'
-import { useToast } from '@/components/Toast'
-import { MAX_ATTEMPTS, WORD_LENGTH, WORDS_PER_DAY } from '@shared/config'
+import { MAX_ATTEMPTS, WORD_LENGTH } from '@shared/config'
 import './Wordle.css'
 
 /**
- * La griglia di una delle cinque parole della giornata.
+ * La parola del giorno: una sola, la stessa per tutti.
  *
- * Quale, lo dice la rotta: `/wordle/classificata/3` e' la terza. La scelta sta
- * nella schermata del percorso, quindi qui sopra la griglia non c'e' nessun
- * selettore — la freccia in alto a sinistra torna alla mappa, che e' anche il
- * gesto che il tasto indietro del telefono fa da solo.
+ * E' la classificata del Wordle. Chi ne vuole giocare altre le trova nella
+ * libera, a caso e senza punti: il riepilogo di fine partita ci porta.
  */
 export default function Wordle() {
   const { vai } = useNavigazione()
-  const toast = useToast()
-  const { slot: param } = useParams()
-  const slot = slotValido(param)
-  const game = useWordle(slot)
+  const game = useWordle()
   const [helpOpen, setHelpOpen] = useState(false)
   const [invitiOpen, setInvitiOpen] = useState(false)
-
-  /*
-   * Indirizzo di una parola ancora chiusa: si torna al percorso.
-   *
-   * Il server la rifiuta comunque (`PAROLA_BLOCCATA`), ma lasciare in piedi il
-   * messaggio d'errore su una griglia vuota non spiega niente: la mappa dice
-   * quale parola apre questa.
-   */
-  useEffect(() => {
-    if (game.loadCode !== 'PAROLA_BLOCCATA') return
-    toast.show(
-      slot === 2 ? 'Prima finisci la parola del giorno' : `Prima finisci la ${slot - 1}ª parola`,
-    )
-    vai(ROTTE.classificata('wordle'), { replace: true, direzione: 'indietro' })
-  }, [game.loadCode, vai, slot, toast])
 
   // Il hook decide da solo quando fare polling: qui basta dirgli se il
   // pannello e' aperto.
   const coop = useCoopHost(invitiOpen)
   const attivi = coop.room?.guests.filter((g) => g.status === 'accepted') ?? []
 
-  const title = slot === 1 ? 'Parola del giorno' : `${slot}ª parola`
+  const title = game.state ? `Wordle #${game.state.puzzleNumber}` : 'Parola del giorno'
   const finished = game.state && game.state.status !== 'playing'
 
-  const vinta = game.state?.status === 'won' && game.resultOpen
+  // La festa quando si apre il risultato di una vittoria appena fatta, non di una riaperta.
+  const festa = useFesta(
+    game.state ? game.state.status === 'playing' : null,
+    game.state?.status === 'won' && game.resultOpen,
+  )
 
   return (
     <Pagina
       titolo={title}
       intera
-      indietro={{ a: ROTTE.classificata('wordle'), etichetta: 'Oggi' }}
+      indietro={{ a: ROTTE.gioco('wordle'), etichetta: 'Wordle' }}
       azioni={
         <>
-          {/* In compagnia si gioca la parola del giorno: sulle altre il
-              pulsante prometterebbe una cosa che non esiste. */}
-          {!finished && slot === 1 && (
+          {!finished && (
             <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setInvitiOpen(true)} badge={attivi.length}>
               <IconPeople size={21} />
             </BottoneBarra>
@@ -197,23 +177,10 @@ export default function Wordle() {
           onClose={game.closeResult}
           state={game.state}
           stats={game.stats}
-          onNextWord={(next) => vai(ROTTE.parola(next), { replace: true })}
+          onLibera={() => vai(ROTTE.libera('wordle'))}
         />
       )}
-      {vinta && <Coriandoli />}
+      {festa && <Coriandoli />}
     </Pagina>
   )
-}
-
-/**
- * Lo slot chiesto dall'indirizzo, dentro i limiti.
- *
- * Un `/wordle/9` scritto a mano finisce sulla parola del giorno invece che su
- * una schermata rotta: il server rifiuterebbe con `BAD_SLOT`, e un errore per
- * un indirizzo battuto male e' una cortesia sprecata.
- */
-function slotValido(param: string | undefined): number {
-  const n = Number(param)
-  if (!Number.isInteger(n) || n < 1 || n > WORDS_PER_DAY) return 1
-  return n
 }

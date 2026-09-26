@@ -54,7 +54,7 @@ const PERIODI: { value: LeaderboardScope; label: string }[] = [
 
 const LEDE: Record<ChiaveClassifica, string> = {
   generale: 'Tutte le classificate insieme: ognuna vale fino a cento punti.',
-  wordle: 'Cinque parole al giorno: metà dei punti alla prima, metà alle altre quattro.',
+  wordle: 'Una parola al giorno: cento punti al primo tentativo, cinquanta al sesto.',
   scarabeo: 'Il tuo punteggio contro quello del computer, con le stesse tessere.',
   cruciverba: 'Cento punti a chi lo completa senza aiuti.',
   battaglia: 'La battaglia del giorno contro il computer: meno colpi, più punti.',

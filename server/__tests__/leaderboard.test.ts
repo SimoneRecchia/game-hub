@@ -78,7 +78,6 @@ function player(nickname: string, over: Partial<PlayerTotals> = {}): PlayerTotal
     assists: 0,
     played: 0,
     wins: 0,
-    extra: 0,
     avgAttempts: null,
     ...over,
   }
@@ -176,52 +175,13 @@ describe('ordine della classifica', () => {
 })
 
 
-describe('le parole in piu come ultimo spareggio', () => {
-  it('passa avanti chi ne ha chiuse di piu, a parita di tutto il resto', () => {
+describe('a pari punti e pari assist', () => {
+  it('passa avanti chi ha vinto di piu, poi chi ha la media migliore', () => {
     const rows = rankPlayers([
-      player('pigra', { playScore: 100, wins: 1, avgAttempts: 3, extra: 0 }),
-      player('sveglia', { playScore: 100, wins: 1, avgAttempts: 3, extra: 4 }),
+      player('lenta', { playScore: 180, played: 2, wins: 2, avgAttempts: 5 }),
+      player('rapida', { playScore: 180, played: 2, wins: 2, avgAttempts: 2 }),
+      player('una', { playScore: 180, played: 2, wins: 1, avgAttempts: 1 }),
     ])
-    expect(rows.map((r) => r.nickname)).toEqual(['sveglia', 'pigra'])
-  })
-
-  it('ma non conta prima del punteggio: le extra non ribaltano', () => {
-    // La condizione che tiene onesto tutto l'impianto: le parole in piu' danno
-    // punti, e i punti contano; il numero di parole giocate no.
-    const rows = rankPlayers([
-      player('tante', { playScore: 90, extra: 4 }),
-      player('brava', { playScore: 100, extra: 0 }),
-    ])
-    expect(rows.map((r) => r.nickname)).toEqual(['brava', 'tante'])
-  })
-})
-
-describe('il pareggio fra la giornata perfetta e chi macina tutto', () => {
-  it('si scioglie sulla media tentativi, non sul numero di partite', () => {
-    /*
-     * Con la scala delle cinque parole il caso estremo e' un pareggio esatto:
-     * principale perfetta 109 contro cinque parole all'ultimo tentativo 109
-     * (vedi `shared/__tests__/scoring.test.ts`).
-     *
-     * Chi ha fatto la giornata perfetta deve stare davanti. Ci arriva perché
-     * `played`, `wins` e la media contano **solo la parola del giorno**: se
-     * contassero tutte e cinque, chi le gioca tutte avrebbe cinque vittorie al
-     * giorno e vincerebbe lo spareggio col numero invece che col merito.
-     */
-    const rows = rankPlayers([
-      player('perfetta', { playScore: 109, played: 1, wins: 1, avgAttempts: 1, extra: 0 }),
-      player('macina', { playScore: 109, played: 1, wins: 1, avgAttempts: 6, extra: 4 }),
-    ])
-    expect(rows.map((r) => r.nickname)).toEqual(['perfetta', 'macina'])
-  })
-
-  it('ma a parita anche di media, chi ha fatto piu parole passa avanti', () => {
-    // Le parole in piu' restano l'ultimo spareggio: fra due giornate identiche,
-    // averne fatte di piu' e' l'unica differenza che resta.
-    const rows = rankPlayers([
-      player('poche', { playScore: 100, played: 1, wins: 1, avgAttempts: 2, extra: 0 }),
-      player('tante', { playScore: 100, played: 1, wins: 1, avgAttempts: 2, extra: 4 }),
-    ])
-    expect(rows.map((r) => r.nickname)).toEqual(['tante', 'poche'])
+    expect(rows.map((r) => r.nickname)).toEqual(['rapida', 'lenta', 'una'])
   })
 })

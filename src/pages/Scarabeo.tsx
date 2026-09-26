@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
-import { Coriandoli, Numero, Vuoto } from '@/components/Elementi'
+import { Coriandoli, Numero, Vuoto, useFesta } from '@/components/Elementi'
 import { IconComputer, IconInfo, IconList, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
@@ -30,6 +30,11 @@ export default function Scarabeo() {
 
   const stato = g.stato
   const finita = stato?.status === 'done'
+  // Battere il computer e' la vittoria della classificata: la festa e' per quella.
+  const festa = useFesta(
+    stato ? !finita : null,
+    finita && stato.punti >= stato.computer.punti && stato.punti > 0,
+  )
 
   return (
     <Pagina
@@ -67,6 +72,7 @@ export default function Scarabeo() {
           restanti={stato.restanti}
           testa={
             <Tabellino
+              avviso={g.messaggio}
               io={stato.punti}
               altro={stato.computer.punti}
               nomeAltro="Computer"
@@ -130,7 +136,7 @@ export default function Scarabeo() {
         )}
       </Sheet>
 
-      {finita && stato.punti >= stato.computer.punti && stato.punti > 0 && <Coriandoli />}
+      {festa && <Coriandoli />}
     </Pagina>
   )
 }

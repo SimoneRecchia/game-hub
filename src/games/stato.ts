@@ -33,45 +33,51 @@ export interface StatoOggi {
   a: string
 }
 
-const parole = (n: number) => (n === 1 ? 'parola' : 'parole')
-
 export function statoWordle(s: WordleSummary): StatoOggi {
-  const base = { gioco: 'wordle' as const, avanzamento: s.done / s.words, punti: s.score }
+  const fatta = s.status === 'won' || s.status === 'lost'
+  const base = { gioco: 'wordle' as const, punti: s.score }
   if (s.roomId && s.status === 'playing') {
     return {
       ...base,
+      avanzamento: 0.5,
       fase: 'in-corso',
       titolo: 'In compagnia',
-      dettaglio: 'La parola del giorno la stai giocando con un collega',
+      dettaglio: 'La parola di oggi la stai giocando con un collega',
       azione: 'Torna alla partita',
       a: ROTTE.insieme(s.roomId),
     }
   }
-  if (s.done >= s.words) {
+  if (fatta) {
     return {
       ...base,
+      avanzamento: 1,
       fase: 'fatta',
-      titolo: 'Fatta',
-      dettaglio: `${s.score ?? 0} punti con cinque parole`,
+      titolo: s.status === 'won' ? 'Indovinata' : 'Non indovinata',
+      dettaglio:
+        s.status === 'won' && s.attempts > 0
+          ? `In ${s.attempts} ${s.attempts === 1 ? 'tentativo' : 'tentativi'}, ${s.score ?? 0} punti`
+          : `${s.score ?? 0} punti`,
       azione: 'Rivedi',
       a: ROTTE.classificata('wordle'),
     }
   }
-  if (s.status === 'new' || (s.done === 0 && s.attempts === 0)) {
+  if (s.status === 'new' || s.attempts === 0) {
     return {
       ...base,
+      avanzamento: 0,
       fase: 'da-giocare',
       titolo: 'Da giocare',
-      dettaglio: 'Cinque parole, una alla volta',
+      dettaglio: 'Una parola, sei tentativi',
       azione: 'Gioca',
       a: ROTTE.classificata('wordle'),
     }
   }
   return {
     ...base,
+    avanzamento: s.attempts / 6,
     fase: 'in-corso',
-    titolo: `${s.done} di ${s.words} ${parole(s.words)}`,
-    dettaglio: s.score ? `${s.score} punti finora` : 'La parola del giorno è in corso',
+    titolo: `${s.attempts} ${s.attempts === 1 ? 'tentativo' : 'tentativi'} su 6`,
+    dettaglio: 'La parola di oggi è in corso',
     azione: 'Continua',
     a: ROTTE.classificata('wordle'),
   }
