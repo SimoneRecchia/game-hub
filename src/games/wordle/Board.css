@@ -33,8 +33,15 @@
     container-type: size;
   }
 
+  /*
+   * `100cqw` e non `100%`. Il riquadro centrava la griglia con una griglia CSS,
+   * e dentro una traccia `auto` una percentuale e' circolare: Safari la
+   * risolveva sulla traccia, che a sua volta si allargava sulla griglia — che
+   * cosi' prendeva la misura dell'altezza e usciva dallo schermo a destra. Le
+   * unita' di container non dipendono da chi sta dentro.
+   */
   .board {
-    width: min(100%, 400px, 83.34cqh);
+    width: min(100cqw, 400px, 83.34cqh);
   }
 }
 

@@ -22,37 +22,77 @@
 
 /* ---------- Riga di stato ---------- */
 
+/*
+ * La plancia del cruciverba, nello stile delle schede della battaglia: una
+ * capsula sola con il tempo, i punti, quanto manca e gli aiuti.
+ */
 .cru__stato {
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
   width: min(100%, 640px);
+  height: 44px;
   margin-inline: auto;
+  padding: 0 6px 0 var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
 }
 
 .cru__tempo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-rounded);
   font-size: var(--text-headline);
-  font-weight: 700;
+  font-weight: 800;
   color: var(--label);
-  min-width: 3.2em;
+  min-width: 4.2em;
+}
+
+.cru__tempo svg {
+  color: var(--cruciverba-2);
 }
 
 .cru__punti {
   font-size: var(--text-footnote);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.cru__punti-label {
   font-weight: 600;
   color: var(--label-secondary);
 }
 
-.cru__punti-label {
-  font-weight: 500;
-}
-
 .cru__avanzamento {
   margin-left: auto;
-  font-size: var(--text-footnote);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
   color: var(--label-tertiary);
+}
+
+/* Quanto dello schema e' scritto: una barretta che si riempie. */
+.cru__avanzamento-barra {
+  position: relative;
+  width: 44px;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  overflow: hidden;
+}
+
+.cru__avanzamento-barra span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--cruciverba-1), var(--cruciverba-2));
+  transform-origin: left center;
+  transition: transform var(--dur-slow) var(--ease-out);
 }
 
 .cru__avviso {
@@ -75,7 +115,8 @@
 }
 
 .cru__aiuti {
-  padding: var(--sp-1) var(--sp-3);
+  height: 32px;
+  padding: 0 var(--sp-3);
   border: none;
   border-radius: var(--r-pill);
   background: var(--brand-soft);
@@ -95,8 +136,9 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /*
@@ -122,6 +164,10 @@
 
 /* ---------- Definizione corrente ---------- */
 
+/*
+ * La definizione in corso: un foglietto a righe, come il bordo del giornale
+ * dove si scrive la risposta prima di riportarla nello schema.
+ */
 .cbarra {
   flex: none;
   display: flex;
@@ -130,7 +176,13 @@
   width: min(100%, 640px);
   margin-inline: auto;
   border-radius: var(--r-md);
-  background: var(--cruci-parola);
+  background-color: var(--cruci-parola);
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent 0 21px,
+    color-mix(in srgb, var(--brand) 12%, transparent) 21px 22px
+  );
+  box-shadow: inset 3px 0 0 var(--brand);
 }
 
 .cbarra__freccia {

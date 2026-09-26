@@ -7,6 +7,8 @@ import { Button } from '@/components/Button'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconPeople } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
+import { Scheda } from '@/components/Scheda'
+import { Tentativi } from '@/games/wordle/fine'
 import { Board } from '@/games/wordle/Board'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
@@ -15,6 +17,7 @@ import { haptic } from '@/lib/haptics'
 import { COOP_POLL_VIEW_MS, WORD_LENGTH } from '@shared/config'
 import { isGameLetter, keyboardStates } from '@shared/wordle'
 import type { CoopView } from '@shared/types'
+import './Wordle.css'
 import './WordleInsieme.css'
 
 /**
@@ -156,16 +159,6 @@ export default function WordleInsieme() {
           </div>
         ) : (
           <>
-            <div className="insieme__banner">
-              {!view.active
-                ? `${view.hostName} ha chiuso la partita condivisa.`
-                : view.status === 'won'
-                  ? `${view.hostName} ha indovinato: ${view.answer?.toUpperCase()}`
-                  : view.status === 'lost'
-                    ? `Niente da fare per ${view.hostName}. Era ${view.answer?.toUpperCase()}.`
-                    : `Stai guardando ${view.hostName}. Puoi suggerire una parola.`}
-            </div>
-
             {/*
               Che cosa vale questa partita per chi guarda.
 
@@ -197,17 +190,34 @@ export default function WordleInsieme() {
               )}
             </div>
 
-            <div className="insieme__board">
-              <Board
-                guesses={view.guesses}
-                draft=""
-                wordLength={view.wordLength}
-                maxAttempts={view.maxAttempts}
-                revealing={null}
-                winningRow={view.status === 'won' ? view.guesses.length - 1 : null}
-                shakingRow={null}
-              />
-            </div>
+            <Scheda
+              className="wordle__tavola"
+              titolo={`La parola di ${view.hostName}`}
+              icona={<Avatar nickname={view.hostName} color={view.hostAvatarColor} size={26} />}
+              destra={<Tentativi guesses={view.guesses} maxAttempts={view.maxAttempts} status={view.status} />}
+            >
+              <div className="insieme__board">
+                <Board
+                  guesses={view.guesses}
+                  draft=""
+                  wordLength={view.wordLength}
+                  maxAttempts={view.maxAttempts}
+                  revealing={null}
+                  winningRow={view.status === 'won' ? view.guesses.length - 1 : null}
+                  shakingRow={null}
+                />
+              </div>
+              {/* Com'e' andata, o che cosa si puo' fare: la riga che prima era un riquadro sopra. */}
+              <p className="wordle__piede" aria-live="polite">
+                {!view.active
+                  ? `${view.hostName} ha chiuso la partita condivisa`
+                  : view.status === 'won'
+                    ? `${view.hostName} ha indovinato: ${view.answer?.toUpperCase()}`
+                    : view.status === 'lost'
+                      ? `Niente da fare: era ${view.answer?.toUpperCase()}`
+                      : `Guardi ${view.hostName} giocare, e puoi suggerire`}
+              </p>
+            </Scheda>
 
             {/* La riga del suggerimento sta fuori dalla griglia dell'host: non
                 è un tentativo, e mescolarla confonderebbe le due cose. */}

@@ -1,0 +1,94 @@
+/*
+ * I disegni degli adesivi del cruciverba: la spunta e la matita. Le durate sono
+ * frazioni di `--durata`, che mette l'adesivo.
+ */
+
+.cru-spunta__cerchio {
+  fill: rgba(255, 255, 255, 0.18);
+  stroke: #fff;
+  stroke-width: 4;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cru-cerchio calc(var(--durata) * 0.3) var(--ease-bounce) both;
+}
+
+@keyframes cru-cerchio {
+  from {
+    transform: scale(0);
+  }
+}
+
+/* Il segno si traccia: il tratto parte nascosto e si scopre. */
+.cru-spunta__segno {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: cru-traccia calc(var(--durata) * 0.28) var(--ease-out) calc(var(--durata) * 0.2) forwards;
+}
+
+@keyframes cru-traccia {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.cru-matita__riga {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.85);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-dasharray: 90;
+  stroke-dashoffset: 90;
+  animation: cru-traccia calc(var(--durata) * 0.4) var(--ease-in-out) calc(var(--durata) * 0.1) forwards;
+}
+
+.cru-matita__spunta {
+  stroke-width: 6;
+  animation-delay: calc(var(--durata) * 0.5);
+}
+
+/* La matita segue la riga, e poi si alza verso la spunta. */
+.cru-matita__corpo {
+  animation: cru-matita calc(var(--durata) * 0.62) var(--ease-in-out) calc(var(--durata) * 0.08) both;
+}
+
+@keyframes cru-matita {
+  0% {
+    transform: translate(-18px, 6px) rotate(-8deg);
+  }
+  65% {
+    transform: translate(52px, -8px) rotate(4deg);
+  }
+  100% {
+    transform: translate(64px, -20px) rotate(0deg);
+  }
+}
+
+.cru-matita__legno {
+  fill: #ffd27a;
+}
+
+.cru-matita__vernice {
+  fill: #ff5e7e;
+}
+
+.cru-matita__punta {
+  fill: #2a2f3a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cru-spunta__segno,
+  .cru-matita__riga {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+
+  .cru-spunta__cerchio,
+  .cru-matita__corpo {
+    animation: none;
+  }
+}

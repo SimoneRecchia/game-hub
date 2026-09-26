@@ -245,6 +245,11 @@
   /* Piu' marcato di quel che sembrerebbe giusto: su fondo bianco un bordo al
      16% spariva, e le caselle vuote diventavano macchie bianche invece di una
      griglia. Il gioco vero il bordo lo fa vedere. */
+  /* L'alloggio vuoto del Wordle: un incavo nella tavoletta, dove la lettera si posa. */
+  --slot: #e6e9f1;
+  --slot: light-dark(#e6e9f1, #12141b);
+  --slot-ombra: rgba(24, 32, 64, 0.14);
+  --slot-ombra: light-dark(rgba(24, 32, 64, 0.14), rgba(0, 0, 0, 0.55));
   --tile-empty-border: rgba(60, 64, 82, 0.26);
   --tile-empty-border: light-dark(rgba(60, 64, 82, 0.26), rgba(160, 168, 200, 0.26));
   --tile-active-border: rgba(60, 64, 82, 0.4);
@@ -288,6 +293,11 @@
      **freddo = moltiplica la lettera**, e la saturazione dice se e' tripla o
      doppia. Nessun colore del gioco vero entra qui: il verde vuol dire "lettera
      giusta" nel Wordle e l'indaco e' l'accento dell'interfaccia. */
+  /* Il legno della cornice del tabellone e del leggio: due toni, chiaro in alto. */
+  --legno-1: #d4a06a;
+  --legno-1: light-dark(#d4a06a, #7a5433);
+  --legno-2: #a8703f;
+  --legno-2: light-dark(#a8703f, #4f3420);
   --tessera: #f1e2c1;
   --tessera: light-dark(#f1e2c1, #4d442f);
   --tessera-ink: #241c0d;
