@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { ThemeButton } from '@/components/ThemeButton'
 import { useAuth } from '@/lib/auth'
-import { ApiFetchError } from '@/lib/api'
+import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { CODE_LENGTH, CODE_TTL_MINUTES } from '@shared/config'
+import type { InvitoConLink } from '@shared/types'
 import './VerifyEmail.css'
 
 /**
@@ -12,9 +14,14 @@ import './VerifyEmail.css'
  *
  * Il giocatore ha già una sessione: puo' farsi rimandare il codice e non perde
  * il nickname appena scelto. Le rotte di gioco restano chiuse lato server.
+ *
+ * Chi si e' registrato da un invito a battaglia navale lo ritrova qui: la
+ * conferma dell'email e' l'ultimo passo prima della partita, e l'indirizzo
+ * resta quello dell'invito, che dopo la conferma lo porta dentro.
  */
-export default function VerifyEmail() {
+export default function VerifyEmail({ invito = null }: { invito?: string | null }) {
   const { player, verify, resendCode, logout } = useAuth()
+  const [sfida, setSfida] = useState<InvitoConLink | null>(null)
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -25,6 +32,17 @@ export default function VerifyEmail() {
   useEffect(() => {
     input.current?.focus()
   }, [])
+
+  useEffect(() => {
+    if (!invito) return
+    let valido = true
+    api<InvitoConLink>(`/inviti/${invito}`)
+      .then((i) => valido && i.stato === 'attesa' && setSfida(i))
+      .catch(() => {})
+    return () => {
+      valido = false
+    }
+  }, [invito])
 
   // Conto alla rovescia per il rinvio: un tasto che non funziona senza dire
   // perché e' peggio di un tasto disabilitato con un numero accanto.
@@ -102,6 +120,15 @@ export default function VerifyEmail() {
             <strong>{player?.email ?? 'la tua email'}</strong>. Vale {CODE_TTL_MINUTES} minuti.
           </p>
         </header>
+
+        {sfida && (
+          <div className="verifica__invito" role="status">
+            <Avatar nickname={sfida.da.nickname} color={sfida.da.avatarColor} size={36} />
+            <p>
+              Appena confermi entri nella battaglia navale con <strong>{sfida.da.displayName}</strong>.
+            </p>
+          </div>
+        )}
 
         <div className="verifica__campo">
           <label className="u-visually-hidden" htmlFor="codice">

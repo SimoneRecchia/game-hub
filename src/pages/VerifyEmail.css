@@ -149,3 +149,20 @@
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
+
+/* Chi arriva da un invito: la partita che lo aspetta, dopo il codice. */
+.verifica__invito {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-xl);
+  background: color-mix(in srgb, var(--battaglia-1) 14%, var(--surface));
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+.verifica__invito strong {
+  color: var(--label);
+}
