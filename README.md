@@ -13,7 +13,7 @@ Ogni gioco ha due partite:
 | Quante | una al giorno | quante vuoi |
 | Uguale per tutti | sì | no, a caso |
 | Punti in classifica | fino a **100** | no |
-| **Wordle** | cinque parole, si aprono una per volta; puoi farti aiutare da un collega | una parola a caso |
+| **Wordle** | la parola del giorno, sei tentativi; puoi farti aiutare da un collega | quante parole vuoi, a caso |
 | **Scarabeo** | dieci mosse con le tessere del giorno, contro il punteggio del computer sulle stesse tessere | a turni contro il computer, tre livelli |
 | **Cruciverba** | lo schema del giorno, definizioni dal Wikizionario | uno schema dalla scorta |
 | **Battaglia navale** | contro il computer, con la sua flotta del giorno uguale per tutti | contro il computer a tre livelli, o contro un amico — online o con un link |
@@ -33,7 +33,7 @@ volte tanto. Una giornata storta si recupera.
 
 | Gioco | Cosa misura | Perfetta | Giocata male |
 | --- | --- | --- | --- |
-| Wordle | i tentativi, su cinque parole | 100 (+4 di spareggio) | 50 con tutte al sesto |
+| Wordle | i tentativi | 100 al primo (+4 di spareggio) | 50 al sesto, 20 se non la indovini |
 | Scarabeo | il tuo punteggio in rapporto a quello del computer | 100 se lo pareggi | 50 con metà |
 | Cruciverba | gli aiuti usati | 100 senza aiuti | −3 a lettera svelata, −1 a errore |
 | Battaglia | i colpi per affondare la flotta | 100 senza acqua | 59 vincendo col mare intero |

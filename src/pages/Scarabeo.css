@@ -88,8 +88,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  width: 150px;
-  max-width: 40vw;
+  width: 132px;
   /* L'altezza dei lati: un messaggio lungo va a capo dentro, non allarga il tabellino. */
   min-height: 48px;
 }

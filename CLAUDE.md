@@ -63,85 +63,40 @@ il test che verifica la condizione numerica cade prima di quello sull'ordine:
 guarda quello.
 
 **La scala dei punti e' derivata, non scritta a mano**: base di partecipazione
-piu' gradino per tentativo risparmiato, cioe' `[50, 45, 40, 35, 30, 25]`. Il
-rapporto fra la giornata migliore e la peggiore e' **2:1** di proposito: con il
-6:1 di prima due giornate sfortunate decidevano la classifica, e una vittoria al
-sesto tentativo valeva un sesto di una perfetta. C'e' un test su entrambi i lati
-del compromesso — che sia recuperabile, e che il gradino non sia simbolico.
+piu' gradino per tentativo risparmiato, cioe' `[100, 90, 80, 70, 60, 50]`, e
+venti per una parola non indovinata. Il rapporto fra la giornata migliore e la
+peggiore e' **2:1** di proposito: con il 6:1 di una volta due giornate
+sfortunate decidevano la classifica, e una vittoria al sesto tentativo valeva
+un sesto di una perfetta. C'e' un test su entrambi i lati del compromesso — che
+sia recuperabile, e che il gradino non sia simbolico. I bonus di velocità (fino
+a uno) e di costanza (fino a tre) sono spareggi: sommati restano sotto il
+gradino di dieci.
 
-**Cinque parole al giorno, ognuna con base e gradino propri** (`WORD_BASE`,
-`WORD_STEP` in `shared/scoring.ts`), non la principale moltiplicata per un peso.
-Il peso sembrava piu' elegante e costringeva ad arrotondare: `floor` era l'unico
-modo di garantire che la somma delle quattro non superasse la principale, e piu'
-in basso nella scala la coda si schiacciava — con una base bassa la quinta parola
-finiva a due o tre punti, e nessuno l'avrebbe giocata.
+**La classificata del Wordle e' una parola sola al giorno**, la stessa per
+tutti, come la partita del giorno di ogni altro gioco; chi ne vuole altre ha la
+libera, quante ne vuole e a caso. Per un periodo le parole erano cinque, aperte
+una per volta su una mappa a percorso (`/wordle/classificata/:slot`): la
+migrazione `0014_parola_unica.sql` ha messo le quattro in piu' gia' giocate in
+`wordle_parole_extra` — righe intere, per non perderle — e ricalcolato la
+parola del giorno sulla scala di adesso, assist compresi, dagli stessi dati con
+cui era stata calcolata. I vecchi indirizzi con lo slot portano alla
+classificata (`App.tsx`), e `/state` e `/guess` rispondono `BAD_SLOT` a uno
+slot diverso da 1. La colonna `slot` resta, sempre a 1, e le query la filtrano
+ancora: non costa niente, e una riga con un altro slot non potrebbe entrare in
+un conto nemmeno per sbaglio.
 
-Con base e gradino la somma torna **per costruzione, a ogni numero di
-tentativi**, perché le basi delle quattro sommano alla base della prima
-(10+7+4+4 = 25) e i gradini al gradino (2+1+1+1 = 5). Da cui:
+Il cronometro del bonus velocità parte quando si apre la parola (`openGame`
+scrive `started_at` alla prima `/state`): nessuna rotta di sola lettura —
+`/summary`, `/oggi` — deve aprire una partita, altrimenti guardare l'hub
+costerebbe punti.
 
-    tentativi        1    2    3    4    5    6
-    del giorno      50   45   40   35   30   25
-    2ª              20   18   16   14   12   10
-    3ª              12   11   10    9    8    7
-    4ª               9    8    7    6    5    4
-    5ª               9    8    7    6    5    4
-    somma 2ª-5ª     50   45   40   35   30   25
+**La streak e' quella della parola del giorno**, sia in `streakBefore` sia
+negli aggregati, e `played`, `wins` e `avg_attempts` contano solo le parole
+giocate per conto proprio: quei numeri significano "giornate", che e' quel che
+uno intende leggendo "giocate". `playerStats` e `server/lib/leaderboard.ts`
+devono restare d'accordo.
 
-E' la tabella di prima divisa a meta' — esatta, perché ogni numero era pari —
-cosi' che la giornata perfetta valga **cento**, come la classificata di ogni
-altro gioco (vedi sotto). La migrazione `0013_punti_bilanciati.sql` ha
-ricalcolato con questa scala anche le giornate gia' giocate, assist compresi:
-un Wordle di agosto e uno di oggi stanno sulla stessa scala. Le ultime due
-valgono uguale invece di continuare a scendere: la quinta deve valere la pena
-di essere giocata. Nessuna parola indovinata scende sotto i quattro punti, e
-c'e' un test per ognuna di queste proprietà.
-
-**I bonus stanno solo sulla parola del giorno** (`scoreForWord`). Velocità e
-costanza sono proprietà della giornata, non di ogni parola: dandoli a tutte e
-cinque, chi le giocava tutte incassava fino a cinque volte il bonus velocità, e
-tanto bastava a superare chi aveva indovinato la principale al primo colpo — cioe'
-esattamente il ribaltamento che la scala serve a impedire. Trovato provando
-l'API, non ragionando sui numeri: la scala da sola era giusta.
-
-**Il caso estremo e' un pareggio, e si scioglie sulla media tentativi.**
-Principale perfetta 54 contro cinque parole all'ultimo tentativo 54: non e' un
-difetto, e' la conseguenza diretta del fatto che le quattro extra valgono quanto
-la principale. Il pareggio si rompe in classifica perché `played`, `wins` e
-`avg_attempts` contano **solo `slot = 1`**: contando tutte e cinque, chi le gioca
-tutte accumulava cinque vittorie al giorno e vinceva lo spareggio col numero
-invece che col merito. `playerStats` deve restare d'accordo — quei numeri
-significano "giornate", che e' quel che uno intende leggendo "giocate".
-
-**Le parole si aprono una per volta.** La N si gioca solo quando la N-1 e'
-chiusa: `requireUnlocked` in `server/routes/wordle.ts` lo applica sia su `/state`
-sia su `/guess`, e `/state` legge il quadro **prima** di `openGame` — creando la
-riga, la parola successiva risulterebbe sbloccata al giro dopo. Il controllo non
-puo' stare solo nel selettore: `?slot=5` lo aggirerebbe.
-
-**Il gioco sono due schermate, e lo slot sta nell'indirizzo.** `/wordle/classificata`
-e' il percorso delle cinque parole, `/wordle/classificata/:slot` la griglia di una
-di esse (`/wordle` e' la pagina del gioco, con le due modalità). Prima la
-parola scelta era uno `useState` dentro `useWordle`, perché il selettore era una
-striscia sopra la griglia; con una schermata sua, cambiare parola e' una
-navigazione — e il tasto indietro del telefono torna al percorso invece di
-uscire dal gioco. Un indirizzo che punta a una parola ancora chiusa non mostra un
-errore: il server risponde `PAROLA_BLOCCATA` e la pagina rimbalza sul percorso
-dicendo quale parola la apre.
-
-**`GET /wordle/day` non deve aprire nessuna partita.** E' la rotta che disegna il
-percorso, ed e' di sola lettura come `/summary`: `openGame` scrive `started_at`,
-che e' l'istante da cui si conta il bonus velocità della parola del giorno.
-Passando da `/state` per sapere come disegnare i nodi, aprire la mappa e
-allontanarsi dal telefono costerebbe punti — e nessuno collegherebbe il conto a
-una schermata che non fa giocare. Il cronometro parte quando si apre la parola.
-
-**La streak e' quella della parola del giorno**, `slot = 1`, sia in
-`streakBefore` sia negli aggregati. Le parole in piu' non devono poter tenere in
-vita una serie interrotta sulla principale.
-
-**In compagnia si gioca la parola del giorno.** Tutte le query di
-`server/lib/coopStore.ts` filtrano su `slot = 1`, ed e' per questo che
+**In compagnia si gioca la parola del giorno**, ed e' per questo che
 `coop_rooms` puo' restare con la sua "una stanza per host al giorno".
 
 **Una partecipazione al giorno, e vale lo stesso per tutti.** La giornata di un
@@ -369,6 +324,19 @@ la pagina lo mostra dopo un respiro (`primaDelComputer` in `useBattaglia.ts`).
 Nella classificata **non si invitano amici**: sarebbe una partita diversa per
 chi ce l'ha. Contro il computer non c'e' polling: non c'e' niente da aspettare.
 
+**Il turno contro il computer si racconta a pezzi, ma la richiesta e' una.**
+Il colpo del computer arriva nella risposta al mio: `useBattaglia` lo toglie
+(`primaDelComputer`), mostra il mio colpo con il suo annuncio, poi il mirino
+del computer che cerca sul mio mare (`MIRA_MS`), poi il suo colpo. Se un colpo
+chiude la partita, prima si vede il colpo (`senzaFine`) e solo dopo la
+schermata di fine: passarci subito farebbe perdere proprio il colpo che ha
+deciso. Mentre si racconta un turno il polling non applica niente
+(`racconto`): una vista arrivata a meta' salterebbe avanti.
+
+Le lunghezze delle navi nemiche si sanno dall'inizio, come sul foglio del
+gioco su carta: `naviNemiche` le mostra tutte, con le caselle vuote. Quale nave
+si e' colpita e dove sta si scopre solo all'affondamento.
+
 **Un amico si invita anche con un link.** `POST /battaglia/link` crea un invito
 valido `LINK_SCADENZA_MS` (un giorno), uno per volta; `/battaglia-navale/invito/:codice`
 lo apre. Chi non ha un account passa dalla registrazione, che lo dice
@@ -385,19 +353,18 @@ deve comparire come "la battaglia con X e' in corso".
 l'unica cosa che rende la classifica significativa. Vale anche per la vista
 condivisa: `guestView()` applica la stessa regola.
 
-**Le parole del giorno sono le stesse per tutti.** `dailyAnswers` fa
-`INSERT OR IGNORE` di cinque righe per `puzzle_number` in un `batch` e poi le
-rilegge: il primo che apre il gioco le fissa, tutti gli altri leggono quelle. È
-anche deterministico dal numero del puzzle, quindi le righe salvate sono una
-garanzia in piu' — se un domani si rigenerasse l'elenco, le parole già giocate
-non cambierebbero. Un test in `shared/__tests__/daily.test.ts` lo blocca.
+**La parola del giorno e' la stessa per tutti.** `dailyAnswer` fa
+`INSERT OR IGNORE` della riga del `puzzle_number` e poi la rilegge: il primo
+che apre il gioco la fissa, tutti gli altri leggono quella. E' anche
+deterministica dal numero del puzzle, quindi la riga salvata e' una garanzia in
+piu' — se un domani si rigenerasse l'elenco, le parole già giocate non
+cambierebbero. Un test in `shared/__tests__/daily.test.ts` lo blocca.
 
-**La sequenza della parola del giorno non si tocca.** `dailySolutionIndexes`
-tiene `slot = 1` esattamente su `solutionIndexFor`, e pesca le quattro extra da
-una permutazione con un altro seme. Non e' un vezzo: consumando cinque parole al
-giorno da un elenco solo, le 1.132 soluzioni finirebbero in 226 giorni invece di
-1.132. C'e' un test che verifica che la principale sia rimasta quella — se cade,
-chi gioca da settembre si trova la parola di un altro giorno.
+**La sequenza della parola del giorno non si tocca.** `solutionIndexFor` e'
+la stessa da settembre, anche nei giorni delle cinque parole — le quattro in
+piu' venivano da una permutazione a parte proprio per non spostarla — e un
+test verifica i primi giorni: se cade, chi gioca da allora si trova la parola
+di un altro giorno.
 
 Ed e' anche il motivo per cui **chi gioca la giornata in compagnia non puo'
 rigiocarla per conto suo**: e' la stessa parola, l'ha già fatta. Quel divieto e'
@@ -465,32 +432,46 @@ allontana.
 I keyframes delle caselle usano `background-color` e non `background`: la
 velatura sta in `background-image` e sostituirla in blocco la cancellerebbe.
 
-**La mappa del percorso e' un SVG stirato, non un rapporto fisso.** Le coordinate
-delle cinque tappe stanno in `src/games/wordle/percorso.ts`, in uno spazio
-100 x 168, e il riquadro le stira fino a riempire lo spazio che resta fra
-intestazione e bottone: `preserveAspectRatio="none"`. Serve perché i nodi sono
-posizionati in percentuale del riquadro — col comportamento normale l'SVG si
-centrerebbe con due bande vuote e la curva non passerebbe piu' per i nodi.
-Legando invece l'altezza alla larghezza, su un iPhone SE la scheda veniva larga
-217 punti su 320 di schermo e le etichette sbordavano. Lo spessore della linea si
-scala di un dieci per cento fra un tratto ripido e uno piatto: a tre pixel e
-mezzo non si vede.
+**I messaggi non galleggiano sopra griglie e tabelloni.** Ogni gioco ha il suo
+posto in pagina: una riga riservata nel Wordle, la riga di mezzo del tabellino
+nello Scarabeo, la riga di stato nel cruciverba, la riga del suggerimento in
+compagnia, la plancia nella battaglia. Erano pillole scure sovrapposte — e
+coprivano proprio le caselle che si stavano guardando. Le notizie della
+battaglia stanno in una riga della plancia, e un test ne misura la lunghezza:
+una riga che va a capo sposterebbe i due mari a ogni colpo.
 
-Tre dettagli di quella schermata che sembrano gusto e sono conseguenze:
+**La festa della vittoria sta nel body, e solo per una vittoria appena fatta.**
+`Coriandoli` e' un portale: dentro la pagina restava sotto il velo del foglio
+del risultato, che si apre nello stesso momento, e non la vedeva nessuno.
+`useFesta` la accende solo se la partita era stata vista in corso: riaprire una
+vittoria di ieri, o riaprire il risultato, non la rifà. Nel Wordle, nello
+Scarabeo e nel cruciverba e' l'unica animazione che non serve a giocare; la
+battaglia ne ha di piu', perché e' il gioco d'azione.
 
-- **Le tappe a destra si ancorano con `right`, non con `left`.** La larghezza di
-  un elemento assoluto in shrink-to-fit e' limitata dallo spazio fra il lato
-  ancorato e il bordo opposto: con `left: 72%` l'etichetta aveva il 28% di
-  riquadro e "2ª parola" andava a capo.
-- **L'etichetta si ritaglia il colore del piano** (`--surface`). Il tracciato
-  arriva al nodo dal lato dove sta l'etichetta — inevitabile, e' la metà libera —
-  e senza quel ritaglio la linea passava in mezzo alle lettere. Per lo stesso
-  motivo il piano non ha la velatura verticale di caselle e tasti: su un pannello
-  alto seicento pixel schiarisce la parte alta, e lì le etichette comparivano
-  come targhette piu' scure.
-- **A giornata intatta il tratto pieno non si disegna affatto.** Un
-  `stroke-dasharray` di lunghezza zero con la punta arrotondata diventa un
-  puntino, e quel puntino compariva in mezzo al lucchetto dell'ultima tappa.
+**Nella battaglia i tre esiti sono tre segni, non tre rossi.** Lo spruzzo per
+l'acqua, il fuoco su un pezzo colpito e ancora a galla, il relitto scuro con
+le croci per una nave a fondo: si distinguono anche senza i colori. Prima
+colpito e affondato erano due rossi, e non si capiva quale fosse quale.
+
+**Gli annunci al centro sono solo per i colpi che contano**: colpito e
+affondato, mai l'acqua — succede quasi sempre, e un annuncio a ogni colpo
+smetterebbe di dire qualcosa. La durata sta in `DURATA_ANNUNCIO_MS`
+(`racconto.ts`) e `Annuncio.css` divide le sue animazioni in frazioni di
+`--durata`: il colpo del computer aspetta che l'annuncio sia finito. I propri
+colpi sono un adesivo colorato che salta fuori, quelli presi una carta bordata
+di rosso che trema: si capisce chi ha colpito chi prima di leggere.
+
+**Il mare e' un'acqua sola sotto caselle trasparenti.** Un livello
+(`.mare__acque`) con un'animazione sola, invece di cento caselle animate; le
+righe del foglio sono il filo interno di ogni casella, e una nave e' uno scafo
+che si unisce da prua a poppa. L'acqua e il mirino sono figli assoluti della
+griglia, e un figlio assoluto con la sola linea d'inizio (`grid-row: 3`) arriva
+fino al bordo della griglia: per questo il mirino ha `span 1`. Senza, era
+grande come mezzo mare.
+
+**Le caselle d'angolo dello Scarabeo seguono la curva del tabellone**
+(`nth-child` 1, 15, 211 e 225, con il raggio del tabellone meno il suo bordo).
+Con gli angoli dritti sporgevano dal bordo arrotondato.
 
 **I colori dello Scarabeo sono token scritti a mano, non mescole.** `--tessera`,
 `--tessera-ink` e i quattro `--premio-*` stanno in `tokens.css` come tutto il
