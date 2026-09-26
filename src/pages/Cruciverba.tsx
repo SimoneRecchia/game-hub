@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { AppShell } from '@/components/AppShell'
+import { useParams } from 'react-router-dom'
+import { Collegamento, useNavigazione } from '@/app/navigazione'
+import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
+import { Coriandoli } from '@/components/Elementi'
 import { Sheet } from '@/components/Sheet'
-import { IconChevronLeft, IconChevronRight, IconInfo, IconTrophy } from '@/components/Icons'
+import { IconChevronLeft, IconChevronRight, IconInfo, IconShuffle, IconTrophy } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { api } from '@/lib/api'
+import { useToast } from '@/components/Toast'
 import { ComeSiGiocaCruciverba } from '@/games/cruciverba/ComeSiGioca'
 import { ElencoDefinizioni } from '@/games/cruciverba/ElencoDefinizioni'
 import { Griglia } from '@/games/cruciverba/Griglia'
 import { Tastiera } from '@/games/cruciverba/Tastiera'
-import { useCruciverba } from '@/games/cruciverba/useCruciverba'
+import { CRUCIVERBA_DEL_GIORNO, indirizziLiberi, useCruciverba } from '@/games/cruciverba/useCruciverba'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown, formatCronometro, pluralize } from '@/lib/format'
 import {
@@ -28,17 +33,23 @@ const NOMI_DIREZIONE = { o: 'orizzontale', v: 'verticale' } as const
 const NESSUNA: ReadonlySet<number> = new Set()
 
 /**
- * Il cruciverba del giorno.
+ * Il cruciverba: quello del giorno, o uno schema libero.
  *
  * Una schermata sola, come lo Scarabeo: la griglia prende lo spazio che resta,
  * sotto stanno la definizione della parola selezionata e la tastiera — le due
  * cose che si guardano e si toccano a ogni lettera. Su un computer le
  * definizioni stanno tutte accanto alla griglia e la tastiera a schermo sparisce,
  * perché c'e' quella vera.
+ *
+ * La classificata e la libera sono la stessa partita sotto due indirizzi: lo
+ * dice la rotta, `/cruciverba/classificata` o `/cruciverba/libera/:id`.
  */
 export default function Cruciverba() {
-  const navigate = useNavigate()
-  const g = useCruciverba()
+  const { id } = useParams()
+  const libera = id !== undefined
+  const indirizzi = useMemo(() => (id ? indirizziLiberi(id) : CRUCIVERBA_DEL_GIORNO), [id])
+  const g = useCruciverba(indirizzi)
+  const [festa, setFesta] = useState(false)
   const [aiuto, setAiuto] = useState(false)
   const [elenco, setElenco] = useState(false)
   const [aiuti, setAiuti] = useState(false)
@@ -108,20 +119,33 @@ export default function Cruciverba() {
     fai()
   }
 
+  // Un cruciverba appena completato si festeggia, uno riaperto gia' finito no.
+  const [eraAperto, setEraAperto] = useState(false)
+  useEffect(() => {
+    if (stato && !g.finita) setEraAperto(true)
+    if (g.finita && eraAperto) {
+      setFesta(true)
+      const t = window.setTimeout(() => setFesta(false), 2200)
+      return () => window.clearTimeout(t)
+    }
+  }, [stato, g.finita, eraAperto])
+
   return (
-    <AppShell
-      title={stato ? `Cruciverba #${stato.puzzleNumber}` : 'Cruciverba'}
-      hideTabBar
-      wide
-      leading={
-        <button type="button" className="navbtn" onClick={() => navigate('/')} aria-label="Torna all'hub">
-          <IconChevronLeft size={22} />
-        </button>
+    <Pagina
+      titolo={
+        stato
+          ? libera
+            ? `Schema libero n. ${stato.puzzleNumber}`
+            : `Cruciverba #${stato.puzzleNumber}`
+          : 'Cruciverba'
       }
-      trailing={
-        <button type="button" className="navbtn" onClick={() => setAiuto(true)} aria-label="Come si gioca">
+      intera
+      larga
+      indietro={{ a: ROTTE.gioco('cruciverba'), etichetta: 'Cruciverba' }}
+      azioni={
+        <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
           <IconInfo size={21} />
-        </button>
+        </BottoneBarra>
       }
     >
       <div className="cru">
@@ -179,7 +203,7 @@ export default function Cruciverba() {
               </div>
 
               {g.finita ? (
-                <Fine stato={stato} onElenco={() => setElenco(true)} />
+                <Fine stato={stato} libera={libera} onElenco={() => setElenco(true)} />
               ) : (
                 <>
                   {g.corrente && (
@@ -304,19 +328,35 @@ export default function Cruciverba() {
           </button>
         </div>
       </Sheet>
-    </AppShell>
+      {festa && <Coriandoli />}
+    </Pagina>
   )
 }
 
-/** Cruciverba finito: i punti, il tempo, cosa e' costato, la classifica. */
-function Fine({ stato, onElenco }: { stato: CruciverbaState; onElenco: () => void }) {
+/** Cruciverba finito: i punti, il tempo, cosa e' costato, e cosa fare adesso. */
+function Fine({ stato, libera, onElenco }: { stato: CruciverbaState; libera: boolean; onElenco: () => void }) {
   const restano = useCountdown(stato.msToNextPuzzle)
+  const { vai } = useNavigazione()
+  const toast = useToast()
+  const [cercando, setCercando] = useState(false)
   const svelate = stato.svelate.length
   const aiuti = [
     svelate > 0 && `${svelate} ${pluralize(svelate, 'lettera svelata', 'lettere svelate')}`,
     stato.errori > 0 &&
       `${stato.errori} ${pluralize(stato.errori, 'errore segnalato', 'errori segnalati')}`,
   ].filter(Boolean)
+
+  const unAltro = async () => {
+    setCercando(true)
+    try {
+      const nuovo = await api<CruciverbaState>('/cruciverba/libera', { method: 'POST' })
+      vai(ROTTE.cruciverbaLibero(nuovo.partitaId), { replace: true })
+    } catch (e) {
+      toast.show(e instanceof Error ? e.message : 'Non riesco ad aprire un altro schema.', 'error')
+    } finally {
+      setCercando(false)
+    }
+  }
 
   return (
     <div className="cru__fine">
@@ -327,16 +367,28 @@ function Fine({ stato, onElenco }: { stato: CruciverbaState; onElenco: () => voi
         {aiuti.length > 0 ? ` · ${aiuti.join(' · ')}` : ' · senza aiuti'}
       </p>
       <div className="cru__fine-azioni">
+        {libera ? (
+          <Button onClick={() => void unAltro()} loading={cercando}>
+            <IconShuffle size={17} /> Un altro schema
+          </Button>
+        ) : (
+          <Collegamento to={ROTTE.classifica('cruciverba')} className="cru__fine-link">
+            <IconTrophy size={18} />
+            Classifica
+          </Collegamento>
+        )}
         <Button variant="tinted" onClick={onElenco}>
           Definizioni e fonti
         </Button>
-        <Link to="/classifica?gioco=cruciverba" className="cru__fine-link">
-          <IconTrophy size={18} />
-          Classifica
-        </Link>
       </div>
       <p className="cru__fine-attesa">
-        Il prossimo fra <span className="u-tabnum">{formatCountdown(restano)}</span>
+        {libera ? (
+          'Gli schemi liberi non contano per la classifica.'
+        ) : (
+          <>
+            Il prossimo fra <span className="u-tabnum">{formatCountdown(restano)}</span>
+          </>
+        )}
       </p>
     </div>
   )

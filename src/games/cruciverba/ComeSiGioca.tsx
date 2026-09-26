@@ -66,6 +66,10 @@ export function ComeSiGiocaCruciverba({ open, onClose }: { open: boolean; onClos
               Il tempo conta solo a schermo acceso e non toglie punti: in classifica, a parità di
               punti, passa avanti chi ci ha messo meno.
             </li>
+            <li>
+              Nello <strong>schema libero</strong> le regole sono le stesse, ma lo schema è tutto
+              tuo, preso da una scorta che si rinnova ogni notte: non conta per la classifica.
+            </li>
           </ul>
         </section>
 

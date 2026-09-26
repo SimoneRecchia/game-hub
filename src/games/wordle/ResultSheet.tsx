@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { Collegamento } from '@/app/navigazione'
+import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
 import { IconShare, IconTrophy } from '@/components/Icons'
@@ -133,10 +134,10 @@ export function ResultSheet({ open, onClose, state, stats, onNextWord }: Props) 
             Condividi il risultato
           </Button>
 
-          <Link to="/classifica" className="result__link">
+          <Collegamento to={ROTTE.classifica('wordle')} className="result__link" onClick={onClose}>
             <IconTrophy size={18} />
             Vedi la classifica
-          </Link>
+          </Collegamento>
         </div>
       </div>
     </Sheet>

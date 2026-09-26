@@ -157,3 +157,44 @@
     border-radius: 3px;
   }
 }
+
+/*
+ * La posa forma una parola che non esiste: rosso, prima di premere "Gioca".
+ * L'anello cambia colore e basta — la tessera resta leggibile, e il bottone
+ * dice quale parola non va.
+ */
+.cella--sospesa.cella--sbagliata {
+  background-color: color-mix(in srgb, var(--red) 14%, var(--tessera));
+  color: var(--red);
+  box-shadow:
+    var(--edge-light),
+    0 0 0 2px var(--red),
+    0 2px 6px color-mix(in srgb, var(--red) 30%, transparent);
+}
+
+/*
+ * L'ultima mossa del computer: le sue tessere arrivano dall'alto e restano
+ * accese un paio di secondi. Senza, sul tabellone pieno non si capirebbe dove
+ * ha giocato.
+ */
+.cella--evidenziata {
+  z-index: 2;
+  animation: cella-arriva 420ms var(--ease-spring) both;
+  box-shadow:
+    var(--edge-light),
+    0 0 0 2px var(--orange),
+    0 2px 8px color-mix(in srgb, var(--orange) 40%, transparent);
+}
+
+@keyframes cella-arriva {
+  from {
+    transform: translateY(-40%) scale(1.25);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cella--evidenziata {
+    animation: none;
+  }
+}

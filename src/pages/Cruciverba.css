@@ -360,7 +360,7 @@
 }
 
 /*
- * Telefono in orizzontale: la pagina torna a scorrere (vedi AppShell.css) e
+ * Telefono in orizzontale: la pagina torna a scorrere (vedi Pagina.css) e
  * `100cqh` si risolverebbe a zero — la stessa trappola documentata per la
  * griglia del Wordle. Si dimensiona sulla larghezza.
  */

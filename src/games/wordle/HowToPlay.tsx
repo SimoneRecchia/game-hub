@@ -81,7 +81,16 @@ export function HowToPlay({ open, onClose }: { open: boolean; onClose: () => voi
             </li>
             <li>
               Chi gioca la parola con te prende il <strong>tuo stesso punteggio</strong>. Giocare in
-              compagnia non vale meno che giocare da soli.
+              compagnia non vale meno che giocare da soli; solo, a pari punti in classifica passa
+              avanti chi ne ha fatti meno in compagnia.
+            </li>
+            <li>
+              La giornata intera vale al massimo <strong>cento punti</strong>, come la classificata
+              di ogni altro gioco: è quel che permette di sommarle nella classifica generale.
+            </li>
+            <li>
+              Nella <strong>parola libera</strong> la parola è a caso, e se ne gioca quante se ne
+              vuole: non conta per la classifica, e non pesca mai fra le parole dei prossimi giorni.
             </li>
             <li>
               Le parole arrivano da dizionari italiani pubblici, filtrate per tenere solo quelle di

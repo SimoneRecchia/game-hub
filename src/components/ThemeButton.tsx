@@ -1,6 +1,7 @@
 import { IconAuto, IconMoon, IconSun } from './Icons'
 import { useTheme, type ThemePreference } from '@/lib/theme'
 import { haptic } from '@/lib/haptics'
+import './BottoneTondo.css'
 
 const ORDER: ThemePreference[] = ['auto', 'light', 'dark']
 const LABEL: Record<ThemePreference, string> = {
@@ -17,7 +18,7 @@ export function ThemeButton() {
   return (
     <button
       type="button"
-      className="navbtn"
+      className="bottone-barra"
       title={LABEL[preference]}
       aria-label={LABEL[preference]}
       onClick={() => {

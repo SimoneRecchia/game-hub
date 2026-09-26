@@ -1,22 +1,28 @@
 /**
  * Regole sugli host, condivise fra browser e Worker.
  *
- * L'hub vive su un sottodominio (per esempio `giochi.esempio.it`) e ogni gioco
- * ha il suo (`wordle.esempio.it`). Sono lo stesso sito servito dallo stesso
- * progetto Pages: il sottodominio decide solo da quale schermata si entra.
+ * L'app ha un indirizzo solo, `giochi.esempio.it`, e ogni gioco ci sta dentro
+ * con il suo nome: `giochi.esempio.it/wordle`, `/battaglia-navale`. I
+ * sottodomini dei giochi (`wordle.esempio.it`) sono rimasti come scorciatoie:
+ * portano all'indirizzo vero, cosi' un link vecchio o un'icona sulla Home non
+ * si rompono, ma l'app non vive su cinque indirizzi diversi.
  *
- * Due conseguenze da gestire, e stanno entrambe qui:
- *  - riconoscere che `wordle.esempio.it` deve aprire il gioco (non l'hub);
+ * Due cose da gestire, e stanno entrambe qui:
+ *  - dove porta un sottodominio di gioco (`indirizzoCanonico`, che lo script
+ *    in testa a index.html ripete: un test li tiene d'accordo);
  *  - far valere il cookie di sessione su tutti i sottodomini, altrimenti chi
- *    accede sull'hub risulterebbe sconosciuto sul gioco.
+ *    arriva da una scorciatoia risulterebbe sconosciuto.
  */
 
-/** Sottodomini che aprono direttamente un gioco, con la rotta di destinazione. */
+/** Il sottodominio dell'app. */
+export const APP_SUBDOMAIN = 'giochi'
+
+/** Sottodomini che portano a un gioco, con il suo indirizzo nell'app. */
 export const GAME_SUBDOMAINS: Readonly<Record<string, string>> = {
   wordle: '/wordle',
   scarabeo: '/scarabeo',
   cruciverba: '/cruciverba',
-  battaglia: '/battaglia',
+  battaglia: '/battaglia-navale',
 }
 
 function labels(hostname: string): string[] {
@@ -24,7 +30,7 @@ function labels(hostname: string): string[] {
 }
 
 /**
- * La rotta da aprire per un host, oppure null se l'host non è di un gioco.
+ * La rotta del gioco di un host, oppure null se l'host non è di un gioco.
  *
  * Serve almeno un dominio di terzo livello: `wordle.localhost` in sviluppo non
  * viene riconosciuto di proposito, così il comportamento in locale resta
@@ -34,6 +40,33 @@ export function routeForHost(hostname: string): string | null {
   const parts = labels(hostname)
   if (parts.length < 3) return null
   return GAME_SUBDOMAINS[parts[0]] ?? null
+}
+
+/**
+ * Dove porta un indirizzo aperto sul sottodominio di un gioco, oppure null se
+ * e' gia' quello giusto.
+ *
+ * La radice porta alla pagina del gioco (`wordle.esempio.it` →
+ * `giochi.esempio.it/wordle`); un percorso resta quello (`battaglia.esempio.it/
+ * battaglia/abc` → `giochi.esempio.it/battaglia/abc`), e ci pensano le rotte
+ * dei vecchi indirizzi a portarlo dove sta adesso.
+ */
+export function indirizzoCanonico(url: {
+  protocol: string
+  hostname: string
+  /** Vuota sulle porte di default: in produzione non c'e', in locale si'. */
+  port: string
+  pathname: string
+  search: string
+  hash: string
+}): string | null {
+  const rotta = routeForHost(url.hostname)
+  if (!rotta) return null
+  const parts = labels(url.hostname)
+  parts[0] = APP_SUBDOMAIN
+  const porta = url.port ? `:${url.port}` : ''
+  const percorso = url.pathname === '/' || url.pathname === '' ? rotta : url.pathname
+  return `${url.protocol}//${parts.join('.')}${porta}${percorso}${url.search}${url.hash}`
 }
 
 /**

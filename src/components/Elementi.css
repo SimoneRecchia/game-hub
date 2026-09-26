@@ -1,0 +1,328 @@
+/* ─────────────────────────────  Sezione  ───────────────────────────── */
+
+.sezione {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.sezione__testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-1);
+}
+
+.sezione__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+
+.sezione__azione {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.sezione__azione a {
+  color: var(--brand);
+}
+
+.sezione__nota {
+  padding: 0 var(--sp-2);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  line-height: 1.45;
+}
+
+/* ─────────────────────────  Elenco a righe  ───────────────────────── */
+
+.elenco {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.riga {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 52px;
+  padding: var(--sp-3) var(--sp-4);
+  color: var(--label);
+  text-align: left;
+  font-size: var(--text-body);
+}
+
+/* Il filo fra le righe parte dopo l'icona, come in iOS. */
+.riga + .riga::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: var(--sp-4);
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.riga:has(.riga__icona) + .riga::before {
+  left: 60px;
+}
+
+.riga--tocca {
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.riga--tocca:active {
+  background: var(--fill-quaternary);
+}
+
+@media (hover: hover) {
+  .riga--tocca:hover {
+    background: var(--fill-quaternary);
+  }
+}
+
+.riga--distruttiva {
+  color: var(--red);
+}
+
+.riga__icona {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 8px;
+  background: var(--brand);
+  color: #fff;
+}
+
+.riga__icona .copertina {
+  --lato: 30px;
+}
+
+/* Le tacche di un livello e le onde non vogliono il quadratino colorato: sono gia' un segno. */
+.riga__icona:has(.tacche),
+.riga__icona:has(.bat-riga__onda) {
+  background: none;
+}
+
+.riga__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.riga__titolo {
+  font-weight: 500;
+}
+
+.riga__sotto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.riga__valore {
+  flex: none;
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+}
+
+.riga__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+}
+
+/* ─────────────────────────  Anello  ───────────────────────── */
+
+.anello {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  color: var(--label);
+}
+
+.anello svg {
+  position: absolute;
+  inset: 0;
+}
+
+.anello__pieno {
+  transition: stroke-dashoffset 900ms var(--ease-push);
+}
+
+.anello__dentro {
+  position: relative;
+  font-family: var(--font-rounded);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+/* ─────────────────────────  Stato vuoto  ───────────────────────── */
+
+.vuoto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-8) var(--sp-5);
+  text-align: center;
+  color: var(--label-secondary);
+}
+
+.vuoto__icona {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--sp-2);
+  border-radius: 20px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.vuoto__titolo {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.vuoto__testo {
+  max-width: 36ch;
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+}
+
+.vuoto .btn {
+  margin-top: var(--sp-3);
+}
+
+/* ─────────────────────────  Etichetta  ───────────────────────── */
+
+.etichetta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+}
+
+.etichetta--brand {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.etichetta--verde {
+  background: color-mix(in srgb, var(--green) 16%, transparent);
+  color: var(--green);
+}
+
+.etichetta--arancio {
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  color: var(--orange);
+}
+
+.etichetta--rosso {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red);
+}
+
+/* ─────────────────────────  Coriandoli  ───────────────────────── */
+
+.coriandoli {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.coriandoli__pezzo {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: coriandolo 1300ms cubic-bezier(0.2, 0.7, 0.4, 1) var(--ritardo) forwards;
+}
+
+.coriandoli__pezzo.is-largo {
+  width: 10px;
+  height: 6px;
+}
+
+@keyframes coriandolo {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(calc(var(--x) * 42vw), -32vh) rotate(calc(var(--giro) * 0.5));
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--x) * 56vw), 40vh) rotate(var(--giro));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .coriandoli {
+    display: none;
+  }
+}
+
+/* ─────────────────────────  Tacche di livello  ───────────────────────── */
+
+.tacche {
+  flex: none;
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 22px;
+  padding: 0 2px;
+}
+
+.tacche__tacca {
+  width: 6px;
+  border-radius: 2px;
+  background: var(--fill-tertiary);
+}
+
+.tacche__tacca:nth-child(1) {
+  height: 40%;
+}
+
+.tacche__tacca:nth-child(2) {
+  height: 70%;
+}
+
+.tacche__tacca:nth-child(3) {
+  height: 100%;
+}
+
+.tacche__tacca.is-piena {
+  background: var(--tacche-colore);
+}

@@ -1,0 +1,87 @@
+/*
+ * La copertina di un gioco.
+ *
+ * Il gradiente e' la luce che viene dall'alto a sinistra, come sulle icone di
+ * iOS; sopra, una velatura che schiarisce il primo terzo, e un filo di luce sul
+ * bordo alto. Il disegno sta a destra nelle card e al centro nelle icone.
+ */
+.copertina {
+  --c1: var(--generale-1);
+  --c2: var(--generale-2);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 10% 0%, rgba(255, 255, 255, 0.28), transparent 55%),
+    linear-gradient(155deg, var(--c1), var(--c2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  isolation: isolate;
+}
+
+.copertina--wordle {
+  --c1: var(--wordle-1);
+  --c2: var(--wordle-2);
+}
+
+.copertina--scarabeo {
+  --c1: var(--scarabeo-1);
+  --c2: var(--scarabeo-2);
+}
+
+.copertina--cruciverba {
+  --c1: var(--cruciverba-1);
+  --c2: var(--cruciverba-2);
+}
+
+.copertina--battaglia {
+  --c1: var(--battaglia-1);
+  --c2: var(--battaglia-2);
+}
+
+.copertina__disegno {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.14));
+}
+
+/* L'icona: un quadrato dagli angoli continui, come un'app. */
+.copertina--icona {
+  width: var(--lato, 44px);
+  height: var(--lato, 44px);
+  flex: none;
+  border-radius: calc(var(--lato, 44px) * 0.24);
+}
+
+/* Nella card il disegno sta a destra, grande, e sborda un po'. */
+.copertina--carta {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.copertina--carta .copertina__disegno {
+  left: auto;
+  right: -6%;
+  top: -4%;
+  width: 62%;
+  height: 108%;
+}
+
+/* La testata della pagina del gioco: il disegno al centro, piu' in grande. */
+.copertina--eroe {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: 260px;
+  border-radius: var(--r-2xl);
+}
+
+.copertina--eroe .copertina__disegno {
+  left: 50%;
+  top: 50%;
+  width: auto;
+  height: 118%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}

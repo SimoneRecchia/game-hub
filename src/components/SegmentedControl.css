@@ -1,41 +1,38 @@
 .segmented {
   position: relative;
   display: flex;
-  padding: 2px;
+  padding: 3px;
   gap: 0;
   background: var(--fill-tertiary);
-  border-radius: var(--r-sm);
+  border-radius: var(--r-pill);
   isolation: isolate;
 }
 
+/* La capsula scivola con una molla: e' il segno che dice "qui si sceglie una cosa sola". */
 .segmented__thumb {
   position: absolute;
-  top: 2px;
-  left: 2px;
-  bottom: 2px;
-  border-radius: calc(var(--r-sm) - 2px);
+  top: 3px;
+  left: 3px;
+  bottom: 3px;
+  border-radius: var(--r-pill);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--dur-base) var(--ease-out);
+  box-shadow:
+    0 2px 6px var(--shadow-tint),
+    0 0 0 0.5px var(--glass-line);
+  transition: transform 420ms var(--ease-spring);
   z-index: -1;
 }
 
 .segmented__item {
   flex: 1;
   min-height: 32px;
-  padding: 0 var(--sp-2);
-  border-radius: calc(var(--r-sm) - 2px);
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-pill);
   font-size: var(--text-subhead);
-  font-weight: 500;
-  color: var(--label);
-  transition:
-    font-weight var(--dur-fast) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out);
-  white-space: nowrap;
-}
-
-.segmented__item.is-active {
   font-weight: 600;
+  color: var(--label);
+  transition: color var(--dur-fast) var(--ease-out);
+  white-space: nowrap;
 }
 
 .segmented__item:not(.is-active) {

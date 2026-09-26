@@ -317,7 +317,7 @@
  */
 @media (orientation: landscape) and (max-height: 560px) {
   .mappa {
-    /* Qui la shell torna a scorrere (vedi AppShell.css): la mappa riprende una
+    /* Qui la shell torna a scorrere (vedi Pagina.css): la mappa riprende una
        misura sua invece di schiacciarsi in duecento pixel di altezza. */
     height: 420px;
     max-height: none;
