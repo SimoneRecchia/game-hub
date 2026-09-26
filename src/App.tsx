@@ -1,42 +1,53 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
+import { ROTTE } from './app/rotte'
+import { Shell } from './components/Shell'
 import { Splash } from './components/Splash'
 import { useAuth } from './lib/auth'
-import { useHostEntry } from './lib/useHostEntry'
+import { PresenzaProvider } from './lib/presenza'
+import { CoopGate } from './games/wordle/coop/CoopGate'
+import { BattagliaGate } from './games/battaglia/BattagliaGate'
+import Home from './pages/Home'
+import Gioco from './pages/Gioco'
 import Classifica from './pages/Classifica'
-import Hub from './pages/Hub'
-import NotFound from './pages/NotFound'
 import Profilo from './pages/Profilo'
+import NotFound from './pages/NotFound'
 import VerifyEmail from './pages/VerifyEmail'
 import Welcome from './pages/Welcome'
 import Wordle from './pages/Wordle'
+import WordleLibero from './pages/WordleLibero'
 import WordleInsieme from './pages/WordleInsieme'
 import WordlePercorso from './pages/WordlePercorso'
 import Scarabeo from './pages/Scarabeo'
+import ScarabeoLibero from './pages/ScarabeoLibero'
 import Cruciverba from './pages/Cruciverba'
-import BattagliaLobby from './pages/BattagliaLobby'
+import CruciverbaLibero from './pages/CruciverbaLibero'
+import BattagliaClassificata from './pages/BattagliaClassificata'
+import BattagliaLibera from './pages/BattagliaLibera'
 import BattagliaPartita from './pages/BattagliaPartita'
-import { CoopGate } from './games/wordle/coop/CoopGate'
-import { BattagliaGate } from './games/battaglia/BattagliaGate'
-import { PresenzaProvider } from './lib/presenza'
+import BattagliaInvito from './pages/BattagliaInvito'
+
+/** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
+const INVITO = /^\/battaglia-navale\/invito\/([a-z0-9]+)\/?$/
 
 export default function App() {
   const { player, checking, config } = useAuth()
-
-  // Arrivando da wordle.simonerecchia.com si entra direttamente nel gioco.
-  useHostEntry()
+  const { pathname } = useLocation()
 
   // Prima di sapere se la sessione salvata e' valida non mostriamo nulla:
   // meglio un istante di splash che far lampeggiare la schermata di accesso
   // a chi e' già dentro.
   if (checking && !player) return <Splash />
 
-  // Nessuna rotta e' raggiungibile senza un giocatore: l'hub esiste per
-  // tenere i punteggi, e senza nickname non ci sono punteggi da tenere.
-  if (!player) return <Welcome />
+  /*
+   * Nessuna rotta e' raggiungibile senza un giocatore: l'app esiste per tenere
+   * i punteggi. L'indirizzo pero' resta quello aperto — per esempio un invito a
+   * una battaglia — e dopo l'accesso o la registrazione si arriva lì.
+   */
+  if (!player) return <Welcome invito={INVITO.exec(pathname)?.[1] ?? null} />
 
   /*
    * Email da confermare: si mostra solo la schermata del codice. Il vincolo
-   * vero e' lato server (requireVerified): questo evita di far vedere un hub
+   * vero e' lato server (requireVerified): questo evita di far vedere un'app
    * dove ogni cosa risponderebbe 403.
    */
   if (config?.emailVerificationRequired && !player.emailVerified) return <VerifyEmail />
@@ -44,29 +55,64 @@ export default function App() {
   return (
     <PresenzaProvider>
       {/* Gli avvisi degli inviti vivono fuori dalle rotte: devono poter
-          comparire da qualunque schermata, non solo dall'hub. Leggono lo
-          stesso giro di controllo, che fa anche da presenza. */}
+          comparire da qualunque schermata. Leggono lo stesso giro di
+          controllo, che fa anche da presenza. */}
       <CoopGate />
       <BattagliaGate />
-      <Routes>
-        <Route path="/" element={<Hub />} />
-        {/*
-          Il gioco sono due schermate: il percorso delle cinque parole e la
-          griglia di una di esse. Lo slot sta nell'indirizzo, non in uno stato
-          interno, perché il tasto indietro del telefono debba tornare al
-          percorso — che e' quel che uno si aspetta uscendo da un livello.
-        */}
-        <Route path="/wordle" element={<WordlePercorso />} />
-        <Route path="/wordle/:slot" element={<Wordle />} />
-        <Route path="/insieme/:roomId" element={<WordleInsieme />} />
-        <Route path="/scarabeo" element={<Scarabeo />} />
-        <Route path="/cruciverba" element={<Cruciverba />} />
-        <Route path="/battaglia" element={<BattagliaLobby />} />
-        <Route path="/battaglia/:id" element={<BattagliaPartita />} />
-        <Route path="/classifica" element={<Classifica />} />
-        <Route path="/profilo" element={<Profilo />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <Shell>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/classifica" element={<Classifica />} />
+          <Route path="/classifica/:gioco" element={<Classifica />} />
+          <Route path="/profilo" element={<Profilo />} />
+
+          {/*
+            Il Wordle classificato sono due schermate: il percorso delle cinque
+            parole e la griglia di una di esse. Lo slot sta nell'indirizzo, non
+            in uno stato interno, perché il tasto indietro del telefono torni al
+            percorso — che e' quel che uno si aspetta uscendo da un livello.
+          */}
+          <Route path="/wordle/classificata" element={<WordlePercorso />} />
+          <Route path="/wordle/classificata/:slot" element={<Wordle />} />
+          <Route path="/wordle/libera" element={<WordleLibero />} />
+          <Route path="/wordle/insieme/:roomId" element={<WordleInsieme />} />
+
+          <Route path="/scarabeo/classificata" element={<Scarabeo />} />
+          <Route path="/scarabeo/libera" element={<ScarabeoLibero />} />
+
+          <Route path="/cruciverba/classificata" element={<Cruciverba />} />
+          <Route path="/cruciverba/libera" element={<CruciverbaLibero />} />
+          <Route path="/cruciverba/libera/:id" element={<Cruciverba />} />
+
+          <Route path="/battaglia-navale/classificata" element={<BattagliaClassificata />} />
+          <Route path="/battaglia-navale/libera" element={<BattagliaLibera />} />
+          <Route path="/battaglia-navale/partita/:id" element={<BattagliaPartita />} />
+          <Route path="/battaglia-navale/invito/:codice" element={<BattagliaInvito />} />
+
+          {/* La pagina di ogni gioco: /wordle, /scarabeo, /cruciverba, /battaglia-navale. */}
+          <Route path="/:gioco" element={<Gioco />} />
+
+          {/* I vecchi indirizzi, perché i link salvati e le icone sulla Home non si rompano. */}
+          <Route path="/insieme/:roomId" element={<Vecchio verso={(p) => ROTTE.insieme(p.roomId ?? '')} />} />
+          <Route path="/battaglia" element={<Navigate to={ROTTE.gioco('battaglia')} replace />} />
+          <Route path="/battaglia/:id" element={<Vecchio verso={(p) => ROTTE.partitaBattaglia(p.id ?? '')} />} />
+          <Route
+            path="/wordle/:slot"
+            element={
+              <Vecchio
+                verso={(p) => (/^[1-5]$/.test(p.slot ?? '') ? ROTTE.parola(Number(p.slot)) : ROTTE.gioco('wordle'))}
+              />
+            }
+          />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Shell>
     </PresenzaProvider>
   )
+}
+
+/** Un indirizzo di prima, che porta a quello di adesso. */
+function Vecchio({ verso }: { verso: (parametri: Readonly<Record<string, string | undefined>>) => string }) {
+  const parametri = useParams()
+  return <Navigate to={verso(parametri)} replace />
 }

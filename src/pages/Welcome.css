@@ -34,14 +34,58 @@
   gap: var(--sp-3);
 }
 
-.welcome__icon {
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-md);
+.welcome__title {
+  font-family: var(--font-rounded);
+  font-size: var(--text-hero);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: var(--tracking-display);
+  animation: welcome-sale 600ms var(--ease-push) 160ms both;
 }
 
-.welcome__title {
-  font-size: var(--text-large-title);
-  letter-spacing: var(--tracking-tight);
+.welcome__lede {
+  animation: welcome-sale 600ms var(--ease-push) 240ms both;
+}
+
+.welcome__form {
+  animation: welcome-sale 600ms var(--ease-push) 320ms both;
+}
+
+@keyframes welcome-sale {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .welcome__title,
+  .welcome__lede,
+  .welcome__form {
+    animation: none;
+  }
+}
+
+/* Chi arriva da un invito: chi lo sfida, prima di tutto il resto. */
+.welcome__invito {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-xl);
+  background: color-mix(in srgb, var(--battaglia-1) 14%, var(--surface));
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  animation: welcome-sale 600ms var(--ease-spring) 200ms both;
+}
+
+.welcome__invito-testo {
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+.welcome__invito-testo strong {
+  color: var(--label);
 }
 
 .welcome__lede {

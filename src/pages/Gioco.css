@@ -1,0 +1,187 @@
+/* ─────────────────────────  Le due modalità  ───────────────────────── */
+
+.gioco__modi {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+@media (min-width: 640px) {
+  .gioco__modi {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.modo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-5);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/*
+ * La classificata ha il colore del gioco: e' la partita che conta, quella del
+ * giorno. La libera resta neutra, un gradino sotto.
+ */
+.modo--classificata {
+  background:
+    radial-gradient(130% 120% at 0% 0%, color-mix(in srgb, var(--c1) 20%, transparent), transparent 62%),
+    var(--surface);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 26%, transparent);
+}
+
+.modo__etichetta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c2) 80%, var(--label));
+}
+
+.modo--libera .modo__etichetta {
+  color: var(--label-secondary);
+}
+
+.modo__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  min-height: 1.2em;
+}
+
+.modo__testo {
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+.modo__piede {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.modo__bottone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 46px;
+  padding: 0 var(--sp-5);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--c2) 88%, #000);
+  color: #fff;
+  font-size: var(--text-headline);
+  font-weight: 700;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--c2) 30%, transparent);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.modo__bottone:active {
+  transform: scale(0.95);
+}
+
+.modo__bottone.is-secondario,
+.modo__bottone.is-tenue {
+  background: var(--fill-tertiary);
+  color: var(--label);
+  box-shadow: none;
+}
+
+.modo__bottone.is-tenue {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.modo__bottone.is-spento {
+  background: var(--fill-quaternary);
+  color: var(--label-tertiary);
+  box-shadow: none;
+}
+
+.modo__conto {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.modo__nota {
+  margin-top: var(--sp-1);
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--label-tertiary);
+}
+
+.modo__prossima {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--label-secondary);
+}
+
+/* ─────────────────────────  Il podio in piccolo  ───────────────────────── */
+
+.podio-mini {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  align-items: end;
+  gap: var(--sp-2);
+  padding: var(--sp-5) var(--sp-3) var(--sp-4);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Il primo al centro, gli altri due ai lati: l'ordine del podio, non quello della lista. */
+.podio-mini__posto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.podio-mini__posto--1 {
+  order: 2;
+}
+
+.podio-mini__posto--2 {
+  order: 1;
+}
+
+.podio-mini__posto--3 {
+  order: 3;
+}
+
+.podio-mini__nome {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.podio-mini__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.podio-mini__ombra {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}

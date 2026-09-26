@@ -1,28 +1,26 @@
 /*
  * Design tokens.
  *
- * L'impianto resta quello delle Apple Human Interface Guidelines — scala
- * tipografica, spaziature a multipli di quattro, materiali translucidi, curve
- * UIKit, safe area. Il **carattere** invece non e' piu' quello dei colori di
- * sistema: con la palette iOS piatta e le card bianche su grigio, l'app
- * sembrava Impostazioni. Questo e' un gioco, e deve vedersi.
+ * L'impianto e' quello delle Apple Human Interface Guidelines — scala
+ * tipografica, spaziature a multipli di quattro, materiali traslucidi, curve a
+ * molla, safe area — con il carattere di un'app di giochi: colori pieni per le
+ * copertine dei giochi, numeri tondi e grandi, superfici che salgono di
+ * luminosita' invece di restare piatte. Sobria dove si legge, giocosa dove si
+ * gioca.
  *
  * Tre scelte che spiegano il resto:
  *
- *  1. **Un solo posto per ogni colore.** Prima la palette scura era scritta due
- *     volte identiche, in `@media (prefers-color-scheme: dark)` e in
- *     `[data-theme='dark']`: novanta righe che sarebbero divergute alla prima
- *     modifica. Ora ogni token e' un `light-dark()`, che segue `color-scheme` —
- *     quindi sia la preferenza di sistema sia l'interruttore manuale, perché
- *     quello imposta `color-scheme` sulla radice. Ogni dichiarazione ha sopra il
- *     valore chiaro nudo: i browser che non conoscono `light-dark()` scartano la
- *     seconda riga e restano sul tema chiaro invece di perdere il colore.
- *  2. **Fondali profondi, non neri.** Il nero puro va bene per un elenco di
- *     impostazioni; per un gioco sembra economico. Il fondo scuro e' un
- *     blu-nero, e le superfici salgono di luminosita' invece di restare piatte.
+ *  1. **Un solo posto per ogni colore.** Ogni token e' un `light-dark()`, che
+ *     segue `color-scheme` — quindi sia la preferenza di sistema sia
+ *     l'interruttore manuale, perché quello imposta `color-scheme` sulla radice.
+ *     Ogni dichiarazione ha sopra il valore chiaro nudo: i browser che non
+ *     conoscono `light-dark()` scartano la seconda riga e restano sul tema
+ *     chiaro invece di perdere il colore.
+ *  2. **Fondali profondi, non neri.** Il fondo scuro e' un blu-nero, e le
+ *     superfici salgono di luminosita': una card sopra una card si distingue.
  *  3. **Il colore vuole dire una cosa sola.** Il verde e' "lettera giusta", e
  *     quindi non e' anche il colore dei pulsanti; l'accento dell'interfaccia e'
- *     un indaco, distinto dalle caselle.
+ *     un indaco. I colori dei giochi stanno solo sulle loro copertine.
  */
 
 :root {
@@ -131,7 +129,11 @@
   --label-inverted: #ffffff;
   --label-inverted: light-dark(#ffffff, #0b0c11);
 
-  /* ---- Materiali (glass) ---- */
+  /* ---- Materiali (glass) ----
+     Le barre galleggiano sopra il contenuto: la tab bar e' una capsula staccata
+     dal bordo, la barra in alto si fa vetro solo quando sotto scorre qualcosa.
+     Il bordo sottile chiaro in alto e' quel che fa sembrare vetro un
+     rettangolo semitrasparente. */
   --material-thick: rgba(255, 255, 255, 0.84);
   --material-thick: light-dark(rgba(255, 255, 255, 0.84), rgba(22, 24, 31, 0.86));
   --material-regular: rgba(246, 247, 251, 0.74);
@@ -139,6 +141,15 @@
   --material-thin: rgba(255, 255, 255, 0.56);
   --material-thin: light-dark(rgba(255, 255, 255, 0.56), rgba(30, 32, 41, 0.62));
   --blur: saturate(180%) blur(20px);
+  --glass: rgba(255, 255, 255, 0.7);
+  --glass: light-dark(rgba(255, 255, 255, 0.7), rgba(28, 30, 40, 0.66));
+  --glass-strong: rgba(255, 255, 255, 0.86);
+  --glass-strong: light-dark(rgba(255, 255, 255, 0.86), rgba(32, 34, 46, 0.86));
+  --glass-edge: rgba(255, 255, 255, 0.9);
+  --glass-edge: light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.12));
+  --glass-line: rgba(20, 24, 40, 0.08);
+  --glass-line: light-dark(rgba(20, 24, 40, 0.08), rgba(255, 255, 255, 0.06));
+  --glass-blur: saturate(190%) blur(24px);
 
   /* ---- Ombre ----
      Tinte di blu-viola invece di nero puro: un'ombra grigia su un fondo
@@ -191,18 +202,40 @@
   /* Piu' elastica della precedente: per le cose che devono sembrare oggetti,
      non pannelli. */
   --ease-bounce: cubic-bezier(0.2, 1.9, 0.4, 1);
+  /* La molla di una schermata che entra: arriva svelta e si posa senza
+     rimbalzare, come il push di UINavigationController. */
+  --ease-push: cubic-bezier(0.2, 0.9, 0.1, 1);
   --dur-fast: 140ms;
   --dur-base: 240ms;
   --dur-slow: 420ms;
+  --dur-push: 440ms;
 
   /* ---- Layout ---- */
   --nav-h: 52px;
-  --tabbar-h: 56px;
-  --content-max: 720px;
+  --tabbar-h: 64px;
+  /* La tab bar galleggia: tanto spazio sotto il contenuto quanto ne occupa lei. */
+  --tabbar-spazio: calc(var(--tabbar-h) + 28px);
+  --sidebar-w: 264px;
+  --content-max: 760px;
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+
+  /* ---- I giochi ----
+     Il colore di ogni gioco sta sulla sua copertina e da nessun'altra parte: e'
+     un'etichetta, non un significato. Due toni per un gradiente, e un terzo
+     scuro per il testo che ci sta sopra quando serve. */
+  --wordle-1: #34c759;
+  --wordle-2: #0f9d58;
+  --scarabeo-1: #f7b23b;
+  --scarabeo-2: #d9731a;
+  --cruciverba-1: #4d8df7;
+  --cruciverba-2: #2a55c9;
+  --battaglia-1: #23a6c9;
+  --battaglia-2: #0d5f82;
+  --generale-1: #6d5fff;
+  --generale-2: #3d2fc4;
 
   /* ---- Caselle e tastiera del Wordle ----
      I tre colori del gioco vero sono desaturati (#6aaa64, #c9b458, #787c7e):

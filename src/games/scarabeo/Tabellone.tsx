@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { LATO, premioDi, type Casella, type Posa } from '@shared/scarabeo'
-import type { Cursore } from './useScarabeo'
+import type { Cursore } from './useComposizione'
 import './Tabellone.css'
 
 interface Props {
@@ -10,6 +10,10 @@ interface Props {
   cursore: Cursore | null
   bloccato: boolean
   onTocca: (r: number, c: number) => void
+  /** Caselle da far notare: l'ultima mossa del computer, per un attimo. */
+  evidenziate?: ReadonlySet<number>
+  /** La posa in corso forma una parola che non esiste: le tessere diventano rosse. */
+  sbagliata?: boolean
 }
 
 /**
@@ -22,7 +26,7 @@ interface Props {
  * conta. Il tocco piccolo e' compensato dal fatto che sbagliare casella non
  * costa niente: si ritocca la tessera e torna in mano.
  */
-export function Tabellone({ tabellone, sospese, cursore, bloccato, onTocca }: Props) {
+export function Tabellone({ tabellone, sospese, cursore, bloccato, onTocca, evidenziate, sbagliata = false }: Props) {
   const inSospeso = new Set(sospese.map((p) => p.r * LATO + p.c))
 
   return (
@@ -37,6 +41,8 @@ export function Tabellone({ tabellone, sospese, cursore, bloccato, onTocca }: Pr
             c={c}
             casella={casella}
             sospesa={inSospeso.has(i)}
+            sbagliata={sbagliata && inSospeso.has(i)}
+            evidenziata={evidenziate?.has(i) ?? false}
             cursore={cursore !== null && cursore.r === r && cursore.c === c ? cursore.oriz : null}
             bloccato={bloccato}
             onTocca={onTocca}
@@ -52,18 +58,32 @@ interface CellaProps {
   c: number
   casella: Casella | null
   sospesa: boolean
+  sbagliata: boolean
+  evidenziata: boolean
   /** true = cursore orizzontale, false = verticale, null = niente cursore. */
   cursore: boolean | null
   bloccato: boolean
   onTocca: (r: number, c: number) => void
 }
 
-const Cella = memo(function Cella({ r, c, casella, sospesa, cursore, bloccato, onTocca }: CellaProps) {
+const Cella = memo(function Cella({
+  r,
+  c,
+  casella,
+  sospesa,
+  sbagliata,
+  evidenziata,
+  cursore,
+  bloccato,
+  onTocca,
+}: CellaProps) {
   const premio = premioDi(r, c)
   const classi = ['cella']
   if (premio && !casella) classi.push(`cella--${premio}`)
   if (casella) classi.push(sospesa ? 'cella--sospesa' : 'cella--tessera')
   if (casella?.jolly) classi.push('cella--jolly')
+  if (sbagliata) classi.push('cella--sbagliata')
+  if (evidenziata && casella) classi.push('cella--evidenziata')
   if (cursore !== null) classi.push(cursore ? 'cella--cursore-oriz' : 'cella--cursore-vert')
 
   const nome = casella

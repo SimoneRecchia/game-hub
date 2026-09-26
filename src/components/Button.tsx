@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import './Button.css'
 
-type Variant = 'filled' | 'tinted' | 'plain' | 'destructive'
+type Variant = 'filled' | 'tinted' | 'plain' | 'glass' | 'destructive'
 type Size = 'md' | 'lg'
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {

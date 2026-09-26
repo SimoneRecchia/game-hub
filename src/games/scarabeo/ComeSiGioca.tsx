@@ -34,11 +34,28 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="scr-aiuto">
         <p className="scr-aiuto__lede">
-          Hai <strong>{MOSSE_PER_GIORNATA} mosse</strong> per fare più punti che puoi. Le{' '}
-          {TESSERE_TOTALI} tessere escono dal sacchetto nello{' '}
+          Hai <strong>{MOSSE_PER_GIORNATA} mosse</strong> per fare più punti che puoi. Nella
+          classificata le {TESSERE_TOTALI} tessere escono dal sacchetto nello{' '}
           <strong>stesso ordine per tutti</strong>: chi gioca oggi ha la tua stessa mano, quindi i
           punteggi si confrontano davvero.
         </p>
+
+        <section className="scr-aiuto__sezione">
+          <h3 className="scr-aiuto__titolo">Le due partite</h3>
+          <ul className="scr-aiuto__elenco">
+            <li>
+              <strong>Classificata.</strong> Il computer ha già giocato le tessere di oggi, e il suo
+              punteggio è il traguardo: pareggiarlo vale <strong>cento punti</strong> in classifica,
+              farne la metà cinquanta. Oltre il cento non si va, e le sue mosse le vedi a giornata
+              chiusa.
+            </li>
+            <li>
+              <strong>Libera.</strong> Una partita a turni contro il computer, dieci mosse a testa,
+              con un sacchetto nuovo ogni volta e tre livelli da scegliere. Non conta per la
+              classifica.
+            </li>
+          </ul>
+        </section>
 
         <section className="scr-aiuto__sezione">
           <h3 className="scr-aiuto__titolo">Posare una parola</h3>

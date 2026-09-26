@@ -1,4 +1,6 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
+import { useNavigazione } from '@/app/navigazione'
+import { ROTTE } from '@/app/rotte'
 import { InviteAlert } from './InviteAlert'
 import { useCoopInbox } from './useCoopInbox'
 
@@ -9,14 +11,14 @@ import { useCoopInbox } from './useCoopInbox'
  * classifica o il profilo, non solo dall'hub.
  */
 export function CoopGate() {
-  const navigate = useNavigate()
+  const { vai } = useNavigazione()
   const { pathname } = useLocation()
 
   /*
    * Il polling si spegne mentre si e' già dentro una partita condivisa: quello
    * e' l'unico posto dove un altro invito sarebbe solo un'interruzione.
    */
-  const attivo = !pathname.startsWith('/insieme/')
+  const attivo = !pathname.startsWith('/wordle/insieme/')
   const { invites, accetta, rifiuta } = useCoopInbox(attivo)
 
   // Uno alla volta: due avvisi sovrapposti non si potrebbero leggere.
@@ -27,7 +29,7 @@ export function CoopGate() {
       invite={primo}
       onAccept={async (id) => {
         const roomId = await accetta(id)
-        navigate(`/insieme/${roomId}`)
+        vai(ROTTE.insieme(roomId))
       }}
       onDecline={rifiuta}
     />

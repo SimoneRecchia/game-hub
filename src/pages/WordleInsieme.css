@@ -164,7 +164,7 @@
   }
 }
 
-/* Vedi AppShell.css: in orizzontale la pagina scorre e la griglia resta
+/* Vedi Pagina.css: in orizzontale la pagina scorre e la griglia resta
    leggibile invece di comprimersi. */
 @media (orientation: landscape) and (max-height: 560px) {
   .insieme {

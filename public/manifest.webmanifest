@@ -1,7 +1,7 @@
 {
-  "name": "Game Hub",
-  "short_name": "Game Hub",
-  "description": "Hub di giochi: Wordle italiano con parola giornaliera e classifica tra colleghi.",
+  "name": "Giochi",
+  "short_name": "Giochi",
+  "description": "Wordle, Scarabeo, Cruciverba e Battaglia navale in italiano: una partita classificata al giorno, la stessa per tutti, e quante libere vuoi.",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -9,17 +9,20 @@
   "orientation": "portrait",
   "lang": "it",
   "dir": "ltr",
-  "background_color": "#f2f2f7",
-  "theme_color": "#2f5ce0",
+  "background_color": "#f4f5f9",
+  "theme_color": "#4f46e5",
   "categories": ["games", "entertainment"],
   "icons": [
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Wordle di oggi", "url": "/wordle" },
-    { "name": "Classifica", "url": "/classifica" }
+    { "name": "Wordle", "short_name": "Wordle", "url": "/wordle/classificata" },
+    { "name": "Scarabeo", "short_name": "Scarabeo", "url": "/scarabeo/classificata" },
+    { "name": "Cruciverba", "short_name": "Cruciverba", "url": "/cruciverba/classificata" },
+    { "name": "Battaglia navale", "short_name": "Battaglia", "url": "/battaglia-navale" },
+    { "name": "Classifica", "short_name": "Classifica", "url": "/classifica" }
   ]
 }

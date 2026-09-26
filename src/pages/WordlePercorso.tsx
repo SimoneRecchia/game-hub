@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { AppShell } from '@/components/AppShell'
+import { useNavigazione } from '@/app/navigazione'
+import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
-import { IconChevronLeft, IconInfo } from '@/components/Icons'
+import { IconInfo } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Percorso } from '@/games/wordle/Percorso'
@@ -27,7 +28,7 @@ import './WordlePercorso.css'
  * il bottone grande in basso ci porta comunque in uno.
  */
 export default function WordlePercorso() {
-  const navigate = useNavigate()
+  const { vai } = useNavigazione()
   const toast = useToast()
   const [view, setView] = useState<DayView | null>(null)
   const [loading, setLoading] = useState(true)
@@ -70,28 +71,14 @@ export default function WordlePercorso() {
   )
 
   return (
-    <AppShell
-      title={view ? `Wordle #${view.puzzleNumber}` : 'Wordle'}
-      hideTabBar
-      leading={
-        <button
-          type="button"
-          className="navbtn"
-          onClick={() => navigate('/')}
-          aria-label="Torna all'hub"
-        >
-          <IconChevronLeft size={22} />
-        </button>
-      }
-      trailing={
-        <button
-          type="button"
-          className="navbtn"
-          onClick={() => setHelpOpen(true)}
-          aria-label="Come si gioca"
-        >
+    <Pagina
+      titolo={view ? `Wordle #${view.puzzleNumber}` : 'Wordle'}
+      intera
+      indietro={{ a: ROTTE.gioco('wordle'), etichetta: 'Wordle' }}
+      azioni={
+        <BottoneBarra etichetta="Come si gioca" onClick={() => setHelpOpen(true)}>
           <IconInfo size={21} />
-        </button>
+        </BottoneBarra>
       }
     >
       <div className="giornata">
@@ -129,7 +116,7 @@ export default function WordlePercorso() {
               <div className="giornata__mappa">
                 <Percorso
                   day={view.day}
-                  onOpen={(slot) => navigate(`/wordle/${slot}`)}
+                  onOpen={(slot) => vai(ROTTE.parola(slot))}
                   onBlocked={spiegaChiusa}
                 />
               </div>
@@ -141,11 +128,11 @@ export default function WordlePercorso() {
                   partita davvero.
                 */}
                 {view.roomId ? (
-                  <Button size="lg" fullWidth onClick={() => navigate(`/insieme/${view.roomId}`)}>
+                  <Button size="lg" fullWidth onClick={() => vai(ROTTE.insieme(view.roomId!))}>
                     Torna alla partita in compagnia
                   </Button>
                 ) : prossima ? (
-                  <Button size="lg" fullWidth onClick={() => navigate(`/wordle/${prossima.slot}`)}>
+                  <Button size="lg" fullWidth onClick={() => vai(ROTTE.parola(prossima.slot))}>
                     {prossima.attempts > 0
                       ? prossima.slot === 1
                         ? 'Continua la parola del giorno'
@@ -164,7 +151,7 @@ export default function WordlePercorso() {
       </div>
 
       <HowToPlay open={helpOpen} onClose={() => setHelpOpen(false)} />
-    </AppShell>
+    </Pagina>
   )
 }
 

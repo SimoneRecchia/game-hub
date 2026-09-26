@@ -28,7 +28,7 @@ function apply(preference: ThemePreference) {
   }
   const meta = document.createElement('meta')
   meta.name = 'theme-color'
-  meta.content = dark ? '#000000' : '#f2f2f7'
+  meta.content = dark ? '#0b0c11' : '#f4f5f9'
   document.head.appendChild(meta)
 }
 

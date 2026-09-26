@@ -1,5 +1,5 @@
 /*
- * La battaglia navale: la sala d'attesa e la partita.
+ * La battaglia navale: la sala delle partite libere e la partita.
  *
  * La partita e' la sola schermata a tutto schermo che scorre: due mari, lo stato
  * e i comandi non stanno sempre in un telefono basso, e tagliarne uno sarebbe
@@ -9,8 +9,7 @@
 
 /* ---------- Comuni ---------- */
 
-.bat,
-.bat-sala {
+.bat {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -79,7 +78,8 @@
 
 .bat__pillola {
   position: absolute;
-  top: var(--sp-1);
+  /* Sotto la riga di stato, non sopra: "il computer prende la mira" deve restare leggibile. */
+  top: 64px;
   max-width: 92%;
   padding: var(--sp-2) var(--sp-4);
   border-radius: var(--r-pill);
@@ -97,17 +97,6 @@
     opacity: 0;
     transform: translateY(-6px) scale(0.96);
   }
-}
-
-.bat__resa {
-  align-self: center;
-  margin-top: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  border: none;
-  background: none;
-  color: var(--label-tertiary);
-  font-size: var(--text-footnote);
-  cursor: pointer;
 }
 
 .bat-resa {
@@ -163,12 +152,19 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  width: 100%;
   padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  background: linear-gradient(150deg, #1e88a8, #0b4f6c);
+  border-radius: var(--r-xl);
+  background: linear-gradient(150deg, var(--battaglia-1), var(--battaglia-2));
   color: #fff;
+  text-align: left;
   text-decoration: none;
   box-shadow: var(--shadow-md);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.bat-sala__partita:active {
+  transform: scale(0.98);
 }
 
 .bat-sala__partita-testo {
@@ -339,6 +335,36 @@
 
 .bat__stato-testo {
   flex: 1;
+}
+
+/* Il computer sta per rispondere: lo stato pulsa, come chi prende la mira. */
+.bat__stato.is-mira {
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  color: var(--orange);
+  animation: bat-mira 900ms var(--ease-in-out) infinite;
+}
+
+@keyframes bat-mira {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.bat__computer {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--label-secondary);
+  color: var(--bg);
+}
+
+.bat__colpi {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-tertiary);
 }
 
 .bat__online {
@@ -515,6 +541,21 @@
   letter-spacing: var(--tracking-tight);
 }
 
+.bat-fine__punti {
+  margin: var(--sp-1) 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-large-title);
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: var(--tracking-tight);
+}
+
+.bat-fine__su {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  opacity: 0.8;
+}
+
 .bat-fine__perche,
 .bat-fine__conto {
   margin: 0;
@@ -566,5 +607,136 @@
   .bat__mare-piccolo {
     width: 100%;
     max-width: none;
+  }
+}
+
+/* ---------- Un invito col link, mentre si apre ---------- */
+
+.bat-invito {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-6);
+  text-align: center;
+  animation: pagina-entra 360ms var(--ease-push) both;
+}
+
+.bat-invito__testo {
+  max-width: 28ch;
+  font-size: var(--text-body);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+.bat-invito__testo strong {
+  color: var(--label);
+}
+
+/* ---------- L'invito con un link ---------- */
+
+.bat-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+}
+
+.bat-link--attivo {
+  background: color-mix(in srgb, var(--battaglia-1) 10%, var(--surface));
+  animation: pagina-entra 360ms var(--ease-push) both;
+}
+
+.bat-link__icona {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-md);
+  background: linear-gradient(150deg, var(--battaglia-1), var(--battaglia-2));
+  color: #fff;
+}
+
+.bat-link__testo {
+  flex: 1;
+  min-width: 0;
+}
+
+.bat-link__riga {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.bat-link--attivo .bat-link__riga {
+  align-items: center;
+}
+
+.bat-link__titolo {
+  font-weight: 700;
+  color: var(--label);
+}
+
+.bat-link__nota {
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+.bat-link__url {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-family: var(--font-mono);
+  font-size: var(--text-footnote);
+  color: var(--label);
+  overflow-wrap: anywhere;
+  user-select: all;
+  -webkit-user-select: all;
+}
+
+.bat-link__azioni {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.bat-link__azioni .btn {
+  flex: 1;
+}
+
+.bat-link__ritira {
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* La partita in corso contro il computer, nell'elenco dei livelli: un'onda che si allarga. */
+.bat-riga__onda {
+  position: relative;
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 0 5px;
+  border-radius: 50%;
+  background: var(--battaglia-1);
+}
+
+.bat-riga__onda::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 var(--battaglia-1);
+  animation: bat-onde 1.6s var(--ease-out) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bat-riga__onda::after,
+  .bat-sala__onde::after {
+    animation: none;
   }
 }
