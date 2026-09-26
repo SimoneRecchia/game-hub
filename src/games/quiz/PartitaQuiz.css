@@ -1,0 +1,1107 @@
+/*
+ * La partita del quiz, dall'intro alla fine.
+ *
+ * Come gli altri giochi sta tutta nello schermo, senza scorrere. `.quiz` e' un
+ * contenitore di misura (`container: quiz / size`): la carta della domanda
+ * prende l'altezza che lasciano la testata e le risposte, e la bandiera o la
+ * cartina si misurano dentro la carta. Le risposte crescono con lo schermo fino
+ * a un tetto, perché un tasto alto un quarto di telefono non si tocca meglio.
+ *
+ * Lo stile e' quello della battaglia — schede, pillole, adesivi — con il tratto
+ * del quiz: la carta di un atlante, col suo reticolo, che arriva come una carta
+ * distribuita e se ne va quando arriva la prossima.
+ */
+
+/*
+ * Il margine degli anelli, come nella battaglia: l'anello verde o rosso della
+ * carta a risposta data, e quello della risposta scelta, escono dal bordo, e
+ * l'overflow li tagliava ai lati. Il contenitore si allarga di tanto quanto
+ * rientra; sotto c'e' anche l'ombra secca dell'ultima riga di risposte.
+ */
+.quiz {
+  --anelli: 10px;
+  container: quiz / size;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: calc(min(100%, 640px) + 2 * var(--anelli));
+  /* Sotto di piu', per l'alone della risposta giusta nell'ultima riga; il margine lo rende allo schermo. */
+  padding: 4px var(--anelli) 10px;
+  margin-bottom: -6px;
+  align-self: center;
+}
+
+.quiz__attesa {
+  flex: 1;
+  min-height: 200px;
+  border-radius: var(--r-xl);
+  background: var(--fill-quaternary);
+  animation: quiz-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes quiz-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.quiz__ripiego {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  max-width: 34ch;
+  text-align: center;
+  color: var(--label-secondary);
+}
+
+.quiz__ripiego p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* Una risposta che non e' partita: una riga sotto, che si tocca per riprovare. */
+.quiz__errore {
+  flex: none;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ─────────────────────────────  L'intro  ───────────────────────────── */
+
+.quiz-intro {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 1.6cqh, 12px);
+  width: min(100%, 420px);
+  margin-inline: auto;
+  text-align: center;
+}
+
+.quiz-intro__disegno {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(96px, 26cqh, 150px);
+  aspect-ratio: 1;
+  margin-bottom: clamp(4px, 2cqh, 16px);
+  animation: quiz-salta 620ms var(--ease-bounce) both;
+}
+
+/* L'anello tratteggiato che gira attorno: la rotta di un giro del mondo. */
+.quiz-intro__anello {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px dashed color-mix(in srgb, var(--quiz-1) 55%, transparent);
+  animation: quiz-gira 18s linear infinite;
+}
+
+.quiz-intro__icona {
+  display: grid;
+  place-items: center;
+  width: 74%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: linear-gradient(155deg, var(--quiz-1), var(--quiz-2) 80%);
+  color: #fff;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.28),
+    0 12px 30px color-mix(in srgb, var(--quiz-2) 34%, transparent);
+}
+
+.quiz-intro__icona svg {
+  width: 48%;
+  height: 48%;
+}
+
+.quiz-intro__sopra,
+.quiz-intro__titolo,
+.quiz-intro__testo,
+.quiz-intro__regole {
+  animation: quiz-sale 480ms var(--ease-out) both;
+}
+
+.quiz-intro__sopra {
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--quiz-lettera-ink);
+  animation-delay: 120ms;
+}
+
+.quiz-intro__titolo {
+  margin: 0;
+  font-size: clamp(var(--text-title-1), 9cqw, var(--text-display));
+  font-weight: 900;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.05;
+  color: var(--label);
+  animation-delay: 180ms;
+}
+
+.quiz-intro__testo {
+  margin: 0;
+  max-width: 30ch;
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+  color: var(--label-secondary);
+  animation-delay: 240ms;
+}
+
+.quiz-intro__regole {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: clamp(4px, 1.4cqh, 12px) 0 clamp(8px, 3cqh, 24px);
+  animation-delay: 300ms;
+}
+
+.quiz-intro__regole span {
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.quiz-intro__regole strong {
+  color: var(--label);
+  font-weight: 800;
+}
+
+.quiz-intro > .btn {
+  animation: quiz-sale 480ms var(--ease-out) 360ms both;
+}
+
+@keyframes quiz-salta {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-20deg);
+  }
+}
+
+@keyframes quiz-sale {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@keyframes quiz-gira {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* ──────────────────────────  Tre, due, uno  ────────────────────────── */
+
+/*
+ * I numeri stanno uno sopra l'altro e ognuno ha il suo quarto di `--via`: salta
+ * fuori grande, si posa, sparisce. "Via!" resta, perché nella classificata la
+ * prima domanda arriva dal server e puo' metterci un attimo.
+ */
+.quiz-via {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(12px, 4cqh, 28px);
+}
+
+.quiz-via__icona {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(155deg, var(--quiz-1), var(--quiz-2) 80%);
+  color: #fff;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--quiz-2) 30%, transparent);
+  animation: quiz-via-icona calc(var(--via) / 4) var(--ease-in-out) infinite;
+}
+
+@keyframes quiz-via-icona {
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+.quiz-via__numeri {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: clamp(110px, 34cqh, 190px);
+}
+
+.quiz-via__numero {
+  grid-area: 1 / 1;
+  font-size: clamp(4.5rem, 30cqh, 9rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: var(--tracking-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--quiz-1);
+  text-shadow: 0 6px 0 color-mix(in srgb, var(--quiz-2) 30%, transparent);
+  animation: quiz-via-numero calc(var(--via) / 4) var(--ease-out) calc(var(--via) / 4 * var(--i)) both;
+}
+
+.quiz-via__numero:last-child {
+  color: var(--quiz-2);
+  font-size: clamp(3.5rem, 22cqh, 7rem);
+  animation-name: quiz-via-ultimo;
+  animation-timing-function: var(--ease-bounce);
+}
+
+@keyframes quiz-via-numero {
+  0% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+  28% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+@keyframes quiz-via-ultimo {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ───────────────────────────  La testata  ─────────────────────────── */
+
+.quiz__tabellone {
+  flex: none;
+}
+
+.quiz-progresso {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quiz-progresso__caselle {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quiz-progresso__casella {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--fill-tertiary);
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+
+.quiz-progresso__casella.is-corrente {
+  background: var(--quiz-1);
+  animation: quiz-corrente 1.6s var(--ease-in-out) infinite;
+}
+
+.quiz-progresso__casella.is-giusta {
+  background: var(--green);
+  animation: quiz-casella 460ms var(--ease-bounce);
+}
+
+.quiz-progresso__casella.is-sbagliata {
+  background: var(--red);
+  animation: quiz-casella 460ms var(--ease-bounce);
+}
+
+@keyframes quiz-corrente {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes quiz-casella {
+  from {
+    transform: scaleY(2.4);
+  }
+}
+
+/*
+ * La miccia: il tempo che resta, che si consuma da destra. Parte da `--da` (la
+ * quota di tempo che restava quando e' comparsa: una domanda ripresa dopo aver
+ * ricaricato la pagina non riparte da capo) e arriva a zero in `--durata`.
+ */
+.quiz-miccia {
+  position: relative;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--fill-quaternary);
+  overflow: hidden;
+}
+
+.quiz-miccia__fuoco {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--quiz-2), var(--quiz-1));
+  transform: translateX(calc((var(--da) - 1) * 100%));
+  animation: quiz-miccia var(--durata) linear forwards;
+}
+
+.quiz-miccia__fuoco.is-ferma {
+  animation: none;
+}
+
+@keyframes quiz-miccia {
+  from {
+    transform: translateX(calc((var(--da) - 1) * 100%));
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* ─────────────────────────  La carta della domanda  ───────────────────────── */
+
+.quiz-carta {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(8px, 2.6cqh, 20px);
+  padding: 14px;
+  border-radius: var(--r-xl);
+  background-color: var(--surface);
+  /* Il reticolo di un atlante: meridiani e paralleli, appena accennati. */
+  background-image:
+    linear-gradient(var(--quiz-reticolo) 1px, transparent 1px),
+    linear-gradient(90deg, var(--quiz-reticolo) 1px, transparent 1px);
+  background-size: 26px 26px;
+  background-position: center;
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  animation: quiz-carta-entra 480ms var(--ease-spring) both;
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+
+.quiz-carta.is-cartina {
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 10px;
+  background-image: none;
+}
+
+.quiz-carta.is-giusta {
+  box-shadow:
+    0 0 0 2.5px var(--green),
+    0 8px 26px color-mix(in srgb, var(--green) 22%, transparent);
+}
+
+.quiz-carta.is-sbagliata {
+  box-shadow:
+    0 0 0 2.5px var(--red),
+    0 8px 26px color-mix(in srgb, var(--red) 20%, transparent);
+  animation: quiz-trema 440ms var(--ease-in-out);
+}
+
+/* Sulla cartina si guarda dov'era: tremando non la si troverebbe. */
+.quiz-carta.is-cartina.is-sbagliata {
+  animation: none;
+}
+
+@keyframes quiz-carta-entra {
+  from {
+    opacity: 0;
+    transform: translateX(34%) rotate(6deg) scale(0.94);
+  }
+}
+
+@keyframes quiz-trema {
+  20% {
+    transform: translateX(-7px) rotate(-1deg);
+  }
+  45% {
+    transform: translateX(6px) rotate(0.8deg);
+  }
+  70% {
+    transform: translateX(-3px);
+  }
+}
+
+/* Il bollo della categoria, sulle domande senza immagine. */
+.quiz-carta__emblema {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: clamp(52px, 15cqh, 92px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: linear-gradient(155deg, var(--quiz-1), var(--quiz-2) 80%);
+  color: #fff;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.28),
+    0 8px 22px color-mix(in srgb, var(--quiz-2) 28%, transparent);
+  animation: quiz-salta 560ms var(--ease-bounce) 140ms both;
+}
+
+.quiz-carta__emblema svg {
+  width: 50%;
+  height: 50%;
+}
+
+.quiz-carta__testo {
+  margin: 0;
+  max-width: 30ch;
+  font-size: clamp(1.125rem, 5.2cqw, 1.625rem);
+  font-weight: 800;
+  line-height: 1.22;
+  letter-spacing: var(--tracking-tight);
+  text-align: center;
+  text-wrap: balance;
+  color: var(--label);
+}
+
+.quiz-carta.is-cartina .quiz-carta__testo {
+  font-size: var(--text-headline);
+}
+
+/*
+ * La bandiera da riconoscere, grande quanto la carta permette. Assoluta e con
+ * i margini automatici, perché cosi' un'immagine si centra tenendo le sue
+ * proporzioni sia quando e' la larghezza a mancare sia quando e' l'altezza.
+ */
+.quiz-carta__bandiera {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  max-height: 300px;
+}
+
+.quiz-carta__bandiera img {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 1px var(--separator),
+    0 10px 26px var(--shadow-tint);
+  transform-origin: left center;
+  animation: quiz-bandiera 720ms var(--ease-out) 120ms both;
+}
+
+/* La bandiera si srotola dall'asta: da sinistra a destra, con l'ombra. */
+@keyframes quiz-bandiera {
+  from {
+    clip-path: inset(-40px 100% -40px -40px);
+    transform: perspective(700px) rotateY(-28deg);
+  }
+  to {
+    clip-path: inset(-40px -40px -40px -40px);
+  }
+}
+
+/* ───────────────────────────  Le risposte  ─────────────────────────── */
+
+.quiz-opzioni {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quiz-opzioni.is-lunghe {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Le bandiere, due per riga: tasti piu' alti, che crescono con lo schermo fino a un tetto. */
+.quiz-opzioni.is-bandiere {
+  gap: 10px;
+}
+
+/*
+ * Una risposta e' un tasto, come quelli delle tastiere dei giochi: l'ombra
+ * secca sotto, il filo di luce in alto, la velatura. Premuto scende.
+ */
+.quiz-opzione {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: clamp(50px, 9.4cqh, 66px);
+  padding: 8px 12px 8px 8px;
+  border-radius: var(--r-lg);
+  background-color: var(--surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.03));
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-key),
+    0 0 0 1px var(--separator);
+  color: var(--label);
+  font-size: clamp(var(--text-subhead), 4.2cqw, var(--text-headline));
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  animation: quiz-opzione-entra 440ms var(--ease-spring) calc(170ms + var(--i) * 60ms) both;
+  transition:
+    transform 90ms var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
+}
+
+.quiz-opzioni.is-lunghe .quiz-opzione {
+  min-height: clamp(46px, 8cqh, 58px);
+}
+
+@media (hover: hover) {
+  .quiz-opzione:hover:not(:disabled) {
+    box-shadow:
+      var(--edge-light),
+      var(--shadow-key),
+      0 0 0 2px color-mix(in srgb, var(--quiz-1) 45%, transparent);
+  }
+}
+
+.quiz-opzione:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    var(--edge-light),
+    0 0 0 1px var(--separator);
+}
+
+.quiz-opzione:disabled {
+  cursor: default;
+}
+
+@keyframes quiz-opzione-entra {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.92);
+  }
+}
+
+.quiz-opzione__lettera {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--quiz-lettera);
+  color: var(--quiz-lettera-ink);
+  font-size: var(--text-footnote);
+  font-weight: 900;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out);
+}
+
+.quiz-opzione__testo {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* La risposta scelta, mentre parte: l'indaco di ogni selezione dell'app. */
+.quiz-opzione.is-scelta {
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-key),
+    0 0 0 2.5px var(--brand);
+  animation: quiz-scelta 900ms var(--ease-in-out) infinite;
+}
+
+.quiz-opzione.is-scelta .quiz-opzione__lettera {
+  background: var(--brand);
+  color: #fff;
+}
+
+@keyframes quiz-scelta {
+  50% {
+    box-shadow:
+      var(--edge-light),
+      var(--shadow-key),
+      0 0 0 5px color-mix(in srgb, var(--brand) 35%, transparent);
+  }
+}
+
+/* `background-color` e non `background`: la velatura resta. */
+.quiz-opzione.is-giusta {
+  background-color: var(--green);
+  color: #fff;
+  box-shadow:
+    var(--edge-light),
+    0 2px 0 color-mix(in srgb, var(--green) 60%, #000),
+    0 4px 14px color-mix(in srgb, var(--green) 30%, transparent);
+  animation: quiz-giusta 560ms var(--ease-bounce);
+}
+
+.quiz-opzione.is-sbagliata {
+  background-color: var(--red);
+  color: #fff;
+  box-shadow:
+    var(--edge-light),
+    0 2px 0 color-mix(in srgb, var(--red) 60%, #000);
+  animation: quiz-trema 440ms var(--ease-in-out);
+}
+
+.quiz-opzione.is-giusta .quiz-opzione__lettera,
+.quiz-opzione.is-sbagliata .quiz-opzione__lettera {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.quiz-opzione.is-spenta {
+  opacity: 0.42;
+  animation: none;
+}
+
+@keyframes quiz-giusta {
+  40% {
+    transform: scale(1.05);
+  }
+}
+
+/*
+ * Le bandiere: ognuna grande quanto il suo tasto, con il nome sotto a risposta
+ * data. `object-fit` la tiene intera, e l'ombra a filtro segue la bandiera e
+ * non il riquadro, che e' piu' largo.
+ */
+.quiz-opzioni.is-bandiere .quiz-opzione {
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  height: clamp(78px, 18cqh, 150px);
+  min-height: 0;
+  padding: 10px;
+}
+
+.quiz-opzione__bandiera {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 0.6px rgba(0, 0, 0, 0.5)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.12));
+}
+
+.quiz-opzione__nome {
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  animation: quiz-sale 300ms var(--ease-out) both;
+}
+
+.quiz-opzioni.is-bandiere .quiz-opzione.is-spenta {
+  opacity: 0.5;
+}
+
+/* ─────────────────────────  Sotto la cartina  ───────────────────────── */
+
+.quiz-conferma {
+  flex: none;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+}
+
+.quiz-conferma__esito {
+  width: 100%;
+  margin: 0;
+  font-size: var(--text-headline);
+  font-weight: 800;
+  text-align: center;
+  color: var(--red);
+  animation: quiz-sale 300ms var(--ease-out) both;
+}
+
+.quiz-conferma__esito.is-giusta {
+  color: var(--green);
+}
+
+/* ──────────────────────────────  La fine  ─────────────────────────────── */
+
+.quiz-fine {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(12px, 3cqh, 24px);
+  /* Su uno schermo troppo basso il risultato scorre, invece di uscire di sopra. Scorrendo
+     ritaglia, quindi anche qui c'e' il margine per gli aloni dei bottoni. */
+  overflow-y: auto;
+  width: calc(min(100%, 460px) + 2 * var(--anelli));
+  padding: 4px var(--anelli) 12px;
+  align-self: center;
+}
+
+/*
+ * Al centro con i margini automatici e non con `justify-content`: quando il
+ * risultato e' piu' alto dello schermo i margini si annullano e si parte
+ * dall'alto, mentre centrando si perderebbe la testata sotto la barra.
+ */
+.quiz-fine > :first-child {
+  margin-top: auto;
+}
+
+.quiz-fine > :last-child {
+  margin-bottom: auto;
+}
+
+.quiz-fine__scheda {
+  align-items: center;
+  gap: clamp(6px, 1.6cqh, 12px);
+  padding-bottom: 14px;
+  animation: quiz-carta-entra 520ms var(--ease-spring) both;
+}
+
+.quiz-fine__scheda > .scheda__testa {
+  align-self: stretch;
+}
+
+.quiz-fine__conto {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: clamp(4px, 2cqh, 16px);
+}
+
+.quiz-fine__giuste {
+  font-size: clamp(3.5rem, 20cqh, 6rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: var(--tracking-display);
+  background: linear-gradient(160deg, var(--quiz-1), var(--quiz-2) 80%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: quiz-salta 620ms var(--ease-bounce) 160ms both;
+}
+
+.quiz-fine__su {
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+.quiz-fine__punti {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.quiz-fine__punti strong {
+  color: var(--label);
+  font-weight: 900;
+}
+
+.quiz-fine__caselle {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  max-width: 100%;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quiz-fine__caselle li {
+  display: grid;
+  place-items: center;
+  width: clamp(18px, 6.4cqw, 24px);
+  height: clamp(18px, 6.4cqw, 24px);
+  border-radius: 7px;
+  color: #fff;
+  box-shadow: var(--edge-light), var(--shadow-key);
+  animation: quiz-opzione-entra 380ms var(--ease-spring) both;
+}
+
+.quiz-fine__caselle li.is-giusta {
+  background: var(--green);
+}
+
+.quiz-fine__caselle li.is-sbagliata {
+  background: var(--red);
+}
+
+/* Le caselle entrano una dopo l'altra, come le lettere di una parola indovinata. */
+.quiz-fine__caselle li {
+  animation-delay: calc(300ms + min(var(--i), 12) * 40ms);
+}
+
+.quiz-fine__rivedi {
+  margin-top: 4px;
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+.quiz-fine__azioni {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: quiz-sale 480ms var(--ease-out) 380ms both;
+}
+
+.quiz-fine__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  text-align: center;
+  color: var(--label-tertiary);
+}
+
+/* ─────────────────────────  Il riepilogo  ───────────────────────── */
+
+.quiz-riepilogo {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.quiz-riepilogo__voce {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--separator);
+}
+
+.quiz-riepilogo__voce:last-child {
+  border-bottom: none;
+}
+
+.quiz-riepilogo__segno {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--red);
+  color: #fff;
+}
+
+.quiz-riepilogo__voce.is-giusta .quiz-riepilogo__segno {
+  background: var(--green);
+}
+
+.quiz-riepilogo__testi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.quiz-riepilogo__domanda {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--label);
+}
+
+.quiz-riepilogo__bandiera {
+  display: inline-block;
+  height: 1.1em;
+  margin-right: 6px;
+  vertical-align: -0.15em;
+  border-radius: 2px;
+  box-shadow: 0 0 0 0.5px var(--separator);
+}
+
+.quiz-riepilogo__risposta {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.quiz-riepilogo__voce.is-giusta .quiz-riepilogo__risposta {
+  color: var(--green);
+  font-weight: 700;
+}
+
+/* ───────────────────────  Schermi bassi e larghi  ─────────────────────── */
+
+/* Schermi bassi: la carta cede per prima, poi le risposte si abbassano. */
+@container quiz (max-height: 520px) {
+  .quiz {
+    gap: 8px;
+  }
+
+  .quiz-carta {
+    padding: 10px;
+  }
+
+  .quiz-carta__emblema {
+    width: 44px;
+  }
+
+  .quiz-opzione {
+    min-height: 44px;
+    padding-block: 6px;
+  }
+
+  .quiz-opzione__lettera {
+    width: 26px;
+    height: 26px;
+  }
+
+  .quiz-fine {
+    gap: 10px;
+  }
+
+  .quiz-fine__giuste {
+    font-size: 3.25rem;
+  }
+
+  .quiz-fine__azioni .btn--lg {
+    min-height: 46px;
+  }
+}
+
+/*
+ * Telefono in orizzontale: la pagina scorre e non c'e' un'altezza su cui
+ * misurare (vedi la nota sulla griglia del Wordle), quindi la carta prende
+ * un'altezza sua, dal viewport, e le risposte vanno accanto.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .quiz {
+    container-type: inline-size;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-items: start;
+    width: calc(min(100%, 900px) + 2 * var(--anelli));
+    overflow: visible;
+  }
+
+  .quiz > .quiz__tabellone,
+  .quiz > .quiz__errore,
+  .quiz > .quiz__attesa,
+  .quiz > .quiz__ripiego,
+  .quiz > .quiz-intro,
+  .quiz > .quiz-via,
+  .quiz > .quiz-fine {
+    grid-column: 1 / -1;
+  }
+
+  .quiz-carta {
+    height: calc(100svh - 170px);
+    min-height: 150px;
+  }
+
+  .quiz-opzioni,
+  .quiz-opzioni.is-lunghe {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quiz-opzioni.is-bandiere {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .quiz-opzioni.is-bandiere .quiz-opzione {
+    height: calc((100svh - 190px) / 2);
+    min-height: 64px;
+  }
+
+  .quiz-opzione {
+    min-height: 44px;
+  }
+
+  .quiz-intro,
+  .quiz-via,
+  .quiz-fine {
+    min-height: calc(100svh - 120px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quiz__attesa,
+  .quiz-intro__disegno,
+  .quiz-intro__anello,
+  .quiz-intro__sopra,
+  .quiz-intro__titolo,
+  .quiz-intro__testo,
+  .quiz-intro__regole,
+  .quiz-intro > .btn,
+  .quiz-via__icona,
+  .quiz-progresso__casella,
+  .quiz-carta,
+  .quiz-carta__emblema,
+  .quiz-carta__bandiera img,
+  .quiz-opzione,
+  .quiz-opzione__nome,
+  .quiz-conferma__esito,
+  .quiz-fine__scheda,
+  .quiz-fine__giuste,
+  .quiz-fine__caselle li,
+  .quiz-fine__azioni {
+    animation: none;
+  }
+
+  /* Il tre-due-uno senza movimento: solo "Via!", fermo. */
+  .quiz-via__numero {
+    animation: none;
+    opacity: 0;
+  }
+
+  .quiz-via__numero:last-child {
+    opacity: 1;
+  }
+
+  /* La miccia resta: e' il tempo che passa, non un ornamento. */
+}

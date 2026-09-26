@@ -37,6 +37,11 @@
   --c2: var(--battaglia-2);
 }
 
+.copertina--quiz {
+  --c1: var(--quiz-1);
+  --c2: var(--quiz-2);
+}
+
 .copertina__disegno {
   position: absolute;
   inset: 0;

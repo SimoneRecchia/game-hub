@@ -16,6 +16,7 @@
  *   Scarabeo     punti rispetto al computer           60-90    ~40       100
  *   Cruciverba   completato, meno gli aiuti            85-95    0*        100
  *   Battaglia    colpi per affondare la flotta         75-85    ~30       100
+ *   Quiz         risposte giuste su dieci              60-90    20        100
  *
  *   * la parola non indovinata vale venti, la peggiore indovinata cinquanta;
  *     un cruciverba svelato per intero non e' stato risolto: vale zero.
@@ -27,8 +28,10 @@
 import { MAX_DAY_SCORE } from './scoring'
 import { PUNTI_COMPLETO } from './cruciverba'
 import { CASELLE_FLOTTA } from './battaglia'
+import { DOMANDE_PER_PARTITA, puntiQuiz } from './quiz'
 
 export { punteggio as puntiCruciverba } from './cruciverba'
+export { puntiQuiz } from './quiz'
 
 /** Il tetto di una partita classificata, per tutti i giochi. */
 export const PUNTI_MASSIMI = 100
@@ -98,4 +101,5 @@ export const MASSIMI = {
   cruciverba: PUNTI_COMPLETO,
   scarabeo: PUNTI_MASSIMI,
   battaglia: PUNTI_MASSIMI,
+  quiz: puntiQuiz(DOMANDE_PER_PARTITA, DOMANDE_PER_PARTITA),
 } as const

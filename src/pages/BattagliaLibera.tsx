@@ -34,6 +34,7 @@ const DOVE: Record<Attivita, string> = {
   scarabeo: 'gioca a Scarabeo',
   cruciverba: 'fa il cruciverba',
   battaglia: 'alla battaglia navale',
+  quiz: 'gioca al quiz',
   classifica: 'guarda la classifica',
   profilo: 'nel profilo',
   altro: 'online',

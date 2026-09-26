@@ -16,6 +16,7 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatCountdown } from '@/lib/format'
 import { leggiPartitaLibera } from '@/games/scarabeo/libera'
+import { leggiStatistiche, type StatisticheLibere } from '@/games/quiz/usePartita'
 import type {
   CruciverbaLiberaRisposta,
   GiocoClassificato,
@@ -183,9 +184,12 @@ function useLibera(id: GiocoClassificato): Libera | null {
   const scarabeo = useDati<StatisticheScarabeoLibero>(id === 'scarabeo' ? '/scarabeo/libera' : null).dati
   const battaglia = useDati<LobbyBattaglia>(id === 'battaglia' ? '/battaglia/lobby' : null).dati
   const [scarabeoInCorso, setScarabeoInCorso] = useState(false)
+  // Le libere del quiz non vanno al server: i conti stanno nel telefono.
+  const [quiz, setQuiz] = useState<StatisticheLibere | null>(null)
 
   useEffect(() => {
     if (id === 'scarabeo') setScarabeoInCorso(leggiPartitaLibera() !== null)
+    if (id === 'quiz') setQuiz(leggiStatistiche())
   }, [id])
 
   switch (id) {
@@ -220,6 +224,12 @@ function useLibera(id: GiocoClassificato): Libera | null {
             : null,
       }
     }
+    case 'quiz':
+      if (!quiz) return null
+      return {
+        azione: 'Scegli la categoria',
+        dettaglio: quiz.domande > 0 ? `${quiz.giuste} giuste su ${quiz.domande}` : null,
+      }
   }
 }
 

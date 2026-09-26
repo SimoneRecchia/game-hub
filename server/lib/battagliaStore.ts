@@ -54,6 +54,7 @@ export const ATTIVITA: readonly Attivita[] = [
   'scarabeo',
   'cruciverba',
   'battaglia',
+  'quiz',
   'classifica',
   'profilo',
   'altro',

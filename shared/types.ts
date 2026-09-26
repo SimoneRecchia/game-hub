@@ -3,8 +3,11 @@
 import type { MossaGiocata } from './scarabeo'
 import type { Esito, IdNave, Nave } from './battaglia'
 import type { LivelloBattaglia } from './battaglia-computer'
+import type { CategoriaQuiz } from './quiz'
+import type { DomandaQuiz } from './quiz-domande'
+import type { DatiQuiz } from './quiz-dati'
 
-export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia'
+export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia' | 'quiz'
 
 export interface Player {
   id: string
@@ -316,6 +319,7 @@ export type Attivita =
   | 'scarabeo'
   | 'cruciverba'
   | 'battaglia'
+  | 'quiz'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -500,12 +504,108 @@ export interface BattagliaLeaderboard {
   me: BattagliaRow | null
 }
 
+/* ──────────────────────────────  Il quiz  ────────────────────────────── */
+
+/** Una risposta data, come la rivede chi ha giocato. */
+export interface RispostaQuiz {
+  /** L'opzione scelta, o il posto toccato sulla cartina; null se il tempo e' finito. */
+  scelta: string | null
+  giusta: boolean
+  /** L'id della risposta giusta: un'opzione, o il posto sulla cartina. */
+  corretta: string
+  /** La risposta giusta a parole: "Lisbona", "il Mar Tirreno". */
+  risposta: string
+  /** Quanto ci si e' messo. */
+  ms: number
+}
+
+/**
+ * La domanda aperta. Il tempo lo conta il server, da quando il telefono l'ha
+ * chiesta: al telefono arriva quanto ne resta, e dopo una ricarica riparte da
+ * lì, non da capo.
+ */
+export interface DomandaAperta {
+  indice: number
+  domanda: DomandaQuiz
+  limiteMs: number
+  restanteMs: number
+}
+
+export interface QuizState {
+  puzzleNumber: number
+  date: string
+  categoria: CategoriaQuiz
+  /** Quante domande ha la partita. */
+  totale: number
+  /** `nuova` finché non si comincia: guardare la pagina non apre la partita. */
+  status: 'nuova' | 'playing' | 'done'
+  /** Le domande a cui si e' gia' risposto, con com'e' andata. */
+  fatte: Array<{ domanda: DomandaQuiz; risposta: RispostaQuiz }>
+  aperta: DomandaAperta | null
+  giuste: number
+  /** I punti in classifica: a partita finita quelli veri, prima quelli che si farebbero fermandosi qui. */
+  punti: number
+  tempoMs: number
+  msToNextPuzzle: number
+}
+
+/** Quel che torna da una risposta: com'e' andata, e lo stato con la domanda dopo. */
+export interface QuizEsito {
+  risposta: RispostaQuiz
+  stato: QuizState
+}
+
+export interface QuizSummary {
+  puzzleNumber: number
+  date: string
+  /** `assente` se lo script della notte non ha preparato la giornata. */
+  status: 'assente' | 'nuova' | 'playing' | 'done'
+  categoria: CategoriaQuiz | null
+  fatte: number
+  giuste: number
+  totale: number
+  punti: number
+  msToNextPuzzle: number
+}
+
+export interface QuizRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  punti: number
+  /** Partite finite nel periodo. */
+  giornate: number
+  /** Risposte giuste nel periodo. */
+  giuste: number
+  /** Il tempo delle partite finite: e' lo spareggio. */
+  tempoMs: number
+  inCorso: boolean
+}
+
+export interface QuizLeaderboard {
+  scope: LeaderboardScope
+  updatedAt: string
+  rows: QuizRow[]
+  me: QuizRow | null
+}
+
+/**
+ * Il riassunto per le partite libere. `dati` e' null se il browser ha gia'
+ * quella versione: la chiede con la sua, e riscarica solo quando cambia.
+ */
+export interface QuizDatiRisposta {
+  versione: string
+  dati: DatiQuiz | null
+}
+
 export type LeaderboardScope = 'today' | 'week' | 'month' | 'all'
 
 /* ──────────────────────────  La classifica generale  ───────────────────────── */
 
 /** I giochi che hanno una classificata, e quindi una classifica. */
-export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia'
+export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia' | 'quiz'
 
 /**
  * Una riga della classifica generale: la somma delle classificate di tutti i
@@ -542,6 +642,7 @@ export interface OggiRisposta {
   scarabeo: ScarabeoSummary
   cruciverba: CruciverbaSummary
   battaglia: BattagliaSummary
+  quiz: QuizSummary
   /** Come si sta oggi nella classifica generale. */
   generale: { posizione: number | null; punti: number; giocatori: number }
 }

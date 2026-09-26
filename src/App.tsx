@@ -24,6 +24,8 @@ import BattagliaClassificata from './pages/BattagliaClassificata'
 import BattagliaLibera from './pages/BattagliaLibera'
 import BattagliaPartita from './pages/BattagliaPartita'
 import BattagliaInvito from './pages/BattagliaInvito'
+import Quiz from './pages/Quiz'
+import QuizLibero from './pages/QuizLibero'
 
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
 const INVITO = /^\/battaglia-navale\/invito\/([a-z0-9]+)\/?$/
@@ -82,7 +84,10 @@ export default function App() {
           <Route path="/battaglia-navale/partita/:id" element={<BattagliaPartita />} />
           <Route path="/battaglia-navale/invito/:codice" element={<BattagliaInvito />} />
 
-          {/* La pagina di ogni gioco: /wordle, /scarabeo, /cruciverba, /battaglia-navale. */}
+          <Route path="/quiz/classificata" element={<Quiz />} />
+          <Route path="/quiz/libera" element={<QuizLibero />} />
+
+          {/* La pagina di ogni gioco: /wordle, /scarabeo, /cruciverba, /battaglia-navale, /quiz. */}
           <Route path="/:gioco" element={<Gioco />} />
 
           {/* I vecchi indirizzi, perché i link salvati e le icone sulla Home non si rompano. */}
