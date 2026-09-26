@@ -111,6 +111,14 @@ describe('estrazione della soluzione', () => {
   it('riparte dall inizio dopo aver esaurito l elenco', () => {
     expect(solutionIndexFor(size + 1, size)).toBe(solutionIndexFor(1, size))
   })
+
+  it('e’ la sequenza di sempre: le giornate gia’ giocate non cambiano parola', () => {
+    // Fissata sui giorni passati: se la permutazione cambiasse, chi gioca da
+    // settembre si troverebbe la parola di un altro giorno — e la riga salvata
+    // in daily_puzzles non direbbe piu' la stessa cosa del calcolo.
+    expect(size).toBe(1_132)
+    expect([1, 2, 3, 10, 28].map((n) => solutionIndexFor(n, size))).toEqual([908, 62, 490, 872, 768])
+  })
 })
 
 describe('la parola del giorno e la stessa per tutti', () => {

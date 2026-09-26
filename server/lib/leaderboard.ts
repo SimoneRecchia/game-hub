@@ -203,17 +203,12 @@ export async function leaderboard(
    * Le partite ancora in corso entrano con punteggio zero (`score` e' NULL finché
    * non finiscono): così nella vista di oggi si vede anche chi sta giocando.
    *
-   * `played`, `wins` e la media contano **solo la parola del giorno giocata per
-   * conto proprio**, e per due ragioni diverse:
-   *
-   *  - i tentativi di una giornata in compagnia sono quelli dell'host: contarli
-   *    come propri falserebbe la media di tutti;
-   *  - contando tutte e cinque le parole, chi le gioca tutte accumula cinque
-   *    vittorie al giorno, e nello spareggio quel numero batteva chi aveva
-   *    indovinato la principale al primo colpo. Con la sola principale il
-   *    conteggio misura le **giornate**, che e' quel che uno intende leggendo
-   *    "giocate", e lo spareggio passa alla media tentativi — dove vince chi ha
-   *    giocato meglio, non chi ha giocato di piu'.
+   * `played`, `wins` e la media contano **solo la parola giocata per conto
+   * proprio**: i tentativi di una giornata in compagnia sono quelli dell'host, e
+   * contarli come propri falserebbe la media di tutti. Il conteggio misura le
+   * **giornate**, che e' quel che uno intende leggendo "giocate". Il filtro su
+   * `slot = 1` e' di quando le parole erano cinque al giorno: ora lo slot e'
+   * sempre 1, e il filtro resta perché non costa niente.
    */
   const [aggregate, winsResult, todayResult] = await Promise.all([
     db
