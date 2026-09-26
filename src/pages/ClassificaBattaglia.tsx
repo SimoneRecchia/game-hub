@@ -97,11 +97,11 @@ function Riga({ row, io }: { row: BattagliaRow; io: boolean }) {
           {io && <span className="lb__you">tu</span>}
         </span>
         <span className="lbs__sotto u-tabnum">
-          {row.perse} {pluralize(row.perse, 'sconfitta', 'sconfitte')}
+          {row.vinte} {pluralize(row.vinte, 'vinta', 'vinte')} su {row.giornate}
         </span>
       </span>
       <span className="lbs__punti u-tabnum">
-        {row.vinte} {pluralize(row.vinte, 'vinta', 'vinte')}
+        {row.punti}
       </span>
     </li>
   )

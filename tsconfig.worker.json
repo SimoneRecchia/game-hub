@@ -24,10 +24,11 @@
     "server",
     "shared"
   ],
-  // I test di shared/ girano in Node con Vitest, non nel Worker: li verifica
-  // tsconfig.app.json, che ha i tipi di Node. Qui leggerebbero `node:fs` con i
-  // tipi del Worker, che non li conoscono.
+  // I test girano in Node con Vitest, non nel Worker: quelli di shared/ li
+  // verifica tsconfig.app.json, quelli del server tsconfig.server-test.json.
+  // Qui leggerebbero `node:fs` con i tipi del Worker, che non li conoscono.
   "exclude": [
-    "shared/__tests__"
+    "shared/__tests__",
+    "server/__tests__"
   ]
 }

@@ -25,8 +25,10 @@ import type {
   ScarabeoRow,
   ScarabeoState,
   ScarabeoStatus,
+  StatisticheScarabeoLibero,
 } from '../../shared/types'
 import { LATO } from '../../shared/scarabeo'
+import { RIFERIMENTO_SCARABEO, puntiScarabeo } from '../../shared/punti'
 import { fail, newId, nowIso } from './http'
 
 export interface PartitaRow {
@@ -37,9 +39,59 @@ export interface PartitaRow {
   status: ScarabeoStatus
   mosse: string
   turns: number
+  /** Il punteggio del tabellone. */
   score: number
+  /** I punti in classifica: il punteggio in rapporto a quello del computer. */
+  punti: number
   started_at: string
   finished_at: string | null
+}
+
+/** La partita del computer sulle tessere del giorno: il riferimento della classificata. */
+export interface ComputerRow {
+  puzzle_number: number
+  punti: number
+  mosse: string | null
+  created_at: string
+}
+
+/**
+ * Il computer del giorno, scritto dallo script della notte.
+ *
+ * Se non c'e', la prima richiesta scrive il riferimento di ripiego e da lì vale
+ * quello per tutti: `INSERT OR IGNORE` fa sì che il riferimento di una giornata
+ * sia uno solo, anche se lo script arrivasse dopo.
+ */
+export async function computerDelGiorno(db: D1Database, puzzleNumber: number): Promise<ComputerRow> {
+  const trovato = await db
+    .prepare('SELECT * FROM scarabeo_computer WHERE puzzle_number = ?')
+    .bind(puzzleNumber)
+    .first<ComputerRow>()
+  if (trovato) return trovato
+  await db
+    .prepare(
+      `INSERT OR IGNORE INTO scarabeo_computer (puzzle_number, punti, mosse, created_at)
+       VALUES (?, ?, NULL, ?)`,
+    )
+    .bind(puzzleNumber, RIFERIMENTO_SCARABEO, nowIso())
+    .run()
+  const scritto = await db
+    .prepare('SELECT * FROM scarabeo_computer WHERE puzzle_number = ?')
+    .bind(puzzleNumber)
+    .first<ComputerRow>()
+  return (
+    scritto ?? { puzzle_number: puzzleNumber, punti: RIFERIMENTO_SCARABEO, mosse: null, created_at: nowIso() }
+  )
+}
+
+export function mosseDelComputer(computer: ComputerRow): Mossa[] | null {
+  if (!computer.mosse) return null
+  try {
+    const valore = JSON.parse(computer.mosse) as unknown
+    return Array.isArray(valore) ? (valore as Mossa[]) : null
+  } catch {
+    return null
+  }
 }
 
 export interface Giornata {
@@ -87,8 +139,14 @@ export async function apriPartita(
   return row
 }
 
-/** Lo stato completo che va al client. */
-export function statoDa(row: PartitaRow, msToNextPuzzle: number): ScarabeoState {
+/**
+ * Lo stato completo che va al client.
+ *
+ * Del computer si dice sempre il punteggio — e' il traguardo della giornata —
+ * ma la sua partita solo a giornata chiusa: la sua prima mossa e' fatta con lo
+ * stesso leggio, e mostrarla prima sarebbe un suggerimento.
+ */
+export function statoDa(row: PartitaRow, computer: ComputerRow, msToNextPuzzle: number): ScarabeoState {
   const mosse = mosseDi(row)
   const { tabellone, giocate, punti } = rigioca(mosse)
   const { leggio, restanti } = leggioDa(sacchettoDelGiorno(row.puzzle_number), mosse)
@@ -121,6 +179,14 @@ export function statoDa(row: PartitaRow, msToNextPuzzle: number): ScarabeoState 
      * vede un totale che non torna con i suoi addendi.
      */
     punti,
+    puntiClassifica: puntiScarabeo(punti, computer.punti),
+    computer: {
+      punti: computer.punti,
+      mosse:
+        row.status === 'done' && mosseDelComputer(computer)
+          ? rigioca(mosseDelComputer(computer)!).giocate
+          : null,
+    },
     status: row.status,
     msToNextPuzzle,
   }
@@ -163,25 +229,28 @@ export async function paroleSconosciute(db: D1Database, parole: string[]): Promi
 export async function aggiungiMossa(
   db: D1Database,
   row: PartitaRow,
+  computer: ComputerRow,
   mossa: Mossa,
   puntiMossa: number,
 ): Promise<PartitaRow> {
   const mosse = [...mosseDi(row), mossa]
   const turns = row.turns + 1
-  const punti = row.score + puntiMossa
+  const punteggio = row.score + puntiMossa
+  const classifica = puntiScarabeo(punteggio, computer.punti)
   const finita = turns >= MOSSE_PER_GIORNATA
   const adesso = nowIso()
 
   const esito = await db
     .prepare(
       `UPDATE scarabeo_games
-          SET mosse = ?, turns = ?, score = ?, status = ?, finished_at = ?
+          SET mosse = ?, turns = ?, score = ?, punti = ?, status = ?, finished_at = ?
         WHERE id = ? AND turns = ?`,
     )
     .bind(
       JSON.stringify(mosse),
       turns,
-      punti,
+      punteggio,
+      classifica,
       finita ? 'done' : 'playing',
       finita ? adesso : null,
       row.id,
@@ -197,7 +266,8 @@ export async function aggiungiMossa(
     ...row,
     mosse: JSON.stringify(mosse),
     turns,
-    score: punti,
+    score: punteggio,
+    punti: classifica,
     status: finita ? 'done' : 'playing',
     finished_at: finita ? adesso : null,
   }
@@ -219,6 +289,7 @@ export interface TotaliScarabeo {
   displayName: string
   avatarColor: string
   punti: number
+  punteggio: number
   giornate: number
   migliore: number
   oggi: number | null
@@ -228,11 +299,12 @@ export interface TotaliScarabeo {
 /**
  * Mette in fila i giocatori di Scarabeo.
  *
- * L'ordine: **punti** del periodo, poi la **giornata migliore** — fra due
- * totali uguali passa avanti chi ha fatto il colpo piu' grosso — poi **meno
- * giornate**, perché lo stesso totale in meno partite e' un gioco migliore, e
- * infine il nickname, così due righe identiche non si scambiano di posto a ogni
- * ricarica.
+ * L'ordine: **punti in classifica** del periodo, poi il **punteggio del
+ * tabellone** — a pari punti ha giocato meglio chi ha fatto di piu' sul
+ * tabellone, che conta anche le giornate in cui si e' battuto il computer —
+ * poi **meno giornate**, perché lo stesso totale in meno partite e' un gioco
+ * migliore, e infine il nickname, così due righe identiche non si scambiano di
+ * posto a ogni ricarica.
  *
  * Funzione pura e fuori da SQL per la stessa ragione della classifica del
  * Wordle: le righe sono poche e una catena di spareggi in SQL non si legge.
@@ -240,23 +312,12 @@ export interface TotaliScarabeo {
 export function ordinaScarabeo(giocatori: TotaliScarabeo[]): ScarabeoRow[] {
   const inFila = [...giocatori].sort((a, b) => {
     if (a.punti !== b.punti) return b.punti - a.punti
-    if (a.migliore !== b.migliore) return b.migliore - a.migliore
+    if (a.punteggio !== b.punteggio) return b.punteggio - a.punteggio
     if (a.giornate !== b.giornate) return a.giornate - b.giornate
     return a.nickname.localeCompare(b.nickname, 'it', { sensitivity: 'base' })
   })
 
-  return inFila.map((g, i) => ({
-    rank: i + 1,
-    playerId: g.playerId,
-    nickname: g.nickname,
-    displayName: g.displayName,
-    avatarColor: g.avatarColor,
-    punti: g.punti,
-    giornate: g.giornate,
-    migliore: g.migliore,
-    oggi: g.oggi,
-    inCorso: g.inCorso,
-  }))
+  return inFila.map((g, i) => ({ rank: i + 1, ...g }))
 }
 
 interface AggregatoRow {
@@ -265,6 +326,7 @@ interface AggregatoRow {
   display_name: string
   avatar_color: string
   punti: number
+  punteggio: number
   giornate: number
   migliore: number
   oggi: number | null
@@ -281,7 +343,7 @@ export async function classificaScarabeo(
   const da = finestra === null ? Number.MIN_SAFE_INTEGER : numeroDiOggi - finestra + 1
 
   /*
-   * Una query sola. Le partite ancora in corso entrano col punteggio che hanno
+   * Una query sola. Le partite ancora in corso entrano coi punti che hanno
    * già fatto, e `in_corso` lo dice: nella vista di oggi si vede anche chi sta
    * giocando, come nel Wordle.
    */
@@ -291,10 +353,11 @@ export async function classificaScarabeo(
               p.nickname     AS nickname,
               p.display_name AS display_name,
               p.avatar_color AS avatar_color,
-              COALESCE(SUM(g.score), 0)                                     AS punti,
+              COALESCE(SUM(g.punti), 0)                                     AS punti,
+              COALESCE(SUM(g.score), 0)                                     AS punteggio,
               COUNT(g.id)                                                   AS giornate,
               COALESCE(MAX(g.score), 0)                                     AS migliore,
-              MAX(CASE WHEN g.puzzle_number = ? THEN g.score END)           AS oggi,
+              MAX(CASE WHEN g.puzzle_number = ? THEN g.punti END)           AS oggi,
               MAX(CASE WHEN g.puzzle_number = ? AND g.status = 'playing'
                        THEN 1 ELSE 0 END)                                   AS in_corso
          FROM players p
@@ -311,6 +374,7 @@ export async function classificaScarabeo(
       displayName: r.display_name || r.nickname,
       avatarColor: r.avatar_color,
       punti: r.punti,
+      punteggio: r.punteggio,
       giornate: r.giornate,
       migliore: r.migliore,
       oggi: r.oggi,
@@ -324,4 +388,42 @@ export async function classificaScarabeo(
     rows,
     me: rows.find((r) => r.playerId === viewerId) ?? null,
   }
+}
+
+/* ──────────────────────────  Le partite libere  ────────────────────────── */
+
+export interface LiberaRow {
+  livello: 'facile' | 'normale' | 'difficile'
+  punti: number
+  punti_computer: number
+  esito: 'vinta' | 'persa' | 'pari'
+}
+
+export async function statisticheLibere(db: D1Database, playerId: string): Promise<StatisticheScarabeoLibero> {
+  const { results } = await db
+    .prepare(
+      `SELECT livello, punti, punti_computer, esito FROM scarabeo_partite_libere
+        WHERE player_id = ? ORDER BY created_at DESC LIMIT 2000`,
+    )
+    .bind(playerId)
+    .all<LiberaRow>()
+
+  const perLivello: StatisticheScarabeoLibero['perLivello'] = {
+    facile: { giocate: 0, vinte: 0 },
+    normale: { giocate: 0, vinte: 0 },
+    difficile: { giocate: 0, vinte: 0 },
+  }
+  let vinte = 0
+  let perse = 0
+  let migliore = 0
+  for (const r of results) {
+    perLivello[r.livello].giocate += 1
+    if (r.esito === 'vinta') {
+      vinte += 1
+      perLivello[r.livello].vinte += 1
+    }
+    if (r.esito === 'persa') perse += 1
+    migliore = Math.max(migliore, r.punti)
+  }
+  return { giocate: results.length, vinte, perse, pari: results.length - vinte - perse, migliore, perLivello }
 }

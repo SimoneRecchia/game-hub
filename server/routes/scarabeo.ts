@@ -12,18 +12,24 @@ import {
   type Mossa,
   type Posa,
 } from '../../shared/scarabeo'
-import type { ScarabeoState, ScarabeoSummary } from '../../shared/types'
+import type { ScarabeoState, ScarabeoSummary, StatisticheScarabeoLibero } from '../../shared/types'
+import { MOSSE_A_TESTA, LIVELLI, statoLibera, type Livello } from '../../shared/scarabeo-computer'
+import { sacchettoDaSeme } from '../../shared/scarabeo'
+import { puntiScarabeo } from '../../shared/punti'
 import type { AppEnv } from '../types'
-import { fail } from '../lib/http'
+import { fail, newId, nowIso } from '../lib/http'
 import { requireVerified } from '../lib/session'
 import {
   aggiungiMossa,
   apriPartita,
+  computerDelGiorno,
   giornata,
   mosseDi,
   paroleSconosciute,
+  statisticheLibere,
   statoDa,
 } from '../lib/scarabeoStore'
+import { riepilogoScarabeo } from '../lib/riepiloghi'
 
 /**
  * Le posizioni arrivate dal client, ripulite.
@@ -86,8 +92,11 @@ export const scarabeoRoutes = new Hono<AppEnv>()
   /** La partita di oggi, creata al primo accesso. */
   .get('/state', async (c) => {
     const quando = giornata()
-    const row = await apriPartita(c.env.DB, c.get('player').id, quando)
-    return c.json<ScarabeoState>(statoDa(row, msToNextPuzzle()))
+    const [row, computer] = await Promise.all([
+      apriPartita(c.env.DB, c.get('player').id, quando),
+      computerDelGiorno(c.env.DB, quando.puzzleNumber),
+    ])
+    return c.json<ScarabeoState>(statoDa(row, computer, msToNextPuzzle()))
   })
 
   /**
@@ -97,32 +106,18 @@ export const scarabeoRoutes = new Hono<AppEnv>()
    * altrimenti comparirebbero giornate iniziate e mai giocate — la stessa
    * regola di `/wordle/summary`.
    */
-  .get('/summary', async (c) => {
-    const quando = giornata()
-    const row = await c.env.DB
-      .prepare(
-        `SELECT status, turns, score, mosse FROM scarabeo_games
-          WHERE player_id = ? AND puzzle_number = ?`,
-      )
-      .bind(c.get('player').id, quando.puzzleNumber)
-      .first<{ status: 'playing' | 'done'; turns: number; score: number; mosse: string }>()
-
-    return c.json<ScarabeoSummary>({
-      puzzleNumber: quando.puzzleNumber,
-      date: quando.date,
-      status: row ? row.status : 'new',
-      punti: row?.score ?? 0,
-      mosseUsate: row?.turns ?? 0,
-      mosseTotali: MOSSE_PER_GIORNATA,
-      msToNextPuzzle: msToNextPuzzle(),
-    })
-  })
+  .get('/summary', async (c) =>
+    c.json<ScarabeoSummary>(await riepilogoScarabeo(c.env.DB, c.get('player').id)),
+  )
 
   /** Gioca una posa. */
   .post('/mossa', async (c) => {
     const posa = leggiPosa(await c.req.json().catch(() => ({})))
     const quando = giornata()
-    const row = await apriPartita(c.env.DB, c.get('player').id, quando)
+    const [row, computer] = await Promise.all([
+      apriPartita(c.env.DB, c.get('player').id, quando),
+      computerDelGiorno(c.env.DB, quando.puzzleNumber),
+    ])
 
     if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
       fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
@@ -158,8 +153,8 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     }
 
     const mossa: Mossa = { tipo: 'posa', posa }
-    const aggiornata = await aggiungiMossa(c.env.DB, row, mossa, esito.punti)
-    return c.json<ScarabeoState>(statoDa(aggiornata, msToNextPuzzle()))
+    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, esito.punti)
+    return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
 
   /**
@@ -170,13 +165,16 @@ export const scarabeoRoutes = new Hono<AppEnv>()
    */
   .post('/passo', async (c) => {
     const quando = giornata()
-    const row = await apriPartita(c.env.DB, c.get('player').id, quando)
+    const [row, computer] = await Promise.all([
+      apriPartita(c.env.DB, c.get('player').id, quando),
+      computerDelGiorno(c.env.DB, quando.puzzleNumber),
+    ])
     if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
       fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
     }
 
-    const aggiornata = await aggiungiMossa(c.env.DB, row, { tipo: 'passo' }, 0)
-    return c.json<ScarabeoState>(statoDa(aggiornata, msToNextPuzzle()))
+    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, { tipo: 'passo' }, 0)
+    return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
 
   /**
@@ -192,7 +190,10 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     if (chieste.length === 0) fail(400, 'CAMBIO_VUOTO', 'Scegli almeno una tessera da cambiare.')
 
     const quando = giornata()
-    const row = await apriPartita(c.env.DB, c.get('player').id, quando)
+    const [row, computer] = await Promise.all([
+      apriPartita(c.env.DB, c.get('player').id, quando),
+      computerDelGiorno(c.env.DB, quando.puzzleNumber),
+    ])
     if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
       fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
     }
@@ -208,8 +209,8 @@ export const scarabeoRoutes = new Hono<AppEnv>()
       mano.splice(i, 1)
     }
 
-    const aggiornata = await aggiungiMossa(c.env.DB, row, { tipo: 'cambio', tessere: chieste }, 0)
-    return c.json<ScarabeoState>(statoDa(aggiornata, msToNextPuzzle()))
+    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, { tipo: 'cambio', tessere: chieste }, 0)
+    return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
 
   /**
@@ -221,9 +222,12 @@ export const scarabeoRoutes = new Hono<AppEnv>()
    */
   .post('/chiudi', async (c) => {
     const quando = giornata()
-    const row = await apriPartita(c.env.DB, c.get('player').id, quando)
+    const [row, computer] = await Promise.all([
+      apriPartita(c.env.DB, c.get('player').id, quando),
+      computerDelGiorno(c.env.DB, quando.puzzleNumber),
+    ])
     if (row.status === 'done') {
-      return c.json<ScarabeoState>(statoDa(row, msToNextPuzzle()))
+      return c.json<ScarabeoState>(statoDa(row, computer, msToNextPuzzle()))
     }
 
     const esito = await c.env.DB
@@ -239,6 +243,80 @@ export const scarabeoRoutes = new Hono<AppEnv>()
 
     const { punti } = rigioca(mosseDi(row))
     return c.json<ScarabeoState>(
-      statoDa({ ...row, status: 'done', score: punti }, msToNextPuzzle()),
+      statoDa(
+        { ...row, status: 'done', score: punti, punti: puntiScarabeo(punti, computer.punti) },
+        computer,
+        msToNextPuzzle(),
+      ),
     )
   })
+
+  /* ─────────────────────────  Le partite libere  ───────────────────────── */
+
+  /** Le statistiche delle partite libere contro il computer. */
+  .get('/libera', async (c) => {
+    return c.json<StatisticheScarabeoLibero>(await statisticheLibere(c.env.DB, c.get('player').id))
+  })
+
+  /**
+   * Una partita libera finita, per le statistiche.
+   *
+   * Si gioca nel browser — il computer gira lì, perché cercare una mossa costa
+   * decine di millisecondi e il Worker ne ha dieci — e qui arriva a partita
+   * chiusa. Il server non si fida dei numeri: la rigioca dalle mosse sul
+   * sacchetto del suo seme, e conta lui chi ha vinto. Non la confronta col
+   * dizionario, perché non ci sono punti in classifica da proteggere.
+   */
+  .post('/libera', async (c) => {
+    const corpo = ((await c.req.json().catch(() => ({}))) ?? {}) as {
+      seme?: unknown
+      livello?: unknown
+      mosse?: unknown
+    }
+    const seme = Number(corpo.seme)
+    if (!Number.isInteger(seme) || seme < 0 || seme > 0xffff_ffff) fail(400, 'SEME', 'La partita non è valida.')
+    if (!LIVELLI.includes(corpo.livello as Livello)) fail(400, 'LIVELLO', 'Livello sconosciuto.')
+    const mosse = leggiMosse(corpo.mosse)
+
+    const stato = statoLibera({ seme, livello: corpo.livello as Livello, mosse }, sacchettoDaSeme(seme))
+    if (!stato.finita || !stato.esito) fail(422, 'NON_FINITA', 'La partita non è finita.')
+    const illegale = stato.giocate.some((g) => g.tipo === 'posa' && g.parole.length === 0)
+    if (illegale) fail(422, 'MOSSA', 'Una delle mosse non è valida.')
+
+    await c.env.DB.prepare(
+      `INSERT OR IGNORE INTO scarabeo_partite_libere
+         (id, player_id, livello, seme, mosse, punti, punti_computer, esito, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        newId('slib'),
+        c.get('player').id,
+        corpo.livello as Livello,
+        seme,
+        JSON.stringify(mosse),
+        stato.mieiPunti,
+        stato.puntiComputer,
+        stato.esito,
+        nowIso(),
+      )
+      .run()
+    return c.json<StatisticheScarabeoLibero>(await statisticheLibere(c.env.DB, c.get('player').id), 201)
+  })
+
+/**
+ * Le mosse di una partita libera, ripulite come quelle della classificata: solo
+ * i campi che servono, con i tipi giusti. Venti al massimo, dieci a testa.
+ */
+function leggiMosse(valore: unknown): Mossa[] {
+  if (!Array.isArray(valore) || valore.length > 2 * MOSSE_A_TESTA) fail(400, 'MOSSE', 'La partita non è valida.')
+  return valore.map((m) => {
+    const x = (m ?? {}) as { tipo?: unknown; posa?: unknown; tessere?: unknown }
+    if (x.tipo === 'passo') return { tipo: 'passo' }
+    if (x.tipo === 'cambio') {
+      if (!Array.isArray(x.tessere)) fail(400, 'MOSSE', 'La partita non è valida.')
+      return { tipo: 'cambio', tessere: x.tessere.map((t) => String(t)).slice(0, TESSERE_LEGGIO) }
+    }
+    if (x.tipo === 'posa') return { tipo: 'posa', posa: leggiPosa({ posa: x.posa }) }
+    return fail(400, 'MOSSE', 'La partita non è valida.')
+  })
+}

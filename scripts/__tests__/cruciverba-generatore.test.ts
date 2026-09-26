@@ -128,3 +128,22 @@ describe('un cruciverba generato', () => {
     expect(parole.every((p: string) => p.length >= 4 && cruciverba.parole.includes(p))).toBe(true)
   })
 })
+
+describe('gli schemi liberi', () => {
+  it('hanno semi loro: lo schema libero n non e’ il cruciverba del giorno n', async () => {
+    // @ts-expect-error — script in JavaScript, senza dichiarazioni di tipo
+    const { semeLibero } = await import('../cruciverba/generatore.mjs')
+    const semi = new Set<number>()
+    for (let n = 1; n <= 500; n += 1) {
+      expect(semeLibero(n)).not.toBe(semeDelGiorno(n))
+      semi.add(semeLibero(n))
+    }
+    expect(semi.size).toBe(500)
+  })
+
+  it('si scrivono nella loro tabella, col loro numero', () => {
+    const finto = { righe: 1, colonne: 2, griglia: 'ab', definizioni: {} }
+    expect(istruzioneSql(7, finto, 'x', true)).toMatch(/^INSERT OR IGNORE INTO cruciverba_schemi_liberi \(id, /)
+    expect(istruzioneSql(7, finto, 'x')).toMatch(/^INSERT OR IGNORE INTO cruciverba_schemi \(puzzle_number, /)
+  })
+})
