@@ -5,6 +5,7 @@ import type {
   CruciverbaLeaderboard,
   LeaderboardResponse,
   LeaderboardScope,
+  QuizLeaderboard,
   ScarabeoLeaderboard,
 } from '../../shared/types'
 import type { AppEnv } from '../types'
@@ -14,6 +15,7 @@ import { leaderboard } from '../lib/leaderboard'
 import { classificaScarabeo } from '../lib/scarabeoStore'
 import { classificaCruciverba } from '../lib/cruciverbaStore'
 import { classificaBattaglia } from '../lib/battagliaStore'
+import { classificaQuiz } from '../lib/quizStore'
 import { classificaGenerale } from '../lib/generale'
 import { today } from '../lib/wordleStore'
 
@@ -78,4 +80,11 @@ export const leaderboardRoutes = new Hono<AppEnv>()
     const scope = readScope(c.req.query('scope'))
     const result = await classificaBattaglia(c.env.DB, scope, today().puzzleNumber, c.get('player').id)
     return c.json<BattagliaLeaderboard>(result)
+  })
+
+  /** Il quiz: le risposte giuste, poi il tempo. */
+  .get('/quiz', async (c) => {
+    const scope = readScope(c.req.query('scope'))
+    const result = await classificaQuiz(c.env.DB, scope, today().puzzleNumber, c.get('player').id)
+    return c.json<QuizLeaderboard>(result)
   })

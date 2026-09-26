@@ -103,7 +103,11 @@ function Riepilogo({
                 : 'In classifica fra poco'}
         </span>
       </span>
-      <span className="riepilogo__anelli" aria-label={`${fatte} classificate su 4`}>
+      <span
+        className="riepilogo__anelli"
+        aria-label={`${fatte} classificate su ${GIOCHI.length}`}
+        style={{ '--giochi': GIOCHI.length } as CSSProperties}
+      >
         {GIOCHI.map((g) => (
           <Anello
             key={g.id}

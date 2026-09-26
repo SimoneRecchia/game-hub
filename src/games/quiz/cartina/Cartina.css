@@ -1,0 +1,205 @@
+/*
+ * La cartina muta: un atlante di scuola dentro una scheda. Il mare e' il fondo,
+ * i paesi stanno sopra con i confini bianchi; i mari da toccare sono tracciati
+ * trasparenti sotto le terre, che si accendono solo quando li si sceglie.
+ */
+
+.cartina {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--carta-mare);
+  box-shadow: inset 0 0 0 1px var(--carta-costa);
+  /* I gesti sono della cartina: niente zoom della pagina, niente scorrimento. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Le onde leggere di un mare disegnato: fisse, non e' la battaglia. */
+.cartina::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(170deg, transparent 0 18px, var(--carta-onda) 19px 20px, transparent 21px 38px);
+  opacity: 0.6;
+}
+
+.cartina.is-attiva {
+  cursor: crosshair;
+}
+
+.cartina__svg {
+  position: relative;
+  display: block;
+}
+
+.cartina__mondo {
+  transform-origin: 0 0;
+}
+
+.cartina__mondo.is-animata {
+  transition: transform 520ms var(--ease-out);
+}
+
+.cartina__paese {
+  fill: var(--carta-terra);
+  stroke: var(--carta-confine);
+  stroke-width: 0.9px;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  transition:
+    fill var(--dur-fast) var(--ease-out),
+    stroke var(--dur-fast) var(--ease-out);
+}
+
+/* Le coste: un filo scuro sotto il bianco dei confini, che disegna il contorno delle terre. */
+.cartina--paesi .cartina__paese {
+  paint-order: stroke;
+}
+
+.cartina--acque .cartina__paese {
+  pointer-events: none;
+}
+
+@media (hover: hover) {
+  .cartina--paesi.is-attiva .cartina__paese:hover {
+    fill: var(--carta-terra-sopra);
+  }
+
+  .cartina--acque.is-attiva .cartina__acqua:hover {
+    fill: color-mix(in srgb, var(--brand) 14%, transparent);
+  }
+}
+
+.cartina__acqua {
+  fill: rgba(0, 0, 0, 0);
+  stroke: none;
+  transition: fill var(--dur-fast) var(--ease-out);
+}
+
+.cartina__paese.is-scelta,
+.cartina__acqua.is-scelta {
+  fill: var(--brand);
+  animation: cartina-scelta 300ms var(--ease-bounce);
+}
+
+.cartina__acqua.is-scelta {
+  fill: color-mix(in srgb, var(--brand) 55%, transparent);
+}
+
+.cartina__paese.is-giusta,
+.cartina__acqua.is-giusta {
+  fill: var(--green);
+  animation: cartina-giusta 900ms var(--ease-out) 2;
+}
+
+.cartina__acqua.is-giusta {
+  fill: color-mix(in srgb, var(--green) 55%, transparent);
+}
+
+.cartina__acqua.is-accettata {
+  fill: color-mix(in srgb, var(--green) 30%, transparent);
+}
+
+.cartina__paese.is-sbagliata,
+.cartina__acqua.is-sbagliata {
+  fill: var(--red);
+}
+
+.cartina__acqua.is-sbagliata {
+  fill: color-mix(in srgb, var(--red) 45%, transparent);
+}
+
+@keyframes cartina-scelta {
+  from {
+    opacity: 0.4;
+  }
+}
+
+@keyframes cartina-giusta {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.cartina__avviso {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  text-align: center;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.cartina__avviso.is-attesa {
+  animation: cartina-respira 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes cartina-respira {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.cartina__riprova {
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-weight: 700;
+}
+
+/* Lo zoom a bottoni, per chi non ha due dita da usare: il computer, o una mano sola. */
+.cartina__zoom {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cartina__zoom button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--material-thick, rgba(255, 255, 255, 0.85));
+  box-shadow:
+    var(--edge-light),
+    0 2px 6px var(--shadow-tint);
+  color: var(--label);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1;
+  backdrop-filter: blur(10px);
+}
+
+.cartina__zoom button:active {
+  transform: translateY(1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cartina__mondo.is-animata {
+    transition: none;
+  }
+
+  .cartina__paese.is-giusta,
+  .cartina__acqua.is-giusta,
+  .cartina__paese.is-scelta,
+  .cartina__acqua.is-scelta,
+  .cartina__avviso.is-attesa {
+    animation: none;
+  }
+}

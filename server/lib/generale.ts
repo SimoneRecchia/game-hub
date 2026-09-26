@@ -4,11 +4,11 @@
  * Si puo' fare adesso e non si poteva prima: ogni classificata vale al massimo
  * cento punti, qualunque sia il gioco (vedi shared/punti.ts), quindi sommarle
  * non richiede un tasso di cambio inventato. Chi gioca a tutto ogni giorno puo'
- * fare fino a quattrocento punti; chi gioca solo al Wordle fino a cento, e
+ * fare fino a cinquecento punti; chi gioca solo al Wordle fino a cento, e
  * nella classifica del Wordle compete alla pari con tutti.
  *
- * Quattro aggregati, uno per gioco, uniti qui. Non una query sola: le quattro
- * tabelle non hanno niente in comune se non il giocatore, e una UNION con
+ * Un aggregato per gioco, uniti qui. Non una query sola: le tabelle non hanno
+ * niente in comune se non il giocatore, e una UNION con
  * colonne diverse per ogni gioco sarebbe piu' difficile da leggere che da
  * unire in memoria — le righe sono una per giocatore per gioco.
  */
@@ -45,7 +45,7 @@ export interface TotaliGenerale {
 export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
   const conPunti = giocatori.map((g) => ({
     ...g,
-    punti: g.perGioco.wordle + g.perGioco.scarabeo + g.perGioco.cruciverba + g.perGioco.battaglia,
+    punti: g.perGioco.wordle + g.perGioco.scarabeo + g.perGioco.cruciverba + g.perGioco.battaglia + g.perGioco.quiz,
   }))
   return conPunti
     .sort((a, b) => {
@@ -73,7 +73,7 @@ export async function classificaGenerale(
   const finestra = FINESTRA[scope]
   const da = finestra === null ? Number.MIN_SAFE_INTEGER : numeroDiOggi - finestra + 1
 
-  const [wordle, scarabeo, cruciverba, battaglia] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, battaglia, quiz] = await Promise.all([
     /*
      * Il Wordle come nella sua classifica: i punti delle proprie parole piu'
      * quelli delle giornate giocate in compagnia. Una giornata conta come una
@@ -121,6 +121,15 @@ export async function classificaGenerale(
       )
       .bind(da)
       .all<Parziale>(),
+    db
+      .prepare(
+        `SELECT player_id,
+                COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
+                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
+           FROM quiz_partite WHERE puzzle_number >= ? GROUP BY player_id`,
+      )
+      .bind(da)
+      .all<Parziale>(),
   ])
 
   const totali = new Map<string, TotaliGenerale>()
@@ -132,7 +141,7 @@ export async function classificaGenerale(
         nickname: '',
         displayName: '',
         avatarColor: '',
-        perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, battaglia: 0 },
+        perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, battaglia: 0, quiz: 0 },
         assist: 0,
         partite: 0,
       }
@@ -152,6 +161,7 @@ export async function classificaGenerale(
   somma('scarabeo', scarabeo.results)
   somma('cruciverba', cruciverba.results)
   somma('battaglia', battaglia.results)
+  somma('quiz', quiz.results)
 
   if (totali.size > 0) {
     const id = [...totali.keys()]

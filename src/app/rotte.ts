@@ -17,6 +17,8 @@
  *   /battaglia-navale/libera            contro il computer o contro un amico
  *   /battaglia-navale/partita/:id       una partita
  *   /battaglia-navale/invito/:codice    un invito arrivato con un link
+ *   /quiz/classificata                  le dieci domande di oggi
+ *   /quiz/libera                        categoria, zona e domande a scelta
  *   /classifica, /classifica/wordle     la generale e quella di ogni gioco
  *   /profilo
  *
@@ -34,6 +36,7 @@ export const SLUG: Record<GiocoClassificato, string> = {
   scarabeo: 'scarabeo',
   cruciverba: 'cruciverba',
   battaglia: 'battaglia-navale',
+  quiz: 'quiz',
 }
 
 export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null {

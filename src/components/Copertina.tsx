@@ -142,6 +142,29 @@ const DISEGNI: Record<GiocoClassificato | 'generale', ReactElement> = {
     </g>
   ),
 
+  // Un mappamondo da scrivania, con lo spillo piantato sul posto da trovare.
+  quiz: (
+    <g>
+      <g fill="none" stroke="#fff" strokeOpacity={0.6} strokeWidth={3.5} strokeLinecap="round">
+        <path d="M58 24A34 34 0 0 0 58 92" />
+        <path d="M58 92v8M46 100h24" />
+      </g>
+      <circle cx={58} cy={58} r={28} fill="#fff" fillOpacity={0.2} stroke="#fff" strokeWidth={3} />
+      <g fill="none" stroke="#fff" strokeOpacity={0.45} strokeWidth={1.6}>
+        <ellipse cx={58} cy={58} rx={11} ry={28} />
+        <path d="M30 58h56M34 44h48M34 72h48" />
+      </g>
+      <g fill="#fff" fillOpacity={0.92}>
+        <path d="M40 45c5-5 13-4 15 1s-3 8-1 12 7 4 5 10-9 6-13 2-8-7-7-13 0-9 1-12z" />
+        <path d="M67 58c5-1 10 2 10 6s-4 5-5 9 1 7-3 8-6-5-5-10-3-12 3-13z" />
+      </g>
+      <g transform="translate(62 16)">
+        <path d="M12 0C5.4 0 0 5 0 11.3 0 19.8 12 32 12 32s12-12.2 12-20.7C24 5 18.6 0 12 0z" fill="#fff" />
+        <circle cx={12} cy={11} r={4.5} fill="var(--c2)" />
+      </g>
+    </g>
+  ),
+
   // La classifica generale: tre gradini di un podio.
   generale: (
     <g fontFamily={TONDO} fontWeight={800}>
