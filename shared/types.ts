@@ -1,8 +1,9 @@
 /** Tipi condivisi tra client React e Pages Functions. */
 
 import type { MossaGiocata } from './scarabeo'
+import type { Esito, IdNave, Nave } from './battaglia'
 
-export type GameId = 'wordle' | 'scarabeo' | 'cruciverba'
+export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia'
 
 export interface Player {
   id: string
@@ -285,6 +286,139 @@ export interface CruciverbaLeaderboard {
   updatedAt: string
   rows: CruciverbaRow[]
   me: CruciverbaRow | null
+}
+
+/* ─────────────────────────────  Battaglia navale  ──────────────────────── */
+
+/** Dove si trova un giocatore nell'app: lo dice il giro di controllo degli inviti. */
+export type Attivita =
+  | 'hub'
+  | 'wordle'
+  | 'scarabeo'
+  | 'cruciverba'
+  | 'battaglia'
+  | 'classifica'
+  | 'profilo'
+  | 'altro'
+
+export interface GiocatoreBreve {
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+}
+
+export interface GiocatoreOnline extends GiocatoreBreve {
+  attivita: Attivita
+  /** In una partita di battaglia navale: non si puo' sfidare. */
+  occupato: boolean
+  /** Gli e' gia' arrivata una sfida tua, che aspetta risposta. */
+  invitato: boolean
+}
+
+/** Una sfida arrivata, da accettare o rifiutare. */
+export interface InvitoBattaglia {
+  id: string
+  da: GiocatoreBreve
+  createdAt: string
+  scadeTraMs: number
+}
+
+/** Una sfida mandata, con come e' andata. */
+export interface InvitoInviato {
+  id: string
+  a: GiocatoreBreve
+  stato: 'attesa' | 'accettato' | 'rifiutato' | 'annullato' | 'scaduto'
+  partitaId: string | null
+  scadeTraMs: number
+}
+
+export type StatoBattaglia = 'disposizione' | 'battaglia' | 'finita'
+
+/** La partita aperta di un giocatore, in breve: per l'hub e per il giro di controllo. */
+export interface PartitaBreve {
+  id: string
+  stato: StatoBattaglia
+  avversario: GiocatoreBreve
+  tuoTurno: boolean
+}
+
+/**
+ * La risposta al giro di controllo che ogni schermata fa ogni pochi secondi:
+ * gli inviti del Wordle in compagnia, le sfide a battaglia navale, la partita
+ * aperta. Un giro solo per tutto, perché il piano gratuito conta le richieste.
+ */
+export interface PresenzaRisposta {
+  coop: CoopInvite[]
+  battaglia: InvitoBattaglia[]
+  partita: PartitaBreve | null
+}
+
+export interface LobbyBattaglia {
+  giocatori: GiocatoreOnline[]
+  inviti: InvitoInviato[]
+  partita: PartitaBreve | null
+  vinte: number
+  perse: number
+}
+
+/** Un colpo visto da chi guarda: dove, com'e' andato, e la nave solo se affondata. */
+export interface ColpoVisto {
+  casella: number
+  esito: Esito
+  /** Il nome si annuncia solo all'affondamento, come al tavolo. */
+  nave: IdNave | null
+}
+
+export interface VistaBattaglia {
+  id: string
+  stato: StatoBattaglia
+  avversario: GiocatoreBreve & { online: boolean }
+  /** La mia flotta, se l'ho gia' messa in mare. */
+  miaFlotta: Nave[] | null
+  avversarioPronto: boolean
+  tuoTurno: boolean
+  /** I miei colpi sul mare dell'avversario. */
+  colpiMiei: ColpoVisto[]
+  /** I colpi dell'avversario sul mio mare. */
+  colpiSubiti: ColpoVisto[]
+  /** Le navi nemiche affondate, con la loro posizione: ormai si vedono. */
+  affondateNemiche: Nave[]
+  /** La flotta nemica intera: solo a partita finita. */
+  flottaNemica: Nave[] | null
+  /** L'ultimo colpo sparato, da chiunque: e' la notizia da dare. */
+  ultimo: (ColpoVisto & { mio: boolean }) | null
+  vincitore: 'io' | 'avversario' | null
+  motivo: 'flotta' | 'resa' | 'assenza' | null
+  /** Da quando l'avversario non muove: oltre il limite si puo' chiedere la vittoria. */
+  attesaMs: number
+  puoiReclamare: boolean
+  versione: number
+}
+
+export interface BattagliaSummary {
+  /** Quanti altri giocatori sono online adesso. */
+  online: number
+  partita: PartitaBreve | null
+  vinte: number
+  perse: number
+}
+
+export interface BattagliaRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  vinte: number
+  perse: number
+}
+
+export interface BattagliaLeaderboard {
+  scope: LeaderboardScope
+  updatedAt: string
+  rows: BattagliaRow[]
+  me: BattagliaRow | null
 }
 
 export type LeaderboardScope = 'today' | 'week' | 'month' | 'all'

@@ -1,0 +1,186 @@
+/*
+ * Il mare: un foglio a quadretti azzurro, con intestazioni come sulla carta.
+ *
+ * La misura segue la larghezza del mare (`cqw`), non quella dello schermo:
+ * lo stesso componente fa il mare grande dove si spara e quello piccolo con la
+ * propria flotta, e lettere e segni devono crescere e calare con le caselle.
+ */
+.mare {
+  display: grid;
+  grid-template-columns: 0.72fr repeat(10, minmax(0, 1fr));
+  grid-template-rows: 0.72fr repeat(10, minmax(0, 1fr));
+  aspect-ratio: 10.72 / 10.72;
+  width: 100%;
+  gap: 2px;
+  container-type: inline-size;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.mare__angolo {
+  display: block;
+}
+
+.mare__intestazione {
+  display: grid;
+  place-items: center;
+  font-size: calc(100cqw / 11 * 0.34);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--label-tertiary);
+}
+
+.mare__cella {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: var(--mare);
+  box-shadow: inset 0 0 0 0.5px var(--mare-linea);
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+button.mare__cella {
+  cursor: pointer;
+}
+
+button.mare__cella:not(:disabled):hover {
+  background: var(--mare-sopra);
+}
+
+button.mare__cella:disabled {
+  cursor: default;
+}
+
+button.mare__cella:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+  z-index: 1;
+}
+
+/*
+ * Le navi: un pezzo per casella, che si unisce ai vicini. Le estremita' si
+ * arrotondano — prua e poppa — e il resto resta squadrato, così cinque caselle
+ * si leggono come una nave e non come cinque tessere.
+ */
+.mare__cella.has-nave {
+  background: var(--nave);
+  box-shadow: inset 0 1px 0 var(--edge-tint);
+  border-radius: 2px;
+}
+
+.mare__cella.has-nave.is-inizio:not(.is-verticale) {
+  border-top-left-radius: 40%;
+  border-bottom-left-radius: 40%;
+}
+
+.mare__cella.has-nave.is-fine:not(.is-verticale) {
+  border-top-right-radius: 40%;
+  border-bottom-right-radius: 40%;
+}
+
+.mare__cella.has-nave.is-verticale.is-inizio {
+  border-top-left-radius: 40%;
+  border-top-right-radius: 40%;
+}
+
+.mare__cella.has-nave.is-verticale.is-fine {
+  border-bottom-left-radius: 40%;
+  border-bottom-right-radius: 40%;
+}
+
+.mare__cella.is-scelta {
+  background: var(--brand);
+}
+
+.mare__cella.is-a-fondo {
+  background: var(--affondato);
+}
+
+/* Il colpo andato a segno su una casella senza nave visibile: il mare nemico. */
+.mare__cella.is-colpito:not(.has-nave),
+.mare__cella.is-affondato:not(.has-nave) {
+  background: var(--colpito-fondo);
+}
+
+.mare__acqua {
+  width: 26%;
+  height: 26%;
+  border-radius: 50%;
+  background: var(--acqua-segno);
+}
+
+/* La croce: due tratti, rossi, che si leggono anche senza distinguere il colore. */
+.mare__croce {
+  position: relative;
+  width: 62%;
+  height: 62%;
+}
+
+.mare__croce::before,
+.mare__croce::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 18%;
+  margin-top: -9%;
+  border-radius: 999px;
+  background: var(--colpito);
+  transform: rotate(45deg);
+}
+
+.mare__croce::after {
+  transform: rotate(-45deg);
+}
+
+.mare__cella.is-a-fondo .mare__croce::before,
+.mare__cella.is-a-fondo .mare__croce::after {
+  background: var(--affondato-ink);
+}
+
+/* L'ultimo colpo appena arrivato: un'onda che si allarga, una volta. */
+.mare__cella.is-nuovo::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--brand);
+  animation: mare-nuovo 900ms var(--ease-out) forwards;
+  pointer-events: none;
+}
+
+@keyframes mare-nuovo {
+  from {
+    opacity: 1;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+.mare--piccolo {
+  gap: 1px;
+}
+
+.mare--piccolo .mare__intestazione {
+  font-size: calc(100cqw / 11 * 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mare__cella {
+    transition: none;
+  }
+
+  .mare__cella.is-nuovo::after {
+    animation: none;
+    opacity: 0;
+  }
+}
