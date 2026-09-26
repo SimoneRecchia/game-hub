@@ -1,10 +1,10 @@
 /**
  * Accesso ai dati delle partite in compagnia.
  *
- * Si gioca in compagnia **la parola del giorno**, cioe' `slot = 1`: le altre
- * quattro della giornata sono un extra personale. Per questo le query qui
- * filtrano tutte su quella posizione, e `coop_rooms` puo' restare con la sua
- * "una stanza per host al giorno".
+ * Si gioca in compagnia **la parola del giorno**, l'unica della classificata:
+ * per questo `coop_rooms` ha "una stanza per host al giorno". Le query filtrano
+ * su `slot = 1` da quando le parole erano cinque, e il filtro resta: e' la
+ * posizione della parola del giorno, e non costa niente.
  */
 
 import { MAX_ATTEMPTS, MAX_COOP_GUESTS, WORD_LENGTH } from '../../shared/config'

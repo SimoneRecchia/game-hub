@@ -38,60 +38,11 @@ export interface EvaluatedGuess {
 
 export type WordleStatus = 'playing' | 'won' | 'lost'
 
-/**
- * Una delle cinque parole della giornata, come la vede il selettore.
- *
- * `new` vuol dire che il giocatore non l'ha ancora aperta: la partita nasce
- * alla prima visita, non all'apertura dell'hub.
- */
-export interface DaySlot {
-  /** 1 = la parola del giorno, 2..5 = quelle in piu'. */
-  slot: number
-  status: WordleStatus | 'new'
-  attempts: number
-  /** Punti fatti. null se non e' chiusa. */
-  score: number | null
-  /**
-   * true finché la parola precedente non e' chiusa.
-   *
-   * Le parole si aprono una per volta: non si passa alla seconda senza aver
-   * finito la prima. Il controllo vero sta sul server — questo campo serve al
-   * selettore per non proporre un percorso che verrebbe rifiutato.
-   */
-  locked: boolean
-  /** true se questa parola e' stata giocata nella stanza di qualcun altro. */
-  shared: boolean
-}
-
-/**
- * La giornata vista dal percorso, senza aprire nessuna partita.
- *
- * Esiste separata da `WordleState` perché la schermata del percorso non deve
- * far partire niente: `openGame` scrive `started_at`, che e' l'istante da cui si
- * misura il bonus velocita'. Se la mappa chiedesse lo stato della prima parola
- * per disegnare i nodi, guardarla e poi andare a fare colazione costerebbe il
- * bonus — e nessuno collegherebbe la cosa al fatto di aver aperto una mappa.
- */
-export interface DayView {
-  puzzleNumber: number
-  date: string
-  /** Le cinque parole: stato, tentativi, punti, e quali sono ancora chiuse. */
-  day: DaySlot[]
-  /** La stanza in cui si sta giocando la giornata, se non e' la propria. */
-  roomId: string | null
-  /** Millisecondi al prossimo puzzle, per il countdown. */
-  msToNextPuzzle: number
-}
-
 export interface WordleState {
   /** Numero progressivo del puzzle: 1 = giorno di lancio. */
   puzzleNumber: number
   /** Data del puzzle in formato YYYY-MM-DD nel fuso Europe/Rome. */
   date: string
-  /** Quale delle cinque parole si sta giocando. */
-  slot: number
-  /** Lo stato di tutte e cinque: il selettore e la griglia non possono divergere. */
-  day: DaySlot[]
   wordLength: number
   maxAttempts: number
   guesses: EvaluatedGuess[]
@@ -663,18 +614,13 @@ export interface ApiError {
 export interface WordleSummary {
   puzzleNumber: number
   date: string
-  /** Lo stato della **parola del giorno**: e' quella che la card racconta. */
   status: WordleStatus | 'new'
   attempts: number
-  /** Punti di tutta la giornata, tutte e cinque le parole. */
+  /** I punti della giornata, se e' chiusa. */
   score: number | null
   msToNextPuzzle: number
   /** Oggi la parola la sta giocando nella stanza di un altro: qui la card ci rimanda. */
   roomId: string | null
-  /** Quante delle cinque parole ha chiuso. */
-  done: number
-  /** Quante sono in tutto. */
-  words: number
 }
 
 /* ─────────────────────────  Partite in compagnia  ───────────────────────── */

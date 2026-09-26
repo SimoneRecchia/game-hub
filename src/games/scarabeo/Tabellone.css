@@ -159,6 +159,28 @@
 }
 
 /*
+ * Le quattro caselle d'angolo seguono la curva del tabellone. Con gli angoli
+ * dritti uscivano dal bordo arrotondato: il tabellone era morbido e le caselle
+ * sopra no. Il raggio e' quello del tabellone meno il suo bordo, così la curva
+ * della casella e quella del tabellone restano parallele.
+ */
+.tabellone > .cella:nth-child(1) {
+  border-top-left-radius: calc(var(--r-md) - 2px);
+}
+
+.tabellone > .cella:nth-child(15) {
+  border-top-right-radius: calc(var(--r-md) - 2px);
+}
+
+.tabellone > .cella:nth-child(211) {
+  border-bottom-left-radius: calc(var(--r-md) - 2px);
+}
+
+.tabellone > .cella:nth-child(225) {
+  border-bottom-right-radius: calc(var(--r-md) - 2px);
+}
+
+/*
  * La posa forma una parola che non esiste: rosso, prima di premere "Gioca".
  * L'anello cambia colore e basta — la tessera resta leggibile, e il bottone
  * dice quale parola non va.

@@ -1,4 +1,6 @@
 import { Sheet } from '@/components/Sheet'
+import { Fuoco } from './Mare'
+import './Mare.css'
 import { CASELLE_FLOTTA, FLOTTA } from '@shared/battaglia'
 import { BATTAGLIA_ATTESA_FLOTTA_MS, BATTAGLIA_ATTESA_TURNO_MS, LINK_SCADENZA_MS } from '@shared/config'
 import { ACQUE_PER_PUNTO, PUNTI_PER_COLPITA, puntiBattaglia } from '@shared/punti'
@@ -63,6 +65,34 @@ export function ComeSiGiocaBattaglia({ open, onClose }: { open: boolean; onClose
               <strong>colpito e affondato</strong> con il nome della nave.
             </li>
             <li>Le navi affondate si vedono intere; le altre restano nascoste fino alla fine.</li>
+          </ul>
+          <ul className="legenda" aria-label="I segni sul mare">
+            <li>
+              <span className="legenda__cella" aria-hidden="true">
+                <span className="mare__spruzzo" />
+              </span>
+              <span>
+                <strong>Acqua</strong>: lì non c&rsquo;è niente.
+              </span>
+            </li>
+            <li>
+              <span className="legenda__cella is-colpito" aria-hidden="true">
+                <Fuoco />
+              </span>
+              <span>
+                <strong>Colpito</strong>: c&rsquo;è una nave, ancora a galla. Quale sia lo scopri
+                affondandola.
+              </span>
+            </li>
+            <li>
+              <span className="legenda__cella is-affondata" aria-hidden="true">
+                <span className="mare__croce" />
+              </span>
+              <span>
+                <strong>Affondata</strong>: la nave è tutta a fondo, e si vede intera. Le caselle
+                intorno sono acqua di sicuro, perché le navi non si toccano.
+              </span>
+            </li>
           </ul>
         </section>
 

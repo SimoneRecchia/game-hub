@@ -106,11 +106,6 @@ export function Campo({
         />
       </div>
 
-      {/* Messaggio effimero: si sovrappone, non sposta il tabellone. */}
-      <div className="scr__messaggio" aria-live="polite">
-        {c.messaggio && <span className="scr__pillola">{c.messaggio}</span>}
-      </div>
-
       {fine ?? (
         <div className="scr__mano">
           <Leggio
@@ -189,6 +184,7 @@ export function Tabellino({
   notaAltro,
   turno,
   sotto,
+  avviso = null,
   avanzamento,
   onApri,
 }: {
@@ -198,6 +194,12 @@ export function Tabellino({
   notaAltro?: string
   turno?: 'io' | 'altro' | null
   sotto: ReactNode
+  /**
+   * Un messaggio del momento — la posa non valida, la mossa del computer — al
+   * posto della riga di mezzo. Prima era una pillola sopra il tabellone, e
+   * copriva le caselle che si stavano guardando.
+   */
+  avviso?: string | null
   /** Da 0 a 1: quanto manca a pareggiare il traguardo. */
   avanzamento?: number
   onApri?: () => void
@@ -209,8 +211,14 @@ export function Tabellino({
         <span className="scr-tab__punti u-tabnum">{io}</span>
       </span>
       <span className="scr-tab__mezzo">
-        <span className="scr-tab__sotto">{sotto}</span>
-        {avanzamento !== undefined && (
+        {avviso ? (
+          <span key={avviso} className="scr-tab__avviso" aria-live="polite">
+            {avviso}
+          </span>
+        ) : (
+          <span className="scr-tab__sotto">{sotto}</span>
+        )}
+        {avanzamento !== undefined && !avviso && (
           <span className="scr-tab__barra" aria-hidden="true">
             <span className="scr-tab__pieno" style={{ transform: `scaleX(${Math.min(1, Math.max(0, avanzamento))})` }} />
           </span>

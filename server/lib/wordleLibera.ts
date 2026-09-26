@@ -10,13 +10,13 @@
  *
  *  - **non svelare le parole del giorno.** Una parola libera che domani fosse la
  *    parola del giorno sarebbe un regalo a chi ha giocato oggi. Le parole dei
- *    prossimi sessanta giorni — tutte e cinque — restano fuori;
+ *    prossimi sessanta giorni restano fuori;
  *  - **non ripetersi.** Le parole delle ultime trecento partite libere del
  *    giocatore restano fuori anche loro, finché ne restano altre.
  */
 
-import { MAX_ATTEMPTS, WORD_LENGTH, WORDS_PER_DAY } from '../../shared/config'
-import { dailySolutionIndexes } from '../../shared/daily'
+import { MAX_ATTEMPTS, WORD_LENGTH } from '../../shared/config'
+import { solutionIndexFor } from '../../shared/daily'
 import type {
   StatisticheWordleLibero,
   WordleLiberaState,
@@ -46,9 +46,7 @@ export interface LiberaRow {
 export function paroleProtette(puzzleDiOggi: number): Set<string> {
   const protette = new Set<string>()
   for (let n = puzzleDiOggi; n < puzzleDiOggi + GIORNI_PROTETTI; n += 1) {
-    for (const i of dailySolutionIndexes(n, SOLUTION_WORDS.length, WORDS_PER_DAY)) {
-      protette.add(SOLUTION_WORDS[i])
-    }
+    protette.add(SOLUTION_WORDS[solutionIndexFor(n, SOLUTION_WORDS.length)])
   }
   return protette
 }

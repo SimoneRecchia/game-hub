@@ -6,7 +6,6 @@ import {
   gameDate,
   msToNextPuzzle,
   puzzleNumberFor,
-  dailySolutionIndexes,
   solutionIndexFor,
   solutionPermutation,
 } from '../daily'
@@ -112,6 +111,14 @@ describe('estrazione della soluzione', () => {
   it('riparte dall inizio dopo aver esaurito l elenco', () => {
     expect(solutionIndexFor(size + 1, size)).toBe(solutionIndexFor(1, size))
   })
+
+  it('e’ la sequenza di sempre: le giornate gia’ giocate non cambiano parola', () => {
+    // Fissata sui giorni passati: se la permutazione cambiasse, chi gioca da
+    // settembre si troverebbe la parola di un altro giorno — e la riga salvata
+    // in daily_puzzles non direbbe piu' la stessa cosa del calcolo.
+    expect(size).toBe(1_132)
+    expect([1, 2, 3, 10, 28].map((n) => solutionIndexFor(n, size))).toEqual([908, 62, 490, 872, 768])
+  })
 })
 
 describe('la parola del giorno e la stessa per tutti', () => {
@@ -141,71 +148,5 @@ describe('la parola del giorno e la stessa per tutti', () => {
       visti.add(solutionIndexFor(puzzle, 1_132))
     }
     expect(visti.size).toBe(200)
-  })
-})
-
-describe('le cinque parole di una giornata', () => {
-  const N = 1_132
-
-  it('la prima e la parola del giorno di sempre', () => {
-    /*
-     * La sequenza della parola del giorno e' l'identità del gioco: aggiungerne
-     * altre quattro non deve spostarla di un giorno. Se questo test cade, chi
-     * gioca da settembre si trova la parola di un altro giorno.
-     */
-    for (const g of [1, 2, 3, 30, 200, 1_000]) {
-      expect(dailySolutionIndexes(g, N, 5)[0]).toBe(solutionIndexFor(g, N))
-    }
-  })
-
-  it('sono cinque, e tutte diverse, ogni giorno', () => {
-    for (let g = -30; g <= 2_500; g += 1) {
-      const indici = dailySolutionIndexes(g, N, 5)
-      expect(indici).toHaveLength(5)
-      expect(new Set(indici).size).toBe(5)
-    }
-  })
-
-  it('sono deterministiche', () => {
-    const primo = dailySolutionIndexes(42, N, 5)
-    for (let volta = 0; volta < 5; volta += 1) {
-      expect(dailySolutionIndexes(42, N, 5)).toEqual(primo)
-    }
-  })
-
-  it('restano dentro l elenco', () => {
-    for (let g = 1; g <= 500; g += 1) {
-      for (const i of dailySolutionIndexes(g, N, 5)) {
-        expect(i).toBeGreaterThanOrEqual(0)
-        expect(i).toBeLessThan(N)
-      }
-    }
-  })
-
-  it('fra due giorni vicini si ripete al massimo una parola in piu, e quasi mai', () => {
-    /*
-     * Lo scorrimento anti-collisione sconfina nel blocco del giorno dopo, e
-     * quello puo' far ricomparire una parola in piu' due giorni di fila. Misurato
-     * su 2000 giorni: capita 3 volte, lo 0.15%. Il doppione *dentro* la stessa
-     * giornata — quello che si noterebbe — non capita mai, ed e' il test sopra.
-     *
-     * Questo test fissa il tetto invece di negare il fenomeno: se una modifica
-     * lo peggiorasse, cade.
-     */
-    let giorniConRipetizione = 0
-    const giorni = 2_000
-    for (let g = 1; g <= giorni; g += 1) {
-      const oggi = dailySolutionIndexes(g, N, 5).slice(1)
-      const domani = dailySolutionIndexes(g + 1, N, 5).slice(1)
-      const comuni = oggi.filter((i) => domani.includes(i))
-      expect(comuni.length).toBeLessThanOrEqual(1)
-      if (comuni.length > 0) giorniConRipetizione += 1
-    }
-    expect(giorniConRipetizione / giorni).toBeLessThan(0.01)
-  })
-
-  it('non accetta piu parole di quelle disponibili', () => {
-    expect(() => dailySolutionIndexes(1, 3, 5)).toThrow()
-    expect(() => dailySolutionIndexes(1, 0, 5)).toThrow()
   })
 })

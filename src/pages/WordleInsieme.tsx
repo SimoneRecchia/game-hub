@@ -4,6 +4,7 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
+import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconPeople } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { Board } from '@/games/wordle/Board'
@@ -79,6 +80,8 @@ export default function WordleInsieme() {
   }, [roomId, carica])
 
   const chiuso = view !== null && (!view.active || view.status !== 'playing')
+  // Chi ha dato una mano vince con l'host: stessa festa, se la vittoria arriva mentre guarda.
+  const festa = useFesta(view ? !chiuso : null, view?.status === 'won')
 
   const suggerisci = useCallback(async () => {
     if (busy || chiuso) return
@@ -195,10 +198,6 @@ export default function WordleInsieme() {
             </div>
 
             <div className="insieme__board">
-              {/* Dentro l'area della griglia: si sovrappone senza spostarla. */}
-              <div className="insieme__messaggio" aria-live="polite">
-                {message && <span className="insieme__pillola">{message}</span>}
-              </div>
               <Board
                 guesses={view.guesses}
                 draft=""
@@ -214,10 +213,15 @@ export default function WordleInsieme() {
                 è un tentativo, e mescolarla confonderebbe le due cose. */}
             {!chiuso && (
               <div className="insieme__proposta">
-                <span className="insieme__proposta-etichetta">
-                  {view.counts
-                    ? `Suggerisci a ${view.hostName}`
-                    : `Dai una mano a ${view.hostName}`}
+                {/* Il messaggio sta al posto dell'etichetta, accanto a quel che si
+                    e' appena scritto: prima era una pillola sopra la griglia, e
+                    copriva i tentativi dell'host. */}
+                <span
+                  className={`insieme__proposta-etichetta${message ? ' is-avviso' : ''}`}
+                  aria-live="polite"
+                >
+                  {message ??
+                    (view.counts ? `Suggerisci a ${view.hostName}` : `Dai una mano a ${view.hostName}`)}
                 </span>
                 <span className="insieme__proposta-caselle">
                   {Array.from({ length: WORD_LENGTH }, (_, i) => (
@@ -242,6 +246,7 @@ export default function WordleInsieme() {
           </>
         )}
       </div>
+      {festa && <Coriandoli />}
     </Pagina>
   )
 }

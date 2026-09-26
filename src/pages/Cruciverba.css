@@ -55,6 +55,25 @@
   color: var(--label-tertiary);
 }
 
+.cru__avviso {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--label);
+  animation: cru-avviso var(--dur-base) var(--ease-spring);
+}
+
+@keyframes cru-avviso {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
 .cru__aiuti {
   padding: var(--sp-1) var(--sp-3);
   border: none;
@@ -158,40 +177,6 @@
   overflow: hidden;
   font-size: var(--text-subhead);
   line-height: 1.3;
-}
-
-/* ---------- Messaggio ---------- */
-
-.cru__messaggio {
-  flex: none;
-  position: relative;
-  height: 0;
-  display: grid;
-  place-items: center;
-}
-
-/* Si sovrappone alla griglia invece di occupare una riga, come nello Scarabeo. */
-.cru__pillola {
-  position: absolute;
-  bottom: var(--sp-2);
-  z-index: 5;
-  max-width: 92%;
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-pill);
-  background: var(--label);
-  color: var(--label-inverted);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  text-align: center;
-  box-shadow: var(--shadow-md);
-  animation: cru-pillola var(--dur-base) var(--ease-spring);
-}
-
-@keyframes cru-pillola {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.96);
-  }
 }
 
 .ctastiera {
