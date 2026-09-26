@@ -480,6 +480,16 @@ corrisponderebbe a quello che il login produrra' dopo, e la password nuova
 risulterebbe subito sbagliata. Vale anche per qualunque futura funzione che
 reimposti una password.
 
+**Il nickname dimenticato si recupera con l'email** (`POST /auth/nickname/request`,
+dal link «Non ricordi il nickname?» nella schermata della password). Risponde
+sempre allo stesso modo, che l'email sia registrata o no — il nickname lo legge
+solo chi apre quella casella — e manda al massimo un'email al minuto per
+persona, con un `UPDATE` condizionato su `players.nickname_email_at`: senza un
+limite, chiunque potrebbe riempire di posta la casella di un collega. Anche
+l'email con il codice della password scrive il nickname in chiaro, perché il
+secondo passo lo chiede e chi ha chiesto il codice con l'email potrebbe non
+ricordarlo.
+
 **La verifica dell'email resta spenta senza chiave Resend.**
 `emailVerificationEnabled` controlla entrambe le condizioni. Non accendere
 `EMAIL_VERIFICATION` senza la chiave: bloccherebbe ogni registrazione, perché
