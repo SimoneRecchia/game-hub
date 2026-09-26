@@ -86,8 +86,32 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  max-width: 132px;
+  width: 150px;
+  max-width: 40vw;
+  /* L'altezza dei lati: un messaggio lungo va a capo dentro, non allarga il tabellino. */
+  min-height: 48px;
+}
+
+.scr-tab__avviso {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--label);
+  text-align: center;
+  animation: scr-avviso var(--dur-base) var(--ease-spring);
+}
+
+@keyframes scr-avviso {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
 }
 
 .scr-tab__sotto {
@@ -145,44 +169,6 @@
 
   .tabellone {
     width: min(100%, 420px, 100cqh);
-  }
-}
-
-/* ---------- Messaggio ---------- */
-
-.scr__messaggio {
-  flex: none;
-  position: relative;
-  height: 0;
-  display: grid;
-  place-items: center;
-}
-
-/*
- * Si sovrappone al tabellone invece di occupare una riga: una fascia riservata
- * a un messaggio che compare di rado costerebbe altezza alle caselle, che e' la
- * stessa scelta fatta nel Wordle per lo stesso motivo.
- */
-.scr__pillola {
-  position: absolute;
-  bottom: var(--sp-2);
-  z-index: 5;
-  max-width: 92%;
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-pill);
-  background: var(--label);
-  color: var(--label-inverted);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  text-align: center;
-  box-shadow: var(--shadow-md);
-  animation: scr-pillola var(--dur-base) var(--ease-spring);
-}
-
-@keyframes scr-pillola {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.96);
   }
 }
 

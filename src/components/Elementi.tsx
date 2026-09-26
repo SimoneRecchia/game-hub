@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Collegamento } from '@/app/navigazione'
 import { IconChevronRight } from './Icons'
 import './Elementi.css'
@@ -214,43 +215,93 @@ export function Etichetta({
 
 /* ─────────────────────────  Coriandoli  ───────────────────────── */
 
-const COLORI_CORIANDOLI = ['#7b6cff', '#34c759', '#f7b23b', '#4d8df7', '#ff5e7e', '#23a6c9']
+const COLORI_CORIANDOLI = ['#7b6cff', '#34c759', '#f7b23b', '#4d8df7', '#ff5e7e', '#23a6c9', '#ffd23f']
+const FORME = ['rettangolo', 'quadrato', 'tondo', 'nastro'] as const
+
+/** Quanto dura la festa, dal primo coriandolo all'ultimo che esce dallo schermo. */
+export const DURATA_FESTA_MS = 3_000
 
 /**
- * Una manciata di coriandoli, per le vittorie.
+ * I coriandoli della vittoria: due cannoni dagli angoli in basso, che sparano
+ * verso il centro e ricadono.
  *
- * Pochi e brevi: una festa di un secondo, non un salvaschermo. Sono elementi
- * CSS e non un canvas, quindi non costano niente quando non ci sono, e con il
- * movimento ridotto non compaiono affatto.
+ * Sono elementi CSS e non un canvas, quindi non costano niente quando non ci
+ * sono, e con il movimento ridotto non compaiono affatto. Stanno nel body e
+ * sopra tutto — anche sopra il foglio del risultato, che si apre nello stesso
+ * momento: dentro la pagina restavano sotto il suo velo, e la festa non la
+ * vedeva nessuno.
+ *
+ * Ogni coriandolo sono tre elementi uno dentro l'altro, perché ognuno ha il
+ * suo movimento: di lato a velocita' costante, in alto e poi giu' come chi
+ * cade, e su se stesso come un foglietto.
  */
-export function Coriandoli({ quanti = 36 }: { quanti?: number }) {
+export function Coriandoli({ quanti = 84 }: { quanti?: number }) {
   const [pezzi] = useState(() =>
-    Array.from({ length: quanti }, (_, i) => ({
-      x: (Math.random() - 0.5) * 2,
-      giro: Math.random() * 720 - 360,
-      ritardo: Math.random() * 140,
-      colore: COLORI_CORIANDOLI[i % COLORI_CORIANDOLI.length],
-      largo: Math.random() > 0.5,
-    })),
+    Array.from({ length: quanti }, (_, i) => {
+      const daSinistra = i % 2 === 0
+      return {
+        daSinistra,
+        dx: `${(daSinistra ? 1 : -1) * (14 + Math.random() * 52)}vw`,
+        su: `${-(38 + Math.random() * 44)}vh`,
+        ritardo: `${Math.floor(i / 2) * 9 + Math.random() * 60}ms`,
+        durata: `${1_900 + Math.random() * 900}ms`,
+        giro: `${500 + Math.random() * 700}ms`,
+        asse: `${Math.random().toFixed(2)}, ${Math.random().toFixed(2)}, ${(0.3 + Math.random()).toFixed(2)}`,
+        colore: COLORI_CORIANDOLI[i % COLORI_CORIANDOLI.length],
+        forma: FORME[i % FORME.length],
+      }
+    }),
   )
-  return (
+  if (typeof document === 'undefined') return null
+  return createPortal(
     <div className="coriandoli" aria-hidden="true">
       {pezzi.map((p, i) => (
         <span
           key={i}
-          className={`coriandoli__pezzo${p.largo ? ' is-largo' : ''}`}
+          className={`coriandoli__pezzo${p.daSinistra ? '' : ' is-destra'}`}
           style={
             {
-              '--x': p.x,
-              '--giro': `${p.giro}deg`,
-              '--ritardo': `${p.ritardo}ms`,
-              background: p.colore,
+              '--dx': p.dx,
+              '--su': p.su,
+              '--ritardo': p.ritardo,
+              '--durata': p.durata,
+              '--giro': p.giro,
+              '--asse': p.asse,
             } as CSSProperties
           }
-        />
+        >
+          <span className="coriandoli__salto">
+            <span className={`coriandoli__forma is-${p.forma}`} style={{ background: p.colore }} />
+          </span>
+        </span>
       ))}
-    </div>
+    </div>,
+    document.body,
   )
+}
+
+/**
+ * Vero per il tempo di una festa quando una partita vista in corso finisce
+ * vinta. La festa e' per la vittoria appena fatta: riaprire una partita vinta
+ * ieri, o riaprire il risultato, non la rifà.
+ *
+ * `inCorso` e' null finché non si sa (la partita sta caricando); `vinta` e' il
+ * momento in cui festeggiare, di solito quando si apre il risultato.
+ */
+export function useFesta(inCorso: boolean | null, vinta: boolean): boolean {
+  const vistaGiocare = useRef(false)
+  const [festa, setFesta] = useState(false)
+  useEffect(() => {
+    if (inCorso === true) vistaGiocare.current = true
+  }, [inCorso])
+  useEffect(() => {
+    if (!vinta || !vistaGiocare.current) return
+    vistaGiocare.current = false
+    setFesta(true)
+    const t = window.setTimeout(() => setFesta(false), DURATA_FESTA_MS)
+    return () => window.clearTimeout(t)
+  }, [vinta])
+  return festa
 }
 
 /* ─────────────────────────  Tacche di livello  ───────────────────────── */

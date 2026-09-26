@@ -25,34 +25,6 @@
  * sovrapposizione non sposta nulla e restituisce 26 px alla griglia, che su
  * uno schermo basso sono tre punti di lato per ogni casella.
  */
-.insieme__messaggio {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.insieme__pillola {
-  padding: var(--sp-1) var(--sp-4);
-  border-radius: var(--r-pill);
-  background: var(--label);
-  color: var(--label-inverted);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  animation: insieme-pillola var(--dur-base) var(--ease-spring);
-}
-
-@keyframes insieme-pillola {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.94);
-  }
-}
-
 .insieme__board {
   position: relative;
   flex: 1;
@@ -90,6 +62,19 @@
   color: var(--label-secondary);
   flex: 1;
   min-width: 0;
+}
+
+.insieme__proposta-etichetta.is-avviso {
+  font-weight: 700;
+  color: var(--label);
+  animation: insieme-avviso var(--dur-base) var(--ease-spring);
+}
+
+@keyframes insieme-avviso {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
 }
 
 .insieme__proposta-caselle {
@@ -156,6 +141,12 @@
 
   .insieme__proposta-etichetta {
     display: none;
+  }
+
+  /* Sugli schermi bassi l'etichetta non c'e', ma un messaggio si': e' l'unico posto che non copre niente. */
+  .insieme__proposta-etichetta.is-avviso {
+    display: block;
+    flex: 0 1 auto;
   }
 
   .insieme__casella {

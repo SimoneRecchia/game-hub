@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
-import { Coriandoli, Elenco, Riga, Sezione, Tacche, Vuoto } from '@/components/Elementi'
+import { Coriandoli, Elenco, Riga, Sezione, Tacche, Vuoto, useFesta } from '@/components/Elementi'
 import { IconComputer, IconFlag, IconInfo, IconList, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
@@ -39,6 +39,7 @@ export default function ScarabeoLibero() {
   const [abbandono, setAbbandono] = useState(false)
   const stato = g.stato
   const finita = stato?.finita ?? false
+  const festa = useFesta(stato ? !stato.finita : null, risultato && finita && stato?.esito === 'vinta')
 
   // A partita finita si apre il risultato, una volta.
   useEffect(() => {
@@ -104,6 +105,7 @@ export default function ScarabeoLibero() {
           evidenziate={g.ultimaDelComputer}
           testa={
             <Tabellino
+              avviso={g.messaggio}
               io={stato.mieiPunti}
               altro={stato.puntiComputer}
               nomeAltro="Computer"
@@ -198,7 +200,7 @@ export default function ScarabeoLibero() {
         </div>
       </Sheet>
 
-      {risultato && stato.esito === 'vinta' && <Coriandoli />}
+      {festa && <Coriandoli />}
     </Pagina>
   )
 }
