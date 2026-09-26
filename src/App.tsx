@@ -16,7 +16,6 @@ import Welcome from './pages/Welcome'
 import Wordle from './pages/Wordle'
 import WordleLibero from './pages/WordleLibero'
 import WordleInsieme from './pages/WordleInsieme'
-import WordlePercorso from './pages/WordlePercorso'
 import Scarabeo from './pages/Scarabeo'
 import ScarabeoLibero from './pages/ScarabeoLibero'
 import Cruciverba from './pages/Cruciverba'
@@ -67,14 +66,7 @@ export default function App() {
           <Route path="/classifica/:gioco" element={<Classifica />} />
           <Route path="/profilo" element={<Profilo />} />
 
-          {/*
-            Il Wordle classificato sono due schermate: il percorso delle cinque
-            parole e la griglia di una di esse. Lo slot sta nell'indirizzo, non
-            in uno stato interno, perché il tasto indietro del telefono torni al
-            percorso — che e' quel che uno si aspetta uscendo da un livello.
-          */}
-          <Route path="/wordle/classificata" element={<WordlePercorso />} />
-          <Route path="/wordle/classificata/:slot" element={<Wordle />} />
+          <Route path="/wordle/classificata" element={<Wordle />} />
           <Route path="/wordle/libera" element={<WordleLibero />} />
           <Route path="/wordle/insieme/:roomId" element={<WordleInsieme />} />
 
@@ -97,14 +89,9 @@ export default function App() {
           <Route path="/insieme/:roomId" element={<Vecchio verso={(p) => ROTTE.insieme(p.roomId ?? '')} />} />
           <Route path="/battaglia" element={<Navigate to={ROTTE.gioco('battaglia')} replace />} />
           <Route path="/battaglia/:id" element={<Vecchio verso={(p) => ROTTE.partitaBattaglia(p.id ?? '')} />} />
-          <Route
-            path="/wordle/:slot"
-            element={
-              <Vecchio
-                verso={(p) => (/^[1-5]$/.test(p.slot ?? '') ? ROTTE.parola(Number(p.slot)) : ROTTE.gioco('wordle'))}
-              />
-            }
-          />
+          {/* Le cinque parole di prima: ora la classificata e' una parola sola. */}
+          <Route path="/wordle/classificata/:slot" element={<Navigate to={ROTTE.classificata('wordle')} replace />} />
+          <Route path="/wordle/:slot" element={<Navigate to={ROTTE.classificata('wordle')} replace />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Shell>

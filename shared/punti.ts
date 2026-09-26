@@ -3,21 +3,22 @@
  *
  * La regola comune: **una partita classificata vale al massimo cento punti**,
  * qualunque sia il gioco. E' quel che rende confrontabili i giochi fra loro e
- * possibile la classifica generale, che e' la loro somma: una giornata di
- * Wordle non deve valere il doppio di un cruciverba solo perché ha cinque
- * parole invece di uno schema.
+ * possibile la classifica generale, che e' la loro somma: una giornata di un
+ * gioco non deve valere il doppio di quella di un altro solo perché ha piu'
+ * mosse o piu' caselle.
  *
  * Dentro quel tetto, ogni gioco misura quel che gli e' proprio, e tutti tengono
  * lo stesso principio del Wordle: **giocarla bene vale circa il doppio di
  * giocarla male**, non dieci volte tanto. Una giornata storta si recupera.
  *
  *   gioco        cosa misura                          tipico   pessimo   perfetto
- *   Wordle       tentativi, su cinque parole          80       ~35       100 (+4)
+ *   Wordle       i tentativi                           70-90    20*       100 (+4)
  *   Scarabeo     punti rispetto al computer           60-90    ~40       100
  *   Cruciverba   completato, meno gli aiuti            85-95    0*        100
  *   Battaglia    colpi per affondare la flotta         75-85    ~30       100
  *
- *   * un cruciverba svelato per intero non e' stato risolto: vale zero.
+ *   * la parola non indovinata vale venti, la peggiore indovinata cinquanta;
+ *     un cruciverba svelato per intero non e' stato risolto: vale zero.
  *
  * I pochi punti oltre il cento del Wordle sono i bonus di velocità e costanza,
  * che servono da spareggio e restano sotto il gradino di un tentativo.

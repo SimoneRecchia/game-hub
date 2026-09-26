@@ -44,7 +44,6 @@ interface AggregateRow {
   assists: number
   played: number
   wins: number
-  extra: number
   avg_attempts: number | null
 }
 
@@ -82,8 +81,6 @@ export interface PlayerTotals {
   assists: number
   played: number
   wins: number
-  /** Quante parole in piu' ha chiuso: e' l'ultimo spareggio. */
-  extra: number
   avgAttempts: number | null
 }
 
@@ -145,9 +142,7 @@ export function streaksByPlayer(
  *  2. **assist**, che e' lo spareggio: fra due totali uguali passa avanti chi
  *     ne ha di meno, cioe' chi ha fatto piu' punti con le proprie partite;
  *  3. vittorie, poi media tentativi piu' bassa;
- *  4. parole in piu' chiuse, che e' l'unico posto in cui "aver giocato di piu'"
- *     conta: nel punteggio non deve, o le extra ribalterebbero la classifica;
- *  5. nickname, perché due righe identiche non devono cambiare posto a ogni
+ *  4. nickname, perché due righe identiche non devono cambiare posto a ogni
  *     ricarica.
  *
  * Chi ha solo giocato in compagnia, senza mai una partita propria, e' in
@@ -165,7 +160,6 @@ export function rankPlayers(players: PlayerTotals[]): LeaderboardRow[] {
       if (b.avgAttempts === null) return -1
       return a.avgAttempts - b.avgAttempts
     }
-    if (a.extra !== b.extra) return b.extra - a.extra
     return a.nickname.localeCompare(b.nickname, 'it', { sensitivity: 'base' })
   })
 
@@ -238,8 +232,6 @@ export async function leaderboard(
                          THEN 1 ELSE 0 END)                              AS played,
                 SUM(CASE WHEN g.slot = 1 AND g.spectated != 1 AND g.status = 'won'
                          THEN 1 ELSE 0 END)                              AS wins,
-                SUM(CASE WHEN g.slot > 1 AND g.status != 'playing'
-                         THEN 1 ELSE 0 END)                              AS extra,
                 AVG(CASE WHEN g.slot = 1 AND g.spectated != 1 AND g.status = 'won'
                          THEN g.attempts END)                            AS avg_attempts
            FROM players p
@@ -289,7 +281,6 @@ export async function leaderboard(
     assists: row.assists,
     played: row.played,
     wins: row.wins,
-    extra: row.extra,
     avgAttempts: row.avg_attempts,
   }))
 

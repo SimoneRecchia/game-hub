@@ -16,35 +16,16 @@ interface Props {
   onClose: () => void
   state: WordleState
   stats: PlayerStats | null
-  /** Porta alla prossima parola da giocare, se ce n'e' una. */
-  onNextWord: (slot: number) => void
+  /** Porta alla parola libera: la classificata e' una al giorno, le altre sono lì. */
+  onLibera: () => void
 }
 
 const WIN_TITLES = ['Al primo colpo!', 'Splendido', 'Ottimo', 'Bene', 'Per un pelo', 'In extremis']
 
-export function ResultSheet({ open, onClose, state, stats, onNextWord }: Props) {
+export function ResultSheet({ open, onClose, state, stats, onLibera }: Props) {
   const toast = useToast()
   const won = state.status === 'won'
   const attempts = state.guesses.length
-
-  /*
-   * La prossima parola aperta della giornata.
-   *
-   * E' il modo in cui le quattro parole in piu' si fanno scoprire: se restassero
-   * solo nel selettore in cima, chi chiude la parola del giorno e chiude il
-   * riepilogo non saprebbe mai che ce ne sono altre.
-   */
-  /*
-   * Le parole si aprono una per volta, quindi la prossima e' semplicemente la
-   * prima non ancora chiusa. Il filtro su `locked` c'e' comunque: se un domani
-   * la progressione cambiasse, questo bottone non porterebbe su una parola che
-   * il server rifiuta.
-   */
-  const prossima = state.day.find(
-    (d) => d.status !== 'won' && d.status !== 'lost' && !d.locked && d.slot !== state.slot,
-  )
-  const rimaste = state.day.filter((d) => d.status !== 'won' && d.status !== 'lost').length
-  const puntiGiornata = state.day.reduce((sum, d) => sum + (d.score ?? 0), 0)
 
   return (
     <Sheet open={open} onClose={onClose} title={won ? WIN_TITLES[attempts - 1] : 'Niente da fare'}>
@@ -62,52 +43,30 @@ export function ResultSheet({ open, onClose, state, stats, onNextWord }: Props) 
         {state.score !== null && (
           <div className="result__score">
             <span className="result__score-value u-tabnum">+{state.score}</span>
-            <span className="result__score-label">
-              {state.slot === 1 ? 'punti' : `punti · ${state.slot}ª parola`}
-            </span>
-            {/* Il totale della giornata, quando non coincide col punteggio di
-                questa parola: e' il numero che finisce in classifica. */}
-            {puntiGiornata !== state.score && (
-              <span className="result__score-day u-tabnum">
-                {puntiGiornata} oggi in tutto
-              </span>
-            )}
+            <span className="result__score-label">punti in classifica</span>
           </div>
         )}
 
         {stats && <StatsPanel stats={stats} highlight={won ? attempts : null} />}
 
-        {rimaste === 0 ? (
-          <Countdown ms={state.msToNextPuzzle} />
-        ) : (
-          <p className="result__rimaste">
-            {rimaste === 1
-              ? 'Ti resta una parola oggi.'
-              : `Ti restano ${rimaste} parole oggi.`}
-          </p>
-        )}
+        <Countdown ms={state.msToNextPuzzle} />
 
         <div className="result__actions">
-          {prossima && (
-            <Button
-              size="lg"
-              fullWidth
-              onClick={() => {
-                onNextWord(prossima.slot)
-                onClose()
-              }}
-            >
-              {/* Niente punti nell'etichetta: la scala sta nel foglio informativo,
-                  e qui il numero sarebbe un'altra cifra da leggere in un foglio
-                  che ne ha già parecchie. */}
-              {prossima.slot === 1
-                ? 'Gioca la parola del giorno'
-                : `Gioca la ${prossima.slot}ª parola`}
-            </Button>
-          )}
+          {/* La classificata e' una al giorno: chi ha voglia di giocarne altre le
+              trova nella libera, a caso e senza punti. */}
+          <Button
+            size="lg"
+            fullWidth
+            onClick={() => {
+              onClose()
+              onLibera()
+            }}
+          >
+            Gioca una parola libera
+          </Button>
 
           <Button
-            variant={prossima ? 'tinted' : 'filled'}
+            variant="tinted"
             size="lg"
             fullWidth
             onClick={async () => {
