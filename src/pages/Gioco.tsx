@@ -140,12 +140,15 @@ function Anteprima({ id }: { id: GiocoClassificato }) {
   const { dati } = useDati<Parameters<typeof righeComuni>[0]>(percorsoClassifica(id, 'week'))
   const righe: RigaComune[] = dati ? righeComuni(dati) : []
   const io = righe.find((r) => r.playerId === player.id)
-  if (dati && righe.length === 0) return null
+  // Sul podio chi ha fatto punti: una partita appena aperta vale zero, e sul
+  // gradino sembrerebbe un errore. E' la stessa regola della classifica.
+  const podio = righe.filter((r) => r.punti > 0).slice(0, 3)
+  if (dati && podio.length === 0) return null
 
   return (
     <Sezione titolo="Questa settimana" azione={<Collegamento to={ROTTE.classifica(id)}>Tutta</Collegamento>}>
       <div className="podio-mini">
-        {(dati ? righe.slice(0, 3) : [null, null, null]).map((r, i) =>
+        {(dati ? podio : [null, null, null]).map((r, i) =>
           r ? (
             <div key={r.playerId} className={`podio-mini__posto podio-mini__posto--${i + 1}`}>
               <Avatar nickname={r.nickname} color={r.avatarColor} size={i === 0 ? 52 : 42} medal={(i + 1) as 1 | 2 | 3} />
