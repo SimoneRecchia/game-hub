@@ -384,7 +384,8 @@ corta — altrimenti la Russia toccava la baia di Baffin. `controllaRiassunto`
 ferma lo script se i conti di controllo non tornano (l'Italia bagnata da
 Tirreno, Adriatico e Ionio; l'Austria da niente).
 
-**Il riassunto del quiz e' l'unico dato che sta sul server, e pesa cento kB.**
+**I dati del quiz sono un riassunto di cento kB, e le immagini non passano dal
+server.**
 Paesi, capitali, confini, acque, fiumi e laghi, a chiavi corte, in quattro
 righe di `quiz_dati` — una per sezione, perché D1 non accetta istruzioni oltre
 i cento kB — riscritte solo quando cambia la versione, che e' l'hash del
