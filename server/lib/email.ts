@@ -126,16 +126,52 @@ export function verifyEmailMessage(nickname: string, code: string, minuti: numbe
   }
 }
 
+/** Il nickname in evidenza: sta in ogni email che serve a rientrare. */
+function bloccoNickname(nickname: string): string {
+  return `<p style="margin:0 0 8px;font-size:15px;color:#3c3c43;line-height:1.5">Il tuo nickname è:</p>
+    <p style="margin:0;font-size:26px;font-weight:700;letter-spacing:0.5px">${nickname}</p>`
+}
+
+/**
+ * Il codice per la nuova password, con il nickname scritto in chiaro.
+ *
+ * Il nickname serve al secondo passo — la password e' legata a lui — e chi ha
+ * chiesto il codice scrivendo l'email potrebbe non ricordarlo: se l'email non
+ * lo dicesse, resterebbe fermo davanti a un campo che non sa riempire.
+ */
 export function resetPasswordMessage(nickname: string, code: string, minuti: number): Omit<EmailMessage, 'to'> {
   return {
     subject: `${code} è il codice per la nuova password`,
-    text: `Ciao ${nickname},\n\nil codice per impostare una nuova password su Game Hub è:\n\n${code}\n\nVale ${minuti} minuti. Se non hai chiesto tu di cambiare la password, ignora questo messaggio: la password attuale resta valida.\n\ngiochi.simonerecchia.com`,
+    text: `Ciao ${nickname},\n\nil codice per impostare una nuova password su Game Hub è:\n\n${code}\n\nIl tuo nickname è: ${nickname}\n\nVale ${minuti} minuti. Se non hai chiesto tu di cambiare la password, ignora questo messaggio: la password attuale resta valida.\n\ngiochi.simonerecchia.com`,
     html: layout(
       'Nuova password',
       `${blocoCodice(code)}
+      <div style="margin:24px 0 0">${bloccoNickname(nickname)}</div>
       <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
         Vale <strong>${minuti} minuti</strong>. Se non hai chiesto tu di cambiare la password, puoi
         ignorare questo messaggio: quella attuale resta valida.
+      </p>`,
+    ),
+  }
+}
+
+/** Il nickname dimenticato, a chi lo chiede con la sua email. */
+export function nicknameMessage(nickname: string): Omit<EmailMessage, 'to'> {
+  return {
+    subject: 'Il tuo nickname su Game Hub',
+    text: `Ciao,\n\nhai chiesto il nickname con cui sei iscritto a Game Hub. È:\n\n${nickname}\n\nCon questo e la tua password entri da giochi.simonerecchia.com. Se non ricordi nemmeno la password, dalla stessa schermata scegli «Password dimenticata».\n\nSe non l'hai chiesto tu, ignora questo messaggio: senza la password nessuno può entrare.\n\ngiochi.simonerecchia.com`,
+    html: layout(
+      'Il tuo nickname',
+      `${bloccoNickname(nickname)}
+      <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
+        Con questo e la tua password entri da
+        <a href="https://giochi.simonerecchia.com" style="color:#007aff;text-decoration:none">giochi.simonerecchia.com</a>.
+        Se non ricordi nemmeno la password, dalla stessa schermata scegli
+        <strong>Password dimenticata</strong>.
+      </p>
+      <p style="margin:12px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
+        Se non l’hai chiesto tu, puoi ignorare questo messaggio: senza la password nessuno può
+        entrare.
       </p>`,
     ),
   }

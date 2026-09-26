@@ -10,7 +10,7 @@ import { deriveVerifier } from '@shared/password'
 import type { Player } from '@shared/types'
 import './VerifyEmail.css'
 
-type Passo = 'richiesta' | 'conferma'
+type Passo = 'richiesta' | 'conferma' | 'nickname' | 'nickname-inviato'
 
 /**
  * Recupero password in due passi: si chiede il codice, poi si imposta la nuova.
@@ -18,7 +18,18 @@ type Passo = 'richiesta' | 'conferma'
  * Il primo passo risponde sempre allo stesso modo anche se l'account non
  * esiste: dire "questo nickname non c'e'" trasformerebbe la schermata in un
  * modo per scoprire chi e' iscritto.
+ *
+ * Da qui si recupera anche il **nickname**, con l'email: senza nickname non si
+ * entra e non si reimposta nemmeno la password, perché la password e' legata a
+ * lui. Anche questa richiesta risponde sempre allo stesso modo.
  */
+const TITOLI: Record<Passo, string> = {
+  richiesta: 'Password dimenticata',
+  conferma: 'Nuova password',
+  nickname: 'Nickname dimenticato',
+  'nickname-inviato': 'Controlla la posta',
+}
+
 export function ForgotPassword({ onDone }: { onDone: () => void }) {
   const { apply } = useAuth()
   const [passo, setPasso] = useState<Passo>('richiesta')
@@ -56,6 +67,27 @@ export function ForgotPassword({ onDone }: { onDone: () => void }) {
     } catch (err) {
       haptic('error')
       setError(err instanceof ApiFetchError ? err.message : 'Non riesco a mandare il codice.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function chiediNickname(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+    const email = identifier.trim()
+    if (!email.includes('@')) {
+      setError('Scrivi l’email con cui ti sei registrato.')
+      return
+    }
+    setBusy(true)
+    try {
+      await api('/auth/nickname/request', { method: 'POST', body: { email } })
+      haptic('success')
+      setPasso('nickname-inviato')
+    } catch (err) {
+      haptic('error')
+      setError(err instanceof ApiFetchError ? err.message : 'Non riesco a mandare l’email.')
     } finally {
       setBusy(false)
     }
@@ -108,19 +140,59 @@ export function ForgotPassword({ onDone }: { onDone: () => void }) {
       <div className="verifica__inner">
         <header className="verifica__head">
           <span className="verifica__busta" aria-hidden="true">
-            {passo === 'richiesta' ? '?' : '✉︎'}
+            {passo === 'richiesta' || passo === 'nickname' ? '?' : '✉︎'}
           </span>
-          <h1 className="verifica__title">
-            {passo === 'richiesta' ? 'Password dimenticata' : 'Nuova password'}
-          </h1>
+          <h1 className="verifica__title">{TITOLI[passo]}</h1>
           <p className="verifica__lede">
             {passo === 'richiesta'
               ? 'Scrivi il nickname (o l’email): ti mandiamo un codice all’email che hai usato per registrarti.'
-              : `Abbiamo mandato un codice di ${CODE_LENGTH} cifre. Vale ${CODE_TTL_MINUTES} minuti.`}
+              : passo === 'conferma'
+                ? `Abbiamo mandato un codice di ${CODE_LENGTH} cifre. Vale ${CODE_TTL_MINUTES} minuti.`
+                : passo === 'nickname'
+                  ? 'Scrivi l’email con cui ti sei registrato: ti mandiamo il tuo nickname.'
+                  : `Se ${identifier.trim()} è registrata, ti abbiamo appena scritto il tuo nickname. Se non arriva entro un minuto, guarda anche nello spam.`}
           </p>
         </header>
 
-        {passo === 'richiesta' ? (
+        {passo === 'nickname' ? (
+          <form className="verifica__form" onSubmit={chiediNickname} noValidate>
+            <div className="verifica__campi">
+              <Field
+                label="Email"
+                type="email"
+                placeholder="la tua email"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                required
+              />
+            </div>
+            {error && (
+              <p className="verifica__errore" role="alert">
+                {error}
+              </p>
+            )}
+            <Button type="submit" size="lg" fullWidth loading={busy}>
+              Mandami il nickname
+            </Button>
+          </form>
+        ) : passo === 'nickname-inviato' ? (
+          <div className="verifica__form">
+            <Button
+              size="lg"
+              fullWidth
+              onClick={() => {
+                setError(null)
+                setPasso('richiesta')
+              }}
+            >
+              Reimposta anche la password
+            </Button>
+          </div>
+        ) : passo === 'richiesta' ? (
           <form className="verifica__form" onSubmit={chiediCodice} noValidate>
             <div className="verifica__campi">
               <Field
@@ -158,7 +230,7 @@ export function ForgotPassword({ onDone }: { onDone: () => void }) {
                 spellCheck={false}
                 hint={
                   identifier.includes('@')
-                    ? 'La password è legata al nickname, non all’email.'
+                    ? 'Lo trovi scritto nell’email con il codice: la password è legata al nickname.'
                     : undefined
                 }
                 required
@@ -203,6 +275,30 @@ export function ForgotPassword({ onDone }: { onDone: () => void }) {
         )}
 
         <div className="verifica__azioni">
+          {passo === 'richiesta' && (
+            <button
+              type="button"
+              className="verifica__link"
+              onClick={() => {
+                setError(null)
+                setPasso('nickname')
+              }}
+            >
+              Non ricordi il nickname?
+            </button>
+          )}
+          {passo === 'nickname' && (
+            <button
+              type="button"
+              className="verifica__link"
+              onClick={() => {
+                setError(null)
+                setPasso('richiesta')
+              }}
+            >
+              Ricordo il nickname
+            </button>
+          )}
           {passo === 'conferma' && (
             <button
               type="button"
