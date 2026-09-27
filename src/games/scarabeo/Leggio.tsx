@@ -66,8 +66,7 @@ export function ScegliJolly({
   return (
     <Sheet open={aperto} onClose={onChiudi} title="Che lettera è?">
       <p className="jolly__lede">
-        Il jolly prende la lettera che scegli e <strong>vale zero punti</strong>. Sul tabellone
-        resta un jolly: la lettera conta per la parola, non per il punteggio.
+        Il jolly <strong>vale zero punti</strong>.
       </p>
       <div className="jolly__griglia">
         {Object.keys(VALORI).map((lettera) => (

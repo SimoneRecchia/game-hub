@@ -53,7 +53,7 @@ export default function Home() {
         </ul>
       </Sezione>
 
-      <Sezione titolo="Partite libere" nota="Quante vuoi, a caso, senza punti in classifica.">
+      <Sezione titolo="Partite libere" nota="Non contano per la classifica.">
         <ul className="home__libere">
           {GIOCHI.map((g, i) => (
             <li key={g.id} className="entra" style={{ '--n': i + 4 } as CSSProperties}>
@@ -97,7 +97,7 @@ function Riepilogo({
           {!oggi
             ? ' '
             : posizione
-              ? `${posizione}º su ${oggi.generale.giocatori} nella classifica generale`
+              ? `${posizione}º su ${oggi.generale.giocatori} in classifica`
               : fatte === 0
                 ? 'Gioca una classificata per entrare in classifica'
                 : 'In classifica fra poco'}
@@ -136,7 +136,7 @@ function CartaClassificata({ gioco, stato }: { gioco: Gioco; stato: StatoOggi | 
       className={`carta carta--${gioco.id}${fatta ? ' is-fatta' : ''}`}
       style={{ '--c1': `var(--${gioco.id}-1)`, '--c2': `var(--${gioco.id}-2)` } as CSSProperties}
     >
-      <Collegamento to={ROTTE.gioco(gioco.id)} className="carta__tutta" aria-label={`${gioco.nome}: la pagina del gioco`} />
+      <Collegamento to={ROTTE.gioco(gioco.id)} className="carta__tutta" aria-label={`Apri ${gioco.nome}`} />
       <Copertina gioco={gioco.id} formato="icona" transizione={`copertina-${gioco.id}`} className="carta__icona" />
       <div className="carta__testo">
         <h3 className="carta__nome">{gioco.nome}</h3>

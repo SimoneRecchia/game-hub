@@ -42,13 +42,6 @@ const DOVE: Record<Attivita, string> = {
 
 const NOMI: Record<LivelloBattaglia, string> = { facile: 'Facile', normale: 'Normale', difficile: 'Difficile' }
 
-/** Com'e' fatto ogni livello, detto come si direbbe di un avversario (vedi shared/battaglia-computer.ts). */
-const DESCRIZIONI: Record<LivelloBattaglia, string> = {
-  facile: 'Spara un po’ a caso, ma quando colpisce insiste.',
-  normale: 'Sa che le navi non si toccano, e non spreca colpi.',
-  difficile: 'Calcola dove è più probabile una nave. Non perdona.',
-}
-
 /**
  * La battaglia libera: contro il computer a tre livelli, o contro un amico.
  *
@@ -118,7 +111,7 @@ export default function BattagliaLibera() {
       const partita = await api<VistaBattaglia>('/battaglia/computer', { method: 'POST', body: { livello } })
       vai(ROTTE.partitaBattaglia(partita.id))
     } catch (err) {
-      toast.show(err instanceof ApiFetchError ? err.message : 'La partita non è partita.', 'error')
+      toast.show(err instanceof ApiFetchError ? err.message : 'Non riesco a iniziare la partita.', 'error')
     } finally {
       setInvio(null)
     }
@@ -137,7 +130,7 @@ export default function BattagliaLibera() {
       await api('/battaglia/sfida', { method: 'POST', body: { playerId: g.playerId } })
       await carica()
     } catch (err) {
-      setAvviso(err instanceof ApiFetchError ? err.message : 'La sfida non è partita.')
+      setAvviso(err instanceof ApiFetchError ? err.message : 'Non riesco a mandare la sfida.')
     } finally {
       setInvio(null)
     }
@@ -155,7 +148,7 @@ export default function BattagliaLibera() {
       setDati((prima) => (prima ? { ...prima, link } : prima))
       await condividi(link, toast.show)
     } catch (err) {
-      toast.show(err instanceof ApiFetchError ? err.message : 'Il link non si è creato.', 'error')
+      toast.show(err instanceof ApiFetchError ? err.message : 'Non riesco a creare il link.', 'error')
     } finally {
       setInvio(null)
     }
@@ -174,7 +167,7 @@ export default function BattagliaLibera() {
   return (
     <Pagina
       titolo="Contro chi vuoi"
-      sotto="Il computer a tre livelli, o un amico. Non conta per la classifica."
+      sotto="Non conta per la classifica."
       indietro={{ a: ROTTE.gioco('battaglia'), etichetta: 'Battaglia' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
@@ -198,20 +191,13 @@ export default function BattagliaLibera() {
         <>
           {dati.partita && <PartitaAperta partita={dati.partita} />}
 
-          <Sezione
-            titolo="Contro il computer"
-            nota="Il primo colpo è sempre tuo. Il computer risponde subito, e la partita si riprende quando vuoi."
-          >
+          <Sezione titolo="Contro il computer">
             <Elenco>
               {dati.computer && (
                 <Riga
                   icona={<span className="bat-riga__onda" aria-hidden="true" />}
                   titolo="Riprendi la partita"
-                  sotto={
-                    dati.computer.stato === 'disposizione'
-                      ? 'Devi ancora disporre la flotta'
-                      : 'La battaglia è in corso, tocca a te'
-                  }
+                  sotto={dati.computer.stato === 'disposizione' ? 'Flotta da disporre' : 'Tocca a te'}
                   a={ROTTE.partitaBattaglia(dati.computer.id)}
                 />
               )}
@@ -223,7 +209,6 @@ export default function BattagliaLibera() {
                     key={livello}
                     icona={<Tacche piene={i + 1} colore="var(--battaglia-1)" />}
                     titolo={invio === livello ? `${NOMI[livello]}…` : NOMI[livello]}
-                    sotto={DESCRIZIONI[livello]}
                     valore={giocate > 0 ? `${conti.vinte}/${giocate}` : undefined}
                     onClick={invio ? undefined : () => scegliLivello(livello)}
                   />
@@ -250,10 +235,7 @@ export default function BattagliaLibera() {
                   </span>
                   <div className="bat-link__testo">
                     <p className="bat-link__titolo">Invita con un link</p>
-                    <p className="bat-link__nota">
-                      Mandalo a chi vuoi, anche a chi non ha ancora un account: si registra, e appena entra
-                      si comincia.
-                    </p>
+                    <p className="bat-link__nota">Anche a chi non ha un account.</p>
                   </div>
                 </div>
                 <Button
@@ -263,7 +245,7 @@ export default function BattagliaLibera() {
                   loading={invio === 'link'}
                   disabled={Boolean(dati.partita) || (invio !== null && invio !== 'link')}
                 >
-                  <IconShare size={18} /> Crea e condividi il link
+                  <IconShare size={18} /> Condividi il link
                 </Button>
               </div>
             )}
@@ -282,10 +264,7 @@ export default function BattagliaLibera() {
 
             <p className="bat-sala__titolo">Chi è online adesso</p>
             {dati.giocatori.length === 0 ? (
-              <p className="bat-sala__vuoto">
-                Adesso non c&rsquo;è nessun altro. Appena un collega apre l&rsquo;app, in qualunque gioco,
-                compare qui e lo puoi sfidare — oppure mandagli il link.
-              </p>
+              <p className="bat-sala__vuoto">Nessuno online in questo momento.</p>
             ) : (
               <ul className="bat-sala__elenco">
                 {dati.giocatori.map((g) => (
@@ -315,9 +294,7 @@ export default function BattagliaLibera() {
 
       <Sheet open={conferma !== null} onClose={() => setConferma(null)} title="Una partita nuova?">
         <div className="bat-resa">
-          <p>
-            Hai una battaglia in corso contro il computer: cominciandone un’altra, quella conta come persa.
-          </p>
+          <p>Se ne cominci un’altra, quella in corso conta come persa.</p>
           <Button
             variant="destructive"
             size="lg"
@@ -391,7 +368,7 @@ async function copia(url: string, avvisa: (testo: string) => void) {
     await navigator.clipboard.writeText(url)
     avvisa('Link copiato')
   } catch {
-    avvisa('Non riesco a copiare: tieni premuto il link per copiarlo.')
+    avvisa('Non riesco a copiare: tieni premuto il link.')
   }
 }
 
@@ -418,8 +395,7 @@ function LinkAttivo({ link, onRitira }: { link: LinkBattaglia; onRitira: () => v
         </Button>
       </div>
       <p className="bat-link__nota">
-        Vale ancora {restano > 2 * 3_600_000 ? `${Math.floor(restano / 3_600_000)} ore` : formatCronometro(restano)}, per una
-        persona sola.{' '}
+        Scade fra {restano > 2 * 3_600_000 ? `${Math.floor(restano / 3_600_000)} ore` : formatCronometro(restano)}.{' '}
         <button type="button" className="bat-link__ritira" onClick={onRitira}>
           Ritira il link
         </button>
@@ -434,7 +410,7 @@ function SfidaInAttesa({ invito, onAnnulla }: { invito: InvitoInviato; onAnnulla
     <div className="bat-sala__in-attesa" aria-live="polite">
       <span className="bat-sala__onde" aria-hidden="true" />
       <p className="bat-sala__in-attesa-testo">
-        Hai sfidato <strong>{invito.a.displayName}</strong>. Aspetta la risposta…
+        Aspetto la risposta di <strong>{invito.a.displayName}</strong>…
         <span className="bat-sala__scadenza u-tabnum"> {formatCronometro(restano)}</span>
       </p>
       <Button variant="plain" onClick={onAnnulla}>

@@ -78,9 +78,9 @@ function readCredentials(body: unknown): Credentials {
 }
 
 function readEmail(value: unknown): string {
-  if (typeof value !== 'string') fail(400, 'EMAIL_REQUIRED', "Serve un'email.")
+  if (typeof value !== 'string') fail(400, 'EMAIL_REQUIRED', 'Scrivi l’email.')
   const email = value.trim()
-  if (email.length === 0) fail(400, 'EMAIL_REQUIRED', "Serve un'email.")
+  if (email.length === 0) fail(400, 'EMAIL_REQUIRED', 'Scrivi l’email.')
   if (email.length > EMAIL_MAX) fail(400, 'EMAIL_INVALID', "Questa email è troppo lunga.")
   if (!EMAIL_PATTERN.test(email)) fail(400, 'EMAIL_INVALID', "Questa email non sembra valida.")
   return email
@@ -125,7 +125,7 @@ export const authRoutes = new Hono<AppEnv>()
   /** Chi sono. Usato all'avvio per capire se la sessione e' ancora buona. */
   .get('/me', async (c) => {
     const player = await optionalPlayer(c)
-    if (!player) fail(401, 'NOT_AUTHENTICATED', 'Nessuna sessione attiva.')
+    if (!player) fail(401, 'NOT_AUTHENTICATED', 'Accedi per continuare.')
     return c.json<{ player: Player }>({ player })
   })
 
@@ -149,7 +149,7 @@ export const authRoutes = new Hono<AppEnv>()
       .bind(emailLower)
       .first<{ id: string }>()
     if (emailUsata) {
-      fail(409, 'EMAIL_TAKEN', 'Questa email è già associata a un altro nickname.')
+      fail(409, 'EMAIL_TAKEN', 'Questa email è già registrata.')
     }
 
     const salt = toBase64(randomSalt())
@@ -189,7 +189,7 @@ export const authRoutes = new Hono<AppEnv>()
       // l'altra incontra il vincolo di unicita'.
       const testo = String(error)
       if (testo.includes('UNIQUE') && testo.includes('email')) {
-        fail(409, 'EMAIL_TAKEN', 'Questa email è già associata a un altro nickname.')
+        fail(409, 'EMAIL_TAKEN', 'Questa email è già registrata.')
       }
       if (testo.includes('UNIQUE')) {
         fail(409, 'NICKNAME_TAKEN', 'Questo nickname è già preso. Provane un altro.')
@@ -215,7 +215,7 @@ export const authRoutes = new Hono<AppEnv>()
     const row = await c.env.DB.prepare('SELECT * FROM players WHERE id = ?')
       .bind(id)
       .first<PlayerRow>()
-    if (!row) fail(500, 'PLAYER_MISSING', 'Registrazione non completata, riprova.')
+    if (!row) fail(500, 'PLAYER_MISSING', 'Non riesco a completare la registrazione. Riprova.')
 
     return c.json<{ player: Player }>({ player: toPlayer(row) }, 201)
   })
@@ -311,12 +311,13 @@ export const authRoutes = new Hono<AppEnv>()
     if (player.emailVerified) fail(409, 'ALREADY_VERIFIED', 'Email già confermata.')
     if (!player.email) fail(409, 'NO_EMAIL', 'Questo account non ha un’email.')
     if (!emailVerificationEnabled(c.env)) {
-      fail(503, 'EMAIL_DISABLED', 'L’invio delle email non è configurato.')
+      fail(503, 'EMAIL_DISABLED', 'L’invio delle email non è attivo.')
     }
 
     const attesa = await resendWaitSeconds(c.env.DB, player.id, 'verify_email')
     if (attesa > 0) {
-      fail(429, 'RESEND_TOO_SOON', `Riprova fra ${attesa} secondi.`)
+      // "secondo" e "secondi": la schermata del codice legge il numero con /(\d+)\s*second/.
+      fail(429, 'RESEND_TOO_SOON', `Riprova fra ${attesa} ${attesa === 1 ? 'secondo' : 'secondi'}.`)
     }
 
     const inviata = await inviaCodice(
@@ -348,11 +349,7 @@ export const authRoutes = new Hono<AppEnv>()
 
     const generico = { ok: true as const, cooldownSeconds: CODE_RESEND_COOLDOWN_SECONDS }
     if (!emailVerificationEnabled(c.env)) {
-      fail(
-        503,
-        'EMAIL_DISABLED',
-        'Il recupero della password richiede l’invio delle email, che non è ancora configurato.',
-      )
+      fail(503, 'EMAIL_DISABLED', 'Il recupero della password non è disponibile.')
     }
 
     const lower = identifier.toLowerCase()
@@ -391,11 +388,7 @@ export const authRoutes = new Hono<AppEnv>()
     const body = (await c.req.json().catch(() => null)) as { email?: unknown } | null
     const email = readEmail(body?.email)
     if (!emailVerificationEnabled(c.env)) {
-      fail(
-        503,
-        'EMAIL_DISABLED',
-        'Il recupero del nickname richiede l’invio delle email, che non è ancora configurato.',
-      )
+      fail(503, 'EMAIL_DISABLED', 'Il recupero del nickname non è disponibile.')
     }
 
     const generico = { ok: true as const, cooldownSeconds: CODE_RESEND_COOLDOWN_SECONDS }
@@ -436,13 +429,9 @@ export const authRoutes = new Hono<AppEnv>()
     const code = typeof body?.code === 'string' ? body.code.trim() : ''
     const verifier = typeof body?.verifier === 'string' ? body.verifier : ''
 
-    if (nickname.length === 0) fail(400, 'BAD_REQUEST', 'Manca il nickname.')
+    if (nickname.length === 0) fail(400, 'BAD_REQUEST', 'Scrivi il nickname.')
     if (nickname.includes('@')) {
-      fail(
-        400,
-        'NICKNAME_REQUIRED',
-        'Qui serve il nickname, non l’email: la password è legata al nickname.',
-      )
+      fail(400, 'NICKNAME_REQUIRED', 'Scrivi il nickname, non l’email.')
     }
     if (!new RegExp(`^\\d{${CODE_LENGTH}}$`).test(code)) {
       fail(400, 'BAD_CODE_FORMAT', `Il codice è di ${CODE_LENGTH} cifre.`)

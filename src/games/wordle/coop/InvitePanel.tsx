@@ -42,14 +42,11 @@ export function InvitePanel({
   return (
     <Sheet open={open} onClose={onClose} title="Gioca in compagnia">
       <div className="invita">
-        <p className="invita__lede">
-          Chi accetta vede la tua griglia in diretta e può suggerirti una parola. Decidi sempre tu
-          cosa giocare.
-        </p>
+        <p className="invita__lede">Chi accetta vede la tua griglia e può suggerirti parole.</p>
 
         <div className="invita__contatore">
           <span>
-            {invitati.length} {invitati.length === 1 ? 'invitato' : 'invitati'}
+            {invitati.length} {invitati.length === 1 ? 'invito' : 'inviti'}
           </span>
           <span className="invita__posti">
             {posti > 0 ? `${posti} ${posti === 1 ? 'posto libero' : 'posti liberi'}` : 'al completo'}
@@ -68,7 +65,7 @@ export function InvitePanel({
                       ? g.suggestions > 0
                         ? `Sta guardando · ${g.suggestions} ${g.suggestions === 1 ? 'suggerimento' : 'suggerimenti'}`
                         : 'Sta guardando'
-                      : 'In attesa che accetti'}
+                      : 'In attesa di risposta'}
                   </span>
                 </span>
                 {g.status === 'accepted' && (
@@ -102,9 +99,7 @@ export function InvitePanel({
             {players === null ? (
               <p className="invita__vuoto">Un attimo…</p>
             ) : liberi.length === 0 ? (
-              <p className="invita__vuoto">
-                Non c’è nessun altro iscritto, per ora. Passa il link ai colleghi.
-              </p>
+              <p className="invita__vuoto">Non c’è ancora nessun altro. Passa il link ai colleghi.</p>
             ) : (
               <ul className="invita__lista">
                 {liberi.map((p) => (
@@ -113,9 +108,7 @@ export function InvitePanel({
                     <span className="invita__riga-corpo">
                       <span className="invita__nome">{p.displayName}</span>
                       <span className={`invita__stato${p.playedToday ? '' : ' is-avviso'}`}>
-                        {p.playedToday
-                          ? 'Ha già giocato oggi'
-                          : 'Non ha ancora giocato: gli sveleresti la parola'}
+                        {p.playedToday ? 'Ha già giocato oggi' : 'Non ha ancora giocato oggi'}
                       </span>
                     </span>
                     <Button
@@ -132,10 +125,7 @@ export function InvitePanel({
           </div>
         )}
 
-        <p className="invita__nota">
-          Chi non ha ancora giocato, accettando vedrà la parola di oggi: la sua partita di oggi
-          resterà giocabile ma non farà punti. Glielo diciamo prima che accetti.
-        </p>
+        <p className="invita__nota">Chi non ha ancora giocato prende il tuo stesso punteggio.</p>
       </div>
     </Sheet>
   )

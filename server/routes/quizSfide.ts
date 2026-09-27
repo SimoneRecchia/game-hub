@@ -39,7 +39,7 @@ async function corpoDi(c: Context<AppEnv>): Promise<Record<string, unknown>> {
 /** Le impostazioni e le domande di una sfida nuova, dal corpo della richiesta. */
 function leggiSfida(corpo: Record<string, unknown>) {
   const imp = impostazioniSfida(corpo.impostazioni)
-  if (!imp) fail(400, 'IMPOSTAZIONI', 'Così non si può giocare una sfida.')
+  if (!imp) fail(400, 'IMPOSTAZIONI', 'Scelte non valide per una sfida.')
   return { imp, domande: leggiDomande(corpo.domande, imp) }
 }
 

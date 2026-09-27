@@ -176,17 +176,15 @@ export default function WordleInsieme() {
               {view.counts ? (
                 view.myScore !== null ? (
                   <span>
-                    La tua parola di oggi era questa · <strong>+{view.myScore}</strong> in
-                    classifica
+                    La tua partita di oggi · <strong>+{view.myScore}</strong> in classifica
                   </span>
                 ) : (
                   <span>
-                    Oggi la tua parola è questa: prendi lo <strong>stesso punteggio</strong> di{' '}
-                    {view.hostName}
+                    Prendi lo <strong>stesso punteggio</strong> di {view.hostName}
                   </span>
                 )
               ) : (
-                <span>Hai già giocato la tua parola di oggi: qui dai solo una mano</span>
+                <span>Hai già giocato oggi: qui non prendi punti</span>
               )}
             </div>
 
@@ -214,8 +212,8 @@ export default function WordleInsieme() {
                   : view.status === 'won'
                     ? `${view.hostName} ha indovinato: ${view.answer?.toUpperCase()}`
                     : view.status === 'lost'
-                      ? `Niente da fare: era ${view.answer?.toUpperCase()}`
-                      : `Guardi ${view.hostName} giocare, e puoi suggerire`}
+                      ? `La parola era ${view.answer?.toUpperCase()}`
+                      : `${view.hostName} sta giocando`}
               </p>
             </Scheda>
 

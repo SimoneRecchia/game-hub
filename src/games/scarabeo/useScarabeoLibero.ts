@@ -13,7 +13,7 @@ import { api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { mossaDelComputer, preparaComputer } from './computer'
 import { leggiPartitaLibera, salvaPartitaLibera } from './libera'
-import { useParoleSconosciute } from './useScarabeo'
+import { nonNelDizionario, tessereCambiate, useParoleSconosciute } from './useScarabeo'
 import { useComposizione, type Composizione } from './useComposizione'
 
 /** Quanto "pensa" il computer, almeno: una risposta istantanea sembra un trucco. */
@@ -90,7 +90,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
   const sconosciute = useParoleSconosciute(anteprima)
 
   useEffect(() => {
-    preparaComputer().catch(() => setGuasto('Il dizionario non si è scaricato: controlla la connessione e riprova.'))
+    preparaComputer().catch(() => setGuasto('Non riesco a scaricare il dizionario. Controlla la connessione.'))
     void api<StatisticheScarabeoLibero>('/scarabeo/libera')
       .then(setStatistiche)
       .catch(() => {})
@@ -130,7 +130,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
         window.setTimeout(() => setUltima(new Set()), 2400)
       })
       .catch(() => {
-        if (!annullato) setGuasto('Il computer non risponde: riprova fra poco.')
+        if (!annullato) setGuasto('Il computer non risponde. Riprova fra poco.')
       })
       .finally(() => {
         if (!annullato) setPensa(false)
@@ -184,7 +184,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     }
     if (sconosciute.length > 0) {
       haptic('error')
-      avvisa(`${sconosciute.map((p) => p.toUpperCase()).join(', ')} non è nel dizionario.`)
+      avvisa(nonNelDizionario(sconosciute))
       return
     }
     const punti = anteprima?.ok ? anteprima.punti : 0
@@ -221,7 +221,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     cambia: (tessere) => {
       annulla()
       aggiungi({ tipo: 'cambio', tessere })
-      avvisa(`${tessere.length} tessere cambiate.`)
+      avvisa(tessereCambiate(tessere.length))
     },
   }
 }

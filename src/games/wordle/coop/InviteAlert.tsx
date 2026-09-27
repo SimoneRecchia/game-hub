@@ -33,37 +33,31 @@ export function InviteAlert({ invite, onAccept, onDecline }: Props) {
   }
 
   return (
-    <Sheet open onClose={() => {}} dismissible={false} title="Ti hanno invitato">
+    <Sheet open onClose={() => {}} dismissible={false} title="Un invito per te">
       <div className="avviso">
         <div className="avviso__testa">
           <Avatar nickname={invite.hostName} color={invite.hostAvatarColor} size={64} />
           <p className="avviso__testo">
-            <strong>{invite.hostName}</strong> sta giocando il Wordle #{invite.puzzleNumber} e ti
-            chiede una mano.
+            <strong>{invite.hostName}</strong> vuole giocare con te il Wordle #{invite.puzzleNumber}.
           </p>
         </div>
 
         {invite.wouldSpoil ? (
           <div className="avviso__insieme">
-            <p className="avviso__insieme-titolo">La parola di oggi la giocate insieme</p>
+            <p className="avviso__insieme-titolo">Diventa la tua partita di oggi</p>
             <p>
-              La parola è la stessa per tutti, quindi diventa quella la tua di oggi: la tua
-              griglia si chiude e prendi lo <strong>stesso punteggio</strong> che fa{' '}
-              {invite.hostName}. Giocare in compagnia non vale meno che giocare da soli.
+              Prendi lo <strong>stesso punteggio</strong> di {invite.hostName}.
             </p>
             {invite.myAttempts > 0 && (
               <p className="avviso__insieme-costo">
-                Hai già {invite.myAttempts}{' '}
-                {invite.myAttempts === 1 ? 'tentativo' : 'tentativi'} sulla tua griglia:
-                accettando {invite.myAttempts === 1 ? 'lo lasci' : 'li lasci'} lì.
+                {invite.myAttempts === 1
+                  ? 'Il tentativo che hai già fatto non conta più.'
+                  : `I ${invite.myAttempts} tentativi che hai già fatto non contano più.`}
               </p>
             )}
           </div>
         ) : (
-          <p className="avviso__sereno">
-            Hai già giocato la tua parola di oggi, quindi il punteggio è al sicuro. Qui puoi dare
-            una mano a {invite.hostName}, senza fare altri punti.
-          </p>
+          <p className="avviso__sereno">Hai già giocato la parola di oggi. Il tuo punteggio non cambia.</p>
         )}
 
         <div className="avviso__azioni">
@@ -74,7 +68,7 @@ export function InviteAlert({ invite, onAccept, onDecline }: Props) {
             disabled={busy !== null}
             onClick={() => void rispondi('accetta')}
           >
-            {invite.wouldSpoil ? 'Giochiamo insieme' : 'Vado a dare una mano'}
+            Accetta
           </Button>
           <Button
             variant="plain"

@@ -1,7 +1,7 @@
 import { Sheet } from '@/components/Sheet'
 import { Tile } from './Tile'
 import './HowToPlay.css'
-import { MAX_ATTEMPTS } from '@shared/config'
+import { MAX_ATTEMPTS, MAX_COOP_GUESTS } from '@shared/config'
 import { ATTEMPT_POINTS, LOSS_POINTS, MAX_SPEED_BONUS, MAX_STREAK_BONUS } from '@shared/scoring'
 import type { TileState } from '@shared/types'
 
@@ -15,17 +15,17 @@ const EXAMPLES: Row[] = [
   {
     word: 'porta',
     pattern: ['correct', null, null, null, null],
-    text: 'La P è nella parola e al posto giusto.',
+    text: 'La P è al posto giusto.',
   },
   {
     word: 'verde',
     pattern: [null, null, 'present', null, null],
-    text: 'La R è nella parola, ma in un altro punto.',
+    text: 'La R c’è, ma in un altro posto.',
   },
   {
     word: 'salto',
     pattern: [null, null, null, 'absent', null],
-    text: 'La T non c’è da nessuna parte.',
+    text: 'La T non c’è.',
   },
 ]
 
@@ -34,9 +34,7 @@ export function HowToPlay({ open, onClose }: { open: boolean; onClose: () => voi
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="howto">
         <p className="howto__text">
-          Indovina la parola italiana di <strong>cinque lettere</strong> in{' '}
-          <strong>sei tentativi</strong>. Dopo ogni tentativo i colori dicono quanto ti sei
-          avvicinato.
+          Indovina la parola di <strong>cinque lettere</strong> in <strong>sei tentativi</strong>.
         </p>
 
         <ul className="howto__examples">
@@ -58,35 +56,16 @@ export function HowToPlay({ open, onClose }: { open: boolean; onClose: () => voi
           <h3 className="howto__notes-title">Da sapere</h3>
           <ul className="howto__list">
             <li>
-              La parola è <strong>una al giorno, la stessa per tutti</strong>, e cambia a
-              mezzanotte, ora italiana.
+              <strong>Classificata</strong>: una parola al giorno, uguale per tutti.
             </li>
             <li>
-              La tastiera ha le <strong>21 lettere</strong> dell’alfabeto italiano: niente accenti,
-              niente J K W X Y.
+              <strong>Libera</strong>: parole a caso, quante vuoi. Non conta per la classifica.
             </li>
             <li>
-              Puoi <strong>invitare fino a cinque persone</strong> sulla parola del giorno: vedono
-              la griglia in diretta e possono suggerirti una parola, ma decidi sempre tu cosa
-              giocare.
+              <strong>In compagnia</strong>: inviti fino a {MAX_COOP_GUESTS} persone a suggerirti parole.
+              Chi gioca con te prende il tuo stesso punteggio.
             </li>
-            <li>
-              Chi gioca la parola con te prende il <strong>tuo stesso punteggio</strong>. Giocare in
-              compagnia non vale meno che giocare da soli; solo, a pari punti in classifica passa
-              avanti chi ne ha fatti meno in compagnia.
-            </li>
-            <li>
-              La parola vale al massimo <strong>cento punti</strong>, come la classificata di ogni
-              altro gioco: è quel che permette di sommarle nella classifica generale.
-            </li>
-            <li>
-              Nella <strong>parola libera</strong> la parola è a caso, e se ne gioca quante se ne
-              vuole: non conta per la classifica, e non pesca mai fra le parole dei prossimi giorni.
-            </li>
-            <li>
-              Le parole arrivano da dizionari italiani pubblici, filtrate per tenere solo quelle di
-              uso comune.
-            </li>
+            <li>Niente accenti, niente J K W X Y.</li>
           </ul>
         </div>
       </div>
@@ -105,11 +84,8 @@ function Punteggi() {
 
   return (
     <div className="howto__punti">
-      <h3 className="howto__notes-title">Come si contano i punti</h3>
-      <p className="howto__text">
-        Meno tentativi, più punti. Anche al sesto la parola vale metà di una indovinata al primo
-        colpo: una giornata storta si recupera il giorno dopo.
-      </p>
+      <h3 className="howto__notes-title">Punteggio</h3>
+      <p className="howto__text">Meno tentativi, più punti.</p>
 
       <div className="howto__tabella-scroll">
         <table className="howto__tabella">
@@ -143,9 +119,8 @@ function Punteggi() {
       </div>
 
       <p className="howto__nota">
-        La colonna <strong>✗</strong> è la parola giocata e non indovinata: meglio di non giocarla.
-        Si aggiungono fino a {MAX_SPEED_BONUS} punto se chiudi in fretta e fino a {MAX_STREAK_BONUS}{' '}
-        per i giorni di fila: servono da spareggio, e restano sotto la differenza fra due tentativi.
+        <strong>✗</strong> è la parola non indovinata. Bonus: fino a {MAX_SPEED_BONUS} punto se indovini in
+        fretta, fino a {MAX_STREAK_BONUS} per i giorni di fila.
       </p>
     </div>
   )

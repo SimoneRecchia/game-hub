@@ -39,7 +39,7 @@ export function useCoopHost(pannelloAperto: boolean) {
       if (vivo.current) setPlayers(fresh)
     } catch (err) {
       if (vivo.current) {
-        setError(err instanceof ApiFetchError ? err.message : 'Non riesco a leggere i giocatori.')
+        setError(err instanceof ApiFetchError ? err.message : 'Non riesco a caricare i giocatori.')
       }
     }
   }, [])
@@ -66,7 +66,7 @@ export function useCoopHost(pannelloAperto: boolean) {
         setRoom(await api<CoopRoom>('/coop/invite', { method: 'POST', body: { playerId } }))
         await caricaGiocatori()
       } catch (err) {
-        setError(err instanceof ApiFetchError ? err.message : 'Invito non riuscito.')
+        setError(err instanceof ApiFetchError ? err.message : 'Non riesco a mandare l’invito.')
       } finally {
         setBusy(false)
       }

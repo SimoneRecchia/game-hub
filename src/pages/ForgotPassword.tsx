@@ -77,7 +77,7 @@ export function ForgotPassword({ onDone }: { onDone: () => void }) {
     setError(null)
     const email = identifier.trim()
     if (!email.includes('@')) {
-      setError('Scrivi l’email con cui ti sei registrato.')
+      setError('Scrivi l’email dell’account.')
       return
     }
     setBusy(true)
@@ -98,7 +98,7 @@ export function ForgotPassword({ onDone }: { onDone: () => void }) {
     setError(null)
 
     if (nickname.trim().length === 0 || nickname.includes('@')) {
-      setError('Scrivi il tuo nickname: la password è legata a lui, non all’email.')
+      setError('Scrivi il nickname, non l’email.')
       return
     }
     if (!new RegExp(`^\\d{${CODE_LENGTH}}$`).test(code.trim())) {
@@ -145,12 +145,12 @@ export function ForgotPassword({ onDone }: { onDone: () => void }) {
           <h1 className="verifica__title">{TITOLI[passo]}</h1>
           <p className="verifica__lede">
             {passo === 'richiesta'
-              ? 'Scrivi il nickname (o l’email): ti mandiamo un codice all’email che hai usato per registrarti.'
+              ? 'Ti mandiamo un codice all’email dell’account.'
               : passo === 'conferma'
                 ? `Abbiamo mandato un codice di ${CODE_LENGTH} cifre. Vale ${CODE_TTL_MINUTES} minuti.`
                 : passo === 'nickname'
-                  ? 'Scrivi l’email con cui ti sei registrato: ti mandiamo il tuo nickname.'
-                  : `Se ${identifier.trim()} è registrata, ti abbiamo appena scritto il tuo nickname. Se non arriva entro un minuto, guarda anche nello spam.`}
+                  ? 'Ti mandiamo il nickname per email.'
+                  : `Se ${identifier.trim()} è registrata, ti abbiamo mandato il nickname. Guarda anche nello spam.`}
           </p>
         </header>
 
@@ -228,11 +228,7 @@ export function ForgotPassword({ onDone }: { onDone: () => void }) {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                hint={
-                  identifier.includes('@')
-                    ? 'Lo trovi scritto nell’email con il codice: la password è legata al nickname.'
-                    : undefined
-                }
+                hint={identifier.includes('@') ? 'Lo trovi nell’email con il codice.' : undefined}
                 required
               />
               <Field

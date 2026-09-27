@@ -43,7 +43,7 @@ export function caricaDatiQuiz(): Promise<IndiceQuiz> {
     const vecchi = salvati()
     const r = await api<QuizDatiRisposta>(`/quiz/dati${vecchi ? `?versione=${encodeURIComponent(vecchi.versione)}` : ''}`)
     const dati = r.dati ?? vecchi
-    if (!dati) throw new Error('I dati del quiz non sono arrivati.')
+    if (!dati) throw new Error('Non riesco a scaricare i dati del quiz.')
     if (r.dati) salva(r.dati)
     return indicizza(dati)
   })().catch((e) => {

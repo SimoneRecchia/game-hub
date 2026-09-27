@@ -83,10 +83,7 @@ export default function Wordle() {
             */}
             {game.state?.spectated && (
               <div className="wordle__insieme">
-                <p className="wordle__insieme-testo">
-                  La parola di oggi la stai giocando in compagnia. Il punteggio è quello di quella
-                  partita.
-                </p>
+                <p className="wordle__insieme-testo">La parola di oggi la giochi in compagnia.</p>
                 {game.state.roomId && (
                   <Button
                     variant="tinted"

@@ -74,6 +74,26 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     expect(oggi.quiz.status).toBe('assente')
   })
 
+  it('regge più giocatori dei cento parametri che D1 accetta in un’istruzione', async () => {
+    const { chiama, giocatore, db } = banco()
+    const n = today().puzzleNumber
+    const adesso = new Date().toISOString()
+    const tutti = []
+    for (let i = 0; i < 120; i += 1) {
+      const g = await giocatore(`g${i}`)
+      tutti.push(g)
+      db.sqlite
+        .prepare(
+          `INSERT INTO quiz_partite (id, player_id, puzzle_number, date, status, giuste, score, started_at, updated_at)
+           VALUES (?, ?, ?, 'x', 'done', 5, 60, ?, ?)`,
+        )
+        .run(`q${i}`, g.id, n, adesso, adesso)
+    }
+    const r = await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', tutti[0])
+    expect(r.status).toBe(200)
+    expect(r.dati.rows).toHaveLength(120)
+  })
+
   it('la schermata di oggi non apre nessuna partita', async () => {
     const { chiama, giocatore, db } = banco()
     const io = await giocatore('carla')
