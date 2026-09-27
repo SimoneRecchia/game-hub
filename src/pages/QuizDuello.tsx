@@ -473,7 +473,12 @@ function Tabellone({ d, v, indice, giro }: { d: Duello; v: VistaDuello; indice: 
   return (
     <Scheda
       className="quiz__tabellone duello-tabellone"
-      titolo={`Domanda ${indice + 1} di ${v.totale}`}
+      titolo={
+        <>
+          <span className="quiz-titolo__parola">Domanda </span>
+          {indice + 1} di {v.totale}
+        </>
+      }
       icona={
         <IconaScheda colore="var(--quiz-1)">
           <IconaCategoria categoria={v.impostazioni.categoria} size={15} />

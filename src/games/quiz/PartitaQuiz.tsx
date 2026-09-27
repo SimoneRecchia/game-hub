@@ -238,9 +238,14 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
 
   const com = esito ? (esito.risposta.giusta ? ' is-giusta' : ' is-sbagliata') : ''
   const nelRipasso = p.ripassoDa !== null && p.indice >= p.ripassoDa
-  const titolo = nelRipasso
-    ? `Ripasso ${p.indice - p.ripassoDa! + 1} di ${p.totale - p.ripassoDa!}`
-    : `Domanda ${Math.min(p.indice + 1, p.totale)} di ${p.ripassoDa ?? p.totale}`
+  const titolo = (
+    <>
+      <span className="quiz-titolo__parola">{nelRipasso ? 'Ripasso ' : 'Domanda '}</span>
+      {nelRipasso
+        ? `${p.indice - p.ripassoDa! + 1} di ${p.totale - p.ripassoDa!}`
+        : `${Math.min(p.indice + 1, p.totale)} di ${p.ripassoDa ?? p.totale}`}
+    </>
+  )
 
   return (
     <>
