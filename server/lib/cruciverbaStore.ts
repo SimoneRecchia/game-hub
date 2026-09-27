@@ -22,7 +22,7 @@ import type {
   CruciverbaState,
   CruciverbaStatus,
   DefinizioneCruciverba,
-  LeaderboardScope,
+  PeriodoClassifica,
 } from '../../shared/types'
 import { fail, newId, nowIso } from './http'
 
@@ -471,13 +471,6 @@ export async function statisticheLibere(
 
 /* ────────────────────────────  La classifica  ─────────────────────────── */
 
-const FINESTRA: Record<LeaderboardScope, number | null> = {
-  today: 1,
-  week: 7,
-  month: 30,
-  all: null,
-}
-
 export interface TotaliCruciverba {
   playerId: string
   nickname: string
@@ -521,13 +514,10 @@ interface AggregatoRow {
 
 export async function classificaCruciverba(
   db: D1Database,
-  scope: LeaderboardScope,
+  periodo: PeriodoClassifica,
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<CruciverbaLeaderboard> {
-  const finestra = FINESTRA[scope]
-  const da = finestra === null ? Number.MIN_SAFE_INTEGER : numeroDiOggi - finestra + 1
-
   /*
    * Contano i completati. Una partita aperta ieri e mai finita non e' niente —
    * ne' punti ne' giornate — mentre quella aperta oggi fa comparire il
@@ -545,11 +535,11 @@ export async function classificaCruciverba(
               MAX(CASE WHEN g.puzzle_number = ? AND g.status = 'playing'
                        THEN 1 ELSE 0 END)                                      AS in_corso
          FROM players p
-         JOIN cruciverba_games g ON g.player_id = p.id AND g.puzzle_number >= ?
+         JOIN cruciverba_games g ON g.player_id = p.id AND g.puzzle_number BETWEEN ? AND ?
         GROUP BY p.id
        HAVING giornate > 0 OR in_corso = 1`,
     )
-    .bind(numeroDiOggi, da)
+    .bind(numeroDiOggi, periodo.da, periodo.a)
     .all<AggregatoRow>()
 
   const rows = ordinaCruciverba(
@@ -566,7 +556,8 @@ export async function classificaCruciverba(
   )
 
   return {
-    scope,
+    scope: periodo.scope,
+    periodo,
     updatedAt: nowIso(),
     rows,
     me: rows.find((r) => r.playerId === viewerId) ?? null,

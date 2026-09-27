@@ -20,7 +20,7 @@ import {
 } from '../../shared/scarabeo'
 import type {
   CellaPiena,
-  LeaderboardScope,
+  PeriodoClassifica,
   ScarabeoLeaderboard,
   ScarabeoRow,
   ScarabeoState,
@@ -275,14 +275,6 @@ export async function aggiungiMossa(
 
 /* ────────────────────────────  La classifica  ─────────────────────────── */
 
-/** Finestra di puzzle coperta da ogni vista, in giorni. null = tutto. */
-const FINESTRA: Record<LeaderboardScope, number | null> = {
-  today: 1,
-  week: 7,
-  month: 30,
-  all: null,
-}
-
 export interface TotaliScarabeo {
   playerId: string
   nickname: string
@@ -335,13 +327,10 @@ interface AggregatoRow {
 
 export async function classificaScarabeo(
   db: D1Database,
-  scope: LeaderboardScope,
+  periodo: PeriodoClassifica,
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<ScarabeoLeaderboard> {
-  const finestra = FINESTRA[scope]
-  const da = finestra === null ? Number.MIN_SAFE_INTEGER : numeroDiOggi - finestra + 1
-
   /*
    * Una query sola. Le partite ancora in corso entrano coi punti che hanno
    * già fatto, e `in_corso` lo dice: nella vista di oggi si vede anche chi sta
@@ -361,10 +350,10 @@ export async function classificaScarabeo(
               MAX(CASE WHEN g.puzzle_number = ? AND g.status = 'playing'
                        THEN 1 ELSE 0 END)                                   AS in_corso
          FROM players p
-         JOIN scarabeo_games g ON g.player_id = p.id AND g.puzzle_number >= ?
+         JOIN scarabeo_games g ON g.player_id = p.id AND g.puzzle_number BETWEEN ? AND ?
         GROUP BY p.id`,
     )
-    .bind(numeroDiOggi, numeroDiOggi, da)
+    .bind(numeroDiOggi, numeroDiOggi, periodo.da, periodo.a)
     .all<AggregatoRow>()
 
   const rows = ordinaScarabeo(
@@ -383,7 +372,8 @@ export async function classificaScarabeo(
   )
 
   return {
-    scope,
+    scope: periodo.scope,
+    periodo,
     updatedAt: nowIso(),
     rows,
     me: rows.find((r) => r.playerId === viewerId) ?? null,

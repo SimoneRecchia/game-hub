@@ -239,6 +239,25 @@
   --quiz-1: #f25f8f;
   --quiz-2: #c2266a;
 
+  /* ---- Il podio ----
+     Oro, argento e bronzo: gli anelli degli avatar, i gradini, i numeri dei
+     primi tre. In scuro un filo piu' accesi: sul nero i metalli spenti
+     diventano grigi. */
+  --oro: #e5a910;
+  --oro: light-dark(#e5a910, #ffc93c);
+  --argento: #a3abb6;
+  --argento: light-dark(#a3abb6, #c3c8cf);
+  --bronzo: #c47a45;
+  --bronzo: light-dark(#c47a45, #dc9c6e);
+  /* I gradini: in chiaro tinti del loro metallo, in scuro di vetro — l'oro
+     sul nero diventa verde oliva — e il filo del metallo in cima dice qual e'. */
+  --gradino-oro: #f7e3a6;
+  --gradino-oro: light-dark(#f7e3a6, rgba(255, 210, 90, 0.13));
+  --gradino-argento: #e3e7ec;
+  --gradino-argento: light-dark(#e3e7ec, rgba(220, 228, 240, 0.1));
+  --gradino-bronzo: #f1d3bd;
+  --gradino-bronzo: light-dark(#f1d3bd, rgba(235, 165, 115, 0.12));
+
   /* ---- Il rallenty della sfida a quiz ----
      Un azzurro freddo che non e' la selezione (indaco) ne' il mare della
      cartina: il tempo che si ferma. Il velo e' quello che cala sulla

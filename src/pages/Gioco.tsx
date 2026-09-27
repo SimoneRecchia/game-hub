@@ -8,7 +8,7 @@ import { Etichetta, Sezione, Elenco, Riga } from '@/components/Elementi'
 import { IconBook, IconCalendar, IconClock, IconPeople, IconPlay, IconShuffle, IconTrophy } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { giocoDi } from '@/games/catalog'
-import { percorsoClassifica, righeComuni, type RigaComune } from '@/games/classifiche'
+import { indirizzoClassifica, percorsoClassifica, righeComuni, type RigaComune } from '@/games/classifiche'
 import { REGOLE } from '@/games/regole'
 import { statiDiOggi } from '@/games/stato'
 import { useCountdown } from '@/games/wordle/useCountdown'
@@ -152,7 +152,7 @@ function Anteprima({ id }: { id: GiocoClassificato }) {
   return (
     <Sezione
       titolo="Questa settimana"
-      azione={<Collegamento to={ROTTE.classifica(id)}>Classifica</Collegamento>}
+      azione={<Collegamento to={indirizzoClassifica(id, 'week')}>Classifica</Collegamento>}
     >
       <div className="podio-mini">
         {(dati ? podio : [null, null, null]).map((r, i) =>

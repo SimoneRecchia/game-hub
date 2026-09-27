@@ -13,15 +13,8 @@
  * unire in memoria — le righe sono una per giocatore per gioco.
  */
 
-import type {
-  GeneraleLeaderboard,
-  GeneraleRow,
-  GiocoClassificato,
-  LeaderboardScope,
-} from '../../shared/types'
+import type { GeneraleLeaderboard, GeneraleRow, GiocoClassificato, PeriodoClassifica } from '../../shared/types'
 import { nowIso } from './http'
-
-const FINESTRA: Record<LeaderboardScope, number | null> = { today: 1, week: 7, month: 30, all: null }
 
 export interface TotaliGenerale {
   playerId: string
@@ -66,12 +59,10 @@ interface Parziale {
 
 export async function classificaGenerale(
   db: D1Database,
-  scope: LeaderboardScope,
-  numeroDiOggi: number,
+  periodo: PeriodoClassifica,
   viewerId: string,
 ): Promise<GeneraleLeaderboard> {
-  const finestra = FINESTRA[scope]
-  const da = finestra === null ? Number.MIN_SAFE_INTEGER : numeroDiOggi - finestra + 1
+  const { da, a } = periodo
 
   const [wordle, scarabeo, cruciverba, battaglia, quiz] = await Promise.all([
     /*
@@ -89,26 +80,26 @@ export async function classificaGenerale(
                         (spectated != 1 AND status != 'playing')
                      OR (spectated = 1 AND assist_status IS NOT NULL))
                       THEN puzzle_number END)                                    AS partite
-           FROM wordle_games WHERE puzzle_number >= ? GROUP BY player_id`,
+           FROM wordle_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
       )
-      .bind(da)
+      .bind(da, a)
       .all<Parziale>(),
     db
       .prepare(
         `SELECT player_id, COALESCE(SUM(punti), 0) AS punti,
                 SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS partite
-           FROM scarabeo_games WHERE puzzle_number >= ? GROUP BY player_id`,
+           FROM scarabeo_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
       )
-      .bind(da)
+      .bind(da, a)
       .all<Parziale>(),
     db
       .prepare(
         `SELECT player_id,
                 COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
                 SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
-           FROM cruciverba_games WHERE puzzle_number >= ? GROUP BY player_id`,
+           FROM cruciverba_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
       )
-      .bind(da)
+      .bind(da, a)
       .all<Parziale>(),
     db
       .prepare(
@@ -116,19 +107,19 @@ export async function classificaGenerale(
                 COALESCE(SUM(CASE WHEN stato = 'finita' THEN punti ELSE 0 END), 0) AS punti,
                 SUM(CASE WHEN stato = 'finita' THEN 1 ELSE 0 END)                 AS partite
            FROM battaglia_partite
-          WHERE modalita = 'classificata' AND puzzle_number >= ?
+          WHERE modalita = 'classificata' AND puzzle_number BETWEEN ? AND ?
           GROUP BY giocatore_a`,
       )
-      .bind(da)
+      .bind(da, a)
       .all<Parziale>(),
     db
       .prepare(
         `SELECT player_id,
                 COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
                 SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
-           FROM quiz_partite WHERE puzzle_number >= ? GROUP BY player_id`,
+           FROM quiz_partite WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
       )
-      .bind(da)
+      .bind(da, a)
       .all<Parziale>(),
   ])
 
@@ -184,5 +175,11 @@ export async function classificaGenerale(
   }
 
   const rows = ordinaGenerale([...totali.values()])
-  return { scope, updatedAt: nowIso(), rows, me: rows.find((r) => r.playerId === viewerId) ?? null }
+  return {
+    scope: periodo.scope,
+    periodo,
+    updatedAt: nowIso(),
+    rows,
+    me: rows.find((r) => r.playerId === viewerId) ?? null,
+  }
 }

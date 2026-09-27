@@ -14,7 +14,7 @@ import { MARGINE_RETE_MS, SECONDI_CARTINA, SECONDI_SCELTA, puntiQuiz, type Categ
 import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI } from '../../shared/quiz-dati'
 import { rispostaGiusta, senzaRisposta, type DomandaCompleta } from '../../shared/quiz-domande'
 import type {
-  LeaderboardScope,
+  PeriodoClassifica,
   QuizLeaderboard,
   QuizRow,
   QuizState,
@@ -284,8 +284,6 @@ export async function chiudiScaduta(db: D1Database, row: PartitaRow | null, g: G
 
 /* ────────────────────────────  La classifica  ─────────────────────────── */
 
-const FINESTRA: Record<LeaderboardScope, number | null> = { today: 1, week: 7, month: 30, all: null }
-
 export interface TotaliQuiz {
   playerId: string
   nickname: string
@@ -317,12 +315,10 @@ export function ordinaQuiz(giocatori: TotaliQuiz[]): QuizRow[] {
 
 export async function classificaQuiz(
   db: D1Database,
-  scope: LeaderboardScope,
+  periodo: PeriodoClassifica,
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<QuizLeaderboard> {
-  const finestra = FINESTRA[scope]
-  const da = finestra === null ? Number.MIN_SAFE_INTEGER : numeroDiOggi - finestra + 1
   const { results } = await db
     .prepare(
       `SELECT p.id AS player_id, p.nickname, p.display_name, p.avatar_color,
@@ -332,11 +328,11 @@ export async function classificaQuiz(
               COALESCE(SUM(CASE WHEN g.status = 'done' THEN g.tempo_ms END), 0) AS tempo,
               MAX(CASE WHEN g.puzzle_number = ? AND g.status = 'playing' THEN 1 ELSE 0 END) AS in_corso
          FROM players p
-         JOIN quiz_partite g ON g.player_id = p.id AND g.puzzle_number >= ?
+         JOIN quiz_partite g ON g.player_id = p.id AND g.puzzle_number BETWEEN ? AND ?
         GROUP BY p.id
        HAVING giornate > 0 OR in_corso = 1`,
     )
-    .bind(numeroDiOggi, da)
+    .bind(numeroDiOggi, periodo.da, periodo.a)
     .all<{
       player_id: string
       nickname: string
@@ -361,7 +357,13 @@ export async function classificaQuiz(
       inCorso: r.in_corso === 1,
     })),
   )
-  return { scope, updatedAt: nowIso(), rows, me: rows.find((r) => r.playerId === viewerId) ?? null }
+  return {
+    scope: periodo.scope,
+    periodo,
+    updatedAt: nowIso(),
+    rows,
+    me: rows.find((r) => r.playerId === viewerId) ?? null,
+  }
 }
 
 /* ─────────────────────────  Il riassunto dei dati  ────────────────────── */

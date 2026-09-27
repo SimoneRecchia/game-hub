@@ -279,9 +279,25 @@ tengono il principio del Wordle — **giocarla bene vale circa il doppio di
 giocarla male**, non dieci volte tanto — e `shared/__tests__/punti.test.ts`
 verifica i tetti e i due lati del compromesso per ogni gioco. La
 classifica di ogni gioco resta (`/leaderboard`, `/leaderboard/scarabeo`, ...), la
-generale e' `/leaderboard/generale`. Non si normalizza per giornata ("il
-migliore prende cento"): cambierebbe le classifiche di ieri ogni volta che
+generale e' `/leaderboard/generale`, e `/leaderboard/panoramica` le da' tutte
+in una richiesta, i primi tre di ognuna e dove sei tu: e' la schermata
+`/classifica`, che le mette una sotto l'altra, e ognuna si apre per intero
+(`/classifica/generale`, `/classifica/wordle`). Non si normalizza per giornata
+("il migliore prende cento"): cambierebbe le classifiche di ieri ogni volta che
 qualcuno gioca.
+
+**I periodi delle classifiche sono di calendario**: il giorno, la settimana da
+lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —
+gli ultimi sette giorni, gli ultimi trenta — che cambiavano ogni mattina anche
+senza partite nuove e non dicevano mai chi aveva vinto una settimana. Ora un
+periodo si chiude, e si torna a guardarlo con `indietro` (le frecce sotto il
+selettore), fino a quello del primo giorno di gioco: oltre, il server si ferma
+li' e la risposta dice quale periodo e' (`periodo`). I conti stanno in
+`shared/periodi.ts`, gli stessi per il Worker e per il browser, che ci scrive
+il nome ("La settimana scorsa", "21–27 settembre"). Un giorno passato del Wordle
+racconta i tentativi di quel giorno, mentre la serie resta quella di adesso;
+"in corso" e la fiamma della serie si mostrano solo in un periodo che arriva a
+oggi, perché una partita rimasta aperta ieri non e' in corso, e' non finita.
 
 **A pari punti passa avanti chi ne ha fatti meno in compagnia.** Nel Wordle e
 nella generale lo spareggio sono gli assist, **al contrario** di prima: una
@@ -685,6 +701,18 @@ largo com'era, e le misure in `cqw` e `cqh` non cambiano perché contano il
 contenuto e non il riquadro. Un contenitore nuovo che ritaglia vuole lo stesso
 margine.
 
+**Una traccia `auto` si allarga fino al contenuto.** Le carte della
+panoramica delle classifiche stavano in una griglia senza colonne scritte, cioe'
+con una traccia `auto`: il suo minimo e' il contenuto piu' largo, e "Battaglia
+navale", che per stare su una riga non va a capo, portava ogni carta undici
+punti oltre il bordo destro di un telefono largo 320. Le colonne di una griglia
+di carte sono `minmax(0, 1fr)`. Un altro guaio aveva la fila di capsule della
+classifica di prima: scorreva di lato, e lo scatto (`scroll-snap`) senza
+`scroll-padding` la fermava con la prima capsula contro il bordo dello schermo.
+Nelle classifiche niente scorre piu' di lato; resta il carosello delle libere
+della home, che mostra un pezzo della terza carta abbastanza grande da dire
+che si scorre.
+
 **La cartina muta e' un SVG, non una libreria.** In Mercatore
 (`cartina/geometria.ts`), come le cartine dei telefoni: conserva le forme a ogni
 scala. La proiezione di prima accorciava le longitudini del coseno della
@@ -739,6 +767,11 @@ direttamente sul tabellone: passarla per lo stato ridisegnerebbe duecentoventici
 caselle a ogni movimento. Le tessere gia' posate ricordano il loro posto sul
 leggio (`sposta` lo aggiorna), e l'ordine scelto resta anche ricaricando la
 pagina, per l'ultima partita sola (`scarabeo-leggio` nel `localStorage`).
+
+**Oro, argento e bronzo sono token, e i gradini del podio anche** (`--oro`,
+`--gradino-oro`, ...). Mescolati con `color-mix` al fondo scuro i metalli
+diventavano verde oliva e grigio sporco; ora in chiaro il gradino e' tinto del
+suo metallo, in scuro e' di vetro, e il filo di metallo in cima dice qual e'.
 
 **I colori dello Scarabeo sono token scritti a mano, non mescole.** `--tessera`,
 `--tessera-ink` e i quattro `--premio-*` stanno in `tokens.css` come tutto il
