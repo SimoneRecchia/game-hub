@@ -720,6 +720,15 @@ grande come mezzo mare.
 (`nth-child` 1, 15, 211 e 225, con il raggio del tabellone meno il suo bordo).
 Con gli angoli dritti sporgevano dal bordo arrotondato.
 
+**Le tessere del leggio si prendono col dito.** Toccata, una tessera va sul
+tabellone al cursore; trascinata oltre `SOGLIA` cambia posto sul leggio, con le
+altre che le fanno spazio, e portata sopra il leggio si posa sulla casella dove
+la si lascia (`posaSu`). La casella sotto il dito si segna con una classe messa
+direttamente sul tabellone: passarla per lo stato ridisegnerebbe duecentoventicinque
+caselle a ogni movimento. Le tessere gia' posate ricordano il loro posto sul
+leggio (`sposta` lo aggiorna), e l'ordine scelto resta anche ricaricando la
+pagina, per l'ultima partita sola (`scarabeo-leggio` nel `localStorage`).
+
 **I colori dello Scarabeo sono token scritti a mano, non mescole.** `--tessera`,
 `--tessera-ink` e i quattro `--premio-*` stanno in `tokens.css` come tutto il
 resto. La prima versione li ricavava con `color-mix` dai colori di sistema, e la
