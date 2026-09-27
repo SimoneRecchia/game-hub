@@ -57,6 +57,11 @@ const LETTERE = 'abcdef'
  */
 export default function QuizDuello() {
   const { id = '' } = useParams()
+  // Un duello, una pagina: la rivincita arriva allo stesso indirizzo con un altro id, e riparte da capo.
+  return <Duello key={id} id={id} />
+}
+
+function Duello({ id }: { id: string }) {
   const { vai } = useNavigazione()
   const d = useDuello(id)
   const v = d.vista
