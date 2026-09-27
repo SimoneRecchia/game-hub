@@ -182,9 +182,7 @@ export default function WordleLibero() {
       )}
 
       <Sheet open={cambio} onClose={() => setCambio(false)} title="Cambiare parola?">
-        <p className="result__lede">
-          Questa l’hai già cominciata: cambiandola conta come non indovinata.
-        </p>
+        <p className="result__lede">Quella in corso conta come non indovinata.</p>
         <Button size="lg" fullWidth variant="destructive" onClick={() => void nuova()}>
           Cambia parola
         </Button>

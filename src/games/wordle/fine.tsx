@@ -34,7 +34,8 @@ export function adesivoFine(finale: FinaleWordle, id: number): DatiAdesivo {
       id,
       tono: 'vivace',
       titolo: TITOLI_VITTORIA[Math.min(finale.tentativi, 6) - 1],
-      sotto: finale.tentativi === 1 ? 'Indovinata al primo tentativo' : `Indovinata in ${finale.tentativi} tentativi`,
+      // Al primo colpo il titolo dice gia' tutto.
+      sotto: finale.tentativi === 1 ? undefined : `In ${finale.tentativi} tentativi`,
       colore: 'linear-gradient(155deg, var(--wordle-1), var(--wordle-2) 80%)',
       durata: ADESIVO_FINE_MS,
       disegno: <Stelle />,
@@ -124,13 +125,13 @@ export function Tentativi({
  * la parola.
  */
 export function notaWordle(guesses: readonly EvaluatedGuess[], status: WordleStatus, answer: string | null): string {
-  if (status === 'won') return `Era ${answer?.toUpperCase() ?? ''}: indovinata!`
+  if (status === 'won') return answer ? `Indovinata: ${answer.toUpperCase()}` : 'Indovinata!'
   if (status === 'lost') return answer ? `La parola era ${answer.toUpperCase()}` : 'Non indovinata'
   const ultima = guesses.at(-1)
   if (!ultima) return 'Cinque lettere, sei tentativi'
   const giuste = ultima.pattern.filter((t) => t === 'correct').length
   const presenti = ultima.pattern.filter((t) => t === 'present').length
-  if (giuste === 0 && presenti === 0) return `${ultima.word.toUpperCase()}: nessuna lettera`
+  if (giuste === 0 && presenti === 0) return `${ultima.word.toUpperCase()}: nessuna lettera giusta`
   const parti = [giuste > 0 ? `${giuste} al posto giusto` : '', presenti > 0 ? `${presenti} da spostare` : ''].filter(
     Boolean,
   )

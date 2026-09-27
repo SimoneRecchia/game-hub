@@ -106,17 +106,14 @@ export function SfidaQuiz({
     NOMI_MODI[imp.modo],
     nomeArea(imp.area, ix),
     `${imp.quante} domande`,
-    `${imp.secondi} s`,
+    `${imp.secondi * (imp.modo === 'cartina' ? 2 : 1)} s a domanda`,
   ].join(' · ')
 
   return (
     <Sheet open={open} onClose={onClose} title="Sfida un amico">
       <div className="quiz-sfida">
         <p className="quiz-sfida__cosa">{riassunto}</p>
-        <p className="quiz-sfida__regole">
-          Le stesse domande, nello stesso momento, sempre a tempo. Il primo che risponde giusto prende il punto; chi
-          sbaglia manda l’altro al rallentatore. È un’amichevole: il conto non va in classifica.
-        </p>
+        <p className="quiz-sfida__regole">Il primo che risponde giusto prende il punto.</p>
 
         {inAttesa && inAttesa.codice ? (
           <LinkInAttesa sfida={inAttesa} onRitira={() => void annulla(inAttesa)} avvisa={toast.show} />
@@ -130,9 +127,7 @@ export function SfidaQuiz({
               </span>
               <div className="bat-link__testo">
                 <p className="bat-link__titolo">Invita con un link</p>
-                <p className="bat-link__nota">
-                  Anche a chi non ha ancora un account: si registra, e appena entra si comincia. Vale un’ora.
-                </p>
+                <p className="bat-link__nota">Anche a chi non ha un account. Vale un’ora.</p>
               </div>
             </div>
             <Button
@@ -148,18 +143,15 @@ export function SfidaQuiz({
         )}
 
         {sala?.sfida?.stato === 'rifiutata' && sala.sfida.a && (
-          <p className="bat-sala__esito">{sala.sfida.a.displayName} ha detto di no, per ora.</p>
+          <p className="bat-sala__esito">{sala.sfida.a.displayName} ha rifiutato la sfida.</p>
         )}
         {avviso && <p className="bat-sala__avviso">{avviso}</p>}
 
         <p className="bat-sala__titolo">Chi è online adesso</p>
         {!sala ? (
-          <p className="bat-sala__vuoto">Guardo chi c’è…</p>
+          <p className="bat-sala__vuoto">Cerco chi è online…</p>
         ) : sala.giocatori.length === 0 ? (
-          <p className="bat-sala__vuoto">
-            Adesso non c&rsquo;è nessun altro. Appena un collega apre l&rsquo;app, in qualunque gioco, compare qui —
-            oppure mandagli il link.
-          </p>
+          <p className="bat-sala__vuoto">Nessuno online in questo momento.</p>
         ) : (
           <ul className="bat-sala__elenco">
             {sala.giocatori.map((g) => (
@@ -211,7 +203,7 @@ async function copia(url: string, avvisa: (testo: string) => void) {
     await navigator.clipboard.writeText(url)
     avvisa('Link copiato')
   } catch {
-    avvisa('Non riesco a copiare: tieni premuto il link per copiarlo.')
+    avvisa('Non riesco a copiare: tieni premuto il link.')
   }
 }
 
@@ -257,7 +249,7 @@ function LinkInAttesa({
         </Button>
       </div>
       <p className="bat-link__nota">
-        Vale ancora {formatCronometro(restano)}, per una persona sola.{' '}
+        Scade fra {formatCronometro(restano)}.{' '}
         <button type="button" className="bat-link__ritira" onClick={onRitira}>
           Ritira il link
         </button>

@@ -382,7 +382,7 @@ export async function accettaSfida(
   if (creata.meta.changes !== 1) {
     if (invito.stato !== 'attesa') fail(409, 'SFIDA_CHIUSA', 'Questa sfida non è più valida.')
     if (scadeTra(invito.created_at, adesso) === 0) {
-      fail(409, 'SFIDA_SCADUTA', 'La sfida è scaduta: chiedi di mandartene un’altra.')
+      fail(409, 'SFIDA_SCADUTA', 'La sfida è scaduta.')
     }
     fail(409, 'OCCUPATO', 'Uno dei due sta già giocando un’altra battaglia.')
   }
@@ -652,7 +652,7 @@ export async function salvaPartita(
     .run()
 
   if (esito.meta.changes !== 1) {
-    fail(409, 'CONFLITTO', 'La partita è cambiata nel frattempo: ricarico.')
+    fail(409, 'CONFLITTO', 'La partita è cambiata: la ricarico.')
   }
   return dopo
 }

@@ -56,12 +56,12 @@ const PERIODI: { value: LeaderboardScope; label: string }[] = [
 ]
 
 const LEDE: Record<ChiaveClassifica, string> = {
-  generale: 'Tutte le classificate insieme: ognuna vale fino a cento punti.',
-  wordle: 'Una parola al giorno: cento punti al primo tentativo, cinquanta al sesto.',
-  scarabeo: 'Il tuo punteggio contro quello del computer, con le stesse tessere.',
-  cruciverba: 'Cento punti a chi lo completa senza aiuti.',
-  battaglia: 'La battaglia del giorno contro il computer: meno colpi, più punti.',
-  quiz: 'Dieci domande al giorno: venti punti per aver giocato, otto per ogni risposta giusta.',
+  generale: 'Tutte le classificate, fino a 100 punti ciascuna.',
+  wordle: '100 punti al primo tentativo, 50 al sesto.',
+  scarabeo: 'Pareggiare il computer vale 100 punti.',
+  cruciverba: '100 punti se lo completi senza aiuti.',
+  battaglia: 'Meno colpi, più punti.',
+  quiz: '20 punti per aver giocato, 8 per ogni risposta giusta.',
 }
 
 function periodoDa(valore: string | null): LeaderboardScope {
@@ -131,7 +131,7 @@ function Tabella({ chiave, periodo }: { chiave: ChiaveClassifica; periodo: Leade
 
       {errore && !dati ? (
         <Vuoto
-          titolo="La classifica non si è caricata"
+          titolo="Non riesco a caricare la classifica"
           testo={errore}
           azione={
             <Button variant="tinted" onClick={() => void ricarica()}>
@@ -148,8 +148,7 @@ function Tabella({ chiave, periodo }: { chiave: ChiaveClassifica; periodo: Leade
       ) : voci.length === 0 ? (
         <Vuoto
           icona={<IconTrophy size={28} />}
-          titolo={periodo === 'today' ? 'Nessuno ha ancora giocato oggi' : 'Ancora nessuna partita'}
-          testo={periodo === 'today' ? 'Puoi essere il primo.' : 'In questo periodo non ha giocato nessuno.'}
+          titolo={periodo === 'today' ? 'Nessuno ha ancora giocato oggi' : 'Nessuna partita in questo periodo'}
         />
       ) : (
         <div className="cl" key={`${chiave}-${periodo}`}>
@@ -337,7 +336,6 @@ function vociDi(chiave: ChiaveClassifica, risposta: Risposta, periodo: Leaderboa
             { etichetta: 'Di cui in compagnia', valore: formatNumber(r.assist) },
             { etichetta: 'Partite classificate', valore: formatNumber(r.partite) },
           ],
-          nota: 'A pari punti passa avanti chi ne ha fatti meno giocando il Wordle in compagnia, poi chi ci è arrivato con meno partite.',
         }
       })
 
@@ -368,14 +366,11 @@ function vociDi(chiave: ChiaveClassifica, risposta: Risposta, periodo: Leaderboa
           { etichetta: 'Punti in compagnia', valore: formatNumber(r.assistScore) },
           { etichetta: 'Totale', valore: formatNumber(r.score), forte: true },
           { etichetta: 'Giornate giocate', valore: formatNumber(r.played) },
-          ...(r.played > 0 ? [{ etichetta: 'Parole del giorno indovinate', valore: formatPercent(r.wins / r.played) }] : []),
+          ...(r.played > 0 ? [{ etichetta: 'Parole indovinate', valore: formatPercent(r.wins / r.played) }] : []),
           ...(r.avgAttempts !== null ? [{ etichetta: 'Media tentativi', valore: r.avgAttempts.toFixed(1) }] : []),
           { etichetta: 'Serie attuale', valore: formatNumber(r.currentStreak) },
         ],
-        nota:
-          r.assists > 0
-            ? `${giornate(r.assists)} in compagnia, allo stesso punteggio di chi ospitava. A pari totale passa avanti chi ne ha fatti meno in compagnia.`
-            : 'Una giornata giocata in compagnia vale come una giocata da soli. A pari totale passa avanti chi ne ha fatti meno in compagnia.',
+        nota: r.assists > 0 ? `${giornate(r.assists)} in compagnia.` : undefined,
       }))
 
     case 'scarabeo':
@@ -394,13 +389,16 @@ function vociDi(chiave: ChiaveClassifica, risposta: Risposta, periodo: Leaderboa
           { etichetta: 'Giornate', valore: formatNumber(r.giornate) },
           { etichetta: 'Giornata migliore', valore: formatNumber(r.migliore) },
         ],
-        nota: 'Pareggiare il computer, che gioca le stesse tessere, vale cento punti. A pari punti conta il punteggio sul tabellone.',
+        nota: 'A pari punti conta il punteggio sul tabellone.',
       }))
 
     case 'cruciverba':
       return (risposta as CruciverbaLeaderboard).rows.map((r) => ({
         ...r,
-        sotto: r.inCorso && r.giornate === 0 ? 'In corso' : `${r.giornate} completati · ${formatDuration(r.tempoMs)}`,
+        sotto:
+          r.inCorso && r.giornate === 0
+            ? 'In corso'
+            : `${r.giornate} ${r.giornate === 1 ? 'completato' : 'completati'} · ${formatDuration(r.tempoMs)}`,
         breve: r.giornate > 0 ? formatDuration(r.tempoMs) : 'in corso',
         segni: r.inCorso ? <Etichetta tono="arancio">in corso</Etichetta> : undefined,
         dettaglio: [
@@ -408,7 +406,7 @@ function vociDi(chiave: ChiaveClassifica, risposta: Risposta, periodo: Leaderboa
           { etichetta: 'Schemi completati', valore: formatNumber(r.giornate) },
           { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
         ],
-        nota: 'Tre punti in meno per ogni lettera svelata, uno per ogni errore trovato da un controllo. A pari punti passa avanti chi ci ha messo meno.',
+        nota: 'A pari punti conta il tempo.',
       }))
 
     case 'battaglia':
@@ -425,19 +423,20 @@ function vociDi(chiave: ChiaveClassifica, risposta: Risposta, periodo: Leaderboa
           { etichetta: 'Vinte', valore: formatNumber(r.vinte) },
           { etichetta: 'Colpi nelle vittorie', valore: formatNumber(r.colpi) },
         ],
-        nota: 'Vincendo, cento punti meno uno ogni due colpi in acqua; perdendo, tre per ogni casella colpita. A pari punti passa avanti chi ha sparato meno.',
+        nota: 'A pari punti contano le vittorie, poi i colpi.',
       }))
 
     case 'quiz':
       return (risposta as QuizLeaderboard).rows.map((r) => {
         const domande = r.giornate * DOMANDE_PER_PARTITA
+        const giuste = `${r.giuste} ${r.giuste === 1 ? 'giusta' : 'giuste'}`
         return {
           ...r,
           sotto:
             r.inCorso && r.giornate === 0
               ? 'In corso'
               : oggi
-                ? `${r.giuste} giuste su ${DOMANDE_PER_PARTITA} · ${formatDuration(r.tempoMs)}`
+                ? `${giuste} su ${DOMANDE_PER_PARTITA} · ${formatDuration(r.tempoMs)}`
                 : `${giornate(r.giornate)} · ${formatPercent(domande > 0 ? r.giuste / domande : 0)} giuste`,
           breve: r.giornate > 0 ? `${r.giuste}/${domande} giuste` : 'in corso',
           segni: r.inCorso ? <Etichetta tono="arancio">in corso</Etichetta> : undefined,
@@ -447,7 +446,7 @@ function vociDi(chiave: ChiaveClassifica, risposta: Risposta, periodo: Leaderboa
             { etichetta: 'Risposte giuste', valore: `${formatNumber(r.giuste)} su ${formatNumber(domande)}` },
             { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
           ],
-          nota: 'Venti punti per aver giocato e otto per ogni risposta giusta. A pari punti passa avanti chi ci ha messo meno.',
+          nota: 'A pari punti conta il tempo.',
         }
       })
   }
@@ -463,11 +462,14 @@ function descriviWordle(r: LeaderboardResponse['rows'][number], oggi: boolean): 
     }
     if (r.todayStatus === 'won') return `Indovinata al ${r.todayAttempts}º tentativo`
     if (r.todayStatus === 'lost') return 'Non indovinata'
-    if (r.todayStatus === 'playing') return r.todayAttempts ? `In corso · ${r.todayAttempts} tentativi` : 'Ha appena iniziato'
+    if (r.todayStatus === 'playing') {
+      if (!r.todayAttempts) return 'Ha appena iniziato'
+      return `In corso · ${r.todayAttempts} ${r.todayAttempts === 1 ? 'tentativo' : 'tentativi'}`
+    }
     return 'Non ha ancora giocato'
   }
   const pezzi = [partite(r.played)]
-  if (r.played > 0) pezzi.push(`${formatPercent(r.wins / r.played)} vinte`)
+  if (r.played > 0) pezzi.push(`${formatPercent(r.wins / r.played)} indovinate`)
   if (r.avgAttempts !== null) pezzi.push(`media ${r.avgAttempts.toFixed(1)}`)
   return pezzi.join(' · ')
 }

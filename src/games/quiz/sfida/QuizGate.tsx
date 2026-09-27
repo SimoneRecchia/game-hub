@@ -126,7 +126,7 @@ function AvvisoSfida({
       if (azione === 'accetta') await onAccetta()
       else await onRifiuta()
     } catch (err) {
-      setErrore(err instanceof ApiFetchError ? err.message : 'Non sono riuscito a rispondere.')
+      setErrore(err instanceof ApiFetchError ? err.message : 'Risposta non inviata. Riprova.')
     } finally {
       setOccupato(null)
     }
@@ -141,19 +141,17 @@ function AvvisoSfida({
           <p className="avviso__testo">
             {sfida.rivincita ? (
               <>
-                <strong>{sfida.da.displayName}</strong> vuole la rivincita: il conto della serie continua.
+                <strong>{sfida.da.displayName}</strong> vuole la rivincita.
               </>
             ) : (
               <>
-                <strong>{sfida.da.displayName}</strong> ti sfida a un quiz: {cosa}. Il primo che risponde giusto
-                prende il punto.
+                <strong>{sfida.da.displayName}</strong> ti sfida a un quiz: {cosa}.
               </>
             )}
           </p>
         </div>
         <p className="avviso__sereno">
-          La sfida scade fra <span className="u-tabnum">{formatCronometro(restano)}</span>. Se ora non puoi,
-          rifiuta: {sfida.da.displayName} lo vede subito e non resta ad aspettare.
+          Scade fra <span className="u-tabnum">{formatCronometro(restano)}</span>.
         </p>
         {errore && <p className="avviso__errore">{errore}</p>}
         <div className="avviso__azioni">
@@ -189,7 +187,7 @@ function AvvisoDuello({ duello, onVai, onDopo }: { duello: DuelloBreve; onVai: (
         <div className="avviso__testa">
           <Avatar nickname={duello.avversario.nickname} color={duello.avversario.avatarColor} size={64} />
           <p className="avviso__testo">
-            <strong>{duello.avversario.displayName}</strong> ha accettato la tua sfida: si comincia appena arrivi.
+            <strong>{duello.avversario.displayName}</strong> ha accettato la tua sfida.
           </p>
         </div>
         <div className="avviso__azioni">

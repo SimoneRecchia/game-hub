@@ -30,8 +30,8 @@ interface Props {
   classificata: boolean
   /** Sotto il risultato: i bottoni che portano via. */
   azioniFine: ReactNode
-  /** Il titolo dell'intro e il suo bottone, se non sono quelli del quiz di oggi. */
-  intro?: { titolo: string; sotto?: string; azione: string }
+  /** Il titolo dell'intro e la riga sopra, se non sono quelli del quiz di oggi. */
+  intro?: { titolo: string; sotto?: string }
 }
 
 /**
@@ -151,13 +151,13 @@ function Intro({ p, categoria, intro }: { p: VistaPartita; categoria: CategoriaQ
             'Senza tempo'
           ) : (
             <>
-              <strong className="u-tabnum">{secondi}</strong> secondi l’una
+              <strong className="u-tabnum">{secondi}</strong> secondi a domanda
             </>
           )}
         </span>
       </div>
       <Button size="lg" fullWidth onClick={p.comincia}>
-        {ripresa ? `Riprendi dalla ${p.fatte.length + 1}ª domanda` : (intro?.azione ?? 'Comincia')}
+        {ripresa ? `Riprendi dalla domanda ${p.fatte.length + 1}` : 'Comincia'}
       </Button>
     </div>
   )
@@ -282,7 +282,9 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
                 <p className={`quiz-conferma__esito${esito.risposta.giusta ? ' is-giusta' : ''}`}>
                   {esito.risposta.giusta
                     ? 'Trovato!'
-                    : `${esito.risposta.scelta === null ? 'Tempo scaduto' : 'Sbagliato'} · ${esito.risposta.risposta}`}
+                    : `${esito.risposta.scelta === null ? 'Tempo scaduto' : 'Sbagliato'} · giusta: ${
+                        esito.risposta.risposta
+                      }`}
                 </p>
                 {manuale && <Avanti p={p} />}
               </>
@@ -316,7 +318,7 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
                   className="quiz-carta__aiuto"
                   disabled={p.esclusi.size > 0}
                   onClick={p.usaAiuto}
-                  aria-label={`Cinquanta e cinquanta: toglie metà delle risposte sbagliate. Ne restano ${p.aiutiRimasti}.`}
+                  aria-label={`Aiuto 50 e 50: ne restano ${p.aiutiRimasti}`}
                 >
                   50:50 <span className="u-tabnum">×{p.aiutiRimasti}</span>
                 </button>
@@ -777,7 +779,7 @@ function Fine({
         </div>
         {fuori && (
           <p className="quiz-fine__punti">
-            Morte improvvisa: fuori alla domanda <strong className="u-tabnum">{primoGiro.length}</strong> di {p.totale}
+            Primo errore alla domanda <strong className="u-tabnum">{primoGiro.length}</strong> di {p.totale}
           </p>
         )}
         {classificata && p.punti !== null && (
@@ -787,8 +789,8 @@ function Fine({
         )}
         {ripasso.length > 0 && (
           <p className="quiz-fine__punti">
-            Ripasso: <strong className="u-tabnum">{ripasso.filter((f) => f.risposta.giusta).length}</strong> su{' '}
-            {ripasso.length} recuperate
+            Ripasso: <strong className="u-tabnum">{ripasso.filter((f) => f.risposta.giusta).length}</strong>{' '}
+            giuste su {ripasso.length}
           </p>
         )}
         <ol className="quiz-fine__caselle" aria-hidden="true">

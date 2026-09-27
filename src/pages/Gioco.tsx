@@ -72,7 +72,7 @@ function PaginaGioco({ id }: { id: GiocoClassificato }) {
                 {stato.azione}
               </Collegamento>
             ) : (
-              <span className="modo__bottone is-spento">{stato ? 'Arriva a momenti' : ' '}</span>
+              <span className="modo__bottone is-spento">{stato ? 'Gioca' : ' '}</span>
             )}
             {stato?.punti !== null && stato?.punti !== undefined && (
               <Etichetta tono="brand">{stato.punti} punti</Etichetta>
@@ -81,7 +81,7 @@ function PaginaGioco({ id }: { id: GiocoClassificato }) {
           {stato?.fase === 'fatta' && oggi ? (
             <Prossima ms={oggi.msToNextPuzzle} />
           ) : (
-            <p className="modo__nota">{gioco.classificata} Vale per la classifica.</p>
+            <p className="modo__nota">{gioco.classificata} Conta per la classifica.</p>
           )}
         </article>
 
@@ -97,7 +97,7 @@ function PaginaGioco({ id }: { id: GiocoClassificato }) {
             </Collegamento>
             {libera?.dettaglio && <span className="modo__conto">{libera.dettaglio}</span>}
           </div>
-          <p className="modo__nota">Senza punti in classifica: si gioca per il gusto di giocare.</p>
+          <p className="modo__nota">Non conta per la classifica.</p>
         </article>
       </div>
 
@@ -108,23 +108,18 @@ function PaginaGioco({ id }: { id: GiocoClassificato }) {
           <Riga
             icona={<IconBook size={18} />}
             titolo="Come si gioca"
-            sotto="Le regole, e come si fanno i punti"
+            sotto="Regole e punti"
             onClick={() => setRegole(true)}
           />
           {id === 'quiz' && (
             <Riga
               icona={<IconPeople size={18} />}
               titolo="Sfida un amico"
-              sotto="A chi è online o con un link: il primo che risponde giusto prende il punto"
+              sotto="Chi risponde giusto per primo prende il punto"
               a={`${ROTTE.libera('quiz')}?sfida=1`}
             />
           )}
-          <Riga
-            icona={<IconTrophy size={18} />}
-            titolo={`Classifica ${id === 'battaglia' ? 'della battaglia navale' : `del ${gioco.nome}`}`}
-            sotto="Oggi, questa settimana, da sempre"
-            a={ROTTE.classifica(id)}
-          />
+          <Riga icona={<IconTrophy size={18} />} titolo="Classifica" a={ROTTE.classifica(id)} />
         </Elenco>
       </Sezione>
 
@@ -155,7 +150,10 @@ function Anteprima({ id }: { id: GiocoClassificato }) {
   if (dati && podio.length === 0) return null
 
   return (
-    <Sezione titolo="Questa settimana" azione={<Collegamento to={ROTTE.classifica(id)}>Tutta</Collegamento>}>
+    <Sezione
+      titolo="Questa settimana"
+      azione={<Collegamento to={ROTTE.classifica(id)}>Classifica</Collegamento>}
+    >
       <div className="podio-mini">
         {(dati ? podio : [null, null, null]).map((r, i) =>
           r ? (
@@ -206,20 +204,20 @@ function useLibera(id: GiocoClassificato): Libera | null {
       return {
         azione: wordle.partita ? 'Continua' : 'Nuova parola',
         dettaglio: wordle.statistiche.giocate
-          ? `${wordle.statistiche.vinte} indovinate su ${wordle.statistiche.giocate}`
+          ? `${quante(wordle.statistiche.vinte, 'indovinata', 'indovinate')} su ${wordle.statistiche.giocate}`
           : null,
       }
     case 'cruciverba':
       if (!cruciverba) return null
       return {
         azione: cruciverba.partita ? 'Continua' : 'Nuovo schema',
-        dettaglio: cruciverba.completate ? `${cruciverba.completate} completati` : null,
+        dettaglio: cruciverba.completate ? quante(cruciverba.completate, 'completato', 'completati') : null,
       }
     case 'scarabeo':
       if (!scarabeo) return null
       return {
         azione: scarabeoInCorso ? 'Continua' : 'Sfida il computer',
-        dettaglio: scarabeo.giocate ? `${scarabeo.vinte} vinte su ${scarabeo.giocate}` : null,
+        dettaglio: scarabeo.giocate ? `${quante(scarabeo.vinte, 'vinta', 'vinte')} su ${scarabeo.giocate}` : null,
       }
     case 'battaglia': {
       if (!battaglia) return null
@@ -236,8 +234,13 @@ function useLibera(id: GiocoClassificato): Libera | null {
       if (!quiz) return null
       return {
         azione: 'Scegli la categoria',
-        dettaglio: quiz.domande > 0 ? `${quiz.giuste} giuste su ${quiz.domande}` : null,
+        dettaglio: quiz.domande > 0 ? `${quante(quiz.giuste, 'giusta', 'giuste')} su ${quiz.domande}` : null,
       }
   }
+}
+
+/** "1 vinta", "3 vinte". */
+function quante(n: number, uno: string, tanti: string): string {
+  return `${n} ${n === 1 ? uno : tanti}`
 }
 

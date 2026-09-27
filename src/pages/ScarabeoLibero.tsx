@@ -29,9 +29,9 @@ const NOMI: Record<Livello, string> = { facile: 'Facile', normale: 'Normale', di
  * sessanta sacchetti, dieci mosse a testa (vedi shared/scarabeo-motore.ts).
  */
 const DESCRIZIONI: Record<Livello, string> = {
-  facile: 'Parole corte, poche caselle premio. Fa sui 170 punti.',
-  normale: 'Gioca bene, ma non vede tutto. Sui 250 punti: è lui il traguardo della classificata.',
-  difficile: 'Cerca quasi sempre la mossa migliore. Oltre 350 punti.',
+  facile: 'Fa circa 170 punti',
+  normale: 'Fa circa 250 punti',
+  difficile: 'Fa oltre 350 punti',
 }
 
 /**
@@ -93,7 +93,7 @@ export default function ScarabeoLibero() {
       <Pagina
         key="scelta"
         titolo="Contro il computer"
-        sotto="Una partita a turni, con un sacchetto nuovo. Non conta per la classifica."
+        sotto="Non conta per la classifica."
         indietro={{ a: ROTTE.gioco('scarabeo'), etichetta: 'Scarabeo' }}
       >
         <SceltaLivello g={g} />
@@ -179,14 +179,12 @@ export default function ScarabeoLibero() {
       <Sheet open={storia} onClose={() => setStoria(false)} title="Le mosse">
         <ElencoMosse
           mosse={stato.giocate.map((m) => ({ ...m, autore: m.mia ? 'Tu' : 'Computer' }))}
-          vuoto="Nessuna mossa, per ora: comincia tu."
+          vuoto="Nessuna mossa, per ora."
         />
       </Sheet>
 
       <Sheet open={abbandono} onClose={() => setAbbandono(false)} title="Abbandonare la partita?">
-        <p className="scr-storia__lede">
-          La partita si chiude qui e non finisce nelle statistiche. Il computer non se la prende.
-        </p>
+        <p className="scr-storia__lede">Non conterà nelle statistiche.</p>
         <Button
           size="lg"
           fullWidth
@@ -232,7 +230,7 @@ export default function ScarabeoLibero() {
               g.nuova(livello)
             }}
           >
-            <IconRefresh size={18} /> Un’altra, livello {NOMI[livello].toLowerCase()}
+            <IconRefresh size={18} /> Un’altra partita
           </Button>
           <Button
             size="lg"
@@ -268,7 +266,7 @@ function SceltaLivello({ g }: { g: ScarabeoLiberoController }) {
   return (
     <Sezione
       titolo="Scegli il livello"
-      nota="Dieci mosse a testa, un sacchetto nuovo ogni partita. Comincia tu; vince chi fa più punti."
+      nota="Dieci mosse a testa. Vince chi fa più punti."
     >
       <Elenco>
         {LIVELLI.map((livello, i) => {

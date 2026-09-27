@@ -187,7 +187,7 @@ export function useDuello(id: string): Duello {
         .catch(async (e) => {
           // Troppo tardi, o l'altro ha risposto prima: si rilegge com'e' andata.
           if (e instanceof ApiFetchError && e.status === 409) await carica()
-          else if (vivo.current) setErrore(e instanceof ApiFetchError ? e.message : 'La risposta non è partita.')
+          else if (vivo.current) setErrore(e instanceof ApiFetchError ? e.message : 'Risposta non inviata.')
         })
         .finally(() => {
           if (!vivo.current) return

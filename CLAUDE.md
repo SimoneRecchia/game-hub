@@ -20,6 +20,14 @@ il typecheck se ne accorga subito invece di lasciar fallire il build del deploy.
 `server/routes/wordle.ts`, che scrive `WHERE attempts = ?` col valore appena
 letto e considera un conflitto il caso `changes !== 1`.
 
+**D1 accetta al massimo cento parametri per istruzione.** Una lista che cresce
+con i giocatori non si passa con un segnaposto per elemento, ma come JSON in un
+parametro solo: `IN (SELECT value FROM json_each(?))`, come fa la classifica
+generale (`server/lib/generale.ts`), che con un `?` per giocatore rispondeva 500
+dal centunesimo in poi. Il banco dei test (`server/__tests__/banco.ts`) ha lo
+stesso limite, perché SQLite in locale ne regge molti di piu' e il test
+passerebbe lo stesso.
+
 **WebCrypto esiste solo nei contesti sicuri.** La derivazione della password
 gira nel browser, quindi il sito funziona in https o su localhost, non su
 un'origine http qualsiasi. `deriveVerifier` solleva `InsecureContextError` in
@@ -540,6 +548,17 @@ perché e' lì che partono le transizioni: avanti, indietro, scheda, con le View
 Transitions dove ci sono. React Router aggiorna lo stato dentro una transizione
 di React, quindi `TransizioniProvider` fa aspettare la View Transition finché la
 rotta nuova e' montata (guarda la chiave della location), con un tetto di 700 ms.
+
+**I testi dicono cosa fare, non perché.** Titoli di poche parole, un
+sottotitolo solo quando serve a decidere, e corto; niente retroscena ("il tempo
+lo tiene il server", "lo schema lo compone un programma ogni notte") né giri di
+parole ("finché ce ne sono", "le opzioni di sempre"). Le opzioni si chiamano
+come in un'app: "Difficoltà", "Ordine", "Ripristina le opzioni". Le regole di
+ogni gioco sono il minimo per giocare — scopo, comandi, punti in una riga,
+classificata e libera in una riga — e il perché delle regole sta in questo
+file, non nell'app. Fonti e licenze stanno nel profilo; nelle schermate resta
+solo il credito che la licenza chiede (il Wikizionario nelle regole del
+cruciverba).
 
 **Le icone SVG di `public/` devono essere XML valido.** Un doppio trattino in un
 commento basta a non far caricare l'immagine, mentre la stessa icona messa nella

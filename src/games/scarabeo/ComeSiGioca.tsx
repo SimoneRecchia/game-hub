@@ -1,13 +1,5 @@
 import { Sheet } from '@/components/Sheet'
-import {
-  BONUS_SCARABEO,
-  DISTRIBUZIONE,
-  JOLLY,
-  MOSSE_PER_GIORNATA,
-  TESSERE_LEGGIO,
-  TESSERE_TOTALI,
-  VALORI,
-} from '@shared/scarabeo'
+import { BONUS_SCARABEO, DISTRIBUZIONE, JOLLY, MOSSE_PER_GIORNATA, TESSERE_LEGGIO, VALORI } from '@shared/scarabeo'
 import './ComeSiGioca.css'
 
 /** I valori raggruppati: sono sette gradini, non ventuno numeri da leggere. */
@@ -21,10 +13,10 @@ const GRADINI = [...new Set(Object.values(VALORI))]
   }))
 
 const PREMI = [
-  { classe: 'tp', nome: 'Parola tripla', quante: 8 },
-  { classe: 'dp', nome: 'Parola doppia', quante: 17 },
-  { classe: 'tl', nome: 'Lettera tripla', quante: 12 },
-  { classe: 'dl', nome: 'Lettera doppia', quante: 24 },
+  { classe: 'tp', nome: 'Parola tripla' },
+  { classe: 'dp', nome: 'Parola doppia' },
+  { classe: 'tl', nome: 'Lettera tripla' },
+  { classe: 'dl', nome: 'Lettera doppia' },
 ] as const
 
 export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -34,43 +26,20 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="scr-aiuto">
         <p className="scr-aiuto__lede">
-          Hai <strong>{MOSSE_PER_GIORNATA} mosse</strong> per fare più punti che puoi. Nella
-          classificata le {TESSERE_TOTALI} tessere escono dal sacchetto nello{' '}
-          <strong>stesso ordine per tutti</strong>: chi gioca oggi ha la tua stessa mano, quindi i
-          punteggi si confrontano davvero.
+          Fai più punti che puoi in <strong>{MOSSE_PER_GIORNATA} mosse</strong>.
         </p>
-
-        <section className="scr-aiuto__sezione">
-          <h3 className="scr-aiuto__titolo">Le due partite</h3>
-          <ul className="scr-aiuto__elenco">
-            <li>
-              <strong>Classificata.</strong> Il computer ha già giocato le tessere di oggi, e il suo
-              punteggio è il traguardo: pareggiarlo vale <strong>cento punti</strong> in classifica,
-              farne la metà cinquanta. Oltre il cento non si va, e le sue mosse le vedi a giornata
-              chiusa.
-            </li>
-            <li>
-              <strong>Libera.</strong> Una partita a turni contro il computer, dieci mosse a testa,
-              con un sacchetto nuovo ogni volta e tre livelli da scegliere. Non conta per la
-              classifica.
-            </li>
-          </ul>
-        </section>
 
         <section className="scr-aiuto__sezione">
           <h3 className="scr-aiuto__titolo">Posare una parola</h3>
           <ol className="scr-aiuto__passi">
             <li>
-              Tocca una casella: compare il cursore. <strong>Toccala di nuovo</strong> per scrivere
-              verso il basso invece che verso destra.
+              Tocca una casella. <strong>Toccala di nuovo</strong> per scrivere in verticale.
             </li>
-            <li>Tocca le tessere del leggio: si posano una dopo l&rsquo;altra.</li>
+            <li>Tocca le tessere del leggio per posarle.</li>
+            <li>Tocca una tessera posata per riprenderla.</li>
             <li>
-              Hai sbagliato? Tocca la tessera sul tabellone e <strong>torna in mano</strong>.
-            </li>
-            <li>
-              La prima parola passa dalla <strong>casella centrale</strong>; le altre devono
-              attaccarsi a quel che c&rsquo;è già.
+              La prima parola passa dalla <strong>casella centrale</strong>. Le altre si attaccano a
+              quelle già posate.
             </li>
           </ol>
         </section>
@@ -82,13 +51,11 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
               <li key={p.classe}>
                 <span className={`scr-aiuto__premio scr-aiuto__premio--${p.classe}`} />
                 <span className="scr-aiuto__premio-nome">{p.nome}</span>
-                <span className="scr-aiuto__premio-quante u-tabnum">{p.quante}</span>
               </li>
             ))}
           </ul>
           <p className="scr-aiuto__nota">
-            Un premio vale <strong>solo quando lo copri</strong>: una parola che passa su una
-            tripla già usata non la riusa. La casella centrale raddoppia la prima parola.
+            Un premio vale <strong>solo quando lo copri</strong>.
           </p>
         </section>
 
@@ -114,25 +81,22 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
           <h3 className="scr-aiuto__titolo">Da sapere</h3>
           <ul className="scr-aiuto__elenco">
             <li>
-              Usare tutte e {TESSERE_LEGGIO} le tessere in una mossa è <strong>scarabeo</strong>:{' '}
-              {BONUS_SCARABEO} punti in più.
+              Tutte e {TESSERE_LEGGIO} le tessere in una mossa: <strong>scarabeo</strong>, {BONUS_SCARABEO} punti
+              in più.
             </li>
             <li>
-              Contano <strong>tutte</strong> le parole che si formano, anche quelle di traverso.
+              Contano <strong>tutte</strong> le parole che si formano.
             </li>
             <li>
-              <strong>Passare e cambiare costano una mossa</strong>, come posare: altrimenti il
-              limite di {MOSSE_PER_GIORNATA} non vorrebbe dire niente. Le tessere cambiate tornano
-              in fondo al sacchetto.
+              <strong>Passare e cambiare</strong> costano una mossa.
+            </li>
+            <li>Niente accenti né nomi propri: &ldquo;città&rdquo; si scrive CITTA.</li>
+            <li>
+              <strong>Classificata</strong>: tessere uguali per tutti. Pareggiare il computer vale 100
+              punti in classifica, farne la metà 50.
             </li>
             <li>
-              Le parole valide sono <strong>271.055</strong> forme italiane da 2 a 15 lettere, senza
-              accenti né nomi propri: chi gioca &ldquo;città&rdquo; posa C-I-T-T-A. Vengono da
-              dizionari italiani pubblici (<em>napolux/paroleitaliane</em>, licenza MIT), gli stessi
-              del Wordle.
-            </li>
-            <li>
-              Le tessere sono <strong>21 lettere</strong>: niente J, K, W, X, Y.
+              <strong>Libera</strong>: a turni contro il computer. Non conta per la classifica.
             </li>
           </ul>
         </section>

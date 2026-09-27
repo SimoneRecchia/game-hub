@@ -148,7 +148,7 @@ export const coopRoutes = new Hono<AppEnv>()
 
     const when = today()
     if (room.puzzle_number !== when.puzzleNumber) {
-      fail(409, 'INVITE_EXPIRED', 'Questo invito era per la parola di un altro giorno.')
+      fail(409, 'INVITE_EXPIRED', 'Questo invito è scaduto.')
     }
 
     await c.env.DB.prepare(
@@ -197,7 +197,7 @@ export const coopRoutes = new Hono<AppEnv>()
     // Solo chi ha accettato può guardare: altrimenti basterebbe l'ID della
     // stanza per conoscere la parola del giorno.
     if (room.host_id !== guest.id && !(await acceptedInvite(c.env.DB, room.id, guest.id))) {
-      fail(403, 'NOT_INVITED', 'Non sei fra gli invitati di questa partita.')
+      fail(403, 'NOT_INVITED', 'Questa partita non è condivisa con te.')
     }
 
     const when = today()
@@ -223,7 +223,7 @@ export const coopRoutes = new Hono<AppEnv>()
     if (room.closed_at !== null) fail(409, 'ROOM_CLOSED', 'La partita non è più condivisa.')
 
     const invite = await acceptedInvite(c.env.DB, room.id, guest.id)
-    if (!invite) fail(403, 'NOT_INVITED', 'Non sei fra gli invitati di questa partita.')
+    if (!invite) fail(403, 'NOT_INVITED', 'Questa partita non è condivisa con te.')
 
     const when = today()
     const answer = await dailyAnswer(c.env.DB, when)

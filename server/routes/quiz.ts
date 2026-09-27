@@ -122,7 +122,7 @@ export const quizRoutes = new Hono<AppEnv>()
   /** Le geometrie di fiumi e laghi, per la cartina, della versione che dice il riassunto. */
   .get('/geometrie', async (c) => {
     const geo = await geometrieDati(c.env.DB)
-    if (!geo) fail(503, 'DATI_ASSENTI', 'Le geometrie del quiz non sono ancora pronte. Riprova più tardi.')
+    if (!geo) fail(503, 'DATI_ASSENTI', 'La cartina del quiz non è ancora pronta. Riprova più tardi.')
     return c.body(geo.json, 200, perSempre(c.req.query('v') === geo.versione))
   })
 

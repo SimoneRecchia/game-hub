@@ -61,7 +61,7 @@ export default function QuizInvito() {
           titolo={errore.codice === 'SFIDA_TUA' ? 'È il tuo invito' : 'L’invito non vale più'}
           testo={
             errore.codice === 'SFIDA_TUA'
-              ? 'Mandalo a chi vuoi sfidare: quando lo apre, la sfida comincia.'
+              ? 'Mandalo a chi vuoi sfidare.'
               : errore.testo
           }
           azione={

@@ -60,7 +60,7 @@ export function StatsPanel({ stats, highlight = null }: Props) {
       {stats.assistScore > 0 && (
         <div className="stats__block stats__block--row">
           <span className="stats__meta">
-            Da solo <strong>{formatNumber(stats.playScore)}</strong>
+            Per conto tuo <strong>{formatNumber(stats.playScore)}</strong>
           </span>
           <span className="stats__meta">
             In compagnia <strong>{formatNumber(stats.assistScore)}</strong>
