@@ -12,6 +12,7 @@ import { IconaScheda, Pillola, Scheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { usePlayer } from '@/lib/auth'
 import { ApiFetchError } from '@/lib/api'
+import { suona } from '@/lib/suoni'
 import { NOMI_CATEGORIE, NOMI_MODI } from '@shared/quiz'
 import type { CittaQuiz } from '@shared/quiz-dati'
 import type { DomandaQuiz } from '@shared/quiz-domande'
@@ -117,6 +118,7 @@ function Duello({ id }: { id: string }) {
 
   const { adesivo, accoda, subito } = useCodaAdesivi()
   useAdesiviDelDuello(d, accoda, subito)
+  useSuoniDelDuello(d)
 
   const inCorso = d.fase === 'caricamento' || d.fase === 'errore' ? null : d.fase !== 'fine' && d.fase !== 'uscito'
   const festa = useFesta(inCorso, d.fase === 'fine' && !!v && v.punti.io > v.punti.avversario)
@@ -258,6 +260,28 @@ function useAdesiviDelDuello(
     // Una volta sola: la fine resta la fine.
     vistoInCorso.current = false
   }, [finito, v, subito])
+}
+
+/**
+ * I suoni che non hanno un adesivo: l'altro che arriva, quando si aspettava lui;
+ * l'altro che se ne va a sfida in corso; la sua richiesta di rivincita.
+ */
+function useSuoniDelDuello(d: Duello) {
+  const fase = d.fase
+  const prima = useRef(fase)
+  useEffect(() => {
+    if (prima.current === 'attesa' && fase === 'via') suona('entra')
+    if (prima.current !== 'uscito' && prima.current !== 'caricamento' && fase === 'uscito') {
+      if (d.vista?.uscito === 'avversario') suona('esce')
+    }
+    prima.current = fase
+  }, [fase, d.vista?.uscito])
+
+  const r = d.vista?.rivincita
+  const richiesta = r && r.stato === 'attesa' && r.da === 'avversario' ? r.id : null
+  useEffect(() => {
+    if (richiesta) suona('invito')
+  }, [richiesta])
 }
 
 /* ───────────────────────────────  L'attesa  ───────────────────────────── */
@@ -441,6 +465,11 @@ function Tabellone({ d, v, indice, giro }: { d: Duello; v: VistaDuello; indice: 
   const lentoIo = !!aperta?.lentoIo && !aperta.mia
   const restaIo = aperta ? aperta.scadeIo - adesso : 0
   const secondi = secondiMostrati(restaIo, lentoIo)
+  // I miei ultimi cinque secondi ticchettano; al rallentatore, piu' piano come l'orologio.
+  const ticchetta = aperta && !aperta.mia && secondi > 0 && secondi <= 5 ? secondi : null
+  useEffect(() => {
+    if (ticchetta !== null) suona('tic')
+  }, [ticchetta])
   let destra
   if (giro) {
     destra = (

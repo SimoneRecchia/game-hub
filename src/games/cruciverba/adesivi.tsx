@@ -20,6 +20,7 @@ export function adesivoControllo(esito: { ambito: 'parola' | 'tutto'; errate: nu
       colore: INCHIOSTRO,
       durata: ADESIVO_CONTROLLO_MS,
       disegno: <Spunta />,
+      suono: 'giusto',
     }
   }
   return {
@@ -28,6 +29,7 @@ export function adesivoControllo(esito: { ambito: 'parola' | 'tutto'; errate: nu
     sotto: 'da correggere, in rosso',
     colore: 'var(--red)',
     durata: ADESIVO_CONTROLLO_MS,
+    suono: 'sbagliato',
   }
 }
 
@@ -39,6 +41,7 @@ export function adesivoCompletato(punti: number): Omit<DatiAdesivo, 'id'> {
     colore: INCHIOSTRO,
     durata: ADESIVO_COMPLETATO_MS,
     disegno: <Matita />,
+    suono: 'vittoria',
   }
 }
 

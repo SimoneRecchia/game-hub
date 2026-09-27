@@ -10,6 +10,7 @@ import type {
 import { isGameLetter, keyboardStates } from '@shared/wordle'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 import { ADESIVO_FINE_MS, type FinaleWordle } from './fine'
 
 /**
@@ -237,6 +238,7 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
   const shake = useCallback(
     (row: number) => {
       haptic('error')
+      suona('sbagliato', { volume: 0.55 })
       setShakingRow(row)
       later(() => setShakingRow(null), SHAKE_MS)
     },
@@ -250,6 +252,7 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
       if (!canType || !state) return
       if (draft.length >= state.wordLength) return
       haptic('tap')
+      suona('tocco')
       setDraft((d) => (d.length >= state.wordLength ? d : d + letter))
     },
     [canType, draft.length, state],
@@ -258,6 +261,7 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
   const backspace = useCallback(() => {
     if (!canType) return
     haptic('tap')
+    suona('tocco', { volume: 0.7 })
     setDraft((d) => d.slice(0, -1))
   }, [canType])
 
@@ -272,6 +276,7 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
     (word: string) => {
       if (!canType || !state) return
       haptic('tap')
+      suona('posa')
       setDraft(word.slice(0, state.wordLength).toLowerCase())
     },
     [canType, state],
@@ -305,6 +310,12 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
       setRevealing(row)
 
       const revealMs = (next.wordLength - 1) * REVEAL_STAGGER_MS + REVEAL_TILE_MS
+      // Ogni casella suona quando si gira e mostra il colore, a meta' della rotazione: una nota per colore.
+      next.guesses[row]?.pattern.forEach((esito, i) =>
+        suona(esito === 'correct' ? 'esatta' : esito === 'present' ? 'presente' : 'assente', {
+          ritardo: (i * REVEAL_STAGGER_MS + REVEAL_TILE_MS / 2) / 1000,
+        }),
+      )
       later(() => {
         // Solo ora la tastiera si colora: prima sarebbe uno spoiler.
         setRevealing(null)

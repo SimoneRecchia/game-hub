@@ -13,6 +13,7 @@ import { leggiStatistiche } from '@/games/quiz/usePartita'
 import { useAuth, usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatGameDate, formatNumber } from '@/lib/format'
+import { useSuoni } from '@/lib/suoni'
 import { useTheme, type ThemePreference } from '@/lib/theme'
 import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
 import type {
@@ -36,6 +37,11 @@ const TEMI: { value: ThemePreference; label: string }[] = [
   { value: 'dark', label: 'Scuro' },
 ]
 
+const SUONI: { value: 'si' | 'no'; label: string }[] = [
+  { value: 'si', label: 'Accesi' },
+  { value: 'no', label: 'Spenti' },
+]
+
 /**
  * Il profilo: come si sta andando, gioco per gioco, e le impostazioni.
  *
@@ -48,6 +54,7 @@ export default function Profilo() {
   const player = usePlayer()
   const { logout } = useAuth()
   const { preference, setTheme } = useTheme()
+  const [suoni, impostaSuoni] = useSuoni()
   const { dati: generale } = useDati<GeneraleLeaderboard>('/leaderboard/generale?scope=all')
   const [aperto, setAperto] = useState<GiocoClassificato | null>(null)
   const [uscita, setUscita] = useState(false)
@@ -95,6 +102,15 @@ export default function Profilo() {
 
       <Sezione titolo="Aspetto">
         <SegmentedControl ariaLabel="Tema" options={TEMI} value={preference} onChange={setTheme} />
+      </Sezione>
+
+      <Sezione titolo="Suoni">
+        <SegmentedControl
+          ariaLabel="Suoni"
+          options={SUONI}
+          value={suoni ? 'si' : 'no'}
+          onChange={(v) => impostaSuoni(v === 'si')}
+        />
       </Sezione>
 
       <Sezione titolo="Account">

@@ -15,13 +15,14 @@ export const ADESIVO_RALLENTY_MS = 1_800
 
 export function adesivoPunto(mio: boolean, nome: string, risposta: string): Omit<DatiAdesivo, 'id'> {
   return mio
-    ? { tono: 'vivace', titolo: 'Punto!', sotto: risposta, colore: COLORE, durata: ADESIVO_RISPOSTA_MS }
+    ? { tono: 'vivace', titolo: 'Punto!', sotto: risposta, colore: COLORE, durata: ADESIVO_RISPOSTA_MS, suono: 'punto' }
     : {
         tono: 'bordato',
         titolo: `Punto a ${nome}`,
         sotto: `Giusta: ${risposta}`,
         colore: 'var(--red)',
         durata: ADESIVO_RISPOSTA_MS,
+        suono: 'puntoAltro',
       }
 }
 
@@ -32,6 +33,7 @@ export function adesivoNessuno(risposta: string): Omit<DatiAdesivo, 'id'> {
     sotto: `Giusta: ${risposta}`,
     colore: 'var(--orange)',
     durata: ADESIVO_RISPOSTA_MS,
+    suono: 'scaduto',
   }
 }
 
@@ -43,6 +45,7 @@ export function adesivoRallenty(nome: string): Omit<DatiAdesivo, 'id'> {
     colore: COLORE_RALLENTY,
     durata: ADESIVO_RALLENTY_MS,
     disegno: <Lumaca />,
+    suono: 'rallenty',
   }
 }
 
@@ -53,14 +56,16 @@ export function adesivoFuori(nome: string): Omit<DatiAdesivo, 'id'> {
     sotto: `Ora tocca a ${nome}`,
     colore: 'var(--red)',
     durata: ADESIVO_RISPOSTA_MS,
+    suono: 'sbagliato',
   }
 }
 
 export function adesivoFineDuello(io: number, lui: number, nome: string): Omit<DatiAdesivo, 'id'> {
   const sotto = `${io} a ${lui}`
-  if (io > lui) return { tono: 'vivace', titolo: 'Hai vinto!', sotto, colore: COLORE, durata: ADESIVO_FINE_MS }
-  if (io === lui) return { tono: 'vivace', titolo: 'Pareggio', sotto, colore: COLORE, durata: ADESIVO_FINE_MS }
-  return { tono: 'bordato', titolo: `Ha vinto ${nome}`, sotto, colore: 'var(--red)', durata: ADESIVO_FINE_MS }
+  const durata = ADESIVO_FINE_MS
+  if (io > lui) return { tono: 'vivace', titolo: 'Hai vinto!', sotto, colore: COLORE, durata, suono: 'vittoria' }
+  if (io === lui) return { tono: 'vivace', titolo: 'Pareggio', sotto, colore: COLORE, durata, suono: 'pareggio' }
+  return { tono: 'bordato', titolo: `Ha vinto ${nome}`, sotto, colore: 'var(--red)', durata, suono: 'sconfitta' }
 }
 
 /** La lumaca del rallenty: attraversa l'adesivo piano, e la scia le resta dietro. */

@@ -37,6 +37,7 @@ export function adesivoMossa(m: MossaAppena): DatiAdesivo {
       durata: ADESIVO_SCARABEO_MS,
       disegno: <Scarabeo />,
       piede,
+      suono: m.mia ? 'scarabeo' : 'puntoAltro',
     }
   }
   return {
@@ -47,6 +48,7 @@ export function adesivoMossa(m: MossaAppena): DatiAdesivo {
     colore: m.mia ? LEGNO : 'var(--scarabeo-2)',
     durata: ADESIVO_MOSSA_MS,
     piede,
+    suono: m.mia ? 'mossa' : 'posa',
   }
 }
 
@@ -60,6 +62,7 @@ export function adesivoFineScarabeo(id: number, vinta: boolean, punti: number, a
         colore: LEGNO,
         durata: ADESIVO_FINE_SCARABEO_MS,
         disegno: <Scarabeo />,
+        suono: 'vittoria',
       }
     : {
         id,
@@ -68,6 +71,7 @@ export function adesivoFineScarabeo(id: number, vinta: boolean, punti: number, a
         sotto: `${punti} a ${altro}`,
         colore: 'var(--scarabeo-2)',
         durata: ADESIVO_FINE_SCARABEO_MS,
+        suono: punti === altro ? 'pareggio' : 'sconfitta',
       }
 }
 
