@@ -194,3 +194,59 @@ export function cittaNellaFrase(nome: string): string {
   if (/^L['’]/.test(nome)) return `l’${nome.slice(2)}`
   return nome
 }
+
+/** Le regioni che non vogliono "in": "nel Lazio", "nelle Marche", "nei Paesi Baschi". */
+const REGIONI_CON_ARTICOLO: Record<string, string> = {
+  Lazio: 'nel Lazio',
+  Marche: 'nelle Marche',
+  'Paesi Baschi': 'nei Paesi Baschi',
+  Asturie: 'nelle Asturie',
+  Fiandre: 'nelle Fiandre',
+}
+
+/**
+ * Una regione dopo "si trova": "in Puglia", "in Baviera", "in Texas", ma "nel
+ * Lazio". I nomi delle regioni vanno quasi tutti senza articolo; quelli che lo
+ * vogliono sono pochi, e i plurali con "Isole" lo prendono da soli.
+ */
+export function inRegione(nome: string): string {
+  if (REGIONI_CON_ARTICOLO[nome]) return REGIONI_CON_ARTICOLO[nome]
+  if (/^Isole\b/.test(nome)) return `nelle ${nome}`
+  return `in ${nome}`
+}
+
+/**
+ * Come si chiama la suddivisione di primo livello di un paese: gli stati degli
+ * Stati Uniti, i land della Germania, i cantoni della Svizzera. Per gli altri
+ * "regione" va bene.
+ */
+const SUDDIVISIONI: Record<string, string> = {
+  US: 'stato',
+  MX: 'stato',
+  BR: 'stato',
+  IN: 'stato',
+  AU: 'stato',
+  VE: 'stato',
+  NG: 'stato',
+  DE: 'land',
+  AT: 'land',
+  CH: 'cantone',
+  ES: 'comunità autonoma',
+  CA: 'provincia',
+  AR: 'provincia',
+  CN: 'provincia',
+  NL: 'provincia',
+  BE: 'regione',
+  TR: 'provincia',
+  IR: 'provincia',
+  PK: 'provincia',
+  ZA: 'provincia',
+  KR: 'provincia',
+  JP: 'prefettura',
+  RU: 'soggetto federale',
+  PL: 'voivodato',
+}
+
+export function suddivisione(iso: string): string {
+  return SUDDIVISIONI[iso] ?? 'regione'
+}

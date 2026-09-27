@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../daily'
-import { CATEGORIE, CONTINENTI, VISTE, categoriaDelGiorno, dentroVista, type CategoriaQuiz } from '../quiz'
 import {
+  CATEGORIE,
+  CATEGORIE_CLASSIFICATA,
+  CONTINENTI,
+  GIORNI_CARTINA_PER_GIRO,
+  MODI,
+  QUANTE_MASSIME,
+  VISTE,
+  dentroVista,
+  giornataDelQuiz,
+  type CategoriaQuiz,
+  type ModoQuiz,
+} from '../quiz'
+import {
+  SUPERFICIE_MINIMA_CARTINA,
+  TIPI,
   acqueAccettate,
   domandaValida,
   generaDomande,
@@ -10,6 +24,8 @@ import {
   senzaRisposta,
   type AreaQuiz,
   type DomandaCompleta,
+  type RichiestaQuiz,
+  type TipoDomanda,
 } from '../quiz-domande'
 import {
   acquaConArticolo,
@@ -18,11 +34,12 @@ import {
   diPaese,
   fiumeNellaFrase,
   inPaese,
+  inRegione,
   lagoInOpzione,
   lagoNellaFrase,
   suLago,
 } from '../quiz-lingua'
-import { ID, MONDO } from './quiz-mondo'
+import { CITTA, ID, MONDO } from './quiz-mondo'
 
 const ix = indicizza(MONDO)
 const paese = (id: string) => ix.paesi.get(id)!
@@ -73,16 +90,30 @@ describe('l’italiano delle domande', () => {
     expect(suLago('lago Vittoria')).toBe('sul lago Vittoria')
     expect(lagoInOpzione('lago di Garda')).toBe('Lago di Garda')
     expect(lagoInOpzione('Titicaca')).toBe('Lago Titicaca')
+    expect(inRegione('Puglia')).toBe('in Puglia')
+    expect(inRegione('Lazio')).toBe('nel Lazio')
+    expect(inRegione('Marche')).toBe('nelle Marche')
+    expect(inRegione('Isole Baleari')).toBe('nelle Isole Baleari')
   })
 })
 
-describe('la categoria del giorno', () => {
+describe('la giornata della classificata', () => {
+  const n = CATEGORIE_CLASSIFICATA.length
   it('passa da tutte le categorie ogni sette giorni, e non si ripete mai due giorni di fila', () => {
     for (let giro = 0; giro < 100; giro += 1) {
-      const settimana = Array.from({ length: CATEGORIE.length }, (_, i) => categoriaDelGiorno(giro * CATEGORIE.length + i + 1))
-      expect(new Set(settimana).size).toBe(CATEGORIE.length)
+      const settimana = Array.from({ length: n }, (_, i) => giornataDelQuiz(giro * n + i + 1).categoria)
+      expect(new Set(settimana).size).toBe(n)
     }
-    for (let n = 2; n <= 730; n += 1) expect(categoriaDelGiorno(n)).not.toBe(categoriaDelGiorno(n - 1))
+    for (let g = 2; g <= 730; g += 1) expect(giornataDelQuiz(g).categoria).not.toBe(giornataDelQuiz(g - 1).categoria)
+  })
+
+  it('ha due giorni per giro sulla cartina, mai di fila, e mai le città', () => {
+    for (let giro = 0; giro < 100; giro += 1) {
+      const modi = Array.from({ length: n }, (_, i) => giornataDelQuiz(giro * n + i + 1).modo)
+      expect(modi.filter((m) => m === 'cartina').length).toBe(GIORNI_CARTINA_PER_GIRO)
+      for (let i = 1; i < n; i += 1) expect(modi[i] === 'cartina' && modi[i - 1] === 'cartina').toBe(false)
+    }
+    for (let g = 1; g <= 730; g += 1) expect(giornataDelQuiz(g).categoria).not.toBe('citta')
   })
 })
 
@@ -96,11 +127,17 @@ describe('le viste della cartina', () => {
   })
 })
 
-/** Tutte le domande di tante partite, per categoria e area. */
-function tante(categoria: CategoriaQuiz, area: AreaQuiz = 'mondo', partite = 40): DomandaCompleta[] {
+/** Tutte le domande di tante partite, per categoria, modo e area. */
+function tante(
+  categoria: CategoriaQuiz,
+  modo: ModoQuiz = 'scelta',
+  area: AreaQuiz = 'mondo',
+  partite = 40,
+  altro: Partial<RichiestaQuiz> = {},
+): DomandaCompleta[] {
   const tutte: DomandaCompleta[] = []
   for (let seme = 1; seme <= partite; seme += 1) {
-    tutte.push(...generaDomande(ix, { categoria, area, quante: 10 }, mulberry32(seme)))
+    tutte.push(...generaDomande(ix, { categoria, modo, area, quante: 10, citta: CITTA, ...altro }, mulberry32(seme)))
   }
   return tutte
 }
@@ -108,58 +145,134 @@ function tante(categoria: CategoriaQuiz, area: AreaQuiz = 'mondo', partite = 40)
 const opzioniSbagliate = (d: DomandaCompleta) => d.opzioni.filter((o) => o.id !== d.giusta)
 
 describe('le domande', () => {
-  it('sono in ordine in ogni categoria: quattro opzioni diverse, una giusta, nessun soggetto ripetuto', () => {
+  it('sono in ordine in ogni categoria e in ogni modo: le risposte diverse, una giusta, nessun soggetto ripetuto', () => {
     for (const categoria of CATEGORIE) {
-      for (let seme = 1; seme <= 25; seme += 1) {
-        const partita = generaDomande(ix, { categoria, area: 'mondo', quante: 10 }, mulberry32(seme))
-        expect(partita.length, categoria).toBeGreaterThan(0)
-        expect(new Set(partita.map((d) => d.soggetto)).size).toBe(partita.length)
-        for (const d of partita) expect(domandaValida(d), `${categoria}: ${d.testo}`).toBe(true)
+      for (const modo of MODI) {
+        for (let seme = 1; seme <= 25; seme += 1) {
+          const partita = generaDomande(
+            ix,
+            { categoria, modo, area: 'mondo', quante: 10, citta: CITTA },
+            mulberry32(seme),
+          )
+          expect(partita.length, `${categoria} ${modo}`).toBeGreaterThan(0)
+          expect(new Set(partita.map((d) => d.soggetto)).size).toBe(partita.length)
+          for (const d of partita) {
+            expect(domandaValida(d), `${categoria} ${modo}: ${d.testo}`).toBe(true)
+            expect(!!d.cartina, `${categoria} ${modo}: ${d.testo}`).toBe(modo === 'cartina')
+          }
+        }
       }
     }
   })
 
   it('ci sono tutte: i test qui sotto non passano per mancanza di domande', () => {
-    const tipi = new Set(CATEGORIE.flatMap((c) => tante(c).map((d) => d.tipo)))
-    expect([...tipi].sort()).toEqual(
-      [
-        'acqua-di-stato',
-        'bandiera-di',
-        'capitale-di',
-        'dove-acqua',
-        'dove-stato',
-        'fiume-in-stato',
-        'lago-in-stato',
-        'quale-bandiera',
-        'stato-bagnato',
-        'stato-del-fiume',
-        'stato-del-lago',
-        'stato-di-capitale',
-      ].sort(),
+    const tipi = new Set<TipoDomanda>()
+    for (const categoria of CATEGORIE) for (const modo of MODI) for (const d of tante(categoria, modo)) tipi.add(d.tipo)
+    for (const d of tante('citta', 'scelta', 'paese:IT')) tipi.add(d.tipo)
+    const attesi = new Set<TipoDomanda>(
+      [...Object.values(TIPI).flatMap((m) => [...m.scelta, ...m.cartina]), 'regione-della-citta', 'citta-in-regione'],
     )
+    expect([...tipi].sort()).toEqual([...attesi].sort())
   })
 
   it('sono le stesse con lo stesso seme', () => {
     for (const categoria of CATEGORIE) {
-      const a = generaDomande(ix, { categoria, area: 'mondo', quante: 10 }, mulberry32(42))
-      const b = generaDomande(ix, { categoria, area: 'mondo', quante: 10 }, mulberry32(42))
-      expect(a).toEqual(b)
+      for (const modo of MODI) {
+        const r: RichiestaQuiz = { categoria, modo, area: 'mondo', quante: 10, citta: CITTA }
+        expect(generaDomande(ix, r, mulberry32(42))).toEqual(generaDomande(ix, r, mulberry32(42)))
+      }
     }
   })
 
-  it('non mostrano la risposta prima del tempo', () => {
-    for (const d of tante('cartina', 'mondo', 3).concat(tante('capitali', 'mondo', 3))) {
+  it('non mostrano la risposta prima del tempo, né dove guardare', () => {
+    for (const d of [...tante('stati', 'cartina', 'mondo', 3), ...tante('capitali', 'scelta', 'mondo', 3)]) {
       const vista: Record<string, unknown> = { ...senzaRisposta(d) }
-      for (const segreto of ['giusta', 'accettate', 'risposta', 'soggetto']) expect(vista[segreto]).toBeUndefined()
+      for (const segreto of ['giusta', 'accettate', 'risposta', 'soggetto', 'luogo']) expect(vista[segreto]).toBeUndefined()
     }
   })
 
+  it('dicono dove guardare a risposta data: la risposta giusta ha sempre un posto', () => {
+    for (const categoria of CATEGORIE_CLASSIFICATA) {
+      for (const modo of MODI) {
+        for (const d of tante(categoria, modo, 'mondo', 10)) {
+          // I fiumi senza linea (l'Arno) non hanno un posto: il resto si'.
+          if (d.soggetto === 'F25') continue
+          expect(d.luogo?.giusti.length, `${categoria} ${modo}: ${d.testo}`).toBeGreaterThan(0)
+        }
+      }
+    }
+  })
+
+  it('arrivano fino a cinquanta per partita, se i dati bastano', () => {
+    const d = generaDomande(ix, { categoria: 'bandiere', area: 'mondo', quante: 80 }, mulberry32(1))
+    expect(d.length).toBe(Math.min(QUANTE_MASSIME, ix.dati.paesi.length))
+  })
+})
+
+describe('le opzioni della libera', () => {
+  it('scelgono fra quante risposte si vuole', () => {
+    for (const risposte of [2, 3, 6]) {
+      const partita = tante('capitali', 'scelta', 'mondo', 5, { risposte })
+      expect(partita.length).toBeGreaterThan(0)
+      for (const d of partita) expect(d.opzioni.length).toBe(risposte)
+    }
+  })
+
+  it('fanno solo i tipi di domanda scelti', () => {
+    for (const d of tante('capitali', 'scelta', 'mondo', 10, { tipi: ['stato-di-capitale'] })) {
+      expect(d.tipo).toBe('stato-di-capitale')
+    }
+    for (const d of tante('stati', 'scelta', 'mondo', 10, { tipi: ['senza-mare'] })) expect(d.tipo).toBe('senza-mare')
+  })
+
+  it('con i più noti restano sul terzo più noto', () => {
+    const noti = [...ix.dati.paesi].sort((a, b) => b.f - a.f).slice(0, Math.round(ix.dati.paesi.length * 0.35))
+    const ids = new Set(noti.map((p) => p.id))
+    for (const d of tante('bandiere', 'scelta', 'mondo', 10, { notorieta: 'noti', quante: 5 })) {
+      expect(ids.has(d.soggetto), d.testo).toBe(true)
+    }
+  })
+
+  it('mettono la bandiera accanto alla capitale da indovinare, e solo lì', () => {
+    for (const d of tante('capitali')) {
+      if (d.tipo === 'capitale-di') expect(d.bandiera).toBe(d.soggetto.toLowerCase())
+      if (d.tipo === 'stato-di-capitale') expect(d.bandiera).toBeUndefined()
+    }
+    for (const d of tante('capitali', 'scelta', 'mondo', 10, { bandieraCapitali: false })) {
+      expect(d.bandiera).toBeUndefined()
+    }
+  })
+})
+
+describe('le categorie', () => {
   it('sulle capitali: la giusta è la capitale, le altre no', () => {
     for (const d of tante('capitali')) {
       if (d.tipo !== 'capitale-di') continue
       const p = paese(d.soggetto)
       expect(d.opzioni.find((o) => o.id === d.giusta)?.testo).toBe(p.cap)
       for (const o of opzioniSbagliate(d)) expect(o.testo).not.toBe(p.cap)
+    }
+  })
+
+  it('sui confini: la risposta confina davvero, e gli errori non confinano per niente', () => {
+    for (const d of tante('stati')) {
+      const p = paese(d.soggetto)
+      if (d.tipo === 'confina-con') {
+        expect(p.cm).toContain(d.giusta)
+        for (const o of opzioniSbagliate(d)) expect(p.conf.includes(o.id), `${d.testo} ${o.testo}`).toBe(false)
+      }
+      if (d.tipo === 'non-confina') {
+        expect(p.conf).not.toContain(d.giusta)
+        for (const o of opzioniSbagliate(d)) expect(p.cm).toContain(o.id)
+      }
+      if (d.tipo === 'senza-mare') {
+        expect(paese(d.giusta).ch).toBe(1)
+        for (const o of opzioniSbagliate(d)) expect(paese(o.id).ch, o.testo).toBeUndefined()
+      }
+    }
+    // La Spagna confina con la Francia, ma non in modo "principale": non e' mai né risposta né errore.
+    for (const d of tante('stati')) {
+      if (d.soggetto === 'FR') expect(d.opzioni.map((o) => o.id)).not.toContain('ES')
     }
   })
 
@@ -203,6 +316,12 @@ describe('le domande', () => {
     }
   })
 
+  it('gli oceani non hanno continenti: l’area si ignora', () => {
+    const europa = generaDomande(ix, { categoria: 'oceani', area: 'eu', quante: 10 }, mulberry32(9))
+    const mondo = generaDomande(ix, { categoria: 'oceani', area: 'mondo', quante: 10 }, mulberry32(9))
+    expect(europa).toEqual(mondo)
+  })
+
   it('sui fiumi e sui laghi: gli errori non toccano la risposta né i paesi vicini', () => {
     for (const categoria of ['fiumi', 'laghi'] as const) {
       const sezione = ix.dati[categoria]
@@ -227,9 +346,33 @@ describe('le domande', () => {
     }
   })
 
+  it('sulle città: lo stato giusto, le città del paese giusto, e mai un nome che si ripete', () => {
+    const perId = new Map(CITTA.map((c) => [c.id, c]))
+    for (const d of tante('citta')) {
+      const c = perId.get(d.soggetto)!
+      expect(c.n).not.toBe('Valencia')
+      if (d.tipo === 'stato-della-citta') expect(d.giusta).toBe(c.p)
+      if (d.tipo === 'citta-in-stato') {
+        expect(d.giusta).toBe(`u:${c.id}`)
+        for (const o of opzioniSbagliate(d)) expect(perId.get(o.id.slice(2))!.p).not.toBe(c.p)
+      }
+    }
+    for (const d of tante('citta', 'scelta', 'paese:IT')) {
+      const c = perId.get(d.soggetto)!
+      expect(c.p).toBe('IT')
+      if (d.tipo === 'regione-della-citta') {
+        expect(d.giusta).toBe(`r:${c.r}`)
+        expect(d.testo).toBe(`In quale regione si trova ${c.n}?`)
+      }
+      if (d.tipo === 'citta-in-regione') {
+        for (const o of opzioniSbagliate(d)) expect(perId.get(o.id.slice(2))!.r).not.toBe(c.r)
+      }
+    }
+  })
+
   it('con un continente parlano di quel continente', () => {
     for (const continente of CONTINENTI) {
-      for (const d of tante('capitali', continente, 5)) expect(paese(d.soggetto).k).toContain(continente)
+      for (const d of tante('capitali', 'scelta', continente, 5)) expect(paese(d.soggetto).k).toContain(continente)
     }
   })
 
@@ -241,14 +384,55 @@ describe('le domande', () => {
 })
 
 describe('la cartina muta', () => {
-  it('chiede i paesi con il loro codice, nel loro continente', () => {
-    for (const d of tante('cartina')) {
-      if (d.tipo !== 'dove-stato') continue
+  it('parte sempre dalla zona della partita, per tutte le domande: niente aiuto dalla vista', () => {
+    for (const [area, vista] of [
+      ['mondo', 'mondo'],
+      ['eu', 'europa'],
+      ['sa', 'sudamerica'],
+    ] as const) {
+      for (const d of tante('stati', 'cartina', area, 5)) expect(d.cartina?.vista).toBe(vista)
+    }
+  })
+
+  it('chiede i paesi con il loro codice, e non quelli troppo piccoli', () => {
+    for (const d of tante('stati', 'cartina')) {
       const p = paese(d.soggetto)
       expect(d.giusta).toBe(`n${p.num}`)
       expect(d.cartina?.strato).toBe('paesi')
-      expect(p.a).toBeGreaterThanOrEqual(20_000)
+      expect(p.a).toBeGreaterThanOrEqual(SUPERFICIE_MINIMA_CARTINA)
     }
+  })
+
+  it('cerca le capitali con il loro pallino', () => {
+    for (const d of tante('capitali', 'cartina')) {
+      expect(d.giusta).toBe(`c:${d.soggetto}`)
+      expect(d.cartina?.strato).toBe('capitali')
+      expect(paese(d.soggetto).cc).toBeDefined()
+    }
+  })
+
+  it('cerca fiumi e laghi solo se hanno una linea o un punto', () => {
+    for (const d of tante('fiumi', 'cartina')) {
+      expect(ix.dati.fiumi.find((f) => `f:${f.id}` === d.giusta)?.g).toBe(1)
+    }
+    for (const d of tante('laghi', 'cartina')) {
+      const l = ix.dati.laghi.find((x) => `l:${x.id}` === d.giusta)!
+      expect(l.g === 1 || !!l.pt).toBe(true)
+    }
+  })
+
+  it('sull’oceano di uno stato vale ogni oceano che lo bagna, e lo stato si vede mentre si cerca', () => {
+    let fatte = 0
+    for (const d of tante('oceani', 'cartina')) {
+      if (d.tipo !== 'oceano-di-stato') continue
+      fatte += 1
+      const p = paese(d.soggetto)
+      expect(d.cartina?.mostra).toEqual([`n${p.num}`])
+      for (const oceano of p.bagna.filter((id) => ix.acque.get(id)?.t === 'oceano')) {
+        expect(d.accettate).toContain(oceano)
+      }
+    }
+    expect(fatte).toBeGreaterThan(0)
   })
 
   it('conta giusto un mare che sta dentro quello chiesto, e non il contrario', () => {

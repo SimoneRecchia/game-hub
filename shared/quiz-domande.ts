@@ -1,15 +1,20 @@
 /**
  * Le domande del quiz, costruite dal riassunto dei dati.
  *
- * Una domanda ha una risposta giusta e tre sbagliate, e il lavoro vero e'
- * scegliere quelle sbagliate: devono essere plausibili — un paese dello stesso
- * continente, un mare della stessa parte del mondo — e **sicuramente**
+ * Una domanda a scelta ha una risposta giusta e qualche sbagliata, e il lavoro
+ * vero e' scegliere quelle sbagliate: devono essere plausibili — un paese dello
+ * stesso continente, un mare della stessa parte del mondo — e **sicuramente**
  * sbagliate. Le fonti non sono perfette: Wikidata puo' dimenticare un paese che
  * un fiume attraversa, e una costa di pochi chilometri puo' sfuggire alla
  * geometria. Per questo un distrattore non deve solo essere fuori dalla
  * risposta, ma lontano: un fiume non si chiede con un paese confinante con
  * quelli che attraversa, un mare non con un paese a poche decine di
  * chilometri. Nel dubbio la domanda non si fa.
+ *
+ * Sulla cartina muta la risposta si tocca: un paese, un mare, un fiume, un
+ * lago, una capitale, una città. Ogni domanda porta anche il suo `luogo`, cioe'
+ * dove guardare a risposta data: la cartina che insegna mostra lì la risposta
+ * giusta, con il suo nome.
  *
  * Tutto dipende solo dal generatore di numeri che si passa: la notte, con il
  * seme del giorno, fa le domande della classificata; nel browser quelle delle
@@ -18,15 +23,17 @@
 
 import {
   DOMANDE_PER_PARTITA,
-  VISTE_REGIONALI,
-  VISTA_DEL_CONTINENTE,
-  dentroVista,
+  QUANTE_MASSIME,
+  RISPOSTE_PREDEFINITE,
   idPaeseCartina,
+  vistaDellaZona,
   type CategoriaQuiz,
   type Continente,
+  type GiornataQuiz,
+  type ModoQuiz,
   type VistaCartina,
 } from './quiz'
-import { OCEANI, type AcquaQuiz, type CorsoQuiz, type DatiQuiz, type PaeseQuiz } from './quiz-dati'
+import { OCEANI, type AcquaQuiz, type CittaQuiz, type CorsoQuiz, type DatiQuiz, type PaeseQuiz } from './quiz-dati'
 import {
   GENERE_PAESI,
   acquaConArticolo,
@@ -36,25 +43,86 @@ import {
   diPaese,
   fiumeNellaFrase,
   inPaese,
+  inRegione,
   lagoInOpzione,
   lagoNellaFrase,
   maiuscola,
   suLago,
+  suddivisione,
 } from './quiz-lingua'
 
 export type TipoDomanda =
   | 'capitale-di'
   | 'stato-di-capitale'
+  | 'dove-capitale'
+  | 'stato-della-citta'
+  | 'citta-in-stato'
+  | 'regione-della-citta'
+  | 'citta-in-regione'
+  | 'dove-citta'
   | 'bandiera-di'
   | 'quale-bandiera'
+  | 'dove-bandiera'
+  | 'confina-con'
+  | 'non-confina'
+  | 'senza-mare'
+  | 'dove-stato'
   | 'stato-bagnato'
   | 'acqua-di-stato'
+  | 'dove-acqua'
+  | 'oceano-di-stato'
   | 'stato-del-fiume'
   | 'fiume-in-stato'
+  | 'dove-fiume'
   | 'stato-del-lago'
   | 'lago-in-stato'
-  | 'dove-stato'
-  | 'dove-acqua'
+  | 'dove-lago'
+
+type CategoriaAttuale = Exclude<CategoriaQuiz, 'cartina'>
+
+/**
+ * I tipi di domanda di ogni categoria, per modo. Le citta' su un paese solo
+ * chiedono le regioni al posto degli stati: sono le stesse due domande.
+ */
+export const TIPI: Record<CategoriaAttuale, Record<ModoQuiz, readonly TipoDomanda[]>> = {
+  capitali: { scelta: ['capitale-di', 'stato-di-capitale'], cartina: ['dove-capitale'] },
+  citta: { scelta: ['stato-della-citta', 'citta-in-stato'], cartina: ['dove-citta'] },
+  bandiere: { scelta: ['bandiera-di', 'quale-bandiera'], cartina: ['dove-bandiera'] },
+  stati: { scelta: ['confina-con', 'non-confina', 'senza-mare'], cartina: ['dove-stato'] },
+  mari: { scelta: ['acqua-di-stato', 'stato-bagnato'], cartina: ['dove-acqua'] },
+  oceani: { scelta: ['acqua-di-stato', 'stato-bagnato'], cartina: ['dove-acqua', 'oceano-di-stato'] },
+  fiumi: { scelta: ['stato-del-fiume', 'fiume-in-stato'], cartina: ['dove-fiume'] },
+  laghi: { scelta: ['stato-del-lago', 'lago-in-stato'], cartina: ['dove-lago'] },
+}
+
+/** Come si chiama un tipo di domanda nelle opzioni avanzate: cosa si chiede, e cosa si risponde. */
+export const NOMI_TIPI: Record<TipoDomanda, string> = {
+  'capitale-di': 'La capitale di uno stato',
+  'stato-di-capitale': 'Lo stato di una capitale',
+  'dove-capitale': 'Dov’è una capitale',
+  'stato-della-citta': 'In che stato è una città',
+  'citta-in-stato': 'Quale città è in uno stato',
+  'regione-della-citta': 'In che regione è una città',
+  'citta-in-regione': 'Quale città è in una regione',
+  'dove-citta': 'Dov’è una città',
+  'bandiera-di': 'Di chi è una bandiera',
+  'quale-bandiera': 'Quale bandiera è di chi',
+  'dove-bandiera': 'Dov’è lo stato di una bandiera',
+  'confina-con': 'Con chi confina',
+  'non-confina': 'Con chi non confina',
+  'senza-mare': 'Chi non ha il mare',
+  'dove-stato': 'Dov’è uno stato',
+  'stato-bagnato': 'Chi bagna',
+  'acqua-di-stato': 'Da chi è bagnato',
+  'dove-acqua': 'Dov’è',
+  'oceano-di-stato': 'Quale oceano bagna uno stato',
+  'stato-del-fiume': 'In che stato scorre',
+  'fiume-in-stato': 'Quale fiume scorre in uno stato',
+  'dove-fiume': 'Dov’è un fiume',
+  'stato-del-lago': 'In che stato si trova',
+  'lago-in-stato': 'Quale lago è in uno stato',
+  'dove-lago': 'Dov’è un lago',
+}
 
 export interface OpzioneQuiz {
   id: string
@@ -63,16 +131,37 @@ export interface OpzioneQuiz {
   bandiera?: string
 }
 
+/**
+ * Cosa si tocca sulla cartina muta. I paesi hanno l'identificativo di
+ * world-atlas (`n380`), i mari quello di Wikidata (`Q38882`); fiumi, laghi,
+ * capitali e città un prefisso (`f:Q1653`, `l:Q6414`, `c:FR`, `u:Q490`),
+ * perché un tocco sappia su quale strato e' caduto.
+ */
+export type StratoCartina = 'paesi' | 'acque' | 'fiumi' | 'laghi' | 'capitali' | 'citta'
+
 /** Una domanda come la vede chi gioca: senza la risposta. */
 export interface DomandaQuiz {
   tipo: TipoDomanda
   testo: string
   /** La bandiera da mostrare con la domanda. */
   bandiera?: string
-  /** Quattro, in ordine sparso; vuote per la cartina. */
+  /** Le risposte fra cui scegliere, in ordine sparso; vuote per la cartina. */
   opzioni: OpzioneQuiz[]
-  /** La cartina muta: dove guardare, e cosa si tocca. */
-  cartina?: { vista: VistaCartina; strato: 'paesi' | 'acque' }
+  /**
+   * La cartina muta: da dove parte, cosa si tocca, e cosa mostrare mentre si
+   * risponde — il paese di cui si chiede l'oceano.
+   */
+  cartina?: { vista: VistaCartina; strato: StratoCartina; mostra?: string[] }
+}
+
+/**
+ * Dove guardare a risposta data: i posti della risposta giusta, e quelli di
+ * cui parla la domanda — il paese di una capitale, i paesi di un fiume, il mare
+ * di cui si chiede chi bagna. Sono identificativi della cartina.
+ */
+export interface LuogoQuiz {
+  giusti: string[]
+  altri?: string[]
 }
 
 /** Una domanda con la risposta: resta sul server, per la classificata, finché non si risponde. */
@@ -85,15 +174,32 @@ export interface DomandaCompleta extends DomandaQuiz {
   risposta: string
   /** Di cosa parla: non torna due volte nella stessa partita. */
   soggetto: string
+  luogo?: LuogoQuiz
 }
 
-/** Tutto il mondo, un continente, o un paese solo (per fiumi, laghi e mari). */
+/** Tutto il mondo, un continente, o un paese solo (per città, fiumi e laghi). */
 export type AreaQuiz = 'mondo' | Continente | `paese:${string}`
+
+/** Quanto sono noti i soggetti: i piu' noti, un po' di tutto dal facile al difficile, o i meno noti. */
+export type Notorieta = 'noti' | 'misti' | 'rari'
 
 export interface RichiestaQuiz {
   categoria: CategoriaQuiz
+  /** A scelta, se non si dice altro. */
+  modo?: ModoQuiz
   area: AreaQuiz
   quante: number
+  /** Fra quante risposte si sceglie: da due a sei. */
+  risposte?: number
+  /** I tipi di domanda da fare, fra quelli della categoria; tutti se non si dice. */
+  tipi?: readonly TipoDomanda[]
+  notorieta?: Notorieta
+  /** Dalla piu' facile alla piu' difficile, o a caso. */
+  ordine?: 'sale' | 'caso'
+  /** La bandiera accanto a "qual e' la capitale di…": si', se non si dice altro. */
+  bandieraCapitali?: boolean
+  /** Le città, per la categoria delle città: il browser le chiede a Wikidata. */
+  citta?: readonly CittaQuiz[]
 }
 
 /* ─────────────────────────────  L'indice dei dati  ──────────────────────── */
@@ -123,6 +229,23 @@ export function indicizza(dati: DatiQuiz): IndiceQuiz {
   }
 }
 
+/* ────────────────────────────  I posti della cartina  ───────────────────── */
+
+export const posto = {
+  paese: (p: PaeseQuiz | undefined): string | null => (p?.num ? idPaeseCartina(p.num) : null),
+  capitale: (iso: string) => `c:${iso}`,
+  fiume: (id: string) => `f:${id}`,
+  lago: (id: string) => `l:${id}`,
+  citta: (id: string) => `u:${id}`,
+}
+
+function luogo(giusti: Array<string | null>, altri: Array<string | null> = []): LuogoQuiz | undefined {
+  const g = giusti.filter((x): x is string => !!x)
+  const a = altri.filter((x): x is string => !!x && !g.includes(x))
+  if (g.length === 0 && a.length === 0) return undefined
+  return a.length > 0 ? { giusti: g, altri: a } : { giusti: g }
+}
+
 /* ───────────────────────────────  Il caso  ─────────────────────────────── */
 
 type Caso = () => number
@@ -141,33 +264,55 @@ function unoDi<T>(voci: readonly T[], caso: Caso): T {
 }
 
 /**
- * Tre distrattori da un elenco di candidati, preferendo i piu' simili alla
+ * I distrattori da un elenco di candidati, preferendo i piu' simili alla
  * risposta: stesso continente prima, poi notorietà vicina. Un po' di caso fra i
- * migliori, perché le stesse domande non abbiano sempre gli stessi compagni.
+ * migliori, perché le stesse domande non abbiano sempre gli stessi compagni; e
+ * chi ha gia' fatto da errore in questa partita passa in fondo, perché il Mar
+ * Caspio non compaia in tre domande su dieci.
  */
-function distrattori<T>(
+function distrattori<T extends { id: string }>(
+  c: Pick<Contesto, 'caso' | 'usati'>,
   candidati: readonly T[],
   quanti: number,
   vicinanza: (t: T) => number,
-  caso: Caso,
 ): T[] {
   const ordinati = candidati
-    .map((t) => ({ t, v: vicinanza(t) + caso() * 0.35 }))
+    .map((t) => ({ t, v: vicinanza(t) + c.caso() * 0.35 + (c.usati.get(t.id) ?? 0) * 0.6 }))
     .sort((a, b) => a.v - b.v)
     .map((x) => x.t)
-  return mescola(ordinati.slice(0, Math.max(quanti * 3, 8)), caso).slice(0, quanti)
+  const scelti = mescola(ordinati.slice(0, Math.max(quanti * 3, 8)), c.caso).slice(0, quanti)
+  for (const t of scelti) c.usati.set(t.id, (c.usati.get(t.id) ?? 0) + 1)
+  return scelti
 }
 
 /**
  * I soggetti di una partita, dal piu' facile al piu' difficile: si dividono i
  * candidati per notorietà in tre fasce e se ne prendono quattro facili,
  * quattro medi e due difficili ogni dieci. In ordine, così la partita sale.
+ *
+ * Con i "noti" si guarda solo il terzo piu' noto, con i "rari" il resto: se la
+ * fetta non basta alla partita, si allarga verso l'altra.
  */
-function soggetti<T extends { f: number }>(candidati: readonly T[], quanti: number, caso: Caso): T[] {
+function soggetti<T extends { f: number }>(
+  tutti: readonly T[],
+  quanti: number,
+  caso: Caso,
+  notorieta: Notorieta = 'misti',
+): T[] {
+  let candidati = [...tutti].sort((a, b) => b.f - a.f)
+  if (notorieta !== 'misti') {
+    const taglio = Math.round(candidati.length * 0.35)
+    const fetta = notorieta === 'noti' ? candidati.slice(0, taglio) : candidati.slice(taglio)
+    candidati =
+      fetta.length >= quanti ? fetta : notorieta === 'noti' ? candidati.slice(0, quanti) : candidati.slice(-quanti)
+  }
   if (candidati.length <= quanti) return mescola(candidati, caso).sort((a, b) => b.f - a.f)
-  const ordinati = [...candidati].sort((a, b) => b.f - a.f)
-  const n = ordinati.length
-  const fasce = [ordinati.slice(0, Math.ceil(n * 0.3)), ordinati.slice(Math.ceil(n * 0.3), Math.ceil(n * 0.7)), ordinati.slice(Math.ceil(n * 0.7))]
+  const n = candidati.length
+  const fasce = [
+    candidati.slice(0, Math.ceil(n * 0.3)),
+    candidati.slice(Math.ceil(n * 0.3), Math.ceil(n * 0.7)),
+    candidati.slice(Math.ceil(n * 0.7)),
+  ]
   const facili = Math.round(quanti * 0.4)
   const medi = Math.round(quanti * 0.4)
   const quote = [facili, medi, quanti - facili - medi]
@@ -207,6 +352,16 @@ function capitaleDaDomanda(p: PaeseQuiz): boolean {
   const capitale = senzaAccenti(p.cap)
   const radice = paese.slice(0, Math.max(4, paese.length - 2))
   return !capitale.includes(radice) && !paese.includes(capitale)
+}
+
+/**
+ * Le capitali che non si cercano sulla cartina: quelle contese, e quelle che si
+ * chiamano come il paese — "dov'e' Lussemburgo?" chiede il paese, non la
+ * capitale. Via anche il Vaticano, che sta dentro Roma: i due pallini sarebbero
+ * uno sopra l'altro.
+ */
+function capitaleDaCercare(p: PaeseQuiz): boolean {
+  return !!p.cap && !!p.cc && !CAPITALI_ESCLUSE.has(p.id) && p.id !== 'VA' && senzaAccenti(p.cap) !== senzaAccenti(p.n)
 }
 
 /** Se `b` sta nel continente di `a` — quello principale: il Kazakistan e' Asia, anche se tocca l'Europa. */
@@ -251,12 +406,34 @@ function paeseDellArea(area: AreaQuiz): string | null {
   return area.startsWith('paese:') ? area.slice(6) : null
 }
 
-/** Sulla cartina un paese piu' piccolo di così non si trova con un dito. */
-const SUPERFICIE_MINIMA_CARTINA = 20_000
+/**
+ * Sulla cartina un paese piu' piccolo di così non si chiede: il Lussemburgo si
+ * trova ingrandendo, Andorra e Malta sono un punto anche da vicino.
+ */
+export const SUPERFICIE_MINIMA_CARTINA = 2_500
 
 /* ─────────────────────────────  Le categorie  ──────────────────────────── */
 
-type Generatore = (ix: IndiceQuiz, area: AreaQuiz, quante: number, caso: Caso, evitare: ReadonlySet<string>) => DomandaCompleta[]
+/** Quel che serve a ogni generatore: i dati, la richiesta, il caso. */
+interface Contesto {
+  ix: IndiceQuiz
+  /** Quante volte ogni posto ha gia' fatto da risposta sbagliata in questa partita. */
+  usati: Map<string, number>
+  area: AreaQuiz
+  quante: number
+  caso: Caso
+  evitare: ReadonlySet<string>
+  /** Quante risposte sbagliate per domanda. */
+  sbagliate: number
+  tipi: ReadonlySet<TipoDomanda> | null
+  notorieta: Notorieta
+  bandiera: boolean
+  /** Da dove parte la cartina: la zona della partita, uguale per tutte le domande. */
+  vista: VistaCartina
+  citta: readonly CittaQuiz[]
+}
+
+type Generatore = (c: Contesto) => DomandaCompleta[]
 
 /** I candidati senza quelli da evitare, se ne restano abbastanza. */
 function preferendo<T>(candidati: T[], chiave: (t: T) => string, evitare: ReadonlySet<string>, quanti: number): T[] {
@@ -264,77 +441,284 @@ function preferendo<T>(candidati: T[], chiave: (t: T) => string, evitare: Readon
   return nuovi.length >= quanti * 2 ? nuovi : candidati
 }
 
-/** Due tipi di domanda in una partita, con la quota del primo. */
-function alterna<T>(soggettiScelti: T[], quota: number, caso: Caso): Array<{ s: T; primo: boolean }> {
-  const quanti = Math.round(soggettiScelti.length * quota)
-  const primi = new Set(mescola(soggettiScelti.map((_, i) => i), caso).slice(0, quanti))
-  return soggettiScelti.map((s, i) => ({ s, primo: primi.has(i) }))
+/**
+ * Il tipo di ogni domanda, fra quelli della categoria con la loro quota: se se
+ * ne sono scelti solo alcuni, le quote si dividono fra quelli.
+ */
+function assegna<T>(
+  scelti: T[],
+  quote: ReadonlyArray<readonly [TipoDomanda, number]>,
+  c: Contesto,
+): Array<{ s: T; tipo: TipoDomanda }> {
+  const ammesse = quote.filter(([t]) => !c.tipi || c.tipi.has(t))
+  const valide = ammesse.length > 0 ? ammesse : quote
+  const totale = valide.reduce((n, [, q]) => n + q, 0)
+  const tipi: TipoDomanda[] = []
+  let fatti = 0
+  valide.forEach(([t, q], i) => {
+    const quanti = i === valide.length - 1 ? scelti.length - fatti : Math.round((scelti.length * q) / totale)
+    for (let k = 0; k < quanti && tipi.length < scelti.length; k += 1) tipi.push(t)
+    fatti += quanti
+  })
+  const ordine = mescola(tipi, c.caso)
+  return scelti.map((s, i) => ({ s, tipo: ordine[i] ?? valide[0][0] }))
 }
 
-const capitali: Generatore = (ix, area, quante, caso, evitare) => {
-  const tutti = ix.dati.paesi.filter((p) => p.cap)
+function vuole(c: Contesto, tipo: TipoDomanda): boolean {
+  return !c.tipi || c.tipi.has(tipo)
+}
+
+/* ── Capitali ── */
+
+const capitaliScelta: Generatore = (c) => {
+  const tutti = c.ix.dati.paesi.filter((p) => p.cap)
   const candidati = preferendo(
-    ix.dati.paesi.filter((p) => capitaleDaDomanda(p) && nelContinente(p, area)),
+    c.ix.dati.paesi.filter((p) => capitaleDaDomanda(p) && nelContinente(p, c.area)),
     (p) => p.id,
-    evitare,
-    quante,
+    c.evitare,
+    c.quante,
   )
-  return alterna(soggetti(candidati, quante, caso), 0.6, caso).map(({ s: p, primo }) => {
+  const quote = [['capitale-di', 0.6], ['stato-di-capitale', 0.4]] as const
+  return assegna(soggetti(candidati, c.quante, c.caso, c.notorieta), quote, c).map(({ s: p, tipo }) => {
     const altri = tutti.filter((q) => q.id !== p.id && senzaAccenti(q.cap) !== senzaAccenti(p.cap))
-    if (primo) {
-      // Qual e' la capitale? Tre capitali di altri paesi, e a volte la città
+    if (tipo === 'capitale-di') {
+      // Qual e' la capitale? Capitali di altri paesi, e a volte la città
       // piu' grande del paese: il trabocchetto di Sydney.
-      const sbagliate = distrattori(altri, 3, vicinanzaPaesi(p), caso).map((q) => ({ id: `cap:${q.id}`, testo: q.cap }))
-      if (p.trap && caso() < 0.6 && !sbagliate.some((o) => senzaAccenti(o.testo) === senzaAccenti(p.trap!))) {
+      const sbagliate = distrattori(c, altri, c.sbagliate, vicinanzaPaesi(p)).map((q) => ({
+        id: `cap:${q.id}`,
+        testo: q.cap,
+      }))
+      if (p.trap && c.caso() < 0.6 && !sbagliate.some((o) => senzaAccenti(o.testo) === senzaAccenti(p.trap!))) {
         sbagliate[0] = { id: `trap:${p.id}`, testo: p.trap }
       }
       const giusta = { id: `cap:${p.id}`, testo: p.cap }
       return {
-        tipo: 'capitale-di',
+        tipo,
         testo: `Qual è la capitale ${diPaese(p.id, p.n)}?`,
-        opzioni: mescola([giusta, ...sbagliate], caso),
+        // La bandiera del paese di cui si chiede la capitale: non aiuta, il nome c'e' gia'.
+        ...(c.bandiera ? { bandiera: p.id.toLowerCase() } : {}),
+        opzioni: mescola([giusta, ...sbagliate], c.caso),
         giusta: giusta.id,
         risposta: p.cap,
         soggetto: p.id,
+        // Senza il punto della capitale, sulla cartina si mostra il paese.
+        luogo: p.cc ? luogo([posto.capitale(p.id)], [posto.paese(p)]) : luogo([posto.paese(p)]),
       }
     }
-    const sbagliati = distrattori(altri, 3, vicinanzaPaesi(p), caso)
+    // Lo stato di una capitale: qui la bandiera direbbe la risposta, e si vede solo dopo.
+    const sbagliati = distrattori(c, altri, c.sbagliate, vicinanzaPaesi(p))
     return {
       tipo: 'stato-di-capitale',
       testo: `Di quale stato è capitale ${cittaNellaFrase(p.cap)}?`,
-      opzioni: mescola([p, ...sbagliati], caso).map((q) => ({ id: q.id, testo: q.n })),
+      opzioni: mescola([p, ...sbagliati], c.caso).map((q) => ({ id: q.id, testo: q.n })),
       giusta: p.id,
       risposta: p.n,
       soggetto: p.id,
+      luogo: luogo([posto.paese(p)], [p.cc ? posto.capitale(p.id) : null]),
     }
   })
 }
 
-const bandiere: Generatore = (ix, area, quante, caso, evitare) => {
-  const tutti = ix.dati.paesi
+const capitaliCartina: Generatore = (c) => {
   const candidati = preferendo(
-    tutti.filter((p) => nelContinente(p, area)),
+    c.ix.dati.paesi.filter((p) => capitaleDaCercare(p) && nelContinente(p, c.area)),
     (p) => p.id,
-    evitare,
-    quante,
+    c.evitare,
+    c.quante,
   )
-  return alterna(soggetti(candidati, quante, caso), 0.6, caso).map(({ s: p, primo }) => {
+  return soggetti(candidati, c.quante, c.caso, c.notorieta).map((p) => ({
+    tipo: 'dove-capitale',
+    testo: `Dov’è ${cittaNellaFrase(p.cap)}?`,
+    opzioni: [],
+    cartina: { vista: c.vista, strato: 'capitali' },
+    giusta: posto.capitale(p.id),
+    accettate: [posto.capitale(p.id)],
+    risposta: `${p.cap}, ${p.n}`,
+    soggetto: p.id,
+    luogo: luogo([posto.capitale(p.id)], [posto.paese(p)]),
+  }))
+}
+
+/* ── Città ── */
+
+/**
+ * Le città con un nome solo, fra quelle che si hanno: "Dov'è Valencia?" non ha
+ * una risposta, ce ne sono due. Il confronto e' senza accenti.
+ */
+function cittaUniche(citta: readonly CittaQuiz[]): CittaQuiz[] {
+  const conti = new Map<string, number>()
+  for (const x of citta) conti.set(senzaAccenti(x.n), (conti.get(senzaAccenti(x.n)) ?? 0) + 1)
+  return citta.filter((x) => conti.get(senzaAccenti(x.n)) === 1)
+}
+
+function cittaNellArea(c: Contesto): CittaQuiz[] {
+  const unPaese = paeseDellArea(c.area)
+  return cittaUniche(c.citta).filter((x) => {
+    const p = c.ix.paesi.get(x.p)
+    if (!p) return false
+    return unPaese ? x.p === unPaese : nelContinente(p, c.area)
+  })
+}
+
+const cittaScelta: Generatore = (c) => {
+  const unPaese = paeseDellArea(c.area)
+  const tutte = cittaNellArea(c)
+  const domande: DomandaCompleta[] = []
+  if (unPaese) {
+    // Su un paese solo si chiedono le regioni: in quale si trova, e quale città ci sta.
+    const p = c.ix.paesi.get(unPaese)
+    const conRegione = tutte.filter((x) => x.r && x.rn)
+    const regioni = [...new Map(conRegione.map((x) => [x.r!, x.rn!])).entries()]
+    if (!p || regioni.length < 2) return []
+    const termine = suddivisione(p.id)
+    const candidati = preferendo(conRegione, (x) => x.id, c.evitare, c.quante)
+    const regioniUsate = new Set<string>()
+    // Le quote con i nomi dei tipi della categoria: su un paese "lo stato" diventa "la regione".
+    const quote = [['stato-della-citta', 0.55], ['citta-in-stato', 0.45]] as const
+    const scelti = soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta)
+    for (const { s: x, tipo } of assegna(scelti, quote, c)) {
+      if (domande.length >= c.quante) break
+      if (tipo === 'stato-della-citta') {
+        const sbagliate = mescola(
+          regioni.filter(([id]) => id !== x.r),
+          c.caso,
+        ).slice(0, c.sbagliate)
+        if (sbagliate.length < c.sbagliate) continue
+        domande.push({
+          tipo: 'regione-della-citta',
+          testo: `In quale ${termine} si trova ${cittaNellaFrase(x.n)}?`,
+          opzioni: mescola([[x.r!, x.rn!] as const, ...sbagliate], c.caso).map(([id, n]) => ({
+            id: `r:${id}`,
+            testo: n,
+          })),
+          giusta: `r:${x.r}`,
+          risposta: x.rn!,
+          soggetto: x.id,
+          luogo: luogo([posto.citta(x.id)], [posto.paese(p)]),
+        })
+      } else {
+        // Una regione per partita: due domande sulla Puglia di fila sono una domanda sola.
+        if (regioniUsate.has(x.r!)) continue
+        const sbagliate = distrattori(
+          c,
+          conRegione.filter((y) => y.r !== x.r),
+          c.sbagliate,
+          (y) => Math.abs(y.f - x.f),
+        )
+        if (sbagliate.length < c.sbagliate) continue
+        regioniUsate.add(x.r!)
+        domande.push({
+          tipo: 'citta-in-regione',
+          testo: `Quale di queste città si trova ${inRegione(x.rn!)}?`,
+          opzioni: mescola([x, ...sbagliate], c.caso).map((y) => ({ id: posto.citta(y.id), testo: y.n })),
+          giusta: posto.citta(x.id),
+          risposta: x.n,
+          soggetto: x.id,
+          luogo: luogo([posto.citta(x.id)], [posto.paese(p)]),
+        })
+      }
+    }
+    return domande
+  }
+
+  const candidati = preferendo(tutte, (x) => x.id, c.evitare, c.quante)
+  const paesiUsati = new Set<string>()
+  const quote = [['stato-della-citta', 0.55], ['citta-in-stato', 0.45]] as const
+  for (const { s: x, tipo } of assegna(soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta), quote, c)) {
+    if (domande.length >= c.quante) break
+    const p = c.ix.paesi.get(x.p)!
+    // Un paese per partita, come nei fiumi: tre città della Cina sono una domanda sola.
+    if (paesiUsati.has(p.id)) continue
+    if (tipo === 'stato-della-citta') {
+      const sbagliati = distrattori(
+        c,
+        c.ix.dati.paesi.filter((q) => q.id !== p.id),
+        c.sbagliate,
+        vicinanzaPaesi(p),
+      )
+      if (sbagliati.length < c.sbagliate) continue
+      paesiUsati.add(p.id)
+      domande.push({
+        tipo: 'stato-della-citta',
+        testo: `In quale stato si trova ${cittaNellaFrase(x.n)}?`,
+        opzioni: mescola([p, ...sbagliati], c.caso).map((q) => ({ id: q.id, testo: q.n })),
+        giusta: p.id,
+        risposta: p.n,
+        soggetto: x.id,
+        luogo: luogo([posto.paese(p)], [posto.citta(x.id)]),
+      })
+    } else {
+      // Le città sbagliate: dei paesi vicini prima, perché siano plausibili.
+      const vicini = new Set(p.conf)
+      const sbagliate = distrattori(
+        c,
+        tutte.filter((y) => y.p !== p.id),
+        c.sbagliate,
+        (y) => (vicini.has(y.p) ? 0 : stessoContinente(p, c.ix.paesi.get(y.p)!) ? 0.5 : 1.2) + Math.abs(y.f - x.f),
+      )
+      if (sbagliate.length < c.sbagliate) continue
+      paesiUsati.add(p.id)
+      domande.push({
+        tipo: 'citta-in-stato',
+        testo: `Quale di queste città si trova ${inPaese(p.id, p.n)}?`,
+        opzioni: mescola([x, ...sbagliate], c.caso).map((y) => ({ id: posto.citta(y.id), testo: y.n })),
+        giusta: posto.citta(x.id),
+        risposta: x.n,
+        soggetto: x.id,
+        luogo: luogo([posto.citta(x.id)], [posto.paese(p)]),
+      })
+    }
+  }
+  return domande
+}
+
+const cittaCartina: Generatore = (c) => {
+  const candidati = preferendo(cittaNellArea(c), (x) => x.id, c.evitare, c.quante)
+  return soggetti(candidati, c.quante, c.caso, c.notorieta).map((x) => {
+    const p = c.ix.paesi.get(x.p)!
+    return {
+      tipo: 'dove-citta',
+      testo: `Dov’è ${cittaNellaFrase(x.n)}?`,
+      opzioni: [],
+      cartina: { vista: c.vista, strato: 'citta' },
+      giusta: posto.citta(x.id),
+      accettate: [posto.citta(x.id)],
+      risposta: `${x.n}, ${p.n}`,
+      soggetto: x.id,
+      luogo: luogo([posto.citta(x.id)], [posto.paese(p)]),
+    }
+  })
+}
+
+/* ── Bandiere ── */
+
+const bandiereScelta: Generatore = (c) => {
+  const tutti = c.ix.dati.paesi
+  const candidati = preferendo(
+    tutti.filter((p) => nelContinente(p, c.area)),
+    (p) => p.id,
+    c.evitare,
+    c.quante,
+  )
+  const quote = [['bandiera-di', 0.6], ['quale-bandiera', 0.4]] as const
+  return assegna(soggetti(candidati, c.quante, c.caso, c.notorieta), quote, c).map(({ s: p, tipo }) => {
     const sbagliati = distrattori(
+      c,
       tutti.filter((q) => q.id !== p.id),
-      3,
+      c.sbagliate,
       vicinanzaPaesi(p),
-      caso,
     )
-    const opzioni = mescola([p, ...sbagliati], caso)
-    if (primo) {
+    const opzioni = mescola([p, ...sbagliati], c.caso)
+    if (tipo === 'bandiera-di') {
       return {
-        tipo: 'bandiera-di',
+        tipo,
         testo: 'Di quale stato è questa bandiera?',
         bandiera: p.id.toLowerCase(),
         opzioni: opzioni.map((q) => ({ id: q.id, testo: q.n })),
         giusta: p.id,
         risposta: p.n,
         soggetto: p.id,
+        luogo: luogo([posto.paese(p)]),
       }
     }
     return {
@@ -344,9 +728,31 @@ const bandiere: Generatore = (ix, area, quante, caso, evitare) => {
       giusta: p.id,
       risposta: p.n,
       soggetto: p.id,
+      luogo: luogo([posto.paese(p)]),
     }
   })
 }
+
+/** I paesi che si cercano sulla cartina: con la loro forma, e non troppo piccoli. */
+function paesiDaCercare(c: Contesto): PaeseQuiz[] {
+  return c.ix.dati.paesi.filter((p) => p.num && p.a >= SUPERFICIE_MINIMA_CARTINA && nelContinente(p, c.area))
+}
+
+const bandiereCartina: Generatore = (c) =>
+  soggetti(preferendo(paesiDaCercare(c), (p) => p.id, c.evitare, c.quante), c.quante, c.caso, c.notorieta).map((p) => ({
+    tipo: 'dove-bandiera',
+    testo: 'Dov’è lo stato di questa bandiera?',
+    bandiera: p.id.toLowerCase(),
+    opzioni: [],
+    cartina: { vista: c.vista, strato: 'paesi' },
+    giusta: posto.paese(p)!,
+    accettate: [posto.paese(p)!],
+    risposta: p.n,
+    soggetto: p.id,
+    luogo: luogo([posto.paese(p)]),
+  }))
+
+/* ── Stati ── */
 
 /** "Dov’è la Francia?", ma "Dove sono gli Stati Uniti?". */
 function doveE(p: PaeseQuiz): string {
@@ -354,15 +760,165 @@ function doveE(p: PaeseQuiz): string {
   return g === 'mp' || g === 'fp' ? `Dove sono ${conArticolo(p.id, p.n)}?` : `Dov’è ${conArticolo(p.id, p.n)}?`
 }
 
+/** Le acque su cui si fanno domande: le piu' note, perché il Mare di Ceram non lo chiede nessuno. */
+const ACQUE_NOTE = 0.45
+
 /**
- * La vista piu' stretta che contiene un'acqua; il mondo per gli oceani. Un mare
- * che non sta in nessuna vista regionale non si chiede: sul mappamondo intero,
- * su un telefono, il Mare di Barents e' una striscia.
+ * Sotto questo peso un'acqua bagna un paese ma non ne e' una risposta: il Cile
+ * tocca l'Atlantico per un decimo della costa che ha sul Pacifico. Non e' mai
+ * nemmeno un errore, perché e' fra quelle che lo bagnano.
  */
-function vistaDellAcqua(a: AcquaQuiz): VistaCartina | null {
-  if (a.t === 'oceano') return 'mondo'
-  return VISTE_REGIONALI.find((v) => dentroVista(v, a.bb, 2)) ?? null
+const PESO_RISPOSTA = 40
+
+/** Il Mar Caspio: per Natural Earth un mare, ma chi lo ha solo lui non ha lo sbocco sul mare. */
+const CASPIO = 'Q5484'
+
+/** Le acque che contano per un paese: quelle che possono essere la risposta giusta. */
+function acqueDi(p: PaeseQuiz): Set<string> {
+  return new Set(p.bagna.filter((_, i) => (p.peso[i] ?? 0) >= PESO_RISPOSTA))
 }
+
+/** Chi ha davvero il mare: una costa che conta, e non solo sul Caspio. */
+function costiero(p: PaeseQuiz): boolean {
+  return [...acqueDi(p)].some((id) => id !== CASPIO)
+}
+
+const statiScelta: Generatore = (c) => {
+  const tutti = c.ix.dati.paesi
+  const nellArea = tutti.filter((p) => nelContinente(p, c.area))
+  /**
+   * I vicini dei vicini — dei confinanti sicuri, non di quelli d'oltremare: i
+   * distrattori migliori per un confine, plausibili e sicuramente sbagliati. Un
+   * paese senza confini di terra e' un errore troppo facile, e viene dopo.
+   */
+  const secondi = (p: PaeseQuiz) => {
+    const s = new Set<string>()
+    for (const v of p.cm ?? []) for (const w of c.ix.paesi.get(v)?.cm ?? []) s.add(w)
+    return s
+  }
+  const lontanoDaConfine = (p: PaeseQuiz) => {
+    const vicini2 = secondi(p)
+    return (q: PaeseQuiz) =>
+      (vicini2.has(q.id) ? 0 : stessoContinente(p, q) ? 1 : 2.5) + (q.cm?.length ? 0 : 0.8) + Math.abs(p.f - q.f) * 0.6
+  }
+  const sicuriDi = (p: PaeseQuiz) => (p.cm ?? []).map((id) => c.ix.paesi.get(id)).filter((q): q is PaeseQuiz => !!q)
+
+  /** Ogni tipo ha i suoi soggetti: chi confina con qualcuno, chi ne ha abbastanza, chi non ha il mare. */
+  const pool: Record<'confina-con' | 'non-confina' | 'senza-mare', PaeseQuiz[]> = {
+    'confina-con': nellArea.filter((p) => sicuriDi(p).length > 0),
+    'non-confina': nellArea.filter((p) => sicuriDi(p).length >= c.sbagliate),
+    'senza-mare': nellArea.filter((p) => p.ch),
+  }
+  const quote = [['confina-con', 0.45], ['non-confina', 0.3], ['senza-mare', 0.25]] as const
+  const conti = new Map<TipoDomanda, number>()
+  for (const { tipo } of assegna(
+    Array.from({ length: c.quante }, (_, i) => i),
+    quote.filter(([t]) => pool[t].length > 0),
+    c,
+  )) {
+    conti.set(tipo, (conti.get(tipo) ?? 0) + 1)
+  }
+
+  const usati = new Set<string>()
+  const domande: DomandaCompleta[] = []
+  for (const [tipo] of quote) {
+    const quanti = conti.get(tipo) ?? 0
+    if (quanti === 0) continue
+    const candidati = preferendo(
+      pool[tipo].filter((p) => !usati.has(p.id)),
+      (p) => p.id,
+      c.evitare,
+      quanti,
+    )
+    let fatte = 0
+    for (const p of soggetti(candidati, quanti * 2, c.caso, c.notorieta)) {
+      if (fatte >= quanti) break
+      const suoi = new Set([p.id, ...p.conf])
+      let d: DomandaCompleta | null = null
+      if (tipo === 'confina-con') {
+        // Uno dei confinanti sicuri, fra i tre piu' noti.
+        const giusto = unoDi(celebri(sicuriDi(p), 3), c.caso)
+        const sbagliati = distrattori(
+          c,
+          tutti.filter((q) => !suoi.has(q.id)),
+          c.sbagliate,
+          lontanoDaConfine(p),
+        )
+        if (sbagliati.length === c.sbagliate) {
+          d = {
+            tipo,
+            testo: `Con quale di questi stati confina ${conArticolo(p.id, p.n)}?`,
+            opzioni: mescola([giusto, ...sbagliati], c.caso).map((q) => ({ id: q.id, testo: q.n })),
+            giusta: giusto.id,
+            risposta: giusto.n,
+            soggetto: p.id,
+            luogo: luogo([posto.paese(giusto)], [posto.paese(p)]),
+          }
+        }
+      } else if (tipo === 'non-confina') {
+        const vicini = mescola(sicuriDi(p), c.caso).slice(0, c.sbagliate)
+        const [intruso] = distrattori(
+          c,
+          tutti.filter((q) => !suoi.has(q.id)),
+          1,
+          lontanoDaConfine(p),
+        )
+        if (intruso) {
+          d = {
+            tipo,
+            testo: `Quale di questi stati non confina con ${conArticolo(p.id, p.n)}?`,
+            opzioni: mescola([intruso, ...vicini], c.caso).map((q) => ({ id: q.id, testo: q.n })),
+            giusta: intruso.id,
+            risposta: intruso.n,
+            soggetto: p.id,
+            luogo: luogo([posto.paese(intruso)], [posto.paese(p), ...vicini.map((v) => posto.paese(v))]),
+          }
+        }
+      } else {
+        // Gli altri hanno il mare davvero: una costa che conta, non un'ansa di pochi chilometri.
+        const sbagliati = distrattori(
+          c,
+          tutti.filter((q) => q.id !== p.id && costiero(q) && !q.ch),
+          c.sbagliate,
+          (q) => (stessoContinente(p, q) ? 0 : 1) + (p.conf.includes(q.id) ? 0 : 0.3) + Math.abs(p.f - q.f),
+        )
+        if (sbagliati.length === c.sbagliate) {
+          d = {
+            tipo,
+            testo: 'Quale di questi stati non ha lo sbocco sul mare?',
+            opzioni: mescola([p, ...sbagliati], c.caso).map((q) => ({ id: q.id, testo: q.n })),
+            giusta: p.id,
+            risposta: p.n,
+            soggetto: p.id,
+            luogo: luogo([posto.paese(p)]),
+          }
+        }
+      }
+      if (!d) continue
+      usati.add(p.id)
+      domande.push(d)
+      fatte += 1
+    }
+  }
+  // I tre tipi mescolati, dal paese piu' noto al meno noto: la partita sale.
+  const fama = (d: DomandaCompleta) => c.ix.paesi.get(d.soggetto)?.f ?? 0
+  return mescola(domande, c.caso).sort((a, b) => fama(b) - fama(a))
+}
+
+const statiCartina: Generatore = (c) =>
+  soggetti(preferendo(paesiDaCercare(c), (p) => p.id, c.evitare, c.quante), c.quante, c.caso, c.notorieta).map((p) => ({
+    tipo: 'dove-stato',
+    testo: doveE(p),
+    opzioni: [],
+    cartina: { vista: c.vista, strato: 'paesi' },
+    giusta: posto.paese(p)!,
+    accettate: [posto.paese(p)!],
+    risposta: p.n,
+    soggetto: p.id,
+    luogo: luogo([posto.paese(p)]),
+  }))
+
+/* ── Mari e oceani ── */
 
 /**
  * Le acque che contano come giuste per un bersaglio sulla cartina: lui e quelle
@@ -384,59 +940,11 @@ export function acqueAccettate(ix: IndiceQuiz, bersaglio: AcquaQuiz): string[] {
   return [...dentro]
 }
 
+/** Un mare e' di un continente se ne bagna almeno un paese: il Mediterraneo e' d'Europa, d'Africa e d'Asia. */
 function acquaInArea(ix: IndiceQuiz, a: AcquaQuiz, area: AreaQuiz): boolean {
   if (area === 'mondo' || area.startsWith('paese:')) return true
   const continente = area as Continente
-  if (a.t === 'oceano') {
-    return ix.dati.paesi.some((p) => p.k.includes(continente) && p.bagna.includes(a.id))
-  }
-  return dentroVista(VISTA_DEL_CONTINENTE[continente], a.bb, 3)
-}
-
-const cartina: Generatore = (ix, area, quante, caso, evitare) => {
-  const paesi = preferendo(
-    ix.dati.paesi.filter((p) => p.num && p.a >= SUPERFICIE_MINIMA_CARTINA && nelContinente(p, area)),
-    (p) => p.id,
-    evitare,
-    quante,
-  )
-  const acque = preferendo(
-    ix.dati.acque.filter((a) => a.t !== 'stretto' && a.f >= ACQUE_NOTE && vistaDellAcqua(a) && acquaInArea(ix, a, area)),
-    (a) => a.id,
-    evitare,
-    quante,
-  )
-  const quanteAcque = acque.length === 0 ? 0 : Math.min(acque.length, Math.round(quante * 0.3))
-  const domandePaesi: DomandaCompleta[] = soggetti(paesi, quante - quanteAcque, caso).map((p) => ({
-    tipo: 'dove-stato',
-    testo: doveE(p),
-    opzioni: [],
-    cartina: { vista: VISTA_DEL_CONTINENTE[p.k[0]], strato: 'paesi' },
-    giusta: idPaeseCartina(p.num!),
-    accettate: [idPaeseCartina(p.num!)],
-    risposta: p.n,
-    soggetto: p.id,
-  }))
-  const domandeAcque: DomandaCompleta[] = soggetti(acque, quanteAcque, caso).map((a) => ({
-    tipo: 'dove-acqua',
-    testo: `Dov’è ${acquaConArticolo(a.n)}?`,
-    opzioni: [],
-    cartina: { vista: vistaDellAcqua(a)!, strato: 'acque' },
-    giusta: a.id,
-    accettate: acqueAccettate(ix, a),
-    risposta: a.n,
-    soggetto: a.id,
-  }))
-  // Le acque in mezzo ai paesi, non tutte in fondo: una ogni tre o quattro.
-  const tutte: DomandaCompleta[] = []
-  const passo = domandeAcque.length > 0 ? Math.max(2, Math.floor(quante / domandeAcque.length)) : Infinity
-  let a = 0
-  for (const d of domandePaesi) {
-    tutte.push(d)
-    if ((tutte.length + 1) % passo === 0 && a < domandeAcque.length) tutte.push(domandeAcque[a++])
-  }
-  while (a < domandeAcque.length) tutte.push(domandeAcque[a++])
-  return tutte
+  return ix.dati.paesi.some((p) => p.k.includes(continente) && p.bagna.includes(a.id))
 }
 
 /** Le acque che un paese non tocca, e nemmeno sfiora: le uniche che possono fare da errore. */
@@ -444,24 +952,12 @@ function lontana(p: PaeseQuiz, acqua: string): boolean {
   return !p.bagna.includes(acqua) && !p.vicine.includes(acqua)
 }
 
-/**
- * Sotto questo peso un'acqua bagna un paese ma non ne e' una risposta: il Cile
- * tocca l'Atlantico per un decimo della costa che ha sul Pacifico. Non e' mai
- * nemmeno un errore, perché e' fra quelle che lo bagnano.
- */
-const PESO_RISPOSTA = 40
-
-/** Le acque che contano per un paese: quelle che possono essere la risposta giusta. */
-function acqueDi(p: PaeseQuiz): Set<string> {
-  return new Set(p.bagna.filter((_, i) => (p.peso[i] ?? 0) >= PESO_RISPOSTA))
-}
-
 function perAcque(tipi: (a: AcquaQuiz) => boolean, parola: 'mare' | 'oceano'): Generatore {
-  return (ix, area, quante, caso, evitare) => {
-    const acque = ix.dati.acque.filter(tipi)
+  return (c) => {
+    const acque = c.ix.dati.acque.filter(tipi)
     const idAcque = new Set(acque.map((a) => a.id))
-    const unPaese = paeseDellArea(area)
-    const costieri = ix.dati.paesi.filter((p) => [...acqueDi(p)].some((id) => idAcque.has(id)))
+    const unPaese = paeseDellArea(c.area)
+    const costieri = c.ix.dati.paesi.filter((p) => [...acqueDi(p)].some((id) => idAcque.has(id)))
     const domande: DomandaCompleta[] = []
 
     // "Quale mare bagna la Grecia?": il paese e' il soggetto, la risposta un'acqua
@@ -473,33 +969,36 @@ function perAcque(tipi: (a: AcquaQuiz) => boolean, parola: 'mare' | 'oceano'): G
       )
       if (candidate.length === 0) return null
       // La piu' nota delle due, di solito: il Regno Unito e' il Mare del Nord, non il Mare delle Ebridi.
-      const giusta = caso() < 0.65 ? candidate[0] : unoDi(candidate, caso)
+      const giusta = c.caso() < 0.65 ? candidate[0] : unoDi(candidate, c.caso)
       const sbagliate = distrattori(
+        c,
         celebri(acque, 45).filter((a) => lontana(p, a.id) && (parola === 'oceano' || a.t === 'mare')),
-        3,
-        (a) => (ix.dati.paesi.some((q) => stessoContinente(q, p) && q.bagna.includes(a.id)) ? 0 : 1) + Math.abs(a.f - giusta.f),
-        caso,
+        c.sbagliate,
+        (a) =>
+          (c.ix.dati.paesi.some((q) => stessoContinente(q, p) && q.bagna.includes(a.id)) ? 0 : 1) +
+          Math.abs(a.f - giusta.f),
       )
-      if (sbagliate.length < 3) return null
+      if (sbagliate.length < c.sbagliate) return null
       return {
         tipo: 'acqua-di-stato',
         testo: `Quale ${parola} bagna ${conArticolo(p.id, p.n)}?`,
-        opzioni: mescola([giusta, ...sbagliate], caso).map((a) => ({ id: a.id, testo: a.n })),
+        opzioni: mescola([giusta, ...sbagliate], c.caso).map((a) => ({ id: a.id, testo: a.n })),
         giusta: giusta.id,
         risposta: giusta.n,
         soggetto,
+        luogo: luogo([giusta.id], [posto.paese(p)]),
       }
     }
 
     if (unPaese) {
-      const p = ix.paesi.get(unPaese)
+      const p = c.ix.paesi.get(unPaese)
       if (!p) return []
       const principali = acqueDi(p)
       const sue = mescola(
         acque.filter((a) => principali.has(a.id)),
-        caso,
+        c.caso,
       )
-      for (const a of sue.slice(0, quante)) {
+      for (const a of sue.slice(0, c.quante)) {
         const d = acquaDiStato(p, [a], a.id)
         if (d) domande.push(d)
       }
@@ -508,56 +1007,160 @@ function perAcque(tipi: (a: AcquaQuiz) => boolean, parola: 'mare' | 'oceano'): G
 
     // Il soggetto e' il paese giusto: in una partita ogni domanda parla di un paese diverso.
     const candidati = preferendo(
-      costieri.filter((p) => nelContinente(p, area)),
+      costieri.filter((p) => nelContinente(p, c.area)),
       (p) => p.id,
-      evitare,
-      quante,
+      c.evitare,
+      c.quante,
     )
-    for (const { s: p, primo } of alterna(soggetti(candidati, quante * 2, caso), 0.5, caso)) {
-      if (domande.length >= quante) break
+    const quote = [['stato-bagnato', 0.5], ['acqua-di-stato', 0.5]] as const
+    for (const { s: p, tipo } of assegna(soggetti(candidati, c.quante * 2, c.caso, c.notorieta), quote, c)) {
+      if (domande.length >= c.quante) break
       const principali = acqueDi(p)
       const sue = acque.filter((a) => principali.has(a.id))
       if (sue.length === 0) continue
-      if (primo) {
+      if (tipo === 'stato-bagnato') {
         // "Quale di questi stati e' bagnato dal Mar Baltico?"
         const note = celebri(
           sue.filter((a) => !nomeRivelato(p.n, a.n)),
           3,
         )
         if (note.length === 0) continue
-        const acqua = unoDi(note, caso)
+        const acqua = unoDi(note, c.caso)
+        // Gli errori dallo stesso continente prima: il Mar di Tasman con l'Iran e' troppo facile.
         const sbagliati = distrattori(
-          ix.dati.paesi.filter((q) => q.id !== p.id && lontana(q, acqua.id)),
-          3,
-          (q) => (stessoContinente(p, q) ? 0 : 1) + (q.bagna.length > 0 ? 0 : 0.5) + Math.abs(q.f - p.f),
-          caso,
+          c,
+          c.ix.dati.paesi.filter((q) => q.id !== p.id && lontana(q, acqua.id)),
+          c.sbagliate,
+          (q) => (stessoContinente(p, q) ? 0 : 1.6) + (q.bagna.length > 0 ? 0 : 0.5) + Math.abs(q.f - p.f),
         )
-        if (sbagliati.length < 3) continue
+        if (sbagliati.length < c.sbagliate) continue
         domande.push({
           tipo: 'stato-bagnato',
           testo: `Quale di questi stati è bagnato ${daAcqua(acqua.n)}?`,
-          opzioni: mescola([p, ...sbagliati], caso).map((q) => ({ id: q.id, testo: q.n })),
+          opzioni: mescola([p, ...sbagliati], c.caso).map((q) => ({ id: q.id, testo: q.n })),
           giusta: p.id,
           risposta: p.n,
           soggetto: p.id,
+          luogo: luogo([posto.paese(p)], [acqua.id]),
         })
       } else {
         const d = acquaDiStato(p, sue, p.id)
         if (d) domande.push(d)
       }
     }
-    return domande.sort((a, b) => (ix.paesi.get(b.soggetto)?.f ?? 0) - (ix.paesi.get(a.soggetto)?.f ?? 0))
+    return domande.sort((a, b) => (c.ix.paesi.get(b.soggetto)?.f ?? 0) - (c.ix.paesi.get(a.soggetto)?.f ?? 0))
   }
 }
 
-/** Le acque su cui si fanno domande: le piu' note, perché il Mare di Ceram non lo chiede nessuno. */
-const ACQUE_NOTE = 0.45
+const eOceano = (a: AcquaQuiz) => OCEANI.includes(a.id)
+const eMare = (a: AcquaQuiz) =>
+  (a.t === 'mare' || a.t === 'golfo' || a.t === 'baia' || a.t === 'canale') && a.f >= ACQUE_NOTE
 
-const oceani = perAcque((a) => OCEANI.includes(a.id), 'oceano')
-const mari = perAcque(
-  (a) => (a.t === 'mare' || a.t === 'golfo' || a.t === 'baia' || a.t === 'canale') && a.f >= ACQUE_NOTE,
-  'mare',
-)
+/** "Dov'è il Mar Egeo?": un'acqua da toccare, e contano anche quelle che ne fanno parte. */
+function doveAcqua(c: Contesto, a: AcquaQuiz): DomandaCompleta {
+  const accettate = acqueAccettate(c.ix, a)
+  return {
+    tipo: 'dove-acqua',
+    testo: `Dov’è ${acquaConArticolo(a.n)}?`,
+    opzioni: [],
+    cartina: { vista: c.vista, strato: 'acque' },
+    giusta: a.id,
+    accettate,
+    risposta: a.n,
+    soggetto: a.id,
+    luogo: luogo([a.id]),
+  }
+}
+
+const mariCartina: Generatore = (c) =>
+  soggetti(
+    preferendo(
+      c.ix.dati.acque.filter((a) => eMare(a) && acquaInArea(c.ix, a, c.area)),
+      (a) => a.id,
+      c.evitare,
+      c.quante,
+    ),
+    c.quante,
+    c.caso,
+    c.notorieta,
+  ).map((a) => doveAcqua(c, a))
+
+/**
+ * Gli oceani sulla cartina: dove sono — sono cinque, e bastano poche domande —
+ * e quale bagna un paese, che si vede acceso mentre si cerca. Vale ogni oceano
+ * che lo bagna, anche per poco: sulla cartina toccare l'Atlantico per il Cile
+ * non e' un errore, e' la Terra del Fuoco.
+ */
+const oceaniCartina: Generatore = (c) => {
+  const oceani = c.ix.dati.acque.filter(eOceano)
+  const entrambe = vuole(c, 'dove-acqua') && vuole(c, 'oceano-di-stato')
+  const quanteDove = !vuole(c, 'dove-acqua')
+    ? 0
+    : entrambe
+      ? Math.min(oceani.length, Math.ceil(c.quante * 0.4))
+      : c.quante
+  const dove = soggetti(oceani, quanteDove, c.caso, 'misti').map((a) => doveAcqua(c, a))
+  const idOceani = new Set(oceani.map((a) => a.id))
+  const candidati = preferendo(
+    c.ix.dati.paesi.filter((p) => p.num && [...acqueDi(p)].some((id) => idOceani.has(id))),
+    (p) => p.id,
+    c.evitare,
+    c.quante,
+  )
+  const principaliDi = (p: PaeseQuiz) => {
+    const peso = (a: AcquaQuiz) => p.peso[p.bagna.indexOf(a.id)] ?? 0
+    return oceani.filter((a) => acqueDi(p).has(a.id)).sort((a, b) => peso(b) - peso(a))
+  }
+  /*
+   * Mezzo mondo e' atlantico: i paesi si scelgono in modo che nessun oceano
+   * faccia piu' dei due quinti delle risposte, se ce ne sono abbastanza.
+   */
+  const quantiDiStato = c.quante - dove.length
+  const tetto = Math.max(1, Math.ceil(quantiDiStato * 0.4))
+  const perOceano = new Map<string, number>()
+  const scelti: PaeseQuiz[] = []
+  const tutti = soggetti(candidati, quantiDiStato * 3, c.caso, c.notorieta)
+  for (const p of tutti) {
+    if (scelti.length >= quantiDiStato) break
+    const oceano = principaliDi(p)[0].id
+    if ((perOceano.get(oceano) ?? 0) >= tetto) continue
+    perOceano.set(oceano, (perOceano.get(oceano) ?? 0) + 1)
+    scelti.push(p)
+  }
+  for (const p of tutti) if (scelti.length < quantiDiStato && !scelti.includes(p)) scelti.push(p)
+  const diStato: DomandaCompleta[] = vuole(c, 'oceano-di-stato')
+    ? scelti.map((p) => {
+        const principali = principaliDi(p)
+        const tutti = oceani.filter((a) => p.bagna.includes(a.id))
+        return {
+          tipo: 'oceano-di-stato' as const,
+          testo: `Quale oceano bagna ${conArticolo(p.id, p.n)}?`,
+          opzioni: [],
+          cartina: { vista: c.vista, strato: 'acque' as const, mostra: [posto.paese(p)!] },
+          giusta: principali[0].id,
+          accettate: [...new Set(tutti.flatMap((a) => acqueAccettate(c.ix, a)))],
+          risposta: principali.map((a) => a.n).join(' o '),
+          soggetto: p.id,
+          luogo: luogo(
+            principali.map((a) => a.id),
+            [posto.paese(p)],
+          ),
+        }
+      })
+    : []
+  // Le due domande alternate: un oceano da trovare ogni due o tre.
+  const tutte: DomandaCompleta[] = []
+  const passo = dove.length > 0 ? Math.max(2, Math.floor(c.quante / dove.length)) : Infinity
+  let i = 0
+  for (const d of diStato) {
+    tutte.push(d)
+    if ((tutte.length + 1) % passo === 0 && i < dove.length) tutte.push(dove[i++])
+  }
+  while (i < dove.length) tutte.push(dove[i++])
+  return tutte
+}
+
+/* ── Fiumi e laghi ── */
 
 /** Fiumi e laghi: la stessa domanda, con le parole di ognuno. */
 function perCorsi(
@@ -569,20 +1172,22 @@ function perCorsi(
     tipi: [TipoDomanda, TipoDomanda]
     /** Fra quanti dei piu' noti si scelgono le domande, e fra quanti gli errori. */
     quanti: [number, number]
+    posto: (id: string) => string
   },
 ): Generatore {
-  return (ix, area, quante, caso, evitare) => {
-    const tutti = ix.dati[sezione].filter((c) => c.p.every((id) => ix.paesi.has(id)) && c.p.length > 0)
+  return (c) => {
+    const tutti = c.ix.dati[sezione].filter((x) => x.p.every((id) => c.ix.paesi.has(id)) && x.p.length > 0)
     const [perDomande, perErrori] = parole.quanti
     /** I nomi che possono fare da risposta sbagliata: noti, ma un po' piu' in la' di quelli delle domande. */
     const corsi = celebri(tutti, perErrori)
-    const unPaese = paeseDellArea(area)
+    const unPaese = paeseDellArea(c.area)
     /** I paesi toccati da un corso, e i loro vicini: fuori da tutti questi, un paese e' sicuramente sbagliato. */
-    const zona = (c: CorsoQuiz) => {
-      const z = new Set(c.p)
-      for (const id of c.p) for (const v of ix.paesi.get(id)?.conf ?? []) z.add(v)
+    const zona = (x: CorsoQuiz) => {
+      const z = new Set(x.p)
+      for (const id of x.p) for (const v of c.ix.paesi.get(id)?.conf ?? []) z.add(v)
       return z
     }
+    const paesiDi = (x: CorsoQuiz) => x.p.map((id) => posto.paese(c.ix.paesi.get(id)))
 
     /**
      * "Quale di questi fiumi scorre in Francia?": gli errori sono fiumi che non
@@ -594,83 +1199,86 @@ function perCorsi(
     const corsoInStato = (p: PaeseQuiz, giusto: CorsoQuiz, noti = false): DomandaCompleta | null => {
       const vietati = new Set([p.id, ...p.conf])
       const sbagliati = distrattori(
-        corsi.filter((c) => c.id !== giusto.id && c.p.every((id) => !vietati.has(id))),
-        3,
-        (c) =>
-          (c.p.some((id) => stessoContinente(ix.paesi.get(id)!, p)) ? 0 : 1) +
-          (noti ? 1 - c.f : Math.abs(c.f - giusto.f)),
-        caso,
+        c,
+        corsi.filter((x) => x.id !== giusto.id && x.p.every((id) => !vietati.has(id))),
+        c.sbagliate,
+        (x) =>
+          (x.p.some((id) => stessoContinente(c.ix.paesi.get(id)!, p)) ? 0 : 1) +
+          (noti ? 1 - x.f : Math.abs(x.f - giusto.f)),
       )
-      if (sbagliati.length < 3) return null
+      if (sbagliati.length < c.sbagliate) return null
       return {
         tipo: parole.tipi[1],
         testo: parole.qualeIn(p),
-        opzioni: mescola([giusto, ...sbagliati], caso).map((c) => ({ id: c.id, testo: parole.opzione(c) })),
+        opzioni: mescola([giusto, ...sbagliati], c.caso).map((x) => ({ id: x.id, testo: parole.opzione(x) })),
         giusta: giusto.id,
         risposta: parole.opzione(giusto),
         soggetto: giusto.id,
+        luogo: luogo([parole.posto(giusto.id)], [posto.paese(p)]),
       }
     }
 
     if (unPaese) {
-      const p = ix.paesi.get(unPaese)
+      const p = c.ix.paesi.get(unPaese)
       if (!p) return []
       // Di un paese solo si chiedono i piu' noti, in ordine: prima la Senna, poi l'Ardèche.
       const suoi = celebri(
-        tutti.filter((c) => c.p.includes(p.id)),
-        quante,
+        tutti.filter((x) => x.p.includes(p.id)),
+        c.quante,
       )
-      return suoi.map((c) => corsoInStato(p, c, true)).filter((d): d is DomandaCompleta => d !== null)
+      return suoi.map((x) => corsoInStato(p, x, true)).filter((d): d is DomandaCompleta => d !== null)
     }
 
     const nellArea = tutti.filter(
-      (c) => area === 'mondo' || c.p.some((id) => ix.paesi.get(id)!.k.includes(area as Continente)),
+      (x) => c.area === 'mondo' || x.p.some((id) => c.ix.paesi.get(id)!.k.includes(c.area as Continente)),
     )
     // In un continente i piu' noti sono meno: un terzo del gruppo del mondo.
-    const candidati = preferendo(
-      celebri(nellArea, area === 'mondo' ? perDomande : Math.max(quante * 2, Math.round(perDomande / 3))),
-      (c) => c.id,
-      evitare,
-      quante,
-    )
+    const quantiNoti = c.area === 'mondo' ? perDomande : Math.max(c.quante * 2, Math.round(perDomande / 3))
+    const allargato = c.notorieta === 'rari' ? Math.round(quantiNoti * 1.7) : quantiNoti
+    const candidati = preferendo(celebri(nellArea, allargato), (x) => x.id, c.evitare, c.quante)
     /**
      * Il paese a cui un fiume "appartiene" di piu': quello dove ha meno fiumi
      * piu' noti davanti. Il Tibisco attraversa l'Ucraina, ma e' il fiume
      * dell'Ungheria; a parità, il paese piu' noto.
      */
-    const posto = (c: CorsoQuiz, p: PaeseQuiz) => tutti.filter((x) => x.f > c.f && x.p.includes(p.id)).length
-    const suoPaese = (c: CorsoQuiz) =>
-      c.p
-        .map((id) => ix.paesi.get(id)!)
-        .reduce((a, b) => (posto(c, b) < posto(c, a) || (posto(c, b) === posto(c, a) && b.f > a.f) ? b : a))
+    const posizione = (x: CorsoQuiz, p: PaeseQuiz) => tutti.filter((y) => y.f > x.f && y.p.includes(p.id)).length
+    const suoPaese = (x: CorsoQuiz) =>
+      x.p
+        .map((id) => c.ix.paesi.get(id)!)
+        .reduce((a, b) =>
+          posizione(x, b) < posizione(x, a) || (posizione(x, b) === posizione(x, a) && b.f > a.f) ? b : a,
+        )
 
     const domande: DomandaCompleta[] = []
     const paesiUsati = new Set<string>()
-    for (const { s: c, primo } of alterna(soggetti(candidati, Math.ceil(quante * 1.5), caso), 0.6, caso)) {
-      if (domande.length >= quante) break
-      const giusto = suoPaese(c)
+    const quote = [[parole.tipi[0], 0.6], [parole.tipi[1], 0.4]] as const
+    const scelti = soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta)
+    for (const { s: x, tipo } of assegna(scelti, quote, c)) {
+      if (domande.length >= c.quante) break
+      const giusto = suoPaese(x)
       // Un paese per partita: due domande sul Canada di fila sono una domanda sola.
       if (paesiUsati.has(giusto.id)) continue
-      if (primo) {
-        const fuori = zona(c)
+      if (tipo === parole.tipi[0]) {
+        const fuori = zona(x)
         const sbagliati = distrattori(
-          ix.dati.paesi.filter((q) => !fuori.has(q.id)),
-          3,
+          c,
+          c.ix.dati.paesi.filter((q) => !fuori.has(q.id)),
+          c.sbagliate,
           vicinanzaPaesi(giusto),
-          caso,
         )
-        if (sbagliati.length < 3) continue
+        if (sbagliati.length < c.sbagliate) continue
         paesiUsati.add(giusto.id)
         domande.push({
           tipo: parole.tipi[0],
-          testo: parole.doveSta(c, c.p.length > 1),
-          opzioni: mescola([giusto, ...sbagliati], caso).map((q) => ({ id: q.id, testo: q.n })),
+          testo: parole.doveSta(x, x.p.length > 1),
+          opzioni: mescola([giusto, ...sbagliati], c.caso).map((q) => ({ id: q.id, testo: q.n })),
           giusta: giusto.id,
           risposta: giusto.n,
-          soggetto: c.id,
+          soggetto: x.id,
+          luogo: luogo([posto.paese(giusto)], [parole.posto(x.id), ...paesiDi(x)]),
         })
       } else {
-        const d = corsoInStato(giusto, c)
+        const d = corsoInStato(giusto, x)
         if (d) {
           paesiUsati.add(giusto.id)
           domande.push(d)
@@ -681,34 +1289,83 @@ function perCorsi(
   }
 }
 
-const fiumi = perCorsi('fiumi', {
-  doveSta: (c) => `In quale stato scorre ${fiumeNellaFrase(c.n)}?`,
-  qualeIn: (p) => `Quale di questi fiumi scorre ${inPaese(p.id, p.n)}?`,
-  opzione: (c) => maiuscola(c.n),
-  tipi: ['stato-del-fiume', 'fiume-in-stato'],
-  quanti: [150, 260],
-})
+const PAROLE_FIUMI = {
+  doveSta: (x: CorsoQuiz) => `In quale stato scorre ${fiumeNellaFrase(x.n)}?`,
+  qualeIn: (p: PaeseQuiz) => `Quale di questi fiumi scorre ${inPaese(p.id, p.n)}?`,
+  opzione: (x: CorsoQuiz) => maiuscola(x.n),
+  tipi: ['stato-del-fiume', 'fiume-in-stato'] as [TipoDomanda, TipoDomanda],
+  quanti: [150, 260] as [number, number],
+  posto: posto.fiume,
+}
 
-const laghi = perCorsi('laghi', {
+const PAROLE_LAGHI = {
   // Un lago di piu' paesi non "si trova" in uno solo: ci si affaccia.
-  doveSta: (c, piuPaesi) =>
-    piuPaesi
-      ? `Quale di questi stati si affaccia ${suLago(c.n)}?`
-      : `In quale stato si trova ${lagoNellaFrase(c.n)}?`,
-  qualeIn: (p) => `Quale di questi laghi si trova ${inPaese(p.id, p.n)}?`,
-  opzione: (c) => lagoInOpzione(c.n),
-  tipi: ['stato-del-lago', 'lago-in-stato'],
-  quanti: [100, 170],
-})
+  doveSta: (x: CorsoQuiz, piuPaesi: boolean) =>
+    piuPaesi ? `Quale di questi stati si affaccia ${suLago(x.n)}?` : `In quale stato si trova ${lagoNellaFrase(x.n)}?`,
+  qualeIn: (p: PaeseQuiz) => `Quale di questi laghi si trova ${inPaese(p.id, p.n)}?`,
+  opzione: (x: CorsoQuiz) => lagoInOpzione(x.n),
+  tipi: ['stato-del-lago', 'lago-in-stato'] as [TipoDomanda, TipoDomanda],
+  quanti: [100, 170] as [number, number],
+  posto: posto.lago,
+}
 
-const GENERATORI: Record<CategoriaQuiz, Generatore> = {
-  capitali,
-  bandiere,
-  cartina,
-  oceani,
-  mari,
-  fiumi,
-  laghi,
+/** Fiumi e laghi sulla cartina: quelli che hanno una linea, o un punto, da toccare. */
+function corsiCartina(sezione: 'fiumi' | 'laghi', perDomande: number): Generatore {
+  return (c) => {
+    const unPaese = paeseDellArea(c.area)
+    const disegnati = c.ix.dati[sezione].filter(
+      (x) => (x.g || x.pt) && x.p.length > 0 && x.p.every((id) => c.ix.paesi.has(id)),
+    )
+    const nellArea = disegnati.filter((x) =>
+      unPaese
+        ? x.p.includes(unPaese)
+        : c.area === 'mondo' || x.p.some((id) => c.ix.paesi.get(id)!.k.includes(c.area as Continente)),
+    )
+    const quanti = unPaese
+      ? nellArea.length
+      : c.area === 'mondo'
+        ? perDomande
+        : Math.max(c.quante * 2, Math.round(perDomande / 3))
+    const candidati = preferendo(
+      celebri(nellArea, c.notorieta === 'rari' ? Math.round(quanti * 1.7) : quanti),
+      (x) => x.id,
+      c.evitare,
+      c.quante,
+    )
+    const fiume = sezione === 'fiumi'
+    return soggetti(candidati, c.quante, c.caso, c.notorieta).map((x) => {
+      const id = fiume ? posto.fiume(x.id) : posto.lago(x.id)
+      return {
+        tipo: fiume ? 'dove-fiume' : 'dove-lago',
+        testo: `Dov’è ${fiume ? fiumeNellaFrase(x.n) : lagoNellaFrase(x.n)}?`,
+        opzioni: [],
+        cartina: { vista: c.vista, strato: sezione },
+        giusta: id,
+        accettate: [id],
+        risposta: fiume ? maiuscola(x.n) : lagoInOpzione(x.n),
+        soggetto: x.id,
+        luogo: luogo([id], x.p.map((p) => posto.paese(c.ix.paesi.get(p)))),
+      }
+    })
+  }
+}
+
+const GENERATORI: Record<CategoriaAttuale, Record<ModoQuiz, Generatore>> = {
+  capitali: { scelta: capitaliScelta, cartina: capitaliCartina },
+  citta: { scelta: cittaScelta, cartina: cittaCartina },
+  bandiere: { scelta: bandiereScelta, cartina: bandiereCartina },
+  stati: { scelta: statiScelta, cartina: statiCartina },
+  mari: { scelta: perAcque(eMare, 'mare'), cartina: mariCartina },
+  oceani: { scelta: perAcque(eOceano, 'oceano'), cartina: oceaniCartina },
+  fiumi: { scelta: perCorsi('fiumi', PAROLE_FIUMI), cartina: corsiCartina('fiumi', 150) },
+  laghi: { scelta: perCorsi('laghi', PAROLE_LAGHI), cartina: corsiCartina('laghi', 100) },
+}
+
+/** La vista da cui parte la cartina di una partita: il mondo, o il continente della zona. */
+function vistaDellArea(ix: IndiceQuiz, area: AreaQuiz): VistaCartina {
+  const unPaese = paeseDellArea(area)
+  if (unPaese) return vistaDellaZona(ix.paesi.get(unPaese)?.k[0] ?? null)
+  return vistaDellaZona(area as 'mondo' | Continente)
 }
 
 /**
@@ -726,41 +1383,69 @@ export function generaDomande(
   evitare: ReadonlySet<string> = new Set(),
 ): DomandaCompleta[] {
   const ix = 'figlie' in dati ? dati : indicizza(dati)
-  const quante = Math.max(1, Math.min(richiesta.quante, 40))
-  const domande = GENERATORI[richiesta.categoria](ix, richiesta.area, quante, caso, evitare)
+  const quante = Math.max(1, Math.min(richiesta.quante, QUANTE_MASSIME))
+  const risposte = Math.max(2, Math.min(6, richiesta.risposte ?? RISPOSTE_PREDEFINITE))
+  // La cartina muta di una volta e' diventata il modo cartina degli stati.
+  const categoria: CategoriaAttuale = richiesta.categoria === 'cartina' ? 'stati' : richiesta.categoria
+  const modo: ModoQuiz = richiesta.categoria === 'cartina' ? 'cartina' : (richiesta.modo ?? 'scelta')
+  // Gli oceani non hanno continenti: bagnano tutti.
+  const area: AreaQuiz = categoria === 'oceani' ? 'mondo' : richiesta.area
+  const tipi = richiesta.tipi?.length ? new Set(richiesta.tipi.filter((t) => TIPI[categoria][modo].includes(t))) : null
+  const c: Contesto = {
+    ix,
+    usati: new Map(),
+    area,
+    quante,
+    caso,
+    evitare,
+    sbagliate: risposte - 1,
+    tipi: tipi && tipi.size > 0 ? tipi : null,
+    notorieta: richiesta.notorieta ?? 'misti',
+    bandiera: richiesta.bandieraCapitali ?? true,
+    vista: vistaDellArea(ix, area),
+    citta: richiesta.citta ?? [],
+  }
+  const domande = GENERATORI[categoria][modo](c)
   const visti = new Set<string>()
-  return domande
+  const buone = domande
     .filter((d) => {
-      if (visti.has(d.soggetto) || !domandaValida(d)) return false
+      if (visti.has(d.soggetto) || !domandaValida(d, risposte)) return false
       visti.add(d.soggetto)
       return true
     })
     .slice(0, quante)
+  return richiesta.ordine === 'caso' ? mescola(buone, caso) : buone
 }
 
-/** Le domande della classificata di un giorno: la categoria del giorno, in tutto il mondo. */
+/** Le domande della classificata di un giorno: la categoria e il modo del giorno, in tutto il mondo. */
 export function domandeDelGiorno(
   dati: DatiQuiz | IndiceQuiz,
-  categoria: CategoriaQuiz,
+  giornata: GiornataQuiz,
   caso: Caso,
   evitare: ReadonlySet<string> = new Set(),
 ): DomandaCompleta[] {
-  return generaDomande(dati, { categoria, area: 'mondo', quante: DOMANDE_PER_PARTITA }, caso, evitare)
+  return generaDomande(
+    dati,
+    { categoria: giornata.categoria, modo: giornata.modo, area: 'mondo', quante: DOMANDE_PER_PARTITA },
+    caso,
+    evitare,
+  )
 }
 
 /**
- * Una domanda si fa solo se e' in ordine: quattro opzioni diverse — di id e di
- * testo — con dentro quella giusta, o un bersaglio sulla cartina.
+ * Una domanda si fa solo se e' in ordine: le opzioni che si sono chieste,
+ * diverse di id e di testo, con dentro quella giusta; o un bersaglio sulla
+ * cartina.
  */
-export function domandaValida(d: DomandaCompleta): boolean {
+export function domandaValida(d: DomandaCompleta, risposte = RISPOSTE_PREDEFINITE): boolean {
   if (d.cartina) return d.opzioni.length === 0 && !!d.giusta && (d.accettate ?? []).includes(d.giusta)
-  if (d.opzioni.length !== 4) return false
+  if (d.opzioni.length !== risposte) return false
   const id = new Set(d.opzioni.map((o) => o.id))
   const testi = new Set(d.opzioni.map((o) => senzaAccenti(o.testo)))
-  return id.size === 4 && testi.size === 4 && id.has(d.giusta)
+  return id.size === risposte && testi.size === risposte && id.has(d.giusta)
 }
 
-/** La domanda come va a chi gioca: senza la risposta. */
+/** La domanda come va a chi gioca: senza la risposta, e senza dove guardare. */
 export function senzaRisposta(d: DomandaCompleta): DomandaQuiz {
   return {
     tipo: d.tipo,

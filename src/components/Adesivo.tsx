@@ -110,7 +110,14 @@ export function useCodaAdesivi() {
     setCoda((c) => [...c, { ...dati, id }])
   }, [])
 
-  return { adesivo: corrente, accoda }
+  /** Al posto di quelli in fila: la fine del quiz non aspetta l'adesivo dell'ultima risposta, gia' visto. */
+  const subito = useCallback((dati: Omit<DatiAdesivo, 'id'>) => {
+    const id = prossimo.current
+    prossimo.current += 1
+    setCoda([{ ...dati, id }])
+  }, [])
+
+  return { adesivo: corrente, accoda, subito }
 }
 
 /**

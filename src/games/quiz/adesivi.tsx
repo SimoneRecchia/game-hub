@@ -48,7 +48,23 @@ export function adesivoTempo(risposta: string): Omit<DatiAdesivo, 'id'> {
   }
 }
 
-export function adesivoFine(giuste: number, totale: number, punti: number | null): Omit<DatiAdesivo, 'id'> {
+export function adesivoFine(
+  giuste: number,
+  totale: number,
+  punti: number | null,
+  fuori = false,
+): Omit<DatiAdesivo, 'id'> {
+  // Con la morte improvvisa conta la serie: "0 su 1" direbbe poco.
+  if (fuori) {
+    return {
+      tono: giuste >= 5 ? 'vivace' : 'bordato',
+      titolo: giuste >= 10 ? 'Che serie!' : giuste === 0 ? 'Fuori subito' : 'Fuori!',
+      sotto: `${giuste} di fila`,
+      colore: giuste >= 5 ? COLORE : 'var(--quiz-2)',
+      durata: ADESIVO_FINE_MS,
+      ...(giuste >= 10 ? { disegno: <Mappamondo /> } : {}),
+    }
+  }
   const quota = totale > 0 ? giuste / totale : 0
   const sotto = `${giuste} su ${totale}${punti !== null ? ` · ${punti} punti` : ''}`
   if (quota >= 0.7) {

@@ -3,8 +3,8 @@
 import type { MossaGiocata } from './scarabeo'
 import type { Esito, IdNave, Nave } from './battaglia'
 import type { LivelloBattaglia } from './battaglia-computer'
-import type { CategoriaQuiz } from './quiz'
-import type { DomandaQuiz } from './quiz-domande'
+import type { CategoriaQuiz, ModoQuiz } from './quiz'
+import type { DomandaQuiz, LuogoQuiz } from './quiz-domande'
 import type { DatiQuiz } from './quiz-dati'
 
 export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia' | 'quiz'
@@ -517,6 +517,10 @@ export interface RispostaQuiz {
   risposta: string
   /** Quanto ci si e' messo. */
   ms: number
+  /** Dove guardare sulla cartina che insegna: c'e' dalle giornate del formato 2. */
+  luogo?: LuogoQuiz
+  /** Sulla cartina, i posti che valevano come giusti: il Tirreno, per il Mediterraneo. */
+  accettate?: string[]
 }
 
 /**
@@ -535,6 +539,8 @@ export interface QuizState {
   puzzleNumber: number
   date: string
   categoria: CategoriaQuiz
+  /** A scelta o sulla cartina muta: lo dicono le domande del giorno. */
+  modo: ModoQuiz
   /** Quante domande ha la partita. */
   totale: number
   /** `nuova` finché non si comincia: guardare la pagina non apre la partita. */
@@ -561,6 +567,7 @@ export interface QuizSummary {
   /** `assente` se lo script della notte non ha preparato la giornata. */
   status: 'assente' | 'nuova' | 'playing' | 'done'
   categoria: CategoriaQuiz | null
+  modo: ModoQuiz | null
   fatte: number
   giuste: number
   totale: number

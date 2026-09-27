@@ -10,8 +10,8 @@
  */
 
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
-import { MARGINE_RETE_MS, SECONDI_CARTINA, SECONDI_SCELTA, puntiQuiz, type CategoriaQuiz } from '../../shared/quiz'
-import { SEZIONI_DATI } from '../../shared/quiz-dati'
+import { MARGINE_RETE_MS, SECONDI_CARTINA, SECONDI_SCELTA, puntiQuiz, type CategoriaQuiz, type ModoQuiz } from '../../shared/quiz'
+import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI } from '../../shared/quiz-dati'
 import { rispostaGiusta, senzaRisposta, type DomandaCompleta } from '../../shared/quiz-domande'
 import type {
   LeaderboardScope,
@@ -35,6 +35,8 @@ export function giornata(): Giornata {
 export interface GiornataQuiz {
   puzzleNumber: number
   categoria: CategoriaQuiz
+  /** Sulla cartina, se le domande si rispondono toccandola: lo dicono loro. */
+  modo: ModoQuiz
   domande: DomandaCompleta[]
 }
 
@@ -67,7 +69,13 @@ export async function giornataQuiz(db: D1Database, numero: number): Promise<Gior
     .bind(numero)
     .first<{ puzzle_number: number; categoria: CategoriaQuiz; domande: string }>()
   if (!row) return null
-  return { puzzleNumber: row.puzzle_number, categoria: row.categoria, domande: JSON.parse(row.domande) }
+  const domande = JSON.parse(row.domande) as DomandaCompleta[]
+  return {
+    puzzleNumber: row.puzzle_number,
+    categoria: row.categoria,
+    modo: domande[0]?.cartina ? 'cartina' : 'scelta',
+    domande,
+  }
 }
 
 /**
@@ -108,8 +116,20 @@ export function scaduta(row: Pick<PartitaRow, 'aperta_at'>, d: DomandaCompleta, 
   return row.aperta_at !== null && adesso > Date.parse(row.aperta_at) + limiteMs(d) + MARGINE_RETE_MS
 }
 
+/**
+ * Una risposta data, con quel che serve alla cartina che insegna: dove guardare
+ * e, sulla cartina, i posti che valevano. Prima di rispondere non esce niente.
+ */
 function rispostaVista(d: DomandaCompleta, salvata: RispostaSalvata): RispostaQuiz {
-  return { scelta: salvata.s, giusta: salvata.g === 1, corretta: d.giusta, risposta: d.risposta, ms: salvata.ms }
+  return {
+    scelta: salvata.s,
+    giusta: salvata.g === 1,
+    corretta: d.giusta,
+    risposta: d.risposta,
+    ms: salvata.ms,
+    ...(d.luogo ? { luogo: d.luogo } : {}),
+    ...(d.cartina && d.accettate ? { accettate: d.accettate } : {}),
+  }
 }
 
 /** Lo stato che va al client: le domande fatte con le risposte, quella aperta senza. */
@@ -138,6 +158,7 @@ export function statoDa(
     puzzleNumber: g.puzzleNumber,
     date: quando.date,
     categoria: g.categoria,
+    modo: g.modo,
     totale,
     status: !row ? 'nuova' : row.status,
     fatte: risposte.map((r, i) => ({ domanda: senzaRisposta(g.domande[i]), risposta: rispostaVista(g.domande[i], r) })),
@@ -348,19 +369,75 @@ export async function classificaQuiz(
 /**
  * Il riassunto per le libere, senza leggerlo: le sezioni sono gia' JSON, e si
  * incollano. Rileggerle e riscriverle costerebbe CPU per niente — sono cento
- * kB — e i dieci millisecondi di una richiesta non sono tanti.
+ * kB — e i dieci millisecondi di una richiesta non sono tanti. Delle geometrie
+ * serve solo la versione: il browser le chiede a parte, se gli servono.
  */
 export async function riassuntoDati(db: D1Database): Promise<{ versione: string; json: string } | null> {
-  const { results } = await db.prepare('SELECT parte, versione, dati FROM quiz_dati').all<{
-    parte: string
-    versione: string
-    dati: string
-  }>()
+  const { results } = await db
+    .prepare(
+      `SELECT parte, versione,
+              CASE WHEN parte LIKE '${PREFISSO_GEOMETRIE}%' OR parte LIKE '${PREFISSO_CITTA}%' THEN '' ELSE dati END AS dati
+         FROM quiz_dati`,
+    )
+    .all<{ parte: string; versione: string; dati: string }>()
   const perParte = new Map(results.map((r) => [r.parte, r]))
   if (SEZIONI_DATI.some((s) => !perParte.has(s))) return null
   const versione = perParte.get('paesi')!.versione
   const corpo = SEZIONI_DATI.map((s) => `"${s}":${perParte.get(s)!.dati}`).join(',')
-  return { versione, json: `{"versione":${JSON.stringify(versione)},${corpo}}` }
+  // Le versioni delle parti che si chiedono a parte: il browser le chiede solo se gli servono.
+  const aParte = (['geo', 'citta'] as const)
+    .map((chiave) => {
+      const prefisso = chiave === 'geo' ? PREFISSO_GEOMETRIE : PREFISSO_CITTA
+      const v = results.find((r) => r.parte.startsWith(prefisso))?.versione
+      return v ? `,"${chiave}":${JSON.stringify(v)}` : ''
+    })
+    .join('')
+  return { versione, json: `{"versione":${JSON.stringify(versione)},${corpo}${aParte}}` }
+}
+
+interface Pezzo {
+  parte: string
+  versione: string
+  dati: string
+}
+
+/** Le righe a pezzi di un prefisso, in ordine. */
+async function aPezzi(db: D1Database, prefisso: string): Promise<Pezzo[]> {
+  const { results } = await db
+    .prepare('SELECT parte, versione, dati FROM quiz_dati WHERE parte LIKE ? ORDER BY parte')
+    .bind(`${prefisso}%`)
+    .all<Pezzo>()
+  return results
+}
+
+/** Piu' oggetti JSON in uno solo, senza leggerli: togliere le graffe e mettere una virgola. */
+function unisci(pezzi: readonly Pezzo[], vale: (parte: string) => boolean): string {
+  const corpi = pezzi.filter((p) => vale(p.parte)).map((p) => p.dati.slice(1, -1))
+  return `{${corpi.filter(Boolean).join(',')}}`
+}
+
+/** Le città, come le geometrie: un oggetto dall'identificativo alla città scritta in breve. */
+export async function cittaDati(db: D1Database): Promise<{ versione: string; json: string } | null> {
+  const pezzi = await aPezzi(db, PREFISSO_CITTA)
+  if (pezzi.length === 0) return null
+  const versione = pezzi[0].versione
+  const regioni = unisci(pezzi, (p) => p === PARTE_REGIONI)
+  const citta = unisci(pezzi, (p) => p !== PARTE_REGIONI)
+  return { versione, json: `{"versione":${JSON.stringify(versione)},"regioni":${regioni},"citta":${citta}}` }
+}
+
+/**
+ * Le linee dei fiumi e le forme dei laghi, incollate dai loro pezzi: ogni riga
+ * e' un oggetto JSON, e l'unione di due oggetti e' togliere le graffe e mettere
+ * una virgola. Niente da leggere, come per il riassunto.
+ */
+export async function geometrieDati(db: D1Database): Promise<{ versione: string; json: string } | null> {
+  const pezzi = await aPezzi(db, PREFISSO_GEOMETRIE)
+  if (pezzi.length === 0) return null
+  const versione = pezzi[0].versione
+  const fiumi = unisci(pezzi, (p) => p.startsWith(`${PREFISSO_GEOMETRIE}fiumi:`))
+  const laghi = unisci(pezzi, (p) => p.startsWith(`${PREFISSO_GEOMETRIE}laghi:`))
+  return { versione, json: `{"versione":${JSON.stringify(versione)},"fiumi":${fiumi},"laghi":${laghi}}` }
 }
 
 export async function versioneDati(db: D1Database): Promise<string | null> {

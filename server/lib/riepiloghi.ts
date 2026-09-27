@@ -158,6 +158,7 @@ export async function riepilogoQuiz(db: D1Database, playerId: string): Promise<Q
     date: quando.date,
     status: !g ? 'assente' : !row ? 'nuova' : row.status,
     categoria: g?.categoria ?? null,
+    modo: g?.modo ?? null,
     fatte: risposteDi(row).length,
     giuste,
     totale,
