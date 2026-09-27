@@ -239,6 +239,15 @@
   --quiz-1: #f25f8f;
   --quiz-2: #c2266a;
 
+  /* ---- Il rallenty della sfida a quiz ----
+     Un azzurro freddo che non e' la selezione (indaco) ne' il mare della
+     cartina: il tempo che si ferma. Il velo e' quello che cala sulla
+     schermata di chi ha il tempo al rallentatore. */
+  --rallenty-1: #5ac8e8;
+  --rallenty-2: #2b7fd6;
+  --rallenty-velo: rgba(60, 150, 220, 0.22);
+  --rallenty-velo: light-dark(rgba(60, 150, 220, 0.22), rgba(90, 190, 255, 0.2));
+
   /* ---- La cartina muta del quiz ----
      Un atlante di scuola: mare azzurro chiaro, terre color carta, confini
      bianchi. In scuro le terre restano piu' chiare del mare, altrimenti i paesi

@@ -6,6 +6,7 @@ import { useAuth } from './lib/auth'
 import { PresenzaProvider } from './lib/presenza'
 import { CoopGate } from './games/wordle/coop/CoopGate'
 import { BattagliaGate } from './games/battaglia/BattagliaGate'
+import { QuizGate } from './games/quiz/sfida/QuizGate'
 import Home from './pages/Home'
 import Gioco from './pages/Gioco'
 import Classifica from './pages/Classifica'
@@ -26,9 +27,11 @@ import BattagliaPartita from './pages/BattagliaPartita'
 import BattagliaInvito from './pages/BattagliaInvito'
 import Quiz from './pages/Quiz'
 import QuizLibero from './pages/QuizLibero'
+import QuizDuello from './pages/QuizDuello'
+import QuizInvito from './pages/QuizInvito'
 
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
-const INVITO = /^\/battaglia-navale\/invito\/([a-z0-9]+)\/?$/
+const INVITO = /^\/(?:battaglia-navale\/invito|quiz\/sfida)\/([a-z0-9]+)\/?$/
 
 export default function App() {
   const { player, checking, config } = useAuth()
@@ -61,6 +64,7 @@ export default function App() {
           controllo, che fa anche da presenza. */}
       <CoopGate />
       <BattagliaGate />
+      <QuizGate />
       <Shell>
         <Routes>
           <Route path="/" element={<Home />} />
@@ -86,6 +90,8 @@ export default function App() {
 
           <Route path="/quiz/classificata" element={<Quiz />} />
           <Route path="/quiz/libera" element={<QuizLibero />} />
+          <Route path="/quiz/duello/:id" element={<QuizDuello />} />
+          <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
 
           {/* La pagina di ogni gioco: /wordle, /scarabeo, /cruciverba, /battaglia-navale, /quiz. */}
           <Route path="/:gioco" element={<Gioco />} />

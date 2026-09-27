@@ -43,6 +43,17 @@ export function ComeSiGiocaQuiz({ open, onClose }: { open: boolean; onClose: () 
         </section>
 
         <section className="cru-aiuto__sezione">
+          <h3 className="cru-aiuto__titolo">La sfida a due</h3>
+          <p className="cru-aiuto__nota">
+            Dalla libera, «Sfida un amico»: a chi è online, o con un link. Le stesse domande nello stesso momento,
+            sempre a tempo. Il primo che risponde giusto prende il punto; chi sbaglia è fuori da quella domanda, e
+            all&rsquo;altro il tempo va <strong>al rallentatore</strong>: i secondi scendono alla metà. Se sbagliate
+            tutti e due, o finisce il tempo, il punto non è di nessuno. Alla fine «Gioca ancora»: se l&rsquo;altro
+            accetta, il conto della serie continua. È un&rsquo;amichevole: non va in classifica e non resta.
+          </p>
+        </section>
+
+        <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">I punti</h3>
           <p className="cru-aiuto__nota">
             {PUNTI_BASE_QUIZ} per aver giocato, e {perGiusta} per ogni risposta giusta: dieci su dieci fanno{' '}

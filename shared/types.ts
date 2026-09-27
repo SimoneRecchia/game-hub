@@ -4,8 +4,9 @@ import type { MossaGiocata } from './scarabeo'
 import type { Esito, IdNave, Nave } from './battaglia'
 import type { LivelloBattaglia } from './battaglia-computer'
 import type { CategoriaQuiz, ModoQuiz } from './quiz'
-import type { DomandaQuiz, LuogoQuiz } from './quiz-domande'
+import type { AreaQuiz, DomandaQuiz, LuogoQuiz } from './quiz-domande'
 import type { DatiQuiz } from './quiz-dati'
+import type { ImpostazioniSfida } from './quiz-sfida'
 
 export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia' | 'quiz'
 
@@ -345,6 +346,16 @@ export interface InvitoBattaglia {
   da: GiocatoreBreve
   createdAt: string
   scadeTraMs: number
+  /** Una rivincita, alla fine di una partita fra amici: il conto della serie continua. */
+  rivincita?: boolean
+}
+
+/** La rivincita chiesta alla fine di una partita fra amici, da uno dei due. */
+export interface RivincitaBattaglia {
+  id: string
+  da: 'io' | 'avversario'
+  stato: 'attesa' | 'accettato' | 'rifiutato' | 'annullato' | 'scaduto'
+  partitaId: string | null
 }
 
 /** Una sfida mandata, con come e' andata. */
@@ -399,6 +410,10 @@ export interface InvitoConLink {
   codice: string
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
+  /** A cosa: la battaglia navale, se non si dice altro, o una sfida a quiz. */
+  gioco?: 'battaglia' | 'quiz'
+  /** Per il quiz, la partita che si gioca. */
+  sfida?: RiassuntoSfida
 }
 
 /**
@@ -410,6 +425,117 @@ export interface PresenzaRisposta {
   coop: CoopInvite[]
   battaglia: InvitoBattaglia[]
   partita: PartitaBreve | null
+  /** Le sfide a quiz arrivate, rivincite comprese. */
+  quiz: InvitoQuiz[]
+  /** Il duello a quiz aperto: chi ha sfidato e poi e' andato altrove deve sapere che l'altro ha accettato. */
+  duello: DuelloBreve | null
+}
+
+/* ─────────────────────────────  La sfida a quiz  ──────────────────────── */
+
+/** La partita di una sfida a quiz, in breve: quel che si legge in un invito. */
+export interface RiassuntoSfida {
+  categoria: CategoriaQuiz
+  modo: ModoQuiz
+  area: AreaQuiz
+  quante: number
+  secondi: number
+}
+
+/** Una sfida a quiz arrivata, da accettare o rifiutare. */
+export interface InvitoQuiz {
+  id: string
+  da: GiocatoreBreve
+  sfida: RiassuntoSfida
+  /** Una rivincita, alla fine di un duello: si accetta anche dalla pagina del duello. */
+  rivincita: boolean
+  scadeTraMs: number
+}
+
+/** Una sfida a quiz mandata, come la vede chi aspetta la risposta. */
+export interface SfidaQuizInviata {
+  id: string
+  /** A chi; null per un invito con il link che nessuno ha ancora usato. */
+  a: GiocatoreBreve | null
+  codice: string | null
+  stato: 'attesa' | 'accettata' | 'rifiutata' | 'annullata' | 'scaduta'
+  duelloId: string | null
+  scadeTraMs: number
+}
+
+/** Chi si puo' sfidare a quiz: chi e' online, e la sfida mandata che aspetta ancora. */
+export interface SalaQuiz {
+  giocatori: GiocatoreOnline[]
+  sfida: SfidaQuizInviata | null
+}
+
+export interface DuelloBreve {
+  id: string
+  avversario: GiocatoreBreve
+  stato: 'attesa' | 'in_corso'
+}
+
+/** Una domanda del duello gia' chiusa: com'e' andata per tutti e due, e la risposta giusta. */
+export interface GiroQuizVisto {
+  indice: number
+  domanda: DomandaQuiz
+  corretta: string
+  risposta: string
+  accettate?: string[]
+  luogo?: LuogoQuiz
+  punto: 'io' | 'avversario' | null
+  /** Le risposte date; null e' il tempo finito. */
+  mia: { scelta: string; giusta: boolean } | null
+  sua: { scelta: string; giusta: boolean } | null
+  /** Quando si e' chiusa, sull'orologio del server: la risposta resta in vista per la pausa. */
+  chiusaAt: number
+}
+
+/** La domanda aperta del duello, senza la risposta. Gli istanti sono sull'orologio del server. */
+export interface DomandaDuello {
+  indice: number
+  domanda: DomandaQuiz
+  apertaAt: number
+  limiteMs: number
+  scadeIo: number
+  /** Da quando il mio tempo va al rallentatore, perché l'altro ha sbagliato. */
+  lentoIo: number | null
+  scadeAvversario: number
+  lentoAvversario: number | null
+  /** La mia risposta sbagliata: sono fuori da questa domanda. */
+  mia: string | null
+  /** L'avversario ha sbagliato: se avesse risposto giusto la domanda sarebbe gia' chiusa. */
+  avversarioFuori: boolean
+}
+
+export interface RivincitaVista {
+  id: string
+  da: 'io' | 'avversario'
+  stato: 'attesa' | 'accettata' | 'rifiutata' | 'annullata' | 'scaduta'
+  duelloId: string | null
+}
+
+export interface VistaDuello {
+  id: string
+  stato: 'attesa' | 'in_corso' | 'finito' | 'abbandonato'
+  impostazioni: ImpostazioniSfida
+  totale: number
+  avversario: GiocatoreBreve & { online: boolean }
+  pronti: { io: boolean; avversario: boolean }
+  /** L'ora del server, per tenere l'orologio del telefono sul suo. */
+  adesso: number
+  inizioAt: number | null
+  /** Nella pausa fra due domande, quando si apre la prossima. */
+  prossimaAt: number | null
+  punti: { io: number; avversario: number }
+  /** Le partite di prima della serie, senza questa. */
+  serie: { io: number; avversario: number; partite: number }
+  /** Le domande chiuse, da quella chiesta in poi. */
+  giri: GiroQuizVisto[]
+  domanda: DomandaDuello | null
+  /** Chi se n'e' andato prima della fine. */
+  uscito: 'io' | 'avversario' | null
+  rivincita: RivincitaVista | null
 }
 
 export interface LobbyBattaglia {
@@ -468,6 +594,10 @@ export interface VistaBattaglia {
   attesaMs: number
   puoiReclamare: boolean
   versione: number
+  /** Fra amici: le vittorie di ciascuno nelle partite di prima della serie. */
+  serie: { io: number; avversario: number; partite: number } | null
+  /** Fra amici, a partita finita: la rivincita chiesta, se c'e'. */
+  rivincita: RivincitaBattaglia | null
 }
 
 export interface BattagliaSummary {
