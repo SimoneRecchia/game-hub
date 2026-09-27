@@ -284,7 +284,9 @@ function Scelta() {
   const { vai } = useNavigazione()
   const [scelte, setScelte] = useState(leggiScelte)
   const [paesiAperti, setPaesiAperti] = useState(false)
-  const [sfida, setSfida] = useState(false)
+  // `?sfida=1`: si arriva dalla pagina del quiz con il foglio della sfida gia' aperto.
+  const [query] = useSearchParams()
+  const [sfida, setSfida] = useState(query.get('sfida') === '1')
   const [avanzate, setAvanzate] = useState(false)
   const [regole, setRegole] = useState(false)
   const [statistiche] = useState(leggiStatistiche)

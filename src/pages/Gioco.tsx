@@ -5,7 +5,7 @@ import { ROTTE, giocoDaSlug } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Copertina } from '@/components/Copertina'
 import { Etichetta, Sezione, Elenco, Riga } from '@/components/Elementi'
-import { IconBook, IconCalendar, IconClock, IconPlay, IconShuffle, IconTrophy } from '@/components/Icons'
+import { IconBook, IconCalendar, IconClock, IconPeople, IconPlay, IconShuffle, IconTrophy } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { giocoDi } from '@/games/catalog'
 import { percorsoClassifica, righeComuni, type RigaComune } from '@/games/classifiche'
@@ -111,6 +111,14 @@ function PaginaGioco({ id }: { id: GiocoClassificato }) {
             sotto="Le regole, e come si fanno i punti"
             onClick={() => setRegole(true)}
           />
+          {id === 'quiz' && (
+            <Riga
+              icona={<IconPeople size={18} />}
+              titolo="Sfida un amico"
+              sotto="A chi è online o con un link: il primo che risponde giusto prende il punto"
+              a={`${ROTTE.libera('quiz')}?sfida=1`}
+            />
+          )}
           <Riga
             icona={<IconTrophy size={18} />}
             titolo={`Classifica ${id === 'battaglia' ? 'della battaglia navale' : `del ${gioco.nome}`}`}
