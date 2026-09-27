@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { COOP_POLL_ROOM_MS } from '@shared/config'
 import type { CoopRoom, InvitablePlayer } from '@shared/types'
 import { ApiFetchError, api } from '@/lib/api'
+import { suona } from '@/lib/suoni'
 
 /**
  * Lato host: chi ho invitato e cosa mi stanno suggerendo.
@@ -24,10 +25,20 @@ export function useCoopHost(pannelloAperto: boolean) {
     }
   }, [])
 
+  const ultima = useRef<CoopRoom | null>(null)
   const carica = useCallback(async () => {
     try {
       const fresh = await api<CoopRoom | null>('/coop/room')
-      if (vivo.current) setRoom(fresh)
+      if (!vivo.current) return
+      // Chi accetta entra nella partita, e un suggerimento arriva: tutti e due si sentono.
+      const prima = ultima.current
+      if (prima && fresh) {
+        const dentro = (r: CoopRoom) => r.guests.filter((g) => g.status === 'accepted').length
+        if (dentro(fresh) > dentro(prima)) suona('entra')
+        else if (fresh.suggestions.length > prima.suggestions.length) suona('invito', { volume: 0.6 })
+      }
+      ultima.current = fresh
+      setRoom(fresh)
     } catch {
       /* il polling non deve far comparire errori: si riprova al giro dopo */
     }

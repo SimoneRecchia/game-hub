@@ -9,6 +9,7 @@ import { useCountdown } from '@/games/wordle/useCountdown'
 import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 import { usePresenza } from '@/lib/presenza'
 import { NOMI_CATEGORIE, NOMI_MODI } from '@shared/quiz'
 import type { DuelloBreve, InvitoQuiz } from '@shared/types'
@@ -117,6 +118,7 @@ function AvvisoSfida({
 
   useEffect(() => {
     haptic('success')
+    suona('invito')
   }, [sfida.id])
 
   async function rispondi(azione: 'accetta' | 'rifiuta') {
@@ -181,6 +183,9 @@ function AvvisoSfida({
 }
 
 function AvvisoDuello({ duello, onVai, onDopo }: { duello: DuelloBreve; onVai: () => void; onDopo: () => void }) {
+  useEffect(() => {
+    suona('entra')
+  }, [duello.id])
   return (
     <Sheet open onClose={onDopo} title="Sfida a quiz">
       <div className="avviso">

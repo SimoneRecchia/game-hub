@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { suona, type NomeSuono } from '@/lib/suoni'
 import './Adesivo.css'
 
 /**
@@ -14,6 +15,10 @@ import './Adesivo.css'
  *
  * Sta nel body e non nella pagina, perché la pagina durante le transizioni fa
  * da contenitore e un `position: fixed` al suo interno si fermerebbe li'.
+ *
+ * Un adesivo puo' avere il suo suono, che parte quando compare: e' il modo in
+ * cui i momenti che contano suonano in tutti i giochi, senza che ogni gioco
+ * debba ricordarsene.
  */
 export interface DatiAdesivo {
   /** Cambia a ogni adesivo: e' la chiave che fa ripartire l'animazione. */
@@ -34,9 +39,18 @@ export interface DatiAdesivo {
   durata: number
   /** Una classe in piu', per i disegni che hanno bisogno di colori loro. */
   classe?: string
+  /** Il suono del momento: parte quando l'adesivo compare. */
+  suono?: NomeSuono
 }
 
 export function Adesivo({ adesivo }: { adesivo: DatiAdesivo | null }) {
+  const id = adesivo?.id
+  const suono = adesivo?.suono
+  // Le cose brutte, o dell'avversario, suonano un po' piu' piano di quelle belle e mie.
+  const piano = adesivo?.tono === 'bordato'
+  useEffect(() => {
+    if (id !== undefined && suono) suona(suono, { volume: piano ? 0.75 : 1 })
+  }, [id, suono, piano])
   if (!adesivo || typeof document === 'undefined') return null
   return createPortal(
     <div
