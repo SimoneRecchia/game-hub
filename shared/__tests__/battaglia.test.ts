@@ -75,7 +75,7 @@ describe('una disposizione valida', () => {
     const fianco = FLOTTA_DI_PROVA.map((n) => (n.tipo === 'corazzata' ? { ...n, r: 1 } : n))
     const verifica = flottaValida(fianco)
     expect(verifica.ok).toBe(false)
-    if (!verifica.ok) expect(verifica.errore).toContain('non possono toccarsi')
+    if (!verifica.ok) expect(verifica.errore).toContain('Non può toccare')
     // Il cacciatorpediniere in F-2 tocca la portaerei solo d'angolo: vale lo stesso.
     const angolo = FLOTTA_DI_PROVA.map((n) =>
       n.tipo === 'cacciatorpediniere' ? { ...n, r: 1, c: 5, verticale: true } : n,

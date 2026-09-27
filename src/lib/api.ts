@@ -18,7 +18,7 @@ export class ApiFetchError extends Error {
   }
 }
 
-const NETWORK_MESSAGE = 'Connessione assente. Controlla la rete e riprova.'
+const NETWORK_MESSAGE = 'Nessuna connessione. Riprova.'
 
 interface Options {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
@@ -65,11 +65,7 @@ export async function api<T>(path: string, options: Options = {}): Promise<T> {
     } catch {
       // Una risposta non-JSON su /api significa che davanti c'e' qualcosa che
       // non e' la nostra Function (tipicamente la pagina 404 di Pages).
-      throw new ApiFetchError(
-        response.status,
-        'BAD_RESPONSE',
-        "L'API non ha risposto correttamente. Il backend potrebbe non essere attivo.",
-      )
+      throw new ApiFetchError(response.status, 'BAD_RESPONSE', 'Il server non risponde. Riprova fra poco.')
     }
   }
 

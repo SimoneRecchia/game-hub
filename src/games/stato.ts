@@ -44,7 +44,7 @@ export function statoWordle(s: WordleSummary): StatoOggi {
       avanzamento: 0.5,
       fase: 'in-corso',
       titolo: 'In compagnia',
-      dettaglio: 'La parola di oggi la stai giocando con un collega',
+      dettaglio: 'Partita in corso',
       azione: 'Torna alla partita',
       a: ROTTE.insieme(s.roomId),
     }
@@ -79,7 +79,7 @@ export function statoWordle(s: WordleSummary): StatoOggi {
     avanzamento: s.attempts / 6,
     fase: 'in-corso',
     titolo: `${s.attempts} ${s.attempts === 1 ? 'tentativo' : 'tentativi'} su 6`,
-    dettaglio: 'La parola di oggi è in corso',
+    dettaglio: 'Partita in corso',
     azione: 'Continua',
     a: ROTTE.classificata('wordle'),
   }
@@ -96,7 +96,7 @@ export function statoScarabeo(s: ScarabeoSummary): StatoOggi {
       ...base,
       fase: 'da-giocare',
       titolo: 'Da giocare',
-      dettaglio: `Il computer ha fatto ${s.computer} punti con queste tessere`,
+      dettaglio: `Il computer ha fatto ${s.computer} punti`,
       punti: null,
       azione: 'Gioca',
     }
@@ -116,7 +116,7 @@ export function statoScarabeo(s: ScarabeoSummary): StatoOggi {
     ...base,
     fase: 'in-corso',
     titolo: `${s.punti} contro ${s.computer}`,
-    dettaglio: `Restano ${restano} ${restano === 1 ? 'mossa' : 'mosse'}`,
+    dettaglio: restano === 1 ? 'Resta 1 mossa' : `Restano ${restano} mosse`,
     punti: s.puntiClassifica,
     azione: 'Continua',
   }
@@ -134,7 +134,7 @@ export function statoCruciverba(s: CruciverbaSummary): StatoOggi {
         ...base,
         fase: 'non-pronta',
         titolo: 'Non ancora pronto',
-        dettaglio: 'Lo schema di oggi arriva a momenti',
+        dettaglio: 'Riprova più tardi',
         punti: null,
         azione: 'Aspetta',
       }
@@ -143,7 +143,7 @@ export function statoCruciverba(s: CruciverbaSummary): StatoOggi {
         ...base,
         fase: 'da-giocare',
         titolo: 'Da giocare',
-        dettaglio: 'Uno schema nuovo, lo stesso per tutti',
+        dettaglio: `${s.bianche} caselle da scrivere`,
         punti: null,
         azione: 'Gioca',
       }
@@ -189,7 +189,7 @@ export function statoBattaglia(s: BattagliaSummary): StatoOggi {
       ...base,
       fase: 'da-giocare',
       titolo: 'Da giocare',
-      dettaglio: 'La flotta del computer è la stessa per tutti',
+      dettaglio: 'Affonda la flotta del computer',
       punti: null,
       avanzamento: 0,
       azione: 'Gioca',
@@ -199,7 +199,7 @@ export function statoBattaglia(s: BattagliaSummary): StatoOggi {
     ...base,
     fase: 'in-corso',
     titolo: c.stato === 'disposizione' ? 'Disponi la flotta' : 'In battaglia',
-    dettaglio: c.colpi > 0 ? `${c.colpi} colpi sparati` : 'Il computer aspetta',
+    dettaglio: c.colpi > 0 ? `${c.colpi} ${c.colpi === 1 ? 'colpo sparato' : 'colpi sparati'}` : 'Tocca a te',
     punti: null,
     avanzamento: c.stato === 'disposizione' ? 0.1 : Math.min(0.95, c.colpi / (CASELLE_FLOTTA * 3)),
     azione: 'Continua',
@@ -222,7 +222,7 @@ export function statoQuiz(s: QuizSummary): StatoOggi {
         ...base,
         fase: 'non-pronta',
         titolo: 'Non ancora pronto',
-        dettaglio: 'Le domande di oggi arrivano a momenti',
+        dettaglio: 'Riprova più tardi',
         punti: null,
         azione: 'Aspetta',
       }

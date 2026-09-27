@@ -193,7 +193,7 @@ export function useBattaglia(id: string) {
             void carica()
           }
         } else {
-          avvisa('Connessione assente: riprova.')
+          avvisa('Qualcosa è andato storto. Riprova.')
         }
       } finally {
         racconto.current = false

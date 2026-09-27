@@ -39,7 +39,7 @@ export function adesivoRallenty(nome: string): Omit<DatiAdesivo, 'id'> {
   return {
     tono: 'vivace',
     titolo: 'Rallenty!',
-    sotto: `${nome} ha sbagliato: il tuo tempo va piano`,
+    sotto: `${nome} ha sbagliato: il tuo tempo rallenta`,
     colore: COLORE_RALLENTY,
     durata: ADESIVO_RALLENTY_MS,
     disegno: <Lumaca />,
@@ -50,7 +50,7 @@ export function adesivoFuori(nome: string): Omit<DatiAdesivo, 'id'> {
   return {
     tono: 'bordato',
     titolo: 'Sbagliato',
-    sotto: `Tocca a ${nome}, al rallentatore`,
+    sotto: `Ora tocca a ${nome}`,
     colore: 'var(--red)',
     durata: ADESIVO_RISPOSTA_MS,
   }

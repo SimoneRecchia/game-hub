@@ -114,13 +114,13 @@ function blocoCodice(code: string): string {
 export function verifyEmailMessage(nickname: string, code: string, minuti: number): Omit<EmailMessage, 'to'> {
   return {
     subject: `${code} è il tuo codice per Game Hub`,
-    text: `Ciao ${nickname},\n\nil codice per confermare la tua email su Game Hub è:\n\n${code}\n\nVale ${minuti} minuti. Se non hai richiesto tu la registrazione, ignora questo messaggio.\n\ngiochi.simonerecchia.com`,
+    text: `Ciao ${nickname},\n\nil codice per confermare la tua email su Game Hub è:\n\n${code}\n\nVale ${minuti} minuti. Se non hai chiesto tu la registrazione, ignora questo messaggio.\n\ngiochi.simonerecchia.com`,
     html: layout(
-      `Ciao ${nickname}, confermiamo l’email`,
+      `Ciao ${nickname}, conferma l’email`,
       `${blocoCodice(code)}
       <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
-        Vale <strong>${minuti} minuti</strong>. Se non hai richiesto tu la registrazione, puoi
-        ignorare questo messaggio: senza il codice l’account non viene attivato.
+        Vale <strong>${minuti} minuti</strong>. Se non hai chiesto tu la registrazione, ignora questo
+        messaggio.
       </p>`,
     ),
   }
@@ -142,14 +142,14 @@ function bloccoNickname(nickname: string): string {
 export function resetPasswordMessage(nickname: string, code: string, minuti: number): Omit<EmailMessage, 'to'> {
   return {
     subject: `${code} è il codice per la nuova password`,
-    text: `Ciao ${nickname},\n\nil codice per impostare una nuova password su Game Hub è:\n\n${code}\n\nIl tuo nickname è: ${nickname}\n\nVale ${minuti} minuti. Se non hai chiesto tu di cambiare la password, ignora questo messaggio: la password attuale resta valida.\n\ngiochi.simonerecchia.com`,
+    text: `Ciao ${nickname},\n\nil codice per impostare una nuova password su Game Hub è:\n\n${code}\n\nIl tuo nickname è: ${nickname}\n\nIl codice vale ${minuti} minuti. Se non l’hai chiesto tu, ignora questo messaggio: la password non cambia.\n\ngiochi.simonerecchia.com`,
     html: layout(
       'Nuova password',
       `${blocoCodice(code)}
       <div style="margin:24px 0 0">${bloccoNickname(nickname)}</div>
       <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
-        Vale <strong>${minuti} minuti</strong>. Se non hai chiesto tu di cambiare la password, puoi
-        ignorare questo messaggio: quella attuale resta valida.
+        Il codice vale <strong>${minuti} minuti</strong>. Se non l’hai chiesto tu, ignora questo
+        messaggio: la password non cambia.
       </p>`,
     ),
   }
@@ -159,19 +159,16 @@ export function resetPasswordMessage(nickname: string, code: string, minuti: num
 export function nicknameMessage(nickname: string): Omit<EmailMessage, 'to'> {
   return {
     subject: 'Il tuo nickname su Game Hub',
-    text: `Ciao,\n\nhai chiesto il nickname con cui sei iscritto a Game Hub. È:\n\n${nickname}\n\nCon questo e la tua password entri da giochi.simonerecchia.com. Se non ricordi nemmeno la password, dalla stessa schermata scegli «Password dimenticata».\n\nSe non l'hai chiesto tu, ignora questo messaggio: senza la password nessuno può entrare.\n\ngiochi.simonerecchia.com`,
+    text: `Ciao,\n\nil tuo nickname su Game Hub è:\n\n${nickname}\n\nSe non ricordi la password, nella schermata di accesso scegli «Password dimenticata».\n\nSe non l’hai chiesto tu, ignora questo messaggio.\n\ngiochi.simonerecchia.com`,
     html: layout(
       'Il tuo nickname',
       `${bloccoNickname(nickname)}
       <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
-        Con questo e la tua password entri da
-        <a href="https://giochi.simonerecchia.com" style="color:#007aff;text-decoration:none">giochi.simonerecchia.com</a>.
-        Se non ricordi nemmeno la password, dalla stessa schermata scegli
+        Se non ricordi la password, nella schermata di accesso scegli
         <strong>Password dimenticata</strong>.
       </p>
       <p style="margin:12px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
-        Se non l’hai chiesto tu, puoi ignorare questo messaggio: senza la password nessuno può
-        entrare.
+        Se non l’hai chiesto tu, ignora questo messaggio.
       </p>`,
     ),
   }

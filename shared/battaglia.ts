@@ -152,7 +152,7 @@ export function naveAmmessa(nave: Nave, altre: readonly Nave[]): Verifica {
     if (altra.tipo === nave.tipo) continue
     const vicino = ingombro(altra)
     if (proprie.some((k) => vicino.has(k))) {
-      return { ok: false, errore: `Tocca ${tipoDi(altra.tipo).la}: le navi non possono toccarsi.` }
+      return { ok: false, errore: `Non può toccare ${tipoDi(altra.tipo).la}, nemmeno d’angolo.` }
     }
   }
   return { ok: true }
@@ -171,10 +171,12 @@ export function flottaValida(navi: readonly Nave[]): Verifica {
   }
   for (const tipo of FLOTTA) {
     const quante = navi.filter((n) => n?.tipo === tipo.id).length
-    if (quante !== 1) return { ok: false, errore: `Serve ${tipo.una}, e uno solo.` }
+    if (quante !== 1) return { ok: false, errore: `Serve esattamente ${tipo.una}.` }
   }
   for (const nave of navi) {
-    if (typeof nave.verticale !== 'boolean') return { ok: false, errore: 'Una nave non ha il verso.' }
+    if (typeof nave.verticale !== 'boolean') {
+      return { ok: false, errore: 'Una nave non è né orizzontale né verticale.' }
+    }
     const verifica = naveAmmessa(nave, navi)
     if (!verifica.ok) return verifica
   }

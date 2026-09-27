@@ -298,7 +298,7 @@ export default function Cruciverba() {
       <Sheet open={aiuti} onClose={() => setAiuti(false)} title="Aiuti">
         <div className="cru-aiuti">
           <p className="cru-aiuti__nota">
-            Adesso il cruciverba vale <strong>{g.punti} punti</strong>. Ogni aiuto ne toglie un po&rsquo;.
+            Adesso il cruciverba vale <strong>{g.punti} punti</strong>.
           </p>
           <button
             type="button"
@@ -307,9 +307,7 @@ export default function Cruciverba() {
             disabled={!g.corrente}
           >
             <span className="cru-aiuti__nome">Controlla la parola</span>
-            <span className="cru-aiuti__costo">
-              {COSTO_ERRORE} punto per lettera sbagliata, gratis se è giusta
-            </span>
+            <span className="cru-aiuti__costo">{COSTO_ERRORE} punto per lettera sbagliata</span>
           </button>
           <button
             type="button"
@@ -317,9 +315,7 @@ export default function Cruciverba() {
             onClick={() => aiutoScelto(() => g.controlla('tutto'))}
           >
             <span className="cru-aiuti__nome">Controlla tutto lo schema</span>
-            <span className="cru-aiuti__costo">
-              {COSTO_ERRORE} punto per lettera sbagliata, gratis se è giusto
-            </span>
+            <span className="cru-aiuti__costo">{COSTO_ERRORE} punto per lettera sbagliata</span>
           </button>
           <button
             type="button"
@@ -328,7 +324,7 @@ export default function Cruciverba() {
             disabled={!g.selezione}
           >
             <span className="cru-aiuti__nome">Svela la lettera</span>
-            <span className="cru-aiuti__costo">{COSTO_SVELATA} punti, se non l&rsquo;avevi già giusta</span>
+            <span className="cru-aiuti__costo">{COSTO_SVELATA} punti se manca o è sbagliata</span>
           </button>
           <button
             type="button"
@@ -337,9 +333,7 @@ export default function Cruciverba() {
             disabled={!g.corrente}
           >
             <span className="cru-aiuti__nome">Svela la parola</span>
-            <span className="cru-aiuti__costo">
-              {COSTO_SVELATA} punti per ogni lettera che non avevi già giusta
-            </span>
+            <span className="cru-aiuti__costo">{COSTO_SVELATA} punti per lettera mancante o sbagliata</span>
           </button>
         </div>
       </Sheet>

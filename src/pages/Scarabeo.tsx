@@ -139,8 +139,10 @@ export default function Scarabeo() {
         {stato && !finita && stato.mosseUsate > 0 && (
           <div className="scr-storia__chiudi">
             <p className="scr-storia__chiudi-nota">
-              Ti restano {stato.mosseTotali - stato.mosseUsate} mosse. Se hai finito le idee puoi chiudere la
-              giornata: il punteggio diventa definitivo e in classifica non risulti più &ldquo;in corso&rdquo;.
+              {stato.mosseTotali - stato.mosseUsate === 1
+                ? 'Ti resta una mossa.'
+                : `Ti restano ${stato.mosseTotali - stato.mosseUsate} mosse.`}{' '}
+              Se chiudi, il punteggio diventa definitivo.
             </p>
             <Button
               variant="tinted"
@@ -157,7 +159,7 @@ export default function Scarabeo() {
       </Sheet>
 
       <Sheet open={delComputer} onClose={() => setDelComputer(false)} title="Le mosse del computer">
-        <p className="scr-storia__lede">Con le tue stesse tessere, prima di tutti.</p>
+        <p className="scr-storia__lede">Con le tue stesse tessere.</p>
         {stato?.computer.mosse && (
           <ElencoMosse mosse={stato.computer.mosse} totale={stato.computer.punti} vuoto="Il computer non ha mosso." />
         )}

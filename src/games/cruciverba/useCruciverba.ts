@@ -168,7 +168,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
         applicaStato(esito.stato)
         return
       }
-      if (esito.pienaConErrori) mostra('Griglia piena, ma qualcosa non torna')
+      if (esito.pienaConErrori) mostra('Griglia piena, ma c’è qualche errore')
     },
     [applicaStato, mostra],
   )

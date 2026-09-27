@@ -59,6 +59,9 @@ class Istruzione {
   ) {}
 
   bind(...parametri: unknown[]): Istruzione {
+    // Come D1: al massimo cento parametri per istruzione. SQLite ne regge molti di piu', e senza questo
+    // controllo una query che cresce con i giocatori passerebbe i test e fallirebbe in produzione.
+    if (parametri.length > 100) throw new Error(`too many SQL variables: ${parametri.length}, D1 ne accetta 100`)
     return new Istruzione(this.db, this.sql, parametri.map(valore))
   }
 

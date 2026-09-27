@@ -3,6 +3,7 @@ import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
 import { IconShare, IconTrophy } from '@/components/Icons'
+import { TITOLI_VITTORIA } from './fine'
 import { StatsPanel } from './StatsPanel'
 import { useCountdown } from './useCountdown'
 import { useToast } from '@/components/Toast'
@@ -20,15 +21,13 @@ interface Props {
   onLibera: () => void
 }
 
-const WIN_TITLES = ['Al primo colpo!', 'Splendido', 'Ottimo', 'Bene', 'Per un pelo', 'In extremis']
-
 export function ResultSheet({ open, onClose, state, stats, onLibera }: Props) {
   const toast = useToast()
   const won = state.status === 'won'
   const attempts = state.guesses.length
 
   return (
-    <Sheet open={open} onClose={onClose} title={won ? WIN_TITLES[attempts - 1] : 'Niente da fare'}>
+    <Sheet open={open} onClose={onClose} title={won ? TITOLI_VITTORIA[attempts - 1] : 'Niente da fare'}>
       <div className="result">
         {won ? (
           <p className="result__lede">
@@ -90,12 +89,12 @@ export function ResultSheet({ open, onClose, state, stats, onLibera }: Props) {
             }}
           >
             <IconShare size={18} />
-            Condividi il risultato
+            Condividi
           </Button>
 
           <Collegamento to={ROTTE.classifica('wordle')} className="result__link" onClick={onClose}>
             <IconTrophy size={18} />
-            Vedi la classifica
+            Classifica
           </Collegamento>
         </div>
       </div>

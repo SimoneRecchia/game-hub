@@ -376,7 +376,7 @@ export function validaPosa(
 
   if (posa.length === 0) return no('POSA_VUOTA', 'Non hai posato nessuna tessera.')
   if (posa.length > TESSERE_LEGGIO) {
-    return no('TROPPE_TESSERE', `Non puoi posare piu' di ${TESSERE_LEGGIO} tessere.`)
+    return no('TROPPE_TESSERE', `Non puoi posare più di ${TESSERE_LEGGIO} tessere.`)
   }
 
   const viste = new Set<number>()
@@ -394,7 +394,7 @@ export function validaPosa(
   const righe = new Set(posa.map((p) => p.r))
   const colonne = new Set(posa.map((p) => p.c))
   if (righe.size > 1 && colonne.size > 1) {
-    return no('NON_ALLINEATA', 'Le tessere devono stare tutte sulla stessa riga o colonna.')
+    return no('NON_ALLINEATA', 'Metti le tessere su una sola riga o colonna.')
   }
 
   // Una tessera sola: la si tratta come orizzontale, e la parola verticale
@@ -413,7 +413,7 @@ export function validaPosa(
     const r = orizzontale ? fisso : k
     const c = orizzontale ? k : fisso
     if (!pieno[r * LATO + c]) {
-      return no('CON_BUCHI', 'Fra le tessere posate non possono restare caselle vuote.')
+      return no('CON_BUCHI', 'Non lasciare caselle vuote fra le tessere.')
     }
   }
 
@@ -431,7 +431,7 @@ export function validaPosa(
       ].some(([r, c]) => dentro(r, c) && tab[r * LATO + c]),
     )
     if (!attaccata) {
-      return no('STACCATA', 'La parola deve attaccarsi a una tessera già sul tabellone.')
+      return no('STACCATA', 'Attacca la parola alle tessere già posate.')
     }
   }
 

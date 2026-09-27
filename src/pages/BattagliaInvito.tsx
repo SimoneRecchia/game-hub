@@ -40,7 +40,7 @@ export default function BattagliaInvito() {
         setErrore(
           e instanceof ApiFetchError
             ? { codice: e.code ?? '', testo: e.message }
-            : { codice: '', testo: 'Non riesco ad aprire l’invito: controlla la connessione.' },
+            : { codice: '', testo: 'Non riesco ad aprire l’invito.' },
         )
       })
     return () => {
@@ -60,11 +60,7 @@ export default function BattagliaInvito() {
             )
           }
           titolo={errore.codice === 'LINK_TUO' ? 'È il tuo invito' : 'L’invito non vale più'}
-          testo={
-            errore.codice === 'LINK_TUO'
-              ? 'Mandalo a chi vuoi sfidare: quando lo apre, la partita comincia.'
-              : errore.testo
-          }
+          testo={errore.codice === 'LINK_TUO' ? 'Mandalo a chi vuoi sfidare.' : errore.testo}
           azione={
             <Button variant="tinted" onClick={() => vai(ROTTE.libera('battaglia'), { replace: true })}>
               Vai alla battaglia navale

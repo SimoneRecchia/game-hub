@@ -126,7 +126,7 @@ function AvvisoSfida({
       if (azione === 'accetta') await onAccetta()
       else await onRifiuta()
     } catch (err) {
-      setErrore(err instanceof ApiFetchError ? err.message : 'Non sono riuscito a rispondere.')
+      setErrore(err instanceof ApiFetchError ? err.message : 'Risposta non inviata. Riprova.')
     } finally {
       setOccupato(null)
     }
@@ -138,22 +138,12 @@ function AvvisoSfida({
         <div className="avviso__testa">
           <Avatar nickname={sfida.da.nickname} color={sfida.da.avatarColor} size={64} />
           <p className="avviso__testo">
-            {sfida.rivincita ? (
-              <>
-                <strong>{sfida.da.displayName}</strong> vuole la rivincita a battaglia navale: il conto della serie
-                continua.
-              </>
-            ) : (
-              <>
-                <strong>{sfida.da.displayName}</strong> ti sfida a battaglia navale: cinque navi a testa, un colpo per
-                volta.
-              </>
-            )}
+            <strong>{sfida.da.displayName}</strong>{' '}
+            {sfida.rivincita ? 'vuole la rivincita.' : 'ti sfida a battaglia navale.'}
           </p>
         </div>
         <p className="avviso__sereno">
-          La sfida scade fra <span className="u-tabnum">{formatCronometro(restano)}</span>. Se ora
-          non puoi, rifiuta: {sfida.da.displayName} lo vede subito e non resta ad aspettare.
+          Scade fra <span className="u-tabnum">{formatCronometro(restano)}</span>.
         </p>
         {errore && <p className="avviso__errore">{errore}</p>}
         <div className="avviso__azioni">
@@ -193,9 +183,9 @@ function AvvisoPartita({
 }) {
   const testo =
     partita.stato === 'disposizione'
-      ? `${partita.avversario.displayName} ha accettato la sfida: è ora di disporre la flotta.`
+      ? `${partita.avversario.displayName} ha accettato la tua sfida.`
       : partita.tuoTurno
-        ? `La battaglia con ${partita.avversario.displayName} è in corso, e tocca a te.`
+        ? `${partita.avversario.displayName} aspetta il tuo colpo.`
         : `La battaglia con ${partita.avversario.displayName} è in corso.`
   return (
     <Sheet open onClose={onDopo} title="Battaglia navale">

@@ -28,7 +28,6 @@ import { ApiFetchError, api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
 import { formatCronometro } from '@/lib/format'
 import {
-  CASELLE_FLOTTA,
   FLOTTA,
   LATO,
   caselleDellaNave,
@@ -134,16 +133,16 @@ export default function BattagliaPartita() {
 
       <ComeSiGiocaBattaglia open={aiuto} onClose={() => setAiuto(false)} />
 
-      <Sheet open={resa} onClose={() => setResa(false)} title="Abbandonare?">
+      <Sheet open={resa} onClose={() => setResa(false)} title="Abbandonare la partita?">
         <div className="bat-resa">
           <p>
             {!v
               ? ''
               : v.modalita === 'classificata'
-                ? 'La battaglia di oggi finisce qui, e non si rigioca. In classifica valgono le navi che hai colpito finora.'
+                ? 'Non si rigioca. Valgono solo le caselle colpite finora.'
                 : v.modalita === 'computer'
-                  ? 'La partita finisce subito e conta come una sconfitta contro il computer.'
-                  : `La partita finisce subito e vince ${v.avversario.displayName}. Conta come una sconfitta.`}
+                  ? 'Conta come una sconfitta.'
+                  : `Vince ${v.avversario.displayName}.`}
           </p>
           <Button
             variant="destructive"
@@ -205,7 +204,7 @@ function Disposizione({
       return
     }
     if (!scelta) {
-      setNota('Tocca prima una nave, poi dove vuoi la prua.')
+      setNota('Prima tocca una nave.')
       return
     }
     const nave = navi.find((n) => n.tipo === scelta)!
@@ -226,11 +225,11 @@ function Disposizione({
   const tipoScelto = scelta ? tipoDi(scelta) : null
   const avversario =
     vista.modalita === 'classificata'
-      ? 'Flotta del giorno'
+      ? 'Classificata'
       : vista.modalita === 'computer'
         ? `Livello ${LIVELLI_NOME[vista.livello ?? 'normale']}`
         : vista.avversarioPronto
-          ? `${vista.avversario.displayName} è pronto`
+          ? `${vista.avversario.displayName} ti aspetta`
           : `${vista.avversario.displayName} si prepara`
 
   return (
@@ -250,9 +249,7 @@ function Disposizione({
         </div>
         <p className="bat__nota" aria-live="polite">
           {nota ??
-            (tipoScelto
-              ? `${naveConCaselle(tipoScelto)}: tocca dove vuoi la prua, o «Ruota».`
-              : 'Tocca una nave, poi la casella della prua. Le navi non si toccano, nemmeno d’angolo.')}
+            (tipoScelto ? `${naveConCaselle(tipoScelto)}: tocca dove vuoi la prua.` : 'Tocca una nave per spostarla.')}
         </p>
       </Scheda>
       <div className="bat-disposizione__navi" role="group" aria-label="Le navi">
@@ -287,7 +284,7 @@ function Disposizione({
           A caso
         </Button>
         <Button onClick={() => onConferma(navi)} loading={inviando}>
-          {vista.modalita === 'amici' ? 'Pronto' : 'Si comincia'}
+          {vista.modalita === 'amici' ? 'Conferma' : 'Comincia'}
         </Button>
       </div>
     </div>
@@ -370,7 +367,7 @@ function Combattimento({
   const scossa = ultimo && ultimo.esito !== 'acqua' ? { id: idColpo, forte: ultimo.esito === 'affondato' } : null
 
   const pillola = !inBattaglia ? (
-    <Pillola>{vista.avversarioPronto ? 'Si comincia…' : `Aspetta ${fraAmici ? nome : 'il computer'}`}</Pillola>
+    <Pillola>{vista.avversarioPronto ? 'Si comincia…' : `${fraAmici ? nome : 'Il computer'} si prepara`}</Pillola>
   ) : mioTurno ? (
     <Pillola tono="turno" icona={<IconTarget size={14} />} vivo>
       Tocca a te
@@ -383,10 +380,10 @@ function Combattimento({
   const riga = avviso
     ? { testo: avviso, tono: 'errore' }
     : fraAmici && !vista.tuoTurno && vista.attesaMs >= 60_000 && !vista.puoiReclamare
-      ? { testo: `${vista.avversario.displayName} non muove da ${formatCronometro(vista.attesaMs)}`, tono: 'neutra' }
+      ? { testo: `${vista.avversario.displayName} non risponde da ${formatCronometro(vista.attesaMs)}`, tono: 'neutra' }
       : (notizia ??
         (affondate === 0
-          ? { testo: `Cinque navi da trovare, ${CASELLE_FLOTTA} caselle in tutto`, tono: 'neutra' }
+          ? { testo: 'Cinque navi da trovare', tono: 'neutra' }
           : {
               testo: `${affondate} ${affondate === 1 ? 'affondata' : 'affondate'}, ne ${FLOTTA.length - affondate === 1 ? 'resta una' : `restano ${FLOTTA.length - affondate}`}`,
               tono: 'neutra',
@@ -425,7 +422,10 @@ function Combattimento({
               scossa={ultimo?.mio ? scossa : null}
             />
           </div>
-          <Navi navi={naviNemiche(vista.affondateNemiche)} etichetta={`Le navi di ${nome}`} />
+          <Navi
+            navi={naviNemiche(vista.affondateNemiche)}
+            etichetta={fraAmici ? `Le navi di ${nome}` : 'Le navi del computer'}
+          />
           <p className="bat-campo__piede" aria-live="polite">
             {!fraAmici && (
               <span className="bat-campo__colpi u-tabnum">
@@ -490,10 +490,10 @@ function Combattimento({
 function messaggioRivincita(r: VistaBattaglia['rivincita'], nome: string): string | null {
   if (!r) return null
   if (r.stato === 'attesa') {
-    return r.da === 'io' ? `Aspetto la risposta di ${nome}…` : `${maiuscola(nome)} vuole la rivincita: la serie continua.`
+    return r.da === 'io' ? `Aspetto la risposta di ${nome}…` : `${maiuscola(nome)} vuole la rivincita.`
   }
   if (r.stato === 'rifiutato') {
-    return r.da === 'io' ? `${maiuscola(nome)} non vuole la rivincita, per ora.` : 'Hai detto di no alla rivincita.'
+    return r.da === 'io' ? `${maiuscola(nome)} non vuole la rivincita.` : 'Hai rifiutato la rivincita.'
   }
   if (r.stato === 'scaduto' && r.da === 'io') return `${maiuscola(nome)} non ha risposto alla rivincita.`
   return null
@@ -510,11 +510,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
   // La serie dopo questa partita: le vittorie di prima, piu' questa.
   const serie =
     vista.serie && vista.serie.partite > 0
-      ? {
-          io: vista.serie.io + (vinta ? 1 : 0),
-          lui: vista.serie.avversario + (vinta ? 0 : 1),
-          partite: vista.serie.partite + 1,
-        }
+      ? { io: vista.serie.io + (vinta ? 1 : 0), lui: vista.serie.avversario + (vinta ? 0 : 1) }
       : null
 
   // La rivincita accettata, da chiunque dei due: si va tutti e due alla partita nuova.
@@ -529,7 +525,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
     try {
       await azione()
     } catch (err) {
-      setErrore(err instanceof ApiFetchError ? err.message : 'Non ci sono riuscito.')
+      setErrore(err instanceof ApiFetchError ? err.message : 'Qualcosa è andato storto. Riprova.')
     } finally {
       setInvio(false)
     }
@@ -563,8 +559,8 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
           ? `${maiuscola(nome)} ha abbandonato la partita.`
           : 'Hai abbandonato la partita.'
         : vinta
-          ? `Vittoria a tavolino: ${nome} non ha più mosso.`
-          : `Sconfitta a tavolino: non hai più mosso.`
+          ? `${maiuscola(nome)} non ha risposto in tempo.`
+          : 'Non hai risposto in tempo.'
 
   const io = usePlayer()
   const aSegno = vista.colpiMiei.filter((c) => c.esito !== 'acqua').length
@@ -607,7 +603,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
         )}
         {serie && (
           <p className="bat-fine__serie u-tabnum">
-            Nella serie: <strong>{serie.io}</strong> a <strong>{serie.lui}</strong> in {serie.partite} partite
+            Serie: tu <strong>{serie.io}</strong>, {nome} <strong>{serie.lui}</strong>
           </p>
         )}
         {vista.colpiMiei.length > 0 && (
@@ -629,7 +625,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
               titolo={fraAmici ? nome : 'Computer'}
               icona={<IconaAvversario vista={vista} />}
             >
-              <Mare celle={nemico} piccolo etichetta={`La flotta di ${nome}`} />
+              <Mare celle={nemico} piccolo etichetta={fraAmici ? `La flotta di ${nome}` : 'La flotta del computer'} />
               <p className="bat-campo__piede bat-fine__piede">
                 {vista.affondateNemiche.length} {vista.affondateNemiche.length === 1 ? 'nave' : 'navi'} su{' '}
                 {FLOTTA.length} a fondo
@@ -692,7 +688,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
         ) : (
           <>
             <Button onClick={() => void ancora()} loading={invio}>
-              <IconRefresh size={18} /> Un’altra
+              <IconRefresh size={18} /> Gioca ancora
             </Button>
             <Button
               variant="tinted"

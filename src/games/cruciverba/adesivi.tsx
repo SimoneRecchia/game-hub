@@ -25,7 +25,7 @@ export function adesivoControllo(esito: { ambito: 'parola' | 'tutto'; errate: nu
   return {
     tono: 'bordato',
     titolo: esito.errate === 1 ? 'Una lettera' : `${esito.errate} lettere`,
-    sotto: esito.errate === 1 ? 'da correggere: è segnata in rosso' : 'da correggere: sono segnate in rosso',
+    sotto: 'da correggere, in rosso',
     colore: 'var(--red)',
     durata: ADESIVO_CONTROLLO_MS,
   }
@@ -35,7 +35,7 @@ export function adesivoCompletato(punti: number): Omit<DatiAdesivo, 'id'> {
   return {
     tono: 'vivace',
     titolo: 'Completato!',
-    sotto: punti >= 100 ? 'Senza nessun aiuto' : `${punti} punti`,
+    sotto: punti >= 100 ? 'Senza aiuti' : `${punti} punti`,
     colore: INCHIOSTRO,
     durata: ADESIVO_COMPLETATO_MS,
     disegno: <Matita />,

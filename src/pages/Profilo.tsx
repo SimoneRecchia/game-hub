@@ -69,19 +69,23 @@ export default function Profilo() {
       </section>
 
       <section className="profilo-numeri entra" style={{ '--n': 1 } as CSSProperties}>
-        <Tessera etichetta="In generale" valore={io ? `${io.rank}º` : '—'} nota={generale ? `su ${generale.rows.length}` : ' '} />
+        <Tessera
+          etichetta="Posizione"
+          valore={io ? `${io.rank}º` : '—'}
+          nota={generale ? `su ${generale.rows.length}` : ' '}
+        />
         <Tessera etichetta="Punti" valore={io ? <Numero valore={io.punti} /> : '0'} nota="da sempre" />
         <Tessera etichetta="Classificate" valore={io ? <Numero valore={io.partite} /> : '0'} nota="giocate" />
       </section>
 
-      <Sezione titolo="I tuoi giochi" nota="Tocca un gioco per i suoi conti, classificate e libere.">
+      <Sezione titolo="I tuoi giochi">
         <Elenco>
           {GIOCHI.map((g) => (
             <Riga
               key={g.id}
               icona={<Copertina gioco={g.id} formato="icona" />}
               titolo={g.nome}
-              sotto={io && io.perGioco[g.id] > 0 ? 'Punti in classifica, da sempre' : 'Ancora nessuna classificata'}
+              sotto={io && io.perGioco[g.id] > 0 ? 'Punti da sempre' : 'Ancora nessuna classificata'}
               valore={<span className="u-tabnum profilo__punti">{formatNumber(io?.perGioco[g.id] ?? 0)}</span>}
               onClick={() => setAperto(g.id)}
             />
@@ -93,10 +97,7 @@ export default function Profilo() {
         <SegmentedControl ariaLabel="Tema" options={TEMI} value={preference} onChange={setTheme} />
       </Sezione>
 
-      <Sezione
-        titolo="Account"
-        nota="Il browser resta collegato per un anno: non serve rifare l’accesso a ogni visita."
-      >
+      <Sezione titolo="Account">
         <Elenco>
           <Riga icona={<IconPerson size={18} />} titolo="Nickname" valore={player.nickname} />
           {player.email && (
@@ -113,12 +114,7 @@ export default function Profilo() {
 
       <Sezione>
         <Elenco>
-          <Riga
-            icona={<IconBook size={18} />}
-            titolo="Fonti e licenze"
-            sotto="Da dove vengono parole, definizioni e cartine"
-            onClick={() => setFonti(true)}
-          />
+          <Riga icona={<IconBook size={18} />} titolo="Fonti e licenze" onClick={() => setFonti(true)} />
         </Elenco>
       </Sezione>
 
@@ -139,7 +135,7 @@ export default function Profilo() {
       </Sheet>
 
       <Sheet open={uscita} onClose={() => setUscita(false)} title="Vuoi uscire?">
-        <p className="profilo__testo">I punteggi restano salvati. Per rientrare ti servono nickname e password.</p>
+        <p className="profilo__testo">Per rientrare servono nickname e password.</p>
         <Button
           variant="destructive"
           size="lg"
@@ -205,7 +201,7 @@ function ContiWordle() {
       {!stats ? (
         <Attesa />
       ) : stats.played === 0 && stats.assistScore === 0 ? (
-        <p className="profilo__testo">Nessuna classificata, per ora: la parola di oggi ti aspetta.</p>
+        <p className="profilo__testo">Ancora nessuna classificata.</p>
       ) : (
         // Gli assist bastano a riempire il pannello: chi ha giocato solo in
         // compagnia ha punti in classifica, e vederli qui a zero sarebbe una smentita.
@@ -317,13 +313,18 @@ function ContiBattaglia() {
         <Conti
           titolo="Partite libere"
           voci={[
-            { etichetta: 'Contro il computer', valore: `${vinteComputer} vinte, ${perseComputer} perse` },
-            { etichetta: 'Contro gli amici', valore: `${lobby.vinte} vinte, ${lobby.perse} perse` },
+            { etichetta: 'Contro il computer', valore: vinteEPerse(vinteComputer, perseComputer) },
+            { etichetta: 'Contro gli amici', valore: vinteEPerse(lobby.vinte, lobby.perse) },
           ]}
         />
       )}
     </div>
   )
+}
+
+/** "1 vinta, 3 perse". */
+function vinteEPerse(vinte: number, perse: number): string {
+  return `${vinte} ${vinte === 1 ? 'vinta' : 'vinte'}, ${perse} ${perse === 1 ? 'persa' : 'perse'}`
 }
 
 function ContiQuiz() {
@@ -377,50 +378,48 @@ function Fonti() {
   return (
     <div className="profilo-fonti">
       <p>
-        <strong>Wordle.</strong> Le parole vengono da{' '}
+        <strong>Wordle.</strong> Parole da{' '}
         <a href="https://github.com/napolux/paroleitaliane" target="_blank" rel="noreferrer">
           napolux/paroleitaliane
         </a>{' '}
-        (MIT), scelte per frequenza d’uso con{' '}
+        (MIT), scelte per frequenza con{' '}
         <a href="https://github.com/hermitdave/FrequencyWords" target="_blank" rel="noreferrer">
           hermitdave/FrequencyWords
         </a>{' '}
-        (MIT, dai sottotitoli di OpenSubtitles 2018).
+        (MIT, da OpenSubtitles 2018).
       </p>
       <p>
-        <strong>Scarabeo.</strong> Il dizionario è l’elenco di forme italiane di napolux/paroleitaliane
-        (MIT), senza nomi propri né parolacce, e senza accenti: sul tabellone non ci sono tessere
-        accentate, quindi «città» si gioca CITTA.
+        <strong>Scarabeo.</strong> Dizionario da napolux/paroleitaliane (MIT).
       </p>
       <p>
-        <strong>Cruciverba.</strong> Le definizioni sono del{' '}
+        <strong>Cruciverba.</strong> Definizioni dal{' '}
         <a href="https://it.wiktionary.org" target="_blank" rel="noreferrer">
           Wikizionario
         </a>
         , estratte da{' '}
         <a href="https://kaikki.org/itwiktionary/" target="_blank" rel="noreferrer">
           kaikki.org
-        </a>
-        , sotto licenza{' '}
+        </a>{' '}
+        e accorciate. Licenza{' '}
         <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.it" target="_blank" rel="noreferrer">
           CC BY-SA 4.0
         </a>
-        : sono accorciate, non riscritte, e a schema finito ognuna porta alla sua voce.
+        .
       </p>
       <p>
-        <strong>Quiz.</strong> Paesi, capitali, confini, fiumi e laghi vengono da{' '}
+        <strong>Quiz.</strong> Dati da{' '}
         <a href="https://www.wikidata.org" target="_blank" rel="noreferrer">
           Wikidata
         </a>{' '}
-        (CC0); la cartina e le coste da{' '}
+        (CC0), cartina da{' '}
         <a href="https://www.naturalearthdata.com" target="_blank" rel="noreferrer">
           Natural Earth
         </a>{' '}
-        (pubblico dominio); le bandiere da{' '}
+        (pubblico dominio), bandiere da{' '}
         <a href="https://flagcdn.com" target="_blank" rel="noreferrer">
           flagcdn
         </a>
-        . Quale mare bagna quale paese è misurato sulla cartina, costa per costa.
+        .
       </p>
     </div>
   )

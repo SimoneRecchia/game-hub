@@ -74,7 +74,7 @@ async function versioneDal(c: Context<AppEnv>): Promise<{ versione: number; corp
 }
 
 function controllaVersione(row: PartitaRow, versione: number) {
-  if (versione !== row.versione) fail(409, 'CONFLITTO', 'La partita è cambiata nel frattempo: ricarico.')
+  if (versione !== row.versione) fail(409, 'CONFLITTO', 'La partita è cambiata: la ricarico.')
 }
 
 /**
@@ -381,7 +381,7 @@ export const battagliaRoutes = new Hono<AppEnv>()
   .post('/partite/:id/reclama', async (c) => {
     const { row, io } = await partitaMia(c)
     if (!reclamo(row, io, Date.now()).puoi) {
-      fail(409, 'ANCORA_PRESTO', 'L’avversario ha ancora tempo per muovere.')
+      fail(409, 'ANCORA_PRESTO', 'L’avversario ha ancora tempo.')
     }
     const dopo = await salvaPartita(c.env.DB, row, fine(row, {}, io, 'assenza'), Date.now())
     return rispondi(c, dopo, io)
