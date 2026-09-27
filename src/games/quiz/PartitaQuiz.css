@@ -783,8 +783,29 @@
 .quiz-opzione__testo {
   flex: 1;
   min-width: 0;
-  overflow-wrap: anywhere;
+  /* Prima la sillabazione, poi — solo se una parola non ci sta proprio — l'a capo dove capita. */
+  overflow-wrap: break-word;
   hyphens: auto;
+}
+
+/*
+ * Su uno schermo stretto le risposte in due colonne sono strette: il testo cala
+ * un poco, e la lettera si avvicina. Nel titolo resta "3 di 10": "Domanda"
+ * accanto alla pillola del tempo non ci sta.
+ */
+@container quiz (max-width: 340px) {
+  .quiz-titolo__parola {
+    display: none;
+  }
+
+  .quiz-opzione {
+    gap: 7px;
+    padding-inline: 6px 8px;
+  }
+
+  .quiz-opzione__testo {
+    font-size: var(--text-subhead);
+  }
 }
 
 /* La risposta scelta, mentre parte: l'indaco di ogni selezione dell'app. */
