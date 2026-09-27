@@ -14,7 +14,7 @@ export const ADESIVO_RISPOSTA_MS = 1_300
 export const ADESIVO_FINE_MS = 2_200
 
 const COLORE = 'linear-gradient(155deg, var(--quiz-1), var(--quiz-2) 80%)'
-const LODI = ['Esatto!', 'Giusto!', 'Bravo!', 'Perfetto!', 'Sì!']
+const LODI = ['Esatto!', 'Giusto!', 'Ottimo!', 'Perfetto!', 'Sì!']
 
 export function adesivoGiusta(indice: number, serie: number, punti: number | null): Omit<DatiAdesivo, 'id'> {
   return {
@@ -70,7 +70,7 @@ export function adesivoFine(
   if (quota >= 0.7) {
     return {
       tono: 'vivace',
-      titolo: giuste === totale ? 'Tutte giuste!' : 'Campione!',
+      titolo: giuste === totale ? 'Tutte giuste!' : 'Ottima partita!',
       sotto,
       colore: COLORE,
       durata: ADESIVO_FINE_MS,

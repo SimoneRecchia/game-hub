@@ -269,7 +269,7 @@ export const cruciverbaRoutes = new Hono<AppEnv>()
   .post('/libera', async (c) => {
     const nuova = await nuovaLibera(c.env.DB, c.get('player').id, casoCrittografico)
     if (!nuova) {
-      fail(503, 'SCHEMI_FINITI', 'Hai già aperto tutti gli schemi liberi: ne arrivano di nuovi ogni notte.')
+      fail(503, 'SCHEMI_FINITI', 'Hai già aperto tutti gli schemi liberi. Riprova domani.')
     }
     return c.json<CruciverbaState>(
       statoDa(nuova.row, nuova.schema, identitaLibera(nuova.row), msToNextPuzzle()),

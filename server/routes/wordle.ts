@@ -177,7 +177,7 @@ export const wordleRoutes = new Hono<AppEnv>()
       .run()
 
     if (update.meta.changes !== 1) {
-      fail(409, 'CONFLICT', 'Un altro tentativo è arrivato prima. Ricarica la pagina.')
+      fail(409, 'CONFLICT', 'Un altro tentativo è arrivato prima.')
     }
 
     const room = await findRoom(c.env.DB, c.get('player').id, row.puzzle_number)
@@ -279,7 +279,7 @@ export const wordleRoutes = new Hono<AppEnv>()
       .bind(JSON.stringify(dopo), dopo.length, status, finita, row.id, parole.length)
       .run()
     if (esito.meta.changes !== 1) {
-      fail(409, 'CONFLICT', 'Un altro tentativo è arrivato prima. Ricarica la pagina.')
+      fail(409, 'CONFLICT', 'Un altro tentativo è arrivato prima.')
     }
     return c.json<WordleLiberaState>(
       statoLibero({ ...row, guesses: JSON.stringify(dopo), attempts: dopo.length, status, finished_at: finita }),

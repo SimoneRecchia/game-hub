@@ -164,13 +164,14 @@ export async function classificaGenerale(
   somma('quiz', quiz.results)
 
   if (totali.size > 0) {
-    const id = [...totali.keys()]
+    // Gli id in un parametro solo, come JSON: D1 accetta al massimo cento parametri per istruzione, e con
+    // un segnaposto per giocatore la classifica si romperebbe al centunesimo.
     const { results } = await db
       .prepare(
         `SELECT id, nickname, display_name, avatar_color FROM players
-          WHERE id IN (${id.map(() => '?').join(',')})`,
+          WHERE id IN (SELECT value FROM json_each(?))`,
       )
-      .bind(...id)
+      .bind(JSON.stringify([...totali.keys()]))
       .all<{ id: string; nickname: string; display_name: string; avatar_color: string }>()
     for (const p of results) {
       const t = totali.get(p.id)!

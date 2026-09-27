@@ -80,7 +80,7 @@ export type ModoQuiz = 'scelta' | 'cartina'
 export const MODI: readonly ModoQuiz[] = ['scelta', 'cartina']
 
 export const NOMI_MODI: Record<ModoQuiz, string> = {
-  scelta: 'A scelta',
+  scelta: 'Scelta multipla',
   cartina: 'Cartina muta',
 }
 

@@ -183,9 +183,9 @@ function Duello({ id }: { id: string }) {
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
       <ComeSiGiocaQuiz open={regole} onClose={() => setRegole(false)} />
-      <Sheet open={resa} onClose={() => setResa(false)} title="Abbandonare?">
+      <Sheet open={resa} onClose={() => setResa(false)} title="Abbandonare la sfida?">
         <div className="bat-resa">
-          <p>La sfida finisce qui, con i punti fatti finora: {v?.avversario.displayName} lo vede subito.</p>
+          <p>La sfida finisce qui.</p>
           <Button
             variant="destructive"
             size="lg"
@@ -270,8 +270,7 @@ function Attesa({ v, onEsci }: { v: VistaDuello; onEsci: () => void }) {
       </span>
       <p className="duello-attesa__titolo">Aspetto {v.avversario.displayName}…</p>
       <p className="duello-attesa__testo">
-        {NOMI_CATEGORIE[v.impostazioni.categoria]} · {NOMI_MODI[v.impostazioni.modo]} · {v.totale} domande. Si comincia
-        quando ci siete tutti e due.
+        {NOMI_CATEGORIE[v.impostazioni.categoria]} · {NOMI_MODI[v.impostazioni.modo]} · {v.totale} domande
       </p>
       <Button variant="tinted" onClick={onEsci}>
         Annulla la sfida
@@ -393,8 +392,8 @@ function Gioco({
             ) : (
               <p className={`quiz-conferma__esito${giro?.punto === 'io' ? ' is-giusta' : ''}`}>
                 {giro
-                  ? `${notiziaDelGiro(giro, v.avversario.displayName)} · ${giro.risposta}`
-                  : 'Sbagliato: aspetta l’altro'}
+                  ? `${notiziaDelGiro(giro, v.avversario.displayName)} · giusta: ${giro.risposta}`
+                  : `Sbagliato: ora tocca a ${v.avversario.displayName}`}
               </p>
             )}
           </div>
@@ -451,7 +450,7 @@ function Tabellone({ d, v, indice, giro }: { d: Duello; v: VistaDuello; indice: 
           giro.punto === 'io' ? <IconCheck size={13} /> : giro.punto ? <IconClose size={13} /> : <IconClock size={13} />
         }
       >
-        {giro.punto === 'io' ? 'Punto tuo' : giro.punto ? `A ${v.avversario.displayName}` : 'Nessuno'}
+        {giro.punto === 'io' ? 'Punto tuo' : giro.punto ? `A ${v.avversario.displayName}` : 'Nessun punto'}
       </Pillola>
     )
   } else if (aperta?.mia) {
@@ -547,17 +546,17 @@ function notiziaDiAdesso(v: VistaDuello, aperta: VistaDuello['domanda'], giro: G
   const nome = v.avversario.displayName
   if (giro) {
     if (giro.punto === 'io') {
-      return giro.sua && !giro.sua.giusta ? `${nome} aveva sbagliato: punto a te` : 'Hai risposto prima tu: punto a te'
+      return giro.sua && !giro.sua.giusta ? `${nome} aveva sbagliato` : 'Hai risposto prima tu'
     }
     if (giro.punto === 'avversario') {
-      return giro.mia && !giro.mia.giusta ? `Hai sbagliato, e ${nome} l’ha presa` : `${nome} ha risposto prima`
+      return giro.mia && !giro.mia.giusta ? 'Hai sbagliato' : `${nome} ha risposto prima`
     }
-    return giro.mia || giro.sua ? 'Sbagliata da tutti e due' : 'Il tempo è finito per tutti e due'
+    return giro.mia || giro.sua ? 'Avete sbagliato tutti e due' : 'Tempo scaduto'
   }
   if (!aperta) return ''
-  if (aperta.mia) return `Hai sbagliato: ora ${nome} ha il tempo al rallentatore`
-  if (aperta.lentoIo) return `${nome} ha sbagliato: il tuo tempo va al rallentatore`
-  return 'Il primo che risponde giusto prende il punto'
+  if (aperta.mia) return `Hai sbagliato: il tempo di ${nome} rallenta`
+  if (aperta.lentoIo) return `${nome} ha sbagliato: il tuo tempo rallenta`
+  return 'Chi risponde giusto per primo prende il punto'
 }
 
 function Giocatore({
@@ -637,7 +636,7 @@ function Fine({ d, v }: { d: Duello; v: VistaDuello }) {
       ? 'Hai lasciato la sfida'
       : v.uscito === 'avversario'
         ? `${nome} ha lasciato la sfida`
-        : `Senza ${nome}: la sfida non è cominciata`
+        : 'La sfida non è cominciata'
     : io > lui
       ? 'Hai vinto!'
       : io < lui
@@ -654,7 +653,7 @@ function Fine({ d, v }: { d: Duello; v: VistaDuello }) {
       const nuovo = await azione()
       if (typeof nuovo === 'string') vai(ROTTE.duelloQuiz(nuovo), { replace: true, direzione: 'nessuna' })
     } catch (e) {
-      setErrore(e instanceof ApiFetchError || e instanceof Error ? e.message : 'Non ci sono riuscito.')
+      setErrore(e instanceof ApiFetchError || e instanceof Error ? e.message : 'Qualcosa è andato storto. Riprova.')
     } finally {
       setOccupato(false)
     }
@@ -705,14 +704,14 @@ function Fine({ d, v }: { d: Duello; v: VistaDuello }) {
             </li>
           ))}
         </ol>
-        <p className="duello-fine__nota">Un’amichevole: il conto non va in classifica e non resta.</p>
+        <p className="duello-fine__nota">Non conta per la classifica.</p>
       </Scheda>
 
       <div className="quiz-fine__azioni">
         {!uscito && r?.stato === 'attesa' && r.da === 'avversario' ? (
           <>
             <p className="duello-fine__rivincita">
-              <strong>{nome}</strong> vuole giocare ancora: il conto continua.
+              <strong>{nome}</strong> vuole la rivincita.
             </p>
             <Button size="lg" fullWidth loading={occupato} onClick={() => fai(d.accettaRivincita)}>
               Accetta la rivincita
@@ -732,7 +731,7 @@ function Fine({ d, v }: { d: Duello; v: VistaDuello }) {
           <>
             {!uscito && r?.stato === 'rifiutata' && (
               <p className="duello-fine__rivincita">
-                {r.da === 'io' ? `${nome} non vuole la rivincita, per ora.` : 'Hai detto di no alla rivincita.'}
+                {r.da === 'io' ? `${nome} non vuole la rivincita.` : 'Hai rifiutato la rivincita.'}
               </p>
             )}
             {!uscito && r?.stato !== 'rifiutata' && (

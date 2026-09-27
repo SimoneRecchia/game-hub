@@ -68,6 +68,6 @@ export async function domandePerSfida(imp: ImpostazioniSfida): Promise<DomandaCo
     },
     mulberry32((Math.random() * 2 ** 32) >>> 0),
   )
-  if (domande.length < 3) throw new Error('Con queste scelte non ci sono abbastanza domande per una sfida.')
+  if (domande.length < 3) throw new Error('Troppe poche domande con queste scelte: prova una zona più grande.')
   return domande
 }

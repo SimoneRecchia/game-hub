@@ -60,6 +60,17 @@ export function useParoleSconosciute(anteprima: EsitoPosa | null): string[] | nu
   return sconosciute
 }
 
+/** L'avviso per le parole che il dizionario non conosce: una o piu'. */
+export function nonNelDizionario(parole: readonly string[]): string {
+  const elenco = parole.map((p) => p.toUpperCase()).join(', ')
+  return parole.length === 1 ? `${elenco} non è nel dizionario.` : `${elenco} non sono nel dizionario.`
+}
+
+/** Quante tessere si sono appena cambiate, detto con il numero giusto. */
+export function tessereCambiate(quante: number): string {
+  return quante === 1 ? '1 tessera cambiata.' : `${quante} tessere cambiate.`
+}
+
 /**
  * La partita di Scarabeo del giorno.
  *
@@ -146,7 +157,7 @@ export function useScarabeo(): ScarabeoController {
     }
     if (sconosciute && sconosciute.length > 0) {
       haptic('error')
-      avvisa(`${sconosciute.map((p) => p.toUpperCase()).join(', ')} non è nel dizionario.`)
+      avvisa(nonNelDizionario(sconosciute))
       return
     }
     const punti = anteprima?.ok ? anteprima.punti : 0
@@ -173,7 +184,7 @@ export function useScarabeo(): ScarabeoController {
     },
     cambia: (tessere) => {
       annulla()
-      void invia('/scarabeo/cambio', { tessere }, `${tessere.length} tessere cambiate.`)
+      void invia('/scarabeo/cambio', { tessere }, tessereCambiate(tessere.length))
     },
     chiudiGiornata: () => {
       annulla()

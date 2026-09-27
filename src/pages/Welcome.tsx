@@ -107,7 +107,7 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
       } else if (err instanceof InsecureContextError) {
         setError(err.message)
       } else {
-        setError('Qualcosa è andato storto. Riprova.')
+        setError(isRegister ? 'Non riesco a creare il profilo. Riprova.' : 'Non riesco a entrare. Riprova.')
       }
     } finally {
       setBusy(false)
@@ -127,8 +127,7 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
           <Marchio lato={96} />
           <h1 className="welcome__title">Giochi</h1>
           <p className="welcome__lede">
-            Wordle, Scarabeo, Cruciverba, Battaglia navale e Quiz. Ogni giorno una partita classificata
-            per gioco, la stessa per tutti, e quante partite libere vuoi.
+            Wordle, Scarabeo, Cruciverba, Battaglia navale e Quiz. Ogni giorno le stesse partite per tutti.
           </p>
         </header>
 
@@ -140,14 +139,11 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
                 <>
                   <strong>{sfida.da.displayName}</strong>{' '}
                   {sfida.gioco === 'quiz' ? 'ti sfida a un quiz di geografia.' : 'ti sfida a battaglia navale.'}{' '}
-                  {isRegister
-                    ? 'Crea il tuo profilo: appena entri, la partita comincia.'
-                    : 'Entra e la partita comincia.'}
+                  {isRegister ? 'Registrati e gioca subito.' : 'Entra e gioca subito.'}
                 </>
               ) : (
                 <>
-                  L’invito di <strong>{sfida.da.displayName}</strong> non vale più, ma puoi entrare lo stesso
-                  e chiedergliene un altro.
+                  L’invito di <strong>{sfida.da.displayName}</strong> non vale più. Chiedine un altro.
                 </>
               )}
             </p>
@@ -168,7 +164,7 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
           <div className="welcome__fields">
             <Field
               label="Nickname"
-              placeholder="come ti chiamiamo"
+              placeholder={isRegister ? 'come ti chiamiamo' : 'il tuo nickname'}
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               autoComplete="username"
@@ -184,7 +180,7 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
               <Field
                 label="Email"
                 type="email"
-                placeholder="per ritrovare l'account"
+                placeholder="per recuperare l’account"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
@@ -252,13 +248,9 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
             </button>
           )}
 
-          <p className="welcome__note">
-            {isRegister
-              ? config?.emailVerificationRequired
-                ? 'Ti mandiamo un codice per confermare l’email. Serve anche a recuperare la password.'
-                : 'L’email serve solo a recuperare la password, se la dimentichi.'
-              : 'Il browser ti ricorda: la prossima volta entri diretto.'}
-          </p>
+          {isRegister && config?.emailVerificationRequired && (
+            <p className="welcome__note">Ti mandiamo un codice per confermare l’email.</p>
+          )}
         </form>
       </div>
     </div>

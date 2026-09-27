@@ -80,10 +80,11 @@ export function Campo({
 
   const anteprima = c.anteprima
   const sbagliata = (sconosciute?.length ?? 0) > 0
+  const nonEsiste = sconosciute?.length === 1 ? 'non esiste' : 'non esistono'
   const etichetta = attesa
     ? attesa
     : sbagliata
-      ? `${sconosciute!.map((p) => p.toUpperCase()).join(', ')} non esiste`
+      ? `${sconosciute!.map((p) => p.toUpperCase()).join(', ')} ${nonEsiste}`
       : anteprima && !anteprima.ok
         ? 'Posa non valida'
         : anteprima?.ok

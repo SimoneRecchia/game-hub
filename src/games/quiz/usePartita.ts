@@ -245,7 +245,7 @@ export function useQuizDelGiorno(): VistaPartita {
           if (e instanceof ApiFetchError && e.status === 409) {
             await carica()
           } else {
-            setErrore(e instanceof ApiFetchError ? e.message : 'La risposta non è partita.')
+            setErrore(e instanceof ApiFetchError ? e.message : 'Risposta non inviata.')
             inAttesa.current = () => void manda()
           }
         } finally {
@@ -428,7 +428,7 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
       caso.current = mulberry32(seme ^ 0x5bd1e995)
       const nuove = generaDomande(ix, { ...impostazioni, citta: elenco ?? undefined }, mulberry32(seme))
       if (nuove.length === 0) {
-        setErrore('Con queste scelte non ci sono domande: prova un’area più grande, o altri tipi di domanda.')
+        setErrore('Nessuna domanda con queste scelte: prova una zona più grande.')
         setFase('errore')
         return
       }

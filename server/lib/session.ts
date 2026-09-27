@@ -152,7 +152,7 @@ async function touchSession(c: Context<AppEnv>, resolved: Resolved): Promise<voi
 /** Richiede una sessione valida; risponde 401 se manca. */
 export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
   const resolved = await resolveSession(c)
-  if (!resolved) fail(401, 'NOT_AUTHENTICATED', 'Serve accedere per continuare.')
+  if (!resolved) fail(401, 'NOT_AUTHENTICATED', 'Accedi per continuare.')
   c.set('player', toPlayer(resolved.player))
   await touchSession(c, resolved)
   await next()
@@ -171,7 +171,7 @@ export const requireAuth: MiddlewareHandler<AppEnv> = async (c, next) => {
  */
 export const requireVerified: MiddlewareHandler<AppEnv> = async (c, next) => {
   const resolved = await resolveSession(c)
-  if (!resolved) fail(401, 'NOT_AUTHENTICATED', 'Serve accedere per continuare.')
+  if (!resolved) fail(401, 'NOT_AUTHENTICATED', 'Accedi per continuare.')
 
   const player = toPlayer(resolved.player)
   if (emailVerificationEnabled(c.env) && !player.emailVerified) {

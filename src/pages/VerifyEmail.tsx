@@ -125,7 +125,7 @@ export default function VerifyEmail({ invito = null }: { invito?: string | null 
           <div className="verifica__invito" role="status">
             <Avatar nickname={sfida.da.nickname} color={sfida.da.avatarColor} size={36} />
             <p>
-              Appena confermi entri nella battaglia navale con <strong>{sfida.da.displayName}</strong>.
+              Appena confermi, giochi con <strong>{sfida.da.displayName}</strong>.
             </p>
           </div>
         )}
@@ -165,7 +165,7 @@ export default function VerifyEmail({ invito = null }: { invito?: string | null 
           disabled={code.length !== CODE_LENGTH}
           onClick={() => void invia(code)}
         >
-          Confermo
+          Conferma
         </Button>
 
         <div className="verifica__azioni">
@@ -175,16 +175,14 @@ export default function VerifyEmail({ invito = null }: { invito?: string | null 
             onClick={() => void rimanda()}
             disabled={busy || attesa > 0}
           >
-            {attesa > 0 ? `Rimanda il codice fra ${attesa}s` : 'Non è arrivato, rimandalo'}
+            {attesa > 0 ? `Rimanda il codice fra ${attesa}s` : 'Rimanda il codice'}
           </button>
           <button type="button" className="verifica__link verifica__link--tenue" onClick={() => void logout()}>
             Esci e usa un altro account
           </button>
         </div>
 
-        <p className="verifica__nota">
-          Se non lo trovi, guarda nello spam. L’email serve anche a recuperare la password.
-        </p>
+        <p className="verifica__nota">Se non lo trovi, guarda nello spam.</p>
       </div>
     </div>
   )
