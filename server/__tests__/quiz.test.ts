@@ -13,7 +13,7 @@ type Chiama = ReturnType<typeof banco>['chiama']
 /** Le domande di oggi: nove capitali e, in fondo, il Mediterraneo sulla cartina. */
 function domandeDiProva(): DomandaCompleta[] {
   const capitali = generaDomande(MONDO, { categoria: 'capitali', area: 'mondo', quante: 9 }, mulberry32(5))
-  const cartina = generaDomande(MONDO, { categoria: 'cartina', area: 'mondo', quante: 10 }, mulberry32(5)).find(
+  const cartina = generaDomande(MONDO, { categoria: 'mari', modo: 'cartina', area: 'mondo', quante: 10 }, mulberry32(5)).find(
     (d) => d.giusta === ID.MED,
   ) ?? {
     tipo: 'dove-acqua',
@@ -59,7 +59,7 @@ describe('il quiz del giorno', () => {
     preparaGiornata(db)
     const io = await giocatore('anna')
     const stato = (await chiama<QuizState>('GET', '/quiz/state', io)).dati
-    expect(stato).toMatchObject({ status: 'nuova', totale: 10, aperta: null, fatte: [], categoria: 'capitali' })
+    expect(stato).toMatchObject({ status: 'nuova', totale: 10, aperta: null, fatte: [], categoria: 'capitali', modo: 'scelta' })
     expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM quiz_partite').get()?.n).toBe(0)
 
     const aperto = await apri(chiama, io)
@@ -68,7 +68,7 @@ describe('il quiz del giorno', () => {
     expect(aperto.aperta?.limiteMs).toBe(15_000)
     // La risposta non viaggia con la domanda.
     const domanda = aperto.aperta!.domanda as unknown as Record<string, unknown>
-    for (const segreto of ['giusta', 'risposta', 'accettate', 'soggetto']) expect(domanda[segreto]).toBeUndefined()
+    for (const segreto of ['giusta', 'risposta', 'accettate', 'soggetto', 'luogo']) expect(domanda[segreto]).toBeUndefined()
     // Chiederla di nuovo non riavvia il tempo.
     const ancora = await apri(chiama, io)
     expect(ancora.aperta?.indice).toBe(0)
@@ -84,6 +84,8 @@ describe('il quiz del giorno', () => {
     const prima = await rispondi(chiama, io, 0, domande[0].giusta)
     expect(prima.status).toBe(200)
     expect(prima.dati.risposta).toMatchObject({ giusta: true, corretta: domande[0].giusta, risposta: domande[0].risposta })
+    // A risposta data arriva anche dove guardare, per la cartina che insegna.
+    expect(prima.dati.risposta.luogo).toEqual(domande[0].luogo)
     expect(prima.dati.stato.aperta).toBeNull()
     expect(prima.dati.stato.giuste).toBe(1)
 
@@ -101,6 +103,8 @@ describe('il quiz del giorno', () => {
       const r = await rispondi(chiama, io, i, scelta)
       expect(r.status, JSON.stringify(r.dati)).toBe(200)
       expect(r.dati.risposta.giusta).toBe(i !== 1)
+      // Sulla cartina, i posti che valevano: il Tirreno era giusto perché sta nel Mediterraneo.
+      if (d.cartina) expect(r.dati.risposta.accettate).toEqual(expect.arrayContaining([ID.MED, ID.TIR]))
     }
     const finale = (await chiama<QuizState>('GET', '/quiz/state', io)).dati
     expect(finale.status).toBe('done')
@@ -206,5 +210,44 @@ describe('il riassunto per le libere', () => {
 
     const uguale = (await chiama<QuizDatiRisposta>('GET', '/quiz/dati?versione=v1', io)).dati
     expect(uguale).toEqual({ versione: 'v1', dati: null })
+  })
+
+  it('porta le versioni delle geometrie e delle città, e le dà a parte, a pezzi incollati', async () => {
+    const { chiama, giocatore, db } = banco()
+    const io = await giocatore('anna')
+    expect((await chiama('GET', '/quiz/geometrie?v=g1', io)).status).toBe(503)
+    expect((await chiama('GET', '/quiz/citta?v=c1', io)).status).toBe(503)
+
+    const adesso = new Date().toISOString()
+    const metti = (parte: string, versione: string, dati: unknown) =>
+      db.sqlite
+        .prepare('INSERT INTO quiz_dati (parte, versione, dati, updated_at) VALUES (?, ?, ?, ?)')
+        .run(parte, versione, JSON.stringify(dati), adesso)
+    for (const parte of ['paesi', 'acque', 'fiumi', 'laghi'] as const) metti(parte, 'v1', MONDO[parte])
+    metti('geo:fiumi:0', 'g1', { F1: [[1, 2, 3, 4]] })
+    metti('geo:fiumi:1', 'g1', { F2: [[5, 6, 7, 8]] })
+    metti('geo:laghi:0', 'g1', { L1: [[1, 1, 1, 1, 1, 1, 1, 1]] })
+    metti('citta:regioni', 'c1', { R1: 'Lombardia' })
+    metti('citta:0', 'c1', { C1: ['Milano', 'IT', 'R1', 9.19, 45.46, 970] })
+
+    const riassunto = (await chiama<QuizDatiRisposta>('GET', '/quiz/dati', io)).dati
+    expect(riassunto.dati).toMatchObject({ geo: 'g1', citta: 'c1' })
+
+    const geo = await chiama<{ versione: string; fiumi: unknown; laghi: unknown }>('GET', '/quiz/geometrie?v=g1', io)
+    expect(geo.dati).toEqual({
+      versione: 'g1',
+      fiumi: { F1: [[1, 2, 3, 4]], F2: [[5, 6, 7, 8]] },
+      laghi: { L1: [[1, 1, 1, 1, 1, 1, 1, 1]] },
+    })
+    expect(geo.intestazioni?.get('cache-control')).toContain('immutable')
+    // Una versione vecchia riceve la nuova, ma senza cache.
+    expect((await chiama('GET', '/quiz/geometrie?v=vecchia', io)).intestazioni?.get('cache-control')).toBe('no-store')
+
+    const citta = await chiama<{ regioni: unknown; citta: unknown }>('GET', '/quiz/citta?v=c1', io)
+    expect(citta.dati).toEqual({
+      versione: 'c1',
+      regioni: { R1: 'Lombardia' },
+      citta: { C1: ['Milano', 'IT', 'R1', 9.19, 45.46, 970] },
+    })
   })
 })

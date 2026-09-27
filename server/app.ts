@@ -25,7 +25,9 @@ export function createApp() {
   app.use('*', async (c, next) => {
     await next()
     // Nessuna risposta dell'API va messa in cache: contiene sessioni e punteggi.
-    c.header('Cache-Control', 'no-store')
+    // L'eccezione la dichiara la rotta stessa: le geometrie e le città del quiz,
+    // che a una versione data non cambiano mai, e il browser tiene per sempre.
+    if (!c.res.headers.has('Cache-Control')) c.header('Cache-Control', 'no-store')
   })
 
   app.get('/health', (c) =>

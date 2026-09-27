@@ -44,6 +44,7 @@ PREFIX ps: <http://www.wikidata.org/prop/statement/>
 PREFIX pq: <http://www.wikidata.org/prop/qualifier/>
 PREFIX wikibase: <http://wikiba.se/ontology#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 `
 
 function inCache(chiave: string): string | null {
@@ -71,7 +72,9 @@ async function scarica(url: string, init: RequestInit = {}, tentativi = 3): Prom
       return await risposta.text()
     } catch (e) {
       ultimo = e
-      await new Promise((r) => setTimeout(r, 2_000 * 2 ** i))
+      // Troppe richieste: QLever chiede di aspettare, e qualche secondo non basta.
+      const attesa = String(e).includes('429') ? 20_000 * (i + 1) : 2_000 * 2 ** i
+      await new Promise((r) => setTimeout(r, attesa))
     }
   }
   throw new Error(`Non riesco a scaricare ${url}: ${String(ultimo)}`)
@@ -163,12 +166,13 @@ export const Q_PAESI = `SELECT ?paese ?iso2 ?nome ?nomeMul ?nomeEn
 GROUP BY ?paese ?iso2 ?nome ?nomeMul ?nomeEn`
 
 /** Le capitali in carica: senza data di fine. Piu' d'una per paese si sceglie dopo. */
-export const Q_CAPITALI = `SELECT ?iso2 ?capitale ?nome ?nomeMul ?nomeEn (MAX(?link) AS ?voci) WHERE {
+export const Q_CAPITALI = `SELECT ?iso2 ?capitale ?nome ?nomeMul ?nomeEn (MAX(?link) AS ?voci) (SAMPLE(?coord) AS ?punto) WHERE {
   ${STATI}
   ?paese p:P36 ?st . ?st ps:P36 ?capitale .
   FILTER NOT EXISTS { ?st pq:P582 ?finecap }
   ${ETICHETTE('capitale')}
   OPTIONAL { ?capitale wikibase:sitelinks ?link }
+  OPTIONAL { ?capitale wdt:P625 ?coord }
 }
 GROUP BY ?iso2 ?capitale ?nome ?nomeMul ?nomeEn`
 
@@ -183,16 +187,46 @@ export const Q_CONFINI = `SELECT ?iso2 (GROUP_CONCAT(DISTINCT ?altro; separator=
 }
 GROUP BY ?iso2`
 
-/** Le città con piu' abitanti: la piu' grande di ogni paese, se non e' la capitale, e' il trabocchetto. */
-export const Q_CITTA = `SELECT ?iso2 ?citta ?nome (MAX(?pop) AS ?abitanti) WHERE {
+/**
+ * I paesi senza sbocco sul mare, per Wikidata. La geometria da sola non basta
+ * a dirlo: i mari di Natural Earth non arrivano a ogni costa, e il Benin
+ * sembrava senza mare. Un paese e' "senza mare" solo se lo dicono tutti e due.
+ */
+export const Q_SENZA_MARE = `SELECT DISTINCT ?iso2 WHERE {
   ${STATI}
-  ?citta wdt:P17 ?paese ; wdt:P1082 ?pop .
+  ?paese wdt:P31 wd:Q123480 .
+}`
+
+/**
+ * Le città, dalla piu' popolosa: servono al trabocchetto delle capitali (la
+ * città piu' grande di un paese, se non e' la capitale) e alla categoria delle
+ * città, che ne tiene le principali di ogni paese. Solo quelle che ci sono
+ * ancora: il Territorio Libero di Trieste ha una popolazione, ma non c'e' piu'.
+ */
+export const Q_CITTA = `SELECT ?citta ?iso2 ?nome ?nomeMul ?nomeEn (MAX(?pop) AS ?abitanti) (SAMPLE(?coord) AS ?punto) (MAX(?link) AS ?voci) WHERE {
+  ${STATI}
+  ?citta wdt:P17 ?paese ; wdt:P1082 ?pop ; wdt:P625 ?coord .
   ?citta wdt:P31/wdt:P279* wd:Q515 .
-  ?citta rdfs:label ?nome . FILTER(LANG(?nome) = "it")
+  FILTER NOT EXISTS { ?citta wdt:P576 ?sciolta }
+  ${ETICHETTE('citta')}
+  OPTIONAL { ?citta wikibase:sitelinks ?link }
 }
-GROUP BY ?iso2 ?citta ?nome
+GROUP BY ?citta ?iso2 ?nome ?nomeMul ?nomeEn
 ORDER BY DESC(?abitanti)
-LIMIT 8000`
+LIMIT 15000`
+
+/**
+ * La regione di ogni città: la suddivisione di primo livello che la contiene,
+ * risalendo "si trova in" — Milano, città metropolitana di Milano, Lombardia.
+ */
+export const Q_REGIONI_CITTA = `SELECT ?citta ?regione ?nome ?nomeMul ?nomeEn WHERE {
+  { SELECT DISTINCT ?citta WHERE {
+      ?citta wdt:P31/wdt:P279* wd:Q515 ; wdt:P1082 ?pop .
+    } ORDER BY DESC(?pop) LIMIT 15000 }
+  ?citta wdt:P131+ ?regione .
+  ?regione wdt:P31/wdt:P279* wd:Q10864048 .
+  ${ETICHETTE('regione')}
+}`
 
 /** I paesi di un fiume o di un lago, anche quando Wikidata indica la parte (i Paesi Bassi) e non lo stato. */
 const PAESI_DI = (x: string) =>
@@ -202,18 +236,22 @@ const PAESI_DI = (x: string) =>
  * I fiumi piu' noti: quelli con piu' voci di Wikipedia, che siano davvero fiumi
  * — con una foce — e non valli o laghi classificati come tali.
  */
-export const Q_FIUMI = `SELECT ?fiume ?nome ?nomeMul ?voci (GROUP_CONCAT(DISTINCT ?iso2; separator=" ") AS ?paesi) WHERE {
-  { SELECT DISTINCT ?fiume ?voci WHERE {
+const SCELTA_FIUMI = `{ SELECT DISTINCT ?fiume ?voci WHERE {
       ?fiume wdt:P31/wdt:P279* wd:Q4022 .
       ?fiume wdt:P403 ?foce .
       ?fiume wikibase:sitelinks ?voci .
       FILTER NOT EXISTS { ?fiume wdt:P31 wd:Q23397 }
-    } ORDER BY DESC(?voci) LIMIT 700 }
+    } ORDER BY DESC(?voci) LIMIT 700 }`
+
+export const Q_FIUMI = `SELECT ?fiume ?nome ?nomeMul ?nomeEn ?voci (SAMPLE(?coord) AS ?punto) (GROUP_CONCAT(DISTINCT ?iso2; separator=" ") AS ?paesi) WHERE {
+  ${SCELTA_FIUMI}
   ${PAESI_DI('fiume')}
   OPTIONAL { ?fiume rdfs:label ?nome . FILTER(LANG(?nome) = "it") }
   OPTIONAL { ?fiume rdfs:label ?nomeMul . FILTER(LANG(?nomeMul) = "mul") }
+  OPTIONAL { ?fiume rdfs:label ?nomeEn . FILTER(LANG(?nomeEn) = "en") }
+  OPTIONAL { ?fiume wdt:P625 ?coord }
 }
-GROUP BY ?fiume ?nome ?nomeMul ?voci`
+GROUP BY ?fiume ?nome ?nomeMul ?nomeEn ?voci`
 
 /**
  * I laghi piu' noti, con la superficie: sotto i dieci chilometri quadrati un
@@ -221,18 +259,40 @@ GROUP BY ?fiume ?nome ?nomeMul ?voci`
  * Fuori le baie, i porti e le lagune classificati come laghi, e i laghi che non
  * ci sono piu' — il lago Agassiz si e' prosciugato ottomila anni fa.
  */
-export const Q_LAGHI = `SELECT ?lago ?nome ?nomeMul ?voci (MAX(?area) AS ?superficie) (GROUP_CONCAT(DISTINCT ?iso2; separator=" ") AS ?paesi) WHERE {
-  { SELECT DISTINCT ?lago ?voci WHERE {
+const SCELTA_LAGHI = `{ SELECT DISTINCT ?lago ?voci WHERE {
       ?lago wdt:P31/wdt:P279* wd:Q23397 .
       ?lago wikibase:sitelinks ?voci .
       FILTER NOT EXISTS { ?lago wdt:P31 ?altro . VALUES ?altro { wd:Q39594 wd:Q283202 wd:Q187223 wd:Q1322134 wd:Q47053 wd:Q45776 wd:Q1140845 wd:Q7205721 wd:Q55965244 } }
-    } ORDER BY DESC(?voci) LIMIT 500 }
+    } ORDER BY DESC(?voci) LIMIT 500 }`
+
+export const Q_LAGHI = `SELECT ?lago ?nome ?nomeMul ?nomeEn ?voci (MAX(?area) AS ?superficie) (SAMPLE(?coord) AS ?punto) (GROUP_CONCAT(DISTINCT ?iso2; separator=" ") AS ?paesi) WHERE {
+  ${SCELTA_LAGHI}
   ${PAESI_DI('lago')}
   OPTIONAL { ?lago wdt:P2046 ?area }
+  OPTIONAL { ?lago wdt:P625 ?coord }
   OPTIONAL { ?lago rdfs:label ?nome . FILTER(LANG(?nome) = "it") }
   OPTIONAL { ?lago rdfs:label ?nomeMul . FILTER(LANG(?nomeMul) = "mul") }
+  OPTIONAL { ?lago rdfs:label ?nomeEn . FILTER(LANG(?nomeEn) = "en") }
 }
-GROUP BY ?lago ?nome ?nomeMul ?voci`
+GROUP BY ?lago ?nome ?nomeMul ?nomeEn ?voci`
+
+/**
+ * Gli altri nomi inglesi di fiumi e laghi: Natural Earth li chiama come li
+ * chiamano le carte in inglese, e non sempre come l'etichetta di Wikidata —
+ * "Amazonas" e' fra gli alias, non e' l'etichetta. Servono solo a trovarne la
+ * linea o la forma (scripts/quiz/geometrie.ts).
+ */
+export const Q_ALIAS_FIUMI = `SELECT ?fiume (GROUP_CONCAT(DISTINCT ?alias; separator="|") AS ?altri) WHERE {
+  ${SCELTA_FIUMI}
+  ?fiume skos:altLabel ?alias . FILTER(LANG(?alias) = "en")
+}
+GROUP BY ?fiume`
+
+export const Q_ALIAS_LAGHI = `SELECT ?lago (GROUP_CONCAT(DISTINCT ?alias; separator="|") AS ?altri) WHERE {
+  ${SCELTA_LAGHI}
+  ?lago skos:altLabel ?alias . FILTER(LANG(?alias) = "en")
+}
+GROUP BY ?lago`
 
 /**
  * Le acque di Natural Earth su Wikidata: di cosa fanno parte (anche piu' in su,

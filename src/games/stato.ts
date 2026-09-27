@@ -212,7 +212,10 @@ export function statoQuiz(s: QuizSummary): StatoOggi {
     avanzamento: s.status === 'done' ? 1 : s.totale > 0 ? s.fatte / s.totale : 0,
     a: ROTTE.classificata('quiz'),
   }
-  const categoria = s.categoria ? NOMI_CATEGORIE[s.categoria] : 'Geografia'
+  // "Fiumi sulla cartina muta": il modo del giorno si dice, perché cambia il gioco.
+  const categoria = s.categoria
+    ? `${NOMI_CATEGORIE[s.categoria]}${s.modo === 'cartina' && s.categoria !== 'cartina' ? ' sulla cartina' : ''}`
+    : 'Geografia'
   switch (s.status) {
     case 'assente':
       return {

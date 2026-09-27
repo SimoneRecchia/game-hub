@@ -9,12 +9,14 @@
  * e' piu' lento ma funziona.
  */
 
+import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import type { DatiQuiz } from '@shared/quiz-dati'
 import { indicizza, type IndiceQuiz } from '@shared/quiz-domande'
 import type { QuizDatiRisposta } from '@shared/types'
 
-const CHIAVE = 'quiz-dati-v1'
+// La versione 2 ha le capitali sulla cartina, i confini sicuri e le geometrie: quella di prima non basta.
+const CHIAVE = 'quiz-dati-v2'
 
 let inCorso: Promise<IndiceQuiz> | null = null
 
@@ -51,14 +53,20 @@ export function caricaDatiQuiz(): Promise<IndiceQuiz> {
   return inCorso
 }
 
-/**
- * Il nome italiano di un posto della cartina: per dire "hai toccato la
- * Slovenia". I paesi hanno il codice numerico, i mari il loro identificativo.
- */
-export function nomeDelLuogo(ix: IndiceQuiz, id: string): string | null {
-  if (id.startsWith('n')) {
-    const num = id.slice(1)
-    return ix.dati.paesi.find((p) => p.num === num)?.n ?? null
-  }
-  return ix.acque.get(id)?.n ?? null
+/** I dati, quando servono e quando arrivano: `attivo` falso non li chiede. */
+export function useIndiceQuiz(attivo = true): IndiceQuiz | null {
+  const [ix, setIx] = useState<IndiceQuiz | null>(null)
+  useEffect(() => {
+    if (!attivo) return
+    let vivo = true
+    caricaDatiQuiz()
+      .then((i) => vivo && setIx(i))
+      .catch(() => {
+        // La cartina lo dira' da sola: qui i dati sono un contorno.
+      })
+    return () => {
+      vivo = false
+    }
+  }, [attivo])
+  return ix
 }
