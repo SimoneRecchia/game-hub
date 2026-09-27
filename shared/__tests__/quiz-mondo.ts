@@ -7,7 +7,7 @@
  */
 
 import type { Continente } from '../quiz'
-import type { AcquaQuiz, CorsoQuiz, DatiQuiz, PaeseQuiz } from '../quiz-dati'
+import type { AcquaQuiz, CittaQuiz, CorsoQuiz, DatiQuiz, PaeseQuiz } from '../quiz-dati'
 
 type Riga = [id: string, n: string, cap: string, k: Continente[], num: string, a: number, f: number, conf: string[], bagna: Record<string, number>, vicine?: string[]]
 
@@ -156,8 +156,32 @@ const LAGHI: CorsoQuiz[] = [
   corso('L17', 'lago Trasimeno', ['IT'], 0.6),
 ]
 
+/** Le capitali sulla cartina: verosimili, e basta. */
+const CAPITALI_QUI: Record<string, [number, number]> = {
+  IT: [12.48, 41.89],
+  FR: [2.35, 48.86],
+  ES: [-3.7, 40.42],
+  DE: [13.38, 52.52],
+  AT: [16.37, 48.21],
+  GR: [23.73, 37.98],
+  GB: [-0.13, 51.51],
+  EG: [31.24, 30.04],
+  JP: [139.69, 35.69],
+  US: [-77.04, 38.9],
+  BR: [-47.88, -15.79],
+  AU: [149.13, -35.28],
+}
+
+/**
+ * I confinanti sicuri: tutti quelli di terra, tranne la Spagna per la Francia e
+ * viceversa — un confine che la prova vuole "non principale", per vedere che
+ * resti fuori dalle risposte di "con chi confina" ma anche dagli errori.
+ */
+const NON_PRINCIPALI = new Set(['FR-ES', 'ES-FR'])
+
 function paese([id, n, cap, k, num, a, f, conf, bagna, vicine = []]: Riga): PaeseQuiz {
   const ordinate = Object.entries(bagna).sort((x, y) => y[1] - x[1])
+  const cm = conf.filter((v) => !NON_PRINCIPALI.has(`${id}-${v}`))
   return {
     id,
     n,
@@ -167,18 +191,75 @@ function paese([id, n, cap, k, num, a, f, conf, bagna, vicine = []]: Riga): Paes
     a,
     f,
     conf,
+    ...(cm.length > 0 ? { cm } : {}),
+    ...(CAPITALI_QUI[id] ? { cc: CAPITALI_QUI[id] } : {}),
+    // Senza mare: l'Austria e la Svizzera, che non hanno coste e non ne sfiorano.
+    ...(id === 'AT' || id === 'CH' ? { ch: 1 as const } : {}),
     bagna: ordinate.map(([q]) => q),
     peso: ordinate.map(([, w]) => w),
     vicine,
   }
 }
 
+/** Le città: qualcuna d'Italia con la regione, e qualcuna nel mondo, con un nome ripetuto. */
+const citta = (id: string, n: string, p: string, pt: [number, number], f: number, r?: [string, string]): CittaQuiz => ({
+  id,
+  n,
+  p,
+  pt,
+  f,
+  ...(r ? { r: r[0], rn: r[1] } : {}),
+})
+const LOMBARDIA: [string, string] = ['R1', 'Lombardia']
+const LAZIO: [string, string] = ['R2', 'Lazio']
+const CAMPANIA: [string, string] = ['R3', 'Campania']
+const TOSCANA: [string, string] = ['R4', 'Toscana']
+const PUGLIA: [string, string] = ['R5', 'Puglia']
+
+export const CITTA: CittaQuiz[] = [
+  citta('C1', 'Milano', 'IT', [9.19, 45.46], 0.97, LOMBARDIA),
+  citta('C2', 'Bergamo', 'IT', [9.67, 45.69], 0.7, LOMBARDIA),
+  citta('C3', 'Brescia', 'IT', [10.21, 45.54], 0.72, LOMBARDIA),
+  citta('C4', 'Roma', 'IT', [12.48, 41.89], 0.99, LAZIO),
+  citta('C5', 'Latina', 'IT', [12.9, 41.47], 0.5, LAZIO),
+  citta('C6', 'Napoli', 'IT', [14.25, 40.85], 0.95, CAMPANIA),
+  citta('C7', 'Salerno', 'IT', [14.77, 40.68], 0.66, CAMPANIA),
+  citta('C8', 'Firenze', 'IT', [11.25, 43.77], 0.96, TOSCANA),
+  citta('C9', 'Pisa', 'IT', [10.4, 43.72], 0.8, TOSCANA),
+  citta('C10', 'Bari', 'IT', [16.87, 41.12], 0.78, PUGLIA),
+  citta('C11', 'Lecce', 'IT', [18.17, 40.35], 0.64, PUGLIA),
+  citta('C12', 'Parigi', 'FR', [2.35, 48.86], 1),
+  citta('C13', 'Lione', 'FR', [4.84, 45.76], 0.85),
+  citta('C14', 'Marsiglia', 'FR', [5.37, 43.3], 0.84),
+  citta('C15', 'Berlino', 'DE', [13.38, 52.52], 0.98),
+  citta('C16', 'Monaco di Baviera', 'DE', [11.58, 48.14], 0.9),
+  citta('C17', 'Amburgo', 'DE', [9.99, 53.55], 0.88),
+  citta('C18', 'Madrid', 'ES', [-3.7, 40.42], 0.97),
+  citta('C19', 'Barcellona', 'ES', [2.17, 41.39], 0.96),
+  citta('C20', 'Valencia', 'ES', [-0.38, 39.47], 0.83),
+  citta('C21', 'Valencia', 'US', [-118.6, 34.4], 0.3),
+  citta('C22', 'New York', 'US', [-74, 40.71], 1),
+  citta('C23', 'Chicago', 'US', [-87.63, 41.88], 0.9),
+  citta('C24', 'Los Angeles', 'US', [-118.24, 34.05], 0.95),
+  citta('C25', 'Tokyo', 'JP', [139.69, 35.69], 0.99),
+  citta('C26', 'Osaka', 'JP', [135.5, 34.69], 0.85),
+  citta('C27', 'San Paolo', 'BR', [-46.63, -23.55], 0.93),
+  citta('C28', 'Rio de Janeiro', 'BR', [-43.2, -22.9], 0.95),
+  citta('C29', 'Sydney', 'AU', [151.2, -33.87], 0.94),
+  citta('C30', 'Melbourne', 'AU', [144.96, -37.81], 0.9),
+  citta('C31', 'Il Cairo', 'EG', [31.24, 30.04], 0.95),
+  citta('C32', 'Alessandria', 'EG', [29.92, 31.2], 0.8),
+]
+
 export const MONDO: DatiQuiz = {
   versione: 'prova',
   paesi: PAESI.map(paese).map((p) => (p.id === 'AU' ? { ...p, trap: 'Sydney' } : p)),
   acque: ACQUE,
-  fiumi: FIUMI,
-  laghi: LAGHI,
+  // Fiumi e laghi sulla cartina: tutti con la linea, tranne l'Arno; il Trasimeno ha solo un punto.
+  fiumi: FIUMI.map((f) => (f.n === 'Arno' ? f : { ...f, g: 1 as const })),
+  laghi: LAGHI.map((l) =>
+    l.n === 'lago Trasimeno' ? { ...l, pt: [12.1, 43.13] as [number, number] } : { ...l, g: 1 as const },
+  ),
 }
 
 export const ID = { ATL, PAC, IND, ART, ANT, MED, TIR, ADR, NORD, BISCAGLIA, FILIPPINE }

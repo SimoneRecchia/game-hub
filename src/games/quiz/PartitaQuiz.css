@@ -348,6 +348,42 @@
   animation: quiz-casella 460ms var(--ease-bounce);
 }
 
+/* Le domande del ripasso: sottolineate, perché si vede dove comincia. */
+.quiz-progresso__casella.is-ripasso {
+  box-shadow: 0 3px 0 -1px var(--quiz-1);
+}
+
+/* Oltre le venti domande una barra, con il conto delle giuste. */
+.quiz-progresso__barra {
+  position: relative;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--fill-tertiary);
+  overflow: hidden;
+}
+
+.quiz-progresso__barra span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--quiz-2), var(--quiz-1));
+  transform: scaleX(var(--pieno));
+  transform-origin: left center;
+  transition: transform var(--dur-slow, 480ms) var(--ease-out);
+}
+
+.quiz-progresso__barra em {
+  position: relative;
+  display: block;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  color: var(--label);
+  text-shadow: 0 0 3px var(--surface);
+}
+
 @keyframes quiz-corrente {
   50% {
     opacity: 0.4;
@@ -420,11 +456,93 @@
   transition: box-shadow var(--dur-base) var(--ease-out);
 }
 
+/*
+ * Sulla cartina la carta e' solo la domanda, in una riga o due: lo spazio e'
+ * della cartina, che sta sotto e resta la stessa da una domanda all'altra.
+ */
 .quiz-carta.is-cartina {
+  flex: none;
+  flex-direction: row;
+  gap: 10px;
+  min-height: 58px;
+  padding: 8px 14px;
+  background-image: none;
+}
+
+/* A risposta data, con la cartina che insegna: la domanda in alto, la cartina sotto. */
+.quiz-carta.is-rivela {
   justify-content: flex-start;
   gap: 8px;
   padding: 10px;
   background-image: none;
+}
+
+.quiz-carta.is-rivela .quiz-carta__testo {
+  font-size: var(--text-headline);
+}
+
+.quiz-carta__cartina {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  animation: quiz-cartina-entra 520ms var(--ease-out) both;
+}
+
+@keyframes quiz-cartina-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.quiz-mappa {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+}
+
+/* La bandiera accanto alla domanda, piccola: sulla cartina, e a risposta data. */
+.quiz-carta__bandierina {
+  flex: none;
+  height: 34px;
+  width: auto;
+  max-width: 60px;
+  border-radius: 5px;
+  box-shadow:
+    0 0 0 1px var(--separator),
+    0 3px 8px var(--shadow-tint);
+  animation: quiz-salta 480ms var(--ease-bounce) both;
+}
+
+/* Il "50 e 50": una pillola nell'angolo della carta, finché ce ne sono. */
+.quiz-carta__aiuto {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--r-pill);
+  background: var(--quiz-lettera);
+  color: var(--quiz-lettera-ink);
+  font-size: var(--text-caption-1);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  box-shadow: var(--edge-light), var(--shadow-key);
+  transition:
+    transform 90ms var(--ease-out),
+    opacity var(--dur-base) var(--ease-out);
+}
+
+.quiz-carta__aiuto:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
+.quiz-carta__aiuto:disabled {
+  opacity: 0.4;
 }
 
 .quiz-carta.is-giusta {
@@ -550,6 +668,29 @@
 
 .quiz-opzioni.is-lunghe {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* Sei risposte: sempre due colonne, e tasti piu' bassi. */
+.quiz-opzioni.is-sei {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.quiz-opzioni.is-sei .quiz-opzione {
+  min-height: clamp(44px, 7.4cqh, 56px);
+  font-size: clamp(var(--text-footnote), 3.8cqw, var(--text-subhead));
+}
+
+/* Con la cartina che insegna restano la giusta e quella scelta, una accanto all'altra. */
+.quiz-opzioni.is-compatte {
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+}
+
+.quiz-opzioni.is-compatte .quiz-opzione {
+  min-height: 48px;
+}
+
+.quiz-opzioni.is-compatte.is-bandiere .quiz-opzione {
+  height: clamp(64px, 12cqh, 96px);
 }
 
 /* Le bandiere, due per riga: tasti piu' alti, che crescono con lo schermo fino a un tetto. */
@@ -700,6 +841,36 @@
   animation: none;
 }
 
+/* Tolta dal "50 e 50": c'e' ancora, barrata, e non si tocca. */
+.quiz-opzione.is-esclusa {
+  opacity: 0.28;
+  box-shadow:
+    var(--edge-light),
+    0 0 0 1px var(--separator);
+  animation: none;
+}
+
+.quiz-opzione.is-esclusa .quiz-opzione__testo {
+  text-decoration: line-through;
+}
+
+/* A risposta data i paesi hanno la bandiera al posto della lettera: una cosa in piu' da imparare. */
+.quiz-opzione__lettera.is-bandiera {
+  width: 36px;
+  height: 26px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
+  animation: quiz-salta 420ms var(--ease-bounce) both;
+}
+
+.quiz-opzione__lettera.is-bandiera img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 @keyframes quiz-giusta {
   40% {
     transform: scale(1.05);
@@ -749,7 +920,16 @@
   flex: none;
   min-height: 54px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* "Avanti": sotto le risposte, quando si e' guardato. */
+.quiz-avanti {
+  flex: none;
+  animation: quiz-sale 320ms var(--ease-out) 200ms both;
 }
 
 .quiz-conferma__esito {
@@ -873,6 +1053,11 @@
   background: var(--red);
 }
 
+.quiz-fine__caselle li.is-ripasso {
+  outline: 2px dashed color-mix(in srgb, var(--quiz-1) 70%, transparent);
+  outline-offset: 1px;
+}
+
 /* Le caselle entrano una dopo l'altra, come le lettere di una parola indovinata. */
 .quiz-fine__caselle li {
   animation-delay: calc(300ms + min(var(--i), 12) * 40ms);
@@ -969,12 +1154,25 @@
   color: var(--label-secondary);
 }
 
+.quiz-riepilogo__ripasso {
+  font-style: normal;
+  font-weight: 800;
+  color: var(--quiz-lettera-ink);
+}
+
 .quiz-riepilogo__voce.is-giusta .quiz-riepilogo__risposta {
   color: var(--green);
   font-weight: 700;
 }
 
 /* ───────────────────────  Schermi bassi e larghi  ─────────────────────── */
+
+/* Su uno schermo largo la cartina muta prende piu' posto: e' lei il gioco, e un fiume vuole spazio. */
+@media (min-width: 900px) {
+  .quiz:has(> .quiz-mappa) {
+    width: calc(min(100%, 1000px) + 2 * var(--anelli));
+  }
+}
 
 /* Schermi bassi: la carta cede per prima, poi le risposte si abbassano. */
 @container quiz (max-height: 520px) {
@@ -1067,6 +1265,63 @@
   .quiz-fine {
     min-height: calc(100svh - 120px);
   }
+
+  /*
+   * A scelta: la carta a sinistra, alta quanto le due righe; a destra le
+   * risposte, e "Avanti" in fondo, accanto alla carta e non sotto, dove
+   * finirebbe fuori dallo schermo.
+   */
+  .quiz > .quiz-carta:not(.is-cartina) {
+    grid-column: 1;
+    grid-row: 2 / span 2;
+  }
+
+  .quiz > .quiz-opzioni {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .quiz > .quiz-avanti {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: end;
+  }
+
+  /* Sulla cartina: la domanda e la conferma in una riga, sotto la cartina larga quanto lo schermo. */
+  .quiz > .quiz-carta.is-cartina {
+    grid-column: 1;
+    grid-row: 2;
+    height: auto;
+    min-height: 48px;
+  }
+
+  .quiz > .quiz-conferma {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 48px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .quiz-conferma > .btn,
+  .quiz-conferma .quiz-avanti__bottone {
+    flex: 1;
+    min-height: 48px;
+  }
+
+  .quiz-conferma__esito {
+    flex: 1;
+    font-size: var(--text-subheadline);
+    line-height: 1.2;
+  }
+
+  .quiz > .quiz-mappa {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    height: calc(100svh - 190px);
+    min-height: 160px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1089,7 +1344,11 @@
   .quiz-fine__scheda,
   .quiz-fine__giuste,
   .quiz-fine__caselle li,
-  .quiz-fine__azioni {
+  .quiz-fine__azioni,
+  .quiz-carta__cartina,
+  .quiz-carta__bandierina,
+  .quiz-opzione__lettera.is-bandiera,
+  .quiz-avanti {
     animation: none;
   }
 

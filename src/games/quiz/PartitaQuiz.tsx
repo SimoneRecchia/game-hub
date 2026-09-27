@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
 import { Coriandoli, useFesta } from '@/components/Elementi'
@@ -6,36 +6,22 @@ import { IconCheck, IconClock, IconClose } from '@/components/Icons'
 import { IconaScheda, Pillola, Scheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { formatCronometro } from '@/lib/format'
-import { NOMI_CATEGORIE, PUNTI_BASE_QUIZ, SECONDI_CARTINA, SECONDI_SCELTA, type CategoriaQuiz } from '@shared/quiz'
-import type { DomandaQuiz } from '@shared/quiz-domande'
+import { NOMI_CATEGORIE, NOMI_MODI, PUNTI_BASE_QUIZ, SECONDI_CARTINA, SECONDI_SCELTA, type CategoriaQuiz } from '@shared/quiz'
+import type { DomandaQuiz, IndiceQuiz, OpzioneQuiz } from '@shared/quiz-domande'
 import { adesivoFine, adesivoGiusta, adesivoSbagliata, adesivoTempo } from './adesivi'
-import { Cartina } from './cartina/Cartina'
+import { misureBandiera, urlBandiera } from './bandiere'
+import { Cartina, type EsitoCartina, type PuntoCartina } from './cartina/Cartina'
+import { useIndiceQuiz } from './dati'
 import { IconaCategoria } from './icone'
+import { descrizione } from './testi'
 import { VIA_MS, type Fatta, type VistaPartita } from './usePartita'
+import { luogoDellaRisposta, postoDellOpzione, zonaDellaPartita } from './zona'
 import './PartitaQuiz.css'
 
-const LETTERE = ['A', 'B', 'C', 'D']
+const LETTERE = ['A', 'B', 'C', 'D', 'E', 'F']
 
-/** Le parole delle categorie, per l'intro: cosa si chiede, in una riga. */
-export const DESCRIZIONI: Record<CategoriaQuiz, string> = {
-  capitali: 'La capitale di un paese, o il paese di una capitale.',
-  bandiere: 'Di chi è una bandiera, o quale bandiera è di chi.',
-  cartina: 'Un paese, un mare o un oceano da trovare sulla cartina muta.',
-  mari: 'Quale mare bagna un paese, e quale paese bagna un mare.',
-  oceani: 'Quale oceano bagna un paese, e quale paese bagna un oceano.',
-  fiumi: 'In quale paese scorre un fiume, e quale fiume scorre in un paese.',
-  laghi: 'In quale paese si trova un lago, e quale lago si trova in un paese.',
-}
-
-/** Le larghezze che flagcdn tiene pronte, fra quelle che servono qui. */
-export function urlBandiera(codice: string, larghezza: 40 | 80 | 160 | 320 | 640 = 320): string {
-  return `https://flagcdn.com/w${larghezza}/${codice}.png`
-}
-
-/** Le due misure di una bandiera, per `srcSet`: il browser prende quella che serve allo schermo. */
-function misureBandiera(codice: string, piccola: 160 | 320, grande: 320 | 640): string {
-  return `${urlBandiera(codice, piccola)} ${piccola}w, ${urlBandiera(codice, grande)} ${grande}w`
-}
+/** Un'opzione che e' un paese: il suo id e' il codice ISO, e a risposta data ha la bandiera. */
+const ePaese = (id: string) => /^[A-Z]{2}$/.test(id)
 
 interface Props {
   p: VistaPartita
@@ -52,11 +38,15 @@ interface Props {
  *
  * Una schermata che non scorre, come gli altri giochi: la testata con il
  * numero della domanda e il tempo, la carta della domanda — il testo, e la
- * bandiera o la cartina — e sotto le quattro risposte, grandi come tasti. Si
- * sceglie con un tocco, o con 1-4 e A-D dalla tastiera.
+ * bandiera — e sotto le risposte, grandi come tasti, o la cartina muta. Si
+ * sceglie con un tocco, o con 1-6 e A-F dalla tastiera; Invio va avanti.
+ *
+ * A risposta data, con la cartina che insegna, la carta diventa una cartina con
+ * i nomi: dov'e' la risposta giusta, e dove quella scelta. Si va avanti con
+ * "Avanti", quando si e' guardato.
  */
 export function PartitaQuiz({ p, classificata, azioniFine, intro }: Props) {
-  const { adesivo, accoda } = useCodaAdesivi()
+  const { adesivo, accoda, subito } = useCodaAdesivi()
   const [riepilogo, setRiepilogo] = useState(false)
 
   // L'adesivo di ogni risposta, appena arriva. Serie e posizione si leggono
@@ -79,16 +69,17 @@ export function PartitaQuiz({ p, classificata, azioniFine, intro }: Props) {
 
   // La fine: la festa e l'adesivo solo per una partita vista giocare.
   const inCorso = p.fase === 'caricamento' || p.fase === 'errore' ? null : p.fase !== 'fine'
-  const quota = p.totale > 0 ? p.giuste / p.totale : 0
+  const risposte = p.ripassoDa ?? p.fatte.length
+  const quota = risposte > 0 ? p.giuste / risposte : 0
   const festa = useFesta(inCorso, p.fase === 'fine' && quota >= 0.7)
   const finita = useFesta(inCorso, p.fase === 'fine')
-  const conto = useRef({ giuste: p.giuste, totale: p.totale, punti: p.punti })
-  conto.current = { giuste: p.giuste, totale: p.totale, punti: p.punti }
+  const conto = useRef({ giuste: p.giuste, totale: risposte, punti: p.punti, fuori: fuoriDi(p) })
+  conto.current = { giuste: p.giuste, totale: risposte, punti: p.punti, fuori: fuoriDi(p) }
   useEffect(() => {
     if (!finita) return
-    const { giuste, totale, punti } = conto.current
-    accoda(adesivoFine(giuste, totale, classificata ? punti : null))
-  }, [finita, accoda, classificata])
+    const { giuste, totale, punti, fuori } = conto.current
+    subito(adesivoFine(giuste, totale, classificata ? punti : null, fuori))
+  }, [finita, subito, classificata])
 
   return (
     <div className="quiz">
@@ -103,9 +94,7 @@ export function PartitaQuiz({ p, classificata, azioniFine, intro }: Props) {
         </div>
       )}
 
-      {p.fase === 'intro' && p.categoria && (
-        <Intro categoria={p.categoria} totale={p.totale} fatte={p.fatte.length} intro={intro} onVia={p.comincia} />
-      )}
+      {p.fase === 'intro' && p.categoria && <Intro p={p} categoria={p.categoria} intro={intro} />}
 
       {p.fase === 'via' && p.categoria && <Via categoria={p.categoria} />}
 
@@ -135,20 +124,11 @@ export function PartitaQuiz({ p, classificata, azioniFine, intro }: Props) {
 
 /* ──────────────────────────────  L'intro  ────────────────────────────── */
 
-function Intro({
-  categoria,
-  totale,
-  fatte,
-  intro,
-  onVia,
-}: {
-  categoria: CategoriaQuiz
-  totale: number
-  fatte: number
-  intro?: Props['intro']
-  onVia: () => void
-}) {
-  const ripresa = fatte > 0
+function Intro({ p, categoria, intro }: { p: VistaPartita; categoria: CategoriaQuiz; intro?: Props['intro'] }) {
+  const ripresa = p.fatte.length > 0
+  const cartina = p.modo === 'cartina'
+  // La classificata ha i tempi di tutti; la libera quelli scelti, il doppio sulla cartina.
+  const secondi = intro ? (p.opzioni.secondi === null ? null : p.opzioni.secondi * (cartina ? 2 : 1)) : cartina ? SECONDI_CARTINA : SECONDI_SCELTA
   return (
     <div className="quiz-intro">
       <div className="quiz-intro__disegno" aria-hidden="true">
@@ -159,18 +139,24 @@ function Intro({
       </div>
       <p className="quiz-intro__sopra">{intro?.sotto ?? 'Il quiz di oggi'}</p>
       <h2 className="quiz-intro__titolo">{intro?.titolo ?? NOMI_CATEGORIE[categoria]}</h2>
-      <p className="quiz-intro__testo">{DESCRIZIONI[categoria]}</p>
+      <p className="quiz-intro__testo">{descrizione(categoria, p.modo)}</p>
       <div className="quiz-intro__regole">
         <span>
-          <strong className="u-tabnum">{totale}</strong> domande
+          <strong className="u-tabnum">{p.totale}</strong> domande
         </span>
+        {p.modo && <span>{NOMI_MODI[p.modo]}</span>}
         <span>
-          <strong className="u-tabnum">{categoria === 'cartina' ? SECONDI_CARTINA : SECONDI_SCELTA}</strong> secondi
-          l’una
+          {secondi === null ? (
+            'Senza tempo'
+          ) : (
+            <>
+              <strong className="u-tabnum">{secondi}</strong> secondi l’una
+            </>
+          )}
         </span>
       </div>
-      <Button size="lg" fullWidth onClick={onVia}>
-        {ripresa ? `Riprendi dalla ${fatte + 1}ª domanda` : (intro?.azione ?? 'Comincia')}
+      <Button size="lg" fullWidth onClick={p.comincia}>
+        {ripresa ? `Riprendi dalla ${p.fatte.length + 1}ª domanda` : (intro?.azione ?? 'Comincia')}
       </Button>
     </div>
   )
@@ -205,26 +191,40 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
   const [sceltaCartina, setSceltaCartina] = useState<string | null>(null)
   useEffect(() => setSceltaCartina(null), [p.indice])
 
-  // Da tastiera, su computer: 1-4 o A-D per rispondere, Invio per confermare sulla cartina.
-  const { rispondi } = p
+  const sullaCartina = !!d?.cartina
+  const rivela = p.opzioni.imparo && !!esito && !sullaCartina
+  // I dati servono alla cartina e a dire dove sta una risposta: si chiedono solo se c'e' una cartina.
+  const ix = useIndiceQuiz(p.modo === 'cartina' || sullaCartina || p.opzioni.imparo)
+  const manuale = !p.opzioni.avantiDaSolo
+
+  // Da tastiera, su computer: 1-6 o A-F per rispondere, Invio per confermare o per andare avanti.
+  const { rispondi, avanti } = p
   useEffect(() => {
-    if (!d || esito) return
+    if (!d) return
     const tasto = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return
+      if (esito) {
+        if (manuale && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault()
+          avanti()
+        }
+        return
+      }
       if (d.cartina) {
         if (e.key === 'Enter' && sceltaCartina) rispondi(sceltaCartina)
         return
       }
       if (e.key.length !== 1) return
-      const i = '1234'.includes(e.key) ? '1234'.indexOf(e.key) : 'abcd'.indexOf(e.key.toLowerCase())
-      if (i >= 0 && d.opzioni[i]) {
+      const i = '123456'.includes(e.key) ? '123456'.indexOf(e.key) : 'abcdef'.indexOf(e.key.toLowerCase())
+      const o = d.opzioni[i]
+      if (i >= 0 && o && !p.esclusi.has(o.id)) {
         e.preventDefault()
-        rispondi(d.opzioni[i].id)
+        rispondi(o.id)
       }
     }
     window.addEventListener('keydown', tasto)
     return () => window.removeEventListener('keydown', tasto)
-  }, [d, esito, rispondi, sceltaCartina])
+  }, [d, esito, rispondi, avanti, sceltaCartina, manuale, p.esclusi])
 
   // Il tempo finisce: la risposta e' "nessuna".
   useEffect(() => {
@@ -235,14 +235,17 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
 
   if (!d) return <div className="quiz__attesa" aria-hidden="true" />
 
-  const forma = d.cartina ? ' is-cartina' : d.bandiera ? ' is-bandiera' : ' is-testo'
   const com = esito ? (esito.risposta.giusta ? ' is-giusta' : ' is-sbagliata') : ''
+  const nelRipasso = p.ripassoDa !== null && p.indice >= p.ripassoDa
+  const titolo = nelRipasso
+    ? `Ripasso ${p.indice - p.ripassoDa! + 1} di ${p.totale - p.ripassoDa!}`
+    : `Domanda ${Math.min(p.indice + 1, p.totale)} di ${p.ripassoDa ?? p.totale}`
 
   return (
     <>
       <Scheda
         className="quiz__tabellone"
-        titolo={`Domanda ${Math.min(p.indice + 1, p.totale)} di ${p.totale}`}
+        titolo={titolo}
         icona={
           <IconaScheda colore="var(--quiz-1)">
             <IconaCategoria categoria={categoria} size={15} />
@@ -253,70 +256,188 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
         <Progresso p={p} />
       </Scheda>
 
-      {/* Chiavi diverse per carta e risposte: sono fratelle, e con la stessa chiave
-          React non saprebbe quale togliere, e la carta vecchia resterebbe. */}
-      <section key={`carta-${p.indice}`} className={`quiz-carta${forma}${com}`} aria-live="polite">
-        {!d.cartina && !d.bandiera && (
-          <span className="quiz-carta__emblema" aria-hidden="true">
-            <IconaCategoria categoria={categoria} size={40} />
-          </span>
-        )}
-        <p className="quiz-carta__testo">{d.testo}</p>
-        {d.bandiera && (
-          <span className="quiz-carta__bandiera">
-            <img
-              src={urlBandiera(d.bandiera, 320)}
-              srcSet={misureBandiera(d.bandiera, 320, 640)}
-              sizes="(min-width: 700px) 440px, 300px"
-              alt="La bandiera da riconoscere"
-              draggable={false}
-            />
-          </span>
-        )}
-        {d.cartina && (
-          <Cartina
-            vista={d.cartina.vista}
-            strato={d.cartina.strato}
-            scelta={sceltaCartina}
-            onScegli={esito ? undefined : setSceltaCartina}
-            esito={
-              esito
-                ? {
-                    giusta: esito.risposta.corretta,
-                    accettate: esito.accettate ?? [],
-                    scelta: esito.risposta.scelta,
-                  }
-                : null
-            }
-            etichetta={d.testo}
-          />
-        )}
-      </section>
-
-      {d.cartina ? (
-        <div className="quiz-conferma">
-          {esito ? (
-            <p className={`quiz-conferma__esito${esito.risposta.giusta ? ' is-giusta' : ''}`}>
-              {esito.risposta.giusta
-                ? 'Trovato!'
-                : `${esito.risposta.scelta === null ? 'Tempo scaduto' : 'Sbagliato'} · in verde: ${esito.risposta.risposta}`}
-            </p>
-          ) : (
-            <Button
-              size="lg"
-              fullWidth
-              disabled={!sceltaCartina}
-              loading={p.inviando}
-              onClick={() => sceltaCartina && rispondi(sceltaCartina)}
-            >
-              {sceltaCartina ? 'È qui' : 'Tocca la cartina'}
-            </Button>
-          )}
-        </div>
+      {sullaCartina ? (
+        <>
+          {/* Il testo cambia a ogni domanda; la cartina no, e con lei la vista. */}
+          <section key={`carta-${p.indice}`} className={`quiz-carta is-cartina${com}`} aria-live="polite">
+            {d.bandiera && (
+              <img
+                className="quiz-carta__bandierina"
+                src={urlBandiera(d.bandiera, 160)}
+                srcSet={`${urlBandiera(d.bandiera, 320)} 2x`}
+                alt="La bandiera da riconoscere"
+                draggable={false}
+              />
+            )}
+            <p className="quiz-carta__testo">{d.testo}</p>
+          </section>
+          <div className="quiz-mappa">
+            <CartinaDellaPartita p={p} ix={ix} d={d} scelta={sceltaCartina} onScegli={esito ? undefined : setSceltaCartina} />
+          </div>
+          <div className="quiz-conferma">
+            {esito ? (
+              <>
+                <p className={`quiz-conferma__esito${esito.risposta.giusta ? ' is-giusta' : ''}`}>
+                  {esito.risposta.giusta
+                    ? 'Trovato!'
+                    : `${esito.risposta.scelta === null ? 'Tempo scaduto' : 'Sbagliato'} · ${esito.risposta.risposta}`}
+                </p>
+                {manuale && <Avanti p={p} />}
+              </>
+            ) : (
+              <Button
+                size="lg"
+                fullWidth
+                disabled={!sceltaCartina}
+                loading={p.inviando}
+                onClick={() => sceltaCartina && rispondi(sceltaCartina)}
+              >
+                {sceltaCartina ? 'È qui' : 'Tocca la cartina'}
+              </Button>
+            )}
+          </div>
+        </>
       ) : (
-        <Opzioni key={`opzioni-${p.indice}`} d={d} esito={esito} inviando={p.inviando} onScegli={rispondi} />
+        <>
+          {/* Chiavi diverse per carta e risposte: sono fratelle, e con la stessa chiave
+              React non saprebbe quale togliere, e la carta vecchia resterebbe. */}
+          <section
+            key={`carta-${p.indice}`}
+            className={`quiz-carta${rivela ? ' is-rivela' : d.bandiera ? ' is-bandiera' : ' is-testo'}${com}`}
+            aria-live="polite"
+          >
+            {!rivela && !d.bandiera && (
+              <span className="quiz-carta__emblema" aria-hidden="true">
+                <IconaCategoria categoria={categoria} size={40} />
+              </span>
+            )}
+            {rivela && d.bandiera && (
+              <img className="quiz-carta__bandierina" src={urlBandiera(d.bandiera, 160)} alt="" draggable={false} />
+            )}
+            <p className="quiz-carta__testo">{d.testo}</p>
+            {!rivela && d.bandiera && (
+              <span className="quiz-carta__bandiera">
+                <img
+                  src={urlBandiera(d.bandiera, 320)}
+                  srcSet={misureBandiera(d.bandiera, 320, 640)}
+                  sizes="(min-width: 700px) 440px, 300px"
+                  alt="La bandiera da riconoscere"
+                  draggable={false}
+                />
+              </span>
+            )}
+            {!esito && p.opzioni.aiuti && p.aiutiRimasti > 0 && d.opzioni.length >= 3 && (
+              <button
+                type="button"
+                className="quiz-carta__aiuto"
+                disabled={p.esclusi.size > 0}
+                onClick={p.usaAiuto}
+                aria-label={`Cinquanta e cinquanta: toglie metà delle risposte sbagliate. Ne restano ${p.aiutiRimasti}.`}
+              >
+                50:50 <span className="u-tabnum">×{p.aiutiRimasti}</span>
+              </button>
+            )}
+            {rivela && esito && (
+              <div className="quiz-carta__cartina">
+                <CartinaDellaPartita p={p} ix={ix} d={d} scelta={null} risposta={esito} />
+              </div>
+            )}
+          </section>
+          <Opzioni
+            key={`opzioni-${p.indice}`}
+            d={d}
+            esito={esito}
+            inviando={p.inviando}
+            esclusi={p.esclusi}
+            compatte={rivela}
+            onScegli={rispondi}
+          />
+          {esito && manuale && (
+            <div className="quiz-avanti">
+              <Avanti p={p} />
+            </div>
+          )}
+        </>
       )}
     </>
+  )
+}
+
+/** "Avanti", o "Risultato" all'ultima domanda. */
+function Avanti({ p }: { p: VistaPartita }) {
+  return (
+    <Button size="lg" fullWidth onClick={p.avanti} className="quiz-avanti__bottone">
+      {p.finale ? 'Risultato' : 'Avanti'}
+    </Button>
+  )
+}
+
+/**
+ * La cartina di una partita: la stessa per tutte le domande sulla cartina, o
+ * quella che nasce a risposta data per le domande a scelta. La zona, i posti
+ * da toccare e i nomi vengono dalle opzioni della partita.
+ */
+function CartinaDellaPartita({
+  p,
+  ix,
+  d,
+  scelta,
+  onScegli,
+  risposta,
+}: {
+  p: VistaPartita
+  ix: IndiceQuiz | null
+  d: DomandaQuiz
+  scelta: string | null
+  onScegli?: (id: string) => void
+  /** Per la cartina che insegna: la risposta data a una domanda a scelta. */
+  risposta?: Fatta
+}) {
+  const strato = risposta ? null : (d.cartina?.strato ?? null)
+  // La vista della domanda conta solo alla prima: dopo la cartina resta dov'e'.
+  const [vistaIniziale] = useState(d.cartina?.vista)
+  const zona = useMemo(
+    () => (ix ? zonaDellaPartita(ix, p.area, strato, p.opzioni.soloZona, p.citta, vistaIniziale) : null),
+    [ix, p.area, strato, p.opzioni.soloZona, p.citta, vistaIniziale],
+  )
+  const punti: PuntoCartina[] | undefined = useMemo(
+    () => p.citta?.map((c) => ({ id: `u:${c.id}`, lon: c.pt[0], lat: c.pt[1], nome: c.n })),
+    [p.citta],
+  )
+  const fatta = risposta ?? (p.fase === 'esito' ? p.ultima : null)
+  const esito: EsitoCartina | null = useMemo(() => {
+    if (!fatta || !ix) return null
+    const r = fatta.risposta
+    const sullaCartina = !!fatta.domanda.cartina
+    const giusta = sullaCartina ? r.corretta : (postoDellOpzione(ix, r.corretta) ?? '')
+    const sceltaQui = sullaCartina ? r.scelta : postoDellOpzione(ix, r.scelta)
+    return {
+      giusta,
+      accettate: sullaCartina ? (fatta.accettate ?? []) : [],
+      scelta: r.giusta ? null : sceltaQui,
+      luogo: luogoDellaRisposta(ix, fatta.domanda, r),
+    }
+  }, [fatta, ix])
+  if (!zona) return <div className="quiz__attesa" aria-hidden="true" />
+  // I nomi dei paesi aiutano a orientarsi, ma dove si cerca un paese sarebbero la risposta.
+  const nomiPaesi = p.opzioni.nomiPaesi && strato !== 'paesi'
+  return (
+    <Cartina
+      inquadra={zona.inquadra}
+      fuoco={zona.fuoco}
+      strato={strato}
+      zona={zona.zona}
+      toccabili={zona.toccabili}
+      evidenzia={p.opzioni.evidenzia}
+      nomiPaesi={nomiPaesi}
+      scelta={scelta}
+      onScegli={onScegli}
+      mostra={d.cartina?.mostra}
+      esito={esito}
+      rivela={p.opzioni.imparo}
+      punti={punti}
+      etichetta={d.testo}
+    />
   )
 }
 
@@ -361,15 +482,33 @@ function Progresso({ p }: { p: VistaPartita }) {
   // Quando si risponde la scadenza sparisce: la miccia si ferma dove era arrivata.
   const ultimaScadenza = useRef<number | null>(null)
   if (p.scade !== null) ultimaScadenza.current = p.scade
+  // Oltre le venti domande le caselle sarebbero fili: una barra che si riempie.
+  const tante = p.totale > 20
   return (
     <div className="quiz-progresso">
-      <ol className="quiz-progresso__caselle" aria-label={`${p.fatte.length} risposte date su ${p.totale}`}>
-        {Array.from({ length: p.totale }, (_, i) => {
-          const f = p.fatte[i]
-          const classe = f ? (f.risposta.giusta ? ' is-giusta' : ' is-sbagliata') : i === p.indice ? ' is-corrente' : ''
-          return <li key={i} className={`quiz-progresso__casella${classe}`} />
-        })}
-      </ol>
+      {tante ? (
+        <div
+          className="quiz-progresso__barra"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={p.totale}
+          aria-valuenow={p.fatte.length}
+        >
+          <span style={{ '--pieno': p.fatte.length / Math.max(1, p.totale) } as CSSProperties} />
+          <em className="u-tabnum">
+            {p.fatte.filter((f) => f.risposta.giusta).length} giuste su {p.fatte.length}
+          </em>
+        </div>
+      ) : (
+        <ol className="quiz-progresso__caselle" aria-label={`${p.fatte.length} risposte date su ${p.totale}`}>
+          {Array.from({ length: p.totale }, (_, i) => {
+            const f = p.fatte[i]
+            const classe = f ? (f.risposta.giusta ? ' is-giusta' : ' is-sbagliata') : i === p.indice ? ' is-corrente' : ''
+            const ripasso = p.ripassoDa !== null && i >= p.ripassoDa ? ' is-ripasso' : ''
+            return <li key={i} className={`quiz-progresso__casella${classe}${ripasso}`} />
+          })}
+        </ol>
+      )}
       {p.limiteMs > 0 && (
         <Miccia
           key={`${p.indice}-${p.scade === null ? 'ferma' : 'va'}`}
@@ -407,24 +546,40 @@ function Opzioni({
   d,
   esito,
   inviando,
+  esclusi,
+  compatte,
   onScegli,
 }: {
   d: DomandaQuiz
   esito: Fatta | null
   inviando: boolean
+  esclusi: ReadonlySet<string>
+  /** Con la cartina che insegna, restano la giusta e quella scelta: il resto dello spazio e' della cartina. */
+  compatte: boolean
   onScegli: (id: string) => void
 }) {
   const [scelta, setScelta] = useState<string | null>(null)
   const bandiere = d.opzioni.some((o) => o.bandiera)
   const lunghe = d.opzioni.some((o) => o.testo.length > 18)
+  const sei = d.opzioni.length > 4
+  const visibili = compatte && esito
+    ? d.opzioni.filter((o) => o.id === esito.risposta.corretta || o.id === esito.risposta.scelta)
+    : d.opzioni
   return (
-    <div className={`quiz-opzioni${bandiere ? ' is-bandiere' : ''}${lunghe && !bandiere ? ' is-lunghe' : ''}`}>
-      {d.opzioni.map((o, i) => {
+    <div
+      className={`quiz-opzioni${bandiere ? ' is-bandiere' : ''}${lunghe && !bandiere ? ' is-lunghe' : ''}${
+        sei ? ' is-sei' : ''
+      }${compatte && esito ? ' is-compatte' : ''}`}
+    >
+      {visibili.map((o) => {
+        const i = d.opzioni.indexOf(o)
         let stato = ''
         if (esito) {
           if (o.id === esito.risposta.corretta) stato = ' is-giusta'
           else if (o.id === esito.risposta.scelta) stato = ' is-sbagliata'
           else stato = ' is-spenta'
+        } else if (esclusi.has(o.id)) {
+          stato = ' is-esclusa'
         } else if (inviando && o.id === scelta) {
           stato = ' is-scelta'
         }
@@ -434,7 +589,7 @@ function Opzioni({
             type="button"
             className={`quiz-opzione${stato}`}
             style={{ '--i': i } as CSSProperties}
-            disabled={!!esito || inviando}
+            disabled={!!esito || inviando || esclusi.has(o.id)}
             onClick={() => {
               setScelta(o.id)
               onScegli(o.id)
@@ -454,15 +609,7 @@ function Opzioni({
               </>
             ) : (
               <>
-                <span className="quiz-opzione__lettera" aria-hidden="true">
-                  {stato === ' is-giusta' ? (
-                    <IconCheck size={15} />
-                  ) : stato === ' is-sbagliata' ? (
-                    <IconClose size={15} />
-                  ) : (
-                    LETTERE[i]
-                  )}
-                </span>
+                <Lettera o={o} i={i} stato={stato} esito={!!esito} />
                 <span className="quiz-opzione__testo">{o.testo}</span>
               </>
             )}
@@ -470,6 +617,26 @@ function Opzioni({
         )
       })}
     </div>
+  )
+}
+
+/**
+ * Il bollo a sinistra di una risposta: la lettera, il segno a risposta data,
+ * e per i paesi la bandiera — che prima di rispondere, per "di quale stato e'
+ * capitale Canberra?", sarebbe un aiuto, e dopo e' una cosa in piu' da imparare.
+ */
+function Lettera({ o, i, stato, esito }: { o: OpzioneQuiz; i: number; stato: string; esito: boolean }) {
+  if (esito && ePaese(o.id)) {
+    return (
+      <span className="quiz-opzione__lettera is-bandiera" aria-hidden="true">
+        <img src={urlBandiera(o.id.toLowerCase(), 80)} alt="" draggable={false} />
+      </span>
+    )
+  }
+  return (
+    <span className="quiz-opzione__lettera" aria-hidden="true">
+      {stato === ' is-giusta' ? <IconCheck size={15} /> : stato === ' is-sbagliata' ? <IconClose size={15} /> : LETTERE[i]}
+    </span>
   )
 }
 
@@ -486,6 +653,9 @@ function Fine({
   onRivedi: () => void
   children: ReactNode
 }) {
+  const primoGiro = p.fatte.filter((f) => !f.ripasso)
+  const ripasso = p.fatte.filter((f) => f.ripasso)
+  const fuori = fuoriDi(p)
   return (
     <div className="quiz-fine">
       <Scheda
@@ -506,18 +676,29 @@ function Fine({
       >
         <div className="quiz-fine__conto">
           <span className="quiz-fine__giuste u-tabnum">{p.giuste}</span>
-          <span className="quiz-fine__su">su {p.totale}</span>
+          <span className="quiz-fine__su">{fuori ? 'di fila' : `su ${classificata ? p.totale : primoGiro.length}`}</span>
         </div>
+        {fuori && (
+          <p className="quiz-fine__punti">
+            Morte improvvisa: fuori alla domanda <strong className="u-tabnum">{primoGiro.length}</strong> di {p.totale}
+          </p>
+        )}
         {classificata && p.punti !== null && (
           <p className="quiz-fine__punti">
             <strong className="u-tabnum">{p.punti}</strong> punti in classifica
+          </p>
+        )}
+        {ripasso.length > 0 && (
+          <p className="quiz-fine__punti">
+            Ripasso: <strong className="u-tabnum">{ripasso.filter((f) => f.risposta.giusta).length}</strong> su{' '}
+            {ripasso.length} recuperate
           </p>
         )}
         <ol className="quiz-fine__caselle" aria-hidden="true">
           {p.fatte.map((f, i) => (
             <li
               key={i}
-              className={f.risposta.giusta ? 'is-giusta' : 'is-sbagliata'}
+              className={`${f.risposta.giusta ? 'is-giusta' : 'is-sbagliata'}${f.ripasso ? ' is-ripasso' : ''}`}
               style={{ '--i': i } as CSSProperties}
             >
               {f.risposta.giusta ? <IconCheck size={13} /> : <IconClose size={13} />}
@@ -533,6 +714,11 @@ function Fine({
   )
 }
 
+/** Se la partita l'ha chiusa la morte improvvisa: una sbagliata nel primo giro. */
+function fuoriDi(p: VistaPartita): boolean {
+  return p.opzioni.morteImprovvisa && p.fatte.some((f) => !f.ripasso && !f.risposta.giusta)
+}
+
 function Riepilogo({ fatte }: { fatte: Fatta[] }) {
   return (
     <ol className="quiz-riepilogo">
@@ -540,6 +726,7 @@ function Riepilogo({ fatte }: { fatte: Fatta[] }) {
         const scelta = f.domanda.opzioni.find((o) => o.id === f.risposta.scelta)
         // Se si sceglieva fra bandiere, la risposta giusta si mostra con la sua.
         const giusta = f.domanda.opzioni.find((o) => o.id === f.risposta.corretta)
+        const bandieraGiusta = giusta?.bandiera ?? (giusta && ePaese(giusta.id) ? giusta.id.toLowerCase() : undefined)
         return (
           <li key={i} className={`quiz-riepilogo__voce${f.risposta.giusta ? ' is-giusta' : ''}`}>
             <span className="quiz-riepilogo__segno" aria-hidden="true">
@@ -555,14 +742,15 @@ function Riepilogo({ fatte }: { fatte: Fatta[] }) {
                     alt=""
                   />
                 )}
+                {f.ripasso && <em className="quiz-riepilogo__ripasso">Ripasso · </em>}
                 {f.domanda.testo}
               </span>
               <span className="quiz-riepilogo__risposta">
-                {giusta?.bandiera && (
+                {bandieraGiusta && (
                   <img
                     className="quiz-riepilogo__bandiera"
-                    src={urlBandiera(giusta.bandiera, 40)}
-                    srcSet={`${urlBandiera(giusta.bandiera, 80)} 2x`}
+                    src={urlBandiera(bandieraGiusta, 40)}
+                    srcSet={`${urlBandiera(bandieraGiusta, 80)} 2x`}
                     alt=""
                   />
                 )}

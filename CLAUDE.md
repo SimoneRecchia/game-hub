@@ -286,7 +286,7 @@ giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
 punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
 Wordle con una parola a caso, Scarabeo a turni contro il computer, cruciverba
 da una scorta di schemi, battaglia contro il computer o contro un amico, quiz
-sulla categoria, la zona e il numero di domande che si sceglie. Gli
+sulla categoria, il modo, la zona e le opzioni che si scelgono. Gli
 indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 (`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
 nuovi in `App.tsx`).
@@ -351,16 +351,33 @@ riporta solo le partite fra amici: una partita col computer lasciata a meta' non
 deve comparire come "la battaglia con X e' in corso".
 
 **Le domande del quiz si fanno la notte, e la classificata e' una categoria
-sola.** `scripts/genera-quiz.ts` (il passo "Il quiz" di `cruciverba.yml`, e il
-deploy per le prossime due settimane) scrive in `quiz_giornate` le dieci
-domande di ogni giornata, risposte comprese, con `INSERT OR IGNORE`: come gli
-schemi del cruciverba, una giornata scritta non cambia piu'. Sono
-deterministiche dal numero del giorno, evitano i soggetti della stessa
-categoria delle cinque settimane prima, e la categoria la decide
-`categoriaDelGiorno`: giri di sette giorni mescolati, tutte le categorie in una
-settimana e mai la stessa due giorni di fila. Se la giornata manca il gioco
-risponde `QUIZ_ASSENTE` (503) e la card dell'hub dice "Non ancora pronto": in
-locale, `npm run quiz:locale`.
+sola, in un modo solo.** `scripts/genera-quiz.ts` (il passo "Il quiz" di
+`cruciverba.yml`, e il deploy per le prossime due settimane) scrive in
+`quiz_giornate` le dieci domande di ogni giornata, risposte comprese, con
+`INSERT OR IGNORE`: come gli schemi del cruciverba, una giornata scritta non
+cambia piu'. Sono deterministiche dal numero del giorno, evitano i soggetti
+della stessa categoria delle cinque settimane prima, e categoria e modo li
+decide `giornataDelQuiz`: giri mescolati delle categorie della classificata,
+mai la stessa due giorni di fila, e due giorni per giro sulla cartina muta
+(`GIORNI_CARTINA_PER_GIRO`), mai vicini. Se la giornata manca il gioco risponde
+`QUIZ_ASSENTE` (503) e la card dell'hub dice "Non ancora pronto": in locale,
+`npm run quiz:locale`.
+
+L'unica eccezione al "non cambia piu'" e' `FORMATO`: una giornata di un formato
+vecchio **nel futuro e che nessuno ha aperto** si riscrive (`DA_RIFARE`), perché
+nessuno l'ha vista. Il 2 e' quello del modo e del `luogo` di ogni domanda, che la
+cartina mostra a risposta data; oggi e il passato restano come sono, anche di un
+formato vecchio, e la colonna `formato` (migrazione `0016`) dice di quale.
+
+**Le città si giocano solo nella libera.** Sono troppe e troppo difficili per
+una partita uguale per tutti: `CATEGORIE_CLASSIFICATA` non le ha. Anche il resto
+della classificata e' fisso — dieci domande, il tempo del server, la cartina che
+insegna, "Avanti" a mano, niente aiuti — mentre la libera sceglie tutto: fino a
+`QUANTE_MASSIME` domande (cinquanta), e nelle opzioni avanzate quali domande,
+fra quante risposte, quanto note, il ritmo, cosa accendere sulla cartina, i due
+"50 e 50", il ripasso delle sbagliate e la morte improvvisa. L'indirizzo porta
+solo quel che non e' come di solito (`BANDIERINE` in `QuizLibero.tsx`), così una
+partita si condivide con un link che si legge.
 
 **Nel quiz il tempo lo tiene il server, e la risposta resta li'.** Il telefono
 riceve una domanda alla volta senza la risposta (`senzaRisposta`), e l'orologio
@@ -384,16 +401,50 @@ corta — altrimenti la Russia toccava la baia di Baffin. `controllaRiassunto`
 ferma lo script se i conti di controllo non tornano (l'Italia bagnata da
 Tirreno, Adriatico e Ionio; l'Austria da niente).
 
-**I dati del quiz sono un riassunto di cento kB, e le immagini non passano dal
-server.**
+Un paese **senza sbocco sul mare** (`ch`) lo deve dire sia la cartina — nessuna
+acqua sfiorata, Caspio a parte — sia Wikidata: i poligoni marini di Natural
+Earth hanno dei buchi, e con la sola geometria il Benin, il Togo e la Giordania
+risultavano senza mare. I **confinanti** sono due elenchi: `conf`, largo, che
+serve a escludere (un fiume non si chiede accanto a un paese vicino a quelli che
+attraversa), e `cm`, i confinanti sicuri — per Wikidata *e* sulla cartina, con
+la parte principale del paese — che sono le risposte di "con chi confina": il
+Brasile confina con la Francia dalla Guyana, ma non e' la risposta che uno si
+aspetta.
+
+**I dati del quiz sono tre riassunti fatti la notte, e le immagini non passano
+dal server.**
 Paesi, capitali, confini, acque, fiumi e laghi, a chiavi corte, in quattro
 righe di `quiz_dati` — una per sezione, perché D1 non accetta istruzioni oltre
 i cento kB — riscritte solo quando cambia la versione, che e' l'hash del
 contenuto. Il browser lo scarica una volta e lo tiene nel `localStorage` con la
 sua versione (`src/games/quiz/dati.ts`); le libere si fanno tutte lì, con lo
 stesso `generaDomande` della notte e un seme a caso, e le loro statistiche non
-lasciano il telefono. Le bandiere vengono da flagcdn e le geometrie della
-cartina da jsDelivr, a versioni fisse: il Worker non le vede mai.
+lasciano il telefono. Le bandiere vengono da flagcdn, i confini dei paesi e i
+mari della cartina da jsDelivr, a versioni fisse: il Worker non li vede mai.
+
+Due riassunti a parte, perché li scarica solo chi li usa: le **linee dei fiumi e
+le forme dei laghi** (righe `geo:*`, circa duecento kB) e le **città** (righe
+`citta:*`, circa trecento kB, quaranta per paese e centoventi per l'Italia, con
+le regioni). Natural Earth ha i fiumi in file da molti mega, e Wikidata dal
+browser non regge: il servizio pubblico va in timeout sulle città di un paese e
+QLever risponde 429 a chi chiede troppo. Il riassunto dice le loro versioni,
+e `GET /quiz/geometrie?v=` e `GET /quiz/citta?v=` rispondono
+`private, max-age=31536000, immutable` quando la versione e' quella giusta
+(`perSempre`): una richiesta per versione, poi la cache. Per questo il
+middleware di `server/app.ts` mette `no-store` solo se la rotta non ha deciso da
+sé — prima lo scriveva sempre, e cancellava la cache di queste due.
+
+**Un fiume di Natural Earth si ritrova per nome, per posto e per rete.** Il file
+del mondo non ha gli identificativi di Wikidata: `scripts/quiz/geometrie.ts`
+prende i tratti con uno dei nomi inglesi del fiume che passano vicino al suo
+punto di Wikidata o stanno dentro i paesi che attraversa, e poi `collegate`
+tiene solo quelli che fanno una rete: le reti vicine al punto, o la piu' lunga;
+la piu' lunga anche quando e' il doppio di quelle (il punto dell'Irtyš e' alla
+sorgente, dove si chiama Ertix); e le reti che cominciano entro tre gradi dalla
+fine di una tenuta, tranne che dal capo sul punto, che e' foce o sorgente. Senza,
+il "Black River" del Vietnam era un pezzo dell'Amur e il Salado di Buenos Aires
+continuava quello del Norte. Un fiume che nel mondo e' solo le sue linee dentro i
+laghi (lo Snake) non ha una linea, e non si chiede sulla cartina.
 
 **Le domande del quiz parlano italiano, e la grammatica e' una tabella.**
 `shared/quiz-lingua.ts` ha il genere e il numero di ogni paese — "dell'Italia",
@@ -563,14 +614,30 @@ largo com'era, e le misure in `cqw` e `cqh` non cambiano perché contano il
 contenuto e non il riquadro. Un contenitore nuovo che ritaglia vuole lo stesso
 margine.
 
-**La cartina muta e' un SVG, non una libreria.** Gradi dritti con le longitudini
-accorciate del coseno della latitudine di mezzo (`cartina/geometria.ts`): regge
-a scala di continente e tornare da un tocco ai gradi e' una divisione. Si
-sposta e si ingrandisce con i pointer event, e un tocco cerca il paese anche
-attorno al dito (`elementsFromPoint` su due anelli di punti): un dito e' piu'
-grande di Malta. Sotto `SUPERFICIE_MINIMA_CARTINA` un paese non si chiede; a
-risposta data la cartina si avvicina a un paese giusto troppo piccolo per
-vederlo.
+**La cartina muta e' un SVG, non una libreria.** In Mercatore
+(`cartina/geometria.ts`), come le cartine dei telefoni: conserva le forme a ogni
+scala. La proiezione di prima accorciava le longitudini del coseno della
+latitudine di mezzo della vista, e fuori da quella latitudine il mondo si vedeva
+schiacciato. Il mondo si taglia a un meridiano, il 180 o l'Atlantico per
+l'Oceania (`taglioPer`): un poligono a cavallo si disegna due volte, spostato di
+un giro, e il ritaglio tiene quel che si vede. I riquadri lo sanno
+(`arcoMinimo`, `giroPrincipale`): la Russia arriva al 180 e lo passa di un niente
+per l'arrotondamento, e prima il suo riquadro era il mondo intero e il suo nome
+cadeva fuori dalla cartina. Si sposta e si ingrandisce con i pointer event, e un
+tocco cerca il paese anche attorno al dito (`elementsFromPoint` su due anelli di
+punti; fiumi, laghi e pallini con `piuVicino`): un dito e' piu' grande di Malta.
+Sotto `SUPERFICIE_MINIMA_CARTINA` un paese non si chiede.
+
+**La vista della cartina resta dove la lascia chi gioca.** La cartina e' una
+sola per tutta la partita, e da una domanda all'altra non salta sul continente
+della risposta: sarebbe un aiuto. La prima vista e' la zona della partita; a
+risposta data la cartina va sulla risposta e sulla scelta solo se sono piccole o
+fuori dallo schermo, con un margine in pixel per i nomi (`MARGINE_NOMI`), e alla
+domanda dopo torna dov'era. Il mondo c'e' sempre tutto: scelta una zona, fuori
+le terre si attenuano e non si toccano, ma non spariscono, altrimenti non si
+capirebbe dove si e'. A risposta data la cartina smette di essere muta: i nomi
+della risposta, della scelta e dei posti della domanda, con la bandiera dei
+paesi, e quelli dei paesi intorno dove c'e' posto.
 
 **Dentro una griglia CSS le percentuali mentono, su Safari.** Il Wordle era
 tagliato ai lati su iPhone: `width: min(100%, ..., 83.34cqh)` dentro un

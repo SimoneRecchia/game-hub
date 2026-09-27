@@ -37,6 +37,25 @@ export const IconCapitale = (p: Props) => (
   </Svg>
 )
 
+/** Tre palazzi di altezze diverse: la città. */
+export const IconCitta = (p: Props) => (
+  <Svg {...p}>
+    <path d="M3.5 20.5h17" />
+    <path d="M5 20.5V11l4-2v11.5" />
+    <path d="M9 20.5V5l6 2.5v13" />
+    <path d="M15 20.5V11.5l4 1.5v7.5" />
+    <path d="M11.5 9.5h1M11.5 12.5h1M11.5 15.5h1" />
+  </Svg>
+)
+
+/** Due paesi con il confine in mezzo, tratteggiato. */
+export const IconStati = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 7.5 9 4l4 2.5 3.5-1.5L20 8l-1 5 1.5 4-5 3-3.5-1.5L7 20l-3-4.5L5 11z" />
+    <path d="M13 6.5c-.5 3 1 4.5.5 7s-1.5 3-1.5 5" strokeDasharray="1.6 2.2" />
+  </Svg>
+)
+
 /** Una bandiera al vento. */
 export const IconBandiera = (p: Props) => (
   <Svg {...p}>
@@ -99,7 +118,9 @@ export const IconMappamondo = (p: Props) => (
 
 export const ICONE_CATEGORIE: Record<CategoriaQuiz, (p: Props) => ReactElement> = {
   capitali: IconCapitale,
+  citta: IconCitta,
   bandiere: IconBandiera,
+  stati: IconStati,
   cartina: IconCartina,
   mari: IconMare,
   oceani: IconOceano,

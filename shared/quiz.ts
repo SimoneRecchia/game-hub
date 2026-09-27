@@ -1,10 +1,11 @@
 /**
- * Il quiz di geografia: le categorie, i tempi, i punti, la categoria del giorno.
+ * Il quiz di geografia: le categorie, i modi, i tempi, i punti, la giornata.
  *
- * Una partita e' una serie di domande a quattro risposte — o, nella cartina
- * muta, un posto da indicare — tutte della stessa categoria. La classificata
- * e' una al giorno, uguale per tutti, e la categoria cambia ogni giorno; la
- * libera la sceglie chi gioca, con l'area e il numero di domande.
+ * Una partita e' una serie di domande della stessa categoria: a risposte da
+ * scegliere, o sulla cartina muta, dove la risposta si tocca. La classificata
+ * e' una al giorno, uguale per tutti, e categoria e modo cambiano ogni giorno;
+ * la libera la sceglie chi gioca, con la zona, il numero di domande e le
+ * opzioni avanzate.
  *
  * Le domande non le scrive nessuno: le costruisce `shared/quiz-domande.ts` dai
  * dati di Wikidata e di Natural Earth, che lo script della notte riduce a un
@@ -14,24 +15,96 @@
 
 import { mulberry32 } from './daily'
 
-export type CategoriaQuiz = 'capitali' | 'bandiere' | 'cartina' | 'oceani' | 'mari' | 'fiumi' | 'laghi'
+/**
+ * `cartina` e' la categoria di una volta, quando la cartina muta era una
+ * categoria e non un modo: resta per le giornate gia' giocate, e non si sceglie
+ * piu'.
+ */
+export type CategoriaQuiz =
+  | 'capitali'
+  | 'citta'
+  | 'bandiere'
+  | 'stati'
+  | 'mari'
+  | 'oceani'
+  | 'fiumi'
+  | 'laghi'
+  | 'cartina'
 
-/** Nell'ordine in cui si mostrano. */
-export const CATEGORIE: readonly CategoriaQuiz[] = ['capitali', 'bandiere', 'cartina', 'mari', 'oceani', 'fiumi', 'laghi']
+/** Le categorie che si scelgono, nell'ordine in cui si mostrano. */
+export const CATEGORIE: readonly CategoriaQuiz[] = [
+  'capitali',
+  'citta',
+  'bandiere',
+  'stati',
+  'mari',
+  'oceani',
+  'fiumi',
+  'laghi',
+]
+
+/**
+ * Le categorie della classificata: tutte tranne le città, troppo difficili per
+ * una partita uguale per tutti — le città principali di un paese lontano non le
+ * sa nessuno — e che vengono da Wikidata solo nel browser di chi gioca.
+ */
+export const CATEGORIE_CLASSIFICATA: readonly CategoriaQuiz[] = [
+  'capitali',
+  'bandiere',
+  'stati',
+  'mari',
+  'oceani',
+  'fiumi',
+  'laghi',
+]
 
 export const NOMI_CATEGORIE: Record<CategoriaQuiz, string> = {
   capitali: 'Capitali',
+  citta: 'Città',
   bandiere: 'Bandiere',
-  cartina: 'Cartina muta',
-  oceani: 'Oceani',
+  stati: 'Stati',
   mari: 'Mari',
+  oceani: 'Oceani',
   fiumi: 'Fiumi',
   laghi: 'Laghi',
+  cartina: 'Cartina muta',
 }
 
 export function eCategoria(valore: unknown): valore is CategoriaQuiz {
   return typeof valore === 'string' && (CATEGORIE as readonly string[]).includes(valore)
 }
+
+/** Come si risponde: scegliendo fra le risposte, o toccando la cartina muta. */
+export type ModoQuiz = 'scelta' | 'cartina'
+
+export const MODI: readonly ModoQuiz[] = ['scelta', 'cartina']
+
+export const NOMI_MODI: Record<ModoQuiz, string> = {
+  scelta: 'A scelta',
+  cartina: 'Cartina muta',
+}
+
+export function eModo(valore: unknown): valore is ModoQuiz {
+  return valore === 'scelta' || valore === 'cartina'
+}
+
+/**
+ * Le categorie che si restringono a un continente. Gli oceani no: bagnano
+ * tutti i continenti, e "gli oceani d'Europa" non vuol dire niente. I mari si',
+ * perché ognuno ha la sua parte di mondo.
+ */
+export const CON_CONTINENTE: readonly CategoriaQuiz[] = [
+  'capitali',
+  'citta',
+  'bandiere',
+  'stati',
+  'mari',
+  'fiumi',
+  'laghi',
+]
+
+/** Le categorie che si giocano anche su un paese solo: le città d'Italia, i fiumi della Francia. */
+export const CON_PAESE: readonly CategoriaQuiz[] = ['citta', 'fiumi', 'laghi']
 
 /**
  * I continenti, come li si studia a scuola: le Americhe divise in due, con
@@ -55,8 +128,13 @@ export const NOMI_CONTINENTI: Record<Continente, string> = {
 /** Le domande della classificata, e quelle della libera se non si sceglie altro. */
 export const DOMANDE_PER_PARTITA = 10
 
-/** Quante domande puo' avere una partita libera. */
-export const QUANTE_LIBERE = [5, 10, 15, 20] as const
+/** Quante domande puo' avere una partita libera: fino a cinquanta. */
+export const QUANTE_LIBERE = [5, 10, 15, 20, 30, 40, 50] as const
+export const QUANTE_MASSIME = 50
+
+/** Fra quante risposte si sceglie, nella libera: quattro, se non si dice altro. */
+export const RISPOSTE_LIBERE = [2, 3, 4, 6] as const
+export const RISPOSTE_PREDEFINITE = 4
 
 /**
  * Il tempo per rispondere. Quindici secondi bastano a leggere quattro risposte
@@ -66,6 +144,9 @@ export const QUANTE_LIBERE = [5, 10, 15, 20] as const
  */
 export const SECONDI_SCELTA = 15
 export const SECONDI_CARTINA = 30
+
+/** I tempi che si scelgono nella libera, per le domande a scelta: sulla cartina sono il doppio. */
+export const SECONDI_LIBERI = [10, 15, 20, 30] as const
 
 /**
  * Quel che il server concede in piu' al tempo misurato: la domanda parte quando
@@ -92,9 +173,13 @@ export function puntiQuiz(giuste: number, domande: number): number {
   return Math.round(PUNTI_BASE_QUIZ + (100 - PUNTI_BASE_QUIZ) * quota)
 }
 
-/* ─────────────────────────  La categoria del giorno  ───────────────────── */
+/* ─────────────────────────  La giornata della classificata  ───────────────── */
 
 const SEME_CATEGORIE = 0x9e0_a11a
+const SEME_CARTINA = 0x5ea_c0de
+
+/** Quanti giorni di ogni giro si giocano sulla cartina muta. */
+export const GIORNI_CARTINA_PER_GIRO = 2
 
 function mescola<T>(voci: readonly T[], caso: () => number): T[] {
   const copia = [...voci]
@@ -107,28 +192,48 @@ function mescola<T>(voci: readonly T[], caso: () => number): T[] {
 
 /** L'ordine delle categorie di un giro, prima del ritocco al confine. */
 function giro(indice: number): CategoriaQuiz[] {
-  return mescola(CATEGORIE, mulberry32((SEME_CATEGORIE ^ Math.imul(indice + 1, 0x85eb_ca6b)) >>> 0))
+  return mescola(CATEGORIE_CLASSIFICATA, mulberry32((SEME_CATEGORIE ^ Math.imul(indice + 1, 0x85eb_ca6b)) >>> 0))
+}
+
+/** I giorni di un giro che vanno sulla cartina: due, mai uno dopo l'altro. */
+function giorniSullaCartina(indice: number): Set<number> {
+  const n = CATEGORIE_CLASSIFICATA.length
+  const caso = mulberry32((SEME_CARTINA ^ Math.imul(indice + 1, 0x27d4_eb2f)) >>> 0)
+  for (;;) {
+    const scelti = mescola(
+      Array.from({ length: n }, (_, i) => i),
+      caso,
+    ).slice(0, GIORNI_CARTINA_PER_GIRO)
+    const [a, b] = scelti
+    if (Math.abs(a - b) > 1) return new Set(scelti)
+  }
+}
+
+export interface GiornataQuiz {
+  categoria: CategoriaQuiz
+  modo: ModoQuiz
 }
 
 /**
- * La categoria della classificata di un giorno.
+ * La categoria e il modo della classificata di un giorno.
  *
  * Ogni giro di sette giorni passa da tutte le categorie, in un ordine diverso
  * ogni volta: nessuna torna prima di averle viste tutte, e non si puo'
- * indovinare quella di domani. L'unico ritocco e' al confine fra due giri:
- * se il primo giorno di un giro ripeterebbe l'ultimo del precedente, i primi due
- * si scambiano — lo scambio non tocca mai l'ultimo giorno di un giro, quindi
- * basta guardare il giro prima.
+ * indovinare quella di domani. Due giorni per giro sono sulla cartina muta, mai
+ * di fila. L'unico ritocco e' al confine fra due giri: se il primo giorno di un
+ * giro ripeterebbe l'ultimo del precedente, i primi due si scambiano — lo
+ * scambio non tocca mai l'ultimo giorno di un giro, quindi basta guardare il
+ * giro prima.
  */
-export function categoriaDelGiorno(numero: number): CategoriaQuiz {
-  const n = CATEGORIE.length
+export function giornataDelQuiz(numero: number): GiornataQuiz {
+  const n = CATEGORIE_CLASSIFICATA.length
   const indice = Math.floor((numero - 1) / n)
   const posto = (((numero - 1) % n) + n) % n
   const ordine = giro(indice)
   if (indice > 0 && ordine[0] === giro(indice - 1)[n - 1]) {
     ;[ordine[0], ordine[1]] = [ordine[1], ordine[0]]
   }
-  return ordine[posto]
+  return { categoria: ordine[posto], modo: giorniSullaCartina(indice).has(posto) ? 'cartina' : 'scelta' }
 }
 
 /* ───────────────────────────────  La cartina  ─────────────────────────── */
@@ -152,7 +257,9 @@ export type VistaCartina =
   | 'sudamerica'
   | 'oceania'
 
-export const VISTE: Record<VistaCartina, readonly [number, number, number, number]> = {
+export type Riquadro = readonly [number, number, number, number]
+
+export const VISTE: Record<VistaCartina, Riquadro> = {
   mondo: [-180, -58, 180, 84],
   europa: [-25, 34, 50, 72],
   mediterraneo: [-8, 29, 42, 48],
@@ -183,12 +290,13 @@ export const VISTE_REGIONALI: readonly VistaCartina[] = [
   'asia',
 ]
 
+/** La vista da cui parte la cartina di una zona: il mondo, un continente, o quello del paese. */
+export function vistaDellaZona(zona: 'mondo' | Continente | null): VistaCartina {
+  return zona === null || zona === 'mondo' ? 'mondo' : VISTA_DEL_CONTINENTE[zona]
+}
+
 /** True se il rettangolo sta dentro la vista, con un filo di tolleranza. */
-export function dentroVista(
-  vista: VistaCartina,
-  [o, s, e, n]: readonly [number, number, number, number],
-  margine = 1,
-): boolean {
+export function dentroVista(vista: VistaCartina, [o, s, e, n]: Riquadro, margine = 1): boolean {
   const [vo, vs, ve, vn] = VISTE[vista]
   // Un rettangolo a ovest dell'antimeridiano, in una vista che lo attraversa, si
   // sposta di un giro come fa la cartina.

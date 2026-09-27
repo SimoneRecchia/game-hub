@@ -8,6 +8,8 @@ import {
   apriDomanda,
   chiudiScaduta,
   giornata,
+  cittaDati,
+  geometrieDati,
   giornataObbligatoria,
   partitaDi,
   registraRisposta,
@@ -25,6 +27,18 @@ function leggiScelta(valore: unknown): string | null {
     fail(400, 'SCELTA', 'La risposta non è valida.')
   }
   return valore
+}
+
+/**
+ * Una risposta che a quell'indirizzo non cambia piu': il browser la tiene per
+ * sempre. Se la versione chiesta e' vecchia arriva la nuova, ma senza cache,
+ * perché quell'indirizzo non e' suo.
+ */
+function perSempre(versioneGiusta: boolean): Record<string, string> {
+  return {
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': versioneGiusta ? 'private, max-age=31536000, immutable' : 'no-store',
+  }
 }
 
 export const quizRoutes = new Hono<AppEnv>()
@@ -102,4 +116,18 @@ export const quizRoutes = new Hono<AppEnv>()
     return c.body(`{"versione":${JSON.stringify(riassunto.versione)},"dati":${riassunto.json}}`, 200, {
       'content-type': 'application/json; charset=utf-8',
     })
+  })
+
+  /** Le geometrie di fiumi e laghi, per la cartina, della versione che dice il riassunto. */
+  .get('/geometrie', async (c) => {
+    const geo = await geometrieDati(c.env.DB)
+    if (!geo) fail(503, 'DATI_ASSENTI', 'Le geometrie del quiz non sono ancora pronte. Riprova più tardi.')
+    return c.body(geo.json, 200, perSempre(c.req.query('v') === geo.versione))
+  })
+
+  /** Le città della categoria delle città: come le geometrie, a parte e per versione. */
+  .get('/citta', async (c) => {
+    const citta = await cittaDati(c.env.DB)
+    if (!citta) fail(503, 'DATI_ASSENTI', 'Le città del quiz non sono ancora pronte. Riprova più tardi.')
+    return c.body(citta.json, 200, perSempre(c.req.query('v') === citta.versione))
   })
