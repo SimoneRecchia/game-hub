@@ -37,10 +37,10 @@ import type {
   InvitoBattaglia,
   InvitoConLink,
   InvitoInviato,
-  LeaderboardScope,
   LinkBattaglia,
   ModalitaBattaglia,
   PartitaBreve,
+  PeriodoClassifica,
   StatoBattaglia,
   VistaBattaglia,
 } from '../../shared/types'
@@ -877,9 +877,6 @@ export async function recordControComputer(
   return record
 }
 
-/** Finestra di puzzle coperta da ogni vista, in giorni. null = tutto. */
-const FINESTRA: Record<LeaderboardScope, number | null> = { today: 1, week: 7, month: 30, all: null }
-
 /**
  * La classifica della battaglia navale: le classificate contro il computer.
  *
@@ -903,12 +900,10 @@ export function ordinaBattaglia(righe: Omit<BattagliaRow, 'rank'>[]): BattagliaR
 
 export async function classificaBattaglia(
   db: D1Database,
-  scope: LeaderboardScope,
+  periodo: PeriodoClassifica,
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<BattagliaLeaderboard> {
-  const finestra = FINESTRA[scope]
-  const da = finestra === null ? Number.MIN_SAFE_INTEGER : numeroDiOggi - finestra + 1
   /*
    * Chi spara per primo e' il giocatore, quindi i suoi colpi sono la meta' per
    * eccesso di tutti quelli della partita.
@@ -925,10 +920,10 @@ export async function classificaBattaglia(
               MAX(CASE WHEN b.puzzle_number = ?1 AND b.stato != 'finita' THEN 1 ELSE 0 END) AS in_corso
          FROM battaglia_partite b
          JOIN players p ON p.id = b.giocatore_a
-        WHERE b.modalita = 'classificata' AND b.puzzle_number >= ?2
+        WHERE b.modalita = 'classificata' AND b.puzzle_number BETWEEN ?2 AND ?3
         GROUP BY p.id`,
     )
-    .bind(numeroDiOggi, da)
+    .bind(numeroDiOggi, periodo.da, periodo.a)
     .all<GiocatoreRow & { punti: number; giornate: number; vinte: number; colpi: number; oggi: number | null; in_corso: number }>()
 
   const rows = ordinaBattaglia(
@@ -942,7 +937,13 @@ export async function classificaBattaglia(
       inCorso: r.in_corso === 1,
     })),
   )
-  return { scope, updatedAt: nowIso(), rows, me: rows.find((r) => r.playerId === viewerId) ?? null }
+  return {
+    scope: periodo.scope,
+    periodo,
+    updatedAt: nowIso(),
+    rows,
+    me: rows.find((r) => r.playerId === viewerId) ?? null,
+  }
 }
 
 /* ───────────────────────────  Gli inviti col link  ─────────────────────── */
