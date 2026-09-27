@@ -63,13 +63,6 @@ export function useDuello(id: string): Duello {
     }
   }, [])
 
-  // Un duello nuovo (la rivincita) riparte da zero.
-  useEffect(() => {
-    setVista(null)
-    setGiri([])
-    quanti.current = 0
-  }, [id])
-
   const oraServer = useCallback(() => Date.now() + scarto.current, [])
   const inLocale = useCallback((t: number) => t - scarto.current, [])
 
