@@ -1,7 +1,12 @@
 /*
- * La cartina muta: un atlante di scuola dentro una scheda. Il mare e' il fondo,
- * i paesi stanno sopra con i confini bianchi; i mari da toccare sono tracciati
- * trasparenti sotto le terre, che si accendono solo quando li si sceglie.
+ * La cartina muta: un atlante di scuola dentro una scheda. Il mare e' il fondo
+ * del mondo, i paesi stanno sopra con i confini bianchi; fuori dalla zona della
+ * partita le terre si spengono, ma restano, perché senza non si capirebbe dove
+ * si e'. I mari da toccare sono tracciati trasparenti sotto le terre; fiumi e
+ * laghi stanno sopra, e i pallini di capitali e città sopra tutto.
+ *
+ * Gli spessori non crescono con lo zoom (`vector-effect: non-scaling-stroke`):
+ * un confine e' un filo sia sul mondo intero sia sulla Liguria.
  */
 
 .cartina {
@@ -11,23 +16,13 @@
   width: 100%;
   overflow: hidden;
   border-radius: 14px;
-  background: var(--carta-mare);
+  background: var(--carta-fuori);
   box-shadow: inset 0 0 0 1px var(--carta-costa);
   /* I gesti sono della cartina: niente zoom della pagina, niente scorrimento. */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-/* Le onde leggere di un mare disegnato: fisse, non e' la battaglia. */
-.cartina::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(170deg, transparent 0 18px, var(--carta-onda) 19px 20px, transparent 21px 38px);
-  opacity: 0.6;
 }
 
 .cartina.is-attiva {
@@ -44,38 +39,73 @@
 }
 
 .cartina__mondo.is-animata {
-  transition: transform 520ms var(--ease-out);
+  transition: transform 560ms var(--ease-out);
 }
+
+.cartina__oceano {
+  fill: var(--carta-mare);
+}
+
+.cartina path {
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────  Le terre  ───────────────────────────── */
 
 .cartina__paese {
   fill: var(--carta-terra);
   stroke: var(--carta-confine);
   stroke-width: 0.9px;
   stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
+  paint-order: stroke;
   transition:
     fill var(--dur-fast) var(--ease-out),
     stroke var(--dur-fast) var(--ease-out);
 }
 
-/* Le coste: un filo scuro sotto il bianco dei confini, che disegna il contorno delle terre. */
-.cartina--paesi .cartina__paese {
-  paint-order: stroke;
+.cartina__paese.is-fuori {
+  fill: var(--carta-terra-fuori);
 }
 
-.cartina--acque .cartina__paese {
-  pointer-events: none;
+/* Sulle terre si tocca solo nello strato dei paesi, e solo dentro la zona. */
+.cartina--paesi.is-attiva .cartina__paese:not(.is-bloccato) {
+  pointer-events: auto;
 }
 
 @media (hover: hover) {
-  .cartina--paesi.is-attiva .cartina__paese:hover {
+  .cartina--paesi.is-attiva .cartina__paese:not(.is-bloccato):hover {
     fill: var(--carta-terra-sopra);
   }
 
-  .cartina--acque.is-attiva .cartina__acqua:hover {
+  .cartina--acque.is-attiva .cartina__acqua:not(.is-bloccato):hover {
     fill: color-mix(in srgb, var(--brand) 14%, transparent);
   }
 }
+
+.cartina__paese.is-mostra {
+  fill: color-mix(in srgb, var(--brand) 38%, var(--carta-terra));
+}
+
+.cartina__paese.is-altro {
+  fill: color-mix(in srgb, var(--brand) 22%, var(--carta-terra));
+}
+
+.cartina__paese.is-scelta {
+  fill: var(--brand);
+  animation: cartina-scelta 300ms var(--ease-bounce);
+}
+
+.cartina__paese.is-giusta {
+  fill: var(--green);
+  animation: cartina-giusta 900ms var(--ease-out) 2;
+}
+
+.cartina__paese.is-sbagliata {
+  fill: var(--red);
+}
+
+/* ──────────────────────────────  I mari  ─────────────────────────────── */
 
 .cartina__acqua {
   fill: rgba(0, 0, 0, 0);
@@ -83,37 +113,189 @@
   transition: fill var(--dur-fast) var(--ease-out);
 }
 
-.cartina__paese.is-scelta,
-.cartina__acqua.is-scelta {
-  fill: var(--brand);
-  animation: cartina-scelta 300ms var(--ease-bounce);
+.cartina--acque.is-attiva .cartina__acqua:not(.is-bloccato) {
+  pointer-events: auto;
+}
+
+.cartina--acque .cartina__paese {
+  pointer-events: none;
+}
+
+/* Con le evidenze, i mari che si possono toccare hanno un velo e un contorno. */
+.cartina--acque.is-evidenzia .cartina__acqua:not(.is-bloccato) {
+  fill: color-mix(in srgb, var(--brand) 6%, transparent);
+  stroke: color-mix(in srgb, var(--brand) 32%, transparent);
+  stroke-width: 0.8px;
+  stroke-dasharray: 3 3;
 }
 
 .cartina__acqua.is-scelta {
   fill: color-mix(in srgb, var(--brand) 55%, transparent);
-}
-
-.cartina__paese.is-giusta,
-.cartina__acqua.is-giusta {
-  fill: var(--green);
-  animation: cartina-giusta 900ms var(--ease-out) 2;
+  animation: cartina-scelta 300ms var(--ease-bounce);
 }
 
 .cartina__acqua.is-giusta {
   fill: color-mix(in srgb, var(--green) 55%, transparent);
+  animation: cartina-giusta 900ms var(--ease-out) 2;
 }
 
 .cartina__acqua.is-accettata {
   fill: color-mix(in srgb, var(--green) 30%, transparent);
 }
 
-.cartina__paese.is-sbagliata,
-.cartina__acqua.is-sbagliata {
-  fill: var(--red);
-}
-
 .cartina__acqua.is-sbagliata {
   fill: color-mix(in srgb, var(--red) 45%, transparent);
+}
+
+.cartina__acqua.is-altro {
+  fill: color-mix(in srgb, var(--brand) 22%, transparent);
+}
+
+/* ─────────────────────────────  I laghi  ─────────────────────────────── */
+
+.cartina__lago {
+  fill: var(--carta-lago);
+  stroke: var(--carta-costa);
+  stroke-width: 0.6px;
+}
+
+.cartina--laghi.is-evidenzia .cartina__lago:not(.is-fuori) {
+  fill: color-mix(in srgb, var(--carta-fiume) 45%, var(--carta-lago));
+  stroke: var(--carta-fiume);
+  stroke-width: 1.4px;
+}
+
+/* Gli stati di un lago battono le evidenze: `.cartina.cartina` ne alza il peso. */
+.cartina.cartina .cartina__lago.is-scelta {
+  fill: var(--brand);
+  stroke: var(--brand);
+}
+
+.cartina.cartina .cartina__lago.is-giusta {
+  fill: var(--green);
+  stroke: var(--green);
+  animation: cartina-giusta 900ms var(--ease-out) 2;
+}
+
+.cartina.cartina .cartina__lago.is-sbagliata {
+  fill: var(--red);
+  stroke: var(--red);
+}
+
+.cartina.cartina .cartina__lago.is-altro {
+  stroke: var(--brand);
+  stroke-width: 1.4px;
+}
+
+/* ─────────────────────────────  I fiumi  ─────────────────────────────── */
+
+.cartina__fiume {
+  fill: none;
+  stroke: var(--carta-fiume-spento);
+  stroke-width: 1px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cartina--fiumi .cartina__fiume {
+  stroke-width: 1.4px;
+}
+
+.cartina--fiumi.is-evidenzia .cartina__fiume:not(.is-fuori) {
+  stroke: var(--carta-fiume);
+  stroke-width: 1.8px;
+}
+
+/* Gli stati di un fiume battono le evidenze: `.cartina.cartina` ne alza il peso. */
+.cartina.cartina .cartina__fiume.is-scelta {
+  stroke: var(--brand);
+  stroke-width: 4px;
+}
+
+.cartina.cartina .cartina__fiume.is-giusta {
+  stroke: var(--green);
+  stroke-width: 4px;
+  animation: cartina-giusta 900ms var(--ease-out) 2;
+}
+
+.cartina.cartina .cartina__fiume.is-sbagliata {
+  stroke: var(--red);
+  stroke-width: 4px;
+}
+
+.cartina.cartina .cartina__fiume.is-altro {
+  stroke: var(--brand);
+  stroke-width: 3px;
+}
+
+/* ─────────────────────────────  I pallini  ────────────────────────────── */
+
+/* Un segmento lungo zero con la punta tonda: un cerchio, largo quanto il tratto. */
+.cartina__pallino,
+.cartina__pallino-bordo {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.cartina__pallino-bordo {
+  stroke: var(--carta-confine);
+  stroke-width: 7px;
+}
+
+.cartina__pallino {
+  stroke: var(--carta-pallino);
+  stroke-width: 4.5px;
+}
+
+.cartina__pallino.is-fuori {
+  stroke: color-mix(in srgb, var(--carta-pallino) 35%, transparent);
+  stroke-width: 3px;
+}
+
+/* Con le evidenze i pallini da toccare si accendono: solo dove si tocca un pallino. */
+:is(.cartina--capitali, .cartina--citta).is-evidenzia .cartina__pallino:not(.is-fuori):not(.is-acceso) {
+  stroke: var(--brand);
+  stroke-width: 5.5px;
+}
+
+:is(.cartina--capitali, .cartina--citta).is-evidenzia .cartina__pallino-bordo:not(.is-acceso) {
+  stroke-width: 8.5px;
+}
+
+/* I laghi senza forma sono un punto d'acqua, non una città. */
+.cartina--laghi .cartina__pallino:not(.is-acceso) {
+  stroke: var(--carta-fiume);
+  stroke-width: 4px;
+}
+
+.cartina--laghi .cartina__pallino-bordo:not(.is-acceso) {
+  stroke-width: 6px;
+}
+
+.cartina__pallino-bordo.is-acceso {
+  stroke-width: 13px;
+}
+
+.cartina__pallino.is-acceso {
+  stroke-width: 9px;
+}
+
+.cartina.cartina .cartina__pallino.is-scelta {
+  stroke: var(--brand);
+}
+
+.cartina.cartina .cartina__pallino.is-giusta {
+  stroke: var(--green);
+  animation: cartina-giusta 900ms var(--ease-out) 2;
+}
+
+.cartina.cartina .cartina__pallino.is-sbagliata {
+  stroke: var(--red);
+}
+
+.cartina.cartina .cartina__pallino.is-altro,
+.cartina.cartina .cartina__pallino.is-mostra {
+  stroke: var(--brand);
 }
 
 @keyframes cartina-scelta {
@@ -127,6 +309,94 @@
     opacity: 0.55;
   }
 }
+
+/* ──────────────────────────────  I nomi  ─────────────────────────────── */
+
+/*
+ * Il livello dei nomi si sposta con la cartina; ogni nome sta nel suo punto,
+ * centrato, e non si ingrandisce con lo zoom.
+ */
+.cartina__nomi {
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  transform-origin: 0 0;
+}
+
+.cartina__nome {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow:
+    0 1px 2px var(--shadow-tint),
+    0 0 0 1px var(--separator);
+  color: var(--label);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  animation: cartina-nome 360ms var(--ease-spring) both;
+}
+
+.cartina__nome.is-sopra {
+  transform: translate(-50%, calc(-100% - 7px));
+}
+
+.cartina__nome img {
+  width: 16px;
+  height: 11px;
+  border-radius: 2px;
+  object-fit: cover;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.2);
+}
+
+.cartina__nome.is-giusta {
+  background: var(--green);
+  color: #fff;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--green) 40%, transparent);
+}
+
+.cartina__nome.is-sbagliata {
+  background: var(--red);
+  color: #fff;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--red) 40%, transparent);
+}
+
+.cartina__nome.is-altro {
+  background: var(--surface);
+  color: var(--brand);
+}
+
+/* I nomi dei paesi di contorno: scritti sulla carta, senza pillola. */
+.cartina__nome.is-paese {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--label-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 3px var(--carta-terra),
+    0 0 2px var(--carta-terra);
+  animation: none;
+}
+
+@keyframes cartina-nome {
+  from {
+    opacity: 0;
+    scale: 0.85;
+  }
+}
+
+/* ─────────────────────────────  Il resto  ────────────────────────────── */
 
 .cartina__avviso {
   position: absolute;
@@ -197,8 +467,12 @@
 
   .cartina__paese.is-giusta,
   .cartina__acqua.is-giusta,
+  .cartina.cartina .cartina__lago.is-giusta,
+  .cartina.cartina .cartina__fiume.is-giusta,
+  .cartina.cartina .cartina__pallino.is-giusta,
   .cartina__paese.is-scelta,
   .cartina__acqua.is-scelta,
+  .cartina__nome,
   .cartina__avviso.is-attesa {
     animation: none;
   }

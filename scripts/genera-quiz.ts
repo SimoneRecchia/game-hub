@@ -3,17 +3,21 @@
  * giorni, in D1.
  *
  * Il riassunto e' quel che serve per fare domande — paesi, capitali, confini,
- * coste, fiumi, laghi — ridotto da Wikidata e Natural Earth a qualche decina di
- * kB (vedi scripts/quiz). Si riscrive solo se e' cambiato: di solito una notte
- * su molte. Le partite libere lo scaricano nel browser.
+ * coste, fiumi, laghi — ridotto da Wikidata e Natural Earth a un centinaio di
+ * kB (vedi scripts/quiz). A parte, le linee dei fiumi e le forme dei laghi per
+ * la cartina: Natural Earth le ha in file da molti mega, e qui diventano due
+ * centinaia di kB semplificati. Tutto si riscrive solo se e' cambiato: di
+ * solito una notte su molte. Le partite libere lo scaricano nel browser.
  *
  * Le domande della classificata si fanno qui e non nel Worker per la stessa
  * ragione del cruciverba: servono i dati interi, e i dieci millisecondi di CPU
  * di una richiesta non basterebbero a leggerli. Solo le giornate che mancano,
  * con `INSERT OR IGNORE`: le domande di un giorno, una volta scritte, non
- * cambiano piu' — sono la stessa partita per tutti. Il seme e' il numero del
- * giorno, e i soggetti delle ultime cinque settimane della stessa categoria si
- * evitano, così la capitale della Francia non torna ogni sette giorni.
+ * cambiano piu' — sono la stessa partita per tutti. L'eccezione e' il cambio
+ * di `FORMATO`: una giornata futura che nessuno ha aperto si rifà. Il seme e'
+ * il numero del giorno, e i soggetti delle ultime cinque settimane della
+ * stessa categoria si evitano, così la capitale della Francia non torna ogni
+ * sette giorni.
  *
  *   npx vite-node scripts/genera-quiz.ts                 anteprima di oggi, senza scrivere
  *   npx vite-node scripts/genera-quiz.ts -- --local      D1 locale di wrangler
@@ -32,24 +36,29 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gameDate, mulberry32, puzzleNumberFor } from '../shared/daily'
-import { DOMANDE_PER_PARTITA, NOMI_CATEGORIE, categoriaDelGiorno, type CategoriaQuiz } from '../shared/quiz'
-import { SEZIONI_DATI, type DatiQuiz } from '../shared/quiz-dati'
+import { DOMANDE_PER_PARTITA, NOMI_CATEGORIE, NOMI_MODI, giornataDelQuiz, type CategoriaQuiz } from '../shared/quiz'
+import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI, cittaInBreve, type DatiQuiz } from '../shared/quiz-dati'
 import { domandeDelGiorno, indicizza, type DomandaCompleta } from '../shared/quiz-domande'
 import type { Topologia } from '../shared/topojson'
 import {
+  Q_ALIAS_FIUMI,
+  Q_ALIAS_LAGHI,
   Q_CAPITALI,
   Q_CITTA,
   Q_CONFINI,
   Q_FIUMI,
   Q_LAGHI,
   Q_PAESI,
+  Q_REGIONI_CITTA,
+  Q_SENZA_MARE,
   URL_MARI,
   URL_PAESI,
   geometria,
   qAcque,
   sparql,
 } from './quiz/fonti'
-import { controllaRiassunto, costruisciRiassunto, type Fonti } from './quiz/riassunto'
+import { FILE_FIUMI, FILE_LAGHI, urlNaturalEarth, type RaccoltaNE } from './quiz/geometrie'
+import { controllaCitta, controllaRiassunto, costruisciRiassunto, type Fonti } from './quiz/riassunto'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
@@ -57,6 +66,18 @@ const DB = 'game-hub-db'
 
 /** Quanti giorni indietro guardare per non ripetere i soggetti. */
 const MEMORIA_GIORNI = 35
+
+/**
+ * La forma delle domande. Una giornata di un formato vecchio, nel futuro e che
+ * nessuno ha ancora aperto, si rifà: e' l'unica eccezione al "una giornata
+ * scritta non cambia piu'", ed e' innocua perché nessuno l'ha vista. Il 2 e'
+ * quello delle categorie con il modo — a scelta o sulla cartina — e del
+ * `luogo` di ogni domanda, che la cartina mostra a risposta data.
+ */
+const FORMATO = 2
+
+/** Un pezzo di geometrie per riga, sotto i cento kB di una istruzione di D1. */
+const PEZZO_MASSIMO = 90_000
 
 const argomenti = process.argv.slice(2)
 function argomento(nome: string, predefinito: string): string {
@@ -89,40 +110,133 @@ function semeDelGiorno(numero: number): number {
   return (0x7a1c_0de5 ^ Math.imul(numero, 0x9e37_79b1)) >>> 0
 }
 
+/** Una giornata che si puo' rifare: nel futuro, di un formato vecchio, e che nessuno ha aperto. */
+const DA_RIFARE = (numero: number) =>
+  `puzzle_number = ${numero} AND formato < ${FORMATO} AND puzzle_number > ${DA}
+   AND NOT EXISTS (SELECT 1 FROM quiz_partite p WHERE p.puzzle_number = ${numero})`
+
 /* ───────────────────────────────  I dati  ─────────────────────────────── */
 
 if (SCRIVE && SE_MANCA) {
   const [giornate] = interroga<{ n: number }>(
-    `SELECT COUNT(*) AS n FROM quiz_giornate WHERE puzzle_number >= ${DA} AND puzzle_number < ${DA + GIORNI}`,
+    `SELECT COUNT(*) AS n FROM quiz_giornate g
+      WHERE puzzle_number >= ${DA} AND puzzle_number < ${DA + GIORNI}
+        AND (formato >= ${FORMATO} OR puzzle_number = ${DA}
+             OR EXISTS (SELECT 1 FROM quiz_partite p WHERE p.puzzle_number = g.puzzle_number))`,
   )
-  const [sezioni] = interroga<{ n: number }>('SELECT COUNT(*) AS n FROM quiz_dati')
-  if (giornate.n === GIORNI && sezioni.n === SEZIONI_DATI.length) {
-    console.log(`Quiz: le ${GIORNI} giornate e il riassunto ci sono già`)
+  const [sezioni] = interroga<{ n: number; geo: number; citta: number }>(
+    `SELECT SUM(CASE WHEN parte IN (${SEZIONI_DATI.map(cita).join(', ')}) THEN 1 ELSE 0 END) AS n,
+            SUM(CASE WHEN parte LIKE '${PREFISSO_GEOMETRIE}%' THEN 1 ELSE 0 END) AS geo,
+            SUM(CASE WHEN parte LIKE '${PREFISSO_CITTA}%' THEN 1 ELSE 0 END) AS citta
+       FROM quiz_dati`,
+  )
+  if (giornate.n === GIORNI && sezioni.n === SEZIONI_DATI.length && sezioni.geo > 0 && sezioni.citta > 0) {
+    console.log(`Quiz: le ${GIORNI} giornate, il riassunto, le geometrie e le città ci sono già`)
     process.exit(0)
   }
 }
 
 console.log('Quiz: le fonti')
-const [paesi, capitali, confini, citta, fiumi, laghi, topologia, mari] = await Promise.all([
-  sparql('paesi', Q_PAESI),
-  sparql('capitali', Q_CAPITALI),
-  sparql('confini', Q_CONFINI),
-  sparql('citta', Q_CITTA),
-  sparql('fiumi', Q_FIUMI),
-  sparql('laghi', Q_LAGHI),
+/*
+ * Le query una dopo l'altra: QLever risponde in pochi secondi, ma a dieci
+ * richieste insieme risponde "troppe richieste". I file di Natural Earth
+ * arrivano da jsDelivr, e quelli si possono chiedere insieme.
+ */
+const raccolte = async <F extends string>(file: readonly F[]) =>
+  Object.fromEntries(await Promise.all(file.map(async (f) => [f, await geometria<RaccoltaNE>(urlNaturalEarth(f))]))) as Record<
+    F,
+    RaccoltaNE
+  >
+const geometrieNE = Promise.all([
   geometria<Topologia>(URL_PAESI),
   geometria<Fonti['mari']>(URL_MARI),
+  raccolte(FILE_FIUMI),
+  raccolte(FILE_LAGHI),
 ])
+const paesi = await sparql('paesi', Q_PAESI)
+const capitali = await sparql('capitali', Q_CAPITALI)
+const confini = await sparql('confini', Q_CONFINI)
+const citta = await sparql('citta', Q_CITTA)
+const regioniCitta = await sparql('regioni-citta', Q_REGIONI_CITTA)
+const fiumi = await sparql('fiumi', Q_FIUMI)
+const laghi = await sparql('laghi', Q_LAGHI)
+const senzaMare = await sparql('senza-mare', Q_SENZA_MARE)
+const aliasFiumi = await sparql('alias-fiumi', Q_ALIAS_FIUMI)
+const aliasLaghi = await sparql('alias-laghi', Q_ALIAS_LAGHI)
+const [topologia, mari, fileFiumi, fileLaghi] = await geometrieNE
 const idAcque = [
   ...new Set(mari.features.map((f) => String(f.properties.wikidataid ?? '')).filter((q) => /^Q\d+$/.test(q))),
 ]
 const acque = await sparql('acque', qAcque(idAcque))
 
-const dati: DatiQuiz = costruisciRiassunto(
-  { paesi, capitali, confini, citta, fiumi, laghi, acque, topologia, mari },
-  gameDate(),
-)
-const problemi = controllaRiassunto(dati)
+const riassunto = costruisciRiassunto({
+  paesi,
+  capitali,
+  confini,
+  citta,
+  regioniCitta,
+  fiumi,
+  laghi,
+  senzaMare,
+  aliasFiumi,
+  aliasLaghi,
+  acque,
+  topologia,
+  mari,
+  fileFiumi,
+  fileLaghi,
+})
+
+const { dati, geometrie } = riassunto
+
+const impronta = (testo: string) => createHash('sha1').update(testo).digest('hex').slice(0, 10)
+
+/**
+ * Un oggetto a pezzi, uno per riga di D1, ognuno sotto il limite di una
+ * istruzione: `prefisso0`, `prefisso1`… Si uniscono togliendo le graffe.
+ */
+function aPezzi(prefisso: string, voci: Record<string, unknown>): Array<{ parte: string; json: string }> {
+  const pezzi: Array<{ parte: string; json: string }> = []
+  let corrente: Record<string, unknown> = {}
+  let lunghezza = 2
+  const chiudi = () => {
+    if (Object.keys(corrente).length === 0) return
+    pezzi.push({ parte: `${prefisso}${pezzi.length}`, json: JSON.stringify(corrente) })
+    corrente = {}
+    lunghezza = 2
+  }
+  for (const [id, valore] of Object.entries(voci)) {
+    const voce = JSON.stringify(valore).length + id.length + 4
+    if (lunghezza + voce > PEZZO_MASSIMO) chiudi()
+    corrente[id] = valore
+    lunghezza += voce
+  }
+  chiudi()
+  return pezzi
+}
+
+/**
+ * Le geometrie e le città a pezzi. Ognuna ha la sua versione, l'impronta del
+ * tutto, e le versioni stanno anche nel riassunto: se cambiano, cambia la
+ * versione del riassunto, e il browser lo sa.
+ */
+const pezziGeo = [
+  ...aPezzi(`${PREFISSO_GEOMETRIE}fiumi:`, geometrie.fiumi),
+  ...aPezzi(`${PREFISSO_GEOMETRIE}laghi:`, geometrie.laghi),
+]
+const regioni = Object.fromEntries(riassunto.citta.filter((c) => c.r && c.rn).map((c) => [c.r!, c.rn!]))
+const pezziCitta = [
+  { parte: PARTE_REGIONI, json: JSON.stringify(regioni) },
+  ...aPezzi(PREFISSO_CITTA, Object.fromEntries(riassunto.citta.map((c) => [c.id, cittaInBreve(c)]))),
+]
+const versioneDi = (pezzi: Array<{ parte: string; json: string }>) =>
+  impronta(pezzi.map((p) => `${p.parte}\n${p.json}`).join('\n'))
+const versioneGeo = versioneDi(pezziGeo)
+const versioneCitta = versioneDi(pezziCitta)
+dati.geo = versioneGeo
+dati.citta = versioneCitta
+
+const problemi = [...controllaRiassunto(dati), ...controllaCitta(riassunto.citta)]
 if (problemi.length > 0) {
   console.error(`Il riassunto non torna:\n  ${problemi.join('\n  ')}`)
   process.exit(1)
@@ -132,21 +246,25 @@ if (problemi.length > 0) {
 const sezioni = Object.fromEntries(
   SEZIONI_DATI.map((s) => [s, JSON.stringify(dati[s])]),
 ) as Record<(typeof SEZIONI_DATI)[number], string>
-const impronta = createHash('sha1')
-  .update(SEZIONI_DATI.map((s) => sezioni[s]).join('\n'))
-  .digest('hex')
-  .slice(0, 10)
-const versione = impronta
+const versione = impronta([...SEZIONI_DATI.map((s) => sezioni[s]), versioneGeo, versioneCitta].join('\n'))
+dati.versione = versione
 console.log(
   `  ${dati.paesi.length} paesi, ${dati.acque.length} acque, ${dati.fiumi.length} fiumi, ${dati.laghi.length} laghi` +
     ` — ${SEZIONI_DATI.map((s) => `${s} ${Math.round(sezioni[s].length / 1024)} kB`).join(', ')}`,
 )
+const peso = (pezzi: Array<{ json: string }>) => Math.round(pezzi.reduce((n, p) => n + p.json.length, 0) / 1024)
+console.log(
+  `  geometrie: ${Object.keys(geometrie.fiumi).length} fiumi e ${Object.keys(geometrie.laghi).length} laghi, ` +
+    `${pezziGeo.length} righe, ${peso(pezziGeo)} kB (${versioneGeo})`,
+)
+console.log(`  città: ${riassunto.citta.length}, ${pezziCitta.length} righe, ${peso(pezziCitta)} kB (${versioneCitta})`)
 
 const istruzioni: string[] = []
 const adesso = new Date().toISOString()
 
 if (SCRIVE) {
-  const salvata = interroga<{ versione: string }>("SELECT versione FROM quiz_dati WHERE parte = 'paesi'")[0]?.versione
+  const salvate = interroga<{ parte: string; versione: string }>('SELECT parte, versione FROM quiz_dati')
+  const salvata = salvate.find((r) => r.parte === 'paesi')?.versione
   if (salvata === versione) {
     console.log(`  il riassunto e' lo stesso (${versione}): non lo riscrivo`)
   } else {
@@ -157,47 +275,79 @@ if (SCRIVE) {
     }
     console.log(`  riassunto nuovo: ${salvata ?? 'nessuno'} → ${versione}`)
   }
+  for (const [nome, prefisso, pezzi, nuova] of [
+    ['geometrie', PREFISSO_GEOMETRIE, pezziGeo, versioneGeo],
+    ['città', PREFISSO_CITTA, pezziCitta, versioneCitta],
+  ] as const) {
+    const vecchia = salvate.find((r) => r.parte.startsWith(prefisso))?.versione
+    if (vecchia === nuova) {
+      console.log(`  ${nome}: le stesse (${nuova}), non le riscrivo`)
+      continue
+    }
+    istruzioni.push(`DELETE FROM quiz_dati WHERE parte LIKE '${prefisso}%';`)
+    for (const p of pezzi) {
+      istruzioni.push(
+        `INSERT INTO quiz_dati (parte, versione, dati, updated_at) VALUES (${cita(p.parte)}, ${cita(nuova)}, ${cita(p.json)}, ${cita(adesso)});`,
+      )
+    }
+    console.log(`  ${nome} nuove: ${vecchia ?? 'nessuna'} → ${nuova}`)
+  }
 }
 
 /* ─────────────────────────────  Le giornate  ───────────────────────────── */
 
-const ix = indicizza(dati)
-const esistenti = new Map<number, { categoria: CategoriaQuiz; domande: DomandaCompleta[] }>()
+const ix = indicizza(dati as DatiQuiz)
+const esistenti = new Map<number, { categoria: CategoriaQuiz; formato: number; giocata: boolean; domande: DomandaCompleta[] }>()
 if (SCRIVE) {
-  for (const r of interroga<{ puzzle_number: number; categoria: CategoriaQuiz; domande: string }>(
-    `SELECT puzzle_number, categoria, domande FROM quiz_giornate
-      WHERE puzzle_number >= ${DA - MEMORIA_GIORNI} AND puzzle_number < ${DA + GIORNI}`,
+  for (const r of interroga<{ puzzle_number: number; categoria: CategoriaQuiz; formato: number; giocata: number; domande: string }>(
+    `SELECT g.puzzle_number, g.categoria, g.formato, g.domande,
+            EXISTS (SELECT 1 FROM quiz_partite p WHERE p.puzzle_number = g.puzzle_number) AS giocata
+       FROM quiz_giornate g
+      WHERE g.puzzle_number >= ${DA - MEMORIA_GIORNI} AND g.puzzle_number < ${DA + GIORNI}`,
   )) {
-    esistenti.set(r.puzzle_number, { categoria: r.categoria, domande: JSON.parse(r.domande) })
+    esistenti.set(r.puzzle_number, {
+      categoria: r.categoria,
+      formato: r.formato,
+      giocata: r.giocata === 1,
+      domande: JSON.parse(r.domande),
+    })
   }
 }
-const giaFatte = [...esistenti.keys()].filter((n) => n >= DA).length
+/** Una giornata resta com'e' se e' di oggi o del passato, se e' del formato giusto, o se qualcuno l'ha aperta. */
+const resta = (numero: number) => {
+  const g = esistenti.get(numero)
+  return !!g && (numero <= DA || g.formato >= FORMATO || g.giocata)
+}
+const giaFatte = [...esistenti.keys()].filter((n) => n >= DA && resta(n)).length
 console.log(`Quiz: le giornate dal ${DA} al ${DA + GIORNI - 1}, ${giaFatte} già pronte`)
 
 for (let numero = DA; numero < DA + GIORNI; numero += 1) {
-  if (esistenti.has(numero)) continue
-  const categoria = categoriaDelGiorno(numero)
+  if (resta(numero)) continue
+  const giornata = giornataDelQuiz(numero)
   const evitare = new Set<string>()
   for (let prima = numero - MEMORIA_GIORNI; prima < numero; prima += 1) {
     const g = esistenti.get(prima)
-    if (g?.categoria === categoria) for (const d of g.domande) evitare.add(d.soggetto)
+    if (g?.categoria === giornata.categoria) for (const d of g.domande) evitare.add(d.soggetto)
   }
-  const domande = domandeDelGiorno(ix, categoria, mulberry32(semeDelGiorno(numero)), evitare)
+  const domande = domandeDelGiorno(ix, giornata, mulberry32(semeDelGiorno(numero)), evitare)
   if (domande.length !== DOMANDE_PER_PARTITA) {
-    console.error(`  #${numero} (${categoria}): solo ${domande.length} domande su ${DOMANDE_PER_PARTITA}`)
+    console.error(`  #${numero} (${giornata.categoria}, ${giornata.modo}): solo ${domande.length} domande su ${DOMANDE_PER_PARTITA}`)
     process.exit(1)
   }
-  esistenti.set(numero, { categoria, domande })
+  if (esistenti.has(numero)) istruzioni.push(`DELETE FROM quiz_giornate WHERE ${DA_RIFARE(numero)};`)
+  esistenti.set(numero, { categoria: giornata.categoria, formato: FORMATO, giocata: false, domande })
   istruzioni.push(
-    'INSERT OR IGNORE INTO quiz_giornate (puzzle_number, categoria, domande, created_at) VALUES (' +
-      [numero, cita(categoria), cita(JSON.stringify(domande)), cita(adesso)].join(', ') +
+    'INSERT OR IGNORE INTO quiz_giornate (puzzle_number, categoria, domande, created_at, formato) VALUES (' +
+      [numero, cita(giornata.categoria), cita(JSON.stringify(domande)), cita(adesso), FORMATO].join(', ') +
       ');',
   )
-  console.log(`  #${numero} ${NOMI_CATEGORIE[categoria]}: ${domande.map((d) => d.risposta).join(', ')}`)
+  console.log(
+    `  #${numero} ${NOMI_CATEGORIE[giornata.categoria]} · ${NOMI_MODI[giornata.modo]}: ${domande.map((d) => d.risposta).join(', ')}`,
+  )
   if (!SCRIVE) {
     for (const d of domande) {
       const opzioni = d.opzioni.map((o) => (o.id === d.giusta ? `[${o.testo}]` : o.testo)).join(' · ')
-      console.log(`     ${d.testo}  ${opzioni || `→ ${d.risposta} (${d.cartina?.vista})`}`)
+      console.log(`     ${d.testo}  ${opzioni || `→ ${d.risposta} (${d.cartina?.strato})`}`)
     }
     break
   }

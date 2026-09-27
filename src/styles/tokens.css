@@ -256,6 +256,22 @@
   --carta-confine: light-dark(#ffffff, #1b2733);
   --carta-costa: rgba(40, 90, 120, 0.35);
   --carta-costa: light-dark(rgba(40, 90, 120, 0.35), rgba(150, 205, 235, 0.25));
+  /* Le terre fuori dalla zona della partita: ci sono, ma spente. */
+  --carta-terra-fuori: #ece8e0;
+  --carta-terra-fuori: light-dark(#ece8e0, #29333d);
+  /* Oltre il bordo del mondo, quando lo si guarda tutto da lontano. */
+  --carta-fuori: #e6edf1;
+  --carta-fuori: light-dark(#e6edf1, #0a141c);
+  /* Fiumi e laghi: l'azzurro del mare, piu' deciso per farsi vedere sulla terra. */
+  --carta-fiume: #5aa6d6;
+  --carta-fiume: light-dark(#5aa6d6, #5fb0e0);
+  --carta-fiume-spento: rgba(90, 166, 214, 0.45);
+  --carta-fiume-spento: light-dark(rgba(90, 166, 214, 0.45), rgba(95, 176, 224, 0.35));
+  --carta-lago: #bfe0f1;
+  --carta-lago: light-dark(#bfe0f1, #17344a);
+  /* I pallini di capitali e città. */
+  --carta-pallino: #6a5a45;
+  --carta-pallino: light-dark(#6a5a45, #d9cbb5);
 
   /* ---- La carta delle domande del quiz ----
      Il reticolo di un atlante sulla carta della domanda, appena accennato, e

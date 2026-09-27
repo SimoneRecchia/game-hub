@@ -14,7 +14,7 @@
 
 @media (min-width: 640px) {
   .quiz-categorie {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -205,6 +205,108 @@
   color: var(--label-secondary);
 }
 
+.quiz-tempo:disabled {
+  opacity: 0.55;
+}
+
+/* ─────────────────────────  Le opzioni avanzate  ───────────────────────── */
+
+/* Una riga che si apre: il titolo, sotto quel che non e' come di solito, e la freccia che gira. */
+.quiz-avanzate {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-sm);
+  color: var(--label);
+  text-align: left;
+}
+
+.quiz-avanzate__testi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quiz-avanzate__titolo {
+  font-size: var(--text-body);
+  font-weight: 700;
+}
+
+.quiz-avanzate__sotto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.quiz-avanzate__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.quiz-avanzate.is-aperte .quiz-avanzate__freccia {
+  transform: rotate(90deg);
+}
+
+.quiz-avanzate__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5, 24px);
+  animation: quiz-avanzate-apre 320ms var(--ease-out) both;
+}
+
+@keyframes quiz-avanzate-apre {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.quiz-avanzate__corpo .sezione {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.quiz-gruppo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quiz-gruppo__titolo {
+  margin: 4px 0 0;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
+.quiz-gruppo__nota {
+  margin: 0;
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+}
+
+.quiz-avanzate__ripristina {
+  align-self: center;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
 /* L'interruttore di iOS: la capsula verde e il pallino che scivola. */
 .quiz-interruttore {
   flex: none;
@@ -332,7 +434,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .quiz-tessera,
-  .quiz-tessera__segno {
+  .quiz-tessera__segno,
+  .quiz-avanzate__corpo {
     animation: none;
   }
 }

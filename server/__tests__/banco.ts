@@ -144,6 +144,8 @@ export interface Giocatore {
 export interface Risposta<T> {
   status: number
   dati: T
+  /** Le intestazioni della risposta: la cache, il cookie. */
+  intestazioni?: Headers
 }
 
 /**
@@ -196,7 +198,7 @@ export function banco(variabili: Partial<Bindings> = {}) {
       env,
     )
     const testo = await risposta.text()
-    return { status: risposta.status, dati: (testo ? JSON.parse(testo) : null) as T }
+    return { status: risposta.status, dati: (testo ? JSON.parse(testo) : null) as T, intestazioni: risposta.headers }
   }
 
   return { db, app, env, giocatore, chiama }
