@@ -85,6 +85,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     celle,
     leggio: stato?.mioLeggio ?? [],
     bloccata: !stato || stato.turno !== 'io' || pensa,
+    ricordo: partita ? `libera:${partita.seme}` : null,
   })
   const { anteprima, sospese, annulla, avvisa } = composizione
   const sconosciute = useParoleSconosciute(anteprima)

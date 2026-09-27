@@ -116,6 +116,8 @@ export function Campo({
             selezione={selezione}
             bloccato={bloccato}
             onUsa={tocca}
+            onSposta={c.sposta}
+            onPosa={c.posaSu}
           />
 
           {cambio ? (

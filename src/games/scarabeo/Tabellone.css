@@ -141,6 +141,12 @@
   position: relative;
 }
 
+/* La casella dove cadrebbe la tessera che si sta trascinando dal leggio. */
+.cella--bersaglio {
+  background: color-mix(in srgb, var(--brand) 30%, var(--surface));
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
 .cella--cursore-oriz::after {
   top: 15%;
   bottom: 15%;
