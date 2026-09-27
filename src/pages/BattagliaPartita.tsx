@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
@@ -118,7 +118,7 @@ export default function BattagliaPartita() {
         ) : v.stato === 'disposizione' && !v.miaFlotta ? (
           <Disposizione vista={v} inviando={g.inviando} onConferma={g.disponi} />
         ) : v.stato === 'finita' ? (
-          <Fine vista={v} />
+          <Fine vista={v} ricarica={g.ricarica} />
         ) : (
           <Combattimento
             vista={v}
@@ -486,13 +486,72 @@ function Combattimento({
 
 /* ─────────────────────────────────  Fine  ──────────────────────────────── */
 
-function Fine({ vista }: { vista: VistaBattaglia }) {
+/** Com'e' la rivincita, in una riga: nella testata della fine, perché sotto ci sono solo i bottoni. */
+function messaggioRivincita(r: VistaBattaglia['rivincita'], nome: string): string | null {
+  if (!r) return null
+  if (r.stato === 'attesa') {
+    return r.da === 'io' ? `Aspetto la risposta di ${nome}…` : `${maiuscola(nome)} vuole la rivincita: la serie continua.`
+  }
+  if (r.stato === 'rifiutato') {
+    return r.da === 'io' ? `${maiuscola(nome)} non vuole la rivincita, per ora.` : 'Hai detto di no alla rivincita.'
+  }
+  if (r.stato === 'scaduto' && r.da === 'io') return `${maiuscola(nome)} non ha risposto alla rivincita.`
+  return null
+}
+
+function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Promise<void> }) {
   const { vai } = useNavigazione()
   const [errore, setErrore] = useState<string | null>(null)
   const [invio, setInvio] = useState(false)
   const nome = nomeAvversario(vista)
   const vinta = vista.vincitore === 'io'
   const fraAmici = vista.modalita === 'amici'
+  const r = vista.rivincita
+  // La serie dopo questa partita: le vittorie di prima, piu' questa.
+  const serie =
+    vista.serie && vista.serie.partite > 0
+      ? {
+          io: vista.serie.io + (vinta ? 1 : 0),
+          lui: vista.serie.avversario + (vinta ? 0 : 1),
+          partite: vista.serie.partite + 1,
+        }
+      : null
+
+  // La rivincita accettata, da chiunque dei due: si va tutti e due alla partita nuova.
+  const nuova = r?.stato === 'accettato' ? r.partitaId : null
+  useEffect(() => {
+    if (nuova) vai(ROTTE.partitaBattaglia(nuova), { replace: true, direzione: 'nessuna' })
+  }, [nuova, vai])
+
+  const fai = async (azione: () => Promise<void>) => {
+    setInvio(true)
+    setErrore(null)
+    try {
+      await azione()
+    } catch (err) {
+      setErrore(err instanceof ApiFetchError ? err.message : 'Non ci sono riuscito.')
+    } finally {
+      setInvio(false)
+    }
+  }
+
+  /** Gioca ancora fra amici: se l'altro l'aveva gia' chiesta, e' un si' e si parte subito. */
+  const rivincita = () =>
+    fai(async () => {
+      const esito = await api<{ partitaId?: string }>(`/battaglia/partite/${vista.id}/rivincita`, { method: 'POST' })
+      if (esito.partitaId) vai(ROTTE.partitaBattaglia(esito.partitaId), { replace: true, direzione: 'nessuna' })
+      else await ricarica()
+    })
+  const accetta = () =>
+    fai(async () => {
+      const { partitaId } = await api<{ partitaId: string }>(`/battaglia/sfide/${r!.id}/accetta`, { method: 'POST' })
+      vai(ROTTE.partitaBattaglia(partitaId), { replace: true, direzione: 'nessuna' })
+    })
+  const rifiuta = () =>
+    fai(async () => {
+      await api(`/battaglia/sfide/${r!.id}/rifiuta`, { method: 'POST' })
+      await ricarica()
+    })
 
   const perche =
     vista.motivo === 'flotta'
@@ -517,27 +576,15 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
   )
   const aGalla = mieNavi.filter((n) => !n.affondata).length
 
-  /** Fra amici una sfida nuova; contro il computer una partita nuova allo stesso livello. */
-  const ancora = async () => {
-    setInvio(true)
-    setErrore(null)
-    try {
-      if (fraAmici) {
-        await api('/battaglia/sfida', { method: 'POST', body: { playerId: vista.avversario.playerId } })
-        vai(ROTTE.libera('battaglia'), { replace: true, direzione: 'indietro' })
-      } else {
-        const nuova = await api<VistaBattaglia>('/battaglia/computer', {
-          method: 'POST',
-          body: { livello: vista.livello ?? 'normale' },
-        })
-        vai(ROTTE.partitaBattaglia(nuova.id), { replace: true, direzione: 'nessuna' })
-      }
-    } catch (err) {
-      setErrore(err instanceof ApiFetchError ? err.message : 'Non riesco a cominciare.')
-    } finally {
-      setInvio(false)
-    }
-  }
+  /** Contro il computer, una partita nuova allo stesso livello. */
+  const ancora = () =>
+    fai(async () => {
+      const partita = await api<VistaBattaglia>('/battaglia/computer', {
+        method: 'POST',
+        body: { livello: vista.livello ?? 'normale' },
+      })
+      vai(ROTTE.partitaBattaglia(partita.id), { replace: true, direzione: 'nessuna' })
+    })
 
   return (
     <div className="bat-fine">
@@ -551,6 +598,16 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
           <p className="bat-fine__punti">
             <Numero valore={vista.punti} />
             <span className="bat-fine__su"> / 100 in classifica</span>
+          </p>
+        )}
+        {fraAmici && messaggioRivincita(r, nome) && (
+          <p className="bat-fine__rivincita" aria-live="polite">
+            {messaggioRivincita(r, nome)}
+          </p>
+        )}
+        {serie && (
+          <p className="bat-fine__serie u-tabnum">
+            Nella serie: <strong>{serie.io}</strong> a <strong>{serie.lui}</strong> in {serie.partite} partite
           </p>
         )}
         {vista.colpiMiei.length > 0 && (
@@ -605,15 +662,32 @@ function Fine({ vista }: { vista: VistaBattaglia }) {
           </>
         ) : fraAmici ? (
           <>
-            <Button onClick={() => void ancora()} loading={invio} disabled={!vista.avversario.online}>
-              {vista.avversario.online ? 'Rivincita' : `${nome} non è online`}
-            </Button>
-            <Button
-              variant="tinted"
-              onClick={() => vai(ROTTE.libera('battaglia'), { replace: true, direzione: 'indietro' })}
-            >
-              Altre partite
-            </Button>
+            {r?.stato === 'attesa' && r.da === 'avversario' ? (
+              <>
+                <Button onClick={() => void accetta()} loading={invio}>
+                  Accetta la rivincita
+                </Button>
+                <Button variant="tinted" disabled={invio} onClick={() => void rifiuta()}>
+                  No, grazie
+                </Button>
+              </>
+            ) : r?.stato === 'attesa' && r.da === 'io' ? null : (
+              <Button
+                onClick={() => void rivincita()}
+                loading={invio}
+                disabled={!vista.avversario.online || r?.stato === 'rifiutato'}
+              >
+                {vista.avversario.online ? 'Gioca ancora' : `${maiuscola(nome)} non è online`}
+              </Button>
+            )}
+            {!(r?.stato === 'attesa' && r.da === 'avversario') && (
+              <Button
+                variant="tinted"
+                onClick={() => vai(ROTTE.libera('battaglia'), { replace: true, direzione: 'indietro' })}
+              >
+                Altre partite
+              </Button>
+            )}
           </>
         ) : (
           <>

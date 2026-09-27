@@ -7,14 +7,15 @@ import { IconaScheda, Pillola, Scheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { formatCronometro } from '@/lib/format'
 import { NOMI_CATEGORIE, NOMI_MODI, PUNTI_BASE_QUIZ, SECONDI_CARTINA, SECONDI_SCELTA, type CategoriaQuiz } from '@shared/quiz'
-import type { DomandaQuiz, IndiceQuiz, OpzioneQuiz } from '@shared/quiz-domande'
+import type { CittaQuiz } from '@shared/quiz-dati'
+import type { AreaQuiz, DomandaQuiz, IndiceQuiz, OpzioneQuiz } from '@shared/quiz-domande'
 import { adesivoFine, adesivoGiusta, adesivoSbagliata, adesivoTempo } from './adesivi'
 import { misureBandiera, urlBandiera } from './bandiere'
 import { Cartina, type EsitoCartina, type PuntoCartina } from './cartina/Cartina'
 import { useIndiceQuiz } from './dati'
 import { IconaCategoria } from './icone'
 import { descrizione } from './testi'
-import { VIA_MS, type Fatta, type VistaPartita } from './usePartita'
+import { VIA_MS, type Fatta, type OpzioniPartita, type VistaPartita } from './usePartita'
 import { luogoDellaRisposta, postoDellOpzione, zonaDellaPartita } from './zona'
 import './PartitaQuiz.css'
 
@@ -163,9 +164,9 @@ function Intro({ p, categoria, intro }: { p: VistaPartita; categoria: CategoriaQ
 }
 
 /** Tre, due, uno, via: numeri che saltano fuori uno dopo l'altro. */
-function Via({ categoria }: { categoria: CategoriaQuiz }) {
+export function Via({ categoria, durata = VIA_MS }: { categoria: CategoriaQuiz; durata?: number }) {
   return (
-    <div className="quiz-via" style={{ '--via': `${VIA_MS}ms` } as CSSProperties}>
+    <div className="quiz-via" style={{ '--via': `${durata}ms` } as CSSProperties}>
       <span className="quiz-via__icona" aria-hidden="true">
         <IconaCategoria categoria={categoria} size={28} />
       </span>
@@ -237,9 +238,14 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
 
   const com = esito ? (esito.risposta.giusta ? ' is-giusta' : ' is-sbagliata') : ''
   const nelRipasso = p.ripassoDa !== null && p.indice >= p.ripassoDa
-  const titolo = nelRipasso
-    ? `Ripasso ${p.indice - p.ripassoDa! + 1} di ${p.totale - p.ripassoDa!}`
-    : `Domanda ${Math.min(p.indice + 1, p.totale)} di ${p.ripassoDa ?? p.totale}`
+  const titolo = (
+    <>
+      <span className="quiz-titolo__parola">{nelRipasso ? 'Ripasso ' : 'Domanda '}</span>
+      {nelRipasso
+        ? `${p.indice - p.ripassoDa! + 1} di ${p.totale - p.ripassoDa!}`
+        : `${Math.min(p.indice + 1, p.totale)} di ${p.ripassoDa ?? p.totale}`}
+    </>
+  )
 
   return (
     <>
@@ -259,20 +265,16 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
       {sullaCartina ? (
         <>
           {/* Il testo cambia a ogni domanda; la cartina no, e con lei la vista. */}
-          <section key={`carta-${p.indice}`} className={`quiz-carta is-cartina${com}`} aria-live="polite">
-            {d.bandiera && (
-              <img
-                className="quiz-carta__bandierina"
-                src={urlBandiera(d.bandiera, 160)}
-                srcSet={`${urlBandiera(d.bandiera, 320)} 2x`}
-                alt="La bandiera da riconoscere"
-                draggable={false}
-              />
-            )}
-            <p className="quiz-carta__testo">{d.testo}</p>
-          </section>
+          <CartaDomanda key={`carta-${p.indice}`} d={d} categoria={categoria} esito={com} rivela={false} />
           <div className="quiz-mappa">
-            <CartinaDellaPartita p={p} ix={ix} d={d} scelta={sceltaCartina} onScegli={esito ? undefined : setSceltaCartina} />
+            <CartinaDellaPartita
+              c={p}
+              ix={ix}
+              d={d}
+              scelta={sceltaCartina}
+              onScegli={esito ? undefined : setSceltaCartina}
+              fatta={esito}
+            />
           </div>
           <div className="quiz-conferma">
             {esito ? (
@@ -301,48 +303,29 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
         <>
           {/* Chiavi diverse per carta e risposte: sono fratelle, e con la stessa chiave
               React non saprebbe quale togliere, e la carta vecchia resterebbe. */}
-          <section
+          <CartaDomanda
             key={`carta-${p.indice}`}
-            className={`quiz-carta${rivela ? ' is-rivela' : d.bandiera ? ' is-bandiera' : ' is-testo'}${com}`}
-            aria-live="polite"
-          >
-            {!rivela && !d.bandiera && (
-              <span className="quiz-carta__emblema" aria-hidden="true">
-                <IconaCategoria categoria={categoria} size={40} />
-              </span>
-            )}
-            {rivela && d.bandiera && (
-              <img className="quiz-carta__bandierina" src={urlBandiera(d.bandiera, 160)} alt="" draggable={false} />
-            )}
-            <p className="quiz-carta__testo">{d.testo}</p>
-            {!rivela && d.bandiera && (
-              <span className="quiz-carta__bandiera">
-                <img
-                  src={urlBandiera(d.bandiera, 320)}
-                  srcSet={misureBandiera(d.bandiera, 320, 640)}
-                  sizes="(min-width: 700px) 440px, 300px"
-                  alt="La bandiera da riconoscere"
-                  draggable={false}
-                />
-              </span>
-            )}
-            {!esito && p.opzioni.aiuti && p.aiutiRimasti > 0 && d.opzioni.length >= 3 && (
-              <button
-                type="button"
-                className="quiz-carta__aiuto"
-                disabled={p.esclusi.size > 0}
-                onClick={p.usaAiuto}
-                aria-label={`Cinquanta e cinquanta: toglie metà delle risposte sbagliate. Ne restano ${p.aiutiRimasti}.`}
-              >
-                50:50 <span className="u-tabnum">×{p.aiutiRimasti}</span>
-              </button>
-            )}
-            {rivela && esito && (
-              <div className="quiz-carta__cartina">
-                <CartinaDellaPartita p={p} ix={ix} d={d} scelta={null} risposta={esito} />
-              </div>
-            )}
-          </section>
+            d={d}
+            categoria={categoria}
+            esito={com}
+            rivela={rivela}
+            aiuto={
+              !esito && p.opzioni.aiuti && p.aiutiRimasti > 0 && d.opzioni.length >= 3 ? (
+                <button
+                  type="button"
+                  className="quiz-carta__aiuto"
+                  disabled={p.esclusi.size > 0}
+                  onClick={p.usaAiuto}
+                  aria-label={`Cinquanta e cinquanta: toglie metà delle risposte sbagliate. Ne restano ${p.aiutiRimasti}.`}
+                >
+                  50:50 <span className="u-tabnum">×{p.aiutiRimasti}</span>
+                </button>
+              ) : null
+            }
+            cartina={
+              rivela && esito ? <CartinaDellaPartita c={p} ix={ix} d={d} scelta={null} fatta={esito} guarda /> : null
+            }
+          />
           <Opzioni
             key={`opzioni-${p.indice}`}
             d={d}
@@ -373,27 +356,106 @@ function Avanti({ p }: { p: VistaPartita }) {
 }
 
 /**
- * La cartina di una partita: la stessa per tutte le domande sulla cartina, o
- * quella che nasce a risposta data per le domande a scelta. La zona, i posti
- * da toccare e i nomi vengono dalle opzioni della partita.
+ * La carta della domanda: il testo, con la bandiera da riconoscere o
+ * l'emblema della categoria. Sulla cartina e' una riga sola, con la bandierina
+ * se c'e'; con la cartina che insegna, a risposta data, ha dentro la cartina.
+ * La usano la partita e la sfida a due.
  */
-function CartinaDellaPartita({
-  p,
+export function CartaDomanda({
+  d,
+  categoria,
+  esito,
+  rivela,
+  aiuto,
+  cartina,
+}: {
+  d: DomandaQuiz
+  categoria: CategoriaQuiz
+  /** Il colore della carta a risposta data: " is-giusta", " is-sbagliata", o niente. */
+  esito: string
+  rivela: boolean
+  aiuto?: ReactNode
+  cartina?: ReactNode
+}) {
+  if (d.cartina) {
+    return (
+      <section className={`quiz-carta is-cartina${esito}`} aria-live="polite">
+        {d.bandiera && (
+          <img
+            className="quiz-carta__bandierina"
+            src={urlBandiera(d.bandiera, 160)}
+            srcSet={`${urlBandiera(d.bandiera, 320)} 2x`}
+            alt="La bandiera da riconoscere"
+            draggable={false}
+          />
+        )}
+        <p className="quiz-carta__testo">{d.testo}</p>
+      </section>
+    )
+  }
+  return (
+    <section
+      className={`quiz-carta${rivela ? ' is-rivela' : d.bandiera ? ' is-bandiera' : ' is-testo'}${esito}`}
+      aria-live="polite"
+    >
+      {!rivela && !d.bandiera && (
+        <span className="quiz-carta__emblema" aria-hidden="true">
+          <IconaCategoria categoria={categoria} size={40} />
+        </span>
+      )}
+      {rivela && d.bandiera && (
+        <img className="quiz-carta__bandierina" src={urlBandiera(d.bandiera, 160)} alt="" draggable={false} />
+      )}
+      <p className="quiz-carta__testo">{d.testo}</p>
+      {!rivela && d.bandiera && (
+        <span className="quiz-carta__bandiera">
+          <img
+            src={urlBandiera(d.bandiera, 320)}
+            srcSet={misureBandiera(d.bandiera, 320, 640)}
+            sizes="(min-width: 700px) 440px, 300px"
+            alt="La bandiera da riconoscere"
+            draggable={false}
+          />
+        </span>
+      )}
+      {aiuto}
+      {rivela && cartina && <div className="quiz-carta__cartina">{cartina}</div>}
+    </section>
+  )
+}
+
+/** Quel che la cartina di una partita deve sapere: dove si gioca, come, e le città se ce ne sono. */
+export interface ContestoCartina {
+  area: AreaQuiz
+  citta: readonly CittaQuiz[] | null
+  opzioni: Pick<OpzioniPartita, 'soloZona' | 'nomiPaesi' | 'evidenzia' | 'imparo'>
+}
+
+/**
+ * La cartina di una partita: la stessa per tutte le domande sulla cartina, o
+ * quella che nasce a risposta data per le domande a scelta (`guarda`). La
+ * zona, i posti da toccare e i nomi vengono dalle opzioni della partita.
+ */
+export function CartinaDellaPartita({
+  c: p,
   ix,
   d,
   scelta,
   onScegli,
-  risposta,
+  fatta,
+  guarda = false,
 }: {
-  p: VistaPartita
+  c: ContestoCartina
   ix: IndiceQuiz | null
   d: DomandaQuiz
   scelta: string | null
   onScegli?: (id: string) => void
-  /** Per la cartina che insegna: la risposta data a una domanda a scelta. */
-  risposta?: Fatta
+  /** La risposta da mostrare, a risposta data. */
+  fatta: Fatta | null
+  /** Da guardare soltanto: la cartina che insegna, per una domanda a scelta. */
+  guarda?: boolean
 }) {
-  const strato = risposta ? null : (d.cartina?.strato ?? null)
+  const strato = guarda ? null : (d.cartina?.strato ?? null)
   // La vista della domanda conta solo alla prima: dopo la cartina resta dov'e'.
   const [vistaIniziale] = useState(d.cartina?.vista)
   const zona = useMemo(
@@ -404,7 +466,6 @@ function CartinaDellaPartita({
     () => p.citta?.map((c) => ({ id: `u:${c.id}`, lon: c.pt[0], lat: c.pt[1], nome: c.n })),
     [p.citta],
   )
-  const fatta = risposta ?? (p.fase === 'esito' ? p.ultima : null)
   const esito: EsitoCartina | null = useMemo(() => {
     if (!fatta || !ix) return null
     const r = fatta.risposta
@@ -527,10 +588,21 @@ function Progresso({ p }: { p: VistaPartita }) {
  * casella toccata sulla cartina, una risposta che parte — la farebbe saltare.
  * La chiave la fa ricomparire a ogni domanda, e ferma quando si risponde.
  */
-function Miccia({ scadenza, ferma, limiteMs }: { scadenza: number | null; ferma: boolean; limiteMs: number }) {
+export function Miccia({
+  scadenza,
+  ferma,
+  limiteMs,
+  fattore = 1,
+}: {
+  scadenza: number | null
+  ferma: boolean
+  limiteMs: number
+  /** Al rallentatore il tempo che resta dura `fattore` volte tanto: la miccia resta dov'e', e brucia piano. */
+  fattore?: number
+}) {
   const [misura] = useState(() => {
     const restante = scadenza === null ? 0 : Math.max(0, scadenza - performance.now())
-    return { da: Math.min(1, restante / limiteMs), durata: restante }
+    return { da: Math.min(1, restante / fattore / limiteMs), durata: restante }
   })
   return (
     <span className="quiz-miccia" aria-hidden="true">
@@ -542,13 +614,22 @@ function Miccia({ scadenza, ferma, limiteMs }: { scadenza: number | null; ferma:
   )
 }
 
-function Opzioni({
+/** Chi altro ha scelto una risposta, nella sfida a due: il suo bollo sull'opzione. */
+export interface AltraScelta {
+  scelta: string | null
+  nome: string
+  colore: string
+}
+
+export function Opzioni({
   d,
   esito,
   inviando,
   esclusi,
   compatte,
   onScegli,
+  fuori = null,
+  altra,
 }: {
   d: DomandaQuiz
   esito: Fatta | null
@@ -557,13 +638,18 @@ function Opzioni({
   /** Con la cartina che insegna, restano la giusta e quella scelta: il resto dello spazio e' della cartina. */
   compatte: boolean
   onScegli: (id: string) => void
+  /** Nella sfida, la risposta sbagliata data mentre la domanda e' ancora aperta: la giusta non si sa ancora. */
+  fuori?: string | null
+  altra?: AltraScelta
 }) {
   const [scelta, setScelta] = useState<string | null>(null)
   const bandiere = d.opzioni.some((o) => o.bandiera)
   const lunghe = d.opzioni.some((o) => o.testo.length > 18)
   const sei = d.opzioni.length > 4
   const visibili = compatte && esito
-    ? d.opzioni.filter((o) => o.id === esito.risposta.corretta || o.id === esito.risposta.scelta)
+    ? d.opzioni.filter(
+        (o) => o.id === esito.risposta.corretta || o.id === esito.risposta.scelta || o.id === altra?.scelta,
+      )
     : d.opzioni
   return (
     <div
@@ -578,6 +664,8 @@ function Opzioni({
           if (o.id === esito.risposta.corretta) stato = ' is-giusta'
           else if (o.id === esito.risposta.scelta) stato = ' is-sbagliata'
           else stato = ' is-spenta'
+        } else if (fuori) {
+          stato = o.id === fuori ? ' is-sbagliata' : ' is-spenta'
         } else if (esclusi.has(o.id)) {
           stato = ' is-esclusa'
         } else if (inviando && o.id === scelta) {
@@ -589,7 +677,7 @@ function Opzioni({
             type="button"
             className={`quiz-opzione${stato}`}
             style={{ '--i': i } as CSSProperties}
-            disabled={!!esito || inviando || esclusi.has(o.id)}
+            disabled={!!esito || !!fuori || inviando || esclusi.has(o.id)}
             onClick={() => {
               setScelta(o.id)
               onScegli(o.id)
@@ -612,6 +700,15 @@ function Opzioni({
                 <Lettera o={o} i={i} stato={stato} esito={!!esito} />
                 <span className="quiz-opzione__testo">{o.testo}</span>
               </>
+            )}
+            {altra && altra.scelta === o.id && (esito || fuori) && (
+              <span
+                className="quiz-opzione__altro"
+                style={{ '--colore': altra.colore } as CSSProperties}
+                aria-label={`La risposta di ${altra.nome}`}
+              >
+                {altra.nome.slice(0, 1).toUpperCase()}
+              </span>
             )}
           </button>
         )

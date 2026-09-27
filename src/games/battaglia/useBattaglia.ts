@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { BATTAGLIA_POLL_ATTESA_MS, BATTAGLIA_POLL_TURNO_MS } from '@shared/config'
+import { BATTAGLIA_POLL_ATTESA_MS, BATTAGLIA_POLL_LOBBY_MS, BATTAGLIA_POLL_TURNO_MS } from '@shared/config'
 import type { Nave } from '@shared/battaglia'
 import type { VistaBattaglia } from '@shared/types'
 import { ApiFetchError, api } from '@/lib/api'
@@ -30,8 +30,9 @@ const totaleColpi = (v: VistaBattaglia) => v.colpiMiei.length + v.colpiSubiti.le
  *
  * Fra amici va a polling, e il ritmo cambia con la situazione: stretto quando
  * si aspetta l'altro — il suo colpo deve comparire subito — largo quando tocca
- * a te, perché lì si guarda solo se l'altro si e' arreso. A partita finita il
- * polling si ferma, e a pagina nascosta non parte: le richieste sono contate.
+ * a te, perché lì si guarda solo se l'altro si e' arreso. A partita finita
+ * rallenta, per vedere se l'altro chiede la rivincita, e a pagina nascosta non
+ * parte: le richieste sono contate.
  *
  * Contro il computer non c'e' niente da aspettare, quindi nessun polling: il
  * suo colpo arriva nella risposta al mio, e qui lo si racconta un pezzo per
@@ -135,8 +136,9 @@ export function useBattaglia(id: string) {
 
   const finita = vista?.stato === 'finita'
   const fraAmici = vista?.modalita === 'amici'
-  const ritmo = vista?.tuoTurno ? BATTAGLIA_POLL_TURNO_MS : BATTAGLIA_POLL_ATTESA_MS
-  const inCorso = vista !== null && !finita
+  // A partita finita fra amici si guarda ancora, piu' piano: e' li' che arriva la rivincita.
+  const ritmo = finita ? BATTAGLIA_POLL_LOBBY_MS : vista?.tuoTurno ? BATTAGLIA_POLL_TURNO_MS : BATTAGLIA_POLL_ATTESA_MS
+  const inCorso = vista !== null && (!finita || fraAmici)
   useEffect(() => {
     if (!inCorso || !fraAmici) return
     const giro = setInterval(() => {

@@ -4,7 +4,7 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Sezione } from '@/components/Elementi'
-import { IconCheck, IconChevronRight, IconInfo } from '@/components/Icons'
+import { IconCheck, IconChevronRight, IconInfo, IconPeople } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
@@ -14,7 +14,8 @@ import { ComeSiGiocaQuiz } from '@/games/quiz/ComeSiGioca'
 import { useIndiceQuiz } from '@/games/quiz/dati'
 import { IconaCategoria } from '@/games/quiz/icone'
 import { PartitaQuiz } from '@/games/quiz/PartitaQuiz'
-import { descrizione } from '@/games/quiz/testi'
+import { SfidaQuiz } from '@/games/quiz/sfida/SfidaQuiz'
+import { descrizione, nomeArea } from '@/games/quiz/testi'
 import {
   OPZIONI_PREDEFINITE,
   leggiStatistiche,
@@ -30,7 +31,6 @@ import {
   CONTINENTI,
   DOMANDE_PER_PARTITA,
   NOMI_CATEGORIE,
-  NOMI_CONTINENTI,
   NOMI_MODI,
   QUANTE_LIBERE,
   RISPOSTE_LIBERE,
@@ -40,7 +40,6 @@ import {
   eCategoria,
   eModo,
   type CategoriaQuiz,
-  type Continente,
   type ModoQuiz,
 } from '@shared/quiz'
 import { NOMI_TIPI, TIPI, type AreaQuiz, type IndiceQuiz, type Notorieta, type TipoDomanda } from '@shared/quiz-domande'
@@ -186,12 +185,6 @@ function salvaScelte(s: ImpostazioniLibera): void {
   }
 }
 
-function nomeArea(area: AreaQuiz, ix: IndiceQuiz | null): string {
-  if (area === 'mondo') return 'Tutto il mondo'
-  if (area.startsWith('paese:')) return ix?.paesi.get(area.slice(6))?.n ?? '…'
-  return NOMI_CONTINENTI[area as Continente]
-}
-
 /**
  * Il quiz libero: prima si sceglie — categoria, a scelta o sulla cartina,
  * dove, quante domande, se a tempo, e sotto le opzioni avanzate — poi si gioca.
@@ -291,6 +284,9 @@ function Scelta() {
   const { vai } = useNavigazione()
   const [scelte, setScelte] = useState(leggiScelte)
   const [paesiAperti, setPaesiAperti] = useState(false)
+  // `?sfida=1`: si arriva dalla pagina del quiz con il foglio della sfida gia' aperto.
+  const [query] = useSearchParams()
+  const [sfida, setSfida] = useState(query.get('sfida') === '1')
   const [avanzate, setAvanzate] = useState(false)
   const [regole, setRegole] = useState(false)
   const [statistiche] = useState(leggiStatistiche)
@@ -619,7 +615,20 @@ function Scelta() {
         <Button size="lg" fullWidth onClick={comincia}>
           Comincia
         </Button>
+        <Button
+          variant="tinted"
+          size="lg"
+          fullWidth
+          onClick={() => {
+            salvaScelte(scelte)
+            setSfida(true)
+          }}
+        >
+          <IconPeople size={20} /> Sfida un amico
+        </Button>
       </div>
+
+      <SfidaQuiz open={sfida} onClose={() => setSfida(false)} scelte={scelte} />
 
       <Sheet
         open={paesiAperti}

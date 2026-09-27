@@ -1,4 +1,5 @@
-import type { CategoriaQuiz, ModoQuiz } from '@shared/quiz'
+import { NOMI_CONTINENTI, type CategoriaQuiz, type Continente, type ModoQuiz } from '@shared/quiz'
+import type { AreaQuiz, IndiceQuiz } from '@shared/quiz-domande'
 
 /** Le parole delle categorie: cosa si chiede, in una riga, a scelta o sulla cartina. */
 export const DESCRIZIONI: Record<ModoQuiz, Record<CategoriaQuiz, string>> = {
@@ -28,4 +29,11 @@ export const DESCRIZIONI: Record<ModoQuiz, Record<CategoriaQuiz, string>> = {
 
 export function descrizione(categoria: CategoriaQuiz, modo: ModoQuiz | null): string {
   return DESCRIZIONI[modo ?? 'scelta'][categoria]
+}
+
+/** Il nome di dove si gioca: "Tutto il mondo", un continente, o un paese. */
+export function nomeArea(area: AreaQuiz, ix: IndiceQuiz | null): string {
+  if (area === 'mondo') return 'Tutto il mondo'
+  if (area.startsWith('paese:')) return ix?.paesi.get(area.slice(6))?.n ?? '…'
+  return NOMI_CONTINENTI[area as Continente]
 }
