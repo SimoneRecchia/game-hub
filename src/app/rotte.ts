@@ -19,6 +19,8 @@
  *   /battaglia-navale/invito/:codice    un invito arrivato con un link
  *   /quiz/classificata                  le dieci domande di oggi
  *   /quiz/libera                        categoria, zona e domande a scelta
+ *   /quiz/duello/:id                    una sfida a quiz fra due
+ *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
  *   /classifica, /classifica/wordle     la generale e quella di ogni gioco
  *   /profilo
  *
@@ -57,4 +59,6 @@ export const ROTTE = {
   cruciverbaLibero: (partita: string) => `/cruciverba/libera/${partita}`,
   partitaBattaglia: (id: string) => `/battaglia-navale/partita/${id}`,
   invitoBattaglia: (codice: string) => `/battaglia-navale/invito/${codice}`,
+  duelloQuiz: (id: string) => `/quiz/duello/${id}`,
+  invitoQuiz: (codice: string) => `/quiz/sfida/${codice}`,
 } as const

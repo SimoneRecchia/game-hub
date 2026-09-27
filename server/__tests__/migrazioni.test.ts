@@ -46,6 +46,8 @@ describe('le migrazioni', () => {
       'quiz_giornate',
       'quiz_partite',
       'quiz_dati',
+      'quiz_sfide',
+      'quiz_duelli',
     ]) {
       expect(tabelle).toContain(t)
     }

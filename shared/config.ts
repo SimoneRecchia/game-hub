@@ -90,6 +90,19 @@ export const BATTAGLIA_POLL_TURNO_MS = 5_000
 export const BATTAGLIA_POLL_LOBBY_MS = 3_000
 
 /**
+ * Il ritmo della sfida a quiz. Un secondo a domanda aperta: l'errore
+ * dell'altro fa partire il rallenty, e la sua risposta giusta chiude la
+ * domanda, e tutti e due vanno visti subito. Nella pausa fra due domande una
+ * richiesta sola, all'ora in cui si apre la prossima; mentre si aspetta
+ * l'altro, o la sua risposta alla rivincita, un secondo e mezzo; a sfida
+ * finita, piu' largo, per vedere se chiede la rivincita. Venti domande sono
+ * quattro o cinquecento richieste a testa: sulle centomila del giorno si puo'.
+ */
+export const SFIDA_POLL_DOMANDA_MS = 1_000
+export const SFIDA_POLL_ATTESA_MS = 1_500
+export const SFIDA_POLL_FINE_MS = 3_000
+
+/**
  * Quanto vale un invito con un link: un giorno. Il link si manda in una chat e
  * chi lo riceve magari deve ancora registrarsi, quindi non puo' durare due
  * minuti come una sfida; ma un invito dimenticato non deve aprire una partita

@@ -24,8 +24,9 @@ type Campo = 'nickname' | 'email' | 'password' | 'conferma' | null
  * serve al recupero, che prima non esisteva — chi dimenticava la password
  * perdeva l'account.
  *
- * Chi arriva da un **invito a battaglia navale** vede prima chi lo sta
- * sfidando, e la schermata parte dalla registrazione: e' quasi certamente la
+ * Chi arriva da un **invito con un link** — a battaglia navale o a una sfida a
+ * quiz — vede prima chi lo sta sfidando, e la schermata parte dalla
+ * registrazione: e' quasi certamente la
  * prima volta che apre l'app. L'indirizzo resta quello dell'invito, quindi
  * appena entra la pagina dell'invito lo porta nella partita.
  */
@@ -126,8 +127,8 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
           <Marchio lato={96} />
           <h1 className="welcome__title">Giochi</h1>
           <p className="welcome__lede">
-            Wordle, Scarabeo, Cruciverba e Battaglia navale. Ogni giorno una partita classificata per
-            gioco, la stessa per tutti, e quante partite libere vuoi.
+            Wordle, Scarabeo, Cruciverba, Battaglia navale e Quiz. Ogni giorno una partita classificata
+            per gioco, la stessa per tutti, e quante partite libere vuoi.
           </p>
         </header>
 
@@ -137,7 +138,8 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
             <p className="welcome__invito-testo">
               {sfida.stato === 'attesa' ? (
                 <>
-                  <strong>{sfida.da.displayName}</strong> ti sfida a battaglia navale.{' '}
+                  <strong>{sfida.da.displayName}</strong>{' '}
+                  {sfida.gioco === 'quiz' ? 'ti sfida a un quiz di geografia.' : 'ti sfida a battaglia navale.'}{' '}
                   {isRegister
                     ? 'Crea il tuo profilo: appena entri, la partita comincia.'
                     : 'Entra e la partita comincia.'}

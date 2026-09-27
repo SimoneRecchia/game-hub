@@ -118,6 +118,11 @@ export function ComeSiGiocaBattaglia({ open, onClose }: { open: boolean; onClose
               account — si registra, e appena entra la partita comincia. Vale {ore(LINK_SCADENZA_MS)}{' '}
               ore, per una persona sola.
             </li>
+            <li>
+              <strong>La rivincita</strong>: a partita finita, «Gioca ancora». L&rsquo;altro accetta o
+              no; se l&rsquo;aveva già chiesta anche lui, si parte subito. Le vittorie si contano: alla
+              fine di ogni partita vedi il conto della serie.
+            </li>
           </ul>
         </section>
       </div>

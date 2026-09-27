@@ -81,6 +81,10 @@ export interface PartitaRow {
   created_at: string
   updated_at: string
   finita_at: string | null
+  /** Fra amici: le vittorie di ciascuno nelle partite di prima della serie, e quante erano. */
+  serie_a: number
+  serie_b: number
+  partite_serie: number
 }
 
 interface GiocatoreRow {
@@ -220,6 +224,8 @@ interface InvitoRow {
   partita_id: string | null
   created_at: string
   risposto_at: string | null
+  /** La partita di cui e' la rivincita. */
+  rivincita_di: string | null
 }
 
 export async function invitoPerId(db: D1Database, id: string): Promise<InvitoRow | null> {
@@ -238,7 +244,7 @@ export async function sfideRicevute(
 ): Promise<InvitoBattaglia[]> {
   const { results } = await db
     .prepare(
-      `SELECT i.id AS invito_id, i.created_at, p.id, p.nickname, p.display_name, p.avatar_color
+      `SELECT i.id AS invito_id, i.created_at, i.rivincita_di, p.id, p.nickname, p.display_name, p.avatar_color
          FROM battaglia_inviti i
          JOIN players p ON p.id = i.da_id
         WHERE i.a_id = ?1 AND i.stato = 'attesa' AND i.created_at >= ?2
@@ -246,13 +252,14 @@ export async function sfideRicevute(
         ORDER BY i.created_at`,
     )
     .bind(ioId, prima(adesso, SFIDA_SCADENZA_MS), sogliaAbbandono(adesso))
-    .all<GiocatoreRow & { invito_id: string; created_at: string }>()
+    .all<GiocatoreRow & { invito_id: string; created_at: string; rivincita_di: string | null }>()
 
   return results.map((r) => ({
     id: r.invito_id,
     da: breve(r),
     createdAt: r.created_at,
     scadeTraMs: scadeTra(r.created_at, adesso),
+    rivincita: r.rivincita_di !== null,
   }))
 }
 
@@ -296,6 +303,7 @@ export async function mandaSfida(
   daId: string,
   aId: string,
   adesso: number,
+  rivincitaDi: string | null = null,
 ): Promise<string> {
   const id = newId('sfi')
   const quando = new Date(adesso).toISOString()
@@ -308,10 +316,10 @@ export async function mandaSfida(
       .bind(quando, daId),
     db
       .prepare(
-        `INSERT INTO battaglia_inviti (id, da_id, a_id, stato, created_at)
-         VALUES (?, ?, ?, 'attesa', ?)`,
+        `INSERT INTO battaglia_inviti (id, da_id, a_id, stato, created_at, rivincita_di)
+         VALUES (?, ?, ?, 'attesa', ?, ?)`,
       )
-      .bind(id, daId, aId, quando),
+      .bind(id, daId, aId, quando, rivincitaDi),
   ])
   return id
 }
@@ -332,17 +340,28 @@ export async function accettaSfida(
 ): Promise<string> {
   const partitaId = newId('bat')
   const quando = new Date(adesso).toISOString()
+  const serie = invito.rivincita_di ? await serieDopo(db, invito.rivincita_di, invito.da_id, invito.a_id) : null
   const [creata] = await db.batch([
     db
       .prepare(
         `INSERT INTO battaglia_partite
-           (id, modalita, giocatore_a, giocatore_b, stato, colpi, versione, created_at, updated_at)
-         SELECT ?1, 'amici', i.da_id, i.a_id, 'disposizione', '[]', 0, ?2, ?2
+           (id, modalita, giocatore_a, giocatore_b, stato, colpi, versione, created_at, updated_at,
+            serie_a, serie_b, partite_serie)
+         SELECT ?1, 'amici', i.da_id, i.a_id, 'disposizione', '[]', 0, ?2, ?2, ?6, ?7, ?8
            FROM battaglia_inviti i
           WHERE i.id = ?3 AND i.stato = 'attesa' AND i.created_at >= ?4
             AND i.da_id NOT IN (${aperte('?5')}) AND i.a_id NOT IN (${aperte('?5')})`,
       )
-      .bind(partitaId, quando, invito.id, prima(adesso, SFIDA_SCADENZA_MS), sogliaAbbandono(adesso)),
+      .bind(
+        partitaId,
+        quando,
+        invito.id,
+        prima(adesso, SFIDA_SCADENZA_MS),
+        sogliaAbbandono(adesso),
+        serie?.a ?? 0,
+        serie?.b ?? 0,
+        serie?.partite ?? 0,
+      ),
     db
       .prepare(
         `UPDATE battaglia_inviti SET stato = 'accettato', partita_id = ?1, risposto_at = ?2
@@ -368,6 +387,35 @@ export async function accettaSfida(
     fail(409, 'OCCUPATO', 'Uno dei due sta già giocando un’altra battaglia.')
   }
   return partitaId
+}
+
+/**
+ * La serie dopo una partita, per quella che viene: le vittorie di ciascuno
+ * contate per giocatore, perché nella rivincita chi sfida e' 'a' e puo' essere
+ * stato 'b' nella partita di prima.
+ */
+async function serieDopo(
+  db: D1Database,
+  partitaId: string,
+  nuovoA: string,
+  nuovoB: string,
+): Promise<{ a: number; b: number; partite: number } | null> {
+  const prima = await partitaPerId(db, partitaId)
+  if (!prima || prima.modalita !== 'amici' || prima.stato !== 'finita') return null
+  const vinte = (id: string) => {
+    const lato: Lato | null = prima.giocatore_a === id ? 'a' : prima.giocatore_b === id ? 'b' : null
+    if (!lato) return 0
+    return (lato === 'a' ? prima.serie_a : prima.serie_b) + (prima.vincitore === lato ? 1 : 0)
+  }
+  return { a: vinte(nuovoA), b: vinte(nuovoB), partite: prima.partite_serie + 1 }
+}
+
+/** L'ultima rivincita chiesta per una partita, se c'e'. */
+export async function rivincitaDi(db: D1Database, partitaId: string): Promise<InvitoRow | null> {
+  return db
+    .prepare('SELECT * FROM battaglia_inviti WHERE rivincita_di = ? ORDER BY created_at DESC LIMIT 1')
+    .bind(partitaId)
+    .first<InvitoRow>()
 }
 
 /* ─────────────────────────────  Le partite  ────────────────────────────── */
@@ -484,6 +532,8 @@ export async function vistaPer(
   const [avversario, online] = idAvversario
     ? await Promise.all([giocatore(db, idAvversario), eOnline(db, idAvversario, adesso)])
     : [COMPUTER, true]
+  const fraAmici = row.modalita === 'amici'
+  const rivincita = fraAmici && row.stato === 'finita' ? await rivincitaDi(db, row.id) : null
 
   const mia = flottaDi(row, io)
   const sua = flottaDi(row, altro(io))
@@ -521,6 +571,22 @@ export async function vistaPer(
     attesaMs,
     puoiReclamare: puoi,
     versione: row.versione,
+    serie: fraAmici
+      ? {
+          io: io === 'a' ? row.serie_a : row.serie_b,
+          avversario: io === 'a' ? row.serie_b : row.serie_a,
+          partite: row.partite_serie,
+        }
+      : null,
+    rivincita: rivincita
+      ? {
+          id: rivincita.id,
+          da: rivincita.da_id === (io === 'a' ? row.giocatore_a : row.giocatore_b) ? 'io' : 'avversario',
+          stato:
+            rivincita.stato === 'attesa' && scadeTra(rivincita.created_at, adesso) === 0 ? 'scaduto' : rivincita.stato,
+          partitaId: rivincita.partita_id,
+        }
+      : null,
   }
 }
 
@@ -719,6 +785,9 @@ export async function nuovaControComputer(
     created_at: adesso,
     updated_at: adesso,
     finita_at: null,
+    serie_a: 0,
+    serie_b: 0,
+    partite_serie: 0,
   }
   await db
     .prepare(

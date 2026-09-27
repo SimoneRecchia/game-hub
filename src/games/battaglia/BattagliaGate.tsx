@@ -138,8 +138,17 @@ function AvvisoSfida({
         <div className="avviso__testa">
           <Avatar nickname={sfida.da.nickname} color={sfida.da.avatarColor} size={64} />
           <p className="avviso__testo">
-            <strong>{sfida.da.displayName}</strong> ti sfida a battaglia navale: cinque navi a testa,
-            un colpo per volta.
+            {sfida.rivincita ? (
+              <>
+                <strong>{sfida.da.displayName}</strong> vuole la rivincita a battaglia navale: il conto della serie
+                continua.
+              </>
+            ) : (
+              <>
+                <strong>{sfida.da.displayName}</strong> ti sfida a battaglia navale: cinque navi a testa, un colpo per
+                volta.
+              </>
+            )}
           </p>
         </div>
         <p className="avviso__sereno">
