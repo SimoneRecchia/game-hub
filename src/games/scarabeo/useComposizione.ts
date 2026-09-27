@@ -11,6 +11,7 @@ import {
 } from '@shared/scarabeo'
 import type { CellaPiena } from '@shared/types'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 
 /** Una tessera posata ma non ancora giocata, con la sua origine sul leggio. */
 interface InSospeso {
@@ -177,6 +178,7 @@ export function useComposizione({
       if (sospesaQui) {
         // Ritocco una tessera appena posata: torna in mano.
         haptic('tap')
+        suona('tocco')
         setSospese((prima) => prima.filter((s) => s !== sospesaQui))
         setCursore({ r, c, oriz: cursore?.oriz ?? true })
         return
@@ -209,6 +211,7 @@ export function useComposizione({
       const posa: Posa = { r: cursore.r, c: cursore.c, lettera, jolly }
       setSospese((prima) => [...prima, { posa, indice }])
       haptic('tap')
+      suona('posa')
 
       const tab = [...tabellone]
       tab[cursore.r * LATO + cursore.c] = { lettera, jolly }
@@ -252,6 +255,7 @@ export function useComposizione({
       }
       setSospese((prima) => [...prima, { posa: { r, c, lettera: tessera, jolly: false }, indice }])
       haptic('tap')
+      suona('posa')
       const tab = [...tabellone]
       tab[r * LATO + c] = { lettera: tessera, jolly: false }
       setCursore(avanza({ r, c, oriz }, tab))
@@ -273,6 +277,8 @@ export function useComposizione({
   const mischia = useCallback(() => {
     if (sospese.length > 0) return
     haptic('tap')
+    // Le tessere mescolate: tre colpi di legno di fila.
+    ;[0, 0.05, 0.1].forEach((ritardo) => suona('tocco', { ritardo }))
     setMano((prima) => {
       const copia = [...prima]
       for (let i = copia.length - 1; i > 0; i -= 1) {

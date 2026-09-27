@@ -607,6 +607,17 @@ dei colpi, e un test ne misura la lunghezza: una riga che va a capo sposterebbe
 i due mari a ogni colpo. L'eccezione sono gli adesivi, che passano da soli e
 non fermano niente (vedi sotto).
 
+**I suoni si fanno nel browser, e non si scaricano.** `src/lib/suoni.ts` li
+sintetizza con Web Audio — marimba e campanello per le cose musicali, un colpo
+di legno per i tocchi, rumore filtrato per acqua ed esplosioni — con un filo di
+riverbero e un compressore: nessun file, niente sul server. I momenti che contano
+suonano dal loro `Adesivo` (il campo `suono`, un po' piu' piano se l'adesivo e'
+bordato); il resto — tasti, tessere, ultimi cinque secondi, il tre-due-uno, chi
+entra e chi esce, la rivincita — chiama `suona` dove succede. Il contesto nasce
+al primo gesto, si ferma a pagina nascosta, e su iOS la sessione e' "ambient",
+che segue l'interruttore del silenzioso. Si spengono dal profilo. Un test li
+suona tutti su un contesto finto che rifiuta i valori che Web Audio non accetta.
+
 **La festa della vittoria sta nel body, e solo per una vittoria appena fatta.**
 `Coriandoli` e' un portale: dentro la pagina restava sotto il velo del foglio
 del risultato, che si apre nello stesso momento, e non la vedeva nessuno.

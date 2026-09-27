@@ -5,6 +5,7 @@ import type { VistaBattaglia } from '@shared/types'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 import { DURATA_ANNUNCIO_MS, annuncioDi, primaDelComputer, senzaFine, type Annuncio } from './racconto'
 
 /** Dopo un colpo in acqua, prima che il computer prenda la mira: il tempo di vedere lo spruzzo. */
@@ -104,6 +105,9 @@ export function useBattaglia(id: string) {
       if (a) {
         annuncia(a)
         haptic(u.mio ? 'success' : 'error')
+      } else {
+        // L'acqua non ha l'annuncio, ma si sente: lo spruzzo, piu' piano quando e' dell'altro.
+        suona('acqua', { volume: u.mio ? 1 : 0.6 })
       }
       if (attendi || chiusa) {
         await aspetta(a ? DURATA_ANNUNCIO_MS[a.esito] : PAUSA_ACQUA_MS)

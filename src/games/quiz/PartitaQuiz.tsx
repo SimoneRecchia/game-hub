@@ -6,6 +6,7 @@ import { IconCheck, IconClock, IconClose } from '@/components/Icons'
 import { IconaScheda, Pillola, Scheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { formatCronometro } from '@/lib/format'
+import { suona } from '@/lib/suoni'
 import { NOMI_CATEGORIE, NOMI_MODI, PUNTI_BASE_QUIZ, SECONDI_CARTINA, SECONDI_SCELTA, type CategoriaQuiz } from '@shared/quiz'
 import type { CittaQuiz } from '@shared/quiz-dati'
 import type { AreaQuiz, DomandaQuiz, IndiceQuiz, OpzioneQuiz } from '@shared/quiz-domande'
@@ -165,6 +166,13 @@ function Intro({ p, categoria, intro }: { p: VistaPartita; categoria: CategoriaQ
 
 /** Tre, due, uno, via: numeri che saltano fuori uno dopo l'altro. */
 export function Via({ categoria, durata = VIA_MS }: { categoria: CategoriaQuiz; durata?: number }) {
+  // I numeri compaiono a un quarto della durata l'uno (vedi PartitaQuiz.css): i suoni vanno con loro.
+  const quarto = durata / 4000
+  useEffect(() => {
+    ;[0, 1, 2].forEach((i) => suona('tic', { ritardo: i * quarto }))
+    suona('via', { ritardo: 3 * quarto })
+    // Una volta sola, quando il tre-due-uno compare: nella sfida la durata si ricalcola a ogni disegno.
+  }, [])
   return (
     <div className="quiz-via" style={{ '--via': `${durata}ms` } as CSSProperties}>
       <span className="quiz-via__icona" aria-hidden="true">
@@ -317,7 +325,10 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
                   type="button"
                   className="quiz-carta__aiuto"
                   disabled={p.esclusi.size > 0}
-                  onClick={p.usaAiuto}
+                  onClick={() => {
+                    suona('svela')
+                    p.usaAiuto()
+                  }}
                   aria-label={`Aiuto 50 e 50: ne restano ${p.aiutiRimasti}`}
                 >
                   50:50 <span className="u-tabnum">×{p.aiutiRimasti}</span>
@@ -515,6 +526,13 @@ function Tempo({ p }: { p: VistaPartita }) {
     const t = setInterval(() => setAdesso(performance.now()), 200)
     return () => clearInterval(t)
   }, [p.scade])
+  const restante = p.scade === null ? 0 : Math.max(0, p.scade - adesso)
+  const secondi = Math.ceil(restante / 1000)
+  // Gli ultimi cinque secondi ticchettano, uno per secondo.
+  const ticchetta = p.fase === 'domanda' && p.scade !== null && secondi > 0 && secondi <= 5 ? secondi : null
+  useEffect(() => {
+    if (ticchetta !== null) suona('tic')
+  }, [ticchetta])
 
   if (p.fase === 'esito' && p.ultima) {
     const { giusta, scelta } = p.ultima.risposta
@@ -530,8 +548,6 @@ function Tempo({ p }: { p: VistaPartita }) {
   if (p.limiteMs === 0) {
     return <Pillola icona={<IconClock size={13} />}>Senza tempo</Pillola>
   }
-  const restante = p.scade === null ? 0 : Math.max(0, p.scade - adesso)
-  const secondi = Math.ceil(restante / 1000)
   const poco = p.scade !== null && secondi <= 5
   return (
     <Pillola tono={poco ? 'cattiva' : 'neutra'} icona={<IconClock size={13} />} vivo={poco}>

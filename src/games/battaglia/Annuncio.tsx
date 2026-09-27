@@ -29,6 +29,7 @@ export function AnnuncioColpo({ annuncio }: { annuncio: Annuncio | null }) {
         durata: DURATA_ANNUNCIO_MS[annuncio.esito],
         classe: `annuncio is-${annuncio.esito} ${annuncio.mio ? 'is-mio' : 'is-suo'}`,
         disegno: annuncio.esito === 'colpito' ? <Esplosione /> : <Affondamento />,
+        suono: annuncio.esito === 'colpito' ? 'colpito' : 'affondato',
         piede: annuncio.nave ? (
           <span className="annuncio__caselle">
             {Array.from({ length: annuncio.nave.lunghezza }, (_, i) => (

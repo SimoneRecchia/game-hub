@@ -24,6 +24,7 @@ export function adesivoGiusta(indice: number, serie: number, punti: number | nul
     colore: COLORE,
     durata: ADESIVO_RISPOSTA_MS,
     disegno: <Mappamondo />,
+    suono: 'giusto',
   }
 }
 
@@ -34,6 +35,7 @@ export function adesivoSbagliata(risposta: string, cartina: boolean): Omit<DatiA
     sotto: cartina ? `In verde: ${risposta}` : `Giusta: ${risposta}`,
     colore: 'var(--red)',
     durata: ADESIVO_RISPOSTA_MS,
+    suono: 'sbagliato',
   }
 }
 
@@ -45,6 +47,7 @@ export function adesivoTempo(risposta: string): Omit<DatiAdesivo, 'id'> {
     colore: 'var(--orange)',
     durata: ADESIVO_RISPOSTA_MS,
     disegno: <Clessidra />,
+    suono: 'scaduto',
   }
 }
 
@@ -63,6 +66,7 @@ export function adesivoFine(
       colore: giuste >= 5 ? COLORE : 'var(--quiz-2)',
       durata: ADESIVO_FINE_MS,
       ...(giuste >= 10 ? { disegno: <Mappamondo /> } : {}),
+      suono: giuste >= 5 ? 'vittoria' : 'sconfitta',
     }
   }
   const quota = totale > 0 ? giuste / totale : 0
@@ -75,6 +79,7 @@ export function adesivoFine(
       colore: COLORE,
       durata: ADESIVO_FINE_MS,
       disegno: <Mappamondo />,
+      suono: 'vittoria',
     }
   }
   return {
@@ -83,6 +88,7 @@ export function adesivoFine(
     sotto,
     colore: quota >= 0.4 ? COLORE : 'var(--quiz-2)',
     durata: ADESIVO_FINE_MS,
+    suono: quota >= 0.4 ? 'pareggio' : 'sconfitta',
   }
 }
 
