@@ -21,7 +21,9 @@
  *   /quiz/libera                        categoria, zona e domande a scelta
  *   /quiz/duello/:id                    una sfida a quiz fra due
  *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
- *   /classifica, /classifica/wordle     la generale e quella di ogni gioco
+ *   /classifica                         tutte le classifiche: la generale e i giochi
+ *   /classifica/generale                la generale per intero
+ *   /classifica/wordle                  quella di un gioco (?periodo=week&indietro=1)
  *   /profilo
  *
  * I vecchi indirizzi — /insieme/..., /battaglia/..., /wordle/3 — portano a
@@ -30,7 +32,7 @@
  * rompono.
  */
 
-import type { GiocoClassificato } from '@shared/types'
+import type { ChiaveClassifica, GiocoClassificato } from '@shared/types'
 
 /** Il pezzo di indirizzo di ogni gioco: "battaglia-navale", non "battaglia". */
 export const SLUG: Record<GiocoClassificato, string> = {
@@ -49,8 +51,9 @@ export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null 
 export const ROTTE = {
   home: '/',
   profilo: '/profilo',
-  classifica: (gioco?: GiocoClassificato | 'generale') =>
-    !gioco || gioco === 'generale' ? '/classifica' : `/classifica/${SLUG[gioco]}`,
+  /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero. */
+  classifica: (chiave?: ChiaveClassifica) =>
+    !chiave ? '/classifica' : chiave === 'generale' ? '/classifica/generale' : `/classifica/${SLUG[chiave]}`,
   gioco: (gioco: GiocoClassificato) => `/${SLUG[gioco]}`,
   classificata: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/classificata`,
   libera: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/libera`,

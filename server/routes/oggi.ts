@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { msToNextPuzzle } from '../../shared/daily'
+import { periodoDi } from '../../shared/periodi'
 import type { OggiRisposta } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { requireVerified } from '../lib/session'
@@ -25,7 +26,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     riepilogoCruciverba(db, io),
     riepilogoBattaglia(db, io),
     riepilogoQuiz(db, io),
-    classificaGenerale(db, 'today', quando.puzzleNumber, io),
+    classificaGenerale(db, periodoDi('today', quando.puzzleNumber), io),
   ])
   return c.json<OggiRisposta>({
     date: quando.date,

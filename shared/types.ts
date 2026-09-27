@@ -188,6 +188,7 @@ export interface ScarabeoRow {
 
 export interface ScarabeoLeaderboard {
   scope: LeaderboardScope
+  periodo: PeriodoClassifica
   updatedAt: string
   rows: ScarabeoRow[]
   me: ScarabeoRow | null
@@ -306,6 +307,7 @@ export interface CruciverbaRow {
 
 export interface CruciverbaLeaderboard {
   scope: LeaderboardScope
+  periodo: PeriodoClassifica
   updatedAt: string
   rows: CruciverbaRow[]
   me: CruciverbaRow | null
@@ -629,6 +631,7 @@ export interface BattagliaRow {
 
 export interface BattagliaLeaderboard {
   scope: LeaderboardScope
+  periodo: PeriodoClassifica
   updatedAt: string
   rows: BattagliaRow[]
   me: BattagliaRow | null
@@ -723,6 +726,7 @@ export interface QuizRow {
 
 export interface QuizLeaderboard {
   scope: LeaderboardScope
+  periodo: PeriodoClassifica
   updatedAt: string
   rows: QuizRow[]
   me: QuizRow | null
@@ -739,10 +743,56 @@ export interface QuizDatiRisposta {
 
 export type LeaderboardScope = 'today' | 'week' | 'month' | 'all'
 
+/**
+ * Il periodo di una classifica, di calendario: un giorno, la settimana da
+ * lunedì a domenica, il mese, o sempre (vedi shared/periodi.ts).
+ */
+export interface PeriodoClassifica {
+  scope: LeaderboardScope
+  /** Quanti periodi prima di quello in corso: 0 e' oggi, questa settimana, questo mese. */
+  indietro: number
+  /** Fin dove si puo' tornare indietro: il periodo del primo giorno di gioco. */
+  massimo: number
+  /** Il primo e l'ultimo giorno del periodo, come numeri di puzzle, compresi. */
+  da: number
+  a: number
+}
+
 /* ──────────────────────────  La classifica generale  ───────────────────────── */
 
 /** I giochi che hanno una classificata, e quindi una classifica. */
 export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia' | 'quiz'
+
+/** Una classifica: quella di un gioco, o la generale che le somma. */
+export type ChiaveClassifica = GiocoClassificato | 'generale'
+
+/** Una riga dell'anteprima di una classifica: chi, e quanti punti. */
+export interface RigaAnteprima {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  punti: number
+  /** Ha una classificata di oggi ancora aperta. */
+  inCorso: boolean
+}
+
+export interface AnteprimaClassifica {
+  /** Quanti sono in classifica nel periodo. */
+  giocatori: number
+  /** I primi tre. */
+  primi: RigaAnteprima[]
+  me: RigaAnteprima | null
+}
+
+/** Tutte le classifiche di un periodo in una richiesta: i primi tre di ognuna, e dove sei tu. */
+export interface PanoramicaClassifiche {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  classifiche: Record<ChiaveClassifica, AnteprimaClassifica>
+}
 
 /**
  * Una riga della classifica generale: la somma delle classificate di tutti i
@@ -765,6 +815,7 @@ export interface GeneraleRow {
 
 export interface GeneraleLeaderboard {
   scope: LeaderboardScope
+  periodo: PeriodoClassifica
   updatedAt: string
   rows: GeneraleRow[]
   me: GeneraleRow | null
@@ -804,15 +855,19 @@ export interface LeaderboardRow {
   avgAttempts: number | null
   currentStreak: number
   bestStreak: number
-  /** Solo per scope=today: tentativi usati oggi. */
+  /**
+   * I tentativi del giorno: di oggi, o del giorno della classifica se il periodo e' un giorno
+   * passato.
+   */
   todayAttempts: number | null
   todayStatus: WordleStatus | null
-  /** Solo per scope=today: oggi ha giocato la parola nella stanza di un altro. */
+  /** Quel giorno ha giocato la parola nella stanza di un altro. */
   todaySpectated: boolean | null
 }
 
 export interface LeaderboardResponse {
   scope: LeaderboardScope
+  periodo: PeriodoClassifica
   updatedAt: string
   rows: LeaderboardRow[]
   me: LeaderboardRow | null
