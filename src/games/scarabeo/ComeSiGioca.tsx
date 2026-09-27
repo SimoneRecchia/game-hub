@@ -35,7 +35,8 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
             <li>
               Tocca una casella. <strong>Toccala di nuovo</strong> per scrivere in verticale.
             </li>
-            <li>Tocca le tessere del leggio per posarle.</li>
+            <li>Tocca le tessere del leggio per posarle, o trascinale sulla casella che vuoi.</li>
+            <li>Trascina una tessera lungo il leggio per cambiarle posto.</li>
             <li>Tocca una tessera posata per riprenderla.</li>
             <li>
               La prima parola passa dalla <strong>casella centrale</strong>. Le altre si attaccano a

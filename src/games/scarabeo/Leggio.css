@@ -100,6 +100,43 @@
   cursor: default;
 }
 
+/*
+ * Le tessere si prendono e si spostano col dito: niente scorrimento, niente
+ * menu del tocco lungo, niente selezione del testo mentre si trascina.
+ */
+.leggio .tessera {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/*
+ * La tessera presa segue il dito senza ritardo, sollevata sopra le altre: piu'
+ * grande e con l'ombra piu' lontana, come una tessera alzata dal leggio. Le
+ * altre le fanno posto scivolando (la transizione di `.tessera`).
+ */
+.tessera.is-presa {
+  z-index: 2;
+  cursor: grabbing;
+  transition: none;
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-key),
+    0 10px 22px var(--shadow-tint);
+}
+
+/* Lasciata: arriva al posto nuovo; la durata e' POSA_MS in Leggio.tsx. */
+.tessera.is-presa.is-posando {
+  transition: transform 140ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tessera.is-presa.is-posando {
+    transition: none;
+  }
+}
+
 .leggio__vuoto {
   grid-column: 1 / -1;
   margin: 0;

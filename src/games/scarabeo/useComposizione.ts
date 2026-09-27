@@ -45,6 +45,10 @@ export interface Composizione {
   scegliJolly: (lettera: string) => void
   chiudiJolly: () => void
   mischia: () => void
+  /** Sposta una tessera del leggio da un posto a un altro: per provare le parole, come sul leggio vero. */
+  sposta: (da: number, a: number) => void
+  /** Posa la tessera i-esima su una casella precisa: e' dove la lascia chi la trascina sul tabellone. */
+  posaSu: (indice: number, r: number, c: number) => boolean
   annulla: () => void
   avvisa: (testo: string) => void
 }
@@ -66,11 +70,14 @@ export function useComposizione({
   celle,
   leggio,
   bloccata,
+  ricordo = null,
 }: {
   celle: readonly CellaPiena[]
   leggio: readonly string[]
   /** A partita finita, o mentre muove l'altro, non si compone niente. */
   bloccata: boolean
+  /** Di quale partita e' il leggio: l'ordine scelto si ricorda anche ricaricando la pagina. */
+  ricordo?: string | null
 }): Composizione {
   const [mano, setMano] = useState<string[]>([])
   const [sospese, setSospese] = useState<InSospeso[]>([])
@@ -103,7 +110,9 @@ export function useComposizione({
   useEffect(() => {
     setSospese([])
     setJollyAperto(null)
-    setMano((precedente) => {
+    setMano((attuale) => {
+      // Alla prima apertura l'ordine e' quello lasciato l'ultima volta, se e' dello stesso leggio.
+      const precedente = attuale.length > 0 ? attuale : (ordineRicordato(ricordo, leggio) ?? [])
       const restano = [...leggio]
       const tenute: string[] = []
       for (const tessera of precedente) {
@@ -117,7 +126,11 @@ export function useComposizione({
     })
     // `leggio` cambia identità a ogni stato del server: conta il contenuto, che
     // e' quel che dicono le due chiavi.
-  }, [chiaveLeggio, chiaveCelle])
+  }, [chiaveLeggio, chiaveCelle, ricordo])
+
+  useEffect(() => {
+    if (ricordo && mano.length > 0) ricordaOrdine(ricordo, mano)
+  }, [ricordo, mano])
 
   /** Il tabellone fermo: quello delle mosse gia' giocate. */
   const fisso = useMemo(() => {
@@ -224,6 +237,29 @@ export function useComposizione({
     [avvisa, bloccata, cursore, impegnate, mano, posaTessera, sospese.length],
   )
 
+  const posaSu = useCallback(
+    (indice: number, r: number, c: number): boolean => {
+      if (bloccata || impegnate.has(indice) || sospese.length >= TESSERE_LEGGIO) return false
+      if (tabellone[r * LATO + c]) return false
+      const tessera = mano[indice]
+      if (tessera === undefined) return false
+      const oriz = cursore?.oriz ?? true
+      if (tessera === JOLLY) {
+        // Il jolly aspetta la sua lettera: la casella e' gia' quella giusta.
+        setCursore({ r, c, oriz })
+        setJollyAperto(indice)
+        return true
+      }
+      setSospese((prima) => [...prima, { posa: { r, c, lettera: tessera, jolly: false }, indice }])
+      haptic('tap')
+      const tab = [...tabellone]
+      tab[r * LATO + c] = { lettera: tessera, jolly: false }
+      setCursore(avanza({ r, c, oriz }, tab))
+      return true
+    },
+    [avanza, bloccata, cursore?.oriz, impegnate, mano, sospese.length, tabellone],
+  )
+
   const scegliJolly = useCallback(
     (lettera: string) => {
       if (jollyAperto === null) return
@@ -247,6 +283,22 @@ export function useComposizione({
     })
   }, [sospese.length])
 
+  const sposta = useCallback((da: number, a: number) => {
+    if (da === a) return
+    setMano((prima) => {
+      if (da < 0 || a < 0 || da >= prima.length || a >= prima.length) return prima
+      const dopo = [...prima]
+      const [tessera] = dopo.splice(da, 1)
+      dopo.splice(a, 0, tessera)
+      return dopo
+    })
+    // Le tessere gia' sul tabellone ricordano da dove vengono: il loro posto si sposta con il leggio.
+    const nuovo = (i: number) =>
+      i === da ? a : da < a ? (i > da && i <= a ? i - 1 : i) : i >= a && i < da ? i + 1 : i
+    setSospese((prima) => prima.map((s) => ({ ...s, indice: nuovo(s.indice) })))
+    setJollyAperto((j) => (j === null ? null : nuovo(j)))
+  }, [])
+
   const annulla = useCallback(() => {
     setSospese([])
     setCursore(null)
@@ -267,7 +319,37 @@ export function useComposizione({
     scegliJolly,
     chiudiJolly: () => setJollyAperto(null),
     mischia,
+    sposta,
+    posaSu,
     annulla,
     avvisa,
+  }
+}
+
+/*
+ * L'ordine del leggio si ricorda per una partita sola, l'ultima: e' una comodità,
+ * e una chiave per giornata riempirebbe il browser di ordini che non servono più.
+ */
+const CHIAVE_ORDINE = 'scarabeo-leggio'
+
+function ordineRicordato(ricordo: string | null, leggio: readonly string[]): string[] | null {
+  if (!ricordo) return null
+  try {
+    const salvato = JSON.parse(localStorage.getItem(CHIAVE_ORDINE) ?? 'null') as { partita?: string; mano?: unknown }
+    if (salvato?.partita !== ricordo || !Array.isArray(salvato.mano)) return null
+    const mano = salvato.mano.filter((t): t is string => typeof t === 'string')
+    // Vale solo se sono le stesse tessere: altrimenti il leggio e' cambiato altrove.
+    const ordina = (tessere: readonly string[]) => [...tessere].sort().join('')
+    return ordina(mano) === ordina(leggio) ? mano : null
+  } catch {
+    return null
+  }
+}
+
+function ricordaOrdine(ricordo: string, mano: readonly string[]): void {
+  try {
+    localStorage.setItem(CHIAVE_ORDINE, JSON.stringify({ partita: ricordo, mano }))
+  } catch {
+    // Senza memoria del browser l'ordine resta fino alla prossima apertura, e basta.
   }
 }

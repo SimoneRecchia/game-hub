@@ -90,6 +90,7 @@ export function useScarabeo(): ScarabeoController {
     celle: stato?.celle ?? NESSUNA,
     leggio: stato?.leggio ?? NESSUNO,
     bloccata: !stato || stato.status === 'done' || inviando,
+    ricordo: stato ? `classificata:${stato.puzzleNumber}` : null,
   })
   const { anteprima, sospese, annulla, avvisa } = composizione
   const sconosciute = useParoleSconosciute(anteprima)
