@@ -1,0 +1,797 @@
+/*
+ * Le classifiche: il periodo, tutte insieme, e una per intero.
+ *
+ * Niente scorre di lato. Prima le classifiche erano una fila di capsule che
+ * scorreva sotto il bordo dello schermo, e la prima e l'ultima sembravano
+ * tagliate; ora stanno una sotto l'altra, in carte che restano dentro la
+ * pagina. I gradini del podio arrivano al bordo della loro carta, che li
+ * arrotonda con i suoi angoli.
+ */
+
+/* ─────────────────────────────  Il periodo  ───────────────────────────── */
+
+.cl-periodo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  container-type: inline-size;
+}
+
+/* Su un telefono stretto "Settimana" non sta in un quarto del controllo, alla misura di sempre. */
+@container (max-width: 340px) {
+  .cl-periodo .segmented__item {
+    padding: 0 2px;
+    font-size: var(--text-footnote);
+  }
+}
+
+.cl-periodo__passo {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 40px;
+  align-items: center;
+  min-height: 46px;
+}
+
+.cl-periodo__freccia {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--brand);
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.cl-periodo__freccia:active:not(:disabled) {
+  background: var(--fill-tertiary);
+  transform: scale(0.9);
+}
+
+.cl-periodo__freccia:disabled {
+  color: var(--label-quaternary);
+  cursor: default;
+}
+
+/* "Sempre" non ha un prima: le frecce spariscono ma tengono il loro posto. */
+.cl-periodo__freccia[hidden] {
+  display: grid;
+  visibility: hidden;
+}
+
+.cl-periodo__nome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* Il periodo nuovo entra dalla parte della freccia toccata. */
+.cl-periodo__nome--prima {
+  animation: cl-da-sinistra 280ms var(--ease-push) both;
+}
+
+.cl-periodo__nome--dopo {
+  animation: cl-da-destra 280ms var(--ease-push) both;
+}
+
+@keyframes cl-da-sinistra {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+}
+
+@keyframes cl-da-destra {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+}
+
+.cl-periodo__titolo,
+.cl-periodo__sotto {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-periodo__titolo {
+  font-size: var(--text-callout);
+  font-weight: 700;
+  color: var(--label);
+}
+
+.cl-periodo__sotto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* Mentre arriva il periodo nuovo resta quello di prima, velato: la pagina non salta. */
+.cl-pan,
+.cl {
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.cl-pan.is-vecchia,
+.cl.is-vecchia {
+  opacity: 0.5;
+}
+
+/* ─────────────────────────────  Tutte insieme  ───────────────────────────── */
+
+.cl-pan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+/*
+ * Colonne minmax(0, 1fr) e non auto: una traccia auto si allarga fino al
+ * contenuto piu' largo, e "Battaglia navale", che non va a capo, spingeva ogni
+ * carta oltre il bordo destro su un telefono stretto.
+ */
+.cl-pan__giochi {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 640px) {
+  .cl-pan__giochi {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* La carta di una classifica: tutta si tocca, e apre la classifica per intero. */
+.cl-carta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  height: 100%;
+  padding: var(--sp-3) var(--sp-4) var(--sp-3);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c1) 12%, transparent), transparent 62%),
+    var(--surface);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 20%, transparent);
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.cl-carta:has(.cl-carta__tutta:active) {
+  transform: scale(0.985);
+}
+
+.cl-carta__tutta {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.cl-carta__tutta:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.cl-carta__testa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 36px;
+  min-width: 0;
+}
+
+.cl-carta__testa .copertina {
+  --lato: 34px;
+}
+
+.cl-carta__titolo {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.cl-carta__freccia {
+  flex: none;
+  margin-right: -4px;
+  color: var(--label-tertiary);
+}
+
+.cl-carta__vuota {
+  padding: var(--sp-1) 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+/* Sopra il velo che apre la classifica: questo porta alla partita. */
+.cl-carta__gioca {
+  position: relative;
+  z-index: 2;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  margin-top: 2px;
+  padding: 0 var(--sp-2) 0 var(--sp-3);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--c1) 16%, transparent);
+  color: color-mix(in srgb, var(--c2) 80%, var(--label));
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.cl-carta__gioca:active {
+  transform: scale(0.95);
+}
+
+/* La generale, in cima: un velo d'oro dietro il podio. */
+.cl-carta--generale {
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-4);
+  background:
+    radial-gradient(70% 60% at 50% 12%, color-mix(in srgb, var(--oro) 13%, transparent), transparent 72%),
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--c1) 15%, transparent), transparent 60%),
+    var(--surface);
+}
+
+/* Il podio della panoramica: senza gradini, il primo al centro e piu' in alto. */
+.cl-podietto {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-1) 0 0;
+  list-style: none;
+}
+
+.cl-podietto__posto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  animation: cl-sale 560ms var(--ease-spring) both;
+}
+
+.cl-podietto__posto--1 {
+  padding-bottom: var(--sp-4);
+  animation-delay: 120ms;
+}
+
+.cl-podietto__posto--3 {
+  animation-delay: 60ms;
+}
+
+.cl-podietto__nome {
+  max-width: 100%;
+  margin-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--label);
+}
+
+.cl-podietto__posto.is-io .cl-podietto__nome {
+  color: var(--brand);
+}
+
+.cl-podietto__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--label);
+}
+
+.cl-podietto__posto--1 .cl-podietto__punti {
+  font-size: var(--text-title-2);
+}
+
+/* Un posto senza nessuno: il cerchio dove starebbe l'avatar, all'altezza degli altri. */
+.cl-podietto__vuoto {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 48px;
+  border: 1.5px dashed var(--separator-opaque);
+  border-radius: 50%;
+}
+
+/* I primi tre di un gioco, e la tua riga. */
+.cl-mini {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cl-mini__riga {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 44px;
+}
+
+.cl-mini__riga + .cl-mini__riga::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 76px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.cl-mini__rank {
+  flex: none;
+  width: 22px;
+  font-family: var(--font-rounded);
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  text-align: center;
+  color: var(--label-tertiary);
+}
+
+.cl-mini__rank.is-1 {
+  color: var(--oro);
+}
+
+.cl-mini__rank.is-2 {
+  color: var(--argento);
+}
+
+.cl-mini__rank.is-3 {
+  color: var(--bronzo);
+}
+
+.cl-mini__nome {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+  color: var(--label);
+}
+
+.cl-mini__testo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-mini__punti {
+  flex: none;
+  font-family: var(--font-rounded);
+  font-size: var(--text-callout);
+  font-weight: 800;
+  color: var(--label);
+}
+
+/* Quando non sei fra i primi, la tua riga sta sotto, in una capsula: si trova subito. */
+.cl-mini--mia {
+  margin: 0 calc(-1 * var(--sp-2));
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-md);
+  background: var(--brand-soft);
+}
+
+/* ─────────────────────────────  Una per intero  ───────────────────────────── */
+
+.cl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.cl-podio {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  column-gap: 6px;
+  padding-top: var(--sp-5);
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(60% 55% at 50% 0%, color-mix(in srgb, var(--oro) 15%, transparent), transparent 75%),
+    var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+}
+
+.cl-podio__posto {
+  --medaglia: var(--bronzo);
+  --gradino: var(--gradino-bronzo);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  color: inherit;
+  animation: cl-sale 560ms var(--ease-spring) both;
+}
+
+.cl-podio__posto--1 {
+  --medaglia: var(--oro);
+  --gradino: var(--gradino-oro);
+  animation-delay: 120ms;
+}
+
+.cl-podio__posto--2 {
+  --medaglia: var(--argento);
+  --gradino: var(--gradino-argento);
+}
+
+.cl-podio__posto--3 {
+  animation-delay: 60ms;
+}
+
+@keyframes cl-sale {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+.cl-podio__nome,
+.cl-podio__breve {
+  max-width: 100%;
+  padding: 0 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-podio__nome {
+  margin-top: 6px;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  color: var(--label);
+}
+
+.cl-podio__posto.is-io .cl-podio__nome {
+  color: var(--brand);
+}
+
+.cl-podio__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+}
+
+.cl-podio__posto--1 .cl-podio__punti {
+  font-size: var(--text-title-1);
+}
+
+.cl-podio__breve {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+/* Il gradino, nel metallo del suo posto: piu' alto per il primo, con il numero dentro. */
+.cl-podio__gradino {
+  display: grid;
+  place-items: start center;
+  width: 100%;
+  height: 40px;
+  margin-top: var(--sp-2);
+  padding-top: 7px;
+  border-radius: 14px 14px 0 0;
+  background: var(--gradino);
+  box-shadow: inset 0 2.5px 0 var(--medaglia);
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  color: color-mix(in srgb, var(--medaglia) 70%, var(--label));
+}
+
+.cl-podio__posto--1 .cl-podio__gradino {
+  height: 76px;
+}
+
+.cl-podio__posto--2 .cl-podio__gradino {
+  height: 56px;
+}
+
+.cl-podio__posto.is-vuoto .cl-podio__gradino {
+  background: var(--fill-quaternary);
+  box-shadow: none;
+  color: var(--label-quaternary);
+}
+
+.cl-podio__vuoto {
+  width: 50px;
+  height: 50px;
+  margin-bottom: 73px;
+  border: 1.5px dashed var(--separator-opaque);
+  border-radius: 50%;
+}
+
+.cl-elenco {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+}
+
+.cl-riga {
+  position: relative;
+  animation: cl-entra 420ms var(--ease-push) both;
+}
+
+@keyframes cl-entra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Il filo fra due righe parte dal nome, come negli elenchi di iOS. */
+.cl-riga + .cl-riga::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 104px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.cl-riga.is-io {
+  background: var(--brand-soft);
+}
+
+.cl-riga__tocca {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 62px;
+  padding: var(--sp-2) var(--sp-4);
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.cl-riga__tocca:active {
+  background: var(--fill-quaternary);
+}
+
+.cl-riga__rank {
+  flex: none;
+  width: 26px;
+  font-family: var(--font-rounded);
+  font-size: var(--text-callout);
+  font-weight: 800;
+  text-align: center;
+  color: var(--label-tertiary);
+}
+
+.cl-riga__chi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cl-riga__nome {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.cl-riga__testo {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cl-riga__sotto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.cl-riga__punti {
+  flex: none;
+  min-width: 40px;
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+  text-align: right;
+  color: var(--label);
+}
+
+/* La generale: un tratto per gioco, nel suo colore, lunga quanto il totale rispetto al primo. */
+.cl-barra {
+  display: flex;
+  gap: 2px;
+  width: var(--lunghezza, 100%);
+  height: 6px;
+  margin: 3px 0 2px;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.cl-barra__tratto {
+  min-width: 3px;
+  height: 100%;
+}
+
+.cl-tu {
+  flex: none;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--brand);
+  color: #fff;
+  font-size: var(--text-caption-2);
+  font-weight: 700;
+  line-height: 16px;
+}
+
+.cl-segno {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
+.cl-segno--serie {
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
+  color: var(--orange);
+}
+
+/* ─────────────────────────────  Il dettaglio  ───────────────────────────── */
+
+.cl-dettaglio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.cl-dettaglio__testa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.cl-dettaglio__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+}
+
+.cl-dettaglio__rank {
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.cl-dettaglio__voci {
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--fill-quaternary);
+}
+
+.cl-dettaglio__voce {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 46px;
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--text-subhead);
+}
+
+.cl-dettaglio__voce + .cl-dettaglio__voce {
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+
+.cl-dettaglio__voce dt {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--label-secondary);
+}
+
+.cl-dettaglio__voce dt .copertina {
+  --lato: 24px;
+}
+
+.cl-dettaglio__voce dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.cl-dettaglio__voce.is-forte dt,
+.cl-dettaglio__voce.is-forte dd {
+  font-weight: 800;
+  color: var(--label);
+}
+
+.cl-dettaglio__nota {
+  font-size: var(--text-footnote);
+  line-height: 1.45;
+  color: var(--label-secondary);
+}
+
+/* ─────────────────────────────  Mentre carica  ───────────────────────────── */
+
+.cl-scheletro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.cl-scheletro__podio {
+  height: 236px;
+  border-radius: var(--r-xl);
+}
+
+.cl-scheletro__riga {
+  height: 62px;
+  border-radius: var(--r-lg);
+}
+
+.cl-scheletro__generale {
+  height: 232px;
+  border-radius: var(--r-xl);
+}
+
+.cl-scheletro__gioco {
+  height: 196px;
+  border-radius: var(--r-xl);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-riga,
+  .cl-podio__posto,
+  .cl-podietto__posto,
+  .cl-periodo__nome--prima,
+  .cl-periodo__nome--dopo {
+    animation: none;
+  }
+}

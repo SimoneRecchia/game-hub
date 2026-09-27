@@ -12,13 +12,13 @@
 }
 
 .avatar--medal-1 {
-  box-shadow: 0 0 0 2.5px var(--surface), 0 0 0 4.5px #ffc93c;
+  box-shadow: 0 0 0 2.5px var(--surface), 0 0 0 4.5px var(--oro);
 }
 
 .avatar--medal-2 {
-  box-shadow: 0 0 0 2.5px var(--surface), 0 0 0 4.5px #c3c8cf;
+  box-shadow: 0 0 0 2.5px var(--surface), 0 0 0 4.5px var(--argento);
 }
 
 .avatar--medal-3 {
-  box-shadow: 0 0 0 2.5px var(--surface), 0 0 0 4.5px #cd9265;
+  box-shadow: 0 0 0 2.5px var(--surface), 0 0 0 4.5px var(--bronzo);
 }

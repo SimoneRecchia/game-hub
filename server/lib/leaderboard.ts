@@ -16,20 +16,7 @@
  * finestra su una tabella piccola.
  */
 
-import type {
-  LeaderboardResponse,
-  LeaderboardRow,
-  LeaderboardScope,
-  WordleStatus,
-} from '../../shared/types'
-
-/** Finestra di puzzle coperta da ogni vista, in giorni. null = tutto. */
-const WINDOW_DAYS: Record<LeaderboardScope, number | null> = {
-  today: 1,
-  week: 7,
-  month: 30,
-  all: null,
-}
+import type { LeaderboardResponse, LeaderboardRow, PeriodoClassifica, WordleStatus } from '../../shared/types'
 
 /** Quanto indietro si guarda per le streak: oltre un anno non serve. */
 const STREAK_LOOKBACK = 400
@@ -52,10 +39,10 @@ interface WinRow {
   puzzle_number: number
 }
 
-/** Righe di oggi, per il dettaglio della vista "oggi". */
-
+/** Le righe di oggi, per le serie, e quelle del giorno della classifica, per il suo dettaglio. */
 interface TodayRow {
   player_id: string
+  puzzle_number: number
   attempts: number
   status: WordleStatus
   spectated: number
@@ -187,12 +174,12 @@ export function rankPlayers(players: PlayerTotals[]): LeaderboardRow[] {
 
 export async function leaderboard(
   db: D1Database,
-  scope: LeaderboardScope,
+  periodo: PeriodoClassifica,
   todayNumber: number,
   viewerId: string,
 ): Promise<LeaderboardResponse> {
-  const window = WINDOW_DAYS[scope]
-  const from = window === null ? Number.MIN_SAFE_INTEGER : todayNumber - window + 1
+  // Il giorno di cui si raccontano i tentativi: quello della classifica, se e' un giorno, altrimenti oggi.
+  const giorno = periodo.scope === 'today' ? periodo.a : todayNumber
 
   /*
    * Una query sola su `wordle_games`: la riga della giornata di un giocatore
@@ -230,10 +217,10 @@ export async function leaderboard(
                 AVG(CASE WHEN g.slot = 1 AND g.spectated != 1 AND g.status = 'won'
                          THEN g.attempts END)                            AS avg_attempts
            FROM players p
-           JOIN wordle_games g ON g.player_id = p.id AND g.puzzle_number >= ?
+           JOIN wordle_games g ON g.player_id = p.id AND g.puzzle_number BETWEEN ? AND ?
           GROUP BY p.id`,
       )
-      .bind(from)
+      .bind(periodo.da, periodo.a)
       .all<AggregateRow>(),
     /*
      * Per la streak vale anche una giornata giocata in compagnia e finita bene:
@@ -251,16 +238,19 @@ export async function leaderboard(
       .all<WinRow>(),
     db
       .prepare(
-        `SELECT player_id, attempts, status, spectated, assist_status
-           FROM wordle_games WHERE puzzle_number = ? AND slot = 1`,
+        `SELECT player_id, puzzle_number, attempts, status, spectated, assist_status
+           FROM wordle_games WHERE puzzle_number IN (?, ?) AND slot = 1`,
       )
-      .bind(todayNumber)
+      .bind(giorno, todayNumber)
       .all<TodayRow>(),
   ])
 
-  const todayByPlayer = new Map(todayResult.results.map((r) => [r.player_id, r]))
+  const todayByPlayer = new Map(
+    todayResult.results.filter((r) => r.puzzle_number === giorno).map((r) => [r.player_id, r]),
+  )
   const lostToday = new Set(
     todayResult.results
+      .filter((r) => r.puzzle_number === todayNumber)
       .filter((r) => (r.spectated === 1 ? r.assist_status === 'lost' : r.status === 'lost'))
       .map((r) => r.player_id),
   )
@@ -295,7 +285,8 @@ export async function leaderboard(
   })
 
   return {
-    scope,
+    scope: periodo.scope,
+    periodo,
     updatedAt: new Date().toISOString(),
     rows,
     me: rows.find((r) => r.playerId === viewerId) ?? null,
