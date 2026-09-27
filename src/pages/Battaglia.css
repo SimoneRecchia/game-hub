@@ -726,6 +726,19 @@
   opacity: 0.85;
 }
 
+/* Il conto della serie, fra una rivincita e l'altra. */
+.bat-fine__serie {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.bat-fine__rivincita {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
 .bat-fine__mari {
   flex: none;
   display: flex;

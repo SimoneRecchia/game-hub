@@ -1312,7 +1312,7 @@
 
   .quiz-conferma__esito {
     flex: 1;
-    font-size: var(--text-subheadline);
+    font-size: var(--text-subhead);
     line-height: 1.2;
   }
 

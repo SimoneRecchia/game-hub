@@ -229,7 +229,8 @@ dispositivi aperti sulla stessa partita non si sovrascrivono un aiuto pagato.
 **La presenza e' un giro solo per tutta l'app.** `PresenzaProvider`
 (`src/lib/presenza.tsx`) chiama `POST /api/presenza` ogni otto secondi a pagina
 visibile: dice al server dove si trova il giocatore e riporta gli inviti del
-Wordle in compagnia, le sfide a battaglia navale e la partita aperta. Prima gli
+Wordle in compagnia, le sfide a battaglia navale e a quiz (rivincite comprese),
+la partita e il duello aperti. Prima gli
 inviti del Wordle avevano il loro polling: due giri separati avrebbero
 raddoppiato le richieste, e le Pages Functions gratuite ne contano centomila al
 giorno per tutto il sito. La scrittura in `presenza` passa solo ogni venti
@@ -349,6 +350,46 @@ risposta. L'accettazione e' un `batch` condizionato come quello delle sfide,
 quindi due persone con lo stesso link non aprono due partite. La presenza
 riporta solo le partite fra amici: una partita col computer lasciata a meta' non
 deve comparire come "la battaglia con X e' in corso".
+
+**La rivincita e' una sfida che porta avanti la serie**, nella battaglia fra
+amici e nella sfida a quiz. A partita finita tutti e due possono chiedere
+"Gioca ancora"; se l'altro l'aveva gia' chiesta, chiederla e' accettarla, e si
+parte subito. La sfida ha `rivincita_di`, e la partita nuova nasce con il conto
+delle precedenti: nella battaglia le vittorie di ciascuno (`serie_a`, `serie_b`,
+`partite_serie`), contate per giocatore perché chi chiede la rivincita diventa
+'a' anche se prima era 'b'; nel quiz i punti, con i due che restano ai loro
+posti. A partita finita la pagina della battaglia continua a guardare, piu'
+piano (`BATTAGLIA_POLL_LOBBY_MS`): e' li' che arriva la risposta.
+
+**La sfida a quiz e' un'amichevole a tempo, e la verita' sono le risposte.**
+Due giocatori, le stesse domande nello stesso momento: il primo che risponde
+giusto prende il punto; chi sbaglia e' fuori da quella domanda e all'altro il
+tempo va al rallentatore — quel che resta dura il doppio (`RALLENTY`), e
+l'orologio segna gli stessi secondi che scendono alla meta'
+(`secondiMostrati`); se sbaglia anche lui, o finisce il tempo, il punto non e'
+di nessuno. `quiz_duelli` salva le domande e le risposte, nell'ordine di arrivo
+e con l'ora del server; quale domanda e' aperta, fino a quando per ciascuno e
+chi ha i punti lo ricava `statoSfida` da quelle e da `inizio_at`, e il tempo
+che finisce non si scrive. Una risposta e' condizionata al numero di quelle
+gia' arrivate (`json_array_length`): due risposte nello stesso istante le
+ordina il server. La prima domanda si apre quando sono arrivati tutti e due
+(`pronto_a`, `pronto_b`, piu' il tre-due-uno), e i telefoni tengono
+l'orologio sull'ora del server.
+
+Le domande le fa **il browser di chi sfida**, con i dati che ha gia' per la
+libera: il Worker non ha i dieci millisecondi per farle, ne' una notte per
+prepararle come la classificata. Vanno al server con le risposte, che le
+controlla (`leggiDomande`) e le manda ai due una alla volta, senza. Chi sfida
+potrebbe guardarle: e' un'amichevole, e il prezzo di non avere un generatore
+sul server. Si gioca sempre a tempo e al massimo con venti domande, senza aiuti
+(`sfidaDalleScelte`); le rotte stanno dentro quelle del quiz, che controllano
+la sessione. Il polling e' di un secondo a domanda aperta, una richiesta sola
+nella pausa, all'ora in cui si apre la prossima (cadenze in `shared/config.ts`).
+**Niente resta**: i punti non vanno in classifica, e sfide e duelli piu'
+vecchi di un giorno si cancellano quando se ne crea uno nuovo. L'invito con il
+link a una sfida vale un'ora, perché si gioca in due nello stesso momento; la
+rotta pubblica `GET /api/inviti/:codice` cerca il codice fra quelli della
+battaglia e fra quelli del quiz.
 
 **Le domande del quiz si fanno la notte, e la classificata e' una categoria
 sola, in un modo solo.** `scripts/genera-quiz.ts` (il passo "Il quiz" di

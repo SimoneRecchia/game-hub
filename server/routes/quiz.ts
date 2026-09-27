@@ -19,6 +19,7 @@ import {
   versioneDati,
 } from '../lib/quizStore'
 import { riepilogoQuiz } from '../lib/riepiloghi'
+import { duelliQuiz, sfideQuiz } from './quizSfide'
 
 /** Una scelta e' un id di opzione o di un posto sulla cartina: corto, e di caratteri semplici. */
 function leggiScelta(valore: unknown): string | null {
@@ -131,3 +132,7 @@ export const quizRoutes = new Hono<AppEnv>()
     if (!citta) fail(503, 'DATI_ASSENTI', 'Le città del quiz non sono ancora pronte. Riprova più tardi.')
     return c.body(citta.json, 200, perSempre(c.req.query('v') === citta.versione))
   })
+
+  // Le sfide a due: qui dentro, perché passino dallo stesso controllo della sessione.
+  .route('/sfide', sfideQuiz)
+  .route('/duelli', duelliQuiz)

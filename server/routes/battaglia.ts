@@ -47,6 +47,7 @@ import {
   puntiDellaClassificata,
   reclamo,
   recordControComputer,
+  rivincitaDi,
   recordDi,
   salvaPartita,
   sfideMandate,
@@ -57,6 +58,7 @@ import {
   type PartitaRow,
 } from '../lib/battagliaStore'
 import { riepilogoBattaglia } from '../lib/riepiloghi'
+import { invitoQuizConLink } from '../lib/quizSfideStore'
 
 /** La partita richiesta, e il lato di chi chiede: chi non ci gioca non la vede. */
 async function partitaMia(c: Context<AppEnv>): Promise<{ row: PartitaRow; io: Lato }> {
@@ -333,6 +335,36 @@ export const battagliaRoutes = new Hono<AppEnv>()
     return rispondi(c, dopo, io)
   })
 
+  /**
+   * Gioca ancora, fra amici, a partita finita: una rivincita all'altro. Se
+   * l'aveva gia' chiesta lui, e' un si': la partita nuova comincia subito, con
+   * il conto della serie.
+   */
+  .post('/partite/:id/rivincita', async (c) => {
+    const db = c.env.DB
+    const { row, io } = await partitaMia(c)
+    if (row.modalita !== 'amici') fail(409, 'NON_FRA_AMICI', 'La rivincita è per le partite fra amici.')
+    if (row.stato !== 'finita') fail(409, 'NON_FINITA', 'La rivincita si chiede a partita finita.')
+    const mioId = c.get('player').id
+    const altroId = (io === 'a' ? row.giocatore_b : row.giocatore_a)!
+    const adesso = Date.now()
+    const esistente = await rivincitaDi(db, row.id)
+    if (esistente && esistente.stato === 'attesa' && esistente.da_id === altroId && esistente.a_id === mioId) {
+      const partitaId = await accettaSfida(db, esistente, adesso)
+      return c.json({ partitaId })
+    }
+    const [online, mia, sua] = await Promise.all([
+      eOnline(db, altroId, adesso),
+      partitaAperta(db, mioId),
+      partitaAperta(db, altroId),
+    ])
+    if (mia) fail(409, 'IN_PARTITA', 'Hai già una battaglia in corso: finiscila prima.')
+    if (!online) fail(409, 'NON_ONLINE', 'Non è più online.')
+    if (sua) fail(409, 'OCCUPATO', 'Sta già giocando un’altra battaglia.')
+    const invitoId = await mandaSfida(db, mioId, altroId, adesso, row.id)
+    return c.json({ invitoId }, 201)
+  })
+
   /** Abbandona: vince l'altro. Nella classificata valgono i colpi a segno fatti fin lì. */
   .post('/partite/:id/resa', async (c) => {
     const { row, io } = await partitaMia(c)
@@ -362,7 +394,10 @@ export const battagliaRoutes = new Hono<AppEnv>()
  * ancora: niente che non si potrebbe leggere nel messaggio con cui e' arrivato.
  */
 export const invitiPubblici = new Hono<AppEnv>().get('/:codice', async (c) => {
-  const invito = await invitoConLink(c.env.DB, c.req.param('codice'), Date.now())
+  const codice = c.req.param('codice')
+  const adesso = Date.now()
+  // I codici sono della battaglia o delle sfide a quiz: lunghi e a caso, non si incontrano.
+  const invito = (await invitoConLink(c.env.DB, codice, adesso)) ?? (await invitoQuizConLink(c.env.DB, codice, adesso))
   if (!invito) fail(404, 'LINK_NON_TROVATO', 'Questo invito non esiste.')
   return c.json<InvitoConLink>(invito)
 })
