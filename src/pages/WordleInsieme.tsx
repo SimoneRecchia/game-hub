@@ -14,6 +14,7 @@ import { Keyboard } from '@/games/wordle/Keyboard'
 import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 import { COOP_POLL_VIEW_MS, WORD_LENGTH } from '@shared/config'
 import { isGameLetter, keyboardStates } from '@shared/wordle'
 import type { CoopView } from '@shared/types'
@@ -85,6 +86,25 @@ export default function WordleInsieme() {
   const chiuso = view !== null && (!view.active || view.status !== 'playing')
   // Chi ha dato una mano vince con l'host: stessa festa, se la vittoria arriva mentre guarda.
   const festa = useFesta(view ? !chiuso : null, view?.status === 'won')
+  const persa = useFesta(view ? !chiuso : null, view?.status === 'lost')
+  // L'host che chiude la partita a meta' esce: e' l'unico modo di finire senza un esito.
+  const uscito = useFesta(view ? !chiuso : null, view !== null && !view.active && view.status === 'playing')
+  useEffect(() => {
+    if (festa) suona('vittoria')
+  }, [festa])
+  useEffect(() => {
+    if (persa) suona('sconfitta')
+  }, [persa])
+  useEffect(() => {
+    if (uscito) suona('esce')
+  }, [uscito])
+  // Un tentativo nuovo dell'host si sente come le caselle che si girano.
+  const tentativi = view?.guesses.length ?? 0
+  const visti = useRef<number | null>(null)
+  useEffect(() => {
+    if (visti.current !== null && tentativi > visti.current) suona('posa')
+    visti.current = tentativi
+  }, [tentativi])
 
   const suggerisci = useCallback(async () => {
     if (busy || chiuso) return

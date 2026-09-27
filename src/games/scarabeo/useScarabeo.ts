@@ -5,6 +5,7 @@ import type { EsitoPosa } from '@shared/scarabeo'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 import { paroleSconosciute, preparaComputer } from './computer'
 import { useComposizione, type Composizione } from './useComposizione'
 
@@ -132,6 +133,7 @@ export function useScarabeo(): ScarabeoController {
       } catch (errore) {
         if (errore instanceof ApiFetchError) {
           haptic('error')
+          suona('sbagliato', { volume: 0.6 })
           avvisa(errore.message)
           // Se il server dice che la partita e' cambiata sotto i piedi, la
           // verita' e' la sua: si rilegge invece di insistere.
@@ -153,11 +155,13 @@ export function useScarabeo(): ScarabeoController {
     }
     if (anteprima && !anteprima.ok) {
       haptic('error')
+      suona('sbagliato', { volume: 0.6 })
       avvisa(anteprima.errore)
       return
     }
     if (sconosciute && sconosciute.length > 0) {
       haptic('error')
+      suona('sbagliato', { volume: 0.6 })
       avvisa(nonNelDizionario(sconosciute))
       return
     }

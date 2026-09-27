@@ -40,6 +40,7 @@ export function adesivoFine(finale: FinaleWordle, id: number): DatiAdesivo {
       durata: ADESIVO_FINE_MS,
       disegno: <Stelle />,
       piede: finale.parola ? <LettereAdesivo parola={finale.parola} /> : undefined,
+      suono: 'vittoria',
     }
   }
   return {
@@ -50,6 +51,7 @@ export function adesivoFine(finale: FinaleWordle, id: number): DatiAdesivo {
     colore: 'var(--brand)',
     durata: ADESIVO_FINE_MS,
     piede: finale.parola ? <LettereAdesivo parola={finale.parola} /> : undefined,
+    suono: 'sconfitta',
   }
 }
 

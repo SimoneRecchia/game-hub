@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react'
 import { Sheet } from '@/components/Sheet'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 import { JOLLY, LATO, VALORI } from '@shared/scarabeo'
 import './Leggio.css'
 
@@ -117,7 +118,10 @@ export function Leggio({ mano, impegnate, cambio, selezione, bloccato, onUsa, on
       const casella = casellaSotto(e.clientX, e.clientY)
       if (casella !== presa.casella) {
         segnaCasella(casella)
-        if (casella !== null) haptic('tap')
+        if (casella !== null) {
+          haptic('tap')
+          suona('tocco', { volume: 0.5 })
+        }
       }
       setPresa({ ...presa, dx, dy, a: presa.da, casella, attiva: true })
       return
@@ -129,7 +133,10 @@ export function Leggio({ mano, impegnate, cambio, selezione, bloccato, onUsa, on
     presa.centri.forEach((c, k) => {
       if (Math.abs(c - x) < Math.abs(presa.centri[a] - x)) a = k
     })
-    if (!presa.attiva || a !== presa.a) haptic('tap')
+    if (!presa.attiva || a !== presa.a) {
+      haptic('tap')
+      suona('tocco', { volume: 0.5 })
+    }
     setPresa({ ...presa, dx, dy, a, casella: null, attiva: true })
   }
 

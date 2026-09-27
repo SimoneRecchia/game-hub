@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
+import { suona } from '@/lib/suoni'
 import type { CoopInvite } from '@shared/types'
 import './InviteAlert.css'
 
@@ -19,6 +20,10 @@ interface Props {
  */
 export function InviteAlert({ invite, onAccept, onDecline }: Props) {
   const [busy, setBusy] = useState<'accetta' | 'rifiuta' | null>(null)
+  const id = invite?.inviteId
+  useEffect(() => {
+    if (id) suona('invito')
+  }, [id])
 
   if (!invite) return null
 

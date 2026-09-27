@@ -8,6 +8,7 @@ import { useCountdown } from '@/games/wordle/useCountdown'
 import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 import { usePresenza } from '@/lib/presenza'
 import type { InvitoBattaglia, PartitaBreve } from '@shared/types'
 import { ROTTE } from '@/app/rotte'
@@ -117,6 +118,7 @@ function AvvisoSfida({
   // Una vibrazione quando arriva, non a ogni giro di controllo.
   useEffect(() => {
     haptic('success')
+    suona('invito')
   }, [sfida.id])
 
   async function rispondi(azione: 'accetta' | 'rifiuta') {
@@ -181,6 +183,10 @@ function AvvisoPartita({
   onVai: () => void
   onDopo: () => void
 }) {
+  // L'altro e' arrivato: si sente come qualcuno che entra.
+  useEffect(() => {
+    suona('entra')
+  }, [partita.id])
   const testo =
     partita.stato === 'disposizione'
       ? `${partita.avversario.displayName} ha accettato la tua sfida.`

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
+import { suona } from '@/lib/suoni'
 import { NERA, VUOTA, grigliaPiena } from '@shared/cruciverba'
 import type {
   CruciverbaEsito,
@@ -356,6 +357,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
       const posizione = corrente.caselle.indexOf(k)
 
       if (!svelate.has(k)) {
+        suona('tocco')
         const dopo = sostituisci(lettereRef.current, k, lettera)
         lettereRef.current = dopo
         setLettere(dopo)
@@ -394,6 +396,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
       setSelezione({ casella: k, direzione: corrente.direzione })
     }
     if (svelate.has(k) || lettereRef.current[k] === VUOTA) return
+    suona('tocco', { volume: 0.7 })
     const dopo = sostituisci(lettereRef.current, k, VUOTA)
     lettereRef.current = dopo
     setLettere(dopo)
@@ -462,6 +465,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
           },
         })
         if (!esito.stato && esito.rivelate) {
+          suona('svela')
           let dopo = lettereRef.current
           for (const [k, l] of Object.entries(esito.rivelate)) dopo = sostituisci(dopo, Number(k), l)
           lettereRef.current = dopo

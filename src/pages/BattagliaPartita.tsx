@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
@@ -27,6 +27,7 @@ import { useBattaglia } from '@/games/battaglia/useBattaglia'
 import { ApiFetchError, api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
 import { formatCronometro } from '@/lib/format'
+import { suona } from '@/lib/suoni'
 import {
   FLOTTA,
   LATO,
@@ -77,6 +78,29 @@ export default function BattagliaPartita() {
   const v = g.vista
   const classificata = v?.modalita === 'classificata'
   const festa = useFesta(v ? v.stato !== 'finita' : null, v?.stato === 'finita' && v.vincitore === 'io')
+  // Le flotte in mare: comincia il combattimento.
+  const inBattaglia = v?.stato === 'battaglia'
+  const primaDisposta = useRef(false)
+  useEffect(() => {
+    if (v?.stato === 'disposizione') primaDisposta.current = true
+    else if (inBattaglia && primaDisposta.current) {
+      primaDisposta.current = false
+      suona('via')
+    }
+  }, [v?.stato, inBattaglia])
+  const persa = useFesta(v ? v.stato !== 'finita' : null, v?.stato === 'finita' && v.vincitore !== 'io')
+  // La fine si sente solo per una partita vista giocare, come la festa.
+  useEffect(() => {
+    if (festa) suona('vittoria')
+  }, [festa])
+  useEffect(() => {
+    if (persa) suona('sconfitta')
+  }, [persa])
+  // L'altro che se ne va: la vittoria a tavolino si sente come qualcuno che esce.
+  const abbandonata = v?.stato === 'finita' && v.motivo === 'resa' && v.vincitore === 'io'
+  useEffect(() => {
+    if (abbandonata && festa) suona('esce', { ritardo: 0.5 })
+  }, [abbandonata, festa])
 
   return (
     <Pagina
@@ -193,6 +217,7 @@ function Disposizione({
     }
     setNavi(navi.map((n) => (n.tipo === nave.tipo ? nave : n)))
     setNota(null)
+    suona('posa')
     return true
   }
 
@@ -201,6 +226,7 @@ function Disposizione({
     if (sopra) {
       setScelta(scelta === sopra.tipo ? null : sopra.tipo)
       setNota(null)
+      suona('tocco')
       return
     }
     if (!scelta) {
@@ -279,6 +305,8 @@ function Disposizione({
             setNavi(disponiACaso())
             setScelta(null)
             setNota(null)
+            // Le navi rimescolate: tre colpi di legno di fila.
+            ;[0, 0.06, 0.12].forEach((ritardo) => suona('posa', { ritardo, volume: 0.7 }))
           }}
         >
           A caso
@@ -500,6 +528,12 @@ function messaggioRivincita(r: VistaBattaglia['rivincita'], nome: string): strin
 }
 
 function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Promise<void> }) {
+  // L'altro chiede la rivincita: arriva come una sfida.
+  const chiesta = vista.rivincita
+  const richiesta = chiesta?.stato === 'attesa' && chiesta.da === 'avversario' ? chiesta.id : null
+  useEffect(() => {
+    if (richiesta) suona('invito')
+  }, [richiesta])
   const { vai } = useNavigazione()
   const [errore, setErrore] = useState<string | null>(null)
   const [invio, setInvio] = useState(false)

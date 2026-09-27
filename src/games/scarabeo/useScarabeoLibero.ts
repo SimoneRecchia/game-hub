@@ -11,6 +11,7 @@ import {
 import type { CellaPiena, StatisticheScarabeoLibero } from '@shared/types'
 import { api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
+import { suona } from '@/lib/suoni'
 import { mossaDelComputer, preparaComputer } from './computer'
 import { leggiPartitaLibera, salvaPartitaLibera } from './libera'
 import { nonNelDizionario, tessereCambiate, useParoleSconosciute } from './useScarabeo'
@@ -127,7 +128,10 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
         aggiungi(mossa)
         const caselle = caselleDi(mossa)
         setUltima(new Set(caselle))
-        if (caselle.length > 0) haptic('tap')
+        if (caselle.length > 0) {
+          haptic('tap')
+          suona('posa', { volume: 0.6 })
+        }
         window.setTimeout(() => setUltima(new Set()), 2400)
       })
       .catch(() => {
@@ -176,6 +180,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     }
     if (anteprima && !anteprima.ok) {
       haptic('error')
+      suona('sbagliato', { volume: 0.6 })
       avvisa(anteprima.errore)
       return
     }
@@ -185,6 +190,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     }
     if (sconosciute.length > 0) {
       haptic('error')
+      suona('sbagliato', { volume: 0.6 })
       avvisa(nonNelDizionario(sconosciute))
       return
     }
