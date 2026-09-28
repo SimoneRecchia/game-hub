@@ -565,6 +565,23 @@ Transitions dove ci sono. React Router aggiorna lo stato dentro una transizione
 di React, quindi `TransizioniProvider` fa aspettare la View Transition finché la
 rotta nuova e' montata (guarda la chiave della location), con un tetto di 700 ms.
 
+**La barra si fa vetro appena qualcosa le scorre sotto**, e il titolo piccolo
+compare quando il grande e' passato: sono due momenti diversi (`is-velata`,
+`is-scorsa` in `Pagina`). Prima erano uno solo, e finché il titolo grande non
+era passato del tutto ci scorreva dietro la freccia indietro, trasparente. Il
+vetro e' del colore della pagina (`--vetro-barra`) e non bianco: Safari tinge la
+zona dell'orologio con il `theme-color`, che e' `--bg`, e una barra bianca ci
+lasciava sopra una fascia grigia.
+
+**Le opzioni stanno in gruppi, come nelle Impostazioni**: una carta per gruppo,
+una riga per opzione, un filo fra due righe, e i gruppi in ordine da quelli
+che si cambiano di piu' (nel quiz libero: domande, difficolta', tempo, sempre
+in vista) a quelli che si cambiano di rado, nelle avanzate. Un interruttore per
+carta, com'erano, faceva leggere la pagina a pezzi. Le voci di un controllo
+segmentato sono larghe uguali e si stringono (`min-width: 0`): altrimenti la
+capsula che le segue non ci sta sopra, e su un telefono stretto l'ultima voce
+esce dalla carta.
+
 **I testi dicono cosa fare, non perché.** Titoli di poche parole, un
 sottotitolo solo quando serve a decidere, e corto; niente retroscena ("il tempo
 lo tiene il server", "lo schema lo compone un programma ogni notte") né giri di
