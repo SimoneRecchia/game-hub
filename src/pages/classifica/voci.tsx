@@ -12,6 +12,7 @@ import type {
   LeaderboardResponse,
   QuizLeaderboard,
   ScarabeoLeaderboard,
+  SudokuLeaderboard,
 } from '@shared/types'
 
 /**
@@ -25,6 +26,7 @@ export type Risposta =
   | LeaderboardResponse
   | ScarabeoLeaderboard
   | CruciverbaLeaderboard
+  | SudokuLeaderboard
   | BattagliaLeaderboard
   | QuizLeaderboard
 
@@ -52,12 +54,13 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   wordle: 'Wordle',
   scarabeo: 'Scarabeo',
   cruciverba: 'Cruciverba',
+  sudoku: 'Sudoku',
   battaglia: 'Battaglia navale',
   quiz: 'Quiz',
 }
 
 /** I giochi, nell'ordine in cui si mostrano. */
-export const ORDINE_GIOCHI: GiocoClassificato[] = ['wordle', 'scarabeo', 'cruciverba', 'battaglia', 'quiz']
+export const ORDINE_GIOCHI: GiocoClassificato[] = ['wordle', 'scarabeo', 'cruciverba', 'sudoku', 'battaglia', 'quiz']
 
 const partite = (n: number) => `${formatNumber(n)} ${n === 1 ? 'partita' : 'partite'}`
 const giornate = (n: number) => `${formatNumber(n)} ${n === 1 ? 'giornata' : 'giornate'}`
@@ -166,6 +169,25 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
         dettaglio: [
           { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
           { etichetta: 'Schemi completati', valore: formatNumber(r.giornate) },
+          { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
+        ],
+        nota: 'A pari punti conta il tempo.',
+      }))
+
+    case 'sudoku':
+      return (risposta as SudokuLeaderboard).rows.map((r) => ({
+        ...r,
+        sotto:
+          r.giornate === 0
+            ? 'In corso'
+            : giorno
+              ? `Risolto in ${formatDuration(r.tempoMs)}`
+              : `${r.giornate} ${r.giornate === 1 ? 'risolto' : 'risolti'} · ${formatDuration(r.tempoMs)}`,
+        breve: r.giornate > 0 ? formatDuration(r.tempoMs) : 'in corso',
+        segni: r.inCorso ? inCorso : undefined,
+        dettaglio: [
+          { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+          { etichetta: 'Sudoku risolti', valore: formatNumber(r.giornate) },
           { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
         ],
         nota: 'A pari punti conta il tempo.',

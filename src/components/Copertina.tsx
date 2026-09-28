@@ -120,6 +120,71 @@ const DISEGNI: Record<GiocoClassificato | 'generale', ReactElement> = {
     </g>
   ),
 
+  // Un riquadro del sudoku: qualche cifra data, una casella scelta e una con le note a matita.
+  sudoku: (
+    <g transform="rotate(-6 60 60)">
+      {Array.from({ length: 9 }, (_, k) => {
+        const r = Math.floor(k / 3)
+        const c = k % 3
+        const scelta = k === 4
+        return (
+          <rect
+            key={k}
+            x={24 + c * 24.5}
+            y={24 + r * 24.5}
+            width={22}
+            height={22}
+            rx={4}
+            fill="#fff"
+            fillOpacity={scelta ? 0.98 : 0.9}
+            stroke={scelta ? 'var(--c2)' : 'none'}
+            strokeWidth={scelta ? 2.4 : 0}
+          />
+        )
+      })}
+      {[
+        [0, '5'],
+        [2, '3'],
+        [4, '7'],
+        [6, '9'],
+        [8, '1'],
+      ].map(([k, d]) => (
+        <text
+          key={String(k)}
+          x={35 + (Number(k) % 3) * 24.5}
+          y={41.5 + Math.floor(Number(k) / 3) * 24.5}
+          textAnchor="middle"
+          fontFamily={TONDO}
+          fontWeight={800}
+          fontSize={15}
+          fill="var(--c2)"
+          fillOpacity={k === 4 ? 1 : 0.85}
+        >
+          {d}
+        </text>
+      ))}
+      {[
+        [0, '2'],
+        [2, '4'],
+        [3, '8'],
+      ].map(([i, d]) => (
+        <text
+          key={`n${i}`}
+          x={24 + 24.5 * 2 + 4.5 + (Number(i) % 3) * 6.5}
+          y={24 + 24.5 + 8 + Math.floor(Number(i) / 3) * 7}
+          textAnchor="middle"
+          fontFamily={TONDO}
+          fontWeight={700}
+          fontSize={6}
+          fill="var(--c2)"
+          fillOpacity={0.7}
+        >
+          {d}
+        </text>
+      ))}
+    </g>
+  ),
+
   // Una nave in griglia, colpita, e uno spruzzo in acqua.
   battaglia: (
     <g>

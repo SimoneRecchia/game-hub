@@ -310,10 +310,14 @@ export function useFesta(inCorso: boolean | null, vinta: boolean): boolean {
  * Tre tacche, come il segnale del telefono: quante sono piene dice quanto e'
  * forte il computer. Si legge senza leggere, ed e' la stessa in tutti i giochi.
  */
-export function Tacche({ piene, colore = 'var(--brand)' }: { piene: number; colore?: string }) {
+export function Tacche({ piene, di = 3, colore = 'var(--brand)' }: { piene: number; di?: 3 | 4; colore?: string }) {
   return (
-    <span className="tacche" aria-hidden="true" style={{ '--tacche-colore': colore } as CSSProperties}>
-      {[1, 2, 3].map((t) => (
+    <span
+      className={`tacche${di === 4 ? ' tacche--4' : ''}`}
+      aria-hidden="true"
+      style={{ '--tacche-colore': colore } as CSSProperties}
+    >
+      {Array.from({ length: di }, (_, i) => i + 1).map((t) => (
         <span key={t} className={`tacche__tacca${t <= piene ? ' is-piena' : ''}`} />
       ))}
     </span>
