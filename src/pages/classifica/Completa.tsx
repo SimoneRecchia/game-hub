@@ -23,6 +23,7 @@ const LEDE: Record<ChiaveClassifica, string> = {
   wordle: '100 punti al primo tentativo, 50 al sesto.',
   scarabeo: 'Pareggiare il computer vale 100 punti.',
   cruciverba: '100 punti se lo completi senza aiuti.',
+  sudoku: '100 punti se lo risolvi senza aiuti.',
   battaglia: 'Meno colpi, più punti.',
   quiz: '20 punti per aver giocato, 8 per ogni risposta giusta.',
 }

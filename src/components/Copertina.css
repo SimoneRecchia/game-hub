@@ -32,6 +32,11 @@
   --c2: var(--cruciverba-2);
 }
 
+.copertina--sudoku {
+  --c1: var(--sudoku-1);
+  --c2: var(--sudoku-2);
+}
+
 .copertina--battaglia {
   --c1: var(--battaglia-1);
   --c2: var(--battaglia-2);

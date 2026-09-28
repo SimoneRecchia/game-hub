@@ -330,48 +330,6 @@
   color: var(--label-secondary);
 }
 
-/* ---------- Foglio degli aiuti ---------- */
-
-.cru-aiuti {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-
-.cru-aiuti__nota {
-  margin: 0 0 var(--sp-2);
-  font-size: var(--text-subhead);
-  color: var(--label-secondary);
-}
-
-.cru-aiuti__voce {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: var(--sp-3) var(--sp-4);
-  border: none;
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
-  color: var(--label);
-  text-align: left;
-  cursor: pointer;
-}
-
-.cru-aiuti__voce:disabled {
-  opacity: 0.5;
-}
-
-.cru-aiuti__nome {
-  font-size: var(--text-callout);
-  font-weight: 600;
-}
-
-.cru-aiuti__costo {
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
-}
-
 /*
  * Computer: definizioni accanto alla griglia, e niente tastiera a schermo —
  * c'e' quella vera, e i 180 punti che occupa servono alla griglia. Solo con un

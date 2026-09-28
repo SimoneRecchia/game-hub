@@ -20,6 +20,7 @@ import type {
   PeriodoClassifica,
   QuizLeaderboard,
   ScarabeoLeaderboard,
+  SudokuLeaderboard,
 } from '@shared/types'
 
 export type { ChiaveClassifica }
@@ -59,6 +60,7 @@ type Qualunque =
   | LeaderboardResponse
   | ScarabeoLeaderboard
   | CruciverbaLeaderboard
+  | SudokuLeaderboard
   | BattagliaLeaderboard
   | QuizLeaderboard
   | GeneraleLeaderboard

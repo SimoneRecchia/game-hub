@@ -235,12 +235,29 @@
   --scarabeo-2: #d9731a;
   --cruciverba-1: #4d8df7;
   --cruciverba-2: #2a55c9;
+  --sudoku-1: #a45cf5;
+  --sudoku-2: #6d28c9;
   --battaglia-1: #23a6c9;
   --battaglia-2: #0d5f82;
   --generale-1: #6d5fff;
   --generale-2: #3d2fc4;
   --quiz-1: #f25f8f;
   --quiz-2: #c2266a;
+
+  /* ---- La griglia del sudoku ----
+     Il filo sottile fra le caselle e quello spesso fra i riquadri, come sulla
+     carta. In scuro le caselle restano piu' chiare del fondo, e il filo spesso
+     si schiarisce: nero su nero non si vedrebbe. */
+  --sud-casella: #ffffff;
+  --sud-casella: light-dark(#ffffff, #1b1d26);
+  --sud-filo: #d7dae1;
+  --sud-filo: light-dark(#d7dae1, #2f3242);
+  --sud-bordo: #3d4150;
+  --sud-bordo: light-dark(#3d4150, #7f8598);
+  /* Il viola del gioco per le scritte (le cifre svelate, il livello): in scuro
+     quello delle copertine sparirebbe nel fondo. */
+  --sudoku-ink: #6d28c9;
+  --sudoku-ink: light-dark(#6d28c9, #c9a4ff);
 
   /* ---- Il podio ----
      Oro, argento e bronzo: gli anelli degli avatar, i gradini, i numeri dei

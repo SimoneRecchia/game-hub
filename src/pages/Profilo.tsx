@@ -10,12 +10,14 @@ import { Sheet } from '@/components/Sheet'
 import { GIOCHI } from '@/games/catalog'
 import { StatsPanel } from '@/games/wordle/StatsPanel'
 import { leggiStatistiche } from '@/games/quiz/usePartita'
+import { leggiContiSudoku } from '@/games/sudoku/libera'
 import { useAuth, usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatGameDate, formatNumber } from '@/lib/format'
 import { useSuoni } from '@/lib/suoni'
 import { useTheme, type ThemePreference } from '@/lib/theme'
 import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
+import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   BattagliaLeaderboard,
   CruciverbaLeaderboard,
@@ -27,6 +29,7 @@ import type {
   QuizLeaderboard,
   ScarabeoLeaderboard,
   StatisticheScarabeoLibero,
+  SudokuLeaderboard,
   WordleLiberaRisposta,
 } from '@shared/types'
 import './Profilo.css'
@@ -142,6 +145,7 @@ export default function Profilo() {
         {aperto === 'wordle' && <ContiWordle />}
         {aperto === 'scarabeo' && <ContiScarabeo />}
         {aperto === 'cruciverba' && <ContiCruciverba />}
+        {aperto === 'sudoku' && <ContiSudoku />}
         {aperto === 'battaglia' && <ContiBattaglia />}
         {aperto === 'quiz' && <ContiQuiz />}
       </Sheet>
@@ -297,6 +301,43 @@ function ContiCruciverba() {
         <Conti
           titolo="Schemi liberi"
           voci={[{ etichetta: 'Completati', valore: formatNumber(libera.completate) }]}
+        />
+      )}
+    </div>
+  )
+}
+
+function ContiSudoku() {
+  const { dati } = useDati<SudokuLeaderboard>('/leaderboard/sudoku?scope=all')
+  // Le libere stanno nel telefono: si leggono una volta, all'apertura del foglio.
+  const [libere] = useState(leggiContiSudoku)
+  const me = dati?.me
+  const risolti = LIVELLI.filter((l) => libere[l].risolti > 0)
+  return (
+    <div className="profilo-sheet">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Sudoku risolti', valore: formatNumber(me?.giornate ?? 0) },
+            {
+              etichetta: 'Tempo medio',
+              valore: me && me.giornate > 0 ? formatDuration(me.tempoMs / me.giornate) : '—',
+            },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {risolti.length > 0 && (
+        <Conti
+          titolo="Schemi liberi"
+          voci={risolti.map((l) => ({
+            etichetta: NOMI_LIVELLI[l],
+            valore: `${formatNumber(libere[l].risolti)}${libere[l].record !== null ? ` · ${formatDuration(libere[l].record!)}` : ''}`,
+          }))}
         />
       )}
     </div>

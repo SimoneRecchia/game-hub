@@ -9,6 +9,7 @@ import type {
   PeriodoClassifica,
   QuizLeaderboard,
   ScarabeoLeaderboard,
+  SudokuLeaderboard,
 } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
@@ -16,6 +17,7 @@ import { requireVerified } from '../lib/session'
 import { leaderboard } from '../lib/leaderboard'
 import { classificaScarabeo } from '../lib/scarabeoStore'
 import { classificaCruciverba } from '../lib/cruciverbaStore'
+import { classificaSudoku } from '../lib/sudokuStore'
 import { classificaBattaglia } from '../lib/battagliaStore'
 import { classificaQuiz } from '../lib/quizStore'
 import { classificaGenerale } from '../lib/generale'
@@ -68,6 +70,12 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/cruciverba', async (c) => {
     const result = await classificaCruciverba(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<CruciverbaLeaderboard>(result)
+  })
+
+  /** Il sudoku: punti dei completati, poi il tempo. */
+  .get('/sudoku', async (c) => {
+    const result = await classificaSudoku(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
+    return c.json<SudokuLeaderboard>(result)
   })
 
   /** La battaglia navale: le classificate contro il computer, a punti. */

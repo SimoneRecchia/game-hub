@@ -1,0 +1,19 @@
+/* Il riquadro dell'adesivo: le caselle arrivano una alla volta, come si riempie un riquadro. */
+.sud-riquadro-adesivo g {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sud-adesivo-cella 360ms var(--ease-spring) both;
+}
+
+@keyframes sud-adesivo-cella {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sud-riquadro-adesivo g {
+    animation: none;
+  }
+}

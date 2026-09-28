@@ -322,3 +322,28 @@ export const IconFlag = (p: IconProps) => (
     <path d="M5 4h11l-2 4 2 4H5" />
   </Svg>
 )
+
+/** La matita delle note a matita. */
+export const IconMatita = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M15.5 4.5l4 4L8.5 19.5 4 20l.5-4.5 11-11Z" />
+    <path d="M13.5 6.5l4 4" />
+  </Svg>
+)
+
+/** La freccia che torna indietro: annulla. */
+export const IconAnnulla = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 14.5 4.5 10 9 5.5" />
+    <path d="M4.5 10H14a5.5 5.5 0 0 1 0 11h-2.5" />
+  </Svg>
+)
+
+/** Una lampadina: l'aiuto. */
+export const IconAiuto = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M9 17.5h6" />
+    <path d="M10 21h4" />
+    <path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1v.1h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3Z" />
+  </Svg>
+)

@@ -16,6 +16,7 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatCountdown } from '@/lib/format'
 import { leggiPartitaLibera } from '@/games/scarabeo/libera'
+import { leggiContiSudoku, leggiPartitaSudoku } from '@/games/sudoku/libera'
 import { leggiStatistiche, type StatisticheLibere } from '@/games/quiz/usePartita'
 import type {
   CruciverbaLiberaRisposta,
@@ -190,12 +191,18 @@ function useLibera(id: GiocoClassificato): Libera | null {
   const scarabeo = useDati<StatisticheScarabeoLibero>(id === 'scarabeo' ? '/scarabeo/libera' : null).dati
   const battaglia = useDati<LobbyBattaglia>(id === 'battaglia' ? '/battaglia/lobby' : null).dati
   const [scarabeoInCorso, setScarabeoInCorso] = useState(false)
-  // Le libere del quiz non vanno al server: i conti stanno nel telefono.
+  // Le libere del quiz e del sudoku non vanno al server: i conti stanno nel telefono.
   const [quiz, setQuiz] = useState<StatisticheLibere | null>(null)
+  const [sudoku, setSudoku] = useState<{ inCorso: boolean; risolti: number } | null>(null)
 
   useEffect(() => {
     if (id === 'scarabeo') setScarabeoInCorso(leggiPartitaLibera() !== null)
     if (id === 'quiz') setQuiz(leggiStatistiche())
+    if (id === 'sudoku') {
+      const partita = leggiPartitaSudoku()
+      const conti = Object.values(leggiContiSudoku())
+      setSudoku({ inCorso: partita !== null && !partita.finita, risolti: conti.reduce((n, c) => n + c.risolti, 0) })
+    }
   }, [id])
 
   switch (id) {
@@ -212,6 +219,12 @@ function useLibera(id: GiocoClassificato): Libera | null {
       return {
         azione: cruciverba.partita ? 'Continua' : 'Nuovo schema',
         dettaglio: cruciverba.completate ? quante(cruciverba.completate, 'completato', 'completati') : null,
+      }
+    case 'sudoku':
+      if (!sudoku) return null
+      return {
+        azione: sudoku.inCorso ? 'Continua' : 'Nuovo schema',
+        dettaglio: sudoku.risolti ? quante(sudoku.risolti, 'risolto', 'risolti') : null,
       }
     case 'scarabeo':
       if (!scarabeo) return null

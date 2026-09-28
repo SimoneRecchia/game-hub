@@ -10,7 +10,7 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
     nickname,
     displayName: nickname,
     avatarColor: '#000',
-    perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, battaglia: 0, quiz: 0, ...perGioco },
+    perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, battaglia: 0, quiz: 0, ...perGioco },
     assist,
     partite,
   }
@@ -63,7 +63,7 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
       ['anna', 45 + 20 + 70 + 97 + 84 + 76],
       ['bruno', 0],
     ])
-    expect(g.me?.perGioco).toEqual({ wordle: 65, scarabeo: 70, cruciverba: 97, battaglia: 84, quiz: 76 })
+    expect(g.me?.perGioco).toEqual({ wordle: 65, scarabeo: 70, cruciverba: 97, sudoku: 0, battaglia: 84, quiz: 76 })
     expect(g.me?.partite).toBe(5)
 
     const oggi = (await chiama<OggiRisposta>('GET', '/oggi', bruno)).dati

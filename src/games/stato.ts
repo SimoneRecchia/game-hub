@@ -9,6 +9,7 @@
 
 import { CASELLE_FLOTTA } from '@shared/battaglia'
 import { NOMI_CATEGORIE } from '@shared/quiz'
+import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   BattagliaSummary,
   CruciverbaSummary,
@@ -16,6 +17,7 @@ import type {
   OggiRisposta,
   QuizSummary,
   ScarabeoSummary,
+  SudokuSummary,
   WordleSummary,
 } from '@shared/types'
 import { ROTTE } from '@/app/rotte'
@@ -170,6 +172,55 @@ export function statoCruciverba(s: CruciverbaSummary): StatoOggi {
   }
 }
 
+export function statoSudoku(s: SudokuSummary): StatoOggi {
+  const base = {
+    gioco: 'sudoku' as const,
+    avanzamento: s.status === 'done' ? 1 : s.vuote > 0 ? s.scritte / s.vuote : 0,
+    a: ROTTE.classificata('sudoku'),
+  }
+  const livello = s.livello ? NOMI_LIVELLI[s.livello] : ''
+  switch (s.status) {
+    case 'assente':
+      return {
+        ...base,
+        fase: 'non-pronta',
+        titolo: 'Non ancora pronto',
+        dettaglio: 'Riprova più tardi',
+        punti: null,
+        azione: 'Aspetta',
+      }
+    case 'new':
+      return {
+        ...base,
+        fase: 'da-giocare',
+        titolo: 'Da giocare',
+        dettaglio: `${livello} · ${s.vuote} caselle da scrivere`,
+        punti: null,
+        azione: 'Gioca',
+      }
+    case 'done':
+      return {
+        ...base,
+        fase: 'fatta',
+        titolo: 'Fatto',
+        dettaglio: `${livello} · ${s.punti} punti`,
+        punti: s.punti,
+        azione: 'Rivedi',
+      }
+    default: {
+      const restano = s.vuote - s.scritte
+      return {
+        ...base,
+        fase: 'in-corso',
+        titolo: `${Math.round(base.avanzamento * 100)}% scritto`,
+        dettaglio: restano > 0 ? `${livello} · ${restano === 1 ? 'manca 1 casella' : `mancano ${restano} caselle`}` : 'Da controllare',
+        punti: null,
+        azione: 'Continua',
+      }
+    }
+  }
+}
+
 export function statoBattaglia(s: BattagliaSummary): StatoOggi {
   const c = s.classificata
   const base = { gioco: 'battaglia' as const, a: ROTTE.classificata('battaglia') }
@@ -261,6 +312,7 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     wordle: statoWordle(oggi.wordle),
     scarabeo: statoScarabeo(oggi.scarabeo),
     cruciverba: statoCruciverba(oggi.cruciverba),
+    sudoku: statoSudoku(oggi.sudoku),
     battaglia: statoBattaglia(oggi.battaglia),
     quiz: statoQuiz(oggi.quiz),
   }
