@@ -46,6 +46,14 @@ export const GIOCHI: readonly Gioco[] = [
     liberaBreve: 'Schema libero',
   },
   {
+    id: 'sudoku',
+    nome: 'Sudoku',
+    motto: 'Nove righe, nove colonne, nove riquadri',
+    classificata: 'Uno schema al giorno, lo stesso per tutti.',
+    libera: 'Uno schema nuovo, della difficoltà che vuoi.',
+    liberaBreve: 'Schema libero',
+  },
+  {
     id: 'battaglia',
     nome: 'Battaglia navale',
     motto: 'Cinque navi, un colpo per volta',

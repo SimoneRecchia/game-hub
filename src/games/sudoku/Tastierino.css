@@ -1,0 +1,112 @@
+.sud-tastierino {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.sud-strumenti {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--sp-1);
+}
+
+.sud-strumento {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 4px 0;
+  border-radius: var(--r-md);
+  color: var(--label-secondary);
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  transition:
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.sud-strumento:active:not(:disabled) {
+  transform: translateY(1px);
+  color: var(--label);
+}
+
+.sud-strumento:disabled {
+  opacity: 0.4;
+}
+
+.sud-strumento.is-acceso {
+  color: var(--brand);
+}
+
+.sud-strumento__icona {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+/* Il segno del modo, sulla matita: "sì" o "no", come nelle app. */
+.sud-strumento__stato {
+  position: absolute;
+  top: -5px;
+  right: -16px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 15px;
+}
+
+.sud-strumento.is-acceso .sud-strumento__stato {
+  background: var(--brand);
+  color: #fff;
+}
+
+.sud-cifre {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 5px;
+}
+
+/* Un tasto come quelli della tastiera del Wordle: un oggetto, che premendo scende. */
+.sud-cifra {
+  display: grid;
+  place-items: center;
+  height: clamp(44px, 7.4dvh, 58px);
+  border-radius: 10px;
+  background: var(--surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.03));
+  box-shadow: var(--edge-light), var(--shadow-key);
+  color: var(--brand);
+  font-family: var(--font-rounded);
+  font-size: clamp(22px, 3.4dvh, 28px);
+  font-weight: 700;
+  transition:
+    transform 70ms var(--ease-out),
+    box-shadow 70ms var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.sud-cifra:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: var(--edge-light);
+}
+
+.sud-cifra.is-finita {
+  color: var(--label-quaternary);
+}
+
+/* Con le note le cifre sono piccole e grigie, in alto a sinistra: si scrive a matita. */
+.sud-tastierino.is-note .sud-cifra {
+  place-items: start start;
+  padding: 5px 0 0 8px;
+  color: var(--label-secondary);
+  font-size: clamp(14px, 2.2dvh, 17px);
+  font-weight: 600;
+}

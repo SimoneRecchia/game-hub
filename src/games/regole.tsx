@@ -3,6 +3,7 @@ import type { GiocoClassificato } from '@shared/types'
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
 import { ComeSiGiocaCruciverba } from '@/games/cruciverba/ComeSiGioca'
+import { ComeSiGiocaSudoku } from '@/games/sudoku/ComeSiGioca'
 import { ComeSiGiocaBattaglia } from '@/games/battaglia/ComeSiGioca'
 import { ComeSiGiocaQuiz } from '@/games/quiz/ComeSiGioca'
 
@@ -11,6 +12,7 @@ export const REGOLE: Record<GiocoClassificato, (p: { open: boolean; onClose: () 
   wordle: HowToPlay,
   scarabeo: ComeSiGiocaScarabeo,
   cruciverba: ComeSiGiocaCruciverba,
+  sudoku: ComeSiGiocaSudoku,
   battaglia: ComeSiGiocaBattaglia,
   quiz: ComeSiGiocaQuiz,
 }

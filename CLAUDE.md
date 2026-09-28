@@ -234,6 +234,38 @@ porta la `versione` restituita dalla precedente. Il server rifiuta quelle con
 una versione vecchia (`CONFLITTO`), e il client rilegge lo stato: due
 dispositivi aperti sulla stessa partita non si sovrascrivono un aiuto pagato.
 
+**Gli schemi del sudoku si fanno la notte, e la difficoltà e' il ragionamento
+che chiedono.** `scripts/genera-sudoku.ts` (il passo "Il sudoku" di
+`cruciverba.yml`, e il deploy per le prossime due settimane) scrive in
+`sudoku_schemi` con `INSERT OR IGNORE`: togliere caselle controllando che la
+soluzione resti una sola costa qualche decimo di secondo per uno schema esperto,
+troppo per il Worker. Lo schema e' deterministico dal numero del giorno
+(`schemaDelGiorno`), il livello dal giorno della settimana — facile il lunedì e
+il martedì, esperto la domenica — e se la giornata manca il gioco risponde
+`SCHEMA_ASSENTE` (503): in locale, `npm run sudoku:locale`. Il livello non si
+misura dalle cifre date ma **risolvendo come una persona** (`valuta`): la
+tecnica piu' difficile che serve decide il gradino (`TECNICHE`), e solo fra i
+due livelli di sole "singole" decidono le date (`livelloDi`). Uno schema che
+chiede di tirare a indovinare non esce mai: `valuta` non ci arriva, e il
+generatore lo scarta.
+
+**Nel sudoku la soluzione resta sul server, e gli aiuti costano come nel
+cruciverba.** Cento a chi lo risolve senza aiuti, tre in meno per ogni cifra
+svelata, uno per ogni cifra sbagliata trovata da un controllo — e ricontrollare
+la stessa cifra sbagliata non costa (`segnalate` tiene la cifra, con lo stesso
+`registraControllo`). Due cifre uguali che si vedono si segnano subito nel
+browser, perché si vedono a occhio; se una cifra e' sbagliata lo sa solo il
+server. Le scritture passano dalla stessa coda con la `versione` del
+cruciverba, e le note a matita viaggiano con la griglia (243 cifre in base
+otto, `noteInTesto`): riaprendo da un altro telefono ci sono.
+
+**Il sudoku libero sta tutto nel telefono.** Lo schema lo genera un Web Worker
+(`generatore.worker.ts`) con lo stesso generatore della classificata e un seme
+a caso; partita e conti stanno nel `localStorage` (`src/games/sudoku/libera.ts`)
+e non vanno al server — come le libere del quiz. La soluzione quindi c'e', e
+controlli e svelate non costano niente: rendono pero' la partita `aiutata`, che
+non fa record.
+
 **La presenza e' un giro solo per tutta l'app.** `PresenzaProvider`
 (`src/lib/presenza.tsx`) chiama `POST /api/presenza` ogni otto secondi a pagina
 visibile: dice al server dove si trova il giocatore e riporta gli inviti del
@@ -273,7 +305,7 @@ Prima una giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche
 centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
 gioco misura quel che gli e' proprio dentro lo stesso tetto (`shared/punti.ts`,
 che ha la tabella di tutti): il Wordle i tentativi, lo Scarabeo il punteggio in
-rapporto al computer, il cruciverba gli aiuti, la battaglia i colpi, il quiz
+rapporto al computer, il cruciverba e il sudoku gli aiuti, la battaglia i colpi, il quiz
 le risposte giuste (venti per aver giocato, otto per ogni giusta). Tutti
 tengono il principio del Wordle — **giocarla bene vale circa il doppio di
 giocarla male**, non dieci volte tanto — e `shared/__tests__/punti.test.ts`
@@ -817,6 +849,20 @@ lasciate al contenuto, una riga con le lettere scritte cresceva di qualche
 punto e le caselle non restavano quadrate. Su computer — largo e con un
 puntatore fine — la tastiera a schermo sparisce e le definizioni vanno accanto
 alla griglia; un tablet in orizzontale e' largo uguale ma ha solo le dita.
+
+**Il sudoku di traverso non scorre.** Quando lo schermo e' piu' largo che alto
+(e largo almeno 640 punti) stato e tastierino vanno accanto alla griglia, le
+cifre diventano tre per tre, e la griglia prende tutta l'altezza: `.sud` e' un
+contenitore, e la fascia della griglia e' larga quanto e' alta (`min(100cqh,
+...)`), altrimenti fra griglia e tastierino resterebbe un vuoto. Sul telefono
+di traverso questo ci sta, e per questo `Sudoku.css` rimette l'altezza fissa
+alla pagina (`.pagina--intera:has(.sud)`) che `Pagina.css` fa scorrere per tutti
+i giochi. La capsula di stato e' un contenitore anche lei: stretta, perde prima
+la barretta e poi il livello, e i punti restano su una riga.
+
+**Il foglio degli aiuti e' uno solo** (`FoglioAiuti`, `src/components/Aiuti.tsx`),
+per il cruciverba e per il sudoku: quanto vale adesso la partita, e un bottone
+per aiuto con quel che costa. Nel sudoku libero i costi non ci sono.
 
 **Le durate delle animazioni delle caselle sono replicate in
 `src/games/wordle/useWordle.ts`** (`REVEAL_*`, `BOUNCE_MS`, `SHAKE_MS`): il

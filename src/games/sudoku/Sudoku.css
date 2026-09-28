@@ -1,0 +1,376 @@
+/*
+ * Il sudoku: riga di stato, griglia, tastierino.
+ *
+ * La griglia e' l'unica fascia elastica. Sul telefono in piedi lo stato sta
+ * sopra e il tastierino sotto, sotto il pollice; quando lo schermo e' piu'
+ * largo che alto — un computer, un tablet o un telefono di traverso — stato e
+ * tastierino vanno accanto alla griglia, che prende tutta l'altezza.
+ */
+.sud {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--sp-3);
+}
+
+/* In colonna il lato non c'e': i suoi figli stanno nella colonna, lo stato prima della griglia. */
+.sud__lato {
+  display: contents;
+}
+
+/* ---------- Riga di stato ---------- */
+
+.sud__stato {
+  container: sud-stato / inline-size;
+  order: -1;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  width: min(100%, 560px);
+  height: 44px;
+  margin-inline: auto;
+  padding: 0 var(--sp-4) 0 var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+}
+
+.sud__tempo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 4.2em;
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.sud__tempo svg {
+  color: var(--sudoku-1);
+}
+
+.sud__livello {
+  padding: 2px var(--sp-2);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--sudoku-1) 16%, transparent);
+  color: var(--sudoku-ink);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+}
+
+.sud__punti {
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.sud__punti-label {
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.sud__avanzamento {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  color: var(--label-tertiary);
+}
+
+/* Quanto dello schema e' scritto: una barretta che si riempie. */
+.sud__avanzamento-barra {
+  position: relative;
+  width: 44px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+}
+
+.sud__avanzamento-barra span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--sudoku-1), var(--sudoku-2));
+  transform-origin: left center;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+/*
+ * Una capsula stretta — un telefono da 320 punti, o di lato alla griglia — non
+ * ha posto per tutto: prima se ne va la barretta (il conto resta), poi il
+ * livello. I punti restano sempre su una riga.
+ */
+.sud__punti,
+.sud__livello,
+.sud__avanzamento {
+  flex: none;
+  white-space: nowrap;
+}
+
+@container sud-stato (max-width: 340px) {
+  .sud__avanzamento-barra {
+    display: none;
+  }
+}
+
+@container sud-stato (max-width: 270px) {
+  .sud__livello {
+    display: none;
+  }
+}
+
+/* Un messaggio prende il posto di livello e caselle, nella stessa riga: non copre la griglia. */
+.sud__avviso {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--label);
+  animation: sud-avviso var(--dur-base) var(--ease-spring);
+}
+
+@keyframes sud-avviso {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* ---------- Griglia ---------- */
+
+.sud__campo {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * La griglia si misura anche sull'altezza che resta: `100cqh` e' l'altezza di
+ * questa fascia. Senza container query resta la larghezza piena, che e' il
+ * ripiego giusto.
+ */
+@supports (width: 1cqh) {
+  .sud__campo {
+    container-type: size;
+  }
+
+  .sud__campo .sud-griglia {
+    width: min(100cqw, 100cqh, 560px);
+  }
+}
+
+/* ---------- Schema finito ---------- */
+
+.sud-fine {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2) 0;
+  text-align: center;
+}
+
+.sud-fine__titolo {
+  margin: 0;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--sudoku-ink);
+}
+
+.sud-fine__valore {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.sud-fine__dettaglio {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.sud-fine__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.sud-fine__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sud-fine__piede {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+}
+
+/* ---------- La scelta del livello, e lasciare uno schema ---------- */
+
+.sud-guasto {
+  font-size: var(--text-footnote);
+  color: var(--red);
+}
+
+.sud-lascia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+/* ---------- Attesa e ripieghi ---------- */
+
+.sud-attesa {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  min-height: 0;
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+}
+
+.sud-attesa__griglia {
+  width: min(100%, 320px);
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--fill-quaternary);
+  animation: sud-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes sud-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.sud-ripiego {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  text-align: center;
+  color: var(--label-secondary);
+}
+
+/*
+ * Di lato: quando lo schermo e' piu' largo che alto, stato e tastierino stanno
+ * a destra della griglia, e la griglia prende tutta l'altezza. Il sudoku
+ * diventa un contenitore, cosi' la fascia della griglia e' larga quanto e'
+ * alta — non di piu', o fra la griglia e il tastierino resterebbe un vuoto — e
+ * le cifre diventano un tastierino da telefono, tre per tre.
+ */
+@media (orientation: landscape) and (min-width: 640px) {
+  .sud {
+    container-type: size;
+    flex-direction: row;
+    justify-content: center;
+    gap: var(--sp-6);
+  }
+
+  .sud__campo {
+    flex: none;
+    width: min(100cqh, 100cqw - 300px - var(--sp-6), 640px);
+  }
+
+  @supports (width: 1cqh) {
+    .sud__campo .sud-griglia {
+      width: min(100cqw, 100cqh);
+    }
+  }
+
+  .sud__lato {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--sp-4);
+    width: 300px;
+  }
+
+  .sud__stato {
+    width: 100%;
+  }
+
+  .sud-tastierino {
+    max-width: none;
+  }
+
+  .sud-cifre {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .sud-cifra {
+    height: clamp(40px, 11dvh, 68px);
+  }
+}
+
+/*
+ * Telefono di traverso. Con stato e tastierino di lato la griglia ci sta, e la
+ * pagina smette di scorrere (Pagina.css la fa scorrere per tutti i giochi): la
+ * griglia puo' misurarsi sull'altezza. Gli strumenti restano icone, per
+ * lasciare l'altezza alle cifre.
+ */
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 640px) {
+  .pagina--intera:has(.sud) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .sud__lato {
+    gap: var(--sp-2);
+  }
+
+  .sud-strumento__nome {
+    display: none;
+  }
+}
+
+/*
+ * Sotto i 640 punti di larghezza il lato non ci sta: la pagina scorre come
+ * negli altri giochi, e senza un'altezza definita `cqh` si risolverebbe a zero.
+ * La griglia si misura sulla larghezza.
+ */
+@media (orientation: landscape) and (max-height: 560px) and (max-width: 639px) {
+  .sud__campo {
+    container-type: normal;
+  }
+
+  .sud__campo .sud-griglia {
+    width: min(100%, 420px);
+  }
+}

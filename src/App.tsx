@@ -21,6 +21,8 @@ import Scarabeo from './pages/Scarabeo'
 import ScarabeoLibero from './pages/ScarabeoLibero'
 import Cruciverba from './pages/Cruciverba'
 import CruciverbaLibero from './pages/CruciverbaLibero'
+import Sudoku from './pages/Sudoku'
+import SudokuLibero from './pages/SudokuLibero'
 import BattagliaClassificata from './pages/BattagliaClassificata'
 import BattagliaLibera from './pages/BattagliaLibera'
 import BattagliaPartita from './pages/BattagliaPartita'
@@ -82,6 +84,9 @@ export default function App() {
           <Route path="/cruciverba/classificata" element={<Cruciverba />} />
           <Route path="/cruciverba/libera" element={<CruciverbaLibero />} />
           <Route path="/cruciverba/libera/:id" element={<Cruciverba />} />
+
+          <Route path="/sudoku/classificata" element={<Sudoku />} />
+          <Route path="/sudoku/libera" element={<SudokuLibero />} />
 
           <Route path="/battaglia-navale/classificata" element={<BattagliaClassificata />} />
           <Route path="/battaglia-navale/libera" element={<BattagliaLibera />} />

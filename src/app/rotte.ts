@@ -13,6 +13,8 @@
  *   /scarabeo/libera                    contro il computer
  *   /cruciverba/classificata            lo schema di oggi
  *   /cruciverba/libera/:partita         uno schema libero
+ *   /sudoku/classificata                lo schema di oggi
+ *   /sudoku/libera                      uno schema nuovo, della difficoltà che vuoi
  *   /battaglia-navale/classificata      la battaglia di oggi contro il computer
  *   /battaglia-navale/libera            contro il computer o contro un amico
  *   /battaglia-navale/partita/:id       una partita
@@ -39,6 +41,7 @@ export const SLUG: Record<GiocoClassificato, string> = {
   wordle: 'wordle',
   scarabeo: 'scarabeo',
   cruciverba: 'cruciverba',
+  sudoku: 'sudoku',
   battaglia: 'battaglia-navale',
   quiz: 'quiz',
 }

@@ -7,8 +7,9 @@ import type { CategoriaQuiz, ModoQuiz } from './quiz'
 import type { AreaQuiz, DomandaQuiz, LuogoQuiz } from './quiz-domande'
 import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
+import type { LivelloSudoku } from './sudoku'
 
-export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia' | 'quiz'
+export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
 
 export interface Player {
   id: string
@@ -313,6 +314,95 @@ export interface CruciverbaLeaderboard {
   me: CruciverbaRow | null
 }
 
+/* ────────────────────────────────  Sudoku  ───────────────────────────── */
+
+export type SudokuStatus = 'playing' | 'done'
+
+export interface SudokuState {
+  partitaId: string
+  puzzleNumber: number
+  date: string
+  livello: LivelloSudoku
+  /** Le cifre date, con i punti per le vuote. */
+  dati: string
+  /** La griglia del giocatore: le date, le sue cifre e i punti per le vuote. */
+  cifre: string
+  /** Le note a matita, 243 caratteri (vedi shared/sudoku.ts). */
+  note: string
+  /** Le caselle svelate: la cifra lì e' giusta per forza e non si cambia. */
+  svelate: number[]
+  /** Le caselle segnalate come sbagliate da un controllo, finché non cambiano. */
+  segnalate: number[]
+  /** Errori segnalati finora: ognuno e' costato un punto. */
+  errori: number
+  /** Tempo di gioco, a pagina visibile. */
+  tempoMs: number
+  /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni scrittura. */
+  versione: number
+  status: SudokuStatus
+  /** A partita chiusa i punti fatti, prima quelli che varrebbe finirla adesso. */
+  punti: number
+  /** La soluzione, solo a partita chiusa. */
+  soluzione: string | null
+  msToNextPuzzle: number
+}
+
+/** La risposta a una scrittura: poco, perché si salva spesso. */
+export interface SudokuEsito {
+  versione: number
+  status: SudokuStatus
+  punti: number
+  tempoMs: number
+  /** Griglia piena ma con almeno un errore: si dice, ma non dove. */
+  pienaConErrori: boolean
+  /** Le caselle sbagliate, dopo un controllo. */
+  errate?: number[]
+  /** Le cifre svelate, dopo una richiesta di aiuto. */
+  rivelate?: Record<number, string>
+  /** Tutte le caselle svelate finora, dopo una richiesta di aiuto. */
+  svelate?: number[]
+  /** Lo stato intero, quando la partita si chiude: porta la soluzione. */
+  stato?: SudokuState
+}
+
+export interface SudokuSummary {
+  puzzleNumber: number
+  date: string
+  /** `assente` se lo schema di oggi non e' stato generato. */
+  status: 'new' | 'assente' | SudokuStatus
+  livello: LivelloSudoku | null
+  /** Le caselle da scrivere, e quante sono scritte. */
+  vuote: number
+  scritte: number
+  punti: number
+  tempoMs: number
+  msToNextPuzzle: number
+}
+
+export interface SudokuRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: solo i sudoku completati. */
+  punti: number
+  /** Sudoku completati nel periodo. */
+  giornate: number
+  /** Tempo totale dei completati: e' lo spareggio. */
+  tempoMs: number
+  /** true se oggi ha un sudoku aperto e non ancora finito. */
+  inCorso: boolean
+}
+
+export interface SudokuLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: SudokuRow[]
+  me: SudokuRow | null
+}
+
 /* ─────────────────────────────  Battaglia navale  ──────────────────────── */
 
 /** Dove si trova un giocatore nell'app: lo dice il giro di controllo degli inviti. */
@@ -321,6 +411,7 @@ export type Attivita =
   | 'wordle'
   | 'scarabeo'
   | 'cruciverba'
+  | 'sudoku'
   | 'battaglia'
   | 'quiz'
   | 'classifica'
@@ -761,7 +852,7 @@ export interface PeriodoClassifica {
 /* ──────────────────────────  La classifica generale  ───────────────────────── */
 
 /** I giochi che hanno una classificata, e quindi una classifica. */
-export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'battaglia' | 'quiz'
+export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
 export type ChiaveClassifica = GiocoClassificato | 'generale'
@@ -829,6 +920,7 @@ export interface OggiRisposta {
   wordle: WordleSummary
   scarabeo: ScarabeoSummary
   cruciverba: CruciverbaSummary
+  sudoku: SudokuSummary
   battaglia: BattagliaSummary
   quiz: QuizSummary
   /** Come si sta oggi nella classifica generale. */

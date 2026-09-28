@@ -19,11 +19,26 @@ export function attivitaDa(pathname: string): Attivita {
   if (pathname.startsWith('/wordle')) return 'wordle'
   if (pathname.startsWith('/scarabeo')) return 'scarabeo'
   if (pathname.startsWith('/cruciverba')) return 'cruciverba'
+  if (pathname.startsWith('/sudoku')) return 'sudoku'
   if (pathname.startsWith('/battaglia')) return 'battaglia'
   if (pathname.startsWith('/quiz')) return 'quiz'
   if (pathname.startsWith('/classifica')) return 'classifica'
   if (pathname.startsWith('/profilo')) return 'profilo'
   return 'altro'
+}
+
+/** Dove si trova un amico, come lo si legge sotto il suo nome nella sala. */
+export const DOVE: Record<Attivita, string> = {
+  hub: 'fra i giochi',
+  wordle: 'gioca a Wordle',
+  scarabeo: 'gioca a Scarabeo',
+  cruciverba: 'fa il cruciverba',
+  sudoku: 'fa il sudoku',
+  battaglia: 'alla battaglia navale',
+  quiz: 'gioca al quiz',
+  classifica: 'guarda la classifica',
+  profilo: 'nel profilo',
+  altro: 'online',
 }
 
 interface Presenza {

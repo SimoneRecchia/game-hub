@@ -17,11 +17,13 @@ import { caselleBianche, caselleScritte, punteggio } from '../../shared/cruciver
 import { msToNextPuzzle } from '../../shared/daily'
 import { MOSSE_PER_GIORNATA } from '../../shared/scarabeo'
 import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
+import { VUOTA, puntiSudoku } from '../../shared/sudoku'
 import type {
   BattagliaSummary,
   CruciverbaSummary,
   QuizSummary,
   ScarabeoSummary,
+  SudokuSummary,
   WordleStatus,
   WordleSummary,
 } from '../../shared/types'
@@ -31,6 +33,12 @@ import { giornata as giornataCruciverba, schemaDelGiorno, svelateDi, type Partit
 import { latoDi, partitaAperta, partitaBreve, quantiOnline, recordDi, statoClassificata } from './battagliaStore'
 import { giornata as giornataQuiz, giornataQuiz as domandeDelGiorno, partitaDi as partitaQuiz, risposteDi } from './quizStore'
 import { puntiQuiz } from '../../shared/quiz'
+import {
+  giornata as giornataSudoku,
+  partitaDi as partitaSudoku,
+  schemaDelGiorno as schemaSudoku,
+  svelateDi as svelateSudoku,
+} from './sudokuStore'
 
 export async function riepilogoWordle(db: D1Database, playerId: string): Promise<WordleSummary> {
   const when = today()
@@ -118,6 +126,26 @@ export async function riepilogoCruciverba(db: D1Database, playerId: string): Pro
     scritte: row ? caselleScritte(row.lettere) : 0,
     bianche: schema ? caselleBianche(schema.soluzione) : 0,
     punti: row ? (row.status === 'done' ? row.score : punteggio(svelateDi(row).length, row.errori)) : 100,
+    tempoMs: row?.tempo_ms ?? 0,
+    msToNextPuzzle: msToNextPuzzle(),
+  }
+}
+
+/** Il sudoku di oggi: il livello, quante caselle sono scritte, i punti. Non apre la partita. */
+export async function riepilogoSudoku(db: D1Database, playerId: string): Promise<SudokuSummary> {
+  const quando = giornataSudoku()
+  const schema = await schemaSudoku(db, quando.puzzleNumber)
+  const row = schema ? await partitaSudoku(db, playerId, quando.puzzleNumber) : null
+  const vuote = schema ? [...schema.dati].filter((d) => d === VUOTA).length : 0
+  const scritte = schema && row ? [...row.cifre].filter((d, k) => d !== VUOTA && schema.dati[k] === VUOTA).length : 0
+  return {
+    puzzleNumber: quando.puzzleNumber,
+    date: quando.date,
+    status: !schema ? 'assente' : row ? row.status : 'new',
+    livello: schema?.livello ?? null,
+    vuote,
+    scritte,
+    punti: row ? (row.status === 'done' ? row.score : puntiSudoku(svelateSudoku(row).length, row.errori)) : 100,
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
   }
