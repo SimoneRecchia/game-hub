@@ -145,6 +145,9 @@
   --glass: light-dark(rgba(255, 255, 255, 0.7), rgba(28, 30, 40, 0.66));
   --glass-strong: rgba(255, 255, 255, 0.86);
   --glass-strong: light-dark(rgba(255, 255, 255, 0.86), rgba(32, 34, 46, 0.86));
+  /* La barra in cima alle schermate: il colore della pagina (--bg), velato. */
+  --vetro-barra: rgba(244, 245, 249, 0.9);
+  --vetro-barra: light-dark(rgba(244, 245, 249, 0.9), rgba(11, 12, 17, 0.86));
   --glass-edge: rgba(255, 255, 255, 0.9);
   --glass-edge: light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.12));
   --glass-line: rgba(20, 24, 40, 0.08);

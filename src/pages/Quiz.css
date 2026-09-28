@@ -170,23 +170,61 @@
   box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.25);
 }
 
-/* ───────────────────────────  Il tempo  ─────────────────────────── */
+/* ───────────────────────────  Le opzioni  ─────────────────────────── */
 
-.quiz-tempo {
+/*
+ * Le opzioni in gruppi, come nelle Impostazioni: una carta per gruppo, una riga
+ * per opzione, un filo fra due righe. Prima ogni interruttore era una carta a
+ * se', e la pagina si leggeva a pezzi.
+ */
+.quiz-impostazioni {
   display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  width: 100%;
-  padding: 12px 14px;
+  flex-direction: column;
+  overflow: hidden;
   border-radius: var(--r-lg);
   background: var(--surface);
   box-shadow:
     var(--edge-light),
     var(--shadow-sm);
+}
+
+.quiz-impostazione {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
   text-align: left;
 }
 
-.quiz-tempo__testi {
+.quiz-impostazione + .quiz-impostazione::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 14px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.quiz-impostazione--interruttore {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 52px;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.quiz-impostazione--interruttore:active:not(:disabled) {
+  background: var(--fill-quaternary);
+}
+
+.quiz-impostazione--interruttore:disabled {
+  opacity: 0.55;
+}
+
+.quiz-impostazione__testi {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -194,19 +232,16 @@
   gap: 2px;
 }
 
-.quiz-tempo__titolo {
+.quiz-impostazione__titolo {
+  margin: 0;
   font-size: var(--text-body);
   font-weight: 600;
   color: var(--label);
 }
 
-.quiz-tempo__sotto {
+.quiz-impostazione__sotto {
   font-size: var(--text-footnote);
   color: var(--label-secondary);
-}
-
-.quiz-tempo:disabled {
-  opacity: 0.55;
 }
 
 /* ─────────────────────────  Le opzioni avanzate  ───────────────────────── */
@@ -261,7 +296,7 @@
 .quiz-avanzate__corpo {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5, 24px);
+  gap: var(--sp-5);
   animation: quiz-avanzate-apre 320ms var(--ease-out) both;
 }
 
@@ -278,23 +313,14 @@
   gap: var(--sp-2);
 }
 
-.quiz-gruppo {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.quiz-gruppo__titolo {
-  margin: 4px 0 0;
+/* Dentro le avanzate i gruppi hanno il titolo piccolo, come le sezioni delle Impostazioni. */
+.quiz-avanzate__corpo .sezione__titolo {
+  padding: 0 14px;
   font-size: var(--text-footnote);
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   color: var(--label-secondary);
-}
-
-.quiz-gruppo__nota {
-  margin: 0;
-  font-size: var(--text-caption-1);
-  color: var(--label-tertiary);
 }
 
 .quiz-avanzate__ripristina {
