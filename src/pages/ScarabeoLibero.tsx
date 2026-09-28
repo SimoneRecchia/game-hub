@@ -154,6 +154,8 @@ export default function ScarabeoLibero() {
                 </IconaScheda>
               }
               avviso={g.messaggio}
+              posa={g.anteprima}
+              sconosciute={g.sconosciute}
               io={stato.mieiPunti}
               altro={stato.puntiComputer}
               nomeAltro="Computer"

@@ -21,7 +21,7 @@ import {
 } from '../scarabeo-computer'
 
 const dawg = Dawg.da(
-  readFileSync(join(__dirname, '..', '..', 'src', 'games', 'scarabeo', 'dizionario.dawg')),
+  readFileSync(join(__dirname, '..', '..', 'public', 'scarabeo', 'dizionario.dawg')),
 )
 
 describe('il computer gioca la giornata', () => {

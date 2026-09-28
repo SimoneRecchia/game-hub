@@ -25,10 +25,10 @@ import {
   computerDelGiorno,
   giornata,
   mosseDi,
-  paroleSconosciute,
   statisticheLibere,
   statoDa,
 } from '../lib/scarabeoStore'
+import { paroleSconosciute } from '../lib/dizionario'
 import { riepilogoScarabeo } from '../lib/riepiloghi'
 
 /**
@@ -134,13 +134,14 @@ export const scarabeoRoutes = new Hono<AppEnv>()
 
     /*
      * Il dizionario si interroga **dopo** la validazione geometrica: se la posa
-     * non sta in piedi non c'e' motivo di chiedere al database, e la risposta
-     * piu' utile e' quella sulla forma della mossa.
+     * non sta in piedi non c'e' motivo di leggerlo, e la risposta piu' utile e'
+     * quella sulla forma della mossa.
      */
     const sconosciute = await paroleSconosciute(
-      c.env.DB,
+      c.env,
+      c.req.url,
       esito.parole.map((p) => p.parola),
-    )
+    ).catch(() => fail(503, 'DIZIONARIO_ASSENTE', 'Il dizionario non risponde: riprova tra poco.'))
     if (sconosciute.length > 0) {
       const elenco = sconosciute.map((p) => `"${p.toUpperCase()}"`).join(', ')
       fail(

@@ -88,9 +88,9 @@ const Cella = memo(function Cella({
 
   const nome = casella
     ? `${casella.lettera.toUpperCase()}${casella.jolly ? ' (jolly)' : ''} in ${r + 1},${c + 1}`
-    : premio
-      ? `${r + 1},${c + 1} ${NOMI[premio]}`
-      : `${r + 1},${c + 1} libera`
+    : `${r + 1},${c + 1} ${premio ? NOMI[premio] : 'libera'}${
+        cursore === null ? '' : cursore ? ', si scrive verso destra' : ', si scrive verso il basso'
+      }`
 
   return (
     <button
@@ -105,6 +105,11 @@ const Cella = memo(function Cella({
     >
       {casella ? (
         <span className="cella__lettera">{casella.lettera.toUpperCase()}</span>
+      ) : cursore !== null ? (
+        // Da che parte si scrive. Sulla casella centrale prende il posto della stella.
+        <svg className="cella__freccia" viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5" />
+        </svg>
       ) : premio === 'centro' ? (
         <span className="cella__stella" aria-hidden="true">
           ★

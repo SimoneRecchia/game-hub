@@ -110,3 +110,45 @@ flessa è "plurale di ala", che darebbe la risposta.
 
 Rigenerare: `node scripts/build-cruciverba.mjs` (scarica circa 45 MB in
 `scripts/.cache/`, non versionata).
+
+## Lo Scarabeo
+
+Il dizionario dello Scarabeo deve dire se una parola esiste, a qualunque
+lunghezza da 2 a 15, ed è permissivo di proposito: rifiutare una parola vera in
+una partita a punti è peggio che accettarne una rara. Ha due livelli: le parole
+**comuni**, che gioca anche il computer, e le **altre**, che valgono quando le
+gioca una persona.
+
+| Fonte | Cosa dà | Licenza |
+| --- | --- | --- |
+| [`napolux/paroleitaliane`](https://github.com/napolux/paroleitaliane) — `280000_parole_italiane.txt` | Le parole comuni, il vocabolario del computer | MIT |
+| [`napolux/paroleitaliane`](https://github.com/napolux/paroleitaliane) — `9000_nomi_propri.txt`, `lista_badwords.txt` | Nomi propri e parolacce da togliere | MIT |
+| Wikizionario italiano, estrazione di [kaikki.org](https://kaikki.org/itwiktionary/) | Lemmi e forme flesse; quali nomi dell'elenco sono anche parole | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it) |
+| Wiktionary inglese, voci italiane, estrazione di [kaikki.org](https://kaikki.org/dictionary/Italian/) | Altre forme flesse, e le coniugazioni da cui si costruiscono le enclitiche | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it) |
+
+Le regole sono quelle del
+[regolamento della Federazione Italiana Gioco Scrabble](http://www.scrabbleitalia.com/test/regnaz.pdf),
+lette con larghezza:
+
+- **Valgono** nomi, aggettivi, verbi in tutte le forme, avverbi, preposizioni
+  (anche articolate), pronomi, interiezioni, e le forme verbali con i pronomi
+  attaccati all'infinito, al gerundio e all'imperativo — DIMMELO, PORTARLO,
+  ANDANDOSENE (articolo 22). Queste non le elenca nessuno: si costruiscono dalle
+  coniugazioni (`scripts/scarabeo/enclitiche.mjs`).
+- **Non valgono** i nomi propri, le sigle, le abbreviazioni, i prefissi e i
+  suffissi, le voci di più parole. Gli accenti si tolgono: "città" è CITTA.
+- **Restano fuori** anche le parolacce e le voci che il Wiktionary dà solo come
+  volgari o offensive: l'hub lo usano dei colleghi.
+
+L'elenco dei nomi propri di napolux comprende anche "sole", "luna", "stella",
+"rosa", "re", "euro": una parola dell'elenco torna fra le comuni se il
+Wikizionario italiano la conosce come nome comune, aggettivo o verbo, e fra le
+altre se la conosce solo il Wiktionary inglese.
+
+Gli elenchi che ne escono (`scripts/data/dizionario-scarabeo*.txt.gz`) e il DAWG
+che li porta nel gioco (`public/scarabeo/dizionario.dawg`) contengono parole del
+Wiktionary, e sono quindi anch'essi sotto **CC BY-SA 4.0**; la fonte è citata
+nel profilo.
+
+Rigenerare: `node scripts/build-dizionario.mjs` (scarica circa 120 MB in
+`scripts/.cache/`, non versionata), poi `npm run dawg:build`.

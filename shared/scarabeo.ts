@@ -194,20 +194,6 @@ export function sacchettoDaSeme(seme: number): string[] {
   return tessere
 }
 
-/**
- * La chiave del secchio del dizionario per una parola: lunghezza e prime due
- * lettere, "casa" → "4:ca".
- *
- * Il dizionario sta in D1 raggruppato così (vedi migrations/0008_scarabeo.sql
- * per il perché). Questa regola deve restare d'accordo con quella di
- * `scripts/seed-dizionario.mjs`, che scrive i secchi: se cambia, il dizionario
- * va ricaricato, e c'e' un test che fissa il formato perché il cambio non passi
- * inosservato.
- */
-export function chiaveDizionario(parola: string): string {
-  return `${parola.length}:${parola.slice(0, 2)}`
-}
-
 /* ─────────────────────────────  Il tabellone  ───────────────────────────── */
 
 export interface Casella {

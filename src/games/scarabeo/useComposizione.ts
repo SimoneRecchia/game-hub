@@ -12,6 +12,7 @@ import {
 import type { CellaPiena } from '@shared/types'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
+import { direzioneDellaPosa, direzioneNaturale } from './direzione'
 
 /** Una tessera posata ma non ancora giocata, con la sua origine sul leggio. */
 interface InSospeso {
@@ -158,6 +159,8 @@ export function useComposizione({
     )
   }, [celle.length, fisso, sospese])
 
+  const primaMossa = celle.length === 0
+
   /** La prossima casella libera nella direzione del cursore. */
   const avanza = useCallback((da: Cursore, tab: (Casella | null)[]): Cursore | null => {
     let { r, c } = da
@@ -190,15 +193,17 @@ export function useComposizione({
       }
 
       haptic('tap')
-      setCursore((prima) =>
-        prima && prima.r === r && prima.c === c
-          ? // Secondo tocco sulla stessa casella: cambia direzione. E' il gesto
-            // dell'app vera, e risparmia un controllo a schermo.
-            { r, c, oriz: !prima.oriz }
-          : { r, c, oriz: prima?.oriz ?? true },
-      )
+      setCursore((prima) => {
+        // Secondo tocco sulla stessa casella: cambia direzione. E' il gesto
+        // dell'app vera, e risparmia un controllo a schermo.
+        if (prima && prima.r === r && prima.c === c) return { r, c, oriz: !prima.oriz }
+        const oriz =
+          direzioneDellaPosa(sospese.map((s) => s.posa), r, c) ??
+          direzioneNaturale(tabellone, r, c, primaMossa, prima?.oriz ?? true)
+        return { r, c, oriz }
+      })
     },
-    [avvisa, bloccata, cursore?.oriz, sospese, tabellone],
+    [avvisa, bloccata, cursore?.oriz, primaMossa, sospese, tabellone],
   )
 
   /** Mette in campo la tessera i-esima della mano, al cursore. */
@@ -215,9 +220,10 @@ export function useComposizione({
 
       const tab = [...tabellone]
       tab[cursore.r * LATO + cursore.c] = { lettera, jolly }
-      setCursore(avanza(cursore, tab))
+      const oriz = direzioneDellaPosa([...sospese.map((s) => s.posa), posa]) ?? cursore.oriz
+      setCursore(avanza({ ...cursore, oriz }, tab))
     },
-    [avanza, avvisa, cursore, tabellone],
+    [avanza, avvisa, cursore, sospese, tabellone],
   )
 
   const usaTessera = useCallback(
@@ -246,7 +252,13 @@ export function useComposizione({
       if (tabellone[r * LATO + c]) return false
       const tessera = mano[indice]
       if (tessera === undefined) return false
-      const oriz = cursore?.oriz ?? true
+      const posate = sospese.map((s) => s.posa)
+      // La direzione la dicono le tessere gia' posate, o per la prima quel che la casella tocca.
+      const oriz =
+        direzioneDellaPosa([...posate, { r, c, lettera: tessera, jolly: false }]) ??
+        (posate.length === 0 ? direzioneNaturale(tabellone, r, c, primaMossa, cursore?.oriz ?? true) : null) ??
+        cursore?.oriz ??
+        true
       if (tessera === JOLLY) {
         // Il jolly aspetta la sua lettera: la casella e' gia' quella giusta.
         setCursore({ r, c, oriz })
@@ -261,7 +273,7 @@ export function useComposizione({
       setCursore(avanza({ r, c, oriz }, tab))
       return true
     },
-    [avanza, bloccata, cursore?.oriz, impegnate, mano, sospese.length, tabellone],
+    [avanza, bloccata, cursore?.oriz, impegnate, mano, primaMossa, sospese, tabellone],
   )
 
   const scegliJolly = useCallback(
