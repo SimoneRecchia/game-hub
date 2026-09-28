@@ -110,6 +110,28 @@ export const SFIDA_POLL_FINE_MS = 3_000
  */
 export const LINK_SCADENZA_MS = 24 * 60 * 60_000
 
+/* ─────────────────────────  Indovina chi  ───────────────────────── */
+
+/** Un invito con il link vale un'ora: si gioca in due nello stesso momento, come la sfida a quiz. */
+export const INDOVINA_LINK_MS = 60 * 60_000
+
+/** Una partita ferma da mezz'ora non tiene piu' occupato nessuno, come nella battaglia. */
+export const INDOVINA_ABBANDONATA_MS = 30 * 60_000
+
+/**
+ * Dopo quanto chi aspetta puo' chiudere la partita a suo favore: tre minuti
+ * senza una domanda, una risposta o un tentativo dell'altro. Senza, chi sta
+ * perdendo potrebbe chiudere l'app e lasciare l'altro li'.
+ */
+export const INDOVINA_ATTESA_MS = 180_000
+
+/** Le partite ferme da due giorni si cancellano: Indovina chi non ha classifica, e non serve tenerle. */
+export const INDOVINA_CONSERVA_MS = 2 * 24 * 60 * 60_000
+
+/** Il ritmo in partita: stretto quando si aspetta l'altro, largo quando tocca a te. */
+export const INDOVINA_POLL_ATTESA_MS = 1_500
+export const INDOVINA_POLL_TURNO_MS = 4_000
+
 /* ─────────────────────────  Email e verifica  ───────────────────────── */
 
 export const EMAIL_MAX = 254

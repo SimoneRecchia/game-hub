@@ -1,4 +1,4 @@
-import type { GiocoClassificato } from '@shared/types'
+import type { GiocoClassificato, GiocoDaTavolo } from '@shared/types'
 
 export interface Gioco {
   id: GiocoClassificato
@@ -74,3 +74,28 @@ export const GIOCHI: readonly Gioco[] = [
 export function giocoDi(id: GiocoClassificato): Gioco {
   return GIOCHI.find((g) => g.id === id)!
 }
+
+export interface GiocoTavolo {
+  id: GiocoDaTavolo
+  nome: string
+  motto: string
+  /** Contro chi: fra amici e basta, o anche contro il computer. */
+  conChi: string
+  /** Dove sta: il pezzo di indirizzo. */
+  slug: string
+}
+
+/**
+ * I giochi da tavolo: niente partita del giorno e niente classifica, solo
+ * partite quando si vuole, con gli amici — e contro il computer dove ha senso.
+ * Indovina chi non ce l'ha: si gioca parlandosi.
+ */
+export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
+  {
+    id: 'indovina',
+    nome: 'Indovina chi',
+    motto: 'Sì o no, finché resta una faccia',
+    conChi: 'Con un amico',
+    slug: 'indovina-chi',
+  },
+]

@@ -8,6 +8,7 @@ import { cruciverbaRoutes } from './routes/cruciverba'
 import { sudokuRoutes } from './routes/sudoku'
 import { battagliaRoutes, invitiPubblici } from './routes/battaglia'
 import { quizRoutes } from './routes/quiz'
+import { indovinaRoutes } from './routes/indovina'
 import { presenzaRoutes } from './routes/presenza'
 import { leaderboardRoutes } from './routes/leaderboard'
 import { coopRoutes } from './routes/coop'
@@ -47,6 +48,7 @@ export function createApp() {
   app.route('/sudoku', sudokuRoutes)
   app.route('/battaglia', battagliaRoutes)
   app.route('/quiz', quizRoutes)
+  app.route('/indovina', indovinaRoutes)
   // Senza sessione: chi apre un invito col link puo' non avere ancora un account.
   app.route('/inviti', invitiPubblici)
   app.route('/presenza', presenzaRoutes)

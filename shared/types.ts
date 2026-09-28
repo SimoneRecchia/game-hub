@@ -7,6 +7,7 @@ import type { CategoriaQuiz, ModoQuiz } from './quiz'
 import type { AreaQuiz, DomandaQuiz, LuogoQuiz } from './quiz-domande'
 import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
+import type { Lato, Personaggi, Risposta } from './indovina'
 import type { LivelloSudoku } from './sudoku'
 
 export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
@@ -414,6 +415,7 @@ export type Attivita =
   | 'sudoku'
   | 'battaglia'
   | 'quiz'
+  | 'indovina'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -503,10 +505,12 @@ export interface InvitoConLink {
   codice: string
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
-  /** A cosa: la battaglia navale, se non si dice altro, o una sfida a quiz. */
-  gioco?: 'battaglia' | 'quiz'
+  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz o Indovina chi. */
+  gioco?: 'battaglia' | 'quiz' | 'indovina'
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
+  /** Per Indovina chi, con quali personaggi. */
+  set?: string
 }
 
 /**
@@ -522,6 +526,97 @@ export interface PresenzaRisposta {
   quiz: InvitoQuiz[]
   /** Il duello a quiz aperto: chi ha sfidato e poi e' andato altrove deve sapere che l'altro ha accettato. */
   duello: DuelloBreve | null
+  /** Gli inviti a Indovina chi arrivati, rivincite comprese. */
+  indovina: InvitoIndovina[]
+  /** La partita di Indovina chi aperta. */
+  partitaIndovina: PartitaIndovinaBreve | null
+}
+
+/* ─────────────────────────────  Indovina chi  ──────────────────────── */
+
+export type StatoIndovina = 'invito' | 'in_corso' | 'finita' | 'rifiutata' | 'annullata'
+
+/** Un invito arrivato: da chi, con quali personaggi. */
+export interface InvitoIndovina {
+  id: string
+  da: GiocatoreBreve
+  set: string
+  quanti: number
+  scadeTraMs: number
+  rivincita: boolean
+}
+
+/** L'ultimo invito mandato, com'e' andato: a un amico o con un link. */
+export interface InvitoIndovinaMandato {
+  id: string
+  a: GiocatoreBreve | null
+  codice: string | null
+  stato: 'attesa' | 'accettato' | 'rifiutato' | 'annullato' | 'scaduto'
+  set: string
+  scadeTraMs: number
+  partitaId: string | null
+}
+
+/** La partita aperta, in breve: per la sala, l'hub e il giro di controllo. */
+export interface PartitaIndovinaBreve {
+  id: string
+  avversario: GiocatoreBreve
+  /** Tocca a me fare una domanda, o rispondere alla sua. */
+  tocca: 'domanda' | 'risposta' | null
+}
+
+export interface SalaIndovina {
+  /** Chi e' online: `occupato` vuol dire in un'altra partita di Indovina chi. */
+  giocatori: GiocatoreOnline[]
+  invito: InvitoIndovinaMandato | null
+  partita: PartitaIndovinaBreve | null
+}
+
+export type MossaVista =
+  | { t: 'd'; mia: boolean; testo: string; at: string }
+  | { t: 'r'; mia: boolean; r: Risposta; at: string }
+  | { t: 'i'; mia: boolean; k: number; ok: boolean; at: string }
+
+/** Un messaggio per aprire il canale fra i due telefoni: l'offerta di chi chiede le foto, e la risposta. */
+export interface SegnaleIndovina {
+  da: Lato
+  sdp: string
+  n: number
+}
+
+/**
+ * Una partita di Indovina chi, come la vede uno dei due: il suo personaggio
+ * segreto si', quello dell'altro solo a partita finita.
+ */
+export interface VistaIndovina {
+  id: string
+  stato: StatoIndovina
+  io: Lato
+  avversario: (GiocatoreBreve & { online: boolean }) | null
+  personaggi: Personaggi
+  mioSegreto: number | null
+  suoSegreto: number | null
+  abbassate: number[]
+  /** Quante facce ha ancora in piedi l'altro: si vede quanto gli manca. */
+  sueInPiedi: number
+  tuoTurno: boolean
+  /** La domanda che aspetta risposta, mia o sua. */
+  domanda: { mia: boolean; testo: string } | null
+  mosse: MossaVista[]
+  vincitore: 'io' | 'avversario' | null
+  motivo: 'indovinato' | 'sbagliato' | 'resa' | 'assenza' | null
+  serie: { io: number; avversario: number; partite: number }
+  rivincita: {
+    id: string
+    da: 'io' | 'avversario'
+    stato: 'attesa' | 'accettato' | 'rifiutato' | 'annullato' | 'scaduto'
+    partitaId: string | null
+  } | null
+  segnale: { offerta: SegnaleIndovina | null; risposta: SegnaleIndovina | null }
+  /** Da quanto l'altro ha la mossa senza farla; oltre un tanto si puo' chiudere la partita. */
+  attesaMs: number
+  puoiReclamare: boolean
+  versione: number
 }
 
 /* ─────────────────────────────  La sfida a quiz  ──────────────────────── */
@@ -853,6 +948,9 @@ export interface PeriodoClassifica {
 
 /** I giochi che hanno una classificata, e quindi una classifica. */
 export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
+
+/** I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha senso, contro il computer). */
+export type GiocoDaTavolo = 'indovina'
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
 export type ChiaveClassifica = GiocoClassificato | 'generale'

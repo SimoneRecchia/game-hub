@@ -6,7 +6,7 @@ import { Copertina } from '@/components/Copertina'
 import { Anello, Numero, Sezione } from '@/components/Elementi'
 import { IconChevronRight, IconPlay } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
-import { GIOCHI, type Gioco } from '@/games/catalog'
+import { GIOCHI, GIOCHI_DA_TAVOLO, type Gioco } from '@/games/catalog'
 import { statiDiOggi, type StatoOggi } from '@/games/stato'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
@@ -21,7 +21,8 @@ import './Home.css'
  * In cima, com'e' andata la giornata: i punti fatti e la posizione nella
  * classifica generale, e un anello per gioco. Sotto, una carta per ogni
  * classificata con il bottone che ci porta dentro — un tocco per giocare —
- * e piu' in basso le partite libere, che non hanno fretta.
+ * piu' in basso le partite libere, che non hanno fretta, e in fondo i giochi
+ * da tavolo, che non hanno classificata e si giocano con gli amici.
  *
  * I dati arrivano con una richiesta sola (`/api/oggi`), e restano in memoria:
  * tornando qui dalla partita si vedono subito, e si aggiornano da soli.
@@ -63,6 +64,24 @@ export default function Home() {
                   <span className="libera__nome">{g.nome}</span>
                   <span className="libera__cosa">{g.liberaBreve}</span>
                 </span>
+              </Collegamento>
+            </li>
+          ))}
+        </ul>
+      </Sezione>
+
+      <Sezione titolo="Giochi da tavolo" nota="Con gli amici, quando volete.">
+        <ul className="home__tavolo">
+          {GIOCHI_DA_TAVOLO.map((g, i) => (
+            <li key={g.id} className="entra" style={{ '--n': i + 10 } as CSSProperties}>
+              <Collegamento to={`/${g.slug}`} className="tavolo">
+                <Copertina gioco={g.id} formato="icona" transizione={`copertina-${g.id}`} />
+                <span className="tavolo__testo">
+                  <span className="tavolo__nome">{g.nome}</span>
+                  <span className="tavolo__motto">{g.motto}</span>
+                </span>
+                <span className="tavolo__con">{g.conChi}</span>
+                <IconChevronRight size={18} className="tavolo__freccia" />
               </Collegamento>
             </li>
           ))}
