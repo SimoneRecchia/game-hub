@@ -100,6 +100,8 @@ export default function Scarabeo() {
                 </IconaScheda>
               }
               avviso={g.messaggio}
+              posa={g.anteprima}
+              sconosciute={g.sconosciute}
               io={stato.punti}
               altro={stato.computer.punti}
               nomeAltro="Computer"

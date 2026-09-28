@@ -1,4 +1,5 @@
 import { useCallback, useState, type ReactNode } from 'react'
+import type { CodicePosa, EsitoPosa } from '@shared/scarabeo'
 import { Button } from '@/components/Button'
 import { IconShuffle } from '@/components/Icons'
 import { Leggio, ScegliJolly } from './Leggio'
@@ -188,6 +189,8 @@ export function Tabellino({
   turno,
   sotto,
   avviso = null,
+  posa = null,
+  sconosciute = null,
   avanzamento,
   onApri,
   iconaIo,
@@ -208,10 +211,18 @@ export function Tabellino({
    * copriva le caselle che si stavano guardando.
    */
   avviso?: string | null
+  /**
+   * La posa in corso, al posto della riga di mezzo: le parole che si formano,
+   * o perché non va. E' qui che si vede quale parola il gioco sta leggendo.
+   */
+  posa?: EsitoPosa | null
+  /** Le parole della posa che il dizionario non conosce, da segnare. */
+  sconosciute?: readonly string[] | null
   /** Da 0 a 1: quanto manca a pareggiare il traguardo. */
   avanzamento?: number
   onApri?: () => void
 }) {
+  const mezzo = avviso ? null : posa ? <RigaDellaPosa esito={posa} sconosciute={sconosciute} /> : null
   return (
     <button type="button" className="scr-tab" onClick={onApri} aria-label="Le mosse della partita">
       <span className={`scr-tab__lato${turno === 'io' ? ' is-turno' : ''}`}>
@@ -227,9 +238,9 @@ export function Tabellino({
             {avviso}
           </span>
         ) : (
-          <span className="scr-tab__sotto">{sotto}</span>
+          (mezzo ?? <span className="scr-tab__sotto">{sotto}</span>)
         )}
-        {avanzamento !== undefined && !avviso && (
+        {avanzamento !== undefined && !avviso && !mezzo && (
           <span className="scr-tab__barra" aria-hidden="true">
             <span className="scr-tab__pieno" style={{ transform: `scaleX(${Math.min(1, Math.max(0, avanzamento))})` }} />
           </span>
@@ -244,6 +255,38 @@ export function Tabellino({
         {notaAltro && <span className="scr-tab__nota">{notaAltro}</span>}
       </span>
     </button>
+  )
+}
+
+/** Perché una posa non va, in poche parole: la frase intera la dice il bottone, se lo si preme. */
+const PERCHE_NO: Partial<Record<CodicePosa, string>> = {
+  NON_ALLINEATA: 'Tutte su una riga o una colonna',
+  CON_BUCHI: 'Niente caselle vuote in mezzo',
+  SENZA_CENTRO: 'La prima parola passa dalla stella',
+  STACCATA: 'Attaccala alle tessere sul tabellone',
+  PAROLA_CORTA: 'Servono due lettere in fila',
+}
+
+/** Le parole che forma la posa in corso, con i loro punti: la prima e' quella con tutte le tessere. */
+function RigaDellaPosa({ esito, sconosciute }: { esito: EsitoPosa; sconosciute: readonly string[] | null }) {
+  if (!esito.ok) {
+    return (
+      <span className="scr-tab__avviso scr-tab__avviso--no" aria-live="polite">
+        {PERCHE_NO[esito.codice] ?? esito.errore}
+      </span>
+    )
+  }
+  return (
+    <span className="scr-tab__parole" aria-live="polite">
+      {esito.parole.map((p, i) => (
+        <span
+          key={`${p.parola}-${p.celle[0].r}-${p.celle[0].c}-${i}`}
+          className={`scr-tab__parola${sconosciute?.includes(p.parola) ? ' is-sconosciuta' : ''}`}
+        >
+          {p.parola.toUpperCase()} <span className="u-tabnum">{p.punti}</span>
+        </span>
+      ))}
+    </span>
   )
 }
 

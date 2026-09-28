@@ -15,6 +15,10 @@
  * Le colonne sono le righe del tabellone trasposto: lo stesso codice cerca le
  * parole orizzontali e quelle verticali.
  *
+ * Il computer gioca solo le parole **comuni** del dizionario (vedi
+ * shared/dawg.ts): quelle che valgono solo quando le gioca una persona — le
+ * forme rare, i "portarglielo" — per lui non esistono.
+ *
  * I punti si contano mentre si cerca, con le stesse regole di `validaPosa` —
  * premi solo sulle caselle appena coperte, parole trasversali comprese, bonus
  * per le otto tessere — e un test controlla che i due conti coincidano su
@@ -85,8 +89,9 @@ export function mosseLegali(
   }
 
   const trovate: MossaTrovata[] = []
-  cerca(dawg, lettere, valori, mano, jolly, primaMossa, true, trovate)
-  cerca(dawg, lettere, valori, mano, jolly, primaMossa, false, trovate)
+  const comuni = dawg.comuni()
+  cerca(comuni, lettere, valori, mano, jolly, primaMossa, true, trovate)
+  cerca(comuni, lettere, valori, mano, jolly, primaMossa, false, trovate)
   return trovate
 }
 
@@ -152,8 +157,10 @@ function cerca(
       const nodo = prima.length === 0 ? RADICE : dawg.segui(RADICE, prima)
       if (nodo !== FOGLIA) {
         for (let e = nodo; ; e += 1) {
-          const chiude = dopo.length === 0 ? dawg.finale(e) : finisceInParola(dawg, dawg.destinazione(e), dopo)
-          if (chiude) maschera |= 1 << dawg.lettera(e)
+          if (dawg.percorribile(e)) {
+            const chiude = dopo.length === 0 ? dawg.finale(e) : finisceInParola(dawg, dawg.destinazione(e), dopo)
+            if (chiude) maschera |= 1 << dawg.lettera(e)
+          }
           if (dawg.ultimo(e)) break
         }
       }
@@ -247,7 +254,7 @@ function cerca(
     if (maschera === 0) return
     for (let e = nodo; ; e += 1) {
       const l = dawg.lettera(e)
-      if ((maschera >> l) & 1) {
+      if ((maschera >> l) & 1 && dawg.percorribile(e)) {
         const opzioni = (mano[l] > 0 ? 1 : 0) + (jolly > 0 ? 2 : 0)
         for (const comeJolly of [false, true]) {
           if (comeJolly ? !(opzioni & 2) : !(opzioni & 1)) continue
@@ -277,7 +284,7 @@ function cerca(
     for (let e = nodo; ; e += 1) {
       const l = dawg.lettera(e)
       const figlio = dawg.destinazione(e)
-      if (figlio !== FOGLIA) {
+      if (figlio !== FOGLIA && dawg.percorribile(e)) {
         for (const comeJolly of [false, true]) {
           if (comeJolly ? jolly === 0 : mano[l] === 0) continue
           if (comeJolly) jolly -= 1

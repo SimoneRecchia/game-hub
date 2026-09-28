@@ -152,13 +152,35 @@ export interface Risposta<T> {
 }
 
 /**
+ * Gli asset statici come li servono le Pages: i file di public/, e per un
+ * indirizzo che non c'e' la pagina dell'app — come fanno le Pages, che la
+ * danno a qualunque indirizzo sconosciuto.
+ */
+const PUBBLICA = join(__dirname, '..', '..', 'public')
+export const ASSETS_FINTI = {
+  async fetch(richiesta: RequestInfo | URL): Promise<Response> {
+    const url = new URL(richiesta instanceof Request ? richiesta.url : String(richiesta))
+    try {
+      return new Response(readFileSync(join(PUBBLICA, decodeURIComponent(url.pathname))))
+    } catch {
+      return new Response('<!doctype html><title>Giochi</title>', { headers: { 'content-type': 'text/html' } })
+    }
+  },
+} as unknown as Fetcher
+
+/**
  * Un ambiente completo: database, app, e il modo di creare giocatori con una
  * sessione valida senza passare dalla registrazione.
  */
 export function banco(variabili: Partial<Bindings> = {}) {
   const db = new ProvaD1()
   const app = createApp()
-  const env = { DB: db as unknown as D1Database, EMAIL_VERIFICATION: 'off', ...variabili } as Bindings
+  const env = {
+    DB: db as unknown as D1Database,
+    ASSETS: ASSETS_FINTI,
+    EMAIL_VERIFICATION: 'off',
+    ...variabili,
+  } as Bindings
 
   let contatore = 0
   async function giocatore(nickname = `g${++contatore}`): Promise<Giocatore> {

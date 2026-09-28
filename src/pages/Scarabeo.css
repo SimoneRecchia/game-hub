@@ -118,6 +118,49 @@
   animation: scr-avviso var(--dur-base) var(--ease-spring);
 }
 
+/* La posa che non va: il perché, nel rosso del bottone. */
+.scr-tab__avviso--no {
+  color: var(--red);
+}
+
+/*
+ * Le parole che forma la posa in corso, ognuna con i suoi punti: la prima e'
+ * quella con tutte le tessere, poi quelle che nascono di traverso. Vanno a capo
+ * dentro la riga di mezzo, fino a tre righe.
+ */
+.scr-tab__parole {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 8px;
+  max-height: calc(3 * 1.25em);
+  overflow: hidden;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--label);
+  animation: scr-avviso var(--dur-base) var(--ease-spring);
+}
+
+.scr-tab__parola {
+  white-space: nowrap;
+}
+
+.scr-tab__parola .u-tabnum {
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.scr-tab__parola.is-sconosciuta {
+  color: var(--red);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.scr-tab__parola.is-sconosciuta .u-tabnum {
+  color: inherit;
+}
+
 @keyframes scr-avviso {
   from {
     opacity: 0;
