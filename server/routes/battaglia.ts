@@ -59,6 +59,7 @@ import {
 } from '../lib/battagliaStore'
 import { riepilogoBattaglia } from '../lib/riepiloghi'
 import { invitoQuizConLink } from '../lib/quizSfideStore'
+import { invitoIndovinaConLink } from '../lib/indovinaStore'
 
 /** La partita richiesta, e il lato di chi chiede: chi non ci gioca non la vede. */
 async function partitaMia(c: Context<AppEnv>): Promise<{ row: PartitaRow; io: Lato }> {
@@ -396,8 +397,11 @@ export const battagliaRoutes = new Hono<AppEnv>()
 export const invitiPubblici = new Hono<AppEnv>().get('/:codice', async (c) => {
   const codice = c.req.param('codice')
   const adesso = Date.now()
-  // I codici sono della battaglia o delle sfide a quiz: lunghi e a caso, non si incontrano.
-  const invito = (await invitoConLink(c.env.DB, codice, adesso)) ?? (await invitoQuizConLink(c.env.DB, codice, adesso))
+  // I codici sono della battaglia, delle sfide a quiz o di Indovina chi: lunghi e a caso, non si incontrano.
+  const invito =
+    (await invitoConLink(c.env.DB, codice, adesso)) ??
+    (await invitoQuizConLink(c.env.DB, codice, adesso)) ??
+    (await invitoIndovinaConLink(c.env.DB, codice, adesso))
   if (!invito) fail(404, 'LINK_NON_TROVATO', 'Questo invito non esiste.')
   return c.json<InvitoConLink>(invito)
 })

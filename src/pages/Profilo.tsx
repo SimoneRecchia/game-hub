@@ -478,6 +478,17 @@ function Fonti() {
         </a>
         .
       </p>
+      <p>
+        <strong>Indovina chi.</strong> Le persone sono gli Avataaars di Pablo Stanley, disegnati da{' '}
+        <a href="https://www.dicebear.com" target="_blank" rel="noreferrer">
+          DiceBear
+        </a>
+        ; gli animali sono le{' '}
+        <a href="https://github.com/microsoft/fluentui-emoji" target="_blank" rel="noreferrer">
+          Fluent Emoji
+        </a>{' '}
+        di Microsoft (licenza MIT).
+      </p>
     </div>
   )
 }

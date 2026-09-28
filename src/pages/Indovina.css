@@ -1,0 +1,762 @@
+/*
+ * Indovina chi: la sala, la partita, i set.
+ *
+ * La partita sta in uno schermo: in cima il proprio personaggio e quante facce
+ * restano all'altro, in mezzo il tabellone — l'unica fascia elastica — e sotto
+ * quel che c'e' da fare. Di traverso il tabellone prende la sinistra e il
+ * resto va in una colonna a destra.
+ */
+
+/* ─────────────────────────────  La partita  ───────────────────────────── */
+
+.ic {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--sp-3);
+}
+
+.ic__testa {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.ic-segreto {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  max-width: 320px;
+  padding: 5px 14px 5px 5px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  text-align: left;
+}
+
+.ic-segreto .ic-faccia {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 11px;
+  --lato: 44px;
+}
+
+.ic-segreto__testo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ic-segreto__etichetta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-tertiary);
+}
+
+.ic-segreto__nome {
+  overflow: hidden;
+  font-size: var(--text-headline);
+  font-weight: 800;
+  color: var(--label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Quante facce restano all'altro: il suo avatar, il numero, e sotto "in piedi". */
+.ic__conto {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.ic__conto-testo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+  font-size: var(--text-caption-2);
+  font-weight: 600;
+  color: var(--label-tertiary);
+}
+
+.ic__conto-testo strong {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.ic__piede {
+  flex: none;
+  min-height: 0;
+}
+
+/* Le foto che arrivano dall'altro telefono: una riga, con la barretta. */
+.ic-foto {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.ic-foto.is-fallito {
+  color: var(--label);
+}
+
+.ic-foto__barra {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+}
+
+.ic-foto__barra span {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--indovina-1), var(--indovina-2));
+  transform-origin: left center;
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+/* ---------- Il turno ---------- */
+
+.ic-domanda,
+.ic-aspetto,
+.ic-chiedi,
+.ic-scegli,
+.ic-fine {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(100%, 560px);
+  margin-inline: auto;
+}
+
+/* La domanda dell'altro: una carta nel colore del gioco, con le tre risposte sotto il pollice. */
+.ic-domanda {
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-md), 0 0 0 2px color-mix(in srgb, var(--indovina-1) 55%, transparent);
+  animation: ic-arriva var(--dur-base) var(--ease-spring);
+}
+
+@keyframes ic-arriva {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.ic-domanda__chi {
+  margin: 0;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--indovina-ink);
+}
+
+.ic-domanda__testo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--label);
+  overflow-wrap: anywhere;
+}
+
+.ic-domanda__risposte {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.8fr);
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+.ic-risposta {
+  width: 100%;
+  font-size: var(--text-headline);
+  font-weight: 700;
+}
+
+.ic-aspetto {
+  align-items: center;
+  text-align: center;
+}
+
+.ic-aspetto__testo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.ic-aspetto__nota {
+  font-size: var(--text-caption-1);
+  color: var(--label-tertiary);
+}
+
+.ic-puntini {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.ic-puntini span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--label-tertiary);
+  animation: ic-puntino 1.2s var(--ease-in-out) infinite;
+}
+
+.ic-puntini span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.ic-puntini span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ic-puntino {
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+  60%,
+  100% {
+    transform: none;
+    opacity: 0.5;
+  }
+}
+
+/* L'ultima risposta alla mia domanda: resta in vista finché non ne faccio un'altra. */
+.ic-ultima {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin: 0;
+  min-width: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.ic-ultima__domanda {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ic-ultima__risposta {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  font-weight: 800;
+}
+
+.ic-ultima__risposta.is-si {
+  background: color-mix(in srgb, var(--green) 18%, transparent);
+  color: var(--green);
+}
+
+.ic-ultima__risposta.is-no {
+  background: color-mix(in srgb, var(--red) 15%, transparent);
+  color: var(--red);
+}
+
+.ic-ultima__risposta.is-forse {
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+}
+
+.ic-chiedi__riga {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.ic-chiedi__campo {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  padding: 0 var(--sp-4);
+  border: none;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm), inset 0 0 0 1px var(--separator);
+  color: var(--label);
+  font-size: 16px;
+}
+
+.ic-chiedi__campo:focus {
+  outline: none;
+  box-shadow: var(--edge-light), var(--shadow-sm), inset 0 0 0 2px var(--brand);
+}
+
+.ic-chiedi__indovina {
+  align-self: center;
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+}
+
+.ic-chiedi__indovina strong {
+  color: var(--indovina-ink);
+}
+
+.ic-scegli {
+  align-items: center;
+  text-align: center;
+}
+
+.ic-scegli__testo {
+  margin: 0;
+  font-size: var(--text-headline);
+  font-weight: 700;
+  color: var(--label);
+}
+
+.ic-reclamo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* ---------- La fine ---------- */
+
+.ic-fine {
+  align-items: center;
+  text-align: center;
+}
+
+.ic-fine__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.ic-fine__dettaglio,
+.ic-fine__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.ic-fine__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+/* ---------- I fogli ---------- */
+
+.ic-foglio-segreto,
+.ic-conferma {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: center;
+}
+
+.ic-foglio-segreto .ic-faccia,
+.ic-conferma__carta .ic-faccia {
+  width: 160px;
+  border-radius: 24px;
+  box-shadow: var(--shadow-md);
+  --lato: 160px;
+}
+
+.ic-foglio-segreto__nome {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+}
+
+.ic-foglio-segreto__nota,
+.ic-conferma__testo {
+  margin: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.ic-storia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ic-storia__riga {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+}
+
+.ic-storia__riga.is-mia {
+  background: color-mix(in srgb, var(--brand) 10%, var(--fill-quaternary));
+}
+
+.ic-storia__chi {
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
+.ic-storia__testo {
+  color: var(--label);
+  overflow-wrap: anywhere;
+}
+
+.ic-storia__risposta {
+  font-weight: 800;
+  color: var(--label);
+}
+
+.ic-storia__vuota {
+  color: var(--label-secondary);
+}
+
+.ic-attesa {
+  flex: 1;
+  border-radius: var(--r-lg);
+  background: var(--fill-quaternary);
+  animation: ic-attesa 1.4s var(--ease-in-out) infinite;
+}
+
+/*
+ * Di traverso — un computer, un tablet, un telefono girato — il tabellone
+ * prende la sinistra e il resto una colonna a destra. Sul telefono la pagina
+ * smette di scorrere, come nel sudoku: di lato ci sta tutto.
+ */
+@media (orientation: landscape) and (min-width: 640px) {
+  .ic {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'campo testa'
+      'campo foto'
+      'campo piede';
+    column-gap: var(--sp-6);
+    row-gap: var(--sp-3);
+  }
+
+  .ic__testa {
+    grid-area: testa;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ic-foto {
+    grid-area: foto;
+  }
+
+  .ic-campo {
+    grid-area: campo;
+  }
+
+  .ic__piede {
+    grid-area: piede;
+    align-self: center;
+  }
+
+  .ic-domanda__risposte {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .ic-risposta--forse {
+    grid-column: span 2;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 640px) {
+  .pagina--intera:has(.ic) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+/* La partita aperta, in cima alla sala: la carta della battaglia, nel rosso di Indovina chi. */
+.ic-partita-aperta {
+  background: linear-gradient(150deg, var(--indovina-1), var(--indovina-2));
+}
+
+/* ─────────────────────────────  La scelta dei personaggi  ───────────────────────────── */
+
+.ic-set-griglia {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+@media (min-width: 600px) {
+  .ic-set-griglia {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .ic-set-griglia {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.ic-set {
+  position: relative;
+  min-width: 0;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition:
+    box-shadow var(--dur-fast) var(--ease-out),
+    transform var(--dur-base) var(--ease-spring);
+}
+
+.ic-set.is-scelto {
+  box-shadow: var(--shadow-sm), 0 0 0 2.5px var(--indovina-1);
+}
+
+.ic-set__scegli,
+.ic-set--nuovo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: var(--sp-3);
+  border-radius: inherit;
+  color: var(--label);
+  text-align: left;
+}
+
+.ic-set:active {
+  transform: scale(0.97);
+}
+
+/* Quattro facce del set, due per due: si riconosce prima di leggerne il nome. */
+.ic-set__mosaico {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: 100%;
+  margin-bottom: var(--sp-2);
+}
+
+.ic-set__mosaico .ic-faccia {
+  border-radius: 10px;
+  --lato: 60px;
+}
+
+.ic-set__nome {
+  overflow: hidden;
+  width: 100%;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ic-set__quanti {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.ic-set__quanti.is-da-completare {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.ic-set__modifica {
+  position: absolute;
+  right: 8px;
+  bottom: 10px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+}
+
+.ic-set--nuovo {
+  justify-content: flex-end;
+  min-height: 100%;
+  border: 2px dashed var(--separator);
+  background: transparent;
+  box-shadow: none;
+}
+
+.ic-set__piu {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  width: 100%;
+  min-height: 72px;
+  color: var(--indovina-ink);
+}
+
+/* ─────────────────────────────  Il set proprio  ───────────────────────────── */
+
+.ic-campo-testo {
+  width: 100%;
+  height: 48px;
+  padding: 0 var(--sp-4);
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--separator);
+  color: var(--label);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.ic-campo-testo:focus {
+  outline: none;
+  box-shadow: var(--shadow-sm), inset 0 0 0 2px var(--brand);
+}
+
+.ic-set-editor__conto {
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--label-tertiary);
+}
+
+.ic-set-editor {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+@media (min-width: 520px) {
+  .ic-set-editor {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .ic-set-editor {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.ic-voce {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ic-voce__foto {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: 0;
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.ic-voce__foto .ic-faccia {
+  --lato: 90px;
+}
+
+.ic-voce__togli {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--label);
+  color: var(--bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.ic-voce__nome {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 8px;
+  background: var(--fill-quaternary);
+  color: var(--label);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.ic-voce__nome:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.ic-voce__nome.is-da-fare {
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--red) 60%, transparent);
+}
+
+.ic-voce--aggiungi {
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border: 2px dashed var(--separator);
+  border-radius: 14px;
+  color: var(--indovina-ink);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+.ic-voce--aggiungi:disabled {
+  opacity: 0.6;
+}
+
+.ic-voce__piu {
+  display: grid;
+  place-items: center;
+}
+
+.ic-attesa--corta {
+  height: 240px;
+  flex: none;
+}

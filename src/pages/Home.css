@@ -324,3 +324,82 @@
   font-size: var(--text-footnote);
   color: var(--label-secondary);
 }
+
+/* ---------- I giochi da tavolo ---------- */
+
+/* Una riga per gioco, come le righe delle impostazioni ma da sola in una carta: sono pochi, e larghi. */
+.home__tavolo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+}
+
+.tavolo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-3);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--label);
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.tavolo:active {
+  transform: scale(0.98);
+}
+
+.tavolo .copertina {
+  --lato: 52px;
+  flex: none;
+}
+
+.tavolo__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tavolo__nome {
+  font-size: var(--text-headline);
+  font-weight: 700;
+}
+
+.tavolo__motto {
+  overflow: hidden;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tavolo__con {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--indovina-1) 14%, transparent);
+  color: var(--indovina-ink);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+}
+
+.tavolo__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+}
+
+@media (min-width: 900px) {
+  .home__tavolo {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Sul telefono il motto ha bisogno di tutta la riga: con chi lo dice gia' la nota della sezione. */
+@media (max-width: 599px) {
+  .tavolo__con {
+    display: none;
+  }
+}
