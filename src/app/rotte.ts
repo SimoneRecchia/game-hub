@@ -23,6 +23,10 @@
  *   /quiz/libera                        categoria, zona e domande a scelta
  *   /quiz/duello/:id                    una sfida a quiz fra due
  *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
+ *   /indovina-chi                       Indovina chi: la sala, i personaggi, le regole
+ *   /indovina-chi/partita/:id           una partita
+ *   /indovina-chi/invito/:codice        un invito arrivato con un link
+ *   /indovina-chi/set/:id               un set di personaggi proprio ('nuovo' per crearne uno)
  *   /classifica                         tutte le classifiche: la generale e i giochi
  *   /classifica/generale                la generale per intero
  *   /classifica/wordle                  quella di un gioco (?periodo=week&indietro=1)
@@ -67,4 +71,9 @@ export const ROTTE = {
   invitoBattaglia: (codice: string) => `/battaglia-navale/invito/${codice}`,
   duelloQuiz: (id: string) => `/quiz/duello/${id}`,
   invitoQuiz: (codice: string) => `/quiz/sfida/${codice}`,
+
+  indovina: '/indovina-chi',
+  partitaIndovina: (id: string) => `/indovina-chi/partita/${id}`,
+  invitoIndovina: (codice: string) => `/indovina-chi/invito/${codice}`,
+  setIndovina: (id: string) => `/indovina-chi/set/${id}`,
 } as const

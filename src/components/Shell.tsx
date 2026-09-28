@@ -2,7 +2,7 @@ import { useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
-import { GIOCHI } from '@/games/catalog'
+import { GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
 import { usePlayer } from '@/lib/auth'
 import { Avatar } from './Avatar'
 import { Copertina } from './Copertina'
@@ -25,7 +25,7 @@ interface Scheda {
   sotto: (percorso: string) => boolean
 }
 
-const PERCORSI_GIOCHI = GIOCHI.map((g) => ROTTE.gioco(g.id))
+const PERCORSI_GIOCHI = [...GIOCHI.map((g) => ROTTE.gioco(g.id)), ...GIOCHI_DA_TAVOLO.map((g) => `/${g.slug}`)]
 
 const SCHEDE: Scheda[] = [
   {
@@ -127,6 +127,25 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
       <nav className="laterale__voci">
         {GIOCHI.map((g) => {
           const a = ROTTE.gioco(g.id)
+          const dentro = pathname === a || pathname.startsWith(`${a}/`)
+          return (
+            <Collegamento
+              key={g.id}
+              to={a}
+              direzione="scheda"
+              className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
+            >
+              <Copertina gioco={g.id} formato="icona" />
+              <span>{g.nome}</span>
+            </Collegamento>
+          )
+        })}
+      </nav>
+
+      <p className="laterale__titolo">Da tavolo</p>
+      <nav className="laterale__voci">
+        {GIOCHI_DA_TAVOLO.map((g) => {
+          const a = `/${g.slug}`
           const dentro = pathname === a || pathname.startsWith(`${a}/`)
           return (
             <Collegamento

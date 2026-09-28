@@ -1,11 +1,11 @@
 import type { CSSProperties, ReactElement } from 'react'
-import type { GiocoClassificato } from '@shared/types'
+import type { GiocoClassificato, GiocoDaTavolo } from '@shared/types'
 import './Copertina.css'
 
 type Formato = 'icona' | 'carta' | 'eroe'
 
 interface Props {
-  gioco: GiocoClassificato | 'generale'
+  gioco: GiocoClassificato | GiocoDaTavolo | 'generale'
   formato?: Formato
   /** Nome della transizione condivisa: la copertina della card diventa quella della pagina. */
   transizione?: string
@@ -33,7 +33,7 @@ export function Copertina({ gioco, formato = 'carta', transizione, className = '
 
 const TONDO = 'ui-rounded, -apple-system, "SF Pro Rounded", system-ui, sans-serif'
 
-const DISEGNI: Record<GiocoClassificato | 'generale', ReactElement> = {
+const DISEGNI: Record<GiocoClassificato | GiocoDaTavolo | 'generale', ReactElement> = {
   // Una riga di tentativi: due lettere giuste, una al posto sbagliato, due grigie.
   wordle: (
     <g>
@@ -226,6 +226,40 @@ const DISEGNI: Record<GiocoClassificato | 'generale', ReactElement> = {
       <g transform="translate(62 16)">
         <path d="M12 0C5.4 0 0 5 0 11.3 0 19.8 12 32 12 32s12-12.2 12-20.7C24 5 18.6 0 12 0z" fill="#fff" />
         <circle cx={12} cy={11} r={4.5} fill="var(--c2)" />
+      </g>
+    </g>
+  ),
+
+  // Il tabellone di Indovina chi: sei carte, due gia' abbassate, e la domanda.
+  indovina: (
+    <g>
+      <g transform="rotate(-6 60 66)">
+        <rect x={14} y={38} width={92} height={70} rx={9} fill="#fff" fillOpacity={0.18} />
+        {[0, 1, 2].flatMap((c) =>
+          [0, 1].map((r) => {
+            const x = 21 + c * 27
+            const y = 44 + r * 31
+            const abbassata = (c === 1 && r === 0) || (c === 2 && r === 1)
+            return abbassata ? (
+              <rect key={`${c}${r}`} x={x} y={y + 19} width={24} height={7} rx={3} fill="#fff" fillOpacity={0.4} />
+            ) : (
+              <g key={`${c}${r}`}>
+                <rect x={x} y={y} width={24} height={27} rx={4.5} fill="#fff" fillOpacity={0.96} />
+                <circle cx={x + 12} cy={y + 11} r={5.6} fill="var(--c2)" fillOpacity={0.9} />
+                <path d={`M${x + 3.5} ${y + 27}c0-6 3.8-9 8.5-9s8.5 3 8.5 9z`} fill="var(--c2)" fillOpacity={0.55} />
+              </g>
+            )
+          }),
+        )}
+      </g>
+      <g transform="translate(66 8)">
+        <path
+          d="M0 11C0 4.9 4.9 0 11 0h16c6.1 0 11 4.9 11 11v3c0 6.1-4.9 11-11 11h-9l-8 7v-7.4C4.3 23.4 0 19.2 0 14z"
+          fill="#fff"
+        />
+        <text x={19} y={19.5} textAnchor="middle" fontFamily={TONDO} fontWeight={800} fontSize={16} fill="var(--c2)">
+          ?
+        </text>
       </g>
     </g>
   ),

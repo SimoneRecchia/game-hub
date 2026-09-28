@@ -47,6 +47,11 @@
   --c2: var(--quiz-2);
 }
 
+.copertina--indovina {
+  --c1: var(--indovina-1);
+  --c2: var(--indovina-2);
+}
+
 .copertina__disegno {
   position: absolute;
   inset: 0;

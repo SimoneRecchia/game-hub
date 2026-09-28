@@ -127,7 +127,7 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
           <Marchio lato={96} />
           <h1 className="welcome__title">Giochi</h1>
           <p className="welcome__lede">
-            Wordle, Scarabeo, Cruciverba, Battaglia navale e Quiz. Ogni giorno le stesse partite per tutti.
+            Wordle, Scarabeo, Cruciverba, Sudoku, Battaglia navale e Quiz, ogni giorno uguali per tutti. E Indovina chi, con gli amici.
           </p>
         </header>
 
@@ -138,7 +138,11 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
               {sfida.stato === 'attesa' ? (
                 <>
                   <strong>{sfida.da.displayName}</strong>{' '}
-                  {sfida.gioco === 'quiz' ? 'ti sfida a un quiz di geografia.' : 'ti sfida a battaglia navale.'}{' '}
+                  {sfida.gioco === 'quiz'
+                    ? 'ti sfida a un quiz di geografia.'
+                    : sfida.gioco === 'indovina'
+                      ? 'ti invita a Indovina chi.'
+                      : 'ti sfida a battaglia navale.'}{' '}
                   {isRegister ? 'Registrati e gioca subito.' : 'Entra e gioca subito.'}
                 </>
               ) : (
