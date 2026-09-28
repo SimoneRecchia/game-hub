@@ -24,7 +24,7 @@ const parole = new Set(
     .split('\n')
     .filter(Boolean),
 )
-const dawg = Dawg.da(readFileSync(join(RADICE_PROGETTO, 'src', 'games', 'scarabeo', 'dizionario.dawg')))
+const dawg = Dawg.da(readFileSync(join(RADICE_PROGETTO, 'public', 'scarabeo', 'dizionario.dawg')))
 
 /** Una posizione di meta' partita: il computer gioca `mosse` volte da un sacchetto a caso. */
 function posizione(seme: number, mosse: number) {

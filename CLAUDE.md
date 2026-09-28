@@ -163,15 +163,52 @@ leggio. Le tessere cambiate tornano **in fondo alla coda** e non rimescolate: il
 leggio deve restare una funzione delle sole mosse, e rimescolare richiederebbe di
 salvare lo stato del generatore.
 
-**Il dizionario dello Scarabeo sta in D1, a secchi.** Due vincoli indipendenti lo
-tengono fuori dal Worker: 271.055 parole sono 2,8 MB e il bundle del piano
-gratuito ne ammette 1 MiB compresso, e costruire un insieme da centomila voci a
-ogni avvio a freddo costerebbe da solo piu' dei 10 ms di CPU. E non una riga per
-parola, perché il piano gratuito concede 100.000 scritture al giorno: le parole
-sono raggruppate per lunghezza e prime due lettere (`chiaveDizionario`), 2.309
-righe, e una verifica legge al massimo un secchio per parola formata. Se si
-cambia quella chiave **va ricaricata la tabella** — c'e' un test che fissa il
-formato perché il cambio non passi inosservato.
+**Il dizionario dello Scarabeo e' un file statico, lo stesso per il browser e
+per il server.** `public/scarabeo/dizionario.dawg` ha due milioni di parole in
+1,3 MB (il formato e' in `scripts/scarabeo/dawg.mjs`): il server lo legge con
+`env.ASSETS` una volta per isolato (`server/lib/dizionario.ts`), il browser lo
+scarica nel Web Worker del computer. Prima stava in D1, a secchi per lunghezza e
+prime due lettere: con le parole di adesso il secchio piu' grosso sarebbe di
+800 kB, e un'istruzione di D1 ne accetta cento. Tre cose che non si vedono:
+
+- l'indirizzo porta l'impronta del file (`?v=`, in
+  `shared/scarabeo-dizionario.ts`, che scrive `npm run dawg:build`), ed e' per
+  questo che `_headers` lo tiene in cache per sempre;
+- Cloudflare non comprime i file binari: il build ne scrive una copia gzip
+  (`vite.config.ts`) che il browser apre con `DecompressionStream`, e il server
+  legge quello intero, che non costa CPU ad aprire;
+- a un indirizzo che non c'e' le Pages rispondono con la pagina dell'app, con un
+  200: chi legge il file ne controlla la lunghezza (`BYTE_DIZIONARIO`) invece di
+  scambiare l'HTML per un dizionario.
+
+La tabella `dizionario` di D1 non la legge piu' nessuno. Resta perché una
+versione di prima, rimessa in linea, ne avrebbe bisogno; se ne andra' con una
+migrazione.
+
+**Il dizionario ha due livelli, e il computer gioca solo le comuni.** Le comuni
+sono le 272.000 parole di napolux, quelle su cui sono misurati i livelli
+(`FASCE`); le altre — le forme del Wikizionario e del Wiktionary che napolux non
+ha, e un milione e mezzo di enclitiche — valgono quando le gioca una persona. Il
+livello sta nel DAWG, un bit sul finale e uno sulla strada, e `Dawg.comuni()` e'
+il dizionario visto dal computer: il motore cerca le mosse come se ci fossero
+solo le comuni. Senza, il computer farebbe punti con "portarglielo", e le medie
+dei livelli — rimaste quelle nel passaggio al dizionario nuovo: 169, 245, 350 —
+sposterebbero il riferimento della classificata.
+
+**Le enclitiche si costruiscono, non si elencano.** Il regolamento della
+federazione (articolo 22) ammette i pronomi attaccati all'infinito, al gerundio
+e all'imperativo di ogni verbo, e nessun elenco li ha: `scripts/build-dizionario.mjs`
+scrive le basi dalle coniugazioni del Wiktionary, `scripts/scarabeo/enclitiche.mjs`
+ne fa le parole. I pronomi dell'oggetto (lo, la, glielo) solo per i verbi
+transitivi; la consonante doppia per gli imperativi di una sillaba e per i
+composti di fare, dare e dire (dammi, rifallo), mai con gli (dagli).
+
+**Un nome proprio torna fra le parole solo se il Wikizionario italiano lo
+conosce.** L'elenco dei nomi di napolux toglieva "sole", "luna", "stella",
+"rosa", "re", "euro": era la prima ragione delle parole che lo Scarabeo "non
+riconosceva". Il Wiktionary inglese non basta, perché ha anche le forme antiche:
+con lui "piero" (da piare) e "matteo" (variante di matto) tornerebbero comuni, e
+il computer le giocherebbe. Valgono, ma fra le altre.
 
 **Gli schemi del cruciverba non si fanno nel Worker.** Riempire una griglia e'
 una ricerca con ritorni all'indietro, e i 10 ms di CPU non bastano nemmeno a
@@ -415,9 +452,8 @@ mosse del computer si mostrano solo a giornata chiusa: prima sarebbero la
 soluzione.
 
 **Lo Scarabeo libero gira tutto nel browser.** Il computer e' un Web Worker con
-il dizionario intero in un DAWG (`src/games/scarabeo/dizionario.dawg`, 600 kB,
-versionato: un test verifica che sia quello che si ricostruisce dall'elenco con
-`npm run dawg:build`). La partita si salva come mosse nel `localStorage` a ogni
+il dizionario intero, lo stesso file che legge il server (vedi sopra). La
+partita si salva come mosse nel `localStorage` a ogni
 turno, e a fine partita va al server, che la rigioca con le stesse regole per le
 statistiche. Il computer usa lo stesso motore (`shared/scarabeo-motore.ts`) del
 traguardo della classificata, con tre fasce di scelta: facile, normale,
@@ -857,6 +893,21 @@ grande come mezzo mare.
 (`nth-child` 1, 15, 211 e 225, con il raggio del tabellone meno il suo bordo).
 Con gli angoli dritti sporgevano dal bordo arrotondato.
 
+**Nello Scarabeo la direzione la sceglie il gioco, e la freccia la dice.**
+`direzioneNaturale` (`useComposizione.ts`) guarda che cosa tocca la casella: sotto
+una lettera si scrive in verticale, dopo l'ultima in orizzontale, verso la stella
+alla prima mossa; con una tessera gia' posata decide la riga o la colonna della
+casella toccata (`direzioneDellaPosa`). Il secondo tocco resta per le mosse di
+fianco, che dalla prima casella non si indovinano. Prima la direzione era sempre
+orizzontale, segnata da un filo sul lato della casella, e chi non lo vedeva
+scriveva nel verso sbagliato.
+
+**La riga di mezzo del tabellino dice che cosa legge il gioco.** Mentre si
+compone ci sono le parole che la posa forma, con i loro punti — la principale e
+quelle di traverso, barrate se non esistono — o perché la posa non va
+(`PERCHE_NO` in `Campo.tsx`). Una mossa rifiutata per una parola di due lettere
+nata di traverso, prima, sembrava un errore del gioco.
+
 **Le tessere del leggio si prendono col dito.** Toccata, una tessera va sul
 tabellone al cursore; trascinata oltre `SOGLIA` cambia posto sul leggio, con le
 altre che le fanno spazio, e portata sopra il leggio si posa sulla casella dove
@@ -931,12 +982,13 @@ quindi ne eredita la licenza: vedi `shared/words/SOURCES.md`. Il dump da cui
 nasce (45 MB) non e' versionato: sta in `scripts/.cache/`, e
 `npm run cruciverba:dati` lo riscarica.
 
-**Il dizionario dello Scarabeo si carica a mano, una volta per ambiente:**
-`node scripts/seed-dizionario.mjs [--remote]`, dopo le migrazioni. Non sta nelle
-migrazioni perché sono 2,3 MB di SQL che non cambiano mai, e rieseguirli a ogni
-deploy sarebbe tempo e scritture buttate. Se la tabella `dizionario` e' vuota il
-gioco rifiuta **ogni** parola: e' il primo posto da guardare se "non accetta
-niente".
+**Il dizionario dello Scarabeo sta in tre elenchi versionati, e il DAWG anche.**
+`scripts/data/dizionario-scarabeo*.txt.gz` — le comuni, le altre, le basi delle
+enclitiche — si rigenerano con `node scripts/build-dizionario.mjs`, che scarica
+120 MB di Wiktionary in `scripts/.cache/`; il DAWG con `npm run dawg:build`. Un
+test verifica che il DAWG abbia esattamente le parole degli elenchi, ognuna al
+suo livello, e l'impronta giusta. Le parole che vengono dal Wiktionary sono
+CC BY-SA come le definizioni del cruciverba: vedi `shared/words/SOURCES.md`.
 
 Le partite in corso appaiono in classifica con **zero punti**: serve a vedere
 chi sta ancora giocando, non è un bug del calcolo.

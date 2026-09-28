@@ -33,16 +33,32 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
           <h3 className="scr-aiuto__titolo">Posare una parola</h3>
           <ol className="scr-aiuto__passi">
             <li>
-              Tocca una casella. <strong>Toccala di nuovo</strong> per scrivere in verticale.
+              Tocca una casella: la <strong>freccia</strong> dice da che parte si scrive. Toccala di nuovo per
+              girarla.
             </li>
             <li>Tocca le tessere del leggio per posarle, o trascinale sulla casella che vuoi.</li>
             <li>Trascina una tessera lungo il leggio per cambiarle posto.</li>
             <li>Tocca una tessera posata per riprenderla.</li>
-            <li>
-              La prima parola passa dalla <strong>casella centrale</strong>. Le altre si attaccano a
-              quelle già posate.
-            </li>
           </ol>
+        </section>
+
+        <section className="scr-aiuto__sezione">
+          <h3 className="scr-aiuto__titolo">Le parole</h3>
+          <ul className="scr-aiuto__elenco">
+            <li>
+              Le tessere di una mossa stanno su <strong>una sola riga o colonna</strong>, senza caselle vuote in
+              mezzo.
+            </li>
+            <li>Si legge da sinistra a destra e dall’alto in basso.</li>
+            <li>
+              La prima parola passa dalla <strong>stella</strong>. Le altre si attaccano a quelle già posate:
+              le incrociano, le allungano o ci corrono accanto.
+            </li>
+            <li>
+              Devono esistere <strong>tutte</strong> le parole che si formano, anche quelle di due lettere di
+              traverso: sopra il tabellone vedi quali sono.
+            </li>
+          </ul>
         </section>
 
         <section className="scr-aiuto__sezione">
@@ -86,12 +102,15 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
               in più.
             </li>
             <li>
-              Contano <strong>tutte</strong> le parole che si formano.
+              Contano i punti di <strong>tutte</strong> le parole che si formano.
             </li>
             <li>
               <strong>Passare e cambiare</strong> costano una mossa.
             </li>
-            <li>Niente accenti né nomi propri: &ldquo;città&rdquo; si scrive CITTA.</li>
+            <li>
+              Valgono anche i verbi coniugati e con i pronomi attaccati: DIMMELO, PORTARLO. Niente accenti, sigle né
+              nomi propri: &ldquo;città&rdquo; si scrive CITTA.
+            </li>
             <li>
               <strong>Classificata</strong>: tessere uguali per tutti. Pareggiare il computer vale 100
               punti in classifica, farne la metà 50.

@@ -7,6 +7,11 @@
  * chi cerca parole: seguire una lettera, sapere se una parola puo' finire,
  * elencare le lettere che proseguono.
  *
+ * Il dizionario ha due livelli: le parole comuni, che gioca il computer, e le
+ * altre, che valgono quando le gioca una persona. `Dawg.da` le legge tutte;
+ * `comuni()` da' lo stesso dizionario come lo vede il computer, in cui gli archi
+ * che portano solo ad altre parole non esistono.
+ *
  * Un nodo si indica con l'indice del suo primo arco. `FOGLIA` e' il nodo senza
  * figli: da lì non si prosegue.
  */
@@ -21,6 +26,12 @@ export const TUTTE = (1 << NUMERO_LETTERE) - 1
 export const FOGLIA = -1
 export const RADICE = 0
 
+const ULTIMO = 1 << 5
+const FINALE = 1 << 6
+const FINALE_COMUNE = 1 << 7
+const STRADA_COMUNE = 1 << 8
+const SPOSTAMENTO_FIGLIO = 9
+
 const INDICI: Readonly<Record<string, number>> = Object.fromEntries(
   [...LETTERE].map((l, i) => [l, i]),
 )
@@ -31,7 +42,19 @@ export function indiceDi(lettera: string): number {
 }
 
 export class Dawg {
-  constructor(readonly archi: Uint32Array) {}
+  /** Il bit che dice se una parola finisce, per questo livello. */
+  private readonly fine: number
+  /** Il bit che un arco deve avere per esistere, per questo livello: nessuno, se si leggono tutte. */
+  private readonly strada: number
+
+  constructor(
+    readonly archi: Uint32Array,
+    /** Solo le parole comuni: e' il dizionario del computer. */
+    readonly soloComuni = false,
+  ) {
+    this.fine = soloComuni ? FINALE_COMUNE : FINALE
+    this.strada = soloComuni ? STRADA_COMUNE : 0
+  }
 
   /** Da un file letto per intero, per esempio con `fetch(...).arrayBuffer()`. */
   static da(buffer: ArrayBuffer | ArrayBufferView): Dawg {
@@ -46,6 +69,11 @@ export class Dawg {
     return new Dawg(new Uint32Array(allineato.buffer, allineato.byteOffset, allineato.byteLength / 4))
   }
 
+  /** Lo stesso dizionario con le sole parole comuni, senza copiarlo. */
+  comuni(): Dawg {
+    return this.soloComuni ? this : new Dawg(this.archi, true)
+  }
+
   /**
    * L'arco che esce da `nodo` con la lettera `l`, oppure -1.
    *
@@ -58,20 +86,28 @@ export class Dawg {
     for (let e = nodo; ; e += 1) {
       const a = archi[e]
       const lettera = a & 31
-      if (lettera === l) return e
-      if (lettera > l || (a & 32) !== 0) return -1
+      if (lettera === l) return (a & this.strada) === this.strada ? e : -1
+      if (lettera > l || (a & ULTIMO) !== 0) return -1
     }
+  }
+
+  /**
+   * L'arco esiste a questo livello? Chi scorre tutti gli archi di un nodo salta
+   * quelli che non lo sono: per il computer portano solo a parole che non usa.
+   */
+  percorribile(e: number): boolean {
+    return (this.archi[e] & this.strada) === this.strada
   }
 
   /** Il nodo in cui porta un arco. */
   destinazione(e: number): number {
-    const figlio = this.archi[e] >>> 7
+    const figlio = this.archi[e] >>> SPOSTAMENTO_FIGLIO
     return figlio === 0 ? FOGLIA : figlio
   }
 
   /** La parola puo' finire dopo la lettera di questo arco? */
   finale(e: number): boolean {
-    return (this.archi[e] & 64) !== 0
+    return (this.archi[e] & this.fine) !== 0
   }
 
   lettera(e: number): number {
@@ -79,7 +115,7 @@ export class Dawg {
   }
 
   ultimo(e: number): boolean {
-    return (this.archi[e] & 32) !== 0
+    return (this.archi[e] & ULTIMO) !== 0
   }
 
   /** Il nodo raggiunto leggendo una sequenza di indici di lettera, o FOGLIA. */
@@ -107,5 +143,23 @@ export class Dawg {
       nodo = this.destinazione(e)
     }
     return false
+  }
+
+  /** Quante parole ha, a questo livello: serve ai test, per dire che non ce n'e' una in piu'. */
+  quante(): number {
+    const conti = new Map<number, number>()
+    const conta = (nodo: number): number => {
+      if (nodo === FOGLIA) return 0
+      const noto = conti.get(nodo)
+      if (noto !== undefined) return noto
+      let n = 0
+      for (let e = nodo; ; e += 1) {
+        if (this.percorribile(e)) n += (this.finale(e) ? 1 : 0) + conta(this.destinazione(e))
+        if (this.ultimo(e)) break
+      }
+      conti.set(nodo, n)
+      return n
+    }
+    return conta(RADICE)
   }
 }

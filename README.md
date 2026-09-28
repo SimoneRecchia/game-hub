@@ -99,7 +99,6 @@ npm install
 
 # database locale (una volta sola, e a ogni nuova migrazione)
 npm run db:migrate:local
-node scripts/seed-dizionario.mjs     # il dizionario dello Scarabeo
 npm run cruciverba:locale            # gli schemi del cruciverba
 npm run scarabeo:locale              # il traguardo del computer
 
@@ -117,7 +116,7 @@ stile, non per giocare.
 | `npm run test` | Suite di test (Vitest) |
 | `npm run typecheck` | Solo il typecheck dei progetti TS |
 | `npm run words:build` | Rigenera gli elenchi del Wordle dalle fonti |
-| `npm run dawg:build` | Rigenera il dizionario compatto del computer dello Scarabeo |
+| `npm run dawg:build` | Rigenera il dizionario dello Scarabeo, per il browser e per il server |
 | `npm run db:migrate:remote` | Applica le migrazioni al D1 di produzione |
 
 Prima di una PR: `npm run typecheck && npm run test && npm run build`.

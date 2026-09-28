@@ -289,20 +289,12 @@ prima del push, altrimenti il codice nuovo cerca tabelle che non esistono:
 npx wrangler d1 migrations apply game-hub-db --remote
 ```
 
-**Caricare il dizionario dello Scarabeo.** Una volta per ambiente, dopo le
-migrazioni. Non sta nelle migrazioni perché sono 2,3 MB di SQL che non cambiano
-mai: rieseguirli a ogni deploy sarebbe tempo e scritture buttate.
+**Il dizionario dello Scarabeo** non va caricato: e' un file statico
+(`public/scarabeo/dizionario.dawg`) che parte con il deploy, e il server lo legge
+dagli asset. Per controllare che ci sia:
 
 ```bash
-node scripts/seed-dizionario.mjs --remote     # 2.309 righe, ~271.000 parole
-```
-
-Se la tabella `dizionario` è vuota lo Scarabeo rifiuta **ogni** parola: è il
-primo posto da guardare se "non accetta niente". Per controllare:
-
-```bash
-npx wrangler d1 execute game-hub-db --remote \
-  --command "SELECT COUNT(*) AS secchi, SUM(quante) AS parole FROM dizionario"
+curl -sI "https://giochi.<dominio>/scarabeo/dizionario.dawg" | grep -i content-length   # 1,3 MB
 ```
 
 **Gli schemi del cruciverba.** Non si generano nel Worker — riempire una

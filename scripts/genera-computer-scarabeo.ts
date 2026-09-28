@@ -65,7 +65,7 @@ function interroga<T>(sql: string): T[] {
   return JSON.parse(uscita.slice(uscita.indexOf('[')))[0].results as T[]
 }
 
-const dawg = Dawg.da(readFileSync(join(ROOT, 'src', 'games', 'scarabeo', 'dizionario.dawg')))
+const dawg = Dawg.da(readFileSync(join(ROOT, 'public', 'scarabeo', 'dizionario.dawg')))
 
 const esistenti = new Set<number>()
 if (REMOTO || LOCALE) {

@@ -121,46 +121,39 @@
 }
 
 /*
- * Il cursore: un bordo su tutta la casella piu' un lato marcato, che dice
- * **da che parte si scrive**. Due tocchi sulla stessa casella lo girano.
+ * Il cursore: la casella velata di indaco, e una freccia che dice **da che
+ * parte si scrive**. Due tocchi sulla stessa casella la girano. Prima era un
+ * filo sul lato della casella, e chi non lo notava scriveva nel verso sbagliato.
  */
 .cella--cursore-oriz,
 .cella--cursore-vert {
-  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
+  background: color-mix(in srgb, var(--brand) 16%, var(--surface));
   box-shadow: inset 0 0 0 1.5px var(--brand);
-}
-
-.cella--cursore-oriz::after,
-.cella--cursore-vert::after {
-  content: '';
-  position: absolute;
-  background: var(--brand);
 }
 
 .cella {
   position: relative;
 }
 
+.cella__freccia {
+  width: 72%;
+  height: 72%;
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.cella--cursore-vert .cella__freccia {
+  transform: rotate(90deg);
+}
+
 /* La casella dove cadrebbe la tessera che si sta trascinando dal leggio. */
 .cella--bersaglio {
   background: color-mix(in srgb, var(--brand) 30%, var(--surface));
   box-shadow: inset 0 0 0 2px var(--brand);
-}
-
-.cella--cursore-oriz::after {
-  top: 15%;
-  bottom: 15%;
-  right: 0;
-  width: 2px;
-  border-radius: 2px;
-}
-
-.cella--cursore-vert::after {
-  left: 15%;
-  right: 15%;
-  bottom: 0;
-  height: 2px;
-  border-radius: 2px;
 }
 
 /*
