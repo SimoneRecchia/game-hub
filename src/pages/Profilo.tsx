@@ -446,7 +446,23 @@ function Fonti() {
         (MIT, da OpenSubtitles 2018).
       </p>
       <p>
-        <strong>Scarabeo.</strong> Dizionario da napolux/paroleitaliane (MIT).
+        <strong>Scarabeo.</strong> Dizionario da napolux/paroleitaliane (MIT), con le forme del{' '}
+        <a href="https://it.wiktionary.org" target="_blank" rel="noreferrer">
+          Wikizionario
+        </a>{' '}
+        e del{' '}
+        <a href="https://en.wiktionary.org" target="_blank" rel="noreferrer">
+          Wiktionary
+        </a>
+        , estratte da{' '}
+        <a href="https://kaikki.org" target="_blank" rel="noreferrer">
+          kaikki.org
+        </a>{' '}
+        (
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.it" target="_blank" rel="noreferrer">
+          CC BY-SA 4.0
+        </a>
+        ).
       </p>
       <p>
         <strong>Cruciverba.</strong> Definizioni dal{' '}

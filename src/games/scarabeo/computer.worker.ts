@@ -14,7 +14,7 @@
 import { Dawg } from '@shared/dawg'
 import { sacchettoDaSeme } from '@shared/scarabeo'
 import { turnoDelComputer, type PartitaLibera } from '@shared/scarabeo-computer'
-import urlDizionario from './dizionario.dawg?url'
+import { BYTE_DIZIONARIO, URL_DIZIONARIO, URL_DIZIONARIO_COMPRESSO } from '@shared/scarabeo-dizionario'
 
 type Richiesta =
   | { id: number; tipo: 'prepara' }
@@ -24,17 +24,40 @@ type Richiesta =
 let dizionario: Promise<Dawg> | null = null
 
 function carica(): Promise<Dawg> {
-  dizionario ??= fetch(urlDizionario)
-    .then((r) => {
-      if (!r.ok) throw new Error(`Dizionario non scaricato (${r.status})`)
-      return r.arrayBuffer()
-    })
-    .then((buffer) => Dawg.da(buffer))
+  dizionario ??= scarica().then((buffer) => {
+    // Le Pages rispondono con la pagina dell'app a un indirizzo che non c'e': quella non e' un dizionario.
+    if (buffer.byteLength !== BYTE_DIZIONARIO) throw new Error('Dizionario non scaricato')
+    return Dawg.da(buffer)
+  })
   // Un fallimento non resta in memoria: la richiesta dopo riprova.
   dizionario.catch(() => {
     dizionario = null
   })
   return dizionario
+}
+
+/**
+ * Il file compresso, se il browser lo sa aprire: Cloudflare non comprime i file
+ * binari, e intero sarebbe quasi il doppio. Altrimenti, o se la copia compressa
+ * non c'e' (in sviluppo la scrive solo il build), il file intero.
+ */
+async function scarica(): Promise<ArrayBuffer> {
+  if (typeof DecompressionStream !== 'undefined') {
+    try {
+      const risposta = await fetch(URL_DIZIONARIO_COMPRESSO)
+      const compresso = new Uint8Array(await risposta.arrayBuffer())
+      // I due byte con cui comincia ogni file gzip.
+      if (risposta.ok && compresso[0] === 0x1f && compresso[1] === 0x8b) {
+        const aperto = new Blob([compresso]).stream().pipeThrough(new DecompressionStream('gzip'))
+        return await new Response(aperto).arrayBuffer()
+      }
+    } catch {
+      /* si prova con il file intero */
+    }
+  }
+  const risposta = await fetch(URL_DIZIONARIO)
+  if (!risposta.ok) throw new Error(`Dizionario non scaricato (${risposta.status})`)
+  return risposta.arrayBuffer()
 }
 
 self.onmessage = async (evento: MessageEvent<Richiesta>) => {

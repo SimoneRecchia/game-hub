@@ -4,6 +4,11 @@ import type { Player } from '../shared/types'
 export interface Bindings {
   DB: D1Database
   /**
+   * Gli asset statici del sito, che le Pages danno a ogni Function. Il server
+   * ci legge il dizionario dello Scarabeo (vedi server/lib/dizionario.ts).
+   */
+  ASSETS: Fetcher
+  /**
    * Dominio su cui vale il cookie di sessione, per esempio `esempio.it`.
    *
    * Va impostata quando hub e giochi stanno su sottodomini diversi: senza,

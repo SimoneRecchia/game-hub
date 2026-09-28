@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   BONUS_SCARABEO,
-  chiaveDizionario,
   CENTRO,
   DISTRIBUZIONE,
   JOLLY,
@@ -351,16 +350,5 @@ describe('rigioca', () => {
   it('non contraddice validaPosa sul limite di mosse', () => {
     expect(MOSSE_PER_GIORNATA).toBeGreaterThan(1)
     expect(MOSSE_PER_GIORNATA).toBeLessThanOrEqual(20)
-  })
-})
-
-describe('chiave del dizionario', () => {
-  it('e’ lunghezza e prime due lettere', () => {
-    // Fissata di proposito: il dizionario in D1 e' scritto con questa regola da
-    // scripts/seed-dizionario.mjs. Cambiarla senza ricaricare la tabella
-    // vorrebbe dire rifiutare ogni parola, e questo test lo dice subito.
-    expect(chiaveDizionario('casa')).toBe('4:ca')
-    expect(chiaveDizionario('ai')).toBe('2:ai')
-    expect(chiaveDizionario('precipitevolissime')).toBe('18:pr')
   })
 })

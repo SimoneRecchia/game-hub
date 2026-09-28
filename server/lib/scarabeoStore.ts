@@ -12,7 +12,6 @@
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
 import {
   MOSSE_PER_GIORNATA,
-  chiaveDizionario,
   leggioDa,
   rigioca,
   sacchettoDelGiorno,
@@ -190,32 +189,6 @@ export function statoDa(row: PartitaRow, computer: ComputerRow, msToNextPuzzle: 
     status: row.status,
     msToNextPuzzle,
   }
-}
-
-/**
- * Quali fra queste parole non stanno nel dizionario.
- *
- * Una query sola: le parole di una mossa sono al massimo otto e cadono in
- * pochi secchi (vedi `chiaveDizionario`). Il confronto e' una ricerca di
- * sottostringa sul blocco del secchio, con gli a capo come sentinelle, così
- * "casa" non risulta trovata dentro "casale".
- */
-export async function paroleSconosciute(db: D1Database, parole: string[]): Promise<string[]> {
-  if (parole.length === 0) return []
-
-  const chiavi = [...new Set(parole.map(chiaveDizionario))]
-  const { results } = await db
-    .prepare(
-      `SELECT chiave, parole FROM dizionario WHERE chiave IN (${chiavi.map(() => '?').join(',')})`,
-    )
-    .bind(...chiavi)
-    .all<{ chiave: string; parole: string }>()
-
-  const blocchi = new Map(results.map((r) => [r.chiave, r.parole]))
-  return parole.filter((parola) => {
-    const blocco = blocchi.get(chiaveDizionario(parola))
-    return !blocco || !blocco.includes(`\n${parola}\n`)
-  })
 }
 
 /**

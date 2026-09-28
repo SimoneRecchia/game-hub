@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Dawg } from '../../shared/dawg'
-import { chiaveDizionario, leggioDa, sacchettoDaSeme, sacchettoDelGiorno, tabelloneVuoto, validaPosa } from '../../shared/scarabeo'
+import { leggioDa, sacchettoDaSeme, sacchettoDelGiorno, tabelloneVuoto } from '../../shared/scarabeo'
 import { mosseLegali } from '../../shared/scarabeo-motore'
 import { MOSSE_A_TESTA, statoLibera, turnoDelComputer, type PartitaLibera } from '../../shared/scarabeo-computer'
 import { RIFERIMENTO_SCARABEO, puntiScarabeo } from '../../shared/punti'
@@ -10,7 +10,7 @@ import type { ScarabeoState, ScarabeoSummary, StatisticheScarabeoLibero } from '
 import { giornata } from '../lib/scarabeoStore'
 import { banco } from './banco'
 
-const dawg = Dawg.da(readFileSync(join(__dirname, '..', '..', 'src', 'games', 'scarabeo', 'dizionario.dawg')))
+const dawg = Dawg.da(readFileSync(join(__dirname, '..', '..', 'public', 'scarabeo', 'dizionario.dawg')))
 
 describe('lo Scarabeo classificato, contro il riferimento del computer', () => {
   it('senza la partita del computer usa il ripiego, e lo fissa per tutta la giornata', async () => {
@@ -34,16 +34,9 @@ describe('lo Scarabeo classificato, contro il riferimento del computer', () => {
       .prepare(`INSERT INTO scarabeo_computer (puzzle_number, punti, mosse, created_at) VALUES (?, 200, ?, 'x')`)
       .run(numero, JSON.stringify([{ tipo: 'passo' }]))
 
-    // Una prima mossa legale con le tessere del giorno, e il suo pezzo di dizionario.
+    // Una prima mossa legale con le tessere del giorno: il server la controlla sul dizionario vero.
     const { leggio } = leggioDa(sacchettoDelGiorno(numero), [])
     const mossa = mosseLegali(dawg, tabelloneVuoto(), leggio, true).sort((a, b) => b.punti - a.punti)[0]
-    const esito = validaPosa(tabelloneVuoto(), mossa.posa, true)
-    if (!esito.ok) throw new Error('mossa non valida')
-    for (const p of esito.parole) {
-      db.sqlite
-        .prepare('INSERT OR REPLACE INTO dizionario (chiave, parole, quante) VALUES (?, ?, 1)')
-        .run(chiaveDizionario(p.parola), `\n${p.parola}\n`)
-    }
 
     const io = await giocatore('bruno')
     const dopo = await chiama<ScarabeoState>('POST', '/scarabeo/mossa', io, { posa: mossa.posa })

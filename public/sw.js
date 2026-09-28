@@ -3,6 +3,7 @@
  *
  * Strategia:
  *  - asset con hash in /assets/  → cache-first (immutabili)
+ *  - dizionario dello Scarabeo   → cache-first (l'impronta sta nell'indirizzo)
  *  - navigazioni                 → network-first con fallback all'ultima index
  *  - /api/*                      → sempre rete, mai cache (punteggi e sessioni)
  */
@@ -53,7 +54,7 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  if (url.pathname.startsWith('/assets/') || /\.(png|svg|woff2?)$/.test(url.pathname)) {
+  if (/^\/(assets|scarabeo)\//.test(url.pathname) || /\.(png|svg|woff2?)$/.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then(
         (hit) =>
