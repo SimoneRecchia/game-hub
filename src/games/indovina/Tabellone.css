@@ -1,0 +1,173 @@
+/*
+ * Il tabellone di Indovina chi: le carte dei personaggi, che si abbassano.
+ *
+ * Una carta abbassata si gira sul suo asse come quelle di plastica della
+ * scatola, e mostra il retro nel colore del gioco: si vede a colpo d'occhio
+ * quante ne restano. Le misure le decide Tabellone.tsx, che prova ogni numero
+ * di colonne e tiene quello delle carte piu' grandi.
+ */
+.ic-campo {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ic-tabellone {
+  display: grid;
+  grid-template-columns: repeat(var(--colonne), var(--lato));
+  gap: 8px;
+  justify-content: center;
+  align-content: center;
+}
+
+.ic-carta {
+  position: relative;
+  width: var(--lato);
+  height: calc(var(--lato) / 0.8);
+  padding: 0;
+  border-radius: 12px;
+  perspective: 600px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ic-carta:focus-visible {
+  outline-offset: 1px;
+}
+
+.ic-carta__dentro {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 380ms var(--ease-spring);
+}
+
+.ic-carta.is-abbassata .ic-carta__dentro {
+  transform: rotateX(180deg);
+}
+
+.ic-carta__fronte,
+.ic-carta__retro {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.ic-carta__fronte {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-key);
+}
+
+/* Il retro: il rosso del gioco con un punto di domanda in rilievo, come la plastica della scatola. */
+.ic-carta__retro {
+  display: grid;
+  place-items: center;
+  transform: rotateX(180deg);
+  background:
+    radial-gradient(90% 70% at 30% 20%, rgba(255, 255, 255, 0.25), transparent 60%),
+    linear-gradient(160deg, var(--indovina-1), var(--indovina-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  opacity: 0.72;
+}
+
+.ic-carta__retro::after {
+  content: '?';
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.46);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ic-faccia {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--fill-quaternary);
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.ic-faccia--vuota {
+  display: grid;
+  place-items: center;
+  color: var(--label-secondary);
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato, 60px) * 0.32);
+  font-weight: 800;
+}
+
+.ic-faccia--vuota.is-attesa {
+  animation: ic-attesa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes ic-attesa {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.ic-carta__nome {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: 0 4px;
+  color: var(--label);
+  font-size: clamp(10px, calc(var(--lato) * 0.15), 15px);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+/* Il nome in un suo contenitore: i puntini di sospensione vogliono un blocco, non una griglia. */
+.ic-carta__nome > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Si sceglie chi e': le carte ancora in piedi si offrono, quella scelta si alza. */
+.ic-tabellone.is-scegli .ic-carta:not(.is-abbassata) .ic-carta__fronte {
+  box-shadow: var(--edge-light), var(--shadow-key), 0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.ic-carta.is-scelta .ic-carta__dentro {
+  transform: translateY(-4px) scale(1.04);
+}
+
+.ic-tabellone.is-scegli .ic-carta.is-scelta .ic-carta__fronte {
+  box-shadow: var(--edge-light), var(--shadow-md), 0 0 0 3px var(--brand);
+}
+
+/* A partita finita: il personaggio dell'altro, verde se l'ho preso, rosso se no. */
+.ic-carta.is-rivelata .ic-carta__dentro {
+  transform: none;
+}
+
+.ic-carta.is-rivelata .ic-carta__fronte {
+  box-shadow: var(--edge-light), var(--shadow-md), 0 0 0 3px var(--red);
+}
+
+.ic-carta.is-rivelata.is-vinta .ic-carta__fronte {
+  box-shadow: var(--edge-light), var(--shadow-md), 0 0 0 3px var(--green);
+}
+
+.ic-carta:active:not(:disabled) .ic-carta__fronte {
+  filter: brightness(0.96);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ic-carta__dentro {
+    transition: none;
+  }
+}

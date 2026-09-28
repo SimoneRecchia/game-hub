@@ -347,3 +347,31 @@ export const IconAiuto = (p: IconProps) => (
     <path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.1v.1h5v-.1c0-.8.4-1.6 1.1-2.1A6 6 0 0 0 12 3Z" />
   </Svg>
 )
+
+/** Una foto: aggiungere personaggi dalla galleria. */
+export const IconFoto = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="3" />
+    <circle cx="9" cy="10" r="1.8" />
+    <path d="m21 16-5-5-7.5 8" />
+  </Svg>
+)
+
+/** Il cestino: eliminare. */
+export const IconCestino = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M4 7h16" />
+    <path d="M9.5 7V4.5h5V7" />
+    <path d="M6.5 7l.9 12.2a1.9 1.9 0 0 0 1.9 1.8h5.4a1.9 1.9 0 0 0 1.9-1.8L17.5 7" />
+    <path d="M10 11v6M14 11v6" />
+  </Svg>
+)
+
+/** Una freccia che entra in un vassoio: importare un file. */
+export const IconImporta = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M12 4v11" />
+    <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+    <path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16" />
+  </Svg>
+)

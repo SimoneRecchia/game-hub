@@ -269,8 +269,10 @@ non fa record.
 **La presenza e' un giro solo per tutta l'app.** `PresenzaProvider`
 (`src/lib/presenza.tsx`) chiama `POST /api/presenza` ogni otto secondi a pagina
 visibile: dice al server dove si trova il giocatore e riporta gli inviti del
-Wordle in compagnia, le sfide a battaglia navale e a quiz (rivincite comprese),
-la partita e il duello aperti. Prima gli
+Wordle in compagnia, le sfide a battaglia navale, a quiz e a Indovina chi
+(rivincite comprese), le partite e il duello aperti. Gli avvisi fuori dalle
+rotte (`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`) si danno la
+precedenza in quest'ordine: due insieme non si leggerebbero. Prima gli
 inviti del Wordle avevano il loro polling: due giri separati avrebbero
 raddoppiato le richieste, e le Pages Functions gratuite ne contano centomila al
 giorno per tutto il sito. La scrittura in `presenza` passa solo ogni venti
@@ -337,6 +339,53 @@ giornata in compagnia vale quanto una da soli, ma fra due totali uguali vince ch
 li ha fatti con le proprie partite. `rankPlayers` e `ordinaGenerale` devono
 restare d'accordo; poi, nella generale, conta chi ci e' arrivato con meno
 partite.
+
+**I giochi da tavolo non hanno classificata.** Sono partite quando si vuole,
+con gli amici — e contro il computer dove ha senso — senza punti ne'
+classifica: stanno in una sezione a parte della home e della barra laterale
+(`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in `GiocoClassificato`, che
+porta con se' classifiche, anelli e statistiche. Il primo e' Indovina chi, che
+il computer non ce l'ha: si gioca parlandosi.
+
+**In Indovina chi l'invito e' gia' la partita.** Una riga di
+`indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
+(`codice`) — e diventa la partita quando l'altro accetta, con un `UPDATE`
+condizionato allo stato 'invito' e al fatto che nessuno dei due sia in
+un'altra partita: nello stesso colpo si pescano i due personaggi segreti e chi
+comincia. Non serve una tabella delle sfide come nella battaglia, perché
+l'invito porta tutto quel che serve alla partita: i personaggi scelti.
+Domande, risposte e tentativi sono le mosse (come i colpi della battaglia) e
+si scrivono condizionate alla `versione`; le facce abbassate e i messaggi del
+canale delle foto no, perché li scrive uno solo dei due e non devono far
+fallire la domanda dell'altro arrivata nello stesso istante — per questo
+`salvaMossa` scrive solo le colonne delle mosse. Il personaggio dell'altro
+esce solo a partita finita (`vistaIndovina`). Chi sbaglia il tentativo perde,
+come sulla scatola: senza, tirare a indovinare a ogni turno non costerebbe
+niente. Niente resta: le partite ferme da due giorni si cancellano a ogni
+invito nuovo.
+
+**Le immagini di Indovina chi non passano dal server.** Le persone sono gli
+Avataaars disegnati da DiceBear (`api.dicebear.com/9.x`), gli animali le
+Fluent Emoji di Microsoft da jsDelivr, a un commit fisso: le scarica il
+browser, come le bandiere del quiz. Ogni tratto delle persone e' scritto nei
+parametri e non lasciato al seme — occhiali, barba, cappello, capelli — perché
+le domande tornino, e un test verifica che siano valori che DiceBear conosce:
+uno sbagliato non darebbe errore, darebbe un tratto a caso. Una foto che non
+arriva lascia le iniziali (`Faccia`), e la partita si gioca coi nomi.
+
+**I set propri stanno nel telefono, e le foto vanno da telefono a telefono.**
+Le foto si preparano nel browser (un quadrato di 256 punti in JPEG, preso un
+po' sopra il centro nelle foto in piedi) e restano in IndexedDB
+(`src/games/indovina/archivio.ts`); al server arrivano solo i nomi e
+l'impronta di ogni foto (i primi 128 bit del suo SHA-256). Chi non ha le foto
+le chiede con un canale WebRTC (`trasferimento.ts`): l'offerta e la risposta
+passano dalla partita sul server (`/segnale`, una risposta vale solo per
+l'offerta a cui risponde), i candidati si raccolgono tutti prima di mandarla —
+con il polling uno alla volta sarebbero una scrittura ciascuno — e poi le foto
+vanno dirette, e ognuna si controlla con la sua impronta. Solo STUN, niente
+TURN: fra due reti che non si lasciano attraversare il canale non si apre, e
+la pagina lo dice. Il ripiego e' il file del set (`setFile.ts`), che si manda
+come un documento qualunque e si apre da "Nuovo set".
 
 **Ogni gioco ha una classificata e una libera.** La **classificata** e' una al
 giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
