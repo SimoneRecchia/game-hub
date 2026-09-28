@@ -23,18 +23,34 @@
   z-index: -1;
 }
 
+/*
+ * Tutte larghe uguali, come la capsula che le segue: `min-width: 0` le lascia
+ * stringere quando sono tante (le domande del quiz, da 5 a 50, su un telefono
+ * largo 320), invece di spingere l'ultima fuori dalla carta.
+ */
 .segmented__item {
   flex: 1;
+  min-width: 0;
   min-height: 32px;
-  padding: 0 var(--sp-3);
+  padding: 0 var(--sp-2);
+  overflow: hidden;
   border-radius: var(--r-pill);
   font-size: var(--text-subhead);
   font-weight: 600;
   color: var(--label);
+  text-overflow: ellipsis;
   transition: color var(--dur-fast) var(--ease-out);
   white-space: nowrap;
 }
 
 .segmented__item:not(.is-active) {
   color: var(--label-secondary);
+}
+
+/* Sui telefoni stretti le voci lunghe ("Automatico", "Settimana") non ci starebbero alla misura di sempre. */
+@media (max-width: 360px) {
+  .segmented__item {
+    padding: 0 4px;
+    font-size: var(--text-footnote);
+  }
 }

@@ -58,19 +58,30 @@ export function Pagina({
   children,
 }: Props) {
   const { indietro: torna } = useNavigazione()
+  const barra = useRef<HTMLElement>(null)
+  const cima = useRef<HTMLDivElement>(null)
   const sentinella = useRef<HTMLDivElement>(null)
+  // Due momenti diversi: qualcosa scorre sotto la barra (e la barra si fa vetro), e il titolo grande
+  // e' passato del tutto (e la barra prende il titolo piccolo).
+  const [velata, setVelata] = useState(intera)
   const [scorsa, setScorsa] = useState(intera)
 
   useEffect(() => {
     if (intera) return
-    const nodo = sentinella.current
-    if (!nodo || typeof IntersectionObserver === 'undefined') return
-    // Il titolo grande e' uscito da sotto la barra: la barra prende il titolo piccolo.
-    const osservatore = new IntersectionObserver(([voce]) => setScorsa(!voce.isIntersecting), {
-      rootMargin: '-52px 0px 0px 0px',
-    })
-    osservatore.observe(nodo)
-    return () => osservatore.disconnect()
+    const inCima = cima.current
+    const titoloFinito = sentinella.current
+    if (!inCima || !titoloFinito || typeof IntersectionObserver === 'undefined') return
+    // L'altezza vera della barra, con l'area sicura in cima di un'app installata.
+    const altezza = Math.round(barra.current?.getBoundingClientRect().height ?? 52)
+    const margine = { rootMargin: `-${altezza}px 0px 0px 0px` }
+    const osservaCima = new IntersectionObserver(([voce]) => setVelata(!voce.isIntersecting), margine)
+    const osservaTitolo = new IntersectionObserver(([voce]) => setScorsa(!voce.isIntersecting), margine)
+    osservaCima.observe(inCima)
+    osservaTitolo.observe(titoloFinito)
+    return () => {
+      osservaCima.disconnect()
+      osservaTitolo.disconnect()
+    }
   }, [intera])
 
   useEffect(() => {
@@ -79,7 +90,7 @@ export function Pagina({
 
   return (
     <div className={`pagina${intera ? ' pagina--intera' : ''}${larga ? ' pagina--larga' : ''}`}>
-      <header className={`pagina__barra${scorsa ? ' is-scorsa' : ''}`}>
+      <header ref={barra} className={`pagina__barra${velata ? ' is-velata' : ''}${scorsa ? ' is-scorsa' : ''}`}>
         <div className="pagina__barra-dentro">
           <div className="pagina__lato">
             {sinistra ??
@@ -102,6 +113,7 @@ export function Pagina({
         </div>
       </header>
 
+      {!intera && <div ref={cima} className="pagina__cima" aria-hidden="true" />}
       <main className="pagina__corpo">
         {!intera && (
           <div className="pagina__testa">

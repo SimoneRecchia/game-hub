@@ -186,7 +186,9 @@ function salvaScelte(s: ImpostazioniLibera): void {
 
 /**
  * Il quiz libero: prima si sceglie — categoria, a scelta o sulla cartina,
- * dove, quante domande, se a tempo, e sotto le opzioni avanzate — poi si gioca.
+ * dove, e la partita: quante domande, quanto difficili, quanto tempo — poi si
+ * gioca. Le opzioni avanzate sono in ordine da quelle che si cambiano di piu'
+ * a quelle che si cambiano di rado.
  * Tutto nel browser, dagli stessi dati e con le stesse regole della
  * classificata, e non conta per la classifica.
  */
@@ -422,19 +424,36 @@ function Scelta() {
         </div>
       </Sezione>
 
-      <Sezione titolo="Domande">
-        <SegmentedControl
-          ariaLabel="Quante domande"
-          options={QUANTE_LIBERE.map((n) => ({ value: String(n), label: String(n) }))}
-          value={String(scelte.quante)}
-          onChange={(v) => cambia({ quante: Number(v) })}
-        />
-        <Interruttore
-          titolo="A tempo"
-          sotto={scelte.secondi === null ? undefined : `${secondi * perModo} secondi a domanda`}
-          acceso={scelte.secondi !== null}
-          onCambia={(si) => cambia({ secondi: si ? SECONDI_SCELTA : null })}
-        />
+      <Sezione titolo="Partita">
+        <Opzioni>
+          <Scelte titolo="Domande">
+            <SegmentedControl
+              ariaLabel="Quante domande"
+              options={QUANTE_LIBERE.map((n) => ({ value: String(n), label: String(n) }))}
+              value={String(scelte.quante)}
+              onChange={(v) => cambia({ quante: Number(v) })}
+            />
+          </Scelte>
+          <Scelte titolo="Difficoltà">
+            <SegmentedControl
+              ariaLabel="Difficoltà"
+              options={NOTORIETA}
+              value={scelte.notorieta ?? 'misti'}
+              onChange={(v) => cambia({ notorieta: v })}
+            />
+          </Scelte>
+          <Scelte titolo="Tempo per domanda">
+            <SegmentedControl
+              ariaLabel="Tempo per domanda"
+              options={[
+                { value: 'senza', label: 'No' },
+                ...SECONDI_LIBERI.map((n) => ({ value: String(n), label: `${n * perModo} s` })),
+              ]}
+              value={scelte.secondi === null ? 'senza' : String(secondi)}
+              onChange={(v) => cambia({ secondi: v === 'senza' ? null : Number(v) })}
+            />
+          </Scelte>
+        </Opzioni>
       </Sezione>
 
       <button
@@ -452,139 +471,139 @@ function Scelta() {
 
       {avanzate && (
         <div className="quiz-avanzate__corpo">
-          <Sezione titolo="Domande e risposte">
-            {tipi.length > 1 && (
-              <Gruppo titolo="Tipi di domanda">
-                {tipi.map((t) => {
-                  const acceso = tipiScelti.includes(t)
-                  return (
-                    <Interruttore
-                      key={t}
-                      titolo={nomeTipo(t, categoria)}
-                      acceso={acceso}
-                      // Almeno un tipo resta acceso: senza domande non c'e' partita.
-                      disabilitato={acceso && tipiScelti.length === 1}
-                      onCambia={(si) => cambia({ tipi: si ? [...tipiScelti, t] : tipiScelti.filter((x) => x !== t) })}
-                    />
-                  )
-                })}
-              </Gruppo>
-            )}
-            {!cartina && (
-              <Gruppo titolo="Risposte tra cui scegliere">
+          <Sezione titolo="Risposte">
+            <Opzioni>
+              {!cartina && (
+                <Scelte titolo="Risposte tra cui scegliere">
+                  <SegmentedControl
+                    ariaLabel="Risposte tra cui scegliere"
+                    options={RISPOSTE_LIBERE.map((n) => ({ value: String(n), label: String(n) }))}
+                    value={String(scelte.risposte ?? RISPOSTE_PREDEFINITE)}
+                    onChange={(v) => cambia({ risposte: Number(v) })}
+                  />
+                </Scelte>
+              )}
+              <Scelte titolo="Ordine delle domande">
                 <SegmentedControl
-                  ariaLabel="Risposte tra cui scegliere"
-                  options={RISPOSTE_LIBERE.map((n) => ({ value: String(n), label: String(n) }))}
-                  value={String(scelte.risposte ?? RISPOSTE_PREDEFINITE)}
-                  onChange={(v) => cambia({ risposte: Number(v) })}
+                  ariaLabel="Ordine delle domande"
+                  options={[
+                    { value: 'sale', label: 'Dalla più facile' },
+                    { value: 'caso', label: 'A caso' },
+                  ]}
+                  value={scelte.ordine ?? 'sale'}
+                  onChange={(v) => cambia({ ordine: v })}
                 />
-              </Gruppo>
-            )}
-            <Gruppo titolo="Difficoltà">
-              <SegmentedControl
-                ariaLabel="Difficoltà"
-                options={NOTORIETA}
-                value={scelte.notorieta ?? 'misti'}
-                onChange={(v) => cambia({ notorieta: v })}
-              />
-            </Gruppo>
-            <Gruppo titolo="Ordine">
-              <SegmentedControl
-                ariaLabel="Ordine delle domande"
-                options={[
-                  { value: 'sale', label: 'Dalla più facile' },
-                  { value: 'caso', label: 'A caso' },
-                ]}
-                value={scelte.ordine ?? 'sale'}
-                onChange={(v) => cambia({ ordine: v })}
-              />
-            </Gruppo>
-            {categoria === 'capitali' && !cartina && (
+              </Scelte>
               <Interruttore
-                titolo="Bandiera nella domanda"
-                sotto="Quando si chiede la capitale di uno stato"
-                acceso={scelte.bandieraCapitali ?? true}
-                onCambia={(si) => cambia({ bandieraCapitali: si })}
+                titolo="Avanti automatico"
+                sotto="Passa da solo alla domanda dopo"
+                acceso={scelte.avantiDaSolo}
+                onCambia={(si) => cambia({ avantiDaSolo: si })}
               />
-            )}
-          </Sezione>
-
-          <Sezione titolo="Tempo">
-            {scelte.secondi !== null && (
-              <Gruppo titolo="Secondi per domanda">
-                <SegmentedControl
-                  ariaLabel="Secondi per domanda"
-                  options={SECONDI_LIBERI.map((n) => ({ value: String(n), label: `${n * perModo} s` }))}
-                  value={String(secondi)}
-                  onChange={(v) => cambia({ secondi: Number(v) })}
-                />
-              </Gruppo>
-            )}
-            <Interruttore
-              titolo="Avanti automatico"
-              acceso={scelte.avantiDaSolo}
-              onCambia={(si) => cambia({ avantiDaSolo: si })}
-            />
-          </Sezione>
-
-          <Sezione titolo="Cartina">
-            <Interruttore
-              titolo="Cartina dopo la risposta"
-              sotto="Mostra dove si trova la risposta giusta"
-              acceso={scelte.imparo}
-              onCambia={(si) => cambia({ imparo: si })}
-            />
-            {cartina && (
-              <Interruttore
-                titolo="Evidenzia cosa si può toccare"
-                acceso={scelte.evidenzia}
-                onCambia={(si) => cambia({ evidenzia: si })}
-              />
-            )}
-            {cartina && scelte.area !== 'mondo' && (
-              <Interruttore
-                titolo="Blocca fuori dalla zona"
-                acceso={scelte.soloZona}
-                onCambia={(si) => cambia({ soloZona: si })}
-              />
-            )}
-            {cartina && categoria !== 'stati' && categoria !== 'bandiere' && (
-              <Interruttore
-                titolo="Nomi dei paesi"
-                acceso={scelte.nomiPaesi}
-                onCambia={(si) => cambia({ nomiPaesi: si })}
-              />
-            )}
+            </Opzioni>
           </Sezione>
 
           <Sezione titolo="Aiuti e sfide">
-            {!cartina && (
+            <Opzioni>
+              {!cartina && (
+                <Interruttore
+                  titolo="Due aiuti 50 e 50"
+                  sotto="Tolgono metà delle risposte sbagliate"
+                  acceso={scelte.aiuti}
+                  onCambia={(si) => cambia({ aiuti: si })}
+                />
+              )}
               <Interruttore
-                titolo="Due aiuti 50 e 50"
-                sotto="Tolgono metà delle risposte sbagliate"
-                acceso={scelte.aiuti}
-                onCambia={(si) => cambia({ aiuti: si })}
+                titolo="Ripeti le sbagliate"
+                sotto="Alla fine della partita"
+                acceso={scelte.ripasso}
+                onCambia={(si) => cambia({ ripasso: si })}
               />
-            )}
-            <Interruttore
-              titolo="Ripeti le sbagliate"
-              sotto="Alla fine della partita"
-              acceso={scelte.ripasso}
-              onCambia={(si) => cambia({ ripasso: si })}
-            />
-            <Interruttore
-              titolo="Morte improvvisa"
-              sotto="La partita finisce al primo errore"
-              acceso={scelte.morteImprovvisa}
-              onCambia={(si) => cambia({ morteImprovvisa: si })}
-            />
+              <Interruttore
+                titolo="Morte improvvisa"
+                sotto="La partita finisce al primo errore"
+                acceso={scelte.morteImprovvisa}
+                onCambia={(si) => cambia({ morteImprovvisa: si })}
+              />
+            </Opzioni>
           </Sezione>
+
+          <Sezione titolo="Cartina">
+            <Opzioni>
+              <Interruttore
+                titolo="Cartina dopo la risposta"
+                sotto="Mostra dove si trova la risposta giusta"
+                acceso={scelte.imparo}
+                onCambia={(si) => cambia({ imparo: si })}
+              />
+              {cartina && (
+                <Interruttore
+                  titolo="Evidenzia cosa si può toccare"
+                  acceso={scelte.evidenzia}
+                  onCambia={(si) => cambia({ evidenzia: si })}
+                />
+              )}
+              {cartina && scelte.area !== 'mondo' && (
+                <Interruttore
+                  titolo="Blocca fuori dalla zona"
+                  acceso={scelte.soloZona}
+                  onCambia={(si) => cambia({ soloZona: si })}
+                />
+              )}
+              {cartina && categoria !== 'stati' && categoria !== 'bandiere' && (
+                <Interruttore
+                  titolo="Nomi dei paesi"
+                  acceso={scelte.nomiPaesi}
+                  onCambia={(si) => cambia({ nomiPaesi: si })}
+                />
+              )}
+            </Opzioni>
+          </Sezione>
+
+          {(tipi.length > 1 || (categoria === 'capitali' && !cartina)) && (
+            <Sezione titolo="Tipi di domanda">
+              <Opzioni>
+                {tipi.length > 1 &&
+                  tipi.map((t) => {
+                    const acceso = tipiScelti.includes(t)
+                    return (
+                      <Interruttore
+                        key={t}
+                        titolo={nomeTipo(t, categoria)}
+                        acceso={acceso}
+                        // Almeno un tipo resta acceso: senza domande non c'e' partita.
+                        disabilitato={acceso && tipiScelti.length === 1}
+                        onCambia={(si) =>
+                          cambia({ tipi: si ? [...tipiScelti, t] : tipiScelti.filter((x) => x !== t) })
+                        }
+                      />
+                    )
+                  })}
+                {categoria === 'capitali' && !cartina && (
+                  <Interruttore
+                    titolo="Bandiera nella domanda"
+                    sotto="Quando si chiede la capitale di uno stato"
+                    acceso={scelte.bandieraCapitali ?? true}
+                    onCambia={(si) => cambia({ bandieraCapitali: si })}
+                  />
+                )}
+              </Opzioni>
+            </Sezione>
+          )}
 
           <button
             type="button"
             className="quiz-avanzate__ripristina"
             onClick={() =>
-              setScelte((s) => ({ ...PREDEFINITE, categoria: s.categoria, modo: s.modo, area: s.area, quante: s.quante }))
+              setScelte((s) => ({
+                ...PREDEFINITE,
+                categoria: s.categoria,
+                modo: s.modo,
+                area: s.area,
+                quante: s.quante,
+                notorieta: s.notorieta,
+                secondi: s.secondi,
+              }))
             }
           >
             Ripristina le opzioni
@@ -637,11 +656,8 @@ function riassuntoAvanzate(s: ImpostazioniLibera): string | null {
   const diverse: string[] = []
   if (s.tipi?.length) diverse.push('alcuni tipi di domanda')
   if (!cartina && s.risposte !== RISPOSTE_PREDEFINITE) diverse.push(`${s.risposte} risposte`)
-  if (s.notorieta === 'noti') diverse.push('facile')
-  if (s.notorieta === 'rari') diverse.push('difficile')
   if (s.ordine === 'caso') diverse.push('a caso')
   if (s.categoria === 'capitali' && !cartina && !s.bandieraCapitali) diverse.push('senza bandiera')
-  if (s.secondi !== null && s.secondi !== SECONDI_SCELTA) diverse.push(`${s.secondi * (cartina ? 2 : 1)} secondi`)
   if (s.avantiDaSolo) diverse.push('avanti automatico')
   if (!s.imparo) diverse.push('senza cartina dopo la risposta')
   if (cartina && !s.evidenzia) diverse.push('senza evidenziare')
@@ -653,12 +669,17 @@ function riassuntoAvanzate(s: ImpostazioniLibera): string | null {
   return diverse.length > 0 ? diverse.join(' · ') : null
 }
 
-function Gruppo({ titolo, nota, children }: { titolo: string; nota?: string; children: ReactNode }) {
+/** Un gruppo di opzioni in una carta, una riga per opzione, come nelle Impostazioni. */
+function Opzioni({ children }: { children: ReactNode }) {
+  return <div className="quiz-impostazioni">{children}</div>
+}
+
+/** Una riga con il suo nome e sotto il controllo segmentato. */
+function Scelte({ titolo, children }: { titolo: string; children: ReactNode }) {
   return (
-    <div className="quiz-gruppo">
-      <p className="quiz-gruppo__titolo">{titolo}</p>
+    <div className="quiz-impostazione">
+      <p className="quiz-impostazione__titolo">{titolo}</p>
       {children}
-      {nota && <p className="quiz-gruppo__nota">{nota}</p>}
     </div>
   )
 }
@@ -682,13 +703,13 @@ function Interruttore({
       type="button"
       role="switch"
       aria-checked={acceso}
-      className="quiz-tempo"
+      className="quiz-impostazione quiz-impostazione--interruttore"
       disabled={disabilitato}
       onClick={() => onCambia(!acceso)}
     >
-      <span className="quiz-tempo__testi">
-        <span className="quiz-tempo__titolo">{titolo}</span>
-        {sotto && <span className="quiz-tempo__sotto">{sotto}</span>}
+      <span className="quiz-impostazione__testi">
+        <span className="quiz-impostazione__titolo">{titolo}</span>
+        {sotto && <span className="quiz-impostazione__sotto">{sotto}</span>}
       </span>
       <span className={`quiz-interruttore${acceso ? ' is-acceso' : ''}`} aria-hidden="true">
         <span />
