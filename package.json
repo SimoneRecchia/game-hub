@@ -16,6 +16,7 @@
     "cruciverba:locale": "node scripts/genera-cruciverba.mjs --local && node scripts/genera-cruciverba.mjs --local --liberi 20",
     "scarabeo:locale": "vite-node scripts/genera-computer-scarabeo.ts -- --local",
     "quiz:locale": "vite-node scripts/genera-quiz.ts -- --local",
+    "sudoku:locale": "vite-node scripts/genera-sudoku.ts -- --local",
     "dawg:build": "node scripts/build-dawg.mjs",
     "db:migrate:local": "wrangler d1 migrations apply game-hub-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply game-hub-db --remote",

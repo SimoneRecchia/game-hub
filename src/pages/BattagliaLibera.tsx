@@ -12,10 +12,10 @@ import { ComeSiGiocaBattaglia } from '@/games/battaglia/ComeSiGioca'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
+import { DOVE } from '@/lib/presenza'
 import { LIVELLI_BATTAGLIA, type LivelloBattaglia } from '@shared/battaglia-computer'
 import { BATTAGLIA_POLL_LOBBY_MS } from '@shared/config'
 import type {
-  Attivita,
   GiocatoreOnline,
   InvitoInviato,
   LinkBattaglia,
@@ -27,18 +27,6 @@ import './Battaglia.css'
 
 /** Senza niente in sospeso la sala si rilegge di rado: serve solo a vedere chi entra. */
 const RITMO_TRANQUILLO_MS = 12_000
-
-const DOVE: Record<Attivita, string> = {
-  hub: 'fra i giochi',
-  wordle: 'gioca a Wordle',
-  scarabeo: 'gioca a Scarabeo',
-  cruciverba: 'fa il cruciverba',
-  battaglia: 'alla battaglia navale',
-  quiz: 'gioca al quiz',
-  classifica: 'guarda la classifica',
-  profilo: 'nel profilo',
-  altro: 'online',
-}
 
 const NOMI: Record<LivelloBattaglia, string> = { facile: 'Facile', normale: 'Normale', difficile: 'Difficile' }
 

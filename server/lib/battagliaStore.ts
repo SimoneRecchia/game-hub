@@ -53,6 +53,7 @@ export const ATTIVITA: readonly Attivita[] = [
   'wordle',
   'scarabeo',
   'cruciverba',
+  'sudoku',
   'battaglia',
   'quiz',
   'classifica',

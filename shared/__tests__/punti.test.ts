@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { CASELLE, CASELLE_FLOTTA } from '../battaglia'
 import { COSTO_SVELATA, PUNTI_COMPLETO, punteggio as puntiCruciverba } from '../cruciverba'
-import { MASSIMI, PUNTI_MASSIMI, RIFERIMENTO_SCARABEO, puntiBattaglia, puntiQuiz, puntiScarabeo } from '../punti'
+import { MASSIMI, PUNTI_MASSIMI, RIFERIMENTO_SCARABEO, puntiBattaglia, puntiQuiz, puntiScarabeo, puntiSudoku } from '../punti'
+import { COSTO_ERRORE as ERRORE_SUDOKU, COSTO_SVELATA as SVELATA_SUDOKU } from '../sudoku'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
 /**
@@ -40,6 +41,10 @@ describe('una classificata vale al massimo cento punti', () => {
     expect(puntiCruciverba(0, 0)).toBe(100)
   })
 
+  it('nel sudoku il risolto senza aiuti vale cento', () => {
+    expect(puntiSudoku(0, 0)).toBe(100)
+  })
+
   it('nel quiz dieci risposte giuste su dieci valgono cento', () => {
     expect(puntiQuiz(10, 10)).toBe(100)
     expect(puntiQuiz(12, 10)).toBe(100)
@@ -74,6 +79,14 @@ describe('una giornata storta si recupera', () => {
   it('nel cruciverba ogni aiuto costa poco, non tutto', () => {
     expect(puntiCruciverba(1, 0)).toBe(100 - COSTO_SVELATA)
     expect(puntiCruciverba(0, 5)).toBeGreaterThan(90)
+  })
+
+  it('nel sudoku ogni aiuto costa poco, non tutto, e svelarlo tutto vale zero', () => {
+    expect(puntiSudoku(1, 0)).toBe(100 - SVELATA_SUDOKU)
+    expect(puntiSudoku(0, 1)).toBe(100 - ERRORE_SUDOKU)
+    // Due cifre svelate e tre errori: una giornata con qualche aiuto resta sopra il novanta.
+    expect(puntiSudoku(2, 3)).toBeGreaterThanOrEqual(90)
+    expect(puntiSudoku(60, 0)).toBe(0)
   })
 
   it('nel quiz una partita storta vale circa la metà di una perfetta, e finirla vale sempre qualcosa', () => {

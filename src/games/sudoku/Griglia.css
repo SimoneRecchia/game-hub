@@ -1,0 +1,164 @@
+/*
+ * La griglia del sudoku. Il filo spesso fra i riquadri e' lo sfondo che si vede
+ * nello spazio fra un riquadro e l'altro, quello sottile lo spazio fra le
+ * caselle: niente bordi da sommare, e le caselle restano tutte uguali.
+ *
+ * La griglia e' un contenitore in larghezza (`cqi`): cifre e note si misurano
+ * sulla casella, che e' un nono della griglia, qualunque sia lo schermo.
+ */
+.sud-griglia {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  width: min(100cqw, 100cqh);
+  aspect-ratio: 1;
+  padding: 2px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--sud-bordo);
+  box-shadow: var(--shadow-sm);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.sud-riquadro {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--sud-filo);
+}
+
+.sud-casella {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  background-color: var(--sud-casella);
+  color: var(--brand);
+  font-family: var(--font-rounded);
+  font-size: calc(100cqi / 9 * 0.56);
+  font-weight: 600;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+/* La casella scelta e' gia' il segno di dove si e': niente anello, e niente angoli tondi del focus. */
+.sud-casella:focus-visible {
+  outline: none;
+  border-radius: 0;
+}
+
+.sud-casella.is-data {
+  color: var(--label);
+  font-weight: 700;
+}
+
+.sud-casella.is-vicina {
+  background-color: color-mix(in srgb, var(--brand) 7%, var(--sud-casella));
+}
+
+.sud-casella.is-uguale {
+  background-color: color-mix(in srgb, var(--brand) 20%, var(--sud-casella));
+}
+
+.sud-casella.is-scelta {
+  z-index: 1;
+  background-color: color-mix(in srgb, var(--brand) 28%, var(--sud-casella));
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+/* Le svelate nel colore del gioco, con un puntino: si sa che non sono proprie. */
+.sud-casella.is-svelata {
+  color: var(--sudoku-ink);
+}
+
+.sud-casella.is-svelata::after {
+  content: '';
+  position: absolute;
+  top: 10%;
+  right: 10%;
+  width: 12%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--sudoku-1);
+}
+
+.sud-casella.is-doppione .sud-casella__cifra,
+.sud-casella.is-sbagliata .sud-casella__cifra {
+  color: var(--red);
+}
+
+.sud-casella.is-sbagliata {
+  background-color: color-mix(in srgb, var(--red) 13%, var(--sud-casella));
+}
+
+.sud-casella__cifra {
+  animation: sud-cifra 220ms var(--ease-spring) both;
+}
+
+@keyframes sud-cifra {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.sud-casella__note {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  width: 100%;
+  height: 100%;
+  padding: 7%;
+  color: var(--label-secondary);
+  font-size: calc(100cqi / 9 * 0.25);
+  font-weight: 600;
+}
+
+.sud-casella__note > span {
+  display: grid;
+  place-items: center;
+}
+
+.sud-casella__note > .is-uguale {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+/* Una riga, una colonna o un riquadro appena completati: un'onda li attraversa. */
+.sud-casella.is-onda {
+  animation: sud-onda 640ms var(--ease-out) both;
+  animation-delay: calc(var(--onda, 0) * 40ms);
+}
+
+@keyframes sud-onda {
+  35% {
+    background-color: color-mix(in srgb, var(--sudoku-1) 34%, var(--sud-casella));
+  }
+}
+
+/* Lo schema finito: un'onda in diagonale, dall'angolo in alto. */
+.sud-casella.is-finita {
+  animation: sud-fine 900ms var(--ease-out) both;
+  animation-delay: calc(var(--onda, 0) * 35ms);
+}
+
+@keyframes sud-fine {
+  30% {
+    background-color: color-mix(in srgb, var(--green) 30%, var(--sud-casella));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sud-casella__cifra,
+  .sud-casella.is-onda,
+  .sud-casella.is-finita {
+    animation: none;
+  }
+}

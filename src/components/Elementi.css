@@ -376,3 +376,28 @@
 .tacche__tacca.is-piena {
   background: var(--tacche-colore);
 }
+
+/* Quattro livelli, come il sudoku: tacche un filo piu' strette, nello stesso spazio. */
+.tacche--4 {
+  gap: 2px;
+}
+
+.tacche--4 .tacche__tacca {
+  width: 5px;
+}
+
+.tacche--4 .tacche__tacca:nth-child(1) {
+  height: 34%;
+}
+
+.tacche--4 .tacche__tacca:nth-child(2) {
+  height: 56%;
+}
+
+.tacche--4 .tacche__tacca:nth-child(3) {
+  height: 78%;
+}
+
+.tacche--4 .tacche__tacca:nth-child(4) {
+  height: 100%;
+}

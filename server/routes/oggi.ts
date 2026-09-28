@@ -5,7 +5,14 @@ import type { OggiRisposta } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { requireVerified } from '../lib/session'
 import { classificaGenerale } from '../lib/generale'
-import { riepilogoBattaglia, riepilogoCruciverba, riepilogoQuiz, riepilogoScarabeo, riepilogoWordle } from '../lib/riepiloghi'
+import {
+  riepilogoBattaglia,
+  riepilogoCruciverba,
+  riepilogoQuiz,
+  riepilogoScarabeo,
+  riepilogoSudoku,
+  riepilogoWordle,
+} from '../lib/riepiloghi'
 import { today } from '../lib/wordleStore'
 
 /**
@@ -20,10 +27,11 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
   const db = c.env.DB
   const io = c.get('player').id
   const quando = today()
-  const [wordle, scarabeo, cruciverba, battaglia, quiz, generale] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, generale] = await Promise.all([
     riepilogoWordle(db, io),
     riepilogoScarabeo(db, io),
     riepilogoCruciverba(db, io),
+    riepilogoSudoku(db, io),
     riepilogoBattaglia(db, io),
     riepilogoQuiz(db, io),
     classificaGenerale(db, periodoDi('today', quando.puzzleNumber), io),
@@ -35,6 +43,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     wordle,
     scarabeo,
     cruciverba,
+    sudoku,
     battaglia,
     quiz,
     generale: {

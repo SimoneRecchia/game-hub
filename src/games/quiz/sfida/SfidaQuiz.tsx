@@ -9,27 +9,16 @@ import { useToast } from '@/components/Toast'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
+import { DOVE } from '@/lib/presenza'
 import { SFIDA_POLL_ATTESA_MS } from '@shared/config'
 import { NOMI_CATEGORIE, NOMI_MODI } from '@shared/quiz'
-import type { Attivita, GiocatoreOnline, SalaQuiz, SfidaQuizInviata } from '@shared/types'
+import type { GiocatoreOnline, SalaQuiz, SfidaQuizInviata } from '@shared/types'
 import { useIndiceQuiz } from '../dati'
 import { nomeArea } from '../testi'
 import type { ImpostazioniLibera } from '../usePartita'
 import { domandePerSfida, sfidaDalleScelte } from './domande'
 import '@/pages/Battaglia.css'
 import './Duello.css'
-
-const DOVE: Record<Attivita, string> = {
-  hub: 'fra i giochi',
-  wordle: 'gioca a Wordle',
-  scarabeo: 'gioca a Scarabeo',
-  cruciverba: 'fa il cruciverba',
-  battaglia: 'alla battaglia navale',
-  quiz: 'gioca al quiz',
-  classifica: 'guarda la classifica',
-  profilo: 'nel profilo',
-  altro: 'online',
-}
 
 /** Quanto spesso si guarda la sala a foglio aperto, se non si aspetta una risposta. */
 const POLL_SALA_MS = 3_000

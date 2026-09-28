@@ -4,6 +4,7 @@ import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
+import { FoglioAiuti, VoceAiuto } from '@/components/Aiuti'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { Sheet } from '@/components/Sheet'
 import { IconChevronLeft, IconChevronRight, IconClock, IconInfo, IconShuffle, IconTrophy } from '@/components/Icons'
@@ -295,48 +296,39 @@ export default function Cruciverba() {
         )}
       </Sheet>
 
-      <Sheet open={aiuti} onClose={() => setAiuti(false)} title="Aiuti">
-        <div className="cru-aiuti">
-          <p className="cru-aiuti__nota">
+      <FoglioAiuti
+        open={aiuti}
+        onClose={() => setAiuti(false)}
+        nota={
+          <>
             Adesso il cruciverba vale <strong>{g.punti} punti</strong>.
-          </p>
-          <button
-            type="button"
-            className="cru-aiuti__voce"
-            onClick={() => aiutoScelto(() => g.controlla('parola'))}
-            disabled={!g.corrente}
-          >
-            <span className="cru-aiuti__nome">Controlla la parola</span>
-            <span className="cru-aiuti__costo">{COSTO_ERRORE} punto per lettera sbagliata</span>
-          </button>
-          <button
-            type="button"
-            className="cru-aiuti__voce"
-            onClick={() => aiutoScelto(() => g.controlla('tutto'))}
-          >
-            <span className="cru-aiuti__nome">Controlla tutto lo schema</span>
-            <span className="cru-aiuti__costo">{COSTO_ERRORE} punto per lettera sbagliata</span>
-          </button>
-          <button
-            type="button"
-            className="cru-aiuti__voce"
-            onClick={() => aiutoScelto(() => g.svela('lettera'))}
-            disabled={!g.selezione}
-          >
-            <span className="cru-aiuti__nome">Svela la lettera</span>
-            <span className="cru-aiuti__costo">{COSTO_SVELATA} punti se manca o è sbagliata</span>
-          </button>
-          <button
-            type="button"
-            className="cru-aiuti__voce"
-            onClick={() => aiutoScelto(() => g.svela('parola'))}
-            disabled={!g.corrente}
-          >
-            <span className="cru-aiuti__nome">Svela la parola</span>
-            <span className="cru-aiuti__costo">{COSTO_SVELATA} punti per lettera mancante o sbagliata</span>
-          </button>
-        </div>
-      </Sheet>
+          </>
+        }
+      >
+        <VoceAiuto
+          nome="Controlla la parola"
+          costo={`${COSTO_ERRORE} punto per lettera sbagliata`}
+          onClick={() => aiutoScelto(() => g.controlla('parola'))}
+          disabled={!g.corrente}
+        />
+        <VoceAiuto
+          nome="Controlla tutto lo schema"
+          costo={`${COSTO_ERRORE} punto per lettera sbagliata`}
+          onClick={() => aiutoScelto(() => g.controlla('tutto'))}
+        />
+        <VoceAiuto
+          nome="Svela la lettera"
+          costo={`${COSTO_SVELATA} punti se manca o è sbagliata`}
+          onClick={() => aiutoScelto(() => g.svela('lettera'))}
+          disabled={!g.selezione}
+        />
+        <VoceAiuto
+          nome="Svela la parola"
+          costo={`${COSTO_SVELATA} punti per lettera mancante o sbagliata`}
+          onClick={() => aiutoScelto(() => g.svela('parola'))}
+          disabled={!g.corrente}
+        />
+      </FoglioAiuti>
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
