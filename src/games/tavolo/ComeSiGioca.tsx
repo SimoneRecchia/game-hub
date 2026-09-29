@@ -45,6 +45,31 @@ const REGOLE: Record<GiocoTavoliere, { lede: string; sezioni: { titolo: string; 
       },
     ],
   },
+  go: {
+    lede: 'Circonda più territorio dell’altro: alla fine contano le tue pietre e le intersezioni vuote che chiudi.',
+    sezioni: [
+      {
+        titolo: 'Il turno',
+        righe: [
+          'Tocca un’intersezione vuota: la pietra si posa. Sul 13 e sul 19 tocca due volte lo stesso punto.',
+          'Un gruppo che non ha più intersezioni libere accanto è catturato, e si toglie.',
+          'Non si gioca dove la pietra resterebbe senza libertà, a meno che non catturi.',
+          <>
+            <strong>Ko</strong>: una pietra sola che ha appena catturato una pietra sola non si ricattura subito.
+          </>,
+          'Comincia il Nero.',
+        ],
+      },
+      {
+        titolo: 'La fine',
+        righe: [
+          'Quando non c’è più niente da fare si passa: due passi di seguito fermano la partita.',
+          'Il gioco segna le pietre morte. Con un amico toccate i gruppi per correggerlo, e il conteggio vale quando lo accettate tutti e due; contro il computer, se non sei d’accordo, riprendi a giocare.',
+          'Si contano le pietre vive e il territorio; il Bianco ha 7,5 punti di komi.',
+        ],
+      },
+    ],
+  },
   dama: {
     lede: 'Mangia o blocca tutti i pezzi dell’altro. Si gioca con le regole italiane.',
     sezioni: [

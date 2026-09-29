@@ -132,7 +132,7 @@ export const INDOVINA_CONSERVA_MS = 2 * 24 * 60 * 60_000
 export const INDOVINA_POLL_ATTESA_MS = 1_500
 export const INDOVINA_POLL_TURNO_MS = 4_000
 
-/* ────────────────────  Scacchi, dama e Forza 4, fra amici  ──────────────────── */
+/* ────────────────────  Scacchi, dama, Forza 4 e go, fra amici  ──────────────────── */
 
 /** Un invito con il link vale un'ora, come in Indovina chi: si gioca in due nello stesso momento. */
 export const TAVOLO_LINK_MS = 60 * 60_000

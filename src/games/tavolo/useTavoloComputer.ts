@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { contaPunti, semeDi } from '@/games/go/conteggio'
+import * as go from '@shared/go'
 import { altraParte, type GiocoTavoliere, type LivelloTavoliere, type Parte } from '@shared/tavolo'
 import { giocaMossa, regoleDi } from '@shared/tavolo-regole'
-import { mossaDelComputer } from './computer'
+import { mossaDelComputer, stimaDelleMorte } from './computer'
 import {
   conta,
   leggiPartita,
@@ -27,6 +29,14 @@ export interface PartitaControComputer {
   /** Una partita nuova: allo stesso livello se non se ne sceglie un altro. */
   nuova: (livello?: LivelloTavoliere) => void
   riprova: () => void
+  /**
+   * Nel go, a gioco fermo dopo due passi: le pietre che il computer stima
+   * morte (null mentre ci pensa). Contro il computer il conteggio non si
+   * corregge a mano: chi non e' d'accordo riprende a giocare, e cattura.
+   */
+  morte: number[] | null
+  confermaConteggio: () => void
+  riprendi: () => void
 }
 
 /** Il seme del computer: a caso, perché due partite uguali non si ripetano mossa per mossa. */
@@ -74,7 +84,27 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
   }, [])
 
   const computer = altraParte(partita.mia)
-  const tocca = !partita.esito && regoleDi(gioco).tratto(partita.posizione) === computer
+  const regole = regoleDi(gioco)
+  const fermo = !partita.esito && (regole.conteggio?.(partita.posizione) ?? false)
+  const tocca = !partita.esito && !fermo && regole.tratto(partita.posizione) === computer
+
+  // Il go fermo per contare: la stima delle pietre morte, nel Worker, una volta per posizione.
+  const [morte, setMorte] = useState<{ posizione: string; morte: number[] } | null>(null)
+  useEffect(() => {
+    if (!fermo) return
+    let annullato = false
+    const posizione = attuale.current.posizione
+    stimaDelleMorte(posizione, semeDi(posizione))
+      .then((stima) => {
+        if (!annullato) setMorte({ posizione, morte: stima })
+      })
+      .catch(() => {
+        if (!annullato) setMorte({ posizione, morte: [] })
+      })
+    return () => {
+      annullato = true
+    }
+  }, [fermo, partita.posizione])
 
   useEffect(() => {
     if (!tocca) return
@@ -142,6 +172,28 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
     [gioco],
   )
 
+  const stima = fermo && morte?.posizione === partita.posizione ? morte.morte : null
+
+  const confermaConteggio = useCallback(() => {
+    const p = attuale.current
+    if (!stima || p.esito) return
+    const conto = contaPunti(p.posizione, stima)
+    if (!conto) return
+    const vincitore: Parte = conto.vincitore === 'nero' ? 0 : 1
+    const punti = { nero: conto.nero, bianco: conto.bianco }
+    setPartita(conta({ ...p, esito: { vincitore, motivo: 'punti' }, punti }))
+  }, [stima])
+
+  // Si riprende da dove ci si era fermati: i due passi non contano piu', e tocca a chi toccava.
+  const riprendi = useCallback(() => {
+    const p = attuale.current
+    const q = go.leggi(p.posizione)
+    if (!q || p.esito) return
+    const dopo = { ...p, posizione: go.scrivi({ ...q, passi: 0 }) }
+    salvaPartita(dopo)
+    setPartita(dopo)
+  }, [])
+
   return {
     partita,
     pensa,
@@ -150,5 +202,8 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
     arrenditi,
     nuova,
     riprova: () => setTentativo((t) => t + 1),
+    morte: stima,
+    confermaConteggio,
+    riprendi,
   }
 }

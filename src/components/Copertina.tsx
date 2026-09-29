@@ -404,6 +404,43 @@ const DISEGNI: Record<GiocoClassificato | GiocoDaTavolo | 'generale', ReactEleme
     </g>
   ),
 
+  // Un angolo di goban: le linee, un punto di riferimento, e le pietre di una partita appena cominciata.
+  go: (
+    <g transform="rotate(-6 60 60)">
+      <rect x={18} y={18} width={84} height={84} rx={6} fill="#fff" fillOpacity={0.16} />
+      <g stroke="#fff" strokeOpacity={0.55} strokeWidth={1.4}>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <g key={i}>
+            <line x1={28} y1={28 + i * 16} x2={92} y2={28 + i * 16} />
+            <line x1={28 + i * 16} y1={28} x2={28 + i * 16} y2={92} />
+          </g>
+        ))}
+      </g>
+      <circle cx={60} cy={60} r={2.4} fill="#fff" fillOpacity={0.7} />
+      {[
+        { c: 1, r: 1, bianca: false },
+        { c: 3, r: 1, bianca: true },
+        { c: 2, r: 2, bianca: false },
+        { c: 3, r: 2, bianca: true },
+        { c: 1, r: 3, bianca: true },
+        { c: 2, r: 3, bianca: false },
+      ].map((p) => (
+        <g key={`${p.c}${p.r}`}>
+          <circle cx={28 + p.c * 16 + 1} cy={28 + p.r * 16 + 1.6} r={7.2} fill="#000" fillOpacity={0.16} />
+          <circle
+            cx={28 + p.c * 16}
+            cy={28 + p.r * 16}
+            r={7.2}
+            fill={p.bianca ? '#fff' : 'var(--c2)'}
+            stroke="#fff"
+            strokeOpacity={p.bianca ? 0 : 0.35}
+            strokeWidth={1.2}
+          />
+        </g>
+      ))}
+    </g>
+  ),
+
   // La classifica generale: tre gradini di un podio.
   generale: (
     <g fontFamily={TONDO} fontWeight={800}>

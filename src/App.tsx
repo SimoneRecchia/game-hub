@@ -41,7 +41,7 @@ import IndovinaSet from './pages/IndovinaSet'
 import { GIOCHI_TAVOLIERE } from '@shared/tavolo'
 
 /*
- * Le pagine di scacchi, dama e Forza 4 arrivano a parte: le regole, i pezzi e i
+ * Le pagine di scacchi, dama, Forza 4 e go arrivano a parte: le regole, i pezzi e i
  * tavolieri sono un quinto dell'app, e chi apre il Wordle non li deve
  * scaricare. React Router naviga dentro una transizione di React, quindi la
  * schermata di prima resta finché la nuova non e' pronta; e il pezzo si
@@ -67,7 +67,7 @@ function usePrecaricaTavolo() {
 
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
 const INVITO =
-  /^\/(?:battaglia-navale\/invito|quiz\/sfida|indovina-chi\/invito|(?:scacchi|dama|forza-4)\/invito)\/([a-z0-9]+)\/?$/
+  /^\/(?:battaglia-navale\/invito|quiz\/sfida|(?:indovina-chi|scacchi|dama|forza-4|go)\/invito)\/([a-z0-9]+)\/?$/
 
 export default function App() {
   const { player, checking, config } = useAuth()
@@ -141,7 +141,7 @@ export default function App() {
             <Route path="/indovina-chi/invito/:codice" element={<IndovinaInvito />} />
             <Route path="/indovina-chi/set/:id" element={<IndovinaSet />} />
 
-            {/* Scacchi, dama e Forza 4: la sala, contro il computer, la partita con un amico, l'invito col link. */}
+            {/* Scacchi, dama, Forza 4 e go: la sala, contro il computer, la partita con un amico, l'invito. */}
             {GIOCHI_TAVOLIERE.flatMap((g) => {
               const a = ROTTE.tavolo(g)
               return [

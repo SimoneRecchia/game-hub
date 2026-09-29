@@ -251,6 +251,8 @@
   --dama-2: #86502a;
   --forza4-1: #1fbfa6;
   --forza4-2: #0b7f71;
+  --go-1: #a8579a;
+  --go-2: #612457;
 
   /* ---- La griglia del sudoku ----
      Il filo sottile fra le caselle e quello spesso fra i riquadri, come sulla
@@ -275,6 +277,8 @@
   --dama-ink: light-dark(#8a5227, #e8b27f);
   --forza4-ink: #0a7a6c;
   --forza4-ink: light-dark(#0a7a6c, #5fe0c8);
+  --go-ink: #8a3a7e;
+  --go-ink: light-dark(#8a3a7e, #eaa0dc);
 
   /* ---- Il podio ----
      Oro, argento e bronzo: gli anelli degli avatar, i gradini, i numeri dei
@@ -441,6 +445,11 @@
   --dama-chiara: light-dark(#f2e1c2, #b99c74);
   --dama-scura: #8d5b36;
   --dama-scura: light-dark(#8d5b36, #6b4427);
+  /* Il goban: il legno chiaro del kaya, e le linee d'inchiostro. */
+  --go-legno: #deb66a;
+  --go-legno: light-dark(#deb66a, #b8914f);
+  --go-linea: #3f2e10;
+  --go-linea: light-dark(#3f2e10, #2a1e0a);
 
   /* ---- Il cruciverba ----
      Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:

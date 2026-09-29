@@ -5,8 +5,8 @@
  *
  * Tutto passa in testo: la posizione come la salva ogni gioco (il FEN negli
  * scacchi), la mossa nella sua notazione piu' semplice da controllare — "e2e4"
- * negli scacchi, "22x13x6" nella dama, la colonna nel Forza 4. La notazione da
- * leggere ("Cf3", "22x13") la scrive l'interfaccia.
+ * negli scacchi, "22x13x6" nella dama, la colonna nel Forza 4, "D4" o "passo"
+ * nel go. La notazione da leggere ("Cf3", "22x13") la scrive l'interfaccia.
  *
  * Qui non entra il computer: i moduli che cercano le mosse sono grandi, e il
  * server non li deve portare con se'.
@@ -14,6 +14,7 @@
 
 import * as dama from './dama'
 import * as forza4 from './forza4'
+import * as go from './go'
 import * as scacchi from './scacchi'
 import type { EsitoTavoliere, GiocoTavoliere, Parte } from './tavolo'
 
@@ -34,8 +35,18 @@ export interface RegoleTavoliere {
   chiave(posizione: string): string
   /** A partita finita chi ha vinto e perché; null se si gioca ancora. */
   esito(posizione: string, chiaviPrecedenti: readonly string[]): EsitoTavoliere | null
-  /** Si puo' proporre la patta: negli scacchi e nella dama si', nel Forza 4 non ha senso. */
+  /** Si puo' proporre la patta: negli scacchi e nella dama si', nel Forza 4 e nel go non ha senso. */
   patta: boolean
+  /**
+   * Le varianti del gioco, quando ne ha: i lati del goban. La prima e' quella
+   * di `iniziale`; `inizialeDi` da' la partenza delle altre, e `varianteDi` dice
+   * di quale variante e' una posizione (per la rivincita, per gli inviti).
+   */
+  varianti?: readonly string[]
+  inizialeDi?(variante: string): string | null
+  varianteDi?(posizione: string): string | null
+  /** Il gioco si e' fermato per contare, e le mosse non valgono piu': nel go, dopo due passi. */
+  conteggio?(posizione: string): boolean
 }
 
 const REGOLE_FORZA4: RegoleTavoliere = {
@@ -120,10 +131,61 @@ const REGOLE_DAMA: RegoleTavoliere = {
   patta: true,
 }
 
+/**
+ * Il go: la posizione e' il testo del goban (con il lato, il ko e i passi), la
+ * mossa il punto ("D4") o "passo". Due passi di seguito non chiudono la
+ * partita: la fermano, e si contano i punti con le pietre morte che i due
+ * giocatori segnano (`conteggio`); la ripetizione lunga e' patta. Nel go ogni
+ * posizione puo' tornare dopo una cattura, quindi le chiavi si tengono tutte:
+ * sono impronte corte, e una partita a 19 ne ha qualche centinaio.
+ */
+const REGOLE_GO: RegoleTavoliere = {
+  iniziale: go.scrivi(go.posizioneIniziale(9)),
+  tratto(posizione) {
+    const p = go.leggi(posizione)
+    return p ? (p.tratto === 'nero' ? 0 : 1) : null
+  },
+  gioca(posizione, mossa) {
+    const p = go.leggi(posizione)
+    const m = p && /^(?:[A-HJ-T](?:[1-9]|1\d)|passo)$/.test(mossa) ? go.mossaDaTesto(p, mossa) : null
+    if (!p || !m) return null
+    return { posizione: go.scrivi(go.gioca(p, m)), irreversibile: false, mossa: go.testoMossa(m, p.lato) }
+  },
+  chiave(posizione) {
+    const p = go.leggi(posizione)
+    return p ? go.chiaveRipetizione(p) : posizione
+  },
+  esito(posizione, chiaviPrecedenti) {
+    const p = go.leggi(posizione)
+    // Due passi fermano il gioco ma non lo chiudono: il risultato lo dice il conteggio.
+    return p && go.esito(p, chiaviPrecedenti) === 'ripetizione' ? { vincitore: null, motivo: 'ripetizione' } : null
+  },
+  patta: false,
+  varianti: go.LATI.map(String),
+  inizialeDi(variante) {
+    const lato = Number(variante)
+    return go.LATI.includes(lato) ? go.scrivi(go.posizioneIniziale(lato)) : null
+  },
+  varianteDi(posizione) {
+    const p = go.leggi(posizione)
+    return p ? String(p.lato) : null
+  },
+  conteggio(posizione) {
+    const p = go.leggi(posizione)
+    return p !== null && p.passi >= 2
+  },
+}
+
 const REGOLE: Record<GiocoTavoliere, RegoleTavoliere> = {
   scacchi: REGOLE_SCACCHI,
   dama: REGOLE_DAMA,
   forza4: REGOLE_FORZA4,
+  go: REGOLE_GO,
+}
+
+/** La posizione di partenza di una partita nuova: quella di una variante, se c'e' e il gioco la conosce. */
+export function inizialeDi(regole: RegoleTavoliere, variante: string | null | undefined): string {
+  return (variante && regole.inizialeDi?.(variante)) || regole.iniziale
 }
 
 export function regoleDi(gioco: GiocoTavoliere): RegoleTavoliere {

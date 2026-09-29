@@ -12,9 +12,15 @@ const vista = async (chiama: Chiama, id: string, chi: Giocatore) =>
   (await chiama<VistaTavolo>('GET', `/tavolo/partite/${id}`, chi)).dati
 
 /** Anna invita Bruno (a Forza 4, se non si dice altro), Bruno accetta: la partita comincia. */
-async function partita(chiama: Chiama, anna: Giocatore, bruno: Giocatore, gioco = 'forza4'): Promise<string> {
+async function partita(
+  chiama: Chiama,
+  anna: Giocatore,
+  bruno: Giocatore,
+  gioco = 'forza4',
+  variante?: string,
+): Promise<string> {
   await online(chiama, bruno)
-  const invito = await chiama<{ id: string }>('POST', '/tavolo/inviti', anna, { gioco, playerId: bruno.id })
+  const invito = await chiama<{ id: string }>('POST', '/tavolo/inviti', anna, { gioco, playerId: bruno.id, variante })
   expect(invito.status).toBe(201)
   const accettato = await chiama<{ partitaId: string }>('POST', `/tavolo/inviti/${invito.dati.id}/accetta`, bruno)
   expect(accettato.status).toBe(200)
@@ -192,6 +198,78 @@ describe('i giochi da tavoliere fra amici, dalle API', () => {
     expect(sala.record).toEqual({ vinte: 0, perse: 0, patte: 1 })
     // La vittoria a tavolino non c'e' finché l'altro ha tempo, e a partita finita non serve.
     expect((await chiama('POST', `/tavolo/partite/${id}/reclama`, nero)).status).toBe(409)
+  })
+
+  it('nel go due passi fermano il gioco, e il conteggio vale quando lo accettano tutti e due', async () => {
+    const { chiama, giocatore } = banco()
+    const anna = await giocatore('anna')
+    const bruno = await giocatore('bruno')
+    // Un goban che non c'e' non si gioca.
+    await online(chiama, bruno)
+    const sette = await chiama('POST', '/tavolo/inviti', anna, { gioco: 'go', playerId: bruno.id, variante: '7' })
+    expect(sette.status).toBe(400)
+    const id = await partita(chiama, anna, bruno, 'go', '13')
+    const { primo: nero, secondo: bianco } = await colori(chiama, id, anna, bruno)
+    expect((await vista(chiama, id, nero)).posizione.startsWith('13:')).toBe(true)
+
+    expect((await muovi(chiama, id, nero, 'D4')).status).toBe(200)
+    expect((await muovi(chiama, id, bianco, 'passo')).status).toBe(200)
+    const fermo = (await muovi(chiama, id, nero, 'passo')).dati
+    expect(fermo.stato).toBe('in_corso')
+    expect(fermo.conteggio).toEqual({ morte: null, accettato: null })
+    expect(fermo.tuoTurno).toBe(false)
+    // A gioco fermo non si muove piu'.
+    expect((await muovi(chiama, id, bianco, 'K10')).status).toBe(409)
+
+    // Il Bianco segna morta la pietra nera (non lo e', ma e' la sua proposta): il Nero non accetta e riprende.
+    const d4 = (13 - 4) * 13 + 3
+    const vuota = (await chiama('POST', `/tavolo/partite/${id}/conteggio`, bianco, {
+      azione: 'proponi',
+      morte: [0],
+      versione: fermo.versione,
+    }))
+    expect(vuota.status).toBe(400)
+    const proposta = await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/conteggio`, bianco, {
+      azione: 'proponi',
+      morte: [d4],
+      versione: fermo.versione,
+    })
+    expect(proposta.dati.conteggio).toEqual({ morte: [d4], accettato: 'io' })
+    expect((await vista(chiama, id, nero)).conteggio?.accettato).toBe('avversario')
+    const ripresa = await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/conteggio`, nero, {
+      azione: 'riprendi',
+      versione: proposta.dati.versione,
+    })
+    expect(ripresa.dati.conteggio).toBeNull()
+    // Riprende chi aveva passato per primo: il Bianco.
+    expect((await vista(chiama, id, bianco)).tuoTurno).toBe(true)
+
+    // Si ripassa, e questa volta il Nero propone il goban cosi' com'e', e il Bianco accetta.
+    await muovi(chiama, id, bianco, 'passo')
+    const ancora = (await muovi(chiama, id, nero, 'passo')).dati
+    const mia = await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/conteggio`, nero, {
+      azione: 'proponi',
+      morte: [],
+      versione: ancora.versione,
+    })
+    const fine = (
+      await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/conteggio`, bianco, {
+        azione: 'accetta',
+        versione: mia.dati.versione,
+      })
+    ).dati
+    // Una pietra nera sul goban vuoto: il Nero ha tutto il goban, 169 punti, contro il komi del Bianco.
+    expect(fine).toMatchObject({ stato: 'finita', motivo: 'punti', vincitore: 'avversario' })
+    expect(fine.punti).toEqual({ io: 7.5, avversario: 169 })
+    expect((await vista(chiama, id, nero)).punti).toEqual({ io: 169, avversario: 7.5 })
+
+    // La rivincita si gioca sullo stesso goban.
+    await online(chiama, nero)
+    await online(chiama, bianco)
+    const chiesta = await chiama<{ invitoId: string }>('POST', `/tavolo/partite/${id}/rivincita`, bianco)
+    const accettata = await chiama<{ partitaId: string }>('POST', `/tavolo/partite/${id}/rivincita`, nero)
+    expect(accettata.dati.partitaId).toBe(chiesta.dati.invitoId)
+    expect((await vista(chiama, accettata.dati.partitaId, nero)).posizione.startsWith('13:')).toBe(true)
   })
 
   it('un invito con il link si vede da fuori e si accetta aprendolo', async () => {

@@ -27,7 +27,7 @@
  *   /indovina-chi/partita/:id           una partita
  *   /indovina-chi/invito/:codice        un invito arrivato con un link
  *   /indovina-chi/set/:id               un set di personaggi proprio ('nuovo' per crearne uno)
- *   /scacchi, /dama, /forza-4           la sala: contro il computer, o con un amico
+ *   /scacchi, /dama, /forza-4, /go      la sala: contro il computer, o con un amico
  *   /scacchi/computer                   la partita contro il computer, nel telefono
  *   /scacchi/partita/:id                una partita con un amico
  *   /scacchi/invito/:codice             un invito arrivato con un link
@@ -65,6 +65,7 @@ export const SLUG_TAVOLIERE: Record<GiocoTavoliere, string> = {
   scacchi: 'scacchi',
   dama: 'dama',
   forza4: 'forza-4',
+  go: 'go',
 }
 
 export const ROTTE = {

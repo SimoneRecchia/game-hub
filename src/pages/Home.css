@@ -407,6 +407,11 @@
   --tavolo-ink: var(--forza4-ink);
 }
 
+.tavolo--go {
+  --tavolo-1: var(--go-1);
+  --tavolo-ink: var(--go-ink);
+}
+
 .tavolo__freccia {
   flex: none;
   color: var(--label-tertiary);
@@ -418,8 +423,11 @@
   }
 }
 
-/* Sul telefono il motto ha bisogno di tutta la riga: con chi lo dice gia' la nota della sezione. */
-@media (max-width: 599px) {
+/*
+ * Sul telefono, e nella griglia a due colonne, il motto ha bisogno di tutta la
+ * riga: con chi lo dice gia' la nota della sezione.
+ */
+@media (max-width: 599px), (min-width: 900px) {
   .tavolo__con {
     display: none;
   }
