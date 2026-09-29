@@ -70,11 +70,11 @@ export default function Home() {
         </ul>
       </Sezione>
 
-      <Sezione titolo="Giochi da tavolo" nota="Con gli amici, quando volete.">
+      <Sezione titolo="Giochi da tavolo" nota="Con gli amici o contro il computer, senza classifica.">
         <ul className="home__tavolo">
           {GIOCHI_DA_TAVOLO.map((g, i) => (
             <li key={g.id} className="entra" style={{ '--n': i + 10 } as CSSProperties}>
-              <Collegamento to={`/${g.slug}`} className="tavolo">
+              <Collegamento to={`/${g.slug}`} className={`tavolo tavolo--${g.id}`}>
                 <Copertina gioco={g.id} formato="icona" transizione={`copertina-${g.id}`} />
                 <span className="tavolo__testo">
                   <span className="tavolo__nome">{g.nome}</span>

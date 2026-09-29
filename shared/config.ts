@@ -132,6 +132,30 @@ export const INDOVINA_CONSERVA_MS = 2 * 24 * 60 * 60_000
 export const INDOVINA_POLL_ATTESA_MS = 1_500
 export const INDOVINA_POLL_TURNO_MS = 4_000
 
+/* ────────────────────  Scacchi, dama e Forza 4, fra amici  ──────────────────── */
+
+/** Un invito con il link vale un'ora, come in Indovina chi: si gioca in due nello stesso momento. */
+export const TAVOLO_LINK_MS = 60 * 60_000
+
+/** Una partita ferma da mezz'ora non tiene piu' occupato nessuno: si puo' riprendere, ma non blocca gli inviti. */
+export const TAVOLO_ABBANDONATA_MS = 30 * 60_000
+
+/**
+ * Dopo quanto chi aspetta puo' chiudere la partita a suo favore: cinque minuti
+ * senza la mossa dell'altro, se l'altro ha chiuso l'app, o mezz'ora comunque.
+ * Una mossa degli scacchi si pensa anche per qualche minuto, e chi e' ancora li'
+ * sta pensando; chi se n'e' andato no.
+ */
+export const TAVOLO_ATTESA_MS = 5 * 60_000
+export const TAVOLO_ATTESA_MASSIMA_MS = 30 * 60_000
+
+/** Le partite ferme da una settimana si cancellano: questi giochi non hanno classifica. */
+export const TAVOLO_CONSERVA_MS = 7 * 24 * 60 * 60_000
+
+/** Il ritmo in partita: stretto quando si aspetta l'altro, largo quando tocca a te. */
+export const TAVOLO_POLL_ATTESA_MS = 1_500
+export const TAVOLO_POLL_TURNO_MS = 4_000
+
 /* ─────────────────────────  Email e verifica  ───────────────────────── */
 
 export const EMAIL_MAX = 254

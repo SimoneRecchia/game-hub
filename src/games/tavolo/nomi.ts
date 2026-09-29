@@ -1,0 +1,21 @@
+import type { GiocoTavoliere } from '@shared/tavolo'
+
+/**
+ * I nomi dei giochi da tavoliere per chi non gioca: gli avvisi degli inviti e
+ * la registrazione, che stanno nel pezzo dell'app che si scarica subito. Le
+ * regole, i tavolieri e i pezzi arrivano con le pagine dei giochi.
+ */
+
+/** Come si dice giocarci: "ti invita a giocare a scacchi". */
+export const A_GIOCO: Record<GiocoTavoliere, string> = {
+  scacchi: 'a scacchi',
+  dama: 'a dama',
+  forza4: 'a Forza 4',
+}
+
+/** Il colore del segno di ogni parte, accanto al nome: il disco, il pezzo. */
+export const SEGNI: Record<GiocoTavoliere, readonly [string, string]> = {
+  scacchi: ['#f6f6f4', '#2b2b2e'],
+  dama: ['#f6efe2', '#2e2723'],
+  forza4: ['var(--f4-rosso)', 'var(--f4-giallo)'],
+}

@@ -1,0 +1,200 @@
+/*
+ * La griglia del Forza 4.
+ *
+ * Tre strati: i dischi, la cornice con i buchi sopra, e le sette colonne da
+ * toccare sopra tutto. Il disco che cade parte dalla fascia in cima e scende
+ * dietro la cornice, visto solo dai buchi. La griglia e' sette per sei piu' la
+ * fascia, e si misura sul contenitore: prende quel che c'e', in larghezza o in
+ * altezza.
+ */
+.f4 {
+  --tuo: var(--f4-rosso);
+  position: relative;
+  /* Sette caselle di larghezza, sei e sette decimi di altezza con la fascia. */
+  width: min(100cqw, var(--campo-alto, 100cqh) * 70 / 67, 520px);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* La fascia sopra la griglia, alta sette decimi di casella: da li' cadono i dischi. */
+.f4__fascia {
+  aspect-ratio: 10 / 1;
+}
+
+.f4--giallo {
+  --tuo: var(--f4-giallo);
+}
+
+.f4__griglia {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 7 / 6;
+  /* Il fondo della griglia, dietro i buchi: un velo del colore della cornice. */
+  background: color-mix(in srgb, var(--f4-cornice) 9%, transparent);
+}
+
+.f4__dischi {
+  position: absolute;
+  inset: 0;
+}
+
+.f4__disco {
+  position: absolute;
+  left: calc(var(--c) * 100% / 7);
+  bottom: calc(var(--r) * 100% / 6);
+  width: calc(100% / 7);
+  height: calc(100% / 6);
+  display: grid;
+  place-items: center;
+}
+
+.f4__disco::before {
+  content: '';
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.45), transparent 42%),
+    radial-gradient(circle at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.16) 60%, transparent 72%),
+    var(--disco);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
+}
+
+.f4__disco.is-rosso {
+  --disco: var(--f4-rosso);
+}
+
+.f4__disco.is-giallo {
+  --disco: var(--f4-giallo);
+}
+
+/* Cade dalla fascia in cima, accelerando, e rimbalza un poco sul fondo. */
+.f4__disco.is-cade {
+  --da: calc((var(--r) - 5.85) * 100%);
+  animation: f4-cade var(--caduta) both;
+}
+
+@keyframes f4-cade {
+  0% {
+    transform: translateY(var(--da));
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.5);
+  }
+  72% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0.5, 0.5, 1);
+  }
+  86% {
+    transform: translateY(-8%);
+    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.5);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* L'ultimo disco giocato ha un punto in mezzo: si ritrova a colpo d'occhio. */
+.f4__disco.is-ultimo::after {
+  content: '';
+  position: absolute;
+  width: 14%;
+  height: 14%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+/* I quattro in fila, a partita finita: un anello bianco che respira. */
+.f4__disco.is-quattro::before {
+  box-shadow:
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    0 0 0 3px #fff,
+    0 0 14px 4px rgba(255, 255, 255, 0.55);
+  animation: f4-quattro 1.4s ease-in-out 0.45s infinite;
+}
+
+@keyframes f4-quattro {
+  50% {
+    transform: scale(0.9);
+  }
+}
+
+.f4__cornice {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 3px 0 color-mix(in srgb, var(--f4-cornice) 60%, #000));
+}
+
+.f4__cornice path {
+  fill: var(--f4-cornice);
+  stroke: rgba(0, 0, 0, 0.12);
+  stroke-width: 0.35;
+}
+
+/* Le colonne da toccare coprono anche la fascia: il dito ci arriva da sopra. */
+.f4__colonne {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.f4__colonna {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.f4__colonna:disabled {
+  cursor: default;
+}
+
+.f4__colonna:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+/* Il disco che si sta per giocare, nella fascia: con il mouse sopra la colonna, o con la tastiera. */
+.f4__fantasma {
+  position: absolute;
+  top: 0;
+  left: 10%;
+  width: 80%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--tuo);
+  opacity: 0;
+  transform: translateY(-12%) scale(0.86);
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .f4.is-attiva .f4__colonna:not(:disabled):hover .f4__fantasma {
+    opacity: 0.9;
+    transform: translateY(-12%);
+  }
+
+  .f4.is-attiva .f4__colonna:not(:disabled):hover {
+    background: color-mix(in srgb, var(--tuo) 9%, transparent);
+  }
+}
+
+.f4.is-attiva .f4__colonna:focus-visible .f4__fantasma {
+  opacity: 0.9;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .f4__disco.is-cade,
+  .f4__disco.is-quattro::before {
+    animation: none;
+  }
+}
