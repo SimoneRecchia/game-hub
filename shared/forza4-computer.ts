@@ -250,7 +250,7 @@ export function mossaDelComputer(
   p: PosizioneForza4,
   livello: LivelloForza4,
   rng: () => number,
-  opzioni: { tempoMs?: number } = {},
+  opzioni: { tempoMs?: number; profondita?: number } = {},
 ): number | null {
   const ricerca = new Ricerca(p, ZOBRIST)
   const d = p.tratto
@@ -281,10 +281,12 @@ export function mossaDelComputer(
   if (livello === 'normale') {
     valori = valuta(6)
   } else {
-    // Il primo giro, corto, si fa sempre intero: da lì in poi si va avanti finché c'e' tempo.
+    // Il primo giro, corto, si fa sempre intero: da lì in poi si va avanti finché c'e' tempo. Con
+    // `profondita` (nei test) ci si ferma li' e il tempo non conta: la mossa non dipende dalla macchina.
     valori = valuta(2)
-    ricerca.scadenza = adesso() + (opzioni.tempoMs ?? TEMPO_DIFFICILE_MS)
-    for (let profondita = 4; profondita <= CASELLE - ricerca.dischi; profondita += 2) {
+    ricerca.scadenza = opzioni.profondita ? Infinity : adesso() + (opzioni.tempoMs ?? TEMPO_DIFFICILE_MS)
+    const fino = Math.min(opzioni.profondita ?? CASELLE, CASELLE - ricerca.dischi)
+    for (let profondita = 4; profondita <= fino; profondita += 2) {
       const piuFonda = valuta(profondita)
       if (!piuFonda) break
       valori = piuFonda

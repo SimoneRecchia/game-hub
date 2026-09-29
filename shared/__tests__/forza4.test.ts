@@ -123,7 +123,8 @@ describe('il computer di Forza 4', () => {
       let p = posizioneIniziale()
       while (!esito(p)) {
         const livello = p.tratto === 0 ? primo : secondo
-        p = gioca(p, mossaDelComputer(p, livello, caso, { tempoMs: 150 })!)!
+        // Il difficile a profondita' fissa: a tempo, su una macchina carica, penserebbe meno del normale.
+        p = gioca(p, mossaDelComputer(p, livello, caso, { profondita: 10 })!)!
       }
       return esito(p)!.vincitore
     }

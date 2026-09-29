@@ -20,13 +20,17 @@ const SENZA_FILE = {
   fetch: async () => new Response('<!doctype html><title>Giochi</title>', { headers: { 'content-type': 'text/html' } }),
 } as unknown as Fetcher
 
-/** Due tessere del leggio del giorno che, dalla stella, non fanno una parola. */
+/**
+ * Due tessere del leggio del giorno che, dalla stella, non fanno una parola.
+ * Due tessere diverse del leggio, non la stessa due volte: una lettera sola nel
+ * leggio non si posa due volte, e il server risponderebbe che manca la tessera.
+ */
 function posaInventata() {
   const { leggio } = leggioDa(sacchettoDelGiorno(giornata().puzzleNumber), [])
   const lettere = leggio.filter((t) => t !== JOLLY)
-  for (const a of lettere) {
-    for (const b of lettere) {
-      if (!dawg.contiene(a + b)) {
+  for (const [i, a] of lettere.entries()) {
+    for (const [j, b] of lettere.entries()) {
+      if (i !== j && !dawg.contiene(a + b)) {
         return [
           { r: CENTRO, c: CENTRO, lettera: a, jolly: false },
           { r: CENTRO, c: CENTRO + 1, lettera: b, jolly: false },
