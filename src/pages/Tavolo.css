@@ -1,0 +1,44 @@
+/*
+ * Le schermate dei giochi da tavoliere: la sala, e le due partite. Le parti
+ * della sala — il link, chi e' online, l'invito in attesa — sono quelle della
+ * battaglia (Battaglia.css); qui c'e' solo quel che cambia colore.
+ */
+
+/* La partita aperta, nel colore del suo gioco. */
+.tavolo-aperta--scacchi {
+  background: linear-gradient(150deg, var(--scacchi-1), var(--scacchi-2));
+}
+
+.tavolo-aperta--dama {
+  background: linear-gradient(150deg, var(--dama-1), var(--dama-2));
+}
+
+.tavolo-aperta--forza4 {
+  background: linear-gradient(150deg, var(--forza4-1), var(--forza4-2));
+}
+
+/* "Riprendi la partita": un punto che pulsa, come quello della battaglia. */
+.tavolo-riga__segno {
+  position: relative;
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 0 5px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+.tavolo-riga__segno::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 var(--brand);
+  animation: bat-onde 1.6s var(--ease-out) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tavolo-riga__segno::after {
+    animation: none;
+  }
+}

@@ -27,6 +27,10 @@
  *   /indovina-chi/partita/:id           una partita
  *   /indovina-chi/invito/:codice        un invito arrivato con un link
  *   /indovina-chi/set/:id               un set di personaggi proprio ('nuovo' per crearne uno)
+ *   /scacchi, /dama, /forza-4           la sala: contro il computer, o con un amico
+ *   /scacchi/computer                   la partita contro il computer, nel telefono
+ *   /scacchi/partita/:id                una partita con un amico
+ *   /scacchi/invito/:codice             un invito arrivato con un link
  *   /classifica                         tutte le classifiche: la generale e i giochi
  *   /classifica/generale                la generale per intero
  *   /classifica/wordle                  quella di un gioco (?periodo=week&indietro=1)
@@ -38,6 +42,7 @@
  * rompono.
  */
 
+import type { GiocoTavoliere } from '@shared/tavolo'
 import type { ChiaveClassifica, GiocoClassificato } from '@shared/types'
 
 /** Il pezzo di indirizzo di ogni gioco: "battaglia-navale", non "battaglia". */
@@ -53,6 +58,13 @@ export const SLUG: Record<GiocoClassificato, string> = {
 export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null {
   const trovato = (Object.keys(SLUG) as GiocoClassificato[]).find((g) => SLUG[g] === slug)
   return trovato ?? null
+}
+
+/** Lo stesso per i giochi da tavoliere: "forza-4", non "forza4". */
+export const SLUG_TAVOLIERE: Record<GiocoTavoliere, string> = {
+  scacchi: 'scacchi',
+  dama: 'dama',
+  forza4: 'forza-4',
 }
 
 export const ROTTE = {
@@ -76,4 +88,9 @@ export const ROTTE = {
   partitaIndovina: (id: string) => `/indovina-chi/partita/${id}`,
   invitoIndovina: (codice: string) => `/indovina-chi/invito/${codice}`,
   setIndovina: (id: string) => `/indovina-chi/set/${id}`,
+
+  tavolo: (gioco: GiocoTavoliere) => `/${SLUG_TAVOLIERE[gioco]}`,
+  computerTavolo: (gioco: GiocoTavoliere) => `/${SLUG_TAVOLIERE[gioco]}/computer`,
+  partitaTavolo: (gioco: GiocoTavoliere, id: string) => `/${SLUG_TAVOLIERE[gioco]}/partita/${id}`,
+  invitoTavolo: (gioco: GiocoTavoliere, codice: string) => `/${SLUG_TAVOLIERE[gioco]}/invito/${codice}`,
 } as const

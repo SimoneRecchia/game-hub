@@ -5,6 +5,7 @@ import { Field } from '@/components/Field'
 import { Marchio } from '@/components/Marchio'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { ThemeButton } from '@/components/ThemeButton'
+import { A_GIOCO } from '@/games/tavolo/nomi'
 import { useAuth } from '@/lib/auth'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
@@ -24,8 +25,8 @@ type Campo = 'nickname' | 'email' | 'password' | 'conferma' | null
  * serve al recupero, che prima non esisteva — chi dimenticava la password
  * perdeva l'account.
  *
- * Chi arriva da un **invito con un link** — a battaglia navale o a una sfida a
- * quiz — vede prima chi lo sta sfidando, e la schermata parte dalla
+ * Chi arriva da un **invito con un link** — a battaglia navale, a una sfida a
+ * quiz, a una partita da tavolo — vede prima chi lo sta sfidando, e la schermata parte dalla
  * registrazione: e' quasi certamente la
  * prima volta che apre l'app. L'indirizzo resta quello dell'invito, quindi
  * appena entra la pagina dell'invito lo porta nella partita.
@@ -127,7 +128,8 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
           <Marchio lato={96} />
           <h1 className="welcome__title">Giochi</h1>
           <p className="welcome__lede">
-            Wordle, Scarabeo, Cruciverba, Sudoku, Battaglia navale e Quiz, ogni giorno uguali per tutti. E Indovina chi, con gli amici.
+            Wordle, Scarabeo, Cruciverba, Sudoku, Battaglia navale e Quiz, ogni giorno uguali per tutti. E scacchi,
+            dama, Forza 4 e Indovina chi, con gli amici.
           </p>
         </header>
 
@@ -142,7 +144,9 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
                     ? 'ti sfida a un quiz di geografia.'
                     : sfida.gioco === 'indovina'
                       ? 'ti invita a Indovina chi.'
-                      : 'ti sfida a battaglia navale.'}{' '}
+                      : sfida.gioco === 'scacchi' || sfida.gioco === 'dama' || sfida.gioco === 'forza4'
+                        ? `ti invita a giocare ${A_GIOCO[sfida.gioco]}.`
+                        : 'ti sfida a battaglia navale.'}{' '}
                   {isRegister ? 'Registrati e gioca subito.' : 'Entra e gioca subito.'}
                 </>
               ) : (

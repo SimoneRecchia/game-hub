@@ -264,6 +264,146 @@ const DISEGNI: Record<GiocoClassificato | GiocoDaTavolo | 'generale', ReactEleme
     </g>
   ),
 
+  // Un cavallo sulla scacchiera, come nei disegni dei libri di scacchi.
+  scacchi: (
+    <g>
+      <g transform="rotate(-8 60 76)">
+        {Array.from({ length: 15 }, (_, k) => {
+          const r = Math.floor(k / 5)
+          const c = k % 5
+          return (
+            <rect
+              key={k}
+              x={15 + c * 18}
+              y={62 + r * 14}
+              width={18}
+              height={14}
+              fill="#fff"
+              fillOpacity={(r + c) % 2 === 0 ? 0.34 : 0.1}
+            />
+          )
+        })}
+      </g>
+      <g transform="translate(24 12) scale(1.75)" strokeLinejoin="round" strokeLinecap="round">
+        <path d="M22 10c10.5 1 16.5 8 16 29H15c0-9 10-6.5 8-21" fill="#fff" />
+        <path
+          d="M24 18c.38 2.91-5.55 7.37-8 9-3 2-2.82 4.34-5 4-1.04-.94 1.41-3.04 0-3-1 0 .19 1.23-1 2-1 0-4 1-4-4 0-2 6-12 6-12s1.89-1.9 2-3.5c-.73-.99-.5-2-.5-3 1-1 3 2.5 3 2.5h2s.78-1.99 2.5-3c1 0 1 3 1 3"
+          fill="#fff"
+        />
+        <circle cx={12} cy={25.5} r={0.9} fill="var(--c2)" />
+        <path d="M15 15.5a.5 1.5 30 1 1-1-.5" fill="none" stroke="var(--c2)" strokeWidth={1.3} />
+        <path d="M24.55 10.4l-.45 1.45.5.15c3.15 1 5.65 2.49 7.9 6.75S35.75 29.06 35.25 39l-.05.5h2.25l.05-.5c.5-10.06-.88-16.85-3.25-21.34-2.37-4.49-5.79-6.64-9.19-7.16z" fill="var(--c2)" fillOpacity={0.35} />
+      </g>
+    </g>
+  ),
+
+  // Tre pedine su una diagonale: una dama, due pezzi impilati, e una pedina nera.
+  dama: (
+    <g>
+      <g transform="rotate(-8 60 60)">
+        {Array.from({ length: 16 }, (_, k) => {
+          const r = Math.floor(k / 4)
+          const c = k % 4
+          return (
+            <rect
+              key={k}
+              x={24 + c * 18}
+              y={24 + r * 18}
+              width={18}
+              height={18}
+              fill="#fff"
+              fillOpacity={(r + c) % 2 === 1 ? 0.3 : 0.08}
+            />
+          )
+        })}
+      </g>
+      {[
+        { x: 42, y: 76, bianca: true, dama: true },
+        { x: 80, y: 46, bianca: false, dama: false },
+      ].map((p) => (
+        <g key={p.x}>
+          {(p.dama ? [0, 1] : [0]).map((piano) => {
+            const y = p.y - piano * 9
+            return (
+              <g key={piano}>
+                <ellipse cx={p.x} cy={y + 5} rx={17} ry={8} fill="#000" fillOpacity={0.14} />
+                <path
+                  d={`M${p.x - 17} ${y}v5a17 8 0 0 0 34 0v-5z`}
+                  fill={p.bianca ? '#fff' : 'var(--c2)'}
+                  fillOpacity={p.bianca ? 0.7 : 1}
+                />
+                <ellipse cx={p.x} cy={y} rx={17} ry={8} fill={p.bianca ? '#fff' : 'var(--c2)'} />
+                <ellipse
+                  cx={p.x}
+                  cy={y}
+                  rx={11}
+                  ry={5}
+                  fill="none"
+                  stroke={p.bianca ? 'var(--c2)' : '#fff'}
+                  strokeOpacity={p.bianca ? 0.35 : 0.45}
+                  strokeWidth={1.6}
+                />
+              </g>
+            )
+          })}
+        </g>
+      ))}
+    </g>
+  ),
+
+  // La griglia del Forza 4: i dischi di due colori, e uno che cade.
+  forza4: (
+    <g>
+      {(() => {
+        const buchi = [] as string[]
+        for (let r = 0; r < 4; r += 1) {
+          for (let c = 0; c < 5; c += 1) {
+            const cx = 26 + c * 17
+            const cy = 50 + r * 15.5
+            buchi.push(`M${cx - 6} ${cy}a6 6 0 1 0 12 0a6 6 0 1 0-12 0z`)
+          }
+        }
+        // I dischi giocati: 1 i bianchi, 2 quelli dell'altro, ad anello.
+        const pedine: Record<string, 1 | 2> = { '3-1': 1, '3-2': 2, '3-3': 1, '2-2': 1, '2-3': 2, '3-4': 2, '1-3': 1 }
+        return (
+          <g>
+            {Object.entries(pedine).map(([k, v]) => {
+              const [r, c] = k.split('-').map(Number)
+              return v === 1 ? (
+                <circle key={k} cx={26 + c * 17} cy={50 + r * 15.5} r={6.4} fill="#fff" fillOpacity={0.95} />
+              ) : (
+                <circle
+                  key={k}
+                  cx={26 + c * 17}
+                  cy={50 + r * 15.5}
+                  r={4.6}
+                  fill="var(--c2)"
+                  stroke="#fff"
+                  strokeWidth={2.2}
+                  strokeOpacity={0.9}
+                />
+              )
+            })}
+            <path
+              d={`M20 40h80a6 6 0 0 1 6 6v57a6 6 0 0 1-6 6H20a6 6 0 0 1-6-6V46a6 6 0 0 1 6-6z${buchi.join('')}`}
+              fill="#fff"
+              fillOpacity={0.3}
+              fillRule="evenodd"
+            />
+            <circle cx={43} cy={22} r={6.4} fill="#fff" />
+            <path
+              d="M43 31v4M39 32.5l1.4 2.2M47 32.5l-1.4 2.2"
+              stroke="#fff"
+              strokeOpacity={0.6}
+              strokeWidth={1.8}
+              strokeLinecap="round"
+            />
+          </g>
+        )
+      })()}
+    </g>
+  ),
+
   // La classifica generale: tre gradini di un podio.
   generale: (
     <g fontFamily={TONDO} fontWeight={800}>

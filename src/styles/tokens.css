@@ -245,6 +245,12 @@
   --quiz-2: #c2266a;
   --indovina-1: #ff6a5c;
   --indovina-2: #d92f3f;
+  --scacchi-1: #6f7a90;
+  --scacchi-2: #343b4d;
+  --dama-1: #c88a52;
+  --dama-2: #86502a;
+  --forza4-1: #1fbfa6;
+  --forza4-2: #0b7f71;
 
   /* ---- La griglia del sudoku ----
      Il filo sottile fra le caselle e quello spesso fra i riquadri, come sulla
@@ -263,6 +269,12 @@
   /* Lo stesso per il rosso di Indovina chi: le scritte nel colore del gioco. */
   --indovina-ink: #c42639;
   --indovina-ink: light-dark(#c42639, #ff8f82);
+  --scacchi-ink: #3f4759;
+  --scacchi-ink: light-dark(#3f4759, #b9c2d6);
+  --dama-ink: #8a5227;
+  --dama-ink: light-dark(#8a5227, #e8b27f);
+  --forza4-ink: #0a7a6c;
+  --forza4-ink: light-dark(#0a7a6c, #5fe0c8);
 
   /* ---- Il podio ----
      Oro, argento e bronzo: gli anelli degli avatar, i gradini, i numeri dei
@@ -410,6 +422,25 @@
   --premio-tl: light-dark(#a8c7ef, #223c62);
   --premio-dl: #d8e5f8;
   --premio-dl: light-dark(#d8e5f8, #1c2d45);
+
+  /* ---- I tavolieri ----
+     Qui i colori sono quelli dei giochi veri: i dischi rossi e gialli del Forza
+     4, le case della scacchiera, il legno della damiera. Il rosso e il giallo
+     sono le due parti, non "sbagliato" e "quasi": dentro la griglia non c'e'
+     niente da confondere. In scuro le case chiare si abbassano un poco, come le
+     bianche del cruciverba, e i pezzi restano quelli. */
+  --f4-cornice: #129786;
+  --f4-cornice: light-dark(#129786, #0d6f63);
+  --f4-rosso: #e8453c;
+  --f4-giallo: #f6c22b;
+  --scacchi-chiara: #e2e7ee;
+  --scacchi-chiara: light-dark(#e2e7ee, #aab4c4);
+  --scacchi-scura: #8d9db5;
+  --scacchi-scura: light-dark(#8d9db5, #62708a);
+  --dama-chiara: #f2e1c2;
+  --dama-chiara: light-dark(#f2e1c2, #b99c74);
+  --dama-scura: #8d5b36;
+  --dama-scura: light-dark(#8d5b36, #6b4427);
 
   /* ---- Il cruciverba ----
      Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:

@@ -52,6 +52,21 @@
   --c2: var(--indovina-2);
 }
 
+.copertina--scacchi {
+  --c1: var(--scacchi-1);
+  --c2: var(--scacchi-2);
+}
+
+.copertina--dama {
+  --c1: var(--dama-1);
+  --c2: var(--dama-2);
+}
+
+.copertina--forza4 {
+  --c1: var(--forza4-1);
+  --c2: var(--forza4-2);
+}
+
 .copertina__disegno {
   position: absolute;
   inset: 0;

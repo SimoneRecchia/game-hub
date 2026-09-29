@@ -381,8 +381,9 @@ partite.
 con gli amici — e contro il computer dove ha senso — senza punti ne'
 classifica: stanno in una sezione a parte della home e della barra laterale
 (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in `GiocoClassificato`, che
-porta con se' classifiche, anelli e statistiche. Il primo e' Indovina chi, che
-il computer non ce l'ha: si gioca parlandosi.
+porta con se' classifiche, anelli e statistiche. Sono Indovina chi, che il
+computer non ce l'ha — si gioca parlandosi — e scacchi, dama e Forza 4, con un
+amico o contro il computer.
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -424,6 +425,91 @@ TURN: fra due reti che non si lasciano attraversare il canale non si apre, e
 la pagina lo dice. Il ripiego e' il file del set (`setFile.ts`), che si manda
 come un documento qualunque e si apre da "Nuovo set".
 
+**Scacchi, dama e Forza 4 passano da una faccia sola.** `RegoleTavoliere`
+(`shared/tavolo-regole.ts`) mette i tre giochi dietro le stesse funzioni, in
+testo: la posizione come la scrive ogni gioco (il FEN, le 32 caselle della
+dama, le 42 del Forza 4) e la mossa nella notazione piu' semplice da
+controllare ("e2e4", "22x13x6", la colonna). Il server la usa per ogni mossa
+delle partite fra amici e il telefono per quelle contro il computer, quindi le
+regole sono le stesse per costruzione. Il server non rigioca la partita:
+`tavolo_partite.posizione` sta accanto alle mosse e la mossa si controlla su
+quella, perché rigiocarne cento a ogni richiesta non starebbe nei dieci
+millisecondi. Le ripetizioni si contano con `chiavi`, le posizioni dall'ultima
+mossa irreversibile (una presa, un pedone, una pedina): prima di quella nessuna
+posizione puo' tornare, e la lista resta corta. Si salva la mossa come la
+scrive il gioco (`giocaMossa` la restituisce), non come la manda il telefono:
+la dama accetta anche "22x6" per "22x13x6".
+
+**Le partite fra amici sono quelle di Indovina chi, su un tavoliere.** La riga
+di `tavolo_partite` nasce invito e diventa la partita con un `UPDATE`
+condizionato; chi muove per primo si pesca quando si accetta (`primo`) e nella
+rivincita tocca all'altro (`primoDellaRivincita`), con la serie contata per
+giocatore. Si gioca una partita da tavoliere alla volta, dei tre giochi insieme
+(`inPartita`). La patta d'accordo, negli scacchi e nella dama, si propone una
+volta per mossa (`patta_n`) e una mossa dell'altro la lascia cadere, come al
+tavolo: e' il modo di dire di no. Chi aspetta chiude a tavolino dopo cinque
+minuti con l'altro fuori linea, o dopo mezz'ora comunque
+(`TAVOLO_ATTESA_MS`, `TAVOLO_ATTESA_MASSIMA_MS`): una mossa di scacchi si
+pensa, e i tre minuti della battaglia sarebbero pochi. Il go ha gia' il suo
+posto nel `CHECK` della tabella: arriva dopo, e cambiare un `CHECK` in SQLite
+vuol dire rifare la tabella.
+
+**Contro il computer non passa niente dal server.** La partita sta nel
+`localStorage` (`src/games/tavolo/locale.ts`) con il conto per livello, e il
+computer pensa in un Web Worker per gioco (`tavolo/computer.ts`): chi gioca a
+Forza 4 non scarica il motore degli scacchi. Cominciare una partita nuova
+lasciando a meta' quella in corso la conta persa, come nella battaglia. I
+motori misurano il tempo con `Date.now()`, che nel Worker di Cloudflare non
+avanza durante il calcolo: non si chiamano mai dal server.
+
+**Le pagine dei tavolieri si scaricano a parte.** Regole, pezzi e tavolieri
+sono un quinto dell'app: `App.tsx` le carica con `lazy`, in un `Suspense`
+attorno alle rotte, e le precarica dopo un paio di secondi. React Router naviga
+dentro una transizione di React, quindi la schermata di prima resta finché la
+nuova e' pronta, e la View Transition la fotografa montata. Per questo gli
+avvisi degli inviti e la registrazione prendono i nomi da `tavolo/nomi.ts` e
+non da `tavolo/giochi.ts`, che porta con se' i tavolieri.
+
+**La dama e' quella italiana.** Le regole sono quelle della Federazione
+(`shared/dama.ts` cita gli articoli): la pedina non mangia la dama, la dama va
+di una casella, prendere e' obbligatorio con le precedenze dell'art. 6 — piu'
+pezzi, poi con la dama, poi piu' dame, poi dove una dama si presenta prima — e
+la pedina che promuove prendendo si ferma. Le caselle si numerano dalla 1 in
+alto a sinistra guardando dal Bianco, con la scura in basso a destra per chi
+guarda: le prime mosse del Bianco sono 21-17, 21-18, 22-18, 22-19, 23-19,
+23-20 e 24-20. La patta per ripetizione e quella delle quaranta mosse di sole
+dame sono automatiche, come nelle app, e non a richiesta come nel regolamento,
+che presuppone un arbitro. Le regole sono verificate contro un'implementazione
+indipendente, e il test del perft (7, 49, 302, 1469, 7361, 36473, 177532 fino
+alla profondita' 7) le tiene ferme.
+
+**Negli scacchi le patte sono automatiche.** Stallo, materiale insufficiente,
+triplice ripetizione e cinquanta mosse chiudono la partita da sole: al telefono
+non c'e' un arbitro a cui reclamarle. La chiave della ripetizione ha la casella
+en passant solo se la presa e' davvero possibile. La notazione e' quella
+italiana (R, D, T, A, C) e le mosse si salvano in UCI: l'elenco le riscrive
+rigiocando la partita. Il perft sulle posizioni classiche tiene ferme le regole.
+
+**I pezzi degli scacchi sono in linea, con la licenza BSD.** Sono i disegni di
+Cburnett presi da Wikimedia Commons, dove l'autore li offre anche con la BSD
+(quelli di lichess sono sotto GPL): `src/games/scacchi/pezzi.ts` li tiene come
+immagini `data:`, senza richieste, e l'avviso della licenza sta in
+`shared/words/SOURCES.md`.
+
+**Nel Forza 4 la cornice sta sopra i dischi.** Il disco che cade scende dietro
+la cornice e si vede solo dai buchi, come nel gioco vero: la cornice e' un
+tracciato SVG con i buchi (`evenodd`) sopra lo strato dei dischi, e le colonne
+da toccare stanno sopra tutto. La caduta dura la radice della distanza, come
+quella di un sasso.
+
+**Le righe dei giocatori sono larghe quanto il tavoliere.** In `Tavola` il
+gruppo — l'altro, il tavoliere, io — e' una griglia larga quanto il tavoliere:
+le righe hanno `width: 0` e `min-width: 100%`, quindi la riempiono senza
+allargarla. Il tavoliere si misura su `--campo-alto`, l'altezza del campo meno
+le due righe. Sul telefono di traverso campo e gruppo diventano
+`display: contents` e i giocatori vanno a destra del tavoliere: sopra e sotto
+non ci starebbero.
+
 **Ogni gioco ha una classificata e una libera.** La **classificata** e' una al
 giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
 punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
@@ -432,7 +518,8 @@ da una scorta di schemi, battaglia contro il computer o contro un amico, quiz
 sulla categoria, il modo, la zona e le opzioni che si scelgono. Gli
 indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 (`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
-nuovi in `App.tsx`).
+nuovi in `App.tsx`). I giochi da tavolo non hanno ne' l'una ne' l'altra: la
+loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`, `/invito/:codice`.
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
 esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso

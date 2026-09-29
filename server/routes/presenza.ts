@@ -12,6 +12,12 @@ import {
   partitaBreve as partitaIndovinaBreve,
 } from '../lib/indovinaStore'
 import {
+  invitiRicevuti as invitiTavolo,
+  latoDi as latoTavolo,
+  partitaAperta as partitaTavoloAperta,
+  partitaBreve as partitaTavoloBreve,
+} from '../lib/tavoloStore'
+import {
   ATTIVITA,
   latoDi,
   partitaAperta,
@@ -25,7 +31,7 @@ import {
  *
  * Una richiesta sola per tutto: dice al server che il giocatore c'e' (e
  * dove), e gli riporta gli inviti del Wordle in compagnia, le sfide a
- * battaglia navale, a quiz e a Indovina chi, le partite e il duello aperti. Tenerle separate
+ * battaglia navale, a quiz, a Indovina chi e ai giochi da tavoliere, le partite e il duello aperti. Tenerle separate
  * moltiplicherebbe le richieste, e il piano gratuito delle Pages Functions ne
  * concede centomila al giorno per tutto il sito.
  */
@@ -45,7 +51,7 @@ export const presenzaRoutes = new Hono<AppEnv>()
     // Gli inviti del Wordle: la stessa regola di /coop/inbox. Chi gioca gia' la
     // giornata in una stanza non ne riceve altri.
     const when = today()
-    const [mia, sfide, aperta, quiz, duello, indovina, apertaIndovina] = await Promise.all([
+    const [mia, sfide, aperta, quiz, duello, indovina, apertaIndovina, tavolo, apertaTavolo] = await Promise.all([
       participation(db, io, when.puzzleNumber),
       sfideRicevute(db, io, adesso),
       partitaAperta(db, io),
@@ -53,11 +59,14 @@ export const presenzaRoutes = new Hono<AppEnv>()
       duelloAperto(db, io, adesso),
       invitiRicevuti(db, io, adesso),
       partitaIndovinaAperta(db, io, adesso),
+      invitiTavolo(db, io, adesso),
+      partitaTavoloAperta(db, io, adesso),
     ])
     const coop: CoopInvite[] = mia?.spectated ? [] : await pendingInvites(db, io, when)
 
     const lato = aperta ? latoDi(aperta, io) : null
     const latoInIndovina = apertaIndovina ? latoIndovina(apertaIndovina, io) : null
+    const latoInTavolo = apertaTavolo ? latoTavolo(apertaTavolo, io) : null
     return c.json<PresenzaRisposta>({
       coop,
       // Chi e' gia' in battaglia non riceve altre sfide: le vedrebbe e non
@@ -71,5 +80,8 @@ export const presenzaRoutes = new Hono<AppEnv>()
       indovina: apertaIndovina ? [] : indovina,
       partitaIndovina:
         apertaIndovina && latoInIndovina ? await partitaIndovinaBreve(db, apertaIndovina, latoInIndovina) : null,
+      // Scacchi, dama e Forza 4 si contano insieme: una partita alla volta, a uno dei tre.
+      tavolo: apertaTavolo ? [] : tavolo,
+      partitaTavolo: apertaTavolo && latoInTavolo ? await partitaTavoloBreve(db, apertaTavolo, latoInTavolo) : null,
     })
   })
