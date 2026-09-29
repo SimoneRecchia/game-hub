@@ -505,6 +505,13 @@ function Fonti() {
         </a>{' '}
         di Microsoft (licenza MIT).
       </p>
+      <p>
+        <strong>Scacchi.</strong> I pezzi sono quelli di Colin M. L. Burnett, da{' '}
+        <a href="https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces" target="_blank" rel="noreferrer">
+          Wikimedia Commons
+        </a>{' '}
+        (licenza BSD).
+      </p>
     </div>
   )
 }

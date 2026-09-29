@@ -8,6 +8,7 @@ import type { AreaQuiz, DomandaQuiz, LuogoQuiz } from './quiz-domande'
 import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
 import type { Lato, Personaggi, Risposta } from './indovina'
+import type { GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
 
 export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
@@ -416,6 +417,9 @@ export type Attivita =
   | 'battaglia'
   | 'quiz'
   | 'indovina'
+  | 'scacchi'
+  | 'dama'
+  | 'forza4'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -505,8 +509,8 @@ export interface InvitoConLink {
   codice: string
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
-  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz o Indovina chi. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina'
+  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, scacchi, dama o Forza 4. */
+  gioco?: 'battaglia' | 'quiz' | 'indovina' | GiocoTavoliere
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -530,6 +534,10 @@ export interface PresenzaRisposta {
   indovina: InvitoIndovina[]
   /** La partita di Indovina chi aperta. */
   partitaIndovina: PartitaIndovinaBreve | null
+  /** Gli inviti a scacchi, dama e Forza 4 arrivati, rivincite comprese. */
+  tavolo: InvitoTavolo[]
+  /** La partita a scacchi, dama o Forza 4 aperta. */
+  partitaTavolo: PartitaTavoloBreve | null
 }
 
 /* ─────────────────────────────  Indovina chi  ──────────────────────── */
@@ -613,6 +621,79 @@ export interface VistaIndovina {
     partitaId: string | null
   } | null
   segnale: { offerta: SegnaleIndovina | null; risposta: SegnaleIndovina | null }
+  /** Da quanto l'altro ha la mossa senza farla; oltre un tanto si puo' chiudere la partita. */
+  attesaMs: number
+  puoiReclamare: boolean
+  versione: number
+}
+
+/* ────────────────────  Scacchi, dama e Forza 4, fra amici  ──────────────────── */
+
+export type StatoTavolo = 'invito' | 'in_corso' | 'finita' | 'rifiutata' | 'annullata'
+
+/** Un invito arrivato: da chi, a che gioco. */
+export interface InvitoTavolo {
+  id: string
+  gioco: GiocoTavoliere
+  da: GiocatoreBreve
+  scadeTraMs: number
+  rivincita: boolean
+}
+
+/** L'ultimo invito mandato dalla sala di un gioco, com'e' andato: a un amico o con un link. */
+export interface InvitoTavoloMandato {
+  id: string
+  gioco: GiocoTavoliere
+  a: GiocatoreBreve | null
+  codice: string | null
+  stato: 'attesa' | 'accettato' | 'rifiutato' | 'annullato' | 'scaduto'
+  scadeTraMs: number
+  partitaId: string | null
+}
+
+/** Una partita aperta, in breve: per la sala, l'hub e il giro di controllo. */
+export interface PartitaTavoloBreve {
+  id: string
+  gioco: GiocoTavoliere
+  avversario: GiocatoreBreve
+  tuoTurno: boolean
+}
+
+export interface SalaTavolo {
+  /** Chi e' online: `occupato` vuol dire in un'altra partita di scacchi, dama o Forza 4. */
+  giocatori: GiocatoreOnline[]
+  invito: InvitoTavoloMandato | null
+  /** Le partite in corso di questo gioco, anche ferme: si riprendono da qui. */
+  partite: PartitaTavoloBreve[]
+  /** Contro gli amici, a questo gioco. */
+  record: { vinte: number; perse: number; patte: number }
+}
+
+/** Una partita come la vede uno dei due. */
+export interface VistaTavolo {
+  id: string
+  gioco: GiocoTavoliere
+  stato: StatoTavolo
+  io: Lato
+  /** Con che parte gioco: 0 muove per primo (il Bianco). Null finché non si e' accettato. */
+  parte: Parte | null
+  avversario: (GiocatoreBreve & { online: boolean }) | null
+  posizione: string
+  mosse: string[]
+  tuoTurno: boolean
+  vincitore: 'io' | 'avversario' | null
+  motivo: MotivoTavoliere | null
+  /** La patta proposta e ancora in sospeso, da me o dall'altro. */
+  patta: 'io' | 'avversario' | null
+  /** Posso proporre la patta adesso: il gioco la prevede, e non l'ho gia' proposta a questa mossa. */
+  puoiProporre: boolean
+  serie: { io: number; avversario: number; partite: number }
+  rivincita: {
+    id: string
+    da: 'io' | 'avversario'
+    stato: 'attesa' | 'accettato' | 'rifiutato' | 'annullato' | 'scaduto'
+    partitaId: string | null
+  } | null
   /** Da quanto l'altro ha la mossa senza farla; oltre un tanto si puo' chiudere la partita. */
   attesaMs: number
   puoiReclamare: boolean
@@ -950,7 +1031,7 @@ export interface PeriodoClassifica {
 export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
 
 /** I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha senso, contro il computer). */
-export type GiocoDaTavolo = 'indovina'
+export type GiocoDaTavolo = 'indovina' | GiocoTavoliere
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
 export type ChiaveClassifica = GiocoClassificato | 'generale'
