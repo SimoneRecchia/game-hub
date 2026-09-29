@@ -185,11 +185,12 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
   }, [stima])
 
   // Si riprende da dove ci si era fermati: i due passi non contano piu', e tocca a chi toccava.
+  // Le posizioni di prima si dimenticano, come sul server: alla seconda ripresa sarebbero una ripetizione.
   const riprendi = useCallback(() => {
     const p = attuale.current
     const q = go.leggi(p.posizione)
     if (!q || p.esito) return
-    const dopo = { ...p, posizione: go.scrivi({ ...q, passi: 0 }) }
+    const dopo = { ...p, posizione: go.scrivi({ ...q, passi: 0 }), chiavi: [] }
     salvaPartita(dopo)
     setPartita(dopo)
   }, [])
