@@ -244,8 +244,17 @@ describe('i giochi da tavoliere fra amici, dalle API', () => {
     // Riprende chi aveva passato per primo: il Bianco.
     expect((await vista(chiama, id, bianco)).tuoTurno).toBe(true)
 
-    // Si ripassa, e questa volta il Nero propone il goban cosi' com'e', e il Bianco accetta.
+    // Si ripassa e si riprende un'altra volta: il goban e' lo stesso di prima, ma non e' una ripetizione.
     await muovi(chiama, id, bianco, 'passo')
+    const due = (await muovi(chiama, id, nero, 'passo')).dati
+    const riprese = await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/conteggio`, bianco, {
+      azione: 'riprendi',
+      versione: due.versione,
+    })
+    expect(riprese.dati.stato).toBe('in_corso')
+
+    // Si ripassa, e questa volta il Nero propone il goban cosi' com'e', e il Bianco accetta.
+    expect((await muovi(chiama, id, bianco, 'passo')).status).toBe(200)
     const ancora = (await muovi(chiama, id, nero, 'passo')).dati
     const mia = await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/conteggio`, nero, {
       azione: 'proponi',

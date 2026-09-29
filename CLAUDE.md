@@ -510,10 +510,12 @@ di partite a caso, nel Worker), con il seme della posizione, cosi' due telefoni
 fanno la stessa stima; il primo che arriva la propone (`/conteggio`,
 `morte`), toccare un gruppo lo cambia, e il conteggio vale quando lo accettano
 tutti e due (`morte_ok`), sulla stessa proposta. Chi non e' d'accordo riprende
-a giocare e cattura quel che per lui e' morto. Contro il computer il conteggio
-non si corregge a mano: il computer fa da arbitro, e chi non e' d'accordo
-riprende. Il server conta con `punteggio`, che e' un riempimento e costa poco;
-la stima no, e per questo non la fa lui.
+a giocare e cattura quel che per lui e' morto; la ripresa azzera le chiavi,
+perché il goban e' quello di prima dei passi con lo stesso tratto, e alla
+seconda ripresa sarebbe gia' una ripetizione che non lascia muovere nessuno.
+Contro il computer il conteggio non si corregge a mano: il computer fa da
+arbitro, e chi non e' d'accordo riprende. Il server conta con `punteggio`, che
+e' un riempimento e costa poco; la stima no, e per questo non la fa lui.
 
 **Il goban e' un SVG in decimi di passo.** Le intersezioni sono punti, e un
 SVG li mette dove stanno a qualunque lato; il passo fra due linee vale dieci

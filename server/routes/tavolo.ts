@@ -356,12 +356,14 @@ export const tavoloRoutes = new Hono<AppEnv>()
     }
 
     if (corpo.azione === 'riprendi') {
-      // Si torna a giocare da dove ci si era fermati: i due passi non contano piu'.
+      // Si torna a giocare da dove ci si era fermati: i due passi non contano piu', e nemmeno le
+      // posizioni di prima. Il goban e' quello di prima dei passi, con lo stesso tratto: a
+      // ricordarle, alla seconda ripresa sarebbe gia' una ripetizione, e nessuno potrebbe muovere.
       const posizione = go.scrivi({ ...p, passi: 0 })
       const dopo = await salvaPartita(
         c.env.DB,
         row,
-        { posizione, morte: null, morte_ok: null, mossa: true },
+        { posizione, chiavi: [], morte: null, morte_ok: null, mossa: true },
         ora,
       )
       return rispondi(c, dopo, io)
