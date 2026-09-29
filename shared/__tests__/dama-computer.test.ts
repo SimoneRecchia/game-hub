@@ -313,8 +313,9 @@ describe('i livelli fra loro', () => {
       const fine = esito(p, storia)
       if (fine) return fine.vincitore
       const livello = p.tratto === 'bianco' ? bianco : nero
-      // Il difficile con meno tempo del suo, perché il test non duri minuti: resta molto piu' forte del facile.
-      const limiti = livello === 'difficile' ? { tempoMs: 50 } : {}
+      // Il difficile a profondita' fissa e senza limite di tempo, perché il test non duri minuti e non
+      // dipenda dalla macchina: su una CI carica, a tempo, penserebbe meno di quanto si crede.
+      const limiti = livello === 'difficile' ? { profondita: 8, tempoMs: 60_000 } : {}
       const m = mossaDelComputer(p, livello, mulberry32(seme * 1000 + i), storia, limiti)
       storia.push(chiaveRipetizione(p))
       p = gioca(p, m!)

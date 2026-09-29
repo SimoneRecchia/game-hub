@@ -1,7 +1,8 @@
 /**
  * Il computer degli scacchi.
  *
- * E' un programma classico, di quelli che si scrivevano negli anni Novanta:
+ * E' un programma classico, di quelli che si scrivono dagli anni Novanta, sulla
+ * scacchiera mutabile di shared/scacchi.ts:
  *
  *  - la **ricerca** e' un alfa-beta ad approfondimento iterativo: prima tutte le
  *    mosse a una semimossa di profondità, poi a due, e cosi' via, ogni giro
@@ -9,12 +10,17 @@
  *    nell'ordine in cui e' piu' probabile che siano buone — quella che la
  *    tabella delle trasposizioni ricorda per la posizione, le prese dalla
  *    vittima piu' preziosa con l'attaccante che lo e' meno (MVV-LVA), le mosse
- *    "killer" che hanno appena tagliato alla stessa profondità, poi le altre
- *    secondo quante volte sono servite — e con quell'ordine l'alfa-beta scarta
- *    quasi tutto il resto senza guardarlo;
+ *    "killer" che hanno appena tagliato alla stessa profondità, le prese che
+ *    perdono materiale nello scambio, poi le altre secondo quante volte sono
+ *    servite — e con quell'ordine l'alfa-beta scarta quasi tutto il resto senza
+ *    guardarlo. Sotto scacco si guarda una semimossa in piu';
  *  - in fondo a ogni variante la **ricerca di quiete** gioca le prese finché ce
  *    ne sono: senza, il computer si fermerebbe a meta' di uno scambio, e
- *    crederebbe di aver vinto una donna che sta per perdere;
+ *    crederebbe di aver vinto una donna che sta per perdere. Non prova le prese
+ *    che perdono materiale nello scambio (`scambio`, la SEE dei programmi), e
+ *    ricorda le posizioni gia' viste: nelle posizioni piene di pezzi che si
+ *    attaccano, senza tutte e due le cose, una sola mossa costava decine di
+ *    migliaia di posizioni;
  *  - la **valutazione** sono le tavole di PeSTO, di Ronald Friederich
  *    (Rofchade), pubblicate sulla Chess Programming Wiki: un valore per ogni
  *    pezzo su ogni casella, uno per il mediogioco e uno per il finale, mescolati
@@ -28,33 +34,45 @@
  *    non potrebbe accorciare smette di pensare.
  *
  * Una **patta** vale per il computer un po' meno di niente (`DISPREZZO`, un
- * quarto di pedone): in vantaggio evita di ripetere, in grave svantaggio ci
- * prova. Una posizione conta come patta gia' la seconda volta che compare, nella
- * ricerca o nella `storia` della partita, come in quasi tutti i programmi: chi
- * puo' ripetere una volta puo' ripetere anche la terza.
+ * quarto di pedone): in vantaggio evita di ripetere, in svantaggio ci prova, e
+ * con un pezzo in meno si salva con lo scacco perpetuo se c'e'. Una posizione
+ * conta come patta gia' la seconda volta che compare, nella ricerca o nella
+ * `storia` della partita, come in quasi tutti i programmi: chi puo' ripetere una
+ * volta puo' ripetere anche la terza.
  *
- * I tre livelli, misurati in Node su un portatile (un telefono e' due o tre
- * volte piu' lento):
+ * Il **rumore** e' quel che rende diverse due partite: alla radice ogni mossa
+ * riceve qualche centesimo di pedone a caso, preso da `rng`, e vince la mossa con
+ * il valore piu' il rumore piu' alto. Ai matti non si aggiunge, e quando la
+ * partita e' decisa si spegne: chi vince deve chiudere, chi perde resistere.
+ *
+ * I tre livelli, con i tempi misurati in Node su un portatile (un telefono va da
+ * due a quattro volte piu' piano):
  *
  *  - **facile** guarda una semimossa e le prese che ne seguono, e sceglie con
  *    un po' di rumore fra le mosse che non perdono niente. Una mossa su cinque
  *    e' distratto: guarda solo la posizione dopo la mossa, senza accorgersi che
  *    il pezzo appena mosso si puo' prendere, e con un rumore piu' forte, che a
- *    volte gli fa lasciare un pezzo in presa. Non vede le minacce: chi ha
- *    appena imparato deve poterlo battere. Pensa un paio di millisecondi;
+ *    volte gli fa lasciare un pezzo in presa o non prendere quello dell'altro.
+ *    Non vede le minacce: chi ha appena imparato deve poterlo battere, e chi
+ *    guarda i pezzi in presa lo batte quasi sempre. Pensa un millisecondo, sette
+ *    nelle posizioni piu' intricate;
  *  - **normale** vede quattro semimosse, due sue e due dell'altro, piu' la
- *    quiete, tutte senza potature, e sceglie a caso fra le mosse a pochi
- *    centesimi di pedone dalla migliore: non regala niente, ma non vede le
- *    combinazioni lunghe. Ha un tetto di nodi, contati e non cronometrati, cosi'
- *    resta sotto il mezzo secondo su un telefono e a parita' di `rng` gioca
- *    sempre la stessa mossa;
+ *    quiete, senza potature, e sceglie a caso fra le mosse a una trentina di
+ *    centesimi dalla migliore: non regala niente, ma non vede le combinazioni
+ *    lunghe. Pensa decine di millisecondi, e ha un tetto di posizioni che lo
+ *    ferma sotto i due decimi di secondo; il tetto e' contato e non
+ *    cronometrato, cosi' a parita' di `rng` gioca la stessa mossa su ogni
+ *    macchina;
  *  - **difficile** approfondisce per un secondo e mezzo, e non comincia un giro
  *    che non avrebbe il tempo di finire. Pota anche: la mossa nulla (se passando
- *    il turno la posizione resta buona, la si lascia) e le riduzioni delle mosse
- *    tranquille che arrivano tardi nell'ordine. Arriva di solito fra le sette e
- *    le dieci semimosse. Ha anche un tetto di nodi: nel Worker di Cloudflare
- *    l'orologio non avanza mentre si calcola, e senza non si fermerebbe (ma il
- *    computer non gira li': dieci millisecondi bastano solo al facile).
+ *    il turno la posizione resta sopra beta, e' troppo buona perché l'altro la
+ *    conceda), le riduzioni delle mosse tranquille che arrivano tardi
+ *    nell'ordine, e vicino al fondo le mosse che non possono cambiare niente.
+ *    Nel mediogioco arriva a dieci o dodici semimosse, e risolve nove delle
+ *    prime dieci posizioni di "Win At Chess". Ha anche un tetto di posizioni:
+ *    nel Worker di Cloudflare l'orologio non avanza mentre si calcola, e senza
+ *    non si fermerebbe (ma il computer gira nel browser: al server, dieci
+ *    millisecondi bastano solo al facile).
  */
 
 import {
@@ -83,8 +101,9 @@ export const LIVELLI_SCACCHI: readonly LivelloScacchi[] = ['facile', 'normale', 
 export const MATTO = 30000
 const QUASI_MATTO = MATTO - 1000
 const INFINITO = 32000
-/** Quanto puo' allungarsi una variante, estensioni e quiete comprese. */
+/** Quanto puo' allungarsi una variante, estensioni e quiete comprese; i giri si fermano prima, per lasciare posto. */
 const PLY_MASSIMI = 100
+const PROFONDITA_MASSIMA = 64
 /** Quanto vale una patta per il computer, in centesimi di pedone: un po' meno di niente. */
 export const DISPREZZO = 25
 
@@ -96,7 +115,7 @@ const RUMORE_DISTRATTO = 200
 const QUIETE_FACILE = 6
 /** Il normale: profondita', tetto di nodi e rumore. */
 const PROFONDITA_NORMALE = 4
-const NODI_NORMALE = 100_000
+const NODI_NORMALE = 60_000
 const RUMORE_NORMALE = 30
 /** Oltre questo vantaggio, per l'uno o per l'altro, il rumore si spegne. */
 const PARTITA_DECISA = 300
@@ -330,7 +349,8 @@ function valuta(s: Scacchiera, patta: number): number {
     if (bianchi >= neri + 400 && pedoniNeri === 0) v += spinta(s.re[1], s.re[0])
     else if (neri >= bianchi + 400 && pedoniBianchi === 0) v -= spinta(s.re[0], s.re[1])
   }
-  return s.tratto === 0 ? v : -v
+  // 0 - v e non -v: una posizione pari deve valere zero, non meno zero.
+  return s.tratto === 0 ? v : 0 - v
 }
 
 /** Il valore statico di una posizione, per chi ha il tratto: senza ricerca, com'e' adesso. */
@@ -421,6 +441,8 @@ const VOTO_PRESA_CATTIVA = (1 << 26) + 4096
 const TETTO_STORICO = 1 << 26
 /** Nella quiete, una presa che nemmeno con questo margine riporterebbe alfa non si prova. */
 const MARGINE_DELTA = 200
+/** Quanto puo' cambiare una posizione in una semimossa tranquilla, per le potature vicino al fondo. */
+const MARGINE_FUTILITA = 150
 
 interface Impostazioni {
   profondita: number
@@ -504,9 +526,8 @@ class Ricerca {
         const vittima = presaDi(m) & 7
         const attaccante = c[m & 63] & 7
         const mvvLva = vittima * 64 + (promozioneDi(m) === DONNA ? 320 : 0) - attaccante
-        const cattiva =
-          conScambio && promozioneDi(m) === 0 && VALORE_SCAMBIO[attaccante] > VALORE_SCAMBIO[vittima] && s.scambio(m) < 0
-        voto = (cattiva ? VOTO_PRESA_CATTIVA : VOTO_PRESA) + mvvLva
+        const puoPerdere = conScambio && promozioneDi(m) === 0 && VALORE_SCAMBIO[attaccante] > VALORE_SCAMBIO[vittima]
+        voto = (puoPerdere && s.scambio(m) < 0 ? VOTO_PRESA_CATTIVA : VOTO_PRESA) + mvvLva
       } else if (m === primo) voto = VOTO_KILLER + 1
       else if (m === secondo) voto = VOTO_KILLER
       else voto = promozioneDi(m) !== 0 ? -1 : this.storico[storico + (m & 4095)]
@@ -571,15 +592,21 @@ class Ricerca {
       }
     }
 
-    if (this.potature && !pv && !scacco && nullaPermessa && prof >= 3 && beta < QUASI_MATTO && haPezzi(s, s.tratto)) {
-      if (valuta(s, this.patta()) >= beta) {
-        s.faiNulla()
-        const v = -this.alfaBeta(prof - (prof > 6 ? 4 : 3), -beta, -beta + 1, ply + 1, false)
-        s.disfaiNulla()
-        if (this.fermata) return 0
-        if (v >= beta) return v >= QUASI_MATTO ? beta : v
-      }
+    // Le potature del difficile, lontano dalla variante principale e senza scacchi di mezzo.
+    const potabile = this.potature && !pv && !scacco && Math.abs(beta) < QUASI_MATTO
+    const statica = potabile ? valuta(s, this.patta()) : 0
+    // Vicino al fondo, una posizione che vale tanto piu' di beta non scende sotto: l'altro non la raggiunge.
+    if (potabile && prof <= 3 && statica - MARGINE_FUTILITA * prof >= beta) return statica
+    // La mossa nulla: se anche passando il turno si resta sopra beta, la posizione e' troppo buona per contare.
+    if (potabile && nullaPermessa && prof >= 3 && statica >= beta && haPezzi(s, s.tratto)) {
+      s.faiNulla()
+      const v = -this.alfaBeta(prof - (prof > 6 ? 4 : 3), -beta, -beta + 1, ply + 1, false)
+      s.disfaiNulla()
+      if (this.fermata) return 0
+      if (v >= beta) return v >= QUASI_MATTO ? beta : v
     }
+    // E se vale tanto meno di alfa, a una o due semimosse dal fondo le mosse tranquille non la salvano.
+    const futile = potabile && prof <= 2 && statica + MARGINE_FUTILITA * prof <= alfa
 
     const inizio = this.cima
     const fine = s.genera(this.mosse, inizio, false)
@@ -595,6 +622,10 @@ class Ricerca {
       legali += 1
       const tranquilla = presaDi(m) === 0 && promozioneDi(m) === 0
       s.fai(m)
+      if (futile && legali > 1 && tranquilla && !s.sottoScacco()) {
+        s.disfai()
+        continue
+      }
       let v: number
       if (legali === 1) v = -this.alfaBeta(prof - 1, -beta, -alfa, ply + 1, true)
       else {
@@ -809,7 +840,11 @@ export interface Analisi {
   ms: number
 }
 
-/** La ricerca con le opzioni date: e' quella del normale e del difficile, e serve ai test e a chi vuole un consiglio. */
+/**
+ * La ricerca con le opzioni date: e' quella del normale e del difficile, e serve
+ * ai test e a chi vuole un consiglio. Senza limiti pensa quanto il difficile: un
+ * secondo e mezzo, o tre milioni di posizioni.
+ */
 export function analizza(p: Posizione, opzioni: OpzioniAnalisi = {}): Analisi {
   const partenza = adesso()
   const ricerca = new Ricerca(p, opzioni.storia ?? [])
@@ -820,9 +855,9 @@ export function analizza(p: Posizione, opzioni: OpzioniAnalisi = {}): Analisi {
   const { mossa, punti } = ricerca.cerca(
     radici,
     {
-      profondita: Math.min(opzioni.profondita ?? PLY_MASSIMI - 36, PLY_MASSIMI - 36),
-      tempoMs: opzioni.tempoMs ?? Infinity,
-      nodi: opzioni.nodi ?? Infinity,
+      profondita: Math.min(opzioni.profondita ?? PROFONDITA_MASSIMA, PROFONDITA_MASSIMA),
+      tempoMs: opzioni.tempoMs ?? TEMPO_DIFFICILE,
+      nodi: opzioni.nodi ?? NODI_DIFFICILE,
       rumore: opzioni.rumore ?? 0,
       potature: opzioni.potature ?? true,
     },
@@ -832,7 +867,8 @@ export function analizza(p: Posizione, opzioni: OpzioniAnalisi = {}): Analisi {
   const distanza = MATTO - Math.abs(punti)
   return {
     mossa: mossaPubblica(mossa),
-    punteggio: punti,
+    // Le negazioni della ricerca fanno anche dei meno zero: fuori non servono.
+    punteggio: punti === 0 ? 0 : punti,
     matto: Math.abs(punti) >= QUASI_MATTO ? Math.sign(punti) * Math.ceil(distanza / 2) : null,
     profondita: ricerca.profondita,
     nodi: ricerca.nodi,
@@ -893,8 +929,10 @@ export function mossaDelComputer(
   if (legali.length === 1) return mossaPubblica(legali[0])
   if (livello === 'facile') return mossaPubblica(mossaFacile(p, rng, storia))
   if (livello === 'normale') {
+    // Senza orologio: a parita' di posizione e di `rng`, la stessa mossa su ogni macchina.
     return analizza(p, {
       profondita: PROFONDITA_NORMALE,
+      tempoMs: Infinity,
       nodi: NODI_NORMALE,
       rumore: RUMORE_NORMALE,
       potature: false,
