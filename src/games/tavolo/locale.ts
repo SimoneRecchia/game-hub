@@ -28,6 +28,8 @@ export interface PartitaLocale {
   esito: EsitoTavoliere | null
   /** Nel go, a partita finita ai punti: quelli del Nero e del Bianco, komi compreso. */
   punti?: { nero: number; bianco: number } | null
+  /** Nel go, a partita finita ai punti: le pietre contate morte. */
+  morte?: number[] | null
   /** A partita finita, se e' gia' nel conto: una partita si conta una volta sola. */
   contata: boolean
 }
@@ -83,6 +85,7 @@ export function leggiPartita(gioco: GiocoTavoliere): PartitaLocale | null {
     chiavi: p.chiavi.filter((m): m is string => typeof m === 'string'),
     esito: p.esito ?? null,
     punti: p.punti ?? null,
+    morte: Array.isArray(p.morte) ? p.morte.filter((k): k is number => Number.isInteger(k)) : null,
     contata: p.contata === true,
   }
 }
@@ -107,6 +110,7 @@ export function nuovaPartita(
     chiavi: [],
     esito: null,
     punti: null,
+    morte: null,
     contata: false,
   }
   salvaPartita(p)

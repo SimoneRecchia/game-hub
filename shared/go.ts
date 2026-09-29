@@ -13,7 +13,9 @@
  *  - **ko semplice**: chi ha appena perso una pietra sola, presa da una pietra
  *    sola che ora ha quell'unica libertà, non puo' riprenderla subito, perché
  *    rifarebbe la posizione di prima. Deve giocare altrove almeno una volta;
- *  - due passaggi di fila chiudono il gioco, e si conta.
+ *  - due passaggi di fila chiudono il gioco, e si conta. Dopo non c'e' piu'
+ *    nessuna mossa legale: un disaccordo sui morti non si risolve riprendendo a
+ *    giocare, ma correggendo la stima.
  *
  * Il punto vietato dal ko sta nella posizione, come l'en passant nel FEN degli
  * scacchi: vale per una mossa sola e si ricava dall'ultima, quindi chi riceve
@@ -51,8 +53,10 @@
  *
  * Le funzioni lavorano sulla posizione immutabile e sono pensate per il
  * server, che per ogni mossa di una partita fra amici fa `leggi`,
- * `mossaDaTesto`, `gioca`, `esito` e `chiaveRipetizione`: sul 19x19 costano
- * qualche decina di microsecondi. Il computer ha una sua rappresentazione,
+ * `mossaDaTesto`, `gioca`, `esito` e `chiaveRipetizione`: sul 19x19, a meta'
+ * partita e con trecento chiavi, tutte insieme costano meno di un decimo di
+ * millisecondo, e il conteggio finale ancora meno. La posizione in testo, per il
+ * database, e' descritta in `scrivi`. Il computer ha una rappresentazione sua,
  * mutabile e molto piu' veloce, in go-computer.ts.
  */
 
@@ -210,6 +214,7 @@ const COLONNE = 'ABCDEFGHJKLMNOPQRST'
 
 /** Le coordinate come si scrivono nel go: colonne A..T senza la I, righe da 1 in basso: 'D4', 'K10'. */
 export function nomePunto(punto: number, lato: number): string {
+  if (!Number.isInteger(punto) || punto < 0 || punto >= lato * lato) return '?'
   return COLONNE[punto % lato] + String(lato - Math.floor(punto / lato))
 }
 

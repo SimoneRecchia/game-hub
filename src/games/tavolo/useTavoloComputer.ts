@@ -119,6 +119,7 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
         livello: richiesta.livello,
         storia: richiesta.chiavi,
         seme: semeACaso(),
+        ultima: richiesta.mosse[richiesta.mosse.length - 1] ?? null,
       })
         .then(async (mossa) => {
           const resto = PAUSA_MS + PENSA_ALMENO_MS - (performance.now() - inizio)
@@ -181,7 +182,7 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
     if (!conto) return
     const vincitore: Parte = conto.vincitore === 'nero' ? 0 : 1
     const punti = { nero: conto.nero, bianco: conto.bianco }
-    setPartita(conta({ ...p, esito: { vincitore, motivo: 'punti' }, punti }))
+    setPartita(conta({ ...p, esito: { vincitore, motivo: 'punti' }, punti, morte: stima }))
   }, [stima])
 
   // Si riprende da dove ci si era fermati: i due passi non contano piu', e tocca a chi toccava.

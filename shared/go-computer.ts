@@ -1,7 +1,95 @@
 /**
  * Il computer del go, e la stima delle pietre morte.
  *
- * (Il commento completo si scrive a lavoro finito, con i numeri misurati.)
+ * E' una ricerca ad albero Monte Carlo (MCTS), la tecnica con cui i programmi
+ * di go hanno imparato a giocare bene prima delle reti neurali: dalla posizione
+ * si giocano migliaia di partite veloci fino in fondo, le **simulazioni**, e si
+ * conta chi vince; le mosse che vincono piu' spesso si esplorano di piu', e
+ * l'albero cresce dove serve. Lo schema e' quello di Michi, il programma minimo
+ * di Petr Baudiš (l'autore di Pachi):
+ *
+ *  - nell'albero si sceglie con **RAVE**: oltre alle statistiche di una mossa
+ *    giocata subito contano quelle della stessa mossa giocata piu' avanti nella
+ *    stessa simulazione ("tutte le mosse come la prima", AMAF). Sono meno
+ *    precise ma molto piu' numerose, e pesano sempre meno man mano che le
+ *    visite vere crescono;
+ *  - ogni mossa nuova parte con dei **prior**, visite e vittorie finte con quel
+ *    che un giocatore vede a colpo d'occhio: prendere un gruppo in atari o
+ *    salvarne uno proprio, rispondere vicino all'ultima mossa (contando ogni
+ *    gruppo come un punto solo), le forme 3x3 buone, la terza linea e non la
+ *    prima dove non c'e' nessuno, non mettersi in atari da soli;
+ *  - le **scale** le legge un piccolo lettore, alla radice e nelle risposte:
+ *    le simulazioni giocano a caso e una scala non la seguono mai fino in fondo.
+ *    L'atari che manda un gruppo in una scala che funziona parte avvantaggiato,
+ *    allungarsi dentro una scala che non si salva parte con un'avvertenza;
+ *  - le simulazioni sono leggere ma non stupide: prendono il gruppo che le
+ *    ultime due mosse hanno lasciato in atari, o salvano il proprio
+ *    (allungandosi se guadagna libertà, o prendendo chi lo minaccia),
+ *    rispondono con le forme 3x3 di MoGo attorno alle ultime due mosse, e
+ *    altrimenti giocano a caso; non riempiono mai un proprio occhio, e
+ *    un'autoatari di piu' pietre la scartano nove volte su dieci se suggerita,
+ *    una su due se a caso (a volte serve, per uccidere un occhio grande
+ *    giocandoci dentro), e sempre da sei pietre in su.
+ *
+ * Il premio di una simulazione e' la vittoria, con un decimo che viene dal
+ * margine, misurato rispetto a quello medio della ricerca: a partita decisa le
+ * vittorie sono tutte uguali, e senza i punti l'albero non distinguerebbe una
+ * mossa che guadagna da una che regala. Si conta ad area con il komi, come nel
+ * conteggio vero di go.ts: il computer gioca per il punteggio con cui si
+ * decide la partita. La mossa scelta e' la piu' visitata, la piu' sicura, con
+ * un'eccezione: un gruppo di tre pietre o piu' in atari si prende subito, se la
+ * ricerca non vede niente di chiaramente meglio.
+ *
+ * Il goban della ricerca non e' la posizione immutabile di go.ts ma un array di
+ * interi con un giro di bordo, e ogni gruppo tiene le sue "pseudo-libertà": il
+ * numero, la somma e la somma dei quadrati dei punti vuoti accanto alle sue
+ * pietre. Con le tre somme si sa in un passo se un gruppo e' in atari (lo e' se
+ * e solo se n × Σx² = (Σx)²) e dov'e' la sua ultima libertà, senza contarle. Una
+ * simulazione parte copiando il goban della radice, un array solo. In Node, su
+ * un computer da tavolo, sono circa 13.000 simulazioni al secondo sul 9x9 vuoto,
+ * 6.000 sul 13x13 e 3.000 sul 19x19; un telefono ne fa la meta' o un terzo.
+ *
+ * I livelli, pensati per giocatori da bar sul 9x9 (sul 13 e sul 19 giocano
+ * mosse sensate, ma non fanno paura a nessuno):
+ *
+ *  - **facile**: 300 simulazioni, e una volta su due la mossa si pesca fra le
+ *    sei che la ricerca ha guardato di piu': chi ha appena imparato lo batte.
+ *    Risponde in qualche decina di millisecondi, e comunque entro 140;
+ *  - **normale**: fino a 5.000 simulazioni o mezzo secondo;
+ *  - **difficile**: fino a 25.000 simulazioni o un secondo e mezzo.
+ *
+ * Sui goban grandi il tetto delle simulazioni si scala con l'area. Il tempo e'
+ * un limite, non un obiettivo: la ricerca si ferma appena la mossa piu' visitata
+ * non puo' piu' essere superata. Sul 9x9, fra loro, il normale batte il facile
+ * dieci partite su dieci, e il difficile batte il normale circa sette volte su
+ * dieci. La radice non guarda la prima linea ne' la seconda dove non c'e'
+ * nessuno, e sui goban grandi, in apertura, la prima linea se non prende o non
+ * salva niente: con qualche centinaio di simulazioni le statistiche AMAF le
+ * premierebbero a caso.
+ *
+ * **Quando passa.** Se l'avversario ha appena passato e, contando con la stima
+ * delle pietre morte, la partita chiusa li' e' vinta. Altrimenti solo quando non
+ * resta niente da fare — niente da prendere o da salvare, nessun punto che le
+ * simulazioni non sappiano di chi e' (le dame contano solo in una partita
+ * stretta) — e regalare una mossa all'avversario non gli serve: lo dicono due
+ * ricerche piccole, dalla posizione e dopo il passo. Non riempie mai un proprio
+ * occhio, e da una partita persa senza speranza passa invece di giocare mosse
+ * inutili; la resa la offre l'interfaccia.
+ *
+ * **Le pietre morte** non si stabiliscono con certezza, e `stimaMorte` guarda
+ * due cose insieme. A colpo d'occhio: un gruppo con due occhi, o con un occhio
+ * di almeno sette punti, e' vivo e basta. Gli altri sono candidati, e li
+ * giudicano quattrocento simulazioni dalla posizione finale, in cui i territori
+ * chiusi non si invadono (a caso ci si vivrebbe piu' spesso di quanto farebbe
+ * chiunque) e le autoatari di tre pietre o piu' non si giocano (sono quelle che
+ * rompono un seki): un candidato che sopravvive meno di tre volte su quattro, e
+ * che e' chiuso da gruppi piu' forti di lui, e' morto. Si toglie un gruppo alla
+ * volta, dal piu' debole, e dopo ognuno si ricontano gli occhi di chi lo
+ * circondava. Due gruppi che si uccidono a vicenda — muoiono spesso tutti e
+ * due, e mai insieme — sono in seki, e restano. La stima si corregge toccando i
+ * gruppi, come al tavolo, dove i morti si decidono d'accordo: nei casi dubbi
+ * (un occhio di quattro punti, una lotta lasciata aperta) le simulazioni possono
+ * sbagliare, e le persone no.
  */
 
 import { KOMI, PASSO, chiaveRipetizione, gioca, legale, punteggio, type Mossa, type Posizione } from './go'
@@ -75,10 +163,11 @@ class Caso {
 class Geometria {
   readonly w: number
   readonly celle: number
-  /** I punti del goban, nell'indice con il bordo. */
+  /**
+   * I punti del goban nell'indice con il bordo, nell'ordine della posizione:
+   * `interni[k]` e' il punto `k` di go.ts. `aPunto` e' il ritorno (-1 sul bordo).
+   */
   readonly interni: Int32Array
-  /** Dall'indice della posizione a quello con il bordo, e ritorno (-1 sul bordo). */
-  readonly daPunto: Int32Array
   readonly aPunto: Int32Array
   /** La linea di ogni punto contando da 0: 0 la prima, 2 la terza. */
   readonly linea: Int8Array
@@ -99,14 +188,12 @@ class Geometria {
     this.w = w
     this.celle = w * w
     this.interni = new Int32Array(lato * lato)
-    this.daPunto = new Int32Array(lato * lato)
     this.aPunto = new Int32Array(this.celle).fill(-1)
     this.linea = new Int8Array(this.celle)
     for (let r = 0; r < lato; r += 1) {
       for (let c = 0; c < lato; c += 1) {
         const s = (r + 1) * w + c + 1
         this.interni[r * lato + c] = s
-        this.daPunto[r * lato + c] = s
         this.aPunto[s] = r * lato + c
         this.linea[s] = Math.min(r, c, lato - 1 - r, lato - 1 - c)
       }
@@ -263,14 +350,20 @@ class Goban {
   ultima = PASSA
   penultima = PASSA
 
-  // Gli attrezzi di chi conta: non fanno parte della posizione e non si copiano.
+  // Gli attrezzi di chi conta: non fanno parte della posizione e non si copiano. Un punto e'
+  // segnato se `segno[s] === giro`: un giro nuovo cancella tutti i segni senza toccare l'array.
   readonly segno: Int32Array
-  giro = 0
+  private giro = 0
   readonly visto: Int32Array
-  giroVisto = 0
+  private giroVisto = 0
   readonly pila: Int32Array
   readonly candidati: Int32Array
   readonly posto: Int32Array
+  /**
+   * I territori chiusi, se si guardano: per ogni punto il colore di chi lo
+   * chiude (0 se nessuno). L'altro ci gioca solo per prendere.
+   */
+  bloccati: Uint8Array | null = null
 
   constructor(readonly geo: Geometria) {
     const c = geo.celle
@@ -299,16 +392,33 @@ class Goban {
 
   static da(p: Posizione): Goban {
     const g = new Goban(geometria(p.lato))
-    const { daPunto } = g.geo
+    const { interni } = g.geo
     // Le pietre una alla volta: in una posizione valida nessun gruppo resta
     // mai senza libertà a meta' strada, quindi non c'e' niente da catturare.
     for (let k = 0; k < p.punti.length; k += 1) {
       const x = p.punti[k]
-      if (x !== null) g.metti(daPunto[k], x === 'nero' ? NERO : BIANCO)
+      if (x !== null) g.metti(interni[k], x === 'nero' ? NERO : BIANCO)
     }
-    g.ko = p.ko === null ? 0 : daPunto[p.ko]
+    g.ko = p.ko === null ? 0 : interni[p.ko]
     g.tratto = p.tratto === 'nero' ? NERO : BIANCO
     return g
+  }
+
+  /** Un giro nuovo di segni; prima che il contatore esca dagli interi a 32 bit, si ripuliscono. */
+  nuovoGiro(): number {
+    if (this.giro >= 0x3fff_ffff) {
+      this.segno.fill(0)
+      this.giro = 0
+    }
+    return ++this.giro
+  }
+
+  nuovoGiroVisto(): number {
+    if (this.giroVisto >= 0x3fff_ffff) {
+      this.visto.fill(0)
+      this.giroVisto = 0
+    }
+    return ++this.giroVisto
   }
 
   copia(da: Goban): void {
@@ -507,7 +617,7 @@ class Goban {
   libertaDopo(s: number, c: number, limite: number): number {
     const { colore, capo, seguente, nLib, segno } = this
     const lati = this.geo.lati
-    const giro = ++this.giro
+    const giro = this.nuovoGiro()
     const a = 3 - c
     segno[s] = giro
     let conta = 0
@@ -568,6 +678,34 @@ class Goban {
     return quante
   }
 
+  /** La pietra di `c` in `s` e' permessa dai territori chiusi? */
+  libera(s: number, c: number): boolean {
+    const b = this.bloccati
+    return b === null || b[s] === 0 || b[s] === c || this.prende(s, c)
+  }
+
+  /** Una pietra in `s` prende qualcosa, o toglie dall'atari un gruppo proprio? */
+  urgente(s: number): boolean {
+    const { colore, capo } = this
+    const lati = this.geo.lati
+    for (let d = 0; d < 4; d += 1) {
+      const n = s + lati[d]
+      if ((colore[n] === NERO || colore[n] === BIANCO) && this.inAtari(capo[n])) return true
+    }
+    return false
+  }
+
+  /** La pietra di `c` in `s` prende qualcosa? */
+  prende(s: number, c: number): boolean {
+    const { colore, capo } = this
+    const lati = this.geo.lati
+    for (let d = 0; d < 4; d += 1) {
+      const n = s + lati[d]
+      if (colore[n] === 3 - c && this.inAtari(capo[n])) return true
+    }
+    return false
+  }
+
   /** Le ultime libertà dei gruppi dell'avversario in atari che toccano il gruppo `g`: prenderli lo salva. */
   contrattacchi(g: number, fuori: Int32Array, n: number): number {
     const { colore, capo, seguente } = this
@@ -578,6 +716,27 @@ class Goban {
       for (let d = 0; d < 4; d += 1) {
         const m = t + lati[d]
         if (colore[m] === a && this.inAtari(capo[m]) && n < fuori.length) fuori[n++] = this.libertaDi(capo[m])
+      }
+      t = seguente[t]
+    } while (t !== g)
+    return n
+  }
+
+  /** Le libertà del gruppo `g`, fino a `limite`, scritte in `fuori`: quante sono. */
+  elencaLiberta(g: number, fuori: Int32Array, limite: number): number {
+    const { colore, seguente, segno } = this
+    const lati = this.geo.lati
+    const giro = this.nuovoGiro()
+    let n = 0
+    let t = g
+    do {
+      for (let d = 0; d < 4; d += 1) {
+        const m = t + lati[d]
+        if (colore[m] === VUOTO && segno[m] !== giro) {
+          segno[m] = giro
+          fuori[n++] = m
+          if (n >= limite) return n
+        }
       }
       t = seguente[t]
     } while (t !== g)
@@ -620,7 +779,7 @@ class Goban {
   area(possesso: Int8Array | null): number {
     const { colore, segno, pila } = this
     const { interni, lati, w } = this.geo
-    const giro = ++this.giro
+    const giro = this.nuovoGiro()
     let totale = 0
     for (let i = 0; i < interni.length; i += 1) {
       const s = interni[i]
@@ -690,12 +849,23 @@ const POLITICA_RICERCA: Politica = {
   semprePietre: 6,
 }
 
-/** Le simulazioni della stima delle pietre morte: le stesse. */
-const POLITICA_STIMA: Politica = POLITICA_RICERCA
+/**
+ * Le simulazioni della stima delle pietre morte. Le catture e le fughe si
+ * guardano sempre, e un'autoatari di tre pietre o piu' non si gioca mai: e'
+ * quella che romperebbe un seki. Due pietre si buttano ancora, a volte: e' così
+ * che si uccide un occhio di tre punti giocandoci dentro.
+ */
+const POLITICA_STIMA: Politica = {
+  cattura: 1,
+  forma: 0.9,
+  scartaSuggerite: 0.9,
+  scartaCasuali: 0.5,
+  semprePietre: 3,
+}
 
 function accettabile(g: Goban, s: number, caso: Caso, scarta: number, pol: Politica): boolean {
   const c = g.tratto
-  if (g.occhio(s, c) || !g.legale(s)) return false
+  if (g.occhio(s, c) || !g.legale(s) || !g.libera(s, c)) return false
   const quante = g.autoAtari(s, c)
   return quante <= 1 || (quante < pol.semprePietre && caso.numero() >= scarta)
 }
@@ -705,7 +875,7 @@ function mossaDiCattura(g: Goban, caso: Caso, pol: Politica): number {
   const { colore, capo, candidati, visto } = g
   const croce = g.geo.croce
   const c = g.tratto
-  const giro = ++g.giroVisto
+  const giro = g.nuovoGiroVisto()
   let n = 0
   for (let volta = 0; volta < 2; volta += 1) {
     const q = volta === 0 ? g.ultima : g.penultima
@@ -824,21 +994,26 @@ const VINTE_AMAF = 5
 
 /** Quante simulazioni prima che una mossa diventi un nodo con i suoi figli. */
 const ESPANDI = 8
-/** Il peso delle statistiche AMAF: sono pari a quelle vere a circa questo numero di visite. */
-const RAVE_EQUIV = 3500
+/**
+ * Il peso delle statistiche AMAF: pesano quanto quelle vere a circa questo
+ * numero di visite. Michi usa 3500; con 1000 il normale ne vince tre su quattro
+ * a 2000 simulazioni (quelle che fa in mezzo secondo su un telefono), e a 6000
+ * sono pari.
+ */
+const RAVE_EQUIV = 1000
 /** Quanto del premio di una simulazione viene dal margine, e non dalla vittoria. */
 const PESO_PUNTI = 0.1
 
 // I prior, in visite finte: con vittorie (un incoraggiamento) o senza (un'avvertenza).
 const PRIOR_PARI = 10
 const PRIOR_AUTOATARI = 10
-const PRIOR_CATTURA_UNA = 15
-const PRIOR_CATTURA_MOLTE = 30
+/** Prendere o salvare un gruppo: tanto per pietra, e un tanto in piu' se le pietre sono piu' d'una. */
+const PRIOR_CATTURA = 15
+const PRIOR_CATTURA_MASSIMO = 120
 const PRIOR_FORMA = 10
 /** Per la distanza dall'ultima mossa: 1, 2 e 3. */
 const PRIOR_VICINE = [0, 24, 22, 8]
 const PRIOR_ZONA_VUOTA = 10
-const PRIOR_PASSO = 10
 
 class Nodo {
   readonly figli: (Nodo | null)[]
@@ -853,15 +1028,26 @@ class Nodo {
   }
 }
 
-/** Le mosse di un nodo: i punti legali che non sono propri occhi, e il passo se non c'e' altro (o se richiesto). */
-function espandi(g: Goban, conPasso: boolean): Nodo {
+/** Le mosse di un nodo: i punti legali che non sono propri occhi, e il passo se non c'e' altro. */
+function espandi(g: Goban, radice = false): Nodo {
   const c = g.tratto
-  const mosse: number[] = []
+  let mosse: number[] = []
   for (let i = 0; i < g.nVuoti; i += 1) {
     const s = g.vuoti[i]
-    if (!g.occhio(s, c) && g.legale(s)) mosse.push(s)
+    if (!g.occhio(s, c) && g.legale(s) && g.libera(s, c)) mosse.push(s)
   }
-  if (conPasso || mosse.length === 0) mosse.push(PASSA)
+  // Alla radice non si guardano la prima e la seconda linea dove non c'e' nessuno, e sui goban
+  // grandi, in apertura, la prima linea se non prende o non salva niente: con poche simulazioni
+  // (sul 19x19 sono qualche centinaio) le statistiche AMAF le premiano a caso.
+  if (radice) {
+    const { linea, lato } = g.geo
+    const apertura = lato >= 13 && g.geo.interni.length - g.nVuoti < 2 * lato
+    const sensate = mosse.filter(
+      (s) => (linea[s] > 1 || !g.zonaVuota(s)) && (!apertura || linea[s] > 0 || g.urgente(s)),
+    )
+    if (sensate.length > 0) mosse = sensate
+  }
+  if (mosse.length === 0) mosse.push(PASSA)
   const nodo = new Nodo(c, Int32Array.from(mosse))
   prior(g, nodo)
   return nodo
@@ -893,7 +1079,7 @@ function prior(g: Goban, nodo: Nodo): void {
     const x = colore[s]
     if ((x !== NERO && x !== BIANCO) || capo[s] !== s || !g.inAtari(s)) continue
     const lib = g.libertaDi(s)
-    const peso = pietre[s] > 1 ? PRIOR_CATTURA_MOLTE : PRIOR_CATTURA_UNA
+    const peso = Math.min(PRIOR_CATTURA_MASSIMO, PRIOR_CATTURA * (pietre[s] > 1 ? pietre[s] + 1 : 1))
     if (x !== c) aggiungi(lib, peso, peso)
     else {
       const n = g.contrattacchi(s, g.candidati, 0)
@@ -906,7 +1092,7 @@ function prior(g: Goban, nodo: Nodo): void {
   const u = g.ultima
   if (u !== PASSA && colore[u] !== VUOTO) {
     const { segno, pila, seguente } = g
-    const giro = ++g.giro
+    const giro = g.nuovoGiro()
     let n = 0
     let t = capo[u]
     do {
@@ -945,21 +1131,118 @@ function prior(g: Goban, nodo: Nodo): void {
   for (let i = 0; i < k; i += 1) {
     const s = mosse[i]
     const b = i * CAMPI
-    if (s === PASSA) {
-      stat[b + VISITE] += PRIOR_PASSO
-      continue
-    }
+    if (s === PASSA) continue
     if (SCHEMI[g.codice(s)] === 1) {
       stat[b + VISITE] += PRIOR_FORMA
       stat[b + VINTE] += PRIOR_FORMA
     }
-    // Dove non c'e' nessuno, la prima e la seconda linea sono lente e la terza e' quella giusta.
+    // Dove non c'e' nessuno, la prima e la seconda linea sono lente e la terza e' quella giusta
+    // (sui goban grandi anche la quarta).
     const l = linea[s]
-    if (l <= 2 && g.zonaVuota(s)) {
+    if ((l <= 2 || (l === 3 && g.geo.lato >= 13)) && g.zonaVuota(s)) {
       stat[b + VISITE] += PRIOR_ZONA_VUOTA
-      if (l === 2) stat[b + VINTE] += PRIOR_ZONA_VUOTA
+      if (l >= 2) stat[b + VINTE] += PRIOR_ZONA_VUOTA
     }
     if (g.autoAtari(s, c) > 1) stat[b + VISITE] += PRIOR_AUTOATARI
+  }
+}
+
+/* ─────────────────────────────  Le scale  ───────────────────────────── */
+
+/** Quanti nodi puo' leggere una scala, e quanto puo' andare a fondo in tratti per lato. */
+const NODI_SCALA = 300
+/** Il prior di una scala, per pietra presa o persa, e il suo tetto. */
+const PRIOR_SCALA = 40
+const PRIOR_SCALA_MASSIMO = 240
+
+/** I goban su cui si legge una scala, uno per tratto, per ogni lato: si copiano, non si disfano. */
+const TAVOLE_SCALA = new Map<number, Goban[]>()
+
+function tavolaDiScala(geo: Geometria, i: number): Goban {
+  let tavole = TAVOLE_SCALA.get(geo.lato)
+  if (!tavole) {
+    tavole = []
+    TAVOLE_SCALA.set(geo.lato, tavole)
+  }
+  while (tavole.length <= i) tavole.push(new Goban(geo))
+  return tavole[i]
+}
+
+/**
+ * La scala: il gruppo della pietra in `s`, in atari e con il tratto, e' preso?
+ * Si legge come si gioca. Chi scappa, se puo' prendere una pietra che lo
+ * minaccia, e' salvo; altrimenti allunga sull'ultima libertà, e se dopo ne ha
+ * tre e' salvo, se ne ha una e' preso. Con due, chi insegue prova l'atari da
+ * tutte e due le parti, e il gruppo e' preso se uno dei due funziona. Una
+ * scala troppo lunga da leggere si da' per salva.
+ */
+function presoInScala(g: Goban, s: number, profondita: number, conto: { nodi: number }): boolean {
+  if (conto.nodi <= 0 || profondita + 2 >= 4 * g.geo.lato) return false
+  conto.nodi -= 1
+  const gr = g.capo[s]
+  if (g.contrattacchi(gr, g.candidati, 0) > 0) return false
+  const ultima = g.libertaDi(gr)
+  if (!g.legale(ultima)) return true
+  const h = tavolaDiScala(g.geo, profondita)
+  h.copia(g)
+  h.gioca(ultima)
+  const libere = h.elencaLiberta(h.capo[s], h.candidati, 3)
+  if (libere !== 2) return libere < 2
+  const attacchi = [h.candidati[0], h.candidati[1]]
+  const k = tavolaDiScala(g.geo, profondita + 1)
+  for (const a of attacchi) {
+    k.copia(h)
+    if (!k.legale(a)) continue
+    k.gioca(a)
+    if (k.inAtari(k.capo[s]) && presoInScala(k, s, profondita + 2, conto)) return true
+  }
+  return false
+}
+
+/**
+ * Le scale, solo alla radice: le simulazioni giocano a caso e una scala non la
+ * seguono mai fino in fondo, quindi non sanno che il gruppo e' perso. L'atari
+ * che manda un gruppo dell'avversario in una scala che funziona parte con un
+ * prior forte, e allungarsi dentro una scala che non si salva con uno
+ * contrario. Valgono anche per le statistiche AMAF, che alla radice pesano piu'
+ * dei prior.
+ */
+function priorScale(g: Goban, nodo: Nodo): void {
+  const { mosse, stat } = nodo
+  const { colore, capo, pietre } = g
+  const c = g.tratto
+  const libere = new Int32Array(3)
+  const aggiungi = (mossa: number, stones: number, buona: boolean) => {
+    const i = mosse.indexOf(mossa)
+    if (i < 0) return
+    const peso = Math.min(PRIOR_SCALA_MASSIMO, PRIOR_SCALA * (stones + 1))
+    const b = i * CAMPI
+    stat[b + VISITE] += peso
+    stat[b + VISITE_AMAF] += peso
+    if (buona) {
+      stat[b + VINTE] += peso
+      stat[b + VINTE_AMAF] += peso
+    }
+  }
+  for (const s of g.geo.interni) {
+    const x = colore[s]
+    if ((x !== NERO && x !== BIANCO) || capo[s] !== s) continue
+    if (x === c) {
+      if (!g.inAtari(s)) continue
+      const k = tavolaDiScala(g.geo, 0)
+      k.copia(g)
+      if (presoInScala(k, s, 1, { nodi: NODI_SCALA })) aggiungi(g.libertaDi(s), pietre[s], false)
+      continue
+    }
+    if (g.elencaLiberta(s, libere, 3) !== 2) continue
+    const attacchi = [libere[0], libere[1]]
+    for (const a of attacchi) {
+      if (!g.legale(a)) continue
+      const k = tavolaDiScala(g.geo, 0)
+      k.copia(g)
+      k.gioca(a)
+      if (k.inAtari(k.capo[s]) && presoInScala(k, s, 1, { nodi: NODI_SCALA })) aggiungi(a, pietre[s], true)
+    }
   }
 }
 
@@ -1009,19 +1292,25 @@ class Ricerca {
   private readonly cammino: Nodo[] = []
   private readonly scelte: number[] = []
 
-  constructor(p: Posizione, rng: () => number, conPasso: boolean, ultima: number | null) {
+  /** `chiusi`: i territori chiusi non si invadono, ne' nell'albero ne' nelle simulazioni. */
+  constructor(p: Posizione, rng: () => number, chiusi: boolean, ultima: number | null) {
     this.radiceGoban = Goban.da(p)
     const geo = this.radiceGoban.geo
     if (ultima !== null && ultima >= 0 && ultima < p.punti.length && p.punti[ultima] !== null) {
-      this.radiceGoban.ultima = geo.daPunto[ultima]
+      this.radiceGoban.ultima = geo.interni[ultima]
     }
     this.lavoro = new Goban(geo)
+    if (chiusi) {
+      this.radiceGoban.bloccati = territoriChiusi(this.radiceGoban)
+      this.lavoro.bloccati = this.radiceGoban.bloccati
+    }
     this.caso = new Caso(rng)
     this.amaf = new Int8Array(geo.celle)
     this.finale = new Int8Array(geo.celle)
     this.possesso = new Float64Array(geo.celle)
     this.passiRadice = p.passi
-    this.radice = espandi(this.radiceGoban, conPasso)
+    this.radice = espandi(this.radiceGoban, true)
+    priorScale(this.radiceGoban, this.radice)
     this.puntiFigli = new Float64Array(this.radice.mosse.length)
   }
 
@@ -1057,7 +1346,9 @@ class Ricerca {
       let figlio = nodo.figli[i]
       if (figlio === null) {
         if (nodo.stat[i * CAMPI + VERE] + 1 < ESPANDI) break
-        figlio = espandi(g, false)
+        figlio = espandi(g)
+        // Anche le risposte alla mossa della radice sanno delle scale: e' li' che chi scappa si perde.
+        if (profondita === 1) priorScale(g, figlio)
         nodo.figli[i] = figlio
       }
       nodo = figlio
@@ -1066,13 +1357,17 @@ class Ricerca {
     const punti = g.area(this.finale) - KOMI
     const { interni } = g.geo
     for (let j = 0; j < interni.length; j += 1) this.possesso[interni[j]] += this.finale[interni[j]]
+    const riferimento = this.simulazioni > 0 ? this.sommaPunti / this.simulazioni : punti
     this.sommaPunti += punti
     this.puntiFigli[scelte[0]] += this.radiceGoban.tratto === NERO ? punti : -punti
     const vinceNero = punti > 0
     // Il premio e' soprattutto la vittoria, e un poco il margine: a partita decisa
     // le vittorie sono tutte uguali, e senza i punti l'albero non saprebbe piu'
-    // distinguere una mossa che guadagna da una che regala.
-    const premioNero = (vinceNero ? 1 - PESO_PUNTI : 0) + PESO_PUNTI * (0.5 + 0.5 * Math.tanh(punti / g.geo.lato))
+    // distinguere una mossa che guadagna da una che regala. Il margine si misura
+    // rispetto a quello medio della ricerca, che a partita decisa e' lontano da
+    // zero: sono i punti in piu' o in meno che contano.
+    const scarto = Math.tanh((punti - riferimento) / g.geo.lato)
+    const premioNero = (vinceNero ? 1 - PESO_PUNTI : 0) + PESO_PUNTI * (0.5 + 0.5 * scarto)
     for (let j = 0; j < profondita; j += 1) {
       const n = cammino[j]
       const i = scelte[j]
@@ -1134,12 +1429,12 @@ interface Livello {
   /** Il minimo, sui goban grandi. */
   readonly minime: number
   readonly tempoMs: number
-  /** Quante volte su cento la scelta finale e' a caso fra le mosse buone. */
+  /** La probabilità che la scelta finale sia a caso fra le mosse che la ricerca ha guardato di piu'. */
   readonly caso: number
 }
 
 const LIVELLI: Record<LivelloGo, Livello> = {
-  facile: { simulazioni: 300, minime: 100, tempoMs: 120, caso: 0.5 },
+  facile: { simulazioni: 300, minime: 100, tempoMs: 140, caso: 0.5 },
   normale: { simulazioni: 5000, minime: 500, tempoMs: 500, caso: 0 },
   difficile: { simulazioni: 25000, minime: 1500, tempoMs: 1500, caso: 0 },
 }
@@ -1150,8 +1445,15 @@ const SICURO = 0.6
 const DECISA = 0.9
 /** Una partita persa con meno di così e' persa senza speranza. */
 const SPERANZA = 0.15
-/** Quanto pensa la verifica del passo, in parti della ricerca. */
-const PARTE_PASSO = 0.4
+/** Da quante pietre un gruppo in atari si prende senza pensarci. */
+const PRESA_GRANDE = 3
+/**
+ * La ricerca principale ha tre quarti del tempo; l'ultimo quarto resta alle
+ * due ricerche che verificano il passo, quando servono, così la risposta non
+ * supera mai il tempo del livello. Le simulazioni di ognuna sono un terzo.
+ */
+const PARTE_RICERCA = 0.75
+const PARTE_PASSO = 0.3
 
 /**
  * La mossa del computer (anche il passo). `storia` sono le chiavi di
@@ -1166,6 +1468,7 @@ export function mossaDelComputer(
   opzioni: OpzioniGo = {},
 ): Mossa {
   if (p.passi >= 2) return PASSO
+  const inizio = adesso()
   const conf = LIVELLI[livello]
   const scala = Math.min(1, 81 / (p.lato * p.lato))
   const simulazioni = opzioni.simulazioni ?? Math.max(conf.minime, Math.round(conf.simulazioni * scala))
@@ -1179,14 +1482,17 @@ export function mossaDelComputer(
 
   const r = new Ricerca(p, rng, false, opzioni.ultima ?? null)
   if (r.radice.mosse.length === 1 && r.radice.mosse[0] === PASSA) return PASSO
-  cerca(r, simulazioni, tempoMs)
+  cerca(r, simulazioni, Math.max(1, inizio + tempoMs * PARTE_RICERCA - adesso()))
   const { scelta, passabile, vinte } = decidi(r, conf, rng)
 
   let passo = false
   if (passabile) {
     // Chiuderebbe l'avversario, e la partita e' persa comunque; oppure regalargli una mossa non costa niente.
     if (p.passi === 1) passo = vinte < SPERANZA
-    else passo = passoInnocuo(p, r, scelta, rng, Math.ceil(simulazioni * PARTE_PASSO), tempoMs * PARTE_PASSO)
+    else {
+      const resto = Math.max(0, inizio + tempoMs - adesso()) / 2
+      passo = passoInnocuo(p, rng, Math.ceil(simulazioni * PARTE_PASSO), resto)
+    }
   }
   return verificata(p, r, passo ? PASSA : scelta, storia)
 }
@@ -1224,12 +1530,20 @@ function decidi(r: Ricerca, conf: Livello, rng: () => number): { scelta: number;
   const verso = r.radiceGoban.tratto === NERO ? 1 : -1
   const quante = Math.max(1, r.simulazioni)
   const margine = (verso * r.sommaPunti) / quante
-  const { utili, urgenti, dame } = mosseUtili(r)
+  const { utili, urgenti, dame, prese } = mosseUtili(r)
   if (Math.abs(margine) <= dame.size + 1.5) for (const d of dame) utili.add(d)
 
   if (decisa && urgenti.size > 0 && !urgenti.has(scelta) && Math.abs(r.possesso[scelta] / quante) >= SICURO) {
     const serve = ordine.find((i) => urgenti.has(radice.mosse[i]))
     if (serve !== undefined) scelta = radice.mosse[serve]
+  }
+  // Un gruppo grande in atari si prende subito, se la ricerca non vede niente di chiaramente
+  // meglio: aspettare (una rete, una scala) di rado vale di piu', e rischia sempre.
+  if (!urgenti.has(scelta)) {
+    const presa = ordine.find((i) => (prese.get(radice.mosse[i]) ?? 0) >= PRESA_GRANDE)
+    if (presa !== undefined && st[presa * CAMPI + VERE] >= 20 && vittorie(radice, presa) >= vinte - 0.05) {
+      scelta = radice.mosse[presa]
+    }
   }
 
   // Il facile, una volta ogni tanto, sceglie a caso fra le mosse che la ricerca ha guardato di piu'.
@@ -1252,39 +1566,41 @@ function decidi(r: Ricerca, conf: Livello, rng: () => number): { scelta: number;
 
 /**
  * Passare regala una mossa all'avversario: e' innocuo solo se non gli serve a
- * niente. Lo si chiede a una ricerca dalla posizione dopo il passo, con
- * l'avversario al tratto: se con la mossa in piu' non vince piu' spesso e non
- * guadagna piu' di una dama o due (e le dame contano solo in una partita
- * stretta), si puo' passare. Le simulazioni da sole non basterebbero: giocano
- * a caso, e un punto vitale lasciato libero lo troverebbero di rado.
+ * niente. Lo dicono due ricerche piccole, una dalla posizione e una dopo il
+ * passo con l'avversario al tratto: se con la mossa in piu' lui non vince piu'
+ * spesso e non guadagna piu' di una dama o due (e le dame contano solo in una
+ * partita stretta), si puo' passare. Le simulazioni da sole non basterebbero:
+ * giocano a caso, e un punto vitale lasciato libero lo troverebbero di rado.
+ * Nelle due ricerche i territori chiusi non si invadono: a caso ci si vive piu'
+ * spesso di quanto farebbe chiunque, e ogni passo sembrerebbe un regalo.
  */
-function passoInnocuo(
-  p: Posizione,
-  r: Ricerca,
-  scelta: number,
-  rng: () => number,
-  simulazioni: number,
-  tempoMs: number,
-): boolean {
-  const r2 = new Ricerca(gioca(p, PASSO), rng, false, null)
-  if (r2.radice.mosse.length === 1 && r2.radice.mosse[0] === PASSA) return true
-  cerca(r2, simulazioni, tempoMs)
-  const loro = ordinati(r2.radice)[0]
-  const vinteDopo = 1 - vittorie(r2.radice, loro)
-  const puntiDopo = -r2.media(loro)
-  const i = r.radice.mosse.indexOf(scelta)
-  if (vinteDopo < vittorie(r.radice, i) - 0.03) return false
-  const costo = r.media(i) - puntiDopo
+function passoInnocuo(p: Posizione, rng: () => number, simulazioni: number, tempoMs: number): boolean {
+  const prima = new Ricerca(p, rng, true, null)
+  if (prima.radice.mosse.length === 1 && prima.radice.mosse[0] === PASSA) return true
+  const dopo = new Ricerca(gioca(p, PASSO), rng, true, null)
+  if (dopo.radice.mosse.length === 1 && dopo.radice.mosse[0] === PASSA) return true
+  cerca(prima, simulazioni, tempoMs)
+  cerca(dopo, simulazioni, tempoMs)
+  const mia = ordinati(prima.radice)[0]
+  const loro = ordinati(dopo.radice)[0]
+  if (1 - vittorie(dopo.radice, loro) < vittorie(prima.radice, mia) - 0.03) return false
+  const puntiDopo = -dopo.media(loro)
+  const costo = prima.media(mia) - puntiDopo
   return costo <= 0.6 || (costo <= 2 && Math.abs(puntiDopo) >= 5)
 }
 
 /**
  * Le mosse che servono ancora: prendere un gruppo in atari, salvarne uno
  * proprio che non sia gia' perso, giocare su un punto che le simulazioni non
- * sanno di chi sia. I punti incerti fra due muri ormai vivi sono dame, e
- * contano solo se la partita e' stretta.
+ * sanno di chi sia, fuori dai territori chiusi. I punti incerti fra due muri
+ * ormai vivi sono dame, e contano solo se la partita e' stretta.
  */
-function mosseUtili(r: Ricerca): { utili: Set<number>; urgenti: Set<number>; dame: Set<number> } {
+function mosseUtili(r: Ricerca): {
+  utili: Set<number>
+  urgenti: Set<number>
+  dame: Set<number>
+  prese: Map<number, number>
+} {
   const g = r.radiceGoban
   const { colore, capo, pietre, seguente } = g
   const { interni, lati } = g.geo
@@ -1296,6 +1612,8 @@ function mosseUtili(r: Ricerca): { utili: Set<number>; urgenti: Set<number>; dam
   const utili = new Set<number>()
   const urgenti = new Set<number>()
   const dame = new Set<number>()
+  /** Le catture, e quante pietre prende ognuna. */
+  const prese = new Map<number, number>()
   const buona = (s: number) => g.legale(s) && !g.occhio(s, c) && g.autoAtari(s, c) <= 1
 
   for (let j = 0; j < interni.length; j += 1) {
@@ -1304,7 +1622,10 @@ function mosseUtili(r: Ricerca): { utili: Set<number>; urgenti: Set<number>; dam
     if ((x !== NERO && x !== BIANCO) || capo[s] !== s || !g.inAtari(s)) continue
     const lib = g.libertaDi(s)
     if (x === a) {
-      if (g.legale(lib) && (pietre[s] > 1 || g.libertaDopo(lib, c, 2) >= 2)) urgenti.add(lib)
+      if (g.legale(lib) && (pietre[s] > 1 || g.libertaDopo(lib, c, 2) >= 2)) {
+        urgenti.add(lib)
+        prese.set(lib, (prese.get(lib) ?? 0) + pietre[s])
+      }
       continue
     }
     // Un gruppo proprio in atari: si salva se non e' gia' dell'avversario.
@@ -1320,13 +1641,16 @@ function mosseUtili(r: Ricerca): { utili: Set<number>; urgenti: Set<number>; dam
     if (g.legale(lib) && g.libertaDopo(lib, c, 2) >= 2) urgenti.add(lib)
   }
 
+  // I territori chiusi non si guardano: a fine partita nessuno ci entra, anche se le
+  // simulazioni, giocando a caso, ogni tanto ci vivono.
+  const chiusi = territoriChiusi(g)
   for (let i = 0; i < g.nVuoti; i += 1) {
     const s = g.vuoti[i]
-    if (Math.abs(mio(s)) >= SICURO || !buona(s)) continue
+    if (chiusi[s] !== 0 || Math.abs(mio(s)) >= SICURO || !buona(s)) continue
     if (dama(s)) dame.add(s)
     else utili.add(s)
   }
-  return { utili, urgenti, dame }
+  return { utili, urgenti, dame, prese }
 
   /** La zona vuota del punto e' piccola, tocca tutti e due i colori, e i muri attorno sono vivi e sicuri. */
   function dama(s: number): boolean {
@@ -1388,6 +1712,12 @@ function verificata(p: Posizione, r: Ricerca, scelta: number, storia: readonly s
 const SIMULAZIONI_STIMA = 400
 /** Quelle della stima con cui il computer decide se passare. */
 const SIMULAZIONI_PASSO = 200
+/** Un gruppo che le simulazioni lasciano vivo almeno così spesso non si da' per morto. */
+const SOGLIA_VIVE = 0.75
+/** Un occhio grande almeno così basta per farne due. */
+const OCCHIO_GRANDE = 7
+/** Un territorio chiuso grande almeno così, nelle simulazioni della stima, non si invade. */
+const TERRITORIO_CHIUSO = 7
 /** Due gruppi vicini di colore diverso che muoiono tutti e due almeno così spesso, e mai insieme, sono in seki. */
 const SEKI = 0.25
 const SEKI_INSIEME = 0.05
@@ -1397,11 +1727,16 @@ export function stimaMorte(p: Posizione, rng: () => number): number[] {
   return stima(p, rng, SIMULAZIONI_STIMA)
 }
 
+interface Gruppo {
+  readonly colore: number
+  readonly pietre: number[]
+}
+
 function stima(p: Posizione, rng: () => number, quante: number): number[] {
   const g0 = Goban.da(p)
   const geo = g0.geo
   const { colore, capo, seguente } = g0
-  const gruppi: { colore: number; pietre: number[] }[] = []
+  const gruppi: Gruppo[] = []
   const gruppoDi = new Int32Array(geo.celle).fill(-1)
   for (const s of geo.interni) {
     const x = colore[s]
@@ -1433,7 +1768,11 @@ function stima(p: Posizione, rng: () => number, quante: number): number[] {
     }
   }
 
+  // Le simulazioni. I territori chiusi e grandi restano come sono: dopo due
+  // passi nessuno dei due ci giocherebbe, e a caso invece li si invade, e ci si
+  // vive, piu' spesso di quanto farebbe chiunque.
   const g = new Goban(geo)
+  g.bloccati = territoriChiusi(g0)
   const caso = new Caso(rng)
   const finale = new Int8Array(geo.celle)
   const morti = new Int32Array(gruppi.length)
@@ -1461,21 +1800,180 @@ function stima(p: Posizione, rng: () => number, quante: number): number[] {
       if (mortoOra[coppie[2 * j]] && mortoOra[coppie[2 * j + 1]]) insieme[j] += 1
     }
   }
+  const vive = Array.from(morti, (m) => 1 - m / quante)
 
-  const morto = Array.from(morti, (m) => m * 2 > quante)
+  // Due gruppi che si uccidono a vicenda — muoiono tutti e due spesso, e mai
+  // insieme — sono in un seki, o in una lotta che nessuno ha chiuso: vivi.
+  const inSeki = new Uint8Array(gruppi.length)
   for (let j = 0; j < insieme.length; j += 1) {
     const a = coppie[2 * j]
     const b = coppie[2 * j + 1]
     if (morti[a] >= SEKI * quante && morti[b] >= SEKI * quante && insieme[j] <= SEKI_INSIEME * quante) {
-      morto[a] = false
-      morto[b] = false
+      inSeki[a] = 1
+      inSeki[b] = 1
     }
   }
+
+  // Si toglie un gruppo alla volta, dal piu' debole: senza due occhi (o un
+  // occhio grande), vivo in meno di tre simulazioni su quattro, e chiuso da
+  // gruppi piu' forti di lui. Tolto un gruppo, chi lo circondava puo' avere
+  // guadagnato un occhio: si ricontano.
+  const morto = new Uint8Array(gruppi.length)
+  for (;;) {
+    const sicuri = gruppiSicuri(g0, gruppi, gruppoDi, morto)
+    const candidati = gruppi
+      .map((_, j) => j)
+      .filter((j) => !morto[j] && !sicuri[j] && !inSeki[j] && vive[j] < SOGLIA_VIVE)
+      .sort((a, b) => vive[a] - vive[b])
+    const scelto = candidati.find((j) =>
+      circondanti(g0, gruppi, gruppoDi, morto, j).every((k) => sicuri[k] || vive[k] > vive[j] + 0.1),
+    )
+    if (scelto === undefined) break
+    morto[scelto] = 1
+  }
+
   const fuori: number[] = []
   gruppi.forEach((gr, j) => {
     if (morto[j]) for (const s of gr.pietre) fuori.push(geo.aPunto[s])
   })
   return fuori.sort((x, y) => x - y)
+}
+
+/**
+ * I territori chiusi: le zone vuote di almeno sette punti, e non piu' di meta'
+ * goban, che toccano pietre di un colore solo. Per ogni punto, chi lo chiude.
+ */
+function territoriChiusi(g: Goban): Uint8Array {
+  const { colore } = g
+  const { celle, interni, lati } = g.geo
+  const chiusi = new Uint8Array(celle)
+  const visti = new Uint8Array(celle)
+  for (const s of interni) {
+    if (colore[s] !== VUOTO || visti[s]) continue
+    const zona = [s]
+    visti[s] = 1
+    let tocca = 0
+    for (let i = 0; i < zona.length; i += 1) {
+      for (const d of lati) {
+        const v = zona[i] + d
+        const x = colore[v]
+        if (x === VUOTO) {
+          if (!visti[v]) {
+            visti[v] = 1
+            zona.push(v)
+          }
+        } else if (x !== FUORI) tocca |= x
+      }
+    }
+    // Una zona di meta' goban o piu' non e' un territorio: all'inizio della partita, con
+    // una pietra sola, tutto il goban toccherebbe un colore solo.
+    const territorio = zona.length >= TERRITORIO_CHIUSO && zona.length * 2 <= interni.length
+    if ((tocca === NERO || tocca === BIANCO) && territorio) for (const v of zona) chiusi[v] = tocca
+  }
+  return chiusi
+}
+
+/**
+ * I gruppi che vivono di sicuro, a colpo d'occhio: quelli con due occhi, o con
+ * un occhio grande. Un occhio e' una zona senza pietre vive dell'altro colore,
+ * chiusa da pietre proprie (le pietre morte contano come vuote); un occhio di
+ * un punto solo vale se non e' falso. I gruppi che chiudono lo stesso occhio lo
+ * condividono, e vivono o muoiono insieme.
+ */
+function gruppiSicuri(g: Goban, gruppi: readonly Gruppo[], gruppoDi: Int32Array, morto: Uint8Array): Uint8Array {
+  const { colore } = g
+  const { celle, interni, lati, w } = g.geo
+  const sicuri = new Uint8Array(gruppi.length)
+  const vivo = (s: number) => {
+    const j = gruppoDi[s]
+    return j >= 0 && !morto[j]
+  }
+  for (const c of [NERO, BIANCO]) {
+    const padre = gruppi.map((_, j) => j)
+    const radice = (j: number): number => (padre[j] === j ? j : (padre[j] = radice(padre[j])))
+    const occhi: { grandezza: number; gruppi: number[] }[] = []
+    const visti = new Uint8Array(celle)
+    for (const s of interni) {
+      if (visti[s] || (colore[s] === c && vivo(s))) continue
+      const zona = [s]
+      visti[s] = 1
+      let pulita = true
+      const bordo = new Set<number>()
+      for (let i = 0; i < zona.length; i += 1) {
+        const t = zona[i]
+        if (colore[t] === 3 - c && vivo(t)) pulita = false
+        for (const d of lati) {
+          const v = t + d
+          if (colore[v] === FUORI) continue
+          if (colore[v] === c && vivo(v)) bordo.add(gruppoDi[v])
+          else if (!visti[v]) {
+            visti[v] = 1
+            zona.push(v)
+          }
+        }
+      }
+      if (!pulita || bordo.size === 0) continue
+      if (zona.length === 1) {
+        // Un occhio falso: troppe diagonali dell'avversario (una sola basta sul bordo).
+        let falsi = 0
+        let lato = 0
+        for (const d of [-w - 1, -w + 1, w - 1, w + 1]) {
+          const v = s + d
+          if (colore[v] === FUORI) lato = 1
+          else if (colore[v] === 3 - c && vivo(v)) falsi += 1
+        }
+        if (falsi + lato >= 2) continue
+      }
+      const chi = [...bordo]
+      for (const j of chi) padre[radice(j)] = radice(chi[0])
+      occhi.push({ grandezza: zona.length, gruppi: chi })
+    }
+    const conti = new Map<number, { occhi: number; grande: boolean }>()
+    for (const o of occhi) {
+      const r = radice(o.gruppi[0])
+      const conto = conti.get(r) ?? { occhi: 0, grande: false }
+      conto.occhi += 1
+      if (o.grandezza >= OCCHIO_GRANDE) conto.grande = true
+      conti.set(r, conto)
+    }
+    gruppi.forEach((gr, j) => {
+      if (gr.colore !== c || morto[j]) return
+      const conto = conti.get(radice(j))
+      if (conto && (conto.occhi >= 2 || conto.grande)) sicuri[j] = 1
+    })
+  }
+  return sicuri
+}
+
+/** I gruppi vivi dell'avversario che chiudono la zona del gruppo `j`: vuoti, pietre morte e pietre sue. */
+function circondanti(
+  g: Goban,
+  gruppi: readonly Gruppo[],
+  gruppoDi: Int32Array,
+  morto: Uint8Array,
+  j: number,
+): number[] {
+  const { colore } = g
+  const { celle, lati } = g.geo
+  const c = gruppi[j].colore
+  const visti = new Uint8Array(celle)
+  const zona = [...gruppi[j].pietre]
+  for (const s of zona) visti[s] = 1
+  const fuori = new Set<number>()
+  for (let i = 0; i < zona.length; i += 1) {
+    for (const d of lati) {
+      const v = zona[i] + d
+      if (visti[v] || colore[v] === FUORI) continue
+      const k = gruppoDi[v]
+      if (colore[v] === 3 - c && !morto[k]) {
+        fuori.add(k)
+        continue
+      }
+      visti[v] = 1
+      zona.push(v)
+    }
+  }
+  return [...fuori]
 }
 
 /* ─────────────────────────────  Per i test  ───────────────────────────── */

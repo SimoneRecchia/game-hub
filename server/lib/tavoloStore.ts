@@ -607,6 +607,7 @@ export async function vistaTavolo(db: D1Database, row: PartitaRow, io: Lato, ade
       ? { morte: morteDi(row), accettato: row.morte_ok ? (row.morte_ok === io ? 'io' : 'avversario') : null }
       : null,
     punti: puntiDi(row, io),
+    morte: row.stato === 'finita' && row.motivo === 'punti' ? morteDi(row) : null,
     serie: {
       io: io === 'a' ? row.serie_a : row.serie_b,
       avversario: io === 'a' ? row.serie_b : row.serie_a,
