@@ -54,25 +54,27 @@
  *    il pezzo appena mosso si puo' prendere, e con un rumore piu' forte, che a
  *    volte gli fa lasciare un pezzo in presa o non prendere quello dell'altro.
  *    Non vede le minacce: chi ha appena imparato deve poterlo battere, e chi
- *    guarda i pezzi in presa lo batte quasi sempre. Pensa un millisecondo, sette
- *    nelle posizioni piu' intricate;
+ *    guarda i pezzi in presa lo batte quasi sempre. Pensa un millisecondo, una
+ *    decina nelle posizioni piu' intricate;
  *  - **normale** vede quattro semimosse, due sue e due dell'altro, piu' la
  *    quiete, senza potature, e sceglie a caso fra le mosse a una trentina di
  *    centesimi dalla migliore: non regala niente, ma non vede le combinazioni
- *    lunghe. Pensa decine di millisecondi, e ha un tetto di posizioni che lo
- *    ferma sotto i due decimi di secondo; il tetto e' contato e non
- *    cronometrato, cosi' a parita' di `rng` gioca la stessa mossa su ogni
- *    macchina;
+ *    lunghe. Pensa qualche decina di millisecondi; nelle posizioni piu'
+ *    intricate lo ferma un tetto di quarantamila posizioni, circa
+ *    centocinquanta millisecondi, e gioca la migliore trovata fin li'. Il
+ *    tetto e' contato e non cronometrato: a parita' di `rng` la mossa e' la
+ *    stessa su ogni macchina;
  *  - **difficile** approfondisce per un secondo e mezzo, e non comincia un giro
  *    che non avrebbe il tempo di finire. Pota anche: la mossa nulla (se passando
  *    il turno la posizione resta sopra beta, e' troppo buona perché l'altro la
  *    conceda), le riduzioni delle mosse tranquille che arrivano tardi
- *    nell'ordine, e vicino al fondo le mosse che non possono cambiare niente.
- *    Nel mediogioco arriva a dieci o dodici semimosse, e risolve nove delle
- *    prime dieci posizioni di "Win At Chess". Ha anche un tetto di posizioni:
- *    nel Worker di Cloudflare l'orologio non avanza mentre si calcola, e senza
- *    non si fermerebbe (ma il computer gira nel browser: al server, dieci
- *    millisecondi bastano solo al facile).
+ *    nell'ordine, e vicino al fondo le mosse che non possono cambiare niente:
+ *    contro se stesso senza queste ultime vince quasi due partite su tre. Nel
+ *    mediogioco arriva a otto o dieci semimosse, nei finali molto piu' in là, e
+ *    risolve nove delle prime dieci posizioni di "Win At Chess". Ha anche un
+ *    tetto di posizioni: nel Worker di Cloudflare l'orologio non avanza mentre
+ *    si calcola, e senza non si fermerebbe (ma il computer gira nel browser: al
+ *    server, dieci millisecondi bastano solo al facile).
  */
 
 import {
@@ -115,7 +117,7 @@ const RUMORE_DISTRATTO = 200
 const QUIETE_FACILE = 6
 /** Il normale: profondita', tetto di nodi e rumore. */
 const PROFONDITA_NORMALE = 4
-const NODI_NORMALE = 60_000
+const NODI_NORMALE = 40_000
 const RUMORE_NORMALE = 30
 /** Oltre questo vantaggio, per l'uno o per l'altro, il rumore si spegne. */
 const PARTITA_DECISA = 300
