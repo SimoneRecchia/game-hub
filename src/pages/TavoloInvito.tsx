@@ -15,7 +15,7 @@ import type { InvitoConLink } from '@shared/types'
 import './Battaglia.css'
 
 /**
- * Un invito a scacchi, a dama o a Forza 4 arrivato con un link. Come per la
+ * Un invito a un gioco da tavoliere arrivato con un link. Come per la
  * battaglia: aprirlo e' gia' accettarlo, e chi non ha un account passa prima
  * dalla registrazione, che gli dice chi lo invita.
  */

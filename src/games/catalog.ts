@@ -94,14 +94,14 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
   {
     id: 'scacchi',
     nome: 'Scacchi',
-    motto: 'Sedici pezzi, un re da mettere in scacco',
+    motto: 'Scacco matto al re dell’altro',
     conChi: 'Amici o computer',
     slug: 'scacchi',
   },
   {
     id: 'dama',
     nome: 'Dama',
-    motto: 'All’italiana: prendere è obbligatorio',
+    motto: 'All’italiana: si mangia per forza',
     conChi: 'Amici o computer',
     slug: 'dama',
   },
@@ -111,6 +111,13 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
     motto: 'Quattro in fila, prima dell’altro',
     conChi: 'Amici o computer',
     slug: 'forza-4',
+  },
+  {
+    id: 'go',
+    nome: 'Go',
+    motto: 'Circonda più territorio dell’altro',
+    conChi: 'Amici o computer',
+    slug: 'go',
   },
   {
     id: 'indovina',

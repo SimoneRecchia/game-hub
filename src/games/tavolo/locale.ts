@@ -7,7 +7,7 @@
  * come le tiene il server: riaprendo la pagina si riprende da dove si era.
  */
 
-import { regoleDi } from '@shared/tavolo-regole'
+import { inizialeDi, regoleDi } from '@shared/tavolo-regole'
 import {
   LIVELLI_TAVOLIERE,
   type EsitoTavoliere,
@@ -26,6 +26,10 @@ export interface PartitaLocale {
   /** Le chiavi delle posizioni dall'ultima mossa irreversibile: bastano per le ripetizioni. */
   chiavi: string[]
   esito: EsitoTavoliere | null
+  /** Nel go, a partita finita ai punti: quelli del Nero e del Bianco, komi compreso. */
+  punti?: { nero: number; bianco: number } | null
+  /** Nel go, a partita finita ai punti: le pietre contate morte. */
+  morte?: number[] | null
   /** A partita finita, se e' gia' nel conto: una partita si conta una volta sola. */
   contata: boolean
 }
@@ -45,6 +49,7 @@ const chiavePartita = (gioco: GiocoTavoliere) => `giochi.${gioco}.computer`
 const chiaveConti = (gioco: GiocoTavoliere) => `giochi.${gioco}.computer.conti`
 const chiaveScelta = (gioco: GiocoTavoliere) => `giochi.${gioco}.computer.parte`
 const chiaveLivello = (gioco: GiocoTavoliere) => `giochi.${gioco}.computer.livello`
+const chiaveVariante = (gioco: GiocoTavoliere) => `giochi.${gioco}.variante`
 
 function leggiJson(chiave: string): unknown {
   try {
@@ -79,6 +84,8 @@ export function leggiPartita(gioco: GiocoTavoliere): PartitaLocale | null {
     mosse: p.mosse.filter((m): m is string => typeof m === 'string'),
     chiavi: p.chiavi.filter((m): m is string => typeof m === 'string'),
     esito: p.esito ?? null,
+    punti: p.punti ?? null,
+    morte: Array.isArray(p.morte) ? p.morte.filter((k): k is number => Number.isInteger(k)) : null,
     contata: p.contata === true,
   }
 }
@@ -87,16 +94,23 @@ export function salvaPartita(p: PartitaLocale) {
   scriviJson(chiavePartita(p.gioco), p)
 }
 
-export function nuovaPartita(gioco: GiocoTavoliere, livello: LivelloTavoliere, scelta: SceltaParte): PartitaLocale {
+export function nuovaPartita(
+  gioco: GiocoTavoliere,
+  livello: LivelloTavoliere,
+  scelta: SceltaParte,
+  variante: string | null = leggiVariante(gioco),
+): PartitaLocale {
   const mia: Parte = scelta === 'prima' ? 0 : scelta === 'seconda' ? 1 : Math.random() < 0.5 ? 0 : 1
   const p: PartitaLocale = {
     gioco,
     livello,
     mia,
-    posizione: regoleDi(gioco).iniziale,
+    posizione: inizialeDi(regoleDi(gioco), variante),
     mosse: [],
     chiavi: [],
     esito: null,
+    punti: null,
+    morte: null,
     contata: false,
   }
   salvaPartita(p)
@@ -153,6 +167,18 @@ export function leggiScelta(gioco: GiocoTavoliere): SceltaParte {
 
 export function salvaScelta(gioco: GiocoTavoliere, s: SceltaParte) {
   scriviJson(chiaveScelta(gioco), s)
+}
+
+/** La variante scelta, per i giochi che ne hanno: il lato del goban. La prima, se non se n'e' scelta una. */
+export function leggiVariante(gioco: GiocoTavoliere): string | null {
+  const varianti = regoleDi(gioco).varianti
+  if (!varianti) return null
+  const v = leggiJson(chiaveVariante(gioco))
+  return typeof v === 'string' && varianti.includes(v) ? v : varianti[0]
+}
+
+export function salvaVariante(gioco: GiocoTavoliere, variante: string) {
+  scriviJson(chiaveVariante(gioco), variante)
 }
 
 /** L'ultimo livello giocato: una pagina aperta senza partita ricomincia da li'. */

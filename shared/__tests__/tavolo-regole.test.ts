@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { giocaMossa, regoleDi } from '../tavolo-regole'
+import { giocaMossa, inizialeDi, regoleDi } from '../tavolo-regole'
 import type { EsitoTavoliere, GiocoTavoliere, Parte } from '../tavolo'
 
 /** Una partita giocata mossa per mossa come la gioca il server: la posizione, le chiavi, e l'esito alla fine. */
@@ -65,10 +65,31 @@ describe('le regole dei giochi da tavoliere dietro una faccia sola', () => {
     expect(dopo.chiavi).toEqual([])
   })
 
+  it('il go: comincia il Nero, si sceglie il goban, e due passi fermano il gioco per contare', () => {
+    const regole = regoleDi('go')
+    expect(regole.tratto(regole.iniziale)).toBe(0)
+    expect(regole.varianteDi!(regole.iniziale)).toBe('9')
+    expect(regole.varianteDi!(inizialeDi(regole, '13'))).toBe('13')
+    expect(regole.varianteDi!(inizialeDi(regole, '7'))).toBe('9')
+    // Le colonne vanno dalla A alla J senza la I, e la mossa si scrive come la scrive il gioco.
+    expect(giocaMossa(regole, regole.iniziale, [], 'I5', 0)).toBeNull()
+    expect(giocaMossa(regole, regole.iniziale, [], 'd4', 0)).toBeNull()
+    expect(giocaMossa(regole, regole.iniziale, [], 'D4', 0)?.mossa).toBe('D4')
+
+    const fermo = partita('go', ['E5', 'C3', 'passo', 'passo'])
+    // Due passi non chiudono la partita: la fermano, e il risultato lo dice il conteggio.
+    expect(fermo.esito).toBeNull()
+    expect(regole.conteggio!(fermo.posizione)).toBe(true)
+    expect(giocaMossa(regole, fermo.posizione, fermo.chiavi, 'D4', 0)).toBeNull()
+    // Nel go ogni posizione puo' tornare: le chiavi si tengono tutte.
+    expect(fermo.chiavi).toHaveLength(4)
+  })
+
   it('solo scacchi e dama prevedono la patta d’accordo', () => {
     expect(regoleDi('scacchi').patta).toBe(true)
     expect(regoleDi('dama').patta).toBe(true)
     expect(regoleDi('forza4').patta).toBe(false)
+    expect(regoleDi('go').patta).toBe(false)
   })
 
   it('una mossa si convalida ben dentro il tempo del server', () => {

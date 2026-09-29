@@ -20,6 +20,16 @@ export interface PropsTavoliere {
   /** A partita finita: il tavoliere puo' segnare perché (il quattro in fila, il re in matto). */
   finita: boolean
   onMossa: (mossa: string) => void
+  /**
+   * Nel go, a gioco fermo: le pietre segnate morte, di chi e' ogni punto, e —
+   * se chi guarda puo' correggere il conteggio — che cosa fare quando tocca una
+   * pietra. Gli altri tavolieri non lo guardano.
+   */
+  conteggio?: {
+    morte: ReadonlySet<number>
+    proprietario: readonly ('nero' | 'bianco' | null)[] | null
+    onTocca?: (punto: number) => void
+  }
 }
 
 /** Una parte come si scrive: "Bianco", e con l'articolo, "il Bianco". */
@@ -39,4 +49,6 @@ export interface GiocoDelTavoliere {
   storia: ((mosse: readonly string[]) => string[]) | null
   /** Una riga su chi ha il tratto, quando c'e' qualcosa da sapere: "Scacco", "Devi prendere". */
   avviso: (posizione: string, mio: boolean) => string | null
+  /** La mossa per passare, nei giochi dove si passa: nel go, "passo". */
+  passo?: string
 }

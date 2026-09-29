@@ -14,7 +14,7 @@ import { usePresenza } from '@/lib/presenza'
 import { suona } from '@/lib/suoni'
 import type { GiocoTavoliere } from '@shared/tavolo'
 import type { InvitoTavolo, PartitaTavoloBreve } from '@shared/types'
-import { A_GIOCO } from './nomi'
+import { A_GIOCO, nomeVariante } from './nomi'
 import '@/games/wordle/coop/InviteAlert.css'
 
 const CHIAVE_ANNUNCIATE = 'tavolo:annunciate'
@@ -158,7 +158,11 @@ function AvvisoInvito({
           <Avatar nickname={invito.da.nickname} color={invito.da.avatarColor} size={64} />
           <p className="avviso__testo">
             <strong>{invito.da.displayName}</strong>{' '}
-            {invito.rivincita ? 'vuole la rivincita.' : `ti invita a giocare ${A_GIOCO[invito.gioco]}.`}
+            {invito.rivincita
+              ? 'vuole la rivincita.'
+              : `ti invita a giocare ${A_GIOCO[invito.gioco]}${
+                  nomeVariante(invito.gioco, invito.variante) ? `, ${nomeVariante(invito.gioco, invito.variante)}` : ''
+                }.`}
           </p>
         </div>
         <p className="avviso__sereno">

@@ -1,5 +1,5 @@
 /**
- * Accesso ai dati delle partite fra amici a scacchi, dama e Forza 4: gli
+ * Accesso ai dati delle partite fra amici a scacchi, dama, Forza 4 e go: gli
  * inviti, che sono gia' la partita, e la partita vista da ciascuno dei due.
  *
  * E' lo stesso disegno di Indovina chi (server/lib/indovinaStore.ts): una riga
@@ -66,6 +66,11 @@ export interface PartitaRow {
   mossa_at: string | null
   updated_at: string
   finita_at: string | null
+  /** Nel go, a gioco fermo: le pietre segnate morte (JSON), e chi ha accettato quella proposta. */
+  morte: string | null
+  morte_ok: Lato | null
+  /** Nel go, a partita finita ai punti: `{"a": 45, "b": 38.5}`. */
+  punti: string | null
 }
 
 interface GiocatoreRow {
@@ -146,11 +151,44 @@ export function chiaviDi(row: PartitaRow): string[] {
   }
 }
 
-/** Chi deve muovere, dalla posizione: null se la partita non e' in corso. */
+/** Il gioco e' fermo per contare: nel go, dopo due passi. */
+export function inConteggio(row: PartitaRow): boolean {
+  return row.stato === 'in_corso' && (regoleDi(row.gioco).conteggio?.(row.posizione) ?? false)
+}
+
+/** Chi deve muovere, dalla posizione: null se la partita non e' in corso, o se si sta contando. */
 export function diTurno(row: PartitaRow): Lato | null {
-  if (row.stato !== 'in_corso' || !row.primo) return null
+  if (row.stato !== 'in_corso' || !row.primo || inConteggio(row)) return null
   const tratto = regoleDi(row.gioco).tratto(row.posizione)
   return tratto === null ? null : latoDellaParte(row, tratto)
+}
+
+/** La variante di una partita: nel go, il lato del goban. */
+function varianteDi(row: Pick<PartitaRow, 'gioco' | 'posizione'>): string | null {
+  return regoleDi(row.gioco).varianteDi?.(row.posizione) ?? null
+}
+
+export function morteDi(row: PartitaRow): number[] | null {
+  if (row.morte === null) return null
+  try {
+    const morte = JSON.parse(row.morte) as unknown
+    return Array.isArray(morte) ? morte.filter((k): k is number => Number.isInteger(k)) : null
+  } catch {
+    return null
+  }
+}
+
+function puntiDi(row: PartitaRow, io: Lato): { io: number; avversario: number } | null {
+  if (row.punti === null) return null
+  try {
+    const punti = JSON.parse(row.punti) as { a?: unknown; b?: unknown }
+    const a = Number(punti.a)
+    const b = Number(punti.b)
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null
+    return io === 'a' ? { io: a, avversario: b } : { io: b, avversario: a }
+  } catch {
+    return null
+  }
 }
 
 /** Fino a quando vale un invito: due minuti a un amico online, un'ora con il link. */
@@ -217,6 +255,7 @@ export async function partitaBreve(db: D1Database, row: PartitaRow, io: Lato): P
   return {
     id: row.id,
     gioco: row.gioco,
+    variante: varianteDi(row),
     avversario: await giocatore(db, idAvversario!),
     tuoTurno: diTurno(row) === io,
   }
@@ -278,6 +317,7 @@ export async function mandaInvito(
     rivincitaDi = null,
     serie = null,
     primo = null,
+    posizione = regoleDi(gioco).iniziale,
   }: {
     da: string
     /** null per un invito con il link. */
@@ -287,6 +327,8 @@ export async function mandaInvito(
     serie?: { a: number; b: number; partite: number } | null
     /** Nella rivincita chi muove per primo e' gia' deciso: l'altro di prima. */
     primo?: Lato | null
+    /** La posizione di partenza, se il gioco ha varianti: il goban da 13. */
+    posizione?: string
   },
   adesso: number,
 ): Promise<PartitaRow> {
@@ -314,7 +356,7 @@ export async function mandaInvito(
         a,
         codice,
         primo,
-        regoleDi(gioco).iniziale,
+        posizione,
         rivincitaDi,
         serie?.a ?? 0,
         serie?.b ?? 0,
@@ -330,7 +372,7 @@ export async function mandaInvito(
 export async function invitiRicevuti(db: D1Database, io: string, adesso: number): Promise<InvitoTavolo[]> {
   const { results } = await db
     .prepare(
-      `SELECT t.id AS invito_id, t.gioco, t.created_at, t.rivincita_di,
+      `SELECT t.id AS invito_id, t.gioco, t.posizione, t.created_at, t.rivincita_di,
               p.id, p.nickname, p.display_name, p.avatar_color
          FROM tavolo_partite t
          JOIN players p ON p.id = t.giocatore_a
@@ -339,10 +381,19 @@ export async function invitiRicevuti(db: D1Database, io: string, adesso: number)
         ORDER BY t.created_at`,
     )
     .bind(io, prima(adesso, SFIDA_SCADENZA_MS), sogliaAbbandono(adesso))
-    .all<GiocatoreRow & { invito_id: string; gioco: GiocoTavoliere; created_at: string; rivincita_di: string | null }>()
+    .all<
+      GiocatoreRow & {
+        invito_id: string
+        gioco: GiocoTavoliere
+        posizione: string
+        created_at: string
+        rivincita_di: string | null
+      }
+    >()
   return results.map((r) => ({
     id: r.invito_id,
     gioco: r.gioco,
+    variante: varianteDi(r),
     da: breve(r),
     scadeTraMs: Math.max(0, Date.parse(r.created_at) + SFIDA_SCADENZA_MS - adesso),
     rivincita: r.rivincita_di !== null,
@@ -380,6 +431,7 @@ export async function ultimoInvito(
   return {
     id: row.id,
     gioco: row.gioco,
+    variante: varianteDi(row),
     a: row.invitato ? await giocatore(db, row.invitato) : null,
     codice: row.codice,
     stato,
@@ -473,7 +525,7 @@ export async function invitoTavoloConLink(
       : row.stato === 'annullata'
         ? 'annullato'
         : 'usato'
-  return { codice, da: await giocatore(db, row.giocatore_a), stato, gioco: row.gioco }
+  return { codice, da: await giocatore(db, row.giocatore_a), stato, gioco: row.gioco, variante: varianteDi(row) }
 }
 
 /* ─────────────────────────────  La rivincita  ───────────────────────────── */
@@ -511,12 +563,14 @@ export function primoDellaRivincita(row: PartitaRow, nuovoA: string): Lato {
 /**
  * Da quanto l'altro ha la mossa senza farla, e se si puo' chiudere la partita a
  * proprio favore: dopo cinque minuti se l'altro ha chiuso l'app, dopo mezz'ora
- * comunque.
+ * comunque. Nel conteggio del go si aspetta l'altro quando io ho accettato e
+ * lui no: allora chiudere vuol dire contare con la proposta che ho accettato.
  */
 function attesa(row: PartitaRow, io: Lato, altroOnline: boolean, adesso: number): { attesaMs: number; puoi: boolean } {
+  const conteggio = inConteggio(row)
   const turno = diTurno(row)
-  if (!turno || turno === io) return { attesaMs: 0, puoi: false }
-  const ultima = row.mossa_at ?? row.iniziata_at ?? row.updated_at
+  if (conteggio ? row.morte_ok !== io : !turno || turno === io) return { attesaMs: 0, puoi: false }
+  const ultima = conteggio ? row.updated_at : (row.mossa_at ?? row.iniziata_at ?? row.updated_at)
   const attesaMs = Math.max(0, adesso - Date.parse(ultima))
   const puoi = attesaMs >= TAVOLO_ATTESA_MASSIMA_MS || (attesaMs >= TAVOLO_ATTESA_MS && !altroOnline)
   return { attesaMs, puoi }
@@ -549,6 +603,11 @@ export async function vistaTavolo(db: D1Database, row: PartitaRow, io: Lato, ade
     motivo: row.motivo,
     patta: inCorso && row.patta ? (row.patta === io ? 'io' : 'avversario') : null,
     puoiProporre: inCorso && regoleDi(row.gioco).patta && !row.patta && row.patta_n !== mosse.length,
+    conteggio: inConteggio(row)
+      ? { morte: morteDi(row), accettato: row.morte_ok ? (row.morte_ok === io ? 'io' : 'avversario') : null }
+      : null,
+    punti: puntiDi(row, io),
+    morte: row.stato === 'finita' && row.motivo === 'punti' ? morteDi(row) : null,
     serie: {
       io: io === 'a' ? row.serie_a : row.serie_b,
       avversario: io === 'a' ? row.serie_b : row.serie_a,
@@ -577,6 +636,9 @@ export interface CambiPartita {
   motivo?: MotivoTavoliere | null
   patta?: Lato | null
   patta_n?: number
+  morte?: number[] | null
+  morte_ok?: Lato | null
+  punti?: { a: number; b: number } | null
   /** Una mossa vera: fa ripartire l'attesa per la vittoria a tavolino. */
   mossa?: boolean
 }
@@ -604,6 +666,9 @@ export async function salvaPartita(
     motivo: cambi.motivo !== undefined ? cambi.motivo : row.motivo,
     patta: cambi.patta !== undefined ? cambi.patta : row.patta,
     patta_n: cambi.patta_n ?? row.patta_n,
+    morte: cambi.morte !== undefined ? (cambi.morte === null ? null : JSON.stringify(cambi.morte)) : row.morte,
+    morte_ok: cambi.morte_ok !== undefined ? cambi.morte_ok : row.morte_ok,
+    punti: cambi.punti !== undefined ? (cambi.punti === null ? null : JSON.stringify(cambi.punti)) : row.punti,
     versione: row.versione + 1,
     mossa_at: cambi.mossa ? quando : row.mossa_at,
     updated_at: quando,
@@ -613,7 +678,7 @@ export async function salvaPartita(
     .prepare(
       `UPDATE tavolo_partite
           SET stato = ?, posizione = ?, mosse = ?, chiavi = ?, vincitore = ?, motivo = ?, patta = ?, patta_n = ?,
-              versione = ?, mossa_at = ?, updated_at = ?, finita_at = ?
+              morte = ?, morte_ok = ?, punti = ?, versione = ?, mossa_at = ?, updated_at = ?, finita_at = ?
         WHERE id = ? AND versione = ?`,
     )
     .bind(
@@ -625,6 +690,9 @@ export async function salvaPartita(
       dopo.motivo,
       dopo.patta,
       dopo.patta_n,
+      dopo.morte,
+      dopo.morte_ok,
+      dopo.punti,
       dopo.versione,
       dopo.mossa_at,
       quando,

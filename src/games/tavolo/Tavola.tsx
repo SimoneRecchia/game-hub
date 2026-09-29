@@ -1,8 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react'
+import { Button } from '@/components/Button'
 import { Pillola } from '@/components/Scheda'
 import { altraParte, type Parte } from '@shared/tavolo'
 import { SEGNI } from './nomi'
-import type { GiocoDelTavoliere } from './tipi'
+import type { GiocoDelTavoliere, PropsTavoliere } from './tipi'
 import './Tavola.css'
 
 export interface GiocatoreTavola {
@@ -24,6 +25,8 @@ interface Props {
   /** Di chi e' il turno, per accendere il suo nome; null a partita finita. */
   turno: 'io' | 'altro' | null
   onMossa: (mossa: string) => void
+  /** Nel go, a gioco fermo: le pietre morte e il territorio sul goban. */
+  conteggio?: PropsTavoliere['conteggio']
   /** Sotto il tavoliere: il turno, le proposte, la fine. */
   piede: ReactNode
 }
@@ -35,7 +38,7 @@ interface Props {
  * stanno mai sopra il tavoliere.
  */
 export function Tavola(props: Props) {
-  const { descrizione, posizione, mosse, mia, attivo, finita, io, altro, turno, onMossa, piede } = props
+  const { descrizione, posizione, mosse, mia, attivo, finita, io, altro, turno, onMossa, conteggio, piede } = props
   const { Tavoliere } = descrizione
   return (
     <div className={`tav tav--${descrizione.gioco}`}>
@@ -56,6 +59,7 @@ export function Tavola(props: Props) {
             n={mosse.length}
             finita={finita}
             onMossa={onMossa}
+            conteggio={conteggio}
           />
           <Giocatore g={io} parte={mia} descrizione={descrizione} turno={turno === 'io'} classe="tav-g--io" />
         </div>
@@ -94,13 +98,32 @@ function Giocatore({
   )
 }
 
-/** Il turno, in una capsula, con quel che c'e' da sapere accanto: "Scacco", "Devi prendere". */
-export function Turno({ mio, testo, avviso }: { mio: boolean; testo: string; avviso?: string | null }) {
+/**
+ * Il turno, in una capsula, con quel che c'e' da sapere accanto: "Scacco",
+ * "Devi prendere". Nei giochi dove si passa, quando tocca a me, il bottone
+ * per passare sta qui accanto.
+ */
+export function Turno({
+  mio,
+  testo,
+  avviso,
+  onPassa,
+}: {
+  mio: boolean
+  testo: string
+  avviso?: string | null
+  onPassa?: () => void
+}) {
   return (
     <div className="tav-turno">
       <Pillola tono={mio ? 'turno' : 'neutra'} vivo>
         {testo}
       </Pillola>
+      {onPassa && (
+        <Button variant="tinted" onClick={onPassa}>
+          Passa
+        </Button>
+      )}
       {avviso && <span className="tav-turno__avviso">{avviso}</span>}
     </div>
   )
