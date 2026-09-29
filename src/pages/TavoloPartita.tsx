@@ -95,7 +95,8 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
 
   // Nel go, dopo due passi: si conta, e le pietre morte le segnano i due.
   const conteggio = v.conteggio
-  const morte = conteggio?.morte ?? null
+  // A partita finita ai punti il goban resta con il conteggio accettato, che non si tocca piu'.
+  const morte = conteggio ? conteggio.morte : v.morte
   const conto = morte ? contaPunti(v.posizione, morte) : null
 
   const reclamo = v.puoiReclamare && (
@@ -205,7 +206,8 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
               ? {
                   morte: new Set(morte),
                   proprietario: conto.proprietario,
-                  onTocca: g.inviando ? undefined : (k) => g.proponiMorte(cambiaGruppo(v.posizione, morte, k)),
+                  onTocca:
+                    !conteggio || g.inviando ? undefined : (k) => g.proponiMorte(cambiaGruppo(v.posizione, morte, k)),
                 }
               : undefined
           }

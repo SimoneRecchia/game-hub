@@ -509,13 +509,18 @@ programma con certezza. Lo stima il telefono (`stimaMorte`, qualche centinaio
 di partite a caso, nel Worker), con il seme della posizione, cosi' due telefoni
 fanno la stessa stima; il primo che arriva la propone (`/conteggio`,
 `morte`), toccare un gruppo lo cambia, e il conteggio vale quando lo accettano
-tutti e due (`morte_ok`), sulla stessa proposta. Chi non e' d'accordo riprende
-a giocare e cattura quel che per lui e' morto; la ripresa azzera le chiavi,
-perché il goban e' quello di prima dei passi con lo stesso tratto, e alla
-seconda ripresa sarebbe gia' una ripetizione che non lascia muovere nessuno.
-Contro il computer il conteggio non si corregge a mano: il computer fa da
-arbitro, e chi non e' d'accordo riprende. Il server conta con `punteggio`, che
-e' un riempimento e costa poco; la stima no, e per questo non la fa lui.
+tutti e due (`morte_ok`), sulla stessa proposta. Proporre non e' accettare: la
+prima proposta la manda il telefono da solo, prima che chi gioca l'abbia
+guardata, e se valesse come accettazione il telefono accetterebbe per lui una
+stima che magari lo fa perdere di settanta punti (provando con Playwright e'
+successo al Bianco). Ogni proposta nuova fa cadere le accettazioni di quella di
+prima. Chi non e' d'accordo riprende a giocare e cattura quel che per lui e'
+morto; la ripresa azzera le chiavi, perché il goban e' quello di prima dei
+passi con lo stesso tratto, e alla seconda ripresa sarebbe gia' una ripetizione
+che non lascia muovere nessuno. Contro il computer il conteggio non si corregge
+a mano: il computer fa da arbitro, e chi non e' d'accordo riprende. Il server
+conta con `punteggio`, che e' un riempimento e costa poco; la stima no, e per
+questo non la fa lui.
 
 **Il goban e' un SVG in decimi di passo.** Le intersezioni sono punti, e un
 SVG li mette dove stanno a qualunque lato; il passo fra due linee vale dieci
@@ -525,6 +530,21 @@ SVG sotto l'unita', e i numeri a due cifre delle righe si sovrapponevano. Sul
 la pietra, il secondo sullo stesso punto la posa. Il lato si sceglie nella
 sala e vale per le partite nuove, contro il computer e negli inviti
 (`variante`); la rivincita si gioca sullo stesso goban.
+
+**Il computer del go gioca a caso, e i test contano le simulazioni.** Il go
+non ha una valutazione da scrivere a mano come gli scacchi: `shared/go-computer.ts`
+gioca migliaia di partite veloci fino in fondo (un MCTS con RAVE, alla Michi) e
+sceglie la mossa che vince piu' spesso. I livelli sono due tetti, di
+simulazioni e di tempo — facile 300 o 140 ms, normale 5.000 o mezzo secondo,
+difficile 25.000 o un secondo e mezzo, con le simulazioni scalate sull'area dei
+goban grandi — e su un computer da tavolo decide il primo, su un telefono il
+secondo. Per questo i test passano `simulazioni`, che da solo toglie il limite
+di tempo: a tempo, la stessa partita darebbe mosse diverse su una macchina
+carica. Il telefono gli passa l'ultima pietra dell'altro (`ultima`), come le
+partite con cui sono misurati i livelli: le risposte vicine partono
+avvantaggiate. Passa solo se l'altro ha passato e la stima dice che vince, o se
+non resta niente da prendere, salvare o chiudere; sul 13 e sul 19 le mosse sono
+sensate ma deboli.
 
 **Nel Forza 4 la cornice sta sopra i dischi.** Il disco che cade scende dietro
 la cornice e si vede solo dai buchi, come nel gioco vero: la cornice e' un

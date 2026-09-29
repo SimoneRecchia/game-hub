@@ -701,6 +701,8 @@ export interface VistaTavolo {
   conteggio: { morte: number[] | null; accettato: 'io' | 'avversario' | null } | null
   /** Nel go, a partita finita ai punti: i punti di ciascuno, komi compreso. */
   punti: { io: number; avversario: number } | null
+  /** Nel go, a partita finita ai punti: le pietre contate morte, che il goban continua a mostrare. */
+  morte: number[] | null
   serie: { io: number; avversario: number; partite: number }
   rivincita: {
     id: string

@@ -317,9 +317,12 @@ export const tavoloRoutes = new Hono<AppEnv>()
   /**
    * Il conteggio del go, a gioco fermo dopo due passi. Uno dei due propone le
    * pietre morte — la prima proposta e' la stima del telefono, poi si toccano i
-   * gruppi — e chi propone accetta la sua proposta; quando anche l'altro la
-   * accetta, si contano i punti e la partita e' finita. Chi non e' d'accordo
-   * riprende a giocare: si cattura sul goban quel che per lui e' morto.
+   * gruppi — e quando tutti e due hanno accettato la stessa proposta si contano
+   * i punti, e la partita e' finita. Proporre non e' accettare: la prima
+   * proposta la manda il telefono da solo, prima che chi gioca l'abbia vista,
+   * e ogni proposta nuova cancella le accettazioni di quella di prima. Chi non
+   * e' d'accordo riprende a giocare: si cattura sul goban quel che per lui e'
+   * morto.
    */
   .post('/partite/:id/conteggio', async (c) => {
     const { row, io } = await partitaMia(c)
@@ -336,7 +339,7 @@ export const tavoloRoutes = new Hono<AppEnv>()
       if (morte.some((k) => !Number.isInteger(k) || k < 0 || k >= p.punti.length || p.punti[k] === null)) {
         fail(400, 'MORTE', 'Si segnano morte solo le pietre sul goban.')
       }
-      return rispondi(c, await salvaPartita(c.env.DB, row, { morte, morte_ok: io }, ora), io)
+      return rispondi(c, await salvaPartita(c.env.DB, row, { morte, morte_ok: null }, ora), io)
     }
 
     if (corpo.azione === 'accetta') {

@@ -16,6 +16,8 @@ export interface DomandaAlComputer {
   /** Le chiavi delle posizioni passate dall'ultima mossa irreversibile, per le ripetizioni. */
   storia: readonly string[]
   seme: number
+  /** L'ultima mossa dell'avversario, come la scrive il gioco: nel go le risposte vicine partono avvantaggiate. */
+  ultima?: string | null
 }
 
 interface Attesa {

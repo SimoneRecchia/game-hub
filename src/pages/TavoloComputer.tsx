@@ -114,7 +114,9 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
     />
   )
 
-  const conto = fermo && g.morte ? contaPunti(p.posizione, g.morte) : null
+  // Il conteggio sul goban: mentre si conta, e a partita finita ai punti, con le pietre che si sono contate morte.
+  const morte = fermo ? g.morte : p.esito?.motivo === 'punti' ? (p.morte ?? null) : null
+  const conto = morte ? contaPunti(p.posizione, morte) : null
 
   return (
     <Pagina
@@ -161,7 +163,7 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
         }}
         turno={finita || fermo ? null : mioTurno ? 'io' : 'altro'}
         onMossa={g.muovi}
-        conteggio={conto && g.morte ? { morte: new Set(g.morte), proprietario: conto.proprietario } : undefined}
+        conteggio={conto && morte ? { morte: new Set(morte), proprietario: conto.proprietario } : undefined}
         piede={piede}
       />
 
