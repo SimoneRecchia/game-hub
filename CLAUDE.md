@@ -382,8 +382,8 @@ con gli amici — e contro il computer dove ha senso — senza punti ne'
 classifica: stanno in una sezione a parte della home e della barra laterale
 (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in `GiocoClassificato`, che
 porta con se' classifiche, anelli e statistiche. Sono Indovina chi, che il
-computer non ce l'ha — si gioca parlandosi — e scacchi, dama e Forza 4, con un
-amico o contro il computer.
+computer non ce l'ha — si gioca parlandosi — e scacchi, dama, Forza 4 e go,
+con un amico o contro il computer.
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -425,11 +425,11 @@ TURN: fra due reti che non si lasciano attraversare il canale non si apre, e
 la pagina lo dice. Il ripiego e' il file del set (`setFile.ts`), che si manda
 come un documento qualunque e si apre da "Nuovo set".
 
-**Scacchi, dama e Forza 4 passano da una faccia sola.** `RegoleTavoliere`
-(`shared/tavolo-regole.ts`) mette i tre giochi dietro le stesse funzioni, in
-testo: la posizione come la scrive ogni gioco (il FEN, le 32 caselle della
-dama, le 42 del Forza 4) e la mossa nella notazione piu' semplice da
-controllare ("e2e4", "22x13x6", la colonna). Il server la usa per ogni mossa
+**Scacchi, dama, Forza 4 e go passano da una faccia sola.** `RegoleTavoliere`
+(`shared/tavolo-regole.ts`) mette i quattro giochi dietro le stesse funzioni,
+in testo: la posizione come la scrive ogni gioco (il FEN, le 32 caselle della
+dama, le 42 del Forza 4, il goban) e la mossa nella notazione piu' semplice da
+controllare ("e2e4", "22x13x6", la colonna, "D4" o "passo"). Il server la usa per ogni mossa
 delle partite fra amici e il telefono per quelle contro il computer, quindi le
 regole sono le stesse per costruzione. Il server non rigioca la partita:
 `tavolo_partite.posizione` sta accanto alle mosse e la mossa si controlla su
@@ -444,15 +444,15 @@ la dama accetta anche "22x6" per "22x13x6".
 di `tavolo_partite` nasce invito e diventa la partita con un `UPDATE`
 condizionato; chi muove per primo si pesca quando si accetta (`primo`) e nella
 rivincita tocca all'altro (`primoDellaRivincita`), con la serie contata per
-giocatore. Si gioca una partita da tavoliere alla volta, dei tre giochi insieme
-(`inPartita`). La patta d'accordo, negli scacchi e nella dama, si propone una
+giocatore. Si gioca una partita da tavoliere alla volta, di tutti i giochi
+insieme (`inPartita`). La patta d'accordo, negli scacchi e nella dama, si propone una
 volta per mossa (`patta_n`) e una mossa dell'altro la lascia cadere, come al
 tavolo: e' il modo di dire di no. Chi aspetta chiude a tavolino dopo cinque
 minuti con l'altro fuori linea, o dopo mezz'ora comunque
 (`TAVOLO_ATTESA_MS`, `TAVOLO_ATTESA_MASSIMA_MS`): una mossa di scacchi si
-pensa, e i tre minuti della battaglia sarebbero pochi. Il go ha gia' il suo
-posto nel `CHECK` della tabella: arriva dopo, e cambiare un `CHECK` in SQLite
-vuol dire rifare la tabella.
+pensa, e i tre minuti della battaglia sarebbero pochi. Il go era nel `CHECK`
+della tabella gia' dalla migrazione 0021, prima di esserci: cambiare un `CHECK`
+in SQLite vuol dire rifare la tabella.
 
 **Contro il computer non passa niente dal server.** La partita sta nel
 `localStorage` (`src/games/tavolo/locale.ts`) con il conto per livello, e il
@@ -496,6 +496,34 @@ Cburnett presi da Wikimedia Commons, dove l'autore li offre anche con la BSD
 immagini `data:`, senza richieste, e l'avviso della licenza sta in
 `shared/words/SOURCES.md`.
 
+**Il go si conta ad area, e le pietre morte le segnano i giocatori.** Le
+regole sono quelle cinesi, le piu' facili da contare a macchina: punti = pietre
+vive + intersezioni vuote chiuse dalle proprie pietre, con 7,5 di komi al
+Bianco (niente patte). Il suicidio non vale, il ko semplice sta nella
+posizione, e i cicli piu' lunghi (triplo ko) finiscono patta alla terza
+ripetizione: nel go ogni posizione puo' tornare dopo una cattura, quindi le
+chiavi si tengono tutte, e sono impronte corte perché una partita a 19 ne ha
+centinaia. Due passi di seguito **fermano** la partita senza chiuderla
+(`RegoleTavoliere.conteggio`): quali pietre sono morte non lo sa dire un
+programma con certezza. Lo stima il telefono (`stimaMorte`, qualche centinaio
+di partite a caso, nel Worker), con il seme della posizione, cosi' due telefoni
+fanno la stessa stima; il primo che arriva la propone (`/conteggio`,
+`morte`), toccare un gruppo lo cambia, e il conteggio vale quando lo accettano
+tutti e due (`morte_ok`), sulla stessa proposta. Chi non e' d'accordo riprende
+a giocare e cattura quel che per lui e' morto. Contro il computer il conteggio
+non si corregge a mano: il computer fa da arbitro, e chi non e' d'accordo
+riprende. Il server conta con `punteggio`, che e' un riempimento e costa poco;
+la stima no, e per questo non la fa lui.
+
+**Il goban e' un SVG in decimi di passo.** Le intersezioni sono punti, e un
+SVG li mette dove stanno a qualunque lato; il passo fra due linee vale dieci
+unita' e non una perché Chrome sbaglia la larghezza delle lettere dei testi
+SVG sotto l'unita', e i numeri a due cifre delle righe si sovrapponevano. Sul
+13 e sul 19 le intersezioni sono piccole sotto il dito: il primo tocco mostra
+la pietra, il secondo sullo stesso punto la posa. Il lato si sceglie nella
+sala e vale per le partite nuove, contro il computer e negli inviti
+(`variante`); la rivincita si gioca sullo stesso goban.
+
 **Nel Forza 4 la cornice sta sopra i dischi.** Il disco che cade scende dietro
 la cornice e si vede solo dai buchi, come nel gioco vero: la cornice e' un
 tracciato SVG con i buchi (`evenodd`) sopra lo strato dei dischi, e le colonne
@@ -519,7 +547,8 @@ sulla categoria, il modo, la zona e le opzioni che si scelgono. Gli
 indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 (`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
 nuovi in `App.tsx`). I giochi da tavolo non hanno ne' l'una ne' l'altra: la
-loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`, `/invito/:codice`.
+loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`, `/invito/:codice`
+(`/scacchi`, `/dama`, `/forza-4`, `/go`).
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
 esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso

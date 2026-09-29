@@ -321,3 +321,8 @@
   --c1: var(--forza4-1);
   --c2: var(--forza4-2);
 }
+
+.tav-computer--go {
+  --c1: var(--go-1);
+  --c2: var(--go-2);
+}

@@ -80,7 +80,7 @@ export const presenzaRoutes = new Hono<AppEnv>()
       indovina: apertaIndovina ? [] : indovina,
       partitaIndovina:
         apertaIndovina && latoInIndovina ? await partitaIndovinaBreve(db, apertaIndovina, latoInIndovina) : null,
-      // Scacchi, dama e Forza 4 si contano insieme: una partita alla volta, a uno dei tre.
+      // Scacchi, dama, Forza 4 e go si contano insieme: una partita alla volta, a uno dei quattro.
       tavolo: apertaTavolo ? [] : tavolo,
       partitaTavolo: apertaTavolo && latoInTavolo ? await partitaTavoloBreve(db, apertaTavolo, latoInTavolo) : null,
     })

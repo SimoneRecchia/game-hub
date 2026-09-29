@@ -1,7 +1,9 @@
 import { Damiera } from '@/games/dama/Damiera'
 import { Griglia } from '@/games/forza4/Griglia'
+import { Goban } from '@/games/go/Goban'
 import { Scacchiera } from '@/games/scacchi/Scacchiera'
 import * as dama from '@shared/dama'
+import * as go from '@shared/go'
 import * as scacchi from '@shared/scacchi'
 import type { GiocoTavoliere } from '@shared/tavolo'
 import type { GiocoDelTavoliere } from './tipi'
@@ -68,10 +70,29 @@ const DAMA: GiocoDelTavoliere = {
   },
 }
 
+const GO: GiocoDelTavoliere = {
+  gioco: 'go',
+  nome: 'Go',
+  parti: [
+    { nome: 'Nero', il: 'il Nero' },
+    { nome: 'Bianco', il: 'il Bianco' },
+  ],
+  Tavoliere: Goban,
+  storia: (mosse) => mosse.map((m) => (m === 'passo' ? 'passa' : m)),
+  // Dopo un passo dell'altro: passare anche io ferma la partita, e si conta.
+  avviso(posizione, mio) {
+    const p = go.leggi(posizione)
+    if (!p || p.passi !== 1) return null
+    return mio ? 'Ha passato: se passi anche tu, si conta' : 'Hai passato'
+  },
+  passo: 'passo',
+}
+
 const GIOCHI: Record<GiocoTavoliere, GiocoDelTavoliere> = {
   scacchi: SCACCHI,
   dama: DAMA,
   forza4: FORZA4,
+  go: GO,
 }
 
 export function giocoDelTavoliere(gioco: GiocoTavoliere): GiocoDelTavoliere {

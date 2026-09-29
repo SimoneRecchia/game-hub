@@ -1,0 +1,182 @@
+/*
+ * Il goban: legno chiaro, linee sottili, le pietre con la loro luce. E' un
+ * SVG solo, con le coordinate nel margine: le intersezioni sono punti, e un
+ * SVG li mette esattamente dove stanno a qualunque lato. Le misure sono in
+ * decimi di passo (vedi `U` in Goban.tsx).
+ */
+.gob {
+  width: min(100cqw, var(--campo-alto, 100cqh), 620px);
+  aspect-ratio: 1;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gob__tavola {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px -8px var(--shadow-tint, rgba(0, 0, 0, 0.35));
+}
+
+.gob.is-attiva .gob__tavola,
+.gob.is-conteggio .gob__tavola {
+  cursor: pointer;
+}
+
+.gob__legno {
+  fill: var(--go-legno);
+}
+
+.gob__linee line,
+.gob__bordo {
+  fill: none;
+  stroke: var(--go-linea);
+  stroke-width: 0.35;
+}
+
+.gob__bordo {
+  stroke-width: 0.6;
+}
+
+.gob__hoshi {
+  fill: var(--go-linea);
+}
+
+.gob__coordinate text {
+  fill: var(--go-linea);
+  opacity: 0.7;
+  font-size: 3.2px;
+  font-weight: 700;
+  font-family: var(--font-rounded, system-ui);
+}
+
+.gob--19 .gob__coordinate text {
+  font-size: 4.2px;
+}
+
+.gob__ombra {
+  fill: rgba(0, 0, 0, 0.28);
+}
+
+.gob__pietra.is-nuova {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: gob-posa 180ms var(--ease-out, ease-out) both;
+}
+
+@keyframes gob-posa {
+  from {
+    transform: scale(1.18);
+    opacity: 0.6;
+  }
+}
+
+.gob__ultima {
+  fill: none;
+  stroke-width: 0.7;
+}
+
+.gob__pietra.is-nero .gob__ultima {
+  stroke: #fff;
+}
+
+.gob__pietra.is-bianco .gob__ultima {
+  stroke: #111;
+}
+
+/* Nel conteggio: le pietre morte si spengono, e il territorio ha il colore di chi lo ha. */
+.gob__pietra.is-morta {
+  opacity: 0.35;
+}
+
+.gob__territorio.is-nero {
+  fill: #151517;
+}
+
+.gob__territorio.is-bianco {
+  fill: #fbfaf6;
+  stroke: rgba(0, 0, 0, 0.4);
+  stroke-width: 0.3;
+}
+
+.gob__fantasma {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Sul 13 e sul 19 il primo tocco mostra la pietra: respira finché non si tocca di nuovo. */
+.gob__fantasma.is-conferma {
+  opacity: 0.7;
+  animation: gob-conferma 1.1s ease-in-out infinite;
+}
+
+@keyframes gob-conferma {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gob__pietra.is-nuova,
+  .gob__fantasma.is-conferma {
+    animation: none;
+  }
+}
+
+/* ---------- Il conteggio, nel piede ---------- */
+
+.gob-conto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: min(100%, 560px);
+  text-align: center;
+}
+
+.gob-conto__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+}
+
+.gob-conto__punti {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: 600;
+}
+
+.gob-conto__parte {
+  width: 11px;
+  height: 11px;
+  margin-left: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+.gob-conto__parte.is-nero {
+  background: #1d1d20;
+}
+
+.gob-conto__parte.is-bianco {
+  background: #f5f4f0;
+}
+
+.gob-conto__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.gob-conto__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
