@@ -92,6 +92,27 @@ export interface GiocoTavolo {
  */
 export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
   {
+    id: 'scacchi',
+    nome: 'Scacchi',
+    motto: 'Sedici pezzi, un re da mettere in scacco',
+    conChi: 'Amici o computer',
+    slug: 'scacchi',
+  },
+  {
+    id: 'dama',
+    nome: 'Dama',
+    motto: 'All’italiana: prendere è obbligatorio',
+    conChi: 'Amici o computer',
+    slug: 'dama',
+  },
+  {
+    id: 'forza4',
+    nome: 'Forza 4',
+    motto: 'Quattro in fila, prima dell’altro',
+    conChi: 'Amici o computer',
+    slug: 'forza-4',
+  },
+  {
     id: 'indovina',
     nome: 'Indovina chi',
     motto: 'Sì o no, finché resta una faccia',
@@ -99,3 +120,7 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
     slug: 'indovina-chi',
   },
 ]
+
+export function giocoTavoloDi(id: GiocoDaTavolo): GiocoTavolo {
+  return GIOCHI_DA_TAVOLO.find((g) => g.id === id)!
+}

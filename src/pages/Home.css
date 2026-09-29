@@ -380,10 +380,31 @@
   flex: none;
   padding: 3px 10px;
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--indovina-1) 14%, transparent);
-  color: var(--indovina-ink);
+  background: color-mix(in srgb, var(--tavolo-1) 14%, transparent);
+  color: var(--tavolo-ink);
   font-size: var(--text-caption-1);
   font-weight: 700;
+}
+
+/* La capsula nel colore di ogni gioco. */
+.tavolo--indovina {
+  --tavolo-1: var(--indovina-1);
+  --tavolo-ink: var(--indovina-ink);
+}
+
+.tavolo--scacchi {
+  --tavolo-1: var(--scacchi-1);
+  --tavolo-ink: var(--scacchi-ink);
+}
+
+.tavolo--dama {
+  --tavolo-1: var(--dama-1);
+  --tavolo-ink: var(--dama-ink);
+}
+
+.tavolo--forza4 {
+  --tavolo-1: var(--forza4-1);
+  --tavolo-ink: var(--forza4-ink);
 }
 
 .tavolo__freccia {

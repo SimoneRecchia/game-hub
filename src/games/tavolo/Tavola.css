@@ -1,0 +1,323 @@
+/*
+ * La partita su un tavoliere: l'altro sopra, io sotto, il tavoliere in mezzo e
+ * il piede in fondo.
+ *
+ * Il campo e' un contenitore `size`: prende l'altezza che resta sopra il
+ * piede, e il tavoliere si misura su quella con `cqw` e `--campo-alto` (che e'
+ * `cqh` meno le due righe dei giocatori), senza scorrere. Le righe dei
+ * giocatori sono larghe quanto il tavoliere: non entrano nel calcolo della
+ * larghezza (`width: 0` e `min-width: 100%`), la prendono.
+ *
+ * Sul telefono di traverso la pagina scorre e l'altezza non e' definita: li'
+ * il campo torna `normal` (la stessa trappola della griglia del Wordle).
+ */
+.tav {
+  --riga-g: 48px;
+  --spazio-g: 8px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.tav__campo {
+  --campo-alto: calc(100cqh - 2 * var(--riga-g) - 2 * var(--spazio-g));
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+
+.tav__gruppo {
+  display: grid;
+  gap: var(--spazio-g);
+  max-width: 100%;
+}
+
+.tav__piede {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+}
+
+/* ---------- I giocatori ---------- */
+
+.tav-g {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 0;
+  min-width: 100%;
+  height: var(--riga-g);
+  padding: 5px 12px 5px 5px;
+  border-radius: 16px;
+  transition:
+    background-color 0.25s,
+    box-shadow 0.25s;
+}
+
+/* Di chi e' il turno: la riga si accende dell'indaco dell'interfaccia. */
+.tav-g.is-turno {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--brand) 45%, transparent);
+}
+
+.tav-g__avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+
+.tav-g__testo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tav-g__nome {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tav-g__parte {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  white-space: nowrap;
+}
+
+.tav-g__segno {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--segno);
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.22);
+}
+
+.tav-g__nota {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Il piede ---------- */
+
+.tav-turno {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-height: 32px;
+}
+
+.tav-turno .pillola {
+  max-width: none;
+}
+
+.tav-turno__avviso {
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--red);
+}
+
+/* Una domanda che aspetta risposta: la patta proposta, l'altro che non muove piu'. */
+.tav-domanda {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  width: min(100%, 520px);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subheadline);
+  text-align: center;
+}
+
+.tav-domanda__azioni {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.tav-errore {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.tav-fine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  width: min(100%, 560px);
+  text-align: center;
+}
+
+.tav-fine__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+}
+
+.tav-fine__riga,
+.tav-fine__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.tav-fine__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+/* ---------- L'elenco delle mosse ---------- */
+
+/* Le coppie scendono in colonna, come sul foglio di una partita, e le colonne si affiancano dove c'e' posto. */
+.tav-mosse {
+  columns: 150px auto;
+  column-gap: var(--sp-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.tav-mosse__riga {
+  display: grid;
+  grid-template-columns: 2.4em 1fr 1fr;
+  gap: var(--sp-2);
+  padding: 3px 0;
+  break-inside: avoid;
+}
+
+.tav-mosse__n {
+  color: var(--label-tertiary);
+}
+
+.tav-mosse__mossa {
+  font-weight: 600;
+}
+
+.tav-mosse__vuoto {
+  margin: 0;
+  color: var(--label-secondary);
+}
+
+/* ---------- I fogli ---------- */
+
+.tav-foglio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.tav-foglio__testo {
+  margin: 0 0 var(--sp-2);
+  color: var(--label-secondary);
+}
+
+.tav-attesa {
+  flex: 1;
+  min-height: 240px;
+}
+
+/*
+ * Il telefono di traverso: sopra e sotto il tavoliere non c'e' posto per i
+ * giocatori, e la pagina, che li' scorre, non da' al campo un'altezza. Il
+ * tavoliere va a sinistra, alto quanto lo schermo meno la barra, e i giocatori
+ * e il piede a destra. Campo e gruppo spariscono dalla griglia
+ * (`display: contents`) e con loro il contenitore: le misure diventano quelle
+ * dello schermo, e `--campo-alto` lo dice.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .tav {
+    display: grid;
+    grid-template-columns: auto minmax(0, 280px);
+    grid-template-rows: auto auto 1fr;
+    align-content: center;
+    justify-content: center;
+    gap: var(--sp-2) var(--sp-5);
+  }
+
+  .tav__campo,
+  .tav__gruppo {
+    display: contents;
+  }
+
+  .tav__campo {
+    --campo-alto: calc(100svh - 84px - var(--safe-top) - var(--safe-bottom));
+  }
+
+  .tav__gruppo > :not(.tav-g) {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    align-self: center;
+  }
+
+  .tav-g--altro {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .tav-g--io {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .tav__piede {
+    grid-column: 2;
+    grid-row: 3;
+    align-self: start;
+  }
+}
+
+/* Il computer, al posto dell'avatar: nel colore del gioco. */
+.tav-computer {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--c1, var(--brand)), var(--c2, var(--brand)));
+  color: #fff;
+}
+
+.tav-computer--scacchi {
+  --c1: var(--scacchi-1);
+  --c2: var(--scacchi-2);
+}
+
+.tav-computer--dama {
+  --c1: var(--dama-1);
+  --c2: var(--dama-2);
+}
+
+.tav-computer--forza4 {
+  --c1: var(--forza4-1);
+  --c2: var(--forza4-2);
+}
