@@ -13,15 +13,17 @@ import { useToast } from '@/components/Toast'
 import { giocoTavoloDi } from '@/games/catalog'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
 import { giocoDelTavoliere } from '@/games/tavolo/giochi'
-import { A_GIOCO } from '@/games/tavolo/nomi'
+import { A_GIOCO, nomeVariante } from '@/games/tavolo/nomi'
 import {
   abbandona,
   cominciata,
   leggiConti,
   leggiPartita,
   leggiScelta,
+  leggiVariante,
   nuovaPartita,
   salvaScelta,
+  salvaVariante,
   type SceltaParte,
 } from '@/games/tavolo/locale'
 import { useCountdown } from '@/games/wordle/useCountdown'
@@ -30,6 +32,7 @@ import { formatCronometro } from '@/lib/format'
 import { DOVE, usePresenza } from '@/lib/presenza'
 import { BATTAGLIA_POLL_LOBBY_MS } from '@shared/config'
 import { LIVELLI_TAVOLIERE, type GiocoTavoliere, type LivelloTavoliere } from '@shared/tavolo'
+import { regoleDi } from '@shared/tavolo-regole'
 import type { InvitoTavoloMandato, PartitaTavoloBreve, SalaTavolo } from '@shared/types'
 import './Battaglia.css'
 import './Tavolo.css'
@@ -44,7 +47,7 @@ export const NOMI_LIVELLI: Record<LivelloTavoliere, string> = {
 }
 
 /**
- * La sala di un gioco da tavoliere — scacchi, dama, Forza 4 — con le due cose
+ * La sala di un gioco da tavoliere — scacchi, dama, Forza 4, go — con le due cose
  * che si possono fare: una partita contro il computer, che sta nel telefono, o
  * una con un amico, online o con un link. Quando l'amico accetta, la sala
  * porta tutti e due alla partita.
@@ -60,6 +63,8 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
   const [invio, setInvio] = useState<string | null>(null)
   const [regole, setRegole] = useState(false)
   const [scelta, setScelta] = useState<SceltaParte>(() => leggiScelta(gioco))
+  const varianti = regoleDi(gioco).varianti ?? null
+  const [variante, setVariante] = useState(() => leggiVariante(gioco))
   const [locale, setLocale] = useState(() => leggiPartita(gioco))
   const [conti, setConti] = useState(() => leggiConti(gioco))
   const [conferma, setConferma] = useState<LivelloTavoliere | null>(null)
@@ -110,9 +115,14 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
     salvaScelta(gioco, s)
   }
 
+  const scegliVariante = (v: string) => {
+    setVariante(v)
+    salvaVariante(gioco, v)
+  }
+
   const comincia = (livello: LivelloTavoliere) => {
     if (locale && cominciata(locale)) abbandona(locale)
-    nuovaPartita(gioco, livello, scelta)
+    nuovaPartita(gioco, livello, scelta, variante)
     setConferma(null)
     vai(ROTTE.computerTavolo(gioco))
   }
@@ -127,7 +137,7 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
     try {
       const creato = await api<{ id: string; codice: string | null }>('/tavolo/inviti', {
         method: 'POST',
-        body: { gioco, playerId },
+        body: { gioco, playerId, variante },
       })
       if (creato.codice) await condividi(gioco, creato.codice, catalogo.nome, A_GIOCO[gioco], toast.show)
       await carica()
@@ -166,6 +176,17 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
       {dati?.partite.map((p) => <PartitaAperta key={p.id} partita={p} />)}
       {altrove && <PartitaAperta partita={altrove} />}
 
+      {varianti && variante && (
+        <Sezione titolo="Goban" nota="Per le partite nuove, contro il computer e con gli amici.">
+          <SegmentedControl
+            ariaLabel="Il lato del goban"
+            value={variante}
+            onChange={scegliVariante}
+            options={varianti.map((v) => ({ value: v, label: nomeVariante(gioco, v) ?? v }))}
+          />
+        </Sezione>
+      )}
+
       <Sezione titolo="Contro il computer" nota={`Comincia ${descrizione.parti[0].il}.`}>
         <SegmentedControl
           ariaLabel="Con che colore giochi"
@@ -182,9 +203,13 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
             <Riga
               icona={<span className="tavolo-riga__segno" aria-hidden="true" />}
               titolo="Riprendi la partita"
-              sotto={`${NOMI_LIVELLI[inCorsoLocale.livello]} · ${
-                inCorsoLocale.mosse.length === 1 ? 'una mossa' : `${inCorsoLocale.mosse.length} mosse`
-              }`}
+              sotto={[
+                NOMI_LIVELLI[inCorsoLocale.livello],
+                nomeVariante(gioco, regoleDi(gioco).varianteDi?.(inCorsoLocale.posizione)),
+                inCorsoLocale.mosse.length === 1 ? 'una mossa' : `${inCorsoLocale.mosse.length} mosse`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
               a={ROTTE.computerTavolo(gioco)}
             />
           )}
@@ -342,7 +367,8 @@ function PartitaAperta({ partita }: { partita: PartitaTavoloBreve }) {
       <Avatar nickname={partita.avversario.nickname} color={partita.avversario.avatarColor} size={44} />
       <span className="bat-sala__partita-testo">
         <span className="bat-sala__partita-titolo">
-          {nome} con {partita.avversario.displayName}
+          {nome}
+          {partita.variante && ` ${nomeVariante(partita.gioco, partita.variante)}`} con {partita.avversario.displayName}
         </span>
         <span className="bat-sala__partita-stato">
           {partita.tuoTurno ? 'Tocca a te' : `Tocca a ${partita.avversario.displayName}`}

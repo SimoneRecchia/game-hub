@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useToast } from '@/components/Toast'
+import { semeDi } from '@/games/go/conteggio'
 import { ApiFetchError, api } from '@/lib/api'
 import { suona } from '@/lib/suoni'
 import { TAVOLO_POLL_ATTESA_MS, TAVOLO_POLL_TURNO_MS } from '@shared/config'
 import { regoleDi } from '@shared/tavolo-regole'
 import type { VistaTavolo } from '@shared/types'
+import { stimaDelleMorte } from './computer'
 
 /** A partita finita si guarda piu' piano: serve solo a vedere la risposta alla rivincita. */
 const POLL_FINE_MS = 3_000
@@ -21,10 +23,14 @@ export interface PartitaConAmico {
   arrenditi: () => void
   reclama: () => void
   rivincita: () => Promise<{ partitaId?: string; invitoId?: string } | null>
+  /** Nel go, a gioco fermo: le pietre morte che propongo (tocco un gruppo), accetto il conteggio, o riprendo. */
+  proponiMorte: (morte: number[]) => void
+  accettaConteggio: () => void
+  riprendiGioco: () => void
 }
 
 /**
- * Una partita a scacchi, a dama o a Forza 4 con un amico: la vista dal
+ * Una partita a scacchi, a dama, a Forza 4 o a go con un amico: la vista dal
  * server, a polling come le altre partite a due — stretto quando si aspetta
  * l'altro, largo quando tocca a me — e le mosse condizionate alla versione.
  *
@@ -136,6 +142,24 @@ export function useTavolo(id: string): PartitaConAmico {
     }
   }, [carica, id, toast])
 
+  // Nel go fermo per contare, se nessuno ha ancora proposto le pietre morte, le propone il mio telefono:
+  // la stima ha il seme della posizione, quindi anche quella dell'altro telefono sarebbe questa.
+  const daStimare = vista?.conteggio && vista.conteggio.morte === null ? vista.posizione : null
+  useEffect(() => {
+    if (!daStimare) return
+    let annullato = false
+    void stimaDelleMorte(daStimare, semeDi(daStimare))
+      .then((morte) => {
+        if (!annullato && vistaRef.current?.posizione === daStimare && vistaRef.current.conteggio?.morte === null) {
+          void azione('conteggio', { azione: 'proponi', morte })
+        }
+      })
+      .catch(() => {})
+    return () => {
+      annullato = true
+    }
+  }, [azione, daStimare])
+
   // Mentre la mia mossa viaggia, la posizione e' gia' quella nuova e non tocca piu' a me.
   const mostrata = useMemo(
     () => (vista && inVolo ? { ...vista, posizione: inVolo.posizione, mosse: inVolo.mosse, tuoTurno: false } : vista),
@@ -151,5 +175,8 @@ export function useTavolo(id: string): PartitaConAmico {
     arrenditi: () => void azione('resa'),
     reclama: () => void azione('reclama'),
     rivincita,
+    proponiMorte: (morte) => void azione('conteggio', { azione: 'proponi', morte }),
+    accettaConteggio: () => void azione('conteggio', { azione: 'accetta' }),
+    riprendiGioco: () => void azione('conteggio', { azione: 'riprendi' }),
   }
 }

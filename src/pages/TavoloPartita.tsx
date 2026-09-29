@@ -10,6 +10,8 @@ import { IconFlag, IconInfo, IconList, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
 import { giocoTavoloDi } from '@/games/catalog'
+import { cambiaGruppo, contaPunti } from '@/games/go/conteggio'
+import { PiedeConteggio } from '@/games/go/PiedeConteggio'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
 import { adesivoFine, testoFine } from '@/games/tavolo/fine'
 import { giocoDelTavoliere } from '@/games/tavolo/giochi'
@@ -25,7 +27,7 @@ import './Tavolo.css'
 const ATTESA_FINE_MS = 450
 
 /**
- * Una partita con un amico a scacchi, a dama o a Forza 4. Le mosse passano
+ * Una partita con un amico a scacchi, a dama, a Forza 4 o a go. Le mosse passano
  * dal server, che le controlla con le stesse regole del telefono; qui si
  * vedono subito, e l'altro le riceve al suo prossimo giro di controllo.
  */
@@ -83,25 +85,54 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
     const ora = vRef.current
     if (ora.stato !== 'finita' || !ora.motivo) return
     const motivo = ora.motivo
-    const t = setTimeout(
-      () => accoda(adesivoFine(ora.gioco, motivo, ora.vincitore, ora.avversario?.displayName ?? 'l’altro')),
-      ATTESA_FINE_MS,
-    )
+    const adesivo = adesivoFine(ora.gioco, motivo, ora.vincitore, ora.avversario?.displayName ?? 'l’altro', ora.punti)
+    const t = setTimeout(() => accoda(adesivo), ATTESA_FINE_MS)
     return () => clearTimeout(t)
   }, [accoda, inCorso])
 
   const storia = useMemo(() => (descrizione.storia ? descrizione.storia(v.mosse) : null), [descrizione, v.mosse])
   const mia = v.parte ?? 0
 
+  // Nel go, dopo due passi: si conta, e le pietre morte le segnano i due.
+  const conteggio = v.conteggio
+  // A partita finita ai punti il goban resta con il conteggio accettato, che non si tocca piu'.
+  const morte = conteggio ? conteggio.morte : v.morte
+  const conto = morte ? contaPunti(v.posizione, morte) : null
+
+  const reclamo = v.puoiReclamare && (
+    <div className="tav-domanda">
+      <span>{conteggio ? `${nome} non accetta il conteggio.` : `${nome} non muove da un po’.`}</span>
+      <Button variant="tinted" onClick={g.reclama} disabled={g.inviando}>
+        {conteggio ? 'Chiudi con questo conteggio' : 'Chiudi e vinci'}
+      </Button>
+    </div>
+  )
+
   const piede =
     v.stato === 'finita' ? (
       <FinePartita g={g} v={v} />
+    ) : conteggio ? (
+      <>
+        <PiedeConteggio
+          posizione={v.posizione}
+          morte={morte}
+          mia={mia}
+          altro={nome}
+          correggibile
+          accettato={conteggio.accettato}
+          inviando={g.inviando}
+          onAccetta={g.accettaConteggio}
+          onRiprendi={g.riprendiGioco}
+        />
+        {reclamo}
+      </>
     ) : (
       <>
         <Turno
           mio={v.tuoTurno}
           testo={v.tuoTurno ? 'Tocca a te' : `Tocca a ${nome}`}
           avviso={descrizione.avviso(v.posizione, v.tuoTurno)}
+          onPassa={descrizione.passo && v.tuoTurno && !g.inviando ? () => g.muovi(descrizione.passo!) : undefined}
         />
         {v.patta === 'avversario' && (
           <div className="tav-domanda" role="alert">
@@ -117,14 +148,7 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
           </div>
         )}
         {v.patta === 'io' && <p className="tav-fine__nota">Hai proposto la patta: aspetto {nome}.</p>}
-        {v.puoiReclamare && (
-          <div className="tav-domanda">
-            <span>{nome} non muove da un po’.</span>
-            <Button variant="tinted" onClick={g.reclama} disabled={g.inviando}>
-              Chiudi e vinci
-            </Button>
-          </div>
-        )}
+        {reclamo}
       </>
     )
 
@@ -175,8 +199,18 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
             avatar: <Avatar nickname={v.avversario?.nickname ?? '?'} color={v.avversario?.avatarColor} size={36} />,
             nota: v.avversario && !v.avversario.online && inCorso ? 'non è online' : undefined,
           }}
-          turno={inCorso ? (v.tuoTurno ? 'io' : 'altro') : null}
+          turno={inCorso && !conteggio ? (v.tuoTurno ? 'io' : 'altro') : null}
           onMossa={g.muovi}
+          conteggio={
+            conto && morte
+              ? {
+                  morte: new Set(morte),
+                  proprietario: conto.proprietario,
+                  onTocca:
+                    !conteggio || g.inviando ? undefined : (k) => g.proponiMorte(cambiaGruppo(v.posizione, morte, k)),
+                }
+              : undefined
+          }
           piede={piede}
         />
       )}
@@ -235,7 +269,7 @@ function FinePartita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
   const [chiedendo, setChiedendo] = useState(false)
   const r = v.rivincita
   const nome = v.avversario?.displayName ?? 'L’altro'
-  const { titolo, riga } = testoFine(v.motivo ?? 'patta', v.vincitore, nome)
+  const { titolo, riga } = testoFine(v.motivo ?? 'patta', v.vincitore, nome, v.punti)
 
   // La rivincita accettata: si va alla partita nuova, tutti e due.
   useEffect(() => {

@@ -17,6 +17,10 @@
   background: linear-gradient(150deg, var(--forza4-1), var(--forza4-2));
 }
 
+.tavolo-aperta--go {
+  background: linear-gradient(150deg, var(--go-1), var(--go-2));
+}
+
 /* "Riprendi la partita": un punto che pulsa, come quello della battaglia. */
 .tavolo-riga__segno {
   position: relative;

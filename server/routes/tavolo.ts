@@ -1,6 +1,7 @@
 import { Hono, type Context } from 'hono'
+import * as go from '../../shared/go'
 import { GIOCHI_TAVOLIERE, type GiocoTavoliere } from '../../shared/tavolo'
-import { giocaMossa, regoleDi } from '../../shared/tavolo-regole'
+import { giocaMossa, inizialeDi, regoleDi } from '../../shared/tavolo-regole'
 import type { SalaTavolo, VistaTavolo } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
@@ -13,11 +14,13 @@ import {
   chiudiInvito,
   diTurno,
   giocatoriOnline,
+  inConteggio,
   inPartita,
   invitoConCodice,
   latoDellaParte,
   latoDi,
   mandaInvito,
+  morteDi,
   mosseDi,
   parteDi,
   partiteInCorso,
@@ -39,6 +42,30 @@ const MOSSA_MASSIMA = 40
 function leggiGioco(valore: unknown): GiocoTavoliere {
   if (!GIOCHI_TAVOLIERE.includes(valore as GiocoTavoliere)) fail(400, 'GIOCO', 'Gioco sconosciuto.')
   return valore as GiocoTavoliere
+}
+
+/** La variante chiesta per una partita nuova (il lato del goban), se il gioco ne ha e questa c'e'. */
+function leggiVariante(gioco: GiocoTavoliere, valore: unknown): string | null {
+  const varianti = regoleDi(gioco).varianti
+  if (!varianti || valore === undefined || valore === null) return null
+  if (!varianti.includes(String(valore))) fail(400, 'VARIANTE', 'Questa variante non c’è.')
+  return String(valore)
+}
+
+/**
+ * Il conteggio del go, dalla proposta: i punti di ciascun lato e chi ha vinto.
+ * Il Nero e' chi muove per primo, quindi il lato con la parte 0.
+ */
+function contaGo(row: PartitaRow, morte: readonly number[]): { punti: { a: number; b: number }; vincitore: Lato } {
+  const p = go.leggi(row.posizione)!
+  const conto = go.punteggio(p, morte)
+  const latoNero = latoDellaParte(row, 0)
+  const nero = conto.nero
+  const bianco = conto.bianco
+  return {
+    punti: latoNero === 'a' ? { a: nero, b: bianco } : { a: bianco, b: nero },
+    vincitore: conto.vincitore === 'nero' ? latoNero : altroLato(latoNero),
+  }
 }
 
 /** La partita richiesta, e il lato di chi chiede: chi non ci gioca non la vede. */
@@ -89,6 +116,7 @@ export const tavoloRoutes = new Hono<AppEnv>()
     const io = c.get('player').id
     const corpo = await corpoDi(c)
     const gioco = leggiGioco(corpo.gioco)
+    const variante = leggiVariante(gioco, corpo.variante)
     const ora = Date.now()
     if (await inPartita(db, io, ora)) fail(409, 'IN_PARTITA', 'Hai già una partita in corso: finiscila prima.')
 
@@ -100,7 +128,8 @@ export const tavoloRoutes = new Hono<AppEnv>()
       if (!(await eOnline(db, a, ora))) fail(409, 'NON_ONLINE', 'Non è più online.')
       if (await inPartita(db, a, ora)) fail(409, 'OCCUPATO', 'Sta già giocando un’altra partita.')
     }
-    const row = await mandaInvito(db, { da: io, a, gioco }, ora)
+    const posizione = inizialeDi(regoleDi(gioco), variante)
+    const row = await mandaInvito(db, { da: io, a, gioco, posizione }, ora)
     return c.json({ id: row.id, codice: row.codice }, 201)
   })
 
@@ -217,11 +246,26 @@ export const tavoloRoutes = new Hono<AppEnv>()
     return rispondi(c, dopo, io)
   })
 
-  /** La vittoria a tavolino: l'altro ha la mossa da un pezzo, e non la fa. */
+  /**
+   * La vittoria a tavolino: l'altro ha la mossa da un pezzo, e non la fa. Nel
+   * conteggio del go l'altro non accetta la proposta che ho accettato io: si
+   * chiude contando con quella.
+   */
   .post('/partite/:id/reclama', async (c) => {
     const { row, io } = await partitaMia(c)
     const vista = await vistaTavolo(c.env.DB, row, io, Date.now())
     if (!vista.puoiReclamare) fail(409, 'ANCORA_PRESTO', 'L’altro ha ancora tempo.')
+    const morte = morteDi(row)
+    if (inConteggio(row) && morte) {
+      const { punti, vincitore } = contaGo(row, morte)
+      const contata = await salvaPartita(
+        c.env.DB,
+        row,
+        { stato: 'finita', vincitore, motivo: 'punti', punti, patta: null },
+        Date.now(),
+      )
+      return rispondi(c, contata, io)
+    }
     const dopo = await salvaPartita(
       c.env.DB,
       row,
@@ -252,6 +296,7 @@ export const tavoloRoutes = new Hono<AppEnv>()
     if (await inPartita(db, mioId, ora)) fail(409, 'IN_PARTITA', 'Hai già una partita in corso: finiscila prima.')
     if (!(await eOnline(db, altroId, ora))) fail(409, 'NON_ONLINE', 'Non è più online.')
     if (await inPartita(db, altroId, ora)) fail(409, 'OCCUPATO', 'Sta già giocando un’altra partita.')
+    const regole = regoleDi(row.gioco)
     const nuova = await mandaInvito(
       db,
       {
@@ -261,8 +306,70 @@ export const tavoloRoutes = new Hono<AppEnv>()
         rivincitaDi: row.id,
         serie: serieDopo(row, mioId, altroId),
         primo: primoDellaRivincita(row, mioId),
+        // La rivincita si gioca sullo stesso goban.
+        posizione: inizialeDi(regole, regole.varianteDi?.(row.posizione)),
       },
       ora,
     )
     return c.json({ invitoId: nuova.id }, 201)
+  })
+
+  /**
+   * Il conteggio del go, a gioco fermo dopo due passi. Uno dei due propone le
+   * pietre morte — la prima proposta e' la stima del telefono, poi si toccano i
+   * gruppi — e quando tutti e due hanno accettato la stessa proposta si contano
+   * i punti, e la partita e' finita. Proporre non e' accettare: la prima
+   * proposta la manda il telefono da solo, prima che chi gioca l'abbia vista,
+   * e ogni proposta nuova cancella le accettazioni di quella di prima. Chi non
+   * e' d'accordo riprende a giocare: si cattura sul goban quel che per lui e'
+   * morto.
+   */
+  .post('/partite/:id/conteggio', async (c) => {
+    const { row, io } = await partitaMia(c)
+    const corpo = await corpoDi(c)
+    if (!inConteggio(row)) fail(409, 'NON_SI_CONTA', 'Non si sta contando.')
+    if (Number(corpo.versione) !== row.versione) fail(409, 'CONFLITTO', 'La partita è cambiata: la ricarico.')
+    const ora = Date.now()
+    const p = go.leggi(row.posizione)!
+
+    if (corpo.azione === 'proponi') {
+      const lista = Array.isArray(corpo.morte) ? corpo.morte : null
+      if (!lista || lista.length > p.punti.length) fail(400, 'MORTE', 'Le pietre morte non si leggono.')
+      const morte = [...new Set(lista.map(Number))].sort((x, y) => x - y)
+      if (morte.some((k) => !Number.isInteger(k) || k < 0 || k >= p.punti.length || p.punti[k] === null)) {
+        fail(400, 'MORTE', 'Si segnano morte solo le pietre sul goban.')
+      }
+      return rispondi(c, await salvaPartita(c.env.DB, row, { morte, morte_ok: null }, ora), io)
+    }
+
+    if (corpo.azione === 'accetta') {
+      const morte = morteDi(row)
+      if (!morte) fail(409, 'NESSUNA_PROPOSTA', 'Non c’è ancora un conteggio da accettare.')
+      if (row.morte_ok === altroLato(io)) {
+        const { punti, vincitore } = contaGo(row, morte)
+        const dopo = await salvaPartita(
+          c.env.DB,
+          row,
+          { stato: 'finita', vincitore, motivo: 'punti', punti, patta: null },
+          ora,
+        )
+        return rispondi(c, dopo, io)
+      }
+      return rispondi(c, await salvaPartita(c.env.DB, row, { morte_ok: io }, ora), io)
+    }
+
+    if (corpo.azione === 'riprendi') {
+      // Si torna a giocare da dove ci si era fermati: i due passi non contano piu', e nemmeno le
+      // posizioni di prima. Il goban e' quello di prima dei passi, con lo stesso tratto: a
+      // ricordarle, alla seconda ripresa sarebbe gia' una ripetizione, e nessuno potrebbe muovere.
+      const posizione = go.scrivi({ ...p, passi: 0 })
+      const dopo = await salvaPartita(
+        c.env.DB,
+        row,
+        { posizione, chiavi: [], morte: null, morte_ok: null, mossa: true },
+        ora,
+      )
+      return rispondi(c, dopo, io)
+    }
+    fail(400, 'AZIONE', 'Azione sconosciuta.')
   })

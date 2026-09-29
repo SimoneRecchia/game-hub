@@ -8,8 +8,10 @@ import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconComputer, IconFlag, IconInfo, IconList, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
+import { contaPunti } from '@/games/go/conteggio'
+import { PiedeConteggio } from '@/games/go/PiedeConteggio'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
-import { adesivoFine, testoFine, type Chi } from '@/games/tavolo/fine'
+import { adesivoFine, testoFine, type Chi, type PuntiFine } from '@/games/tavolo/fine'
 import { giocoDelTavoliere } from '@/games/tavolo/giochi'
 import { ElencoMosse, Fine, Tavola, Turno } from '@/games/tavolo/Tavola'
 import { useTavoloComputer } from '@/games/tavolo/useTavoloComputer'
@@ -23,7 +25,7 @@ import './Tavolo.css'
 const ATTESA_FINE_MS = 450
 
 /**
- * Una partita contro il computer, a scacchi, a dama o a Forza 4. Sta tutta
+ * Una partita contro il computer, a scacchi, a dama, a Forza 4 o a go. Sta tutta
  * nel telefono: il computer pensa in un Web Worker, e la partita si salva a
  * ogni mossa, cosi' si riprende da dove la si era lasciata.
  */
@@ -38,9 +40,16 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
   const [resa, setResa] = useState(false)
 
   const finita = p.esito !== null
-  const mioTurno = !finita && regoleDi(gioco).tratto(p.posizione) === p.mia
+  // Nel go, dopo due passi: nessuno muove, si conta.
+  const fermo = !finita && (regoleDi(gioco).conteggio?.(p.posizione) ?? false)
+  const mioTurno = !finita && !fermo && regoleDi(gioco).tratto(p.posizione) === p.mia
   const vincitore: Chi =
     p.esito && p.esito.vincitore !== null ? (p.esito.vincitore === p.mia ? 'io' : 'avversario') : null
+  const puntiFine: PuntiFine = p.punti
+    ? { io: p.mia === 0 ? p.punti.nero : p.punti.bianco, avversario: p.mia === 0 ? p.punti.bianco : p.punti.nero }
+    : null
+  const puntiRef = useRef(puntiFine)
+  puntiRef.current = puntiFine
 
   // La fine: l'adesivo, una volta, e i coriandoli, solo per una partita vista in corso.
   const { adesivo, accoda } = useCodaAdesivi()
@@ -58,7 +67,8 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
     const esito = esitoRef.current
     if (!esito) return
     const chi: Chi = esito.vincitore === null ? null : esito.vincitore === p.mia ? 'io' : 'avversario'
-    const t = setTimeout(() => accoda(adesivoFine(gioco, esito.motivo, chi, 'il computer')), ATTESA_FINE_MS)
+    const adesivo = adesivoFine(gioco, esito.motivo, chi, 'il computer', puntiRef.current)
+    const t = setTimeout(() => accoda(adesivo), ATTESA_FINE_MS)
     return () => clearTimeout(t)
   }, [accoda, finita, gioco, p.mia])
 
@@ -66,7 +76,7 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
 
   const piede = finita ? (
     (() => {
-      const { titolo, riga } = testoFine(p.esito!.motivo, vincitore, 'il computer')
+      const { titolo, riga } = testoFine(p.esito!.motivo, vincitore, 'il computer', puntiFine)
       return (
         <Fine titolo={titolo} riga={`${riga} · ${NOMI_LIVELLI[p.livello]}`}>
           <Button onClick={() => g.nuova()}>
@@ -78,6 +88,16 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
         </Fine>
       )
     })()
+  ) : fermo ? (
+    <PiedeConteggio
+      posizione={p.posizione}
+      morte={g.morte}
+      mia={p.mia}
+      altro="il computer"
+      correggibile={false}
+      onAccetta={g.confermaConteggio}
+      onRiprendi={g.riprendi}
+    />
   ) : g.errore ? (
     <div className="tav-errore" role="alert">
       <span>{g.errore}</span>
@@ -90,8 +110,13 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
       mio={mioTurno}
       testo={mioTurno ? 'Tocca a te' : 'Il computer pensa…'}
       avviso={descrizione.avviso(p.posizione, mioTurno)}
+      onPassa={descrizione.passo && mioTurno ? () => g.muovi(descrizione.passo!) : undefined}
     />
   )
+
+  // Il conteggio sul goban: mentre si conta, e a partita finita ai punti, con le pietre che si sono contate morte.
+  const morte = fermo ? g.morte : p.esito?.motivo === 'punti' ? (p.morte ?? null) : null
+  const conto = morte ? contaPunti(p.posizione, morte) : null
 
   return (
     <Pagina
@@ -136,8 +161,9 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
           ),
           nota: NOMI_LIVELLI[p.livello],
         }}
-        turno={finita ? null : mioTurno ? 'io' : 'altro'}
+        turno={finita || fermo ? null : mioTurno ? 'io' : 'altro'}
         onMossa={g.muovi}
+        conteggio={conto && morte ? { morte: new Set(morte), proprietario: conto.proprietario } : undefined}
         piede={piede}
       />
 

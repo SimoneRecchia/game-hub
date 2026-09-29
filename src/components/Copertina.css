@@ -67,6 +67,11 @@
   --c2: var(--forza4-2);
 }
 
+.copertina--go {
+  --c1: var(--go-1);
+  --c2: var(--go-2);
+}
+
 .copertina__disegno {
   position: absolute;
   inset: 0;

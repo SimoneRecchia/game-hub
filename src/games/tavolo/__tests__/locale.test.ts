@@ -7,9 +7,11 @@ import {
   leggiConti,
   leggiPartita,
   leggiScelta,
+  leggiVariante,
   nuovaPartita,
   salvaPartita,
   salvaScelta,
+  salvaVariante,
   ultimoLivello,
 } from '../locale'
 
@@ -71,6 +73,17 @@ describe('le partite contro il computer, nel telefono', () => {
     const lasciata = abbandona({ ...p, mosse: ['3', '4'] })
     expect(lasciata.esito).toEqual({ vincitore: 0, motivo: 'resa' })
     expect(leggiConti('forza4').normale.perse).toBe(1)
+  })
+
+  it('nel go il goban scelto vale per le partite nuove', () => {
+    expect(leggiVariante('go')).toBe('9')
+    expect(leggiVariante('scacchi')).toBeNull()
+    salvaVariante('go', '13')
+    expect(nuovaPartita('go', 'facile', 'prima').posizione.startsWith('13:')).toBe(true)
+    // Una variante che non c'e' torna alla prima.
+    salvaVariante('go', '11')
+    expect(leggiVariante('go')).toBe('9')
+    expect(nuovaPartita('go', 'facile', 'prima', '19').posizione.startsWith('19:')).toBe(true)
   })
 
   it('la scelta del colore resta', () => {

@@ -420,6 +420,7 @@ export type Attivita =
   | 'scacchi'
   | 'dama'
   | 'forza4'
+  | 'go'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -509,12 +510,14 @@ export interface InvitoConLink {
   codice: string
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
-  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, scacchi, dama o Forza 4. */
+  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi o un gioco da tavoliere. */
   gioco?: 'battaglia' | 'quiz' | 'indovina' | GiocoTavoliere
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
   set?: string
+  /** Per il go, il lato del goban. */
+  variante?: string | null
 }
 
 /**
@@ -534,9 +537,9 @@ export interface PresenzaRisposta {
   indovina: InvitoIndovina[]
   /** La partita di Indovina chi aperta. */
   partitaIndovina: PartitaIndovinaBreve | null
-  /** Gli inviti a scacchi, dama e Forza 4 arrivati, rivincite comprese. */
+  /** Gli inviti a scacchi, dama, Forza 4 e go arrivati, rivincite comprese. */
   tavolo: InvitoTavolo[]
-  /** La partita a scacchi, dama o Forza 4 aperta. */
+  /** La partita a scacchi, dama, Forza 4 o go aperta. */
   partitaTavolo: PartitaTavoloBreve | null
 }
 
@@ -627,7 +630,7 @@ export interface VistaIndovina {
   versione: number
 }
 
-/* ────────────────────  Scacchi, dama e Forza 4, fra amici  ──────────────────── */
+/* ────────────────────  Scacchi, dama, Forza 4 e go, fra amici  ──────────────────── */
 
 export type StatoTavolo = 'invito' | 'in_corso' | 'finita' | 'rifiutata' | 'annullata'
 
@@ -635,6 +638,8 @@ export type StatoTavolo = 'invito' | 'in_corso' | 'finita' | 'rifiutata' | 'annu
 export interface InvitoTavolo {
   id: string
   gioco: GiocoTavoliere
+  /** Per il go, il lato del goban: "13". */
+  variante: string | null
   da: GiocatoreBreve
   scadeTraMs: number
   rivincita: boolean
@@ -644,6 +649,7 @@ export interface InvitoTavolo {
 export interface InvitoTavoloMandato {
   id: string
   gioco: GiocoTavoliere
+  variante: string | null
   a: GiocatoreBreve | null
   codice: string | null
   stato: 'attesa' | 'accettato' | 'rifiutato' | 'annullato' | 'scaduto'
@@ -655,12 +661,13 @@ export interface InvitoTavoloMandato {
 export interface PartitaTavoloBreve {
   id: string
   gioco: GiocoTavoliere
+  variante: string | null
   avversario: GiocatoreBreve
   tuoTurno: boolean
 }
 
 export interface SalaTavolo {
-  /** Chi e' online: `occupato` vuol dire in un'altra partita di scacchi, dama o Forza 4. */
+  /** Chi e' online: `occupato` vuol dire in un'altra partita da tavoliere. */
   giocatori: GiocatoreOnline[]
   invito: InvitoTavoloMandato | null
   /** Le partite in corso di questo gioco, anche ferme: si riprendono da qui. */
@@ -687,6 +694,15 @@ export interface VistaTavolo {
   patta: 'io' | 'avversario' | null
   /** Posso proporre la patta adesso: il gioco la prevede, e non l'ho gia' proposta a questa mossa. */
   puoiProporre: boolean
+  /**
+   * Nel go, a gioco fermo dopo due passi: le pietre segnate morte (null finché
+   * nessuno le ha segnate) e chi ha accettato il conteggio cosi' com'e'.
+   */
+  conteggio: { morte: number[] | null; accettato: 'io' | 'avversario' | null } | null
+  /** Nel go, a partita finita ai punti: i punti di ciascuno, komi compreso. */
+  punti: { io: number; avversario: number } | null
+  /** Nel go, a partita finita ai punti: le pietre contate morte, che il goban continua a mostrare. */
+  morte: number[] | null
   serie: { io: number; avversario: number; partite: number }
   rivincita: {
     id: string
