@@ -1,0 +1,144 @@
+/*
+ * Il cursore a punti: la pista con i suoi punti, la parte riempita fino alla
+ * maniglia, e sotto le etichette. Lasciata, la maniglia scatta sul punto con
+ * una molla; mentre si trascina segue il dito, senza transizioni.
+ *
+ * La pista rientra di mezza maniglia per lato: la maniglia e le etichette dei
+ * due estremi restano dentro la carta.
+ */
+.cursore {
+  --cursore-colore: var(--brand);
+  --lato-maniglia: 28px;
+  padding: 0 calc(var(--lato-maniglia) / 2);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* L'area da toccare e' alta 44 punti, il minimo di Apple, anche se la pista ne ha sei. */
+.cursore__pista {
+  position: relative;
+  height: 44px;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+/*
+ * La pista va oltre il primo e l'ultimo punto di `--oltre`: i due punti in fondo
+ * stanno dentro la pista, e non a cavallo della sua punta arrotondata, dove
+ * quello chiaro sulla parte piena la intaccava.
+ */
+.cursore__pista::before,
+.cursore__pieno {
+  --oltre: 6px;
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: calc(var(--oltre) * -1);
+  height: 6px;
+  margin-top: -3px;
+  border-radius: var(--r-pill);
+}
+
+.cursore__pista::before {
+  right: calc(var(--oltre) * -1);
+  background: var(--fill-secondary);
+}
+
+.cursore__pieno {
+  width: calc(var(--pos) * 100% + var(--oltre));
+  background: var(--cursore-colore);
+  transition: width 360ms var(--ease-spring);
+}
+
+/*
+ * I punti dove la maniglia si ferma: grigi sulla pista vuota, del colore della
+ * carta su quella piena. Stanno sopra il 3:1 in tutti e due i temi, perché
+ * dicono dove ci si puo' fermare.
+ */
+.cursore__punto {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--punto) * 100%);
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--label-secondary);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.cursore__punto.is-dentro {
+  background: var(--surface);
+}
+
+/* Bianca con il filo del colore: si vede anche al primo punto, dove la pista piena non c'e'. */
+.cursore__maniglia {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--pos) * 100%);
+  box-sizing: border-box;
+  width: var(--lato-maniglia);
+  height: var(--lato-maniglia);
+  margin: calc(var(--lato-maniglia) / -2) 0 0 calc(var(--lato-maniglia) / -2);
+  border: 2px solid var(--cursore-colore);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  transition:
+    left 360ms var(--ease-spring),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.cursore__maniglia:focus-visible {
+  border-radius: 50%;
+}
+
+/* Mentre la si tiene e' un po' piu' grande, e segue il dito. */
+.cursore.is-trascina .cursore__maniglia {
+  transform: scale(1.12);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.cursore.is-trascina .cursore__pieno {
+  transition: none;
+}
+
+/*
+ * Le etichette sono anche da toccare: alte 28 punti, sopra i 24 del WCAG, e
+ * salgono un poco dentro l'area della pista, che sotto la riga e' vuota.
+ */
+.cursore__etichette {
+  position: relative;
+  height: 28px;
+  margin-top: -10px;
+}
+
+.cursore__etichetta {
+  position: absolute;
+  top: 0;
+  left: calc(var(--punto) * 100%);
+  min-width: 28px;
+  height: 28px;
+  padding: 0 4px;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 28px;
+  color: var(--label-secondary);
+  white-space: nowrap;
+  transform: translateX(-50%);
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.cursore__etichetta.is-scelta {
+  color: var(--label);
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursore__pieno,
+  .cursore__maniglia {
+    transition: none;
+  }
+}

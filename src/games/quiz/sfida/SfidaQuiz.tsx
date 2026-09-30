@@ -3,7 +3,7 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { IconCopy, IconLink, IconShare } from '@/components/Icons'
+import { IconCopy, IconShare } from '@/components/Icons'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { useCountdown } from '@/games/wordle/useCountdown'
@@ -95,8 +95,9 @@ export function SfidaQuiz({
     NOMI_CATEGORIE[imp.categoria],
     ...dettagliPartita(imp, ix),
     imp.categoria === 'oggi' && scelte.giorno === 'caso' ? 'un giorno a caso' : null,
-    `${imp.quante} domande`,
-    `${imp.secondi * (imp.modo === 'cartina' ? 2 : 1)} s a domanda`,
+    // Il numero resta con la sua unita': "15" a fine riga e "s a domanda" sotto non si leggono.
+    `${imp.quante}\u00a0domande`,
+    `${imp.secondi * (imp.modo === 'cartina' ? 2 : 1)}\u00a0s a domanda`,
   ]
     .filter(Boolean)
     .join(' · ')
@@ -105,33 +106,22 @@ export function SfidaQuiz({
     <Sheet open={open} onClose={onClose} title="Sfida un amico">
       <div className="quiz-sfida">
         <p className="quiz-sfida__cosa">{riassunto}</p>
-        <p className="quiz-sfida__regole">Il primo che risponde giusto prende il punto.</p>
 
         {inAttesa && inAttesa.codice ? (
           <LinkInAttesa sfida={inAttesa} onRitira={() => void annulla(inAttesa)} avvisa={toast.show} />
         ) : inAttesa && inAttesa.a ? (
           <SfidaInAttesa sfida={inAttesa} onAnnulla={() => void annulla(inAttesa)} />
         ) : (
-          <div className="bat-link">
-            <div className="bat-link__riga">
-              <span className="bat-link__icona" aria-hidden="true">
-                <IconLink size={22} />
-              </span>
-              <div className="bat-link__testo">
-                <p className="bat-link__titolo">Invita con un link</p>
-                <p className="bat-link__nota">Anche a chi non ha un account. Vale un’ora.</p>
-              </div>
-            </div>
-            <Button
-              variant="tinted"
-              fullWidth
-              onClick={() => void manda('link')}
-              loading={invio === 'link'}
-              disabled={invio !== null && invio !== 'link'}
-            >
-              <IconShare size={18} /> Crea il link
-            </Button>
-          </div>
+          <Button
+            variant="tinted"
+            size="lg"
+            fullWidth
+            onClick={() => void manda('link')}
+            loading={invio === 'link'}
+            disabled={invio !== null && invio !== 'link'}
+          >
+            <IconShare size={18} /> Invita con un link
+          </Button>
         )}
 
         {sala?.sfida?.stato === 'rifiutata' && sala.sfida.a && (
@@ -139,11 +129,11 @@ export function SfidaQuiz({
         )}
         {avviso && <p className="bat-sala__avviso">{avviso}</p>}
 
-        <p className="bat-sala__titolo">Chi è online adesso</p>
+        <p className="bat-sala__titolo">Online</p>
         {!sala ? (
           <p className="bat-sala__vuoto">Cerco chi è online…</p>
         ) : sala.giocatori.length === 0 ? (
-          <p className="bat-sala__vuoto">Nessuno online in questo momento.</p>
+          <p className="bat-sala__vuoto">Nessuno online.</p>
         ) : (
           <ul className="bat-sala__elenco">
             {sala.giocatori.map((g) => (
