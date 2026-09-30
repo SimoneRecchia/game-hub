@@ -1,3 +1,4 @@
+import { frecceDelGruppo } from '@/lib/gruppo'
 import './SegmentedControl.css'
 
 interface Option<T extends string> {
@@ -12,6 +13,11 @@ interface Props<T extends string> {
   ariaLabel: string
 }
 
+/**
+ * Una scelta fra poche voci, come il controllo segmentato di iOS. Per chi non
+ * vede e' un gruppo di scelte (radio group): una sola, e le frecce passano
+ * dall'una all'altra.
+ */
 export function SegmentedControl<T extends string>({
   options,
   value,
@@ -24,7 +30,7 @@ export function SegmentedControl<T extends string>({
   )
 
   return (
-    <div className="segmented" role="tablist" aria-label={ariaLabel}>
+    <div className="segmented" role="radiogroup" aria-label={ariaLabel} onKeyDown={frecceDelGruppo}>
       {/* Il "pillolo" scorre invece di apparire: è il tell visivo di iOS. */}
       <span
         className="segmented__thumb"
@@ -34,13 +40,14 @@ export function SegmentedControl<T extends string>({
           transform: `translateX(calc(${activeIndex} * 100%))`,
         }}
       />
-      {options.map((option) => (
+      {options.map((option, i) => (
         <button
           key={option.value}
           type="button"
-          role="tab"
-          aria-selected={option.value === value}
-          className={`segmented__item${option.value === value ? ' is-active' : ''}`}
+          role="radio"
+          aria-checked={i === activeIndex}
+          tabIndex={i === activeIndex ? 0 : -1}
+          className={`segmented__item${i === activeIndex ? ' is-active' : ''}`}
           onClick={() => onChange(option.value)}
         >
           {option.label}

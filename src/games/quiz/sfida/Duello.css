@@ -362,16 +362,12 @@
   gap: 12px;
 }
 
+/* Le scelte con cui si sfida, sotto il titolo del foglio: per ricontrollarle, non per leggerle. */
 .quiz-sfida__cosa {
-  margin: 0;
-  font-size: var(--text-headline);
-  font-weight: 700;
-}
-
-.quiz-sfida__regole {
-  margin: 0;
-  font-size: var(--text-footnote);
+  margin: 0 0 var(--sp-1);
+  font-size: var(--text-subhead);
   color: var(--label-secondary);
+  text-align: center;
 }
 
 /* ─────────────────────────────  L'attesa e la fine  ───────────────────── */
