@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { IconMatita, IconPlus } from '@/components/Icons'
+import { frecceDelGruppo } from '@/lib/gruppo'
 import { immaginePredefinita, sfondoPredefinito, type SetPredefinito } from '@shared/indovina'
 import { leggiImmagine, type SetProprio } from './archivio'
 import { problemaDelSet } from './setFile'
@@ -89,13 +90,14 @@ export function SceltaSet({
   onNuovo: () => void
 }) {
   return (
-    <div className="ic-set-griglia" role="radiogroup" aria-label="Personaggi">
-      {opzioni.map((o) => (
+    <div className="ic-set-griglia" role="radiogroup" aria-label="Personaggi" onKeyDown={frecceDelGruppo}>
+      {opzioni.map((o, i) => (
         <div key={o.chiave} className={`ic-set${scelta === o.chiave ? ' is-scelto' : ''}`}>
           <button
             type="button"
             role="radio"
             aria-checked={scelta === o.chiave}
+            tabIndex={scelta === o.chiave || (i === 0 && !opzioni.some((x) => x.chiave === scelta)) ? 0 : -1}
             className="ic-set__scegli"
             onClick={() => onScegli(o.chiave)}
           >

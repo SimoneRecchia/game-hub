@@ -3,8 +3,9 @@ import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
+import { Cursore } from '@/components/Cursore'
 import { Elenco, Riga, Sezione, Tacche } from '@/components/Elementi'
-import { IconCheck, IconChevronRight, IconInfo, IconPeople, IconPlay } from '@/components/Icons'
+import { IconCheck, IconChevronRight, IconInfo, IconPlay } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
@@ -13,8 +14,9 @@ import { contaCitta } from '@/games/quiz/citta'
 import { ComeSiGiocaQuiz } from '@/games/quiz/ComeSiGioca'
 import { useIndiceQuiz } from '@/games/quiz/dati'
 import { caricaCultura } from '@/games/quiz/fonti'
-import { ICONE_MATERIE, IconaCategoria } from '@/games/quiz/icone'
+import { ICONE_MATERIE, IconBandiera, IconaCategoria } from '@/games/quiz/icone'
 import { PartitaQuiz } from '@/games/quiz/PartitaQuiz'
+import { SAGOME } from '@/games/quiz/sagome'
 import { SfidaQuiz } from '@/games/quiz/sfida/SfidaQuiz'
 import {
   DESCRIZIONI_MATERIE,
@@ -27,6 +29,7 @@ import {
 import { leggiStatistiche } from '@/games/quiz/statistiche'
 import { OPZIONI_PREDEFINITE, useQuizLibero, type ImpostazioniLibera } from '@/games/quiz/usePartita'
 import { useDati } from '@/lib/dati'
+import { frecceDelGruppo } from '@/lib/gruppo'
 import { formatPercent } from '@/lib/format'
 import { gameDate } from '@shared/daily'
 import {
@@ -49,10 +52,12 @@ import {
   eModo,
   materiaDi,
   type CategoriaQuiz,
+  type Continente,
   type MateriaQuiz,
   type ModoQuiz,
 } from '@shared/quiz'
 import { giornoDellAnno, giornoInLettere } from '@shared/quiz-cultura'
+import { QUANTE_SFIDA, SECONDI_SFIDA, SECONDI_SFIDA_PREDEFINITI } from '@shared/quiz-sfida'
 import type { AreaQuiz, IndiceQuiz, Notorieta } from '@shared/quiz-domande'
 import { eCultura } from '@shared/quiz-domande-cultura'
 import type { QuizSummary } from '@shared/types'
@@ -397,19 +402,42 @@ function paesiCon(ix: IndiceQuiz, categoria: CategoriaQuiz, conti: Map<string, n
 
 const PAROLE_PAESE: Partial<Record<CategoriaQuiz, string>> = { citta: 'città', fiumi: 'fiumi', laghi: 'laghi' }
 
+/** Da soli o contro un amico: come Computer | Amico nelle sale dei giochi da tavolo, e si ricorda. */
+type Contro = 'solo' | 'amico'
+const CHIAVE_CONTRO = 'quiz-libera-contro'
+
+function leggiContro(): Contro {
+  try {
+    return localStorage.getItem(CHIAVE_CONTRO) === 'amico' ? 'amico' : 'solo'
+  } catch {
+    return 'solo'
+  }
+}
+
+/** Il valore piu' vicino fra quelli che si possono scegliere: 50 domande da soli sono 20 in una sfida. */
+function vicino<T extends number>(valori: readonly T[], x: number | null | undefined, predefinito: T): T {
+  if (x === null || x === undefined) return predefinito
+  return valori.reduce((a, b) => (Math.abs(b - x) < Math.abs(a - x) ? b : a))
+}
+
+/** Il tempo da soli: i secondi, e in fondo senza tempo, che e' il piu' lungo di tutti. */
+const TEMPI_LIBERI: ReadonlyArray<number | null> = [...SECONDI_LIBERI, null]
+
 function Scelta({ materia }: { materia: MateriaQuiz }) {
   const { vai } = useNavigazione()
   const [scelte, setScelte] = useState(() => scelteDellaMateria(materia))
-  const [paesiAperti, setPaesiAperti] = useState(false)
-  // `?sfida=1`: si arriva dal menu con il foglio della sfida gia' aperto.
+  const [foglio, setFoglio] = useState<'zona' | 'paese' | 'ambito' | null>(null)
+  // `?sfida=1`: si arriva dal menu per sfidare un amico.
   const [query] = useSearchParams()
-  const [sfida, setSfida] = useState(query.get('sfida') === '1')
+  const [contro, setContro] = useState<Contro>(() => (query.get('sfida') === '1' ? 'amico' : leggiContro()))
+  const [sfida, setSfida] = useState(false)
   const [regole, setRegole] = useState(false)
   const [statistiche] = useState(leggiStatistiche)
 
   const { categoria, modo = 'scelta' } = scelte
   const geografia = diGeografia(categoria)
   const voce = voceDi(materia, categoria, scelte.ambito)
+  const conAmico = contro === 'amico'
 
   // I dati servono alla partita: scaricarli mentre si sceglie la fa partire subito.
   const ix = useIndiceQuiz(geografia)
@@ -438,11 +466,28 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
 
   const scegliVoce = (v: VoceMateria) => cambia({ categoria: v.categoria, ambito: v.ambito })
 
-  // La difficoltà scelta fa partire la partita, e resta per la prossima e per la sfida.
+  const scegliContro = (c: Contro) => {
+    setContro(c)
+    try {
+      localStorage.setItem(CHIAVE_CONTRO, c)
+    } catch {
+      // E' una comodita'.
+    }
+  }
+
+  // Con un amico le domande e i secondi sono quelli della sfida: si vedono quelli, e si gioca con quelli.
+  const quante = conAmico ? vicino(QUANTE_SFIDA, scelte.quante, 10) : scelte.quante
+  const secondi = conAmico ? vicino(SECONDI_SFIDA, scelte.secondi, SECONDI_SFIDA_PREDEFINITI) : scelte.secondi
+
+  // La difficoltà scelta fa partire la partita, o la sfida; e resta per la prossima volta.
   const comincia = (notorieta: Notorieta) => {
-    const pronte = { ...scelte, notorieta }
+    const pronte = { ...scelte, notorieta, quante, secondi }
     setScelte(pronte)
     salvaScelte(pronte)
+    if (conAmico) {
+      setSfida(true)
+      return
+    }
     // Se oggi non si puo', un giorno a caso: ma la scelta ricordata resta "oggi", che domani si potra'.
     vai(indirizzo(oggiChiuso ? { ...pronte, giorno: 'caso' } : pronte))
   }
@@ -454,14 +499,15 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
     () => (ix && conPaese ? paesiCon(ix, categoria, contiCitta) : []),
     [ix, conPaese, categoria, contiCitta],
   )
-  const aree: AreaQuiz[] = conContinente ? ['mondo', ...CONTINENTI] : ['mondo']
-  // L'ambito si sceglie sotto solo se la voce non e' gia' un argomento: la chimica non ha altro da scegliere.
+  // L'ambito si sceglie solo se la voce non e' gia' un argomento: la chimica non ha altro da scegliere.
   const ambiti = voce?.ambito === undefined ? AMBITI[categoria] : undefined
-  const secondi = scelte.secondi ?? SECONDI_SCELTA
+  const ambito = ambiti?.find((a) => a.id === (scelte.ambito ?? 'tutti'))
   // Sulla cartina il tempo e' il doppio: si mostrano i secondi veri del modo scelto.
   const perModo = modo === 'cartina' ? 2 : 1
   const voci = VOCI_MATERIE[materia]
   const nome = MATERIE.find((m) => m.id === materia)!.nome
+  const colore = `var(--materia-${materia}-1)`
+  const dove = geografia && (conContinente || conPaese)
 
   return (
     <Pagina
@@ -473,8 +519,23 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
         </BottoneBarra>
       }
     >
+      <SegmentedControl
+        ariaLabel="Contro chi"
+        value={contro}
+        onChange={scegliContro}
+        options={[
+          { value: 'solo', label: 'Da solo' },
+          { value: 'amico', label: 'Con un amico' },
+        ]}
+      />
+
       <Sezione titolo="Categoria">
-        <div className={`quiz-categorie quiz-colori--${materia}`} role="radiogroup" aria-label="Categoria">
+        <div
+          className={`quiz-categorie quiz-colori--${materia}`}
+          role="radiogroup"
+          aria-label="Categoria"
+          onKeyDown={frecceDelGruppo}
+        >
           {voci.map((v, i) => {
             const scelta = v === voce
             // I record sono per categoria: gli argomenti della scienza non hanno il loro.
@@ -486,6 +547,7 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
                 type="button"
                 role="radio"
                 aria-checked={scelta}
+                tabIndex={scelta || (!voce && i === 0) ? 0 : -1}
                 className={`quiz-tessera${scelta ? ' is-scelta' : ''}`}
                 style={{ '--n': i } as CSSProperties}
                 onClick={() => scegliVoce(v)}
@@ -508,93 +570,79 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
         </div>
       </Sezione>
 
-      {geografia && (
-        <>
-          <Sezione titolo="Come rispondi">
-            <SegmentedControl
-              ariaLabel="Come rispondi"
-              options={[
-                { value: 'scelta', label: NOMI_MODI.scelta },
-                { value: 'cartina', label: NOMI_MODI.cartina },
-              ]}
-              value={modo}
-              onChange={(v) => cambia({ modo: v })}
-            />
-          </Sezione>
-
-          <Sezione titolo="Dove">
-            <div className="quiz-zone" role="radiogroup" aria-label="Dove">
-              {aree.map((a) => (
-                <Capsula key={a} scelta={scelte.area === a} onClick={() => cambia({ area: a })}>
-                  {nomeArea(a, ix)}
-                </Capsula>
-              ))}
-              {conPaese && (
-                <Capsula scelta={paese !== null} onClick={() => setPaesiAperti(true)} disabilitata={!ix}>
-                  {paese && (
-                    <img
-                      className="quiz-zona__bandiera"
-                      src={urlBandiera(paese.toLowerCase(), 40)}
-                      srcSet={`${urlBandiera(paese.toLowerCase(), 80)} 2x`}
-                      alt=""
-                    />
-                  )}
-                  {paese ? nomeArea(scelte.area, ix) : 'Un paese…'}
-                </Capsula>
-              )}
-            </div>
-          </Sezione>
-        </>
-      )}
-
-      {ambiti && (
-        <Sezione titolo={TITOLI_AMBITI[categoria]}>
-          <div className="quiz-zone" role="radiogroup" aria-label={TITOLI_AMBITI[categoria]}>
-            {ambiti.map((a) => (
-              <Capsula key={a.id} scelta={(scelte.ambito ?? 'tutti') === a.id} onClick={() => cambia({ ambito: a.id })}>
-                {a.nome}
-              </Capsula>
-            ))}
-          </div>
-        </Sezione>
-      )}
-
-      {categoria === 'oggi' && (
-        <Sezione titolo="Quale giorno" nota={oggiChiuso ? 'Oggi si gioca dopo il quiz del giorno.' : undefined}>
-          <div className="quiz-zone" role="radiogroup" aria-label="Quale giorno">
-            <Capsula
-              scelta={scelte.giorno !== 'caso' && !oggiChiuso}
-              disabilitata={oggiChiuso}
-              onClick={() => cambia({ giorno: undefined })}
-            >
-              Oggi, {giornoInLettere(giornoDellAnno(gameDate()))}
-            </Capsula>
-            <Capsula scelta={scelte.giorno === 'caso' || oggiChiuso} onClick={() => cambia({ giorno: 'caso' })}>
-              Un giorno a caso
-            </Capsula>
-          </div>
-        </Sezione>
-      )}
-
       <Sezione titolo="Partita">
         <Opzioni>
-          <Scelte titolo="Domande">
-            <SegmentedControl
-              ariaLabel="Quante domande"
-              options={QUANTE_LIBERE.map((n) => ({ value: String(n), label: String(n) }))}
-              value={String(scelte.quante)}
-              onChange={(v) => cambia({ quante: Number(v) })}
+          {geografia && (
+            <Scelte titolo="Come rispondi">
+              <SegmentedControl
+                ariaLabel="Come rispondi"
+                options={[
+                  { value: 'scelta', label: NOMI_MODI.scelta },
+                  { value: 'cartina', label: NOMI_MODI.cartina },
+                ]}
+                value={modo}
+                onChange={(v) => cambia({ modo: v })}
+              />
+            </Scelte>
+          )}
+          {dove && (
+            <RigaFoglio
+              titolo="Dove"
+              valore={nomeArea(scelte.area, ix)}
+              icona={
+                paese ? (
+                  <img className="quiz-impostazione__bandiera" src={urlBandiera(paese.toLowerCase(), 40)} alt="" />
+                ) : (
+                  <Sagoma
+                    zona={scelte.area === 'mondo' ? 'mondo' : (scelte.area as Continente)}
+                    piccola
+                    colore={colore}
+                  />
+                )
+              }
+              onClick={() => setFoglio('zona')}
+            />
+          )}
+          {ambiti && ambito && (
+            <RigaFoglio
+              titolo={TITOLI_AMBITI[categoria] ?? 'Quali'}
+              valore={ambito.nome}
+              onClick={() => setFoglio('ambito')}
+            />
+          )}
+          {categoria === 'oggi' && (
+            <Scelte titolo="Giorno" sotto={oggiChiuso ? 'Oggi si gioca dopo il quiz del giorno' : undefined}>
+              <SegmentedControl
+                ariaLabel="Quale giorno"
+                value={scelte.giorno === 'caso' || oggiChiuso ? 'caso' : 'oggi'}
+                onChange={(v) => {
+                  if (v === 'oggi' && oggiChiuso) return
+                  cambia({ giorno: v === 'caso' ? 'caso' : undefined })
+                }}
+                options={[
+                  { value: 'oggi', label: `Oggi, ${giornoInLettere(giornoDellAnno(gameDate()))}` },
+                  { value: 'caso', label: 'A caso' },
+                ]}
+              />
+            </Scelte>
+          )}
+          <Scelte titolo="Domande" valore={String(quante)}>
+            <Cursore
+              ariaLabel="Domande"
+              valori={conAmico ? QUANTE_SFIDA : QUANTE_LIBERE}
+              valore={quante}
+              etichetta={String}
+              onChange={(n) => cambia({ quante: n })}
             />
           </Scelte>
-          <Scelte titolo="Tempo">
-            <SegmentedControl
+          <Scelte titolo="Tempo per domanda" valore={secondi === null ? 'Senza limite' : `${secondi * perModo} s`}>
+            <Cursore
               ariaLabel="Tempo per domanda"
-              options={[
-                { value: 'senza', label: 'No' },
-                ...SECONDI_LIBERI.map((n) => ({ value: String(n), label: `${n * perModo} s` })),
-              ]}
-              value={scelte.secondi === null ? 'senza' : String(secondi)}
-              onChange={(v) => cambia({ secondi: v === 'senza' ? null : Number(v) })}
+              valori={conAmico ? SECONDI_SFIDA : TEMPI_LIBERI}
+              valore={secondi}
+              etichetta={(t) => (t === null ? 'Senza' : `${t * perModo} s`)}
+              voce={(t) => (t === null ? 'senza tempo' : `${t * perModo} secondi`)}
+              onChange={(t) => cambia({ secondi: t })}
             />
           </Scelte>
         </Opzioni>
@@ -605,7 +653,7 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
           {LIVELLI.map((l, i) => (
             <Riga
               key={l.notorieta}
-              icona={<Tacche piene={i + 1} colore={`var(--materia-${materia}-1)`} />}
+              icona={<Tacche piene={i + 1} colore={colore} />}
               titolo={l.nome}
               onClick={() => comincia(l.notorieta)}
             />
@@ -613,61 +661,114 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
         </Elenco>
       </Sezione>
 
-      <div className="quiz-scelta__via">
-        <Button
-          variant="tinted"
-          size="lg"
-          fullWidth
-          onClick={() => {
-            salvaScelte(scelte)
-            setSfida(true)
-          }}
-        >
-          <IconPeople size={20} /> Sfida un amico
-        </Button>
-      </div>
+      <SfidaQuiz open={sfida} onClose={() => setSfida(false)} scelte={{ ...scelte, quante, secondi }} />
 
-      <SfidaQuiz open={sfida} onClose={() => setSfida(false)} scelte={scelte} />
+      <Sheet open={foglio === 'zona'} onClose={() => setFoglio(null)} title="Dove">
+        <div className={`quiz-zone-tessere quiz-colori--${materia}`}>
+          {(['mondo', ...(conContinente ? CONTINENTI : [])] as Array<'mondo' | Continente>).map((z) => (
+            <button
+              key={z}
+              type="button"
+              aria-current={scelte.area === z || undefined}
+              className={`quiz-zona-tessera${scelte.area === z ? ' is-scelta' : ''}`}
+              onClick={() => {
+                cambia({ area: z })
+                setFoglio(null)
+              }}
+            >
+              <Sagoma zona={z} />
+              <span className="quiz-zona-tessera__nome">{nomeArea(z, ix)}</span>
+            </button>
+          ))}
+          {conPaese && (
+            <button
+              type="button"
+              aria-current={paese !== null || undefined}
+              className={`quiz-zona-tessera quiz-zona-tessera--paese${paese ? ' is-scelta' : ''}`}
+              disabled={!ix}
+              onClick={() => setFoglio('paese')}
+            >
+              <span className="quiz-zona-tessera__bandiera" aria-hidden="true">
+                {paese ? <img src={urlBandiera(paese.toLowerCase(), 80)} alt="" /> : <IconBandiera size={30} />}
+              </span>
+              <span className="quiz-zona-tessera__nome">{paese ? nomeArea(scelte.area, ix) : 'Un paese'}</span>
+            </button>
+          )}
+        </div>
+      </Sheet>
 
-      <Sheet open={paesiAperti} onClose={() => setPaesiAperti(false)} title="Scegli un paese">
+      <Sheet open={foglio === 'paese'} onClose={() => setFoglio(null)} title="Scegli un paese">
         <ElencoPaesi
           paesi={elencoPaesi}
           scelto={paese}
           cosa={PAROLE_PAESE[categoria] ?? ''}
           onScegli={(id) => {
             cambia({ area: `paese:${id}` })
-            setPaesiAperti(false)
+            setFoglio(null)
           }}
         />
       </Sheet>
+
+      {ambiti && (
+        <Sheet open={foglio === 'ambito'} onClose={() => setFoglio(null)} title={TITOLI_AMBITI[categoria] ?? ''}>
+          <Elenco>
+            {ambiti.map((a) => (
+              <Riga
+                key={a.id}
+                titolo={a.nome}
+                scelta={(scelte.ambito ?? 'tutti') === a.id}
+                onClick={() => {
+                  cambia({ ambito: a.id })
+                  setFoglio(null)
+                }}
+              />
+            ))}
+          </Elenco>
+        </Sheet>
+      )}
+
       <ComeSiGiocaQuiz open={regole} onClose={() => setRegole(false)} />
     </Pagina>
   )
 }
 
-/** Una capsula da scegliere: una zona, un ambito, un giorno. */
-function Capsula({
-  scelta,
-  disabilitata = false,
+/** Una riga che apre un foglio: il nome a sinistra, la scelta a destra, come nelle Impostazioni. */
+function RigaFoglio({
+  titolo,
+  valore,
+  icona,
   onClick,
-  children,
 }: {
-  scelta: boolean
-  disabilitata?: boolean
+  titolo: string
+  valore: string
+  icona?: ReactNode
   onClick: () => void
-  children: ReactNode
 }) {
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={scelta}
-      className={`quiz-zona${scelta ? ' is-scelta' : ''}`}
-      disabled={disabilitata}
-      onClick={onClick}
-    >
-      {children}
+    <button type="button" className="quiz-impostazione quiz-impostazione--riga" onClick={onClick}>
+      <span className="quiz-impostazione__titolo">{titolo}</span>
+      <span className="quiz-impostazione__valore">
+        {icona}
+        <span className="quiz-impostazione__scelta">{valore}</span>
+      </span>
+      <IconChevronRight size={18} className="quiz-impostazione__freccia" />
     </button>
+  )
+}
+
+/** La sagoma di una zona: le sue terre nel colore della materia, quelle intorno in grigio. */
+function Sagoma({ zona, piccola = false, colore }: { zona: 'mondo' | Continente; piccola?: boolean; colore?: string }) {
+  const s = SAGOME[zona]
+  return (
+    <svg
+      className={`sagoma${piccola ? ' sagoma--piccola' : ''}`}
+      viewBox={`0 0 ${s.larga} ${s.alta}`}
+      style={colore ? ({ '--m1': colore } as CSSProperties) : undefined}
+      aria-hidden="true"
+    >
+      <path className="sagoma__resto" d={s.resto} />
+      <path className="sagoma__zona" d={s.zona} />
+    </svg>
   )
 }
 
@@ -676,13 +777,34 @@ function Opzioni({ children }: { children: ReactNode }) {
   return <div className="quiz-impostazioni">{children}</div>
 }
 
-/** Una riga con il suo nome, se serve una riga che spiega, e sotto il controllo segmentato. */
-function Scelte({ titolo, sotto, children }: { titolo: string; sotto?: string; children: ReactNode }) {
+/**
+ * Una riga con il suo nome, se serve una riga che spiega, e sotto il
+ * controllo. `valore` e' quel che dice un cursore, scritto a destra del nome:
+ * sotto la pista lo coprirebbe il dito che lo trascina.
+ */
+function Scelte({
+  titolo,
+  sotto,
+  valore,
+  children,
+}: {
+  titolo: string
+  sotto?: string
+  valore?: string
+  children: ReactNode
+}) {
   return (
     <div className="quiz-impostazione">
-      <span className="quiz-impostazione__testi">
-        <span className="quiz-impostazione__titolo">{titolo}</span>
-        {sotto && <span className="quiz-impostazione__sotto">{sotto}</span>}
+      <span className="quiz-impostazione__testa">
+        <span className="quiz-impostazione__testi">
+          <span className="quiz-impostazione__titolo">{titolo}</span>
+          {sotto && <span className="quiz-impostazione__sotto">{sotto}</span>}
+        </span>
+        {valore && (
+          <span className="quiz-impostazione__numero" aria-hidden="true">
+            {valore}
+          </span>
+        )}
       </span>
       {children}
     </div>
