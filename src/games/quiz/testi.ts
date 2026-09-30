@@ -1,14 +1,83 @@
 import {
+  MATERIE,
+  NOMI_CATEGORIE,
   NOMI_CONTINENTI,
   NOMI_MODI,
   diGeografia,
   nomeAmbito,
   type CategoriaQuiz,
   type Continente,
+  type MateriaQuiz,
   type ModoQuiz,
 } from '@shared/quiz'
 import { giornoInLettere } from '@shared/quiz-cultura'
 import { NOMI_TIPI, type AreaQuiz, type IndiceQuiz, type TipoDomanda } from '@shared/quiz-domande'
+
+/** Che cosa c'e' in una materia, in una riga: sotto il suo nome, nel menu della libera. */
+export const DESCRIZIONI_MATERIE: Record<MateriaQuiz, string> = {
+  geografia: 'Capitali, città, bandiere, stati, mari, fiumi e laghi, anche sulla cartina muta',
+  storia: 'Le date famose, dall’antichità a oggi, e quel che accadde in questo giorno',
+  cultura: 'Quadri e pittori, libri, film e opere liriche',
+  scienza: 'Chimica, fisica, astronomia, scoperte, animali e piante, premi Nobel',
+}
+
+/**
+ * Una sottocategoria nella pagina di una materia: di solito una categoria, e
+ * nella scienza anche un argomento, perché la chimica e l'astronomia chiedono
+ * cose diverse e non sono un filtro, come i periodi dell'arte.
+ */
+export interface VoceMateria {
+  categoria: CategoriaQuiz
+  /** L'argomento, se la voce e' uno solo: allora non si sceglie piu' sotto. */
+  ambito?: string
+  nome: string
+  /** Che cosa si chiede, se non e' la descrizione della categoria. */
+  descrizione?: string
+}
+
+const perCategoria = (m: MateriaQuiz): VoceMateria[] =>
+  MATERIE.find((x) => x.id === m)!.categorie.map((categoria) => ({ categoria, nome: NOMI_CATEGORIE[categoria] }))
+
+export const VOCI_MATERIE: Record<MateriaQuiz, readonly VoceMateria[]> = {
+  geografia: perCategoria('geografia'),
+  storia: perCategoria('storia'),
+  cultura: perCategoria('cultura'),
+  scienza: [
+    { categoria: 'scienza', ambito: 'tutti', nome: 'Tutta la scienza' },
+    {
+      categoria: 'scienza',
+      ambito: 'chimica',
+      nome: 'Chimica',
+      descrizione: 'I simboli degli elementi e le formule dei composti.',
+    },
+    {
+      categoria: 'scienza',
+      ambito: 'fisica',
+      nome: 'Fisica',
+      descrizione: 'Le unità di misura: che cosa misurano, e da chi prendono il nome.',
+    },
+    {
+      categoria: 'scienza',
+      ambito: 'astronomia',
+      nome: 'Astronomia',
+      descrizione: 'I pianeti, il loro ordine dal Sole, e i loro satelliti.',
+    },
+    {
+      categoria: 'scienza',
+      ambito: 'scoperte',
+      nome: 'Scoperte e invenzioni',
+      descrizione: 'Chi ha fatto le grandi scoperte e le grandi invenzioni.',
+    },
+    { categoria: 'scienza', ambito: 'natura', nome: 'Animali e piante', descrizione: 'Il nome scientifico delle specie.' },
+    { categoria: 'nobel', nome: 'Premi Nobel' },
+  ],
+}
+
+/** La voce di una scelta: quella con il suo argomento, se c'e', o quella della categoria. */
+export function voceDi(materia: MateriaQuiz, categoria: CategoriaQuiz, ambito: string | undefined): VoceMateria | null {
+  const voci = VOCI_MATERIE[materia].filter((v) => v.categoria === categoria)
+  return voci.find((v) => v.ambito === (ambito ?? 'tutti')) ?? voci.find((v) => v.ambito === undefined) ?? null
+}
 
 /** Cosa si chiede in una categoria, in una riga: l'introduzione della partita. */
 export const DESCRIZIONI: Record<ModoQuiz, Record<CategoriaQuiz, string>> = {
@@ -95,7 +164,9 @@ export function dettagliPartita(
   ix: IndiceQuiz | null,
 ): string[] {
   if (diGeografia(s.categoria)) return [NOMI_MODI[s.modo ?? 'scelta'], nomeArea(s.area ?? 'mondo', ix)]
-  const cosa = nomeAmbito(s.categoria, s.ambito) ?? (s.giorno ? giornoInLettere(s.giorno) : null)
+  // Il giorno e' "03-12" per una partita, "caso" per le scelte di chi vuole un giorno a caso.
+  const giorno = s.giorno === 'caso' ? 'Un giorno a caso' : s.giorno ? giornoInLettere(s.giorno) : null
+  const cosa = nomeAmbito(s.categoria, s.ambito) ?? giorno
   return cosa ? [cosa] : []
 }
 

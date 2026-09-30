@@ -711,10 +711,17 @@ si rifanno, se nessuno le ha aperte. Oggi e il passato restano come sono, anche
 di un formato vecchio, e la colonna `formato` (migrazione `0016`) dice di quale.
 
 **Le città si giocano solo nella libera.** Sono troppe e troppo difficili per
-una partita uguale per tutti: `CATEGORIE_CLASSIFICATA` non le ha. La libera si
-sceglie per materia (`MATERIE`), poi per categoria; al posto della zona le
-altre materie hanno l'ambito (`AMBITI`: un periodo, un premio, un argomento),
-"Accadde oggi" il giorno. Anche il resto
+una partita uguale per tutti: `CATEGORIE_CLASSIFICATA` non le ha. La libera
+comincia da un menu delle materie (`/quiz/libera`), e ogni materia ha la sua
+pagina (`/quiz/libera/geografia`, `VOCI_MATERIE` in `quiz/testi.ts`) con le
+sottocategorie e le opzioni; la partita sta all'indirizzo del menu con le
+scelte (`?categoria=…`), così i link di prima funzionano ancora. Al posto della
+zona le altre materie hanno l'ambito (`AMBITI`: un periodo, un premio), "Accadde
+oggi" il giorno. Gli argomenti della scienza no: chimica e astronomia chiedono
+cose diverse, e nella pagina sono sottocategorie (una categoria con l'ambito
+fisso), mentre per il modello e per la classificata la scienza resta una
+categoria sola. Le opzioni della partita sono una per tutte le materie; la
+categoria, la zona e l'ambito si ricordano per materia. Anche il resto
 della classificata e' fisso — dieci domande, il tempo del server, la cartina che
 insegna, "Avanti" a mano, niente aiuti — mentre la libera sceglie tutto: fino a
 `QUANTE_MASSIME` domande (cinquanta), e nelle opzioni avanzate quali domande,
