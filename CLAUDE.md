@@ -58,6 +58,16 @@ finiscono nel valore — e non e' versionato, quindi un comportamento locale che
 non si spiega guardando `wrangler.toml` e' quasi sempre `.dev.vars`. Il cambio
 non ha effetto sul processo già avviato: va riavviato.
 
+**Una regola di `_headers` prende anche le pagine dell'app.** Le Pages servono
+ogni pagina con `index.html`, allo stesso indirizzo, e le regole di `_headers`
+guardano l'indirizzo: `/scarabeo/*`, scritta per il dizionario, dava un anno di
+cache anche a /scarabeo/classificata, e un browser poteva tenersi per mesi
+l'app di quel giorno. Le regole "per sempre" nominano i file o stanno sotto
+cartelle senza pagine (`/assets/`, `/dati/`), e un test
+(`scripts/__tests__/headers.test.ts`) le prova sulle rotte di `App.tsx`. Il
+service worker riconvalida ogni navigazione (`cache: 'no-cache'`), per chi ha
+ancora in cache una pagina di allora.
+
 ## Invarianti da non rompere
 
 **Ogni soluzione deve essere anche un tentativo ammesso**, altrimenti il gioco
@@ -462,9 +472,13 @@ lasciando a meta' quella in corso la conta persa, come nella battaglia. I
 motori misurano il tempo con `Date.now()`, che nel Worker di Cloudflare non
 avanza durante il calcolo: non si chiamano mai dal server.
 
-**Le pagine dei tavolieri si scaricano a parte.** Regole, pezzi e tavolieri
-sono un quinto dell'app: `App.tsx` le carica con `lazy`, in un `Suspense`
-attorno alle rotte, e le precarica dopo un paio di secondi. React Router naviga
+**Le pagine dei tavolieri si scaricano a parte, e quelle del quiz anche.**
+Regole, pezzi e tavolieri sono un quinto dell'app, e i generatori delle domande
+di tutte le materie del quiz un altro bel pezzo: `App.tsx` le carica con `lazy`,
+in un `Suspense` attorno alle rotte, e le precarica dopo un paio di secondi.
+Le statistiche delle libere del quiz stanno in `quiz/statistiche.ts` perché le
+leggono anche la pagina del gioco e il profilo, che altrimenti si porterebbero
+dietro i generatori. React Router naviga
 dentro una transizione di React, quindi la schermata di prima resta finché la
 nuova e' pronta, e la View Transition la fotografa montata. Per questo gli
 avvisi degli inviti e la registrazione prendono i nomi da `tavolo/nomi.ts` e
@@ -565,7 +579,8 @@ giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
 punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
 Wordle con una parola a caso, Scarabeo a turni contro il computer, cruciverba
 da una scorta di schemi, battaglia contro il computer o contro un amico, quiz
-sulla categoria, il modo, la zona e le opzioni che si scelgono. Gli
+sulla materia, la categoria, il modo, la zona o l'ambito e le opzioni che si
+scelgono. Gli
 indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 (`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
 nuovi in `App.tsx`). I giochi da tavolo non hanno ne' l'una ne' l'altra: la
@@ -671,26 +686,35 @@ rotta pubblica `GET /api/inviti/:codice` cerca il codice fra quelli della
 battaglia e fra quelli del quiz.
 
 **Le domande del quiz si fanno la notte, e la classificata e' una categoria
-sola, in un modo solo.** `scripts/genera-quiz.ts` (il passo "Il quiz" di
-`cruciverba.yml`, e il deploy per le prossime due settimane) scrive in
-`quiz_giornate` le dieci domande di ogni giornata, risposte comprese, con
-`INSERT OR IGNORE`: come gli schemi del cruciverba, una giornata scritta non
+sola, di qualunque materia, in un modo solo.** `scripts/genera-quiz.ts` (il
+passo "Il quiz" di `cruciverba.yml`, e il deploy per le prossime due settimane)
+scrive in `quiz_giornate` le dieci domande di ogni giornata, risposte comprese,
+con `INSERT OR IGNORE`: come gli schemi del cruciverba, una giornata scritta non
 cambia piu'. Sono deterministiche dal numero del giorno, evitano i soggetti
 della stessa categoria delle cinque settimane prima, e categoria e modo li
-decide `giornataDelQuiz`: giri mescolati delle categorie della classificata,
-mai la stessa due giorni di fila, e due giorni per giro sulla cartina muta
-(`GIORNI_CARTINA_PER_GIRO`), mai vicini. Se la giornata manca il gioco risponde
-`QUIZ_ASSENTE` (503) e la card dell'hub dice "Non ancora pronto": in locale,
-`npm run quiz:locale`.
+decide `giornataDelQuiz`: giri di quindici giorni, uno per categoria della
+classificata, in un ordine mescolato ogni volta. Le otto categorie delle altre
+materie fanno da divisori — ogni giorno di geografia sta dopo una di loro, e
+ogni giro comincia con una di loro — quindi due giorni di geografia non sono
+mai di fila, nemmeno a cavallo di due giri; al confine il primo giorno non
+ripete l'ultimo del giro prima. Due giorni di geografia per giro sono sulla
+cartina muta (`GIORNI_CARTINA_PER_GIRO`). Se la giornata manca il gioco
+risponde `QUIZ_ASSENTE` (503) e la card dell'hub dice "Non ancora pronto": in
+locale, `npm run quiz:locale`.
 
 L'unica eccezione al "non cambia piu'" e' `FORMATO`: una giornata di un formato
 vecchio **nel futuro e che nessuno ha aperto** si riscrive (`DA_RIFARE`), perché
 nessuno l'ha vista. Il 2 e' quello del modo e del `luogo` di ogni domanda, che la
-cartina mostra a risposta data; oggi e il passato restano come sono, anche di un
-formato vecchio, e la colonna `formato` (migrazione `0016`) dice di quale.
+cartina mostra a risposta data; il 3 quello delle altre materie, con il
+calendario nuovo: le giornate gia' scritte con il calendario di sola geografia
+si rifanno, se nessuno le ha aperte. Oggi e il passato restano come sono, anche
+di un formato vecchio, e la colonna `formato` (migrazione `0016`) dice di quale.
 
 **Le città si giocano solo nella libera.** Sono troppe e troppo difficili per
-una partita uguale per tutti: `CATEGORIE_CLASSIFICATA` non le ha. Anche il resto
+una partita uguale per tutti: `CATEGORIE_CLASSIFICATA` non le ha. La libera si
+sceglie per materia (`MATERIE`), poi per categoria; al posto della zona le
+altre materie hanno l'ambito (`AMBITI`: un periodo, un premio, un argomento),
+"Accadde oggi" il giorno. Anche il resto
 della classificata e' fisso — dieci domande, il tempo del server, la cartina che
 insegna, "Avanti" a mano, niente aiuti — mentre la libera sceglie tutto: fino a
 `QUANTE_MASSIME` domande (cinquanta), e nelle opzioni avanzate quali domande,
@@ -771,7 +795,66 @@ laghi (lo Snake) non ha una linea, e non si chiede sulla cartina.
 "degli Stati Uniti", "nei Paesi Bassi", "in Israele" — e lo script si ferma se
 nel riassunto c'e' un paese che non ci sta. Le etichette di Wikidata si
 prendono in italiano, poi `mul`, poi inglese: la capitale della Norvegia ha solo
-`mul`.
+`mul`. Per le altre materie la tabella e' quella della prima parola
+(`GENERE_PAROLE`: "la battaglia", "il trattato", "lo sbarco", "gli
+accordi"), e il verbo segue il tipo del fatto: "si combatté", "fu firmato",
+"cominciò". Una parola che la tabella non conosce non si indovina: la domanda
+diventa «Battaglia di Canne»: in che anno?, che e' brutta ma giusta.
+
+**Le altre materie del quiz sono file statici, e il server non li legge.**
+Arte, libri, cinema, lirica, Nobel, storia e scienza stanno in
+`public/dati/quiz/<materia>.json`, "Accadde oggi" in
+`public/dati/quiz/oggi/MM-GG.json`, uno per giorno dell'anno. Li scrivono
+`npm run quiz:cultura` e `npm run quiz:oggi` da Wikidata (con QLever) e da
+Wikipedia, e sono versionati come le parole del Wordle: il build non va in
+rete, e una fonte che cambia non cambia le domande. L'indirizzo porta
+l'impronta (`?v=`, in `shared/quiz-cultura-versioni.ts`), quindi `_headers` li
+tiene in cache per sempre. Il browser li scarica per la libera e per la sfida;
+la classificata la scrive lo script della notte, che li legge dal repository e
+salva in `quiz_giornate` solo le dieci domande del giorno, perché le risposte
+della classificata non possono stare nel telefono. Sotto `/dati/` e non sotto
+`/quiz/`, dove ci sono le pagine dell'app (vedi la nota su `_headers`).
+
+**Una risposta sbagliata deve essere sicuramente sbagliata, e credibile.** I
+generatori delle altre materie (`shared/quiz-domande-cultura.ts`) scartano le
+opzioni che potrebbero essere giuste: chi ha vinto lo stesso Nobel nello stesso
+anno non e' mai fra le sbagliate, e l'altro anno di chi ne ha vinti due non e'
+un anno sbagliato; una corrente sbagliata e' una che al tempo del quadro non
+c'era, di venticinque anni almeno; un titolo che hanno piu' quadri
+("Autoritratto") non si chiede. Gli anni sbagliati sono vicini a quello giusto,
+tanto piu' vicini quanto piu' e' recente (di uno per l'anno scorso, di cento
+per l'antichità), mai l'anno zero e mai nel futuro, e la finestra si sposta
+perché la risposta giusta non sia sempre quella di mezzo: un test conta le
+posizioni. Un secolo non si chiede a meno di due anni dal suo confine, e un
+evento con l'anno nel nome ("terremoto di Messina del 1908") non si chiede per
+l'anno.
+
+**La scheda che insegna arriva con la risposta.** Per le materie senza cartina,
+a risposta data, la carta diventa una scheda: di chi e' il quadro, la corrente,
+la tecnica, dove si trova, due frasi da Wikipedia e la voce intera. E' la
+stessa opzione della cartina che insegna (`imparo`), e nella libera si chiama
+"Spiegazione dopo ogni risposta". La compone il generatore
+(`SpiegazioneQuiz`), e come la risposta resta sul server finché non si risponde:
+`senzaRisposta` non la manda. Le domande lunghe da leggere (`lunga`: quattro
+fatti fra cui scegliere quale viene prima) hanno venti secondi invece di
+quindici (`SECONDI_LUNGA`), nella classificata, nella libera e nella sfida.
+
+**I quadri vengono da Commons, e il nome del file si vede.** Solo JPEG e PNG di
+pubblico dominio, larghi almeno 960 punti: dal 2025 Commons fa le miniature
+solo di misure standard, e l'app chiede 330, 500 e 960 (`LARGHEZZE_IMMAGINI`).
+Si scaricano dal browser, come le bandiere, e l'indirizzo porta il nome del
+file, che a volte dice il quadro: e' lo stesso compromesso del codice del paese
+nell'indirizzo delle bandiere, e il tempo resta la difesa della classifica. Il
+posto del quadro lo tengono le sue proporzioni (`r`) prima che arrivi, e un
+quadro che non arriva lo dice senza bloccare la domanda.
+
+**"Accadde oggi" fuori dalla classificata non gioca il giorno del quiz.** Quando
+la classificata di oggi e' "Accadde oggi", i suoi fatti sono gli stessi del
+file di oggi, e una libera giocata prima la svelerebbe: la libera prende un
+giorno a caso finché la classificata non e' chiusa, e la sfida sempre, perché
+l'altro potrebbe non averla giocata (`giornoDellaPartita` in
+`src/games/quiz/fonti.ts`). La sfida porta il giorno nelle impostazioni, e la
+rivincita resta su quello.
 
 **La soluzione non deve arrivare al client prima della fine.** `toState()` in
 `server/routes/wordle.ts` mette `answer: null` finché lo stato è `playing`; è

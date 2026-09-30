@@ -188,3 +188,24 @@ la GPL; qui si usano con la **BSD**, che chiede di riportare l'avviso:
 
 Nel file i disegni sono gli stessi, senza gli spazi e con il `viewBox` al posto
 delle misure; nell'app il credito sta nel profilo, in «Fonti e licenze».
+
+## Le altre materie del quiz
+
+I file di `public/dati/quiz/` (arte, libri, cinema, lirica, Nobel, storia,
+scienza, e un file per ogni giorno di «Accadde oggi») vengono da tre fonti:
+
+- **[Wikidata](https://www.wikidata.org)**, sotto **CC0**: i quadri, i libri, i
+  film, le opere, i premi, i fatti della storia, gli elementi, le unità, i
+  pianeti, le scoperte, le specie, e chi è nato in ogni giorno dell'anno;
+- **[Wikipedia in italiano](https://it.wikipedia.org)**, sotto
+  **[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it)**:
+  le frasi delle spiegazioni (l'inizio della voce di una corrente, di un
+  fatto) e i fatti di «Accadde oggi», dalla rubrica «Accadde oggi» della
+  pagina principale. I testi sono accorciati; ogni spiegazione porta alla sua
+  voce, e il credito sta nelle regole del quiz e nel profilo;
+- **[Wikimedia Commons](https://commons.wikimedia.org)**: le immagini dei
+  quadri, solo quelle di **pubblico dominio** o **CC0**. Non sono nei file: i
+  file ne hanno il nome, e il browser le scarica da Commons.
+
+Rigenerare: `npm run quiz:cultura` e `npm run quiz:oggi` (le risposte delle
+fonti restano in `scripts/.cache/`, non versionata).

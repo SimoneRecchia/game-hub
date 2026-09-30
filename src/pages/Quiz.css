@@ -111,10 +111,11 @@
   color: var(--label-tertiary);
 }
 
+/* Il segno sta sull'angolo dell'icona: nell'angolo della tessera finiva sopra i nomi lunghi ("Accadde oggi"). */
 .quiz-tessera__segno {
   position: absolute;
-  top: 7px;
-  right: 7px;
+  top: 5px;
+  left: 36px;
   display: grid;
   place-items: center;
   width: 20px;
@@ -122,6 +123,7 @@
   border-radius: 50%;
   background: var(--brand);
   color: #fff;
+  box-shadow: 0 0 0 2px var(--surface);
   animation: quiz-segno 320ms var(--ease-bounce);
 }
 
