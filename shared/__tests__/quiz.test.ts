@@ -3,6 +3,7 @@ import { mulberry32 } from '../daily'
 import {
   CATEGORIE as TUTTE_LE_CATEGORIE,
   CATEGORIE_CLASSIFICATA as CLASSIFICATA_DI_TUTTE,
+  CONFINE_DEL_GIRO,
   CONTINENTI,
   GIORNI_CARTINA_PER_GIRO,
   GIORNI_PER_GIRO,
@@ -104,13 +105,23 @@ describe('l’italiano delle domande', () => {
 
 describe('la giornata della classificata', () => {
   const n = GIORNI_PER_GIRO
-  it('passa da tutte le categorie di tutte le materie a ogni giro, e non si ripete mai due giorni di fila', () => {
+  it('passa da tutte le categorie di tutte le materie a ogni giro', () => {
     expect(n).toBe(CLASSIFICATA_DI_TUTTE.length)
     for (let giro = 0; giro < 100; giro += 1) {
       const giorni = Array.from({ length: n }, (_, i) => giornataDelQuiz(giro * n + i + 1).categoria)
       expect(new Set(giorni).size).toBe(n)
     }
-    for (let g = 2; g <= 1500; g += 1) expect(giornataDelQuiz(g).categoria).not.toBe(giornataDelQuiz(g - 1).categoria)
+  })
+
+  it('non ripete una categoria prima di cinque giorni, nemmeno fra un giro e l’altro', () => {
+    expect(CONFINE_DEL_GIRO).toBe(4)
+    const ultimo = new Map<CategoriaQuiz, number>()
+    for (let g = 1; g <= n * 400; g += 1) {
+      const { categoria } = giornataDelQuiz(g)
+      const prima = ultimo.get(categoria)
+      if (prima !== undefined) expect(g - prima, `giorno ${g}`).toBeGreaterThan(CONFINE_DEL_GIRO)
+      ultimo.set(categoria, g)
+    }
   })
 
   it('non mette mai due giorni di geografia di fila, nemmeno fra un giro e l’altro', () => {

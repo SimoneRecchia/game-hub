@@ -20,13 +20,13 @@ import type {
   UnitaQuiz,
 } from '../../shared/quiz-cultura'
 import { persone, type Persona } from './persone'
-import { interroga } from './rete'
+import { interroga, letture } from './rete'
 import {
   anni,
   annoSicuro,
   aPezzi,
-  conSpinta,
   nomeItaliano,
+  notorietaItaliana,
   numero,
   perFama,
   perNotorieta,
@@ -426,6 +426,11 @@ SELECT ?q ?alias ?comune WHERE {
     ]),
   ])
 
+  /* ── Quanto e' nota ogni voce, con le letture di tutte le liste insieme ── */
+  const tutte = [sElementi, sComposti, sUnita, sAstri, sScoperte, sSpecie].flatMap((m) => [...m.values()])
+  const lette = await letture(tutte.map((sc) => sc.voce).filter((t): t is string => !!t))
+  const nota = (sc: Scheda | undefined) => notorietaItaliana(sc?.voci ?? 0, lette.get(sc?.voce ?? '') ?? 0)
+
   /* ── Gli elementi, finiti ── */
   const elementi: ElementoQuiz[] = []
   for (const [z, { id, s }] of perNumero) {
@@ -448,13 +453,13 @@ SELECT ?q ?alias ?comune WHERE {
       f: 0,
     })
   }
-  const famaElementi = perNotorieta(elementi, (e) => sElementi.get(e.id)?.voci ?? 0)
+  const famaElementi = perNotorieta(elementi, (e) => nota(sElementi.get(e.id)))
   for (const e of elementi) e.f = famaElementi.get(e.id) ?? 0
 
   /* ── I composti, finiti ── */
   const perFormula = new Map<string, CompostoQuiz>()
   const ordineComposti = [...idComposti].sort(
-    (a, b) => (vociComposti.get(b) ?? 0) - (vociComposti.get(a) ?? 0) || a.localeCompare(b),
+    (a, b) => nota(sComposti.get(b)) - nota(sComposti.get(a)) || a.localeCompare(b),
   )
   for (const id of ordineComposti) {
     if (primi(vComposti, id, 'P31').includes('Q11344')) continue
@@ -474,7 +479,7 @@ SELECT ?q ?alias ?comune WHERE {
     if (perFormula.size >= COMPOSTI) break
   }
   const composti = [...perFormula.values()]
-  const famaComposti = perNotorieta(composti, (c) => vociComposti.get(c.id) ?? 0)
+  const famaComposti = perNotorieta(composti, (c) => nota(sComposti.get(c.id)))
   for (const c of composti) c.f = famaComposti.get(c.id) ?? 0
 
   /* ── Le unità, finite ── */
@@ -504,7 +509,7 @@ SELECT ?q ?alias ?comune WHERE {
       f: 0,
     })
   }
-  const famaUnita = perNotorieta(unita, (u) => sUnita.get(u.id)?.voci ?? 0)
+  const famaUnita = perNotorieta(unita, (u) => nota(sUnita.get(u.id)))
   for (const u of unita) u.f = famaUnita.get(u.id) ?? 0
 
   /* ── Gli astri, finiti ── */
@@ -540,7 +545,7 @@ SELECT ?q ?alias ?comune WHERE {
       f: 0,
     })
   }
-  const famaAstri = perNotorieta(astri, (a) => sAstri.get(a.id)?.voci ?? 0)
+  const famaAstri = perNotorieta(astri, (a) => nota(sAstri.get(a.id)))
   for (const a of astri) a.f = famaAstri.get(a.id) ?? 0
 
   /* ── Le scoperte, finite ── */
@@ -569,8 +574,7 @@ SELECT ?q ?alias ?comune WHERE {
       vite.every(({ na, mo }) => (na === undefined || anno > na + 5) && (mo === undefined || anno <= mo + 2))
     )
   })
-  const italianaScoperta = (id: string) => (scopritori.get(id) ?? []).some((p) => gente.get(p)?.it)
-  const pesoScoperta = (id: string) => conSpinta(vociScoperte.get(id) ?? 0, italianaScoperta(id))
+  const pesoScoperta = (id: string) => nota(sScoperte.get(id))
   const sceltaScoperte = titoliUnici(
     buone,
     (id) => nomeItaliano(sScoperte.get(id))!,
@@ -632,11 +636,11 @@ SELECT ?q ?alias ?comune WHERE {
     (id) => vociSpecie.get(id) ?? 0,
     () => '',
   )
-    .sort((a, b) => (vociSpecie.get(b) ?? 0) - (vociSpecie.get(a) ?? 0) || a.localeCompare(b))
+    .sort((a, b) => nota(sSpecie.get(b)) - nota(sSpecie.get(a)) || a.localeCompare(b))
     .slice(0, SPECIE)
   const famaSpecie = perNotorieta(
     sceltaSpecie.map((id) => ({ id })),
-    (x) => vociSpecie.get(x.id) ?? 0,
+    (x) => nota(sSpecie.get(x.id)),
   )
   const specie: SpecieQuiz[] = sceltaSpecie.map((id) => ({
     id,

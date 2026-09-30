@@ -35,14 +35,15 @@ import {
   annoDaData,
   annoSicuro,
   aPezzi,
-  conSpinta,
   nomeItaliano,
+  notorietaItaliana,
   perFama,
   perNotorieta,
   primi,
   schede,
   valori,
 } from './wikidata'
+import { letture } from './rete'
 
 /** Una persona, prima della notorietà: quella si calcola dentro l'elenco di ogni materia. */
 export interface Persona extends Omit<PersonaQuiz, 'f'> {
@@ -284,9 +285,10 @@ export function personaQuiz(p: Persona, f: number): PersonaQuiz {
   }
 }
 
-/** Le persone di un elenco come le vuole lo schema, dalla piu' nota: le italiane contano un po' di piu'. */
-export function elencoPersone(voci: readonly Persona[]): PersonaQuiz[] {
-  const fama = perNotorieta(voci, (p) => conSpinta(p.voci, !!p.it))
+/** Le persone di un elenco come le vuole lo schema, dalla piu' nota a chi gioca in italiano. */
+export async function elencoPersone(voci: readonly Persona[]): Promise<PersonaQuiz[]> {
+  const lette = await letture(voci.map((p) => p.w).filter((t): t is string => !!t))
+  const fama = perNotorieta(voci, (p) => notorietaItaliana(p.voci, lette.get(p.w ?? '') ?? 0))
   return perFama(voci.map((p) => personaQuiz(p, fama.get(p.id) ?? 0)))
 }
 

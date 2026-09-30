@@ -314,14 +314,19 @@ export function perFama<T extends { id: string; f: number }>(voci: readonly T[])
   return [...voci].sort((a, b) => b.f - a.f || confrontaId(a.id, b.id))
 }
 
-/**
- * Le voci italiane contano un po' di piu': il quiz e' per chi parla italiano, e
- * "Il quarto stato" si studia a scuola anche se ha meno Wikipedia della
- * "Colazione sull'erba".
- */
-export const SPINTA_ITALIANA = 1.4
+/** Un anno di letture che si da' a ogni voce, perché senza la voce italiana decidano le Wikipedia. */
+const LETTURE_MINIME = 1_000
 
-export const conSpinta = (voci: number, italiano: boolean) => voci * (italiano ? SPINTA_ITALIANA : 1)
+/**
+ * Quanto e' nota una voce a chi gioca in italiano: quanto si legge la sua voce
+ * di Wikipedia in italiano (`letture`), per la radice di quante Wikipedia ne
+ * parlano. Le Wikipedia da sole dicono quel che e' noto nel mondo: "Il fu Mattia
+ * Pascal" ne ha dodici, meno della seconda lettera ai Tessalonicesi, ma in
+ * italiano si legge dieci volte di piu'. Le letture da sole seguirebbero la
+ * televisione; la radice le tiene insieme senza che le Wikipedia pesino quanto
+ * loro.
+ */
+export const notorietaItaliana = (voci: number, lette: number) => (lette + LETTURE_MINIME) * Math.sqrt(voci)
 
 /** I valori nell'ordine di Wikidata, dove si sa; quelli che l'ordine non ha vanno in fondo, dal piu' noto. */
 export function inOrdine(

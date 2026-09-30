@@ -14,14 +14,14 @@ import type { DatiLirica, OperaQuiz } from '../../shared/quiz-cultura'
 import { lingueDi } from './lingue'
 import { cittaDi, sonoCitta } from './luoghi'
 import { elencoPersone, persone } from './persone'
-import { interroga, ordineDichiarazioni } from './rete'
+import { interroga, letture, ordineDichiarazioni } from './rete'
 import {
   anni,
   annoSicuro,
-  conSpinta,
   inOrdine,
   maiuscolaIniziale,
   nomeItaliano,
+  notorietaItaliana,
   numero,
   perFama,
   perNotorieta,
@@ -76,7 +76,8 @@ export async function lirica(): Promise<Omit<DatiLirica, 'versione'>> {
   const nomiLingue = await schede('lirica-lingue', [...new Set(conCompositore.flatMap((id) => primi(v, id, 'P407')))])
   const lingue = (id: string) => lingueDi(primi(v, id, 'P407'), nomiLingue)
   const italiano = (id: string) => umani(id).some((c) => compositori.get(c)?.it) || lingue(id).includes('italiano')
-  const peso = (id: string) => conSpinta(voci.get(id) ?? 0, italiano(id))
+  const lette = await letture(conCompositore.map((id) => s.get(id)?.voce).filter((t): t is string => !!t))
+  const peso = (id: string) => notorietaItaliana(voci.get(id) ?? 0, lette.get(s.get(id)?.voce ?? '') ?? 0)
   const unici = titoliUnici(
     conCompositore.filter((id) => !NON_OPERE.has(id)),
     (id) => titoloItaliano(s.get(id))!,
@@ -139,5 +140,5 @@ export async function lirica(): Promise<Omit<DatiLirica, 'versione'>> {
     }
   })
   const usati = [...new Set(elenco.flatMap((o) => o.c))].map((c) => compositori.get(c)!).filter(Boolean)
-  return { opere: perFama(elenco), compositori: elencoPersone(usati) }
+  return { opere: perFama(elenco), compositori: await elencoPersone(usati) }
 }

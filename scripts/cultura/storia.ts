@@ -19,13 +19,13 @@
 
 import type { DatiStoria, EventoQuiz, TipoEvento } from '../../shared/quiz-cultura'
 import { ITALIA } from './persone'
-import { interroga } from './rete'
+import { interroga, letture } from './rete'
 import {
   anni,
   annoSicuro,
   aPezzi,
-  conSpinta,
   nomeItaliano,
+  notorietaItaliana,
   numero,
   perFama,
   perNotorieta,
@@ -273,7 +273,8 @@ export async function storia(): Promise<Omit<DatiStoria, 'versione'>> {
     primi(v, id, 'P17').some((p) => italiani.has(p)) ||
     primi(v, id, 'P276').some((l) => primi(paesiLuoghi, l, 'P17').includes(ITALIA)) ||
     primi(v, id, 'P710').some((p) => italiani.has(p))
-  const peso = (id: string) => conSpinta(voci.get(id) ?? 0, italiano(id))
+  const lette = await letture(conAnno.map((id) => s.get(id)?.voce).filter((t): t is string => !!t))
+  const peso = (id: string) => notorietaItaliana(voci.get(id) ?? 0, lette.get(s.get(id)?.voce ?? '') ?? 0)
   const unici = titoliUnici(conAnno, (id) => titoloItaliano(s.get(id))!, (id) => voci.get(id) ?? 0, () => '')
   const scelti = unici.sort((a, b) => peso(b) - peso(a) || a.localeCompare(b)).slice(0, EVENTI)
   console.log(
