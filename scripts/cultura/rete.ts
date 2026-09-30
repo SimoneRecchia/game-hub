@@ -16,7 +16,8 @@
  *
  * Commons e Wikipedia si chiedono a gruppi (cinquanta file, venti voci), ma si
  * salvano voce per voce: se l'elenco cambia di poco, si chiede solo quel che
- * manca.
+ * manca. Le letture delle voci (`letture`) sono l'eccezione: il servizio delle
+ * statistiche ne da' una per richiesta, e si chiedono in parallelo.
  */
 
 import { createHash } from 'node:crypto'
@@ -68,6 +69,8 @@ const INTERVALLI: Record<string, number> = {
   commons: 1_600,
   wikipedia: 1_600,
   wikidata: 1_600,
+  // Le letture vanno in parallelo (`IN_VIAGGIO`), e il limite e' quello.
+  letture: 0,
 }
 
 const pausa = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -383,6 +386,57 @@ export async function introduzioni(titoli: readonly string[]): Promise<Map<strin
     scriviArchivio('wikipedia', archivio)
   }
   return new Map(titoli.map((t) => [t, archivio[t] ?? null]))
+}
+
+/** L'anno delle letture: uno intero e passato, così rifare lo script da' gli stessi numeri. */
+const ANNO_LETTURE = 2025
+
+/** Quante richieste delle letture sono in viaggio insieme: il servizio ne regge cento al secondo. */
+const IN_VIAGGIO = 6
+
+/**
+ * Quanto si legge in un anno ogni voce di Wikipedia in italiano, per titolo: le
+ * visite di un mese tipico (la mediana dei dodici) per dodici. La mediana e non
+ * la somma, perché un mese solo — un film in televisione, un anniversario, un
+ * giro di programmi che si fingono persone — non faccia famosa una voce
+ * qualunque. Zero se la voce non ha visite, o non c'e'.
+ *
+ * Il servizio delle statistiche risponde una voce alla volta: qui se ne chiedono
+ * `IN_VIAGGIO` insieme, e l'archivio si salva ogni tanto e alla fine.
+ */
+export async function letture(titoli: readonly string[]): Promise<Map<string, number>> {
+  const archivio = leggiArchivio<number>('letture')
+  const mancano = [...new Set(titoli)].filter((t) => !(t in archivio))
+  if (mancano.length > 0) console.log(`  Wikipedia: le letture di ${mancano.length} voci`)
+  let prossima = 0
+  let fatte = 0
+  const lavora = async () => {
+    while (prossima < mancano.length) {
+      const titolo = mancano[prossima]
+      prossima += 1
+      const url =
+        'https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/it.wikipedia/all-access/user/' +
+        `${encodeURIComponent(titolo.replace(/ /g, '_'))}/monthly/${ANNO_LETTURE}010100/${ANNO_LETTURE}123100`
+      let mesi: number[] = []
+      try {
+        const risposta = JSON.parse(await richiesta('letture', url, {}, 30_000, 5)) as { items?: { views: number }[] }
+        mesi = (risposta.items ?? []).map((i) => i.views)
+      } catch (e) {
+        // Una voce senza visite nell'anno il servizio non la conosce: 404.
+        if (!(e instanceof ErroreDefinitivo && e.message.startsWith('404'))) throw e
+      }
+      const dodici = [...mesi, ...Array<number>(Math.max(0, 12 - mesi.length)).fill(0)].sort((a, b) => a - b)
+      archivio[titolo] = Math.round(((dodici[5] + dodici[6]) / 2) * 12)
+      fatte += 1
+      if (fatte % 250 === 0) {
+        scriviArchivio('letture', archivio)
+        console.log(`    ${fatte} di ${mancano.length}`)
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: IN_VIAGGIO }, lavora))
+  if (mancano.length > 0) scriviArchivio('letture', archivio)
+  return new Map(titoli.map((t) => [t, archivio[t] ?? 0]))
 }
 
 interface Dichiarazione {

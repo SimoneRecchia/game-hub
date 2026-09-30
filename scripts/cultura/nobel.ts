@@ -51,5 +51,5 @@ export async function nobel(): Promise<Omit<DatiNobel, 'versione'>> {
     )
   console.log(`  ${perChiave.size} premi con l'anno, ${premi.length} con il nome di chi l'ha vinto`)
   const usati = [...new Set(premi.map((p) => p.chi))].map((id) => premiati.get(id)!)
-  return { premi, premiati: elencoPersone(usati) }
+  return { premi, premiati: await elencoPersone(usati) }
 }

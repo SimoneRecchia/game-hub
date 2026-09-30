@@ -207,5 +207,11 @@ scienza, e un file per ogni giorno di «Accadde oggi») vengono da tre fonti:
   quadri, solo quelle di **pubblico dominio** o **CC0**. Non sono nei file: i
   file ne hanno il nome, e il browser le scarica da Commons.
 
+Quanto è nota una voce lo dicono anche le visite del 2025 alle voci di
+Wikipedia in italiano, dal
+[servizio delle statistiche di Wikimedia](https://doc.wikimedia.org/generated-data-platform/aqs/analytics-api/reference/page-views.html)
+(**CC0**): decidono quali voci entrano e quanto è difficile una domanda, e nei
+file restano solo come notorietà (`f`).
+
 Rigenerare: `npm run quiz:cultura` e `npm run quiz:oggi` (le risposte delle
 fonti restano in `scripts/.cache/`, non versionata).

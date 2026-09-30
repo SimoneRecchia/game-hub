@@ -696,8 +696,12 @@ decide `giornataDelQuiz`: giri di quindici giorni, uno per categoria della
 classificata, in un ordine mescolato ogni volta. Le otto categorie delle altre
 materie fanno da divisori — ogni giorno di geografia sta dopo una di loro, e
 ogni giro comincia con una di loro — quindi due giorni di geografia non sono
-mai di fila, nemmeno a cavallo di due giri; al confine il primo giorno non
-ripete l'ultimo del giro prima. Due giorni di geografia per giro sono sulla
+mai di fila, nemmeno a cavallo di due giri. Al confine i primi quattro giorni
+non ripetono gli ultimi quattro del giro prima (`CONFINE_DEL_GIRO`), quindi una
+categoria non torna prima di cinque giorni: prima al cambio di giro si leggeva
+"Libri, Fiumi, Libri, Fiumi". Il calendario lo usa solo lo script della notte,
+il server legge la categoria dalla giornata salvata: cambiarlo tocca solo i
+giorni ancora da scrivere. Due giorni di geografia per giro sono sulla
 cartina muta (`GIORNI_CARTINA_PER_GIRO`). Se la giornata manca il gioco
 risponde `QUIZ_ASSENTE` (503) e la card dell'hub dice "Non ancora pronto": in
 locale, `npm run quiz:locale`.
@@ -821,6 +825,19 @@ la classificata la scrive lo script della notte, che li legge dal repository e
 salva in `quiz_giornate` solo le dieci domande del giorno, perché le risposte
 della classificata non possono stare nel telefono. Sotto `/dati/` e non sotto
 `/quiz/`, dove ci sono le pagine dell'app (vedi la nota su `_headers`).
+
+**Quanto e' nota una voce lo dice anche la Wikipedia in italiano.** Le
+Wikipedia che parlano di una voce dicono quel che e' noto nel mondo, e da sole
+mettevano "Il fu Mattia Pascal", che ne ha dodici, dietro la seconda lettera
+ai Tessalonicesi. `notorietaItaliana` le prende sotto radice e le moltiplica per
+quanto si legge la voce italiana in un anno (`letture`: un mese tipico per
+dodici, del 2025, perché rifare lo script dia gli stessi numeri). Decide chi
+entra negli elenchi e la fascia di difficoltà (`f`) in tutte le materie tranne
+"Accadde oggi", che ha il suo punteggio. Prima le voci italiane pesavano 1,4
+volte le altre — due volte e mezzo nei libri, due nei film — e non bastava mai:
+un classico della scuola non e' una voce italiana un po' nota, e' una voce nota.
+I film d'animazione pesano ancora meno della meta' (`PESO_ANIMAZIONE`): chi li
+ha diretti non lo sa nessuno.
 
 **Una risposta sbagliata deve essere sicuramente sbagliata, e credibile.** I
 generatori delle altre materie (`shared/quiz-domande-cultura.ts`) scartano le

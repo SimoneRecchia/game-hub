@@ -27,15 +27,15 @@ import {
 } from '../../shared/quiz-cultura'
 import { cittaDi } from './luoghi'
 import { elencoPersone, persone } from './persone'
-import { infoFile, interroga, introduzioni, type InfoFile } from './rete'
+import { infoFile, interroga, introduzioni, letture, type InfoFile } from './rete'
 import {
   anni,
   annoSicuro,
   aPezzi,
-  conSpinta,
   maiuscolaIniziale,
   nomeItaliano,
   nonDeprecata,
+  notorietaItaliana,
   numero,
   perFama,
   perNotorieta,
@@ -297,8 +297,8 @@ export async function arte(): Promise<Omit<DatiArte, 'versione'>> {
 
   /* I quadri buoni prima delle immagini: nome italiano, un pittore con il suo nome. */
   const buoni = conNome.filter((id) => (autori.get(id) ?? []).some((a) => pittori.has(a)))
-  const italiano = (id: string) => (autori.get(id) ?? []).some((a) => pittori.get(a)?.it)
-  const peso = (id: string) => conSpinta(voci.get(id) ?? 0, italiano(id))
+  const lette = await letture(buoni.map((id) => s.get(id)?.voce).filter((t): t is string => !!t))
+  const peso = (id: string) => notorietaItaliana(voci.get(id) ?? 0, lette.get(s.get(id)?.voce ?? '') ?? 0)
 
   /* Titoli doppi. */
   const perPeso = titoliUnici(
@@ -422,7 +422,7 @@ export async function arte(): Promise<Omit<DatiArte, 'versione'>> {
 
   /* I pittori dei quadri scelti, con le sole correnti tenute. */
   const usati = [...new Set(quadri.flatMap((q) => q.a))].map((id) => pittori.get(id)!).filter(Boolean)
-  const elencoPittori = elencoPersone(usati.map((p) => ({ ...p, c: correntiDi(p.c ?? []) })))
+  const elencoPittori = await elencoPersone(usati.map((p) => ({ ...p, c: correntiDi(p.c ?? []) })))
   const correntiUsate = new Set([...quadri.flatMap((q) => q.c ?? []), ...elencoPittori.flatMap((p) => p.c ?? [])])
 
   return {

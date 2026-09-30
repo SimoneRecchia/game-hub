@@ -344,17 +344,36 @@ function inFila({ altre, geografia, spazi }: ReturnType<typeof giroGrezzo>): Cat
   return fila
 }
 
-/** L'ordine delle categorie di un giro, ritoccato al confine con il giro prima. */
+/** Gli ultimi giorni di un giro, che non tornano nei primi del giro dopo. */
+export const CONFINE_DEL_GIRO = 4
+
+/**
+ * Le prime voci (`quante`) che non sono da evitare: una da evitare si scambia
+ * con una delle voci di mezzo, mai con le ultime due, che fanno la fine del giro.
+ */
+function inTesta<T>(voci: T[], evitare: ReadonlySet<T>, quante: number): void {
+  for (let i = 0; i < quante; i += 1) {
+    if (!evitare.has(voci[i])) continue
+    const j = voci.findIndex((v, k) => k >= quante && k < voci.length - 2 && !evitare.has(v))
+    if (j >= 0) [voci[i], voci[j]] = [voci[j], voci[i]]
+  }
+}
+
+/**
+ * L'ordine delle categorie di un giro, ritoccato al confine con il giro prima:
+ * i primi giorni non ripetono gli ultimi del giro prima, altrimenti al cambio
+ * di giro si leggeva "Libri, Fiumi, Libri, Fiumi". Nei primi quattro giorni ci
+ * sono al piu' tre altre materie e due di geografia, e sono quelle che si
+ * guardano. Il ritocco non tocca mai la fine di un giro, che sono le ultime due
+ * voci di ognuna delle due file, quindi basta guardare il giro prima senza il
+ * suo ritocco.
+ */
 function giro(indice: number): CategoriaQuiz[] {
   const grezzo = giroGrezzo(indice)
-  // Il primo giorno non ripete l'ultimo del giro prima: il ritocco scambia le
-  // prime due altre materie, e non tocca mai la fine di un giro, quindi basta
-  // guardare il giro prima senza il suo ritocco.
   if (indice > 0) {
-    const prima = inFila(giroGrezzo(indice - 1))
-    if (grezzo.altre[0] === prima[prima.length - 1]) {
-      ;[grezzo.altre[0], grezzo.altre[1]] = [grezzo.altre[1], grezzo.altre[0]]
-    }
+    const fine = new Set(inFila(giroGrezzo(indice - 1)).slice(-CONFINE_DEL_GIRO))
+    inTesta(grezzo.altre, fine, 3)
+    inTesta(grezzo.geografia, fine, 2)
   }
   return inFila(grezzo)
 }

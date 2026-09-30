@@ -22,7 +22,7 @@
 
 import type { DatiCinema, FilmQuiz } from '../../shared/quiz-cultura'
 import { CITTADINANZE_ITALIANE, elencoPersone, ITALIA, moderno, nomePaese, persone, statiDi } from './persone'
-import { interroga, ordineDichiarazioni } from './rete'
+import { interroga, letture, ordineDichiarazioni } from './rete'
 import {
   anni,
   annoSicuro,
@@ -30,6 +30,7 @@ import {
   confrontaId,
   inOrdine,
   nomeItaliano,
+  notorietaItaliana,
   numero,
   perFama,
   perNotorieta,
@@ -46,13 +47,6 @@ const FILM = 1200
 const CANDIDATI = 3200
 /** I candidati italiani, cercati a parte come per i libri: fra i primi del mondo non ci arrivano. */
 const CANDIDATI_ITALIANI = 800
-
-/**
- * Un film italiano pesa il doppio: "Il sorpasso" e "Il postino" hanno meno
- * Wikipedia di un cartone animato qualunque, e con la spinta delle altre
- * materie restavano fuori.
- */
-const SPINTA_FILM_ITALIANI = 2
 
 /**
  * I film d'animazione pesano meno della meta': li doppiano in tutte le lingue,
@@ -204,8 +198,9 @@ export async function cinema(): Promise<Omit<DatiCinema, 'versione'>> {
   }
   const animato = (id: string) =>
     primi(v, id, 'P31').some((c) => ANIMAZIONE.has(c)) || primi(v, id, 'P136').some((g) => GENERI_ANIMATI.has(g))
+  const lette = await letture(conRegista.map((id) => s.get(id)?.voce).filter((t): t is string => !!t))
   const peso = (id: string) =>
-    (voci.get(id) ?? 0) * (italiano(id) ? SPINTA_FILM_ITALIANI : 1) * (animato(id) ? PESO_ANIMAZIONE : 1)
+    notorietaItaliana(voci.get(id) ?? 0, lette.get(s.get(id)?.voce ?? '') ?? 0) * (animato(id) ? PESO_ANIMAZIONE : 1)
   const unici = titoliUnici(
     conRegista,
     (id) => titoloItaliano(s.get(id))!,
@@ -311,5 +306,5 @@ export async function cinema(): Promise<Omit<DatiCinema, 'versione'>> {
     }
   })
   const usati = [...new Set(elenco.flatMap((f) => f.r))].map((r) => registi.get(r)!).filter(Boolean)
-  return { film: perFama(elenco), registi: elencoPersone(usati) }
+  return { film: perFama(elenco), registi: await elencoPersone(usati) }
 }

@@ -17,11 +17,12 @@
 import type { DatiLibri, LibroQuiz } from '../../shared/quiz-cultura'
 import { lingueDi } from './lingue'
 import { elencoPersone, PERSONE, persone } from './persone'
-import { interroga, ordineDichiarazioni } from './rete'
+import { interroga, letture, ordineDichiarazioni } from './rete'
 import {
   anni,
   annoSicuro,
   inOrdine,
+  notorietaItaliana,
   numero,
   perFama,
   perNotorieta,
@@ -38,14 +39,6 @@ const LIBRI = 1000
 const CANDIDATI = 3000
 /** I candidati italiani, cercati a parte: vedi `Q_ITALIANI`. */
 const CANDIDATI_ITALIANI = 1000
-
-/**
- * Un libro italiano pesa due volte e mezzo, non 1,4 come nelle altre materie.
- * I classici della scuola hanno poche Wikipedia — "Il fu Mattia Pascal" 12, "I
- * Malavoglia" 13, "La coscienza di Zeno" 17 — e con la spinta delle altre
- * materie restavano fuori tutti: i libri italiani erano 40 su mille.
- */
-const SPINTA_LIBRI_ITALIANI = 2.5
 
 /** Le classi dei libri (le etichette italiane di Wikidata). */
 const CLASSI = [
@@ -269,7 +262,8 @@ export async function libri(): Promise<Omit<DatiLibri, 'versione'>> {
   // Italiano se lo e' un autore, o se l'italiano e' la sola lingua: una traduzione non fa italiano un libro.
   const italiano = (id: string) =>
     umani(id).some((a) => autori.get(a)?.it) || (lingue(id).length === 1 && lingue(id)[0] === 'italiano')
-  const peso = (id: string) => (voci.get(id) ?? 0) * (italiano(id) ? SPINTA_LIBRI_ITALIANI : 1)
+  const lette = await letture(conAutore.map((id) => s.get(id)?.voce).filter((t): t is string => !!t))
+  const peso = (id: string) => notorietaItaliana(voci.get(id) ?? 0, lette.get(s.get(id)?.voce ?? '') ?? 0)
   const unici = titoliUnici(
     conAutore,
     (id) => titoloItaliano(s.get(id))!,
@@ -309,7 +303,7 @@ export async function libri(): Promise<Omit<DatiLibri, 'versione'>> {
     }
   })
   const usati = [...new Set(elenco.flatMap((l) => l.a))].map((a) => autori.get(a)!).filter(Boolean)
-  return { libri: perFama(elenco), autori: elencoPersone(usati) }
+  return { libri: perFama(elenco), autori: await elencoPersone(usati) }
 }
 
 function genereDi(valori: readonly string[]): string | undefined {
