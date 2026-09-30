@@ -847,7 +847,11 @@ entra negli elenchi e la fascia di difficoltà (`f`) in tutte le materie tranne
 volte le altre — due volte e mezzo nei libri, due nei film — e non bastava mai:
 un classico della scuola non e' una voce italiana un po' nota, e' una voce nota.
 I film d'animazione pesano ancora meno della meta' (`PESO_ANIMAZIONE`): chi li
-ha diretti non lo sa nessuno.
+ha diretti non lo sa nessuno. E i film usciti nell'anno delle letture, o in
+quello prima, le contano a un terzo e a due terzi (`lettureDiSempre`): le
+letture dell'uscita non sono quelle di sempre, e senza uno su quattro dei primi
+cinquanta era del 2023 o dopo, Thunderbolts* davanti al Padrino. Libri, quadri e
+opere di quegli anni fra i primi non ce ne sono.
 
 **Una risposta sbagliata deve essere sicuramente sbagliata, e credibile.** I
 generatori delle altre materie (`shared/quiz-domande-cultura.ts`) scartano le

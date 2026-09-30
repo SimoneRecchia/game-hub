@@ -389,7 +389,7 @@ export async function introduzioni(titoli: readonly string[]): Promise<Map<strin
 }
 
 /** L'anno delle letture: uno intero e passato, così rifare lo script da' gli stessi numeri. */
-const ANNO_LETTURE = 2025
+export const ANNO_LETTURE = 2025
 
 /** Quante richieste delle letture sono in viaggio insieme: il servizio ne regge cento al secondo. */
 const IN_VIAGGIO = 6
