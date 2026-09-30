@@ -2,7 +2,7 @@
 // L'impronta di ogni file di public/dati/quiz, per l'indirizzo: un file nuovo ha un indirizzo nuovo.
 export const VERSIONI_CULTURA: Record<string, string> = {
   arte: '44436fb257',
-  libri: 'd7d153d759',
+  libri: 'f9394ee1cc',
   cinema: '4ec9e228f3',
   lirica: '8dab9e6f07',
   nobel: '09a3729de8',
