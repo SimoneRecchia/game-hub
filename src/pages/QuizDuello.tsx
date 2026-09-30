@@ -13,7 +13,7 @@ import { Sheet } from '@/components/Sheet'
 import { usePlayer } from '@/lib/auth'
 import { ApiFetchError } from '@/lib/api'
 import { suona } from '@/lib/suoni'
-import { NOMI_CATEGORIE, NOMI_MODI } from '@shared/quiz'
+import { NOMI_CATEGORIE, diGeografia } from '@shared/quiz'
 import type { CittaQuiz } from '@shared/quiz-dati'
 import type { DomandaQuiz } from '@shared/quiz-domande'
 import { RALLENTY, secondiMostrati } from '@shared/quiz-sfida'
@@ -30,7 +30,7 @@ import { caricaCitta } from '@/games/quiz/citta'
 import { ComeSiGiocaQuiz } from '@/games/quiz/ComeSiGioca'
 import { useIndiceQuiz } from '@/games/quiz/dati'
 import { IconaCategoria } from '@/games/quiz/icone'
-import { nomeArea } from '@/games/quiz/testi'
+import { dettagliPartita } from '@/games/quiz/testi'
 import type { Fatta } from '@/games/quiz/usePartita'
 import {
   adesivoFineDuello,
@@ -69,7 +69,7 @@ function Duello({ id }: { id: string }) {
   const imp = v?.impostazioni ?? null
 
   // I dati del quiz servono alla cartina, e le città alla categoria delle città.
-  const serveIndice = !!imp && (imp.modo === 'cartina' || imp.imparo)
+  const serveIndice = !!imp && diGeografia(imp.categoria) && (imp.modo === 'cartina' || imp.imparo)
   const ix = useIndiceQuiz(serveIndice)
   const [citta, setCitta] = useState<CittaQuiz[] | null>(null)
   useEffect(() => {
@@ -294,7 +294,11 @@ function Attesa({ v, onEsci }: { v: VistaDuello; onEsci: () => void }) {
       </span>
       <p className="duello-attesa__titolo">Aspetto {v.avversario.displayName}…</p>
       <p className="duello-attesa__testo">
-        {NOMI_CATEGORIE[v.impostazioni.categoria]} · {NOMI_MODI[v.impostazioni.modo]} · {v.totale} domande
+        {[
+          NOMI_CATEGORIE[v.impostazioni.categoria],
+          ...dettagliPartita(v.impostazioni, null).slice(0, 1),
+          `${v.totale} domande`,
+        ].join(' · ')}
       </p>
       <Button variant="tinted" onClick={onEsci}>
         Annulla la sfida
@@ -368,7 +372,9 @@ function Gioco({
 
   if (!domanda) return <div className="quiz__attesa" aria-hidden="true" />
   const sullaCartina = !!domanda.cartina
-  const rivela = contesto.opzioni.imparo && !!fatta && !sullaCartina
+  const geografia = diGeografia(v.impostazioni.categoria)
+  const scheda = giro?.spiegazione ?? null
+  const rivela = contesto.opzioni.imparo && !!fatta && !sullaCartina && (geografia || !!scheda)
   const esito = giro ? (giro.punto === 'io' ? ' is-giusta' : giro.mia && !giro.mia.giusta ? ' is-sbagliata' : '') : ''
   const altra = { scelta: giro?.sua?.scelta ?? null, nome: v.avversario.displayName, colore: v.avversario.avatarColor }
 
@@ -383,10 +389,11 @@ function Gioco({
         esito={esito}
         rivela={rivela}
         cartina={
-          rivela && fatta ? (
+          rivela && fatta && geografia ? (
             <CartinaDellaPartita c={contesto} ix={ix} d={domanda} scelta={null} fatta={fatta} guarda />
           ) : null
         }
+        scheda={scheda}
       />
 
       {sullaCartina ? (
@@ -654,6 +661,8 @@ function Fine({ d, v }: { d: Duello; v: VistaDuello }) {
   const { vai } = useNavigazione()
   const player = usePlayer()
   const ix = useIndiceQuiz(v.impostazioni.area.startsWith('paese:'))
+  // La zona per la geografia, l'ambito o il giorno per le altre materie.
+  const dove = dettagliPartita(v.impostazioni, ix).at(-1) ?? null
   const [occupato, setOccupato] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
   const io = v.punti.io
@@ -698,7 +707,7 @@ function Fine({ d, v }: { d: Duello; v: VistaDuello }) {
             <IconaCategoria categoria={v.impostazioni.categoria} size={15} />
           </IconaScheda>
         }
-        destra={<Pillola tono="neutra">{nomeArea(v.impostazioni.area, ix)}</Pillola>}
+        destra={dove ? <Pillola tono="neutra">{dove}</Pillola> : undefined}
       >
         <p className="duello-fine__titolo">{titolo}</p>
         <div className="duello-fine__conto">

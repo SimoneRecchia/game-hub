@@ -64,9 +64,9 @@ export const GIOCHI: readonly Gioco[] = [
   {
     id: 'quiz',
     nome: 'Quiz',
-    motto: 'Capitali, bandiere, mari e cartina muta',
+    motto: 'Geografia, storia, arte, libri, cinema e scienza',
     classificata: 'Dieci domande al giorno, le stesse per tutti.',
-    libera: 'Scegli categoria, zona e numero di domande.',
+    libera: 'Scegli materia, categoria e numero di domande.',
     liberaBreve: 'Quiz libero',
   },
 ]

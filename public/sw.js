@@ -4,7 +4,8 @@
  * Strategia:
  *  - asset con hash in /assets/  → cache-first (immutabili)
  *  - dizionario dello Scarabeo   → cache-first (l'impronta sta nell'indirizzo)
- *  - navigazioni                 → network-first con fallback all'ultima index
+ *  - dati del quiz in /dati/     → cache-first (idem)
+ *  - navigazioni                 → network-first con fallback all'ultima index, sempre riconvalidate
  *  - /api/*                      → sempre rete, mai cache (punteggi e sessioni)
  */
 
@@ -43,7 +44,9 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      // Riconvalidata sempre: le pagine sotto /scarabeo/ sono state servite per un po' con un anno di cache,
+      // e senza chiedere al server il browser continuerebbe a dare la versione di allora.
+      fetch(request, { cache: 'no-cache' })
         .then((response) => {
           const copy = response.clone()
           caches.open(SHELL_CACHE).then((cache) => cache.put(SHELL_URL, copy))
@@ -54,13 +57,15 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  if (/^\/(assets|scarabeo)\//.test(url.pathname) || /\.(png|svg|woff2?)$/.test(url.pathname)) {
+  if (/^\/(assets|scarabeo|dati)\//.test(url.pathname) || /\.(png|svg|woff2?)$/.test(url.pathname)) {
     event.respondWith(
       caches.match(request).then(
         (hit) =>
           hit ??
           fetch(request).then((response) => {
-            if (response.ok) {
+            // A un file che non c'e' le Pages rispondono con la pagina dell'app, e un 200: quella non si tiene.
+            const pagina = (response.headers.get('content-type') ?? '').includes('text/html')
+            if (response.ok && !pagina) {
               const copy = response.clone()
               caches.open(ASSET_CACHE).then((cache) => cache.put(request, copy))
             }

@@ -33,6 +33,7 @@ import {
   type ModoQuiz,
   type VistaCartina,
 } from './quiz'
+import type { CategoriaCultura, ImmagineQuiz } from './quiz-cultura'
 import { OCEANI, type AcquaQuiz, type CittaQuiz, type CorsoQuiz, type DatiQuiz, type PaeseQuiz } from './quiz-dati'
 import {
   GENERE_PAESI,
@@ -77,12 +78,49 @@ export type TipoDomanda =
   | 'stato-del-lago'
   | 'lago-in-stato'
   | 'dove-lago'
+  | 'autore-quadro'
+  | 'titolo-quadro'
+  | 'quadro-di'
+  | 'corrente-quadro'
+  | 'secolo-quadro'
+  | 'autore-libro'
+  | 'libro-di'
+  | 'secolo-libro'
+  | 'regista-film'
+  | 'film-di'
+  | 'anno-film'
+  | 'compositore-opera'
+  | 'opera-di'
+  | 'citta-opera'
+  | 'nobel-anno'
+  | 'premio-nobel'
+  | 'anno-nobel'
+  | 'anno-evento'
+  | 'secolo-evento'
+  | 'prima-evento'
+  | 'simbolo-elemento'
+  | 'elemento-simbolo'
+  | 'formula-composto'
+  | 'grandezza-unita'
+  | 'unita-grandezza'
+  | 'nome-unita'
+  | 'satellite-di'
+  | 'ordine-pianeta'
+  | 'autore-scoperta'
+  | 'nome-scientifico'
+  | 'oggi-anno'
+  | 'oggi-fatto'
+  | 'oggi-nato'
 
 type CategoriaAttuale = Exclude<CategoriaQuiz, 'cartina'>
 
+/** Le categorie di geografia di adesso: quelle che fa questo file. */
+export type CategoriaGeografia = Exclude<CategoriaAttuale, CategoriaCultura>
+
 /**
  * I tipi di domanda di ogni categoria, per modo. Le citta' su un paese solo
- * chiedono le regioni al posto degli stati: sono le stesse due domande.
+ * chiedono le regioni al posto degli stati: sono le stesse due domande. Le
+ * altre materie non hanno la cartina.
  */
 export const TIPI: Record<CategoriaAttuale, Record<ModoQuiz, readonly TipoDomanda[]>> = {
   capitali: { scelta: ['capitale-di', 'stato-di-capitale'], cartina: ['dove-capitale'] },
@@ -93,6 +131,47 @@ export const TIPI: Record<CategoriaAttuale, Record<ModoQuiz, readonly TipoDomand
   oceani: { scelta: ['acqua-di-stato', 'stato-bagnato'], cartina: ['dove-acqua', 'oceano-di-stato'] },
   fiumi: { scelta: ['stato-del-fiume', 'fiume-in-stato'], cartina: ['dove-fiume'] },
   laghi: { scelta: ['stato-del-lago', 'lago-in-stato'], cartina: ['dove-lago'] },
+  arte: {
+    scelta: ['autore-quadro', 'titolo-quadro', 'quadro-di', 'corrente-quadro', 'secolo-quadro'],
+    cartina: [],
+  },
+  libri: { scelta: ['autore-libro', 'libro-di', 'secolo-libro'], cartina: [] },
+  cinema: { scelta: ['regista-film', 'film-di', 'anno-film'], cartina: [] },
+  lirica: { scelta: ['compositore-opera', 'opera-di', 'citta-opera'], cartina: [] },
+  nobel: { scelta: ['nobel-anno', 'premio-nobel', 'anno-nobel'], cartina: [] },
+  storia: { scelta: ['anno-evento', 'secolo-evento', 'prima-evento'], cartina: [] },
+  oggi: { scelta: ['oggi-anno', 'oggi-fatto', 'oggi-nato'], cartina: [] },
+  scienza: {
+    scelta: [
+      'simbolo-elemento',
+      'elemento-simbolo',
+      'formula-composto',
+      'grandezza-unita',
+      'unita-grandezza',
+      'nome-unita',
+      'satellite-di',
+      'ordine-pianeta',
+      'autore-scoperta',
+      'nome-scientifico',
+    ],
+    cartina: [],
+  },
+}
+
+/** I tipi della scienza di ogni argomento: scegliere la chimica vuol dire elementi, simboli e formule. */
+export const TIPI_SCIENZA: Record<string, readonly TipoDomanda[]> = {
+  chimica: ['simbolo-elemento', 'elemento-simbolo', 'formula-composto'],
+  fisica: ['grandezza-unita', 'unita-grandezza', 'nome-unita'],
+  astronomia: ['satellite-di', 'ordine-pianeta'],
+  scoperte: ['autore-scoperta'],
+  natura: ['nome-scientifico'],
+}
+
+/** I tipi che si possono scegliere per una categoria, in un modo e, per la scienza, in un argomento. */
+export function tipiPossibili(categoria: CategoriaQuiz, modo: ModoQuiz, ambito = 'tutti'): readonly TipoDomanda[] {
+  if (categoria === 'cartina') return []
+  if (categoria === 'scienza' && TIPI_SCIENZA[ambito]) return modo === 'scelta' ? TIPI_SCIENZA[ambito] : []
+  return TIPI[categoria][modo]
 }
 
 /** Come si chiama un tipo di domanda nelle opzioni avanzate: cosa si chiede, e cosa si risponde. */
@@ -122,6 +201,39 @@ export const NOMI_TIPI: Record<TipoDomanda, string> = {
   'stato-del-lago': 'In che stato è un lago',
   'lago-in-stato': 'Quale lago è in uno stato',
   'dove-lago': 'Dov’è un lago',
+  'autore-quadro': 'Chi ha dipinto un quadro',
+  'titolo-quadro': 'Il titolo di un quadro',
+  'quadro-di': 'Un quadro di un pittore',
+  'corrente-quadro': 'La corrente di un quadro',
+  'secolo-quadro': 'Il secolo di un quadro',
+  'autore-libro': 'Chi ha scritto un libro',
+  'libro-di': 'Un libro di un autore',
+  'secolo-libro': 'Il secolo di un libro',
+  'regista-film': 'Chi ha diretto un film',
+  'film-di': 'Un film di un regista',
+  'anno-film': 'L’anno di un film',
+  'compositore-opera': 'Chi ha composto un’opera',
+  'opera-di': 'Un’opera di un compositore',
+  'citta-opera': 'Dove ha debuttato un’opera',
+  'nobel-anno': 'Chi ha vinto un Nobel',
+  'premio-nobel': 'In quale campo',
+  'anno-nobel': 'In che anno',
+  'anno-evento': 'L’anno di un fatto',
+  'secolo-evento': 'Il secolo di un fatto',
+  'prima-evento': 'Quale fatto viene prima',
+  'simbolo-elemento': 'Il simbolo di un elemento',
+  'elemento-simbolo': 'L’elemento di un simbolo',
+  'formula-composto': 'La formula di un composto',
+  'grandezza-unita': 'Che cosa misura un’unità',
+  'unita-grandezza': 'L’unità di una grandezza',
+  'nome-unita': 'Da chi prende il nome un’unità',
+  'satellite-di': 'Il pianeta di un satellite',
+  'ordine-pianeta': 'L’ordine dei pianeti',
+  'autore-scoperta': 'Chi ha fatto una scoperta',
+  'nome-scientifico': 'Il nome scientifico di una specie',
+  'oggi-anno': 'L’anno di un fatto',
+  'oggi-fatto': 'Che cosa accadde in un anno',
+  'oggi-nato': 'L’anno di nascita',
 }
 
 export interface OpzioneQuiz {
@@ -129,6 +241,8 @@ export interface OpzioneQuiz {
   testo: string
   /** Il codice della bandiera, quando l'opzione e' una bandiera e non un nome. */
   bandiera?: string
+  /** Un quadro, quando si sceglie fra quadri: il titolo resta sotto. */
+  immagine?: ImmagineQuiz
 }
 
 /**
@@ -145,6 +259,10 @@ export interface DomandaQuiz {
   testo: string
   /** La bandiera da mostrare con la domanda. */
   bandiera?: string
+  /** Il quadro da riconoscere: un'immagine di Wikimedia Commons. */
+  immagine?: ImmagineQuiz
+  /** 1 se le risposte sono lunghe da leggere: un terzo di tempo in piu' (`SECONDI_LUNGA`). */
+  lunga?: 1
   /** Le risposte fra cui scegliere, in ordine sparso; vuote per la cartina. */
   opzioni: OpzioneQuiz[]
   /**
@@ -164,6 +282,26 @@ export interface LuogoQuiz {
   altri?: string[]
 }
 
+/**
+ * La scheda che insegna, a risposta data, per le materie senza cartina: di
+ * chi e' il quadro, di che corrente, dov'e'; chi ha scritto il libro, quando.
+ * La compone il generatore dai dati, e resta sul server con la risposta.
+ */
+export interface SpiegazioneQuiz {
+  /** Di cosa parla: di solito la risposta, o il soggetto della domanda. */
+  titolo: string
+  /** La riga sotto il titolo: "Leonardo da Vinci, 1503". */
+  sotto?: string
+  /** I dati, una riga ciascuno: ["Corrente", "Rinascimento"]. */
+  righe?: Array<[string, string]>
+  /** Due frasi da Wikipedia: la corrente, il fatto. */
+  testo?: string
+  /** La voce di Wikipedia in italiano, per leggere di piu'. */
+  voce?: string
+  /** Il quadro, quando la scheda ne parla. */
+  immagine?: ImmagineQuiz
+}
+
 /** Una domanda con la risposta: resta sul server, per la classificata, finché non si risponde. */
 export interface DomandaCompleta extends DomandaQuiz {
   /** L'id dell'opzione giusta, o del posto sulla cartina. */
@@ -175,6 +313,8 @@ export interface DomandaCompleta extends DomandaQuiz {
   /** Di cosa parla: non torna due volte nella stessa partita. */
   soggetto: string
   luogo?: LuogoQuiz
+  /** La scheda da mostrare a risposta data, per le materie senza cartina. */
+  spiegazione?: SpiegazioneQuiz
 }
 
 /** Tutto il mondo, un continente, o un paese solo (per città, fiumi e laghi). */
@@ -200,6 +340,13 @@ export interface RichiestaQuiz {
   bandieraCapitali?: boolean
   /** Le città, per la categoria delle città: il browser le chiede a Wikidata. */
   citta?: readonly CittaQuiz[]
+  /** Per le altre materie, quel che per la geografia e' la zona: un periodo, un premio, un argomento. */
+  ambito?: string
+  /**
+   * Il giorno della partita, "AAAA-MM-GG": gli anni sbagliati non lo passano.
+   * La classificata lo passa sempre, perché le domande dipendano solo dal giorno.
+   */
+  data?: string
 }
 
 /* ─────────────────────────────  L'indice dei dati  ──────────────────────── */
@@ -248,9 +395,9 @@ function luogo(giusti: Array<string | null>, altri: Array<string | null> = []): 
 
 /* ───────────────────────────────  Il caso  ─────────────────────────────── */
 
-type Caso = () => number
+export type Caso = () => number
 
-function mescola<T>(voci: readonly T[], caso: Caso): T[] {
+export function mescola<T>(voci: readonly T[], caso: Caso): T[] {
   const copia = [...voci]
   for (let i = copia.length - 1; i > 0; i -= 1) {
     const j = Math.floor(caso() * (i + 1))
@@ -259,7 +406,7 @@ function mescola<T>(voci: readonly T[], caso: Caso): T[] {
   return copia
 }
 
-function unoDi<T>(voci: readonly T[], caso: Caso): T {
+export function unoDi<T>(voci: readonly T[], caso: Caso): T {
   return voci[Math.floor(caso() * voci.length)]
 }
 
@@ -270,7 +417,7 @@ function unoDi<T>(voci: readonly T[], caso: Caso): T {
  * chi ha gia' fatto da errore in questa partita passa in fondo, perché il Mar
  * Caspio non compaia in tre domande su dieci.
  */
-function distrattori<T extends { id: string }>(
+export function distrattori<T extends { id: string }>(
   c: Pick<Contesto, 'caso' | 'usati'>,
   candidati: readonly T[],
   quanti: number,
@@ -293,7 +440,7 @@ function distrattori<T extends { id: string }>(
  * Con i "noti" si guarda solo il terzo piu' noto, con i "rari" il resto: se la
  * fetta non basta alla partita, si allarga verso l'altra.
  */
-function soggetti<T extends { f: number }>(
+export function soggetti<T extends { f: number }>(
   tutti: readonly T[],
   quanti: number,
   caso: Caso,
@@ -333,7 +480,7 @@ function soggetti<T extends { f: number }>(
 
 /* ───────────────────────────────  Le regole  ───────────────────────────── */
 
-const senzaAccenti = (s: string) =>
+export const senzaAccenti = (s: string) =>
   s
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
@@ -436,7 +583,12 @@ interface Contesto {
 type Generatore = (c: Contesto) => DomandaCompleta[]
 
 /** I candidati senza quelli da evitare, se ne restano abbastanza. */
-function preferendo<T>(candidati: T[], chiave: (t: T) => string, evitare: ReadonlySet<string>, quanti: number): T[] {
+export function preferendo<T>(
+  candidati: T[],
+  chiave: (t: T) => string,
+  evitare: ReadonlySet<string>,
+  quanti: number,
+): T[] {
   const nuovi = candidati.filter((t) => !evitare.has(chiave(t)))
   return nuovi.length >= quanti * 2 ? nuovi : candidati
 }
@@ -445,21 +597,49 @@ function preferendo<T>(candidati: T[], chiave: (t: T) => string, evitare: Readon
  * Il tipo di ogni domanda, fra quelli della categoria con la loro quota: se se
  * ne sono scelti solo alcuni, le quote si dividono fra quelli.
  */
-function assegna<T>(
+/**
+ * Quante domande di ogni tipo, su `quante`, con le quote date: a ognuno la sua
+ * parte intera, e i posti che avanzano ai resti, estratti in proporzione.
+ *
+ * Arrotondare ogni quota e dare all'ultimo tipo quel che resta, come si faceva,
+ * gli lasciava sempre zero: con 40, 20, 15, 15 e 10 su dieci domande gli
+ * arrotondamenti fanno 4, 2, 2, 2, e il secolo dei quadri non usciva mai. Cosi'
+ * un tipo al dieci per cento ha la sua domanda su dieci, e su cinque ha le sue
+ * probabilita'.
+ */
+export function ripartisci(
+  quante: number,
+  quote: ReadonlyArray<readonly [TipoDomanda, number]>,
+  caso: Caso,
+): Map<TipoDomanda, number> {
+  const totale = quote.reduce((n, [, q]) => n + q, 0)
+  const parti = quote.map(([t, q]) => ({ t, parte: totale > 0 ? (quante * q) / totale : 0 }))
+  const fuori = new Map(parti.map(({ t, parte }) => [t, Math.floor(parte + 1e-9)]))
+  let dati = [...fuori.values()].reduce((a, b) => a + b, 0)
+  const resti = parti.map(({ t, parte }) => ({ t, r: parte - fuori.get(t)! })).filter((x) => x.r > 1e-9)
+  while (dati < quante && resti.length > 0) {
+    let x = caso() * resti.reduce((a, y) => a + y.r, 0)
+    let i = 0
+    while (i < resti.length - 1 && x >= resti[i].r) {
+      x -= resti[i].r
+      i += 1
+    }
+    fuori.set(resti[i].t, fuori.get(resti[i].t)! + 1)
+    resti.splice(i, 1)
+    dati += 1
+  }
+  return fuori
+}
+
+export function assegna<T>(
   scelti: T[],
   quote: ReadonlyArray<readonly [TipoDomanda, number]>,
-  c: Contesto,
+  c: Pick<Contesto, 'tipi' | 'caso'>,
 ): Array<{ s: T; tipo: TipoDomanda }> {
   const ammesse = quote.filter(([t]) => !c.tipi || c.tipi.has(t))
   const valide = ammesse.length > 0 ? ammesse : quote
-  const totale = valide.reduce((n, [, q]) => n + q, 0)
   const tipi: TipoDomanda[] = []
-  let fatti = 0
-  valide.forEach(([t, q], i) => {
-    const quanti = i === valide.length - 1 ? scelti.length - fatti : Math.round((scelti.length * q) / totale)
-    for (let k = 0; k < quanti && tipi.length < scelti.length; k += 1) tipi.push(t)
-    fatti += quanti
-  })
+  for (const [t, quanti] of ripartisci(scelti.length, valide, c.caso)) for (let k = 0; k < quanti; k += 1) tipi.push(t)
   const ordine = mescola(tipi, c.caso)
   return scelti.map((s, i) => ({ s, tipo: ordine[i] ?? valide[0][0] }))
 }
@@ -1350,7 +1530,7 @@ function corsiCartina(sezione: 'fiumi' | 'laghi', perDomande: number): Generator
   }
 }
 
-const GENERATORI: Record<CategoriaAttuale, Record<ModoQuiz, Generatore>> = {
+const GENERATORI: Record<CategoriaGeografia, Record<ModoQuiz, Generatore>> = {
   capitali: { scelta: capitaliScelta, cartina: capitaliCartina },
   citta: { scelta: cittaScelta, cartina: cittaCartina },
   bandiere: { scelta: bandiereScelta, cartina: bandiereCartina },
@@ -1386,7 +1566,8 @@ export function generaDomande(
   const quante = Math.max(1, Math.min(richiesta.quante, QUANTE_MASSIME))
   const risposte = Math.max(2, Math.min(6, richiesta.risposte ?? RISPOSTE_PREDEFINITE))
   // La cartina muta di una volta e' diventata il modo cartina degli stati.
-  const categoria: CategoriaAttuale = richiesta.categoria === 'cartina' ? 'stati' : richiesta.categoria
+  const categoria = (richiesta.categoria === 'cartina' ? 'stati' : richiesta.categoria) as CategoriaGeografia
+  if (!GENERATORI[categoria]) throw new Error(`La categoria ${richiesta.categoria} non e' di geografia`)
   const modo: ModoQuiz = richiesta.categoria === 'cartina' ? 'cartina' : (richiesta.modo ?? 'scelta')
   // Gli oceani non hanno continenti: bagnano tutti.
   const area: AreaQuiz = categoria === 'oceani' ? 'mondo' : richiesta.area
@@ -1405,7 +1586,21 @@ export function generaDomande(
     vista: vistaDellArea(ix, area),
     citta: richiesta.citta ?? [],
   }
-  const domande = GENERATORI[categoria][modo](c)
+  return rifinisci(GENERATORI[categoria][modo](c), quante, risposte, richiesta.ordine, caso)
+}
+
+/**
+ * Le domande di una partita come escono dal generatore, ripulite: una per
+ * soggetto, solo quelle in ordine, quante se ne sono chieste, e mescolate se si
+ * gioca "a caso" invece che dalla piu' facile.
+ */
+export function rifinisci(
+  domande: readonly DomandaCompleta[],
+  quante: number,
+  risposte: number,
+  ordine: RichiestaQuiz['ordine'],
+  caso: Caso,
+): DomandaCompleta[] {
   const visti = new Set<string>()
   const buone = domande
     .filter((d) => {
@@ -1414,7 +1609,7 @@ export function generaDomande(
       return true
     })
     .slice(0, quante)
-  return richiesta.ordine === 'caso' ? mescola(buone, caso) : buone
+  return ordine === 'caso' ? mescola(buone, caso) : buone
 }
 
 /** Le domande della classificata di un giorno: la categoria e il modo del giorno, in tutto il mondo. */
@@ -1445,12 +1640,14 @@ export function domandaValida(d: DomandaCompleta, risposte = RISPOSTE_PREDEFINIT
   return id.size === risposte && testi.size === risposte && id.has(d.giusta)
 }
 
-/** La domanda come va a chi gioca: senza la risposta, e senza dove guardare. */
+/** La domanda come va a chi gioca: senza la risposta, senza dove guardare, senza la scheda. */
 export function senzaRisposta(d: DomandaCompleta): DomandaQuiz {
   return {
     tipo: d.tipo,
     testo: d.testo,
     ...(d.bandiera ? { bandiera: d.bandiera } : {}),
+    ...(d.immagine ? { immagine: d.immagine } : {}),
+    ...(d.lunga ? { lunga: d.lunga } : {}),
     opzioni: d.opzioni,
     ...(d.cartina ? { cartina: d.cartina } : {}),
   }

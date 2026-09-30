@@ -353,6 +353,31 @@
   --quiz-lettera-ink: #b0205f;
   --quiz-lettera-ink: light-dark(#b0205f, #ff9cc0);
 
+  /* ---- Le materie del quiz ----
+     Un colore per materia, sulle icone del menu della libera e delle sue
+     pagine: si riconoscono prima di leggere. Il mare per la geografia, il
+     bronzo per la storia, il rosa del quiz per l'arte, il petrolio per la
+     scienza: nessuno e' il verde di "giusta" ne' l'indaco della selezione. */
+  --materia-geografia-1: #3db3ea;
+  --materia-geografia-2: #1f6fd1;
+  --materia-storia-1: #e9a85a;
+  --materia-storia-2: #b0652a;
+  --materia-cultura-1: #f25f8f;
+  --materia-cultura-2: #c2266a;
+  --materia-scienza-1: #35b9b2;
+  --materia-scienza-2: #177a85;
+
+  /* ---- I quadri del quiz ----
+     La cornice di un museo: oro vecchio con un filo scuro fuori, e la tela
+     color lino finché l'immagine non arriva. In scuro l'oro si spegne un poco:
+     una cornice luminosa in una schermata scura abbaglia. */
+  --quadro-cornice: #a8894f;
+  --quadro-cornice: light-dark(#a8894f, #8a7142);
+  --quadro-filo: rgba(60, 40, 10, 0.35);
+  --quadro-filo: light-dark(rgba(60, 40, 10, 0.35), rgba(0, 0, 0, 0.6));
+  --quadro-tela: #efe8da;
+  --quadro-tela: light-dark(#efe8da, #2b2822);
+
   /* ---- Caselle e tastiera del Wordle ----
      I tre colori del gioco vero sono desaturati (#6aaa64, #c9b458, #787c7e):
      su schermo grande sembrano scoloriti. Questi sono piu' pieni, e le versioni

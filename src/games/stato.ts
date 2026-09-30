@@ -266,7 +266,7 @@ export function statoQuiz(s: QuizSummary): StatoOggi {
   // "Fiumi sulla cartina muta": il modo del giorno si dice, perché cambia il gioco.
   const categoria = s.categoria
     ? `${NOMI_CATEGORIE[s.categoria]}${s.modo === 'cartina' && s.categoria !== 'cartina' ? ' sulla cartina' : ''}`
-    : 'Geografia'
+    : 'Quiz'
   switch (s.status) {
     case 'assente':
       return {

@@ -17,7 +17,17 @@
  * E' un'amichevole: i punti non vanno in classifica e il duello non resta.
  */
 
-import { CATEGORIE, CONTINENTI, MODI, RISPOSTE_LIBERE, type CategoriaQuiz, type ModoQuiz } from './quiz'
+import {
+  CATEGORIE,
+  CONTINENTI,
+  FATTORE_LUNGA,
+  MODI,
+  RISPOSTE_LIBERE,
+  ambitoValido,
+  diGeografia,
+  type CategoriaQuiz,
+  type ModoQuiz,
+} from './quiz'
 import { NOMI_TIPI, type AreaQuiz, type Notorieta, type TipoDomanda } from './quiz-domande'
 
 export type LatoSfida = 'a' | 'b'
@@ -84,7 +94,14 @@ export interface ImpostazioniSfida {
   tipi?: TipoDomanda[]
   notorieta?: Notorieta
   bandieraCapitali?: boolean
+  /** Per le altre materie, l'ambito: un periodo, un premio, un argomento. */
+  ambito?: string
+  /** Il giorno di "Accadde oggi", "03-12": lo sceglie chi sfida, e la rivincita resta lì. */
+  giorno?: string
 }
+
+/** Un giorno dell'anno come lo scrivono i file di "Accadde oggi": "03-12". */
+const GIORNO = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
 
 function si(valore: unknown, predefinito: boolean): boolean {
   return typeof valore === 'boolean' ? valore : predefinito
@@ -99,8 +116,10 @@ function si(valore: unknown, predefinito: boolean): boolean {
 export function impostazioniSfida(valore: unknown): ImpostazioniSfida | null {
   const x = (valore ?? {}) as Record<string, unknown>
   const categoria = x.categoria as CategoriaQuiz
-  const modo = x.modo as ModoQuiz
-  const area = typeof x.area === 'string' ? x.area : 'mondo'
+  const geografia = diGeografia(categoria)
+  // Le altre materie non hanno ne' la cartina ne' le zone.
+  const modo = geografia ? (x.modo as ModoQuiz) : 'scelta'
+  const area = geografia && typeof x.area === 'string' ? x.area : 'mondo'
   if (!CATEGORIE.includes(categoria) || !MODI.includes(modo)) return null
   const areaBuona =
     area === 'mondo' || CONTINENTI.includes(area as (typeof CONTINENTI)[number]) || /^paese:[A-Z]{2}$/.test(area)
@@ -126,12 +145,18 @@ export function impostazioniSfida(valore: unknown): ImpostazioniSfida | null {
     ...(tipi.length > 0 ? { tipi } : {}),
     notorieta,
     bandieraCapitali: si(x.bandieraCapitali, true),
+    ...(geografia ? {} : { ambito: ambitoValido(categoria, x.ambito) }),
+    ...(categoria === 'oggi' && typeof x.giorno === 'string' && GIORNO.test(x.giorno) ? { giorno: x.giorno } : {}),
   }
 }
 
-/** Il tempo di una domanda: il doppio sulla cartina, dove un posto va cercato. */
-export function limiteMs(impostazioni: Pick<ImpostazioniSfida, 'secondi'>, sullaCartina: boolean): number {
-  return impostazioni.secondi * (sullaCartina ? 2 : 1) * 1000
+/** Il tempo di una domanda: il doppio sulla cartina, dove un posto va cercato, e un terzo in piu' se si legge tanto. */
+export function limiteMs(
+  impostazioni: Pick<ImpostazioniSfida, 'secondi'>,
+  sullaCartina: boolean,
+  lunga = false,
+): number {
+  return Math.round(impostazioni.secondi * (sullaCartina ? 2 : lunga ? FATTORE_LUNGA : 1) * 1000)
 }
 
 /* ─────────────────────────────  Il giro del tempo  ──────────────────────── */
