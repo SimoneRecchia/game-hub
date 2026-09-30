@@ -217,7 +217,9 @@ describe('le regole di ogni materia', () => {
   it('in "Accadde oggi" i fatti fra cui scegliere sono tutti di anni diversi', () => {
     for (const d of tante('oggi', 30, { tipi: ['oggi-fatto'] })) {
       if (d.tipo !== 'oggi-fatto') continue
-      const anni = d.opzioni.map((o) => OGGI.fatti[Number(o.id.slice(1))].anno)
+      // Gli id sono "giorno/posto": il giorno, perché non si confondano con quelli degli altri giorni.
+      expect(d.opzioni.every((o) => o.id.startsWith(`${OGGI.giorno}/`))).toBe(true)
+      const anni = d.opzioni.map((o) => OGGI.fatti[Number(o.id.split('/')[1])].anno)
       expect(new Set(anni).size).toBe(anni.length)
     }
   })

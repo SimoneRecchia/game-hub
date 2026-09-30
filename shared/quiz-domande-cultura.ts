@@ -1491,7 +1491,8 @@ function fraseConDomanda(t: string, domanda: string): string {
 
 function oggi(dati: DatiOggi, c: Contesto): DomandaCompleta[] {
   const data = giornoInLettere(dati.giorno)
-  const fatti = dati.fatti.map((x, i) => ({ ...x, id: `f${i}` }))
+  // L'id porta il giorno: la notte evita i soggetti delle classificate di prima, che sono di altri giorni.
+  const fatti = dati.fatti.map((x, i) => ({ ...x, id: `${dati.giorno}/${i}` }))
   const nati = dati.nati
   type Fatto = FattoQuiz & { id: string }
   type Voce = { id: string; f: number; fatto?: Fatto; nato?: NatoQuiz }
