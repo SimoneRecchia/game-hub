@@ -30,10 +30,6 @@ import BattagliaClassificata from './pages/BattagliaClassificata'
 import BattagliaLibera from './pages/BattagliaLibera'
 import BattagliaPartita from './pages/BattagliaPartita'
 import BattagliaInvito from './pages/BattagliaInvito'
-import Quiz from './pages/Quiz'
-import QuizLibero from './pages/QuizLibero'
-import QuizDuello from './pages/QuizDuello'
-import QuizInvito from './pages/QuizInvito'
 import IndovinaChi from './pages/IndovinaChi'
 import IndovinaPartita from './pages/IndovinaPartita'
 import IndovinaInvito from './pages/IndovinaInvito'
@@ -56,10 +52,24 @@ const TavoloComputer = lazy(caricaComputer)
 const TavoloPartita = lazy(caricaPartita)
 const TavoloInvito = lazy(caricaInvito)
 
-function usePrecaricaTavolo() {
+/*
+ * Anche il quiz arriva a parte, per la stessa ragione: i generatori delle
+ * domande di tutte le materie, che servono solo a chi ci gioca.
+ */
+const caricaQuiz = () => import('./pages/Quiz')
+const caricaQuizLibero = () => import('./pages/QuizLibero')
+const caricaQuizDuello = () => import('./pages/QuizDuello')
+const caricaQuizInvito = () => import('./pages/QuizInvito')
+const Quiz = lazy(caricaQuiz)
+const QuizLibero = lazy(caricaQuizLibero)
+const QuizDuello = lazy(caricaQuizDuello)
+const QuizInvito = lazy(caricaQuizInvito)
+
+function usePrecarica() {
   useEffect(() => {
     const t = window.setTimeout(() => {
-      void Promise.all([caricaSala(), caricaComputer(), caricaPartita(), caricaInvito()]).catch(() => {})
+      const pezzi = [caricaSala, caricaComputer, caricaPartita, caricaInvito, caricaQuiz, caricaQuizLibero]
+      void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito].map((c) => c())).catch(() => {})
     }, 2_500)
     return () => window.clearTimeout(t)
   }, [])
@@ -72,7 +82,7 @@ const INVITO =
 export default function App() {
   const { player, checking, config } = useAuth()
   const { pathname } = useLocation()
-  usePrecaricaTavolo()
+  usePrecarica()
 
   // Prima di sapere se la sessione salvata e' valida non mostriamo nulla:
   // meglio un istante di splash che far lampeggiare la schermata di accesso

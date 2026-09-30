@@ -17,7 +17,7 @@ import { useDati } from '@/lib/dati'
 import { formatCountdown } from '@/lib/format'
 import { leggiPartitaLibera } from '@/games/scarabeo/libera'
 import { leggiContiSudoku, leggiPartitaSudoku } from '@/games/sudoku/libera'
-import { leggiStatistiche, type StatisticheLibere } from '@/games/quiz/usePartita'
+import { leggiStatistiche, type StatisticheLibere } from '@/games/quiz/statistiche'
 import type {
   CruciverbaLiberaRisposta,
   GiocoClassificato,

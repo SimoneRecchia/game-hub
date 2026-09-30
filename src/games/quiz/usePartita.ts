@@ -30,6 +30,7 @@ import { giornoDellAnno } from '@shared/quiz-cultura'
 import { generaPartita } from '@shared/quiz-domande-cultura'
 import type { QuizEsito, QuizState, RispostaQuiz } from '@shared/types'
 import { fontiDelQuiz, giornoDellaPartita } from './fonti'
+import { leggiStatistiche, registraStatistiche, type StatisticheLibere } from './statistiche'
 
 export type Fase = 'caricamento' | 'intro' | 'via' | 'domanda' | 'esito' | 'fine' | 'errore'
 
@@ -319,43 +320,6 @@ export function useQuizDelGiorno(): VistaPartita {
 export interface ImpostazioniLibera extends Omit<RichiestaQuiz, 'citta' | 'data'>, OpzioniPartita {
   /** "Accadde oggi" di un giorno a caso, invece che di oggi. */
   giorno?: 'caso'
-}
-
-export interface StatisticheLibere {
-  partite: number
-  domande: number
-  giuste: number
-  /** La miglior percentuale per categoria. */
-  migliori: Partial<Record<CategoriaQuiz, number>>
-}
-
-const CHIAVE_STATISTICHE = 'quiz-libere-v1'
-
-export function leggiStatistiche(): StatisticheLibere {
-  try {
-    const s = JSON.parse(localStorage.getItem(CHIAVE_STATISTICHE) ?? 'null') as StatisticheLibere | null
-    if (s && typeof s.partite === 'number') return s
-  } catch {
-    // niente
-  }
-  return { partite: 0, domande: 0, giuste: 0, migliori: {} }
-}
-
-function registraStatistiche(categoria: CategoriaQuiz, domande: number, giuste: number): StatisticheLibere {
-  const s = leggiStatistiche()
-  const quota = domande > 0 ? Math.round((100 * giuste) / domande) : 0
-  const nuove: StatisticheLibere = {
-    partite: s.partite + 1,
-    domande: s.domande + domande,
-    giuste: s.giuste + giuste,
-    migliori: { ...s.migliori, [categoria]: Math.max(s.migliori[categoria] ?? 0, quota) },
-  }
-  try {
-    localStorage.setItem(CHIAVE_STATISTICHE, JSON.stringify(nuove))
-  } catch {
-    // Le statistiche delle libere sono un contorno.
-  }
-  return nuove
 }
 
 /** Le opzioni di una domanda rimescolate: nel ripasso la risposta giusta non sta dove stava. */
