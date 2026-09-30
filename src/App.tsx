@@ -143,6 +143,7 @@ export default function App() {
 
             <Route path="/quiz/classificata" element={<Quiz />} />
             <Route path="/quiz/libera" element={<QuizLibero />} />
+            <Route path="/quiz/libera/:materia" element={<QuizLibero />} />
             <Route path="/quiz/duello/:id" element={<QuizDuello />} />
             <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
 

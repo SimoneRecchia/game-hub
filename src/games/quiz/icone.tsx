@@ -1,5 +1,5 @@
 import type { ReactElement, SVGProps } from 'react'
-import type { CategoriaQuiz } from '@shared/quiz'
+import type { CategoriaQuiz, MateriaQuiz } from '@shared/quiz'
 
 /**
  * Le icone del quiz, una per categoria, nello stile delle altre dell'app:
@@ -187,6 +187,59 @@ export const IconScienza = (p: Props) => (
   </Svg>
 )
 
+/** Tre atomi legati: la chimica. */
+export const IconChimica = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="7" cy="7" r="2.5" />
+    <circle cx="17" cy="9" r="2.5" />
+    <circle cx="10" cy="17" r="2.5" />
+    <path d="M9.45 7.49 14.55 8.51M7.72 9.39l1.56 5.21M15.35 10.88l-3.7 4.24" />
+  </Svg>
+)
+
+/** L'atomo con le orbite: la fisica. */
+export const IconFisica = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="1.4" />
+    <ellipse cx="12" cy="12" rx="9" ry="3.4" />
+    <ellipse cx="12" cy="12" rx="9" ry="3.4" transform="rotate(60 12 12)" />
+    <ellipse cx="12" cy="12" rx="9" ry="3.4" transform="rotate(120 12 12)" />
+  </Svg>
+)
+
+/** Un pianeta con l'anello: l'astronomia. */
+export const IconAstronomia = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="5" />
+    <ellipse cx="12" cy="12" rx="10" ry="3.2" transform="rotate(-20 12 12)" />
+  </Svg>
+)
+
+/** La lampadina: le scoperte e le invenzioni. */
+export const IconScoperte = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9.5 17.5h5M10.5 20.5h3" />
+    <path d="M12 3a6 6 0 0 0-3.6 10.8c.8.6 1.1 1.4 1.1 2.2v.5h5V16c0-.8.3-1.6 1.1-2.2A6 6 0 0 0 12 3Z" />
+  </Svg>
+)
+
+/** Una foglia: gli animali e le piante. */
+export const IconNatura = (p: Props) => (
+  <Svg {...p}>
+    <path d="M19.5 4.5C11 4.5 5 9 5 15.8c0 1.3.3 2.5.8 3.7 6.8-.5 13.7-5.3 13.7-15Z" />
+    <path d="M4 20.5c3-4.8 7-8.3 11.5-10.5" />
+  </Svg>
+)
+
+/** Le icone degli argomenti della scienza, che nella libera si scelgono come categorie. */
+export const ICONE_AMBITI: Record<string, (p: Props) => ReactElement> = {
+  chimica: IconChimica,
+  fisica: IconFisica,
+  astronomia: IconAstronomia,
+  scoperte: IconScoperte,
+  natura: IconNatura,
+}
+
 export const ICONE_CATEGORIE: Record<CategoriaQuiz, (p: Props) => ReactElement> = {
   capitali: IconCapitale,
   citta: IconCitta,
@@ -207,7 +260,24 @@ export const ICONE_CATEGORIE: Record<CategoriaQuiz, (p: Props) => ReactElement> 
   scienza: IconScienza,
 }
 
-export function IconaCategoria({ categoria, size = 24 }: { categoria: CategoriaQuiz; size?: number }) {
-  const Icona = ICONE_CATEGORIE[categoria]
+export function IconaCategoria({
+  categoria,
+  ambito,
+  size = 24,
+}: {
+  categoria: CategoriaQuiz
+  /** Per gli argomenti della scienza, la loro icona. */
+  ambito?: string
+  size?: number
+}) {
+  const Icona = (ambito && ICONE_AMBITI[ambito]) || ICONE_CATEGORIE[categoria]
   return <Icona size={size} />
+}
+
+/** L'icona di una materia, nel menu della libera. */
+export const ICONE_MATERIE: Record<MateriaQuiz, (p: Props) => ReactElement> = {
+  geografia: IconMappamondo,
+  storia: IconStoria,
+  cultura: IconArte,
+  scienza: IconScienza,
 }

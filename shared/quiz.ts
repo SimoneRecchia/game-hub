@@ -55,7 +55,7 @@ export const MATERIE: ReadonlyArray<{ id: MateriaQuiz; nome: string; categorie: 
     categorie: ['capitali', 'citta', 'bandiere', 'stati', 'mari', 'oceani', 'fiumi', 'laghi'],
   },
   { id: 'storia', nome: 'Storia', categorie: ['storia', 'oggi'] },
-  { id: 'cultura', nome: 'Cultura', categorie: ['arte', 'libri', 'cinema', 'lirica'] },
+  { id: 'cultura', nome: 'Arte e cultura', categorie: ['arte', 'libri', 'cinema', 'lirica'] },
   { id: 'scienza', nome: 'Scienza', categorie: ['scienza', 'nobel'] },
 ]
 

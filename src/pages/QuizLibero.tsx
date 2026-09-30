@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { useNavigazione } from '@/app/navigazione'
+import { Navigate, useParams, useSearchParams } from 'react-router-dom'
+import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Sezione } from '@/components/Elementi'
-import { IconCheck, IconChevronRight, IconInfo, IconPeople } from '@/components/Icons'
+import { IconCheck, IconChevronRight, IconInfo, IconPeople, IconPlay } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
@@ -13,10 +13,20 @@ import { contaCitta } from '@/games/quiz/citta'
 import { ComeSiGiocaQuiz } from '@/games/quiz/ComeSiGioca'
 import { useIndiceQuiz } from '@/games/quiz/dati'
 import { caricaCultura } from '@/games/quiz/fonti'
-import { IconaCategoria } from '@/games/quiz/icone'
+import { ICONE_MATERIE, IconaCategoria } from '@/games/quiz/icone'
 import { PartitaQuiz } from '@/games/quiz/PartitaQuiz'
 import { SfidaQuiz } from '@/games/quiz/sfida/SfidaQuiz'
-import { COSA_INSEGNA, descrizione, dettagliPartita, nomeArea, nomeTipo } from '@/games/quiz/testi'
+import {
+  COSA_INSEGNA,
+  DESCRIZIONI_MATERIE,
+  VOCI_MATERIE,
+  descrizione,
+  dettagliPartita,
+  nomeArea,
+  nomeTipo,
+  voceDi,
+  type VoceMateria,
+} from '@/games/quiz/testi'
 import { leggiStatistiche } from '@/games/quiz/statistiche'
 import { OPZIONI_PREDEFINITE, useQuizLibero, type ImpostazioniLibera } from '@/games/quiz/usePartita'
 import { useDati } from '@/lib/dati'
@@ -180,35 +190,167 @@ function indirizzo(s: ImpostazioniLibera): string {
   return `${ROTTE.libera('quiz')}?${q}`
 }
 
-function leggiScelte(): ImpostazioniLibera {
+/** Le scelte dell'ultima partita, se ce n'e' stata una. */
+function scelteSalvate(): ImpostazioniLibera | null {
   try {
-    return valide(JSON.parse(localStorage.getItem(CHIAVE_SCELTE) ?? 'null')) ?? PREDEFINITE
+    return valide(JSON.parse(localStorage.getItem(CHIAVE_SCELTE) ?? 'null'))
   } catch {
-    return PREDEFINITE
+    return null
   }
+}
+
+/**
+ * Cosa si e' scelto l'ultima volta in ogni materia: tornando alla geografia si
+ * ritrovano le capitali d'Europa anche se in mezzo si e' giocato all'arte. Le
+ * opzioni della partita invece sono una sola, per tutte le materie.
+ */
+const CHIAVE_ULTIME = 'quiz-libera-materie-v1'
+type Ultima = Pick<ImpostazioniLibera, 'categoria' | 'modo' | 'area' | 'ambito' | 'giorno'>
+
+function ultimeScelte(): Partial<Record<MateriaQuiz, Ultima>> {
+  try {
+    return (JSON.parse(localStorage.getItem(CHIAVE_ULTIME) ?? 'null') as Partial<Record<MateriaQuiz, Ultima>>) ?? {}
+  } catch {
+    return {}
+  }
+}
+
+/** Le scelte con cui si apre la pagina di una materia. */
+function scelteDellaMateria(materia: MateriaQuiz): ImpostazioniLibera {
+  const salvate = scelteSalvate() ?? PREDEFINITE
+  if (materiaDi(salvate.categoria) === materia) return salvate
+  const ultima = ultimeScelte()[materia]
+  const prima = VOCI_MATERIE[materia][0]
+  const qui = ultima && materiaDi(ultima.categoria) === materia ? ultima : { categoria: prima.categoria, ambito: prima.ambito }
+  // Le opzioni della partita restano quelle di prima; la categoria, la zona e l'ambito sono di questa materia.
+  return valide({ ...salvate, area: 'mondo', ambito: undefined, giorno: undefined, tipi: undefined, ...qui }) ?? salvate
 }
 
 function salvaScelte(s: ImpostazioniLibera): void {
   try {
     localStorage.setItem(CHIAVE_SCELTE, JSON.stringify(s))
+    const ultima: Ultima = { categoria: s.categoria, modo: s.modo, area: s.area, ambito: s.ambito, giorno: s.giorno }
+    localStorage.setItem(CHIAVE_ULTIME, JSON.stringify({ ...ultimeScelte(), [materiaDi(s.categoria)]: ultima }))
   } catch {
     // Le scelte ricordate sono una comodità.
   }
 }
 
+const eMateria = (m: string | undefined): m is MateriaQuiz => MATERIE.some((x) => x.id === m)
+
 /**
- * Il quiz libero: prima si sceglie — categoria, a scelta o sulla cartina,
- * dove, e la partita: quante domande, quanto difficili, quanto tempo — poi si
- * gioca. Le opzioni avanzate sono in ordine da quelle che si cambiano di piu'
- * a quelle che si cambiano di rado.
+ * Il quiz libero, in tre schermate: il menu delle materie, la pagina di una
+ * materia — le sue categorie, su cosa, la partita, le opzioni — e la partita.
  * Tutto nel browser, dagli stessi dati e con le stesse regole della
  * classificata, e non conta per la classifica.
+ *
+ * La partita sta nell'indirizzo del menu, con le scelte (`?categoria=…`): i
+ * link condivisi di prima, che non avevano la materia, portano ancora alla
+ * partita.
  */
 export default function QuizLibero() {
   const [query] = useSearchParams()
+  const { materia } = useParams()
   const chiave = query.toString()
   const impostazioni = useMemo(() => daIndirizzo(new URLSearchParams(chiave)), [chiave])
-  return impostazioni ? <Partita key={chiave} impostazioni={impostazioni} /> : <Scelta />
+  if (impostazioni) return <Partita key={chiave} impostazioni={impostazioni} />
+  if (eMateria(materia)) return <Scelta key={materia} materia={materia} />
+  if (materia) return <Navigate to={ROTTE.libera('quiz')} replace />
+  return <Menu />
+}
+
+/* ──────────────────────────────  Il menu  ─────────────────────────────── */
+
+function Menu() {
+  const { vai } = useNavigazione()
+  const [query] = useSearchParams()
+  const [statistiche] = useState(leggiStatistiche)
+  const [regole, setRegole] = useState(false)
+  const [ultima] = useState(scelteSalvate)
+  const ix = useIndiceQuiz(!!ultima && diGeografia(ultima.categoria))
+
+  // Dalla pagina del quiz, "Sfida un amico": si sfida con le scelte dell'ultima materia.
+  const sfida = query.get('sfida') === '1'
+  useEffect(() => {
+    if (!sfida) return
+    const materia = materiaDi(ultima?.categoria ?? PREDEFINITE.categoria)
+    vai(`${ROTTE.materiaQuiz(materia)}?sfida=1`, { replace: true, direzione: 'nessuna' })
+  }, [sfida, ultima, vai])
+
+  const riassunto = ultima
+    ? [NOMI_CATEGORIE[ultima.categoria], ...dettagliPartita(ultima, ix), `${ultima.quante} domande`]
+        // Il modo si dice solo se e' la cartina: "Scelta multipla" e' come di solito.
+        .filter((x) => x !== NOMI_MODI.scelta)
+        .join(' · ')
+    : null
+
+  return (
+    <Pagina
+      titolo="Quiz libero"
+      sotto={
+        statistiche.domande > 0
+          ? `${statistiche.partite} ${statistiche.partite === 1 ? 'partita' : 'partite'} · ${formatPercent(
+              statistiche.giuste / statistiche.domande,
+            )} di risposte giuste`
+          : 'Non conta per la classifica.'
+      }
+      indietro={{ a: ROTTE.gioco('quiz'), etichetta: 'Quiz' }}
+      azioni={
+        <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
+          <IconInfo size={21} />
+        </BottoneBarra>
+      }
+    >
+      {ultima && riassunto && (
+        <Sezione titolo="Gioca ancora">
+          <button
+            type="button"
+            className={`quiz-ancora quiz-colori--${materiaDi(ultima.categoria)}`}
+            onClick={() => vai(indirizzo(ultima))}
+          >
+            <span className="quiz-ancora__icona" aria-hidden="true">
+              <IconaCategoria categoria={ultima.categoria} ambito={ultima.ambito} size={20} />
+            </span>
+            <span className="quiz-ancora__testi">
+              <span className="quiz-ancora__titolo">Come l’ultima volta</span>
+              <span className="quiz-ancora__sotto">{riassunto}</span>
+            </span>
+            <span className="quiz-ancora__via" aria-hidden="true">
+              <IconPlay size={16} />
+            </span>
+          </button>
+        </Sezione>
+      )}
+
+      <Sezione titolo="Scegli il quiz">
+        <nav className="quiz-materie" aria-label="Materie">
+          {MATERIE.map((m, i) => {
+            const Icona = ICONE_MATERIE[m.id]
+            const record = Math.max(-1, ...m.categorie.map((c) => statistiche.migliori[c] ?? -1))
+            return (
+              <Collegamento
+                key={m.id}
+                to={ROTTE.materiaQuiz(m.id)}
+                className={`quiz-materia quiz-colori--${m.id}`}
+                style={{ '--n': i } as CSSProperties}
+              >
+                <span className="quiz-materia__icona" aria-hidden="true">
+                  <Icona size={28} />
+                </span>
+                <span className="quiz-materia__testi">
+                  <span className="quiz-materia__nome">{m.nome}</span>
+                  <span className="quiz-materia__sotto">{DESCRIZIONI_MATERIE[m.id]}</span>
+                  {record >= 0 && <span className="quiz-materia__record">record {record}%</span>}
+                </span>
+                <IconChevronRight size={20} className="quiz-materia__freccia" />
+              </Collegamento>
+            )
+          })}
+        </nav>
+      </Sezione>
+      <ComeSiGiocaQuiz open={regole} onClose={() => setRegole(false)} />
+    </Pagina>
+  )
 }
 
 /* ───────────────────────────────  La partita  ──────────────────────────── */
@@ -226,11 +368,13 @@ function Partita({ impostazioni }: { impostazioni: ImpostazioniLibera }) {
     : dettagliPartita({ ...impostazioni, giorno: p.giorno }, ix)
   const extra = ['Libera', ...dove, impostazioni.morteImprovvisa ? 'morte improvvisa' : null].filter(Boolean)
 
+  const materia = materiaDi(impostazioni.categoria)
+  const scelte = ROTTE.materiaQuiz(materia)
   return (
     <Pagina
       titolo="Quiz libero"
       intera
-      indietro={{ a: ROTTE.libera('quiz'), etichetta: 'Scelte' }}
+      indietro={{ a: scelte, etichetta: MATERIE.find((m) => m.id === materia)!.nome }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />
@@ -246,7 +390,7 @@ function Partita({ impostazioni }: { impostazioni: ImpostazioniLibera }) {
             <Button size="lg" fullWidth onClick={p.riprova}>
               Un’altra partita
             </Button>
-            <Button variant="tinted" size="lg" fullWidth onClick={() => indietro(ROTTE.libera('quiz'))}>
+            <Button variant="tinted" size="lg" fullWidth onClick={() => indietro(scelte)}>
               Cambia le scelte
             </Button>
             {s.domande > 0 && (
@@ -290,9 +434,9 @@ function paesiCon(ix: IndiceQuiz, categoria: CategoriaQuiz, conti: Map<string, n
 
 const PAROLE_PAESE: Partial<Record<CategoriaQuiz, string>> = { citta: 'città', fiumi: 'fiumi', laghi: 'laghi' }
 
-function Scelta() {
+function Scelta({ materia }: { materia: MateriaQuiz }) {
   const { vai } = useNavigazione()
-  const [scelte, setScelte] = useState(leggiScelte)
+  const [scelte, setScelte] = useState(() => scelteDellaMateria(materia))
   const [paesiAperti, setPaesiAperti] = useState(false)
   // `?sfida=1`: si arriva dalla pagina del quiz con il foglio della sfida gia' aperto.
   const [query] = useSearchParams()
@@ -300,14 +444,10 @@ function Scelta() {
   const [avanzate, setAvanzate] = useState(false)
   const [regole, setRegole] = useState(false)
   const [statistiche] = useState(leggiStatistiche)
-  // L'ultima categoria scelta di ogni materia: tornando a una materia si ritrova quella.
-  const [ultime, setUltime] = useState<Partial<Record<MateriaQuiz, CategoriaQuiz>>>(() => ({
-    [materiaDi(scelte.categoria)]: scelte.categoria,
-  }))
 
   const { categoria, modo = 'scelta' } = scelte
-  const materia = materiaDi(categoria)
   const geografia = diGeografia(categoria)
+  const voce = voceDi(materia, categoria, scelte.ambito)
 
   // I dati servono alla partita: scaricarli mentre si sceglie la fa partire subito.
   const ix = useIndiceQuiz(geografia)
@@ -334,15 +474,7 @@ function Scelta() {
 
   const cambia = (nuove: Partial<ImpostazioniLibera>) => setScelte((s) => valide({ ...s, ...nuove }) ?? s)
 
-  const scegliCategoria = (c: CategoriaQuiz) => {
-    setUltime((u) => ({ ...u, [materiaDi(c)]: c }))
-    cambia({ categoria: c, tipi: undefined, ambito: undefined })
-  }
-
-  const scegliMateria = (m: MateriaQuiz) => {
-    if (m === materia) return
-    scegliCategoria(ultime[m] ?? MATERIE.find((x) => x.id === m)!.categorie[0])
-  }
+  const scegliVoce = (v: VoceMateria) => cambia({ categoria: v.categoria, ambito: v.ambito, tipi: undefined })
 
   const comincia = () => {
     salvaScelte(scelte)
@@ -358,59 +490,49 @@ function Scelta() {
     [ix, conPaese, categoria, contiCitta],
   )
   const aree: AreaQuiz[] = conContinente ? ['mondo', ...CONTINENTI] : ['mondo']
-  const ambiti = AMBITI[categoria]
+  // L'ambito si sceglie sotto solo se la voce non e' gia' un argomento: la chimica non ha altro da scegliere.
+  const ambiti = voce?.ambito === undefined ? AMBITI[categoria] : undefined
   const tipi = tipiPossibili(categoria, modo, scelte.ambito)
   const tipiScelti = scelte.tipi?.length ? scelte.tipi : tipi
   const secondi = scelte.secondi ?? SECONDI_SCELTA
   // Sulla cartina il tempo e' il doppio: si mostrano i secondi veri del modo scelto.
   const perModo = cartina(scelte) ? 2 : 1
   const riassunto = riassuntoAvanzate(scelte)
-  const categorie = MATERIE.find((m) => m.id === materia)!.categorie
+  const voci = VOCI_MATERIE[materia]
   const sullaCartina = cartina(scelte)
+  const nome = MATERIE.find((m) => m.id === materia)!.nome
 
   return (
     <Pagina
-      titolo="Quiz libero"
-      sotto={
-        statistiche.domande > 0
-          ? `${statistiche.partite} ${statistiche.partite === 1 ? 'partita' : 'partite'} · ${formatPercent(
-              statistiche.giuste / statistiche.domande,
-            )} di risposte giuste`
-          : 'Non conta per la classifica.'
-      }
-      indietro={{ a: ROTTE.gioco('quiz'), etichetta: 'Quiz' }}
+      titolo={nome}
+      indietro={{ a: ROTTE.libera('quiz'), etichetta: 'Quiz libero' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />
         </BottoneBarra>
       }
     >
-      <Sezione titolo="Materia">
-        <SegmentedControl
-          ariaLabel="Materia"
-          options={MATERIE.map((m) => ({ value: m.id, label: m.nome }))}
-          value={materia}
-          onChange={scegliMateria}
-        />
-        <div className="quiz-categorie" role="radiogroup" aria-label="Categoria">
-          {categorie.map((c, i) => {
-            const scelta = c === categoria
-            const record = statistiche.migliori[c]
+      <Sezione titolo="Categoria">
+        <div className={`quiz-categorie quiz-colori--${materia}`} role="radiogroup" aria-label="Categoria">
+          {voci.map((v, i) => {
+            const scelta = v === voce
+            // I record sono per categoria: gli argomenti della scienza non hanno il loro.
+            const record = v.ambito === undefined || v.ambito === 'tutti' ? statistiche.migliori[v.categoria] : undefined
             return (
               <button
-                key={c}
+                key={`${v.categoria}:${v.ambito ?? ''}`}
                 type="button"
                 role="radio"
                 aria-checked={scelta}
                 className={`quiz-tessera${scelta ? ' is-scelta' : ''}`}
                 style={{ '--n': i } as CSSProperties}
-                onClick={() => scegliCategoria(c)}
+                onClick={() => scegliVoce(v)}
               >
                 <span className="quiz-tessera__icona" aria-hidden="true">
-                  <IconaCategoria categoria={c} size={19} />
+                  <IconaCategoria categoria={v.categoria} ambito={v.ambito} size={19} />
                 </span>
                 <span className="quiz-tessera__testi">
-                  <span className="quiz-tessera__nome">{NOMI_CATEGORIE[c]}</span>
+                  <span className="quiz-tessera__nome">{v.nome}</span>
                   {record !== undefined && <span className="quiz-tessera__record">record {record}%</span>}
                 </span>
                 {scelta && (
@@ -424,7 +546,7 @@ function Scelta() {
         </div>
         {/* Che cosa si chiede, in una riga: cambia con la categoria e con il modo. */}
         <p className="quiz-scelta__cosa" aria-live="polite">
-          {descrizione(categoria, modo)}
+          {voce?.descrizione ?? descrizione(categoria, modo)}
         </p>
       </Sezione>
 
