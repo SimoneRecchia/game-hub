@@ -250,3 +250,85 @@ const SUDDIVISIONI: Record<string, string> = {
 export function suddivisione(iso: string): string {
   return SUDDIVISIONI[iso] ?? 'regione'
 }
+
+/* ─────────────────────────────  I nomi comuni  ─────────────────────────── */
+
+/**
+ * Il genere delle parole con cui cominciano i nomi delle altre materie:
+ * "battaglia di Waterloo", "trattato di Versailles", "anidride carbonica",
+ * "pascal". Wikidata li scrive senza articolo, e il genere non lo dice: la
+ * tabella ha le parole che si incontrano davvero, e per le altre si guarda la
+ * desinenza solo dove non sbaglia mai. Se non si sa, la domanda usa il nome fra
+ * virgolette, senza articolo: sgraziato, ma non sbagliato.
+ */
+const GENERE_PAROLE: Record<string, Exclude<Genere, '0'>> = {
+  // La storia.
+  battaglia: 'f', battaglie: 'fp', guerra: 'f', guerre: 'fp', assedio: 'm', trattato: 'm', trattati: 'mp',
+  pace: 'f', rivoluzione: 'f', rivolta: 'f', insurrezione: 'f', moti: 'mp', assassinio: 'm', omicidio: 'm',
+  strage: 'f', massacro: 'm', eccidio: 'm', genocidio: 'm', terremoto: 'm', eruzione: 'f', naufragio: 'm',
+  incendio: 'm', epidemia: 'f', pandemia: 'f', peste: 'f', carestia: 'f', alluvione: 'f', uragano: 'm',
+  maremoto: 'm', tsunami: 'm', scoperta: 'f', caduta: 'f', sacco: 'm', presa: 'f', conquista: 'f',
+  spedizione: 'f', spedizioni: 'fp', crociata: 'f', crociate: 'fp', campagna: 'f', incoronazione: 'f',
+  congresso: 'm', concilio: 'm', editto: 'm', unificazione: 'f', riunificazione: 'f', proclamazione: 'f',
+  fondazione: 'f', crisi: 'f', sbarco: 'm', attacco: 'm', attentato: 'm', attentati: 'mp', disastro: 'm',
+  esplosione: 'f', incidente: 'm', crollo: 'm', invasione: 'f', occupazione: 'f', marcia: 'f', riforma: 'f',
+  scisma: 'm', dichiarazione: 'f', armistizio: 'm', accordo: 'm', accordi: 'mp', conferenza: 'f',
+  vespri: 'mp', colpo: 'm', putsch: 'm', olocausto: 'm', affondamento: 'm', disfatta: 'f', ritirata: 'f',
+  sconfitta: 'f', vittoria: 'f', notte: 'f', giornate: 'fp', primavera: 'f', processo: 'm', rogo: 'm',
+  patto: 'm', convenzione: 'f', capitolazione: 'f', resa: 'f', sollevazione: 'f', secessione: 'f',
+  restaurazione: 'f', ammutinamento: 'm', traversata: 'f', viaggio: 'm', allunaggio: 'm', missione: 'f',
+  incursione: 'f', bombardamento: 'm', bombardamenti: 'mp', blocco: 'm', rapimento: 'm', esecuzione: 'f',
+  // Le scienze.
+  acqua: 'f', anidride: 'f', ammoniaca: 'f', acido: 'm', cloruro: 'm', metano: 'm', etanolo: 'm',
+  glucosio: 'm', saccarosio: 'm', ozono: 'm', ossido: 'm', biossido: 'm', monossido: 'm', idrossido: 'm',
+  perossido: 'm', carbonato: 'm', bicarbonato: 'm', solfato: 'm', nitrato: 'm', benzene: 'm', propano: 'm',
+  butano: 'm', etilene: 'm', acetilene: 'm', urea: 'f', caffeina: 'f', nicotina: 'f', aspirina: 'f',
+  paracetamolo: 'm', cloroformio: 'm', fruttosio: 'm', lattosio: 'm', idrogenocarbonato: 'm', solfuro: 'm',
+  radio: 'f', dinamite: 'f', lampadina: 'f', penicillina: 'f', insulina: 'f', vaccino: 'm', teoria: 'f',
+  legge: 'f', leggi: 'fp', principio: 'm', equazione: 'f', relatività: 'f', telefono: 'm', telegrafo: 'm',
+  televisione: 'f', stampa: 'f', macchina: 'f', motore: 'm', pila: 'f', batteria: 'f', computer: 'm',
+  aeroplano: 'm', aereo: 'm', automobile: 'f', bicicletta: 'f', fonografo: 'm', cinematografo: 'm',
+  microscopio: 'm', telescopio: 'm', termometro: 'm', barometro: 'm', parafulmine: 'm', elettrone: 'm',
+  protone: 'm', neutrone: 'm', raggi: 'mp', radioattività: 'f', vaccinazione: 'f', anestesia: 'f',
+  pastorizzazione: 'f', calcolatrice: 'f', ascensore: 'm', frigorifero: 'm', transistor: 'm', laser: 'm',
+  // Le grandezze e le unità di misura.
+  lunghezza: 'f', massa: 'f', tempo: 'm', durata: 'f', temperatura: 'f', intensità: 'f', quantità: 'f',
+  energia: 'f', lavoro: 'm', calore: 'm', potenza: 'f', forza: 'f', pressione: 'f', frequenza: 'f',
+  tensione: 'f', carica: 'f', resistenza: 'f', capacità: 'f', induttanza: 'f', flusso: 'm', campo: 'm',
+  attività: 'f', dose: 'f', illuminamento: 'm', velocità: 'f', accelerazione: 'f', area: 'f', volume: 'm',
+  superficie: 'f', angolo: 'm', densità: 'f', conduttanza: 'f', differenza: 'f',
+  mole: 'f', candela: 'f',
+}
+
+/**
+ * Il genere di un nome che comincia con un nome comune, dalla prima parola:
+ * null se non si sa. "battaglia di Waterloo" → f, "pascal" → m (le unità
+ * di misura sono maschili, tranne mole e candela, che sono in tabella).
+ */
+export function genereNome(nome: string, predefinito: Exclude<Genere, '0'> | null = null): Exclude<Genere, '0'> | null {
+  const prima = nome.trim().split(/[\s'’]+/)[0]?.toLowerCase() ?? ''
+  if (GENERE_PAROLE[prima]) return GENERE_PAROLE[prima]
+  if (/(zione|sione|tà|ite)$/.test(prima)) return 'f'
+  return predefinito
+}
+
+/** "la battaglia di Waterloo", "l’anidride carbonica", "i vespri siciliani": null se il genere non si sa. */
+export function nomeConArticolo(nome: string, genere = genereNome(nome)): string | null {
+  return genere ? articolo(genere, nome) + nome : null
+}
+
+/** "della battaglia di Waterloo", "dell’acqua", "del ferro": null se il genere non si sa. */
+export function diNome(nome: string, genere = genereNome(nome)): string | null {
+  return genere ? articolata('di', articolo(genere, nome)) + nome : null
+}
+
+/** Se il nome e' plurale: "i vespri siciliani ci furono", non "ci fu". */
+export function plurale(genere: Exclude<Genere, '0'>): boolean {
+  return genere === 'mp' || genere === 'fp'
+}
+
+/** Gli elementi chimici sono tutti maschili: "del ferro", "dell’oro", "dello zinco", "dello iodio". */
+export function diElemento(nome: string): string {
+  const art = /^i[aeiou]/i.test(nome) ? 'lo ' : articolo('m', nome)
+  return articolata('di', art) + nome
+}

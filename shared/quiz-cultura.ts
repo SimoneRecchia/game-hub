@@ -391,6 +391,8 @@ export interface NatoQuiz {
   id: string
   n: string
   anno: number
+  /** 1 se e' una donna (P21 = Q6581072): la domanda dice "e' nata". */
+  fem?: 1
   /** "fisico tedesco". */
   d?: string
   w?: string

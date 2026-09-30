@@ -1,16 +1,19 @@
 /**
- * Il quiz di geografia: le categorie, i modi, i tempi, i punti, la giornata.
+ * Il quiz: le materie e le loro categorie, i modi, i tempi, i punti, la
+ * giornata.
  *
  * Una partita e' una serie di domande della stessa categoria: a risposte da
- * scegliere, o sulla cartina muta, dove la risposta si tocca. La classificata
- * e' una al giorno, uguale per tutti, e categoria e modo cambiano ogni giorno;
- * la libera la sceglie chi gioca, con la zona, il numero di domande e le
- * opzioni avanzate.
+ * scegliere, o — in geografia — sulla cartina muta, dove la risposta si tocca.
+ * La classificata e' una al giorno, uguale per tutti, e la categoria cambia
+ * ogni giorno, di qualunque materia; la libera la sceglie chi gioca, con la
+ * zona o l'ambito, il numero di domande e le opzioni avanzate.
  *
- * Le domande non le scrive nessuno: le costruisce `shared/quiz-domande.ts` dai
- * dati di Wikidata e di Natural Earth, che lo script della notte riduce a un
- * riassunto (`shared/quiz-dati.ts`). Stesse funzioni per le due modalità: la
- * classificata le fa girare la notte e salva le domande, la libera nel browser.
+ * Le domande non le scrive nessuno: le costruiscono `shared/quiz-domande.ts`
+ * dai dati di Wikidata e di Natural Earth, che lo script della notte riduce a
+ * un riassunto (`shared/quiz-dati.ts`), e `shared/quiz-domande-cultura.ts` dai
+ * file delle altre materie (`shared/quiz-cultura.ts`). Stesse funzioni per le
+ * due modalità: la classificata le fa girare la notte e salva le domande, la
+ * libera nel browser.
  */
 
 import { mulberry32 } from './daily'
@@ -30,33 +33,50 @@ export type CategoriaQuiz =
   | 'fiumi'
   | 'laghi'
   | 'cartina'
+  | 'arte'
+  | 'libri'
+  | 'cinema'
+  | 'lirica'
+  | 'nobel'
+  | 'storia'
+  | 'oggi'
+  | 'scienza'
+
+/**
+ * Le materie, cioe' come si mostrano le categorie: la geografia e le altre.
+ * Le categorie dentro una materia sono in ordine di come si scelgono.
+ */
+export type MateriaQuiz = 'geografia' | 'storia' | 'cultura' | 'scienza'
+
+export const MATERIE: ReadonlyArray<{ id: MateriaQuiz; nome: string; categorie: readonly CategoriaQuiz[] }> = [
+  {
+    id: 'geografia',
+    nome: 'Geografia',
+    categorie: ['capitali', 'citta', 'bandiere', 'stati', 'mari', 'oceani', 'fiumi', 'laghi'],
+  },
+  { id: 'storia', nome: 'Storia', categorie: ['storia', 'oggi'] },
+  { id: 'cultura', nome: 'Cultura', categorie: ['arte', 'libri', 'cinema', 'lirica'] },
+  { id: 'scienza', nome: 'Scienza', categorie: ['scienza', 'nobel'] },
+]
 
 /** Le categorie che si scelgono, nell'ordine in cui si mostrano. */
-export const CATEGORIE: readonly CategoriaQuiz[] = [
-  'capitali',
-  'citta',
-  'bandiere',
-  'stati',
-  'mari',
-  'oceani',
-  'fiumi',
-  'laghi',
-]
+export const CATEGORIE: readonly CategoriaQuiz[] = MATERIE.flatMap((m) => m.categorie)
+
+export function materiaDi(categoria: CategoriaQuiz): MateriaQuiz {
+  return MATERIE.find((m) => m.categorie.includes(categoria))?.id ?? 'geografia'
+}
+
+/** Le categorie di geografia: le sole con la cartina muta, le zone e i paesi. */
+export function diGeografia(categoria: CategoriaQuiz): boolean {
+  return categoria === 'cartina' || materiaDi(categoria) === 'geografia'
+}
 
 /**
  * Le categorie della classificata: tutte tranne le città, troppo difficili per
  * una partita uguale per tutti — le città principali di un paese lontano non le
- * sa nessuno — e che vengono da Wikidata solo nel browser di chi gioca.
+ * sa nessuno.
  */
-export const CATEGORIE_CLASSIFICATA: readonly CategoriaQuiz[] = [
-  'capitali',
-  'bandiere',
-  'stati',
-  'mari',
-  'oceani',
-  'fiumi',
-  'laghi',
-]
+export const CATEGORIE_CLASSIFICATA: readonly CategoriaQuiz[] = CATEGORIE.filter((c) => c !== 'citta')
 
 export const NOMI_CATEGORIE: Record<CategoriaQuiz, string> = {
   capitali: 'Capitali',
@@ -68,10 +88,92 @@ export const NOMI_CATEGORIE: Record<CategoriaQuiz, string> = {
   fiumi: 'Fiumi',
   laghi: 'Laghi',
   cartina: 'Cartina muta',
+  arte: 'Arte',
+  libri: 'Libri',
+  cinema: 'Cinema',
+  lirica: 'Lirica',
+  nobel: 'Premi Nobel',
+  storia: 'Storia',
+  oggi: 'Accadde oggi',
+  scienza: 'Scienza',
 }
 
 export function eCategoria(valore: unknown): valore is CategoriaQuiz {
   return typeof valore === 'string' && (CATEGORIE as readonly string[]).includes(valore)
+}
+
+/**
+ * Gli ambiti delle altre materie: quel che per la geografia sono le zone. Il
+ * primo e' "tutti", e vale se non si sceglie altro.
+ */
+export const AMBITI: Partial<Record<CategoriaQuiz, ReadonlyArray<{ id: string; nome: string }>>> = {
+  arte: [
+    { id: 'tutti', nome: 'Tutti' },
+    { id: 'italiani', nome: 'Pittori italiani' },
+    { id: 'antichi', nome: 'Fino al Cinquecento' },
+    { id: 'barocchi', nome: 'Seicento e Settecento' },
+    { id: 'ottocento', nome: 'Ottocento' },
+    { id: 'novecento', nome: 'Novecento' },
+  ],
+  libri: [
+    { id: 'tutti', nome: 'Tutti' },
+    { id: 'italiani', nome: 'Letteratura italiana' },
+    { id: 'stranieri', nome: 'Letteratura straniera' },
+  ],
+  cinema: [
+    { id: 'tutti', nome: 'Tutti' },
+    { id: 'italiani', nome: 'Cinema italiano' },
+    { id: 'classici', nome: 'Prima del 1980' },
+    { id: 'recenti', nome: 'Dal 1980' },
+  ],
+  lirica: [
+    { id: 'tutti', nome: 'Tutte' },
+    { id: 'italiani', nome: 'Opere italiane' },
+    { id: 'stranieri', nome: 'Opere straniere' },
+  ],
+  nobel: [
+    { id: 'tutti', nome: 'Tutti' },
+    { id: 'letteratura', nome: 'Letteratura' },
+    { id: 'fisica', nome: 'Fisica' },
+    { id: 'chimica', nome: 'Chimica' },
+    { id: 'medicina', nome: 'Medicina' },
+    { id: 'pace', nome: 'Pace' },
+    { id: 'economia', nome: 'Economia' },
+    { id: 'italiani', nome: 'Italiani' },
+  ],
+  storia: [
+    { id: 'tutti', nome: 'Tutta' },
+    { id: 'antichita', nome: 'Antichità' },
+    { id: 'medioevo', nome: 'Medioevo' },
+    { id: 'moderna', nome: 'Età moderna' },
+    { id: 'contemporanea', nome: 'Età contemporanea' },
+    { id: 'italia', nome: 'Storia d’Italia' },
+  ],
+  scienza: [
+    { id: 'tutti', nome: 'Tutto' },
+    { id: 'chimica', nome: 'Chimica' },
+    { id: 'fisica', nome: 'Fisica' },
+    { id: 'astronomia', nome: 'Astronomia' },
+    { id: 'scoperte', nome: 'Scoperte e invenzioni' },
+    { id: 'natura', nome: 'Animali e piante' },
+  ],
+}
+
+/** Come si chiama la scelta dell'ambito, nella libera: la domanda a cui risponde. */
+export const TITOLI_AMBITI: Partial<Record<CategoriaQuiz, string>> = {
+  arte: 'Quali quadri',
+  libri: 'Quali libri',
+  cinema: 'Quali film',
+  lirica: 'Quali opere',
+  nobel: 'Quale premio',
+  storia: 'Quale periodo',
+  scienza: 'Quale argomento',
+}
+
+/** L'ambito, se la categoria lo ha e se c'e': "tutti" altrimenti. */
+export function ambitoValido(categoria: CategoriaQuiz, ambito: unknown): string {
+  const ambiti = AMBITI[categoria]
+  return ambiti?.some((a) => a.id === ambito) ? (ambito as string) : 'tutti'
 }
 
 /** Come si risponde: scegliendo fra le risposte, o toccando la cartina muta. */
@@ -145,6 +247,14 @@ export const RISPOSTE_PREDEFINITE = 4
 export const SECONDI_SCELTA = 15
 export const SECONDI_CARTINA = 30
 
+/**
+ * Le domande con risposte lunghe — quattro fatti di un giorno, quattro eventi
+ * da mettere in ordine — ne hanno un terzo in piu': si deve leggere, prima di
+ * scegliere.
+ */
+export const SECONDI_LUNGA = 20
+export const FATTORE_LUNGA = SECONDI_LUNGA / SECONDI_SCELTA
+
 /** I tempi che si scelgono nella libera, per le domande a scelta: sulla cartina sono il doppio. */
 export const SECONDI_LIBERI = [10, 15, 20, 30] as const
 
@@ -190,23 +300,59 @@ function mescola<T>(voci: readonly T[], caso: () => number): T[] {
   return copia
 }
 
-/** L'ordine delle categorie di un giro, prima del ritocco al confine. */
-function giro(indice: number): CategoriaQuiz[] {
-  return mescola(CATEGORIE_CLASSIFICATA, mulberry32((SEME_CATEGORIE ^ Math.imul(indice + 1, 0x85eb_ca6b)) >>> 0))
+const GEOGRAFIA_DEL_GIORNO = CATEGORIE_CLASSIFICATA.filter((c) => diGeografia(c))
+const ALTRE_DEL_GIORNO = CATEGORIE_CLASSIFICATA.filter((c) => !diGeografia(c))
+
+/**
+ * Un giro prima del ritocco al confine: le altre materie in un ordine, e dopo
+ * alcune di loro un giorno di geografia. Le altre materie fanno da divisori —
+ * la geografia va negli spazi che seguono ciascuna, uno per spazio — così due
+ * giorni di geografia non sono mai di fila, nemmeno fra un giro e l'altro,
+ * perché ogni giro comincia con un'altra materia.
+ */
+function giroGrezzo(indice: number): { altre: CategoriaQuiz[]; geografia: CategoriaQuiz[]; spazi: Set<number> } {
+  const caso = mulberry32((SEME_CATEGORIE ^ Math.imul(indice + 1, 0x85eb_ca6b)) >>> 0)
+  const altre = mescola(ALTRE_DEL_GIORNO, caso)
+  const geografia = mescola(GEOGRAFIA_DEL_GIORNO, caso)
+  const spazi = new Set(
+    mescola(
+      Array.from({ length: altre.length }, (_, i) => i),
+      caso,
+    ).slice(0, geografia.length),
+  )
+  return { altre, geografia, spazi }
 }
 
-/** I giorni di un giro che vanno sulla cartina: due, mai uno dopo l'altro. */
-function giorniSullaCartina(indice: number): Set<number> {
-  const n = CATEGORIE_CLASSIFICATA.length
-  const caso = mulberry32((SEME_CARTINA ^ Math.imul(indice + 1, 0x27d4_eb2f)) >>> 0)
-  for (;;) {
-    const scelti = mescola(
-      Array.from({ length: n }, (_, i) => i),
-      caso,
-    ).slice(0, GIORNI_CARTINA_PER_GIRO)
-    const [a, b] = scelti
-    if (Math.abs(a - b) > 1) return new Set(scelti)
+function inFila({ altre, geografia, spazi }: ReturnType<typeof giroGrezzo>): CategoriaQuiz[] {
+  const fila: CategoriaQuiz[] = []
+  let g = 0
+  altre.forEach((a, i) => {
+    fila.push(a)
+    if (spazi.has(i)) fila.push(geografia[g++])
+  })
+  return fila
+}
+
+/** L'ordine delle categorie di un giro, ritoccato al confine con il giro prima. */
+function giro(indice: number): CategoriaQuiz[] {
+  const grezzo = giroGrezzo(indice)
+  // Il primo giorno non ripete l'ultimo del giro prima: il ritocco scambia le
+  // prime due altre materie, e non tocca mai la fine di un giro, quindi basta
+  // guardare il giro prima senza il suo ritocco.
+  if (indice > 0) {
+    const prima = inFila(giroGrezzo(indice - 1))
+    if (grezzo.altre[0] === prima[prima.length - 1]) {
+      ;[grezzo.altre[0], grezzo.altre[1]] = [grezzo.altre[1], grezzo.altre[0]]
+    }
   }
+  return inFila(grezzo)
+}
+
+/** I giorni di un giro che vanno sulla cartina: due giorni di geografia, che non sono mai di fila. */
+function giorniSullaCartina(indice: number, ordine: readonly CategoriaQuiz[]): Set<number> {
+  const caso = mulberry32((SEME_CARTINA ^ Math.imul(indice + 1, 0x27d4_eb2f)) >>> 0)
+  const geografia = ordine.flatMap((c, i) => (diGeografia(c) ? [i] : []))
+  return new Set(mescola(geografia, caso).slice(0, GIORNI_CARTINA_PER_GIRO))
 }
 
 export interface GiornataQuiz {
@@ -214,26 +360,24 @@ export interface GiornataQuiz {
   modo: ModoQuiz
 }
 
+/** Quanti giorni fa un giro: una volta ogni categoria della classificata. */
+export const GIORNI_PER_GIRO = CATEGORIE_CLASSIFICATA.length
+
 /**
  * La categoria e il modo della classificata di un giorno.
  *
- * Ogni giro di sette giorni passa da tutte le categorie, in un ordine diverso
- * ogni volta: nessuna torna prima di averle viste tutte, e non si puo'
- * indovinare quella di domani. Due giorni per giro sono sulla cartina muta, mai
- * di fila. L'unico ritocco e' al confine fra due giri: se il primo giorno di un
- * giro ripeterebbe l'ultimo del precedente, i primi due si scambiano — lo
- * scambio non tocca mai l'ultimo giorno di un giro, quindi basta guardare il
- * giro prima.
+ * Ogni giro passa da tutte le categorie di tutte le materie, in un ordine
+ * diverso ogni volta: nessuna torna prima di averle viste tutte, e non si puo'
+ * indovinare quella di domani. La geografia ha sette categorie su quindici, e
+ * per questo due suoi giorni non sono mai di fila; due giorni per giro sono
+ * sulla cartina muta.
  */
 export function giornataDelQuiz(numero: number): GiornataQuiz {
-  const n = CATEGORIE_CLASSIFICATA.length
+  const n = GIORNI_PER_GIRO
   const indice = Math.floor((numero - 1) / n)
   const posto = (((numero - 1) % n) + n) % n
   const ordine = giro(indice)
-  if (indice > 0 && ordine[0] === giro(indice - 1)[n - 1]) {
-    ;[ordine[0], ordine[1]] = [ordine[1], ordine[0]]
-  }
-  return { categoria: ordine[posto], modo: giorniSullaCartina(indice).has(posto) ? 'cartina' : 'scelta' }
+  return { categoria: ordine[posto], modo: giorniSullaCartina(indice, ordine).has(posto) ? 'cartina' : 'scelta' }
 }
 
 /* ───────────────────────────────  La cartina  ─────────────────────────── */

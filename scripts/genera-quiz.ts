@@ -1,6 +1,11 @@
 /**
- * Prepara il quiz di geografia: il riassunto dei dati e le domande dei prossimi
- * giorni, in D1.
+ * Prepara il quiz: il riassunto dei dati della geografia e le domande dei
+ * prossimi giorni, in D1.
+ *
+ * Le altre materie non hanno un riassunto in D1: i loro dati sono i file di
+ * `public/quiz/` (li scrive `npm run quiz:cultura`), e qui si leggono dal
+ * repository per fare le domande delle giornate che sono di arte, di storia,
+ * di "Accadde oggi".
  *
  * Il riassunto e' quel che serve per fare domande — paesi, capitali, confini,
  * coste, fiumi, laghi — ridotto da Wikidata e Natural Earth a un centinaio di
@@ -32,13 +37,15 @@
 
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { gameDate, mulberry32, puzzleNumberFor } from '../shared/daily'
+import { dateForPuzzleNumber, gameDate, mulberry32, puzzleNumberFor } from '../shared/daily'
 import { DOMANDE_PER_PARTITA, NOMI_CATEGORIE, NOMI_MODI, giornataDelQuiz, type CategoriaQuiz } from '../shared/quiz'
+import { CATEGORIE_CULTURA, giornoDellAnno, type DatiCultura, type DatiOggi } from '../shared/quiz-cultura'
 import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI, cittaInBreve, type DatiQuiz } from '../shared/quiz-dati'
-import { domandeDelGiorno, indicizza, type DomandaCompleta } from '../shared/quiz-domande'
+import { indicizza, type DomandaCompleta } from '../shared/quiz-domande'
+import { domandeDelGiornoQuiz, eCultura, type FontiQuiz } from '../shared/quiz-domande-cultura'
 import type { Topologia } from '../shared/topojson'
 import {
   Q_ALIAS_FIUMI,
@@ -72,9 +79,11 @@ const MEMORIA_GIORNI = 35
  * nessuno ha ancora aperto, si rifà: e' l'unica eccezione al "una giornata
  * scritta non cambia piu'", ed e' innocua perché nessuno l'ha vista. Il 2 e'
  * quello delle categorie con il modo — a scelta o sulla cartina — e del
- * `luogo` di ogni domanda, che la cartina mostra a risposta data.
+ * `luogo` di ogni domanda, che la cartina mostra a risposta data; il 3 quello
+ * delle altre materie, con il calendario che passa da tutte e la scheda che
+ * insegna.
  */
-const FORMATO = 2
+const FORMATO = 3
 
 /** Un pezzo di geometrie per riga, sotto i cento kB di una istruzione di D1. */
 const PEZZO_MASSIMO = 90_000
@@ -297,6 +306,24 @@ if (SCRIVE) {
 /* ─────────────────────────────  Le giornate  ───────────────────────────── */
 
 const ix = indicizza(dati as DatiQuiz)
+
+/** I file delle altre materie, dal repository: sono gli stessi che il browser scarica per le libere. */
+const CARTELLA_CULTURA = join(ROOT, 'public', 'quiz')
+function leggiJson<T>(file: string): T {
+  if (!existsSync(file)) {
+    console.error(`  manca ${file}: prima npm run quiz:cultura`)
+    process.exit(1)
+  }
+  return JSON.parse(readFileSync(file, 'utf8')) as T
+}
+const cultura: Partial<Omit<DatiCultura, 'oggi'>> = {}
+function fontiDelGiorno(categoria: CategoriaQuiz, data: string): FontiQuiz {
+  if (!eCultura(categoria)) return { geo: ix }
+  if (categoria === 'oggi') return { oggi: leggiJson<DatiOggi>(join(CARTELLA_CULTURA, 'oggi', `${giornoDellAnno(data)}.json`)) }
+  const c = categoria as Exclude<(typeof CATEGORIE_CULTURA)[number], 'oggi'>
+  ;(cultura as Record<string, unknown>)[c] ??= leggiJson(join(CARTELLA_CULTURA, `${c}.json`))
+  return { cultura }
+}
 const esistenti = new Map<number, { categoria: CategoriaQuiz; formato: number; giocata: boolean; domande: DomandaCompleta[] }>()
 if (SCRIVE) {
   for (const r of interroga<{ puzzle_number: number; categoria: CategoriaQuiz; formato: number; giocata: number; domande: string }>(
@@ -329,7 +356,14 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
     const g = esistenti.get(prima)
     if (g?.categoria === giornata.categoria) for (const d of g.domande) evitare.add(d.soggetto)
   }
-  const domande = domandeDelGiorno(ix, giornata, mulberry32(semeDelGiorno(numero)), evitare)
+  const data = dateForPuzzleNumber(numero)
+  const domande = domandeDelGiornoQuiz(
+    fontiDelGiorno(giornata.categoria, data),
+    giornata,
+    data,
+    mulberry32(semeDelGiorno(numero)),
+    evitare,
+  )
   if (domande.length !== DOMANDE_PER_PARTITA) {
     console.error(`  #${numero} (${giornata.categoria}, ${giornata.modo}): solo ${domande.length} domande su ${DOMANDE_PER_PARTITA}`)
     process.exit(1)
