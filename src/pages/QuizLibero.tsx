@@ -17,12 +17,8 @@ import { IconaCategoria } from '@/games/quiz/icone'
 import { PartitaQuiz } from '@/games/quiz/PartitaQuiz'
 import { SfidaQuiz } from '@/games/quiz/sfida/SfidaQuiz'
 import { COSA_INSEGNA, descrizione, dettagliPartita, nomeArea, nomeTipo } from '@/games/quiz/testi'
-import {
-  OPZIONI_PREDEFINITE,
-  leggiStatistiche,
-  useQuizLibero,
-  type ImpostazioniLibera,
-} from '@/games/quiz/usePartita'
+import { leggiStatistiche } from '@/games/quiz/statistiche'
+import { OPZIONI_PREDEFINITE, useQuizLibero, type ImpostazioniLibera } from '@/games/quiz/usePartita'
 import { useDati } from '@/lib/dati'
 import { formatPercent } from '@/lib/format'
 import { gameDate } from '@shared/daily'
