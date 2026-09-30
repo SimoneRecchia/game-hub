@@ -104,7 +104,7 @@
   margin-top: 2px;
   font-size: var(--text-caption-1);
   font-weight: 700;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
 .quiz-materia__freccia {
@@ -268,7 +268,7 @@
 .quiz-tessera__record {
   font-size: var(--text-caption-1);
   font-weight: 600;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
 /* Il segno sta sull'angolo dell'icona: nell'angolo della tessera finiva sopra i nomi lunghi ("Accadde oggi"). */
@@ -295,52 +295,103 @@
 
 /* ───────────────────────────  Le zone  ─────────────────────────── */
 
-.quiz-zone {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/*
+ * Il foglio "Dove": una tessera per zona con la sua sagoma, due per riga, come
+ * le categorie. La scelta ha l'anello indaco delle tessere delle categorie.
+ */
+.quiz-zone-tessere {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 2px 2px var(--sp-2);
 }
 
-.quiz-zona {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  height: 36px;
-  padding: 0 14px;
-  border-radius: var(--r-pill);
+.quiz-zona-tessera {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 12px 10px;
+  border-radius: var(--r-lg);
   background: var(--surface);
+  /* Nel foglio la carta e' dello stesso colore del fondo: la staccano un filo e un'ombra morbida. */
   box-shadow:
-    var(--edge-light),
+    0 0 0 0.5px var(--separator),
     var(--shadow-sm);
   color: var(--label);
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  white-space: nowrap;
+  text-align: left;
   transition:
-    background-color var(--dur-fast) var(--ease-out),
-    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
     transform 90ms var(--ease-out);
 }
 
-.quiz-zona:active:not(:disabled) {
-  transform: scale(0.96);
+.quiz-zona-tessera:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
-.quiz-zona:disabled {
+.quiz-zona-tessera:disabled {
   opacity: 0.5;
 }
 
-.quiz-zona.is-scelta {
-  background: var(--brand);
-  color: #fff;
+.quiz-zona-tessera.is-scelta {
+  box-shadow:
+    0 0 0 2.5px var(--brand),
+    var(--shadow-sm);
 }
 
-.quiz-zona__bandiera {
-  width: 22px;
-  height: 16px;
-  border-radius: 3px;
-  object-fit: cover;
+.quiz-zona-tessera .sagoma {
+  height: 64px;
+}
+
+.quiz-zona-tessera__nome {
+  overflow: hidden;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Un paese: la sua bandiera, o l'icona finché non se n'e' scelto uno. */
+.quiz-zona-tessera__bandiera {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  color: var(--m1, var(--brand));
+}
+
+.quiz-zona-tessera__bandiera img {
+  max-height: 44px;
+  border-radius: 5px;
   box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.25);
+}
+
+/*
+ * La sagoma di una zona: le sue terre nel colore della materia, con un filo
+ * dello stesso colore che chiude le fessure fra un paese e l'altro, e le terre
+ * intorno in grigio, perché si capisca dov'e'.
+ */
+.sagoma {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.sagoma__zona {
+  fill: var(--m1, var(--brand));
+  stroke: var(--m1, var(--brand));
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+}
+
+.sagoma__resto {
+  fill: var(--fill-secondary);
+}
+
+.sagoma--piccola {
+  width: 34px;
+  height: 22px;
+  flex: none;
 }
 
 /* ───────────────────────────  Le opzioni  ─────────────────────────── */
@@ -379,6 +430,68 @@
   left: 14px;
   height: 0.5px;
   background: var(--separator);
+}
+
+/* Una riga che apre un foglio: il nome, la scelta a destra con la sua figura, la freccia. */
+.quiz-impostazione--riga {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 52px;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.quiz-impostazione--riga:active {
+  background: var(--fill-quaternary);
+}
+
+.quiz-impostazione--riga .quiz-impostazione__titolo {
+  flex: none;
+}
+
+.quiz-impostazione__valore {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--label-secondary);
+  font-size: var(--text-body);
+}
+
+.quiz-impostazione__scelta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quiz-impostazione__bandiera {
+  flex: none;
+  width: 24px;
+  height: 17px;
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.25);
+}
+
+.quiz-impostazione__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+}
+
+/* Il nome della riga e, a destra, il valore del suo cursore, come la scelta delle righe che aprono un foglio. */
+.quiz-impostazione__testa {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+
+.quiz-impostazione__numero {
+  flex: none;
+  font-size: var(--text-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--label-secondary);
 }
 
 .quiz-impostazione__testi {
@@ -490,7 +603,7 @@
 
 .quiz-paese__conto {
   font-size: var(--text-footnote);
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
 @media (prefers-reduced-motion: reduce) {

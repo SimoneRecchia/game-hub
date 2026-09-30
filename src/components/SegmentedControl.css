@@ -25,8 +25,9 @@
 
 /*
  * Tutte larghe uguali, come la capsula che le segue: `min-width: 0` le lascia
- * stringere quando sono tante (le domande del quiz, da 5 a 50, su un telefono
- * largo 320), invece di spingere l'ultima fuori dalla carta.
+ * stringere quando sono tante o lunghe (i quattro periodi della classifica, su
+ * un telefono largo 320), invece di spingere l'ultima fuori dalla carta. Oltre
+ * le cinque voci si sceglie con un cursore (`Cursore`).
  */
 .segmented__item {
   flex: 1;

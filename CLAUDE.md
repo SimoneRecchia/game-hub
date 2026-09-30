@@ -730,9 +730,14 @@ categoria sola. Le opzioni della partita sono una per tutte le materie; la
 categoria, la zona e l'ambito si ricordano per materia. Anche il resto
 della classificata e' fisso — dieci domande, il tempo del server, la cartina o
 la scheda che insegnano, "Avanti" a mano, niente aiuti — e la libera ne sceglie
-poco, uguale in tutte le materie: quante domande (`QUANTE_LIBERE`, fino a
-cinquanta), il tempo, e la difficoltà, che fa partire la partita come nelle
-sale dei giochi da tavolo. La spiegazione dopo ogni risposta c'e' sempre. Le
+poco, con le stesse tre sezioni in tutte le materie: la categoria, la partita
+(come si risponde, nella geografia; dove o su cosa; quante domande, con
+`QUANTE_LIBERE` fino a cinquanta, e il tempo) e la difficoltà, che fa partire
+la partita come nelle sale dei giochi da tavolo. In cima, "Da solo | Con un
+amico" come Computer | Amico nelle sale: con un amico la difficoltà apre il
+foglio della sfida, e i cursori mostrano i valori della sfida (`QUANTE_SFIDA`,
+`SECONDI_SFIDA`), il piu' vicino a quello scelto prima: cinquanta domande da
+soli sono venti in due. La spiegazione dopo ogni risposta c'e' sempre. Le
 opzioni di prima — gli aiuti, i tipi di domanda, quante risposte, la morte
 improvvisa — c'erano e non le usava nessuno: il motore le ha ancora (la sfida e
 il server le leggono), ma `valide` le rimette ai valori di sempre, anche da un
@@ -967,6 +972,41 @@ segmentato sono larghe uguali e si stringono (`min-width: 0`): altrimenti la
 capsula che le segue non ci sta sopra, e su un telefono stretto l'ultima voce
 esce dalla carta.
 
+**Le tante alternative numeriche si scelgono con un cursore a punti**
+(`Cursore`): le domande del quiz, sette punti da cinque a cinquanta, e i secondi
+per domanda. Con sette voci un controllo segmentato non si legge piu'. I punti
+stanno alla stessa distanza qualunque sia il valore — e' una scala di scelte,
+non un righello — e la maniglia si attacca a quello vicino (`MAGNETE`) e ci
+scatta quando la si lascia. Tre cose vengono dalle regole e non dal gusto: il
+valore scelto sta sulla riga del titolo, a destra, perché le etichette sotto la
+pista le copre il dito che trascina (Nielsen Norman Group); la pista si tocca in
+un punto qualunque e le etichette anche, così non serve trascinare (WCAG
+2.5.7), e l'area da toccare e' alta 44 punti anche se la pista ne ha sei; da
+tastiera e' lo slider di WAI-ARIA, con le frecce, Inizio e Fine, e
+`aria-valuetext` che dice "senza tempo" invece del numero del punto.
+
+**Dove si gioca si sceglie su una cartina.** Il foglio "Dove" del quiz ha una
+tessera per zona, con la sagoma del continente nel colore della materia e le
+terre intorno in grigio, al posto della fila di capsule di prima. Le sagome
+sono tracciati SVG scritti una volta in `src/games/quiz/sagome.ts` da
+`scripts/genera-sagome.ts`, come i pezzi degli scacchi: i confini di world-atlas
+a 1:110 milioni, tagliati sul riquadro della cartina muta (`VISTE`) e
+semplificati fino a 43 kB, con il continente di ogni paese preso dal riassunto
+del quiz nel D1 locale (prima `npm run quiz:locale`). Un anello che passa il
+180 si porta tutto a est prima di tagliarlo: altrimenti la Russia e le Figi
+tiravano una striscia da un lato all'altro della sagoma. Il foglio si tocca e si
+chiude, quindi le tessere sono bottoni e la scelta la dice `aria-current`, come
+le righe con la spunta (`Riga scelta`) del foglio del periodo.
+
+**I gruppi di scelte e i fogli seguono WAI-ARIA anche con la tastiera.**
+`SegmentedControl` e le tessere delle categorie sono radio group: Tab entra
+sulla scelta fatta e le frecce passano alle altre (`frecceDelGruppo` in
+`src/lib/gruppo.ts`, con le voci a `tabIndex` 0 o -1). Il foglio (`Sheet`) e' un
+dialog modale: il fuoco entra, Tab ci gira dentro, e alla chiusura torna su quel
+che l'aveva aperto. L'effetto che lo fa non dipende da `onClose`, che chi apre
+il foglio passa nuova a ogni giro: ripartendo a ogni render riportava il fuoco
+sul pannello, anche mentre si scriveva nella ricerca dei paesi.
+
 **I testi dicono cosa fare, non perché.** Titoli di poche parole, e niente
 righe che spiegano quel che si vede: "Non conta per la classifica" sotto una
 libera, "Anche a chi non ha un account" sotto un link, cosa chiede una
@@ -1006,7 +1046,15 @@ resta fuori.
 **Il colore vuole dire una cosa sola.** Il verde e' "lettera giusta", quindi
 l'accento dell'interfaccia e' un indaco (`--brand`) e non un verde né l'azzurro
 di sistema. Se serve un accento nuovo, va aggiunto un token, non riusato uno del
-gioco.
+gioco. Anche il cursore e' indaco, come ogni scelta: il colore di un gioco o di
+una materia dice di che cosa si parla — le icone, le tacche, le sagome — e non
+che cosa si e' scelto.
+
+**Il grigio terziario non e' per le parole da leggere.** `--label-tertiary` su
+bianco fa 2,4:1, e il WCAG chiede 4,5:1 al testo (1.4.3): sta sulle frecce
+delle righe e sulle decorazioni, mentre etichette, conti e titoletti
+("Online", "record 80%", i gruppi della barra laterale) usano
+`--label-secondary`, che fa 5:1.
 
 **Profondita' con tre livelli, non con le ombre grandi.** Caselle e tasti usano
 `--edge-light` (filo di luce in alto), una velatura verticale in

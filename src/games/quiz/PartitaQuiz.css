@@ -1374,7 +1374,7 @@
   font-size: var(--text-footnote);
   font-weight: 600;
   text-align: center;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
 /* ─────────────────────────  Il riepilogo  ───────────────────────── */
