@@ -786,10 +786,12 @@
   gap: 12px;
 }
 
+/* Alto quanto il quadro, con le sue proporzioni: un riquadro piu' alto lasciava un vuoto sotto i quadri larghi. */
 .quiz-scheda__quadro {
   flex: none;
   width: clamp(84px, 36%, 210px);
-  height: clamp(84px, 24cqh, 200px);
+  aspect-ratio: var(--r);
+  max-height: clamp(84px, 24cqh, 200px);
   container-type: size;
   display: flex;
   align-items: flex-start;

@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react'
 import { urlVoce } from '@shared/quiz-cultura'
 import type { SpiegazioneQuiz } from '@shared/quiz-domande'
 import { Quadro } from './Quadro'
@@ -13,7 +14,7 @@ export function SchedaSpiegazione({ s }: { s: SpiegazioneQuiz }) {
     <article className="quiz-scheda">
       <header className={`quiz-scheda__testa${s.immagine ? ' con-quadro' : ''}`}>
         {s.immagine && (
-          <span className="quiz-scheda__quadro">
+          <span className="quiz-scheda__quadro" style={{ '--r': s.immagine.r } as CSSProperties}>
             <Quadro img={s.immagine} alt={s.titolo} sizes="(min-width: 700px) 220px, 40vw" />
           </span>
         )}
