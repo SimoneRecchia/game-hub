@@ -10,7 +10,15 @@
  */
 
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
-import { MARGINE_RETE_MS, SECONDI_CARTINA, SECONDI_SCELTA, puntiQuiz, type CategoriaQuiz, type ModoQuiz } from '../../shared/quiz'
+import {
+  MARGINE_RETE_MS,
+  SECONDI_CARTINA,
+  SECONDI_LUNGA,
+  SECONDI_SCELTA,
+  puntiQuiz,
+  type CategoriaQuiz,
+  type ModoQuiz,
+} from '../../shared/quiz'
 import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI } from '../../shared/quiz-dati'
 import { rispostaGiusta, senzaRisposta, type DomandaCompleta } from '../../shared/quiz-domande'
 import type {
@@ -106,9 +114,12 @@ export function risposteDi(row: Pick<PartitaRow, 'risposte'> | null): RispostaSa
   }
 }
 
-/** Il tempo di una domanda: quindici secondi per scegliere, trenta per trovare un posto sulla cartina. */
+/**
+ * Il tempo di una domanda: quindici secondi per scegliere, venti se le risposte
+ * sono lunghe da leggere, trenta per trovare un posto sulla cartina.
+ */
 export function limiteMs(d: DomandaCompleta): number {
-  return (d.cartina ? SECONDI_CARTINA : SECONDI_SCELTA) * 1000
+  return (d.cartina ? SECONDI_CARTINA : d.lunga ? SECONDI_LUNGA : SECONDI_SCELTA) * 1000
 }
 
 /** Se la domanda aperta ha finito il tempo, margine della rete compreso. */
@@ -117,8 +128,9 @@ export function scaduta(row: Pick<PartitaRow, 'aperta_at'>, d: DomandaCompleta, 
 }
 
 /**
- * Una risposta data, con quel che serve alla cartina che insegna: dove guardare
- * e, sulla cartina, i posti che valevano. Prima di rispondere non esce niente.
+ * Una risposta data, con quel che serve a insegnare: dove guardare sulla
+ * cartina e i posti che valevano, o la scheda delle altre materie. Prima di
+ * rispondere non esce niente.
  */
 function rispostaVista(d: DomandaCompleta, salvata: RispostaSalvata): RispostaQuiz {
   return {
@@ -129,6 +141,7 @@ function rispostaVista(d: DomandaCompleta, salvata: RispostaSalvata): RispostaQu
     ms: salvata.ms,
     ...(d.luogo ? { luogo: d.luogo } : {}),
     ...(d.cartina && d.accettate ? { accettate: d.accettate } : {}),
+    ...(d.spiegazione ? { spiegazione: d.spiegazione } : {}),
   }
 }
 

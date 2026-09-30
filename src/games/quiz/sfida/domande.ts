@@ -7,8 +7,9 @@
  * server, che le tiene con le risposte e le manda ai due una alla volta.
  */
 
-import { mulberry32 } from '@shared/daily'
-import { generaDomande, type DomandaCompleta } from '@shared/quiz-domande'
+import { gameDate, mulberry32 } from '@shared/daily'
+import type { DomandaCompleta } from '@shared/quiz-domande'
+import { generaPartita } from '@shared/quiz-domande-cultura'
 import {
   QUANTE_SFIDA,
   SECONDI_SFIDA,
@@ -16,8 +17,7 @@ import {
   impostazioniSfida,
   type ImpostazioniSfida,
 } from '@shared/quiz-sfida'
-import { caricaCitta } from '../citta'
-import { caricaDatiQuiz } from '../dati'
+import { fontiDelQuiz } from '../fonti'
 import type { ImpostazioniLibera } from '../usePartita'
 
 /**
@@ -46,14 +46,14 @@ export function sfidaDalleScelte(s: ImpostazioniLibera): ImpostazioniSfida {
     tipi: s.tipi,
     notorieta: s.notorieta,
     bandieraCapitali: s.bandieraCapitali,
+    ambito: s.ambito,
   })!
 }
 
 export async function domandePerSfida(imp: ImpostazioniSfida): Promise<DomandaCompleta[]> {
-  const ix = await caricaDatiQuiz()
-  const citta = imp.categoria === 'citta' ? await caricaCitta(ix, imp.area) : undefined
-  const domande = generaDomande(
-    ix,
+  const { fonti, citta } = await fontiDelQuiz(imp.categoria, imp.area)
+  const domande = generaPartita(
+    fonti,
     {
       categoria: imp.categoria,
       modo: imp.modo,
@@ -64,7 +64,9 @@ export async function domandePerSfida(imp: ImpostazioniSfida): Promise<DomandaCo
       notorieta: imp.notorieta,
       bandieraCapitali: imp.bandieraCapitali,
       ordine: 'sale',
-      citta,
+      citta: citta ?? undefined,
+      ambito: imp.ambito,
+      data: gameDate(),
     },
     mulberry32((Math.random() * 2 ** 32) >>> 0),
   )

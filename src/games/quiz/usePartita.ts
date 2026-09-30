@@ -15,11 +15,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
-import { mulberry32 } from '@shared/daily'
-import { SECONDI_CARTINA, SECONDI_SCELTA, type CategoriaQuiz, type ModoQuiz } from '@shared/quiz'
+import { gameDate, mulberry32 } from '@shared/daily'
+import { FATTORE_LUNGA, SECONDI_CARTINA, SECONDI_SCELTA, type CategoriaQuiz, type ModoQuiz } from '@shared/quiz'
 import type { CittaQuiz } from '@shared/quiz-dati'
 import {
-  generaDomande,
   rispostaGiusta,
   senzaRisposta,
   type AreaQuiz,
@@ -27,9 +26,9 @@ import {
   type DomandaQuiz,
   type RichiestaQuiz,
 } from '@shared/quiz-domande'
+import { generaPartita } from '@shared/quiz-domande-cultura'
 import type { QuizEsito, QuizState, RispostaQuiz } from '@shared/types'
-import { caricaCitta } from './citta'
-import { caricaDatiQuiz } from './dati'
+import { fontiDelQuiz } from './fonti'
 
 export type Fase = 'caricamento' | 'intro' | 'via' | 'domanda' | 'esito' | 'fine' | 'errore'
 
@@ -128,9 +127,11 @@ export const VIA_MS = 2_400
 
 /**
  * Quanto resta l'esito, se si va avanti da soli: sulla cartina di piu', perché
- * si guarda dov'era, e con la cartina che insegna di piu' ancora.
+ * si guarda dov'era, con la cartina che insegna di piu' ancora, e con la
+ * scheda da leggere il doppio.
  */
-export function durataEsito(d: DomandaQuiz | null, imparo: boolean): number {
+export function durataEsito(d: DomandaQuiz | null, imparo: boolean, scheda = false): number {
+  if (imparo && scheda) return 7_000
   if (imparo) return 3_600
   return d?.cartina ? 2_600 : 1_800
 }
@@ -400,7 +401,8 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
 
   const secondi = impostazioni?.secondi ?? null
   const limite = useCallback(
-    (d: DomandaCompleta | undefined) => (!d || secondi === null ? 0 : (d.cartina ? secondi * 2 : secondi) * 1000),
+    (d: DomandaCompleta | undefined) =>
+      !d || secondi === null ? 0 : Math.round((d.cartina ? secondi * 2 : d.lunga ? secondi * FATTORE_LUNGA : secondi) * 1000),
     [secondi],
   )
 
@@ -422,11 +424,14 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     if (!impostazioni) return
     setFase('caricamento')
     try {
-      const ix = await caricaDatiQuiz()
-      const elenco = impostazioni.categoria === 'citta' ? await caricaCitta(ix, impostazioni.area) : null
+      const { fonti, citta: elenco } = await fontiDelQuiz(impostazioni.categoria, impostazioni.area)
       const seme = (Math.random() * 2 ** 32) >>> 0
       caso.current = mulberry32(seme ^ 0x5bd1e995)
-      const nuove = generaDomande(ix, { ...impostazioni, citta: elenco ?? undefined }, mulberry32(seme))
+      const nuove = generaPartita(
+        fonti,
+        { ...impostazioni, citta: elenco ?? undefined, data: gameDate() },
+        mulberry32(seme),
+      )
       if (nuove.length === 0) {
         setErrore('Nessuna domanda con queste scelte: prova una zona più grande.')
         setFase('errore')
@@ -504,6 +509,7 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
           ms,
           ...(d.luogo ? { luogo: d.luogo } : {}),
           ...(d.cartina && d.accettate ? { accettate: d.accettate } : {}),
+          ...(d.spiegazione ? { spiegazione: d.spiegazione } : {}),
         },
         accettate: d.accettate ?? [],
         ripasso: ripassoDa !== null && indice >= ripassoDa,
@@ -520,7 +526,7 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
   // Avanti da solo: dopo l'esito, la domanda dopo senza toccare niente.
   useEffect(() => {
     if (fase !== 'esito' || !impostazioni?.avantiDaSolo) return
-    const t = setTimeout(avanti, durataEsito(ultima?.domanda ?? null, impostazioni.imparo))
+    const t = setTimeout(avanti, durataEsito(ultima?.domanda ?? null, impostazioni.imparo, !!ultima?.risposta.spiegazione))
     return () => clearTimeout(t)
   }, [fase, impostazioni?.avantiDaSolo, impostazioni?.imparo, ultima, avanti])
 

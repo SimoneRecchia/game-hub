@@ -4,7 +4,7 @@ import type { MossaGiocata } from './scarabeo'
 import type { Esito, IdNave, Nave } from './battaglia'
 import type { LivelloBattaglia } from './battaglia-computer'
 import type { CategoriaQuiz, ModoQuiz } from './quiz'
-import type { AreaQuiz, DomandaQuiz, LuogoQuiz } from './quiz-domande'
+import type { AreaQuiz, DomandaQuiz, LuogoQuiz, SpiegazioneQuiz } from './quiz-domande'
 import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
 import type { Lato, Personaggi, Risposta } from './indovina'
@@ -768,6 +768,8 @@ export interface GiroQuizVisto {
   risposta: string
   accettate?: string[]
   luogo?: LuogoQuiz
+  /** La scheda che insegna, per le materie senza cartina. */
+  spiegazione?: SpiegazioneQuiz
   punto: 'io' | 'avversario' | null
   /** Le risposte date; null e' il tempo finito. */
   mia: { scelta: string; giusta: boolean } | null
@@ -937,6 +939,8 @@ export interface RispostaQuiz {
   luogo?: LuogoQuiz
   /** Sulla cartina, i posti che valevano come giusti: il Tirreno, per il Mediterraneo. */
   accettate?: string[]
+  /** La scheda che insegna, per le materie senza cartina: di chi e' il quadro, quando, dove. */
+  spiegazione?: SpiegazioneQuiz
 }
 
 /**

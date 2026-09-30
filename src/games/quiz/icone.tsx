@@ -116,6 +116,77 @@ export const IconMappamondo = (p: Props) => (
   </Svg>
 )
 
+/** La tavolozza del pittore: l'arte. */
+export const IconArte = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 3.5c-4.9 0-8.5 3.4-8.5 7.9 0 4.3 3.4 7.6 7.4 7.6 1.4 0 2-1 1.6-2.1-.5-1.4.3-2.6 1.8-2.6h2.1c2.6 0 4.1-1.6 4.1-3.8 0-4-3.8-7-8.5-7Z" />
+    <circle cx="7.8" cy="11" r="1.1" />
+    <circle cx="10.5" cy="7.4" r="1.1" />
+    <circle cx="15" cy="7.6" r="1.1" />
+  </Svg>
+)
+
+/** Un libro aperto. */
+export const IconLibri = (p: Props) => (
+  <Svg {...p}>
+    <path d="M12 6.5c-2-1.6-5-2-8-1.6v12.6c3-.4 6 0 8 1.6 2-1.6 5-2 8-1.6V4.9c-3-.4-6 0-8 1.6Z" />
+    <path d="M12 6.5v12.6" />
+  </Svg>
+)
+
+/** Il ciak. */
+export const IconCinema = (p: Props) => (
+  <Svg {...p}>
+    <rect x="3.5" y="9.5" width="17" height="10" rx="1.5" />
+    <path d="m3.8 9.3 15.7-4.4-.9-3-15.7 4.4.9 3Z" transform="translate(0 1.2)" />
+    <path d="m8.2 5.9 2.4 2.7M13 4.6l2.4 2.7" transform="translate(0 1.2)" />
+  </Svg>
+)
+
+/** Due note di musica: la lirica. */
+export const IconLirica = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9 17.5V6l10-2v11" />
+    <circle cx="6.8" cy="17.5" r="2.3" />
+    <circle cx="16.8" cy="15" r="2.3" />
+    <path d="m9 9.5 10-2" />
+  </Svg>
+)
+
+/** La medaglia con il nastro: il Nobel. */
+export const IconNobel = (p: Props) => (
+  <Svg {...p}>
+    <path d="m8 3 2.8 6M16 3l-2.8 6" />
+    <circle cx="12" cy="14.5" r="5.5" />
+    <path d="m12 11.8.9 1.8 2 .3-1.4 1.4.3 2-1.8-.9-1.8.9.3-2-1.4-1.4 2-.3Z" />
+  </Svg>
+)
+
+/** Una colonna antica: la storia. */
+export const IconStoria = (p: Props) => (
+  <Svg {...p}>
+    <path d="M5 5.5h14M6 3.5h12M5 20.5h14M6 18.5h12" />
+    <path d="M8 5.5v13M12 5.5v13M16 5.5v13" />
+  </Svg>
+)
+
+/** Il calendario con il giorno: accadde oggi. */
+export const IconOggi = (p: Props) => (
+  <Svg {...p}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2" />
+    <path d="M3.5 9.5h17M8 3v4M16 3v4" />
+    <path d="M11 13h1.5v4.5M11 17.5h3" />
+  </Svg>
+)
+
+/** La beuta: la scienza. */
+export const IconScienza = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9.5 3.5h5M10.5 3.5v5.2L5.2 18.3c-.6 1 .1 2.2 1.3 2.2h11c1.2 0 1.9-1.2 1.3-2.2l-5.3-9.6V3.5" />
+    <path d="M7.6 14h8.8" />
+  </Svg>
+)
+
 export const ICONE_CATEGORIE: Record<CategoriaQuiz, (p: Props) => ReactElement> = {
   capitali: IconCapitale,
   citta: IconCitta,
@@ -126,6 +197,14 @@ export const ICONE_CATEGORIE: Record<CategoriaQuiz, (p: Props) => ReactElement> 
   oceani: IconOceano,
   fiumi: IconFiume,
   laghi: IconLago,
+  arte: IconArte,
+  libri: IconLibri,
+  cinema: IconCinema,
+  lirica: IconLirica,
+  nobel: IconNobel,
+  storia: IconStoria,
+  oggi: IconOggi,
+  scienza: IconScienza,
 }
 
 export function IconaCategoria({ categoria, size = 24 }: { categoria: CategoriaQuiz; size?: number }) {
