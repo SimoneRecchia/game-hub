@@ -71,7 +71,7 @@ export function statoWordle(s: WordleSummary): StatoOggi {
       avanzamento: 0,
       fase: 'da-giocare',
       titolo: 'Da giocare',
-      dettaglio: 'Una parola, sei tentativi',
+      dettaglio: '',
       azione: 'Gioca',
       a: ROTTE.classificata('wordle'),
     }
@@ -240,7 +240,7 @@ export function statoBattaglia(s: BattagliaSummary): StatoOggi {
       ...base,
       fase: 'da-giocare',
       titolo: 'Da giocare',
-      dettaglio: 'Affonda la flotta del computer',
+      dettaglio: '',
       punti: null,
       avanzamento: 0,
       azione: 'Gioca',

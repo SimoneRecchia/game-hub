@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom'
-import { ROTTE } from './app/rotte'
+import { ROTTE, giocoDaSlug } from './app/rotte'
 import { Shell } from './components/Shell'
 import { Splash } from './components/Splash'
 import { useAuth } from './lib/auth'
@@ -11,7 +11,6 @@ import { QuizGate } from './games/quiz/sfida/QuizGate'
 import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
 import Home from './pages/Home'
-import Gioco from './pages/Gioco'
 import Classifica from './pages/Classifica'
 import Profilo from './pages/Profilo'
 import NotFound from './pages/NotFound'
@@ -163,12 +162,12 @@ export default function App() {
               ]
             })}
 
-            {/* La pagina di ogni gioco: /wordle, /scarabeo, /cruciverba, /battaglia-navale, /quiz. */}
-            <Route path="/:gioco" element={<Gioco />} />
+            {/* L'indirizzo di un gioco, /wordle o /quiz, porta alla partita di oggi. */}
+            <Route path="/:gioco" element={<AllaClassificata />} />
 
             {/* I vecchi indirizzi, perché i link salvati e le icone sulla Home non si rompano. */}
             <Route path="/insieme/:roomId" element={<Vecchio verso={(p) => ROTTE.insieme(p.roomId ?? '')} />} />
-            <Route path="/battaglia" element={<Navigate to={ROTTE.gioco('battaglia')} replace />} />
+            <Route path="/battaglia" element={<Navigate to={ROTTE.classificata('battaglia')} replace />} />
             <Route path="/battaglia/:id" element={<Vecchio verso={(p) => ROTTE.partitaBattaglia(p.id ?? '')} />} />
             {/* Le cinque parole di prima: ora la classificata e' una parola sola. */}
             <Route path="/wordle/classificata/:slot" element={<Navigate to={ROTTE.classificata('wordle')} replace />} />
@@ -179,6 +178,17 @@ export default function App() {
       </Shell>
     </PresenzaProvider>
   )
+}
+
+/**
+ * Un gioco non ha piu' una pagina sua: dalla schermata iniziale si va dritti
+ * alla partita di oggi o alla scelta della libera, e l'indirizzo del gioco —
+ * quello dei sottodomini, dei link salvati — porta alla partita di oggi.
+ */
+function AllaClassificata() {
+  const { gioco } = useParams()
+  const id = giocoDaSlug(gioco)
+  return id ? <Navigate to={ROTTE.classificata(id)} replace /> : <NotFound />
 }
 
 /** Un indirizzo di prima, che porta a quello di adesso. */

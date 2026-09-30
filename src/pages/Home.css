@@ -149,18 +149,13 @@
   box-shadow:
     var(--shadow-sm),
     inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 22%, transparent);
+  color: var(--label);
   transition: transform var(--dur-base) var(--ease-spring);
 }
 
-.carta:has(.carta__tutta:active) {
+/* Tutta la carta e' il collegamento alla partita: si preme tutta. */
+.carta:active {
   transform: scale(0.975);
-}
-
-.carta__tutta {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
 }
 
 .carta__icona {
@@ -212,8 +207,6 @@
 }
 
 .carta__bottone {
-  position: relative;
-  z-index: 2;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -225,11 +218,6 @@
   font-size: var(--text-subhead);
   font-weight: 700;
   box-shadow: 0 6px 14px color-mix(in srgb, var(--c2) 28%, transparent);
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-
-.carta__bottone:active {
-  transform: scale(0.94);
 }
 
 .carta__bottone.is-rivedi {
@@ -253,182 +241,57 @@
 /* ─────────────────────────  Le partite libere  ───────────────────────── */
 
 /*
- * Un carosello sul telefono — si scorre di lato, si ferma su una carta — e una
- * fila di cinque su uno schermo largo, dove ci stanno. Sul telefono ne stanno
- * due e un pezzo della terza, abbastanza grande da dire che si scorre: con le
- * carte da 168 punti ne spuntavano quattordici, e sembrava una carta tagliata.
+ * Le libere dei sei giochi e i giochi da tavolo, una tessera ciascuno: la
+ * copertina e il nome, come le icone di un telefono. Tre per riga sul telefono,
+ * di piu' dove c'e' posto; le colonne sono `minmax(0, 1fr)`, perché "Battaglia
+ * navale" non allarghi la sua.
  */
 .home__libere {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: max(124px, calc((100% - 2 * var(--sp-3)) / 2.2));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-3);
-  margin: 0 calc(-1 * var(--sp-4));
-  padding: 2px var(--sp-4) var(--sp-2);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding: 0 var(--sp-4);
-  scrollbar-width: none;
 }
 
-.home__libere::-webkit-scrollbar {
-  display: none;
-}
-
-.home__libere > li {
-  scroll-snap-align: start;
+@media (min-width: 560px) {
+  .home__libere {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 900px) {
   .home__libere {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    margin: 0;
-    padding: 2px 0 var(--sp-2);
-    overflow: visible;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
 .libera {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
+  align-items: center;
+  gap: var(--sp-2);
   height: 100%;
-  padding: var(--sp-4);
+  padding: var(--sp-4) var(--sp-2) var(--sp-3);
   border-radius: 24px;
   background: var(--surface);
   box-shadow: var(--shadow-sm);
   color: var(--label);
+  text-align: center;
   transition: transform var(--dur-base) var(--ease-spring);
 }
 
 .libera:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .libera .copertina {
-  --lato: 44px;
-}
-
-.libera__testo {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.libera__nome {
-  font-weight: 700;
-}
-
-.libera__cosa {
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
-}
-
-/* ---------- I giochi da tavolo ---------- */
-
-/* Una riga per gioco, come le righe delle impostazioni ma da sola in una carta: sono pochi, e larghi. */
-.home__tavolo {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--sp-3);
-}
-
-.tavolo {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-3);
-  border-radius: 24px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  color: var(--label);
-  transition: transform var(--dur-base) var(--ease-spring);
-}
-
-.tavolo:active {
-  transform: scale(0.98);
-}
-
-.tavolo .copertina {
   --lato: 52px;
   flex: none;
 }
 
-.tavolo__testo {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.tavolo__nome {
-  font-size: var(--text-headline);
-  font-weight: 700;
-}
-
-.tavolo__motto {
-  overflow: hidden;
+.libera__nome {
   font-size: var(--text-footnote);
-  color: var(--label-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.tavolo__con {
-  flex: none;
-  padding: 3px 10px;
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--tavolo-1) 14%, transparent);
-  color: var(--tavolo-ink);
-  font-size: var(--text-caption-1);
   font-weight: 700;
-}
-
-/* La capsula nel colore di ogni gioco. */
-.tavolo--indovina {
-  --tavolo-1: var(--indovina-1);
-  --tavolo-ink: var(--indovina-ink);
-}
-
-.tavolo--scacchi {
-  --tavolo-1: var(--scacchi-1);
-  --tavolo-ink: var(--scacchi-ink);
-}
-
-.tavolo--dama {
-  --tavolo-1: var(--dama-1);
-  --tavolo-ink: var(--dama-ink);
-}
-
-.tavolo--forza4 {
-  --tavolo-1: var(--forza4-1);
-  --tavolo-ink: var(--forza4-ink);
-}
-
-.tavolo--go {
-  --tavolo-1: var(--go-1);
-  --tavolo-ink: var(--go-ink);
-}
-
-.tavolo__freccia {
-  flex: none;
-  color: var(--label-tertiary);
-}
-
-@media (min-width: 900px) {
-  .home__tavolo {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-/*
- * Sul telefono, e nella griglia a due colonne, il motto ha bisogno di tutta la
- * riga: con chi lo dice gia' la nota della sezione.
- */
-@media (max-width: 599px), (min-width: 900px) {
-  .tavolo__con {
-    display: none;
-  }
+  line-height: 1.25;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
 }

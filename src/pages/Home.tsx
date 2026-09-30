@@ -6,7 +6,7 @@ import { Copertina } from '@/components/Copertina'
 import { Anello, Numero, Sezione } from '@/components/Elementi'
 import { IconChevronRight, IconPlay } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
-import { GIOCHI, GIOCHI_DA_TAVOLO, type Gioco } from '@/games/catalog'
+import { GIOCHI, GIOCHI_DA_TAVOLO, type Gioco, type GiocoTavolo } from '@/games/catalog'
 import { statiDiOggi, type StatoOggi } from '@/games/stato'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
@@ -16,13 +16,25 @@ import type { OggiRisposta } from '@shared/types'
 import './Home.css'
 
 /**
+ * Le partite che non contano: la libera di ogni gioco e i giochi da tavolo, che
+ * portano alla scelta della partita. Solo i giochi da tavolo hanno una
+ * copertina che si allarga nella pagina dove arrivano: le libere dei sei giochi
+ * hanno la stessa copertina delle carte qui sopra, e due nomi uguali
+ * fermerebbero la transizione.
+ */
+const LIBERE: ReadonlyArray<{ id: Gioco['id'] | GiocoTavolo['id']; nome: string; a: string; transizione?: string }> = [
+  ...GIOCHI.map((g) => ({ id: g.id, nome: g.nome, a: ROTTE.libera(g.id) })),
+  ...GIOCHI_DA_TAVOLO.map((g) => ({ id: g.id, nome: g.nome, a: `/${g.slug}`, transizione: `copertina-${g.id}` })),
+]
+
+/**
  * La schermata iniziale: le classificate di oggi e le partite libere.
  *
  * In cima, com'e' andata la giornata: i punti fatti e la posizione nella
  * classifica generale, e un anello per gioco. Sotto, una carta per ogni
- * classificata con il bottone che ci porta dentro — un tocco per giocare —
- * piu' in basso le partite libere, che non hanno fretta, e in fondo i giochi
- * da tavolo, che non hanno classificata e si giocano con gli amici.
+ * classificata, che porta dritta alla partita di oggi: un tocco per giocare. In
+ * fondo le partite che non contano, le libere dei sei giochi e i giochi da
+ * tavolo insieme, che portano a scegliere la partita.
  *
  * I dati arrivano con una richiesta sola (`/api/oggi`), e restano in memoria:
  * tornando qui dalla partita si vedono subito, e si aggiornano da soli.
@@ -54,34 +66,13 @@ export default function Home() {
         </ul>
       </Sezione>
 
-      <Sezione titolo="Partite libere" nota="Non contano per la classifica.">
+      <Sezione titolo="Partite libere">
         <ul className="home__libere">
-          {GIOCHI.map((g, i) => (
-            <li key={g.id} className="entra" style={{ '--n': i + 4 } as CSSProperties}>
-              <Collegamento to={ROTTE.libera(g.id)} className="libera">
-                <Copertina gioco={g.id} formato="icona" />
-                <span className="libera__testo">
-                  <span className="libera__nome">{g.nome}</span>
-                  <span className="libera__cosa">{g.liberaBreve}</span>
-                </span>
-              </Collegamento>
-            </li>
-          ))}
-        </ul>
-      </Sezione>
-
-      <Sezione titolo="Giochi da tavolo" nota="Con gli amici o contro il computer, senza classifica.">
-        <ul className="home__tavolo">
-          {GIOCHI_DA_TAVOLO.map((g, i) => (
-            <li key={g.id} className="entra" style={{ '--n': i + 10 } as CSSProperties}>
-              <Collegamento to={`/${g.slug}`} className={`tavolo tavolo--${g.id}`}>
-                <Copertina gioco={g.id} formato="icona" transizione={`copertina-${g.id}`} />
-                <span className="tavolo__testo">
-                  <span className="tavolo__nome">{g.nome}</span>
-                  <span className="tavolo__motto">{g.motto}</span>
-                </span>
-                <span className="tavolo__con">{g.conChi}</span>
-                <IconChevronRight size={18} className="tavolo__freccia" />
+          {LIBERE.map((l, i) => (
+            <li key={l.id} className="entra" style={{ '--n': i + GIOCHI.length } as CSSProperties}>
+              <Collegamento to={l.a} className="libera">
+                <Copertina gioco={l.id} formato="icona" transizione={l.transizione} />
+                <span className="libera__nome">{l.nome}</span>
               </Collegamento>
             </li>
           ))}
@@ -118,7 +109,7 @@ function Riepilogo({
             : posizione
               ? `${posizione}º su ${oggi.generale.giocatori} in classifica`
               : fatte === 0
-                ? 'Gioca una classificata per entrare in classifica'
+                ? 'Non sei ancora in classifica'
                 : 'In classifica fra poco'}
         </span>
       </span>
@@ -144,25 +135,24 @@ function Riepilogo({
 
 /**
  * La carta di una classificata: la copertina del gioco, a che punto sei, e il
- * bottone che ci porta. Tutta la carta apre la pagina del gioco; il bottone
- * va dritto alla partita, perché la classificata di tutti i giorni deve stare a
- * un tocco.
+ * bottone. Tutta la carta porta alla partita di oggi, come il bottone: la
+ * classificata di tutti i giorni deve stare a un tocco.
  */
 function CartaClassificata({ gioco, stato }: { gioco: Gioco; stato: StatoOggi | null }) {
   const fatta = stato?.fase === 'fatta'
   return (
-    <article
+    <Collegamento
+      to={stato?.a ?? ROTTE.classificata(gioco.id)}
       className={`carta carta--${gioco.id}${fatta ? ' is-fatta' : ''}`}
       style={{ '--c1': `var(--${gioco.id}-1)`, '--c2': `var(--${gioco.id}-2)` } as CSSProperties}
     >
-      <Collegamento to={ROTTE.gioco(gioco.id)} className="carta__tutta" aria-label={`Apri ${gioco.nome}`} />
-      <Copertina gioco={gioco.id} formato="icona" transizione={`copertina-${gioco.id}`} className="carta__icona" />
+      <Copertina gioco={gioco.id} formato="icona" className="carta__icona" />
       <div className="carta__testo">
         <h3 className="carta__nome">{gioco.nome}</h3>
         {stato ? (
           <>
             <p className="carta__stato">{stato.titolo}</p>
-            <p className="carta__dettaglio">{stato.dettaglio}</p>
+            {stato.dettaglio && <p className="carta__dettaglio">{stato.dettaglio}</p>}
           </>
         ) : (
           <>
@@ -173,15 +163,13 @@ function CartaClassificata({ gioco, stato }: { gioco: Gioco; stato: StatoOggi | 
       </div>
       <div className="carta__azione">
         {stato && stato.fase !== 'non-pronta' && (
-          <Collegamento to={stato.a} className={`carta__bottone${fatta ? ' is-rivedi' : ''}`}>
+          <span className={`carta__bottone${fatta ? ' is-rivedi' : ''}`}>
             {!fatta && <IconPlay size={14} />}
             {stato.azione}
-          </Collegamento>
+          </span>
         )}
-        {stato && (
-          <Anello valore={stato.avanzamento} dimensione={28} spessore={3.5} colore="var(--c1)" />
-        )}
+        {stato && <Anello valore={stato.avanzamento} dimensione={28} spessore={3.5} colore="var(--c1)" />}
       </div>
-    </article>
+    </Collegamento>
   )
 }

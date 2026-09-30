@@ -4,9 +4,9 @@ import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Copertina } from '@/components/Copertina'
-import { Elenco, Riga, Sezione, Vuoto } from '@/components/Elementi'
-import { IconBook, IconCopy, IconLink, IconShare } from '@/components/Icons'
-import { Pagina } from '@/components/Pagina'
+import { Sezione, Vuoto } from '@/components/Elementi'
+import { IconCopy, IconInfo, IconShare } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { elencoSet, type SetProprio } from '@/games/indovina/archivio'
 import { ComeSiGiocaIndovina } from '@/games/indovina/ComeSiGioca'
@@ -151,9 +151,13 @@ export default function IndovinaChi() {
   return (
     <Pagina
       titolo="Indovina chi"
-      sotto="Sì o no, finché resta una faccia"
       indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       eroe={<Copertina gioco="indovina" formato="eroe" transizione="copertina-indovina" />}
+      azioni={
+        <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
+          <IconInfo size={21} />
+        </BottoneBarra>
+      }
     >
       {dati?.partita && <PartitaAperta partita={dati.partita} />}
 
@@ -167,7 +171,7 @@ export default function IndovinaChi() {
         />
       </Sezione>
 
-      <Sezione titolo="Con chi">
+      <Sezione titolo="Invita">
         {errore && !dati ? (
           <Vuoto
             titolo="La sala non si è caricata"
@@ -185,26 +189,16 @@ export default function IndovinaChi() {
             {inAttesa?.codice ? (
               <LinkAttivo invito={inAttesa} onRitira={() => void annulla(inAttesa)} />
             ) : (
-              <div className="bat-link">
-                <div className="bat-link__riga">
-                  <span className="bat-link__icona" aria-hidden="true">
-                    <IconLink size={22} />
-                  </span>
-                  <div className="bat-link__testo">
-                    <p className="bat-link__titolo">Invita con un link</p>
-                    <p className="bat-link__nota">Anche a chi non ha un account.</p>
-                  </div>
-                </div>
-                <Button
-                  variant="tinted"
-                  fullWidth
-                  onClick={() => void invita(null)}
-                  loading={invio === 'link'}
-                  disabled={Boolean(dati.partita) || (invio !== null && invio !== 'link')}
-                >
-                  <IconShare size={18} /> Condividi il link
-                </Button>
-              </div>
+              <Button
+                variant="tinted"
+                size="lg"
+                fullWidth
+                onClick={() => void invita(null)}
+                loading={invio === 'link'}
+                disabled={Boolean(dati.partita) || (invio !== null && invio !== 'link')}
+              >
+                <IconShare size={18} /> Invita con un link
+              </Button>
             )}
 
             {inAttesa && !inAttesa.codice && <InvitoInAttesa invito={inAttesa} onAnnulla={() => void annulla(inAttesa)} />}
@@ -217,9 +211,9 @@ export default function IndovinaChi() {
               </p>
             )}
 
-            <p className="bat-sala__titolo">Chi è online adesso</p>
+            <p className="bat-sala__titolo">Online</p>
             {dati.giocatori.length === 0 ? (
-              <p className="bat-sala__vuoto">Nessuno online in questo momento.</p>
+              <p className="bat-sala__vuoto">Nessuno online.</p>
             ) : (
               <ul className="bat-sala__elenco">
                 {dati.giocatori.map((g) => (
@@ -243,12 +237,6 @@ export default function IndovinaChi() {
             )}
           </>
         )}
-      </Sezione>
-
-      <Sezione>
-        <Elenco>
-          <Riga icona={<IconBook size={18} />} titolo="Come si gioca" onClick={() => setRegole(true)} />
-        </Elenco>
       </Sezione>
 
       <ComeSiGiocaIndovina open={regole} onClose={() => setRegole(false)} />

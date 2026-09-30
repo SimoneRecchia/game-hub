@@ -5,26 +5,25 @@ import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Copertina } from '@/components/Copertina'
 import { Elenco, Riga, Sezione, Tacche, Vuoto } from '@/components/Elementi'
-import { IconBook, IconCopy, IconLink, IconShare } from '@/components/Icons'
-import { Pagina } from '@/components/Pagina'
+import { IconCopy, IconInfo, IconShare } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { giocoTavoloDi } from '@/games/catalog'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
-import { giocoDelTavoliere } from '@/games/tavolo/giochi'
 import { A_GIOCO, nomeVariante } from '@/games/tavolo/nomi'
 import {
   abbandona,
   cominciata,
   leggiConti,
+  leggiContro,
   leggiPartita,
-  leggiScelta,
   leggiVariante,
   nuovaPartita,
-  salvaScelta,
+  salvaContro,
   salvaVariante,
-  type SceltaParte,
+  type Contro,
 } from '@/games/tavolo/locale'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { ApiFetchError, api } from '@/lib/api'
@@ -49,20 +48,22 @@ export const NOMI_LIVELLI: Record<LivelloTavoliere, string> = {
 /**
  * La sala di un gioco da tavoliere — scacchi, dama, Forza 4, go — con le due cose
  * che si possono fare: una partita contro il computer, che sta nel telefono, o
- * una con un amico, online o con un link. Quando l'amico accetta, la sala
+ * una con un amico, online o con un link. Un interruttore sceglie quale, e si
+ * vede solo quel che serve a quella: la difficoltà contro il computer, gli
+ * inviti con un amico. Il colore non si sceglie: contro il computer cambia a
+ * ogni partita, fra amici lo pesca il server. Quando l'amico accetta, la sala
  * porta tutti e due alla partita.
  */
 export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
   const { vai } = useNavigazione()
   const toast = useToast()
   const catalogo = giocoTavoloDi(gioco)
-  const descrizione = giocoDelTavoliere(gioco)
   const presenza = usePresenza()
   const [dati, setDati] = useState<SalaTavolo | null>(null)
   const [errore, setErrore] = useState<string | null>(null)
   const [invio, setInvio] = useState<string | null>(null)
   const [regole, setRegole] = useState(false)
-  const [scelta, setScelta] = useState<SceltaParte>(() => leggiScelta(gioco))
+  const [contro, setContro] = useState<Contro>(() => leggiContro(gioco))
   const varianti = regoleDi(gioco).varianti ?? null
   const [variante, setVariante] = useState(() => leggiVariante(gioco))
   const [locale, setLocale] = useState(() => leggiPartita(gioco))
@@ -110,9 +111,9 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
     return () => document.removeEventListener('visibilitychange', rileggi)
   }, [gioco])
 
-  const scegliParte = (s: SceltaParte) => {
-    setScelta(s)
-    salvaScelta(gioco, s)
+  const scegliContro = (c: Contro) => {
+    setContro(c)
+    salvaContro(gioco, c)
   }
 
   const scegliVariante = (v: string) => {
@@ -122,7 +123,7 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
 
   const comincia = (livello: LivelloTavoliere) => {
     if (locale && cominciata(locale)) abbandona(locale)
-    nuovaPartita(gioco, livello, scelta, variante)
+    nuovaPartita(gioco, livello, variante)
     setConferma(null)
     vai(ROTTE.computerTavolo(gioco))
   }
@@ -163,171 +164,142 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
   const altrove = aperta && aperta.gioco !== gioco ? aperta : null
   const occupato = aperta !== null
   const inCorsoLocale = locale && !locale.esito ? locale : null
-  const record = dati?.record
-  const giocateAmici = record ? record.vinte + record.perse + record.patte : 0
+
+  // Un invito che aspetta risposta si vede anche se l'ultima volta si era scelto il computer.
+  const vista: Contro = inAttesa ? 'amico' : contro
 
   return (
     <Pagina
       titolo={catalogo.nome}
-      sotto={catalogo.motto}
       indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       eroe={<Copertina gioco={gioco} formato="eroe" transizione={`copertina-${gioco}`} />}
+      azioni={
+        <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
+          <IconInfo size={21} />
+        </BottoneBarra>
+      }
     >
       {dati?.partite.map((p) => <PartitaAperta key={p.id} partita={p} />)}
       {altrove && <PartitaAperta partita={altrove} />}
 
-      {varianti && variante && (
-        <Sezione titolo="Goban" nota="Per le partite nuove, contro il computer e con gli amici.">
+      <div className="tav-sala__scelte">
+        <SegmentedControl
+          ariaLabel="Contro chi"
+          value={vista}
+          onChange={scegliContro}
+          options={[
+            { value: 'computer', label: 'Computer' },
+            { value: 'amico', label: 'Amico' },
+          ]}
+        />
+        {varianti && variante && (
           <SegmentedControl
             ariaLabel="Il lato del goban"
             value={variante}
             onChange={scegliVariante}
             options={varianti.map((v) => ({ value: v, label: nomeVariante(gioco, v) ?? v }))}
           />
+        )}
+      </div>
+
+      {vista === 'computer' ? (
+        <Sezione titolo="Difficoltà">
+          <Elenco>
+            {inCorsoLocale && (
+              <Riga
+                icona={<span className="tavolo-riga__segno" aria-hidden="true" />}
+                titolo="Riprendi la partita"
+                sotto={[
+                  NOMI_LIVELLI[inCorsoLocale.livello],
+                  nomeVariante(gioco, regoleDi(gioco).varianteDi?.(inCorsoLocale.posizione)),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+                a={ROTTE.computerTavolo(gioco)}
+              />
+            )}
+            {LIVELLI_TAVOLIERE.map((livello, i) => {
+              const c = conti[livello]
+              const giocate = c.vinte + c.perse + c.patte
+              return (
+                <Riga
+                  key={livello}
+                  icona={<Tacche piene={i + 1} colore={`var(--${gioco}-1)`} />}
+                  titolo={NOMI_LIVELLI[livello]}
+                  valore={giocate > 0 ? `${c.vinte}/${giocate}` : undefined}
+                  onClick={() => scegliLivello(livello)}
+                />
+              )
+            })}
+          </Elenco>
+        </Sezione>
+      ) : errore && !dati ? (
+        <Vuoto
+          titolo="La sala non si è caricata"
+          testo={errore}
+          azione={
+            <Button variant="tinted" onClick={() => void carica()}>
+              Riprova
+            </Button>
+          }
+        />
+      ) : !dati ? (
+        <div className="bat__attesa" aria-hidden="true" />
+      ) : (
+        <Sezione titolo="Invita">
+          {inAttesa?.codice ? (
+            <LinkAttivo gioco={gioco} nome={catalogo.nome} invito={inAttesa} onRitira={() => void annulla(inAttesa)} />
+          ) : (
+            <Button
+              variant="tinted"
+              size="lg"
+              fullWidth
+              onClick={() => void invita(null)}
+              loading={invio === 'link'}
+              disabled={occupato || (invio !== null && invio !== 'link')}
+            >
+              <IconShare size={18} /> Invita con un link
+            </Button>
+          )}
+
+          {inAttesa && !inAttesa.codice && (
+            <InvitoInAttesa invito={inAttesa} onAnnulla={() => void annulla(inAttesa)} />
+          )}
+
+          {esito && (
+            <p className="bat-sala__esito">
+              {esito.stato === 'rifiutato'
+                ? `${esito.a?.displayName} non può giocare adesso.`
+                : `${esito.a?.displayName} non ha risposto in tempo.`}
+            </p>
+          )}
+
+          <p className="bat-sala__titolo">Online</p>
+          {dati.giocatori.length === 0 ? (
+            <p className="bat-sala__vuoto">Nessuno online.</p>
+          ) : (
+            <ul className="bat-sala__elenco">
+              {dati.giocatori.map((g) => (
+                <li key={g.playerId} className="bat-sala__giocatore">
+                  <Avatar nickname={g.nickname} color={g.avatarColor} size={40} />
+                  <span className="bat-sala__chi">
+                    <span className="bat-sala__nome">{g.displayName}</span>
+                    <span className="bat-sala__dove">{g.occupato ? 'sta già giocando' : DOVE[g.attivita]}</span>
+                  </span>
+                  <Button
+                    variant={g.invitato ? 'plain' : 'tinted'}
+                    disabled={g.occupato || g.invitato || occupato || invio !== null}
+                    loading={invio === g.playerId}
+                    onClick={() => void invita(g.playerId)}
+                  >
+                    {g.invitato ? 'Invitato' : 'Invita'}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Sezione>
       )}
-
-      <Sezione titolo="Contro il computer" nota={`Comincia ${descrizione.parti[0].il}.`}>
-        <SegmentedControl
-          ariaLabel="Con che colore giochi"
-          value={scelta}
-          onChange={scegliParte}
-          options={[
-            { value: 'prima', label: descrizione.parti[0].nome },
-            { value: 'seconda', label: descrizione.parti[1].nome },
-            { value: 'caso', label: 'A caso' },
-          ]}
-        />
-        <Elenco>
-          {inCorsoLocale && (
-            <Riga
-              icona={<span className="tavolo-riga__segno" aria-hidden="true" />}
-              titolo="Riprendi la partita"
-              sotto={[
-                NOMI_LIVELLI[inCorsoLocale.livello],
-                nomeVariante(gioco, regoleDi(gioco).varianteDi?.(inCorsoLocale.posizione)),
-                inCorsoLocale.mosse.length === 1 ? 'una mossa' : `${inCorsoLocale.mosse.length} mosse`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-              a={ROTTE.computerTavolo(gioco)}
-            />
-          )}
-          {LIVELLI_TAVOLIERE.map((livello, i) => {
-            const c = conti[livello]
-            const giocate = c.vinte + c.perse + c.patte
-            return (
-              <Riga
-                key={livello}
-                icona={<Tacche piene={i + 1} colore={`var(--${gioco}-1)`} />}
-                titolo={NOMI_LIVELLI[livello]}
-                valore={giocate > 0 ? `${c.vinte}/${giocate}` : undefined}
-                onClick={() => scegliLivello(livello)}
-              />
-            )
-          })}
-        </Elenco>
-      </Sezione>
-
-      <Sezione
-        titolo="Con un amico"
-        nota={
-          record && giocateAmici > 0
-            ? `Con gli amici: ${record.vinte} ${record.vinte === 1 ? 'vinta' : 'vinte'}, ${record.perse} ${
-                record.perse === 1 ? 'persa' : 'perse'
-              }${record.patte > 0 ? `, ${record.patte} ${record.patte === 1 ? 'patta' : 'patte'}` : ''}.`
-            : undefined
-        }
-      >
-        {errore && !dati ? (
-          <Vuoto
-            titolo="La sala non si è caricata"
-            testo={errore}
-            azione={
-              <Button variant="tinted" onClick={() => void carica()}>
-                Riprova
-              </Button>
-            }
-          />
-        ) : !dati ? (
-          <div className="bat__attesa" aria-hidden="true" />
-        ) : (
-          <>
-            {inAttesa?.codice ? (
-              <LinkAttivo
-                gioco={gioco}
-                nome={catalogo.nome}
-                invito={inAttesa}
-                onRitira={() => void annulla(inAttesa)}
-              />
-            ) : (
-              <div className="bat-link">
-                <div className="bat-link__riga">
-                  <span className="bat-link__icona" aria-hidden="true">
-                    <IconLink size={22} />
-                  </span>
-                  <div className="bat-link__testo">
-                    <p className="bat-link__titolo">Invita con un link</p>
-                    <p className="bat-link__nota">Anche a chi non ha un account.</p>
-                  </div>
-                </div>
-                <Button
-                  variant="tinted"
-                  fullWidth
-                  onClick={() => void invita(null)}
-                  loading={invio === 'link'}
-                  disabled={occupato || (invio !== null && invio !== 'link')}
-                >
-                  <IconShare size={18} /> Condividi il link
-                </Button>
-              </div>
-            )}
-
-            {inAttesa && !inAttesa.codice && (
-              <InvitoInAttesa invito={inAttesa} onAnnulla={() => void annulla(inAttesa)} />
-            )}
-
-            {esito && (
-              <p className="bat-sala__esito">
-                {esito.stato === 'rifiutato'
-                  ? `${esito.a?.displayName} non può giocare adesso.`
-                  : `${esito.a?.displayName} non ha risposto in tempo.`}
-              </p>
-            )}
-
-            <p className="bat-sala__titolo">Chi è online adesso</p>
-            {dati.giocatori.length === 0 ? (
-              <p className="bat-sala__vuoto">Nessuno online in questo momento.</p>
-            ) : (
-              <ul className="bat-sala__elenco">
-                {dati.giocatori.map((g) => (
-                  <li key={g.playerId} className="bat-sala__giocatore">
-                    <Avatar nickname={g.nickname} color={g.avatarColor} size={40} />
-                    <span className="bat-sala__chi">
-                      <span className="bat-sala__nome">{g.displayName}</span>
-                      <span className="bat-sala__dove">{g.occupato ? 'sta già giocando' : DOVE[g.attivita]}</span>
-                    </span>
-                    <Button
-                      variant={g.invitato ? 'plain' : 'tinted'}
-                      disabled={g.occupato || g.invitato || occupato || invio !== null}
-                      loading={invio === g.playerId}
-                      onClick={() => void invita(g.playerId)}
-                    >
-                      {g.invitato ? 'Invitato' : 'Invita'}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </Sezione>
-
-      <Sezione>
-        <Elenco>
-          <Riga icona={<IconBook size={18} />} titolo="Come si gioca" onClick={() => setRegole(true)} />
-        </Elenco>
-      </Sezione>
 
       <ComeSiGiocaTavoliere gioco={gioco} open={regole} onClose={() => setRegole(false)} />
 

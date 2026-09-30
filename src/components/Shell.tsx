@@ -126,12 +126,13 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
       <p className="laterale__titolo">I giochi</p>
       <nav className="laterale__voci">
         {GIOCHI.map((g) => {
-          const a = ROTTE.gioco(g.id)
-          const dentro = pathname === a || pathname.startsWith(`${a}/`)
+          // Il gioco porta alla partita di oggi, e resta acceso in tutte le sue schermate.
+          const radice = ROTTE.gioco(g.id)
+          const dentro = pathname === radice || pathname.startsWith(`${radice}/`)
           return (
             <Collegamento
               key={g.id}
-              to={a}
+              to={ROTTE.classificata(g.id)}
               direzione="scheda"
               className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
             >
