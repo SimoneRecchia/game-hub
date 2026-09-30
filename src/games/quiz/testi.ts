@@ -1,4 +1,13 @@
-import { AMBITI, NOMI_CONTINENTI, type CategoriaQuiz, type Continente, type ModoQuiz } from '@shared/quiz'
+import {
+  NOMI_CONTINENTI,
+  NOMI_MODI,
+  diGeografia,
+  nomeAmbito,
+  type CategoriaQuiz,
+  type Continente,
+  type ModoQuiz,
+} from '@shared/quiz'
+import { giornoInLettere } from '@shared/quiz-cultura'
 import { NOMI_TIPI, type AreaQuiz, type IndiceQuiz, type TipoDomanda } from '@shared/quiz-domande'
 
 /** Cosa si chiede in una categoria, in una riga: l'introduzione della partita. */
@@ -18,7 +27,7 @@ export const DESCRIZIONI: Record<ModoQuiz, Record<CategoriaQuiz, string>> = {
     cinema: 'Chi ha diretto i film, e in che anno sono usciti.',
     lirica: 'Chi ha composto le opere, e dove hanno debuttato.',
     nobel: 'Chi ha vinto il premio Nobel, in quale campo, e quando.',
-    storia: 'Quando sono successi i fatti della storia.',
+    storia: 'In che anno o in che secolo, e che cosa venne prima.',
     oggi: 'Quel che è successo in questo giorno, e chi è nato.',
     scienza: 'Elementi e formule, unità di misura, pianeti, scoperte, specie.',
   },
@@ -37,7 +46,7 @@ export const DESCRIZIONI: Record<ModoQuiz, Record<CategoriaQuiz, string>> = {
     cinema: 'Chi ha diretto i film, e in che anno sono usciti.',
     lirica: 'Chi ha composto le opere, e dove hanno debuttato.',
     nobel: 'Chi ha vinto il premio Nobel, in quale campo, e quando.',
-    storia: 'Quando sono successi i fatti della storia.',
+    storia: 'In che anno o in che secolo, e che cosa venne prima.',
     oggi: 'Quel che è successo in questo giorno, e chi è nato.',
     scienza: 'Elementi e formule, unità di misura, pianeti, scoperte, specie.',
   },
@@ -47,10 +56,47 @@ export function descrizione(categoria: CategoriaQuiz, modo: ModoQuiz | null): st
   return DESCRIZIONI[modo ?? 'scelta'][categoria]
 }
 
-/** Il nome dell'ambito di una materia: "Ottocento", "Fisica"; null per "tutti". */
-export function nomeAmbito(categoria: CategoriaQuiz, ambito: string | undefined): string | null {
-  if (!ambito || ambito === 'tutti') return null
-  return AMBITI[categoria]?.find((a) => a.id === ambito)?.nome ?? null
+const SULLA_CARTINA = 'Dove si trova la risposta, sulla cartina con i nomi'
+
+/** Cosa insegna ogni categoria dopo la risposta, in una riga: sotto l'interruttore delle spiegazioni. */
+export const COSA_INSEGNA: Record<CategoriaQuiz, string> = {
+  capitali: SULLA_CARTINA,
+  citta: SULLA_CARTINA,
+  bandiere: SULLA_CARTINA,
+  stati: SULLA_CARTINA,
+  mari: SULLA_CARTINA,
+  oceani: SULLA_CARTINA,
+  fiumi: SULLA_CARTINA,
+  laghi: SULLA_CARTINA,
+  cartina: SULLA_CARTINA,
+  arte: 'Il pittore, la corrente, la tecnica e il museo',
+  libri: 'L’autore, l’anno, il genere e la lingua',
+  cinema: 'La regia, l’anno, il paese e gli interpreti',
+  lirica: 'La musica, il libretto e la prima',
+  nobel: 'Chi è, da dove viene e la motivazione',
+  storia: 'Quando, dove e di che cosa fa parte',
+  oggi: 'Il fatto o la persona, in due righe',
+  scienza: 'Simboli, famiglie, scopritori e nomi',
+}
+
+/**
+ * Su cosa si gioca, oltre la categoria: la zona e il modo per la geografia
+ * ("Europa", "Cartina muta"), l'ambito o il giorno per le altre materie
+ * ("Ottocento", "12 marzo"). Vuoto se e' tutto.
+ */
+export function dettagliPartita(
+  s: {
+    categoria: CategoriaQuiz
+    modo?: ModoQuiz | null
+    area?: AreaQuiz
+    ambito?: string | null
+    giorno?: string | null
+  },
+  ix: IndiceQuiz | null,
+): string[] {
+  if (diGeografia(s.categoria)) return [NOMI_MODI[s.modo ?? 'scelta'], nomeArea(s.area ?? 'mondo', ix)]
+  const cosa = nomeAmbito(s.categoria, s.ambito) ?? (s.giorno ? giornoInLettere(s.giorno) : null)
+  return cosa ? [cosa] : []
 }
 
 /** Il nome di dove si gioca: "Tutto il mondo", un continente, o un paese. */

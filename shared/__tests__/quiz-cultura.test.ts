@@ -1,9 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../daily'
 import { AMBITI, type CategoriaQuiz } from '../quiz'
-import { CATEGORIE_CULTURA, PERCORSO_IMMAGINE, annoInLettere, numeroSecolo, secolo, urlImmagine } from '../quiz-cultura'
-import { TIPI, TIPI_SCIENZA, domandaValida, senzaRisposta, type DomandaCompleta, type TipoDomanda } from '../quiz-domande'
-import { domandaSulTempo, generaPartita, giornoInLettere, type FontiQuiz } from '../quiz-domande-cultura'
+import {
+  CATEGORIE_CULTURA,
+  PERCORSO_IMMAGINE,
+  annoInLettere,
+  giornoInLettere,
+  numeroSecolo,
+  secolo,
+  urlImmagine,
+} from '../quiz-cultura'
+import {
+  TIPI,
+  TIPI_SCIENZA,
+  domandaValida,
+  senzaRisposta,
+  type DomandaCompleta,
+  type TipoDomanda,
+} from '../quiz-domande'
+import { domandaSulTempo, generaPartita, type FontiQuiz } from '../quiz-domande-cultura'
 import { diElemento, diNome, genereNome, nomeConArticolo } from '../quiz-lingua'
 import { ARTE, CINEMA, LIBRI, LIRICA, NOBEL, OGGI, SCIENZA, STORIA } from './quiz-cultura-dati'
 
@@ -43,7 +58,8 @@ describe('le domande delle altre materie', () => {
   it('ci sono tutte: ogni tipo di ogni materia esce, se si sceglie solo lui', () => {
     for (const categoria of CATEGORIE_CULTURA) {
       for (const tipo of TIPI[categoria].scelta) {
-        const ambito = categoria === 'scienza' ? Object.keys(TIPI_SCIENZA).find((a) => TIPI_SCIENZA[a].includes(tipo)) : 'tutti'
+        const ambito =
+          categoria === 'scienza' ? Object.keys(TIPI_SCIENZA).find((a) => TIPI_SCIENZA[a].includes(tipo)) : 'tutti'
         const domande = tante(categoria, 5, { tipi: [tipo], ambito })
         expect(domande.filter((d) => d.tipo === tipo).length, `${categoria}: ${tipo}`).toBeGreaterThan(0)
       }
@@ -65,7 +81,9 @@ describe('le domande delle altre materie', () => {
 
   it('restano nel loro ambito', () => {
     const quadri = new Map(ARTE.quadri.map((q) => [q.id, q]))
-    for (const d of tante('arte', 10, { ambito: 'novecento' })) expect(quadri.get(d.soggetto)!.anno!).toBeGreaterThanOrEqual(1900)
+    for (const d of tante('arte', 10, { ambito: 'novecento' })) {
+      expect(quadri.get(d.soggetto)!.anno!).toBeGreaterThanOrEqual(1900)
+    }
     const eventi = new Map(STORIA.eventi.map((e) => [e.id, e]))
     for (const d of tante('storia', 10, { ambito: 'antichita' })) expect(eventi.get(d.soggetto)!.anno).toBeLessThan(476)
     for (const d of tante('nobel', 10, { ambito: 'fisica' })) expect(d.soggetto).toContain(':fisica:')
@@ -134,7 +152,9 @@ describe('le regole di ogni materia', () => {
     for (const d of tante('nobel', 30, { tipi: ['nobel-anno'] })) {
       if (d.tipo !== 'nobel-anno') continue
       const [, premio, anno] = d.soggetto.split(':')
-      const vincitori = new Set(NOBEL.premi.filter((x) => x.premio === premio && x.anno === Number(anno)).map((x) => x.chi))
+      const vincitori = new Set(
+        NOBEL.premi.filter((x) => x.premio === premio && x.anno === Number(anno)).map((x) => x.chi),
+      )
       for (const o of d.opzioni) if (o.id !== d.giusta) expect(vincitori.has(o.id)).toBe(false)
     }
   })
@@ -156,7 +176,9 @@ describe('le regole di ogni materia', () => {
       if (d.tipo !== 'prima-evento') continue
       const giusto = eventi.get(d.giusta)!
       expect(d.lunga).toBe(1)
-      for (const o of d.opzioni) if (o.id !== d.giusta) expect(eventi.get(o.id)!.anno).toBeGreaterThanOrEqual(giusto.anno + 8)
+      for (const o of d.opzioni) {
+        if (o.id !== d.giusta) expect(eventi.get(o.id)!.anno).toBeGreaterThanOrEqual(giusto.anno + 8)
+      }
     }
   })
 
@@ -260,7 +282,9 @@ describe('le immagini di Commons', () => {
   it('hanno l’indirizzo delle miniature, con il nome codificato', () => {
     const url = urlImmagine({ f: 'e/ec/Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg' }, 500)
     expect(url).toBe(
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/500px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/' +
+        'Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg/' +
+        '500px-Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg',
     )
     expect(PERCORSO_IMMAGINE.test('e/ec/Mona_Lisa.jpg')).toBe(true)
     expect(PERCORSO_IMMAGINE.test('../../etc/passwd')).toBe(false)

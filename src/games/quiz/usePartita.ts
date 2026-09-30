@@ -12,11 +12,11 @@
  * cartina che insegna — e poi, con "Avanti", la domanda dopo, o la **fine**.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { gameDate, mulberry32 } from '@shared/daily'
-import { FATTORE_LUNGA, SECONDI_CARTINA, SECONDI_SCELTA, type CategoriaQuiz, type ModoQuiz } from '@shared/quiz'
+import { FATTORE_LUNGA, SECONDI_SCELTA, secondiDellaDomanda, type CategoriaQuiz, type ModoQuiz } from '@shared/quiz'
 import type { CittaQuiz } from '@shared/quiz-dati'
 import {
   rispostaGiusta,
@@ -26,9 +26,10 @@ import {
   type DomandaQuiz,
   type RichiestaQuiz,
 } from '@shared/quiz-domande'
+import { giornoDellAnno } from '@shared/quiz-cultura'
 import { generaPartita } from '@shared/quiz-domande-cultura'
 import type { QuizEsito, QuizState, RispostaQuiz } from '@shared/types'
-import { fontiDelQuiz } from './fonti'
+import { fontiDelQuiz, giornoDellaPartita } from './fonti'
 
 export type Fase = 'caricamento' | 'intro' | 'via' | 'domanda' | 'esito' | 'fine' | 'errore'
 
@@ -86,10 +87,16 @@ export interface VistaPartita {
   categoria: CategoriaQuiz | null
   modo: ModoQuiz | null
   area: AreaQuiz
+  /** L'ambito delle altre materie, se non sono tutte: "ottocento". */
+  ambito: string | null
+  /** Il giorno di "Accadde oggi": "03-12". */
+  giorno: string | null
   opzioni: OpzioniPartita
   totale: number
   indice: number
   domanda: DomandaQuiz | null
+  /** La domanda che viene dopo, se la si sa gia' (la libera): i suoi quadri si scaricano prima. */
+  prossima: DomandaQuiz | null
   /** Il tempo della domanda; zero se si gioca senza. */
   limiteMs: number
   /** Quando scade la domanda, in `performance.now()`; null se non scade. */
@@ -274,12 +281,15 @@ export function useQuizDelGiorno(): VistaPartita {
     categoria: stato?.categoria ?? null,
     modo: stato?.modo ?? null,
     area: 'mondo',
+    ambito: null,
+    giorno: stato?.categoria === 'oggi' ? giornoDellAnno(stato.date) : null,
     opzioni: OPZIONI_CLASSIFICATA,
     totale: stato?.totale ?? 0,
     // Durante l'esito la domanda e' quella appena risposta, non la prossima.
     indice: fase === 'esito' ? Math.max(0, fatte.length - 1) : (stato?.aperta?.indice ?? fatte.length),
     domanda: fase === 'esito' ? (ultima?.domanda ?? null) : (stato?.aperta?.domanda ?? null),
-    limiteMs: stato?.aperta?.limiteMs ?? (ultima?.domanda.cartina ? SECONDI_CARTINA : SECONDI_SCELTA) * 1000,
+    prossima: null,
+    limiteMs: stato?.aperta?.limiteMs ?? secondiDellaDomanda(ultima?.domanda ?? {}) * 1000,
     scade,
     fatte,
     ultima,
@@ -306,7 +316,10 @@ export function useQuizDelGiorno(): VistaPartita {
 /* ───────────────────────────────  La libera  ──────────────────────────── */
 
 /** Le scelte di una partita libera: le domande e come si gioca. */
-export interface ImpostazioniLibera extends Omit<RichiestaQuiz, 'citta'>, OpzioniPartita {}
+export interface ImpostazioniLibera extends Omit<RichiestaQuiz, 'citta' | 'data'>, OpzioniPartita {
+  /** "Accadde oggi" di un giorno a caso, invece che di oggi. */
+  giorno?: 'caso'
+}
 
 export interface StatisticheLibere {
   partite: number
@@ -377,6 +390,7 @@ function cinquantaCinquanta(d: DomandaCompleta, caso: () => number): Set<string>
 export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPartita & { statistiche: StatisticheLibere } {
   const [domande, setDomande] = useState<DomandaCompleta[]>([])
   const [citta, setCitta] = useState<readonly CittaQuiz[] | null>(null)
+  const [giorno, setGiorno] = useState<string | null>(null)
   const [fase, setFase] = useState<Fase>('caricamento')
   const [indice, setIndice] = useState(0)
   const [fatte, setFatte] = useState<Fatta[]>([])
@@ -402,7 +416,7 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
   const secondi = impostazioni?.secondi ?? null
   const limite = useCallback(
     (d: DomandaCompleta | undefined) =>
-      !d || secondi === null ? 0 : Math.round((d.cartina ? secondi * 2 : d.lunga ? secondi * FATTORE_LUNGA : secondi) * 1000),
+      !d || secondi === null ? 0 : Math.round(secondi * (d.cartina ? 2 : d.lunga ? FATTORE_LUNGA : 1) * 1000),
     [secondi],
   )
 
@@ -424,20 +438,19 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     if (!impostazioni) return
     setFase('caricamento')
     try {
-      const { fonti, citta: elenco } = await fontiDelQuiz(impostazioni.categoria, impostazioni.area)
+      const oggi = impostazioni.categoria === 'oggi'
+      const data = oggi ? await giornoDellaPartita(impostazioni.giorno, false) : gameDate()
+      const { fonti, citta: elenco } = await fontiDelQuiz(impostazioni.categoria, impostazioni.area, data)
       const seme = (Math.random() * 2 ** 32) >>> 0
       caso.current = mulberry32(seme ^ 0x5bd1e995)
-      const nuove = generaPartita(
-        fonti,
-        { ...impostazioni, citta: elenco ?? undefined, data: gameDate() },
-        mulberry32(seme),
-      )
+      const nuove = generaPartita(fonti, { ...impostazioni, citta: elenco ?? undefined, data }, mulberry32(seme))
       if (nuove.length === 0) {
         setErrore('Nessuna domanda con queste scelte: prova una zona più grande.')
         setFase('errore')
         return
       }
       setCitta(elenco)
+      setGiorno(oggi ? giornoDellAnno(data) : null)
       setDomande(nuove)
       setFatte([])
       setIndice(0)
@@ -526,7 +539,8 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
   // Avanti da solo: dopo l'esito, la domanda dopo senza toccare niente.
   useEffect(() => {
     if (fase !== 'esito' || !impostazioni?.avantiDaSolo) return
-    const t = setTimeout(avanti, durataEsito(ultima?.domanda ?? null, impostazioni.imparo, !!ultima?.risposta.spiegazione))
+    const dura = durataEsito(ultima?.domanda ?? null, impostazioni.imparo, !!ultima?.risposta.spiegazione)
+    const t = setTimeout(avanti, dura)
     return () => clearTimeout(t)
   }, [fase, impostazioni?.avantiDaSolo, impostazioni?.imparo, ultima, avanti])
 
@@ -538,6 +552,8 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
   }, [domande, indice, fase, aiutiRimasti, esclusi])
 
   const d = domande[indice]
+  const quale = fase === 'intro' || fase === 'via' ? 0 : indice + 1
+  const prossima = useMemo(() => (domande[quale] ? senzaRisposta(domande[quale]) : null), [domande, quale])
   const primoGiro = ripassoDa ?? domande.length
   const restaRipasso =
     !!impostazioni?.ripasso && ripassoDa === null && fatte.slice(0, primoGiro).some((f) => !f.risposta.giusta)
@@ -546,10 +562,13 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     categoria: impostazioni?.categoria ?? null,
     modo: impostazioni?.modo ?? 'scelta',
     area: impostazioni?.area ?? 'mondo',
+    ambito: impostazioni?.ambito && impostazioni.ambito !== 'tutti' ? impostazioni.ambito : null,
+    giorno,
     opzioni: impostazioni ?? OPZIONI_PREDEFINITE,
     totale: domande.length,
     indice,
     domanda: fase === 'esito' ? (ultima?.domanda ?? null) : d ? senzaRisposta(d) : null,
+    prossima,
     limiteMs: limite(d),
     scade,
     fatte,

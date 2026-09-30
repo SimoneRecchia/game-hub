@@ -10,15 +10,7 @@
  */
 
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
-import {
-  MARGINE_RETE_MS,
-  SECONDI_CARTINA,
-  SECONDI_LUNGA,
-  SECONDI_SCELTA,
-  puntiQuiz,
-  type CategoriaQuiz,
-  type ModoQuiz,
-} from '../../shared/quiz'
+import { MARGINE_RETE_MS, puntiQuiz, secondiDellaDomanda, type CategoriaQuiz, type ModoQuiz } from '../../shared/quiz'
 import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI } from '../../shared/quiz-dati'
 import { rispostaGiusta, senzaRisposta, type DomandaCompleta } from '../../shared/quiz-domande'
 import type {
@@ -119,7 +111,7 @@ export function risposteDi(row: Pick<PartitaRow, 'risposte'> | null): RispostaSa
  * sono lunghe da leggere, trenta per trovare un posto sulla cartina.
  */
 export function limiteMs(d: DomandaCompleta): number {
-  return (d.cartina ? SECONDI_CARTINA : d.lunga ? SECONDI_LUNGA : SECONDI_SCELTA) * 1000
+  return secondiDellaDomanda(d) * 1000
 }
 
 /** Se la domanda aperta ha finito il tempo, margine della rete compreso. */

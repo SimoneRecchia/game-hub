@@ -725,6 +725,9 @@ export interface RiassuntoSfida {
   area: AreaQuiz
   quante: number
   secondi: number
+  /** Le altre materie: l'ambito, se non sono tutte, e il giorno di "Accadde oggi". */
+  ambito?: string
+  giorno?: string
 }
 
 /** Una sfida a quiz arrivata, da accettare o rifiutare. */

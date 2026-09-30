@@ -1,10 +1,21 @@
 /*
- * Le scelte del quiz libero: la categoria, dove, quante domande, se a tempo.
+ * Le scelte del quiz libero, dall'alto: la materia e la categoria, su cosa si
+ * gioca (la zona, l'ambito o il giorno), la partita, se si impara, e le
+ * opzioni avanzate chiuse.
  *
  * Una schermata che scorre, come la sala della battaglia: tessere per le
  * categorie, capsule per le zone. La scelta e' indaco, come ogni selezione
  * dell'app; il rosa del quiz sta sulle icone.
  */
+
+/* Che cosa si chiede nella categoria scelta: una riga sotto le tessere, che cambia con loro. */
+.quiz-scelta__cosa {
+  margin: 0;
+  padding: 0 var(--sp-1);
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
 
 .quiz-categorie {
   display: grid;

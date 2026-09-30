@@ -492,7 +492,19 @@ function Fonti() {
         <a href="https://flagcdn.com" target="_blank" rel="noreferrer">
           flagcdn
         </a>
-        .
+        . I quadri sono immagini di pubblico dominio di{' '}
+        <a href="https://commons.wikimedia.org" target="_blank" rel="noreferrer">
+          Wikimedia Commons
+        </a>
+        ; le spiegazioni e i fatti di «Accadde oggi» vengono da{' '}
+        <a href="https://it.wikipedia.org" target="_blank" rel="noreferrer">
+          Wikipedia
+        </a>{' '}
+        (
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.it" target="_blank" rel="noreferrer">
+          CC BY-SA 4.0
+        </a>
+        ).
       </p>
       <p>
         <strong>Indovina chi.</strong> Le persone sono gli Avataaars di Pablo Stanley, disegnati da{' '}

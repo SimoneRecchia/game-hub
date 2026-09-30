@@ -291,7 +291,13 @@ export const SCIENZA: DatiScienza = {
   unita: UNITA.map(([n, s, g, da], i) => ({ id: `UN${i}`, n, s, g, ...(da ? { da } : {}), f: fama(i, UNITA.length) })),
   astri: [
     ...PIANETI.map((n, i) => ({ id: `PI${i}`, n, tipo: 'pianeta' as const, ordine: i + 1, f: fama(i, 8) })),
-    ...SATELLITI.map(([n, di], i) => ({ id: `SA${i}`, n, tipo: 'satellite' as const, di, f: fama(i, SATELLITI.length) })),
+    ...SATELLITI.map(([n, di], i) => ({
+      id: `SA${i}`,
+      n,
+      tipo: 'satellite' as const,
+      di,
+      f: fama(i, SATELLITI.length),
+    })),
   ],
   scoperte: Array.from({ length: 30 }, (_, i) => ({
     id: `SC${i}`,
