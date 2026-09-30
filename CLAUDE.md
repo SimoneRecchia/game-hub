@@ -389,8 +389,9 @@ partite.
 
 **I giochi da tavolo non hanno classificata.** Sono partite quando si vuole,
 con gli amici — e contro il computer dove ha senso — senza punti ne'
-classifica: stanno in una sezione a parte della home e della barra laterale
-(`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in `GiocoClassificato`, che
+classifica: nella home stanno con le libere, e nella barra laterale in una
+sezione loro (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in
+`GiocoClassificato`, che
 porta con se' classifiche, anelli e statistiche. Sono Indovina chi, che il
 computer non ce l'ha — si gioca parlandosi — e scacchi, dama, Forza 4 e go,
 con un amico o contro il computer.
@@ -477,8 +478,8 @@ Regole, pezzi e tavolieri sono un quinto dell'app, e i generatori delle domande
 di tutte le materie del quiz un altro bel pezzo: `App.tsx` le carica con `lazy`,
 in un `Suspense` attorno alle rotte, e le precarica dopo un paio di secondi.
 Le statistiche delle libere del quiz stanno in `quiz/statistiche.ts` perché le
-leggono anche la pagina del gioco e il profilo, che altrimenti si porterebbero
-dietro i generatori. React Router naviga
+legge anche il profilo, che altrimenti si porterebbe dietro i generatori.
+React Router naviga
 dentro una transizione di React, quindi la schermata di prima resta finché la
 nuova e' pronta, e la View Transition la fotografa montata. Per questo gli
 avvisi degli inviti e la registrazione prendono i nomi da `tavolo/nomi.ts` e
@@ -583,7 +584,8 @@ sulla materia, la categoria, il modo, la zona o l'ambito e le opzioni che si
 scelgono. Gli
 indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 (`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
-nuovi in `App.tsx`). I giochi da tavolo non hanno ne' l'una ne' l'altra: la
+nuovi in `App.tsx`); `/<gioco>` da solo porta alla classificata.
+I giochi da tavolo non hanno ne' l'una ne' l'altra: la
 loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`, `/invito/:codice`
 (`/scacchi`, `/dama`, `/forza-4`, `/go`).
 
@@ -726,13 +728,16 @@ cose diverse, e nella pagina sono sottocategorie (una categoria con l'ambito
 fisso), mentre per il modello e per la classificata la scienza resta una
 categoria sola. Le opzioni della partita sono una per tutte le materie; la
 categoria, la zona e l'ambito si ricordano per materia. Anche il resto
-della classificata e' fisso — dieci domande, il tempo del server, la cartina che
-insegna, "Avanti" a mano, niente aiuti — mentre la libera sceglie tutto: fino a
-`QUANTE_MASSIME` domande (cinquanta), e nelle opzioni avanzate quali domande,
-fra quante risposte, quanto note, il ritmo, cosa accendere sulla cartina, i due
-"50 e 50", il ripasso delle sbagliate e la morte improvvisa. L'indirizzo porta
-solo quel che non e' come di solito (`BANDIERINE` in `QuizLibero.tsx`), così una
-partita si condivide con un link che si legge.
+della classificata e' fisso — dieci domande, il tempo del server, la cartina o
+la scheda che insegnano, "Avanti" a mano, niente aiuti — e la libera ne sceglie
+poco, uguale in tutte le materie: quante domande (`QUANTE_LIBERE`, fino a
+cinquanta), il tempo, e la difficoltà, che fa partire la partita come nelle
+sale dei giochi da tavolo. La spiegazione dopo ogni risposta c'e' sempre. Le
+opzioni di prima — gli aiuti, i tipi di domanda, quante risposte, la morte
+improvvisa — c'erano e non le usava nessuno: il motore le ha ancora (la sfida e
+il server le leggono), ma `valide` le rimette ai valori di sempre, anche da un
+indirizzo o da una scelta salvata. L'indirizzo porta solo quel che non e' come
+di solito, così una partita si condivide con un link che si legge.
 
 **Nel quiz il tempo lo tiene il server, e la risposta resta li'.** Il telefono
 riceve una domanda alla volta senza la risposta (`senzaRisposta`), e l'orologio
@@ -856,8 +861,8 @@ l'anno.
 **La scheda che insegna arriva con la risposta.** Per le materie senza cartina,
 a risposta data, la carta diventa una scheda: di chi e' il quadro, la corrente,
 la tecnica, dove si trova, due frasi da Wikipedia e la voce intera. E' la
-stessa opzione della cartina che insegna (`imparo`), e nella libera si chiama
-"Spiegazione dopo ogni risposta". La compone il generatore
+stessa cosa della cartina che insegna (`imparo`), accesa sempre: ogni risposta
+ha la sua spiegazione, anche nella libera. La compone il generatore
 (`SpiegazioneQuiz`), e come la risposta resta sul server finché non si risponde:
 `senzaRisposta` non la manda. Le domande lunghe da leggere (`lunga`: quattro
 fatti fra cui scegliere quale viene prima) hanno venti secondi invece di
@@ -936,16 +941,37 @@ zona dell'orologio con il `theme-color`, che e' `--bg`, e una barra bianca ci
 lasciava sopra una fascia grigia.
 
 **Le opzioni stanno in gruppi, come nelle Impostazioni**: una carta per gruppo,
-una riga per opzione, un filo fra due righe, e i gruppi in ordine da quelli
-che si cambiano di piu' (nel quiz libero: domande, difficolta', tempo, sempre
-in vista) a quelli che si cambiano di rado, nelle avanzate. Un interruttore per
-carta, com'erano, faceva leggere la pagina a pezzi. Le voci di un controllo
+una riga per opzione, un filo fra due righe. Un interruttore per carta,
+com'erano, faceva leggere la pagina a pezzi. Le opzioni che non cambia nessuno
+non ci sono: nel quiz libero erano un pannello di avanzate, e la schermata non
+si capiva più.
+
+**La difficoltà si sceglie con le tacche, e fa partire la partita.** In tutte
+le libere e nelle sale — sudoku, scarabeo, battaglia, quiz, scacchi, dama,
+Forza 4, go — la difficoltà e' un elenco di righe con le tacche nel colore del
+gioco (`Tacche`), e toccarne una comincia: niente "Comincia" da cercare dopo.
+Contro chi si gioca, dove si puo' scegliere, e' un interruttore sopra
+(Computer | Amico), ricordato per gioco, e si vede solo quel che serve a quella
+scelta: la difficoltà contro il computer, gli inviti con un amico. Il colore
+contro il computer non si sceglie: cambia a ogni partita (`prossimaParte` in
+`tavolo/locale.ts`), come nelle rivincite fra amici.
+
+**Un gioco non ha una pagina sua.** Dalla home una carta del giorno porta dritta
+alla partita di oggi, e le partite libere — le libere dei sei giochi e i giochi
+da tavolo, in una griglia sola — portano a sceglierle. Le pagine di ogni gioco,
+con la classificata, la libera e un podio, erano un passaggio in piu' da
+attraversare ogni giorno: l'indirizzo del gioco (`/wordle`, quello dei
+sottodomini) porta alla classificata (`AllaClassificata` in `App.tsx`), e la
+freccia indietro di ogni partita torna alla home. Le voci di un controllo
 segmentato sono larghe uguali e si stringono (`min-width: 0`): altrimenti la
 capsula che le segue non ci sta sopra, e su un telefono stretto l'ultima voce
 esce dalla carta.
 
-**I testi dicono cosa fare, non perché.** Titoli di poche parole, un
-sottotitolo solo quando serve a decidere, e corto; niente retroscena ("il tempo
+**I testi dicono cosa fare, non perché.** Titoli di poche parole, e niente
+righe che spiegano quel che si vede: "Non conta per la classifica" sotto una
+libera, "Anche a chi non ha un account" sotto un link, cosa chiede una
+categoria, cosa fa un livello. Quel che serve davvero sta nel foglio della "i"
+in alto a destra, che ogni gioco ha. Niente retroscena ("il tempo
 lo tiene il server", "lo schema lo compone un programma ogni notte") né giri di
 parole ("finché ce ne sono", "le opzioni di sempre"). Le opzioni si chiamano
 come in un'app: "Difficoltà", "Ordine", "Ripristina le opzioni". Le regole di
@@ -1088,9 +1114,8 @@ punti oltre il bordo destro di un telefono largo 320. Le colonne di una griglia
 di carte sono `minmax(0, 1fr)`. Un altro guaio aveva la fila di capsule della
 classifica di prima: scorreva di lato, e lo scatto (`scroll-snap`) senza
 `scroll-padding` la fermava con la prima capsula contro il bordo dello schermo.
-Nelle classifiche niente scorre piu' di lato; resta il carosello delle libere
-della home, che mostra un pezzo della terza carta abbastanza grande da dire
-che si scorre.
+Nelle classifiche niente scorre piu' di lato, e nemmeno nella home, dove le
+libere erano un carosello e ora sono una griglia.
 
 **La cartina muta e' un SVG, non una libreria.** In Mercatore
 (`cartina/geometria.ts`), come le cartine dei telefoni: conserva le forme a ogni

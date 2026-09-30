@@ -4,8 +4,9 @@ import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Elenco, Riga, Sezione, Tacche, Vuoto } from '@/components/Elementi'
-import { IconCopy, IconInfo, IconLink, IconShare } from '@/components/Icons'
+import { IconCopy, IconInfo, IconShare } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { ComeSiGiocaBattaglia } from '@/games/battaglia/ComeSiGioca'
@@ -30,8 +31,30 @@ const RITMO_TRANQUILLO_MS = 12_000
 
 const NOMI: Record<LivelloBattaglia, string> = { facile: 'Facile', normale: 'Normale', difficile: 'Difficile' }
 
+type Contro = 'computer' | 'amico'
+const CHIAVE_CONTRO = 'battaglia.contro'
+
+/** Contro chi si gioca: quello dell'ultima volta, come nelle sale dei giochi da tavolo. */
+function leggiContro(): Contro {
+  try {
+    return localStorage.getItem(CHIAVE_CONTRO) === 'amico' ? 'amico' : 'computer'
+  } catch {
+    return 'computer'
+  }
+}
+
+function salvaContro(c: Contro): void {
+  try {
+    localStorage.setItem(CHIAVE_CONTRO, c)
+  } catch {
+    // E' una comodita'.
+  }
+}
+
 /**
- * La battaglia libera: contro il computer a tre livelli, o contro un amico.
+ * La battaglia libera: contro il computer a tre livelli, o contro un amico. Un
+ * interruttore sceglie quale, come nelle sale dei giochi da tavolo, e si vede
+ * solo quel che serve a quella.
  *
  * Un amico si sfida in due modi. Se e' online, dall'elenco: gli arriva la sfida
  * in qualunque schermata sia. Se no, con un **link**: lo si manda come si
@@ -48,6 +71,7 @@ export default function BattagliaLibera() {
   const [aiuto, setAiuto] = useState(false)
   const [avviso, setAvviso] = useState<string | null>(null)
   const [conferma, setConferma] = useState<LivelloBattaglia | null>(null)
+  const [contro, setContro] = useState<Contro>(leggiContro)
   /** La partita fra amici vista al giro prima: quando ne compare una nuova, ci si entra. */
   const vista = useRef<string | null | undefined>(undefined)
 
@@ -152,11 +176,13 @@ export default function BattagliaLibera() {
   const esitoUltima =
     ultima && !inAttesa && (ultima.stato === 'rifiutato' || ultima.stato === 'scaduto') ? ultima : null
 
+  // Una sfida che aspetta risposta, o un link aperto, si vedono anche se l'ultima volta si era scelto il computer.
+  const mostrata: Contro = aspetto ? 'amico' : contro
+
   return (
     <Pagina
-      titolo="Contro chi vuoi"
-      sotto="Non conta per la classifica."
-      indietro={{ a: ROTTE.gioco('battaglia'), etichetta: 'Battaglia' }}
+      titolo="Battaglia navale"
+      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
           <IconInfo size={21} />
@@ -179,102 +205,100 @@ export default function BattagliaLibera() {
         <>
           {dati.partita && <PartitaAperta partita={dati.partita} />}
 
-          <Sezione titolo="Contro il computer">
-            <Elenco>
-              {dati.computer && (
-                <Riga
-                  icona={<span className="bat-riga__onda" aria-hidden="true" />}
-                  titolo="Riprendi la partita"
-                  sotto={dati.computer.stato === 'disposizione' ? 'Flotta da disporre' : 'Tocca a te'}
-                  a={ROTTE.partitaBattaglia(dati.computer.id)}
-                />
-              )}
-              {LIVELLI_BATTAGLIA.map((livello, i) => {
-                const conti = dati.controComputer[livello]
-                const giocate = conti.vinte + conti.perse
-                return (
-                  <Riga
-                    key={livello}
-                    icona={<Tacche piene={i + 1} colore="var(--battaglia-1)" />}
-                    titolo={invio === livello ? `${NOMI[livello]}…` : NOMI[livello]}
-                    valore={giocate > 0 ? `${conti.vinte}/${giocate}` : undefined}
-                    onClick={invio ? undefined : () => scegliLivello(livello)}
-                  />
-                )
-              })}
-            </Elenco>
-          </Sezione>
+          <SegmentedControl
+            ariaLabel="Contro chi"
+            value={mostrata}
+            onChange={(c) => {
+              setContro(c)
+              salvaContro(c)
+            }}
+            options={[
+              { value: 'computer', label: 'Computer' },
+              { value: 'amico', label: 'Amico' },
+            ]}
+          />
 
-          <Sezione
-            titolo="Con un amico"
-            nota={
-              dati.vinte + dati.perse > 0
-                ? `Contro gli amici: ${dati.vinte} vinte, ${dati.perse} perse.`
-                : undefined
-            }
-          >
-            {dati.link ? (
-              <LinkAttivo link={dati.link} onRitira={() => void ritiraLink()} />
-            ) : (
-              <div className="bat-link">
-                <div className="bat-link__riga">
-                  <span className="bat-link__icona" aria-hidden="true">
-                    <IconLink size={22} />
-                  </span>
-                  <div className="bat-link__testo">
-                    <p className="bat-link__titolo">Invita con un link</p>
-                    <p className="bat-link__nota">Anche a chi non ha un account.</p>
-                  </div>
-                </div>
+          {mostrata === 'computer' ? (
+            <Sezione titolo="Difficoltà">
+              <Elenco>
+                {dati.computer && (
+                  <Riga
+                    icona={<span className="bat-riga__onda" aria-hidden="true" />}
+                    titolo="Riprendi la partita"
+                    sotto={dati.computer.stato === 'disposizione' ? 'Flotta da disporre' : 'Tocca a te'}
+                    a={ROTTE.partitaBattaglia(dati.computer.id)}
+                  />
+                )}
+                {LIVELLI_BATTAGLIA.map((livello, i) => {
+                  const conti = dati.controComputer[livello]
+                  const giocate = conti.vinte + conti.perse
+                  return (
+                    <Riga
+                      key={livello}
+                      icona={<Tacche piene={i + 1} colore="var(--battaglia-1)" />}
+                      titolo={invio === livello ? `${NOMI[livello]}…` : NOMI[livello]}
+                      valore={giocate > 0 ? `${conti.vinte}/${giocate}` : undefined}
+                      onClick={invio ? undefined : () => scegliLivello(livello)}
+                    />
+                  )
+                })}
+              </Elenco>
+            </Sezione>
+          ) : (
+            <Sezione titolo="Invita">
+              {dati.link ? (
+                <LinkAttivo link={dati.link} onRitira={() => void ritiraLink()} />
+              ) : (
                 <Button
                   variant="tinted"
+                  size="lg"
                   fullWidth
                   onClick={() => void creaLink()}
                   loading={invio === 'link'}
                   disabled={Boolean(dati.partita) || (invio !== null && invio !== 'link')}
                 >
-                  <IconShare size={18} /> Condividi il link
+                  <IconShare size={18} /> Invita con un link
                 </Button>
-              </div>
-            )}
+              )}
 
-            {inAttesa && <SfidaInAttesa invito={inAttesa} onAnnulla={() => void annulla(inAttesa)} />}
+              {inAttesa && <SfidaInAttesa invito={inAttesa} onAnnulla={() => void annulla(inAttesa)} />}
 
-            {esitoUltima && (
-              <p className="bat-sala__esito">
-                {esitoUltima.stato === 'rifiutato'
-                  ? `${esitoUltima.a.displayName} ha rifiutato la sfida.`
-                  : `${esitoUltima.a.displayName} non ha risposto in tempo.`}
-              </p>
-            )}
+              {esitoUltima && (
+                <p className="bat-sala__esito">
+                  {esitoUltima.stato === 'rifiutato'
+                    ? `${esitoUltima.a.displayName} ha rifiutato la sfida.`
+                    : `${esitoUltima.a.displayName} non ha risposto in tempo.`}
+                </p>
+              )}
 
-            {avviso && <p className="bat-sala__avviso">{avviso}</p>}
+              {avviso && <p className="bat-sala__avviso">{avviso}</p>}
 
-            <p className="bat-sala__titolo">Chi è online adesso</p>
-            {dati.giocatori.length === 0 ? (
-              <p className="bat-sala__vuoto">Nessuno online in questo momento.</p>
-            ) : (
-              <ul className="bat-sala__elenco">
-                {dati.giocatori.map((g) => (
-                  <li key={g.playerId} className="bat-sala__giocatore">
-                    <Avatar nickname={g.nickname} color={g.avatarColor} size={40} />
-                    <span className="bat-sala__chi">
-                      <span className="bat-sala__nome">{g.displayName}</span>
-                      <span className="bat-sala__dove">{g.occupato ? 'sta combattendo' : DOVE[g.attivita]}</span>
-                    </span>
-                    <Button
-                      variant={g.invitato ? 'plain' : 'tinted'}
-                      disabled={g.occupato || g.invitato || Boolean(dati.partita) || invio !== null}
-                      loading={invio === g.playerId}
-                      onClick={() => void sfida(g)}
-                    >
-                      {g.invitato ? 'Sfidato' : 'Sfida'}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Sezione>
+              <p className="bat-sala__titolo">Online</p>
+              {dati.giocatori.length === 0 ? (
+                <p className="bat-sala__vuoto">Nessuno online.</p>
+              ) : (
+                <ul className="bat-sala__elenco">
+                  {dati.giocatori.map((g) => (
+                    <li key={g.playerId} className="bat-sala__giocatore">
+                      <Avatar nickname={g.nickname} color={g.avatarColor} size={40} />
+                      <span className="bat-sala__chi">
+                        <span className="bat-sala__nome">{g.displayName}</span>
+                        <span className="bat-sala__dove">{g.occupato ? 'sta combattendo' : DOVE[g.attivita]}</span>
+                      </span>
+                      <Button
+                        variant={g.invitato ? 'plain' : 'tinted'}
+                        disabled={g.occupato || g.invitato || Boolean(dati.partita) || invio !== null}
+                        loading={invio === g.playerId}
+                        onClick={() => void sfida(g)}
+                      >
+                        {g.invitato ? 'Sfidato' : 'Sfida'}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Sezione>
+          )}
         </>
       )}
 

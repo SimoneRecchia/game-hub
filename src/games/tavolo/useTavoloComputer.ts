@@ -7,7 +7,6 @@ import { mossaDelComputer, stimaDelleMorte } from './computer'
 import {
   conta,
   leggiPartita,
-  leggiScelta,
   nuovaPartita,
   salvaPartita,
   ultimoLivello,
@@ -52,7 +51,7 @@ function semeACaso(): number {
  */
 export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer {
   const [partita, setPartita] = useState<PartitaLocale>(
-    () => leggiPartita(gioco) ?? nuovaPartita(gioco, ultimoLivello(gioco), leggiScelta(gioco)),
+    () => leggiPartita(gioco) ?? nuovaPartita(gioco, ultimoLivello(gioco)),
   )
   const [pensa, setPensa] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
@@ -63,7 +62,7 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
   // Un'altra partita dello stesso posto, se cambia il gioco senza smontare la pagina.
   useEffect(() => {
     if (attuale.current.gioco === gioco) return
-    setPartita(leggiPartita(gioco) ?? nuovaPartita(gioco, ultimoLivello(gioco), leggiScelta(gioco)))
+    setPartita(leggiPartita(gioco) ?? nuovaPartita(gioco, ultimoLivello(gioco)))
   }, [gioco])
 
   /** La mossa di `chi` sulla partita: salvata, e contata se chiude. Null se non si puo'. */
@@ -168,7 +167,7 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
     (livello?: LivelloTavoliere) => {
       const p = attuale.current
       setErrore(null)
-      setPartita(nuovaPartita(gioco, livello ?? p.livello, leggiScelta(gioco)))
+      setPartita(nuovaPartita(gioco, livello ?? p.livello))
     },
     [gioco],
   )

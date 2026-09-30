@@ -61,7 +61,7 @@ export default function Scarabeo() {
     <Pagina
       titolo={stato ? `Scarabeo #${stato.puzzleNumber}` : 'Scarabeo'}
       intera
-      indietro={{ a: ROTTE.gioco('scarabeo'), etichetta: 'Scarabeo' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       azioni={
         <>
           <BottoneBarra etichetta="Le tue mosse" onClick={() => setStoria(true)}>
