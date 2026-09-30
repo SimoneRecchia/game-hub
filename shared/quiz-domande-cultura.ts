@@ -58,6 +58,7 @@ import {
   mescola,
   preferendo,
   rifinisci,
+  ripartisci,
   senzaAccenti,
   soggetti,
   tipiPossibili,
@@ -70,7 +71,7 @@ import {
   type SpiegazioneQuiz,
   type TipoDomanda,
 } from './quiz-domande'
-import { diElemento, diNome, genereNome, maiuscola, nomeConArticolo, plurale } from './quiz-lingua'
+import { diElemento, diNome, genereNome, maiuscola, nomeConArticolo, plurale, testaDelNome } from './quiz-lingua'
 
 export function eCultura(categoria: CategoriaQuiz): categoria is CategoriaCultura {
   return (CATEGORIE_CULTURA as readonly string[]).includes(categoria)
@@ -288,7 +289,10 @@ function inRiga(p: PersonaQuiz): string {
 }
 
 function righe(...voci: Array<[string, string | null | undefined] | null>): Array<[string, string]> {
-  return voci.filter((v): v is [string, string] => !!v && !!v[1])
+  // Con la maiuscola ("Santuario di Santa Lucia"), tranne "n. 1947" e "m. 1528", che sono abbreviazioni.
+  return voci
+    .filter((v): v is [string, string] => !!v && !!v[1])
+    .map(([k, v]) => [k, /^[nm]\. /.test(v) ? v : maiuscola(v)])
 }
 
 function scheda(s: SpiegazioneQuiz): SpiegazioneQuiz {
@@ -328,6 +332,25 @@ function piuNota(persone: readonly PersonaQuiz[]): PersonaQuiz {
   return [...persone].sort((a, b) => b.f - a.f)[0]
 }
 
+/**
+ * Le scuole non sono correnti: un quadro fiorentino del Rinascimento e' della
+ * scuola fiorentina e del Rinascimento insieme, e fra le due non si sceglie.
+ */
+const unaScuola = (v: { n: string }) => /\bscuola\b/i.test(v.n)
+
+/**
+ * Se il titolo dice l'autore: il «Vangelo secondo Matteo», il «Diario di Anna
+ * Frank». Chiedere chi l'ha scritto, o quale ha scritto lui, sarebbe regalato.
+ */
+function ilTitoloDice(titolo: string, autori: readonly PersonaQuiz[]): boolean {
+  const nel = new Set(senzaAccenti(titolo).split(/[^a-z0-9]+/))
+  return autori.some((p) =>
+    senzaAccenti(p.n)
+      .split(/[^a-z0-9]+/)
+      .some((w) => w.length >= 4 && nel.has(w)),
+  )
+}
+
 /* ─────────────────────────────────  Arte  ─────────────────────────────── */
 
 const QUOTE_ARTE = [
@@ -359,7 +382,9 @@ function nellAmbitoArte(q: QuadroQuiz, ambito: string, pittori: Map<string, Pers
 function arte(dati: DatiCultura['arte'], c: Contesto): DomandaCompleta[] {
   const pittori = new Map(dati.pittori.map((p) => [p.id, p]))
   const correnti = new Map(dati.correnti.map((v) => [v.id, v]))
-  const quadri = dati.quadri.filter((q) => q.a.length > 0 && q.a.every((id) => pittori.has(id)))
+  const quadri = dati.quadri
+    .filter((q) => q.a.length > 0 && q.a.every((id) => pittori.has(id)))
+    .map((q) => ({ ...q, n: maiuscola(q.n) }))
   const doppi = titoliDoppi(quadri.map((q) => q.n))
   // Quando c'era ogni corrente, dai quadri che la portano: una corrente sbagliata e' una che a quel tempo non c'era.
   const anniCorrente = new Map<string, [number, number]>()
@@ -472,11 +497,11 @@ function arte(dati: DatiCultura['arte'], c: Contesto): DomandaCompleta[] {
         // Una corrente sola: con due ("Rinascimento", "Alto Rinascimento") la risposta sarebbe da discutere.
         if (q.anno === undefined || q.c?.length !== 1) return null
         const giusta = correnti.get(q.c[0])
-        if (!giusta) return null
+        if (!giusta || unaScuola(giusta)) return null
         const parole = new Set(senzaAccenti(giusta.n).split(/\W+/).filter((w) => w.length > 3))
         const altre = dati.correnti.filter((v) => {
           const anni = anniCorrente.get(v.id)
-          if (v.id === giusta.id || !anni || stessoTesto(v.n, giusta.n)) return false
+          if (v.id === giusta.id || !anni || stessoTesto(v.n, giusta.n) || unaScuola(v)) return false
           if (senzaAccenti(v.n).split(/\W+/).some((w) => parole.has(w))) return false
           return q.anno! < anni[0] - 25 || q.anno! > anni[1] + 25
         })
@@ -564,6 +589,8 @@ interface Descrizione<T extends Opera> {
   terza?: { tipo: TipoDomanda; fai: (o: T, autori: PersonaQuiz[]) => DomandaCompleta | null }
   quote: ReadonlyArray<readonly [TipoDomanda, number]>
   nellAmbito: (o: T, persone: Map<string, PersonaQuiz>) => boolean
+  /** Le opere di cui chi le ha fatte non lo sa nessuno: di loro si chiede solo la terza domanda. */
+  senzaAutore?: (o: T) => boolean
 }
 
 function opereConAutore<T extends Opera>(d: Descrizione<T>, c: Contesto): DomandaCompleta[] {
@@ -574,6 +601,7 @@ function opereConAutore<T extends Opera>(d: Descrizione<T>, c: Contesto): Domand
   const fai: Fai<T> = (tipo, o) => {
     const autori = o.autori.map((id) => persone.get(id)!)
     const autore = piuNota(autori)
+    if ((tipo === d.tipoChi || tipo === d.tipoQuale) && (ilTitoloDice(o.n, autori) || d.senzaAutore?.(o))) return null
     if (tipo === d.tipoChi) {
       if (!ancoraGiusta(c, autore.id)) return null
       const altri = d.persone.filter((p) => !o.autori.includes(p.id))
@@ -641,7 +669,7 @@ function nellAmbitoItaliano(o: Opera, ambito: string): boolean {
 }
 
 function libri(dati: DatiCultura['libri'], c: Contesto): DomandaCompleta[] {
-  const opere = dati.libri.map((l) => ({ ...l, autori: l.a }))
+  const opere = dati.libri.map((l) => ({ ...l, n: maiuscola(l.n), autori: l.a }))
   const schedaLibro = (l: LibroQuiz, autori: PersonaQuiz[]): SpiegazioneQuiz =>
     scheda({
       titolo: l.n,
@@ -649,7 +677,6 @@ function libri(dati: DatiCultura['libri'], c: Contesto): DomandaCompleta[] {
       righe: righe(
         [autori.length > 1 ? 'Autori' : 'Autore', autori.map(inRiga).join('; ')],
         ['Anno', l.anno !== undefined ? annoInLettere(l.anno) : null],
-        ['Genere', l.g],
         ['Lingua originale', l.lingua],
       ),
       testo: autori.length === 1 && autori[0].d ? maiuscola(`${autori[0].n}: ${autori[0].d}.`) : undefined,
@@ -693,7 +720,7 @@ function libri(dati: DatiCultura['libri'], c: Contesto): DomandaCompleta[] {
 }
 
 function cinema(dati: DatiCultura['cinema'], c: Contesto): DomandaCompleta[] {
-  const opere = dati.film.map((f) => ({ ...f, autori: f.r }))
+  const opere = dati.film.map((f) => ({ ...f, n: maiuscola(f.n), autori: f.r }))
   const schedaFilm = (f: FilmQuiz, registi: PersonaQuiz[]): SpiegazioneQuiz =>
     scheda({
       titolo: f.n,
@@ -702,7 +729,6 @@ function cinema(dati: DatiCultura['cinema'], c: Contesto): DomandaCompleta[] {
         ['Regia', registi.map(inRiga).join('; ')],
         ['Anno', f.anno !== undefined ? String(f.anno) : null],
         ['Paese', f.p],
-        ['Genere', f.g],
         ['Interpreti', f.cast?.length ? elenco(f.cast) : null],
         ['Premi', f.oscar ? 'Oscar al miglior film' : null],
       ),
@@ -717,6 +743,8 @@ function cinema(dati: DatiCultura['cinema'], c: Contesto): DomandaCompleta[] {
       scheda: schedaFilm,
       tipoChi: 'regista-film',
       tipoQuale: 'film-di',
+      // Chi ha diretto un cartone animato non lo sa quasi nessuno: di quelli si chiede l'anno.
+      senzaAutore: (f) => /animazion/i.test(f.g ?? ''),
       terza: {
         tipo: 'anno-film',
         fai: (f, registi) => {
@@ -750,7 +778,7 @@ function cinema(dati: DatiCultura['cinema'], c: Contesto): DomandaCompleta[] {
 }
 
 function lirica(dati: DatiCultura['lirica'], c: Contesto): DomandaCompleta[] {
-  const opere = dati.opere.map((o) => ({ ...o, autori: o.c }))
+  const opere = dati.opere.map((o) => ({ ...o, n: maiuscola(o.n), autori: o.c }))
   const citta = [...new Set(dati.opere.map((o) => o.citta).filter((x): x is string => !!x))]
   const schedaOpera = (o: OperaQuiz, compositori: PersonaQuiz[]): SpiegazioneQuiz =>
     scheda({
@@ -840,9 +868,12 @@ const PRIMO_ANNO: Record<PremioNobel, number> = {
   economia: 1969,
 }
 
-function nobel(dati: DatiCultura['nobel'], c: Contesto): DomandaCompleta[] {
+function nobel(dati: DatiCultura['nobel'], contesto: Contesto): DomandaCompleta[] {
   const premiati = new Map(dati.premiati.map((p) => [p.id, p]))
   const premi = dati.premi.filter((x) => premiati.has(x.chi))
+  // Gli anni arrivano all'ultimo premio dato: quelli di quest'anno, prima di ottobre, non ci sono ancora.
+  const ultimo = premi.reduce((n, x) => Math.max(n, x.anno), 0)
+  const c: Contesto = { ...contesto, annoMassimo: Math.min(contesto.annoMassimo, ultimo || contesto.annoMassimo) }
   const chiDelPremio = (premio: PremioNobel, anno: number) =>
     premi.filter((x) => x.premio === premio && x.anno === anno).map((x) => x.chi)
   const premiDi = (chi: string) => premi.filter((x) => x.chi === chi)
@@ -972,20 +1003,40 @@ function nobel(dati: DatiCultura['nobel'], c: Contesto): DomandaCompleta[] {
  * il trattato di Versailles?". Il verbo lo decide la prima parola del nome, il
  * genere anche; se la parola non la si conosce, il nome va fra virgolette.
  */
-export function domandaSulTempo(nome: string, quando: 'anno' | 'secolo'): string {
+/**
+ * I fatti che durano per forza: una guerra, un'epidemia, un assedio. Si chiede
+ * quando cominciarono anche se Wikidata non dice quando finirono, come per la
+ * pandemia di COVID-19.
+ */
+const COMINCIANO = new RegExp(
+  '^(guerr|rivoluzion|rivolt|insurrezion|crociat|campagn|occupazion|invasion|pandemi|epidemi|carestia|crisi|assedi|blocc)',
+)
+
+export function domandaSulTempo(
+  nome: string,
+  quando: 'anno' | 'secolo',
+  /**
+   * Se il fatto e' durato piu' di quell'anno o di quel secolo: allora si chiede
+   * quando comincio', perché "in che anno ci fu la pandemia di COVID-19?"
+   * avrebbe piu' risposte giuste.
+   */
+  dura = false,
+): string {
   const genere = genereNome(nome)
   if (!genere) return `${titolo(maiuscola(nome))}: in che ${quando}?`
   const conArticolo = nomeConArticolo(nome, genere)!
   const molti = plurale(genere)
   const femminile = genere === 'f' || genere === 'fp'
-  const prima = nome.trim().split(/[\s'’]+/)[0].toLowerCase()
+  // Il verbo segue il nome che regge, non l'aggettivo davanti: "cominciò la seconda guerra balcanica".
+  const prima = testaDelNome(nome)
   let verbo: string
-  if (/^battagli/.test(prima)) verbo = molti ? 'si combatterono' : 'si combatté'
-  else if (/^(guerr|rivoluzion|rivolt|insurrezion|crociat|campagn|occupazion|invasion)/.test(prima)) {
-    verbo = molti ? 'cominciarono' : 'cominciò'
-  } else if (/^(trattat|pace|accord|patt|armistizi|convenzion|concordat)/.test(prima)) {
+  // Un trattato si firma il primo anno anche quando dura: il patto di Varsavia "fu firmato", nel 1955.
+  if (/^(trattat|pace|accord|patt|armistizi|convenzion|concordat)/.test(prima)) {
     verbo = molti ? (femminile ? 'furono firmate' : 'furono firmati') : femminile ? 'fu firmata' : 'fu firmato'
-  } else verbo = molti ? 'ci furono' : 'ci fu'
+  } else if (dura || COMINCIANO.test(prima)) {
+    verbo = molti ? 'cominciarono' : 'cominciò'
+  } else if (/^battagli/.test(prima)) verbo = molti ? 'si combatterono' : 'si combatté'
+  else verbo = molti ? 'ci furono' : 'ci fu'
   return `In che ${quando} ${verbo} ${conArticolo}?`
 }
 
@@ -1044,7 +1095,7 @@ function storia(dati: DatiCultura['storia'], c: Contesto): DomandaCompleta[] {
         if (!opzioni) return null
         return {
           tipo,
-          testo: domandaSulTempo(e.n, 'anno'),
+          testo: domandaSulTempo(e.n, 'anno', e.fine !== undefined && e.fine !== e.anno),
           opzioni,
           giusta: `anno:${e.anno}`,
           risposta: annoInLettere(e.anno),
@@ -1058,7 +1109,11 @@ function storia(dati: DatiCultura['storia'], c: Contesto): DomandaCompleta[] {
         if (!opzioni) return null
         return {
           tipo,
-          testo: domandaSulTempo(e.n, 'secolo'),
+          testo: domandaSulTempo(
+            e.n,
+            'secolo',
+            e.fine !== undefined && numeroSecolo(e.fine) !== numeroSecolo(e.anno),
+          ),
           opzioni,
           giusta: `sec:${numeroSecolo(e.anno)}`,
           risposta: nomeSecolo(numeroSecolo(e.anno)),
@@ -1068,8 +1123,12 @@ function storia(dati: DatiCultura['storia'], c: Contesto): DomandaCompleta[] {
       }
       case 'prima-evento': {
         // Gli altri vengono dopo, e abbastanza dopo da non dover sapere l'anno esatto.
+        // Con un anno nel nome ("rivoluzione cinese del 1911") l'ordine si leggerebbe.
+        if (haUnAnno(e.n)) return null
         const distacco = Math.max(8, Math.round((c.annoMassimo - e.anno) / 25))
-        const dopo = eventi.filter((x) => x.id !== e.id && x.anno >= e.anno + distacco && !stessoTesto(x.n, e.n))
+        const dopo = eventi.filter(
+          (x) => x.id !== e.id && x.anno >= e.anno + distacco && !stessoTesto(x.n, e.n) && !haUnAnno(x.n),
+        )
         const scelti = distrattori(c, dopo, c.sbagliate, (x) => Math.abs(x.anno - e.anno) / 400 + scarto(x, e))
         const opzioni = conGiusta(
           c,
@@ -1263,7 +1322,7 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
             opzione(k.id, k.formula),
             sbagliati.map((x) => opzione(x.id, x.formula)),
           )
-          const di = diNome(k.n) ?? `di ${titolo(k.n)}`
+          const di = diNome(k.n, genereNome(k.n, null, true)) ?? `di ${titolo(k.n)}`
           return opzioni && {
             tipo: 'formula-composto',
             testo: `Qual è la formula chimica ${di}?`,
@@ -1402,10 +1461,11 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
             opzione(`chi:${chi}`, chi),
             sbagliati.map((p) => opzione(`chi:${p.n}`, p.n)),
           )
-          const cosa = nomeConArticolo(s.n) ?? titolo(s.n)
+          const genere = genereNome(s.n, null, true)
+          const cosa = nomeConArticolo(s.n, genere) ?? titolo(s.n)
           return opzioni && {
             tipo: 'autore-scoperta',
-            testo: `A chi si deve ${cosa}?`,
+            testo: `A chi si ${genere && plurale(genere) ? 'devono' : 'deve'} ${cosa}?`,
             opzioni,
             giusta: `chi:${chi}`,
             risposta: chi,
@@ -1430,8 +1490,8 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
             opzione(s.id, s.sci),
             sbagliate.map((x) => opzione(x.id, x.sci)),
           )
-          // I nomi in -o sono maschili ("del lupo"); per gli altri le virgolette.
-          const nome = diNome(s.n, /o$/i.test(s.n.split(' ')[0]) ? 'm' : null) ?? `di ${titolo(s.n)}`
+          // Il genere dalla tabella o dalla desinenza ("del lupo", "della tigre"); se non si sa, le virgolette.
+          const nome = diNome(s.n, genereNome(s.n, null, true)) ?? `di ${titolo(s.n)}`
           return opzioni && {
             tipo: 'nome-scientifico',
             testo: `Qual è il nome scientifico ${nome}?`,
@@ -1448,7 +1508,7 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
   const ammessi = TIPI_SCIENZA[c.ambito] ?? QUOTE_SCIENZA.map(([t]) => t)
   const quote = QUOTE_SCIENZA.filter(([t]) => ammessi.includes(t) && (!c.tipi || c.tipi.has(t)) && perTipo[t])
   const valide = quote.length > 0 ? quote : QUOTE_SCIENZA.filter(([t]) => ammessi.includes(t))
-  const totale = valide.reduce((n, [, q]) => n + q, 0)
+  const perQuota = ripartisci(c.quante, valide, c.caso)
   // Quante domande per tipo, in proporzione, e le voci di ognuno dalla piu' nota. Lo stesso
   // elemento non fa due domande (il simbolo e l'elemento del simbolo): chi e' gia' uscito si salta.
   const domande: DomandaCompleta[] = []
@@ -1464,10 +1524,8 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
       fatte += 1
     }
   }
-  let assegnate = 0
-  valide.forEach(([tipo, q], i) => {
-    const quanti = i === valide.length - 1 ? c.quante - assegnate : Math.round((c.quante * q) / totale)
-    assegnate += quanti
+  valide.forEach(([tipo]) => {
+    const quanti = perQuota.get(tipo) ?? 0
     const lista = perTipo[tipo]
     if (!lista || quanti <= 0) return
     const voci = preferendo([...lista.voci], (x) => x.id, c.evitare, quanti)

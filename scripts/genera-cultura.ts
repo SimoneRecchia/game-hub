@@ -1,0 +1,98 @@
+/**
+ * Prepara i dati delle materie di cultura del quiz — arte, libri, cinema,
+ * lirica, premi Nobel, storia, scienza — da Wikidata, Wikimedia Commons e
+ * Wikipedia in italiano, in public/dati/quiz/<materia>.json.
+ *
+ * Sono file statici versionati, come le parole del Wordle: il build non dipende
+ * dalla rete, e il browser li scarica solo quando si gioca quella materia. Ogni
+ * file ha la sua `versione`, i primi dieci caratteri dello SHA-1 del contenuto
+ * senza la versione: cambia solo se cambiano i dati.
+ *
+ *   npx vite-node scripts/genera-cultura.ts                   tutte le materie
+ *   npx vite-node scripts/genera-cultura.ts -- arte libri     solo alcune
+ *   … --rinnova                                               richiede le query SPARQL anche se salvate
+ *
+ * Tutto quel che arriva dalla rete resta in scripts/.cache/cultura: le query
+ * SPARQL per una settimana, le licenze delle immagini, le prime frasi delle
+ * voci e l'ordine delle dichiarazioni per sempre (vedi scripts/cultura/rete.ts).
+ * Rifare lo script subito dopo non chiede niente a nessuno. Prima di scrivere,
+ * `controllaCultura` guarda che i fatti che tutti sanno tornino: se no lo
+ * script si ferma e non tocca i file.
+ */
+
+import { createHash } from 'node:crypto'
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { arte } from './cultura/arte'
+import { cinema } from './cultura/cinema'
+import { controllaCultura, type DatiDaControllare } from './cultura/controlli'
+import { libri } from './cultura/libri'
+import { lirica } from './cultura/lirica'
+import { nobel } from './cultura/nobel'
+import { rinnovaSparql } from './cultura/rete'
+import { scienza } from './cultura/scienza'
+import { storia } from './cultura/storia'
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
+const CARTELLA = join(ROOT, 'public', 'dati', 'quiz')
+
+/** Il peso massimo di un file e di tutti insieme: si scaricano su un telefono. */
+const MASSIMO_FILE = 450 * 1024
+const MASSIMO_TOTALE = 1.6 * 1024 * 1024
+
+type Materia = keyof DatiDaControllare
+
+const MATERIE: { [M in Materia]-?: () => Promise<NonNullable<DatiDaControllare[M]>> } = {
+  arte: () => arte(),
+  libri: () => libri(),
+  cinema: () => cinema(),
+  lirica: () => lirica(),
+  nobel: () => nobel(),
+  storia: () => storia(),
+  scienza: () => scienza(),
+}
+
+const argomenti = process.argv.slice(2)
+if (argomenti.includes('--rinnova')) rinnovaSparql()
+const chieste = argomenti.filter((a): a is Materia => a in MATERIE)
+const daFare = chieste.length > 0 ? chieste : (Object.keys(MATERIE) as Materia[])
+
+const dati: DatiDaControllare = {}
+for (const materia of daFare) Object.assign(dati, { [materia]: await MATERIE[materia]() })
+
+const problemi = controllaCultura(dati)
+
+/** Il file: la versione prima, poi i dati, in JSON senza spazi. */
+const file = new Map<Materia, { testo: string; versione: string }>()
+for (const materia of daFare) {
+  const corpo = dati[materia]!
+  const versione = createHash('sha1').update(JSON.stringify(corpo)).digest('hex').slice(0, 10)
+  file.set(materia, { testo: JSON.stringify({ versione, ...corpo }), versione })
+}
+const peso = (testo: string) => Buffer.byteLength(testo, 'utf8')
+for (const [materia, { testo }] of file) {
+  if (peso(testo) > MASSIMO_FILE) problemi.push(`${materia}.json pesa ${Math.round(peso(testo) / 1024)} kB`)
+}
+const totale = [...file.values()].reduce((n, f) => n + peso(f.testo), 0)
+if (daFare.length === Object.keys(MATERIE).length && totale > MASSIMO_TOTALE) {
+  problemi.push(`i file pesano ${Math.round(totale / 1024)} kB in tutto`)
+}
+
+if (problemi.length > 0) {
+  console.error(`I dati di cultura non tornano, non scrivo niente:\n  ${problemi.join('\n  ')}`)
+  process.exit(1)
+}
+
+mkdirSync(CARTELLA, { recursive: true })
+console.log(`Cultura: scrivo in ${CARTELLA}`)
+for (const [materia, { testo, versione }] of file) {
+  writeFileSync(join(CARTELLA, `${materia}.json`), testo)
+  const elenchi = Object.entries(dati[materia]!)
+    .filter(([, v]) => Array.isArray(v))
+    .map(([k, v]) => `${(v as unknown[]).length} ${k}`)
+    .join(', ')
+  console.log(`  ${materia}.json ${Math.round(peso(testo) / 1024)} kB (${versione}): ${elenchi}`)
+}
+console.log(`  in tutto ${Math.round(totale / 1024)} kB`)
+console.log(`  versioni: ${JSON.stringify(Object.fromEntries([...file].map(([m, f]) => [m, f.versione])))}`)

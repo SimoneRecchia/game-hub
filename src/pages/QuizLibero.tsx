@@ -221,7 +221,8 @@ function scelteDellaMateria(materia: MateriaQuiz): ImpostazioniLibera {
   if (materiaDi(salvate.categoria) === materia) return salvate
   const ultima = ultimeScelte()[materia]
   const prima = VOCI_MATERIE[materia][0]
-  const qui = ultima && materiaDi(ultima.categoria) === materia ? ultima : { categoria: prima.categoria, ambito: prima.ambito }
+  const qui =
+    ultima && materiaDi(ultima.categoria) === materia ? ultima : { categoria: prima.categoria, ambito: prima.ambito }
   // Le opzioni della partita restano quelle di prima; la categoria, la zona e l'ambito sono di questa materia.
   return valide({ ...salvate, area: 'mondo', ambito: undefined, giorno: undefined, tipi: undefined, ...qui }) ?? salvate
 }
@@ -517,7 +518,8 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
           {voci.map((v, i) => {
             const scelta = v === voce
             // I record sono per categoria: gli argomenti della scienza non hanno il loro.
-            const record = v.ambito === undefined || v.ambito === 'tutti' ? statistiche.migliori[v.categoria] : undefined
+            const tutta = v.ambito === undefined || v.ambito === 'tutti'
+            const record = tutta ? statistiche.migliori[v.categoria] : undefined
             return (
               <button
                 key={`${v.categoria}:${v.ambito ?? ''}`}

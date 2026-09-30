@@ -12,7 +12,9 @@ import { FILE_MATERIE, versioniCultura } from '../cultura/versioni'
 const CARTELLA = join(__dirname, '..', '..', 'public', 'dati', 'quiz')
 
 const leggi = <T>(file: string): T => JSON.parse(readFileSync(file, 'utf8')) as T
-const cultura = Object.fromEntries(FILE_MATERIE.map((m) => [m, leggi(join(CARTELLA, `${m}.json`))])) as unknown as DatiCultura
+const cultura = Object.fromEntries(
+  FILE_MATERIE.map((m) => [m, leggi(join(CARTELLA, `${m}.json`))]),
+) as unknown as DatiCultura
 const GIORNI = readdirSync(join(CARTELLA, 'oggi'))
   .filter((f) => f.endsWith('.json'))
   .sort()
@@ -38,8 +40,9 @@ describe('i file delle materie del quiz', () => {
     expect(immagini.length).toBeGreaterThan(300)
     for (const img of immagini) {
       expect(img.f).toMatch(PERCORSO_IMMAGINE)
-      expect(img.r).toBeGreaterThan(0.2)
-      expect(img.r).toBeLessThan(5)
+      // Le proporzioni che si vedono in una carta del telefono (scripts/cultura/arte.ts).
+      expect(img.r).toBeGreaterThanOrEqual(0.3)
+      expect(img.r).toBeLessThanOrEqual(3.2)
     }
   })
 
@@ -89,7 +92,8 @@ describe('i file delle materie del quiz', () => {
     it(`${categoria}: ogni tipo di domanda si fa`, () => {
       const visti = new Set<TipoDomanda>()
       for (let seme = 1; seme <= 30; seme += 1) {
-        for (const d of generaPartita(fonti, { categoria, area: 'mondo', quante: 10 }, mulberry32(seme))) visti.add(d.tipo)
+        const domande = generaPartita(fonti, { categoria, area: 'mondo', quante: 10 }, mulberry32(seme))
+        for (const d of domande) visti.add(d.tipo)
       }
       expect([...visti].sort()).toEqual([...tipiPossibili(categoria, 'scelta')].sort())
     })

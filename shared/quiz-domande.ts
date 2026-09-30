@@ -597,6 +597,40 @@ export function preferendo<T>(
  * Il tipo di ogni domanda, fra quelli della categoria con la loro quota: se se
  * ne sono scelti solo alcuni, le quote si dividono fra quelli.
  */
+/**
+ * Quante domande di ogni tipo, su `quante`, con le quote date: a ognuno la sua
+ * parte intera, e i posti che avanzano ai resti, estratti in proporzione.
+ *
+ * Arrotondare ogni quota e dare all'ultimo tipo quel che resta, come si faceva,
+ * gli lasciava sempre zero: con 40, 20, 15, 15 e 10 su dieci domande gli
+ * arrotondamenti fanno 4, 2, 2, 2, e il secolo dei quadri non usciva mai. Cosi'
+ * un tipo al dieci per cento ha la sua domanda su dieci, e su cinque ha le sue
+ * probabilita'.
+ */
+export function ripartisci(
+  quante: number,
+  quote: ReadonlyArray<readonly [TipoDomanda, number]>,
+  caso: Caso,
+): Map<TipoDomanda, number> {
+  const totale = quote.reduce((n, [, q]) => n + q, 0)
+  const parti = quote.map(([t, q]) => ({ t, parte: totale > 0 ? (quante * q) / totale : 0 }))
+  const fuori = new Map(parti.map(({ t, parte }) => [t, Math.floor(parte + 1e-9)]))
+  let dati = [...fuori.values()].reduce((a, b) => a + b, 0)
+  const resti = parti.map(({ t, parte }) => ({ t, r: parte - fuori.get(t)! })).filter((x) => x.r > 1e-9)
+  while (dati < quante && resti.length > 0) {
+    let x = caso() * resti.reduce((a, y) => a + y.r, 0)
+    let i = 0
+    while (i < resti.length - 1 && x >= resti[i].r) {
+      x -= resti[i].r
+      i += 1
+    }
+    fuori.set(resti[i].t, fuori.get(resti[i].t)! + 1)
+    resti.splice(i, 1)
+    dati += 1
+  }
+  return fuori
+}
+
 export function assegna<T>(
   scelti: T[],
   quote: ReadonlyArray<readonly [TipoDomanda, number]>,
@@ -604,14 +638,8 @@ export function assegna<T>(
 ): Array<{ s: T; tipo: TipoDomanda }> {
   const ammesse = quote.filter(([t]) => !c.tipi || c.tipi.has(t))
   const valide = ammesse.length > 0 ? ammesse : quote
-  const totale = valide.reduce((n, [, q]) => n + q, 0)
   const tipi: TipoDomanda[] = []
-  let fatti = 0
-  valide.forEach(([t, q], i) => {
-    const quanti = i === valide.length - 1 ? scelti.length - fatti : Math.round((scelti.length * q) / totale)
-    for (let k = 0; k < quanti && tipi.length < scelti.length; k += 1) tipi.push(t)
-    fatti += quanti
-  })
+  for (const [t, quanti] of ripartisci(scelti.length, valide, c.caso)) for (let k = 0; k < quanti; k += 1) tipi.push(t)
   const ordine = mescola(tipi, c.caso)
   return scelti.map((s, i) => ({ s, tipo: ordine[i] ?? valide[0][0] }))
 }

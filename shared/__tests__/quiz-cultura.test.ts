@@ -251,8 +251,21 @@ describe('l’italiano delle altre materie', () => {
     expect(domandaSulTempo('pace di Vestfalia', 'anno')).toBe('In che anno fu firmata la pace di Vestfalia?')
     expect(domandaSulTempo('guerra dei trent’anni', 'secolo')).toBe('In che secolo cominciò la guerra dei trent’anni?')
     expect(domandaSulTempo('vespri siciliani', 'anno')).toBe('In che anno ci furono i vespri siciliani?')
-    expect(domandaSulTempo('assedio di Troia', 'secolo')).toBe('In che secolo ci fu l’assedio di Troia?')
-    expect(domandaSulTempo('Grande Fuga', 'anno')).toBe('«Grande Fuga»: in che anno?')
+    const casi: Array<[string, 'anno' | 'secolo', boolean, string]> = [
+      // Un assedio, un'epidemia, un fatto che dura: si chiede quando comincio', e la risposta e' una sola.
+      ['assedio di Troia', 'secolo', false, 'In che secolo cominciò l’assedio di Troia?'],
+      ['pandemia di COVID-19', 'anno', false, 'In che anno cominciò la pandemia di COVID-19?'],
+      ['Fronda', 'anno', true, 'In che anno cominciò la Fronda?'],
+      ['massacro di Deir Yassin', 'anno', true, 'In che anno cominciò il massacro di Deir Yassin?'],
+      // Un trattato si firma il primo anno, anche quando dura.
+      ['patto di Varsavia', 'anno', true, 'In che anno fu firmato il patto di Varsavia?'],
+      // Gli aggettivi e i numeri davanti: il genere dalla desinenza, o dalla parola dopo.
+      ['seconda guerra balcanica', 'anno', false, 'In che anno cominciò la seconda guerra balcanica?'],
+      ['Cinque giornate di Milano', 'anno', false, 'In che anno ci furono le Cinque giornate di Milano?'],
+      ['Grande carestia irlandese', 'secolo', false, 'In che secolo cominciò la Grande carestia irlandese?'],
+      ['Grande Fuga', 'anno', false, '«Grande Fuga»: in che anno?'],
+    ]
+    for (const [nome, quando, dura, atteso] of casi) expect(domandaSulTempo(nome, quando, dura)).toBe(atteso)
   })
 
   it('mette l’articolo ai nomi comuni', () => {
