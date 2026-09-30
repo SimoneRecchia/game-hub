@@ -5,7 +5,7 @@
  * le parole del gioco: il nome del gioco, poi la modalità, poi la partita.
  *
  *   /                                   i giochi, e le classificate di oggi
- *   /wordle                             la pagina del Wordle
+ *   /wordle                             porta alla parola di oggi: un gioco non ha una pagina sua
  *   /wordle/classificata                la parola di oggi
  *   /wordle/libera                      una parola a caso
  *   /wordle/insieme/:stanza             la partita di un collega che ti ha invitato
@@ -76,6 +76,7 @@ export const ROTTE = {
   /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero. */
   classifica: (chiave?: ChiaveClassifica) =>
     !chiave ? '/classifica' : chiave === 'generale' ? '/classifica/generale' : `/classifica/${SLUG[chiave]}`,
+  /** L'indirizzo del gioco, radice delle sue schermate: da solo porta alla classificata. */
   gioco: (gioco: GiocoClassificato) => `/${SLUG[gioco]}`,
   classificata: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/classificata`,
   libera: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/libera`,

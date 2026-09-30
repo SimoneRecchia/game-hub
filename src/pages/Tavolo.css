@@ -46,3 +46,9 @@
     animation: none;
   }
 }
+
+/* Contro chi, e nel go il goban: in cima alla sala, uno sotto l'altro. */
+.tav-sala__scelte {
+  display: grid;
+  gap: var(--sp-3);
+}

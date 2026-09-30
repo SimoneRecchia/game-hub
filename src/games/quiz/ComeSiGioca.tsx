@@ -21,8 +21,8 @@ export function ComeSiGiocaQuiz({ open, onClose }: { open: boolean; onClose: () 
               sono lunghe, {SECONDI_CARTINA} sulla cartina).
             </li>
             <li>
-              <strong>Libera.</strong> Scegli tu materia, categoria, periodo o zona, domande e opzioni. Non conta per la
-              classifica.
+              <strong>Libera.</strong> Scegli materia, categoria, zona o periodo, domande, tempo e difficoltà. Non conta
+              per la classifica.
             </li>
             <li>
               <strong>Sfida un amico.</strong> Stesse domande, nello stesso momento: il primo che risponde giusto
@@ -36,6 +36,13 @@ export function ComeSiGiocaQuiz({ open, onClose }: { open: boolean; onClose: () 
           <p className="cru-aiuto__nota">
             {PUNTI_BASE_QUIZ} per aver giocato, più {perGiusta} per ogni risposta giusta. A pari punti passa avanti chi
             ci mette meno.
+          </p>
+        </section>
+
+        <section className="cru-aiuto__sezione">
+          <h3 className="cru-aiuto__titolo">Dopo ogni risposta</h3>
+          <p className="cru-aiuto__nota">
+            La cartina con la risposta, o una scheda che la spiega: di chi è il quadro, quando, dove. Poi «Avanti».
           </p>
         </section>
 

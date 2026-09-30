@@ -59,7 +59,7 @@ export default function WordleLibero() {
     <Pagina
       titolo="Parola libera"
       intera
-      indietro={{ a: ROTTE.gioco('wordle'), etichetta: 'Wordle' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       azioni={
         <>
           {finita ? (

@@ -33,7 +33,7 @@ export default function BattagliaClassificata() {
   }, [vai, tentativo])
 
   return (
-    <Pagina titolo="Battaglia di oggi" intera indietro={{ a: ROTTE.gioco('battaglia'), etichetta: 'Battaglia' }}>
+    <Pagina titolo="Battaglia di oggi" intera indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}>
       {errore ? (
         <Vuoto
           titolo="La battaglia non si è aperta"

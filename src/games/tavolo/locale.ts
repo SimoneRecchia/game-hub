@@ -42,13 +42,10 @@ export interface Conto {
 
 export type ContiLocali = Record<LivelloTavoliere, Conto>
 
-/** Con che parte si comincia una partita nuova: la prima, la seconda, o a caso. */
-export type SceltaParte = 'prima' | 'seconda' | 'caso'
-
 const chiavePartita = (gioco: GiocoTavoliere) => `giochi.${gioco}.computer`
 const chiaveConti = (gioco: GiocoTavoliere) => `giochi.${gioco}.computer.conti`
-const chiaveScelta = (gioco: GiocoTavoliere) => `giochi.${gioco}.computer.parte`
 const chiaveLivello = (gioco: GiocoTavoliere) => `giochi.${gioco}.computer.livello`
+const chiaveContro = (gioco: GiocoTavoliere) => `giochi.${gioco}.contro`
 const chiaveVariante = (gioco: GiocoTavoliere) => `giochi.${gioco}.variante`
 
 function leggiJson(chiave: string): unknown {
@@ -94,13 +91,21 @@ export function salvaPartita(p: PartitaLocale) {
   scriviJson(chiavePartita(p.gioco), p)
 }
 
+/**
+ * Con che parte si comincia contro il computer: a turno, l'altra di quella di
+ * prima, come nelle rivincite fra amici. La prima volta si muove per primi.
+ */
+function prossimaParte(gioco: GiocoTavoliere): Parte {
+  const prima = leggiPartita(gioco)
+  return prima && prima.mia === 0 ? 1 : 0
+}
+
 export function nuovaPartita(
   gioco: GiocoTavoliere,
   livello: LivelloTavoliere,
-  scelta: SceltaParte,
   variante: string | null = leggiVariante(gioco),
 ): PartitaLocale {
-  const mia: Parte = scelta === 'prima' ? 0 : scelta === 'seconda' ? 1 : Math.random() < 0.5 ? 0 : 1
+  const mia = prossimaParte(gioco)
   const p: PartitaLocale = {
     gioco,
     livello,
@@ -160,13 +165,15 @@ export function conta(p: PartitaLocale): PartitaLocale {
   return contata
 }
 
-export function leggiScelta(gioco: GiocoTavoliere): SceltaParte {
-  const s = leggiJson(chiaveScelta(gioco))
-  return s === 'prima' || s === 'seconda' || s === 'caso' ? s : 'prima'
+/** Contro chi si gioca, nella sala: il computer o un amico. Resta quello dell'ultima volta. */
+export type Contro = 'computer' | 'amico'
+
+export function leggiContro(gioco: GiocoTavoliere): Contro {
+  return leggiJson(chiaveContro(gioco)) === 'amico' ? 'amico' : 'computer'
 }
 
-export function salvaScelta(gioco: GiocoTavoliere, s: SceltaParte) {
-  scriviJson(chiaveScelta(gioco), s)
+export function salvaContro(gioco: GiocoTavoliere, c: Contro) {
+  scriviJson(chiaveContro(gioco), c)
 }
 
 /** La variante scelta, per i giochi che ne hanno: il lato del goban. La prima, se non se n'e' scelta una. */
