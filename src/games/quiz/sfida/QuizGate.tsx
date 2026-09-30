@@ -11,7 +11,8 @@ import { formatCronometro } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { usePresenza } from '@/lib/presenza'
-import { NOMI_CATEGORIE, NOMI_MODI } from '@shared/quiz'
+import { NOMI_CATEGORIE, NOMI_MODI, diGeografia, nomeAmbito } from '@shared/quiz'
+import { giornoInLettere } from '@shared/quiz-cultura'
 import type { DuelloBreve, InvitoQuiz } from '@shared/types'
 import '@/games/wordle/coop/InviteAlert.css'
 
@@ -134,7 +135,12 @@ function AvvisoSfida({
     }
   }
 
-  const cosa = `${NOMI_CATEGORIE[sfida.sfida.categoria]} · ${NOMI_MODI[sfida.sfida.modo]} · ${sfida.sfida.quante} domande`
+  const r = sfida.sfida
+  // Qui non ci sono i nomi dei paesi: per la geografia basta il modo.
+  const come = diGeografia(r.categoria)
+    ? NOMI_MODI[r.modo]
+    : (nomeAmbito(r.categoria, r.ambito) ?? (r.giorno ? giornoInLettere(r.giorno) : null))
+  const cosa = [NOMI_CATEGORIE[r.categoria], come, `${r.quante} domande`].filter(Boolean).join(' · ')
   return (
     <Sheet open onClose={() => {}} dismissible={false} title={sfida.rivincita ? 'Rivincita' : 'Sfida a quiz'}>
       <div className="avviso">

@@ -20,7 +20,8 @@
  *   /battaglia-navale/partita/:id       una partita
  *   /battaglia-navale/invito/:codice    un invito arrivato con un link
  *   /quiz/classificata                  le dieci domande di oggi
- *   /quiz/libera                        categoria, zona e domande a scelta
+ *   /quiz/libera                        il menu delle materie; con ?categoria=… la partita
+ *   /quiz/libera/:materia               le categorie e le opzioni di una materia
  *   /quiz/duello/:id                    una sfida a quiz fra due
  *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
  *   /indovina-chi                       Indovina chi: la sala, i personaggi, le regole
@@ -42,6 +43,7 @@
  * rompono.
  */
 
+import type { MateriaQuiz } from '@shared/quiz'
 import type { GiocoTavoliere } from '@shared/tavolo'
 import type { ChiaveClassifica, GiocoClassificato } from '@shared/types'
 
@@ -82,6 +84,8 @@ export const ROTTE = {
   cruciverbaLibero: (partita: string) => `/cruciverba/libera/${partita}`,
   partitaBattaglia: (id: string) => `/battaglia-navale/partita/${id}`,
   invitoBattaglia: (codice: string) => `/battaglia-navale/invito/${codice}`,
+  /** La pagina di una materia del quiz libero, con le sue categorie e le opzioni. */
+  materiaQuiz: (materia: MateriaQuiz) => `/quiz/libera/${materia}`,
   duelloQuiz: (id: string) => `/quiz/duello/${id}`,
   invitoQuiz: (codice: string) => `/quiz/sfida/${codice}`,
 

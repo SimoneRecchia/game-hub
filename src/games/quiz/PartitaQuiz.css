@@ -657,6 +657,230 @@
   }
 }
 
+/* ─────────────────────────────  I quadri  ───────────────────────────── */
+
+/*
+ * Un quadro appeso nella cornice. La misura la decide il contenitore di chi lo
+ * tiene (la carta, un tasto, la scheda): largo quanto ci sta senza uscire in
+ * altezza, alto quanto ci sta senza uscire in larghezza, con le proporzioni del
+ * quadro (`--r`, larghezza / altezza) — anche prima che l'immagine arrivi, e
+ * intanto c'e' la tela. La cornice e' un'ombra piena, e la misura la toglie.
+ */
+.quadro {
+  --cornice: 3px;
+  position: relative;
+  display: block;
+  flex: none;
+  width: min(100cqw - 2 * var(--cornice) - 2px, (100cqh - 2 * var(--cornice) - 2px) * var(--r));
+  height: min(100cqh - 2 * var(--cornice) - 2px, (100cqw - 2 * var(--cornice) - 2px) / var(--r));
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--quadro-tela);
+  box-shadow:
+    0 0 0 var(--cornice) var(--quadro-cornice),
+    0 0 0 calc(var(--cornice) + 1px) var(--quadro-filo),
+    0 10px 24px var(--shadow-tint);
+}
+
+.quadro.is-carica {
+  animation: quiz-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+.quadro img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 320ms var(--ease-out);
+}
+
+.quadro.is-pronto img {
+  opacity: 1;
+}
+
+.quadro__errore {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 6px;
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--label-secondary);
+}
+
+/* Nella carta il quadro prende lo spazio che resta sotto la domanda. */
+.quiz-carta.is-quadro {
+  justify-content: flex-start;
+  gap: clamp(8px, 2cqh, 14px);
+  padding: 12px 14px 18px;
+}
+
+.quiz-carta.is-quadro .quiz-carta__testo {
+  font-size: clamp(1.0625rem, 4.6cqw, 1.375rem);
+}
+
+.quiz-carta__quadro {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  max-height: 560px;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Arriva come un quadro appeso a un chiodo: dondola un poco, e si ferma. */
+.quiz-carta__quadro .quadro {
+  transform-origin: 50% -24px;
+  animation: quadro-appeso 760ms var(--ease-out) 100ms both;
+}
+
+.quiz-carta__quadro .quadro.is-carica {
+  animation:
+    quadro-appeso 760ms var(--ease-out) 100ms both,
+    quiz-pulsa 1.4s var(--ease-in-out) 860ms infinite;
+}
+
+@keyframes quadro-appeso {
+  from {
+    opacity: 0;
+    transform: rotate(-5deg) translateY(-10px);
+  }
+  55% {
+    opacity: 1;
+    transform: rotate(2deg);
+  }
+  80% {
+    transform: rotate(-0.7deg);
+  }
+}
+
+/* ────────────────────────  La scheda che insegna  ──────────────────────── */
+
+/* A risposta data, per le altre materie: sotto la domanda, al posto della cartina. Scorre, se e' lunga. */
+.quiz-carta__scheda {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  animation: quiz-cartina-entra 520ms var(--ease-out) both;
+}
+
+.quiz-scheda {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 4px 6px;
+  text-align: left;
+}
+
+.quiz-scheda__testa {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Alto quanto il quadro, con le sue proporzioni: un riquadro piu' alto lasciava un vuoto sotto i quadri larghi. */
+.quiz-scheda__quadro {
+  flex: none;
+  width: clamp(84px, 36%, 210px);
+  aspect-ratio: var(--r);
+  max-height: clamp(84px, 24cqh, 200px);
+  container-type: size;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.quiz-scheda__quadro .quadro {
+  --cornice: 2px;
+  box-shadow:
+    0 0 0 var(--cornice) var(--quadro-cornice),
+    0 0 0 calc(var(--cornice) + 1px) var(--quadro-filo),
+    0 4px 12px var(--shadow-tint);
+}
+
+.quiz-scheda__titoli {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.quiz-scheda__titolo {
+  margin: 0;
+  font-size: var(--text-headline);
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  color: var(--label);
+}
+
+.quiz-scheda__sotto {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--label-secondary);
+}
+
+/* I dati come sul cartellino di un museo: il nome a sinistra, il valore a destra, in colonna. */
+.quiz-scheda__righe {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 5px 12px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-footnote);
+  line-height: 1.35;
+}
+
+.quiz-scheda__riga {
+  display: contents;
+}
+
+.quiz-scheda__riga dt {
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.quiz-scheda__riga dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: break-word;
+  color: var(--label);
+}
+
+.quiz-scheda__testo {
+  margin: 0;
+  font-size: var(--text-footnote);
+  line-height: 1.45;
+  color: var(--label-secondary);
+}
+
+.quiz-scheda__voce {
+  align-self: flex-start;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.quiz-scheda__voce::after {
+  content: ' ›';
+}
+
 /* ───────────────────────────  Le risposte  ─────────────────────────── */
 
 .quiz-opzioni {
@@ -687,6 +911,11 @@
 
 .quiz-opzioni.is-compatte .quiz-opzione {
   min-height: 48px;
+}
+
+/* Due risposte lunghe una accanto all'altra andrebbero a capo cinque volte: una sotto l'altra. */
+.quiz-opzioni.is-compatte.is-lunghe {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .quiz-opzioni.is-compatte.is-bandiere .quiz-opzione {
@@ -933,6 +1162,45 @@
 
 .quiz-opzioni.is-bandiere .quiz-opzione.is-spenta {
   opacity: 0.5;
+}
+
+/* I quadri fra cui scegliere: piu' alti delle bandiere, perché un quadro si guarda. La lettera sta nell'angolo. */
+.quiz-opzioni.is-quadri .quiz-opzione {
+  height: clamp(100px, 21cqh, 200px);
+  padding: 8px;
+}
+
+.quiz-opzione__quadro {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quiz-opzione__quadro .quadro {
+  --cornice: 2px;
+  box-shadow:
+    0 0 0 var(--cornice) var(--quadro-cornice),
+    0 3px 8px var(--shadow-tint);
+}
+
+.quiz-opzione__segno {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--quiz-lettera);
+  color: var(--quiz-lettera-ink);
+  font-size: var(--text-caption-2);
+  font-weight: 900;
+  box-shadow: 0 1px 3px var(--shadow-tint);
 }
 
 /* ─────────────────────────  Sotto la cartina  ───────────────────────── */
@@ -1186,6 +1454,29 @@
   font-weight: 700;
 }
 
+.quiz-riepilogo__quadro {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quiz-riepilogo__quadro .quadro {
+  --cornice: 1.5px;
+  box-shadow: 0 0 0 var(--cornice) var(--quadro-cornice);
+}
+
+.quiz-riepilogo__leggi {
+  align-self: flex-start;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--brand);
+  text-decoration: none;
+}
+
 /* ───────────────────────  Schermi bassi e larghi  ─────────────────────── */
 
 /* Su uno schermo largo la cartina muta prende piu' posto: e' lei il gioco, e un fiume vuole spazio. */
@@ -1369,7 +1660,11 @@
   .quiz-carta__cartina,
   .quiz-carta__bandierina,
   .quiz-opzione__lettera.is-bandiera,
-  .quiz-avanti {
+  .quiz-avanti,
+  .quiz-carta__quadro .quadro,
+  .quiz-carta__quadro .quadro.is-carica,
+  .quiz-carta__scheda,
+  .quadro.is-carica {
     animation: none;
   }
 

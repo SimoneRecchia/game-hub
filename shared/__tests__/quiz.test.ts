@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../daily'
 import {
-  CATEGORIE,
-  CATEGORIE_CLASSIFICATA,
+  CATEGORIE as TUTTE_LE_CATEGORIE,
+  CATEGORIE_CLASSIFICATA as CLASSIFICATA_DI_TUTTE,
+  CONFINE_DEL_GIRO,
   CONTINENTI,
   GIORNI_CARTINA_PER_GIRO,
+  GIORNI_PER_GIRO,
   MODI,
   QUANTE_MASSIME,
   VISTE,
   dentroVista,
+  diGeografia,
   giornataDelQuiz,
   type CategoriaQuiz,
   type ModoQuiz,
@@ -42,6 +45,9 @@ import {
 import { CITTA, ID, MONDO } from './quiz-mondo'
 
 const ix = indicizza(MONDO)
+// Qui si prova la geografia: le altre materie hanno i loro test (quiz-cultura.test.ts).
+const CATEGORIE = TUTTE_LE_CATEGORIE.filter(diGeografia)
+const CATEGORIE_CLASSIFICATA = CLASSIFICATA_DI_TUTTE.filter(diGeografia)
 const paese = (id: string) => ix.paesi.get(id)!
 
 describe('l’italiano delle domande', () => {
@@ -98,22 +104,39 @@ describe('l’italiano delle domande', () => {
 })
 
 describe('la giornata della classificata', () => {
-  const n = CATEGORIE_CLASSIFICATA.length
-  it('passa da tutte le categorie ogni sette giorni, e non si ripete mai due giorni di fila', () => {
+  const n = GIORNI_PER_GIRO
+  it('passa da tutte le categorie di tutte le materie a ogni giro', () => {
+    expect(n).toBe(CLASSIFICATA_DI_TUTTE.length)
     for (let giro = 0; giro < 100; giro += 1) {
-      const settimana = Array.from({ length: n }, (_, i) => giornataDelQuiz(giro * n + i + 1).categoria)
-      expect(new Set(settimana).size).toBe(n)
+      const giorni = Array.from({ length: n }, (_, i) => giornataDelQuiz(giro * n + i + 1).categoria)
+      expect(new Set(giorni).size).toBe(n)
     }
-    for (let g = 2; g <= 730; g += 1) expect(giornataDelQuiz(g).categoria).not.toBe(giornataDelQuiz(g - 1).categoria)
   })
 
-  it('ha due giorni per giro sulla cartina, mai di fila, e mai le città', () => {
-    for (let giro = 0; giro < 100; giro += 1) {
-      const modi = Array.from({ length: n }, (_, i) => giornataDelQuiz(giro * n + i + 1).modo)
-      expect(modi.filter((m) => m === 'cartina').length).toBe(GIORNI_CARTINA_PER_GIRO)
-      for (let i = 1; i < n; i += 1) expect(modi[i] === 'cartina' && modi[i - 1] === 'cartina').toBe(false)
+  it('non ripete una categoria prima di cinque giorni, nemmeno fra un giro e l’altro', () => {
+    expect(CONFINE_DEL_GIRO).toBe(4)
+    const ultimo = new Map<CategoriaQuiz, number>()
+    for (let g = 1; g <= n * 400; g += 1) {
+      const { categoria } = giornataDelQuiz(g)
+      const prima = ultimo.get(categoria)
+      if (prima !== undefined) expect(g - prima, `giorno ${g}`).toBeGreaterThan(CONFINE_DEL_GIRO)
+      ultimo.set(categoria, g)
     }
-    for (let g = 1; g <= 730; g += 1) expect(giornataDelQuiz(g).categoria).not.toBe('citta')
+  })
+
+  it('non mette mai due giorni di geografia di fila, nemmeno fra un giro e l’altro', () => {
+    for (let g = 2; g <= 1500; g += 1) {
+      expect(diGeografia(giornataDelQuiz(g).categoria) && diGeografia(giornataDelQuiz(g - 1).categoria)).toBe(false)
+    }
+  })
+
+  it('ha due giorni per giro sulla cartina, solo di geografia, e mai le città', () => {
+    for (let giro = 0; giro < 100; giro += 1) {
+      const giorni = Array.from({ length: n }, (_, i) => giornataDelQuiz(giro * n + i + 1))
+      expect(giorni.filter((g) => g.modo === 'cartina').length).toBe(GIORNI_CARTINA_PER_GIRO)
+      for (const g of giorni) if (g.modo === 'cartina') expect(diGeografia(g.categoria)).toBe(true)
+    }
+    for (let g = 1; g <= 1500; g += 1) expect(giornataDelQuiz(g).categoria).not.toBe('citta')
   })
 })
 
@@ -169,9 +192,11 @@ describe('le domande', () => {
     const tipi = new Set<TipoDomanda>()
     for (const categoria of CATEGORIE) for (const modo of MODI) for (const d of tante(categoria, modo)) tipi.add(d.tipo)
     for (const d of tante('citta', 'scelta', 'paese:IT')) tipi.add(d.tipo)
-    const attesi = new Set<TipoDomanda>(
-      [...Object.values(TIPI).flatMap((m) => [...m.scelta, ...m.cartina]), 'regione-della-citta', 'citta-in-regione'],
-    )
+    const attesi = new Set<TipoDomanda>([
+      ...CATEGORIE.flatMap((c) => (c === 'cartina' ? [] : [...TIPI[c].scelta, ...TIPI[c].cartina])),
+      'regione-della-citta',
+      'citta-in-regione',
+    ])
     expect([...tipi].sort()).toEqual([...attesi].sort())
   })
 

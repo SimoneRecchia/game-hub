@@ -13,11 +13,13 @@
 
 import { PRESENZA_ONLINE_MS, SFIDA_SCADENZA_MS } from '../../shared/config'
 import { VISTE, type VistaCartina } from '../../shared/quiz'
+import { PERCORSO_IMMAGINE, type ImmagineQuiz } from '../../shared/quiz-cultura'
 import {
   domandaValida,
   rispostaGiusta,
   senzaRisposta,
   type DomandaCompleta,
+  type SpiegazioneQuiz,
   type StratoCartina,
 } from '../../shared/quiz-domande'
 import {
@@ -120,6 +122,40 @@ const testo = (v: unknown, massimo: number): string | null =>
 const testi = (v: unknown, quanti: number, massimo: number): string[] | null =>
   Array.isArray(v) && v.length <= quanti && v.every((x) => testo(x, massimo) !== null) ? (v as string[]) : null
 
+/** Un quadro di Commons: solo un percorso di miniatura, mai un indirizzo qualunque. */
+function immagineDi(v: unknown): ImmagineQuiz | null {
+  const x = (v ?? null) as Record<string, unknown> | null
+  if (!x || typeof x.f !== 'string' || !PERCORSO_IMMAGINE.test(x.f)) return null
+  const r = Number(x.r)
+  return { f: x.f, r: Number.isFinite(r) && r > 0.1 && r < 10 ? Math.round(r * 1000) / 1000 : 1 }
+}
+
+/** La scheda che insegna, con le misure di una scheda vera. */
+function spiegazioneDi(v: unknown): SpiegazioneQuiz | null {
+  const x = (v ?? null) as Record<string, unknown> | null
+  const titolo = x ? testo(x.titolo, 200) : null
+  if (!x || !titolo) return null
+  const righe = Array.isArray(x.righe)
+    ? x.righe
+        .filter(
+          (r): r is [string, string] => Array.isArray(r) && r.length === 2 && !!testo(r[0], 60) && !!testo(r[1], 400),
+        )
+        .slice(0, 8)
+    : []
+  const sotto = testo(x.sotto, 300)
+  const corpo = testo(x.testo, 800)
+  const voce = testo(x.voce, 200)
+  const immagine = immagineDi(x.immagine)
+  return {
+    titolo,
+    ...(sotto ? { sotto } : {}),
+    ...(righe.length ? { righe } : {}),
+    ...(corpo ? { testo: corpo } : {}),
+    ...(voce ? { voce } : {}),
+    ...(immagine ? { immagine } : {}),
+  }
+}
+
 /**
  * Le domande arrivate dal browser di chi sfida, ripulite: solo i campi che
  * servono, con i tipi giusti e le misure di una domanda vera. Sono sue, e chi
@@ -137,7 +173,13 @@ export function leggiDomande(valore: unknown, imp: ImpostazioniSfida): DomandaCo
       ? x.opzioni.map((o) => {
           const y = (o ?? {}) as Record<string, unknown>
           const bandiera = testo(y.bandiera, 12)
-          return { id: testo(y.id, 80) ?? '', testo: testo(y.testo, 160) ?? '', ...(bandiera ? { bandiera } : {}) }
+          const immagine = immagineDi(y.immagine)
+          return {
+            id: testo(y.id, 80) ?? '',
+            testo: testo(y.testo, 240) ?? '',
+            ...(bandiera ? { bandiera } : {}),
+            ...(immagine ? { immagine } : {}),
+          }
         })
       : []
     const c = (x.cartina ?? null) as Record<string, unknown> | null
@@ -154,11 +196,15 @@ export function leggiDomande(valore: unknown, imp: ImpostazioniSfida): DomandaCo
     const giusti = l ? testi(l.giusti, 80, 80) : null
     const altri = l ? testi(l.altri, 80, 80) : null
     const bandiera = testo(x.bandiera, 12)
+    const immagine = immagineDi(x.immagine)
+    const spiegazione = spiegazioneDi(x.spiegazione)
     const accettate = testi(x.accettate, 600, 80)
     const d = {
       tipo: (testo(x.tipo, 40) ?? '') as DomandaCompleta['tipo'],
       testo: testo(x.testo, 400) ?? '',
       ...(bandiera ? { bandiera } : {}),
+      ...(immagine ? { immagine } : {}),
+      ...(x.lunga === 1 ? { lunga: 1 as const } : {}),
       opzioni,
       ...(cartina ? { cartina: cartina as DomandaCompleta['cartina'] } : {}),
       giusta: testo(x.giusta, 80) ?? '',
@@ -166,6 +212,7 @@ export function leggiDomande(valore: unknown, imp: ImpostazioniSfida): DomandaCo
       risposta: testo(x.risposta, 200) ?? '',
       soggetto: testo(x.soggetto, 120) ?? '',
       ...(giusti ? { luogo: { giusti, ...(altri ? { altri } : {}) } } : {}),
+      ...(spiegazione ? { spiegazione } : {}),
     } as DomandaCompleta
     const sceltaBuona = cartina || (opzioni.length >= 2 && opzioni.length <= 6)
     if (!d.testo || !d.risposta || !sceltaBuona || !domandaValida(d, d.opzioni.length || undefined)) {
@@ -176,7 +223,15 @@ export function leggiDomande(valore: unknown, imp: ImpostazioniSfida): DomandaCo
 }
 
 function riassunto(imp: ImpostazioniSfida): RiassuntoSfida {
-  return { categoria: imp.categoria, modo: imp.modo, area: imp.area, quante: imp.quante, secondi: imp.secondi }
+  return {
+    categoria: imp.categoria,
+    modo: imp.modo,
+    area: imp.area,
+    quante: imp.quante,
+    secondi: imp.secondi,
+    ...(imp.ambito && imp.ambito !== 'tutti' ? { ambito: imp.ambito } : {}),
+    ...(imp.giorno ? { giorno: imp.giorno } : {}),
+  }
 }
 
 function impostazioniDi(row: { impostazioni: string }): ImpostazioniSfida {
@@ -463,7 +518,7 @@ function risposteDi(row: DuelloRow): RispostaSfida[] {
 
 function limitiDi(row: DuelloRow, domande = domandeDi(row)): number[] {
   const imp = impostazioniDi(row)
-  return domande.map((d) => limiteMs(imp, !!d.cartina))
+  return domande.map((d) => limiteMs(imp, !!d.cartina, !!d.lunga))
 }
 
 /** Lo stato del duello adesso; prima del via, un duello senza domande aperte. */
@@ -643,6 +698,7 @@ export async function vistaDuello(
       risposta: d.risposta,
       ...(d.accettate ? { accettate: d.accettate } : {}),
       ...(d.luogo ? { luogo: d.luogo } : {}),
+      ...(d.spiegazione ? { spiegazione: d.spiegazione } : {}),
       punto: g.punto === null ? null : g.punto === lato ? 'io' : 'avversario',
       mia: di(lato),
       sua: di(altro),
@@ -688,7 +744,7 @@ export async function vistaDuello(
             indice: aperto.indice,
             domanda: senzaRisposta(domande[aperto.indice]),
             apertaAt: aperto.apertaAt,
-            limiteMs: limiteMs(imp, !!domande[aperto.indice].cartina),
+            limiteMs: limiteMs(imp, !!domande[aperto.indice].cartina, !!domande[aperto.indice].lunga),
             scadeIo: aperto.scade[lato],
             lentoIo: aperto.lentoDa[lato],
             scadeAvversario: aperto.scade[altro],
