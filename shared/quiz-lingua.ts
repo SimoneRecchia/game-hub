@@ -336,7 +336,8 @@ const SENZA_ARTICOLO = new Set(['internet'])
  * che segue ("Cinque giornate", "Grande carestia").
  */
 const CONCORDANO = new RegExp(
-  '^(?:prim|second|terz|quart|quint|sest|settim|ottav|non|decim|ultim|nuov|lung|stran|glorios|antic|sant|sacr|piccol)[oaie]$',
+  '^(?:prim|second|terz|quart|quint|sest|settim|ottav|non|decim|' +
+    'ultim|nuov|lung|stran|glorios|antic|sant|sacr|piccol)[oaie]$',
 )
 const NON_DICONO = new Set([
   'grande',
