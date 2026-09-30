@@ -950,7 +950,7 @@ function Riepilogo({ fatte }: { fatte: Fatta[] }) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {f.risposta.spiegazione.titolo} su Wikipedia
+                  {f.risposta.spiegazione.voce} su Wikipedia
                 </a>
               )}
             </span>
