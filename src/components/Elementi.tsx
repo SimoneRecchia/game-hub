@@ -6,7 +6,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Collegamento } from '@/app/navigazione'
-import { IconChevronRight } from './Icons'
+import { IconCheck, IconChevronRight } from './Icons'
 import './Elementi.css'
 
 /* ─────────────────────────────  Sezione  ───────────────────────────── */
@@ -55,9 +55,14 @@ interface PropsRiga {
   a?: string
   onClick?: () => void
   distruttiva?: boolean
+  /**
+   * Una riga di un elenco di scelte: la spunta su quella scelta e niente
+   * freccia, che vuol dire "si va da un'altra parte". Come nelle Impostazioni.
+   */
+  scelta?: boolean
 }
 
-export function Riga({ icona, titolo, sotto, valore, a, onClick, distruttiva = false }: PropsRiga) {
+export function Riga({ icona, titolo, sotto, valore, a, onClick, distruttiva = false, scelta }: PropsRiga) {
   const corpo = (
     <>
       {icona && <span className="riga__icona">{icona}</span>}
@@ -66,7 +71,9 @@ export function Riga({ icona, titolo, sotto, valore, a, onClick, distruttiva = f
         {sotto && <span className="riga__sotto">{sotto}</span>}
       </span>
       {valore !== undefined && <span className="riga__valore">{valore}</span>}
-      {(a || onClick) && <IconChevronRight size={18} className="riga__freccia" />}
+      {scelta !== undefined
+        ? scelta && <IconCheck size={18} className="riga__spunta" />
+        : (a || onClick) && <IconChevronRight size={18} className="riga__freccia" />}
     </>
   )
   const classe = `riga${a || onClick ? ' riga--tocca' : ''}${distruttiva ? ' riga--distruttiva' : ''}`
@@ -78,8 +85,9 @@ export function Riga({ icona, titolo, sotto, valore, a, onClick, distruttiva = f
     )
   }
   if (onClick) {
+    // La spunta non si legge: chi non vede sente che la riga e' quella scelta.
     return (
-      <button type="button" className={classe} onClick={onClick}>
+      <button type="button" className={classe} onClick={onClick} aria-current={scelta || undefined}>
         {corpo}
       </button>
     )

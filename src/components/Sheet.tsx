@@ -24,19 +24,35 @@ const SOGLIA_CHIUSURA = 110
  *
  * Sta in un portale sul body: dentro una schermata con `overflow: hidden` — le
  * schermate di gioco — o durante una View Transition, resterebbe tagliato.
+ *
+ * Con la tastiera si comporta come il dialog modale di WAI-ARIA: aperto, il
+ * fuoco entra nel foglio e Tab ci gira dentro; chiuso, torna su quel che lo
+ * aveva aperto, invece di ripartire dall'inizio della pagina.
  */
 export function Sheet({ open, onClose, title, dismissible = true, children }: Props) {
   const panelRef = useRef<HTMLDivElement>(null)
   const [spostamento, setSpostamento] = useState(0)
   const [chiudendo, setChiudendo] = useState(false)
   const inizio = useRef<number | null>(null)
+  const radice = useRef<HTMLDivElement>(null)
+  // Chi apre il foglio passa spesso una funzione nuova a ogni giro: l'effetto non deve ripartire per questo, o
+  // riporterebbe il fuoco sul pannello mentre si scrive dentro il foglio.
+  const suChiudi = useRef(onClose)
+  useEffect(() => {
+    suChiudi.current = onClose
+  })
 
   useEffect(() => {
     if (!open) return
     setSpostamento(0)
     setChiudendo(false)
+    const prima = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && dismissible) onClose()
+      // Con due fogli aperti, uno sopra l'altro, i tasti sono di quello sopra: l'ultimo messo nel body.
+      const fogli = document.querySelectorAll('.sheet')
+      if (!radice.current || fogli[fogli.length - 1] !== radice.current) return
+      if (e.key === 'Escape' && dismissible) suChiudi.current()
+      if (e.key === 'Tab') tieniDentro(e, radice.current)
     }
     document.addEventListener('keydown', onKey)
     const prevOverflow = document.body.style.overflow
@@ -45,8 +61,9 @@ export function Sheet({ open, onClose, title, dismissible = true, children }: Pr
     return () => {
       document.removeEventListener('keydown', onKey)
       document.body.style.overflow = prevOverflow
+      if (prima?.isConnected) prima.focus({ preventScroll: true })
     }
-  }, [open, dismissible, onClose])
+  }, [open, dismissible])
 
   if (!open) return null
 
@@ -73,7 +90,13 @@ export function Sheet({ open, onClose, title, dismissible = true, children }: Pr
   }
 
   return createPortal(
-    <div className={`sheet${chiudendo ? ' is-chiudendo' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
+    <div
+      ref={radice}
+      className={`sheet${chiudendo ? ' is-chiudendo' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+    >
       <button
         type="button"
         className="sheet__scrim"
@@ -97,4 +120,29 @@ export function Sheet({ open, onClose, title, dismissible = true, children }: Pr
     </div>,
     document.body,
   )
+}
+
+const TABBABILI = [
+  'a[href]',
+  'button:not(:disabled)',
+  'input:not(:disabled)',
+  'select',
+  'textarea',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ')
+
+/** Tab e Maiuscolo+Tab restano nel foglio: dall'ultimo elemento si torna al primo, e dal primo all'ultimo. */
+function tieniDentro(e: KeyboardEvent, foglio: HTMLElement): void {
+  const voci = Array.from(foglio.querySelectorAll<HTMLElement>(TABBABILI)).filter((el) => el.tabIndex >= 0)
+  if (voci.length === 0) return
+  const primo = voci[0]
+  const ultimo = voci[voci.length - 1]
+  const qui = document.activeElement
+  if (e.shiftKey && (qui === primo || !foglio.contains(qui))) {
+    e.preventDefault()
+    ultimo.focus()
+  } else if (!e.shiftKey && (qui === ultimo || !foglio.contains(qui))) {
+    e.preventDefault()
+    primo.focus()
+  }
 }
