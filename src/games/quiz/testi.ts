@@ -11,14 +11,14 @@ import {
   type ModoQuiz,
 } from '@shared/quiz'
 import { giornoInLettere } from '@shared/quiz-cultura'
-import { NOMI_TIPI, type AreaQuiz, type IndiceQuiz, type TipoDomanda } from '@shared/quiz-domande'
+import type { AreaQuiz, IndiceQuiz } from '@shared/quiz-domande'
 
 /** Che cosa c'e' in una materia, in una riga: sotto il suo nome, nel menu della libera. */
 export const DESCRIZIONI_MATERIE: Record<MateriaQuiz, string> = {
-  geografia: 'Capitali, città, bandiere, stati, mari, fiumi e laghi, anche sulla cartina muta',
-  storia: 'Le date famose, dall’antichità a oggi, e quel che accadde in questo giorno',
-  cultura: 'Quadri e pittori, libri, film e opere liriche',
-  scienza: 'Chimica, fisica, astronomia, scoperte, animali e piante, premi Nobel',
+  geografia: 'Capitali, bandiere, mari, fiumi, città',
+  storia: 'Date famose, Accadde oggi',
+  cultura: 'Quadri, libri, film, lirica',
+  scienza: 'Chimica, astronomia, natura, Nobel',
 }
 
 /**
@@ -130,29 +130,6 @@ export function descrizione(categoria: CategoriaQuiz, modo: ModoQuiz | null): st
   return DESCRIZIONI[modo ?? 'scelta'][categoria]
 }
 
-const SULLA_CARTINA = 'Dove si trova la risposta, sulla cartina con i nomi'
-
-/** Cosa insegna ogni categoria dopo la risposta, in una riga: sotto l'interruttore delle spiegazioni. */
-export const COSA_INSEGNA: Record<CategoriaQuiz, string> = {
-  capitali: SULLA_CARTINA,
-  citta: SULLA_CARTINA,
-  bandiere: SULLA_CARTINA,
-  stati: SULLA_CARTINA,
-  mari: SULLA_CARTINA,
-  oceani: SULLA_CARTINA,
-  fiumi: SULLA_CARTINA,
-  laghi: SULLA_CARTINA,
-  cartina: SULLA_CARTINA,
-  arte: 'Il pittore, la corrente, la tecnica e il museo',
-  libri: 'L’autore, l’anno, il genere e la lingua',
-  cinema: 'La regia, l’anno, il paese e gli interpreti',
-  lirica: 'La musica, il libretto e la prima',
-  nobel: 'Chi è, da dove viene e la motivazione',
-  storia: 'Quando, dove e di che cosa fa parte',
-  oggi: 'Il fatto o la persona, in due righe',
-  scienza: 'Simboli, famiglie, scopritori e nomi',
-}
-
 /**
  * Su cosa si gioca, oltre la categoria: la zona e il modo per la geografia
  * ("Europa", "Cartina muta"), l'ambito o il giorno per le altre materie
@@ -180,13 +157,4 @@ export function nomeArea(area: AreaQuiz, ix: IndiceQuiz | null): string {
   if (area === 'mondo') return 'Tutto il mondo'
   if (area.startsWith('paese:')) return ix?.paesi.get(area.slice(6))?.n ?? '…'
   return NOMI_CONTINENTI[area as Continente]
-}
-
-/** Il nome di un tipo di domanda nelle opzioni: per gli oceani, le domande dei mari parlano di oceani. */
-export function nomeTipo(tipo: TipoDomanda, categoria: CategoriaQuiz): string {
-  if (categoria !== 'oceani') return NOMI_TIPI[tipo]
-  if (tipo === 'stato-bagnato') return 'Quale stato si affaccia su un oceano'
-  if (tipo === 'acqua-di-stato') return 'Quale oceano bagna uno stato'
-  if (tipo === 'dove-acqua') return 'Dov’è un oceano'
-  return NOMI_TIPI[tipo]
 }

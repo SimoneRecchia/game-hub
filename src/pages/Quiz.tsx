@@ -28,7 +28,7 @@ export default function Quiz() {
     <Pagina
       titolo="Quiz di oggi"
       intera
-      indietro={{ a: ROTTE.gioco('quiz'), etichetta: 'Quiz' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />

@@ -128,7 +128,7 @@ export function ComeSiGiocaTavoliere({
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">Con chi</h3>
           <ul className="cru-aiuto__elenco">
-            <li>Contro il computer, a tre livelli: la partita resta nel telefono.</li>
+            <li>Contro il computer, a tre livelli: il colore cambia a ogni partita, e alla prima cominci tu.</li>
             <li>Con un amico online, o con un link. A partita finita, «Gioca ancora» scambia i colori.</li>
             <li>Non c’è classifica.</li>
           </ul>

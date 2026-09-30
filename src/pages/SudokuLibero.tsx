@@ -10,15 +10,7 @@ import { FineSudoku } from '@/games/sudoku/Fine'
 import { PartitaSudoku } from '@/games/sudoku/PartitaSudoku'
 import { useSudokuLibero, type SudokuLiberoController } from '@/games/sudoku/useSudokuLibero'
 import { formatCronometro } from '@/lib/format'
-import { LIVELLI, NOMI_LIVELLI, type LivelloSudoku } from '@shared/sudoku'
-
-/** Cosa aspettarsi da ogni livello, in due parole. */
-const DESCRIZIONI: Record<LivelloSudoku, string> = {
-  facile: 'Tante cifre date',
-  media: 'Meno cifre, stesse mosse',
-  difficile: 'Servono le note',
-  esperto: 'Per chi conosce le tecniche',
-}
+import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
 
 /**
  * Il sudoku libero: si sceglie la difficoltà e lo schema si prepara nel
@@ -34,11 +26,16 @@ export default function SudokuLibero() {
     return (
       <Pagina
         key="scelta"
-        titolo="Schema libero"
-        sotto="Non conta per la classifica."
-        indietro={{ a: ROTTE.gioco('sudoku'), etichetta: 'Sudoku' }}
+        titolo="Sudoku"
+        indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+        azioni={
+          <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
+            <IconInfo size={21} />
+          </BottoneBarra>
+        }
       >
         <SceltaLivello g={g} />
+        <ComeSiGiocaSudoku open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )
   }
@@ -48,7 +45,7 @@ export default function SudokuLibero() {
       key="partita"
       titolo="Schema libero"
       intera
-      indietro={{ a: ROTTE.gioco('sudoku'), etichetta: 'Sudoku' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       azioni={
         <>
           <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
@@ -109,7 +106,6 @@ function SceltaLivello({ g }: { g: SudokuLiberoController }) {
               key={livello}
               icona={<Tacche piene={i + 1} di={4} colore="var(--sudoku-1)" />}
               titolo={NOMI_LIVELLI[livello]}
-              sotto={DESCRIZIONI[livello]}
               valore={c.record !== null ? `Record ${formatCronometro(c.record)}` : undefined}
               onClick={() => g.nuova(livello)}
             />

@@ -147,7 +147,7 @@ export default function Cruciverba() {
       }
       intera
       larga
-      indietro={{ a: ROTTE.gioco('cruciverba'), etichetta: 'Cruciverba' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
           <IconInfo size={21} />

@@ -236,8 +236,8 @@ export const NOMI_CONTINENTI: Record<Continente, string> = {
 /** Le domande della classificata, e quelle della libera se non si sceglie altro. */
 export const DOMANDE_PER_PARTITA = 10
 
-/** Quante domande puo' avere una partita libera: fino a cinquanta. */
-export const QUANTE_LIBERE = [5, 10, 15, 20, 30, 40, 50] as const
+/** Quante domande puo' avere una partita libera: quattro scelte, fino a cinquanta. */
+export const QUANTE_LIBERE = [5, 10, 20, 50] as const
 export const QUANTE_MASSIME = 50
 
 /** Fra quante risposte si sceglie, nella libera: quattro, se non si dice altro. */

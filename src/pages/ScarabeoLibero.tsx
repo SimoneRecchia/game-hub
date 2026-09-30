@@ -25,16 +25,6 @@ import './Scarabeo.css'
 const NOMI: Record<Livello, string> = { facile: 'Facile', normale: 'Normale', difficile: 'Difficile' }
 
 /**
- * Cosa aspettarsi da ogni livello. I numeri sono le medie del computer su
- * sessanta sacchetti, dieci mosse a testa (vedi shared/scarabeo-motore.ts).
- */
-const DESCRIZIONI: Record<Livello, string> = {
-  facile: 'Fa circa 170 punti',
-  normale: 'Fa circa 250 punti',
-  difficile: 'Fa oltre 350 punti',
-}
-
-/**
  * Lo Scarabeo libero: una partita a turni contro il computer.
  *
  * Tutto nel browser — il computer gira in un Web Worker con il dizionario
@@ -92,11 +82,16 @@ export default function ScarabeoLibero() {
     return (
       <Pagina
         key="scelta"
-        titolo="Contro il computer"
-        sotto="Non conta per la classifica."
-        indietro={{ a: ROTTE.gioco('scarabeo'), etichetta: 'Scarabeo' }}
+        titolo="Scarabeo"
+        indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+        azioni={
+          <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
+            <IconInfo size={21} />
+          </BottoneBarra>
+        }
       >
         <SceltaLivello g={g} />
+        <ComeSiGiocaScarabeo open={aiuto} onClose={() => setAiuto(false)} />
       </Pagina>
     )
   }
@@ -109,7 +104,7 @@ export default function ScarabeoLibero() {
       key="partita"
       titolo="Contro il computer"
       intera
-      indietro={{ a: ROTTE.gioco('scarabeo'), etichetta: 'Scarabeo' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
       azioni={
         <>
           <BottoneBarra etichetta="Le mosse" onClick={() => setStoria(true)}>
@@ -266,10 +261,7 @@ function titoloEsito(esito: 'vinta' | 'persa' | 'pari' | null): string {
  */
 function SceltaLivello({ g }: { g: ScarabeoLiberoController }) {
   return (
-    <Sezione
-      titolo="Scegli il livello"
-      nota="Dieci mosse a testa. Vince chi fa più punti."
-    >
+    <Sezione titolo="Difficoltà">
       <Elenco>
         {LIVELLI.map((livello, i) => {
           const conti = g.statistiche?.perLivello[livello]
@@ -278,7 +270,6 @@ function SceltaLivello({ g }: { g: ScarabeoLiberoController }) {
               key={livello}
               icona={<Tacche piene={i + 1} colore="var(--scarabeo-1)" />}
               titolo={NOMI[livello]}
-              sotto={DESCRIZIONI[livello]}
               valore={conti && conti.giocate > 0 ? `${conti.vinte}/${conti.giocate}` : undefined}
               onClick={() => g.nuova(livello)}
             />

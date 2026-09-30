@@ -109,7 +109,7 @@ export default function BattagliaPartita() {
       larga
       indietro={
         classificata
-          ? { a: ROTTE.gioco('battaglia'), etichetta: 'Battaglia' }
+          ? { a: ROTTE.home, etichetta: 'Giochi' }
           : { a: ROTTE.libera('battaglia'), etichetta: 'Libera' }
       }
       azioni={
