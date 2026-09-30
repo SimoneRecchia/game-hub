@@ -22,7 +22,7 @@
 
 import type { DatiCinema, FilmQuiz } from '../../shared/quiz-cultura'
 import { CITTADINANZE_ITALIANE, elencoPersone, ITALIA, moderno, nomePaese, persone, statiDi } from './persone'
-import { interroga, letture, ordineDichiarazioni } from './rete'
+import { ANNO_LETTURE, interroga, letture, ordineDichiarazioni } from './rete'
 import {
   anni,
   annoSicuro,
@@ -54,6 +54,18 @@ const CANDIDATI_ITALIANI = 800
  * ha diretto "Biancaneve e i sette nani" non lo sa nessuno.
  */
 const PESO_ANIMAZIONE = 0.4
+/**
+ * Le letture di un film uscito nell'anno delle letture, o in quello prima, sono
+ * quelle dell'uscita, e non quelle di sempre: Thunderbolts* e Captain America
+ * stavano fra i primi cinquanta, davanti al Padrino, e un film era del 2023 o
+ * dopo uno su quattro. Contano un terzo l'anno dell'uscita e due terzi quello
+ * dopo; i libri e i quadri di quegli anni fra i primi non ci sono.
+ */
+function lettureDiSempre(lette: number, anno: number | undefined): number {
+  const eta = anno === undefined ? Infinity : ANNO_LETTURE - anno
+  return eta >= 2 ? lette : (lette * (Math.max(0, eta) + 1)) / 3
+}
+
 /** Anche per genere, oltre alle classi di `ANIMAZIONE`: i lungometraggi animati, e gli anime. */
 const GENERI_ANIMATI = new Set(['Q202866', 'Q29168811', 'Q17013749', 'Q28968511', 'Q1107'])
 /** Gli interpreti fra cui si scelgono i tre del cast: i primi dei titoli di testa. */
@@ -199,8 +211,11 @@ export async function cinema(): Promise<Omit<DatiCinema, 'versione'>> {
   const animato = (id: string) =>
     primi(v, id, 'P31').some((c) => ANIMAZIONE.has(c)) || primi(v, id, 'P136').some((g) => GENERI_ANIMATI.has(g))
   const lette = await letture(conRegista.map((id) => s.get(id)?.voce).filter((t): t is string => !!t))
+  // L'uscita: la prima, anche se il film e' tornato in sala decenni dopo.
+  const annoDi = (id: string) => annoSicuro(date.get(id)?.get('P577'), { scarto: Infinity })
   const peso = (id: string) =>
-    notorietaItaliana(voci.get(id) ?? 0, lette.get(s.get(id)?.voce ?? '') ?? 0) * (animato(id) ? PESO_ANIMAZIONE : 1)
+    notorietaItaliana(voci.get(id) ?? 0, lettureDiSempre(lette.get(s.get(id)?.voce ?? '') ?? 0, annoDi(id))) *
+    (animato(id) ? PESO_ANIMAZIONE : 1)
   const unici = titoliUnici(
     conRegista,
     (id) => titoloItaliano(s.get(id))!,
@@ -283,8 +298,7 @@ export async function cinema(): Promise<Omit<DatiCinema, 'versione'>> {
   )
   const elenco: FilmQuiz[] = scelti.map((id) => {
     const r = inOrdine(umani(id), ordine.get(id)?.get('P57'), (x) => registi.get(x)?.voci ?? 0)
-    // L'uscita: la prima, anche se il film e' tornato in sala decenni dopo.
-    const anno = annoSicuro(date.get(id)?.get('P577'), { scarto: Infinity })
+    const anno = annoDi(id)
     const p = paeseDi(id)
     const g = primi(v, id, 'P31').some((c) => ANIMAZIONE.has(c))
       ? 'animazione'
