@@ -1009,7 +1009,22 @@ function nobel(dati: DatiCultura['nobel'], contesto: Contesto): DomandaCompleta[
  * pandemia di COVID-19.
  */
 const COMINCIANO = new RegExp(
-  '^(guerr|rivoluzion|rivolt|insurrezion|crociat|campagn|occupazion|invasion|pandemi|epidemi|carestia|crisi|assedi|blocc)',
+  `^(${[
+    'guerr',
+    'rivoluzion',
+    'rivolt',
+    'insurrezion',
+    'crociat',
+    'campagn',
+    'occupazion',
+    'invasion',
+    'pandemi',
+    'epidemi',
+    'carestia',
+    'crisi',
+    'assedi',
+    'blocc',
+  ].join('|')})`,
 )
 
 export function domandaSulTempo(
