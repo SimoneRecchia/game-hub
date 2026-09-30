@@ -3,7 +3,7 @@
  * prossimi giorni, in D1.
  *
  * Le altre materie non hanno un riassunto in D1: i loro dati sono i file di
- * `public/quiz/` (li scrive `npm run quiz:cultura`), e qui si leggono dal
+ * `public/dati/quiz/` (li scrive `npm run quiz:cultura`), e qui si leggono dal
  * repository per fare le domande delle giornate che sono di arte, di storia,
  * di "Accadde oggi".
  *
@@ -308,7 +308,7 @@ if (SCRIVE) {
 const ix = indicizza(dati as DatiQuiz)
 
 /** I file delle altre materie, dal repository: sono gli stessi che il browser scarica per le libere. */
-const CARTELLA_CULTURA = join(ROOT, 'public', 'quiz')
+const CARTELLA_CULTURA = join(ROOT, 'public', 'dati', 'quiz')
 function leggiJson<T>(file: string): T {
   if (!existsSync(file)) {
     console.error(`  manca ${file}: prima npm run quiz:cultura`)
@@ -319,7 +319,9 @@ function leggiJson<T>(file: string): T {
 const cultura: Partial<Omit<DatiCultura, 'oggi'>> = {}
 function fontiDelGiorno(categoria: CategoriaQuiz, data: string): FontiQuiz {
   if (!eCultura(categoria)) return { geo: ix }
-  if (categoria === 'oggi') return { oggi: leggiJson<DatiOggi>(join(CARTELLA_CULTURA, 'oggi', `${giornoDellAnno(data)}.json`)) }
+  if (categoria === 'oggi') {
+    return { oggi: leggiJson<DatiOggi>(join(CARTELLA_CULTURA, 'oggi', `${giornoDellAnno(data)}.json`)) }
+  }
   const c = categoria as Exclude<(typeof CATEGORIE_CULTURA)[number], 'oggi'>
   ;(cultura as Record<string, unknown>)[c] ??= leggiJson(join(CARTELLA_CULTURA, `${c}.json`))
   return { cultura }

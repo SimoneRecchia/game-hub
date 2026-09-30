@@ -11,12 +11,12 @@ import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
 import { DOVE } from '@/lib/presenza'
 import { SFIDA_POLL_ATTESA_MS } from '@shared/config'
-import { NOMI_CATEGORIE, NOMI_MODI } from '@shared/quiz'
+import { NOMI_CATEGORIE, diGeografia } from '@shared/quiz'
 import type { GiocatoreOnline, SalaQuiz, SfidaQuizInviata } from '@shared/types'
 import { useIndiceQuiz } from '../dati'
-import { nomeArea } from '../testi'
+import { dettagliPartita } from '../testi'
 import type { ImpostazioniLibera } from '../usePartita'
-import { domandePerSfida, sfidaDalleScelte } from './domande'
+import { conIlGiorno, domandePerSfida, sfidaDalleScelte } from './domande'
 import '@/pages/Battaglia.css'
 import './Duello.css'
 
@@ -41,7 +41,7 @@ export function SfidaQuiz({
 }) {
   const { vai } = useNavigazione()
   const toast = useToast()
-  const ix = useIndiceQuiz(open)
+  const ix = useIndiceQuiz(open && diGeografia(scelte.categoria))
   const imp = useMemo(() => sfidaDalleScelte(scelte), [scelte])
   const [sala, setSala] = useState<SalaQuiz | null>(null)
   const [invio, setInvio] = useState<string | null>(null)
@@ -73,8 +73,9 @@ export function SfidaQuiz({
     setInvio(a === 'link' ? 'link' : a.playerId)
     setAvviso(null)
     try {
-      const domande = await domandePerSfida(imp)
-      const corpo = { impostazioni: imp, domande }
+      const impostazioni = await conIlGiorno(imp, scelte.giorno)
+      const domande = await domandePerSfida(impostazioni)
+      const corpo = { impostazioni, domande }
       if (a === 'link') await api<SfidaQuizInviata>('/quiz/sfide/link', { method: 'POST', body: corpo })
       else await api<SfidaQuizInviata>('/quiz/sfide', { method: 'POST', body: { ...corpo, playerId: a.playerId } })
       await carica()
@@ -92,11 +93,13 @@ export function SfidaQuiz({
 
   const riassunto = [
     NOMI_CATEGORIE[imp.categoria],
-    NOMI_MODI[imp.modo],
-    nomeArea(imp.area, ix),
+    ...dettagliPartita(imp, ix),
+    imp.categoria === 'oggi' && scelte.giorno === 'caso' ? 'un giorno a caso' : null,
     `${imp.quante} domande`,
     `${imp.secondi * (imp.modo === 'cartina' ? 2 : 1)} s a domanda`,
-  ].join(' · ')
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <Sheet open={open} onClose={onClose} title="Sfida un amico">

@@ -7,14 +7,25 @@ import { IconaScheda, Pillola, Scheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { formatCronometro } from '@/lib/format'
 import { suona } from '@/lib/suoni'
-import { NOMI_CATEGORIE, NOMI_MODI, PUNTI_BASE_QUIZ, SECONDI_CARTINA, SECONDI_SCELTA, type CategoriaQuiz } from '@shared/quiz'
+import {
+  NOMI_CATEGORIE,
+  NOMI_MODI,
+  PUNTI_BASE_QUIZ,
+  SECONDI_CARTINA,
+  SECONDI_SCELTA,
+  diGeografia,
+  type CategoriaQuiz,
+} from '@shared/quiz'
+import { giornoInLettere, urlVoce } from '@shared/quiz-cultura'
 import type { CittaQuiz } from '@shared/quiz-dati'
-import type { AreaQuiz, DomandaQuiz, IndiceQuiz, OpzioneQuiz } from '@shared/quiz-domande'
+import type { AreaQuiz, DomandaQuiz, IndiceQuiz, OpzioneQuiz, SpiegazioneQuiz } from '@shared/quiz-domande'
 import { adesivoFine, adesivoGiusta, adesivoSbagliata, adesivoTempo } from './adesivi'
 import { misureBandiera, urlBandiera } from './bandiere'
 import { Cartina, type EsitoCartina, type PuntoCartina } from './cartina/Cartina'
 import { useIndiceQuiz } from './dati'
 import { IconaCategoria } from './icone'
+import { Quadro, precaricaQuadro } from './Quadro'
+import { SchedaSpiegazione } from './Spiegazione'
 import { descrizione } from './testi'
 import { VIA_MS, type Fatta, type OpzioniPartita, type VistaPartita } from './usePartita'
 import { luogoDellaRisposta, postoDellOpzione, zonaDellaPartita } from './zona'
@@ -131,6 +142,11 @@ function Intro({ p, categoria, intro }: { p: VistaPartita; categoria: CategoriaQ
   const cartina = p.modo === 'cartina'
   // La classificata ha i tempi di tutti; la libera quelli scelti, il doppio sulla cartina.
   const secondi = intro ? (p.opzioni.secondi === null ? null : p.opzioni.secondi * (cartina ? 2 : 1)) : cartina ? SECONDI_CARTINA : SECONDI_SCELTA
+  const come = diGeografia(categoria)
+    ? p.modo && NOMI_MODI[p.modo]
+    : !intro && p.giorno
+      ? giornoInLettere(p.giorno)
+      : null
   return (
     <div className="quiz-intro">
       <div className="quiz-intro__disegno" aria-hidden="true">
@@ -146,7 +162,8 @@ function Intro({ p, categoria, intro }: { p: VistaPartita; categoria: CategoriaQ
         <span>
           <strong className="u-tabnum">{p.totale}</strong> domande
         </span>
-        {p.modo && <span>{NOMI_MODI[p.modo]}</span>}
+        {/* Il modo per la geografia, il giorno per "Accadde oggi". Zona e ambito della libera stanno sopra. */}
+        {come && <span>{come}</span>}
         <span>
           {secondi === null ? (
             'Senza tempo'
@@ -201,10 +218,19 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
   useEffect(() => setSceltaCartina(null), [p.indice])
 
   const sullaCartina = !!d?.cartina
-  const rivela = p.opzioni.imparo && !!esito && !sullaCartina
+  const geografia = diGeografia(categoria)
+  // A risposta data, con "impara": la cartina per la geografia, la scheda per le altre materie.
+  const scheda = esito?.risposta.spiegazione ?? null
+  const rivela = p.opzioni.imparo && !!esito && !sullaCartina && (geografia || !!scheda)
   // I dati servono alla cartina e a dire dove sta una risposta: si chiedono solo se c'e' una cartina.
-  const ix = useIndiceQuiz(p.modo === 'cartina' || sullaCartina || p.opzioni.imparo)
+  const ix = useIndiceQuiz(geografia && (p.modo === 'cartina' || sullaCartina || p.opzioni.imparo))
   const manuale = !p.opzioni.avantiDaSolo
+
+  // Il quadro della domanda dopo, mentre si risponde a questa: quando arriva, c'e' gia'.
+  const prossima = p.prossima
+  useEffect(() => {
+    if (prossima) precaricaQuadri(prossima)
+  }, [prossima])
 
   // Da tastiera, su computer: 1-6 o A-F per rispondere, Invio per confermare o per andare avanti.
   const { rispondi, avanti } = p
@@ -336,8 +362,11 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
               ) : null
             }
             cartina={
-              rivela && esito ? <CartinaDellaPartita c={p} ix={ix} d={d} scelta={null} fatta={esito} guarda /> : null
+              rivela && esito && geografia ? (
+                <CartinaDellaPartita c={p} ix={ix} d={d} scelta={null} fatta={esito} guarda />
+              ) : null
             }
+            scheda={scheda}
           />
           <Opzioni
             key={`opzioni-${p.indice}`}
@@ -381,6 +410,7 @@ export function CartaDomanda({
   rivela,
   aiuto,
   cartina,
+  scheda,
 }: {
   d: DomandaQuiz
   categoria: CategoriaQuiz
@@ -389,6 +419,8 @@ export function CartaDomanda({
   rivela: boolean
   aiuto?: ReactNode
   cartina?: ReactNode
+  /** Per le altre materie, a risposta data: la scheda al posto della cartina. */
+  scheda?: SpiegazioneQuiz | null
 }) {
   if (d.cartina) {
     return (
@@ -406,21 +438,26 @@ export function CartaDomanda({
       </section>
     )
   }
+  // Si insegna solo se c'e' cosa: la cartina, o la scheda.
+  const insegna = rivela && (!!cartina || !!scheda)
+  const aspetto = insegna ? ' is-rivela' : d.immagine ? ' is-quadro' : d.bandiera ? ' is-bandiera' : ' is-testo'
   return (
-    <section
-      className={`quiz-carta${rivela ? ' is-rivela' : d.bandiera ? ' is-bandiera' : ' is-testo'}${esito}`}
-      aria-live="polite"
-    >
-      {!rivela && !d.bandiera && (
+    <section className={`quiz-carta${aspetto}${esito}`} aria-live="polite">
+      {!insegna && !d.bandiera && !d.immagine && (
         <span className="quiz-carta__emblema" aria-hidden="true">
           <IconaCategoria categoria={categoria} size={40} />
         </span>
       )}
-      {rivela && d.bandiera && (
+      {insegna && d.bandiera && (
         <img className="quiz-carta__bandierina" src={urlBandiera(d.bandiera, 160)} alt="" draggable={false} />
       )}
       <p className="quiz-carta__testo">{d.testo}</p>
-      {!rivela && d.bandiera && (
+      {!insegna && d.immagine && (
+        <span className="quiz-carta__quadro">
+          <Quadro img={d.immagine} alt="Il quadro della domanda" sizes={MISURE_DOMANDA} />
+        </span>
+      )}
+      {!insegna && d.bandiera && (
         <span className="quiz-carta__bandiera">
           <img
             src={urlBandiera(d.bandiera, 320)}
@@ -432,9 +469,24 @@ export function CartaDomanda({
         </span>
       )}
       {aiuto}
-      {rivela && cartina && <div className="quiz-carta__cartina">{cartina}</div>}
+      {insegna && cartina && <div className="quiz-carta__cartina">{cartina}</div>}
+      {insegna && !cartina && scheda && (
+        <div className="quiz-carta__scheda">
+          <SchedaSpiegazione s={scheda} />
+        </div>
+      )}
     </section>
   )
+}
+
+/** Quanto e' largo sullo schermo il quadro di una domanda, e quello di una risposta: per scegliere la misura. */
+const MISURE_DOMANDA = '(min-width: 700px) 500px, 92vw'
+const MISURE_OPZIONE = '(min-width: 700px) 240px, 160px'
+
+/** I quadri di una domanda: quello da riconoscere, o quelli fra cui scegliere. */
+export function precaricaQuadri(d: DomandaQuiz): void {
+  if (d.immagine) precaricaQuadro(d.immagine, MISURE_DOMANDA)
+  for (const o of d.opzioni) if (o.immagine) precaricaQuadro(o.immagine, MISURE_OPZIONE)
 }
 
 /** Quel che la cartina di una partita deve sapere: dove si gioca, come, e le città se ce ne sono. */
@@ -661,7 +713,9 @@ export function Opzioni({
   altra?: AltraScelta
 }) {
   const [scelta, setScelta] = useState<string | null>(null)
-  const bandiere = d.opzioni.some((o) => o.bandiera)
+  // Quadri e bandiere si scelgono guardandoli: tasti grandi, due per riga, e il nome sotto a risposta data.
+  const quadri = d.opzioni.some((o) => o.immagine)
+  const bandiere = quadri || d.opzioni.some((o) => o.bandiera)
   const lunghe = d.opzioni.some((o) => o.testo.length > 18)
   const sei = d.opzioni.length > 4
   const visibili = compatte && esito
@@ -671,9 +725,9 @@ export function Opzioni({
     : d.opzioni
   return (
     <div
-      className={`quiz-opzioni${bandiere ? ' is-bandiere' : ''}${lunghe && !bandiere ? ' is-lunghe' : ''}${
-        sei ? ' is-sei' : ''
-      }${compatte && esito ? ' is-compatte' : ''}`}
+      className={`quiz-opzioni${bandiere ? ' is-bandiere' : ''}${quadri ? ' is-quadri' : ''}${
+        lunghe && !bandiere ? ' is-lunghe' : ''
+      }${sei ? ' is-sei' : ''}${compatte && esito ? ' is-compatte' : ''}`}
     >
       {visibili.map((o) => {
         const i = d.opzioni.indexOf(o)
@@ -701,7 +755,20 @@ export function Opzioni({
               onScegli(o.id)
             }}
           >
-            {o.bandiera ? (
+            {o.immagine ? (
+              <>
+                <span className="quiz-opzione__quadro">
+                  <Quadro img={o.immagine} alt={esito ? o.testo : `Quadro ${LETTERE[i]}`} sizes={MISURE_OPZIONE} />
+                </span>
+                {esito ? (
+                  <span className="quiz-opzione__nome">{o.testo}</span>
+                ) : (
+                  <span className="quiz-opzione__segno" aria-hidden="true">
+                    {LETTERE[i]}
+                  </span>
+                )}
+              </>
+            ) : o.bandiera ? (
               <>
                 <img
                   className="quiz-opzione__bandiera"
@@ -860,6 +927,7 @@ function Riepilogo({ fatte }: { fatte: Fatta[] }) {
                 {f.ripasso && <em className="quiz-riepilogo__ripasso">Ripasso · </em>}
                 {f.domanda.testo}
               </span>
+
               <span className="quiz-riepilogo__risposta">
                 {bandieraGiusta && (
                   <img
@@ -875,7 +943,22 @@ function Riepilogo({ fatte }: { fatte: Fatta[] }) {
                     ? `Tempo scaduto · giusta: ${f.risposta.risposta}`
                     : `${scelta ? `${scelta.testo} · ` : ''}giusta: ${f.risposta.risposta}`}
               </span>
+              {f.risposta.spiegazione?.voce && (
+                <a
+                  className="quiz-riepilogo__leggi"
+                  href={urlVoce(f.risposta.spiegazione.voce)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {f.risposta.spiegazione.titolo} su Wikipedia
+                </a>
+              )}
             </span>
+            {f.domanda.immagine && (
+              <span className="quiz-riepilogo__quadro">
+                <Quadro img={f.domanda.immagine} alt="" sizes="56px" />
+              </span>
+            )}
           </li>
         )
       })}

@@ -137,7 +137,9 @@ function spiegazioneDi(v: unknown): SpiegazioneQuiz | null {
   if (!x || !titolo) return null
   const righe = Array.isArray(x.righe)
     ? x.righe
-        .filter((r): r is [string, string] => Array.isArray(r) && r.length === 2 && !!testo(r[0], 60) && !!testo(r[1], 400))
+        .filter(
+          (r): r is [string, string] => Array.isArray(r) && r.length === 2 && !!testo(r[0], 60) && !!testo(r[1], 400),
+        )
         .slice(0, 8)
     : []
   const sotto = testo(x.sotto, 300)
@@ -221,7 +223,15 @@ export function leggiDomande(valore: unknown, imp: ImpostazioniSfida): DomandaCo
 }
 
 function riassunto(imp: ImpostazioniSfida): RiassuntoSfida {
-  return { categoria: imp.categoria, modo: imp.modo, area: imp.area, quante: imp.quante, secondi: imp.secondi }
+  return {
+    categoria: imp.categoria,
+    modo: imp.modo,
+    area: imp.area,
+    quante: imp.quante,
+    secondi: imp.secondi,
+    ...(imp.ambito && imp.ambito !== 'tutti' ? { ambito: imp.ambito } : {}),
+    ...(imp.giorno ? { giorno: imp.giorno } : {}),
+  }
 }
 
 function impostazioniDi(row: { impostazioni: string }): ImpostazioniSfida {

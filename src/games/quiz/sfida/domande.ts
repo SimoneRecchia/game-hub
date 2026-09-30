@@ -3,11 +3,12 @@
  *
  * Il Worker non ha i dieci millisecondi per farle: servono i dati interi del
  * quiz, che il telefono ha gia' per le partite libere. Le stesse regole e lo
- * stesso `generaDomande` della libera, con un seme a caso; poi vanno al
+ * stesso `generaPartita` della libera, con un seme a caso; poi vanno al
  * server, che le tiene con le risposte e le manda ai due una alla volta.
  */
 
 import { gameDate, mulberry32 } from '@shared/daily'
+import { giornoDellAnno } from '@shared/quiz-cultura'
 import type { DomandaCompleta } from '@shared/quiz-domande'
 import { generaPartita } from '@shared/quiz-domande-cultura'
 import {
@@ -17,7 +18,7 @@ import {
   impostazioniSfida,
   type ImpostazioniSfida,
 } from '@shared/quiz-sfida'
-import { fontiDelQuiz } from '../fonti'
+import { fontiDelQuiz, giornoDellaPartita } from '../fonti'
 import type { ImpostazioniLibera } from '../usePartita'
 
 /**
@@ -50,8 +51,21 @@ export function sfidaDalleScelte(s: ImpostazioniLibera): ImpostazioniSfida {
   })!
 }
 
+/**
+ * Il giorno di una sfida a "Accadde oggi", nelle impostazioni: chi e' sfidato
+ * legge di quale giorno sono le domande, e la rivincita resta sullo stesso.
+ */
+export async function conIlGiorno(
+  imp: ImpostazioniSfida,
+  scelta: ImpostazioniLibera['giorno'],
+): Promise<ImpostazioniSfida> {
+  if (imp.categoria !== 'oggi' || imp.giorno) return imp
+  return { ...imp, giorno: giornoDellAnno(await giornoDellaPartita(scelta, true)) }
+}
+
 export async function domandePerSfida(imp: ImpostazioniSfida): Promise<DomandaCompleta[]> {
-  const { fonti, citta } = await fontiDelQuiz(imp.categoria, imp.area)
+  const data = imp.giorno ? `${gameDate().slice(0, 4)}-${imp.giorno}` : gameDate()
+  const { fonti, citta } = await fontiDelQuiz(imp.categoria, imp.area, data)
   const domande = generaPartita(
     fonti,
     {
@@ -66,7 +80,7 @@ export async function domandePerSfida(imp: ImpostazioniSfida): Promise<DomandaCo
       ordine: 'sale',
       citta: citta ?? undefined,
       ambito: imp.ambito,
-      data: gameDate(),
+      data,
     },
     mulberry32((Math.random() * 2 ** 32) >>> 0),
   )

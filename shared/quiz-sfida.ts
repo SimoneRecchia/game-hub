@@ -96,7 +96,12 @@ export interface ImpostazioniSfida {
   bandieraCapitali?: boolean
   /** Per le altre materie, l'ambito: un periodo, un premio, un argomento. */
   ambito?: string
+  /** Il giorno di "Accadde oggi", "03-12": lo sceglie chi sfida, e la rivincita resta lì. */
+  giorno?: string
 }
+
+/** Un giorno dell'anno come lo scrivono i file di "Accadde oggi": "03-12". */
+const GIORNO = /^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/
 
 function si(valore: unknown, predefinito: boolean): boolean {
   return typeof valore === 'boolean' ? valore : predefinito
@@ -141,11 +146,16 @@ export function impostazioniSfida(valore: unknown): ImpostazioniSfida | null {
     notorieta,
     bandieraCapitali: si(x.bandieraCapitali, true),
     ...(geografia ? {} : { ambito: ambitoValido(categoria, x.ambito) }),
+    ...(categoria === 'oggi' && typeof x.giorno === 'string' && GIORNO.test(x.giorno) ? { giorno: x.giorno } : {}),
   }
 }
 
 /** Il tempo di una domanda: il doppio sulla cartina, dove un posto va cercato, e un terzo in piu' se si legge tanto. */
-export function limiteMs(impostazioni: Pick<ImpostazioniSfida, 'secondi'>, sullaCartina: boolean, lunga = false): number {
+export function limiteMs(
+  impostazioni: Pick<ImpostazioniSfida, 'secondi'>,
+  sullaCartina: boolean,
+  lunga = false,
+): number {
   return Math.round(impostazioni.secondi * (sullaCartina ? 2 : lunga ? FATTORE_LUNGA : 1) * 1000)
 }
 

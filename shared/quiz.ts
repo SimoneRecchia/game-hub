@@ -176,6 +176,12 @@ export function ambitoValido(categoria: CategoriaQuiz, ambito: unknown): string 
   return ambiti?.some((a) => a.id === ambito) ? (ambito as string) : 'tutti'
 }
 
+/** Il nome dell'ambito: "Ottocento", "Fisica"; null per "tutti", che non si dice. */
+export function nomeAmbito(categoria: CategoriaQuiz, ambito: string | null | undefined): string | null {
+  if (!ambito || ambito === 'tutti') return null
+  return AMBITI[categoria]?.find((a) => a.id === ambito)?.nome ?? null
+}
+
 /** Come si risponde: scegliendo fra le risposte, o toccando la cartina muta. */
 export type ModoQuiz = 'scelta' | 'cartina'
 
@@ -254,6 +260,11 @@ export const SECONDI_CARTINA = 30
  */
 export const SECONDI_LUNGA = 20
 export const FATTORE_LUNGA = SECONDI_LUNGA / SECONDI_SCELTA
+
+/** Il tempo di una domanda della classificata, lo stesso per il server e per la pagina. */
+export function secondiDellaDomanda(d: { cartina?: unknown; lunga?: 1 }): number {
+  return d.cartina ? SECONDI_CARTINA : d.lunga ? SECONDI_LUNGA : SECONDI_SCELTA
+}
 
 /** I tempi che si scelgono nella libera, per le domande a scelta: sulla cartina sono il doppio. */
 export const SECONDI_LIBERI = [10, 15, 20, 30] as const

@@ -426,18 +426,41 @@ export function giornoDellAnno(data: string): string {
   return data.slice(5, 10)
 }
 
-/**
- * L'indirizzo dei dati di una materia: `/quiz/arte.json?v=…`. La versione e'
- * l'impronta del file, scritta da `npm run quiz:cultura` in
- * `shared/quiz-cultura-versioni.ts`: `_headers` li tiene in cache per sempre.
- */
-export function urlDatiCultura(categoria: Exclude<CategoriaCultura, 'oggi'>): string {
-  return `/quiz/${categoria}.json?v=${VERSIONI_CULTURA[categoria] ?? ''}`
+const MESI = [
+  'gennaio',
+  'febbraio',
+  'marzo',
+  'aprile',
+  'maggio',
+  'giugno',
+  'luglio',
+  'agosto',
+  'settembre',
+  'ottobre',
+  'novembre',
+  'dicembre',
+]
+
+/** "03-15" → "15 marzo"; il primo del mese e' "1º". */
+export function giornoInLettere(giorno: string): string {
+  const [mese, g] = giorno.split('-').map(Number)
+  return `${g === 1 ? '1º' : g} ${MESI[mese - 1] ?? ''}`
 }
 
-/** I dati di "Accadde oggi" di un giorno dell'anno: `/quiz/oggi/03-15.json?v=…`. */
+/**
+ * L'indirizzo dei dati di una materia: `/dati/quiz/arte.json?v=…`. La
+ * versione e' l'impronta del file, scritta da `npm run quiz:cultura` in
+ * `shared/quiz-cultura-versioni.ts`: `_headers` li tiene in cache per sempre.
+ * Sotto `/dati/` e non sotto `/quiz/`, dove ci sono le pagine dell'app: una
+ * regola di `_headers` su `/quiz/*` terrebbe in cache per un anno anche quelle.
+ */
+export function urlDatiCultura(categoria: Exclude<CategoriaCultura, 'oggi'>): string {
+  return `/dati/quiz/${categoria}.json?v=${VERSIONI_CULTURA[categoria] ?? ''}`
+}
+
+/** I dati di "Accadde oggi" di un giorno dell'anno: `/dati/quiz/oggi/03-15.json?v=…`. */
 export function urlOggi(giorno: string): string {
-  return `/quiz/oggi/${giorno}.json?v=${VERSIONI_CULTURA.oggi ?? ''}`
+  return `/dati/quiz/oggi/${giorno}.json?v=${VERSIONI_CULTURA.oggi ?? ''}`
 }
 
 /** Un anno come si legge: 1492, 44 a.C. */

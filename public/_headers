@@ -20,7 +20,15 @@
   Cache-Control: public, max-age=0, must-revalidate
 
 # Il dizionario dello Scarabeo: l'indirizzo porta l'impronta (?v=), che cambia a ogni versione.
-/scarabeo/*
+# I due file e non /scarabeo/*: sotto /scarabeo/ ci sono anche le pagine dell'app, che le Pages
+# servono con index.html, e la regola le teneva in cache per un anno.
+/scarabeo/dizionario.dawg
+  Cache-Control: public, max-age=31536000, immutable
+/scarabeo/dizionario.dawg.gz
+  Cache-Control: public, max-age=31536000, immutable
+
+# I dati delle materie del quiz: anche qui l'impronta sta nell'indirizzo. Sotto /dati/ non ci sono pagine.
+/dati/*
   Cache-Control: public, max-age=31536000, immutable
 
 /manifest.webmanifest

@@ -26,6 +26,7 @@ import {
   CATEGORIE_CULTURA,
   PREMI_NOBEL,
   annoInLettere,
+  giornoInLettere,
   numeroSecolo,
   romano,
   type AstroQuiz,
@@ -217,8 +218,15 @@ function anniVicini(
   minimo = -5000,
 ): number[] {
   const distanza = Math.max(1, c.annoMassimo - anno)
-  const passo =
-    distanza > 2000 ? 100 : distanza > 1000 ? 50 : distanza > 500 ? 20 : distanza > 200 ? 10 : distanza > 80 ? 5 : distanza > 25 ? 3 : 1
+  const passi: Array<[number, number]> = [
+    [2000, 100],
+    [1000, 50],
+    [500, 20],
+    [200, 10],
+    [80, 5],
+    [25, 3],
+  ]
+  const passo = passi.find(([oltre]) => distanza > oltre)?.[1] ?? 1
   const valore = (k: number) => anno + k * passo
   return finestra(0, quanti, c.caso, (k) => {
     const a = valore(k)
@@ -294,6 +302,11 @@ function elenco(nomi: readonly string[]): string {
   return `${nomi.slice(0, -1).join(', ')} e ${nomi[nomi.length - 1]}`
 }
 
+/** "Leonardo da Vinci, 1503": chi e quando, se si sa. */
+function conAnno(chi: string, anno: number | undefined): string {
+  return [chi, anno !== undefined ? annoInLettere(anno) : null].filter(Boolean).join(', ')
+}
+
 /** Il titolo di un'opera in una frase: fra le caporali. */
 const titolo = (n: string) => `«${n}»`
 
@@ -363,7 +376,7 @@ function arte(dati: DatiCultura['arte'], c: Contesto): DomandaCompleta[] {
     const suoi = (q.c ?? []).map((id) => correnti.get(id)).filter((v) => !!v)
     return scheda({
       titolo: q.n,
-      sotto: [elenco(autori.map((p) => p.n)), q.anno !== undefined ? annoInLettere(q.anno) : null].filter(Boolean).join(', '),
+      sotto: conAnno(elenco(autori.map((p) => p.n)), q.anno),
       righe: righe(
         [autori.length > 1 ? 'Pittori' : 'Pittore', autori.map(inRiga).join('; ')],
         ['Corrente', suoi.map((v) => v.n).join(', ')],
@@ -432,12 +445,14 @@ function arte(dati: DatiCultura['arte'], c: Contesto): DomandaCompleta[] {
         const altri = quadri.filter(
           (x) => !x.a.some((id) => q.a.includes(id)) && !doppi.has(senzaAccenti(x.n)) && !stessoTesto(x.n, q.n),
         )
-        const sbagliati = distrattori(c, altri, c.sbagliate, (x) => {
+        // Quattro quadri al massimo: sei, su un telefono, sarebbero francobolli.
+        const fra = { ...c, sbagliate: Math.min(c.sbagliate, 3) }
+        const sbagliati = distrattori(fra, altri, fra.sbagliate, (x) => {
           const tempo = x.anno !== undefined && q.anno !== undefined ? Math.min(2, Math.abs(x.anno - q.anno) / 60) : 1
           return tempo + scarto(x, q)
         })
         const opzioni = conGiusta(
-          c,
+          fra,
           opzione(q.id, q.n, { immagine: q.img }),
           sbagliati.map((x) => opzione(x.id, x.n, { immagine: x.img })),
         )
@@ -630,7 +645,7 @@ function libri(dati: DatiCultura['libri'], c: Contesto): DomandaCompleta[] {
   const schedaLibro = (l: LibroQuiz, autori: PersonaQuiz[]): SpiegazioneQuiz =>
     scheda({
       titolo: l.n,
-      sotto: [elenco(autori.map((p) => p.n)), l.anno !== undefined ? annoInLettere(l.anno) : null].filter(Boolean).join(', '),
+      sotto: conAnno(elenco(autori.map((p) => p.n)), l.anno),
       righe: righe(
         [autori.length > 1 ? 'Autori' : 'Autore', autori.map(inRiga).join('; ')],
         ['Anno', l.anno !== undefined ? annoInLettere(l.anno) : null],
@@ -740,7 +755,7 @@ function lirica(dati: DatiCultura['lirica'], c: Contesto): DomandaCompleta[] {
   const schedaOpera = (o: OperaQuiz, compositori: PersonaQuiz[]): SpiegazioneQuiz =>
     scheda({
       titolo: o.n,
-      sotto: [elenco(compositori.map((p) => p.n)), o.anno !== undefined ? String(o.anno) : null].filter(Boolean).join(', '),
+      sotto: conAnno(elenco(compositori.map((p) => p.n)), o.anno),
       righe: righe(
         ['Musica', compositori.map(inRiga).join('; ')],
         ['Libretto', o.lib?.length ? elenco(o.lib) : null],
@@ -999,7 +1014,7 @@ function anniEvento(e: EventoQuiz): string {
 }
 
 /** Un nome con un anno dentro ("terremoto di Messina del 1908") non fa una domanda sul tempo. */
-const conAnno = (nome: string) => /\d{3,4}/.test(nome)
+const haUnAnno = (nome: string) => /\d{3,4}/.test(nome)
 
 function storia(dati: DatiCultura['storia'], c: Contesto): DomandaCompleta[] {
   const eventi = dati.eventi
@@ -1008,8 +1023,15 @@ function storia(dati: DatiCultura['storia'], c: Contesto): DomandaCompleta[] {
       titolo: maiuscola(e.n),
       sotto: anniEvento(e),
       righe: altri.length
-        ? [...altri, e].sort((a, b) => a.anno - b.anno).map((x): [string, string] => [annoInLettere(x.anno), maiuscola(x.n)])
-        : righe(['Quando', anniEvento(e)], ['Secolo', nomeSecolo(numeroSecolo(e.anno))], ['Dove', e.luogo], ['Parte di', e.parte]),
+        ? [...altri, e]
+            .sort((a, b) => a.anno - b.anno)
+            .map((x): [string, string] => [annoInLettere(x.anno), maiuscola(x.n)])
+        : righe(
+            ['Quando', anniEvento(e)],
+            ['Secolo', nomeSecolo(numeroSecolo(e.anno))],
+            ['Dove', e.luogo],
+            ['Parte di', e.parte],
+          ),
       voce: e.w,
     })
 
@@ -1017,7 +1039,7 @@ function storia(dati: DatiCultura['storia'], c: Contesto): DomandaCompleta[] {
     switch (tipo) {
       case 'anno-evento': {
         // Un anno si chiede dal Mille in poi, o per i fatti famosissimi: le Idi di marzo, Maratona.
-        if (conAnno(e.n) || (e.anno < 1000 && e.f < 0.8)) return null
+        if (haUnAnno(e.n) || (e.anno < 1000 && e.f < 0.8)) return null
         const opzioni = opzioniAnni(c, e.anno)
         if (!opzioni) return null
         return {
@@ -1031,7 +1053,7 @@ function storia(dati: DatiCultura['storia'], c: Contesto): DomandaCompleta[] {
         }
       }
       case 'secolo-evento': {
-        if (conAnno(e.n) || aCavalloDelSecolo(e.anno)) return null
+        if (haUnAnno(e.n) || aCavalloDelSecolo(e.anno)) return null
         const opzioni = opzioniSecoli(c, e.anno)
         if (!opzioni) return null
         return {
@@ -1090,7 +1112,17 @@ function storia(dati: DatiCultura['storia'], c: Contesto): DomandaCompleta[] {
 
 /* ──────────────────────────────────  Scienza  ──────────────────────────── */
 
-const ORDINALI = ['', 'il primo', 'il secondo', 'il terzo', 'il quarto', 'il quinto', 'il sesto', 'il settimo', 'l’ottavo']
+const ORDINALI = [
+  '',
+  'il primo',
+  'il secondo',
+  'il terzo',
+  'il quarto',
+  'il quinto',
+  'il sesto',
+  'il settimo',
+  'l’ottavo',
+]
 
 /** Le lettere degli elementi di una formula: "H₂SO₄" → H, S, O. */
 function elementiDellaFormula(formula: string): Set<string> {
@@ -1122,7 +1154,7 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
         ['Simbolo', e.s],
         ['Numero atomico', String(e.z)],
         ['Famiglia', e.g],
-        ['Scoperto da', e.chi?.length ? elenco(e.chi) + (e.anno !== undefined ? `, ${annoInLettere(e.anno)}` : '') : null],
+        ['Scoperto da', e.chi?.length ? conAnno(elenco(e.chi), e.anno) : null],
       ),
       voce: e.w,
     })
@@ -1143,7 +1175,7 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
         ['Che cos’è', maiuscola(a.tipo)],
         ['Pianeta', a.di],
         ['Posizione dal Sole', a.ordine ? `${a.ordine}º` : null],
-        ['Scoperto da', a.chi?.length ? elenco(a.chi) + (a.anno !== undefined ? `, ${annoInLettere(a.anno)}` : '') : null],
+        ['Scoperto da', a.chi?.length ? conAnno(elenco(a.chi), a.anno) : null],
       ),
       voce: a.w,
     })
@@ -1158,19 +1190,25 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
     scheda({
       titolo: maiuscola(s.n),
       sotto: s.sci,
-      righe: righe(['Nome scientifico', s.sci], ['Regno', s.regno === 'animale' ? 'Animali' : s.regno === 'pianta' ? 'Piante' : null]),
+      righe: righe(
+        ['Nome scientifico', s.sci],
+        ['Regno', s.regno === 'animale' ? 'Animali' : s.regno === 'pianta' ? 'Piante' : null],
+      ),
       voce: s.w,
     })
 
   /** Una domanda di un tipo sulla voce di una lista: null se non si fa. */
-  const perTipo: Partial<Record<TipoDomanda, { voci: readonly { id: string; f: number }[]; fai: (x: never) => DomandaCompleta | null }>> =
+  type Lista = { voci: readonly { id: string; f: number }[]; fai: (x: never) => DomandaCompleta | null }
+  const perTipo: Partial<Record<TipoDomanda, Lista>> =
     {
       'simbolo-elemento': {
         voci: dati.elementi,
         fai: (e: ElementoQuiz) => {
           const iniziale = e.n.charAt(0).toUpperCase()
           const altri = dati.elementi.filter((x) => x.id !== e.id && x.s !== e.s)
-          const sbagliati = distrattori(c, altri, c.sbagliate, (x) => (x.s.charAt(0) === iniziale ? 0 : 1) + scarto(x, e))
+          const sbagliati = distrattori(c, altri, c.sbagliate, (x) => {
+            return (x.s.charAt(0) === iniziale ? 0 : 1) + scarto(x, e)
+          })
           const opzioni = conGiusta(
             c,
             opzione(e.id, e.s),
@@ -1192,7 +1230,9 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
         fai: (e: ElementoQuiz) => {
           const iniziale = e.s.charAt(0).toLowerCase()
           const altri = dati.elementi.filter((x) => x.id !== e.id && !stessoTesto(x.n, e.n))
-          const sbagliati = distrattori(c, altri, c.sbagliate, (x) => (x.n.charAt(0) === iniziale ? 0 : 1) + scarto(x, e))
+          const sbagliati = distrattori(c, altri, c.sbagliate, (x) => {
+            return (x.n.charAt(0) === iniziale ? 0 : 1) + scarto(x, e)
+          })
           const opzioni = conGiusta(
             c,
             opzione(e.id, maiuscola(e.n)),
@@ -1282,7 +1322,8 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
       'nome-unita': {
         voci: dati.unita.filter((u) => u.da),
         fai: (u: UnitaQuiz) => {
-          const altri = [...new Set(dati.unita.map((x) => x.da).filter((x): x is string => !!x))].filter((x) => x !== u.da)
+          const nomi = dati.unita.map((x) => x.da).filter((x): x is string => !!x)
+          const altri = [...new Set(nomi)].filter((x) => x !== u.da)
           const opzioni = conGiusta(
             c,
             opzione(`da:${u.da}`, u.da!),
@@ -1349,7 +1390,9 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
           const chi = s.chi[0]
           const persone = new Map<string, { id: string; n: string; anno?: number; f: number }>()
           for (const x of dati.scoperte) {
-            for (const n of x.chi) if (!s.chi.includes(n) && !persone.has(n)) persone.set(n, { id: n, n, anno: x.anno, f: x.f })
+            for (const n of x.chi) {
+              if (!s.chi.includes(n) && !persone.has(n)) persone.set(n, { id: n, n, anno: x.anno, f: x.f })
+            }
           }
           const sbagliati = distrattori(c, [...persone.values()], c.sbagliate, (p) =>
             p.anno !== undefined && s.anno !== undefined ? Math.min(2, Math.abs(p.anno - s.anno) / 80) : 1,
@@ -1440,27 +1483,6 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
 }
 
 /* ────────────────────────────────  Accadde oggi  ───────────────────────── */
-
-const MESI = [
-  'gennaio',
-  'febbraio',
-  'marzo',
-  'aprile',
-  'maggio',
-  'giugno',
-  'luglio',
-  'agosto',
-  'settembre',
-  'ottobre',
-  'novembre',
-  'dicembre',
-]
-
-/** "03-15" → "15 marzo"; il primo del mese e' "1º". */
-export function giornoInLettere(giorno: string): string {
-  const [mese, g] = giorno.split('-').map(Number)
-  return `${g === 1 ? '1º' : g} ${MESI[mese - 1] ?? ''}`
-}
 
 /** Un fatto come domanda: la frase di Wikipedia, e poi la domanda. */
 function fraseConDomanda(t: string, domanda: string): string {
@@ -1557,7 +1579,12 @@ function oggi(dati: DatiOggi, c: Contesto): DomandaCompleta[] {
     : []
   const suiNati =
     quanteNati > 0
-      ? componi(preferendo(voceNati, (v) => v.id, c.evitare, quanteNati), [['oggi-nato', 100]], { ...c, quante: quanteNati }, fai)
+      ? componi(
+          preferendo(voceNati, (v) => v.id, c.evitare, quanteNati),
+          [['oggi-nato', 100]],
+          { ...c, quante: quanteNati },
+          fai,
+        )
       : []
   // Un nato ogni tre fatti, piu' o meno: la partita alterna.
   const insieme: DomandaCompleta[] = []

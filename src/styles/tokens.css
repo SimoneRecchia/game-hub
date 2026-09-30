@@ -353,6 +353,17 @@
   --quiz-lettera-ink: #b0205f;
   --quiz-lettera-ink: light-dark(#b0205f, #ff9cc0);
 
+  /* ---- I quadri del quiz ----
+     La cornice di un museo: oro vecchio con un filo scuro fuori, e la tela
+     color lino finché l'immagine non arriva. In scuro l'oro si spegne un poco:
+     una cornice luminosa in una schermata scura abbaglia. */
+  --quadro-cornice: #a8894f;
+  --quadro-cornice: light-dark(#a8894f, #8a7142);
+  --quadro-filo: rgba(60, 40, 10, 0.35);
+  --quadro-filo: light-dark(rgba(60, 40, 10, 0.35), rgba(0, 0, 0, 0.6));
+  --quadro-tela: #efe8da;
+  --quadro-tela: light-dark(#efe8da, #2b2822);
+
   /* ---- Caselle e tastiera del Wordle ----
      I tre colori del gioco vero sono desaturati (#6aaa64, #c9b458, #787c7e):
      su schermo grande sembrano scoloriti. Questi sono piu' pieni, e le versioni
