@@ -203,7 +203,7 @@ async function copia(url: string, avvisa: (testo: string) => void) {
 async function condividi(url: string, avvisa: (testo: string) => void) {
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Sfida a quiz', text: 'Ti sfido a un quiz di geografia!', url })
+      await navigator.share({ title: 'Sfida a quiz', text: 'Ti sfido a un quiz!', url })
       return
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return
