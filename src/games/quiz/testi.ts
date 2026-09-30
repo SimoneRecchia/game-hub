@@ -68,7 +68,12 @@ export const VOCI_MATERIE: Record<MateriaQuiz, readonly VoceMateria[]> = {
       nome: 'Scoperte e invenzioni',
       descrizione: 'Chi ha fatto le grandi scoperte e le grandi invenzioni.',
     },
-    { categoria: 'scienza', ambito: 'natura', nome: 'Animali e piante', descrizione: 'Il nome scientifico delle specie.' },
+    {
+      categoria: 'scienza',
+      ambito: 'natura',
+      nome: 'Animali e piante',
+      descrizione: 'Il nome scientifico delle specie.',
+    },
     { categoria: 'nobel', nome: 'Premi Nobel' },
   ],
 }

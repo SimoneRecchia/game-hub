@@ -278,6 +278,16 @@ const GENERE_PAROLE: Record<string, Exclude<Genere, '0'>> = {
   patto: 'm', convenzione: 'f', capitolazione: 'f', resa: 'f', sollevazione: 'f', secessione: 'f',
   restaurazione: 'f', ammutinamento: 'm', traversata: 'f', viaggio: 'm', allunaggio: 'm', missione: 'f',
   incursione: 'f', bombardamento: 'm', bombardamenti: 'mp', blocco: 'm', rapimento: 'm', esecuzione: 'f',
+  conflitto: 'm', offensiva: 'f', volo: 'm', fronte: 'm', morte: 'f', statuto: 'm', ribellione: 'f',
+  protocollo: 'm', carta: 'f', congiura: 'f', unione: 'f', massacri: 'mp', intervento: 'm', patti: 'mp',
+  holodomor: 'm', reconquista: 'f', protesta: 'f', proteste: 'fp', terremoti: 'mp', euromaidan: 'm',
+  assalto: 'm', ciclone: 'm', acquisto: 'm', nakba: 'f', tregua: 'f', porrajmos: 'm', indipendenza: 'f',
+  memorandum: 'm', golpe: 'm', storia: 'f', entente: 'f', teatro: 'm', scioglimento: 'm', disordini: 'mp',
+  decabrismo: 'm', jacquerie: 'f', deportazioni: 'fp', invasioni: 'fp', era: 'f', fronda: 'f',
+  interregno: 'm', esplosioni: 'fp', rivolte: 'fp', atto: 'm', fine: 'f', calca: 'f', cesaricidio: 'm',
+  raid: 'm', lega: 'f', bagno: 'm', conquiste: 'fp', concili: 'mp', anni: 'mp',
+  // La Comune di Parigi, che e' femminile.
+  comune: 'f',
   // Le scienze.
   acqua: 'f', anidride: 'f', ammoniaca: 'f', acido: 'm', cloruro: 'm', metano: 'm', etanolo: 'm',
   glucosio: 'm', saccarosio: 'm', ozono: 'm', ossido: 'm', biossido: 'm', monossido: 'm', idrossido: 'm',
@@ -298,6 +308,112 @@ const GENERE_PAROLE: Record<string, Exclude<Genere, '0'>> = {
   attività: 'f', dose: 'f', illuminamento: 'm', velocità: 'f', accelerazione: 'f', area: 'f', volume: 'm',
   superficie: 'f', angolo: 'm', densità: 'f', conduttanza: 'f', differenza: 'f',
   mole: 'f', candela: 'f',
+  // Le scoperte, i composti e le specie che non finiscono in -o o in -a, o che non ne seguono la regola.
+  pianoforte: 'm', pallacanestro: 'f', pallavolo: 'f', big: 'm', browser: 'm', mouse: 'm', condensatore: 'm',
+  principi: 'mp', eritrocita: 'm', bluetooth: 'm', hypertext: 'm', aspirapolvere: 'm', sudoku: 'm',
+  positrone: 'm', barbie: 'f', testosterone: 'm', bikini: 'm', pulsar: 'f', snooker: 'm', catalisi: 'f',
+  emoji: 'mp', googol: 'm', ibuprofene: 'm', ethernet: 'm', caesar: 'f', antiprotone: 'm', vermut: 'm',
+  muone: 'm', quaternione: 'm', sinapsi: 'f', prione: 'm', lego: 'm', bios: 'm', grafene: 'm', napalm: 'm',
+  lavastoviglie: 'f', hovercraft: 'm', auricolari: 'mp', turchese: 'm', sildenafil: 'm', trinitrotoluene: 'm',
+  acetone: 'm', formaldeide: 'f', opale: 'm', glucagone: 'm', borace: 'm', sarin: 'm', toluene: 'm',
+  zircone: 'm', propilene: 'm', leone: 'm', tigre: 'f', volpe: 'f', cinghiale: 'm', mais: 'm', girasole: 'm',
+  cetrioli: 'mp', olivi: 'mp', spinaci: 'mp', ceci: 'mp', anacardi: 'mp', struzzi: 'mp', cormorani: 'mp',
+  alce: 'm', gru: 'f', carvi: 'm', anice: 'm', melone: 'm', pavone: 'm', procione: 'm', ghiottone: 'm',
+  sparviere: 'm', barbagianni: 'm', coyote: 'm', jackfruit: 'm', aardvark: 'm', litchi: 'm', alopex: 'm',
+  carcarodonte: 'm', codone: 'm', rondine: 'f', ailuridi: 'mp', neanderthal: 'm', lisosoma: 'm',
+}
+
+/**
+ * Le parole che non vogliono l'articolo: "a chi si deve Internet?". Per loro
+ * `nomeConArticolo` da' il nome com'e', e `diNome` "di Internet".
+ */
+const SENZA_ARTICOLO = new Set(['internet'])
+
+/**
+ * Gli aggettivi all'inizio di un nome concordano con il nome dopo: la
+ * desinenza ne dice il genere e il numero ("Seconda guerra balcanica", "Lunga
+ * marcia", "Primi vespri"). I numeri e "grande" no: il genere e' della parola
+ * che segue ("Cinque giornate", "Grande carestia").
+ */
+const CONCORDANO = new RegExp(
+  '^(?:prim|second|terz|quart|quint|sest|settim|ottav|non|decim|ultim|nuov|lung|stran|glorios|antic|sant|sacr|piccol)[oaie]$',
+)
+const NON_DICONO = new Set([
+  'grande',
+  'grandi',
+  'due',
+  'tre',
+  'quattro',
+  'cinque',
+  'sei',
+  'sette',
+  'otto',
+  'nove',
+  'dieci',
+  'undici',
+  'dodici',
+  'tredici',
+  'quattordici',
+  'quindici',
+  'venti',
+  'cento',
+  'mille',
+])
+
+function daDesinenza(parola: string): Exclude<Genere, '0'> {
+  const fine = parola.charAt(parola.length - 1)
+  return fine === 'o' ? 'm' : fine === 'a' ? 'f' : fine === 'i' ? 'mp' : 'fp'
+}
+
+/**
+ * Per le cose che si chiamano con un nome comune — un'invenzione, un
+ * composto, una specie — le desinenze che non sbagliano quasi mai: -o
+ * maschile e -a femminile, tolte le eccezioni che si incontrano. Le altre non
+ * si indovinano: le -e sono dei due generi, e le -i singolari o plurali.
+ */
+const MASCHILI_IN_A = new Set([
+  'sistema',
+  'problema',
+  'programma',
+  'teorema',
+  'diagramma',
+  'telegramma',
+  'cinema',
+  'clima',
+  'panorama',
+  'schema',
+  'pianeta',
+  'poeta',
+  'pilota',
+  'koala',
+  'puma',
+  'lama',
+  'gorilla',
+  'panda',
+  'cobra',
+  'capibara',
+])
+const FEMMINILI_IN_O = new Set(['mano', 'radio', 'foto', 'moto', 'auto', 'dinamo', 'biro'])
+
+function indovinato(parola: string): Exclude<Genere, '0'> | null {
+  if (parola.endsWith('o')) return FEMMINILI_IN_O.has(parola) ? 'f' : 'm'
+  if (parola.endsWith('a')) return MASCHILI_IN_A.has(parola) ? 'm' : 'f'
+  return null
+}
+
+/** Le parole di un nome, senza apostrofi. */
+function parole(nome: string): string[] {
+  return nome.trim().toLowerCase().split(/[\s'’]+/).filter(Boolean)
+}
+
+/**
+ * La parola che regge un nome, saltati gli aggettivi e i numeri davanti: la
+ * "guerra" della seconda guerra balcanica. Serve al verbo della domanda.
+ */
+export function testaDelNome(nome: string): string {
+  const tutte = parole(nome)
+  const i = tutte.findIndex((p) => !CONCORDANO.test(p) && !NON_DICONO.has(p))
+  return tutte[i >= 0 ? i : 0] ?? ''
 }
 
 /**
@@ -305,20 +421,32 @@ const GENERE_PAROLE: Record<string, Exclude<Genere, '0'>> = {
  * null se non si sa. "battaglia di Waterloo" → f, "pascal" → m (le unità
  * di misura sono maschili, tranne mole e candela, che sono in tabella).
  */
-export function genereNome(nome: string, predefinito: Exclude<Genere, '0'> | null = null): Exclude<Genere, '0'> | null {
-  const prima = nome.trim().split(/[\s'’]+/)[0]?.toLowerCase() ?? ''
+export function genereNome(
+  nome: string,
+  predefinito: Exclude<Genere, '0'> | null = null,
+  /** Per le cose con un nome comune: prova anche con le desinenze (vedi `indovinato`). */
+  indovina = false,
+): Exclude<Genere, '0'> | null {
+  const [prima, ...resto] = parole(nome)
+  if (!prima) return predefinito
   if (GENERE_PAROLE[prima]) return GENERE_PAROLE[prima]
+  if (CONCORDANO.test(prima)) return daDesinenza(prima)
+  if (NON_DICONO.has(prima) && resto.length > 0) return genereNome(resto.join(' '), predefinito, indovina)
   if (/(zione|sione|tà|ite)$/.test(prima)) return 'f'
-  return predefinito
+  return (indovina ? indovinato(prima) : null) ?? predefinito
 }
+
+const senzaArticolo = (nome: string) => SENZA_ARTICOLO.has(parole(nome)[0] ?? '')
 
 /** "la battaglia di Waterloo", "l’anidride carbonica", "i vespri siciliani": null se il genere non si sa. */
 export function nomeConArticolo(nome: string, genere = genereNome(nome)): string | null {
+  if (senzaArticolo(nome)) return nome
   return genere ? articolo(genere, nome) + nome : null
 }
 
 /** "della battaglia di Waterloo", "dell’acqua", "del ferro": null se il genere non si sa. */
 export function diNome(nome: string, genere = genereNome(nome)): string | null {
+  if (senzaArticolo(nome)) return `di ${nome}`
   return genere ? articolata('di', articolo(genere, nome)) + nome : null
 }
 
