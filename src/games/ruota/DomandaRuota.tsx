@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Button } from '@/components/Button'
 import { IconCheck, IconClock, IconClose } from '@/components/Icons'
 import { IconaScheda, Pillola, Scheda } from '@/components/Scheda'
@@ -14,9 +14,9 @@ import {
 import { OPZIONI_CLASSIFICATA, type Fatta } from '@/games/quiz/usePartita'
 import { suona } from '@/lib/suoni'
 import { diGeografia } from '@shared/quiz'
-import { NOMI_MATERIE_RUOTA, conSegno } from '@shared/ruota'
+import { NOMI_MATERIE_RUOTA, scriviMoltiplicatore } from '@shared/ruota'
 import type { SfidaRuotaVista } from '@shared/types'
-import { COLORI_MATERIE_RUOTA, ICONE_MATERIE_RUOTA } from './Ruota'
+import { COLORI_MATERIE_RUOTA, ICONE_MATERIE_RUOTA, coloreDelMoltiplicatore } from './disegni'
 
 type SfidaDomanda = Extract<SfidaRuotaVista, { tipo: 'domanda' }>
 
@@ -29,12 +29,13 @@ const ULTIMI_SECONDI = 5
 const CONTESTO: ContestoCartina = { area: 'mondo', citta: null, opzioni: OPZIONI_CLASSIFICATA }
 
 /**
- * La domanda di una sfida della ruota, con la testata, la carta, le risposte e
- * la miccia del quiz: le stesse della partita di tutti i giorni, perché chi la
- * vede la riconosca. Il tempo lo tiene il server; qui, a tempo finito, si manda
- * la risposta non data. A risposta data restano la giusta e quel che insegna —
- * la cartina per la geografia, la scheda per le altre materie — e il bottone
- * per tornare alla ruota.
+ * La domanda di Crazy Time, con la testata, la carta, le risposte e la miccia
+ * del quiz: le stesse della partita di tutti i giorni, perché chi la vede la
+ * riconosca. Sotto il titolo, quel che c'e' in palio: la puntata per il
+ * moltiplicatore uscito. Il tempo lo tiene il server; qui, a tempo finito, si
+ * manda la risposta non data. A risposta data restano la giusta e quel che
+ * insegna — la cartina per la geografia, la scheda per le altre materie — e il
+ * bottone per tornare alla ruota.
  *
  * Arriva a parte dal resto della ruota: si porta dietro la carta del quiz, che
  * serve solo quando la ruota si ferma su una domanda.
@@ -90,9 +91,17 @@ export default function DomandaRuota({
         destra={<Tempo fatta={fatta} scadenza={aperta ? scadenza : null} />}
       >
         <div className="quiz-progresso">
-          <p className="ruota-quiz__posta">
-            {conSegno(sfida.posta)} se rispondi giusto, {conSegno(-sfida.posta)} se sbagli
-          </p>
+          {sfida.moltiplicatore !== null && sfida.vincita !== null && (
+            <p className="ct-quiz__palio">
+              <span
+                className="ct-quiz__moltiplicatore"
+                style={{ '--colore': coloreDelMoltiplicatore(sfida.moltiplicatore) } as CSSProperties}
+              >
+                {scriviMoltiplicatore(sfida.moltiplicatore)}
+              </span>
+              In palio <span className="u-tabnum">{sfida.vincita}</span> punti
+            </p>
+          )}
           {sfida.limiteMs !== null && (
             <Miccia
               key={aperta ? 'va' : 'ferma'}

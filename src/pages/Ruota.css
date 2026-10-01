@@ -1,143 +1,544 @@
 /*
- * La pagina di Crazy Time: la ruota, che prende lo spazio che c'e', e sotto il
- * pannello di quel che si fa adesso — la puntata, la sfida, il conto. Il
- * pannello ha un'altezza minima, così la ruota non salta fra un momento e
- * l'altro; quando lo schermo e' piu' largo che alto va a destra della ruota.
+ * La pagina di Crazy Time: il tabellone in cima, il palco con le scene — la
+ * ruota, quella dei moltiplicatori, la moneta — e sotto il pannello di quel che
+ * si fa adesso. Il palco e' scuro in tutti e due i temi, come una sala da gioco,
+ * e prende lo spazio che c'e'; quando lo schermo e' piu' largo che alto il
+ * pannello va di lato.
  */
-.ruota-pagina {
+.ct {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
+  animation: ct-entra 460ms var(--ease-out) both;
 }
 
-.ruota-campo {
-  container-type: size;
-  position: relative;
+@keyframes ct-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.ct-corpo {
   flex: 1;
-  min-height: 180px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* ─────────────────────────────  Il tabellone  ───────────────────────────── */
+
+.ct-tabellone {
+  flex: none;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 8px 16px;
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, #26133f, #120822);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(244, 196, 48, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    var(--shadow-sm);
+  color: #fff;
 }
 
-/*
- * La luce del palco: un alone e dei raggi che girano piano dietro la ruota.
- * Riempie il posto che resta intorno, che sul telefono in piedi e' tanto,
- * senza dire niente.
- */
-.ruota-campo__luce {
+.ct-tabellone__voce {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ct-tabellone__voce.is-destra {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.ct-tabellone__etichetta {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ct-oro);
+}
+
+.ct-tabellone__saldo {
+  position: relative;
+  font-family: var(--font-rounded);
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-shadow: 0 0 14px rgba(255, 214, 90, 0.5);
+}
+
+/* La differenza a ogni cambio del saldo: sale accanto al numero e svanisce. */
+.ct-tabellone__variazione {
+  position: absolute;
+  left: 100%;
+  top: 2px;
+  margin-left: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+  text-shadow: none;
+  animation: ct-variazione 1.5s var(--ease-out) both;
+}
+
+.ct-tabellone__variazione.is-piu,
+.ct-tabellone__netto.is-piu {
+  color: var(--ct-piu);
+}
+
+.ct-tabellone__variazione.is-meno,
+.ct-tabellone__netto.is-meno {
+  color: var(--ct-meno);
+}
+
+@keyframes ct-variazione {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.12);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+}
+
+.ct-tabellone__oggi {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.ct-tabellone__netto {
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.ct-tabellone__giri {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ─────────────────────────────  Il palco  ───────────────────────────── */
+
+.ct-palco {
+  position: relative;
+  flex: 1;
+  min-height: 240px;
+  container-type: size;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(120% 70% at 50% -12%, rgba(255, 205, 110, 0.24), transparent 60%),
+    radial-gradient(circle at 50% 55%, var(--ct-palco-1), var(--ct-palco-2) 76%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 214, 120, 0.25),
+    inset 0 -60px 90px rgba(0, 0, 0, 0.45),
+    var(--shadow-md);
+}
+
+/* Il banco: il palco ha un sussulto, come un colpo sul tavolo. */
+.ct-palco.is-scosso {
+  animation: ct-scosso 460ms var(--ease-out);
+}
+
+@keyframes ct-scosso {
+  15% {
+    transform: translate(-5px, 2px);
+  }
+  35% {
+    transform: translate(5px, -2px);
+  }
+  55% {
+    transform: translate(-3px, 1px);
+  }
+  75% {
+    transform: translate(2px, 0);
+  }
+}
+
+/* I raggi dietro la ruota, che girano piano: il palco di una sala, senza dire niente. */
+.ct-palco__luce {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: min(140cqw, 140cqh, 680px);
+  z-index: 0;
+  width: max(150cqw, 150cqh);
   aspect-ratio: 1;
   border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 214, 120, 0.09) 0 6deg, transparent 6deg 16deg);
+  mask: radial-gradient(closest-side, #000 25%, transparent 72%);
+  -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 72%);
   transform: translate(-50%, -50%);
-  background:
-    radial-gradient(closest-side, var(--ruota-alone) 55%, transparent),
-    repeating-conic-gradient(var(--ruota-raggio) 0 5deg, transparent 5deg 15deg);
-  mask: radial-gradient(closest-side, #000 50%, transparent);
-  -webkit-mask: radial-gradient(closest-side, #000 50%, transparent);
+  animation: ct-luce 70s linear infinite;
   pointer-events: none;
-  animation: ruota-raggi 60s linear infinite;
 }
 
-@keyframes ruota-raggi {
+@keyframes ct-luce {
   to {
     transform: translate(-50%, -50%) rotate(1turn);
   }
 }
 
-.ruota-campo .ruota {
-  position: relative;
-  transition:
-    opacity var(--dur-slow) var(--ease-out),
-    filter var(--dur-slow) var(--ease-out);
-}
-
-/* Testa o croce: la moneta davanti, la ruota velata dietro. */
-.ruota-campo.is-moneta .ruota {
-  opacity: 0.28;
-  filter: saturate(0.5);
-}
-
-.ruota-campo__moneta {
+/* Le scintille: puntini che si accendono e si spengono, in due giri sfasati. */
+.ct-palco__scintille,
+.ct-palco__scintille::after {
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: ruota-moneta-entra 460ms var(--ease-spring) both;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 18%, #fff 50%, transparent),
+    radial-gradient(1.4px 1.4px at 84% 12%, #ffe8a0 50%, transparent),
+    radial-gradient(1.8px 1.8px at 92% 64%, #fff 50%, transparent),
+    radial-gradient(1.4px 1.4px at 7% 76%, #ffe8a0 50%, transparent),
+    radial-gradient(1.2px 1.2px at 30% 92%, #fff 50%, transparent),
+    radial-gradient(1.5px 1.5px at 70% 88%, #ffe8a0 50%, transparent);
+  animation: ct-scintille 3.4s var(--ease-in-out) infinite;
 }
 
-.ruota-campo__moneta .moneta {
-  --lato-moneta: clamp(96px, 38cqmin, 168px);
+.ct-palco__scintille::after {
+  content: '';
+  background-image:
+    radial-gradient(1.5px 1.5px at 22% 40%, #ffe8a0 50%, transparent),
+    radial-gradient(1.3px 1.3px at 66% 6%, #fff 50%, transparent),
+    radial-gradient(1.7px 1.7px at 95% 34%, #ffe8a0 50%, transparent),
+    radial-gradient(1.4px 1.4px at 4% 46%, #fff 50%, transparent),
+    radial-gradient(1.3px 1.3px at 52% 96%, #ffe8a0 50%, transparent);
+  animation-delay: -1.7s;
 }
 
-@keyframes ruota-moneta-entra {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
+/*
+ * L'insegna al neon in cima al palco, dove la ruota lascia posto: sui telefoni
+ * in piedi. Due colori, l'oro e il rosa, e ogni tanto una lettera che sfarfalla.
+ */
+.ct-palco__insegna {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  right: 0;
+  z-index: 0;
+  display: none;
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  font-size: clamp(26px, 9cqw, 42px);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #fff3c4;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 12px var(--ct-oro),
+    0 0 26px var(--ct-oro),
+    0 0 42px rgba(244, 196, 48, 0.6);
+  pointer-events: none;
+  animation: ct-neon 5s steps(1, end) infinite;
+}
+
+.ct-palco__insegna span {
+  color: #ffd6ec;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 12px #ff4fa3,
+    0 0 26px #ff4fa3,
+    0 0 42px rgba(255, 79, 163, 0.6);
+}
+
+@keyframes ct-neon {
+  0%,
+  41%,
+  45%,
+  100% {
+    opacity: 1;
+  }
+  42%,
+  44% {
+    opacity: 0.55;
   }
 }
 
-.ruota-campo__attesa,
-.ruota-attesa {
-  border-radius: 50%;
-  background: var(--fill-quaternary);
-  animation: ruota-pulsa 1.4s var(--ease-in-out) infinite;
+@container (min-height: 500px) and (max-aspect-ratio: 3 / 4) {
+  .ct-palco.is-ruota .ct-palco__insegna {
+    display: block;
+  }
 }
 
-.ruota-campo__attesa {
-  width: min(100cqw, 100cqh, 460px);
-  aspect-ratio: 1;
-}
-
-.ruota-attesa {
-  flex: 1;
-  min-height: 200px;
-  border-radius: var(--r-xl);
-}
-
-@keyframes ruota-pulsa {
+@keyframes ct-scintille {
   50% {
-    opacity: 0.5;
+    opacity: 0.25;
+  }
+}
+
+.ct-palco__attesa {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(80cqw, 80cqh);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  transform: translate(-50%, -50%);
+  animation: ct-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes ct-pulsa {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/*
+ * Le scene stanno una sopra l'altra: quella attiva entra rimbalzando, le altre
+ * escono rimpicciolendo e aspettano dietro, nascoste e intoccabili.
+ */
+.ct-scena {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.78) translateY(4%);
+  transition:
+    opacity 340ms var(--ease-out),
+    transform 420ms var(--ease-in),
+    visibility 0s linear 420ms;
+}
+
+.ct-scena.is-attiva {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 420ms var(--ease-out) 60ms,
+    transform 680ms cubic-bezier(0.2, 0.9, 0.25, 1.14) 60ms,
+    visibility 0s;
+}
+
+.ct-palco .ct-ruota {
+  width: min(100cqw - 28px, (100cqh - 28px) * 232 / 248, 470px);
+}
+
+/* Sopra la ruota dei moltiplicatori c'e' il cartello della materia: la ruota gli lascia il posto. */
+.ct-scena--moltiplicatori .ct-ruota {
+  width: min(100cqw - 28px, (100cqh - 92px) * 232 / 248, 420px);
+  margin-top: 46px;
+}
+
+.ct-cartello {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 18px;
+  border-radius: var(--r-pill);
+  background: var(--colore);
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow:
+    0 0 0 2px var(--ct-oro),
+    0 8px 20px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+  animation: ct-cartello 640ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 200ms both;
+}
+
+@keyframes ct-cartello {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -24px) scale(0.8);
+  }
+}
+
+/* Il moltiplicatore uscito: salta fuori dal centro con i suoi raggi, e sotto quel che c'e' in palio. */
+.ct-rivela {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.ct-rivela__raggi {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 130cqmin;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--colore) 55%, #fff) 0 8deg, transparent 8deg 20deg);
+  mask: radial-gradient(closest-side, #000 12%, transparent 70%);
+  -webkit-mask: radial-gradient(closest-side, #000 12%, transparent 70%);
+  transform: translate(-50%, -50%);
+  animation: ct-rivela-raggi 2.2s var(--ease-out) both;
+}
+
+@keyframes ct-rivela-raggi {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+  }
+  30% {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(1) rotate(60deg);
+  }
+}
+
+.ct-rivela__valore {
+  position: relative;
+  font-family: var(--font-rounded);
+  font-size: clamp(64px, 27cqmin, 136px);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--colore);
+  -webkit-text-stroke: 4px #fff;
+  paint-order: stroke fill;
+  text-shadow:
+    0 6px 0 rgba(0, 0, 0, 0.35),
+    0 0 34px rgba(255, 255, 255, 0.55);
+  animation: ct-rivela-valore 720ms cubic-bezier(0.2, 0.9, 0.3, 1.45) both;
+}
+
+@keyframes ct-rivela-valore {
+  0% {
+    opacity: 0;
+    transform: scale(0.1) rotate(-24deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.16) rotate(5deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.ct-rivela__palio {
+  position: relative;
+  padding: 6px 18px;
+  border-radius: var(--r-pill);
+  background: rgba(10, 4, 24, 0.85);
+  box-shadow: 0 0 0 2px var(--ct-oro);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  animation: ct-sale 480ms var(--ease-out) 420ms both;
+}
+
+@keyframes ct-sale {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
 }
 
 /* ─────────────────────────────  Il pannello  ───────────────────────────── */
 
-.ruota-pannello {
+.ct-pannello {
   flex: none;
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: var(--sp-3);
-  width: min(100%, 420px);
-  min-height: 156px;
+  width: min(100%, 440px);
+  min-height: 150px;
   margin-inline: auto;
 }
 
-.ruota-pannello__nota {
+.ct-nota {
   margin: 0;
   font-size: var(--text-callout);
   color: var(--label-secondary);
   text-align: center;
 }
 
-/* Una sfida, o i punti che mancano: il nome, la posta, e quel che si tocca. */
-.ruota-sfida {
+/* L'invito a trascinare: la mano che va e viene, e quel che c'e' da fare. */
+.ct-suggerimento {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.ct-mano {
+  flex: none;
+  color: var(--brand);
+  animation: ct-mano 1.8s var(--ease-in-out) infinite;
+}
+
+@keyframes ct-mano {
+  0%,
+  100% {
+    transform: translateX(-4px) rotate(-10deg);
+  }
+  50% {
+    transform: translateX(5px) rotate(12deg);
+  }
+}
+
+.ct-suggerimento.is-debole {
+  color: var(--label);
+  animation: ct-trema 420ms var(--ease-out);
+}
+
+@keyframes ct-trema {
+  20%,
+  60% {
+    transform: translateX(-6px);
+  }
+  40%,
+  80% {
+    transform: translateX(6px);
+  }
+}
+
+.ct-indicazione {
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: var(--sp-2);
   text-align: center;
-  animation: ruota-sale 320ms var(--ease-out) both;
+  animation: ct-sale 320ms var(--ease-out) both;
 }
 
-.ruota-sfida__titolo {
+.ct-indicazione__titolo {
   margin: 0;
   font-family: var(--font-rounded);
   font-size: var(--text-title-3);
@@ -145,51 +546,110 @@
   color: var(--label);
 }
 
-.ruota-sfida__posta {
-  margin: 0 0 var(--sp-2);
+.ct-indicazione__testo {
+  margin: 0 0 var(--sp-1);
   font-size: var(--text-subhead);
   color: var(--label-secondary);
 }
 
-.ruota-sfida__lati {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--sp-3);
+.ct-lati {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
 }
 
-/* Il conto della giornata, sotto il bottone: quel che Crazy Time ha dato o tolto, e in quanti giri. */
-.ruota-pannello__conto {
+.ct-lato {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  color: #fff;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+.ct-lato.is-blu {
+  background: var(--ct-blu);
+}
+
+.ct-lato.is-rosso {
+  background: var(--ct-rosso);
+}
+
+/* ─────────────────────────────  La domanda  ───────────────────────────── */
+
+/* Sotto il titolo della domanda: il moltiplicatore, e quel che c'e' in palio. */
+.ct-quiz__palio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: var(--text-footnote);
   color: var(--label-secondary);
-  text-align: center;
 }
 
-.ruota-pannello__netto {
+.ct-quiz__palio .u-tabnum {
   font-weight: 700;
   color: var(--label);
 }
 
-.ruota-pannello__netto.is-piu {
-  color: var(--green);
+.ct-quiz__moltiplicatore {
+  padding: 1px 9px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--colore) 22%, var(--surface));
+  box-shadow: inset 0 0 0 1.5px var(--colore);
+  color: var(--label);
+  font-weight: 800;
 }
 
-.ruota-pannello__netto.is-meno {
-  color: var(--red);
+.ct-attesa {
+  flex: 1;
+  min-height: 200px;
+  border-radius: var(--r-xl);
+  background: var(--fill-quaternary);
+  animation: ct-pulsa 1.4s var(--ease-in-out) infinite;
 }
 
-@keyframes ruota-sale {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
+/* La domanda pronta ma non aperta: il cartello, il palio e il Via. */
+.ct-pronti {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  width: min(100%, 420px);
+  margin: 0 auto;
 }
 
-/* La domanda: sotto il nome, quanto vale. */
-.ruota-quiz__posta {
+.ct-pronti .ct-cartello {
+  position: static;
+  transform: none;
+  animation: none;
+}
+
+.ct-pronti__palio {
   margin: 0;
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  color: var(--label);
+}
+
+/* L'adesivo di una vincita: d'oro, con la scritta scura, e un alone che luccica. */
+.adesivo.ct-adesivo-vincita .adesivo__carta {
+  background: linear-gradient(155deg, var(--ct-oro-chiaro), var(--ct-oro) 52%, var(--ct-oro-scuro));
+  color: #3d2300;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 44px rgba(255, 210, 80, 0.7),
+    var(--shadow-lg);
+}
+
+.adesivo.ct-adesivo-vincita .adesivo__titolo,
+.adesivo.ct-adesivo-vincita .adesivo__sotto {
+  color: #3d2300;
 }
 
 /* ─────────────────────────────  Le regole  ───────────────────────────── */
@@ -217,65 +677,74 @@
 
 /* ─────────────────────────────  Di lato  ───────────────────────────── */
 
-/* Piu' largo che alto: la ruota a sinistra, alta quanto lo schermo, e il pannello a destra. */
+/* Piu' largo che alto: il palco a sinistra, alto quanto lo schermo, e il pannello a destra. */
 @media (orientation: landscape) and (min-width: 640px) {
-  .ruota-pagina {
+  .ct-corpo {
     flex-direction: row;
     align-items: stretch;
-    justify-content: center;
-    gap: var(--sp-8);
+    gap: var(--sp-6);
   }
 
-  .ruota-campo {
-    flex: 0 1 620px;
-  }
-
-  .ruota-pannello {
+  .ct-pannello {
     flex: 0 0 320px;
     width: 320px;
     margin-inline: 0;
   }
 }
 
-/* Il telefono di traverso: con il pannello di lato la ruota ci sta, e la pagina smette di scorrere. */
+/* Il telefono di traverso: con il pannello di lato tutto ci sta, e la pagina smette di scorrere. */
 @media (orientation: landscape) and (max-height: 560px) and (min-width: 640px) {
-  .pagina--intera:has(.ruota-pagina) {
+  .pagina--intera:has(.ct) {
     height: 100dvh;
     overflow: hidden;
   }
 
-  .ruota-pagina {
-    gap: var(--sp-5);
+  .ct {
+    gap: var(--sp-2);
   }
 
-  .ruota-pannello {
+  .ct-tabellone {
+    padding: 4px 14px;
+  }
+
+  .ct-tabellone__saldo {
+    font-size: 20px;
+  }
+
+  .ct-pannello {
     flex-basis: 280px;
     width: 280px;
     min-height: 0;
   }
 }
 
-/* Piu' stretto, la pagina scorre come negli altri giochi: senza un'altezza `cqh` varrebbe zero. */
+/* Piu' stretto la pagina scorre: senza un'altezza il palco non saprebbe quanto e' alto (`cqh` varrebbe zero). */
 @media (orientation: landscape) and (max-height: 560px) and (max-width: 639px) {
-  .ruota-campo {
-    container-type: normal;
+  .ct-palco {
     flex: none;
-  }
-
-  .ruota-campo .ruota,
-  .ruota-campo__attesa {
-    width: min(100%, 300px);
-  }
-
-  .ruota-campo__luce {
-    width: 420px;
+    height: 330px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ruota-campo__luce,
-  .ruota-campo__moneta,
-  .ruota-sfida {
+  .ct,
+  .ct-palco.is-scosso,
+  .ct-palco__luce,
+  .ct-palco__insegna,
+  .ct-palco__scintille,
+  .ct-palco__scintille::after,
+  .ct-cartello,
+  .ct-rivela__raggi,
+  .ct-rivela__valore,
+  .ct-rivela__palio,
+  .ct-mano,
+  .ct-indicazione,
+  .ct-tabellone__variazione {
     animation: none;
+  }
+
+  .ct-scena,
+  .ct-scena.is-attiva {
+    transition: none;
   }
 }

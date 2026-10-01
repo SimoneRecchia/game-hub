@@ -1,0 +1,292 @@
+/*
+ * Una ruota di Crazy Time: la cornice d'oro con le lampadine, gli spicchi, il
+ * mozzo e la lancetta. Si misura sul contenitore che la ospita, larga quanto
+ * puo' e mai piu' alta dello spazio che ha (il disegno e' un po' piu' alto che
+ * largo, per la lancetta). Si prende col dito: niente scorrimento della
+ * pagina sopra di lei, e niente selezione.
+ */
+.ct-ruota {
+  position: relative;
+  flex: none;
+  width: min(100cqw, 100cqh * 232 / 248, 480px);
+  aspect-ratio: 232 / 248;
+  margin: 0 auto;
+  border-radius: 50%;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+.ct-ruota.is-pronta {
+  cursor: grab;
+}
+
+.ct-ruota.is-presa {
+  cursor: grabbing;
+}
+
+.ct-ruota__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  overflow: visible;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* Presa col dito, la ruota si avvicina appena: la si sente in mano. */
+.ct-ruota.is-presa .ct-ruota__svg {
+  transform: scale(1.015);
+}
+
+.ct-ruota:focus-visible .ct-ruota__cornice {
+  stroke: var(--brand);
+  stroke-width: 3;
+}
+
+.ct-ruota__ombra {
+  fill: rgba(0, 0, 0, 0.5);
+  filter: blur(5px);
+}
+
+.ct-ruota__cornice {
+  stroke: rgba(60, 30, 0, 0.55);
+  stroke-width: 0.8;
+}
+
+/* La gola della cornice, dove stanno le lampadine: un filo scuro dentro l'oro. */
+.ct-ruota__cornice-gola {
+  fill: none;
+  stroke: rgba(70, 38, 0, 0.5);
+  stroke-width: 1.1;
+}
+
+.ct-ruota__bordo {
+  fill: none;
+  stroke: rgba(40, 20, 0, 0.7);
+  stroke-width: 1.6;
+}
+
+.ct-ruota__lucido {
+  pointer-events: none;
+}
+
+/* ─────────────────────────────  Le lampadine  ───────────────────────────── */
+
+.ct-ruota__lampada {
+  fill: var(--ct-lampada-spenta);
+  stroke: transparent;
+  stroke-width: 2.6;
+}
+
+/* In attesa si accendono a turno, una si' e una no: il richiamo di un banco della fiera. */
+.ct-ruota.is-luci-attesa .ct-ruota__lampada {
+  animation: ct-lampada-turno 1.6s steps(1, end) infinite;
+}
+
+.ct-ruota.is-luci-attesa .ct-ruota__lampada.is-pari {
+  animation-delay: -0.8s;
+}
+
+@keyframes ct-lampada-turno {
+  0% {
+    fill: var(--ct-lampada);
+    stroke: rgba(255, 238, 170, 0.4);
+  }
+  50% {
+    fill: var(--ct-lampada-spenta);
+    stroke: transparent;
+  }
+}
+
+/* Mentre gira una luce corre lungo la cornice, nel verso del giro. */
+.ct-ruota.is-in-moto .ct-ruota__lampada {
+  animation: ct-lampada-corsa 0.6s linear infinite;
+  animation-delay: calc(var(--i) * -0.025s);
+}
+
+@keyframes ct-lampada-corsa {
+  0%,
+  62% {
+    fill: var(--ct-lampada-spenta);
+    stroke: transparent;
+  }
+  75% {
+    fill: #fff;
+    stroke: rgba(255, 238, 170, 0.65);
+  }
+}
+
+/* Una vincita, o un minigioco: tutte a raffica. */
+.ct-ruota.is-luci-vinto .ct-ruota__lampada {
+  animation: ct-lampada-festa 0.24s steps(1, end) infinite;
+}
+
+.ct-ruota.is-luci-vinto .ct-ruota__lampada.is-pari {
+  animation-delay: -0.12s;
+}
+
+@keyframes ct-lampada-festa {
+  0% {
+    fill: #fff;
+    stroke: rgba(255, 226, 130, 0.75);
+  }
+  50% {
+    fill: var(--ct-oro);
+    stroke: transparent;
+  }
+}
+
+/* Il banco: un lampo rosso, e poi si spengono. */
+.ct-ruota.is-luci-perso .ct-ruota__lampada {
+  animation: ct-lampada-perso 1.5s ease-out both;
+}
+
+@keyframes ct-lampada-perso {
+  0% {
+    fill: #ff5a6a;
+    stroke: rgba(255, 80, 100, 0.7);
+  }
+  100% {
+    fill: var(--ct-lampada-spenta);
+    stroke: transparent;
+  }
+}
+
+/* Lo spicchio uscito: una luce che pulsa sopra di lui, bianca per un minigioco, rossa per il banco. */
+.ct-ruota__evidenza {
+  pointer-events: none;
+  stroke-width: 2.5;
+  animation: ct-evidenza 0.5s var(--ease-in-out) infinite alternate;
+}
+
+.ct-ruota__evidenza.is-vinto {
+  fill: rgba(255, 255, 255, 0.28);
+  stroke: #fff;
+}
+
+.ct-ruota__evidenza.is-perso {
+  fill: rgba(255, 40, 70, 0.22);
+  stroke: #ff5a6a;
+}
+
+@keyframes ct-evidenza {
+  from {
+    opacity: 0.35;
+  }
+}
+
+/* ─────────────────────────────  Il mozzo  ───────────────────────────── */
+
+.ct-ruota__mozzo {
+  stroke: rgba(80, 40, 0, 0.55);
+  stroke-width: 0.8;
+}
+
+.ct-ruota__mozzo-dentro {
+  fill: var(--ct-mozzo);
+  stroke: rgba(255, 226, 150, 0.55);
+  stroke-width: 0.8;
+}
+
+.ct-ruota__mozzo-testo {
+  fill: #fff;
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.ct-ruota__mozzo-testo.is-piu {
+  fill: var(--ct-piu);
+}
+
+.ct-ruota__mozzo-testo.is-meno {
+  fill: var(--ct-meno);
+}
+
+.ct-ruota__mozzo-sotto {
+  fill: rgba(255, 238, 200, 0.78);
+  font-size: 4.4px;
+  font-weight: 700;
+  text-anchor: middle;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────  La lancetta  ───────────────────────────── */
+
+.ct-ruota__lancetta-perno {
+  transform-box: fill-box;
+  transform-origin: 50% 29%;
+  filter: drop-shadow(0 2px 1.6px rgba(0, 0, 0, 0.5));
+}
+
+.ct-ruota__lancetta-perno > path {
+  stroke: #6b4300;
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+
+.ct-ruota__pietra {
+  fill: #e0263f;
+  stroke: #7a0d1c;
+  stroke-width: 0.8;
+}
+
+.ct-ruota__pietra-luce {
+  fill: rgba(255, 255, 255, 0.75);
+}
+
+/* ─────────────────────────────  L'invito  ───────────────────────────── */
+
+/* La freccia che gira attorno alla cornice: da questa parte, col dito. */
+.ct-ruota__invito {
+  animation: ct-invito-pulsa 1.8s var(--ease-in-out) infinite;
+  pointer-events: none;
+}
+
+.ct-ruota__invito path {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.9);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ct-ruota__invito path:first-child {
+  stroke-dasharray: 0.1 6;
+  animation: ct-invito-scorre 0.9s linear infinite;
+}
+
+@keyframes ct-invito-scorre {
+  to {
+    stroke-dashoffset: -6.1;
+  }
+}
+
+@keyframes ct-invito-pulsa {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-ruota .ct-ruota__lampada {
+    animation: none !important;
+  }
+
+  .ct-ruota.is-luci-attesa .ct-ruota__lampada.is-pari,
+  .ct-ruota.is-luci-vinto .ct-ruota__lampada {
+    fill: var(--ct-lampada);
+  }
+
+  .ct-ruota__invito,
+  .ct-ruota__invito path:first-child,
+  .ct-ruota__evidenza {
+    animation: none;
+  }
+}

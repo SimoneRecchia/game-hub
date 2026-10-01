@@ -256,27 +256,30 @@
   --ruota-1: #ffb020;
   --ruota-2: #e5383b;
 
-  /* ---- La ruota di Crazy Time ----
-     Un oggetto, come il tabellone dello Scarabeo: gli stessi colori nei due
-     temi. Gli spicchi si riconoscono prima di leggerli — l'oro del x2, il
-     grigio dello 0, il nero della ✕, il viola di testa o croce — e le domande
-     hanno il colore della loro materia. */
-  --ruota-cornice: #2b2160;
-  --ruota-cornice-luce: #4a3d9a;
-  --ruota-piolo: #ffd166;
-  --ruota-oro-1: #ffe066;
-  --ruota-oro-2: #f5a623;
-  --ruota-niente: #6b7489;
-  --ruota-perdi: #17141f;
-  --ruota-croce: #ff4d4f;
-  --ruota-moneta: #6c45d6;
-  --ruota-mozzo-1: #7b6cff;
-  --ruota-mozzo-2: #3d2fc4;
-  /* La luce dietro la ruota: indaco su chiaro, oro su scuro, dove l'oro si vede. */
-  --ruota-alone: rgba(123, 108, 255, 0.2);
-  --ruota-alone: light-dark(rgba(123, 108, 255, 0.2), rgba(123, 108, 255, 0.3));
-  --ruota-raggio: rgba(123, 108, 255, 0.1);
-  --ruota-raggio: light-dark(rgba(123, 108, 255, 0.1), rgba(255, 209, 102, 0.1));
+  /* ---- Crazy Time da casinò ----
+     Il palco e' scuro in tutti e due i temi, come una sala; l'oro della
+     cornice e delle lampadine, il nero del banco, il blu e il rosso della
+     moneta, e i colori dei moltiplicatori, dal blu del ×1,25 all'oro del ×3. */
+  --ct-palco-1: #3a1a78;
+  --ct-palco-2: #0b0418;
+  --ct-oro-chiaro: #fff3b0;
+  --ct-oro: #f4c430;
+  --ct-oro-scuro: #a2650e;
+  --ct-lampada: #fff6d2;
+  --ct-lampada-spenta: #7a6230;
+  --ct-banco: #16121f;
+  --ct-moneta: #6c45d6;
+  --ct-blu: #2f6fe8;
+  --ct-blu-2: #173c9c;
+  --ct-rosso: #e8384f;
+  --ct-rosso-2: #8f1528;
+  --ct-mozzo: #1b0f33;
+  --ct-piu: #5ef09a;
+  --ct-meno: #ff7083;
+  --ct-m125: #2f7de1;
+  --ct-m15: #f3a521;
+  --ct-m2: #e0457b;
+  --ct-m3: #ffd23f;
 
   /* ---- La griglia del sudoku ----
      Il filo sottile fra le caselle e quello spesso fra i riquadri, come sulla
