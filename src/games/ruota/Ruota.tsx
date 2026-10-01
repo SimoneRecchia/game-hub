@@ -8,17 +8,17 @@ import './Ruota.css'
 const PASSO = 360 / SPICCHI.length
 /**
  * Il raggio della ruota, dei pioli sul bordo, delle scritte, delle icone e del
- * mozzo, in unita' del disegno. I numeri stanno verso il bordo, dove lo
- * spicchio e' piu' largo: piu' dentro, due poste vicine si leggevano come un
- * numero solo ("20 20").
+ * mozzo, in unita' del disegno. Scritte e icone stanno verso il bordo, dove lo
+ * spicchio e' piu' largo.
  */
 const RAGGIO = 96
 const PIOLI = 92
 const SCRITTE = 77
-const ICONE = 58
+const ICONE = 74
 const MOZZO = 24
-/** Il lato delle icone delle sfide. */
-const ICONA = 13
+/** Il lato delle icone delle sfide, e mezza croce della ✕. */
+const ICONA = 16
+const CROCE = 4.6
 
 /** Quanto dura un giro, e quanti giri interi fa prima di fermarsi. */
 const DURATA_GIRO_MS = 5_800
@@ -52,6 +52,8 @@ function classiDi(s: Spicchio): string {
       return 'is-doppio'
     case 'niente':
       return 'is-niente'
+    case 'perdi':
+      return 'is-perdi'
     case 'moneta':
       return 'is-moneta'
     case 'domanda':
@@ -89,7 +91,8 @@ const CORONA = 'M9 27 L11 14 L16.5 20 L20 11 L23.5 20 L29 14 L31 27 Z'
  * Il disegno fermo: spicchi, scritte, icone delle sfide e pioli. Non cambia
  * mai, quindi si disegna una volta; a girare e' il gruppo che lo contiene.
  * Scritte e icone stanno dritte quando lo spicchio e' in cima, sotto la
- * lancetta: e' li' che si guardano.
+ * lancetta: e' li' che si guardano. La ✕ e' disegnata e non scritta: il segno
+ * non c'e' in tutti i caratteri, e da un telefono all'altro cambiava spessore.
  */
 const Disegno = memo(function Disegno() {
   return (
@@ -111,14 +114,21 @@ const Disegno = memo(function Disegno() {
                 ) : (
                   <>
                     <circle className="ruota__moneta" r={ICONA / 2} />
-                    <path className="ruota__corona" d={CORONA} transform="scale(0.3) translate(-20 -20)" />
+                    <path className="ruota__corona" d={CORONA} transform={`scale(${ICONA / 43}) translate(-20 -20)`} />
                   </>
                 )}
               </g>
-              <text className="ruota__posta" y={-SCRITTE}>
-                {etichettaDi(s)}
-              </text>
             </g>
+          )
+        }
+        if (s.tipo === 'perdi') {
+          return (
+            <path
+              key={`c${i}`}
+              className="ruota__croce"
+              transform={`rotate(${centro}) translate(0 ${-SCRITTE})`}
+              d={`M${-CROCE} ${-CROCE}L${CROCE} ${CROCE}M${CROCE} ${-CROCE}L${-CROCE} ${CROCE}`}
+            />
           )
         }
         return (
@@ -143,6 +153,8 @@ const Disegno = memo(function Disegno() {
 interface Props {
   /** Dove fermarsi: l'indice dello spicchio, o null finché non si gira. */
   fermaSu: number | null
+  /** Il numero del giro: due giri di fila sullo stesso spicchio sono due giri, e la ruota li gira tutti e due. */
+  giro?: number
   /** Se arrivarci girando o esserci gia', come quando si riapre la pagina. */
   anima: boolean
   onFerma?: () => void
@@ -152,7 +164,7 @@ interface Props {
 }
 
 /**
- * La ruota del giorno: ventiquattro spicchi e una lancetta in cima.
+ * La ruota di Crazy Time: ventiquattro spicchi e una lancetta in cima.
  *
  * Il giro lo decide il server; qui si fa solo vedere. Gira in senso orario per
  * qualche giro e rallenta come una ruota vera (`1 - (1 - t)^4`), e la lancetta
@@ -161,10 +173,11 @@ interface Props {
  * ridisegnerebbe tutti gli spicchi sessanta volte al secondo. Con il
  * movimento ridotto la ruota si ferma subito dove deve.
  */
-export function Ruota({ fermaSu, anima, onFerma, mozzo, mozzoSotto }: Props) {
+export function Ruota({ fermaSu, giro, anima, onFerma, mozzo, mozzoSotto }: Props) {
   const gruppo = useRef<SVGGElement>(null)
   const lancetta = useRef<SVGGElement>(null)
-  const angolo = useRef(0)
+  // Prima del primo giro la ruota sta ferma con il x2 sotto la lancetta.
+  const angolo = useRef(angoloPer(0))
   /** Mentre gira, chi non vede non deve sapere dove si fermera'. */
   const [inGiro, setInGiro] = useState(false)
   const avvisa = useRef(onFerma)
@@ -219,7 +232,7 @@ export function Ruota({ fermaSu, anima, onFerma, mozzo, mozzoSotto }: Props) {
     }
     fotogramma = requestAnimationFrame(passo)
     return () => cancelAnimationFrame(fotogramma)
-  }, [fermaSu, anima])
+  }, [fermaSu, giro, anima])
 
   const sotto = fermaSu === null || inGiro ? null : SPICCHI[fermaSu]
   return (
@@ -237,7 +250,7 @@ export function Ruota({ fermaSu, anima, onFerma, mozzo, mozzoSotto }: Props) {
         </defs>
         <circle className="ruota__ombra" r={RAGGIO + 9} cy={3} />
         <circle className="ruota__cornice" r={RAGGIO + 8} />
-        <g ref={gruppo}>
+        <g ref={gruppo} transform={`rotate(${angoloPer(0)})`}>
           <Disegno />
         </g>
         <circle className="ruota__bordo" r={RAGGIO} />

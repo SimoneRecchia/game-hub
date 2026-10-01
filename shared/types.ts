@@ -1102,7 +1102,7 @@ export interface GeneraleRow {
   avatarColor: string
   punti: number
   perGioco: Record<GiocoClassificato, number>
-  /** Quel che ha dato o tolto la ruota nel periodo: e' gia' dentro `punti`. */
+  /** Quel che ha dato o tolto Crazy Time nel periodo: e' gia' dentro `punti`. */
   ruota: number
   /** La parte del Wordle fatta nella stanza di qualcun altro: e' lo spareggio. */
   assist: number
@@ -1130,11 +1130,11 @@ export interface OggiRisposta {
   battaglia: BattagliaSummary
   quiz: QuizSummary
   ruota: RuotaSummary
-  /** Come si sta oggi nella classifica generale, con quel che ha dato o tolto la ruota. */
+  /** Come si sta oggi nella classifica generale, con quel che ha dato o tolto Crazy Time. */
   generale: { posizione: number | null; punti: number; giocatori: number }
 }
 
-/* ─────────────────────────────────  La ruota  ───────────────────────────────── */
+/* ───────────────────────────────  Crazy Time  ──────────────────────────────── */
 
 /** La sfida di un giro, come la vede chi gioca, con la sua posta: tanto in piu' se va bene, tanto in meno se no. */
 export type SfidaRuotaVista =
@@ -1161,12 +1161,14 @@ export type SfidaRuotaVista =
     }
 
 export interface GiroRuota {
+  /** Il numero del giro nella giornata, da 1. */
+  n: number
   puntata: number
   /** Lo spicchio dove si e' fermata la ruota, contando dall'alto in senso orario (shared/ruota.ts). */
   spicchio: number
   /** `sfida` finché la moneta o la domanda non si giocano, `domanda` mentre la domanda e' aperta. */
   stato: 'sfida' | 'domanda' | 'fatto'
-  /** Quel che la ruota ha dato o tolto; durante una sfida, quel che toglie se va male. */
+  /** Quel che il giro ha dato o tolto; durante una sfida, quel che toglie se va male. */
   delta: number
   sfida: SfidaRuotaVista | null
 }
@@ -1174,20 +1176,27 @@ export interface GiroRuota {
 export interface RuotaStato {
   puzzleNumber: number
   date: string
-  /** I punti delle classificate di oggi: quanti se ne possono puntare. */
-  puntiDiOggi: number
+  /** I punti delle classificate di oggi. */
+  classificate: number
+  /** Quel che Crazy Time ha dato o tolto oggi, e in quanti giri. */
+  netto: number
+  giri: number
+  /** Quanto si puo' puntare: le classificate di oggi piu' il netto, mai sotto zero. */
+  saldo: number
+  /** L'ultimo giro di oggi, se c'e'. */
   giro: GiroRuota | null
   msToNextPuzzle: number
 }
 
-/** La ruota nella schermata iniziale. */
+/** Crazy Time nella schermata iniziale. */
 export interface RuotaSummary {
-  puntiDiOggi: number
-  stato: 'da-girare' | 'sfida' | 'fatto'
-  /** Lo spicchio del giro di oggi, se c'e'. */
+  saldo: number
+  netto: number
+  giri: number
+  /** `sfida` se l'ultimo giro aspetta la moneta o la risposta. */
+  stato: 'gioca' | 'sfida'
+  /** Lo spicchio dell'ultimo giro, se c'e'. */
   spicchio: number | null
-  /** Quel che ha dato o tolto, a giro fatto. */
-  delta: number | null
 }
 
 export interface LeaderboardRow {

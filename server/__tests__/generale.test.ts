@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GeneraleLeaderboard, OggiRisposta } from '../../shared/types'
-import { ordinaGenerale, type TotaliGenerale } from '../lib/generale'
+import { ordinaGenerale, puntiClassificateDi, type TotaliGenerale } from '../lib/generale'
 import { today } from '../lib/wordleStore'
 import { banco } from './banco'
 
@@ -66,6 +66,9 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     ])
     expect(g.me?.perGioco).toEqual({ wordle: 65, scarabeo: 70, cruciverba: 97, sudoku: 0, battaglia: 84, quiz: 76 })
     expect(g.me?.partite).toBe(5)
+    // Crazy Time legge i punti di oggi di un giocatore solo: devono essere quelli della generale.
+    expect(await puntiClassificateDi(db as unknown as D1Database, anna.id, n)).toBe(g.me!.punti - g.me!.ruota)
+    expect(await puntiClassificateDi(db as unknown as D1Database, bruno.id, n)).toBe(0)
 
     const oggi = (await chiama<OggiRisposta>('GET', '/oggi', bruno)).dati
     expect(oggi.generale).toEqual({ posizione: 2, punti: 0, giocatori: 2 })

@@ -16,16 +16,16 @@ function leggiScelta(valore: unknown): string | null {
 }
 
 /**
- * La ruota del giorno. Ogni rotta che scrive risponde con lo stato intero,
- * come la lettura: il telefono ha sempre una cosa sola da mostrare.
+ * Crazy Time. Ogni rotta che scrive risponde con lo stato intero, come la
+ * lettura: il telefono ha sempre una cosa sola da mostrare.
  */
 export const ruotaRoutes = new Hono<AppEnv>()
   .use('*', requireVerified)
 
-  /** La ruota di oggi: i punti che si possono puntare e il giro, se c'e'. Non gira niente. */
+  /** Crazy Time di oggi: il saldo, il conto della giornata e l'ultimo giro. Non gira niente. */
   .get('/', async (c) => c.json<RuotaStato>(await statoRuota(c.env.DB, c.get('player').id)))
 
-  /** Il giro di oggi, con la puntata: lo spicchio lo sceglie il server. */
+  /** Un giro, con la puntata: lo spicchio lo sceglie il server. */
   .post('/gira', async (c) => {
     const corpo = (await c.req.json().catch(() => ({}))) as { puntata?: unknown }
     const io = c.get('player').id

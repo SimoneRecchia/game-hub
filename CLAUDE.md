@@ -365,58 +365,89 @@ in una richiesta, i primi tre di ognuna e dove sei tu: e' la schermata
 `/classifica`, che le mette una sotto l'altra, e ognuna si apre per intero
 (`/classifica/generale`, `/classifica/wordle`). Non si normalizza per giornata
 ("il migliore prende cento"): cambierebbe le classifiche di ieri ogni volta che
-qualcuno gioca. Alla generale si aggiunge solo la ruota, che non e' una
+qualcuno gioca. Alla generale si aggiunge solo Crazy Time, che non e' una
 classificata (vedi sotto).
 
-**La ruota punta i punti delle classificate, una volta al giorno.** Sta fra le
-carte del giorno, dopo i giochi (`/ruota`): si puntano da `PUNTATA_MINIMA` a
-tutti i punti fatti oggi nelle classificate, e quel che la ruota da' o toglie
-(`ruota_giri.delta`) entra nella generale del giorno, in una colonna sua
-(`GeneraleRow.ruota`, gia' dentro `punti`). La puntata si misura sulle sole
-classificate (`punti - ruota` della generale di oggi): la ruota non punta su se
-stessa, e quel che si gioca dopo il giro conta per la giornata ma non per la
-puntata, gia' fatta. Un giro per giocatore al giorno, con la chiave primaria e
-un `INSERT OR IGNORE`.
+**Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta fra
+le carte del giorno, dopo i giochi (`/crazy-time`; `/ruota`, l'indirizzo di
+quando si girava una volta al giorno, ci porta): si punta da `PUNTATA_MINIMA` a
+tutto il saldo — i punti fatti oggi nelle classificate piu' quel che Crazy Time
+ha gia' dato o tolto oggi — e si rigira. Quel che da' o toglie entra nella
+generale del giorno, in una colonna sua (`GeneraleRow.ruota`, gia' dentro
+`punti`). Si perde al massimo la puntata e si punta al massimo il saldo, quindi
+il totale del giorno non va mai sotto zero, e i giorni passati non si toccano.
+Il nome e' quello del gioco vero, e cosi' le probabilita' (vedi sotto): il
+marchio e' di Evolution, e per un gioco fra amici e senza soldi va bene, ma se
+l'app diventasse pubblica il nome andrebbe cambiato.
 
-**La ruota ha tre specie di spicchi, e i test le tengono ferme.** Ventiquattro
-spicchi (`SPICCHI` in `shared/ruota.ts`), non i cinquantaquattro di Crazy Time:
-su un telefono non si leggevano. Un x2 solo, che raddoppia la puntata ed e' il
-solo spicchio che la guarda; otto "niente", che lasciano tutto com'e'; e le
-sfide — testa o croce e due domande per materia — ognuna con la sua posta, da
-dieci a cinquanta punti, che si vince se va bene e si perde se va male. Prima
-c'erano anche un x3, i ÷2 e ÷3 e dei punti fissi: dividere una puntata non
-diceva niente a nessuno, e i punti fissi sono diventati le poste delle sfide.
-Si perde al massimo la posta piu' alta, e per girare servono almeno altrettanti
-punti di oggi (`PUNTATA_MINIMA`): il totale del giorno non va mai sotto zero.
-In media un giro vale da cinque punti in meno (chi tira a indovinare) a sedici
-in piu' (chi sa tutto), piu' un ventiquattresimo della puntata per il x2; il
-x2 esce un giro su ventiquattro. Siccome nessuno spicchio toglie dalla
-puntata, la pagina propone di puntare tutto. `shared/__tests__/ruota.test.ts`
-tiene ferme queste condizioni e la disposizione: due vicini mai dello stesso
-colore (arte, libri e cinema hanno quello della cultura), le due domande di una
-materia lontane. Il giro salva l'indice dello spicchio: una disposizione nuova
-cambia lo spicchio mostrato per i giri gia' fatti quel giorno, quindi si cambia
-a giornata finita.
+**I giri stanno in `ruota_giocate`, e la generale legge `ruota_giornate`.** Un
+giro per riga, numerato nella giornata di ogni giocatore (`n`, nella chiave
+primaria: due giri partiti insieme non prendono lo stesso numero). Il saldo si
+controlla nell'`INSERT` stesso (`INSERT OR IGNORE … SELECT … WHERE classificate
++ SUM(delta) >= puntata`): due giri nello stesso istante, sul saldo letto prima,
+punterebbero due volte gli stessi punti. Nello stesso `batch` `riconta` riscrive
+`ruota_giornate` dalla somma dei giri, una riga per giocatore e per giorno: e'
+quella che legge la classifica generale, che altrimenti sommerebbe tutti i giri
+di tutti a ogni richiesta. I punti delle classificate di un giocatore solo li
+conta `puntiClassificateDi` (`server/lib/generale.ts`) con le stesse espressioni
+della generale, e un test verifica che diano lo stesso numero: se si tocca il
+conto di un gioco nella generale, va toccato anche li'. Fra due giri passano
+almeno `INTERVALLO_GIRI_MS` (429, `TROPPO_PRESTO`): la ruota impiega sei secondi
+a fermarsi, e un programma che gira a raffica consumerebbe le richieste di
+tutti. `ruota_giri`, la tabella della ruota di una volta al giorno, non la legge
+piu' nessuno: la migrazione `0024` ne ha copiato i giri, con `spicchio` NULL
+perché la disposizione era un'altra, e non l'ha tolta, perché una migrazione che
+cancella vorrebbe un backup.
+
+**Vince il banco, come nel Crazy Time vero, e i test lo tengono fermo.**
+Ventiquattro spicchi (`SPICCHI` in `shared/ruota.ts`), non i cinquantaquattro
+della ruota vera: su un telefono non si leggevano. Ogni spicchio vale una parte
+della puntata — il x2 la raddoppia, gli undici 0 lasciano tutto com'e', le tre ✕
+la tolgono, testa o croce (tre) la raddoppia o la toglie, le sei domande (una per
+materia) ne danno o ne tolgono un quarto — quindi il conto e' lo stesso a ogni
+puntata, e in media la ruota restituisce il 94,8% a chi risponde giusto a tre
+domande su quattro, come il Crazy Time vero (dal 94 al 96%). Nemmeno chi sa
+tutto ci guadagna (97,9%), ed e' per questo che una domanda vale solo un quarto:
+con la puntata intera chi sa avrebbe battuto il banco a ogni giro. Il quarto si
+arrotonda per difetto, perché alle puntate piccole l'eccesso darebbe a chi sa
+piu' di quel che toglie a chi sbaglia. Si puo' avere fortuna una volta, e
+giocando a lungo si perde: e' quel che si vuole, perché la ruota insegni che
+vince il banco. Le regole lo dicono in una riga, con la resa, e niente scritte
+sulla ludopatia: e' una scelta, la lezione la da' la ruota.
+`shared/__tests__/ruota.test.ts` misura la resa di chi tira a indovinare, di chi
+sa e di chi sta in mezzo, il valore atteso in punti interi a ogni puntata fino a
+duemila, e la disposizione: il x2 in cima, dove la ruota sta prima del primo
+giro, gli 0 mai vicini, due vicini mai dello stesso colore (arte, libri e cinema
+hanno quello della cultura), monete e ✕ lontane fra loro. Il giro salva
+l'indice dello spicchio: una disposizione nuova cambia lo spicchio mostrato per
+i giri gia' fatti quel giorno, quindi si cambia a giornata finita.
 
 **L'esito lo decide il server, e una sfida lasciata a meta' e' persa.** Lo
 spicchio si pesca con `crypto.getRandomValues` (con lo scarto, perché il resto
 di una divisione favorirebbe i primi), e il browser fa solo girare la ruota fin
 li': la risposta di `/ruota/gira` ha gia' l'esito. Lo spicchio di una materia
-che oggi non ha domande non esce. Una sfida scrive subito il `delta` di quando
-va male: chi chiude la pagina davanti a una domanda difficile non si salva.
-Testa o croce si sceglie prima (`/moneta` porta il lato) e la moneta la lancia
-il server; la domanda e' quella del quiz, con le stesse regole del tempo:
+che oggi non ha piu' domande da dare a quel giocatore non esce. Una sfida
+scrive subito il `delta` di quando va male: chi chiude la pagina davanti a una
+domanda difficile non si salva, e il giro dopo la chiude cosi' com'e'. Testa o
+croce si sceglie prima (`/moneta` porta il lato) e la moneta la lancia il
+server; la domanda e' quella del quiz, con le stesse regole del tempo:
 `/domanda` scrive `aperta_at`, la risposta vale entro il limite piu'
 `MARGINE_RETE_MS`, e una domanda rimasta aperta la chiude la prima `GET`. Ogni
 scrittura e' condizionata allo stato appena letto.
 
-**Le domande della ruota si fanno la notte, con quelle del quiz.**
-`scripts/genera-quiz.ts` scrive in `ruota_domande` cinque domande per materia e
-per giorno, fra le voci note, lontane dai soggetti della classificata dello
-stesso giorno e da quelli della stessa materia delle cinque settimane prima;
-il server ne pesca una quando la domanda si apre. Come le giornate del quiz,
-`INSERT OR IGNORE`: una giornata scritta non cambia. `--se-manca` guarda anche
-queste righe, quindi il deploy le crea per i giorni che non le hanno.
+**Le domande di Crazy Time si fanno la notte, con quelle del quiz.**
+`scripts/genera-quiz.ts` scrive in `ruota_domande` trenta domande per materia e
+per giorno (`DOMANDE_PER_MATERIA`), fra le voci note, lontane dai soggetti della
+classificata dello stesso giorno e da quelli della stessa materia dei tre giorni
+prima (`MEMORIA_RUOTA`: trenta al giorno per cinque settimane finirebbero le voci
+note di una materia piccola). Come le giornate del quiz, una giornata scritta non
+cambia, tranne le righe di un formato vecchio (`FORMATO_DOMANDE_RUOTA`), che si
+rifanno anche per oggi: erano cinque per materia. Rifarle non fa rivedere niente
+a nessuno, perché chi gira non rivede una domanda lo stesso giorno e la
+riconosce dall'impronta (`improntaDomanda`, il testo e la risposta, salvata nel
+giro con la materia), non dal posto nell'elenco; una materia di cui ha visto
+tutto non gli esce piu' fino a domani. `--se-manca` guarda anche queste righe, e
+il formato, quindi il deploy le crea per i giorni che non le hanno.
 
 **La ruota si disegna una volta e gira scrivendo l'angolo.** Gli spicchi sono un
 SVG fermo (`Disegno`, in `memo`), e a ogni fotogramma l'animazione scrive la
@@ -425,11 +456,24 @@ ventiquattro spicchi sessanta volte al secondo. Rallenta come una ruota
 vera (`1 - (1 - t)^4`), si ferma dentro lo spicchio ma mai sul filo, e la
 lancetta scatta a ogni spicchio, con il suono del tocco tenuto a uno ogni 45 ms
 (a ruota veloce sarebbe un ronzio). Scritte e icone stanno dritte quando lo
-spicchio e' sotto la lancetta, dove si guardano, e i numeri verso il bordo, dove
-lo spicchio e' largo: piu' dentro, due poste vicine si leggevano come un numero
-solo. La domanda arriva a parte con la carta, le risposte e la
+spicchio e' sotto la lancetta, dove si guardano, e verso il bordo, dove lo
+spicchio e' largo. Le sfide hanno solo l'icona, perché la posta dipende dalla
+puntata, e la ✕ e' un tracciato: il carattere non c'e' in tutti i caratteri, e
+da un telefono all'altro cambiava spessore. Il giro riparte guardando anche il
+suo numero (`giro`), non solo lo spicchio: due giri di fila sullo stesso
+spicchio sono due giri. La domanda arriva a parte con la carta, le risposte e la
 cartina del quiz (`DomandaRuota`), che servono solo quando la ruota si ferma su
 una domanda.
+
+**Crazy Time si gioca di fila.** Dopo un giro il pannello torna alla puntata, che
+resta quella di prima finché non la si cambia, come al tavolo, e sul mozzo resta
+l'esito finché non si tocca la linea. Lo 0 non ha l'adesivo: esce quasi un giro
+su due, e un adesivo a ogni giro smetterebbe di dire qualcosa, come l'acqua
+nella battaglia. Sotto il bottone c'e' quel che Crazy Time ha dato o tolto oggi,
+e in quanti giri; nella home la carta dice lo stesso e quanto si puo' puntare, e
+non ha l'anello, perché Crazy Time non finisce: c'e' solo finché mancano i punti
+per la prima puntata. Senza animazioni la ruota si ferma subito, e il bottone
+aspetta `INTERVALLO_GIRI_MS` prima di riaccendersi: il server direbbe di no.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —
@@ -1053,9 +1097,9 @@ un punto qualunque e le etichette anche, così non serve trascinare (WCAG
 tastiera e' lo slider di WAI-ARIA, con le frecce, Inizio e Fine, e
 `aria-valuetext` che dice "senza tempo" invece del numero del punto.
 
-**La puntata della ruota invece e' una cifra, e si sceglie libera.** Non e' una
-scelta fra poche alternative: si punta quanto si vuole, un punto alla volta,
-dalla minima a tutti (`LineaPuntata`). La linea e' un `input type="range"` senza
+**La puntata di Crazy Time invece e' una cifra, e si sceglie libera.** Non e'
+una scelta fra poche alternative: si punta quanto si vuole, un punto alla volta,
+dalla minima a tutto il saldo (`LineaPuntata`). La linea e' un `input type="range"` senza
 punti, con la pista e la maniglia del cursore, e accanto il numero si scrive:
 su una linea di trecento punti col dito la cifra esatta non si prende, e con un
 cursore va dato anche il campo per il valore preciso (Nielsen Norman Group). Il

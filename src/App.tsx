@@ -64,7 +64,7 @@ const QuizLibero = lazy(caricaQuizLibero)
 const QuizDuello = lazy(caricaQuizDuello)
 const QuizInvito = lazy(caricaQuizInvito)
 
-/* E la ruota, che si gira una volta al giorno. */
+/* E Crazy Time, la ruota dei punti di oggi. */
 const caricaRuota = () => import('./pages/Ruota')
 const Ruota = lazy(caricaRuota)
 
@@ -151,6 +151,7 @@ export default function App() {
             <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
 
             <Route path={ROTTE.ruota} element={<Ruota />} />
+            <Route path="/ruota" element={<Navigate to={ROTTE.ruota} replace />} />
 
             <Route path="/indovina-chi" element={<IndovinaChi />} />
             <Route path="/indovina-chi/partita/:id" element={<IndovinaPartita />} />
