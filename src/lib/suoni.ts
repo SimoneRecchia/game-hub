@@ -53,6 +53,22 @@ export type NomeSuono =
   | 'assente'
   | 'presente'
   | 'esatta'
+  /** La lancetta di Crazy Time contro un piolo. */
+  | 'scatto'
+  /** Una ruota lanciata col dito. */
+  | 'lancio'
+  /** La ruota si ferma su un minigioco. */
+  | 'bonus'
+  /** Vince il banco. */
+  | 'banco'
+  /** La ruota dei moltiplicatori si ferma. */
+  | 'moltiplicatore'
+  | 'monetaLancio'
+  | 'monetaCade'
+  /** Una puntata vinta: la fanfara, e le monete. */
+  | 'vincita'
+  /** Il passaggio da una scena all'altra di Crazy Time. */
+  | 'intermezzo'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -580,5 +596,80 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
   esatta: (u, t, v) => {
     legno(u, t, 760, 0.1 * v)
     marimba(u, t, N.E6, 0.14 * v, { durata: 0.5 })
+  },
+
+  // La lancetta di plastica contro il piolo: piu' secca e piu' alta di un tocco.
+  scatto: (u, t, v) => {
+    legno(u, t, vario(2300, 0.05), 0.08 * v, 0.02)
+    colpo(u, t, voce(u, 0.06 * v, 0), vario(5200, 0.08), 0.008, 0.6)
+  },
+
+  // Il fruscio della ruota che parte: rumore che sale, e il legno del mozzo.
+  lancio: (u, t, v) => {
+    soffio(u, t, 0.42, 0.26 * v, { tipo: 'bandpass', da: 350, a: 2600, q: 1.1 }, { attacco: 0.04, eco: 0.15 })
+    legno(u, t, 420, 0.12 * v)
+  },
+
+  // Il campanello del banco della fiera, tre volte, sopra un accordo: c'e' un minigioco.
+  bonus: (u, t, v) => {
+    ;[N.G6, N.E6, N.G6, N.E6, N.C7].forEach((f, i) =>
+      campanello(u, t + i * 0.075, f, 0.11 * v, { eco: 0.35, durata: 0.5 }),
+    )
+    marimba(u, t, N.C5, 0.2 * v, { eco: 0.3 })
+    marimba(u, t + 0.3, N.G5, 0.22 * v, { eco: 0.3 })
+    marimba(u, t + 0.3, N.C6, 0.2 * v, { eco: 0.3, durata: 1.2 })
+  },
+
+  // Vince il banco: la tromba che scende, e il colpo sul fondo.
+  banco: (u, t, v) => {
+    scivolo(u, t, 520, 360, 0.26, 0.12 * v)
+    scivolo(u, t + 0.28, 470, 300, 0.26, 0.12 * v)
+    scivolo(u, t + 0.56, 420, 160, 0.7, 0.13 * v)
+    tonfo(u, t + 0.56, 0.14 * v, { da: 90, a: 40, durata: 0.45 })
+  },
+
+  // Il moltiplicatore: un arpeggio che sale veloce e si apre in un accordo che luccica.
+  moltiplicatore: (u, t, v) => {
+    ;[N.C5, N.E5, N.G5, N.C6, N.E6, N.G6].forEach((f, i) => marimba(u, t + i * 0.05, f, 0.2 * v, { eco: 0.28 }))
+    const accordo = t + 0.32
+    campanello(u, accordo, N.C7, 0.12 * v, { eco: 0.5, durata: 1.2 })
+    campanello(u, accordo, N.E7, 0.09 * v, { eco: 0.5, durata: 1.2 })
+    campanello(u, accordo + 0.05, N.G7, 0.07 * v, { eco: 0.5, durata: 1 })
+  },
+
+  // La moneta che parte dal pollice: il soffio, e il metallo che vibra.
+  monetaLancio: (u, t, v) => {
+    soffio(u, t, 0.3, 0.2 * v, { tipo: 'highpass', da: 1800, a: 5200, q: 0.7 }, { attacco: 0.01, eco: 0.1 })
+    campanello(u, t, vario(N.A7), 0.06 * v, { eco: 0.25, durata: 0.5 })
+  },
+
+  // La moneta che tocca terra e rimbalza: due tintinnii, il secondo piu' piccolo.
+  monetaCade: (u, t, v) => {
+    campanello(u, t, vario(N.E7), 0.12 * v, { eco: 0.2, durata: 0.35 })
+    legno(u, t, 900, 0.14 * v)
+    campanello(u, t + 0.13, vario(N.G7), 0.06 * v, { eco: 0.2, durata: 0.25 })
+    legno(u, t + 0.13, 1100, 0.06 * v)
+  },
+
+  // La vincita: la fanfara della vittoria, e una pioggia di monete che tintinnano.
+  vincita: (u, t, v) => {
+    ;[N.C5, N.E5, N.G5, N.C6].forEach((f, i) => marimba(u, t + i * 0.07, f, 0.26 * v, { eco: 0.25 }))
+    const accordo = t + 0.3
+    campanello(u, accordo, N.C6, 0.15 * v, { eco: 0.4, durata: 1.3 })
+    campanello(u, accordo, N.E6, 0.12 * v, { eco: 0.4, durata: 1.3 })
+    campanello(u, accordo, N.G6, 0.1 * v, { eco: 0.4, durata: 1.3 })
+    const monete = [N.E7, N.G7, N.A7, N.D7, N.C7]
+    for (let i = 0; i < 14; i += 1) {
+      const f = monete[Math.floor(Math.random() * monete.length)]
+      campanello(u, accordo + 0.08 + i * 0.055 + Math.random() * 0.03, vario(f), 0.04 * v, { eco: 0.4, durata: 0.3 })
+    }
+  },
+
+  // Fra una scena e l'altra: un soffio che passa, e un accordo d'apertura.
+  intermezzo: (u, t, v) => {
+    soffio(u, t, 0.5, 0.22 * v, { tipo: 'bandpass', da: 600, a: 4200, q: 0.9 }, { attacco: 0.12, eco: 0.25 })
+    marimba(u, t + 0.32, N.G5, 0.16 * v, { eco: 0.3 })
+    marimba(u, t + 0.32, N.C6, 0.18 * v, { eco: 0.3, durata: 1.1 })
+    campanello(u, t + 0.32, N.E7, 0.06 * v, { eco: 0.5, durata: 0.9 })
   },
 }

@@ -1136,19 +1136,29 @@ export interface OggiRisposta {
 
 /* ───────────────────────────────  Crazy Time  ──────────────────────────────── */
 
-/** La sfida di un giro, come la vede chi gioca, con la sua posta: tanto in piu' se va bene, tanto in meno se no. */
+/**
+ * Il minigioco di un giro, come lo vede chi gioca. La vincita e' quel che
+ * restituisce la puntata se va bene — la puntata per il moltiplicatore — e
+ * c'e' da quando il moltiplicatore e' deciso: subito per la moneta, alla ruota
+ * dei moltiplicatori per la domanda.
+ */
 export type SfidaRuotaVista =
   | {
       tipo: 'moneta'
-      posta: number
-      /** Il lato scelto e quello uscito: ci sono a moneta lanciata. */
-      scelto: LatoMoneta | null
+      /** Il moltiplicatore del blu, deciso quando la ruota si ferma sulla moneta. */
+      moltiplicatore: number
+      vincita: number
+      /** Il lato uscito, a moneta lanciata. */
       uscito: LatoMoneta | null
     }
   | {
       tipo: 'domanda'
-      posta: number
       materia: MateriaRuota
+      /** Dalla ruota dei moltiplicatori: null finché non la si gira. */
+      moltiplicatore: number | null
+      /** Lo spicchio dove si e' fermata la ruota dei moltiplicatori (shared/ruota.ts, MOLTIPLICATORI). */
+      spicchioMoltiplicatore: number | null
+      vincita: number | null
       /** La categoria del quiz della domanda, per l'emblema della carta: c'e' da quando si apre. */
       categoria: CategoriaQuiz | null
       /** Da quando si apre: senza la risposta finché non si risponde. */
@@ -1168,7 +1178,7 @@ export interface GiroRuota {
   spicchio: number
   /** `sfida` finché la moneta o la domanda non si giocano, `domanda` mentre la domanda e' aperta. */
   stato: 'sfida' | 'domanda' | 'fatto'
-  /** Quel che il giro ha dato o tolto; durante una sfida, quel che toglie se va male. */
+  /** Quel che il giro ha dato o tolto: la puntata si paga subito, quindi durante un minigioco e' la puntata persa. */
   delta: number
   sfida: SfidaRuotaVista | null
 }

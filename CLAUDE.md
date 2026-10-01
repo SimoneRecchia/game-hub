@@ -383,57 +383,64 @@ l'app diventasse pubblica il nome andrebbe cambiato.
 **I giri stanno in `ruota_giocate`, e la generale legge `ruota_giornate`.** Un
 giro per riga, numerato nella giornata di ogni giocatore (`n`, nella chiave
 primaria: due giri partiti insieme non prendono lo stesso numero). Il saldo si
-controlla nell'`INSERT` stesso (`INSERT OR IGNORE … SELECT … WHERE classificate
-+ SUM(delta) >= puntata`): due giri nello stesso istante, sul saldo letto prima,
-punterebbero due volte gli stessi punti. Nello stesso `batch` `riconta` riscrive
-`ruota_giornate` dalla somma dei giri, una riga per giocatore e per giorno: e'
-quella che legge la classifica generale, che altrimenti sommerebbe tutti i giri
-di tutti a ogni richiesta. I punti delle classificate di un giocatore solo li
-conta `puntiClassificateDi` (`server/lib/generale.ts`) con le stesse espressioni
-della generale, e un test verifica che diano lo stesso numero: se si tocca il
-conto di un gioco nella generale, va toccato anche li'. Fra due giri passano
-almeno `INTERVALLO_GIRI_MS` (429, `TROPPO_PRESTO`): la ruota impiega sei secondi
-a fermarsi, e un programma che gira a raffica consumerebbe le richieste di
-tutti. `ruota_giri`, la tabella della ruota di una volta al giorno, non la legge
-piu' nessuno: la migrazione `0024` ne ha copiato i giri, con `spicchio` NULL
-perché la disposizione era un'altra, e non l'ha tolta, perché una migrazione che
-cancella vorrebbe un backup.
+controlla nell'`INSERT` stesso (`INSERT OR IGNORE … SELECT … WHERE
+classificate + SUM(delta) >= puntata`): due giri nello stesso istante, sul
+saldo letto prima, punterebbero due volte gli stessi punti. Nello stesso
+`batch` `riconta` riscrive `ruota_giornate` dalla somma dei giri, una riga per
+giocatore e per giorno: e' quella che legge la classifica generale, che
+altrimenti sommerebbe tutti i giri di tutti a ogni richiesta. I punti delle
+classificate di un giocatore solo li conta `puntiClassificateDi`
+(`server/lib/generale.ts`) con le stesse espressioni della generale, e un test
+verifica che diano lo stesso numero: se si tocca il conto di un gioco nella
+generale, va toccato anche li'. Fra due giri passano almeno
+`INTERVALLO_GIRI_MS` (429, `TROPPO_PRESTO`): una ruota lanciata impiega piu'
+di tre secondi a fermarsi, e un programma che gira a raffica consumerebbe le
+richieste di tutti. `ruota_giri`, la tabella della ruota di una volta al
+giorno, non la legge piu' nessuno: la migrazione `0024` ne ha copiato i giri,
+con `spicchio` NULL perché la disposizione era un'altra, e non l'ha tolta,
+perché una migrazione che cancella vorrebbe un backup.
 
-**Vince il banco, come nel Crazy Time vero, e i test lo tengono fermo.**
-Ventiquattro spicchi (`SPICCHI` in `shared/ruota.ts`), non i cinquantaquattro
-della ruota vera: su un telefono non si leggevano. Ogni spicchio vale una parte
-della puntata — il x2 la raddoppia, gli undici 0 lasciano tutto com'e', le tre ✕
-la tolgono, testa o croce (tre) la raddoppia o la toglie, le sei domande (una per
-materia) ne danno o ne tolgono un quarto — quindi il conto e' lo stesso a ogni
-puntata, e in media la ruota restituisce il 94,8% a chi risponde giusto a tre
-domande su quattro, come il Crazy Time vero (dal 94 al 96%). Nemmeno chi sa
-tutto ci guadagna (97,9%), ed e' per questo che una domanda vale solo un quarto:
-con la puntata intera chi sa avrebbe battuto il banco a ogni giro. Il quarto si
-arrotonda per difetto, perché alle puntate piccole l'eccesso darebbe a chi sa
-piu' di quel che toglie a chi sbaglia. Si puo' avere fortuna una volta, e
+**Vince il banco, come nel Crazy Time vero, e i test lo tengono fermo.** Dodici
+spicchi (`SPICCHI` in `shared/ruota.ts`), non i cinquantaquattro della ruota
+vera: quattro BANCO, sei domande (una per materia) e due monete. La puntata si
+paga al lancio — il giro nasce con `delta = -puntata` — e un minigioco vinto la
+restituisce moltiplicata (`vincitaDi`, per difetto), quindi non c'e' uno
+spicchio che lascia tutto com'e': sarebbe il banco con un altro nome. Il
+moltiplicatore della domanda lo sceglie una seconda ruota (`MOLTIPLICATORI`: ×3
+una volta, ×2 due, ×1,5 quattro, ×1,25 cinque, in media 1,6), quello della
+moneta e' uno dei quattro a caso, deciso con il giro (`MOLTIPLICATORI_MONETA`),
+e la moneta e' blu o rossa: il blu paga, il rosso e' il banco. Chi risponde
+sempre giusto riceve in media il 96,4% di quel che punta (`resa`), chi risponde
+giusto a tre domande su quattro il 76%: nemmeno chi sa tutto batte il banco,
+come nel Crazy Time vero (dal 94 al 96%). Si puo' avere fortuna una volta, e
 giocando a lungo si perde: e' quel che si vuole, perché la ruota insegni che
 vince il banco. Le regole lo dicono in una riga, con la resa, e niente scritte
 sulla ludopatia: e' una scelta, la lezione la da' la ruota.
-`shared/__tests__/ruota.test.ts` misura la resa di chi tira a indovinare, di chi
-sa e di chi sta in mezzo, il valore atteso in punti interi a ogni puntata fino a
-duemila, e la disposizione: il x2 in cima, dove la ruota sta prima del primo
-giro, gli 0 mai vicini, due vicini mai dello stesso colore (arte, libri e cinema
-hanno quello della cultura), monete e ✕ lontane fra loro. Il giro salva
-l'indice dello spicchio: una disposizione nuova cambia lo spicchio mostrato per
-i giri gia' fatti quel giorno, quindi si cambia a giornata finita.
+`shared/__tests__/ruota.test.ts` misura la resa di chi sa tutto e di chi sta in
+mezzo, il valore atteso in punti interi a ogni puntata fino a duemila, e la
+disposizione: una moneta in cima, dove la ruota sta prima del primo giro,
+l'altra di fronte, i banchi a tre spicchi l'uno dall'altro, due vicini mai dello
+stesso colore (arte, libri e cinema hanno quello della cultura), e fra i
+moltiplicatori mai due uguali vicini. Il giro salva l'indice dello spicchio e la
+disposizione con cui e' uscito (`disposizione`, `DISPOSIZIONE_RUOTA`): i giri di
+una disposizione di prima contano nel saldo e non si mostrano, perché lo stesso
+indice adesso e' un altro spicchio. La migrazione `0025`, che ha portato questa,
+ha chiuso come perse le sfide rimaste aperte, con il `delta` che avevano gia'.
 
 **L'esito lo decide il server, e una sfida lasciata a meta' e' persa.** Lo
 spicchio si pesca con `crypto.getRandomValues` (con lo scarto, perché il resto
 di una divisione favorirebbe i primi), e il browser fa solo girare la ruota fin
-li': la risposta di `/ruota/gira` ha gia' l'esito. Lo spicchio di una materia
-che oggi non ha piu' domande da dare a quel giocatore non esce. Una sfida
-scrive subito il `delta` di quando va male: chi chiude la pagina davanti a una
-domanda difficile non si salva, e il giro dopo la chiude cosi' com'e'. Testa o
-croce si sceglie prima (`/moneta` porta il lato) e la moneta la lancia il
-server; la domanda e' quella del quiz, con le stesse regole del tempo:
-`/domanda` scrive `aperta_at`, la risposta vale entro il limite piu'
-`MARGINE_RETE_MS`, e una domanda rimasta aperta la chiude la prima `GET`. Ogni
-scrittura e' condizionata allo stato appena letto.
+li': il lancio col dito chiede `/ruota/gira`, e la risposta ha gia' l'esito.
+Cosi' anche la ruota dei moltiplicatori (`/ruota/moltiplicatore`, che a una
+seconda richiesta ridà lo stesso spicchio) e la moneta: il suo moltiplicatore
+esce con il giro, il lato a `/moneta`, che non porta niente. Lo spicchio di una
+materia che oggi non ha piu' domande da dare a quel giocatore non esce. La
+puntata e' persa dal lancio: chi chiude la pagina davanti a una domanda
+difficile non si salva, e il giro dopo la chiude cosi' com'e'. `/domanda` vuole
+il moltiplicatore (`MOLTIPLICATORE`, 409), e la domanda e' quella del quiz, con
+le stesse regole del tempo: `/domanda` scrive `aperta_at`, la risposta vale
+entro il limite piu' `MARGINE_RETE_MS`, e una domanda rimasta aperta la chiude
+la prima `GET`. Ogni scrittura e' condizionata allo stato appena letto.
 
 **Le domande di Crazy Time si fanno la notte, con quelle del quiz.**
 `scripts/genera-quiz.ts` scrive in `ruota_domande` trenta domande per materia e
@@ -449,31 +456,49 @@ giro con la materia), non dal posto nell'elenco; una materia di cui ha visto
 tutto non gli esce piu' fino a domani. `--se-manca` guarda anche queste righe, e
 il formato, quindi il deploy le crea per i giorni che non le hanno.
 
-**La ruota si disegna una volta e gira scrivendo l'angolo.** Gli spicchi sono un
-SVG fermo (`Disegno`, in `memo`), e a ogni fotogramma l'animazione scrive la
-rotazione sul gruppo che lo contiene: passare dallo stato di React ridisegnerebbe
-ventiquattro spicchi sessanta volte al secondo. Rallenta come una ruota
-vera (`1 - (1 - t)^4`), si ferma dentro lo spicchio ma mai sul filo, e la
-lancetta scatta a ogni spicchio, con il suono del tocco tenuto a uno ogni 45 ms
-(a ruota veloce sarebbe un ronzio). Scritte e icone stanno dritte quando lo
-spicchio e' sotto la lancetta, dove si guardano, e verso il bordo, dove lo
-spicchio e' largo. Le sfide hanno solo l'icona, perché la posta dipende dalla
-puntata, e la ✕ e' un tracciato: il carattere non c'e' in tutti i caratteri, e
-da un telefono all'altro cambiava spessore. Il giro riparte guardando anche il
-suo numero (`giro`), non solo lo spicchio: due giri di fila sullo stesso
-spicchio sono due giri. La domanda arriva a parte con la carta, le risposte e la
+**La ruota si gira col dito, e si disegna una volta.** `RuotaFisica`
+(`src/games/ruota/`) e' la ruota di tutte e due: la si prende, la si trascina
+attorno al centro e la si lascia, e parte con la velocita' degli ultimi
+movimenti del dito (`FINESTRA_MS`). Sotto `LANCIO_MINIMO`, o con il dito fermo
+prima di lasciarla, non parte, e la pagina chiede di lanciarla piu' forte. Al
+lancio chiede l'esito e intanto gira libera, rallentando appena; quando l'esito
+arriva frena fino allo spicchio con `1 - (1 - t)^3`, una curva che comincia
+proprio alla velocita' che aveva — niente scatti — e aggiunge i giri interi che
+servono a durare almeno `durataMinima`. Si ferma dentro lo spicchio ma mai sul
+filo. Gli spicchi sono un disegno fermo (`DisegnoRuota`,
+`DisegnoMoltiplicatori`, in `memo`), e a ogni fotogramma si scrive la rotazione
+sul gruppo che lo contiene: passare dallo stato di React ridisegnerebbe gli
+spicchi sessanta volte al secondo. La lancetta scatta a ogni piolo, dalla parte
+in cui la spinge la ruota, con il suono del tocco tenuto a uno ogni 45 ms (a
+ruota veloce sarebbe un ronzio). Le scritte vanno lungo il raggio, dal bordo
+verso il mozzo (`scrittaRadiale` in `geometria.ts`), come nel Crazy Time vero:
+si leggono quando lo spicchio e' sotto la lancetta, e le parole lunghe si
+stringono (`textLength`) invece di uscire dallo spicchio. Le icone restano
+dritte. La meta che c'e' quando la ruota compare e' dove sta gia' ferma, quindi
+tornando da un minigioco la ruota non rigira: sta sullo spicchio uscito, con
+l'esito sul mozzo. Ogni chiave nuova e' un giro, anche sullo stesso spicchio.
+Con la tastiera si lancia con Invio o lo spazio, e senza animazioni la ruota va
+subito dove deve. La domanda arriva a parte con la carta, le risposte e la
 cartina del quiz (`DomandaRuota`), che servono solo quando la ruota si ferma su
 una domanda.
 
-**Crazy Time si gioca di fila.** Dopo un giro il pannello torna alla puntata, che
-resta quella di prima finché non la si cambia, come al tavolo, e sul mozzo resta
-l'esito finché non si tocca la linea. Lo 0 non ha l'adesivo: esce quasi un giro
-su due, e un adesivo a ogni giro smetterebbe di dire qualcosa, come l'acqua
-nella battaglia. Sotto il bottone c'e' quel che Crazy Time ha dato o tolto oggi,
-e in quanti giri; nella home la carta dice lo stesso e quanto si puo' puntare, e
+**Crazy Time si gioca di fila, e ogni passaggio ha la sua scena.** Il palco e'
+scuro in tutti e due i temi, come una sala, e tiene tre scene una sopra l'altra
+— la ruota, quella dei moltiplicatori, la moneta — mentre la domanda prende la
+pagina intera, come nel quiz. Fra una scena e l'altra passa un intermezzo
+(`Intermezzo`: raggi, un lampo e l'insegna del minigioco; la scena cambia sotto
+l'insegna), e le lampadine della cornice dicono il momento: a turno in attesa,
+una corsa mentre gira, a raffica su un minigioco, un lampo rosso al banco. La
+moneta si lancia toccandola. Mentre e' in aria il tabellone resta com'era
+(`conto`) e il lato si dice quando cade: la risposta del server arriva prima, e
+sarebbe la soluzione. Una vincita ha l'adesivo d'oro e la pioggia di monete, il
+banco l'adesivo bordato e un sussulto del palco. Dopo un giro il pannello torna
+alla puntata, che resta quella di prima finché non la si cambia, come al tavolo.
+Il tabellone in cima dice il saldo e quel che Crazy Time ha dato o tolto oggi, e
+in quanti giri; nella home la carta dice lo stesso e quanto si puo' puntare, e
 non ha l'anello, perché Crazy Time non finisce: c'e' solo finché mancano i punti
-per la prima puntata. Senza animazioni la ruota si ferma subito, e il bottone
-aspetta `INTERVALLO_GIRI_MS` prima di riaccendersi: il server direbbe di no.
+per la prima puntata. La ruota si riprende in mano `INTERVALLO_GIRI_MS` dopo il
+lancio: senza animazioni si fermerebbe subito, e il server direbbe di no.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —
