@@ -14,6 +14,7 @@ import { presenzaRoutes } from './routes/presenza'
 import { leaderboardRoutes } from './routes/leaderboard'
 import { coopRoutes } from './routes/coop'
 import { oggiRoutes } from './routes/oggi'
+import { ruotaRoutes } from './routes/ruota'
 import { gameDate, msToNextPuzzle, puzzleNumberFor } from '../shared/daily'
 
 /**
@@ -57,6 +58,7 @@ export function createApp() {
   app.route('/leaderboard', leaderboardRoutes)
   app.route('/coop', coopRoutes)
   app.route('/oggi', oggiRoutes)
+  app.route('/ruota', ruotaRoutes)
 
   app.notFound((c) => c.json({ error: 'Endpoint non trovato.', code: 'NOT_FOUND' }, 404))
 

@@ -9,6 +9,7 @@
 
 import { CASELLE_FLOTTA } from '@shared/battaglia'
 import { NOMI_CATEGORIE } from '@shared/quiz'
+import { PUNTATA_MINIMA, SPICCHI, conSegno, nomeDi } from '@shared/ruota'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   BattagliaSummary,
@@ -16,6 +17,7 @@ import type {
   GiocoClassificato,
   OggiRisposta,
   QuizSummary,
+  RuotaSummary,
   ScarabeoSummary,
   SudokuSummary,
   WordleSummary,
@@ -315,5 +317,44 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     sudoku: statoSudoku(oggi.sudoku),
     battaglia: statoBattaglia(oggi.battaglia),
     quiz: statoQuiz(oggi.quiz),
+  }
+}
+
+/** La ruota, detta come le classificate: non e' un gioco con i suoi punti, quindi niente `gioco` ne' `punti`. */
+export type StatoRuota = Omit<StatoOggi, 'gioco' | 'punti'>
+
+/**
+ * La ruota nella schermata iniziale. Si gira una volta, quando ci sono i punti
+ * da puntare: prima, l'anello dice quanto manca alla puntata minima.
+ */
+export function statoRuota(s: RuotaSummary): StatoRuota {
+  const a = ROTTE.ruota
+  if (s.stato === 'fatto') {
+    const delta = s.delta ?? 0
+    const dettaglio = delta === 0 ? 'Niente di più, niente di meno' : `${conSegno(delta)} punti`
+    return { fase: 'fatta', titolo: 'Girata', dettaglio, avanzamento: 1, azione: 'Rivedi', a }
+  }
+  if (s.stato === 'sfida') {
+    const spicchio = s.spicchio === null ? undefined : SPICCHI[s.spicchio]
+    const dettaglio = spicchio ? nomeDi(spicchio) : ''
+    return { fase: 'in-corso', titolo: 'Sfida in corso', dettaglio, avanzamento: 0.5, azione: 'Continua', a }
+  }
+  if (s.puntiDiOggi < PUNTATA_MINIMA) {
+    return {
+      fase: 'non-pronta',
+      titolo: 'Prima le classificate',
+      dettaglio: `Servono ${PUNTATA_MINIMA} punti di oggi`,
+      avanzamento: Math.max(0, s.puntiDiOggi) / PUNTATA_MINIMA,
+      azione: '',
+      a,
+    }
+  }
+  return {
+    fase: 'da-giocare',
+    titolo: 'Da girare',
+    dettaglio: `Puoi puntare fino a ${s.puntiDiOggi} punti`,
+    avanzamento: 0,
+    azione: 'Gira',
+    a,
   }
 }

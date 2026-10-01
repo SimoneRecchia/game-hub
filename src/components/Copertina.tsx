@@ -4,8 +4,11 @@ import './Copertina.css'
 
 type Formato = 'icona' | 'carta' | 'eroe'
 
+/** Un gioco, la classifica generale o la ruota del giorno. */
+type Soggetto = GiocoClassificato | GiocoDaTavolo | 'generale' | 'ruota'
+
 interface Props {
-  gioco: GiocoClassificato | GiocoDaTavolo | 'generale'
+  gioco: Soggetto
   formato?: Formato
   /** Nome della transizione condivisa: la copertina della card diventa quella della pagina. */
   transizione?: string
@@ -33,7 +36,16 @@ export function Copertina({ gioco, formato = 'carta', transizione, className = '
 
 const TONDO = 'ui-rounded, -apple-system, "SF Pro Rounded", system-ui, sans-serif'
 
-const DISEGNI: Record<GiocoClassificato | GiocoDaTavolo | 'generale', ReactElement> = {
+/** Uno spicchio della ruota della copertina: dal centro al bordo, fra due angoli contati dall'alto. */
+function spicchio(cx: number, cy: number, r: number, da: number, a: number): string {
+  const punto = (gradi: number) => {
+    const rad = ((gradi - 90) * Math.PI) / 180
+    return `${(cx + r * Math.cos(rad)).toFixed(2)} ${(cy + r * Math.sin(rad)).toFixed(2)}`
+  }
+  return `M${cx} ${cy}L${punto(da)}A${r} ${r} 0 0 1 ${punto(a)}Z`
+}
+
+const DISEGNI: Record<Soggetto, ReactElement> = {
   // Una riga di tentativi: due lettere giuste, una al posto sbagliato, due grigie.
   wordle: (
     <g>
@@ -438,6 +450,31 @@ const DISEGNI: Record<GiocoClassificato | GiocoDaTavolo | 'generale', ReactEleme
           />
         </g>
       ))}
+    </g>
+  ),
+
+  // La ruota del giorno: dodici spicchi in tre toni, i pioli sul bordo, il mozzo e la lancetta in cima.
+  ruota: (
+    <g>
+      <circle cx={61} cy={65} r={42} fill="#000" fillOpacity={0.12} />
+      <g transform="rotate(-10 60 62)">
+        {Array.from({ length: 12 }, (_, i) => (
+          <path
+            key={i}
+            d={spicchio(60, 62, 40, i * 30, (i + 1) * 30)}
+            fill="#fff"
+            fillOpacity={[0.95, 0.38, 0.7, 0.38][i % 4]}
+          />
+        ))}
+        {Array.from({ length: 12 }, (_, i) => {
+          const rad = ((i * 30 - 90) * Math.PI) / 180
+          const [x, y] = [60 + 37 * Math.cos(rad), 62 + 37 * Math.sin(rad)]
+          return <circle key={`p${i}`} cx={x} cy={y} r={1.7} fill="var(--c2)" />
+        })}
+      </g>
+      <circle cx={60} cy={62} r={40} fill="none" stroke="#fff" strokeWidth={3.5} />
+      <circle cx={60} cy={62} r={10.5} fill="var(--c2)" stroke="#fff" strokeWidth={3} />
+      <path d="M51 12h18l-9 17z" fill="#fff" stroke="var(--c2)" strokeWidth={1.6} strokeLinejoin="round" />
     </g>
   ),
 
