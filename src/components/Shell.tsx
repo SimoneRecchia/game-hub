@@ -4,6 +4,7 @@ import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
 import { usePlayer } from '@/lib/auth'
+import { NOME_CRAZY_TIME } from '@shared/ruota'
 import { Avatar } from './Avatar'
 import { Copertina } from './Copertina'
 import {
@@ -151,7 +152,7 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
           className={`laterale__voce laterale__voce--gioco${pathname === ROTTE.ruota ? ' is-attiva' : ''}`}
         >
           <Copertina gioco="ruota" formato="icona" />
-          <span>Ruota</span>
+          <span>{NOME_CRAZY_TIME}</span>
         </Collegamento>
       </nav>
 

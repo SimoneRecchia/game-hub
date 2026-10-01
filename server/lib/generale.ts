@@ -5,9 +5,9 @@
  * cento punti, qualunque sia il gioco (vedi shared/punti.ts), quindi sommarle
  * non richiede un tasso di cambio inventato. Chi gioca a tutto ogni giorno puo'
  * fare fino a cinquecento punti; chi gioca solo al Wordle fino a cento, e
- * nella classifica del Wordle compete alla pari con tutti. La ruota del giorno
- * si somma a parte (`ruota`): non e' una classificata, ma quel che da' o toglie
- * e' fatto con i punti delle classificate, e va dove vanno loro.
+ * nella classifica del Wordle compete alla pari con tutti. Crazy Time si somma
+ * a parte (`ruota`): non e' una classificata, ma quel che da' o toglie e' fatto
+ * con i punti delle classificate, e va dove vanno loro.
  *
  * Un aggregato per gioco, uniti qui. Non una query sola: le tabelle non hanno
  * niente in comune se non il giocatore, e una UNION con
@@ -141,11 +141,11 @@ export async function classificaGenerale(
       )
       .bind(da, a)
       .all<Parziale>(),
-    // La ruota: un giro al giorno, che non e' una partita. Una sfida a meta' conta gia' persa.
+    // Crazy Time: il conto di ogni giornata, non i giri uno per uno. Non e' una partita.
     db
       .prepare(
-        `SELECT player_id, COALESCE(SUM(delta), 0) AS punti, 0 AS partite
-           FROM ruota_giri WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        `SELECT player_id, COALESCE(SUM(netto), 0) AS punti, 0 AS partite
+           FROM ruota_giornate WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
       )
       .bind(da, a)
       .all<Parziale>(),
@@ -213,4 +213,33 @@ export async function classificaGenerale(
     rows,
     me: rows.find((r) => r.playerId === viewerId) ?? null,
   }
+}
+
+/**
+ * I punti delle classificate di un giocatore in una giornata: quelli della
+ * generale di quel giorno senza Crazy Time, ma di lui solo. Crazy Time li legge
+ * a ogni giro, e la generale intera leggerebbe le partite di tutti. Le somme sono
+ * quelle di `classificaGenerale`, gioco per gioco: un test le tiene d'accordo.
+ */
+export async function puntiClassificateDi(db: D1Database, playerId: string, numero: number): Promise<number> {
+  const riga = await db
+    .prepare(
+      `SELECT
+         (SELECT COALESCE(SUM(CASE WHEN spectated = 1 THEN COALESCE(assist_score, 0)
+                                   ELSE COALESCE(score, 0) END), 0)
+            FROM wordle_games WHERE player_id = ?1 AND puzzle_number = ?2)
+       + (SELECT COALESCE(SUM(punti), 0) FROM scarabeo_games WHERE player_id = ?1 AND puzzle_number = ?2)
+       + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
+            FROM cruciverba_games WHERE player_id = ?1 AND puzzle_number = ?2)
+       + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
+            FROM sudoku_games WHERE player_id = ?1 AND puzzle_number = ?2)
+       + (SELECT COALESCE(SUM(CASE WHEN stato = 'finita' THEN punti ELSE 0 END), 0)
+            FROM battaglia_partite
+           WHERE modalita = 'classificata' AND giocatore_a = ?1 AND puzzle_number = ?2)
+       + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
+            FROM quiz_partite WHERE player_id = ?1 AND puzzle_number = ?2) AS punti`,
+    )
+    .bind(playerId, numero)
+    .first<{ punti: number }>()
+  return riga?.punti ?? 0
 }

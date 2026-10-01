@@ -1,23 +1,29 @@
 /**
- * La ruota del giorno: una volta al giorno si punta una parte dei punti fatti
- * nelle classificate di oggi, e si gira.
+ * Crazy Time: la ruota dei punti di oggi. Si punta quanto si vuole dei punti
+ * della giornata, quante volte si vuole, e la ruota decide che cosa ne resta.
  *
- * Ventiquattro spicchi, larghi abbastanza da leggerli su un telefono, di tre
- * specie:
+ * Come nei giochi veri, vince il banco: ogni spicchio da' o toglie una parte
+ * della puntata, quindi il conto e' lo stesso a qualunque puntata, e in media
+ * la ruota restituisce meno di quel che riceve — circa il 95% per chi risponde
+ * giusto a tre domande su quattro, come il Crazy Time vero (dal 94 al 96%).
+ * Si puo' avere fortuna una volta; giocando a lungo si perde.
  *
- * - **il x2**, uno solo: raddoppia la puntata. E' l'unico spicchio che guarda
- *   la puntata, ed esce un giro su ventiquattro;
- * - **niente**, otto, sparsi: lasciano tutto com'e';
- * - **le sfide**: testa o croce, e le domande del quiz, due per materia. Ognuna
- *   ha la sua posta, da dieci a cinquanta punti, quanto una partita: tanto in
- *   piu' se va bene, tanto in meno se va male. La domanda premia chi sa, la
- *   moneta nessuno.
+ * Ventiquattro spicchi, larghi abbastanza da leggerli su un telefono:
  *
- * Si perde al massimo la posta piu' alta, e per girare servono almeno
- * altrettanti punti di oggi (`PUNTATA_MINIMA`): il totale della giornata non va
- * mai sotto zero. In media un giro vale pochi punti: dai cinque in meno di chi
- * tira a indovinare le domande ai sedici in piu' di chi le sa tutte, piu' un
- * ventiquattresimo della puntata per il x2 (un test lo misura).
+ * - **il x2**, uno solo: raddoppia la puntata;
+ * - **lo 0**, undici: lascia tutto com'e';
+ * - **la ✕**, tre: la puntata e' persa;
+ * - **testa o croce**, tre: indovinato il lato la puntata raddoppia,
+ *   sbagliato e' persa;
+ * - **le domande** del quiz, una per materia: un quarto della puntata in piu'
+ *   se si risponde giusto, in meno se si sbaglia. Solo un quarto perché chi sa
+ *   non batta il banco: con la puntata intera chi conosce le risposte
+ *   guadagnerebbe a ogni giro, e qui nemmeno lui ci arriva (97,9%).
+ *
+ * Si perde al massimo la puntata, e si punta al massimo quel che si ha oggi: il
+ * totale della giornata non va mai sotto zero, e i giorni passati non si
+ * toccano. Un test misura la resa per chi tira a indovinare, per chi sa e per
+ * chi sta in mezzo.
  *
  * Questo file e' di tutti: il server ci decide l'esito, il browser ci disegna
  * la ruota e ci scrive le regole.
@@ -26,7 +32,10 @@
 import type { CategoriaQuiz } from './quiz'
 import type { DomandaCompleta } from './quiz-domande'
 
-/** Le materie delle domande sulla ruota: due spicchi ciascuna. */
+/** Il nome del gioco, come lo leggono tutti. */
+export const NOME_CRAZY_TIME = 'Crazy Time'
+
+/** Le materie delle domande sulla ruota: uno spicchio ciascuna. */
 export type MateriaRuota = 'geografia' | 'storia' | 'arte' | 'libri' | 'cinema' | 'scienza'
 
 export const MATERIE_RUOTA: readonly MateriaRuota[] = ['geografia', 'storia', 'arte', 'libri', 'cinema', 'scienza']
@@ -43,30 +52,35 @@ export const NOMI_MATERIE_RUOTA: Record<MateriaRuota, string> = {
 export type Spicchio =
   | { tipo: 'doppio' }
   | { tipo: 'niente' }
-  | { tipo: 'moneta'; posta: number }
-  | { tipo: 'domanda'; materia: MateriaRuota; posta: number }
+  | { tipo: 'perdi' }
+  | { tipo: 'moneta' }
+  | { tipo: 'domanda'; materia: MateriaRuota }
 
 export type LatoMoneta = 'testa' | 'croce'
 
+/** La puntata piu' bassa: con meno, un quarto della puntata — la posta di una domanda — sarebbe zero. */
+export const PUNTATA_MINIMA = 10
+
+/** Fra un giro e l'altro: la ruota ne impiega sei a fermarsi, e chi la fa girare con un programma va fermato. */
+export const INTERVALLO_GIRI_MS = 3_000
+
 /**
  * La ruota, dallo spicchio in cima in senso orario. Il x2 sta in cima, dove la
- * ruota e' ferma prima del primo giro; i "niente" uno ogni tre; due spicchi
- * vicini non hanno mai lo stesso colore, e le due domande di una materia stanno
- * lontane (lo controlla un test). "arte:30" e' una domanda d'arte da trenta
- * punti.
+ * ruota e' ferma prima del primo giro; gli 0 a uno sì e uno no; due spicchi
+ * vicini non hanno mai lo stesso colore, e le monete e le ✕ stanno lontane fra
+ * loro (lo controlla un test).
  */
 const DISPOSIZIONE = [
-  'x2', '0', 'geografia:20', 'moneta:20', '0', 'arte:30', 'storia:10', '0', 'scienza:40', 'libri:20', '0', 'moneta:50',
-  'cinema:30', '0', 'geografia:40', 'arte:50', '0', 'storia:30', 'libri:40', '0', 'moneta:30', 'scienza:20', '0',
-  'cinema:10',
+  'x2', '0', 'geografia', '0', 'perdi', '0', 'moneta', 'storia', '0', 'arte', '0', 'perdi', '0', 'scienza', '0',
+  'moneta', '0', 'libri', '0', 'perdi', 'cinema', '0', 'moneta', '0',
 ] as const
 
 function spicchioDa(voce: (typeof DISPOSIZIONE)[number]): Spicchio {
   if (voce === 'x2') return { tipo: 'doppio' }
   if (voce === '0') return { tipo: 'niente' }
-  const [nome, posta] = voce.split(':')
-  if (nome === 'moneta') return { tipo: 'moneta', posta: Number(posta) }
-  return { tipo: 'domanda', materia: nome as MateriaRuota, posta: Number(posta) }
+  if (voce === 'perdi') return { tipo: 'perdi' }
+  if (voce === 'moneta') return { tipo: 'moneta' }
+  return { tipo: 'domanda', materia: voce }
 }
 
 export const SPICCHI: readonly Spicchio[] = DISPOSIZIONE.map(spicchioDa)
@@ -76,11 +90,16 @@ export function eSfida(s: Spicchio): s is Extract<Spicchio, { tipo: 'moneta' | '
   return s.tipo === 'moneta' || s.tipo === 'domanda'
 }
 
-/** La posta piu' alta di una sfida: quanto si puo' perdere al massimo in un giro. */
-export const POSTA_MASSIMA = Math.max(...SPICCHI.map((s) => (eSfida(s) ? s.posta : 0)))
-
-/** La puntata piu' bassa, e i punti di oggi che servono per girare: quanto toglie la sfida piu' cara. */
-export const PUNTATA_MINIMA = 50
+/**
+ * Quanto vale una sfida su una puntata: la moneta tutta, la domanda un quarto,
+ * per difetto — un quarto arrotondato per eccesso, alle puntate piccole, darebbe
+ * a chi sa piu' di quel che toglie a chi sbaglia.
+ */
+export function postaDi(s: Spicchio, puntata: number): number {
+  if (s.tipo === 'moneta') return puntata
+  if (s.tipo === 'domanda') return Math.floor(puntata / 4)
+  return 0
+}
 
 /** Quel che uno spicchio da' o toglie, su una puntata: per una sfida, secondo com'e' andata. */
 export function deltaDi(s: Spicchio, puntata: number, vinta = false): number {
@@ -89,9 +108,11 @@ export function deltaDi(s: Spicchio, puntata: number, vinta = false): number {
       return puntata
     case 'niente':
       return 0
+    case 'perdi':
+      return -puntata
     case 'moneta':
     case 'domanda':
-      return vinta ? s.posta : -s.posta
+      return vinta ? postaDi(s, puntata) : -postaDi(s, puntata)
   }
 }
 
@@ -100,43 +121,63 @@ export function conSegno(n: number): string {
   return n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'
 }
 
-/** Come si scrive uno spicchio sulla ruota: "x2", "0", e la posta delle sfide, accanto alla loro icona. */
+/** Come si scrive uno spicchio sulla ruota: "x2", "0", "✕". Le sfide hanno solo la loro icona. */
 export function etichettaDi(s: Spicchio): string {
   switch (s.tipo) {
     case 'doppio':
       return 'x2'
     case 'niente':
       return '0'
+    case 'perdi':
+      return '✕'
     case 'moneta':
     case 'domanda':
-      return String(s.posta)
+      return ''
   }
 }
 
-/** Come lo legge chi non vede, e come lo dice il risultato: "Per due", "Domanda di arte da 30 punti". */
+/** Come lo legge chi non vede, e come lo dice il risultato: "Per due", "Persa", "Domanda di arte". */
 export function nomeDi(s: Spicchio): string {
   switch (s.tipo) {
     case 'doppio':
       return 'Per due'
     case 'niente':
       return 'Niente'
+    case 'perdi':
+      return 'Puntata persa'
     case 'moneta':
-      return `Testa o croce da ${s.posta} punti`
+      return 'Testa o croce'
     case 'domanda':
-      return `Domanda di ${NOMI_MATERIE_RUOTA[s.materia].toLowerCase()} da ${s.posta} punti`
+      return `Domanda di ${NOMI_MATERIE_RUOTA[s.materia].toLowerCase()}`
   }
 }
 
-/** Se una puntata si puo' fare con i punti di oggi: un intero, fra la minima e tutti. */
-export function puntataValida(puntata: unknown, puntiDiOggi: number): puntata is number {
-  return Number.isInteger(puntata) && (puntata as number) >= PUNTATA_MINIMA && (puntata as number) <= puntiDiOggi
+/**
+ * Quanto restituisce in media la ruota per ogni punto puntato, per chi risponde
+ * giusto a una domanda con probabilita' `s`: la moneta va bene una volta su
+ * due. Senza gli arrotondamenti della posta delle domande, che possono solo
+ * abbassarla.
+ */
+export function resa(s: number): number {
+  let somma = 0
+  for (const sp of SPICCHI) {
+    const vale = (vinta: boolean) => (sp.tipo === 'domanda' ? (vinta ? 0.25 : -0.25) : deltaDi(sp, 1, vinta))
+    if (sp.tipo === 'domanda') somma += s * vale(true) + (1 - s) * vale(false)
+    else if (sp.tipo === 'moneta') somma += (vale(true) + vale(false)) / 2
+    else somma += vale(false)
+  }
+  return 1 + somma / SPICCHI.length
+}
+
+/** Se una puntata si puo' fare con il saldo di oggi: un intero, fra la minima e tutto il saldo. */
+export function puntataValida(puntata: unknown, saldo: number): puntata is number {
+  return Number.isInteger(puntata) && (puntata as number) >= PUNTATA_MINIMA && (puntata as number) <= saldo
 }
 
 /**
  * Le categorie del quiz da cui vengono le domande di ogni materia della ruota.
- * La geografia le ha tutte tranne le città, come la classificata: una domanda
- * sola vale fino a cinquanta punti, e le città di un paese lontano non le sa
- * nessuno.
+ * La geografia le ha tutte tranne le città, come la classificata: le città di
+ * un paese lontano non le sa nessuno.
  */
 export const CATEGORIE_DELLA_MATERIA: Record<MateriaRuota, readonly CategoriaQuiz[]> = {
   geografia: ['capitali', 'bandiere', 'stati', 'mari', 'oceani', 'fiumi', 'laghi'],
@@ -147,11 +188,31 @@ export const CATEGORIE_DELLA_MATERIA: Record<MateriaRuota, readonly CategoriaQui
   scienza: ['scienza'],
 }
 
-/** Quante domande si preparano per ogni materia, ogni giorno: a chi gira ne tocca una a caso. */
-export const DOMANDE_PER_MATERIA = 5
+/**
+ * Quante domande si preparano per ogni materia, ogni giorno: a chi gira ne
+ * tocca una che quel giorno non ha ancora visto. Si gira quanto si vuole, e una
+ * domanda su quattro giri: trenta per materia bastano a qualche centinaio di
+ * giri, e stanno in una riga di D1 (una domanda d'arte, la piu' lunga, pesa un
+ * chilobyte).
+ */
+export const DOMANDE_PER_MATERIA = 30
+
+/** Il formato delle domande della ruota: le righe di un formato vecchio si rifanno (erano cinque per materia). */
+export const FORMATO_DOMANDE_RUOTA = 2
 
 /** Una domanda della ruota, come la scrive lo script della notte: con la sua categoria, per l'emblema della carta. */
 export interface DomandaRuota {
   categoria: CategoriaQuiz
   domanda: DomandaCompleta
+}
+
+/**
+ * L'impronta di una domanda, per non farla rivedere a chi l'ha gia' avuta quel
+ * giorno: il testo e la risposta giusta, in un FNV-1a a 32 bit. Non l'indice
+ * nell'elenco, che cambierebbe se l'elenco del giorno si rifacesse.
+ */
+export function improntaDomanda(d: Pick<DomandaCompleta, 'testo' | 'giusta'>): string {
+  let h = 0x811c9dc5
+  for (const c of `${d.testo}|${d.giusta}`) h = Math.imul(h ^ c.charCodeAt(0), 0x01000193)
+  return (h >>> 0).toString(16).padStart(8, '0')
 }

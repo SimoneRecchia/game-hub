@@ -256,17 +256,19 @@
   --ruota-1: #ffb020;
   --ruota-2: #e5383b;
 
-  /* ---- La ruota del giorno ----
+  /* ---- La ruota di Crazy Time ----
      Un oggetto, come il tabellone dello Scarabeo: gli stessi colori nei due
      temi. Gli spicchi si riconoscono prima di leggerli — l'oro del x2, il
-     grigio del niente, il viola di testa o croce — e le domande hanno il
-     colore della loro materia. */
+     grigio dello 0, il nero della ✕, il viola di testa o croce — e le domande
+     hanno il colore della loro materia. */
   --ruota-cornice: #2b2160;
   --ruota-cornice-luce: #4a3d9a;
   --ruota-piolo: #ffd166;
   --ruota-oro-1: #ffe066;
   --ruota-oro-2: #f5a623;
   --ruota-niente: #6b7489;
+  --ruota-perdi: #17141f;
+  --ruota-croce: #ff4d4f;
   --ruota-moneta: #6c45d6;
   --ruota-mozzo-1: #7b6cff;
   --ruota-mozzo-2: #3d2fc4;

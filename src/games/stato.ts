@@ -320,40 +320,37 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
   }
 }
 
-/** La ruota, detta come le classificate: non e' un gioco con i suoi punti, quindi niente `gioco` ne' `punti`. */
-export type StatoRuota = Omit<StatoOggi, 'gioco' | 'punti'>
-
 /**
- * La ruota nella schermata iniziale. Si gira una volta, quando ci sono i punti
- * da puntare: prima, l'anello dice quanto manca alla puntata minima.
+ * Crazy Time, detto come le classificate: non e' un gioco con i suoi punti, e non
+ * finisce mai, quindi niente `gioco` ne' `punti`, e l'anello c'e' solo finché
+ * mancano i punti per la prima puntata.
  */
+export type StatoRuota = Omit<StatoOggi, 'gioco' | 'punti' | 'avanzamento'> & { avanzamento: number | null }
+
+/** Crazy Time nella schermata iniziale: quel che ha dato o tolto oggi, e quanto si puo' puntare adesso. */
 export function statoRuota(s: RuotaSummary): StatoRuota {
   const a = ROTTE.ruota
-  if (s.stato === 'fatto') {
-    const delta = s.delta ?? 0
-    const dettaglio = delta === 0 ? 'Niente di più, niente di meno' : `${conSegno(delta)} punti`
-    return { fase: 'fatta', titolo: 'Girata', dettaglio, avanzamento: 1, azione: 'Rivedi', a }
-  }
   if (s.stato === 'sfida') {
     const spicchio = s.spicchio === null ? undefined : SPICCHI[s.spicchio]
     const dettaglio = spicchio ? nomeDi(spicchio) : ''
-    return { fase: 'in-corso', titolo: 'Sfida in corso', dettaglio, avanzamento: 0.5, azione: 'Continua', a }
+    return { fase: 'in-corso', titolo: 'Sfida in corso', dettaglio, avanzamento: null, azione: 'Continua', a }
   }
-  if (s.puntiDiOggi < PUNTATA_MINIMA) {
+  const conto = `Oggi ${conSegno(s.netto)} in ${s.giri} ${s.giri === 1 ? 'giro' : 'giri'}`
+  if (s.saldo < PUNTATA_MINIMA) {
     return {
       fase: 'non-pronta',
-      titolo: 'Prima le classificate',
+      titolo: s.giri > 0 ? conto : 'Prima le classificate',
       dettaglio: `Servono ${PUNTATA_MINIMA} punti di oggi`,
-      avanzamento: Math.max(0, s.puntiDiOggi) / PUNTATA_MINIMA,
+      avanzamento: s.giri > 0 ? null : Math.max(0, s.saldo) / PUNTATA_MINIMA,
       azione: '',
       a,
     }
   }
   return {
     fase: 'da-giocare',
-    titolo: 'Da girare',
-    dettaglio: `Puoi puntare fino a ${s.puntiDiOggi} punti`,
-    avanzamento: 0,
+    titolo: s.giri > 0 ? conto : 'Da girare',
+    dettaglio: `Puoi puntare fino a ${s.saldo} punti`,
+    avanzamento: null,
     azione: 'Gira',
     a,
   }
