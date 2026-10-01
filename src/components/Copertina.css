@@ -72,6 +72,11 @@
   --c2: var(--go-2);
 }
 
+.copertina--ruota {
+  --c1: var(--ruota-1);
+  --c2: var(--ruota-2);
+}
+
 .copertina__disegno {
   position: absolute;
   inset: 0;

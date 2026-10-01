@@ -4,6 +4,7 @@ import { IconFlame, IconPeople } from '@/components/Icons'
 import type { ChiaveClassifica } from '@/games/classifiche'
 import { formatDuration, formatNumber, formatPercent } from '@/lib/format'
 import { DOMANDE_PER_PARTITA } from '@shared/quiz'
+import { conSegno } from '@shared/ruota'
 import type {
   BattagliaLeaderboard,
   CruciverbaLeaderboard,
@@ -45,7 +46,9 @@ export interface Voce {
   segni?: ReactNode
   /** Nella generale, i punti di ogni gioco: la barra sotto il nome. */
   composizione?: Record<GiocoClassificato, number>
-  dettaglio: { etichetta: string; valore: string; forte?: boolean; gioco?: GiocoClassificato }[]
+  /** Nella generale, quel che ha dato o tolto la ruota: e' gia' nei punti. */
+  ruota?: number
+  dettaglio: { etichetta: string; valore: string; forte?: boolean; gioco?: GiocoClassificato | 'ruota' }[]
   nota?: string
 }
 
@@ -90,6 +93,7 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
               : `${partite(r.partite)} · ${giochi} ${giochi === 1 ? 'gioco' : 'giochi'}`,
           breve: partite(r.partite),
           composizione: r.perGioco,
+          ruota: r.ruota,
           segni:
             r.assist > 0 ? (
               <span className="cl-segno" title={`${r.assist} punti in compagnia`}>
@@ -99,6 +103,7 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             ) : undefined,
           dettaglio: [
             ...ORDINE_GIOCHI.map((g) => ({ etichetta: NOMI_CLASSIFICHE[g], valore: formatNumber(r.perGioco[g]), gioco: g })),
+            ...(r.ruota !== 0 ? [{ etichetta: 'Ruota', valore: conSegno(r.ruota), gioco: 'ruota' as const }] : []),
             { etichetta: 'Totale', valore: formatNumber(r.punti), forte: true },
             ...(r.assist > 0 ? [{ etichetta: 'Di cui in compagnia', valore: formatNumber(r.assist) }] : []),
             { etichetta: 'Partite classificate', valore: formatNumber(r.partite) },

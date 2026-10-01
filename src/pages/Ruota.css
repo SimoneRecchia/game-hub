@@ -1,0 +1,341 @@
+/*
+ * La pagina della ruota: la ruota, che prende lo spazio che c'e', e sotto il
+ * pannello di quel che si fa adesso — la puntata, la sfida, l'esito. Il
+ * pannello ha un'altezza minima, così la ruota non salta fra un momento e
+ * l'altro; quando lo schermo e' piu' largo che alto va a destra della ruota.
+ */
+.ruota-pagina {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.ruota-campo {
+  container-type: size;
+  position: relative;
+  flex: 1;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * La luce del palco: un alone e dei raggi che girano piano dietro la ruota.
+ * Riempie il posto che resta intorno, che sul telefono in piedi e' tanto,
+ * senza dire niente.
+ */
+.ruota-campo__luce {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(140cqw, 140cqh, 680px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(closest-side, var(--ruota-alone) 55%, transparent),
+    repeating-conic-gradient(var(--ruota-raggio) 0 5deg, transparent 5deg 15deg);
+  mask: radial-gradient(closest-side, #000 50%, transparent);
+  -webkit-mask: radial-gradient(closest-side, #000 50%, transparent);
+  pointer-events: none;
+  animation: ruota-raggi 60s linear infinite;
+}
+
+@keyframes ruota-raggi {
+  to {
+    transform: translate(-50%, -50%) rotate(1turn);
+  }
+}
+
+.ruota-campo .ruota {
+  position: relative;
+  transition:
+    opacity var(--dur-slow) var(--ease-out),
+    filter var(--dur-slow) var(--ease-out);
+}
+
+/* Testa o croce: la moneta davanti, la ruota velata dietro. */
+.ruota-campo.is-moneta .ruota {
+  opacity: 0.28;
+  filter: saturate(0.5);
+}
+
+.ruota-campo__moneta {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ruota-moneta-entra 460ms var(--ease-spring) both;
+}
+
+.ruota-campo__moneta .moneta {
+  --lato-moneta: clamp(96px, 38cqmin, 168px);
+}
+
+@keyframes ruota-moneta-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+.ruota-campo__attesa,
+.ruota-attesa {
+  border-radius: 50%;
+  background: var(--fill-quaternary);
+  animation: ruota-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+.ruota-campo__attesa {
+  width: min(100cqw, 100cqh, 460px);
+  aspect-ratio: 1;
+}
+
+.ruota-attesa {
+  flex: 1;
+  min-height: 200px;
+  border-radius: var(--r-xl);
+}
+
+@keyframes ruota-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ─────────────────────────────  Il pannello  ───────────────────────────── */
+
+.ruota-pannello {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-3);
+  width: min(100%, 420px);
+  min-height: 156px;
+  margin-inline: auto;
+}
+
+.ruota-pannello__nota {
+  margin: 0;
+  font-size: var(--text-callout);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+/* La puntata: il nome e, a destra, quanto si punta su quanto si ha; sotto il cursore. */
+.ruota-puntata {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-sm);
+}
+
+.ruota-puntata__testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.ruota-puntata__titolo {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--label);
+}
+
+.ruota-puntata__valore {
+  font-size: var(--text-body);
+  color: var(--label-secondary);
+}
+
+.ruota-puntata__valore .u-tabnum {
+  font-weight: 700;
+  color: var(--label);
+}
+
+/* Una sfida, o i punti che mancano: il nome, la posta, e quel che si tocca. */
+.ruota-sfida {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--sp-2);
+  text-align: center;
+  animation: ruota-sale 320ms var(--ease-out) both;
+}
+
+.ruota-sfida__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.ruota-sfida__posta {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.ruota-sfida__lati {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+/* L'esito del giro: lo spicchio, i punti grandi, e poi la puntata e quando torna. */
+.ruota-esito {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  animation: ruota-sale 360ms var(--ease-out) both;
+}
+
+.ruota-esito__spicchio {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.ruota-esito__delta {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-large-title);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--label);
+}
+
+.ruota-esito__delta.is-piu {
+  color: var(--green);
+}
+
+.ruota-esito__delta.is-meno {
+  color: var(--red);
+}
+
+.ruota-esito__delta span {
+  font-size: var(--text-title-3);
+}
+
+.ruota-esito__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+@keyframes ruota-sale {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* La domanda: sotto il nome, quanto vale. */
+.ruota-quiz__posta {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* ─────────────────────────────  Le regole  ───────────────────────────── */
+
+.ruota-regole {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-subhead);
+}
+
+.ruota-regole td {
+  padding: 6px 0;
+  color: var(--label-secondary);
+}
+
+.ruota-regole tr + tr td {
+  border-top: 0.5px solid var(--separator);
+}
+
+.ruota-regole td:last-child {
+  text-align: right;
+  font-weight: 600;
+  color: var(--label);
+}
+
+/* ─────────────────────────────  Di lato  ───────────────────────────── */
+
+/* Piu' largo che alto: la ruota a sinistra, alta quanto lo schermo, e il pannello a destra. */
+@media (orientation: landscape) and (min-width: 640px) {
+  .ruota-pagina {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: var(--sp-8);
+  }
+
+  .ruota-campo {
+    flex: 0 1 620px;
+  }
+
+  .ruota-pannello {
+    flex: 0 0 320px;
+    width: 320px;
+    margin-inline: 0;
+  }
+}
+
+/* Il telefono di traverso: con il pannello di lato la ruota ci sta, e la pagina smette di scorrere. */
+@media (orientation: landscape) and (max-height: 560px) and (min-width: 640px) {
+  .pagina--intera:has(.ruota-pagina) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .ruota-pagina {
+    gap: var(--sp-5);
+  }
+
+  .ruota-pannello {
+    flex-basis: 280px;
+    width: 280px;
+    min-height: 0;
+  }
+}
+
+/* Piu' stretto, la pagina scorre come negli altri giochi: senza un'altezza `cqh` varrebbe zero. */
+@media (orientation: landscape) and (max-height: 560px) and (max-width: 639px) {
+  .ruota-campo {
+    container-type: normal;
+    flex: none;
+  }
+
+  .ruota-campo .ruota,
+  .ruota-campo__attesa {
+    width: min(100%, 300px);
+  }
+
+  .ruota-campo__luce {
+    width: 420px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ruota-campo__luce,
+  .ruota-campo__moneta,
+  .ruota-sfida,
+  .ruota-esito {
+    animation: none;
+  }
+}

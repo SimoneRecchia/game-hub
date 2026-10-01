@@ -13,11 +13,12 @@ import {
   riepilogoSudoku,
   riepilogoWordle,
 } from '../lib/riepiloghi'
+import { riepilogoRuota } from '../lib/ruotaStore'
 import { today } from '../lib/wordleStore'
 
 /**
- * La schermata iniziale in una richiesta: le classificate di oggi e la
- * posizione nella classifica generale del giorno.
+ * La schermata iniziale in una richiesta: le classificate di oggi, la ruota e
+ * la posizione nella classifica generale del giorno.
  *
  * Una e non sei perché il piano gratuito delle Pages Functions conta le
  * richieste, e la schermata iniziale e' quella che si apre di piu'. Come i
@@ -36,6 +37,8 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     riepilogoQuiz(db, io),
     classificaGenerale(db, periodoDi('today', quando.puzzleNumber), io),
   ])
+  // I punti che si possono puntare sulla ruota sono quelli delle classificate: la generale del giorno li ha gia'.
+  const ruota = await riepilogoRuota(db, io, generale.me ? generale.me.punti - generale.me.ruota : 0)
   return c.json<OggiRisposta>({
     date: quando.date,
     puzzleNumber: quando.puzzleNumber,
@@ -46,6 +49,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     sudoku,
     battaglia,
     quiz,
+    ruota,
     generale: {
       posizione: generale.me?.rank ?? null,
       punti: generale.me?.punti ?? 0,

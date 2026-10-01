@@ -13,13 +13,14 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
+import { conSegno } from '@shared/ruota'
 import type { GiocoClassificato, LeaderboardScope } from '@shared/types'
 import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
 import { NOMI_CLASSIFICHE, ORDINE_GIOCHI, vociDi, type Risposta, type Voce } from './voci'
 
 const LEDE: Record<ChiaveClassifica, string> = {
-  generale: 'Tutte le classificate, fino a 100 punti ciascuna.',
+  generale: 'Tutte le classificate, fino a 100 punti ciascuna, e la ruota.',
   wordle: '100 punti al primo tentativo, 50 al sesto.',
   scarabeo: 'Pareggiare il computer vale 100 punti.',
   cruciverba: '100 punti se lo completi senza aiuti.',
@@ -201,7 +202,7 @@ function RigaVoce({
             {io && <span className="cl-tu">tu</span>}
           </span>
           {voce.composizione && voce.punti > 0 ? (
-            <BarraGiochi punti={voce.composizione} totale={voce.punti} inCima={inCima} />
+            <BarraGiochi punti={voce.composizione} ruota={voce.ruota ?? 0} totale={voce.punti} inCima={inCima} />
           ) : (
             <span className="cl-riga__sotto">{voce.sotto}</span>
           )}
@@ -216,30 +217,35 @@ function RigaVoce({
 /**
  * Di che cosa e' fatto un totale della generale: un tratto per gioco, nel suo
  * colore, lungo quanto i suoi punti. La barra intera e' lunga quanto il totale
- * in rapporto al primo, così si vede anche quanto manca.
+ * in rapporto al primo, così si vede anche quanto manca. Quel che ha dato la
+ * ruota e' un tratto in fondo; quel che ha tolto accorcia la barra, che e'
+ * lunga quanto il totale.
  */
 function BarraGiochi({
   punti,
+  ruota,
   totale,
   inCima,
 }: {
   punti: Record<GiocoClassificato, number>
+  ruota: number
   totale: number
   inCima: number
 }) {
   const lunghezza = inCima > 0 ? Math.max(6, (100 * totale) / inCima) : 100
+  const giochi = ORDINE_GIOCHI.filter((g) => punti[g] > 0)
+  const voci = giochi.map((g) => `${NOMI_CLASSIFICHE[g]} ${punti[g]}`)
   return (
     <span
       className="cl-barra"
       style={{ '--lunghezza': `${lunghezza}%` } as CSSProperties}
       role="img"
-      aria-label={ORDINE_GIOCHI.filter((g) => punti[g] > 0)
-        .map((g) => `${NOMI_CLASSIFICHE[g]} ${punti[g]}`)
-        .join(', ')}
+      aria-label={[...voci, ...(ruota !== 0 ? [`Ruota ${conSegno(ruota)}`] : [])].join(', ')}
     >
-      {ORDINE_GIOCHI.filter((g) => punti[g] > 0).map((g) => (
+      {giochi.map((g) => (
         <span key={g} className="cl-barra__tratto" style={{ flexGrow: punti[g], background: `var(--${g}-1)` }} />
       ))}
+      {ruota > 0 && <span className="cl-barra__tratto" style={{ flexGrow: ruota, background: 'var(--ruota-2)' }} />}
     </span>
   )
 }
