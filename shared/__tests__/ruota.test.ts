@@ -9,7 +9,6 @@ import {
   etichettaDi,
   nomeDi,
   puntataValida,
-  puntateDi,
   type Spicchio,
 } from '../ruota'
 
@@ -125,18 +124,10 @@ describe('la ruota', () => {
 })
 
 describe('la puntata', () => {
-  it('si sceglie fra la minima, un quarto, metà, tre quarti e tutto', () => {
-    expect(puntateDi(420)).toEqual([50, 105, 210, 315, 420])
-    expect(puntateDi(600)).toEqual([50, 150, 300, 450, 600])
-    expect(puntateDi(120)).toEqual([50, 60, 90, 120])
-    expect(puntateDi(60)).toEqual([50, 60])
-    expect(puntateDi(50)).toEqual([50])
-    expect(puntateDi(49)).toEqual([])
-  })
-
-  it('vale fra la minima e tutti i punti di oggi, in punti interi', () => {
-    expect(puntataValida(50, 420)).toBe(true)
-    expect(puntataValida(420, 420)).toBe(true)
+  it('è quanto si vuole, fra la minima e tutti i punti di oggi, in punti interi', () => {
+    for (let puntata = PUNTATA_MINIMA; puntata <= 420; puntata += 1) expect(puntataValida(puntata, 420)).toBe(true)
+    expect(puntataValida(50, 50)).toBe(true)
+    expect(puntataValida(50, 49)).toBe(false)
     expect(puntataValida(421, 420)).toBe(false)
     expect(puntataValida(49, 420)).toBe(false)
     expect(puntataValida(100.5, 420)).toBe(false)
