@@ -5,7 +5,9 @@
  * cento punti, qualunque sia il gioco (vedi shared/punti.ts), quindi sommarle
  * non richiede un tasso di cambio inventato. Chi gioca a tutto ogni giorno puo'
  * fare fino a cinquecento punti; chi gioca solo al Wordle fino a cento, e
- * nella classifica del Wordle compete alla pari con tutti.
+ * nella classifica del Wordle compete alla pari con tutti. La ruota del giorno
+ * si somma a parte (`ruota`): non e' una classificata, ma quel che da' o toglie
+ * e' fatto con i punti delle classificate, e va dove vanno loro.
  *
  * Un aggregato per gioco, uniti qui. Non una query sola: le tabelle non hanno
  * niente in comune se non il giocatore, e una UNION con
@@ -22,6 +24,8 @@ export interface TotaliGenerale {
   displayName: string
   avatarColor: string
   perGioco: Record<GiocoClassificato, number>
+  /** Quel che ha dato o tolto la ruota: si somma ai punti, e non e' una partita. */
+  ruota: number
   assist: number
   partite: number
 }
@@ -44,7 +48,8 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.cruciverba +
       g.perGioco.sudoku +
       g.perGioco.battaglia +
-      g.perGioco.quiz,
+      g.perGioco.quiz +
+      g.ruota,
   }))
   return conPunti
     .sort((a, b) => {
@@ -70,7 +75,7 @@ export async function classificaGenerale(
 ): Promise<GeneraleLeaderboard> {
   const { da, a } = periodo
 
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, ruota] = await Promise.all([
     /*
      * Il Wordle come nella sua classifica: i punti delle proprie parole piu'
      * quelli delle giornate giocate in compagnia. Una giornata conta come una
@@ -136,6 +141,14 @@ export async function classificaGenerale(
       )
       .bind(da, a)
       .all<Parziale>(),
+    // La ruota: un giro al giorno, che non e' una partita. Una sfida a meta' conta gia' persa.
+    db
+      .prepare(
+        `SELECT player_id, COALESCE(SUM(delta), 0) AS punti, 0 AS partite
+           FROM ruota_giri WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+      )
+      .bind(da, a)
+      .all<Parziale>(),
   ])
 
   const totali = new Map<string, TotaliGenerale>()
@@ -148,6 +161,7 @@ export async function classificaGenerale(
         displayName: '',
         avatarColor: '',
         perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, battaglia: 0, quiz: 0 },
+        ruota: 0,
         assist: 0,
         partite: 0,
       }
@@ -169,6 +183,7 @@ export async function classificaGenerale(
   somma('sudoku', sudoku.results)
   somma('battaglia', battaglia.results)
   somma('quiz', quiz.results)
+  for (const r of ruota.results) di(r.player_id).ruota += r.punti
 
   if (totali.size > 0) {
     // Gli id in un parametro solo, come JSON: D1 accetta al massimo cento parametri per istruzione, e con

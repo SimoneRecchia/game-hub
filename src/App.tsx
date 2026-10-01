@@ -64,11 +64,15 @@ const QuizLibero = lazy(caricaQuizLibero)
 const QuizDuello = lazy(caricaQuizDuello)
 const QuizInvito = lazy(caricaQuizInvito)
 
+/* E la ruota, che si gira una volta al giorno. */
+const caricaRuota = () => import('./pages/Ruota')
+const Ruota = lazy(caricaRuota)
+
 function usePrecarica() {
   useEffect(() => {
     const t = window.setTimeout(() => {
       const pezzi = [caricaSala, caricaComputer, caricaPartita, caricaInvito, caricaQuiz, caricaQuizLibero]
-      void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito].map((c) => c())).catch(() => {})
+      void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito, caricaRuota].map((c) => c())).catch(() => {})
     }, 2_500)
     return () => window.clearTimeout(t)
   }, [])
@@ -145,6 +149,8 @@ export default function App() {
             <Route path="/quiz/libera/:materia" element={<QuizLibero />} />
             <Route path="/quiz/duello/:id" element={<QuizDuello />} />
             <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
+
+            <Route path={ROTTE.ruota} element={<Ruota />} />
 
             <Route path="/indovina-chi" element={<IndovinaChi />} />
             <Route path="/indovina-chi/partita/:id" element={<IndovinaPartita />} />

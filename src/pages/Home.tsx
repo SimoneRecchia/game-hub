@@ -7,7 +7,7 @@ import { Anello, Numero, Sezione } from '@/components/Elementi'
 import { IconChevronRight, IconPlay } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { GIOCHI, GIOCHI_DA_TAVOLO, type Gioco, type GiocoTavolo } from '@/games/catalog'
-import { statiDiOggi, type StatoOggi } from '@/games/stato'
+import { statiDiOggi, statoRuota, type StatoOggi, type StatoRuota } from '@/games/stato'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
@@ -60,16 +60,30 @@ export default function Home() {
         <ul className="home__carte">
           {GIOCHI.map((g, i) => (
             <li key={g.id} className="entra" style={{ '--n': i } as CSSProperties}>
-              <CartaClassificata gioco={g} stato={stati?.[g.id] ?? null} />
+              <CartaClassificata
+                id={g.id}
+                nome={g.nome}
+                a={ROTTE.classificata(g.id)}
+                stato={stati?.[g.id] ?? null}
+              />
             </li>
           ))}
+          {/* La ruota viene dopo i giochi: si puntano i punti fatti. */}
+          <li className="entra home__carte-ruota" style={{ '--n': GIOCHI.length } as CSSProperties}>
+            <CartaClassificata
+              id="ruota"
+              nome="Ruota"
+              a={ROTTE.ruota}
+              stato={oggi?.ruota ? statoRuota(oggi.ruota) : null}
+            />
+          </li>
         </ul>
       </Sezione>
 
       <Sezione titolo="Partite libere">
         <ul className="home__libere">
           {LIBERE.map((l, i) => (
-            <li key={l.id} className="entra" style={{ '--n': i + GIOCHI.length } as CSSProperties}>
+            <li key={l.id} className="entra" style={{ '--n': i + GIOCHI.length + 1 } as CSSProperties}>
               <Collegamento to={l.a} className="libera">
                 <Copertina gioco={l.id} formato="icona" transizione={l.transizione} />
                 <span className="libera__nome">{l.nome}</span>
@@ -136,19 +150,31 @@ function Riepilogo({
 /**
  * La carta di una classificata: la copertina del gioco, a che punto sei, e il
  * bottone. Tutta la carta porta alla partita di oggi, come il bottone: la
- * classificata di tutti i giorni deve stare a un tocco.
+ * classificata di tutti i giorni deve stare a un tocco. La ruota ha la stessa
+ * carta, e porta alla ruota.
  */
-function CartaClassificata({ gioco, stato }: { gioco: Gioco; stato: StatoOggi | null }) {
+function CartaClassificata({
+  id,
+  nome,
+  a,
+  stato,
+}: {
+  id: Gioco['id'] | 'ruota'
+  nome: string
+  /** Dove porta finché lo stato non e' arrivato. */
+  a: string
+  stato: StatoOggi | StatoRuota | null
+}) {
   const fatta = stato?.fase === 'fatta'
   return (
     <Collegamento
-      to={stato?.a ?? ROTTE.classificata(gioco.id)}
-      className={`carta carta--${gioco.id}${fatta ? ' is-fatta' : ''}`}
-      style={{ '--c1': `var(--${gioco.id}-1)`, '--c2': `var(--${gioco.id}-2)` } as CSSProperties}
+      to={stato?.a ?? a}
+      className={`carta carta--${id}${fatta ? ' is-fatta' : ''}`}
+      style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
     >
-      <Copertina gioco={gioco.id} formato="icona" className="carta__icona" />
+      <Copertina gioco={id} formato="icona" className="carta__icona" />
       <div className="carta__testo">
-        <h3 className="carta__nome">{gioco.nome}</h3>
+        <h3 className="carta__nome">{nome}</h3>
         {stato ? (
           <>
             <p className="carta__stato">{stato.titolo}</p>

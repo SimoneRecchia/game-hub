@@ -253,6 +253,28 @@
   --forza4-2: #0b7f71;
   --go-1: #a8579a;
   --go-2: #612457;
+  --ruota-1: #ffb020;
+  --ruota-2: #e5383b;
+
+  /* ---- La ruota del giorno ----
+     Un oggetto, come il tabellone dello Scarabeo: gli stessi colori nei due
+     temi. Gli spicchi si riconoscono prima di leggerli — l'oro del x2, il
+     grigio del niente, il viola di testa o croce — e le domande hanno il
+     colore della loro materia. */
+  --ruota-cornice: #2b2160;
+  --ruota-cornice-luce: #4a3d9a;
+  --ruota-piolo: #ffd166;
+  --ruota-oro-1: #ffe066;
+  --ruota-oro-2: #f5a623;
+  --ruota-niente: #6b7489;
+  --ruota-moneta: #6c45d6;
+  --ruota-mozzo-1: #7b6cff;
+  --ruota-mozzo-2: #3d2fc4;
+  /* La luce dietro la ruota: indaco su chiaro, oro su scuro, dove l'oro si vede. */
+  --ruota-alone: rgba(123, 108, 255, 0.2);
+  --ruota-alone: light-dark(rgba(123, 108, 255, 0.2), rgba(123, 108, 255, 0.3));
+  --ruota-raggio: rgba(123, 108, 255, 0.1);
+  --ruota-raggio: light-dark(rgba(123, 108, 255, 0.1), rgba(255, 209, 102, 0.1));
 
   /* ---- La griglia del sudoku ----
      Il filo sottile fra le caselle e quello spesso fra i riquadri, come sulla

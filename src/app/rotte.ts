@@ -24,6 +24,7 @@
  *   /quiz/libera/:materia               le categorie e le opzioni di una materia
  *   /quiz/duello/:id                    una sfida a quiz fra due
  *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
+ *   /ruota                              la ruota del giorno: si puntano i punti delle classificate
  *   /indovina-chi                       Indovina chi: la sala, i personaggi, le regole
  *   /indovina-chi/partita/:id           una partita
  *   /indovina-chi/invito/:codice        un invito arrivato con un link
@@ -73,6 +74,7 @@ export const SLUG_TAVOLIERE: Record<GiocoTavoliere, string> = {
 export const ROTTE = {
   home: '/',
   profilo: '/profilo',
+  ruota: '/ruota',
   /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero. */
   classifica: (chiave?: ChiaveClassifica) =>
     !chiave ? '/classifica' : chiave === 'generale' ? '/classifica/generale' : `/classifica/${SLUG[chiave]}`,

@@ -365,7 +365,71 @@ in una richiesta, i primi tre di ognuna e dove sei tu: e' la schermata
 `/classifica`, che le mette una sotto l'altra, e ognuna si apre per intero
 (`/classifica/generale`, `/classifica/wordle`). Non si normalizza per giornata
 ("il migliore prende cento"): cambierebbe le classifiche di ieri ogni volta che
-qualcuno gioca.
+qualcuno gioca. Alla generale si aggiunge solo la ruota, che non e' una
+classificata (vedi sotto).
+
+**La ruota punta i punti delle classificate, una volta al giorno.** Sta fra le
+carte del giorno, dopo i giochi (`/ruota`): si puntano da `PUNTATA_MINIMA` a
+tutti i punti fatti oggi nelle classificate, e quel che la ruota da' o toglie
+(`ruota_giri.delta`) entra nella generale del giorno, in una colonna sua
+(`GeneraleRow.ruota`, gia' dentro `punti`). La puntata si misura sulle sole
+classificate (`punti - ruota` della generale di oggi): la ruota non punta su se
+stessa, e quel che si gioca dopo il giro conta per la giornata ma non per la
+puntata, gia' fatta. Un giro per giocatore al giorno, con la chiave primaria e
+un `INSERT OR IGNORE`.
+
+**La ruota ha tre specie di spicchi, e i test le tengono ferme.** Ventiquattro
+spicchi (`SPICCHI` in `shared/ruota.ts`), non i cinquantaquattro di Crazy Time:
+su un telefono non si leggevano. Un x2 solo, che raddoppia la puntata ed e' il
+solo spicchio che la guarda; otto "niente", che lasciano tutto com'e'; e le
+sfide — testa o croce e due domande per materia — ognuna con la sua posta, da
+dieci a cinquanta punti, che si vince se va bene e si perde se va male. Prima
+c'erano anche un x3, i ÷2 e ÷3 e dei punti fissi: dividere una puntata non
+diceva niente a nessuno, e i punti fissi sono diventati le poste delle sfide.
+Si perde al massimo la posta piu' alta, e per girare servono almeno altrettanti
+punti di oggi (`PUNTATA_MINIMA`): il totale del giorno non va mai sotto zero.
+In media un giro vale da cinque punti in meno (chi tira a indovinare) a sedici
+in piu' (chi sa tutto), piu' un ventiquattresimo della puntata per il x2; il
+x2 esce un giro su ventiquattro. Siccome nessuno spicchio toglie dalla
+puntata, la pagina propone di puntare tutto. `shared/__tests__/ruota.test.ts`
+tiene ferme queste condizioni e la disposizione: due vicini mai dello stesso
+colore (arte, libri e cinema hanno quello della cultura), le due domande di una
+materia lontane. Il giro salva l'indice dello spicchio: una disposizione nuova
+cambia lo spicchio mostrato per i giri gia' fatti quel giorno, quindi si cambia
+a giornata finita.
+
+**L'esito lo decide il server, e una sfida lasciata a meta' e' persa.** Lo
+spicchio si pesca con `crypto.getRandomValues` (con lo scarto, perché il resto
+di una divisione favorirebbe i primi), e il browser fa solo girare la ruota fin
+li': la risposta di `/ruota/gira` ha gia' l'esito. Lo spicchio di una materia
+che oggi non ha domande non esce. Una sfida scrive subito il `delta` di quando
+va male: chi chiude la pagina davanti a una domanda difficile non si salva.
+Testa o croce si sceglie prima (`/moneta` porta il lato) e la moneta la lancia
+il server; la domanda e' quella del quiz, con le stesse regole del tempo:
+`/domanda` scrive `aperta_at`, la risposta vale entro il limite piu'
+`MARGINE_RETE_MS`, e una domanda rimasta aperta la chiude la prima `GET`. Ogni
+scrittura e' condizionata allo stato appena letto.
+
+**Le domande della ruota si fanno la notte, con quelle del quiz.**
+`scripts/genera-quiz.ts` scrive in `ruota_domande` cinque domande per materia e
+per giorno, fra le voci note, lontane dai soggetti della classificata dello
+stesso giorno e da quelli della stessa materia delle cinque settimane prima;
+il server ne pesca una quando la domanda si apre. Come le giornate del quiz,
+`INSERT OR IGNORE`: una giornata scritta non cambia. `--se-manca` guarda anche
+queste righe, quindi il deploy le crea per i giorni che non le hanno.
+
+**La ruota si disegna una volta e gira scrivendo l'angolo.** Gli spicchi sono un
+SVG fermo (`Disegno`, in `memo`), e a ogni fotogramma l'animazione scrive la
+rotazione sul gruppo che lo contiene: passare dallo stato di React ridisegnerebbe
+ventiquattro spicchi sessanta volte al secondo. Rallenta come una ruota
+vera (`1 - (1 - t)^4`), si ferma dentro lo spicchio ma mai sul filo, e la
+lancetta scatta a ogni spicchio, con il suono del tocco tenuto a uno ogni 45 ms
+(a ruota veloce sarebbe un ronzio). Scritte e icone stanno dritte quando lo
+spicchio e' sotto la lancetta, dove si guardano, e i numeri verso il bordo, dove
+lo spicchio e' largo: piu' dentro, due poste vicine si leggevano come un numero
+solo. La domanda arriva a parte con la carta, le risposte e la
+cartina del quiz (`DomandaRuota`), che servono solo quando la ruota si ferma su
+una domanda.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —

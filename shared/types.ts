@@ -10,6 +10,7 @@ import type { ImpostazioniSfida } from './quiz-sfida'
 import type { Lato, Personaggi, Risposta } from './indovina'
 import type { GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
+import type { LatoMoneta, MateriaRuota } from './ruota'
 
 export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
 
@@ -421,6 +422,7 @@ export type Attivita =
   | 'dama'
   | 'forza4'
   | 'go'
+  | 'ruota'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -1100,6 +1102,8 @@ export interface GeneraleRow {
   avatarColor: string
   punti: number
   perGioco: Record<GiocoClassificato, number>
+  /** Quel che ha dato o tolto la ruota nel periodo: e' gia' dentro `punti`. */
+  ruota: number
   /** La parte del Wordle fatta nella stanza di qualcun altro: e' lo spareggio. */
   assist: number
   /** Classificate chiuse nel periodo: una giornata di Wordle conta una. */
@@ -1125,8 +1129,65 @@ export interface OggiRisposta {
   sudoku: SudokuSummary
   battaglia: BattagliaSummary
   quiz: QuizSummary
-  /** Come si sta oggi nella classifica generale. */
+  ruota: RuotaSummary
+  /** Come si sta oggi nella classifica generale, con quel che ha dato o tolto la ruota. */
   generale: { posizione: number | null; punti: number; giocatori: number }
+}
+
+/* ─────────────────────────────────  La ruota  ───────────────────────────────── */
+
+/** La sfida di un giro, come la vede chi gioca, con la sua posta: tanto in piu' se va bene, tanto in meno se no. */
+export type SfidaRuotaVista =
+  | {
+      tipo: 'moneta'
+      posta: number
+      /** Il lato scelto e quello uscito: ci sono a moneta lanciata. */
+      scelto: LatoMoneta | null
+      uscito: LatoMoneta | null
+    }
+  | {
+      tipo: 'domanda'
+      posta: number
+      materia: MateriaRuota
+      /** La categoria del quiz della domanda, per l'emblema della carta: c'e' da quando si apre. */
+      categoria: CategoriaQuiz | null
+      /** Da quando si apre: senza la risposta finché non si risponde. */
+      domanda: DomandaQuiz | null
+      limiteMs: number | null
+      /** Quanto resta, mentre la domanda e' aperta. */
+      restanteMs: number | null
+      /** A risposta data, con la giusta e la scheda che insegna. */
+      risposta: RispostaQuiz | null
+    }
+
+export interface GiroRuota {
+  puntata: number
+  /** Lo spicchio dove si e' fermata la ruota, contando dall'alto in senso orario (shared/ruota.ts). */
+  spicchio: number
+  /** `sfida` finché la moneta o la domanda non si giocano, `domanda` mentre la domanda e' aperta. */
+  stato: 'sfida' | 'domanda' | 'fatto'
+  /** Quel che la ruota ha dato o tolto; durante una sfida, quel che toglie se va male. */
+  delta: number
+  sfida: SfidaRuotaVista | null
+}
+
+export interface RuotaStato {
+  puzzleNumber: number
+  date: string
+  /** I punti delle classificate di oggi: quanti se ne possono puntare. */
+  puntiDiOggi: number
+  giro: GiroRuota | null
+  msToNextPuzzle: number
+}
+
+/** La ruota nella schermata iniziale. */
+export interface RuotaSummary {
+  puntiDiOggi: number
+  stato: 'da-girare' | 'sfida' | 'fatto'
+  /** Lo spicchio del giro di oggi, se c'e'. */
+  spicchio: number | null
+  /** Quel che ha dato o tolto, a giro fatto. */
+  delta: number | null
 }
 
 export interface LeaderboardRow {
