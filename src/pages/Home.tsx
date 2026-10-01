@@ -12,6 +12,7 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
 import { gameDate } from '@shared/daily'
+import { NOME_CRAZY_TIME } from '@shared/ruota'
 import type { OggiRisposta } from '@shared/types'
 import './Home.css'
 
@@ -68,11 +69,11 @@ export default function Home() {
               />
             </li>
           ))}
-          {/* La ruota viene dopo i giochi: si puntano i punti fatti. */}
+          {/* Crazy Time viene dopo i giochi: si puntano i punti fatti. */}
           <li className="entra home__carte-ruota" style={{ '--n': GIOCHI.length } as CSSProperties}>
             <CartaClassificata
               id="ruota"
-              nome="Ruota"
+              nome={NOME_CRAZY_TIME}
               a={ROTTE.ruota}
               stato={oggi?.ruota ? statoRuota(oggi.ruota) : null}
             />
@@ -150,7 +151,7 @@ function Riepilogo({
 /**
  * La carta di una classificata: la copertina del gioco, a che punto sei, e il
  * bottone. Tutta la carta porta alla partita di oggi, come il bottone: la
- * classificata di tutti i giorni deve stare a un tocco. La ruota ha la stessa
+ * classificata di tutti i giorni deve stare a un tocco. Crazy Time ha la stessa
  * carta, e porta alla ruota.
  */
 function CartaClassificata({
@@ -194,7 +195,9 @@ function CartaClassificata({
             {stato.azione}
           </span>
         )}
-        {stato && <Anello valore={stato.avanzamento} dimensione={28} spessore={3.5} colore="var(--c1)" />}
+        {stato && stato.avanzamento !== null && (
+          <Anello valore={stato.avanzamento} dimensione={28} spessore={3.5} colore="var(--c1)" />
+        )}
       </div>
     </Collegamento>
   )

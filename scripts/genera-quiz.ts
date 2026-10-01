@@ -34,9 +34,12 @@
  * gia' pronto non c'e' ragione di chiederle — né di fermare una pubblicazione
  * perché uno di loro non risponde.
  *
- * Qui si fanno anche le domande delle sfide della ruota del giorno: qualche
- * domanda per materia per giorno (`ruota_domande`), con lo stesso generatore
- * e le stesse fonti, e anche loro una volta scritte non cambiano.
+ * Qui si fanno anche le domande delle sfide di Crazy Time: trenta per materia
+ * per giorno (`ruota_domande`), con lo stesso generatore e le stesse fonti, e
+ * anche loro una volta scritte non cambiano — tranne quelle di un formato
+ * vecchio (`FORMATO_DOMANDE_RUOTA`), che si rifanno anche per oggi: il server
+ * riconosce una domanda gia' vista dalla sua impronta, non dal posto
+ * nell'elenco, quindi rifare l'elenco non fa rivedere niente a nessuno.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -53,6 +56,7 @@ import { domandeDelGiornoQuiz, eCultura, generaPartita, type FontiQuiz } from '.
 import {
   CATEGORIE_DELLA_MATERIA,
   DOMANDE_PER_MATERIA,
+  FORMATO_DOMANDE_RUOTA,
   MATERIE_RUOTA,
   type DomandaRuota,
   type MateriaRuota,
@@ -158,7 +162,8 @@ if (SCRIVE && SE_MANCA) {
        FROM quiz_dati`,
   )
   const [ruota] = interroga<{ n: number }>(
-    `SELECT COUNT(*) AS n FROM ruota_domande WHERE puzzle_number >= ${DA} AND puzzle_number < ${DA + GIORNI}`,
+    `SELECT COUNT(*) AS n FROM ruota_domande
+      WHERE puzzle_number >= ${DA} AND puzzle_number < ${DA + GIORNI} AND formato >= ${FORMATO_DOMANDE_RUOTA}`,
   )
   const pronto =
     giornate.n === GIORNI &&
@@ -167,7 +172,7 @@ if (SCRIVE && SE_MANCA) {
     sezioni.geo > 0 &&
     sezioni.citta > 0
   if (pronto) {
-    console.log(`Quiz: le ${GIORNI} giornate, la ruota, il riassunto, le geometrie e le città ci sono già`)
+    console.log(`Quiz: le ${GIORNI} giornate, Crazy Time, il riassunto, le geometrie e le città ci sono già`)
     process.exit(0)
   }
 }
@@ -416,39 +421,44 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
   }
 }
 
-/* ──────────────────────────  Le domande della ruota  ─────────────────────────── */
+/* ──────────────────────────  Le domande di Crazy Time  ─────────────────────────── */
 
 /**
  * Per ogni giorno e ogni materia della ruota, `DOMANDE_PER_MATERIA` domande a
- * scelta: a chi gira e cade su quella materia ne tocca una a caso. Non
- * ripetono i soggetti della classificata dello stesso giorno — una sfida non
- * deve svelare il quiz di oggi — ne' quelli della stessa materia delle cinque
- * settimane prima. La geografia pesca una categoria a caso per domanda. Sono
- * fra le piu' note, come al livello facile: una domanda sola vale fino a
- * cinquanta punti, e una sfida deve essere di chi sa, non di chi ha studiato la
+ * scelta: a chi gira e cade su quella materia ne tocca una che quel giorno non
+ * ha ancora avuto. Non ripetono i soggetti della classificata dello stesso
+ * giorno — una sfida non deve svelare il quiz di oggi — ne' quelli della stessa
+ * materia dei giorni appena prima (`MEMORIA_RUOTA`: trenta al giorno per cinque
+ * settimane finirebbero le voci note di una materia piccola). La geografia
+ * pesca una categoria a caso per domanda. Sono fra le piu' note, come al
+ * livello facile: una sfida deve essere di chi sa, non di chi ha studiato la
  * Filocalia.
  */
+const MEMORIA_RUOTA = 3
 const ruotaFatte = new Map<string, DomandaRuota[]>()
 const chiaveRuota = (numero: number, materia: MateriaRuota) => `${numero}:${materia}`
 if (SCRIVE) {
-  for (const r of interroga<{ puzzle_number: number; materia: MateriaRuota; domande: string }>(
-    `SELECT puzzle_number, materia, domande FROM ruota_domande
-      WHERE puzzle_number >= ${DA - MEMORIA_GIORNI} AND puzzle_number < ${DA + GIORNI}`,
+  for (const r of interroga<{ puzzle_number: number; materia: MateriaRuota; domande: string; formato: number }>(
+    `SELECT puzzle_number, materia, domande, formato FROM ruota_domande
+      WHERE puzzle_number >= ${DA - MEMORIA_RUOTA} AND puzzle_number < ${DA + GIORNI}`,
   )) {
-    ruotaFatte.set(chiaveRuota(r.puzzle_number, r.materia), JSON.parse(r.domande))
+    // Una riga di un formato vecchio, da oggi in poi, e' da rifare: per i giorni prima conta come memoria.
+    if (r.formato >= FORMATO_DOMANDE_RUOTA || r.puzzle_number < DA) {
+      ruotaFatte.set(chiaveRuota(r.puzzle_number, r.materia), JSON.parse(r.domande))
+    }
   }
 }
 const ruotaMancanti = (numero: number) => MATERIE_RUOTA.filter((m) => !ruotaFatte.has(chiaveRuota(numero, m)))
 const ruotaDaFare = Array.from({ length: GIORNI }, (_, i) => ruotaMancanti(DA + i).length).reduce((a, b) => a + b, 0)
 console.log(
-  `Ruota: le domande dal ${DA} al ${DA + GIORNI - 1}, ` +
+  `Crazy Time: le domande dal ${DA} al ${DA + GIORNI - 1}, ` +
     `${GIORNI * MATERIE_RUOTA.length - ruotaDaFare} materie su ${GIORNI * MATERIE_RUOTA.length} già pronte`,
 )
 for (let numero = DA; numero < (SCRIVE ? DA + GIORNI : DA + 1); numero += 1) {
   const data = dateForPuzzleNumber(numero)
   for (const materia of ruotaMancanti(numero)) {
     const evitare = new Set((esistenti.get(numero)?.domande ?? []).map((d) => d.soggetto))
-    for (let prima = numero - MEMORIA_GIORNI; prima < numero; prima += 1) {
+    for (let prima = numero - MEMORIA_RUOTA; prima < numero; prima += 1) {
       for (const d of ruotaFatte.get(chiaveRuota(prima, materia)) ?? []) evitare.add(d.domanda.soggetto)
     }
     const caso = mulberry32(semeDellaRuota(numero, materia))
@@ -472,10 +482,12 @@ for (let numero = DA; numero < (SCRIVE ? DA + GIORNI : DA + 1); numero += 1) {
       console.error(`  #${numero} ${materia}: nessuna domanda`)
       process.exit(1)
     }
+    if (domande.length < DOMANDE_PER_MATERIA) console.log(`  #${numero} ${materia}: ${domande.length} domande`)
     ruotaFatte.set(chiaveRuota(numero, materia), domande)
+    // REPLACE solo per le righe di un formato vecchio: quelle nuove qui non arrivano, perché non mancano.
     istruzioni.push(
-      'INSERT OR IGNORE INTO ruota_domande (puzzle_number, materia, domande, created_at) VALUES (' +
-        [numero, cita(materia), cita(JSON.stringify(domande)), cita(adesso)].join(', ') +
+      'INSERT OR REPLACE INTO ruota_domande (puzzle_number, materia, domande, created_at, formato) VALUES (' +
+        [numero, cita(materia), cita(JSON.stringify(domande)), cita(adesso), FORMATO_DOMANDE_RUOTA].join(', ') +
         ');',
     )
     if (!SCRIVE) {

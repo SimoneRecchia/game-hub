@@ -17,7 +17,7 @@ import { riepilogoRuota } from '../lib/ruotaStore'
 import { today } from '../lib/wordleStore'
 
 /**
- * La schermata iniziale in una richiesta: le classificate di oggi, la ruota e
+ * La schermata iniziale in una richiesta: le classificate di oggi, Crazy Time e
  * la posizione nella classifica generale del giorno.
  *
  * Una e non sei perché il piano gratuito delle Pages Functions conta le
@@ -37,8 +37,8 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     riepilogoQuiz(db, io),
     classificaGenerale(db, periodoDi('today', quando.puzzleNumber), io),
   ])
-  // I punti che si possono puntare sulla ruota sono quelli delle classificate: la generale del giorno li ha gia'.
-  const ruota = await riepilogoRuota(db, io, generale.me ? generale.me.punti - generale.me.ruota : 0)
+  // Il saldo di Crazy Time e' il totale di oggi nella generale: le classificate piu' quel che ha dato o tolto.
+  const ruota = await riepilogoRuota(db, io, Math.max(0, generale.me?.punti ?? 0), generale.me?.ruota ?? 0)
   return c.json<OggiRisposta>({
     date: quando.date,
     puzzleNumber: quando.puzzleNumber,

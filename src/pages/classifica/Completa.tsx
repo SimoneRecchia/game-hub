@@ -13,14 +13,14 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
-import { conSegno } from '@shared/ruota'
+import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
 import type { GiocoClassificato, LeaderboardScope } from '@shared/types'
 import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
 import { NOMI_CLASSIFICHE, ORDINE_GIOCHI, vociDi, type Risposta, type Voce } from './voci'
 
 const LEDE: Record<ChiaveClassifica, string> = {
-  generale: 'Tutte le classificate, fino a 100 punti ciascuna, e la ruota.',
+  generale: 'Tutte le classificate, fino a 100 punti ciascuna, e Crazy Time.',
   wordle: '100 punti al primo tentativo, 50 al sesto.',
   scarabeo: 'Pareggiare il computer vale 100 punti.',
   cruciverba: '100 punti se lo completi senza aiuti.',
@@ -217,8 +217,8 @@ function RigaVoce({
 /**
  * Di che cosa e' fatto un totale della generale: un tratto per gioco, nel suo
  * colore, lungo quanto i suoi punti. La barra intera e' lunga quanto il totale
- * in rapporto al primo, così si vede anche quanto manca. Quel che ha dato la
- * ruota e' un tratto in fondo; quel che ha tolto accorcia la barra, che e'
+ * in rapporto al primo, così si vede anche quanto manca. Quel che ha dato
+ * Crazy Time e' un tratto in fondo; quel che ha tolto accorcia la barra, che e'
  * lunga quanto il totale.
  */
 function BarraGiochi({
@@ -240,7 +240,7 @@ function BarraGiochi({
       className="cl-barra"
       style={{ '--lunghezza': `${lunghezza}%` } as CSSProperties}
       role="img"
-      aria-label={[...voci, ...(ruota !== 0 ? [`Ruota ${conSegno(ruota)}`] : [])].join(', ')}
+      aria-label={[...voci, ...(ruota !== 0 ? [`${NOME_CRAZY_TIME} ${conSegno(ruota)}`] : [])].join(', ')}
     >
       {giochi.map((g) => (
         <span key={g} className="cl-barra__tratto" style={{ flexGrow: punti[g], background: `var(--${g}-1)` }} />
