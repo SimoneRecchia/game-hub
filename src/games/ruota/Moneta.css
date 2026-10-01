@@ -1,0 +1,109 @@
+/*
+ * La moneta: un disco d'oro con due facce, che in aria sale, gira su se
+ * stessa e ricade. Il giro e' una transizione sul disco, il salto
+ * un'animazione sul suo contenitore, l'ombra si stringe mentre sale.
+ */
+.moneta {
+  --lato-moneta: 112px;
+  position: relative;
+  width: var(--lato-moneta);
+  height: calc(var(--lato-moneta) + 24px);
+  margin: 0 auto;
+  perspective: 600px;
+}
+
+.moneta__salto {
+  position: absolute;
+  inset: 0 0 24px;
+}
+
+.moneta.is-in-aria .moneta__salto {
+  animation: moneta-salto var(--lancio) cubic-bezier(0.33, 0, 0.67, 1) both;
+}
+
+@keyframes moneta-salto {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  45% {
+    transform: translateY(calc(var(--lato-moneta) * -0.85)) scale(1.18);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.moneta__disco {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition-property: transform;
+  transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.moneta__faccia {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.65), transparent 45%),
+    radial-gradient(circle, var(--ruota-oro-1) 0 58%, var(--ruota-oro-2) 59% 100%);
+  box-shadow:
+    inset 0 0 0 4px rgba(122, 74, 0, 0.35),
+    inset 0 0 0 9px rgba(255, 255, 255, 0.25),
+    0 6px 14px rgba(60, 35, 0, 0.3);
+  color: #7a4a00;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.moneta__faccia svg {
+  width: 44px;
+  height: 44px;
+  fill: currentColor;
+}
+
+.moneta__faccia span {
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.moneta__faccia.is-croce {
+  transform: rotateY(180deg);
+}
+
+.moneta__ombra {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  width: 70%;
+  height: 12px;
+  margin-left: -35%;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.18);
+  filter: blur(3px);
+}
+
+.moneta.is-in-aria .moneta__ombra {
+  animation: moneta-ombra var(--lancio) cubic-bezier(0.33, 0, 0.67, 1) both;
+}
+
+@keyframes moneta-ombra {
+  45% {
+    transform: scale(0.55);
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moneta.is-in-aria .moneta__salto,
+  .moneta.is-in-aria .moneta__ombra {
+    animation: none;
+  }
+}

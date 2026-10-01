@@ -1,0 +1,164 @@
+/*
+ * La ruota: una cornice scura con i pioli d'oro, gli spicchi, il mozzo
+ * indaco e la lancetta in cima. Si misura sul contenitore che la ospita: e'
+ * larga quanto puo', e mai piu' alta dello spazio che ha (il disegno e' un
+ * po' piu' alto che largo, per la lancetta).
+ */
+.ruota {
+  flex: none;
+  width: min(100cqw, 100cqh * 220 / 224, 460px);
+  aspect-ratio: 220 / 224;
+  margin: 0 auto;
+}
+
+.ruota__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  overflow: visible;
+}
+
+.ruota__ombra {
+  fill: rgba(10, 8, 30, 0.28);
+  filter: blur(4px);
+}
+
+.ruota__cornice {
+  fill: var(--ruota-cornice);
+  stroke: var(--ruota-cornice-luce);
+  stroke-width: 1.2;
+}
+
+.ruota__bordo {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.8;
+}
+
+.ruota__spicchio {
+  stroke: rgba(0, 0, 0, 0.22);
+  stroke-width: 0.4;
+}
+
+/* Il x2 e' d'oro, l'unico; i "niente" grigi; le monete viola; le domande nel colore della loro materia. */
+.ruota__spicchio.is-doppio {
+  fill: var(--ruota-oro-1);
+}
+
+.ruota__spicchio.is-niente {
+  fill: var(--ruota-niente);
+}
+
+.ruota__spicchio.is-moneta {
+  fill: var(--ruota-moneta);
+}
+
+.ruota__spicchio.is-materia-geografia {
+  fill: var(--materia-geografia-2);
+}
+
+.ruota__spicchio.is-materia-storia {
+  fill: var(--materia-storia-2);
+}
+
+.ruota__spicchio.is-materia-arte,
+.ruota__spicchio.is-materia-libri,
+.ruota__spicchio.is-materia-cinema {
+  fill: var(--materia-cultura-2);
+}
+
+.ruota__spicchio.is-materia-scienza {
+  fill: var(--materia-scienza-2);
+}
+
+.ruota__scritta,
+.ruota__posta {
+  fill: #fff;
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.2);
+  stroke-width: 0.7px;
+}
+
+.ruota__scritta {
+  font-size: 13px;
+}
+
+.ruota__scritta.is-doppio {
+  fill: #5a3400;
+  stroke: none;
+  font-size: 16px;
+  letter-spacing: -0.02em;
+}
+
+.ruota__scritta.is-niente {
+  fill: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+}
+
+.ruota__posta {
+  font-size: 12px;
+}
+
+.ruota__sfida {
+  color: #fff;
+}
+
+.ruota__moneta {
+  fill: var(--ruota-oro-1);
+  stroke: var(--ruota-oro-2);
+  stroke-width: 0.9;
+}
+
+.ruota__corona {
+  fill: #7a4a00;
+}
+
+.ruota__piolo {
+  fill: var(--ruota-piolo);
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.3;
+}
+
+.ruota__mozzo {
+  stroke: rgba(0, 0, 0, 0.25);
+  stroke-width: 0.6;
+}
+
+.ruota__mozzo-filo {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.35);
+  stroke-width: 0.6;
+}
+
+.ruota__mozzo-testo {
+  fill: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  text-anchor: middle;
+  font-variant-numeric: tabular-nums;
+}
+
+.ruota__mozzo-sotto {
+  fill: rgba(255, 255, 255, 0.78);
+  font-size: 5px;
+  font-weight: 700;
+  text-anchor: middle;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ruota__lancetta-perno {
+  fill: var(--ruota-piolo);
+  stroke: #7a4a00;
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1.5px 1.2px rgba(0, 0, 0, 0.35));
+  transform-box: fill-box;
+  transform-origin: 50% 15%;
+}

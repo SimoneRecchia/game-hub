@@ -25,7 +25,11 @@ interface Scheda {
   sotto: (percorso: string) => boolean
 }
 
-const PERCORSI_GIOCHI = [...GIOCHI.map((g) => ROTTE.gioco(g.id)), ...GIOCHI_DA_TAVOLO.map((g) => `/${g.slug}`)]
+const PERCORSI_GIOCHI = [
+  ...GIOCHI.map((g) => ROTTE.gioco(g.id)),
+  ROTTE.ruota,
+  ...GIOCHI_DA_TAVOLO.map((g) => `/${g.slug}`),
+]
 
 const SCHEDE: Scheda[] = [
   {
@@ -141,6 +145,14 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
             </Collegamento>
           )
         })}
+        <Collegamento
+          to={ROTTE.ruota}
+          direzione="scheda"
+          className={`laterale__voce laterale__voce--gioco${pathname === ROTTE.ruota ? ' is-attiva' : ''}`}
+        >
+          <Copertina gioco="ruota" formato="icona" />
+          <span>Ruota</span>
+        </Collegamento>
       </nav>
 
       <p className="laterale__titolo">Da tavolo</p>

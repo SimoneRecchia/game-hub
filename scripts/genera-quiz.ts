@@ -33,6 +33,10 @@
  * `--se-manca` e' per il deploy: le fonti sono servizi di altri, e se tutto e'
  * gia' pronto non c'e' ragione di chiederle — né di fermare una pubblicazione
  * perché uno di loro non risponde.
+ *
+ * Qui si fanno anche le domande delle sfide della ruota del giorno: qualche
+ * domanda per materia per giorno (`ruota_domande`), con lo stesso generatore
+ * e le stesse fonti, e anche loro una volta scritte non cambiano.
  */
 
 import { execFileSync } from 'node:child_process'
@@ -45,7 +49,14 @@ import { DOMANDE_PER_PARTITA, NOMI_CATEGORIE, NOMI_MODI, giornataDelQuiz, type C
 import { CATEGORIE_CULTURA, giornoDellAnno, type DatiCultura, type DatiOggi } from '../shared/quiz-cultura'
 import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI, cittaInBreve, type DatiQuiz } from '../shared/quiz-dati'
 import { indicizza, type DomandaCompleta } from '../shared/quiz-domande'
-import { domandeDelGiornoQuiz, eCultura, type FontiQuiz } from '../shared/quiz-domande-cultura'
+import { domandeDelGiornoQuiz, eCultura, generaPartita, type FontiQuiz } from '../shared/quiz-domande-cultura'
+import {
+  CATEGORIE_DELLA_MATERIA,
+  DOMANDE_PER_MATERIA,
+  MATERIE_RUOTA,
+  type DomandaRuota,
+  type MateriaRuota,
+} from '../shared/ruota'
 import type { Topologia } from '../shared/topojson'
 import {
   Q_ALIAS_FIUMI,
@@ -119,6 +130,13 @@ function semeDelGiorno(numero: number): number {
   return (0x7a1c_0de5 ^ Math.imul(numero, 0x9e37_79b1)) >>> 0
 }
 
+/** Il seme delle domande di una materia della ruota, in un giorno: diverso da quello della classificata. */
+function semeDellaRuota(numero: number, materia: MateriaRuota): number {
+  let h = 0x5eed_4a7a ^ Math.imul(numero, 0x85eb_ca6b)
+  for (const c of materia) h = Math.imul(h ^ c.charCodeAt(0), 0x0100_0193)
+  return h >>> 0
+}
+
 /** Una giornata che si puo' rifare: nel futuro, di un formato vecchio, e che nessuno ha aperto. */
 const DA_RIFARE = (numero: number) =>
   `puzzle_number = ${numero} AND formato < ${FORMATO} AND puzzle_number > ${DA}
@@ -139,8 +157,17 @@ if (SCRIVE && SE_MANCA) {
             SUM(CASE WHEN parte LIKE '${PREFISSO_CITTA}%' THEN 1 ELSE 0 END) AS citta
        FROM quiz_dati`,
   )
-  if (giornate.n === GIORNI && sezioni.n === SEZIONI_DATI.length && sezioni.geo > 0 && sezioni.citta > 0) {
-    console.log(`Quiz: le ${GIORNI} giornate, il riassunto, le geometrie e le città ci sono già`)
+  const [ruota] = interroga<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM ruota_domande WHERE puzzle_number >= ${DA} AND puzzle_number < ${DA + GIORNI}`,
+  )
+  const pronto =
+    giornate.n === GIORNI &&
+    ruota.n === GIORNI * MATERIE_RUOTA.length &&
+    sezioni.n === SEZIONI_DATI.length &&
+    sezioni.geo > 0 &&
+    sezioni.citta > 0
+  if (pronto) {
+    console.log(`Quiz: le ${GIORNI} giornate, la ruota, il riassunto, le geometrie e le città ci sono già`)
     process.exit(0)
   }
 }
@@ -386,6 +413,77 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
       console.log(`     ${d.testo}  ${opzioni || `→ ${d.risposta} (${d.cartina?.strato})`}`)
     }
     break
+  }
+}
+
+/* ──────────────────────────  Le domande della ruota  ─────────────────────────── */
+
+/**
+ * Per ogni giorno e ogni materia della ruota, `DOMANDE_PER_MATERIA` domande a
+ * scelta: a chi gira e cade su quella materia ne tocca una a caso. Non
+ * ripetono i soggetti della classificata dello stesso giorno — una sfida non
+ * deve svelare il quiz di oggi — ne' quelli della stessa materia delle cinque
+ * settimane prima. La geografia pesca una categoria a caso per domanda. Sono
+ * fra le piu' note, come al livello facile: una domanda sola vale fino a
+ * cinquanta punti, e una sfida deve essere di chi sa, non di chi ha studiato la
+ * Filocalia.
+ */
+const ruotaFatte = new Map<string, DomandaRuota[]>()
+const chiaveRuota = (numero: number, materia: MateriaRuota) => `${numero}:${materia}`
+if (SCRIVE) {
+  for (const r of interroga<{ puzzle_number: number; materia: MateriaRuota; domande: string }>(
+    `SELECT puzzle_number, materia, domande FROM ruota_domande
+      WHERE puzzle_number >= ${DA - MEMORIA_GIORNI} AND puzzle_number < ${DA + GIORNI}`,
+  )) {
+    ruotaFatte.set(chiaveRuota(r.puzzle_number, r.materia), JSON.parse(r.domande))
+  }
+}
+const ruotaMancanti = (numero: number) => MATERIE_RUOTA.filter((m) => !ruotaFatte.has(chiaveRuota(numero, m)))
+const ruotaDaFare = Array.from({ length: GIORNI }, (_, i) => ruotaMancanti(DA + i).length).reduce((a, b) => a + b, 0)
+console.log(
+  `Ruota: le domande dal ${DA} al ${DA + GIORNI - 1}, ` +
+    `${GIORNI * MATERIE_RUOTA.length - ruotaDaFare} materie su ${GIORNI * MATERIE_RUOTA.length} già pronte`,
+)
+for (let numero = DA; numero < (SCRIVE ? DA + GIORNI : DA + 1); numero += 1) {
+  const data = dateForPuzzleNumber(numero)
+  for (const materia of ruotaMancanti(numero)) {
+    const evitare = new Set((esistenti.get(numero)?.domande ?? []).map((d) => d.soggetto))
+    for (let prima = numero - MEMORIA_GIORNI; prima < numero; prima += 1) {
+      for (const d of ruotaFatte.get(chiaveRuota(prima, materia)) ?? []) evitare.add(d.domanda.soggetto)
+    }
+    const caso = mulberry32(semeDellaRuota(numero, materia))
+    const categorie = CATEGORIE_DELLA_MATERIA[materia]
+    const domande: DomandaRuota[] = []
+    for (let prova = 0; domande.length < DOMANDE_PER_MATERIA && prova < DOMANDE_PER_MATERIA * 4; prova += 1) {
+      const categoria = categorie[Math.floor(caso() * categorie.length)]
+      const [domanda] = generaPartita(
+        fontiDelGiorno(categoria, data),
+        { categoria, modo: 'scelta', area: 'mondo', quante: 1, data, notorieta: 'noti' },
+        caso,
+        evitare,
+      )
+      // Lo stesso soggetto non basta: "un'unita' di misura della massa" puo' tornare con un altro chilogrammo.
+      const doppia = (d: DomandaRuota) => d.domanda.testo === domanda?.testo && d.domanda.giusta === domanda?.giusta
+      if (!domanda || domande.some(doppia)) continue
+      evitare.add(domanda.soggetto)
+      domande.push({ categoria, domanda })
+    }
+    if (domande.length === 0) {
+      console.error(`  #${numero} ${materia}: nessuna domanda`)
+      process.exit(1)
+    }
+    ruotaFatte.set(chiaveRuota(numero, materia), domande)
+    istruzioni.push(
+      'INSERT OR IGNORE INTO ruota_domande (puzzle_number, materia, domande, created_at) VALUES (' +
+        [numero, cita(materia), cita(JSON.stringify(domande)), cita(adesso)].join(', ') +
+        ');',
+    )
+    if (!SCRIVE) {
+      for (const { domanda: d } of domande) {
+        const opzioni = d.opzioni.map((o) => (o.id === d.giusta ? `[${o.testo}]` : o.testo)).join(' · ')
+        console.log(`  ruota ${materia}: ${d.testo}  ${opzioni}`)
+      }
+    }
   }
 }
 

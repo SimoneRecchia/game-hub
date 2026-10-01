@@ -11,6 +11,7 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
     displayName: nickname,
     avatarColor: '#000',
     perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, battaglia: 0, quiz: 0, ...perGioco },
+    ruota: 0,
     assist,
     partite,
   }
