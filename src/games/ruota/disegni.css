@@ -1,0 +1,130 @@
+/*
+ * Gli spicchi delle due ruote. Il banco e' nero con l'oro: e' la casa. Le
+ * domande hanno il colore della loro materia, quello del quiz; la moneta e'
+ * viola. Sulla ruota dei moltiplicatori il colore dice quanto vale lo
+ * spicchio, dal blu del ×1,25 all'oro del ×3.
+ */
+.ct-spicchio {
+  stroke: rgba(0, 0, 0, 0.25);
+  stroke-width: 0.4;
+}
+
+.ct-spicchio.is-banco {
+  fill: var(--ct-banco);
+}
+
+.ct-spicchio.is-moneta {
+  fill: var(--ct-moneta);
+}
+
+.ct-spicchio.is-materia-geografia {
+  fill: var(--materia-geografia-2);
+}
+
+.ct-spicchio.is-materia-storia {
+  fill: var(--materia-storia-2);
+}
+
+.ct-spicchio.is-materia-arte,
+.ct-spicchio.is-materia-libri,
+.ct-spicchio.is-materia-cinema {
+  fill: var(--materia-cultura-2);
+}
+
+.ct-spicchio.is-materia-scienza {
+  fill: var(--materia-scienza-2);
+}
+
+.ct-spicchio.is-m125 {
+  fill: var(--ct-m125);
+}
+
+.ct-spicchio.is-m15 {
+  fill: var(--ct-m15);
+}
+
+.ct-spicchio.is-m2 {
+  fill: var(--ct-m2);
+}
+
+.ct-spicchio.is-m3 {
+  fill: var(--ct-m3);
+}
+
+/* I raggi d'oro fra gli spicchi, e i pioli dove scatta la lancetta. */
+.ct-raggio {
+  stroke: var(--ct-oro);
+  stroke-width: 1;
+  stroke-opacity: 0.85;
+}
+
+.ct-piolo {
+  fill: var(--ct-oro-chiaro);
+  stroke: rgba(80, 40, 0, 0.6);
+  stroke-width: 0.5;
+}
+
+/* ─────────────────────────────  Le scritte  ───────────────────────────── */
+
+.ct-scritta {
+  fill: #fff;
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.3);
+  stroke-width: 0.9px;
+}
+
+/* Il banco: oro su nero, la scritta piu' grande della ruota. */
+.ct-scritta.is-banco {
+  fill: var(--ct-oro);
+  stroke: rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.14em;
+}
+
+.ct-scritta.is-moltiplicatore {
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  stroke: rgba(0, 0, 0, 0.32);
+  stroke-width: 1.2px;
+}
+
+/* Sull'oro del ×3 e sull'ambra del ×1,5 la scritta e' scura: il bianco non si leggerebbe. */
+.ct-scritta.is-m3,
+.ct-scritta.is-m15 {
+  fill: #3d2300;
+  stroke: rgba(255, 255, 255, 0.35);
+}
+
+.ct-icona {
+  color: #fff;
+}
+
+.ct-icona svg {
+  overflow: visible;
+}
+
+/* ─────────────────────────────  La moneta dello spicchio  ───────────────────────────── */
+
+.ct-icona-moneta__orlo {
+  fill: var(--ct-oro);
+  stroke: var(--ct-oro-scuro);
+  stroke-width: 0.8;
+}
+
+.ct-icona-moneta__blu {
+  fill: var(--ct-blu);
+}
+
+.ct-icona-moneta__rosso {
+  fill: var(--ct-rosso);
+}
+
+.ct-icona-moneta__filo {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 0.6;
+}

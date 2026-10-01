@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  DISPOSIZIONE_RUOTA,
   DOMANDE_PER_MATERIA,
   MATERIE_RUOTA,
+  MOLTIPLICATORI,
+  MOLTIPLICATORI_MONETA,
   PUNTATA_MINIMA,
   SPICCHI,
   improntaDomanda,
@@ -17,9 +20,7 @@ type Banco = ReturnType<typeof banco>
 
 /** Gli spicchi che servono alle prove, per posto: il primo di ogni specie. */
 const indice = (prova: (s: Spicchio) => boolean) => SPICCHI.findIndex(prova)
-const X2 = indice((s) => s.tipo === 'doppio')
-const NIENTE = indice((s) => s.tipo === 'niente')
-const PERDI = indice((s) => s.tipo === 'perdi')
+const BANCO = indice((s) => s.tipo === 'banco')
 const MONETA = indice((s) => s.tipo === 'moneta')
 const GEOGRAFIA = indice((s) => s.tipo === 'domanda' && s.materia === 'geografia')
 
@@ -129,17 +130,17 @@ describe('Crazy Time', () => {
     expect(r.dati.code).toBe('POCHI_PUNTI')
   })
 
-  it('si gira quante volte si vuole, e il saldo e la generale seguono ogni giro', async () => {
+  it('si gira quante volte si vuole, la puntata si paga subito, e il saldo e la generale seguono', async () => {
     const b = banco()
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 90, 90)
     domandeDiOggi(b)
     expect(await stato(b, io)).toMatchObject({ classificate: 180, saldo: 180 })
 
-    expect((await gira(b, io, 100, X2)).giro).toMatchObject({ n: 1, spicchio: X2, stato: 'fatto', delta: 100 })
-    expect(await stato(b, io)).toMatchObject({ classificate: 180, netto: 100, giri: 1, saldo: 280 })
-    // Il saldo nuovo si puo' puntare tutto.
-    expect((await gira(b, io, 280, PERDI)).giro).toMatchObject({ n: 2, spicchio: PERDI, delta: -280 })
+    expect((await gira(b, io, 100, BANCO)).giro).toMatchObject({ n: 1, spicchio: BANCO, stato: 'fatto', delta: -100 })
+    expect(await stato(b, io)).toMatchObject({ classificate: 180, netto: -100, giri: 1, saldo: 80 })
+    // Il saldo che resta si puo' puntare tutto.
+    expect((await gira(b, io, 80, BANCO)).giro).toMatchObject({ n: 2, delta: -80 })
     expect(await stato(b, io)).toMatchObject({ netto: -180, giri: 2, saldo: 0 })
     const finito = await b.chiama('POST', '/ruota/gira', io, { puntata: PUNTATA_MINIMA })
     expect(finito.dati.code).toBe('POCHI_PUNTI')
@@ -149,7 +150,7 @@ describe('Crazy Time', () => {
     expect(me?.perGioco).toMatchObject({ quiz: 90, cruciverba: 90 })
     const oggi = (await b.chiama<OggiRisposta>('GET', '/oggi', io)).dati
     expect(oggi.generale.punti).toBe(0)
-    expect(oggi.ruota).toEqual({ saldo: 0, netto: -180, giri: 2, stato: 'gioca', spicchio: PERDI })
+    expect(oggi.ruota).toEqual({ saldo: 0, netto: -180, giri: 2, stato: 'gioca', spicchio: BANCO })
   })
 
   it('si punta da dieci a tutto il saldo, in punti interi', async () => {
@@ -162,7 +163,7 @@ describe('Crazy Time', () => {
       expect(r.status, String(puntata)).toBe(400)
       expect(r.dati.code).toBe('PUNTATA')
     }
-    expect((await gira(b, io, 137, NIENTE)).giro).toMatchObject({ puntata: 137, delta: 0 })
+    expect((await gira(b, io, 137, BANCO)).giro).toMatchObject({ puntata: 137, delta: -137 })
   })
 
   it('fra un giro e l’altro passano almeno tre secondi', async () => {
@@ -170,8 +171,8 @@ describe('Crazy Time', () => {
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 90, 90)
     domandeDiOggi(b)
-    await gira(b, io, 50, NIENTE)
-    caso(NIENTE)
+    await gira(b, io, 50, BANCO)
+    caso(BANCO)
     const subito = await b.chiama('POST', '/ruota/gira', io, { puntata: 50 })
     expect(subito.status).toBe(429)
     expect(subito.dati.code).toBe('TROPPO_PRESTO')
@@ -182,52 +183,80 @@ describe('Crazy Time', () => {
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 50, 50)
     domandeDiOggi(b)
-    await gira(b, io, 100, PERDI)
+    await gira(b, io, 100, BANCO)
     // Un giro con lo stesso numero arrivato dopo, come da una seconda richiesta che aveva letto il saldo di prima.
     b.db.sqlite.prepare('DELETE FROM ruota_giocate WHERE player_id = ?').run(io.id)
     b.db.sqlite
       .prepare(
         `INSERT INTO ruota_giocate
-           (player_id, puzzle_number, n, puntata, spicchio, stato, delta, created_at, updated_at)
-         VALUES (?, ?, 1, 100, ?, 'fatto', -100, ?, ?)`,
+           (player_id, puzzle_number, n, puntata, spicchio, stato, delta, disposizione, created_at, updated_at)
+         VALUES (?, ?, 1, 100, ?, 'fatto', -100, ?, ?, ?)`,
       )
-      .run(io.id, today().puzzleNumber, PERDI, new Date(0).toISOString(), new Date(0).toISOString())
+      .run(io.id, today().puzzleNumber, BANCO, DISPOSIZIONE_RUOTA, new Date(0).toISOString(), new Date(0).toISOString())
     const r = await b.chiama('POST', '/ruota/gira', io, { puntata: 100 })
     expect(r.status).toBe(409)
     expect(await stato(b, io)).toMatchObject({ saldo: 0, giri: 1 })
   })
 
-  it('testa o croce: vale la puntata, conta persa finché non si lancia, e il giro dopo la chiude', async () => {
+  it('la moneta: il moltiplicatore lo porta dal giro, blu vince la puntata per lui, rosso e’ del banco', async () => {
     const b = banco()
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 90, 90)
     domandeDiOggi(b)
 
-    const giro = (await gira(b, io, 100, MONETA)).giro!
-    expect(giro).toMatchObject({ stato: 'sfida', delta: -100, sfida: { tipo: 'moneta', posta: 100, scelto: null } })
+    // Il secondo numero e' il moltiplicatore del blu: il terzo dei quattro, ×2.
+    const giro = (await gira(b, io, 100, MONETA, 2)).giro!
+    expect(MOLTIPLICATORI_MONETA[2]).toBe(2)
+    expect(giro).toMatchObject({
+      stato: 'sfida',
+      delta: -100,
+      sfida: { tipo: 'moneta', moltiplicatore: 2, vincita: 200, uscito: null },
+    })
     expect((await generaleDiOggi(b, io))?.punti).toBe(80)
     caso(0)
-    const vinta = (await b.chiama<RuotaStato>('POST', '/ruota/moneta', io, { lato: 'testa' })).dati
-    expect(vinta.giro).toMatchObject({ stato: 'fatto', delta: 100, sfida: { scelto: 'testa', uscito: 'testa' } })
-    expect(vinta.saldo).toBe(280)
-    expect((await b.chiama('POST', '/ruota/moneta', io, { lato: 'croce' })).status).toBe(409)
-    expect((await b.chiama('POST', '/ruota/moneta', io, { lato: 'di taglio' })).status).toBe(400)
+    const blu = (await b.chiama<RuotaStato>('POST', '/ruota/moneta', io)).dati
+    expect(blu.giro).toMatchObject({ stato: 'fatto', delta: 100, sfida: { uscito: 'blu' } })
+    expect(blu.saldo).toBe(280)
+    expect((await b.chiama('POST', '/ruota/moneta', io)).status).toBe(409)
+
+    await gira(b, io, 80, MONETA, 0)
+    caso(1)
+    const rosso = (await b.chiama<RuotaStato>('POST', '/ruota/moneta', io)).dati
+    expect(rosso.giro).toMatchObject({ delta: -80, sfida: { moltiplicatore: 1.25, uscito: 'rosso' } })
+    expect(rosso.saldo).toBe(200)
 
     // Una moneta lasciata a meta': il giro dopo la chiude persa, e parte.
-    await gira(b, io, 80, MONETA)
-    const dopo = await gira(b, io, 50, NIENTE)
-    expect(dopo).toMatchObject({ giri: 3, netto: 100 - 80, giro: { n: 3, delta: 0 } })
+    await gira(b, io, 50, MONETA, 3)
+    const dopo = await gira(b, io, 50, BANCO)
+    expect(dopo).toMatchObject({ giri: 4, netto: 100 - 80 - 50 - 50, giro: { n: 4, delta: -50 } })
   })
 
-  it('la domanda vale un quarto della puntata, e la stessa domanda non torna nello stesso giorno', async () => {
+  it('la domanda: prima i moltiplicatori, poi la domanda, e giusta restituisce la puntata moltiplicata', async () => {
     const b = banco()
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 90, 90)
     domandeDiOggi(b, 2)
 
     const giro = (await gira(b, io, 100, GEOGRAFIA)).giro!
-    expect(giro).toMatchObject({ stato: 'sfida', delta: -25, sfida: { tipo: 'domanda', posta: 25, domanda: null } })
+    expect(giro).toMatchObject({
+      stato: 'sfida',
+      delta: -100,
+      sfida: { tipo: 'domanda', materia: 'geografia', moltiplicatore: null, vincita: null, domanda: null },
+    })
+    const senza = await b.chiama('POST', '/ruota/domanda', io)
+    expect(senza.status).toBe(409)
+    expect(senza.dati.code).toBe('MOLTIPLICATORE')
     expect((await b.chiama('POST', '/ruota/risposta', io, { scelta: 'lis' })).status).toBe(409)
+
+    caso(4)
+    expect(MOLTIPLICATORI[4]).toBe(2)
+    const girata = (await b.chiama<RuotaStato>('POST', '/ruota/moltiplicatore', io)).dati.giro!
+    expect(girata.sfida).toMatchObject({ moltiplicatore: 2, spicchioMoltiplicatore: 4, vincita: 200 })
+    // Si gira una volta sola: richiederla ridà lo stesso moltiplicatore.
+    caso(0)
+    expect((await b.chiama<RuotaStato>('POST', '/ruota/moltiplicatore', io)).dati.giro!.sfida).toMatchObject({
+      moltiplicatore: 2,
+    })
 
     caso(0)
     const aperta = (await b.chiama<RuotaStato>('POST', '/ruota/domanda', io)).dati.giro!
@@ -236,50 +265,102 @@ describe('Crazy Time', () => {
     const vista = sfida.domanda as unknown as Record<string, unknown>
     for (const segreto of ['giusta', 'risposta', 'soggetto', 'spiegazione']) expect(vista[segreto]).toBeUndefined()
     const prima = sfida.domanda!.testo
+    expect((await b.chiama('POST', '/ruota/moltiplicatore', io)).status).toBe(409)
 
     const risposta = (await b.chiama<RuotaStato>('POST', '/ruota/risposta', io, { scelta: 'lis' })).dati
-    expect(risposta.giro).toMatchObject({ stato: 'fatto', delta: 25, sfida: { risposta: { giusta: true } } })
-    expect(risposta.saldo).toBe(205)
+    expect(risposta.giro).toMatchObject({ stato: 'fatto', delta: 100, sfida: { risposta: { giusta: true } } })
+    expect(risposta.saldo).toBe(280)
 
     // Il giro dopo cade ancora sulla geografia: la domanda e' l'altra, anche se il caso sceglierebbe la prima.
     await gira(b, io, 100, GEOGRAFIA)
     caso(0)
+    expect((await b.chiama<RuotaStato>('POST', '/ruota/moltiplicatore', io)).dati.giro!.sfida).toMatchObject({
+      moltiplicatore: 3,
+      vincita: 300,
+    })
+    caso(0)
     const seconda = (await b.chiama<RuotaStato>('POST', '/ruota/domanda', io)).dati.giro!
     expect((seconda.sfida as typeof sfida).domanda!.testo).not.toBe(prima)
-    await b.chiama('POST', '/ruota/risposta', io, { scelta: 'opo' })
-    expect(await stato(b, io)).toMatchObject({ netto: 25 - 25, giri: 2 })
+    const sbagliata = (await b.chiama<RuotaStato>('POST', '/ruota/risposta', io, { scelta: 'opo' })).dati
+    expect(sbagliata.giro).toMatchObject({ delta: -100, sfida: { risposta: { giusta: false } } })
+    expect(await stato(b, io)).toMatchObject({ netto: 100 - 100, giri: 2 })
 
     // Finite le domande della geografia, il suo spicchio non esce piu': il numero cade sullo spicchio dopo.
     const terzo = await gira(b, io, 100, GEOGRAFIA)
     expect(SPICCHI[terzo.giro!.spicchio]).not.toEqual({ tipo: 'domanda', materia: 'geografia' })
   })
 
-  it('una risposta in ritardo e una domanda lasciata aperta contano perse', async () => {
+  it('una risposta in ritardo e una domanda lasciata aperta li prende il banco', async () => {
     const b = banco()
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 90, 90)
     domandeDiOggi(b, 3)
     await gira(b, io, 100, GEOGRAFIA)
     caso(0)
+    await b.chiama('POST', '/ruota/moltiplicatore', io)
+    caso(0)
     await b.chiama('POST', '/ruota/domanda', io)
     b.db.sqlite
       .prepare('UPDATE ruota_giocate SET aperta_at = ? WHERE player_id = ?')
       .run(new Date(Date.now() - 60_000).toISOString(), io.id)
     const tardi = (await b.chiama<RuotaStato>('POST', '/ruota/risposta', io, { scelta: 'lis' })).dati.giro!
-    expect(tardi).toMatchObject({ stato: 'fatto', delta: -25, sfida: { risposta: { scelta: null, giusta: false } } })
+    expect(tardi).toMatchObject({ stato: 'fatto', delta: -100, sfida: { risposta: { scelta: null, giusta: false } } })
 
-    await gira(b, io, 100, GEOGRAFIA)
+    await gira(b, io, 50, GEOGRAFIA)
+    caso(0)
+    await b.chiama('POST', '/ruota/moltiplicatore', io)
     caso(0)
     await b.chiama('POST', '/ruota/domanda', io)
     b.db.sqlite
       .prepare('UPDATE ruota_giocate SET aperta_at = ? WHERE player_id = ? AND n = 2')
       .run(new Date(Date.now() - 60_000).toISOString(), io.id)
     const chiusa = (await stato(b, io)).giro!
-    expect(chiusa).toMatchObject({ n: 2, stato: 'fatto', delta: -25, sfida: { risposta: { scelta: null } } })
-    expect((await stato(b, io)).netto).toBe(-50)
+    expect(chiusa).toMatchObject({ n: 2, stato: 'fatto', delta: -50, sfida: { risposta: { scelta: null } } })
+    expect((await stato(b, io)).netto).toBe(-150)
   })
 
-  it('i giri della ruota di prima passano con i loro punti, chiusi e senza spicchio', async () => {
+  it('un giro della ruota di prima conta i suoi punti, ma non si mostra', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+    const t = new Date(Date.now() - 60_000).toISOString()
+    b.db.sqlite
+      .prepare(
+        `INSERT INTO ruota_giocate
+           (player_id, puzzle_number, n, puntata, spicchio, stato, delta, disposizione, created_at, updated_at)
+         VALUES (?, ?, 1, 40, 3, 'fatto', 40, 1, ?, ?)`,
+      )
+      .run(io.id, today().puzzleNumber, t, t)
+    b.db.sqlite
+      .prepare('INSERT INTO ruota_giornate (player_id, puzzle_number, netto, giri) VALUES (?, ?, 40, 1)')
+      .run(io.id, today().puzzleNumber)
+    expect(await stato(b, io)).toMatchObject({ netto: 40, giri: 1, saldo: 220, giro: null })
+    const oggi = await b.chiama<OggiRisposta>('GET', '/oggi', io)
+    expect(oggi.dati.ruota).toMatchObject({ stato: 'gioca', spicchio: null })
+    expect((await b.chiama('POST', '/ruota/moneta', io)).status).toBe(409)
+    expect((await gira(b, io, 20, BANCO)).giro).toMatchObject({ n: 2, delta: -20 })
+  })
+
+  it('la migrazione della ruota da casinò chiude le sfide rimaste a meta’, con i loro punti', () => {
+    const d1 = new ProvaD1('0025_crazy_time_casino.sql')
+    const n = today().puzzleNumber
+    const t = new Date().toISOString()
+    d1.sqlite.exec('PRAGMA foreign_keys = OFF')
+    const giro = d1.sqlite.prepare(
+      `INSERT INTO ruota_giocate (player_id, puzzle_number, n, puntata, spicchio, stato, delta, sfida, created_at,
+         updated_at) VALUES ('p1', ?, ?, 100, ?, ?, ?, ?, ?, ?)`,
+    )
+    giro.run(n, 1, 0, 'fatto', 100, null, t, t)
+    giro.run(n, 2, 2, 'sfida', -25, '{"tipo":"domanda","materia":"geografia"}', t, t)
+    applica(d1, '0025_crazy_time_casino.sql')
+    expect(d1.sqlite.prepare('SELECT n, stato, delta, disposizione FROM ruota_giocate ORDER BY n').all()).toEqual([
+      { n: 1, stato: 'fatto', delta: 100, disposizione: 1 },
+      { n: 2, stato: 'fatto', delta: -25, disposizione: 1 },
+    ])
+  })
+
+  it('i giri della ruota di una volta al giorno passano con i loro punti, chiusi e senza spicchio', async () => {
     const d1 = new ProvaD1('0024_crazy_time.sql')
     const n = today().puzzleNumber
     const t = new Date().toISOString()
