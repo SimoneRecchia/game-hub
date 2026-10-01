@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   MATERIE_RUOTA,
+  MOLTIPLICATORI,
+  MOLTIPLICATORI_MONETA,
   PUNTATA_MINIMA,
   SPICCHI,
   deltaDi,
@@ -8,22 +10,22 @@ import {
   etichettaDi,
   improntaDomanda,
   nomeDi,
-  postaDi,
   puntataValida,
   resa,
+  scriviMoltiplicatore,
+  vincitaDi,
   type Spicchio,
 } from '../ruota'
 
 const conta = (prova: (s: Spicchio) => boolean) => SPICCHI.filter(prova).length
+const media = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
 
-/** Quel che un giro da' o toglie in media, in punti, a una puntata vera: con gli arrotondamenti della posta. */
-function attesoInPunti(puntata: number, s: number): number {
+/** Quel che un giro restituisce in media, in punti veri, a una puntata: con le vincite arrotondate per difetto. */
+function restituitoInPunti(puntata: number, s: number): number {
+  const domanda = s * media(MOLTIPLICATORI.map((m) => vincitaDi(puntata, m)))
+  const moneta = media(MOLTIPLICATORI_MONETA.map((m) => vincitaDi(puntata, m))) / 2
   let somma = 0
-  for (const sp of SPICCHI) {
-    if (sp.tipo === 'domanda') somma += s * deltaDi(sp, puntata, true) + (1 - s) * deltaDi(sp, puntata, false)
-    else if (sp.tipo === 'moneta') somma += (deltaDi(sp, puntata, true) + deltaDi(sp, puntata, false)) / 2
-    else somma += deltaDi(sp, puntata)
-  }
+  for (const sp of SPICCHI) somma += sp.tipo === 'domanda' ? domanda : sp.tipo === 'moneta' ? moneta : 0
   return somma / SPICCHI.length
 }
 
@@ -34,93 +36,115 @@ function coloreDi(s: Spicchio): string {
 }
 
 /** Quanti posti ci sono fra due spicchi, girando dalla parte piu' corta. */
-function distanza(a: number, b: number): number {
+function distanza(a: number, b: number, n = SPICCHI.length): number {
   const d = Math.abs(a - b)
-  return Math.min(d, SPICCHI.length - d)
+  return Math.min(d, n - d)
 }
 
 const posti = (prova: (s: Spicchio) => boolean) => SPICCHI.flatMap((s, i) => (prova(s) ? [i] : []))
 
-describe('Crazy Time', () => {
-  it('ha ventiquattro spicchi: abbastanza larghi da leggerli su un telefono', () => {
-    expect(SPICCHI).toHaveLength(24)
-  })
-
-  it('vince il banco: a chi tira a indovinare, a chi sa e a chi sta in mezzo', () => {
-    for (const s of [0, 0.25, 0.5, 0.75, 1]) expect(resa(s), `chi risponde giusto ${s * 100}%`).toBeLessThan(1)
-    // Chi sa tre domande su quattro perde quanto al Crazy Time vero, che rende dal 94 al 96%.
-    expect(resa(0.75)).toBeGreaterThan(0.94)
-    expect(resa(0.75)).toBeLessThan(0.96)
-    // Nemmeno chi le sa tutte ci guadagna.
-    expect(resa(1)).toBeLessThan(0.99)
-  })
-
-  it('vince il banco a ogni puntata, anche con gli arrotondamenti', () => {
-    for (let puntata = PUNTATA_MINIMA; puntata <= 2_000; puntata += 1) {
-      expect(attesoInPunti(puntata, 1), `puntata ${puntata}`).toBeLessThan(0)
-    }
-  })
-
-  it('ha un solo x2, che raddoppia la puntata', () => {
-    expect(conta((s) => s.tipo === 'doppio')).toBe(1)
-    const x2 = SPICCHI.find((s) => s.tipo === 'doppio')!
-    for (const puntata of [PUNTATA_MINIMA, 137, 600]) expect(deltaDi(x2, puntata)).toBe(puntata)
-  })
-
-  it('ha tanti 0, che lasciano tutto com’è, mai due vicini', () => {
-    const zeri = posti((s) => s.tipo === 'niente')
-    expect(zeri.length).toBeGreaterThanOrEqual(8)
-    for (const i of zeri) expect(deltaDi(SPICCHI[i], 300)).toBe(0)
-    for (let k = 0; k < zeri.length; k += 1) expect(distanza(zeri[k], zeri[(k + 1) % zeri.length])).toBeGreaterThan(1)
-  })
-
-  it('le ✕ fanno perdere la puntata, e sono poche', () => {
-    expect(conta((s) => s.tipo === 'perdi')).toBe(3)
-    for (const s of SPICCHI.filter((s) => s.tipo === 'perdi')) expect(deltaDi(s, 250)).toBe(-250)
-  })
-
-  it('testa o croce vale la puntata, una domanda un quarto, per difetto', () => {
-    expect(conta((s) => s.tipo === 'moneta')).toBe(3)
+describe('la ruota', () => {
+  it('ha dodici spicchi: il banco, le domande e le monete', () => {
+    expect(SPICCHI).toHaveLength(12)
+    expect(conta((s) => s.tipo === 'banco')).toBe(4)
+    expect(conta((s) => s.tipo === 'moneta')).toBe(2)
     for (const m of MATERIE_RUOTA) expect(conta((s) => s.tipo === 'domanda' && s.materia === m), m).toBe(1)
-    const moneta = SPICCHI.find((s) => s.tipo === 'moneta')!
-    const domanda = SPICCHI.find((s) => s.tipo === 'domanda')!
-    expect([deltaDi(moneta, 137, true), deltaDi(moneta, 137, false)]).toEqual([137, -137])
-    expect([deltaDi(domanda, 137, true), deltaDi(domanda, 137, false)]).toEqual([34, -34])
-    expect(postaDi(domanda, PUNTATA_MINIMA)).toBeGreaterThan(0)
-    expect(postaDi(SPICCHI.find((s) => s.tipo === 'niente')!, 100)).toBe(0)
+    expect(SPICCHI.filter(eSfida)).toHaveLength(8)
   })
 
-  it('si perde al massimo la puntata, e si vince al massimo la puntata', () => {
-    for (const puntata of [PUNTATA_MINIMA, 51, 600]) {
-      for (const s of SPICCHI) {
-        expect(deltaDi(s, puntata, false), nomeDi(s)).toBeGreaterThanOrEqual(-puntata)
-        expect(deltaDi(s, puntata, true), nomeDi(s)).toBeLessThanOrEqual(puntata)
-      }
-    }
+  it('non ha spicchi che lasciano tutto com’è: o si vince, o vince il banco', () => {
+    expect(SPICCHI.every((s) => s.tipo === 'banco' || eSfida(s))).toBe(true)
   })
 
-  it('due spicchi vicini non hanno mai lo stesso colore, e monete e ✕ stanno lontane', () => {
+  it('il banco ogni tre spicchi, mai due vicini dello stesso colore, le monete una di fronte all’altra', () => {
     for (let i = 0; i < SPICCHI.length; i += 1) {
       const dopo = SPICCHI[(i + 1) % SPICCHI.length]
       expect(coloreDi(SPICCHI[i]), `spicchi ${i} e ${i + 1}`).not.toBe(coloreDi(dopo))
     }
-    for (const tipo of ['moneta', 'perdi'] as const) {
-      const suoi = posti((s) => s.tipo === tipo)
-      for (let k = 0; k < suoi.length; k += 1) {
-        expect(distanza(suoi[k], suoi[(k + 1) % suoi.length]), tipo).toBeGreaterThanOrEqual(6)
+    expect(posti((s) => s.tipo === 'banco')).toEqual([2, 5, 8, 11])
+    const [a, b] = posti((s) => s.tipo === 'moneta')
+    expect(distanza(a, b)).toBe(6)
+    expect(SPICCHI[0].tipo).toBe('moneta')
+  })
+
+  it('si scrive lungo il raggio, e per intero per chi non vede', () => {
+    expect(SPICCHI.map(etichettaDi).slice(0, 4)).toEqual(['MONETA', 'GEOGRAFIA', 'BANCO', 'ARTE'])
+    expect(nomeDi(SPICCHI[1])).toBe('Domanda di geografia')
+    expect(nomeDi(SPICCHI[2])).toBe('Banco')
+  })
+})
+
+describe('i moltiplicatori', () => {
+  it('stanno su una ruota di dodici: ×3 una volta, ×2 due, ×1,5 quattro, ×1,25 cinque', () => {
+    expect(MOLTIPLICATORI).toHaveLength(12)
+    const quanti = (m: number) => MOLTIPLICATORI.filter((x) => x === m).length
+    expect([quanti(3), quanti(2), quanti(1.5), quanti(1.25)]).toEqual([1, 2, 4, 5])
+    for (let i = 0; i < MOLTIPLICATORI.length; i += 1) {
+      expect(MOLTIPLICATORI[i], `spicchi ${i} e ${i + 1}`).not.toBe(MOLTIPLICATORI[(i + 1) % MOLTIPLICATORI.length])
+    }
+  })
+
+  it('la moneta porta uno degli stessi, a caso', () => {
+    expect([...MOLTIPLICATORI_MONETA].sort()).toEqual([...new Set(MOLTIPLICATORI)].sort())
+  })
+
+  it('si scrivono con la virgola', () => {
+    expect(MOLTIPLICATORI_MONETA.map(scriviMoltiplicatore)).toEqual(['×1,25', '×1,5', '×2', '×3'])
+  })
+})
+
+describe('la vincita', () => {
+  it('e’ la puntata per il moltiplicatore, per difetto, e si conta senza errori di virgola', () => {
+    expect(vincitaDi(100, 2)).toBe(200)
+    expect(vincitaDi(100, 1.25)).toBe(125)
+    expect(vincitaDi(13, 1.25)).toBe(16)
+    expect(vincitaDi(7, 1.5)).toBe(10)
+    for (let puntata = PUNTATA_MINIMA; puntata <= 3_000; puntata += 1) {
+      for (const m of MOLTIPLICATORI_MONETA) {
+        const esatta = (puntata * Math.round(m * 100) - ((puntata * Math.round(m * 100)) % 100)) / 100
+        expect(vincitaDi(puntata, m)).toBe(esatta)
       }
     }
-    expect(SPICCHI[0].tipo).toBe('doppio')
   })
 
-  it('si scrive corto sulla ruota, e per intero per chi non vede', () => {
-    expect(SPICCHI.map(etichettaDi).slice(0, 5)).toEqual(['x2', '0', '', '0', '✕'])
-    expect(SPICCHI.filter(eSfida).every((s) => etichettaDi(s) === '')).toBe(true)
-    expect(nomeDi(SPICCHI[2])).toBe('Domanda di geografia')
-    expect(nomeDi(SPICCHI[4])).toBe('Puntata persa')
+  it('anche la piu’ piccola restituisce piu’ della puntata', () => {
+    for (let puntata = PUNTATA_MINIMA; puntata <= 500; puntata += 1) {
+      expect(vincitaDi(puntata, 1.25), `puntata ${puntata}`).toBeGreaterThan(puntata)
+    }
   })
 
-  it('riconosce una domanda già vista dal testo e dalla risposta, non dal posto', () => {
+  it('alla giornata da’ la vincita meno la puntata, o toglie la puntata', () => {
+    expect(deltaDi(100, 3)).toBe(200)
+    expect(deltaDi(100, 1.25)).toBe(25)
+    expect(deltaDi(100, null)).toBe(-100)
+  })
+})
+
+describe('vince il banco', () => {
+  it('a chi tira a indovinare, a chi sa e a chi sta in mezzo', () => {
+    for (const s of [0, 0.25, 0.5, 0.75, 0.9, 1]) expect(resa(s), `chi risponde giusto ${s * 100}%`).toBeLessThan(1)
+    // Chi le sa tutte riceve quanto da un gioco da casinò, dal 95 al 97%; chi ne sbaglia una su quattro meno.
+    expect(resa(1)).toBeGreaterThan(0.95)
+    expect(resa(1)).toBeLessThan(0.97)
+    expect(resa(0.75)).toBeLessThan(0.8)
+    expect(resa(0.25)).toBeLessThan(resa(0.75))
+  })
+
+  it('a ogni puntata, anche con gli arrotondamenti, e anche a chi le sa tutte', () => {
+    for (let puntata = PUNTATA_MINIMA; puntata <= 2_000; puntata += 1) {
+      expect(restituitoInPunti(puntata, 1), `puntata ${puntata}`).toBeLessThan(puntata)
+    }
+  })
+
+  it('la moneta da sola rende quanto quella del Crazy Time vero, poco meno della puntata', () => {
+    const moneta = media(MOLTIPLICATORI_MONETA) / 2
+    expect(moneta).toBeGreaterThan(0.95)
+    expect(moneta).toBeLessThan(1)
+  })
+})
+
+describe('le domande', () => {
+  it('si riconoscono dal testo e dalla risposta, non dal posto', () => {
     const d = { testo: 'Qual è la capitale del Portogallo?', giusta: 'lis' }
     expect(improntaDomanda(d)).toBe(improntaDomanda({ ...d }))
     expect(improntaDomanda(d)).toMatch(/^[0-9a-f]{8}$/)

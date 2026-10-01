@@ -1,0 +1,250 @@
+/*
+ * Il passaggio fra le scene: sta sopra la scena, con il suo angolo
+ * arrotondato, e non si tocca. Tutte le animazioni sono frazioni di
+ * `--durata`, come quelle degli adesivi.
+ */
+.ct-intermezzo {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.ct-intermezzo__velo,
+.ct-intermezzo__raggi,
+.ct-intermezzo__lampo {
+  position: absolute;
+  pointer-events: none;
+}
+
+.ct-intermezzo__velo {
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--colore) 55%, #12062e), #07020f 75%);
+  animation: ct-int-velo var(--durata) var(--ease-in-out) both;
+}
+
+@keyframes ct-int-velo {
+  0% {
+    opacity: 0;
+  }
+  22%,
+  72% {
+    opacity: 0.96;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* I raggi: una ruota di luce del colore del minigioco, che gira e si allarga. */
+.ct-intermezzo__raggi {
+  left: 50%;
+  top: 50%;
+  width: 180cqmax;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    color-mix(in srgb, var(--colore) 70%, #fff) 0 7deg,
+    transparent 7deg 18deg
+  );
+  mask: radial-gradient(closest-side, #000 20%, transparent 70%);
+  -webkit-mask: radial-gradient(closest-side, #000 20%, transparent 70%);
+  animation: ct-int-raggi var(--durata) var(--ease-out) both;
+}
+
+@keyframes ct-int-raggi {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+  }
+  25% {
+    opacity: 0.55;
+  }
+  75% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.15) rotate(70deg);
+  }
+}
+
+/* Il lampo d'apertura, bianco, che si spegne subito. */
+.ct-intermezzo__lampo {
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.9), transparent 55%);
+  animation: ct-int-lampo var(--durata) var(--ease-out) both;
+}
+
+@keyframes ct-int-lampo {
+  0% {
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.9;
+  }
+  34%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/*
+ * L'insegna: una targa scura nel colore del minigioco, con l'orlo d'oro e le
+ * lampadine che si accendono a turno (un bordo a puntini).
+ */
+.ct-intermezzo__insegna {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 48px);
+  padding: 22px 30px 20px;
+  border: 5px dotted var(--ct-lampada);
+  border-radius: 26px;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--colore) 85%, #fff),
+    color-mix(in srgb, var(--colore) 70%, #1a0838)
+  );
+  box-shadow:
+    0 0 0 4px var(--ct-oro),
+    0 0 0 7px var(--ct-oro-scuro),
+    0 18px 48px rgba(0, 0, 0, 0.5),
+    0 0 60px color-mix(in srgb, var(--colore) 60%, transparent);
+  color: #fff;
+  text-align: center;
+  animation:
+    ct-int-insegna var(--durata) cubic-bezier(0.2, 0.9, 0.3, 1.2) both,
+    ct-int-lampadine 0.3s steps(1, end) infinite;
+}
+
+@keyframes ct-int-insegna {
+  0% {
+    opacity: 0;
+    transform: scale(0.25) rotate(-10deg);
+  }
+  20% {
+    opacity: 1;
+    transform: scale(1.08) rotate(2deg);
+  }
+  30% {
+    transform: scale(1) rotate(0deg);
+  }
+  74% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
+@keyframes ct-int-lampadine {
+  50% {
+    border-color: var(--ct-oro);
+  }
+}
+
+.ct-intermezzo__icona {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+  animation: ct-int-icona calc(var(--durata) * 0.4) var(--ease-out) calc(var(--durata) * 0.12) both;
+}
+
+@keyframes ct-int-icona {
+  from {
+    transform: scale(0) rotate(-120deg);
+  }
+}
+
+.ct-intermezzo__titolo {
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  font-size: clamp(26px, 8.5cqw, 46px);
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  text-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.28),
+    0 0 18px rgba(255, 255, 255, 0.35);
+}
+
+.ct-intermezzo__sotto {
+  font-size: clamp(15px, 4.2cqw, 20px);
+  font-weight: 700;
+  color: var(--ct-oro-chiaro);
+}
+
+/* ─────────────────────────────  La pioggia di monete  ───────────────────────────── */
+
+.ct-pioggia {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ct-pioggia__moneta {
+  position: absolute;
+  top: -40px;
+  left: var(--x);
+  width: var(--lato);
+  height: var(--lato);
+  animation: ct-pioggia-cade var(--durata) cubic-bezier(0.45, 0, 0.85, 0.6) var(--ritardo) both;
+}
+
+@keyframes ct-pioggia-cade {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--deriva), calc(100vh + 60px));
+  }
+}
+
+.ct-pioggia__faccia {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #fff6c8, var(--ct-oro) 48%, var(--ct-oro-scuro));
+  box-shadow:
+    inset 0 0 0 2px rgba(120, 70, 0, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+  animation: ct-pioggia-gira var(--giro) linear infinite;
+}
+
+@keyframes ct-pioggia-gira {
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-intermezzo__raggi,
+  .ct-intermezzo__lampo {
+    display: none;
+  }
+
+  .ct-intermezzo__insegna,
+  .ct-intermezzo__icona {
+    animation: none;
+  }
+
+  .ct-pioggia {
+    display: none;
+  }
+}

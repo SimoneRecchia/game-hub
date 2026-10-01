@@ -1,9 +1,8 @@
 import { Hono } from 'hono'
-import type { LatoMoneta } from '../../shared/ruota'
 import type { RuotaStato } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
-import { apriDomanda, gira, lanciaMoneta, rispondi, statoRuota } from '../lib/ruotaStore'
+import { apriDomanda, gira, giraMoltiplicatore, lanciaMoneta, rispondi, statoRuota } from '../lib/ruotaStore'
 import { requireVerified } from '../lib/session'
 
 /** Una scelta e' l'id di un'opzione: corto, e di caratteri semplici. Null e' il tempo finito. */
@@ -33,16 +32,21 @@ export const ruotaRoutes = new Hono<AppEnv>()
     return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
   })
 
-  /** Testa o croce: si sceglie il lato, e la moneta si lancia adesso. */
-  .post('/moneta', async (c) => {
-    const corpo = (await c.req.json().catch(() => ({}))) as { lato?: unknown }
-    if (corpo.lato !== 'testa' && corpo.lato !== 'croce') fail(400, 'LATO', 'Scegli testa o croce.')
+  /** La ruota dei moltiplicatori della domanda: il moltiplicatore lo sceglie il server. */
+  .post('/moltiplicatore', async (c) => {
     const io = c.get('player').id
-    await lanciaMoneta(c.env.DB, io, corpo.lato as LatoMoneta)
+    await giraMoltiplicatore(c.env.DB, io)
     return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
   })
 
-  /** La domanda della sfida: si apre adesso, e il tempo parte da qui. */
+  /** La moneta: si lancia adesso, e il lato lo sceglie il server. */
+  .post('/moneta', async (c) => {
+    const io = c.get('player').id
+    await lanciaMoneta(c.env.DB, io)
+    return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
+  })
+
+  /** La domanda: si apre adesso, e il tempo parte da qui. */
   .post('/domanda', async (c) => {
     const io = c.get('player').id
     await apriDomanda(c.env.DB, io)

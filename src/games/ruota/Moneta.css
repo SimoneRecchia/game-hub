@@ -1,109 +1,243 @@
 /*
- * La moneta: un disco d'oro con due facce, che in aria sale, gira su se
- * stessa e ricade. Il giro e' una transizione sul disco, il salto
- * un'animazione sul suo contenitore, l'ombra si stringe mentre sale.
+ * La moneta: due facce piatte e qualche strato d'oro in mezzo, che di taglio
+ * fanno lo spessore. Il lato e' una frazione della scena (`cqmin`), e il salto
+ * va verso l'alto di quasi mezza scena: la moneta deve volare.
  */
-.moneta {
-  --lato-moneta: 112px;
+.ct-moneta {
+  --lato: min(54cqmin, 240px);
+  --spessore: calc(var(--lato) * 0.03);
   position: relative;
-  width: var(--lato-moneta);
-  height: calc(var(--lato-moneta) + 24px);
-  margin: 0 auto;
-  perspective: 600px;
-}
-
-.moneta__salto {
-  position: absolute;
-  inset: 0 0 24px;
-}
-
-.moneta.is-in-aria .moneta__salto {
-  animation: moneta-salto var(--lancio) cubic-bezier(0.33, 0, 0.67, 1) both;
-}
-
-@keyframes moneta-salto {
-  0% {
-    transform: translateY(0) scale(1);
-  }
-  45% {
-    transform: translateY(calc(var(--lato-moneta) * -0.85)) scale(1.18);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
-.moneta__disco {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-  transition-property: transform;
-  transition-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
-}
-
-.moneta__faccia {
-  position: absolute;
-  inset: 0;
   display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 2px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.65), transparent 45%),
-    radial-gradient(circle, var(--ruota-oro-1) 0 58%, var(--ruota-oro-2) 59% 100%);
-  box-shadow:
-    inset 0 0 0 4px rgba(122, 74, 0, 0.35),
-    inset 0 0 0 9px rgba(255, 255, 255, 0.25),
-    0 6px 14px rgba(60, 35, 0, 0.3);
-  color: #7a4a00;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  place-items: center;
+  width: var(--lato);
+  height: calc(var(--lato) * 1.22);
 }
 
-.moneta__faccia svg {
-  width: 44px;
-  height: 44px;
-  fill: currentColor;
-}
-
-.moneta__faccia span {
-  font-size: var(--text-caption-1);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.moneta__faccia.is-croce {
-  transform: rotateY(180deg);
-}
-
-.moneta__ombra {
+/* L'alone del lato uscito, dietro la moneta. */
+.ct-moneta::before {
+  content: '';
   position: absolute;
-  left: 50%;
-  bottom: 2px;
-  width: 70%;
-  height: 12px;
-  margin-left: -35%;
+  inset: -30%;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.18);
-  filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
 }
 
-.moneta.is-in-aria .moneta__ombra {
-  animation: moneta-ombra var(--lancio) cubic-bezier(0.33, 0, 0.67, 1) both;
+.ct-moneta.is-uscito-blu::before {
+  background: radial-gradient(closest-side, rgba(80, 150, 255, 0.75), transparent);
+  animation: ct-moneta-alone 1.6s var(--ease-out) both;
 }
 
-@keyframes moneta-ombra {
-  45% {
-    transform: scale(0.55);
-    opacity: 0.5;
+.ct-moneta.is-uscito-rosso::before {
+  background: radial-gradient(closest-side, rgba(255, 70, 90, 0.7), transparent);
+  animation: ct-moneta-alone 1.6s var(--ease-out) both;
+}
+
+@keyframes ct-moneta-alone {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
   }
+  30% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+}
+
+.ct-moneta__ombra {
+  position: absolute;
+  bottom: 0;
+  width: 72%;
+  height: 11%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.6), transparent);
+  opacity: 0.55;
+}
+
+.ct-moneta__salto {
+  position: relative;
+  align-self: start;
+  width: var(--lato);
+  height: var(--lato);
+}
+
+.ct-moneta.is-ferma .ct-moneta__salto {
+  animation: ct-moneta-galleggia 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes ct-moneta-galleggia {
+  50% {
+    transform: translateY(-4%);
+  }
+}
+
+/* Toccata: si abbassa e si stringe, come in una mano che prende lo slancio. */
+.ct-moneta.is-carica .ct-moneta__salto {
+  animation: ct-moneta-carica 0.45s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes ct-moneta-carica {
+  to {
+    transform: translateY(4%) scale(0.92);
+  }
+}
+
+.ct-moneta__bottone {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  perspective: 900px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ct-moneta__bottone:disabled {
+  cursor: default;
+}
+
+.ct-moneta__bottone:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 6px;
+}
+
+/* L'invito a toccarla: un'onda che parte dall'orlo. */
+.ct-moneta__invito {
+  position: absolute;
+  inset: -5%;
+  border: 3px solid rgba(255, 255, 255, 0.75);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: ct-moneta-onda 1.6s var(--ease-out) infinite;
+}
+
+@keyframes ct-moneta-onda {
+  from {
+    opacity: 0.9;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.28);
+  }
+}
+
+.ct-moneta__disco {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+}
+
+/* Lo spessore: dischi d'oro fra le facce, visti solo quando la moneta e' di taglio. */
+.ct-moneta__strato {
+  position: absolute;
+  inset: 1.5%;
+  border-radius: 50%;
+  background: var(--ct-oro-scuro);
+  transform: translateZ(calc(var(--spessore) * var(--z)));
+}
+
+.ct-moneta__faccia {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3%;
+  overflow: hidden;
+  border-radius: 50%;
+  color: #fff;
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  box-shadow:
+    inset 0 0 0 calc(var(--lato) * 0.045) var(--ct-oro),
+    inset 0 0 0 calc(var(--lato) * 0.062) var(--ct-oro-scuro),
+    inset 0 calc(var(--lato) * -0.05) calc(var(--lato) * 0.1) rgba(0, 0, 0, 0.35);
+  transform: translateZ(var(--spessore));
+}
+
+.ct-moneta__faccia.is-blu {
+  background: radial-gradient(circle at 34% 28%, #8fbaff, var(--ct-blu) 46%, var(--ct-blu-2));
+}
+
+.ct-moneta__faccia.is-rosso {
+  background: radial-gradient(circle at 34% 28%, #ff98a3, var(--ct-rosso) 46%, var(--ct-rosso-2));
+  transform: rotateX(180deg) translateZ(var(--spessore));
+}
+
+/* La luce che passa sulla faccia, ogni tanto, mentre aspetta. */
+.ct-moneta__faccia::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(115deg, transparent 36%, rgba(255, 255, 255, 0.55) 48%, transparent 60%);
+  transform: translateX(-120%);
+}
+
+.ct-moneta.is-ferma .ct-moneta__faccia::after {
+  animation: ct-moneta-luccica 3s var(--ease-in-out) infinite;
+}
+
+@keyframes ct-moneta-luccica {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  85%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+.ct-moneta__lato {
+  font-size: calc(var(--lato) * 0.072);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  opacity: 0.88;
+}
+
+.ct-moneta__valore {
+  font-size: calc(var(--lato) * 0.3);
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 calc(var(--lato) * 0.014) 0 rgba(0, 0, 0, 0.3);
+}
+
+.ct-moneta__banco {
+  font-size: calc(var(--lato) * 0.15);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--ct-oro-chiaro);
+  text-shadow: 0 calc(var(--lato) * 0.012) 0 rgba(0, 0, 0, 0.35);
+}
+
+.ct-moneta__stelle {
+  font-size: calc(var(--lato) * 0.055);
+  letter-spacing: 0.3em;
+  color: var(--ct-oro-chiaro);
+  opacity: 0.85;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .moneta.is-in-aria .moneta__salto,
-  .moneta.is-in-aria .moneta__ombra {
+  .ct-moneta.is-ferma .ct-moneta__salto,
+  .ct-moneta.is-carica .ct-moneta__salto,
+  .ct-moneta__invito,
+  .ct-moneta.is-ferma .ct-moneta__faccia::after {
     animation: none;
   }
 }
