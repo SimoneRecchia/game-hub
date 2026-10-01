@@ -1053,6 +1053,15 @@ un punto qualunque e le etichette anche, così non serve trascinare (WCAG
 tastiera e' lo slider di WAI-ARIA, con le frecce, Inizio e Fine, e
 `aria-valuetext` che dice "senza tempo" invece del numero del punto.
 
+**La puntata della ruota invece e' una cifra, e si sceglie libera.** Non e' una
+scelta fra poche alternative: si punta quanto si vuole, un punto alla volta,
+dalla minima a tutti (`LineaPuntata`). La linea e' un `input type="range"` senza
+punti, con la pista e la maniglia del cursore, e accanto il numero si scrive:
+su una linea di trecento punti col dito la cifra esatta non si prende, e con un
+cursore va dato anche il campo per il valore preciso (Nielsen Norman Group). Il
+campo ha il testo a 17 punti, perché sotto i 16 Safari ingrandisce la pagina
+quando prende il fuoco.
+
 **Dove si gioca si sceglie su una cartina.** Il foglio "Dove" del quiz ha una
 tessera per zona, con la sagoma del continente nel colore della materia e le
 terre intorno in grigio, al posto della fila di capsule di prima. Le sagome

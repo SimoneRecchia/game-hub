@@ -127,19 +127,6 @@ export function nomeDi(s: Spicchio): string {
   }
 }
 
-/**
- * Le puntate che si possono scegliere con i punti di oggi: la minima, un
- * quarto, meta', tre quarti e tutto, arrotondati a cinque e senza doppioni.
- * Sono i punti del cursore: con meno della minima non si gira.
- */
-export function puntateDi(puntiDiOggi: number): number[] {
-  if (puntiDiOggi < PUNTATA_MINIMA) return []
-  const quote = [0.25, 0.5, 0.75].map((q) => Math.round((puntiDiOggi * q) / 5) * 5)
-  return [...new Set([PUNTATA_MINIMA, ...quote, puntiDiOggi])]
-    .filter((p) => p >= PUNTATA_MINIMA && p <= puntiDiOggi)
-    .sort((a, b) => a - b)
-}
-
 /** Se una puntata si puo' fare con i punti di oggi: un intero, fra la minima e tutti. */
 export function puntataValida(puntata: unknown, puntiDiOggi: number): puntata is number {
   return Number.isInteger(puntata) && (puntata as number) >= PUNTATA_MINIMA && (puntata as number) <= puntiDiOggi

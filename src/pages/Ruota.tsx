@@ -3,12 +3,12 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi, type DatiAdesivo } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
-import { Cursore } from '@/components/Cursore'
 import { Coriandoli, DURATA_FESTA_MS } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { ComeSiGiocaRuota } from '@/games/ruota/ComeSiGioca'
+import { LineaPuntata } from '@/games/ruota/LineaPuntata'
 import { Moneta } from '@/games/ruota/Moneta'
 import { COLORI_MATERIE_RUOTA, Ruota } from '@/games/ruota/Ruota'
 import { useCountdown } from '@/games/wordle/useCountdown'
@@ -21,7 +21,6 @@ import {
   SPICCHI,
   conSegno,
   eSfida,
-  puntateDi,
   type LatoMoneta,
 } from '@shared/ruota'
 import type { GiroRuota, RuotaStato } from '@shared/types'
@@ -153,9 +152,11 @@ export default function RuotaPagina() {
 
   const giro = stato?.giro ?? null
   const sfida = giro?.sfida ?? null
-  const puntate = stato ? puntateDi(stato.puntiDiOggi) : []
-  // Si propone tutto: il x2 e' il solo spicchio che guarda la puntata, e non toglie.
-  const scelta = puntata !== null && puntate.includes(puntata) ? puntata : (puntate[puntate.length - 1] ?? 0)
+  const puntiDiOggi = stato?.puntiDiOggi ?? 0
+  const puoGirare = puntiDiOggi >= PUNTATA_MINIMA
+  // Si punta quanto si vuole, dalla minima a tutti. Si propone tutto: il x2 e' il solo spicchio che guarda la
+  // puntata, e non toglie.
+  const scelta = puntata === null ? puntiDiOggi : Math.min(puntiDiOggi, Math.max(PUNTATA_MINIMA, puntata))
 
   const gira = async () => {
     const nuovo = await chiedi('/ruota/gira', { puntata: scelta })
@@ -225,9 +226,9 @@ export default function RuotaPagina() {
   const fatto = giro?.stato === 'fatto' && !girando && !lancio && !caduta
   // Sul mozzo la puntata finché la ruota gira, poi l'esito; durante una sfida, la sfida.
   const mozzo = !giro
-    ? puntate.length > 0
+    ? puoGirare
       ? { testo: String(scelta), sotto: 'puntata' }
-      : { testo: String(stato?.puntiDiOggi ?? 0), sotto: 'punti' }
+      : { testo: String(puntiDiOggi), sotto: 'punti' }
     : girando
       ? { testo: String(giro.puntata), sotto: 'puntata' }
       : fatto
@@ -281,28 +282,11 @@ export default function RuotaPagina() {
             {errore ? (
               <p className="ruota-pannello__nota">{errore}</p>
             ) : !stato ? null : !giro ? (
-              puntate.length === 0 ? (
-                <PochiPunti punti={stato.puntiDiOggi} onClassificate={() => vai(ROTTE.home)} />
+              !puoGirare ? (
+                <PochiPunti punti={puntiDiOggi} onClassificate={() => vai(ROTTE.home)} />
               ) : (
                 <>
-                  <div className="ruota-puntata">
-                    <span className="ruota-puntata__testa">
-                      <span className="ruota-puntata__titolo">Puntata</span>
-                      <span className="ruota-puntata__valore" aria-hidden="true">
-                        <span className="u-tabnum">{scelta}</span> su {stato.puntiDiOggi}
-                      </span>
-                    </span>
-                    {puntate.length > 1 && (
-                      <Cursore
-                        ariaLabel="Puntata"
-                        valori={puntate}
-                        valore={scelta}
-                        etichetta={String}
-                        voce={(v) => `${v} punti su ${stato.puntiDiOggi}`}
-                        onChange={setPuntata}
-                      />
-                    )}
-                  </div>
+                  <LineaPuntata min={PUNTATA_MINIMA} max={puntiDiOggi} valore={scelta} onChange={setPuntata} />
                   <Button size="lg" fullWidth onClick={() => void gira()} loading={inviando}>
                     Gira
                   </Button>
