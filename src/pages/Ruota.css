@@ -127,42 +127,6 @@
   text-align: center;
 }
 
-/* La puntata: il nome e, a destra, quanto si punta su quanto si ha; sotto il cursore. */
-.ruota-puntata {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px 14px;
-  border-radius: var(--r-xl);
-  background: var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
-}
-
-.ruota-puntata__testa {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--sp-3);
-}
-
-.ruota-puntata__titolo {
-  font-size: var(--text-body);
-  font-weight: 600;
-  color: var(--label);
-}
-
-.ruota-puntata__valore {
-  font-size: var(--text-body);
-  color: var(--label-secondary);
-}
-
-.ruota-puntata__valore .u-tabnum {
-  font-weight: 700;
-  color: var(--label);
-}
-
 /* Una sfida, o i punti che mancano: il nome, la posta, e quel che si tocca. */
 .ruota-sfida {
   display: flex;
