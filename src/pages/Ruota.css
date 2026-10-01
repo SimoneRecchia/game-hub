@@ -1,6 +1,6 @@
 /*
- * La pagina della ruota: la ruota, che prende lo spazio che c'e', e sotto il
- * pannello di quel che si fa adesso — la puntata, la sfida, l'esito. Il
+ * La pagina di Crazy Time: la ruota, che prende lo spazio che c'e', e sotto il
+ * pannello di quel che si fa adesso — la puntata, la sfida, il conto. Il
  * pannello ha un'altezza minima, così la ruota non salta fra un momento e
  * l'altro; quando lo schermo e' piu' largo che alto va a destra della ruota.
  */
@@ -157,48 +157,25 @@
   gap: var(--sp-3);
 }
 
-/* L'esito del giro: lo spicchio, i punti grandi, e poi la puntata e quando torna. */
-.ruota-esito {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  text-align: center;
-  animation: ruota-sale 360ms var(--ease-out) both;
-}
-
-.ruota-esito__spicchio {
-  margin: 0;
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  color: var(--label-secondary);
-}
-
-.ruota-esito__delta {
-  margin: 0;
-  font-family: var(--font-rounded);
-  font-size: var(--text-large-title);
-  font-weight: 800;
-  line-height: 1.1;
-  color: var(--label);
-}
-
-.ruota-esito__delta.is-piu {
-  color: var(--green);
-}
-
-.ruota-esito__delta.is-meno {
-  color: var(--red);
-}
-
-.ruota-esito__delta span {
-  font-size: var(--text-title-3);
-}
-
-.ruota-esito__nota {
+/* Il conto della giornata, sotto il bottone: quel che Crazy Time ha dato o tolto, e in quanti giri. */
+.ruota-pannello__conto {
   margin: 0;
   font-size: var(--text-footnote);
   color: var(--label-secondary);
+  text-align: center;
+}
+
+.ruota-pannello__netto {
+  font-weight: 700;
+  color: var(--label);
+}
+
+.ruota-pannello__netto.is-piu {
+  color: var(--green);
+}
+
+.ruota-pannello__netto.is-meno {
+  color: var(--red);
 }
 
 @keyframes ruota-sale {
@@ -298,8 +275,7 @@
 @media (prefers-reduced-motion: reduce) {
   .ruota-campo__luce,
   .ruota-campo__moneta,
-  .ruota-sfida,
-  .ruota-esito {
+  .ruota-sfida {
     animation: none;
   }
 }

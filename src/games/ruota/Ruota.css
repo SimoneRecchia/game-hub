@@ -41,13 +41,20 @@
   stroke-width: 0.4;
 }
 
-/* Il x2 e' d'oro, l'unico; i "niente" grigi; le monete viola; le domande nel colore della loro materia. */
+/*
+ * Il x2 e' d'oro, l'unico; gli 0 grigi; le ✕ nere, con la croce rossa; le
+ * monete viola; le domande nel colore della loro materia.
+ */
 .ruota__spicchio.is-doppio {
   fill: var(--ruota-oro-1);
 }
 
 .ruota__spicchio.is-niente {
   fill: var(--ruota-niente);
+}
+
+.ruota__spicchio.is-perdi {
+  fill: var(--ruota-perdi);
 }
 
 .ruota__spicchio.is-moneta {
@@ -72,8 +79,7 @@
   fill: var(--materia-scienza-2);
 }
 
-.ruota__scritta,
-.ruota__posta {
+.ruota__scritta {
   fill: #fff;
   font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
   font-weight: 800;
@@ -83,9 +89,6 @@
   paint-order: stroke;
   stroke: rgba(0, 0, 0, 0.2);
   stroke-width: 0.7px;
-}
-
-.ruota__scritta {
   font-size: 13px;
 }
 
@@ -101,8 +104,11 @@
   font-size: 12px;
 }
 
-.ruota__posta {
-  font-size: 12px;
+.ruota__croce {
+  fill: none;
+  stroke: var(--ruota-croce);
+  stroke-width: 2.6;
+  stroke-linecap: round;
 }
 
 .ruota__sfida {
