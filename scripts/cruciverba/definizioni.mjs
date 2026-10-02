@@ -5,7 +5,8 @@
  * Nessuna definizione e' scritta qui: si prende il testo della voce e lo si
  * accorcia, senza riformularlo. Quello che questo modulo fa e' **scartare**:
  * una definizione che contiene la risposta, una che e' un rimando ("variante
- * di…"), una rimasta mozza perché l'estrazione ha tolto un collegamento.
+ * di…"), una rimasta mozza perché l'estrazione ha tolto un collegamento, una
+ * con un buco in mezzo.
  *
  * Sta in un modulo a parte, e non dentro lo script che scarica il dump, perché
  * sono regole da provare una per una: vedi scripts/__tests__/cruciverba-definizioni.test.ts.
@@ -108,6 +109,16 @@ const FINALI_MOZZI = new Set([
   // …o una frase che aspetta il seguito: "da usare solo", "per significare".
   'anche', 'comunque', 'indicare', 'significare', 'solo', 'soltanto',
 ])
+
+/**
+ * Un articolo o una preposizione articolata seguiti da una virgola o da un
+ * punto: il nome che reggevano non c'e'. Il Wikizionario scrive davvero
+ * "l'universalità dei, ovverosia, senza eccezione alcuna, tutti i diritti ed
+ * oneri" per EREDITÀ, e nello schema sembrava un pezzo perso dal gioco. Le
+ * preposizioni semplici restano fuori: "composto da, o frequentato da" e'
+ * italiano giusto.
+ */
+const BUCO = /(?<![\p{L}'’])(il|lo|gli|le|un|(?:de|a|da|ne|su)(?:l|llo|lla|i|gli|lle)|col|coi)\s*[,;:.)]/giu
 
 /** Le preposizioni con cui comincia un inciso: "…ovvero, in senso ampio". */
 const INCISO = /^(?:a|ad|con|da|di|fra|in|per|su|tra)\s/i
@@ -250,12 +261,24 @@ function finisceMozza(testo) {
   return /\bche,/.test(testo)
 }
 
+/** Manca una parola in mezzo? Vedi `BUCO`. */
+export function haUnBuco(testo) {
+  for (const m of testo.matchAll(BUCO)) {
+    // "La potenza degli dei, …": dopo GLI, DEI e' il nome, e la frase e' intera.
+    if (m[1].toLowerCase() === 'dei' && /(?:^|[^\p{L}])(?:de|a|da|ne|su)?gli\s+$/iu.test(testo.slice(0, m.index))) {
+      continue
+    }
+    return true
+  }
+  return false
+}
+
 /** Si puo' usare questa definizione (gia' pulita) per questa risposta? */
 export function definizioneAccettabile(definizione, risposta) {
   if (!definizione) return false
   const minuscola = definizione.toLowerCase()
   if (VIETATE.some((re) => re.test(minuscola))) return false
-  if (finisceMozza(definizione)) return false
+  if (finisceMozza(definizione) || haUnBuco(definizione)) return false
   // "Pensioni per cani: luoghi" — il taglio ha lasciato dopo i due punti un
   // moncherino invece della spiegazione.
   const dopoDuePunti = definizione.split(':').slice(1).join(':').trim()

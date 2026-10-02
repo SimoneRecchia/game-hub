@@ -3,6 +3,7 @@ import {
   definizioneAccettabile,
   definizioniDellaVoce,
   formeDellaVoce,
+  haUnBuco,
   normalizzaRisposta,
   notaDellaForma,
   pulisciDefinizione,
@@ -89,6 +90,22 @@ describe('le definizioni che non si usano', () => {
     expect(definizioneAccettabile('Distesa di acqua salata che circonda la terra emersa', 'mare')).toBe(
       true,
     )
+  })
+
+  it('quelle con un buco: un articolo senza il suo nome', () => {
+    // Scritta cosi' nel Wikizionario, alla voce "eredità".
+    const eredita = "L'universalità dei, ovverosia, senza eccezione alcuna, tutti i diritti ed oneri"
+    expect(haUnBuco(eredita)).toBe(true)
+    expect(definizioneAccettabile(eredita, 'eredita')).toBe(false)
+    expect(haUnBuco('Desiderare ardentemente qualcosa preceduto da a,agli,alle, ecc')).toBe(true)
+    expect(haUnBuco('Usato, con o senza articolo Il, per indicare le società sportive')).toBe(true)
+    // Le preposizioni semplici reggono anche un oggetto in comune.
+    expect(haUnBuco('Composto da, o frequentato da cittadini di tutto il mondo')).toBe(false)
+    expect(haUnBuco('Che possiede, o è relativo a, tutte quelle caratteristiche')).toBe(false)
+    // Dopo GLI, DEI e' un nome; LA e' anche una nota.
+    expect(haUnBuco('Maestà, volontà divina, potenza degli dei, potenza divina')).toBe(false)
+    expect(haUnBuco('Strumento ad arco con quattro corde (sol, re, la, mi) dal suono grave')).toBe(false)
+    expect(haUnBuco('Passaggio di proprietà e/o beni, anche pecuniari, per la morte di qualcuno')).toBe(false)
   })
 })
 
