@@ -220,6 +220,18 @@ export const Rulli = memo(function Rulli({
     return () => cancelAnimationFrame(id)
   }, [])
 
+  // I simboli che pagano saltano fuori dal rullo: le loro caselle, nel giro di mezzo della striscia.
+  useEffect(() => {
+    const accese: Element[] = []
+    for (const [rullo, riga] of vincenti) {
+      const casella = strisce.current[rullo]?.children[N + modulo(stati.current[rullo].fermata) - 1 + riga]
+      if (!casella) continue
+      casella.classList.add('is-vincente')
+      accese.push(casella)
+    }
+    return () => accese.forEach((c) => c.classList.remove('is-vincente'))
+  }, [vincenti])
+
   // Il ticchettio mentre girano: uno ogni 90 ms, finché il terzo non si ferma.
   useEffect(() => {
     if (!inMoto) return
