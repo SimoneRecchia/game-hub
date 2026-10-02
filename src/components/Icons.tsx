@@ -35,6 +35,27 @@ export const IconGames = (p: IconProps) => (
   </Svg>
 )
 
+/** Il quadrifoglio della Fortuna: quattro foglie a cuore e il gambo. */
+const FOGLIA = 'M12 11.4C10 9.8 8.1 7.9 9.2 5.8c.9-1.7 2.8-1.1 2.8.3 0-1.4 1.9-2 2.8-.3 1.1 2.1-.8 4-2.8 5.6Z'
+
+export const IconFortuna = (p: IconProps) => (
+  <Svg {...p}>
+    {[0, 90, 180, 270].map((g) => (
+      <path key={g} d={FOGLIA} transform={`rotate(${g} 12 12)`} />
+    ))}
+    <path d="M13 13c1.6 2.4 2.5 4.8 2.3 7.6" />
+  </Svg>
+)
+
+export const IconFortunaFill = (p: IconProps) => (
+  <Svg {...p}>
+    {[0, 90, 180, 270].map((g) => (
+      <path key={g} d={FOGLIA} transform={`rotate(${g} 12 12)`} fill="currentColor" />
+    ))}
+    <path d="M13 13c1.6 2.4 2.5 4.8 2.3 7.6" />
+  </Svg>
+)
+
 export const IconTrophy = (p: IconProps) => (
   <Svg {...p}>
     <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />

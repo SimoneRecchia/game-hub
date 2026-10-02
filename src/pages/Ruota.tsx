@@ -8,13 +8,11 @@ import {
   useState,
   type CSSProperties,
   type ReactNode,
-  type RefObject,
 } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi, type DatiAdesivo } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
-import { Numero } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
@@ -31,7 +29,9 @@ import { Intermezzo, PIOGGIA_MS, PioggiaDiMonete, type DatiIntermezzo } from '@/
 import { LineaPuntata } from '@/games/ruota/LineaPuntata'
 import { Moneta } from '@/games/ruota/Moneta'
 import { RuotaFisica, type Meta, type Mozzo } from '@/games/ruota/RuotaFisica'
-import { centroDi, incassaMonete, perdiFiches, puntaFiches, type Punto } from '@/games/ruota/voli'
+import { Tabellone } from '@/games/fortuna/Tabellone'
+import { useDopo } from '@/games/fortuna/useDopo'
+import { centroDi, incassaMonete, perdiFiches, puntaFiches, type Punto } from '@/games/fortuna/voli'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
@@ -89,22 +89,6 @@ function palioDi(giro: GiroRuota | null): { moltiplicatore: number; vincita: num
   const s = giro?.sfida
   if (!s || s.moltiplicatore === null || s.vincita === null) return null
   return { moltiplicatore: s.moltiplicatore, vincita: s.vincita }
-}
-
-/** Le attese della pagina, tutte spente quando la pagina se ne va. */
-function useDopo() {
-  const attese = useRef(new Set<number>())
-  useEffect(() => {
-    const tutte = attese.current
-    return () => tutte.forEach((t) => window.clearTimeout(t))
-  }, [])
-  return useCallback((ms: number, fai: () => void) => {
-    const t = window.setTimeout(() => {
-      attese.current.delete(t)
-      fai()
-    }, ms)
-    attese.current.add(t)
-  }, [])
 }
 
 /**
@@ -463,7 +447,7 @@ export default function RuotaPagina() {
     <Pagina
       titolo={NOME_CRAZY_TIME}
       intera
-      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+      indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />
@@ -631,68 +615,6 @@ function Scena({ attiva, nome, children }: { attiva: boolean; nome: string; chil
   )
 }
 
-/**
- * Il tabellone in cima: il saldo, che conta quando cambia, e quel che Crazy Time
- * ha dato o tolto oggi. A ogni cambio del saldo la differenza sale e svanisce,
- * grande, e il tabellone si accende: rosso per la puntata pagata al lancio,
- * d'oro per la vincita che arriva. `saldoRef` e' il numero, da dove partono le
- * fiches e dove arrivano le monete.
- */
-function Tabellone({
-  saldo,
-  netto,
-  giri,
-  saldoRef,
-}: {
-  saldo: number
-  netto: number
-  giri: number
-  saldoRef: RefObject<HTMLSpanElement | null>
-}) {
-  const prima = useRef(saldo)
-  const [variazione, setVariazione] = useState<{ chiave: number; quanto: number } | null>(null)
-  useEffect(() => {
-    const d = saldo - prima.current
-    prima.current = saldo
-    if (d !== 0) setVariazione({ chiave: Date.now(), quanto: d })
-  }, [saldo])
-  const tono = netto > 0 ? ' is-piu' : netto < 0 ? ' is-meno' : ''
-  return (
-    <div className="ct-tabellone">
-      {variazione && (
-        <span
-          key={variazione.chiave}
-          className={`ct-tabellone__lampo${variazione.quanto > 0 ? ' is-incassa' : ' is-paga'}`}
-          aria-hidden="true"
-        />
-      )}
-      <span className="ct-tabellone__voce">
-        <span className="ct-tabellone__etichetta">Saldo</span>
-        <span className="ct-tabellone__saldo" ref={saldoRef}>
-          <Numero valore={saldo} />
-          {variazione && (
-            <span
-              key={variazione.chiave}
-              className={`ct-tabellone__variazione${variazione.quanto > 0 ? ' is-piu' : ' is-meno'}`}
-              aria-hidden="true"
-            >
-              {conSegno(variazione.quanto)}
-            </span>
-          )}
-        </span>
-      </span>
-      <span className="ct-tabellone__voce is-destra">
-        <span className="ct-tabellone__etichetta">Oggi</span>
-        <span className="ct-tabellone__oggi">
-          <span className={`ct-tabellone__netto u-tabnum${tono}`}>{conSegno(netto)}</span>
-          <span className="ct-tabellone__giri">
-            in <span className="u-tabnum">{giri}</span> {giri === 1 ? 'giro' : 'giri'}
-          </span>
-        </span>
-      </span>
-    </div>
-  )
-}
 
 /** Il cartello sopra la ruota dei moltiplicatori: di che categoria sara' la domanda. */
 function Cartello({ categoria }: { categoria: CategoriaQuiz }) {

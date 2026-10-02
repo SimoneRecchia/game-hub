@@ -130,11 +130,6 @@
   .home__carte {
     grid-template-columns: 1fr 1fr;
   }
-
-  /* La ruota chiude la giornata: una carta larga, sotto i giochi. */
-  .home__carte-ruota {
-    grid-column: 1 / -1;
-  }
 }
 
 .carta {

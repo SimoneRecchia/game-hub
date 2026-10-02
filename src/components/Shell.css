@@ -37,12 +37,12 @@
   view-transition-name: tabbar;
 }
 
-/* La lente sotto la sezione aperta: scivola invece di comparire. */
+/* La lente sotto la sezione aperta: scivola invece di comparire. Le sezioni sono quattro. */
 .tabbar__lente {
   position: absolute;
   top: 4px;
   left: 4px;
-  width: calc((100% - 8px) / 3);
+  width: calc((100% - 8px) / 4);
   height: calc(100% - 8px);
   border-radius: var(--r-pill);
   background: var(--brand-soft);
