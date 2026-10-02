@@ -538,6 +538,41 @@ export function scegliDefinizioni(riempimento) {
 }
 
 /**
+ * Le definizioni di uno schema gia' scritto, rimesse d'accordo con il
+ * dizionario di adesso. Una definizione che il dizionario non ha piu' — il
+ * filtro l'ha scartata dopo, come "L'universalità dei, ovverosia…" per EREDITÀ
+ * — lascia il posto a quella che sceglierebbe `scegliDefinizioni`. La griglia
+ * non cambia, e nemmeno le altre definizioni.
+ *
+ * `salvate` e' il JSON della colonna (`{ o20: { t, v, n } }`), `perParola` la
+ * mappa parola → voce di `leggiDefinizioni`. Restituisce le definizioni
+ * corrette e quel che e' cambiato, o `null` se non c'e' niente da correggere.
+ */
+export function correggiDefinizioni(soluzione, righe, colonne, salvate, perParola) {
+  const nere = [...soluzione].map((c) => c === '#')
+  const gia = new Set(Object.values(salvate).map((d) => d.t.toLowerCase()))
+  let definizioni = null
+  const cambiate = []
+  for (const { chiave, caselle } of sequenzeDi(nere, righe, colonne)) {
+    const salvata = salvate[chiave]
+    const parola = caselle.map((k) => soluzione[k]).join('')
+    const voce = perParola.get(parola)
+    if (!salvata || !voce) continue
+    if (voce.definizioni.some((d) => d.testo.toLowerCase() === salvata.t.toLowerCase())) continue
+    const proprie = voce.definizioni.filter((d) => !d.sigla)
+    const elenco = proprie.length > 0 ? proprie : voce.definizioni
+    const d = elenco.find((x) => !gia.has(x.testo.toLowerCase())) ?? elenco[0]
+    if (!d) continue
+    gia.add(d.testo.toLowerCase())
+    const nota = d.nota === 'sigla' && GIA_SIGLA.test(d.testo) ? '' : d.nota
+    definizioni ??= { ...salvate }
+    definizioni[chiave] = nota ? { t: d.testo, v: d.voce, n: nota } : { t: d.testo, v: d.voce }
+    cambiate.push({ chiave, parola, prima: salvata.t, dopo: d.testo })
+  }
+  return definizioni && { definizioni, cambiate }
+}
+
+/**
  * Lo schema di un giorno.
  *
  * `evita` sono le parole uscite di recente: non sono vietate — le parole corte

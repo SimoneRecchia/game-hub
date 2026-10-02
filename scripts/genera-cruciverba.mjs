@@ -18,6 +18,11 @@
  * stesso script con `--liberi`: la scorta cresce di qualche decina a notte fino
  * al totale chiesto, e gli schemi gia' scritti non cambiano.
  *
+ * Una cosa sola degli schemi scritti si corregge: una definizione che il
+ * dizionario non ha piu', perché il filtro l'ha scartata dopo. La griglia resta
+ * quella; cambia il testo di quella definizione, da oggi in avanti e nella
+ * scorta dei liberi (`correggiSalvati`).
+ *
  * Uso:
  *   node scripts/genera-cruciverba.mjs                 anteprima di oggi, niente database
  *   node scripts/genera-cruciverba.mjs --local         riempie il D1 locale di wrangler
@@ -32,6 +37,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 import {
+  correggiDefinizioni,
   generaCruciverba,
   istruzioneSql,
   leggiDefinizioni,
@@ -82,6 +88,7 @@ const indici = preparaDizionario(voci)
 
 if (LIBERI !== null) {
   generaLiberi()
+  correggiSalvati('cruciverba_schemi_liberi', 'id', '1 = 1', (id) => `libero ${id}`)
   process.exit(0)
 }
 
@@ -125,15 +132,45 @@ function generaLiberi() {
   scriviIstruzioni(istruzioni, 'cruciverba-liberi.sql')
 }
 
-function scriviIstruzioni(istruzioni, nome) {
+function scriviIstruzioni(istruzioni, nome, cosa = 'schemi') {
   const cartella = join(HERE, '.cache')
   mkdirSync(cartella, { recursive: true })
   const file = join(cartella, nome)
   writeFileSync(file, istruzioni.join('\n'))
   const argomenti = [`--file=${file}`]
   if (REMOTO) argomenti.push('--yes')
-  console.log(`  scrivo ${istruzioni.length} schemi su ${REMOTO ? 'PRODUZIONE' : 'locale'}…`)
+  console.log(`  scrivo ${istruzioni.length} ${cosa} su ${REMOTO ? 'PRODUZIONE' : 'locale'}…`)
   wrangler(argomenti)
+}
+
+/**
+ * Le definizioni degli schemi gia' scritti che il dizionario di adesso non ha
+ * piu' (vedi `correggiDefinizioni`). Cinquanta schemi per lettura, e
+ * l'`UPDATE` e' condizionato alle definizioni appena lette.
+ */
+function correggiSalvati(tabella, colonna, dove, nome) {
+  const perParola = new Map(voci.map((v) => [v.parola, v]))
+  const cita = (s) => `'${String(s).replace(/'/g, "''")}'`
+  const istruzioni = []
+  let dopo = -1
+  for (;;) {
+    const righe = interroga(
+      `SELECT ${colonna} AS id, righe, colonne, soluzione, definizioni FROM ${tabella}
+        WHERE ${dove} AND ${colonna} > ${dopo} ORDER BY ${colonna} LIMIT 50`,
+    )
+    if (righe.length === 0) break
+    for (const r of righe) {
+      const corretto = correggiDefinizioni(r.soluzione, r.righe, r.colonne, JSON.parse(r.definizioni), perParola)
+      if (!corretto) continue
+      for (const c of corretto.cambiate) console.log(`  ${nome(r.id)}, ${c.parola}: «${c.prima}» → «${c.dopo}»`)
+      istruzioni.push(
+        `UPDATE ${tabella} SET definizioni = ${cita(JSON.stringify(corretto.definizioni))}
+          WHERE ${colonna} = ${r.id} AND definizioni = ${cita(r.definizioni)};`,
+      )
+    }
+    dopo = righe.at(-1).id
+  }
+  if (istruzioni.length > 0) scriviIstruzioni(istruzioni, `correzioni-${tabella}.sql`, 'schemi corretti')
 }
 
 /** numero → parole, per gli schemi che ci sono già. */
@@ -187,6 +224,7 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
 }
 
 if ((REMOTO || LOCALE) && istruzioni.length > 0) scriviIstruzioni(istruzioni, 'cruciverba.sql')
+if (REMOTO || LOCALE) correggiSalvati('cruciverba_schemi', 'puzzle_number', `puzzle_number >= ${DA}`, (n) => `#${n}`)
 
 if (REMOTO || LOCALE) {
   const [{ pronti }] = interroga(

@@ -225,22 +225,32 @@ una ricerca con ritorni all'indietro, e i 10 ms di CPU non bastano nemmeno a
 costruire gli indici. Li genera `scripts/genera-cruciverba.mjs` — ogni notte il
 workflow `cruciverba.yml` tiene pronti due mesi, il deploy ne controlla due
 settimane — e li scrive in `cruciverba_schemi` con `INSERT OR IGNORE`: uno
-schema scritto non cambia piu', come le parole del Wordle. E' deterministico
-dal numero del giorno, e il budget si conta in nodi e non in millisecondi,
-così una macchina piu' lenta non cambia lo schema. Se la tabella non ha la
-giornata di oggi il gioco risponde `SCHEMA_ASSENTE` (503) e la card dell'hub
-non mostra lo stato: in locale, `npm run cruciverba:locale`.
+schema scritto non cambia piu', come le parole del Wordle. L'unica cosa che si
+corregge e' una definizione che il dizionario non ha piu', perché il filtro l'ha
+scartata dopo: la stessa esecuzione la sostituisce con quella che sceglierebbe
+adesso (`correggiDefinizioni`), da oggi in avanti e nella scorta dei liberi, con
+un `UPDATE` condizionato alle definizioni lette. La griglia resta quella, e i
+giorni passati come li si e' giocati. E' deterministico dal numero del giorno, e
+il budget si conta in nodi e non in millisecondi, così una macchina piu' lenta
+non cambia lo schema. Se la tabella non ha la giornata di oggi il gioco risponde
+`SCHEMA_ASSENTE` (503) e la card dell'hub non mostra lo stato: in locale,
+`npm run cruciverba:locale`.
 
 **Le definizioni del cruciverba si scelgono, non si scrivono.** Vengono dal
 Wikizionario (CC BY-SA, estrazione di kaikki.org) e
 `scripts/cruciverba/definizioni.mjs` fa solo due cose: accorcia — la prima
 proposizione, un taglio a una virgola o prima di un complemento — e **scarta**.
-Via i rimandi, i segnaposto, i nomi propri generici, le glosse inglesi, e ogni
+Via i rimandi, i segnaposto, i nomi propri generici, le glosse inglesi, ogni
 definizione che contiene la risposta o la sua radice ("che regola" per
-REGOLATORE, "cani" per CANE). Le forme flesse prendono la definizione del loro
-lemma **della stessa parte del discorso** con la nota "plurale": ORE e' il
-plurale del nome "ora", non dell'avverbio "in questo momento", e la definizione
-del Wikizionario di una forma flessa ("plurale di ala") darebbe la risposta. La
+REGOLATORE, "cani" per CANE), e quelle con un buco: un articolo o una
+preposizione articolata seguiti da una virgola o da un punto (`haUnBuco`). Il
+Wikizionario scrive davvero "l'universalità dei, ovverosia, senza eccezione
+alcuna, tutti i diritti ed oneri" per EREDITÀ, e nello schema sembrava un pezzo
+perso dal gioco; le preposizioni semplici no, perché "composto da, o frequentato
+da" e' italiano giusto. Le forme flesse prendono la definizione del loro lemma
+**della stessa parte del discorso** con la nota "plurale": ORE e' il plurale del
+nome "ora", non dell'avverbio "in questo momento", e la definizione del
+Wikizionario di una forma flessa ("plurale di ala") darebbe la risposta. La
 licenza chiede di citare la fonte: la citano le regole, e a partita chiusa ogni
 definizione porta alla sua voce.
 
@@ -1265,7 +1275,9 @@ insieme si coprirebbero. Ogni gioco ha il suo carattere dentro lo stesso
 stile, senza prendere quello degli altri: il Wordle una tavoletta con gli
 alloggi incavati (`--slot`) e le stelle della vittoria, lo Scarabeo il legno
 della cornice e del leggio (`--legno-*`) e lo scarabeo d'oro quando si posano
-tutte e otto le tessere, il cruciverba la matita e il quaderno a righe.
+tutte e otto le tessere, il cruciverba la matita. La definizione in corso
+non ha piu' le righe del quaderno: a passo fisso non combaciavano con quelle
+del testo, e sembravano cancellature.
 
 **Un adesivo di fine partita viene prima del riepilogo, non sopra.** Nel Wordle
 `useWordle` tiene il foglio del risultato chiuso finché l'adesivo non e' finito
