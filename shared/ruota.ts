@@ -3,21 +3,23 @@
  * della giornata, quante volte si vuole, e come al casinò la puntata si paga
  * subito: quel che esce la restituisce moltiplicata, o se la tiene il banco.
  *
- * Dodici spicchi:
+ * Quindici spicchi:
  *
- * - **il banco**, quattro: vince il banco, la puntata e' persa;
- * - **le domande** del quiz, una per materia: si gira la ruota dei
- *   moltiplicatori, poi si risponde. Giusta, la puntata torna moltiplicata;
- *   sbagliata, vince il banco;
+ * - **il banco**, sei: vince il banco, la puntata e' persa;
+ * - **il triplo**, uno: la puntata torna per tre, subito;
+ * - **le domande** del quiz, sei, una per categoria, e le categorie cambiano
+ *   ogni giorno: si gira la ruota dei moltiplicatori, poi si risponde. Giusta,
+ *   la puntata torna moltiplicata; sbagliata, vince il banco, qualunque sia il
+ *   moltiplicatore;
  * - **la moneta**, due: blu vince la puntata per il moltiplicatore che porta la
  *   moneta, rosso vince il banco.
  *
- * La ruota dei moltiplicatori ha dodici spicchi anche lei: ×3 uno, ×2 due,
- * ×1,5 quattro, ×1,25 cinque. La moneta porta uno dei quattro, a caso.
+ * La ruota dei moltiplicatori ha dodici spicchi: ×3 uno, ×2 due, ×1,5 quattro,
+ * ×1,25 cinque. La moneta porta uno dei quattro, a caso.
  *
  * Come nei giochi veri vince il banco: chi risponde giusto a tutte le domande
- * riceve in media 96 punti ogni 100 puntati, quanto un gioco da casinò, e chi
- * sbaglia meno ancora (76 a chi ne sbaglia una su quattro). Si puo' avere
+ * riceve in media 97 punti ogni 100 puntati, quanto alla roulette, e chi
+ * sbaglia meno ancora (81 a chi ne sbaglia una su quattro). Si puo' avere
  * fortuna una volta; giocando a lungo si perde. Un test misura la resa per chi
  * tira a indovinare, per chi sa e per chi sta in mezzo, con gli arrotondamenti.
  *
@@ -29,27 +31,23 @@
  * le ruote e ci scrive le regole.
  */
 
-import type { CategoriaQuiz } from './quiz'
+import { mulberry32 } from './daily'
+import { NOMI_CATEGORIE, type CategoriaQuiz } from './quiz'
 import type { DomandaCompleta } from './quiz-domande'
 
 /** Il nome del gioco, come lo leggono tutti. */
 export const NOME_CRAZY_TIME = 'Crazy Time'
 
-/** Le materie delle domande sulla ruota: uno spicchio ciascuna. */
-export type MateriaRuota = 'geografia' | 'storia' | 'arte' | 'libri' | 'cinema' | 'scienza'
+export type Spicchio =
+  | { tipo: 'banco' }
+  | { tipo: 'moneta' }
+  | { tipo: 'fisso'; moltiplicatore: number }
+  | { tipo: 'domanda'; categoria: CategoriaQuiz }
 
-export const MATERIE_RUOTA: readonly MateriaRuota[] = ['geografia', 'storia', 'arte', 'libri', 'cinema', 'scienza']
+export type TipoSpicchio = Spicchio['tipo']
 
-export const NOMI_MATERIE_RUOTA: Record<MateriaRuota, string> = {
-  geografia: 'Geografia',
-  storia: 'Storia',
-  arte: 'Arte',
-  libri: 'Libri',
-  cinema: 'Cinema',
-  scienza: 'Scienza',
-}
-
-export type Spicchio = { tipo: 'banco' } | { tipo: 'moneta' } | { tipo: 'domanda'; materia: MateriaRuota }
+/** Lo spicchio fisso: la puntata torna moltiplicata subito, senza minigioco. */
+export const MOLTIPLICATORE_FISSO = 3
 
 /** I due lati della moneta: il blu vince, il rosso e' del banco. */
 export type LatoMoneta = 'blu' | 'rosso'
@@ -63,31 +61,92 @@ export const INTERVALLO_GIRI_MS = 3_000
 /**
  * La disposizione della ruota, salvata con ogni giro: un giro di una
  * disposizione vecchia ha l'indice di uno spicchio che oggi e' un altro, e non
- * si mostra (vedi la migrazione 0025).
+ * si mostra. La 3 e' quella con il triplo e le categorie del giorno: chi
+ * cambia la forma o il calendario delle categorie la deve cambiare.
  */
-export const DISPOSIZIONE_RUOTA = 2
+export const DISPOSIZIONE_RUOTA = 3
 
 /**
- * La ruota, dallo spicchio in cima in senso orario. Una moneta in cima, dove la
- * ruota sta prima del primo giro; il banco ogni tre spicchi; due spicchi
- * vicini non hanno mai lo stesso colore, e le due monete stanno una di fronte
- * all'altra (lo controlla un test).
+ * La ruota, dallo spicchio in cima in senso orario: il triplo in cima, dove la
+ * ruota sta prima del primo giro; i banchi sparsi, mai due vicini; le due
+ * monete quasi una di fronte all'altra; e fra due domande c'e' sempre un altro
+ * spicchio, così due categorie dello stesso colore non si toccano mai (lo
+ * controlla un test). Al posto di `domanda` va una delle categorie del giorno.
  */
-const DISPOSIZIONE = [
-  'moneta', 'geografia', 'banco', 'arte', 'storia', 'banco', 'moneta', 'libri', 'banco', 'scienza', 'cinema', 'banco',
-] as const
+export const FORMA_RUOTA: readonly TipoSpicchio[] = [
+  'fisso', 'domanda', 'banco', 'domanda', 'moneta', 'banco', 'domanda', 'banco',
+  'domanda', 'banco', 'domanda', 'moneta', 'banco', 'domanda', 'banco',
+]
 
-function spicchioDa(voce: (typeof DISPOSIZIONE)[number]): Spicchio {
-  if (voce === 'banco') return { tipo: 'banco' }
-  if (voce === 'moneta') return { tipo: 'moneta' }
-  return { tipo: 'domanda', materia: voce }
+/**
+ * Le categorie delle domande della ruota: quelle della classificata del quiz,
+ * sette di geografia e sette delle altre materie. Manca "Accadde oggi": i
+ * fatti di un giorno solo non bastano a trenta domande.
+ */
+export const CATEGORIE_RUOTA_GEOGRAFIA: readonly CategoriaQuiz[] = [
+  'capitali', 'bandiere', 'stati', 'fiumi', 'mari', 'laghi', 'oceani',
+]
+export const CATEGORIE_RUOTA_ALTRE: readonly CategoriaQuiz[] = [
+  'arte', 'storia', 'scienza', 'libri', 'cinema', 'nobel', 'lirica',
+]
+export const CATEGORIE_RUOTA: readonly CategoriaQuiz[] = [...CATEGORIE_RUOTA_GEOGRAFIA, ...CATEGORIE_RUOTA_ALTRE]
+
+/** Quante categorie di ogni gruppo vanno sulla ruota ogni giorno: tre di geografia e tre delle altre. */
+const PER_GRUPPO = 3
+
+function semeDellaRuota(numero: number): number {
+  return (0x6c7a_0ce5 ^ Math.imul(numero, 0x2c1b_3c6d)) >>> 0
 }
 
-export const SPICCHI: readonly Spicchio[] = DISPOSIZIONE.map(spicchioDa)
+/** Tre categorie a caso fra le quattro che ieri non c'erano. */
+function scegliDopo(gruppo: readonly CategoriaQuiz[], ieri: readonly CategoriaQuiz[], caso: () => number) {
+  const libere = gruppo.filter((c) => !ieri.includes(c))
+  for (let i = libere.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(caso() * (i + 1))
+    ;[libere[i], libere[j]] = [libere[j], libere[i]]
+  }
+  return libere.slice(0, PER_GRUPPO)
+}
+
+/** L'ultimo giorno calcolato da `categorieDelGiorno`, con le sue categorie. */
+let calcolato: { n: number; geografia: CategoriaQuiz[]; altre: CategoriaQuiz[] } = { n: 0, geografia: [], altre: [] }
+
+/**
+ * Le sei categorie delle domande di un giorno, nell'ordine dei loro spicchi:
+ * tre di geografia e tre delle altre materie, alternate, e nessuna di quelle
+ * del giorno prima. Il calendario parte dal primo giorno di gioco e procede un
+ * giorno alla volta, perché ogni giorno dipende da quello prima, ed e' lo
+ * stesso per il server, il browser e lo script della notte. Costa mezzo
+ * microsecondo a giorno, e l'ultimo giorno calcolato resta (`calcolato`): il
+ * server chiede quasi sempre oggi, e non riparte dal primo.
+ */
+export function categorieDelGiorno(numero: number): CategoriaQuiz[] {
+  const fino = Math.max(1, numero)
+  let { n, geografia, altre } = calcolato.n <= fino ? calcolato : { n: 0, geografia: [], altre: [] }
+  while (n < fino) {
+    n += 1
+    const caso = mulberry32(semeDellaRuota(n))
+    geografia = scegliDopo(CATEGORIE_RUOTA_GEOGRAFIA, geografia, caso)
+    altre = scegliDopo(CATEGORIE_RUOTA_ALTRE, altre, caso)
+  }
+  calcolato = { n, geografia, altre }
+  return geografia.flatMap((g, i) => [g, altre[i]])
+}
+
+/** Gli spicchi della ruota di un giorno, dallo spicchio in cima in senso orario. */
+export function spicchiDelGiorno(numero: number): Spicchio[] {
+  const categorie = categorieDelGiorno(numero)
+  let prossima = 0
+  return FORMA_RUOTA.map((tipo): Spicchio => {
+    if (tipo === 'domanda') return { tipo, categoria: categorie[prossima++] }
+    if (tipo === 'fisso') return { tipo, moltiplicatore: MOLTIPLICATORE_FISSO }
+    return { tipo }
+  })
+}
 
 /** Uno spicchio che apre un minigioco: l'esito si sa solo dopo. */
 export function eSfida(s: Spicchio): s is Extract<Spicchio, { tipo: 'moneta' | 'domanda' }> {
-  return s.tipo !== 'banco'
+  return s.tipo === 'moneta' || s.tipo === 'domanda'
 }
 
 /**
@@ -123,27 +182,36 @@ export function scriviMoltiplicatore(m: number): string {
   return `×${String(m).replace('.', ',')}`
 }
 
-/** Come si scrive uno spicchio sulla ruota, lungo il raggio: "BANCO", "MONETA", "GEOGRAFIA". */
+/** Il nome di una categoria sulla ruota, dove lo spazio e' poco: "Nobel" e non "Premi Nobel". */
+export function nomeSullaRuota(c: CategoriaQuiz): string {
+  return c === 'nobel' ? 'Nobel' : NOMI_CATEGORIE[c]
+}
+
+/** Come si scrive uno spicchio sulla ruota: "BANCO", "MONETA", "×3", "CAPITALI". */
 export function etichettaDi(s: Spicchio): string {
   switch (s.tipo) {
     case 'banco':
       return 'BANCO'
     case 'moneta':
       return 'MONETA'
+    case 'fisso':
+      return scriviMoltiplicatore(s.moltiplicatore)
     case 'domanda':
-      return NOMI_MATERIE_RUOTA[s.materia].toUpperCase()
+      return nomeSullaRuota(s.categoria).toUpperCase()
   }
 }
 
-/** Come lo legge chi non vede, e come lo dice il risultato: "Banco", "Moneta", "Domanda di arte". */
+/** Come lo legge chi non vede, e come lo dice il risultato: "Banco", "Moneta", "Triplo", "Domanda: Capitali". */
 export function nomeDi(s: Spicchio): string {
   switch (s.tipo) {
     case 'banco':
       return 'Banco'
     case 'moneta':
       return 'Moneta'
+    case 'fisso':
+      return s.moltiplicatore === 3 ? 'Triplo' : scriviMoltiplicatore(s.moltiplicatore)
     case 'domanda':
-      return `Domanda di ${NOMI_MATERIE_RUOTA[s.materia].toLowerCase()}`
+      return `Domanda: ${NOMI_CATEGORIE[s.categoria]}`
   }
 }
 
@@ -156,11 +224,12 @@ const media = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0) / xs.leng
  */
 export function resa(s: number): number {
   let somma = 0
-  for (const sp of SPICCHI) {
-    if (sp.tipo === 'domanda') somma += s * media(MOLTIPLICATORI)
-    else if (sp.tipo === 'moneta') somma += media(MOLTIPLICATORI_MONETA) / 2
+  for (const tipo of FORMA_RUOTA) {
+    if (tipo === 'domanda') somma += s * media(MOLTIPLICATORI)
+    else if (tipo === 'moneta') somma += media(MOLTIPLICATORI_MONETA) / 2
+    else if (tipo === 'fisso') somma += MOLTIPLICATORE_FISSO
   }
-  return somma / SPICCHI.length
+  return somma / FORMA_RUOTA.length
 }
 
 /** Se una puntata si puo' fare con il saldo di oggi: un intero, fra la minima e tutto il saldo. */
@@ -169,30 +238,20 @@ export function puntataValida(puntata: unknown, saldo: number): puntata is numbe
 }
 
 /**
- * Le categorie del quiz da cui vengono le domande di ogni materia della ruota.
- * La geografia le ha tutte tranne le città, come la classificata: le città di
- * un paese lontano non le sa nessuno.
+ * Quante domande si preparano per ogni categoria del giorno: a chi gira ne
+ * tocca una che quel giorno non ha ancora visto. Si gira quanto si vuole, e
+ * una categoria esce un giro su quindici: trenta bastano a qualche centinaio
+ * di giri, e stanno in una riga di D1 (una domanda d'arte, la piu' lunga, pesa
+ * un chilobyte).
  */
-export const CATEGORIE_DELLA_MATERIA: Record<MateriaRuota, readonly CategoriaQuiz[]> = {
-  geografia: ['capitali', 'bandiere', 'stati', 'mari', 'oceani', 'fiumi', 'laghi'],
-  storia: ['storia'],
-  arte: ['arte'],
-  libri: ['libri'],
-  cinema: ['cinema'],
-  scienza: ['scienza'],
-}
+export const DOMANDE_PER_CATEGORIA = 30
 
 /**
- * Quante domande si preparano per ogni materia, ogni giorno: a chi gira ne
- * tocca una che quel giorno non ha ancora visto. Si gira quanto si vuole, e
- * una materia esce un giro su dodici: trenta per materia bastano a qualche
- * centinaio di giri, e stanno in una riga di D1 (una domanda d'arte, la piu'
- * lunga, pesa un chilobyte).
+ * Il formato delle domande della ruota: le righe di un formato vecchio si
+ * rifanno. Il 2 era di trenta domande per materia, il 3 e' per categoria, con
+ * le categorie del giorno.
  */
-export const DOMANDE_PER_MATERIA = 30
-
-/** Il formato delle domande della ruota: le righe di un formato vecchio si rifanno (erano cinque per materia). */
-export const FORMATO_DOMANDE_RUOTA = 2
+export const FORMATO_DOMANDE_RUOTA = 3
 
 /** Una domanda della ruota, come la scrive lo script della notte: con la sua categoria, per l'emblema della carta. */
 export interface DomandaRuota {

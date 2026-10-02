@@ -1,4 +1,5 @@
 import { Hono, type Context } from 'hono'
+import { sceltaValida } from '../../shared/quiz'
 import { impostazioniSfida, type LatoSfida } from '../../shared/quiz-sfida'
 import type { SalaQuiz, SfidaQuizInviata, VistaDuello } from '../../shared/types'
 import type { AppEnv } from '../types'
@@ -162,7 +163,7 @@ export const duelliQuiz = new Hono<AppEnv>()
   .post('/:id/risposta', async (c) => {
     const { row, lato } = await duelloMio(c)
     const corpo = await corpoDi(c)
-    const scelta = typeof corpo.scelta === 'string' && /^[A-Za-z0-9:_-]{1,40}$/.test(corpo.scelta) ? corpo.scelta : null
+    const scelta = sceltaValida(corpo.scelta) ? corpo.scelta : null
     if (!scelta) fail(400, 'SCELTA', 'La risposta non è valida.')
     const adesso = Date.now()
     const dopo = await rispondiNelDuello(c.env.DB, row, lato, Number(corpo.indice), scelta, adesso)

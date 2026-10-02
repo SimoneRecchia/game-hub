@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   DISPOSIZIONE_RUOTA,
-  DOMANDE_PER_MATERIA,
-  MATERIE_RUOTA,
+  DOMANDE_PER_CATEGORIA,
   MOLTIPLICATORI,
   MOLTIPLICATORI_MONETA,
   PUNTATA_MINIMA,
-  SPICCHI,
+  categorieDelGiorno,
   improntaDomanda,
+  spicchiDelGiorno,
   type DomandaRuota,
   type Spicchio,
 } from '../../shared/ruota'
@@ -18,11 +18,15 @@ import { ProvaD1, applica, banco, type Giocatore } from './banco'
 
 type Banco = ReturnType<typeof banco>
 
-/** Gli spicchi che servono alle prove, per posto: il primo di ogni specie. */
+/** Gli spicchi di oggi, e quelli che servono alle prove, per posto: il primo di ogni specie. */
+const SPICCHI = spicchiDelGiorno(today().puzzleNumber)
 const indice = (prova: (s: Spicchio) => boolean) => SPICCHI.findIndex(prova)
 const BANCO = indice((s) => s.tipo === 'banco')
 const MONETA = indice((s) => s.tipo === 'moneta')
-const GEOGRAFIA = indice((s) => s.tipo === 'domanda' && s.materia === 'geografia')
+const TRIPLO = indice((s) => s.tipo === 'fisso')
+const DOMANDA = indice((s) => s.tipo === 'domanda')
+/** La categoria del primo spicchio di domande, oggi. */
+const CATEGORIA = categorieDelGiorno(today().puzzleNumber)[0]
 
 /**
  * Il caso, deciso dalla prova: ogni chiamata a `crypto.getRandomValues` prende
@@ -78,20 +82,18 @@ function domanda(quale = 0): DomandaCompleta {
 }
 
 /**
- * Le domande di oggi, `quante` per ogni materia: con tutte le materie ci sono
- * tutti gli spicchi, e il numero che esce e' proprio l'indice dello spicchio.
+ * Le domande di oggi, `quante` per ogni categoria del giorno: con tutte le
+ * categorie ci sono tutti gli spicchi, e il numero che esce e' proprio l'indice
+ * dello spicchio.
  */
 function domandeDiOggi(b: Banco, quante = 1) {
-  const voci: DomandaRuota[] = Array.from({ length: quante }, (_, i) => ({
-    categoria: 'capitali',
-    domanda: domanda(i),
-  }))
-  for (const materia of MATERIE_RUOTA) {
+  for (const categoria of categorieDelGiorno(today().puzzleNumber)) {
+    const voci: DomandaRuota[] = Array.from({ length: quante }, (_, i) => ({ categoria, domanda: domanda(i) }))
     b.db.sqlite
       .prepare(
-        'INSERT INTO ruota_domande (puzzle_number, materia, domande, created_at, formato) VALUES (?, ?, ?, ?, 2)',
+        'INSERT INTO ruota_domande (puzzle_number, materia, domande, created_at, formato) VALUES (?, ?, ?, ?, 3)',
       )
-      .run(today().puzzleNumber, materia, JSON.stringify(voci), new Date().toISOString())
+      .run(today().puzzleNumber, categoria, JSON.stringify(voci), new Date().toISOString())
   }
 }
 
@@ -231,17 +233,29 @@ describe('Crazy Time', () => {
     expect(dopo).toMatchObject({ giri: 4, netto: 100 - 80 - 50 - 50, giro: { n: 4, delta: -50 } })
   })
 
+  it('il triplo restituisce subito la puntata per tre', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+    expect(TRIPLO).toBe(0)
+    const dopo = await gira(b, io, 100, TRIPLO)
+    expect(dopo.giro).toMatchObject({ spicchio: TRIPLO, stato: 'fatto', delta: 200, sfida: null })
+    expect(dopo).toMatchObject({ netto: 200, saldo: 380 })
+    expect((await generaleDiOggi(b, io))?.ruota).toBe(200)
+  })
+
   it('la domanda: prima i moltiplicatori, poi la domanda, e giusta restituisce la puntata moltiplicata', async () => {
     const b = banco()
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 90, 90)
     domandeDiOggi(b, 2)
 
-    const giro = (await gira(b, io, 100, GEOGRAFIA)).giro!
+    const giro = (await gira(b, io, 100, DOMANDA)).giro!
     expect(giro).toMatchObject({
       stato: 'sfida',
       delta: -100,
-      sfida: { tipo: 'domanda', materia: 'geografia', moltiplicatore: null, vincita: null, domanda: null },
+      sfida: { tipo: 'domanda', categoria: CATEGORIA, moltiplicatore: null, vincita: null, domanda: null },
     })
     const senza = await b.chiama('POST', '/ruota/domanda', io)
     expect(senza.status).toBe(409)
@@ -271,8 +285,8 @@ describe('Crazy Time', () => {
     expect(risposta.giro).toMatchObject({ stato: 'fatto', delta: 100, sfida: { risposta: { giusta: true } } })
     expect(risposta.saldo).toBe(280)
 
-    // Il giro dopo cade ancora sulla geografia: la domanda e' l'altra, anche se il caso sceglierebbe la prima.
-    await gira(b, io, 100, GEOGRAFIA)
+    // Il giro dopo cade ancora sulla stessa categoria: la domanda e' l'altra, anche se il caso sceglierebbe la prima.
+    await gira(b, io, 100, DOMANDA)
     caso(0)
     expect((await b.chiama<RuotaStato>('POST', '/ruota/moltiplicatore', io)).dati.giro!.sfida).toMatchObject({
       moltiplicatore: 3,
@@ -285,9 +299,27 @@ describe('Crazy Time', () => {
     expect(sbagliata.giro).toMatchObject({ delta: -100, sfida: { risposta: { giusta: false } } })
     expect(await stato(b, io)).toMatchObject({ netto: 100 - 100, giri: 2 })
 
-    // Finite le domande della geografia, il suo spicchio non esce piu': il numero cade sullo spicchio dopo.
-    const terzo = await gira(b, io, 100, GEOGRAFIA)
-    expect(SPICCHI[terzo.giro!.spicchio]).not.toEqual({ tipo: 'domanda', materia: 'geografia' })
+    // Finite le domande della categoria, il suo spicchio non esce piu': il numero cade sullo spicchio dopo.
+    const terzo = await gira(b, io, 100, DOMANDA)
+    expect(SPICCHI[terzo.giro!.spicchio]).not.toEqual({ tipo: 'domanda', categoria: CATEGORIA })
+  })
+
+  it('sbagliata, la domanda toglie tutta la puntata, anche con il moltiplicatore piu’ piccolo', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+    await gira(b, io, 100, DOMANDA)
+    caso(1)
+    expect(MOLTIPLICATORI[1]).toBe(1.25)
+    expect((await b.chiama<RuotaStato>('POST', '/ruota/moltiplicatore', io)).dati.giro!.sfida).toMatchObject({
+      moltiplicatore: 1.25,
+      vincita: 125,
+    })
+    caso(0)
+    await b.chiama('POST', '/ruota/domanda', io)
+    const sbagliata = (await b.chiama<RuotaStato>('POST', '/ruota/risposta', io, { scelta: 'opo' })).dati
+    expect(sbagliata).toMatchObject({ netto: -100, saldo: 80, giro: { stato: 'fatto', delta: -100 } })
   })
 
   it('una risposta in ritardo e una domanda lasciata aperta li prende il banco', async () => {
@@ -295,7 +327,7 @@ describe('Crazy Time', () => {
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 90, 90)
     domandeDiOggi(b, 3)
-    await gira(b, io, 100, GEOGRAFIA)
+    await gira(b, io, 100, DOMANDA)
     caso(0)
     await b.chiama('POST', '/ruota/moltiplicatore', io)
     caso(0)
@@ -306,7 +338,7 @@ describe('Crazy Time', () => {
     const tardi = (await b.chiama<RuotaStato>('POST', '/ruota/risposta', io, { scelta: 'lis' })).dati.giro!
     expect(tardi).toMatchObject({ stato: 'fatto', delta: -100, sfida: { risposta: { scelta: null, giusta: false } } })
 
-    await gira(b, io, 50, GEOGRAFIA)
+    await gira(b, io, 50, DOMANDA)
     caso(0)
     await b.chiama('POST', '/ruota/moltiplicatore', io)
     caso(0)
@@ -329,9 +361,9 @@ describe('Crazy Time', () => {
       .prepare(
         `INSERT INTO ruota_giocate
            (player_id, puzzle_number, n, puntata, spicchio, stato, delta, disposizione, created_at, updated_at)
-         VALUES (?, ?, 1, 40, 3, 'fatto', 40, 1, ?, ?)`,
+         VALUES (?, ?, 1, 40, 3, 'fatto', 40, ?, ?, ?)`,
       )
-      .run(io.id, today().puzzleNumber, t, t)
+      .run(io.id, today().puzzleNumber, DISPOSIZIONE_RUOTA - 1, t, t)
     b.db.sqlite
       .prepare('INSERT INTO ruota_giornate (player_id, puzzle_number, netto, giri) VALUES (?, ?, 40, 1)')
       .run(io.id, today().puzzleNumber)
@@ -380,8 +412,8 @@ describe('Crazy Time', () => {
     expect(d1.sqlite.prepare('SELECT netto, giri FROM ruota_giornate').all()).toEqual([{ netto: -20, giri: 1 }])
   })
 
-  it('prepara trenta domande per materia, e le riconosce dall’impronta', () => {
-    expect(DOMANDE_PER_MATERIA).toBe(30)
+  it('prepara trenta domande per categoria, e le riconosce dall’impronta', () => {
+    expect(DOMANDE_PER_CATEGORIA).toBe(30)
     expect(improntaDomanda(domanda(1))).not.toBe(improntaDomanda(domanda(2)))
   })
 })

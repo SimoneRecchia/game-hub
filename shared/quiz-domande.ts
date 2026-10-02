@@ -26,6 +26,7 @@ import {
   QUANTE_MASSIME,
   RISPOSTE_PREDEFINITE,
   idPaeseCartina,
+  sceltaValida,
   vistaDellaZona,
   type CategoriaQuiz,
   type Continente,
@@ -1633,8 +1634,10 @@ export function domandeDelGiorno(
  * cartina.
  */
 export function domandaValida(d: DomandaCompleta, risposte = RISPOSTE_PREDEFINITE): boolean {
-  if (d.cartina) return d.opzioni.length === 0 && !!d.giusta && (d.accettate ?? []).includes(d.giusta)
-  if (d.opzioni.length !== risposte) return false
+  // Ogni risposta possibile deve essere una scelta che il server accetta.
+  if (!sceltaValida(d.giusta)) return false
+  if (d.cartina) return d.opzioni.length === 0 && (d.accettate ?? []).includes(d.giusta)
+  if (d.opzioni.length !== risposte || !d.opzioni.every((o) => sceltaValida(o.id))) return false
   const id = new Set(d.opzioni.map((o) => o.id))
   const testi = new Set(d.opzioni.map((o) => senzaAccenti(o.testo)))
   return id.size === risposte && testi.size === risposte && id.has(d.giusta)

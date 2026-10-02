@@ -10,7 +10,7 @@ import type { ImpostazioniSfida } from './quiz-sfida'
 import type { Lato, Personaggi, Risposta } from './indovina'
 import type { GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
-import type { LatoMoneta, MateriaRuota } from './ruota'
+import type { LatoMoneta } from './ruota'
 
 export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
 
@@ -1153,14 +1153,13 @@ export type SfidaRuotaVista =
     }
   | {
       tipo: 'domanda'
-      materia: MateriaRuota
+      /** La categoria dello spicchio, una di quelle del giorno (shared/ruota.ts, categorieDelGiorno). */
+      categoria: CategoriaQuiz
       /** Dalla ruota dei moltiplicatori: null finché non la si gira. */
       moltiplicatore: number | null
       /** Lo spicchio dove si e' fermata la ruota dei moltiplicatori (shared/ruota.ts, MOLTIPLICATORI). */
       spicchioMoltiplicatore: number | null
       vincita: number | null
-      /** La categoria del quiz della domanda, per l'emblema della carta: c'e' da quando si apre. */
-      categoria: CategoriaQuiz | null
       /** Da quando si apre: senza la risposta finché non si risponde. */
       domanda: DomandaQuiz | null
       limiteMs: number | null
@@ -1174,11 +1173,14 @@ export interface GiroRuota {
   /** Il numero del giro nella giornata, da 1. */
   n: number
   puntata: number
-  /** Lo spicchio dove si e' fermata la ruota, contando dall'alto in senso orario (shared/ruota.ts). */
+  /** Lo spicchio dove si e' fermata la ruota, dall'alto in senso orario (shared/ruota.ts, spicchiDelGiorno). */
   spicchio: number
   /** `sfida` finché la moneta o la domanda non si giocano, `domanda` mentre la domanda e' aperta. */
   stato: 'sfida' | 'domanda' | 'fatto'
-  /** Quel che il giro ha dato o tolto: la puntata si paga subito, quindi durante un minigioco e' la puntata persa. */
+  /**
+   * Quel che il giro ha dato o tolto: la puntata si paga subito, quindi durante
+   * un minigioco e' la puntata persa; il triplo la restituisce per tre subito.
+   */
   delta: number
   sfida: SfidaRuotaVista | null
 }
