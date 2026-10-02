@@ -165,8 +165,9 @@
 /* ---------- Definizione corrente ---------- */
 
 /*
- * La definizione in corso: un foglietto a righe, come il bordo del giornale
- * dove si scrive la risposta prima di riportarla nello schema.
+ * La definizione in corso, nel colore della parola che si sta scrivendo. Senza
+ * le righe del quaderno: a passo fisso, non combaciavano con quelle del testo e
+ * sembravano cancellature.
  */
 .cbarra {
   flex: none;
@@ -177,11 +178,6 @@
   margin-inline: auto;
   border-radius: var(--r-md);
   background-color: var(--cruci-parola);
-  background-image: repeating-linear-gradient(
-    180deg,
-    transparent 0 21px,
-    color-mix(in srgb, var(--brand) 12%, transparent) 21px 22px
-  );
   box-shadow: inset 3px 0 0 var(--brand);
 }
 

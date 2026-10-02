@@ -7,6 +7,7 @@ import { NERA, sequenzeDelloSchema } from '../../shared/cruciverba'
 import { addDays, mulberry32 as mulberryCondiviso, puzzleNumberFor } from '../../shared/daily'
 import {
   TRATTO_MASSIMO,
+  correggiDefinizioni,
   disegnaSchema,
   generaCruciverba,
   istruzioneSql,
@@ -145,5 +146,40 @@ describe('gli schemi liberi', () => {
     const finto = { righe: 1, colonne: 2, griglia: 'ab', definizioni: {} }
     expect(istruzioneSql(7, finto, 'x', true)).toMatch(/^INSERT OR IGNORE INTO cruciverba_schemi_liberi \(id, /)
     expect(istruzioneSql(7, finto, 'x')).toMatch(/^INSERT OR IGNORE INTO cruciverba_schemi \(puzzle_number, /)
+  })
+})
+
+describe('gli schemi gia\' scritti', () => {
+  const perParola = new Map(voci.map((v: { parola: string }) => [v.parola, v]))
+  // Le definizioni come le scrive `istruzioneSql`: testo, voce e nota.
+  const salvate = (cruciverba: { definizioni: Record<string, { testo: string; voce: string; nota: string }> }) =>
+    Object.fromEntries(
+      Object.entries(cruciverba.definizioni).map(([k, d]) => [
+        k,
+        d.nota ? { t: d.testo, v: d.voce, n: d.nota } : { t: d.testo, v: d.voce },
+      ]),
+    )
+
+  it('una definizione che il filtro ha scartato dopo lascia il posto alla prima buona', () => {
+    // Lo schema #35, quando il filtro non vedeva ancora il buco di "dei,".
+    const rotta = "L'universalità dei, ovverosia, senza eccezione alcuna, tutti i diritti ed oneri"
+    const corretto = correggiDefinizioni('eredita', 1, 7, { o0: { t: rotta, v: 'eredità' } }, perParola)
+    expect(corretto.definizioni.o0).toEqual({
+      t: 'Passaggio di proprietà e/o beni, anche pecuniari, per la morte di qualcuno',
+      v: 'eredità',
+    })
+    expect(corretto.cambiate).toEqual([
+      { chiave: 'o0', parola: 'eredita', prima: rotta, dopo: corretto.definizioni.o0.t },
+    ])
+  })
+
+  it('uno schema con le definizioni di adesso resta com\'e\'', () => {
+    const cruciverba = generaCruciverba({ indici, seme: semeDelGiorno(29), schemi: 40 })
+    const { griglia, righe, colonne } = cruciverba
+    expect(correggiDefinizioni(griglia, righe, colonne, salvate(cruciverba), perParola)).toBeNull()
+  }, 60_000)
+
+  it('una parola che il dizionario non ha piu\' tiene la sua definizione', () => {
+    expect(correggiDefinizioni('zzzz', 1, 4, { o0: { t: 'Il verso di chi dorme', v: 'zzzz' } }, perParola)).toBeNull()
   })
 })
