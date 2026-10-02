@@ -1,14 +1,30 @@
 /*
  * La slot: il tabellone in cima, e sotto la sala, scura in tutti e due i temi
- * come quella di Crazy Time, con il mobile in mezzo. Il mobile e' laccato rosso
- * con le finiture d'oro e di cromo, come le slot dei casinò di una volta:
- * l'insegna con le lampadine, i premi piu' alti sul vetro, i tre rulli
- * d'avorio dietro il vetro, il display a led, i gettoni della puntata e il
- * bottone, il vassoio delle monete, e la leva sul fianco.
+ * come quella di Crazy Time, con il mobile in mezzo sotto un faro. Il mobile e'
+ * quello delle slot di una volta, disegnato perché sembri un oggetto: la lacca
+ * rossa con i fianchi tondi, l'insegna ad arco con le lampadine, i rulli
+ * d'avorio dietro un vetro curvo, il display a led, il banco dei comandi
+ * inclinato verso chi gioca, la pancia illuminata con le categorie del giorno,
+ * il vassoio delle monete, lo zoccolo, e sul fianco la leva di cromo.
  *
- * Tutto si misura sulla sala, che e' un contenitore: il mobile e' alto quanto
- * ci sta, e largo il 62% della sua altezza, con il posto per la leva.
+ * Tutto si misura sulla larghezza del mobile (`--w`, e il suo centesimo
+ * `--u`): quella che ci sta con la leva da tutti e due i lati, cosi' il mobile
+ * resta al centro, o quella che lascia l'altezza. Le parti hanno altezze fisse
+ * in centesimi; la pancia prende quel che avanza, fino a un tetto.
  */
+
+/*
+ * La larghezza e' una lunghezza vera, calcolata sul mobile e ereditata: senza
+ * la registrazione le unita' del contenitore si risolverebbero dove si usa la
+ * variabile, e dentro la pancia, che e' un contenitore anche lei, varrebbero
+ * le sue.
+ */
+@property --w {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 300px;
+}
+
 .slot {
   flex: 1;
   min-height: 0;
@@ -39,7 +55,12 @@
 /* ─────────────────────────────  La sala  ───────────────────────────── */
 
 .slot-sala {
-  --alto: min(100cqh - 16px, (100cqw - 16px) / 0.7);
+  --lacca-1: #e3203f;
+  --lacca-2: #a50f2a;
+  --lacca-3: #5e0617;
+  --oro-1: #fff2b8;
+  --oro-2: #f0c24a;
+  --oro-3: #9c6612;
   position: relative;
   flex: 1;
   min-height: 300px;
@@ -51,26 +72,61 @@
   justify-content: center;
   border-radius: var(--r-xl);
   background:
-    radial-gradient(110% 60% at 50% -10%, rgba(255, 79, 163, 0.28), transparent 62%),
-    radial-gradient(circle at 50% 60%, #2a0f4d, #08020f 78%);
+    radial-gradient(110% 60% at 50% -10%, rgba(255, 79, 163, 0.26), transparent 62%),
+    radial-gradient(70% 50% at 50% 105%, rgba(255, 140, 60, 0.16), transparent 70%),
+    radial-gradient(circle at 50% 55%, #2a0f4d, #08020f 78%);
   box-shadow:
     inset 0 0 0 1px rgba(255, 214, 120, 0.22),
     inset 0 -60px 90px rgba(0, 0, 0, 0.5),
     var(--shadow-md);
 }
 
-/* Il pavimento della sala: un riflesso sotto il mobile. */
-.slot-sala::after {
+/* Il faro: un cono di luce calda che scende dall'alto sul mobile. */
+.slot-sala::before {
   content: '';
   position: absolute;
-  left: 50%;
-  bottom: -6%;
+  inset: 0;
   z-index: -1;
-  width: calc(var(--alto) * 0.9);
-  height: 24%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 79, 163, 0.32), transparent);
-  transform: translateX(-50%);
+  pointer-events: none;
+  background: conic-gradient(
+    at 50% -14%,
+    transparent 0 154deg,
+    rgba(255, 232, 196, 0.06) 163deg,
+    rgba(255, 232, 196, 0.13) 180deg,
+    rgba(255, 232, 196, 0.06) 197deg,
+    transparent 206deg
+  );
+  -webkit-mask-image: linear-gradient(180deg, #000 30%, transparent 95%);
+  mask-image: linear-gradient(180deg, #000 30%, transparent 95%);
+  animation: slot-faro 6s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes slot-faro {
+  to {
+    opacity: 0.7;
+  }
+}
+
+/* Le luci lontane della sala: macchie di colore sfocate che respirano. */
+.slot-sala__luci {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 12% 22%, rgba(255, 79, 163, 0.35) 0 3%, transparent 9%),
+    radial-gradient(circle at 88% 18%, rgba(80, 160, 255, 0.3) 0 2.5%, transparent 8%),
+    radial-gradient(circle at 8% 78%, rgba(255, 200, 60, 0.28) 0 2.5%, transparent 8%),
+    radial-gradient(circle at 92% 72%, rgba(170, 80, 255, 0.3) 0 3%, transparent 9%),
+    radial-gradient(circle at 50% 8%, rgba(255, 255, 255, 0.12) 0 2%, transparent 7%);
+  filter: blur(6px);
+  animation: slot-luci 7s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes slot-luci {
+  to {
+    opacity: 0.55;
+    transform: scale(1.06);
+  }
 }
 
 .slot-sala.is-jackpot {
@@ -80,119 +136,350 @@
 @keyframes slot-sala-jackpot {
   50% {
     background:
-      radial-gradient(110% 60% at 50% -10%, rgba(255, 214, 90, 0.5), transparent 62%),
+      radial-gradient(110% 60% at 50% -10%, rgba(255, 214, 90, 0.55), transparent 62%),
       radial-gradient(circle at 50% 60%, #4a1d00, #08020f 78%);
   }
 }
 
 /* ─────────────────────────────  Il mobile  ───────────────────────────── */
 
-.slot-mobile {
+.slot-macchina {
+  /* La larghezza: quella che lascia la leva da tutti e due i lati, o quella che lascia l'altezza. */
+  --w: min((100cqw - 20px) / 1.28, (100cqh - 32px) / 1.68);
+  --u: calc(var(--w) / 100);
   position: relative;
   display: grid;
   /* `minmax(0, ...)`: la striscia dei rulli e' alta trenta rulli, e lasciata al contenuto allargherebbe la sua riga. */
   grid-template-rows:
-    minmax(0, 13fr) minmax(0, 6.5fr) minmax(0, 44fr) minmax(0, 8.5fr)
-    minmax(0, 15fr) minmax(0, 8fr);
-  gap: calc(var(--alto) * 0.012);
-  height: var(--alto);
-  width: calc(var(--alto) * 0.58);
-  padding: calc(var(--alto) * 0.025) calc(var(--alto) * 0.035) calc(var(--alto) * 0.03);
-  border-radius: calc(var(--alto) * 0.06) calc(var(--alto) * 0.06) calc(var(--alto) * 0.035)
-    calc(var(--alto) * 0.035);
+    calc(var(--u) * 30) calc(var(--u) * 100) calc(var(--u) * 20) minmax(0, 1fr) calc(var(--u) * 10)
+    calc(var(--u) * 5);
+  width: var(--w);
+  height: min(100cqh - 32px, var(--w) * 2.04);
+  border-radius: calc(var(--u) * 12) calc(var(--u) * 12) calc(var(--u) * 4) calc(var(--u) * 4);
+  /*
+   * La lacca, con i fianchi tondi: da ogni lato una fascia d'ombra sul bordo,
+   * una di luce subito dentro, e il rosso pieno in mezzo. Sopra, il faro che
+   * la accende in cima, il riflesso di traverso della vernice lucida, e il buio
+   * che sale dal fondo.
+   */
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.35), transparent 12%, transparent 88%, rgba(0, 0, 0, 0.35)),
-    linear-gradient(180deg, #b0132e, #7a0d1f 45%, #3b0510);
+    linear-gradient(112deg, transparent 30%, rgba(255, 255, 255, 0.07) 36%, transparent 44%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 20%, transparent 66%, rgba(0, 0, 0, 0.4)),
+    linear-gradient(
+      90deg,
+      #2a0309 0%,
+      var(--lacca-3) 2.5%,
+      var(--lacca-1) 7%,
+      #ff6f86 9%,
+      var(--lacca-1) 12%,
+      var(--lacca-2) 30%,
+      var(--lacca-2) 70%,
+      var(--lacca-1) 88%,
+      #ff6f86 91%,
+      var(--lacca-1) 93%,
+      var(--lacca-3) 97.5%,
+      #2a0309 100%
+    );
   box-shadow:
-    inset 0 0 0 calc(var(--alto) * 0.007) #f0c24a,
-    inset 0 0 0 calc(var(--alto) * 0.014) #7a4706,
-    inset 0 2px 0 calc(var(--alto) * 0.014) rgba(255, 255, 255, 0.12),
-    0 calc(var(--alto) * 0.03) calc(var(--alto) * 0.07) rgba(0, 0, 0, 0.6);
+    inset 0 0 0 calc(var(--u) * 1) var(--oro-2),
+    inset 0 0 0 calc(var(--u) * 1.8) var(--oro-3),
+    0 calc(var(--u) * 6) calc(var(--u) * 12) rgba(0, 0, 0, 0.6),
+    0 0 calc(var(--u) * 20) rgba(255, 79, 163, 0.16);
+}
+
+/* Il riverbero dell'insegna sul muro dietro il mobile: si accende con le luci. */
+.slot-macchina::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--u) * -30);
+  right: calc(var(--u) * -30);
+  top: calc(var(--u) * -22);
+  z-index: -1;
+  height: calc(var(--u) * 80);
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(255, 79, 163, 0.32), rgba(122, 31, 184, 0.12) 60%, transparent);
+  transition: opacity 400ms var(--ease-out);
+}
+
+.slot-sala.is-vinto .slot-macchina::before,
+.slot-sala.is-jackpot .slot-macchina::before {
+  background: radial-gradient(closest-side, rgba(255, 214, 90, 0.5), rgba(255, 120, 40, 0.16) 60%, transparent);
+  animation: slot-riverbero 0.32s steps(2) infinite;
+}
+
+@keyframes slot-riverbero {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Il pavimento: l'ombra sotto il mobile, e il rosso della lacca che ci si riflette. */
+.slot-macchina::after {
+  content: '';
+  position: absolute;
+  left: calc(var(--u) * -40);
+  right: calc(var(--u) * -40);
+  top: calc(100% - var(--u) * 6);
+  z-index: -1;
+  height: calc(var(--u) * 40);
+  pointer-events: none;
+  --piede: calc(var(--u) * 6);
+  background:
+    radial-gradient(calc(var(--u) * 62) calc(var(--u) * 6) at 50% var(--piede), rgba(0, 0, 0, 0.85), transparent),
+    radial-gradient(calc(var(--u) * 80) calc(var(--u) * 24) at 50% var(--piede), rgba(227, 32, 63, 0.3), transparent),
+    radial-gradient(calc(var(--u) * 110) calc(var(--u) * 34) at 50% 0, rgba(255, 79, 163, 0.12), transparent);
+}
+
+.slot-macchina.is-scossa {
+  animation: slot-scossa 0.4s var(--ease-out);
+}
+
+@keyframes slot-scossa {
+  20% {
+    transform: translateY(calc(var(--u) * 1)) rotate(-0.4deg);
+  }
+  45% {
+    transform: translateY(calc(var(--u) * -0.5)) rotate(0.3deg);
+  }
+  70% {
+    transform: translateY(calc(var(--u) * 0.3));
+  }
+}
+
+/*
+ * Il fianco destro, dove sta la leva: chi guarda e' un poco a destra, quindi
+ * se ne vede una striscia di taglio, piu' bassa verso il fondo perché e' piu'
+ * lontana. La forma viene dallo stesso punto di vista della leva (Leva.tsx):
+ * l'occhio all'altezza del perno, a 84 centesimi dal bordo di sopra, e il
+ * fondo del fianco che si vede a tre quarti della grandezza del fronte.
+ */
+.slot-fianco {
+  position: absolute;
+  left: calc(100% - 1px);
+  top: 0;
+  bottom: 0;
+  z-index: -1;
+  width: calc(var(--u) * 5.2);
+  clip-path: polygon(
+    0 calc(var(--u) * 7),
+    100% calc(var(--u) * 19.8),
+    100% calc(76.5% + var(--u) * 19.8),
+    0 calc(100% - var(--u) * 1)
+  );
+  background:
+    linear-gradient(90deg, rgba(255, 120, 140, 0.45), transparent 26%),
+    linear-gradient(180deg, #4a0412, #33020c 64%, #12020a 82%, #241e26);
 }
 
 /* ─────────────────────────────  L'insegna  ───────────────────────────── */
 
 .slot-insegna {
   position: relative;
-  display: grid;
-  place-items: center;
-  border-radius: calc(var(--alto) * 0.045) calc(var(--alto) * 0.045) calc(var(--alto) * 0.015)
-    calc(var(--alto) * 0.015);
+  margin: calc(var(--u) * 2) calc(var(--u) * 3) 0;
+  border-radius: 50% 50% calc(var(--u) * 2) calc(var(--u) * 2) / 100% 100% calc(var(--u) * 2) calc(var(--u) * 2);
   background:
-    radial-gradient(80% 120% at 50% 0%, rgba(255, 79, 163, 0.45), transparent 70%),
-    linear-gradient(180deg, #2b0a4a, #12031f);
+    radial-gradient(70% 90% at 50% 100%, rgba(255, 79, 163, 0.5), transparent 70%),
+    radial-gradient(60% 60% at 50% 20%, rgba(255, 255, 255, 0.14), transparent 70%),
+    linear-gradient(180deg, #3a0d5e, #12031f);
   box-shadow:
-    inset 0 0 0 calc(var(--alto) * 0.005) #f0c24a,
-    inset 0 0 calc(var(--alto) * 0.03) rgba(0, 0, 0, 0.6);
+    inset 0 0 0 calc(var(--u) * 0.8) var(--oro-2),
+    inset 0 0 0 calc(var(--u) * 1.5) var(--oro-3),
+    inset 0 calc(var(--u) * -3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55),
+    0 calc(var(--u) * 1.3) calc(var(--u) * 2.6) rgba(0, 0, 0, 0.45);
 }
 
-/* Le lampadine lungo il bordo: a turno in attesa, una corsa mentre girano, a raffica per una vincita. */
-.slot-insegna__lampadine {
+.slot-insegna__disegno {
   position: absolute;
-  inset: calc(var(--alto) * 0.008);
-  border-radius: inherit;
-  --lampada: radial-gradient(circle, var(--ct-lampada) 0 28%, rgba(255, 220, 120, 0.4) 40%, transparent 60%);
-  background:
-    var(--lampada) 0 0 / calc(var(--alto) * 0.028) calc(var(--alto) * 0.028) repeat-x,
-    var(--lampada) calc(var(--alto) * 0.014) 100% / calc(var(--alto) * 0.028) calc(var(--alto) * 0.028) repeat-x;
-  animation: slot-lampade 1.4s steps(2) infinite;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.slot-insegna.is-gira .slot-insegna__lampadine {
-  animation-duration: 0.28s;
+/* Le lampadine: a turno in attesa, in corsa mentre girano, a raffica per una vincita. */
+.slot-insegna__lampadina {
+  fill: #fff6d2;
+  filter: drop-shadow(0 0 3px rgba(255, 220, 120, 0.95));
+  animation: slot-lampadina 1.4s steps(1) infinite;
+  animation-delay: calc(var(--i) * -0.7s);
 }
 
-.slot-insegna.is-vinto .slot-insegna__lampadine,
-.slot-insegna.is-jackpot .slot-insegna__lampadine {
-  animation: slot-lampade-raffica 0.18s steps(2) infinite;
+.slot-insegna.is-gira .slot-insegna__lampadina {
+  animation: slot-corsa 0.6s linear infinite;
+  animation-delay: calc(var(--i) * -0.6s / 25);
 }
 
-@keyframes slot-lampade {
+.slot-insegna.is-vinto .slot-insegna__lampadina,
+.slot-insegna.is-jackpot .slot-insegna__lampadina {
+  animation: slot-raffica 0.16s steps(1) infinite;
+  animation-delay: calc(var(--i) * -0.08s);
+}
+
+@keyframes slot-lampadina {
   50% {
-    background-position:
-      calc(var(--alto) * 0.014) 0,
-      0 100%;
+    fill: #7a6230;
+    filter: none;
   }
 }
 
-@keyframes slot-lampade-raffica {
-  50% {
-    opacity: 0.25;
+@keyframes slot-corsa {
+  0%,
+  70% {
+    fill: #7a6230;
+    filter: none;
+  }
+  80% {
+    fill: #fffbe8;
+    filter: drop-shadow(0 0 5px #ffd23f);
   }
 }
 
-.slot-insegna__nome {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: calc(var(--alto) * 0.012);
+@keyframes slot-raffica {
+  50% {
+    fill: #ff4fa3;
+    filter: drop-shadow(0 0 5px #ff4fa3);
+  }
+}
+
+.slot-insegna__scritta {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 6%;
+  width: 84%;
+  height: 72%;
+  overflow: visible;
+}
+
+.slot-insegna__scritta text {
   font-family: var(--font-rounded);
-  font-size: calc(var(--alto) * 0.07);
   font-weight: 900;
-  letter-spacing: 0.12em;
-  line-height: 1;
-  background: linear-gradient(180deg, #fff8d6, #f4c430 55%, #c27a0e);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 calc(var(--alto) * 0.012) rgba(255, 79, 163, 0.85));
+  text-anchor: middle;
+}
+
+.slot-insegna__lettere,
+.slot-insegna__spessore:not(.is-sette) {
+  font-size: 88px;
+  letter-spacing: 6px;
+}
+
+.slot-insegna__lettere {
+  fill: url(#slot-insegna-oro);
+  stroke: #fff8d6;
+  stroke-width: 2;
+  paint-order: stroke;
+  filter: drop-shadow(0 0 8px rgba(255, 79, 163, 0.9));
+}
+
+.slot-insegna__spessore {
+  fill: #7a3c00;
+}
+
+.slot-insegna__sette,
+.slot-insegna__spessore.is-sette {
+  font-size: 58px;
 }
 
 .slot-insegna__sette {
-  font-size: 0.72em;
-  background: linear-gradient(180deg, #ff9aa5, #e3132f 60%, #7d0012);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  fill: url(#slot-insegna-rosso);
+  stroke: #fff;
+  stroke-width: 1.5;
+  paint-order: stroke;
 }
 
-.slot-insegna.is-jackpot .slot-insegna__nome {
+.slot-insegna__spessore.is-sette {
+  fill: #5c000f;
+}
+
+/* Il luccichio che passa sulla scritta, ogni tanto: la vernice d'oro che prende la luce. */
+.slot-insegna__luccichio {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.slot-insegna__luccichio::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -40%;
+  width: 22%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  transform: skewX(-20deg);
+  animation: slot-luccichio 5.5s var(--ease-in-out) infinite;
+}
+
+@keyframes slot-luccichio {
+  0%,
+  62% {
+    left: -40%;
+  }
+  100% {
+    left: 130%;
+  }
+}
+
+.slot-insegna.is-jackpot .slot-insegna__scritta {
   animation: slot-nome-jackpot 0.36s steps(2) infinite;
 }
 
 @keyframes slot-nome-jackpot {
   50% {
-    filter: drop-shadow(0 0 calc(var(--alto) * 0.03) #fff6c2) brightness(1.4);
+    filter: brightness(1.45) drop-shadow(0 0 10px #fff6c2);
+  }
+}
+
+/* ─────────────────────────────  Il fronte  ───────────────────────────── */
+
+.slot-fronte {
+  position: relative;
+  display: grid;
+  grid-template-rows: calc(var(--u) * 8.5) minmax(0, 1fr) calc(var(--u) * 10.5);
+  gap: calc(var(--u) * 1.6);
+  min-height: 0;
+  padding: calc(var(--u) * 1.5) calc(var(--u) * 6);
+}
+
+/* Le strisce di led sui fianchi: corrono piano in attesa, veloci mentre girano, d'oro per una vincita. */
+.slot-fronte__led {
+  position: absolute;
+  top: 4%;
+  bottom: 4%;
+  width: calc(var(--u) * 1.3);
+  border-radius: 99px;
+  background: linear-gradient(180deg, #ff4fa3, #7a5cff, #4fd2ff, #7dff9a, #ffd23f, #ff4fa3);
+  background-size: 100% 300%;
+  box-shadow: 0 0 calc(var(--u) * 2) rgba(255, 79, 163, 0.65);
+  opacity: 0.85;
+  animation: slot-led 6s linear infinite;
+}
+
+.slot-fronte__led.is-sinistra {
+  left: calc(var(--u) * 2.3);
+}
+
+.slot-fronte__led.is-destra {
+  right: calc(var(--u) * 2.3);
+}
+
+.slot-sala.is-gira .slot-fronte__led {
+  animation-duration: 0.9s;
+}
+
+.slot-sala.is-vinto .slot-fronte__led,
+.slot-sala.is-jackpot .slot-fronte__led {
+  background: linear-gradient(180deg, #fff6c2, #ffd23f, #ff9a1f, #ffd23f, #fff6c2);
+  background-size: 100% 200%;
+  box-shadow: 0 0 calc(var(--u) * 3.3) rgba(255, 214, 90, 0.95);
+  animation-duration: 0.5s;
+}
+
+@keyframes slot-led {
+  to {
+    background-position: 0 300%;
   }
 }
 
@@ -201,51 +488,55 @@
 .slot-tabella {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: calc(var(--alto) * 0.008);
-  padding: calc(var(--alto) * 0.006);
-  border-radius: calc(var(--alto) * 0.016);
+  gap: calc(var(--u) * 1.3);
+  padding: calc(var(--u) * 1);
+  border-radius: calc(var(--u) * 2.6);
   background: linear-gradient(180deg, #160424, #2a0b44);
-  box-shadow: inset 0 0 0 1px rgba(240, 194, 74, 0.55);
+  box-shadow:
+    inset 0 0 0 1px rgba(240, 194, 74, 0.55),
+    inset 0 calc(var(--u) * 0.7) calc(var(--u) * 1.6) rgba(0, 0, 0, 0.6);
 }
 
 .slot-tabella__voce {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--alto) * 0.006);
+  gap: calc(var(--u) * 1);
   min-width: 0;
 }
 
 .slot-tabella__simboli {
   display: flex;
-  height: calc(var(--alto) * 0.034);
+  height: calc(var(--u) * 5.6);
 }
 
 .slot-tabella__simboli .slot-simbolo {
-  width: calc(var(--alto) * 0.03);
-  height: calc(var(--alto) * 0.034);
+  width: calc(var(--u) * 5);
+  height: calc(var(--u) * 5.6);
   padding: 0;
 }
 
 .slot-tabella__valore {
   font-family: var(--font-rounded);
-  font-size: calc(var(--alto) * 0.026);
+  font-size: calc(var(--u) * 4.3);
   font-weight: 900;
   color: var(--ct-oro);
 }
 
 /* ─────────────────────────────  Il vetro e i rulli  ───────────────────────────── */
 
+/* La cornice di cromo, e dentro la finestra incassata: i rulli stanno piu' indietro del fronte. */
 .slot-vetro {
   position: relative;
   display: flex;
   min-height: 0;
-  padding: calc(var(--alto) * 0.014);
-  border-radius: calc(var(--alto) * 0.022);
-  background: linear-gradient(180deg, #d9dde4, #8f96a3 50%, #e8ebf0);
+  padding: calc(var(--u) * 2.2);
+  border-radius: calc(var(--u) * 4);
+  background: linear-gradient(180deg, #f2f4f8, #8f96a3 30%, #d9dde4 52%, #6d7380 78%, #e8ebf0);
   box-shadow:
-    inset 0 0 0 calc(var(--alto) * 0.003) rgba(0, 0, 0, 0.35),
-    0 calc(var(--alto) * 0.006) calc(var(--alto) * 0.016) rgba(0, 0, 0, 0.45);
+    inset 0 0 0 calc(var(--u) * 0.5) rgba(0, 0, 0, 0.35),
+    inset 0 calc(var(--u) * 0.4) 0 rgba(255, 255, 255, 0.7),
+    0 calc(var(--u) * 1) calc(var(--u) * 2.6) rgba(0, 0, 0, 0.5);
 }
 
 .slot-rulli {
@@ -255,10 +546,11 @@
   display: grid;
   grid-template-rows: minmax(0, 1fr);
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: calc(var(--alto) * 0.008);
-  padding: calc(var(--alto) * 0.006);
-  border-radius: calc(var(--alto) * 0.014);
+  gap: calc(var(--u) * 1.3);
+  padding: calc(var(--u) * 1);
+  border-radius: calc(var(--u) * 2.3);
   background: #140b14;
+  box-shadow: inset 0 calc(var(--u) * 1.6) calc(var(--u) * 3.3) rgba(0, 0, 0, 0.9);
 }
 
 .slot-rulli.is-attesa {
@@ -270,25 +562,32 @@
   overflow: hidden;
   min-height: 0;
   height: 100%;
-  border-radius: calc(var(--alto) * 0.01);
-  background: linear-gradient(180deg, #e9e2cf, #fffaf0 45%, #fffaf0 55%, #e9e2cf);
+  border-radius: calc(var(--u) * 1.6);
+  background: linear-gradient(180deg, #d8cfb8, #fffaf0 40%, #fffaf0 60%, #d8cfb8);
   transition: box-shadow 200ms var(--ease-out);
 }
 
-/* La curva del rullo: piu' scuro in cima e in fondo, come un cilindro. */
+/*
+ * La curva del rullo: piu' scuro in cima e in fondo, e una fascia di luce in
+ * mezzo, come un cilindro sotto una lampada. E' quel che lo fa sembrare
+ * tondo, mentre la striscia scorre piatta.
+ */
 .slot-rullo__ombra {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0.55),
-    rgba(0, 0, 0, 0.12) 22%,
-    transparent 40%,
-    transparent 60%,
-    rgba(0, 0, 0, 0.12) 78%,
-    rgba(0, 0, 0, 0.55)
-  );
+  background:
+    linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.75),
+      rgba(0, 0, 0, 0.24) 20%,
+      transparent 38%,
+      transparent 62%,
+      rgba(0, 0, 0, 0.24) 80%,
+      rgba(0, 0, 0, 0.75)
+    ),
+    linear-gradient(180deg, transparent 44%, rgba(255, 255, 255, 0.22) 50%, transparent 56%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.28), transparent 14%, transparent 86%, rgba(0, 0, 0, 0.28));
 }
 
 .slot-rullo__striscia {
@@ -319,8 +618,8 @@
 @keyframes slot-suspense {
   to {
     box-shadow:
-      0 0 0 calc(var(--alto) * 0.004) #f4c430,
-      0 0 calc(var(--alto) * 0.03) rgba(255, 214, 90, 0.9);
+      0 0 0 calc(var(--u) * 0.7) #f4c430,
+      0 0 calc(var(--u) * 5) rgba(255, 214, 90, 0.9);
   }
 }
 
@@ -337,7 +636,22 @@
   width: 100%;
   height: 100%;
   overflow: visible;
-  filter: drop-shadow(0 calc(var(--alto) * 0.003) calc(var(--alto) * 0.003) rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 calc(var(--u) * 0.5) calc(var(--u) * 0.5) rgba(0, 0, 0, 0.25));
+}
+
+/* Un simbolo che paga salta fuori dal rullo, e ci torna, finché resta acceso. */
+.slot-rullo__casella.is-vincente .slot-simbolo {
+  animation: slot-salta 0.62s var(--ease-spring) infinite alternate;
+}
+
+@keyframes slot-salta {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.16);
+    filter: brightness(1.12) drop-shadow(0 0 calc(var(--u) * 2) rgba(255, 214, 90, 0.9));
+  }
 }
 
 /* Una categoria del quiz: la tessera tonda nel colore della materia, con l'anello d'oro. */
@@ -356,7 +670,7 @@
     radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.5), transparent 45%),
     var(--colore);
   box-shadow:
-    inset 0 0 0 calc(var(--alto) * 0.004) #f4c430,
+    inset 0 0 0 calc(var(--u) * 0.7) #f4c430,
     inset 0 -3px 6px rgba(0, 0, 0, 0.25),
     0 2px 4px rgba(0, 0, 0, 0.3);
   color: #fff;
@@ -368,16 +682,28 @@
   stroke-width: 2.2;
 }
 
+/* Il vetro curvo davanti ai rulli: un riflesso di traverso e la luce in cima. */
+.slot-vetro__riflesso {
+  position: absolute;
+  inset: calc(var(--u) * 2.2);
+  border-radius: calc(var(--u) * 2.3);
+  pointer-events: none;
+  background:
+    linear-gradient(115deg, transparent 18%, rgba(255, 255, 255, 0.16) 26%, transparent 34%),
+    linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.07) 42%, transparent 46%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 12%);
+}
+
 /* La linea che paga, e le due frecce ai lati del vetro. */
 .slot-vetro__linea {
   position: absolute;
-  left: calc(var(--alto) * 0.01);
-  right: calc(var(--alto) * 0.01);
+  left: calc(var(--u) * 1.6);
+  right: calc(var(--u) * 1.6);
   top: 50%;
-  height: calc(var(--alto) * 0.004);
+  height: calc(var(--u) * 0.7);
   border-radius: 2px;
   background: rgba(227, 19, 47, 0.75);
-  box-shadow: 0 0 calc(var(--alto) * 0.008) rgba(227, 19, 47, 0.8);
+  box-shadow: 0 0 calc(var(--u) * 1.3) rgba(227, 19, 47, 0.8);
   transform: translateY(-50%);
   pointer-events: none;
 }
@@ -387,25 +713,25 @@
   top: 50%;
   width: 0;
   height: 0;
-  border-block: calc(var(--alto) * 0.016) solid transparent;
+  border-block: calc(var(--u) * 2.6) solid transparent;
   transform: translateY(-50%);
   filter: drop-shadow(0 0 3px rgba(227, 19, 47, 0.9));
 }
 
 .slot-vetro__freccia.is-sinistra {
-  left: calc(var(--alto) * -0.004);
-  border-left: calc(var(--alto) * 0.02) solid #e3132f;
+  left: calc(var(--u) * -0.7);
+  border-left: calc(var(--u) * 3.3) solid #e3132f;
 }
 
 .slot-vetro__freccia.is-destra {
-  right: calc(var(--alto) * -0.004);
-  border-right: calc(var(--alto) * 0.02) solid #e3132f;
+  right: calc(var(--u) * -0.7);
+  border-right: calc(var(--u) * 3.3) solid #e3132f;
 }
 
 .slot-sala.is-vinto .slot-vetro__linea,
 .slot-sala.is-jackpot .slot-vetro__linea {
   background: #ffe066;
-  box-shadow: 0 0 calc(var(--alto) * 0.02) #ffd23f;
+  box-shadow: 0 0 calc(var(--u) * 3.3) #ffd23f;
   animation: slot-linea 0.3s steps(2) 8;
 }
 
@@ -418,11 +744,11 @@
 /* Le caselle che pagano: un riquadro d'oro che pulsa, e una luce che le attraversa. */
 .slot-rulli__luci {
   position: absolute;
-  inset: calc(var(--alto) * 0.006);
+  inset: calc(var(--u) * 1);
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(3, minmax(0, 1fr));
-  gap: 0 calc(var(--alto) * 0.008);
+  gap: 0 calc(var(--u) * 1.3);
   pointer-events: none;
 }
 
@@ -431,10 +757,10 @@
   grid-row: calc(var(--riga) + 1);
   position: relative;
   overflow: hidden;
-  border-radius: calc(var(--alto) * 0.01);
+  border-radius: calc(var(--u) * 1.6);
   box-shadow:
-    inset 0 0 0 calc(var(--alto) * 0.005) #ffd23f,
-    0 0 calc(var(--alto) * 0.025) rgba(255, 214, 90, 0.95);
+    inset 0 0 0 calc(var(--u) * 0.8) #ffd23f,
+    0 0 calc(var(--u) * 4) rgba(255, 214, 90, 0.95);
   animation: slot-luce 0.55s var(--ease-in-out) infinite alternate;
 }
 
@@ -464,15 +790,27 @@
 
 .slot-display {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
   align-items: center;
-  gap: calc(var(--alto) * 0.012);
-  padding: 0 calc(var(--alto) * 0.014);
-  border-radius: calc(var(--alto) * 0.016);
-  background: linear-gradient(180deg, #050307, #170b10);
+  gap: calc(var(--u) * 2);
+  padding: 0 calc(var(--u) * 2.3);
+  border-radius: calc(var(--u) * 2.6);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 40%),
+    linear-gradient(180deg, #050307, #170b10);
   box-shadow:
     inset 0 0 0 1px rgba(240, 194, 74, 0.5),
-    inset 0 calc(var(--alto) * 0.004) calc(var(--alto) * 0.01) rgba(0, 0, 0, 0.8);
+    inset 0 calc(var(--u) * 0.7) calc(var(--u) * 1.6) rgba(0, 0, 0, 0.8),
+    0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.slot-display::before {
+  content: '';
+  grid-column: 2;
+  grid-row: 1;
+  align-self: stretch;
+  margin: calc(var(--u) * 1.6) 0;
+  background: rgba(240, 194, 74, 0.35);
 }
 
 .slot-display__voce {
@@ -482,8 +820,12 @@
   min-width: 0;
 }
 
+.slot-display__voce.is-vincita {
+  grid-column: 3;
+}
+
 .slot-display__etichetta {
-  font-size: calc(var(--alto) * 0.016);
+  font-size: calc(var(--u) * 2.7);
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -492,20 +834,25 @@
 
 .slot-display__cifre {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: calc(var(--alto) * 0.036);
+  font-size: calc(var(--u) * 6);
   font-weight: 800;
   line-height: 1.05;
   color: #ff3b3b;
   text-shadow:
-    0 0 calc(var(--alto) * 0.008) rgba(255, 59, 59, 0.9),
-    0 0 calc(var(--alto) * 0.02) rgba(255, 59, 59, 0.5);
+    0 0 calc(var(--u) * 1.3) rgba(255, 59, 59, 0.9),
+    0 0 calc(var(--u) * 3.3) rgba(255, 59, 59, 0.5);
+}
+
+.slot-display__voce.is-vincita .slot-display__cifre {
+  color: rgba(125, 255, 154, 0.35);
+  text-shadow: none;
 }
 
 .slot-display__voce.is-vincita.is-accesa .slot-display__cifre {
   color: #7dff9a;
   text-shadow:
-    0 0 calc(var(--alto) * 0.008) rgba(125, 255, 154, 0.9),
-    0 0 calc(var(--alto) * 0.022) rgba(125, 255, 154, 0.6);
+    0 0 calc(var(--u) * 1.3) rgba(125, 255, 154, 0.9),
+    0 0 calc(var(--u) * 3.6) rgba(125, 255, 154, 0.6);
   animation: slot-cifre 0.5s var(--ease-bounce) both;
 }
 
@@ -516,31 +863,43 @@
   }
 }
 
-/* La fessura delle monete: le fiches della puntata ci finiscono dentro. */
-.slot-feritoia {
-  justify-self: center;
-  width: calc(var(--alto) * 0.016);
-  height: calc(var(--alto) * 0.05);
-  border-radius: calc(var(--alto) * 0.01);
-  background: #000;
-  box-shadow:
-    0 0 0 calc(var(--alto) * 0.004) #c0c6d0,
-    0 0 0 calc(var(--alto) * 0.007) #6d7380;
+/* ─────────────────────────────  Il banco dei comandi  ───────────────────────────── */
+
+/*
+ * Il banco esce dal mobile verso chi gioca, inclinato: il piano e' ruotato
+ * all'indietro in prospettiva, quindi le fiches e il bottone ci stanno sopra
+ * come su un ripiano vero, con il bordo davanti che prende la luce.
+ */
+.slot-banco {
+  position: relative;
+  min-height: 0;
+  margin: 0 calc(var(--u) * -2);
+  perspective: calc(var(--u) * 150);
 }
 
-/* ─────────────────────────────  I comandi  ───────────────────────────── */
-
-.slot-comandi {
+.slot-banco__piano {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(var(--alto) * 0.016);
-  min-height: 0;
+  gap: calc(var(--u) * 2.6);
+  height: 100%;
+  padding: 0 calc(var(--u) * 6.6);
+  border-radius: calc(var(--u) * 3.3) calc(var(--u) * 3.3) calc(var(--u) * 2) calc(var(--u) * 2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 30%),
+    linear-gradient(180deg, #2b2f38, #0e0f13);
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 0.7) var(--oro-2),
+    inset 0 calc(var(--u) * 1) 0 rgba(255, 255, 255, 0.12),
+    0 calc(var(--u) * 2) 0 #6b4a0c,
+    0 calc(var(--u) * 3.3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55);
+  transform: rotateX(22deg);
+  transform-origin: 50% 0;
 }
 
 .slot-gettoni {
   display: flex;
-  gap: calc(var(--alto) * 0.01);
+  gap: calc(var(--u) * 1.6);
 }
 
 /* Un gettone da casinò: il disco nel suo colore, l'orlo a tacche bianche, il valore in mezzo. */
@@ -549,19 +908,21 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: calc(var(--alto) * 0.064);
+  width: calc(var(--u) * 10.6);
   aspect-ratio: 1;
   border: 0;
   border-radius: 50%;
   background:
+    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.3), transparent 60%),
     radial-gradient(circle, var(--fiche) 0 52%, transparent 53%),
     repeating-conic-gradient(#fff 0 14deg, var(--fiche) 14deg 45deg);
   box-shadow:
     inset 0 0 0 1.5px rgba(0, 0, 0, 0.3),
-    0 calc(var(--alto) * 0.006) 0 rgba(0, 0, 0, 0.45);
+    0 calc(var(--u) * 1.2) 0 color-mix(in srgb, var(--fiche) 55%, #000),
+    0 calc(var(--u) * 2) calc(var(--u) * 2) rgba(0, 0, 0, 0.45);
   color: #fff;
   font-family: var(--font-rounded);
-  font-size: calc(var(--alto) * 0.024);
+  font-size: calc(var(--u) * 4);
   font-weight: 900;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
   cursor: pointer;
@@ -591,12 +952,13 @@
 }
 
 .slot-gettone.is-scelto {
-  transform: translateY(calc(var(--alto) * -0.008));
+  transform: translateY(calc(var(--u) * -1.6));
   box-shadow:
     inset 0 0 0 1.5px rgba(0, 0, 0, 0.3),
-    0 0 0 calc(var(--alto) * 0.004) #ffd23f,
-    0 0 calc(var(--alto) * 0.02) rgba(255, 214, 90, 0.9),
-    0 calc(var(--alto) * 0.012) 0 rgba(0, 0, 0, 0.4);
+    0 0 0 calc(var(--u) * 0.7) #ffd23f,
+    0 0 calc(var(--u) * 3.6) rgba(255, 214, 90, 0.95),
+    0 calc(var(--u) * 2.6) 0 color-mix(in srgb, var(--fiche) 55%, #000),
+    0 calc(var(--u) * 3.6) calc(var(--u) * 3.3) rgba(0, 0, 0, 0.45);
 }
 
 .slot-gettone:disabled {
@@ -610,28 +972,36 @@
   outline-offset: 2px;
 }
 
-/* Il bottone: rosso, lucido, che scende quando lo si preme. */
+/* Il bottone: una cupola rossa nel suo anello di cromo, che scende quando la si preme. */
 .slot-gira {
   flex: none;
-  width: calc(var(--alto) * 0.11);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: calc(var(--u) * 18);
   aspect-ratio: 1;
   border: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 36% 30%, #ff9aa5, #e3132f 50%, #7d0012);
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.75), transparent 34%),
+    radial-gradient(circle at 50% 55%, #ff5a72, #e3132f 50%, #7d0012 92%);
   box-shadow:
-    inset 0 0 0 calc(var(--alto) * 0.004) rgba(255, 255, 255, 0.35),
-    0 0 0 calc(var(--alto) * 0.007) #f0c24a,
-    0 calc(var(--alto) * 0.01) 0 calc(var(--alto) * 0.007) #7a4706,
-    0 calc(var(--alto) * 0.016) calc(var(--alto) * 0.03) rgba(0, 0, 0, 0.5);
+    inset 0 calc(var(--u) * -1.3) calc(var(--u) * 2.3) rgba(0, 0, 0, 0.35),
+    0 0 0 calc(var(--u) * 1) #e8ebf0,
+    0 0 0 calc(var(--u) * 1.5) #6d7380,
+    0 calc(var(--u) * 2) 0 calc(var(--u) * 1.5) #3c4048,
+    0 calc(var(--u) * 3.3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55);
   color: #fff;
   font-family: var(--font-rounded);
-  font-size: calc(var(--alto) * 0.028);
+  font-size: calc(var(--u) * 4.3);
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   cursor: pointer;
-  transition: transform var(--dur-fast) var(--ease-out);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
 .slot-gira:not(:disabled) {
@@ -639,7 +1009,13 @@
 }
 
 .slot-gira:active:not(:disabled) {
-  transform: translateY(calc(var(--alto) * 0.008));
+  transform: translateY(calc(var(--u) * 1.5));
+  box-shadow:
+    inset 0 calc(var(--u) * -0.7) calc(var(--u) * 1.6) rgba(0, 0, 0, 0.4),
+    0 0 0 calc(var(--u) * 1) #e8ebf0,
+    0 0 0 calc(var(--u) * 1.5) #6d7380,
+    0 calc(var(--u) * 0.5) 0 calc(var(--u) * 1.5) #3c4048,
+    0 calc(var(--u) * 1.3) calc(var(--u) * 2.6) rgba(0, 0, 0, 0.55);
 }
 
 .slot-gira:disabled {
@@ -649,32 +1025,150 @@
 
 @keyframes slot-gira-respira {
   50% {
-    box-shadow:
-      inset 0 0 0 calc(var(--alto) * 0.004) rgba(255, 255, 255, 0.35),
-      0 0 0 calc(var(--alto) * 0.007) #f0c24a,
-      0 calc(var(--alto) * 0.01) 0 calc(var(--alto) * 0.007) #7a4706,
-      0 0 calc(var(--alto) * 0.05) rgba(255, 79, 120, 0.8);
+    filter: brightness(1.15) drop-shadow(0 0 calc(var(--u) * 4) rgba(255, 79, 120, 0.85));
   }
 }
 
-/* ─────────────────────────────  Il vassoio  ───────────────────────────── */
+/* ─────────────────────────────  La pancia  ───────────────────────────── */
 
+/*
+ * La pancia, sotto il banco: un vetro illuminato con i raggi che girano, la
+ * domanda e le sei categorie del giorno, come sui mobili veri c'e' il gioco
+ * che si vince. Prende l'altezza che avanza, e quel che ci sta dentro si
+ * misura su di lei (e' un contenitore): troppo bassa, resta solo la luce.
+ */
+.slot-pancia {
+  min-height: 0;
+  padding: calc(var(--u) * 2.4) calc(var(--u) * 6) calc(var(--u) * 1);
+}
+
+.slot-pancia__vetro {
+  position: relative;
+  height: 100%;
+  container-type: size;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: calc(var(--u) * 3);
+  background: radial-gradient(120% 140% at 50% 120%, #5a1a8a, #1a0530 60%, #0b0214);
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 0.6) var(--oro-2),
+    inset 0 0 0 calc(var(--u) * 1.1) var(--oro-3),
+    inset 0 calc(var(--u) * 1.5) calc(var(--u) * 3) rgba(0, 0, 0, 0.6);
+}
+
+.slot-pancia__raggi {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(240cqw, 240cqh);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(rgba(255, 79, 163, 0.2) 0 8deg, transparent 8deg 20deg);
+  -webkit-mask-image: radial-gradient(closest-side, #000, transparent 70%);
+  mask-image: radial-gradient(closest-side, #000, transparent 70%);
+  animation: slot-raggi 24s linear infinite;
+}
+
+.slot-sala.is-gira .slot-pancia__raggi {
+  animation-duration: 6s;
+}
+
+.slot-sala.is-vinto .slot-pancia__raggi,
+.slot-sala.is-jackpot .slot-pancia__raggi {
+  background: repeating-conic-gradient(rgba(255, 214, 90, 0.32) 0 8deg, transparent 8deg 20deg);
+  animation-duration: 3s;
+}
+
+@keyframes slot-raggi {
+  to {
+    rotate: 360deg;
+  }
+}
+
+.slot-pancia__titolo {
+  position: relative;
+  font-family: var(--font-rounded);
+  font-size: min(14cqh, 5cqw);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffe9a8;
+  text-shadow:
+    0 0 1.2cqh rgba(255, 79, 163, 0.9),
+    0 0.4cqh 0 #7a3c00;
+}
+
+.slot-pancia__titolo b {
+  color: var(--ct-oro);
+}
+
+/* I margini e le misure di quel che sta nel vetro sono in unita' del vetro: il vetro stesso conta quelle della sala. */
+.slot-pancia__categorie {
+  position: relative;
+  display: flex;
+  gap: 2cqw;
+  margin-top: 7cqh;
+}
+
+.slot-pancia__categorie .slot-simbolo {
+  width: min(34cqh, 13cqw);
+  height: min(34cqh, 13cqw);
+  padding: 0;
+}
+
+.slot-pancia__categorie .slot-simbolo__tessera {
+  box-shadow:
+    inset 0 0 0 0.6cqh #f4c430,
+    inset 0 -3px 6px rgba(0, 0, 0, 0.25),
+    0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Bassa, la pancia tiene solo le categorie; ancora piu' bassa, solo i raggi. */
+@container (max-height: 70px) {
+  .slot-pancia__titolo {
+    display: none;
+  }
+
+  .slot-pancia__categorie {
+    margin-top: 0;
+  }
+
+  .slot-pancia__categorie .slot-simbolo {
+    width: min(64cqh, 13cqw);
+    height: min(64cqh, 13cqw);
+  }
+}
+
+@container (max-height: 30px) {
+  .slot-pancia__categorie {
+    display: none;
+  }
+}
+
+/* ─────────────────────────────  Il vassoio e lo zoccolo  ───────────────────────────── */
+
+/* Il vassoio, piu' largo in fondo: lo si guarda dall'alto, e il fondo si vede in prospettiva. */
 .slot-vassoio {
   position: relative;
   overflow: hidden;
-  border-radius: calc(var(--alto) * 0.012) calc(var(--alto) * 0.012) calc(var(--alto) * 0.03)
-    calc(var(--alto) * 0.03);
-  background: linear-gradient(180deg, #0a0507, #2b2f38 70%, #6d7380);
-  box-shadow:
-    inset 0 calc(var(--alto) * 0.008) calc(var(--alto) * 0.014) rgba(0, 0, 0, 0.9),
-    0 0 0 calc(var(--alto) * 0.004) #c0c6d0;
+  margin: calc(var(--u) * 1) calc(var(--u) * 3.3) calc(var(--u) * 1);
+  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
+  border-radius: 0 0 calc(var(--u) * 5) calc(var(--u) * 5);
+  background:
+    linear-gradient(180deg, #050304, #1d1f25 40%, #3c4048 75%, #9aa1ad),
+    #000;
+  box-shadow: inset 0 calc(var(--u) * 2) calc(var(--u) * 2.6) rgba(0, 0, 0, 0.95);
 }
 
 .slot-vassoio__moneta {
   position: absolute;
-  left: calc(6% + var(--i) * 3.7%);
-  bottom: 12%;
-  width: calc(var(--alto) * 0.034);
+  left: calc(8% + var(--i) * 3.5%);
+  bottom: 14%;
+  width: calc(var(--u) * 5.6);
   aspect-ratio: 1;
   border-radius: 50%;
   background: radial-gradient(circle at 34% 30%, #fff6c8, var(--ct-oro) 48%, var(--ct-oro-scuro));
@@ -685,7 +1179,7 @@
 }
 
 .slot-vassoio__moneta:nth-child(even) {
-  bottom: 34%;
+  bottom: 36%;
 }
 
 @keyframes slot-moneta-cade {
@@ -698,20 +1192,28 @@
   }
 }
 
+/* Lo zoccolo: il fondo scuro del mobile, con il filo di cromo, che poggia sul pavimento. */
+.slot-zoccolo {
+  border-radius: 0 0 calc(var(--u) * 4) calc(var(--u) * 4);
+  background:
+    linear-gradient(180deg, #e8ebf0, #6d7380 calc(var(--u) * 1), #2a0309 calc(var(--u) * 1.2), #12020a);
+  box-shadow: inset 0 calc(var(--u) * -1) calc(var(--u) * 1.6) rgba(0, 0, 0, 0.6);
+}
+
 /* ─────────────────────────────  La leva  ───────────────────────────── */
 
+/* Sul fianco destro: il riquadro del disegno (Leva.tsx), due centesimi dentro il mobile e trenta sotto la cima. */
 .slot-leva {
-  position: relative;
-  z-index: 1;
-  flex: none;
-  width: calc(var(--alto) * 0.1);
-  height: calc(var(--alto) * 0.4);
-  margin-left: calc(var(--alto) * -0.012);
-  margin-top: calc(var(--alto) * -0.04);
+  position: absolute;
+  left: calc(100% - var(--u) * 2);
+  top: calc(var(--u) * 30);
+  z-index: 2;
+  width: calc(var(--u) * 16);
+  height: calc(var(--u) * 105);
   overflow: visible;
   touch-action: none;
   cursor: grab;
-  filter: drop-shadow(0 calc(var(--alto) * 0.01) calc(var(--alto) * 0.012) rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(calc(var(--u) * 0.8) calc(var(--u) * 1.6) calc(var(--u) * 1.4) rgba(0, 0, 0, 0.5));
 }
 
 .slot-leva:active {
@@ -726,11 +1228,6 @@
 
 .slot-leva.is-ferma {
   cursor: default;
-  filter: saturate(0.5) brightness(0.8) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
-}
-
-.slot-leva__guida {
-  fill: rgba(0, 0, 0, 0.35);
 }
 
 /* ─────────────────────────────  Di traverso  ───────────────────────────── */
@@ -831,7 +1328,7 @@
 
 /* Le regole: i premi con i loro simboli. */
 .slot-regole {
-  --alto: 520px;
+  --u: 3px;
 }
 
 .slot-regole__premi {
@@ -864,15 +1361,23 @@
 
 @media (prefers-reduced-motion: reduce) {
   .slot,
+  .slot-sala::before,
   .slot-sala.is-jackpot,
-  .slot-insegna__lampadine,
-  .slot-insegna__nome,
+  .slot-sala__luci,
+  .slot-macchina::before,
+  .slot-macchina.is-scossa,
+  .slot-insegna__lampadina,
+  .slot-insegna__luccichio::after,
+  .slot-insegna__scritta,
+  .slot-fronte__led,
   .slot-rullo.is-suspense,
+  .slot-rullo__casella.is-vincente .slot-simbolo,
   .slot-vetro__linea,
   .slot-rulli__luce,
   .slot-rulli__luce::after,
   .slot-display__cifre,
   .slot-gira,
+  .slot-pancia__raggi,
   .slot-vassoio__moneta {
     animation: none !important;
   }

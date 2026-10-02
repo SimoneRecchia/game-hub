@@ -405,9 +405,10 @@ Fortuna ha il saldo grande, senza scomporlo. Quel che si e' vinto o perso oggi,
 e da quanto si e' partiti — i punti delle classificate — non si dicono, per
 scelta: al tavolo si guarda quel che si ha davanti. Le carte della scheda
 dicono quanto si puo' puntare, non com'e' andata. Il momento di un giro invece
-si vede tutto — l'adesivo con la vincita, il mozzo della ruota, le fasce sulle
-mani del blackjack — perché e' il gioco. Il conto della giornata resta nella
-classifica della Fortuna, che e' il posto dove si va a guardarlo.
+si vede tutto — l'adesivo con la vincita, il display e la festa della slot, il
+mozzo della ruota, le fasce sulle mani del blackjack — perché e' il gioco. Il
+conto della giornata resta nella classifica della Fortuna, che e' il posto dove
+si va a guardarlo.
 
 **Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta
 nella scheda della Fortuna (`/crazy-time`; `/ruota`, l'indirizzo di quando si
@@ -623,16 +624,42 @@ spostamento, come la rotazione della ruota. Le righe del mobile sono `minmax(0,
 ...)`: la striscia e' alta trenta rulli, e lasciata al contenuto allargherebbe
 la sua riga.
 
-**La leva si tira col dito.** `Leva` sta sul fianco destro del mobile: la si
-prende per il pomo e la si tira giu', e oltre `SOGLIA` i rulli partono e la
-leva torna su con una molla; un tocco senza trascinare la tira tutta, e Invio e
-lo spazio anche, perché e' un bottone. Accanto ai gettoni c'e' "Gira", per chi
-non vuole tirare. Il resto si vede come a Crazy Time: le fiches volano dal
-saldo nella fessura e il saldo scende alla leva; una vincita accende i simboli
-che pagano, il display la segna, le monete cadono nel vassoio e da li' volano
-al saldo, che sale quando arriva la prima. Dal ×20 c'e' l'adesivo d'oro, dal
-×100 la pioggia di monete, e i tre sette sono il jackpot, con le luci a
-raffica.
+**La leva si tira col dito, e viene verso chi guarda.** `Leva` sta sul fianco
+destro del mobile e ruota nel piano del fianco: tirandola il pomo scende e
+viene avanti, a meta' corsa il braccio punta dritto verso chi guarda e si vede
+di scorcio, col pomo piu' grande davanti al perno. Il disegno e' una
+proiezione, con l'occhio un poco a destra della leva e all'altezza del perno,
+ed e' lo stesso punto di vista del fianco del mobile (`.slot-fianco` in
+`Slot.css`): se si tocca l'uno, i numeri dell'altro vanno rifatti. Con l'occhio
+al centro del mobile, come all'inizio, il pomo che veniva avanti scappava di
+lato, e la leva girava come la lancetta di un orologio. Oltre `SOGLIA` i rulli
+partono e la leva torna su con una molla; un tocco senza trascinare la tira
+tutta, e Invio e lo spazio anche, perché e' un bottone. Accanto ai gettoni
+c'e' "Gira", per chi non vuole tirare. Il resto si vede come a Crazy Time: le
+fiches volano dal saldo al display della puntata e il saldo scende alla leva;
+una vincita accende i simboli che pagano, che saltano fuori dal rullo, il
+display la segna, le monete cadono nel vassoio e da li' volano al saldo, che
+sale quando arriva la prima.
+
+**Dal ×20 c'e' la festa delle slot vere.** `FestaSlot` (`src/games/slot/`)
+prende lo schermo: il lampo, i raggi, la scritta — BIG WIN dal ×20, MEGA WIN
+dal ×100, JACKPOT per i tre sette — con la luce che le passa sopra, la vincita
+che conta da zero e una fontana di monete con le scintille, che per il jackpot
+piovono anche dall'alto. Le monete sono un canvas: cento elementi animati dal
+DOM costerebbero troppo a un telefono. Un tocco finisce il conto, un altro
+chiude, e finita la festa le monete vanno al saldo. Una domanda giusta ha la
+festa del ×20.
+
+**Il mobile si misura sulla sua larghezza.** `--w` e' quella che ci sta con la
+leva da tutti e due i lati — cosi' il mobile resta al centro e la leva sporge
+nel margine — o quella che lascia l'altezza, e `--u` ne e' il centesimo: le
+parti hanno altezze fisse in centesimi, e la pancia, con le categorie del
+giorno, prende quel che avanza fino a un tetto. `--w` e' registrata con
+`@property`, quindi i figli ereditano una lunghezza vera: non registrata, le
+unita' del contenitore si risolverebbero dove la si usa, e dentro la pancia,
+che e' un contenitore anche lei, varrebbero le sue. Per lo stesso motivo i
+margini dentro il vetro della pancia stanno sui figli: il vetro stesso conta
+le unita' della sala.
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
 europee dei casinò italiani (`shared/blackjack.ts`): niente carta coperta — il
