@@ -13,10 +13,10 @@ import {
 } from '@/games/quiz/PartitaQuiz'
 import { OPZIONI_CLASSIFICATA, type Fatta } from '@/games/quiz/usePartita'
 import { suona } from '@/lib/suoni'
-import { diGeografia } from '@shared/quiz'
-import { NOMI_MATERIE_RUOTA, scriviMoltiplicatore } from '@shared/ruota'
+import { NOMI_CATEGORIE, diGeografia } from '@shared/quiz'
+import { scriviMoltiplicatore } from '@shared/ruota'
 import type { SfidaRuotaVista } from '@shared/types'
-import { COLORI_MATERIE_RUOTA, ICONE_MATERIE_RUOTA, coloreDelMoltiplicatore } from './disegni'
+import { coloreDelMoltiplicatore, coloreDellaCategoria, iconaDellaCategoria } from './disegni'
 
 type SfidaDomanda = Extract<SfidaRuotaVista, { tipo: 'domanda' }>
 
@@ -71,10 +71,10 @@ export default function DomandaRuota({
     return () => window.clearTimeout(t)
   }, [aperta, inviando, scadenza])
 
-  const categoria = sfida.categoria ?? 'capitali'
+  const categoria = sfida.categoria
   const geografia = diGeografia(categoria)
   const ix = useIndiceQuiz(geografia)
-  const Icona = ICONE_MATERIE_RUOTA[sfida.materia]
+  const Icona = iconaDellaCategoria(categoria)
   const esito = fatta ? (fatta.risposta.giusta ? ' is-giusta' : ' is-sbagliata') : ''
   const scheda = fatta?.risposta.spiegazione ?? null
   const rivela = !!fatta && (geografia || !!scheda)
@@ -82,9 +82,9 @@ export default function DomandaRuota({
     <div className="quiz ruota-quiz">
       <Scheda
         className="quiz__tabellone"
-        titolo={`Domanda di ${NOMI_MATERIE_RUOTA[sfida.materia].toLowerCase()}`}
+        titolo={NOMI_CATEGORIE[categoria]}
         icona={
-          <IconaScheda colore={COLORI_MATERIE_RUOTA[sfida.materia]}>
+          <IconaScheda colore={coloreDellaCategoria(categoria)}>
             <Icona size={15} />
           </IconaScheda>
         }

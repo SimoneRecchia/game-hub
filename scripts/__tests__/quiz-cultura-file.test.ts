@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../../shared/daily'
-import { AMBITI } from '../../shared/quiz'
+import { AMBITI, sceltaValida } from '../../shared/quiz'
 import { PERCORSO_IMMAGINE, type DatiCultura, type DatiOggi, type ImmagineQuiz } from '../../shared/quiz-cultura'
 import { VERSIONI_CULTURA } from '../../shared/quiz-cultura-versioni'
 import { domandaValida, tipiPossibili, type TipoDomanda } from '../../shared/quiz-domande'
@@ -98,6 +98,25 @@ describe('i file delle materie del quiz', () => {
       expect([...visti].sort()).toEqual([...tipiPossibili(categoria, 'scelta')].sort())
     })
   }
+
+  it('ogni risposta e’ una scelta che il server accetta, con gli spazi e gli accenti dei nomi', () => {
+    const id = new Set<string>()
+    for (const categoria of FILE_MATERIE) {
+      for (let seme = 1; seme <= 30; seme += 1) {
+        for (const d of generaPartita(fonti, { categoria, area: 'mondo', quante: 10 }, mulberry32(seme))) {
+          for (const x of [d.giusta, ...d.opzioni.map((o) => o.id)]) id.add(x)
+        }
+      }
+    }
+    for (const file of GIORNI.slice(0, 40)) {
+      const oggi = leggi<DatiOggi>(join(CARTELLA, 'oggi', file))
+      const partita = { categoria: 'oggi' as const, area: 'mondo' as const, quante: 10, data: `2026-${oggi.giorno}` }
+      for (const d of generaPartita({ oggi }, partita, mulberry32(7))) id.add(d.giusta)
+    }
+    // "chi:Nikola Tesla", "10-04/2": il server accettava solo lettere semplici, e meno di quaranta.
+    expect([...id].some((x) => /[^A-Za-z0-9:_-]/.test(x))).toBe(true)
+    for (const x of id) expect(sceltaValida(x), x).toBe(true)
+  })
 
   it('ogni giorno di "Accadde oggi" fa dieci domande', () => {
     for (const file of GIORNI) {

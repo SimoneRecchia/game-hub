@@ -1,34 +1,15 @@
 import { memo, type ReactElement } from 'react'
-import { IconArte, IconCinema, IconLibri, IconMappamondo, IconScienza, IconStoria } from '@/games/quiz/icone'
-import {
-  MOLTIPLICATORI,
-  SPICCHI,
-  etichettaDi,
-  scriviMoltiplicatore,
-  type MateriaRuota,
-  type Spicchio,
-} from '@shared/ruota'
+import { ICONE_CATEGORIE } from '@/games/quiz/icone'
+import { materiaDi, type CategoriaQuiz } from '@shared/quiz'
+import { MOLTIPLICATORI, etichettaDi, scriviMoltiplicatore, type Spicchio } from '@shared/ruota'
 import { MOZZO, PIOLI, RAGGIO, punto, scrittaRadiale, spicchioPath } from './geometria'
 import './disegni.css'
 
-export const ICONE_MATERIE_RUOTA: Record<MateriaRuota, (p: { size?: number }) => ReactElement> = {
-  geografia: IconMappamondo,
-  storia: IconStoria,
-  arte: IconArte,
-  libri: IconLibri,
-  cinema: IconCinema,
-  scienza: IconScienza,
-}
+/** L'icona di una categoria: quella del quiz. */
+export const iconaDellaCategoria = (c: CategoriaQuiz): ((p: { size?: number }) => ReactElement) => ICONE_CATEGORIE[c]
 
-/** Il colore di ogni materia, quello del quiz: arte, libri e cinema sono la cultura. */
-export const COLORI_MATERIE_RUOTA: Record<MateriaRuota, string> = {
-  geografia: 'var(--materia-geografia-1)',
-  storia: 'var(--materia-storia-1)',
-  arte: 'var(--materia-cultura-1)',
-  libri: 'var(--materia-cultura-1)',
-  cinema: 'var(--materia-cultura-1)',
-  scienza: 'var(--materia-scienza-1)',
-}
+/** Il colore di una categoria: quello della sua materia nel quiz. Arte, libri, cinema e lirica sono la cultura. */
+export const coloreDellaCategoria = (c: CategoriaQuiz) => `var(--materia-${materiaDi(c)}-1)`
 
 /** Il colore di un moltiplicatore, sulla sua ruota e dovunque lo si mostri: piu' vale, piu' e' prezioso. */
 export const COLORI_MOLTIPLICATORI: Record<string, string> = {
@@ -41,7 +22,7 @@ export const COLORI_MOLTIPLICATORI: Record<string, string> = {
 export const coloreDelMoltiplicatore = (m: number) => COLORI_MOLTIPLICATORI[String(m)] ?? 'var(--ct-oro)'
 
 function classiDi(s: Spicchio): string {
-  return s.tipo === 'domanda' ? `is-domanda is-materia-${s.materia}` : `is-${s.tipo}`
+  return s.tipo === 'domanda' ? `is-domanda is-materia-${materiaDi(s.categoria)}` : `is-${s.tipo}`
 }
 
 /** I separatori d'oro fra gli spicchi, dal mozzo al bordo, e i pioli dove scatta la lancetta. */
@@ -81,32 +62,52 @@ const SCRITTA_DA = 65
 const SCRITTA_A = 28
 
 /**
- * La ruota di Crazy Time: dodici spicchi. Il banco e' nero con la scritta
- * d'oro; le domande hanno il colore della materia, la sua icona in alto e il
- * nome lungo il raggio; la moneta e' viola, con la moneta blu e rossa. Le
- * scritte corrono lungo il raggio e si leggono dall'alto in basso quando lo
- * spicchio e' sotto la lancetta; le icone stanno dritte.
+ * La ruota di Crazy Time di un giorno. Il banco e' nero con la scritta d'oro;
+ * il triplo e' d'oro, con il ×3 grande e dritto; le domande hanno il colore
+ * della materia della categoria, la sua icona in alto e il nome lungo il
+ * raggio; la moneta e' viola, con la moneta blu e rossa. Le scritte corrono
+ * lungo il raggio e si leggono dall'alto in basso quando lo spicchio e' sotto
+ * la lancetta; le icone, e il ×3, stanno dritte. Gli spicchi cambiano solo con
+ * il giorno: chi la usa li passa sempre uguali, e il disegno non si rifà.
  */
-export const DisegnoRuota = memo(function DisegnoRuota() {
-  const n = SPICCHI.length
+export const DisegnoRuota = memo(function DisegnoRuota({ spicchi }: { spicchi: readonly Spicchio[] }) {
+  const n = spicchi.length
   const passo = 360 / n
   return (
     <>
-      {SPICCHI.map((s, i) => (
+      {spicchi.map((s, i) => (
         <path key={`s${i}`} className={`ct-spicchio ${classiDi(s)}`} d={spicchioPath(i, n)} />
       ))}
       <Raggiere n={n} />
-      {SPICCHI.map((s, i) => {
+      {spicchi.map((s, i) => {
         const centro = i * passo + passo / 2
         if (s.tipo === 'banco') {
           return (
-            <text key={`t${i}`} className="ct-scritta is-banco" {...scrittaRadiale(centro, 88, 34, 'BANCO', 12)}>
+            <text key={`t${i}`} className="ct-scritta is-banco" {...scrittaRadiale(centro, 88, 34, 'BANCO', 11)}>
               BANCO
             </text>
           )
         }
+        if (s.tipo === 'fisso') {
+          return (
+            <g key={`f${i}`}>
+              <text
+                className="ct-scritta is-fisso is-numero"
+                transform={`rotate(${centro}) translate(0 ${-ICONA_A + 4})`}
+              >
+                {etichettaDi(s)}
+              </text>
+              <text
+                className="ct-scritta is-fisso"
+                {...scrittaRadiale(centro, SCRITTA_DA - 4, SCRITTA_A, 'TRIPLO', 7.6)}
+              >
+                TRIPLO
+              </text>
+            </g>
+          )
+        }
         const testo = etichettaDi(s)
-        const Icona = s.tipo === 'domanda' ? ICONE_MATERIE_RUOTA[s.materia] : null
+        const Icona = s.tipo === 'domanda' ? iconaDellaCategoria(s.categoria) : null
         return (
           <g key={`c${i}`}>
             <g className={`ct-icona ${classiDi(s)}`} transform={`rotate(${centro}) translate(0 ${-ICONA_A})`}>

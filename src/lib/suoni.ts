@@ -67,6 +67,10 @@ export type NomeSuono =
   | 'monetaCade'
   /** Una puntata vinta: la fanfara, e le monete. */
   | 'vincita'
+  /** Le fiches della puntata posate sulla ruota. */
+  | 'fiche'
+  /** Una moneta della vincita che arriva sul saldo. */
+  | 'incasso'
   /** Il passaggio da una scena all'altra di Crazy Time. */
   | 'intermezzo'
 
@@ -663,6 +667,20 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
       const f = monete[Math.floor(Math.random() * monete.length)]
       campanello(u, accordo + 0.08 + i * 0.055 + Math.random() * 0.03, vario(f), 0.04 * v, { eco: 0.4, durata: 0.3 })
     }
+  },
+
+  // Le fiches che si posano una sull'altra: tre colpi secchi di plastica, sempre piu' vicini.
+  fiche: (u, t, v) => {
+    ;[0, 0.055, 0.095].forEach((d, i) => {
+      legno(u, t + d, vario(1650 + i * 140, 0.04), (0.13 - i * 0.025) * v, 0.012)
+      colpo(u, t + d, voce(u, 0.035 * v, 0), vario(4200, 0.1), 0.006, 0.5)
+    })
+  },
+
+  // Una moneta che cade sulle altre: un tintinnio corto, ogni volta un po' diverso.
+  incasso: (u, t, v) => {
+    campanello(u, t, vario(N.C7, 0.04), 0.06 * v, { eco: 0.2, durata: 0.22 })
+    legno(u, t, vario(1300, 0.06), 0.05 * v, 0.01)
   },
 
   // Fra una scena e l'altra: un soffio che passa, e un accordo d'apertura.
