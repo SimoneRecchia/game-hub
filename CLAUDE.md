@@ -364,47 +364,61 @@ Prima una giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche
 centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
 gioco misura quel che gli e' proprio dentro lo stesso tetto (`shared/punti.ts`,
 che ha la tabella di tutti): il Wordle i tentativi, lo Scarabeo il punteggio in
-rapporto al computer, il cruciverba e il sudoku gli aiuti, la battaglia i colpi, il quiz
-le risposte giuste (venti per aver giocato, otto per ogni giusta). Tutti
-tengono il principio del Wordle — **giocarla bene vale circa il doppio di
-giocarla male**, non dieci volte tanto — e `shared/__tests__/punti.test.ts`
-verifica i tetti e i due lati del compromesso per ogni gioco. La
-classifica di ogni gioco resta (`/leaderboard`, `/leaderboard/scarabeo`, ...), la
-generale e' `/leaderboard/generale`, e `/leaderboard/panoramica` le da' tutte
-in una richiesta, i primi tre di ognuna e dove sei tu: e' la schermata
-`/classifica`, che le mette una sotto l'altra, e ognuna si apre per intero
-(`/classifica/generale`, `/classifica/wordle`). Non si normalizza per giornata
-("il migliore prende cento"): cambierebbe le classifiche di ieri ogni volta che
-qualcuno gioca. Alla generale si aggiunge solo Crazy Time, che non e' una
-classificata (vedi sotto).
+rapporto al computer, il cruciverba e il sudoku gli aiuti, la battaglia i
+colpi, il quiz le risposte giuste (venti per aver giocato, otto per ogni
+giusta). Tutti tengono il principio del Wordle — **giocarla bene vale circa il
+doppio di giocarla male**, non dieci volte tanto — e
+`shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
+per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
+`/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
+`/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna
+e dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
+ognuna si apre per intero (`/classifica/generale`, `/classifica/wordle`). Non
+si normalizza per giornata ("il migliore prende cento"): cambierebbe le
+classifiche di ieri ogni volta che qualcuno gioca. Alla generale si aggiungono
+solo i giochi della Fortuna, che non sono classificate (vedi sotto).
 
-**Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta fra
-le carte del giorno, dopo i giochi (`/crazy-time`; `/ruota`, l'indirizzo di
-quando si girava una volta al giorno, ci porta): si punta da `PUNTATA_MINIMA` a
-tutto il saldo — i punti fatti oggi nelle classificate piu' quel che Crazy Time
-ha gia' dato o tolto oggi — e si rigira. Quel che da' o toglie entra nella
-generale del giorno, in una colonna sua (`GeneraleRow.ruota`, gia' dentro
-`punti`). Si perde al massimo la puntata e si punta al massimo il saldo, quindi
-il totale del giorno non va mai sotto zero, e i giorni passati non si toccano.
-Il nome e' quello del gioco vero, e cosi' le probabilita' (vedi sotto): il
-marchio e' di Evolution, e per un gioco fra amici e senza soldi va bene, ma se
-l'app diventasse pubblica il nome andrebbe cambiato.
+**La Fortuna e' la quarta scheda, e i suoi giochi puntano un saldo solo.**
+Crazy Time e la slot stanno nella scheda Fortuna (`/fortuna`, il quadrifoglio),
+con il saldo di oggi in cima: i punti delle classificate piu' quel che i giochi
+della Fortuna hanno dato o tolto oggi (`saldoDi` in `server/lib/fortuna.ts`).
+Quel che si vince a un gioco si punta all'altro. Ogni gioco controlla il saldo
+dentro la sua scrittura con lo stesso pezzo di SQL (`nettoFortunaSql`), sui
+conti di tutti: Crazy Time ha il suo `ruota_giornate`, gli altri
+`fortuna_giornate`, una riga per giocatore, giorno e gioco, riscritta nel batch
+di ogni giocata. Il blackjack e' gia' nel `CHECK` di quella tabella. Crazy Time
+e' rimasto nelle sue tabelle perché spostarne i conti avrebbe voluto copiare i
+giorni passati, e nei minuti del deploy il codice di prima avrebbe scritto dove
+il nuovo non leggeva. La generale li somma tutti e li tiene ognuno nella sua
+colonna (`GeneraleRow.ruota`, `slot`, `blackjack`); la scheda ha la sua
+richiesta (`/api/fortuna`), e la schermata iniziale non mostra piu' Crazy Time.
+
+**Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta
+nella scheda della Fortuna (`/crazy-time`; `/ruota`, l'indirizzo di quando si
+girava una volta al giorno, ci porta): si punta da `PUNTATA_MINIMA` a tutto il
+saldo della Fortuna, e si rigira. Quel che da' o toglie entra nella generale
+del giorno, in una colonna sua (`GeneraleRow.ruota`, gia' dentro `punti`). Si
+perde al massimo la puntata e si punta al massimo il saldo, quindi il totale
+del giorno non va mai sotto zero, e i giorni passati non si toccano. Il nome e'
+quello del gioco vero, e cosi' le probabilita' (vedi sotto): il marchio e' di
+Evolution, e per un gioco fra amici e senza soldi va bene, ma se l'app
+diventasse pubblica il nome andrebbe cambiato.
 
 **I giri stanno in `ruota_giocate`, e la generale legge `ruota_giornate`.** Un
 giro per riga, numerato nella giornata di ogni giocatore (`n`, nella chiave
 primaria: due giri partiti insieme non prendono lo stesso numero). Il saldo si
-controlla nell'`INSERT` stesso (`INSERT OR IGNORE … SELECT … WHERE
-classificate + SUM(delta) >= puntata`): due giri nello stesso istante, sul
-saldo letto prima, punterebbero due volte gli stessi punti. Nello stesso
-`batch` `riconta` riscrive `ruota_giornate` dalla somma dei giri, una riga per
-giocatore e per giorno: e' quella che legge la classifica generale, che
-altrimenti sommerebbe tutti i giri di tutti a ogni richiesta. I punti delle
-classificate di un giocatore solo li conta `puntiClassificateDi`
+controlla nell'`INSERT` stesso (un `INSERT OR IGNORE … SELECT … WHERE` che
+somma alle classificate i conti della Fortuna, `nettoFortunaSql`): due giri
+nello stesso istante, sul saldo letto prima, punterebbero due volte gli stessi
+punti. Nello stesso `batch` `riconta` riscrive `ruota_giornate` dalla somma dei
+giri, una riga per giocatore e per giorno: e' quella che legge la classifica
+generale, che altrimenti sommerebbe tutti i giri di tutti a ogni richiesta. I
+punti delle classificate di un giocatore solo li conta `puntiClassificateDi`
 (`server/lib/generale.ts`) con le stesse espressioni della generale, e un test
 verifica che diano lo stesso numero: se si tocca il conto di un gioco nella
 generale, va toccato anche li'. Fra due giri passano almeno
-`INTERVALLO_GIRI_MS` (429, `TROPPO_PRESTO`): una ruota lanciata impiega piu'
-di tre secondi a fermarsi, e un programma che gira a raffica consumerebbe le
+`INTERVALLO_GIRI_MS` (429, `TROPPO_PRESTO`): una ruota lanciata impiega piu' di
+tre secondi a fermarsi, e un programma che gira a raffica consumerebbe le
 richieste di tutti. `ruota_giri`, la tabella della ruota di una volta al
 giorno, non la legge piu' nessuno: la migrazione `0024` ne ha copiato i giri,
 con `spicchio` NULL perché la disposizione era un'altra, e non l'ha tolta,
@@ -529,12 +543,13 @@ moneta si lancia toccandola. Mentre e' in aria il tabellone resta com'era
 (`conto`) e il lato si dice quando cade: la risposta del server arriva prima, e
 sarebbe la soluzione. Una vincita ha l'adesivo d'oro e la pioggia di monete, il
 banco l'adesivo bordato e un sussulto del palco. Dopo un giro il pannello torna
-alla puntata, che resta quella di prima finché non la si cambia, come al tavolo.
-Il tabellone in cima dice il saldo e quel che Crazy Time ha dato o tolto oggi, e
-in quanti giri; nella home la carta dice lo stesso e quanto si puo' puntare, e
-non ha l'anello, perché Crazy Time non finisce: c'e' solo finché mancano i punti
-per la prima puntata. La ruota si riprende in mano `INTERVALLO_GIRI_MS` dopo il
-lancio: senza animazioni si fermerebbe subito, e il server direbbe di no.
+alla puntata, che resta quella di prima finché non la si cambia, come al
+tavolo. Il tabellone in cima dice il saldo e quel che Crazy Time ha dato o
+tolto oggi, e in quanti giri; nella scheda della Fortuna la carta dice lo
+stesso e quanto si puo' puntare, e non ha l'anello, perché Crazy Time non
+finisce: c'e' solo finché mancano i punti per la prima puntata. La ruota si
+riprende in mano `INTERVALLO_GIRI_MS` dopo il lancio: senza animazioni si
+fermerebbe subito, e il server direbbe di no.
 
 **La puntata e la vincita si vedono andare e venire.** Al lancio una pila di
 fiches vola dal saldo al mozzo, che diventa una fiche "in gioco", e il saldo
@@ -545,11 +560,64 @@ arriva la prima; al banco le fiches cadono dal mozzo, e il mozzo dice quanto si
 e' vinto o perso. Fino ad allora il tabellone resta su quel che si e' visto
 (`conto`), poi un lampo d'oro o rosso accompagna il conto nuovo. Una domanda
 vinta o persa si racconta cosi' tornando alla ruota (`RITORNO_MS`). I voli sono
-elementi del body animati con le Web Animations (`src/games/ruota/voli.ts`),
-sotto gli adesivi, che dicono il momento: passare dallo stato di React
-ridisegnerebbe la pagina a ogni fotogramma. Durante la domanda la pagina della
-ruota resta montata e nascosta (`hidden`): rimontarla farebbe ricontare il
-tabellone da zero e ridisegnare le ruote.
+elementi del body animati con le Web Animations (`src/games/fortuna/voli.ts`,
+che usa anche la slot), sotto gli adesivi, che dicono il momento: passare dallo
+stato di React ridisegnerebbe la pagina a ogni fotogramma. Durante la domanda
+la pagina della ruota resta montata e nascosta (`hidden`): rimontarla farebbe
+ricontare il tabellone da zero e ridisegnare le ruote.
+
+**La slot e' una slot classica, e rende come Crazy Time.** Tre rulli di trenta
+fermate, tre righe in vista e una linea (`shared/slot.ts`): pagano tre uguali
+sulla linea (`PREMI`, dal ×20 dei limoni al ×300 dei sette) e le ciliegie da
+sinistra, anche una sola (`CILIEGIE`). Sui rulli ci sono anche le sei categorie
+del giorno di Crazy Time, come cifre da 0 a 5: valgono dovunque nella finestra,
+come gli scatter delle slot vere, e tre della stessa categoria, una per rullo,
+aprono una domanda che giusta paga `VINCITA_DOMANDA` volte la puntata. Ogni
+categoria c'e' una volta per rullo, a cinque fermate dalle altre: in una
+finestra se ne vede al massimo una, e due triple insieme non possono uscire.
+Come nelle slot vere si vince di rado e quasi sempre poco — una volta ogni sei
+o sette giri, e piu' della meta' delle volte e' una ciliegia — e i premi grossi
+sono rari: i sette una volta ogni ventisettemila giri. La resa la conta
+`contaSlot` su tutte le 27.000 combinazioni: la linea il 79%, con le domande
+tutte giuste il 97%, come Crazy Time, e `shared/__tests__/slot.test.ts` la
+tiene li'. Si punta da 1 a `PUNTATA_MASSIMA_SLOT`, dieci, e non tutto il saldo
+come a Crazy Time: il ×300 dei sette su un saldo intero darebbe in un giro
+decine di migliaia di punti, e la generale non vorrebbe piu' dire niente.
+
+**La domanda della slot e' quella di Crazy Time.** Le stesse trenta domande per
+categoria della notte (`ruota_domande`), e chi ne ha avuta una a un gioco non
+la rivede all'altro: `domandeViste` guarda `ruota_giocate` e `slot_giri`. Come
+alla ruota, una categoria che oggi non ha piu' domande da dare a quel giocatore
+non fa tripla: le fermate si ripescano (`fermateACaso`). La domanda si apre con
+il Via, con il tempo del quiz, e una lasciata a meta' la chiude il giro dopo:
+la puntata era gia' pagata, e la linea aveva gia' pagato il suo. Il resto e'
+come a Crazy Time: le fermate le sceglie il server, il saldo si controlla
+nell'`INSERT`, fra due giri passa `INTERVALLO_SLOT_MS`, e un giro dei rulli di
+prima (`DISPOSIZIONE_SLOT`) conta nel saldo e non si mostra.
+
+**I rulli frenano con un salto che non si vede.** `Rulli` (`src/games/slot/`)
+li fa girare verso il basso, sfocati, finché non arriva l'esito; poi ogni
+rullo, al suo momento, salta di colpo cinque fermate prima della sua — a quella
+velocita' i simboli non si leggono — e da li' frena con `1 - (1 - t)^3`, passa
+un filo oltre e torna indietro, come un rullo che si incastra. Cosi' i tre si
+fermano a tempi fissi, il primo 0,9 secondi dopo la leva e gli altri ogni 0,42,
+qualunque sia la fermata; se i primi due promettono una tripla o i tre sette il
+terzo gira un secondo in piu', con il bordo che pulsa. La striscia di un rullo
+sono tre giri dei suoi simboli, e a ogni fotogramma si scrive solo il suo
+spostamento, come la rotazione della ruota. Le righe del mobile sono `minmax(0,
+...)`: la striscia e' alta trenta rulli, e lasciata al contenuto allargherebbe
+la sua riga.
+
+**La leva si tira col dito.** `Leva` sta sul fianco destro del mobile: la si
+prende per il pomo e la si tira giu', e oltre `SOGLIA` i rulli partono e la
+leva torna su con una molla; un tocco senza trascinare la tira tutta, e Invio e
+lo spazio anche, perché e' un bottone. Accanto ai gettoni c'e' "Gira", per chi
+non vuole tirare. Il resto si vede come a Crazy Time: le fiches volano dal
+saldo nella fessura e il saldo scende alla leva; una vincita accende i simboli
+che pagano, il display la segna, le monete cadono nel vassoio e da li' volano
+al saldo, che sale quando arriva la prima. Dal ×20 c'e' l'adesivo d'oro, dal
+×100 la pioggia di monete, e i tre sette sono il jackpot, con le luci a
+raffica.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —

@@ -15,10 +15,23 @@ import { OPZIONI_CLASSIFICATA, type Fatta } from '@/games/quiz/usePartita'
 import { suona } from '@/lib/suoni'
 import { NOMI_CATEGORIE, diGeografia } from '@shared/quiz'
 import { scriviMoltiplicatore } from '@shared/ruota'
-import type { SfidaRuotaVista } from '@shared/types'
+import type { CategoriaQuiz } from '@shared/quiz'
+import type { DomandaQuiz } from '@shared/quiz-domande'
+import type { RispostaQuiz } from '@shared/types'
 import { coloreDelMoltiplicatore, coloreDellaCategoria, iconaDellaCategoria } from './disegni'
+import './DomandaRuota.css'
 
-type SfidaDomanda = Extract<SfidaRuotaVista, { tipo: 'domanda' }>
+/** Una domanda di un gioco della Fortuna: quella di uno spicchio di Crazy Time, o della tripla della slot. */
+export interface DomandaDiFortuna {
+  categoria: CategoriaQuiz
+  domanda: DomandaQuiz | null
+  risposta: RispostaQuiz | null
+  limiteMs: number | null
+  restanteMs: number | null
+  /** Quel che c'e' in palio: la puntata per il moltiplicatore. */
+  moltiplicatore: number | null
+  vincita: number | null
+}
 
 const NESSUNO: ReadonlySet<string> = new Set()
 
@@ -38,16 +51,19 @@ const CONTESTO: ContestoCartina = { area: 'mondo', citta: null, opzioni: OPZIONI
  * bottone per tornare alla ruota.
  *
  * Arriva a parte dal resto della ruota: si porta dietro la carta del quiz, che
- * serve solo quando la ruota si ferma su una domanda.
+ * serve solo quando la ruota si ferma su una domanda. La slot usa la stessa, per
+ * la domanda della tripla.
  */
 export default function DomandaRuota({
   sfida,
   inviando,
+  torna = 'Torna alla ruota',
   onRispondi,
   onTorna,
 }: {
-  sfida: SfidaDomanda
+  sfida: DomandaDiFortuna
   inviando: boolean
+  torna?: string
   onRispondi: (scelta: string | null) => void
   onTorna: () => void
 }) {
@@ -135,7 +151,7 @@ export default function DomandaRuota({
       {fatta && (
         <div className="quiz-avanti">
           <Button size="lg" fullWidth onClick={onTorna} className="quiz-avanti__bottone">
-            Torna alla ruota
+            {torna}
           </Button>
         </div>
       )}

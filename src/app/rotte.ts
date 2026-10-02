@@ -24,7 +24,9 @@
  *   /quiz/libera/:materia               le categorie e le opzioni di una materia
  *   /quiz/duello/:id                    una sfida a quiz fra due
  *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
- *   /crazy-time                         Crazy Time: si puntano i punti delle classificate (/ruota ci porta)
+ *   /fortuna                            i giochi d'azzardo: si puntano i punti delle classificate
+ *   /crazy-time                         Crazy Time (/ruota ci porta)
+ *   /slot                               la slot
  *   /indovina-chi                       Indovina chi: la sala, i personaggi, le regole
  *   /indovina-chi/partita/:id           una partita
  *   /indovina-chi/invito/:codice        un invito arrivato con un link
@@ -74,7 +76,9 @@ export const SLUG_TAVOLIERE: Record<GiocoTavoliere, string> = {
 export const ROTTE = {
   home: '/',
   profilo: '/profilo',
+  fortuna: '/fortuna',
   ruota: '/crazy-time',
+  slot: '/slot',
   /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero. */
   classifica: (chiave?: ChiaveClassifica) =>
     !chiave ? '/classifica' : chiave === 'generale' ? '/classifica/generale' : `/classifica/${SLUG[chiave]}`,

@@ -13,12 +13,12 @@ import {
   riepilogoSudoku,
   riepilogoWordle,
 } from '../lib/riepiloghi'
-import { riepilogoRuota } from '../lib/ruotaStore'
 import { today } from '../lib/wordleStore'
 
 /**
- * La schermata iniziale in una richiesta: le classificate di oggi, Crazy Time e
- * la posizione nella classifica generale del giorno.
+ * La schermata iniziale in una richiesta: le classificate di oggi e la
+ * posizione nella classifica generale del giorno. I giochi della Fortuna hanno
+ * la loro scheda, e la loro richiesta (`/fortuna`).
  *
  * Una e non sei perché il piano gratuito delle Pages Functions conta le
  * richieste, e la schermata iniziale e' quella che si apre di piu'. Come i
@@ -37,8 +37,6 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     riepilogoQuiz(db, io),
     classificaGenerale(db, periodoDi('today', quando.puzzleNumber), io),
   ])
-  // Il saldo di Crazy Time e' il totale di oggi nella generale: le classificate piu' quel che ha dato o tolto.
-  const ruota = await riepilogoRuota(db, io, Math.max(0, generale.me?.punti ?? 0), generale.me?.ruota ?? 0)
   return c.json<OggiRisposta>({
     date: quando.date,
     puzzleNumber: quando.puzzleNumber,
@@ -49,7 +47,6 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     sudoku,
     battaglia,
     quiz,
-    ruota,
     generale: {
       posizione: generale.me?.rank ?? null,
       punti: generale.me?.punti ?? 0,

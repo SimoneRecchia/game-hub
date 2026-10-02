@@ -73,6 +73,16 @@ export type NomeSuono =
   | 'incasso'
   /** Il passaggio da una scena all'altra di Crazy Time. */
   | 'intermezzo'
+  /** La leva della slot che arriva in fondo. */
+  | 'leva'
+  /** I rulli che girano, uno scatto alla volta. */
+  | 'rullo'
+  /** Un rullo che si ferma e si incastra. */
+  | 'fermo'
+  /** Tre categorie uguali alla slot: c'e' una domanda. */
+  | 'tripla'
+  /** I tre sette. */
+  | 'jackpot'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -689,5 +699,42 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     marimba(u, t + 0.32, N.G5, 0.16 * v, { eco: 0.3 })
     marimba(u, t + 0.32, N.C6, 0.18 * v, { eco: 0.3, durata: 1.1 })
     campanello(u, t + 0.32, N.E7, 0.06 * v, { eco: 0.5, durata: 0.9 })
+  },
+
+  // La leva in fondo: il colpo del meccanismo, e la molla che vibra nella cassa.
+  leva: (u, t, v) => {
+    tonfo(u, t, 0.32 * v, { da: 170, a: 58, durata: 0.28 })
+    legno(u, t, 480, 0.16 * v)
+    soffio(u, t + 0.02, 0.22, 0.1 * v, { tipo: 'bandpass', da: 1900, a: 700, q: 3 }, { attacco: 0.004, eco: 0.12 })
+  },
+
+  // I rulli che girano: lo scatto dei denti, piu' basso e piu' piano di quello della lancetta.
+  rullo: (u, t, v) => legno(u, t, vario(820, 0.08), 0.045 * v, 0.008),
+
+  // Un rullo che si incastra: un colpo secco e sordo.
+  fermo: (u, t, v) => {
+    tonfo(u, t, 0.24 * v, { da: 150, a: 66, durata: 0.16 })
+    legno(u, t, vario(640, 0.03), 0.15 * v)
+  },
+
+  // La tripla di una categoria: tre campanelli che salgono, e l'accordo del quiz.
+  tripla: (u, t, v) => {
+    ;[N.C6, N.E6, N.G6].forEach((f, i) => campanello(u, t + i * 0.12, f, 0.13 * v, { eco: 0.4, durata: 0.7 }))
+    marimba(u, t + 0.36, N.C5, 0.2 * v, { eco: 0.3 })
+    marimba(u, t + 0.36, N.G5, 0.18 * v, { eco: 0.3 })
+    campanello(u, t + 0.36, N.C7, 0.1 * v, { eco: 0.5, durata: 1.2 })
+  },
+
+  // I tre sette: la fanfara due volte, piu' alta la seconda, e una cascata di monete.
+  jackpot: (u, t, v) => {
+    ;[N.C5, N.E5, N.G5, N.C6].forEach((f, i) => marimba(u, t + i * 0.08, f, 0.28 * v, { eco: 0.3 }))
+    ;[N.E5, N.G5, N.C6, N.E6].forEach((f, i) => marimba(u, t + 0.4 + i * 0.08, f, 0.3 * v, { eco: 0.3 }))
+    const accordo = t + 0.78
+    ;[N.C6, N.E6, N.G6, N.C7].forEach((f) => campanello(u, accordo, f, 0.13 * v, { eco: 0.5, durata: 1.6 }))
+    const monete = [N.E7, N.G7, N.A7, N.D7, N.C7]
+    for (let i = 0; i < 30; i += 1) {
+      const f = monete[Math.floor(Math.random() * monete.length)]
+      campanello(u, accordo + 0.1 + i * 0.045 + Math.random() * 0.03, vario(f), 0.045 * v, { eco: 0.45, durata: 0.3 })
+    }
   },
 }
