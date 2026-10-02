@@ -1,0 +1,196 @@
+/*
+ * Il profilo di un amico: l'avatar grande con un alone del suo colore, chi e',
+ * se e' online, e i giochi a cui lo si invita, una tessera ciascuno.
+ */
+
+.amico-testa {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  text-align: center;
+}
+
+/* L'alone dietro l'avatar: verde quando e' online, e respira. */
+.amico-testa__alone {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: -1;
+  width: 220px;
+  height: 160px;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--salotto) 24%, transparent), transparent);
+}
+
+.amico-testa.is-online .amico-testa__alone {
+  background: radial-gradient(closest-side, rgba(34, 197, 94, 0.28), transparent);
+  animation: amico-respira 3.2s var(--ease-in-out) infinite;
+}
+
+@keyframes amico-respira {
+  50% {
+    transform: scale(1.12);
+    opacity: 0.7;
+  }
+}
+
+.amico-testa__avatar {
+  position: relative;
+  display: inline-grid;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px var(--bg),
+    0 12px 30px var(--shadow-tint);
+  animation: amico-arriva 560ms var(--ease-spring) both;
+}
+
+@keyframes amico-arriva {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+
+.amico-testa__online {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 4px var(--bg);
+}
+
+.amico-testa__chi {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.amico-stato {
+  min-height: 1.6em;
+  padding: 3px 12px;
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+.amico-testa.is-online .amico-stato {
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+  color: light-dark(#15803d, #4ade80);
+}
+
+/* ─────────────────────────  I giochi  ───────────────────────── */
+
+/* Tre per riga, come le tessere del Salotto: la copertina, il nome, e cosa fa il tocco. */
+.amico-giochi {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 560px) {
+  .amico-giochi {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .amico-giochi {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+
+.amico-gioco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: var(--sp-4) var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: 24px;
+  background:
+    radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--c1) 18%, transparent), transparent 70%),
+    var(--surface);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 22%, transparent);
+  color: var(--label);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.amico-gioco:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+@media (hover: hover) {
+  .amico-gioco:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow:
+      var(--shadow-md),
+      inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 32%, transparent);
+  }
+}
+
+.amico-gioco:disabled {
+  cursor: default;
+}
+
+.amico-gioco:disabled:not(.is-invio) {
+  opacity: 0.6;
+}
+
+.amico-gioco .copertina {
+  --lato: 50px;
+  flex: none;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--c2) 26%, transparent);
+}
+
+.amico-gioco__nome {
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.amico-gioco__azione {
+  margin-top: auto;
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  color: color-mix(in srgb, var(--c2) 80%, var(--label));
+}
+
+.amico-gioco.is-invio .amico-gioco__azione {
+  animation: amico-invio 0.9s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes amico-invio {
+  to {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .amico-testa__alone,
+  .amico-testa__avatar,
+  .amico-gioco.is-invio .amico-gioco__azione {
+    animation: none !important;
+  }
+}

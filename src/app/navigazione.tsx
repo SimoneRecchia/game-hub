@@ -134,6 +134,8 @@ interface PropsCollegamento extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>
   to: To
   direzione?: Direzione
   replace?: boolean
+  /** Lo stato della history che la schermata nuova legge: da dove si arriva, per la freccia indietro. */
+  stato?: unknown
   children?: ReactNode
 }
 
@@ -144,17 +146,25 @@ interface PropsCollegamento extends Omit<AnchorHTMLAttributes<HTMLAnchorElement>
  * un lettore di schermo lo annuncia come link — e solo il clic semplice passa
  * dalla transizione.
  */
-export function Collegamento({ to, direzione = 'avanti', replace, onClick, children, ...resto }: PropsCollegamento) {
+export function Collegamento({
+  to,
+  direzione = 'avanti',
+  replace,
+  stato,
+  onClick,
+  children,
+  ...resto
+}: PropsCollegamento) {
   const { vai } = useNavigazione()
   const gestisci = (evento: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(evento)
     if (evento.defaultPrevented) return
     if (evento.button !== 0 || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.altKey) return
     evento.preventDefault()
-    vai(to, { direzione, replace })
+    vai(to, { direzione, replace, state: stato })
   }
   return (
-    <Link to={to} replace={replace} onClick={gestisci} {...resto}>
+    <Link to={to} replace={replace} state={stato} onClick={gestisci} {...resto}>
       {children}
     </Link>
   )

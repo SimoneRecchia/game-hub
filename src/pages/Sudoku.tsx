@@ -26,7 +26,7 @@ export default function Sudoku() {
     <Pagina
       titolo={stato ? `Sudoku #${stato.puzzleNumber}` : 'Sudoku'}
       intera
-      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Arena' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />

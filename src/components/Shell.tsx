@@ -1,5 +1,5 @@
+import { useRef, type CSSProperties, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import type { ReactNode } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
@@ -9,28 +9,22 @@ import { NOME_SLOT } from '@shared/slot'
 import { NOME_BLACKJACK } from '@shared/blackjack'
 import { Avatar } from './Avatar'
 import { Copertina } from './Copertina'
-import {
-  IconFortuna,
-  IconFortunaFill,
-  IconGames,
-  IconGamesFill,
-  IconPerson,
-  IconPersonFill,
-  IconTrophy,
-  IconTrophyFill,
-} from './Icons'
+import { IconArena, IconArenaFill, IconFortuna, IconFortunaFill, IconSalotto, IconSalottoFill } from './Icons'
 import './Shell.css'
 
 interface Scheda {
   a: string
   nome: string
-  Icona: typeof IconGames
-  IconaPiena: typeof IconGames
+  Icona: typeof IconArena
+  IconaPiena: typeof IconArena
+  /** Il colore della scheda: l'icona accesa e la lente sotto. */
+  colore: string
   /** Le rotte che appartengono a questa sezione, oltre alla sua. */
   sotto: (percorso: string) => boolean
 }
 
-const PERCORSI_GIOCHI = [...GIOCHI.map((g) => ROTTE.gioco(g.id)), ...GIOCHI_DA_TAVOLO.map((g) => `/${g.slug}`)]
+/** Il percorso e' questo, o una schermata sotto questo. */
+const sotto = (percorso: string, radice: string) => percorso === radice || percorso.startsWith(`${radice}/`)
 
 /** I giochi della Fortuna: si puntano i punti fatti oggi nelle classificate. */
 const GIOCHI_FORTUNA = [
@@ -40,34 +34,45 @@ const GIOCHI_FORTUNA = [
 ] as const
 const PERCORSI_FORTUNA = [ROTTE.fortuna, ...GIOCHI_FORTUNA.map((g) => g.a)]
 
+/**
+ * Le tre schede: l'Arena con le classificate di oggi, che sono la parte
+ * principale, il Salotto con le partite che non contano, e la Fortuna. La
+ * classifica si apre dall'Arena e dalla Fortuna, il profilo dall'avatar in
+ * alto a destra: non sono schede, e mentre li si guarda nessuna e' accesa.
+ * L'ordine dei controlli conta: `/quiz/classificata` e' dell'Arena, il resto
+ * del quiz del Salotto.
+ */
 const SCHEDE: Scheda[] = [
   {
     a: ROTTE.home,
-    nome: 'Giochi',
-    Icona: IconGames,
-    IconaPiena: IconGamesFill,
-    sotto: (p) => p === '/' || PERCORSI_GIOCHI.some((g) => p === g || p.startsWith(`${g}/`)),
+    nome: 'Arena',
+    Icona: IconArena,
+    IconaPiena: IconArenaFill,
+    colore: 'var(--arena)',
+    sotto: (p) =>
+      p === '/' ||
+      GIOCHI.some((g) => sotto(p, ROTTE.classificata(g.id))) ||
+      p.startsWith('/wordle/insieme/') ||
+      (sotto(p, ROTTE.classifica()) && !sotto(p, ROTTE.classifica('fortuna'))),
+  },
+  {
+    a: ROTTE.salotto,
+    nome: 'Salotto',
+    Icona: IconSalotto,
+    IconaPiena: IconSalottoFill,
+    colore: 'var(--salotto)',
+    sotto: (p) =>
+      sotto(p, ROTTE.salotto) ||
+      GIOCHI.some((g) => sotto(p, ROTTE.gioco(g.id))) ||
+      GIOCHI_DA_TAVOLO.some((g) => sotto(p, `/${g.slug}`)),
   },
   {
     a: ROTTE.fortuna,
     nome: 'Fortuna',
     Icona: IconFortuna,
     IconaPiena: IconFortunaFill,
-    sotto: (p) => PERCORSI_FORTUNA.some((g) => p === g || p.startsWith(`${g}/`)),
-  },
-  {
-    a: ROTTE.classifica(),
-    nome: 'Classifica',
-    Icona: IconTrophy,
-    IconaPiena: IconTrophyFill,
-    sotto: (p) => p.startsWith('/classifica'),
-  },
-  {
-    a: ROTTE.profilo,
-    nome: 'Profilo',
-    Icona: IconPerson,
-    IconaPiena: IconPersonFill,
-    sotto: (p) => p.startsWith('/profilo'),
+    colore: 'var(--fortuna)',
+    sotto: (p) => PERCORSI_FORTUNA.some((g) => sotto(p, g)) || sotto(p, ROTTE.classifica('fortuna')),
   },
 ]
 
@@ -76,8 +81,9 @@ const SCHEDE: Scheda[] = [
  *
  * Sul telefono le sezioni sono una tab bar che **galleggia** sopra il
  * contenuto, una capsula di vetro staccata dal bordo, e la lente sotto la
- * sezione aperta scivola da una all'altra. Su un computer diventano una barra
- * laterale, come nelle app del Mac, con i giochi a portata di clic.
+ * sezione aperta scivola da una all'altra, nel colore della sezione. Su un
+ * computer diventano una barra laterale, come nelle app del Mac, con i giochi
+ * di ogni sezione a portata di clic.
  *
  * Nelle schermate di gioco le sezioni spariscono del tutto: si gioca a schermo
  * intero, e si esce col tasto indietro della schermata. Lo decide il CSS con
@@ -85,17 +91,23 @@ const SCHEDE: Scheda[] = [
  */
 export function Shell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
-  const attiva = Math.max(
-    0,
-    SCHEDE.findIndex((s) => s.sotto(pathname)),
-  )
+  // Il profilo, un amico: nessuna scheda accesa, e la lente resta dov'era, spenta.
+  const trovata = SCHEDE.findIndex((s) => s.sotto(pathname))
+  const ultima = useRef(0)
+  if (trovata >= 0) ultima.current = trovata
+  const attiva = trovata
+  const lente = { transform: `translateX(${ultima.current * 100}%)`, '--lente': SCHEDE[ultima.current].colore }
 
   return (
     <div className="shell">
       <BarraLaterale pathname={pathname} attiva={attiva} />
       <div className="shell__contenuto">{children}</div>
       <nav className="tabbar" aria-label="Sezioni">
-        <span className="tabbar__lente" style={{ transform: `translateX(${attiva * 100}%)` }} aria-hidden="true" />
+        <span
+          className={`tabbar__lente${attiva < 0 ? ' is-spenta' : ''}`}
+          style={lente as CSSProperties}
+          aria-hidden="true"
+        />
         {SCHEDE.map((s, i) => {
           const Icona = i === attiva ? s.IconaPiena : s.Icona
           return (
@@ -104,6 +116,7 @@ export function Shell({ children }: { children: ReactNode }) {
               to={s.a}
               direzione="scheda"
               className={`tabbar__voce${i === attiva ? ' is-attiva' : ''}`}
+              style={{ '--colore': s.colore } as CSSProperties}
               aria-current={i === attiva ? 'page' : undefined}
             >
               <Icona size={24} />
@@ -134,6 +147,7 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
               to={s.a}
               direzione="scheda"
               className={`laterale__voce${i === attiva ? ' is-attiva' : ''}`}
+              style={{ '--colore': s.colore } as CSSProperties}
               aria-current={i === attiva ? 'page' : undefined}
             >
               <Icona size={20} />
@@ -143,16 +157,34 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
         })}
       </nav>
 
-      <p className="laterale__titolo">I giochi</p>
+      <p className="laterale__titolo">Arena</p>
       <nav className="laterale__voci">
         {GIOCHI.map((g) => {
           // Il gioco porta alla partita di oggi, e resta acceso in tutte le sue schermate.
-          const radice = ROTTE.gioco(g.id)
-          const dentro = pathname === radice || pathname.startsWith(`${radice}/`)
+          const dentro = sotto(pathname, ROTTE.classificata(g.id))
           return (
             <Collegamento
               key={g.id}
               to={ROTTE.classificata(g.id)}
+              direzione="scheda"
+              className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
+            >
+              <Copertina gioco={g.id} formato="icona" />
+              <span>{g.nome}</span>
+            </Collegamento>
+          )
+        })}
+      </nav>
+
+      <p className="laterale__titolo">Salotto</p>
+      <nav className="laterale__voci">
+        {GIOCHI_DA_TAVOLO.map((g) => {
+          const a = `/${g.slug}`
+          const dentro = sotto(pathname, a)
+          return (
+            <Collegamento
+              key={g.id}
+              to={a}
               direzione="scheda"
               className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
             >
@@ -181,26 +213,11 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
         })}
       </nav>
 
-      <p className="laterale__titolo">Da tavolo</p>
-      <nav className="laterale__voci">
-        {GIOCHI_DA_TAVOLO.map((g) => {
-          const a = `/${g.slug}`
-          const dentro = pathname === a || pathname.startsWith(`${a}/`)
-          return (
-            <Collegamento
-              key={g.id}
-              to={a}
-              direzione="scheda"
-              className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
-            >
-              <Copertina gioco={g.id} formato="icona" />
-              <span>{g.nome}</span>
-            </Collegamento>
-          )
-        })}
-      </nav>
-
-      <Collegamento to={ROTTE.profilo} direzione="scheda" className="laterale__io">
+      <Collegamento
+        to={ROTTE.profilo}
+        stato={{ da: SCHEDE[attiva]?.nome }}
+        className={`laterale__io${sotto(pathname, ROTTE.profilo) ? ' is-attiva' : ''}`}
+      >
         <Avatar nickname={player.nickname} color={player.avatarColor} size={32} />
         <span className="laterale__io-nome">{player.displayName}</span>
       </Collegamento>
