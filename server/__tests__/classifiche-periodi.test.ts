@@ -110,7 +110,16 @@ describe('la panoramica delle classifiche', () => {
 
     const { status, dati } = await chiama<PanoramicaClassifiche>('GET', '/leaderboard/panoramica?scope=today', elena)
     expect(status).toBe(200)
-    expect(Object.keys(dati.classifiche).sort()).toEqual(['battaglia', 'cruciverba', 'generale', 'quiz', 'scarabeo', 'sudoku', 'wordle'])
+    expect(Object.keys(dati.classifiche).sort()).toEqual([
+      'battaglia',
+      'cruciverba',
+      'fortuna',
+      'generale',
+      'quiz',
+      'scarabeo',
+      'sudoku',
+      'wordle',
+    ])
 
     const q = dati.classifiche.quiz
     expect(q.giocatori).toBe(5)

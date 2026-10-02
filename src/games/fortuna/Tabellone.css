@@ -1,7 +1,7 @@
 /*
- * Il tabellone dei giochi della Fortuna: il saldo di oggi, comune a tutti, e
- * quel che il gioco ha dato o tolto oggi. Scuro con il filo d'oro, come il
- * palco di Crazy Time, in tutti e due i temi.
+ * Il tabellone dei giochi della Fortuna: il saldo, comune a tutti, e la
+ * puntata. Scuro con il filo d'oro, come il palco di Crazy Time, in tutti e
+ * due i temi.
  */
 .ct-tabellone {
   position: relative;
@@ -48,19 +48,6 @@
   text-shadow: 0 0 14px rgba(255, 214, 90, 0.5);
 }
 
-/* La differenza a ogni cambio del saldo: sale accanto al numero, grande, e svanisce. */
-.ct-tabellone__variazione {
-  position: absolute;
-  left: 100%;
-  top: -2px;
-  margin-left: 10px;
-  font-size: 22px;
-  font-weight: 900;
-  white-space: nowrap;
-  text-shadow: 0 0 12px currentColor;
-  animation: ct-variazione 1.8s var(--ease-out) both;
-}
-
 /* Il tabellone si accende quando il saldo cambia: rosso per la puntata pagata, d'oro per la vincita. */
 .ct-tabellone__lampo {
   position: absolute;
@@ -94,55 +81,25 @@
   }
 }
 
-.ct-tabellone__variazione.is-piu,
-.ct-tabellone__netto.is-piu {
-  color: var(--ct-piu);
-}
-
-.ct-tabellone__variazione.is-meno,
-.ct-tabellone__netto.is-meno {
-  color: var(--ct-meno);
-}
-
-@keyframes ct-variazione {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.8);
-  }
-  15% {
-    opacity: 1;
-    transform: translateY(0) scale(1.12);
-  }
-  70% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-16px);
-  }
-}
-
-.ct-tabellone__oggi {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  white-space: nowrap;
-}
-
-.ct-tabellone__netto {
+.ct-tabellone__puntata {
   font-family: var(--font-rounded);
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 900;
+  line-height: 1.1;
+  color: #fff;
+  animation: ct-puntata 0.32s var(--ease-out);
 }
 
-.ct-tabellone__giri {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.75);
+@keyframes ct-puntata {
+  from {
+    transform: scale(1.2);
+    color: var(--ct-oro-chiaro);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ct-tabellone__lampo,
-  .ct-tabellone__variazione {
+  .ct-tabellone__puntata {
     animation: none;
   }
 }

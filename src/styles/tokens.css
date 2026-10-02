@@ -259,6 +259,8 @@
   --slot-2: #7a1fb8;
   --fortuna-1: #34d17a;
   --fortuna-2: #0d7a55;
+  --blackjack-1: #1fa463;
+  --blackjack-2: #0b4f30;
 
   /* ---- Crazy Time da casinò ----
      Il palco e' scuro in tutti e due i temi, come una sala; l'oro della
@@ -284,6 +286,28 @@
   --ct-m15: #f3a521;
   --ct-m2: #e0457b;
   --ct-m3: #ffd23f;
+
+  /* ---- Il tavolo del blackjack ----
+     Il panno verde e il bordo imbottito sono gli stessi nei due temi, come il
+     palco di Crazy Time: un tavolo da gioco non cambia colore. Le carte sono
+     bianche anche in scuro, e il dorso rosso. Le fiches hanno i colori dei
+     tavoli veri, uno per taglio. */
+  --bj-panno-1: #1b8a52;
+  --bj-panno-2: #0b4a2b;
+  --bj-panno-3: #062c19;
+  --bj-bordo: #3a2416;
+  --bj-bordo-2: #1d1109;
+  --bj-scritta: #f2d27a;
+  --bj-scritta-chiara: rgba(255, 246, 214, 0.82);
+  --bj-rosso-carta: #c8102e;
+  --bj-nero-carta: #17191e;
+  --bj-dorso-1: #9c1a2f;
+  --bj-dorso-2: #761224;
+  --bj-fiche-10: #2563eb;
+  --bj-fiche-25: #16a34a;
+  --bj-fiche-50: #dc2626;
+  --bj-fiche-100: #23262d;
+  --bj-fiche-500: #7c3aed;
 
   /* ---- La griglia del sudoku ----
      Il filo sottile fra le caselle e quello spesso fra i riquadri, come sulla

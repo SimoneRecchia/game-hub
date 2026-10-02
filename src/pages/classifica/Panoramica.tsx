@@ -13,6 +13,7 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
+import { conSegno } from '@shared/ruota'
 import type { AnteprimaClassifica, LeaderboardScope, PanoramicaClassifiche, RigaAnteprima } from '@shared/types'
 import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
@@ -20,9 +21,10 @@ import { NOMI_CLASSIFICHE, ORDINE_GIOCHI } from './voci'
 
 /**
  * Tutte le classifiche di un periodo, una sotto l'altra: in cima la generale,
- * che somma le classificate di tutti i giochi, poi quella di ogni gioco. Di
- * ognuna i primi tre e dove sei tu; toccandola si apre per intero, con lo
- * stesso periodo.
+ * che somma le classificate di tutti i giochi, poi quella di ogni gioco, e in
+ * fondo la Fortuna, chi ha vinto di piu' ai giochi d'azzardo. Di ognuna i
+ * primi tre e dove sei tu; toccandola si apre per intero, con lo stesso
+ * periodo.
  */
 export function Panoramica({ scope, indietro }: { scope: LeaderboardScope; indietro: number }) {
   const { vai } = useNavigazione()
@@ -79,6 +81,19 @@ export function Panoramica({ scope, indietro }: { scope: LeaderboardScope; indie
               ))}
             </ul>
           </Sezione>
+          {mostrati.classifiche.fortuna && (
+            <Sezione titolo="La Fortuna">
+              <CartaGioco
+                chiave="fortuna"
+                anteprima={mostrati.classifiche.fortuna}
+                io={io}
+                a={a('fortuna')}
+                gioca={vivo ? ROTTE.fortuna : null}
+                invito="Tenta la fortuna"
+                segno
+              />
+            </Sezione>
+          )}
         </div>
       )}
     </Pagina>
@@ -167,6 +182,8 @@ function CartaGioco({
   io,
   a,
   gioca,
+  invito = 'Gioca la classificata',
+  segno = false,
 }: {
   chiave: Exclude<ChiaveClassifica, 'generale'>
   anteprima: AnteprimaClassifica
@@ -174,6 +191,9 @@ function CartaGioco({
   a: string
   /** Dove si gioca la classificata, se il periodo arriva a oggi. */
   gioca: string | null
+  invito?: string
+  /** I punti con il segno: nella Fortuna si puo' andare sotto zero. */
+  segno?: boolean
 }) {
   const { primi, me } = anteprima
   const mia = me && !primi.some((r) => r.playerId === io) ? me : null
@@ -186,18 +206,18 @@ function CartaGioco({
       ) : (
         <ol className="cl-mini">
           {primi.map((r) => (
-            <RigaMini key={r.playerId} riga={r} io={r.playerId === io} />
+            <RigaMini key={r.playerId} riga={r} io={r.playerId === io} segno={segno} />
           ))}
         </ol>
       )}
       {mia && (
         <ol className="cl-mini cl-mini--mia" start={mia.rank}>
-          <RigaMini riga={mia} io />
+          <RigaMini riga={mia} io segno={segno} />
         </ol>
       )}
       {!me && gioca && (
         <Collegamento to={gioca} className="cl-carta__gioca">
-          Gioca la classificata
+          {invito}
           <IconChevronRight size={15} />
         </Collegamento>
       )}
@@ -205,7 +225,7 @@ function CartaGioco({
   )
 }
 
-function RigaMini({ riga, io }: { riga: RigaAnteprima; io: boolean }) {
+function RigaMini({ riga, io, segno = false }: { riga: RigaAnteprima; io: boolean; segno?: boolean }) {
   return (
     <li className={`cl-mini__riga${io ? ' is-io' : ''}`}>
       <span className={`cl-mini__rank u-tabnum${riga.punti > 0 && riga.rank <= 3 ? ` is-${riga.rank}` : ''}`}>
@@ -219,7 +239,7 @@ function RigaMini({ riga, io }: { riga: RigaAnteprima; io: boolean }) {
       {riga.inCorso && riga.punti === 0 ? (
         <Etichetta tono="arancio">in corso</Etichetta>
       ) : (
-        <span className="cl-mini__punti u-tabnum">{formatNumber(riga.punti)}</span>
+        <span className="cl-mini__punti u-tabnum">{segno ? conSegno(riga.punti) : formatNumber(riga.punti)}</span>
       )}
     </li>
   )

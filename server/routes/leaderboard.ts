@@ -1,6 +1,7 @@
 import { Hono, type Context } from 'hono'
 import { PERIODI, periodoDi } from '../../shared/periodi'
 import type {
+  FortunaLeaderboard,
   BattagliaLeaderboard,
   GeneraleLeaderboard,
   CruciverbaLeaderboard,
@@ -20,7 +21,7 @@ import { classificaCruciverba } from '../lib/cruciverbaStore'
 import { classificaSudoku } from '../lib/sudokuStore'
 import { classificaBattaglia } from '../lib/battagliaStore'
 import { classificaQuiz } from '../lib/quizStore'
-import { classificaGenerale } from '../lib/generale'
+import { classificaFortuna, classificaGenerale } from '../lib/generale'
 import { panoramica } from '../lib/panoramica'
 import { today } from '../lib/wordleStore'
 
@@ -58,6 +59,12 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/generale', async (c) => {
     const result = await classificaGenerale(c.env.DB, leggiPeriodo(c), c.get('player').id)
     return c.json<GeneraleLeaderboard>(result)
+  })
+
+  /** La classifica della Fortuna: quel che i giochi d'azzardo hanno dato o tolto nel periodo. */
+  .get('/fortuna', async (c) => {
+    const result = await classificaFortuna(c.env.DB, leggiPeriodo(c), c.get('player').id)
+    return c.json<FortunaLeaderboard>(result)
   })
 
   /** La classifica dello Scarabeo: punti in rapporto al computer, poi il tabellone. */

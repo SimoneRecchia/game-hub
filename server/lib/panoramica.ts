@@ -16,7 +16,7 @@ import type {
 } from '../../shared/types'
 import { classificaBattaglia } from './battagliaStore'
 import { classificaCruciverba } from './cruciverbaStore'
-import { classificaGenerale } from './generale'
+import { classificaFortuna, classificaGenerale } from './generale'
 import { nowIso } from './http'
 import { leaderboard } from './leaderboard'
 import { classificaQuiz } from './quizStore'
@@ -55,7 +55,7 @@ export async function panoramica(
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<PanoramicaClassifiche> {
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, generale] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, generale, fortuna] = await Promise.all([
     leaderboard(db, periodo, numeroDiOggi, viewerId),
     classificaScarabeo(db, periodo, numeroDiOggi, viewerId),
     classificaCruciverba(db, periodo, numeroDiOggi, viewerId),
@@ -63,6 +63,7 @@ export async function panoramica(
     classificaBattaglia(db, periodo, numeroDiOggi, viewerId),
     classificaQuiz(db, periodo, numeroDiOggi, viewerId),
     classificaGenerale(db, periodo, viewerId),
+    classificaFortuna(db, periodo, viewerId),
   ])
 
   // "In corso" vuol dire una classificata di oggi ancora aperta: in un periodo passato non ce ne sono.
@@ -97,6 +98,7 @@ export async function panoramica(
       sudoku: anteprima(sudoku.rows, sudoku.me, colPunti, aperta),
       battaglia: anteprima(battaglia.rows, battaglia.me, colPunti, aperta),
       quiz: anteprima(quiz.rows, quiz.me, colPunti, aperta),
+      fortuna: anteprima(fortuna.rows, fortuna.me, colPunti, () => false),
     },
   }
 }

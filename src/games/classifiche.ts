@@ -14,6 +14,7 @@ import type {
   BattagliaLeaderboard,
   ChiaveClassifica,
   CruciverbaLeaderboard,
+  FortunaLeaderboard,
   GeneraleLeaderboard,
   LeaderboardResponse,
   LeaderboardScope,
@@ -64,6 +65,7 @@ type Qualunque =
   | BattagliaLeaderboard
   | QuizLeaderboard
   | GeneraleLeaderboard
+  | FortunaLeaderboard
 
 export function righeComuni(risposta: Qualunque): RigaComune[] {
   return risposta.rows.map((r) => ({

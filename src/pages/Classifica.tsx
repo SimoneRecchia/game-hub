@@ -34,7 +34,8 @@ export default function Classifica() {
   const indietro = indietroDa(query.get('indietro'))
   if (!slug) return <Panoramica scope={scope} indietro={indietro} />
 
-  const chiave: ChiaveClassifica | null = slug === 'generale' ? 'generale' : giocoDaSlug(slug)
+  const chiave: ChiaveClassifica | null =
+    slug === 'generale' || slug === 'fortuna' ? slug : giocoDaSlug(slug)
   if (!chiave) return <Navigate to={ROTTE.classifica()} replace />
   return <Completa key={chiave} chiave={chiave} scope={scope} indietro={indietro} />
 }

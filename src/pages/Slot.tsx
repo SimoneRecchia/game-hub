@@ -347,7 +347,7 @@ export default function SlotPagina() {
         </Suspense>
       )}
       <div className="slot" hidden={!!inDomanda}>
-        {quanto && <Tabellone {...quanto} saldoRef={saldoRef} />}
+        {quanto && <Tabellone saldo={quanto.saldo} puntata={scelta} saldoRef={saldoRef} />}
         <div className={`slot-sala is-${luci}`}>
           <div className="slot-mobile">
             <Insegna luci={luci} />
