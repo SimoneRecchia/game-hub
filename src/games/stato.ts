@@ -10,10 +10,12 @@
 import { CASELLE_FLOTTA } from '@shared/battaglia'
 import { NOMI_CATEGORIE } from '@shared/quiz'
 import { PUNTATA_MINIMA, conSegno, nomeDi, spicchiDelGiorno } from '@shared/ruota'
+import { PUNTATA_MASSIMA_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   BattagliaSummary,
   CruciverbaSummary,
+  FortunaRisposta,
   GiocoClassificato,
   OggiRisposta,
   QuizSummary,
@@ -355,6 +357,37 @@ export function statoRuota(s: RuotaSummary, numero: number): StatoRuota {
     dettaglio: `Puoi puntare fino a ${s.saldo} punti`,
     avanzamento: null,
     azione: 'Gira',
+    a,
+  }
+}
+
+/**
+ * La slot nella scheda della Fortuna: quel che ha dato o tolto oggi, e quanto si
+ * puo' puntare adesso. Una domanda in sospeso si riprende dalla slot.
+ */
+export function statoSlot(s: FortunaRisposta): StatoRuota {
+  const a = ROTTE.slot
+  if (s.slot.stato === 'sfida') {
+    return { fase: 'in-corso', titolo: 'Domanda in sospeso', dettaglio: '', avanzamento: null, azione: 'Continua', a }
+  }
+  const giri = s.giocate.slot
+  const conto = `Oggi ${conSegno(s.netti.slot)} in ${giri} ${giri === 1 ? 'giro' : 'giri'}`
+  if (s.saldo < PUNTATA_MINIMA_SLOT) {
+    return {
+      fase: 'non-pronta',
+      titolo: giri > 0 ? conto : 'Prima le classificate',
+      dettaglio: `Serve ${PUNTATA_MINIMA_SLOT} punto di oggi`,
+      avanzamento: null,
+      azione: '',
+      a,
+    }
+  }
+  return {
+    fase: 'da-giocare',
+    titolo: giri > 0 ? conto : 'Da giocare',
+    dettaglio: `Puntate da ${PUNTATA_MINIMA_SLOT} a ${Math.min(PUNTATA_MASSIMA_SLOT, s.saldo)} punti`,
+    avanzamento: null,
+    azione: 'Gioca',
     a,
   }
 }

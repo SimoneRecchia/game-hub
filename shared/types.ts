@@ -423,6 +423,8 @@ export type Attivita =
   | 'forza4'
   | 'go'
   | 'ruota'
+  | 'fortuna'
+  | 'slot'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -1104,6 +1106,9 @@ export interface GeneraleRow {
   perGioco: Record<GiocoClassificato, number>
   /** Quel che ha dato o tolto Crazy Time nel periodo: e' gia' dentro `punti`. */
   ruota: number
+  /** Quel che hanno dato o tolto la slot e il blackjack: anche questo e' gia' dentro `punti`. */
+  slot: number
+  blackjack: number
   /** La parte del Wordle fatta nella stanza di qualcun altro: e' lo spareggio. */
   assist: number
   /** Classificate chiuse nel periodo: una giornata di Wordle conta una. */
@@ -1129,8 +1134,7 @@ export interface OggiRisposta {
   sudoku: SudokuSummary
   battaglia: BattagliaSummary
   quiz: QuizSummary
-  ruota: RuotaSummary
-  /** Come si sta oggi nella classifica generale, con quel che ha dato o tolto Crazy Time. */
+  /** Come si sta oggi nella classifica generale, con quel che hanno dato o tolto i giochi della Fortuna. */
   generale: { posizione: number | null; punti: number; giocatori: number }
 }
 
@@ -1200,7 +1204,7 @@ export interface RuotaStato {
   msToNextPuzzle: number
 }
 
-/** Crazy Time nella schermata iniziale. */
+/** Crazy Time nella scheda della Fortuna. */
 export interface RuotaSummary {
   saldo: number
   netto: number
@@ -1209,6 +1213,63 @@ export interface RuotaSummary {
   stato: 'gioca' | 'sfida'
   /** Lo spicchio dell'ultimo giro, se c'e'. */
   spicchio: number | null
+}
+
+/* ────────────────────────────────  La Fortuna  ──────────────────────────────── */
+
+/** I giochi d'azzardo della scheda Fortuna: puntano tutti lo stesso saldo, i punti fatti oggi. */
+export type GiocoFortuna = 'ruota' | 'slot' | 'blackjack'
+
+/** La scheda della Fortuna in una richiesta: il saldo di oggi, e com'e' andata a ogni gioco. */
+export interface FortunaRisposta {
+  puzzleNumber: number
+  date: string
+  msToNextPuzzle: number
+  /** I punti delle classificate di oggi. */
+  classificate: number
+  /** Quel che si puo' puntare: le classificate piu' quel che i giochi hanno dato o tolto, mai sotto zero. */
+  saldo: number
+  netti: Record<GiocoFortuna, number>
+  giocate: Record<GiocoFortuna, number>
+  ruota: RuotaSummary
+  /** `sfida` se l'ultimo giro della slot aspetta la risposta alla domanda. */
+  slot: { stato: 'gioca' | 'sfida' }
+}
+
+/** Un giro della slot, come lo vede chi gioca: la domanda senza la risposta finché non si risponde. */
+export interface GiroSlot {
+  n: number
+  puntata: number
+  /** Le fermate dei tre rulli: l'indice del simbolo sulla linea (shared/slot.ts, RULLI). */
+  fermate: number[]
+  /** Quante volte la puntata paga la linea: zero se niente. */
+  premio: number
+  /** La tripla di una categoria, se c'e': il suo indice fra quelle del giorno, e la categoria. */
+  tripla: { indice: number; categoria: CategoriaQuiz } | null
+  stato: 'sfida' | 'domanda' | 'fatto'
+  /** Quel che il giro da' o toglie: la vincita meno la puntata, e la domanda se e' vinta. */
+  delta: number
+  /** Quel che paga la domanda, se e' giusta. */
+  vincitaDomanda: number | null
+  domanda: DomandaQuiz | null
+  limiteMs: number | null
+  restanteMs: number | null
+  risposta: RispostaQuiz | null
+}
+
+/** La slot di oggi: il saldo, il conto della slot, le categorie dei rulli e l'ultimo giro. */
+export interface SlotStato {
+  puzzleNumber: number
+  date: string
+  classificate: number
+  saldo: number
+  /** Quel che la slot ha dato o tolto oggi, e in quanti giri. */
+  netto: number
+  giri: number
+  /** Le categorie del giorno, nell'ordine dei simboli dei rulli (shared/ruota.ts, categorieDelGiorno). */
+  categorie: CategoriaQuiz[]
+  giro: GiroSlot | null
+  msToNextPuzzle: number
 }
 
 export interface LeaderboardRow {

@@ -7,12 +7,11 @@ import { Anello, Numero, Sezione } from '@/components/Elementi'
 import { IconChevronRight, IconPlay } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { GIOCHI, GIOCHI_DA_TAVOLO, type Gioco, type GiocoTavolo } from '@/games/catalog'
-import { statiDiOggi, statoRuota, type StatoOggi, type StatoRuota } from '@/games/stato'
+import { statiDiOggi, type StatoOggi } from '@/games/stato'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
 import { gameDate } from '@shared/daily'
-import { NOME_CRAZY_TIME } from '@shared/ruota'
 import type { OggiRisposta } from '@shared/types'
 import './Home.css'
 
@@ -69,15 +68,6 @@ export default function Home() {
               />
             </li>
           ))}
-          {/* Crazy Time viene dopo i giochi: si puntano i punti fatti. */}
-          <li className="entra home__carte-ruota" style={{ '--n': GIOCHI.length } as CSSProperties}>
-            <CartaClassificata
-              id="ruota"
-              nome={NOME_CRAZY_TIME}
-              a={ROTTE.ruota}
-              stato={oggi?.ruota ? statoRuota(oggi.ruota, oggi.puzzleNumber) : null}
-            />
-          </li>
         </ul>
       </Sezione>
 
@@ -151,8 +141,7 @@ function Riepilogo({
 /**
  * La carta di una classificata: la copertina del gioco, a che punto sei, e il
  * bottone. Tutta la carta porta alla partita di oggi, come il bottone: la
- * classificata di tutti i giorni deve stare a un tocco. Crazy Time ha la stessa
- * carta, e porta alla ruota.
+ * classificata di tutti i giorni deve stare a un tocco.
  */
 function CartaClassificata({
   id,
@@ -160,11 +149,11 @@ function CartaClassificata({
   a,
   stato,
 }: {
-  id: Gioco['id'] | 'ruota'
+  id: Gioco['id']
   nome: string
   /** Dove porta finché lo stato non e' arrivato. */
   a: string
-  stato: StatoOggi | StatoRuota | null
+  stato: StatoOggi | null
 }) {
   const fatta = stato?.fase === 'fatta'
   return (

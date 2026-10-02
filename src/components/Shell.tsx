@@ -5,9 +5,12 @@ import { ROTTE } from '@/app/rotte'
 import { GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
 import { usePlayer } from '@/lib/auth'
 import { NOME_CRAZY_TIME } from '@shared/ruota'
+import { NOME_SLOT } from '@shared/slot'
 import { Avatar } from './Avatar'
 import { Copertina } from './Copertina'
 import {
+  IconFortuna,
+  IconFortunaFill,
   IconGames,
   IconGamesFill,
   IconPerson,
@@ -26,11 +29,14 @@ interface Scheda {
   sotto: (percorso: string) => boolean
 }
 
-const PERCORSI_GIOCHI = [
-  ...GIOCHI.map((g) => ROTTE.gioco(g.id)),
-  ROTTE.ruota,
-  ...GIOCHI_DA_TAVOLO.map((g) => `/${g.slug}`),
-]
+const PERCORSI_GIOCHI = [...GIOCHI.map((g) => ROTTE.gioco(g.id)), ...GIOCHI_DA_TAVOLO.map((g) => `/${g.slug}`)]
+
+/** I giochi della Fortuna: si puntano i punti fatti oggi nelle classificate. */
+const GIOCHI_FORTUNA = [
+  { id: 'ruota', nome: NOME_CRAZY_TIME, a: ROTTE.ruota },
+  { id: 'slot', nome: NOME_SLOT, a: ROTTE.slot },
+] as const
+const PERCORSI_FORTUNA = [ROTTE.fortuna, ...GIOCHI_FORTUNA.map((g) => g.a)]
 
 const SCHEDE: Scheda[] = [
   {
@@ -39,6 +45,13 @@ const SCHEDE: Scheda[] = [
     Icona: IconGames,
     IconaPiena: IconGamesFill,
     sotto: (p) => p === '/' || PERCORSI_GIOCHI.some((g) => p === g || p.startsWith(`${g}/`)),
+  },
+  {
+    a: ROTTE.fortuna,
+    nome: 'Fortuna',
+    Icona: IconFortuna,
+    IconaPiena: IconFortunaFill,
+    sotto: (p) => PERCORSI_FORTUNA.some((g) => p === g || p.startsWith(`${g}/`)),
   },
   {
     a: ROTTE.classifica(),
@@ -146,14 +159,24 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
             </Collegamento>
           )
         })}
-        <Collegamento
-          to={ROTTE.ruota}
-          direzione="scheda"
-          className={`laterale__voce laterale__voce--gioco${pathname === ROTTE.ruota ? ' is-attiva' : ''}`}
-        >
-          <Copertina gioco="ruota" formato="icona" />
-          <span>{NOME_CRAZY_TIME}</span>
-        </Collegamento>
+      </nav>
+
+      <p className="laterale__titolo">Fortuna</p>
+      <nav className="laterale__voci">
+        {GIOCHI_FORTUNA.map((g) => {
+          const dentro = pathname === g.a || pathname.startsWith(`${g.a}/`)
+          return (
+            <Collegamento
+              key={g.id}
+              to={g.a}
+              direzione="scheda"
+              className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
+            >
+              <Copertina gioco={g.id} formato="icona" />
+              <span>{g.nome}</span>
+            </Collegamento>
+          )
+        })}
       </nav>
 
       <p className="laterale__titolo">Da tavolo</p>

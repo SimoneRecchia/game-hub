@@ -1,0 +1,80 @@
+/*
+ * Lo strato dei voli (voli.ts): sopra la barra (40) e sotto gli
+ * adesivi (90), che dicono il momento; le fiches e le monete passano loro
+ * dietro, e non si toccano.
+ */
+.ct-voli {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ct-volo {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* Una fiche da casinò: il disco nel suo colore, l'orlo a tacche bianche, l'importo in mezzo. */
+.ct-volo--fiche {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, var(--fiche) 0 54%, transparent 55%),
+    repeating-conic-gradient(#fff 0 14deg, var(--fiche) 14deg 45deg);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(0, 0, 0, 0.28),
+    0 4px 8px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+}
+
+.ct-volo--fiche::after {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(255, 255, 255, 0.75);
+}
+
+/* Persa, la fiche si fa rossa scivolando al banco. */
+.ct-volo--fiche.is-persa {
+  filter: saturate(0.6) brightness(0.85) drop-shadow(0 0 6px rgba(255, 60, 80, 0.8));
+}
+
+.ct-volo--moneta {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #fff6c8, var(--ct-oro) 48%, var(--ct-oro-scuro));
+  box-shadow:
+    inset 0 0 0 2px rgba(120, 70, 0, 0.45),
+    0 0 10px rgba(255, 214, 90, 0.7),
+    0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* L'adesivo di una vincita: d'oro, con la scritta scura, e un alone che luccica. */
+.adesivo.ct-adesivo-vincita .adesivo__carta {
+  background: linear-gradient(155deg, var(--ct-oro-chiaro), var(--ct-oro) 52%, var(--ct-oro-scuro));
+  color: #3d2300;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 44px rgba(255, 210, 80, 0.7),
+    var(--shadow-lg);
+}
+
+.adesivo.ct-adesivo-vincita .adesivo__titolo,
+.adesivo.ct-adesivo-vincita .adesivo__sotto {
+  color: #3d2300;
+}

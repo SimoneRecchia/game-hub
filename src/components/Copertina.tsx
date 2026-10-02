@@ -4,8 +4,8 @@ import './Copertina.css'
 
 type Formato = 'icona' | 'carta' | 'eroe'
 
-/** Un gioco, la classifica generale o la ruota del giorno. */
-type Soggetto = GiocoClassificato | GiocoDaTavolo | 'generale' | 'ruota'
+/** Un gioco, la classifica generale, i giochi della Fortuna o la Fortuna stessa. */
+type Soggetto = GiocoClassificato | GiocoDaTavolo | 'generale' | 'ruota' | 'slot' | 'fortuna'
 
 interface Props {
   gioco: Soggetto
@@ -475,6 +475,43 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
       <circle cx={60} cy={62} r={40} fill="none" stroke="#fff" strokeWidth={3.5} />
       <circle cx={60} cy={62} r={10.5} fill="var(--c2)" stroke="#fff" strokeWidth={3} />
       <path d="M51 12h18l-9 17z" fill="#fff" stroke="var(--c2)" strokeWidth={1.6} strokeLinejoin="round" />
+    </g>
+  ),
+
+  // La slot: il mobile con l'insegna, i tre sette nella finestra dei rulli, il vassoio e la leva.
+  slot: (
+    <g fontFamily={TONDO} fontWeight={900}>
+      <rect x={26} y={92} width={60} height={6} rx={3} fill="#000" fillOpacity={0.14} />
+      <rect x={30} y={16} width={52} height={15} rx={7.5} fill="#fff" fillOpacity={0.55} />
+      <rect x={22} y={30} width={68} height={62} rx={11} fill="#fff" fillOpacity={0.95} />
+      <rect x={29} y={40} width={54} height={30} rx={6} fill="var(--c2)" />
+      <path d="M47 41v28M65 41v28" stroke="#fff" strokeOpacity={0.35} strokeWidth={1.5} />
+      {[38, 56, 74].map((x) => (
+        <text key={x} x={x} y={63} textAnchor="middle" fontSize={20} fill="#fff">
+          7
+        </text>
+      ))}
+      <rect x={34} y={78} width={44} height={7} rx={3.5} fill="var(--c2)" fillOpacity={0.45} />
+      <rect x={88} y={56} width={7} height={14} rx={3} fill="#fff" fillOpacity={0.8} />
+      <path d="M92 62 L101 30" stroke="#fff" strokeWidth={4} strokeLinecap="round" />
+      <circle cx={101} cy={27} r={7} fill="#fff" />
+    </g>
+  ),
+
+  // La Fortuna: un quadrifoglio, quattro foglie a cuore intorno al centro, e il gambo.
+  fortuna: (
+    <g>
+      {[0, 90, 180, 270].map((g) => (
+        <path
+          key={g}
+          d="M60 58C50 50 40 40 46 29c4.6-8.7 14-5.6 14 1.6 0-7.2 9.4-10.3 14-1.6 6 11-4 21-14 29Z"
+          fill="#fff"
+          fillOpacity={g % 180 === 0 ? 0.95 : 0.75}
+          transform={`rotate(${g} 60 60)`}
+        />
+      ))}
+      <circle cx={60} cy={60} r={4.5} fill="var(--c2)" fillOpacity={0.5} />
+      <path d="M64 64c8 11 12 22 11 34" stroke="#fff" strokeWidth={5} strokeLinecap="round" fill="none" />
     </g>
   ),
 
