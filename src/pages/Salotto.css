@@ -1,0 +1,305 @@
+/* ─────────────────────────  Chi c'e'  ───────────────────────── */
+
+/* L'eroe del Salotto (Vetrina.css): gli amici online, in fila, con quel che fanno. */
+.chi-ce {
+  min-height: 176px;
+}
+
+.chi-ce__punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+  animation: chi-ce-respira 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes chi-ce-respira {
+  50% {
+    box-shadow: 0 0 0 5px rgba(74, 222, 128, 0.25);
+  }
+}
+
+.chi-ce__amici {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chi-ce__amici > li {
+  min-width: 0;
+  animation: chi-ce-arriva 560ms var(--ease-spring) both;
+  animation-delay: calc(160ms + var(--n, 0) * 70ms);
+}
+
+@keyframes chi-ce-arriva {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.85);
+  }
+}
+
+.chi-ce__amico {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: var(--sp-2) 2px;
+  border-radius: var(--r-lg);
+  color: #fff;
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+.chi-ce__amico:active {
+  transform: scale(0.92);
+}
+
+@media (hover: hover) {
+  .chi-ce__amico:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+}
+
+.chi-ce__avatar {
+  position: relative;
+  display: inline-grid;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.55),
+    0 8px 18px rgba(120, 30, 60, 0.3);
+}
+
+.chi-ce__online {
+  position: absolute;
+  right: 0;
+  bottom: 1px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2.5px #fff;
+}
+
+.chi-ce__nome {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  font-weight: 800;
+}
+
+.chi-ce__dove {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-2);
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.chi-ce__altri {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+}
+
+.chi-ce__vuoto {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  justify-self: center;
+}
+
+.chi-ce__nessuno {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: auto;
+}
+
+.chi-ce__titolo {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+
+.chi-ce__sotto {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+/* ─────────────────────────  Le partite in corso  ───────────────────────── */
+
+.salotto__in-corso {
+  display: grid;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.in-corso {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 64px;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--label);
+  transition: transform var(--dur-base) var(--ease-spring);
+}
+
+.in-corso:active {
+  transform: scale(0.98);
+}
+
+.in-corso .copertina {
+  --lato: 40px;
+  flex: none;
+}
+
+.in-corso__testo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.in-corso__nome {
+  font-weight: 700;
+}
+
+.in-corso__con {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.in-corso__turno {
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--salotto) 15%, transparent);
+  color: var(--salotto);
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.in-corso__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+}
+
+/* ─────────────────────────  Le tessere  ───────────────────────── */
+
+/*
+ * Le libere e i giochi da tavolo, una tessera ciascuno: la copertina e il
+ * nome, su un fondo appena tinto del colore del gioco. Tre per riga sul
+ * telefono, di piu' dove c'e' posto; le colonne sono `minmax(0, 1fr)`, perché
+ * "Battaglia navale" non allarghi la sua. Sotto il dito o il puntatore la
+ * copertina galleggia un poco: e' il Salotto, si gioca senza fretta.
+ */
+.salotto__tessere {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 560px) {
+  .salotto__tessere {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .salotto__tessere {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.salotto-tessera {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 100%;
+  padding: var(--sp-4) var(--sp-2) var(--sp-3);
+  border-radius: 26px;
+  background:
+    radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--c1) 18%, transparent), transparent 70%),
+    var(--surface);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 20%, transparent);
+  color: var(--label);
+  text-align: center;
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+.salotto-tessera:active {
+  transform: scale(0.95);
+}
+
+.salotto-tessera .copertina {
+  --lato: 54px;
+  flex: none;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--c2) 26%, transparent);
+  transition: transform var(--dur-slow) var(--ease-spring);
+}
+
+@media (hover: hover) {
+  .salotto-tessera:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      var(--shadow-md),
+      inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 30%, transparent);
+  }
+
+  .salotto-tessera:hover .copertina {
+    transform: translateY(-3px) rotate(-4deg) scale(1.05);
+  }
+}
+
+.salotto-tessera__nome {
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  line-height: 1.25;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chi-ce__punto,
+  .chi-ce__amici > li {
+    animation: none;
+  }
+}

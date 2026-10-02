@@ -3,9 +3,10 @@ import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Copertina } from '@/components/Copertina'
 import { Numero, Sezione } from '@/components/Elementi'
-import { IconInfo, IconPlay } from '@/components/Icons'
-import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { IconChevronRight, IconInfo, IconPlay } from '@/components/Icons'
+import { BottoneBarra } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
+import { Vetrina } from '@/components/Vetrina'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
 import { statoBlackjack, statoRuota, statoSlot, type StatoRuota } from '@/games/stato'
 import { useDati } from '@/lib/dati'
@@ -30,9 +31,11 @@ const RESA = Math.round(resa(1) * 100)
 /**
  * La scheda della Fortuna: i giochi d'azzardo, che puntano tutti lo stesso
  * saldo — i punti fatti oggi nelle classificate, piu' quel che i giochi hanno
- * gia' dato o tolto. In cima il saldo, e basta: quanto si e' vinto o perso non
- * si dice. Sotto una carta per gioco, e i tavoli del blackjack degli amici
- * online, a cui ci si siede con un tocco.
+ * gia' dato o tolto. E' una sala da gioco, scura in tutti e due i temi
+ * (Vetrina.css). In cima il saldo, e basta: quanto si e' vinto o perso non si
+ * dice, e toccandolo si apre la classifica della Fortuna. Sotto una carta per
+ * gioco, e i tavoli del blackjack degli amici online, a cui ci si siede con un
+ * tocco.
  *
  * I dati arrivano con una richiesta sola (`/api/fortuna`) e restano in memoria,
  * come quelli della schermata iniziale.
@@ -45,9 +48,11 @@ export default function Fortuna() {
     : null
 
   return (
-    <Pagina
+    <Vetrina
+      scheda="fortuna"
       titolo="Fortuna"
       sopra={formatGameDate(dati?.date ?? gameDate())}
+      classifica={ROTTE.classifica('fortuna')}
       azioni={
         <BottoneBarra etichetta="Come funziona" onClick={() => setRegole(true)}>
           <IconInfo size={21} />
@@ -55,6 +60,12 @@ export default function Fortuna() {
       }
     >
       <Saldo dati={dati ?? null} />
+      {dati && dati.saldo < PUNTATA_MINIMA_SLOT && (
+        <Collegamento to={ROTTE.home} direzione="scheda" className="fortuna-vuoto entra">
+          <span>Gioca le classificate di oggi: i loro punti sono il saldo</span>
+          <IconChevronRight size={18} />
+        </Collegamento>
+      )}
 
       <Sezione titolo="I giochi">
         <ul className="fortuna__giochi">
@@ -102,28 +113,33 @@ export default function Fortuna() {
           </section>
         </div>
       </Sheet>
-    </Pagina>
+    </Vetrina>
   )
 }
 
-/** Il saldo di oggi, grande: quel che si puo' puntare adesso. */
+/** Il saldo di oggi, grande: quel che si puo' puntare adesso. Toccandolo si apre la classifica della Fortuna. */
 function Saldo({ dati }: { dati: FortunaRisposta | null }) {
-  const vuoto = dati !== null && dati.saldo < PUNTATA_MINIMA_SLOT
   return (
-    <section className="fortuna-saldo entra" aria-label="Il saldo di oggi">
-      <span className="fortuna-saldo__luci" aria-hidden="true" />
-      <Copertina gioco="fortuna" formato="icona" className="fortuna-saldo__icona" />
-      <p className="fortuna-saldo__etichetta">Saldo</p>
-      <p className="fortuna-saldo__numero u-tabnum">
-        {dati ? <Numero valore={dati.saldo} /> : <span className="scheletro scheletro--riga-corta" />}
-        <span className="fortuna-saldo__unita"> punti</span>
-      </p>
-      {vuoto && (
-        <Collegamento to={ROTTE.home} direzione="scheda" className="fortuna-saldo__vuoto">
-          Gioca le classificate di oggi: i loro punti sono il saldo
-        </Collegamento>
-      )}
-    </section>
+    <Collegamento
+      to={ROTTE.classifica('fortuna')}
+      className="eroe eroe--fortuna saldo-fortuna"
+      aria-label={dati ? `Saldo: ${dati.saldo} punti. La classifica della Fortuna` : 'La classifica della Fortuna'}
+    >
+      <span className="eroe__testa">
+        <span className="eroe__occhiello saldo-fortuna__etichetta">Saldo</span>
+        <span className="eroe__capsula">
+          Classifica
+          <IconChevronRight size={14} />
+        </span>
+      </span>
+      <span className="saldo-fortuna__riga">
+        <span className="saldo-fortuna__numero u-tabnum">
+          {dati ? <Numero valore={dati.saldo} /> : <span className="scheletro scheletro--riga-corta" />}
+          <span className="saldo-fortuna__unita"> punti</span>
+        </span>
+        <Copertina gioco="fortuna" formato="icona" className="saldo-fortuna__icona" />
+      </span>
+    </Collegamento>
   )
 }
 

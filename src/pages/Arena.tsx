@@ -5,61 +5,43 @@ import { Avatar } from '@/components/Avatar'
 import { Copertina } from '@/components/Copertina'
 import { Anello, Numero, Sezione } from '@/components/Elementi'
 import { IconChevronRight, IconPlay } from '@/components/Icons'
-import { Pagina } from '@/components/Pagina'
-import { GIOCHI, GIOCHI_DA_TAVOLO, type Gioco, type GiocoTavolo } from '@/games/catalog'
+import { Vetrina } from '@/components/Vetrina'
+import { GIOCHI, type Gioco } from '@/games/catalog'
 import { statiDiOggi, type StatoOggi } from '@/games/stato'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
 import { gameDate } from '@shared/daily'
 import type { OggiRisposta } from '@shared/types'
-import './Home.css'
+import './Arena.css'
 
 /**
- * Le partite che non contano: la libera di ogni gioco e i giochi da tavolo, che
- * portano alla scelta della partita. Solo i giochi da tavolo hanno una
- * copertina che si allarga nella pagina dove arrivano: le libere dei sei giochi
- * hanno la stessa copertina delle carte qui sopra, e due nomi uguali
- * fermerebbero la transizione.
- */
-const LIBERE: ReadonlyArray<{ id: Gioco['id'] | GiocoTavolo['id']; nome: string; a: string; transizione?: string }> = [
-  ...GIOCHI.map((g) => ({ id: g.id, nome: g.nome, a: ROTTE.libera(g.id) })),
-  ...GIOCHI_DA_TAVOLO.map((g) => ({ id: g.id, nome: g.nome, a: `/${g.slug}`, transizione: `copertina-${g.id}` })),
-]
-
-/**
- * La schermata iniziale: le classificate di oggi e le partite libere.
- *
- * In cima, com'e' andata la giornata: i punti fatti e la posizione nella
- * classifica generale, e un anello per gioco. Sotto, una carta per ogni
- * classificata, che porta dritta alla partita di oggi: un tocco per giocare. In
- * fondo le partite che non contano, le libere dei sei giochi e i giochi da
- * tavolo insieme, che portano a scegliere la partita.
+ * L'Arena, la scheda principale: le classificate di oggi, che fanno la
+ * classifica. In cima la giornata — dove sei nella generale di oggi, i punti,
+ * chi sta sul podio, e un anello per gioco — che porta alla classifica; sotto
+ * una carta per gioco, che porta dritta alla partita di oggi.
  *
  * I dati arrivano con una richiesta sola (`/api/oggi`), e restano in memoria:
  * tornando qui dalla partita si vedono subito, e si aggiornano da soli.
  */
-export default function Home() {
+export default function Arena() {
   const player = usePlayer()
   const { dati: oggi } = useDati<OggiRisposta>('/oggi')
   const stati = oggi ? statiDiOggi(oggi) : null
 
   return (
-    <Pagina
-      titolo="Giochi"
+    <Vetrina
+      scheda="arena"
+      titolo="Arena"
       sopra={formatGameDate(oggi?.date ?? gameDate())}
-      azioni={
-        <Collegamento to={ROTTE.profilo} direzione="scheda" className="home__io" aria-label="Il tuo profilo">
-          <Avatar nickname={player.nickname} color={player.avatarColor} size={36} />
-        </Collegamento>
-      }
+      classifica={ROTTE.classifica()}
     >
-      <Riepilogo nome={player.displayName} oggi={oggi ?? null} stati={stati} />
+      <Giornata io={player.id} oggi={oggi ?? null} stati={stati} />
 
       <Sezione titolo="Le classificate di oggi">
-        <ul className="home__carte">
+        <ul className="arena__carte">
           {GIOCHI.map((g, i) => (
-            <li key={g.id} className="entra" style={{ '--n': i } as CSSProperties}>
+            <li key={g.id} className="entra" style={{ '--n': i + 1 } as CSSProperties}>
               <CartaClassificata
                 id={g.id}
                 nome={g.nome}
@@ -70,56 +52,62 @@ export default function Home() {
           ))}
         </ul>
       </Sezione>
-
-      <Sezione titolo="Partite libere">
-        <ul className="home__libere">
-          {LIBERE.map((l, i) => (
-            <li key={l.id} className="entra" style={{ '--n': i + GIOCHI.length + 1 } as CSSProperties}>
-              <Collegamento to={l.a} className="libera">
-                <Copertina gioco={l.id} formato="icona" transizione={l.transizione} />
-                <span className="libera__nome">{l.nome}</span>
-              </Collegamento>
-            </li>
-          ))}
-        </ul>
-      </Sezione>
-    </Pagina>
+    </Vetrina>
   )
 }
 
-/** La giornata in una carta: i punti, la posizione, e un anello per gioco. */
-function Riepilogo({
-  nome,
+/**
+ * La giornata in una carta: il posto nella generale di oggi, grande, i punti,
+ * il podio e un anello per gioco. Chi non ha ancora giocato vede i punti, che
+ * sono zero, e l'invito a cominciare.
+ */
+function Giornata({
+  io,
   oggi,
   stati,
 }: {
-  nome: string
+  io: string
   oggi: OggiRisposta | null
   stati: Record<string, StatoOggi> | null
 }) {
   const fatte = stati ? Object.values(stati).filter((s) => s.fase === 'fatta').length : 0
-  const posizione = oggi?.generale.posizione ?? null
+  const generale = oggi?.generale ?? null
+  const posizione = generale?.posizione ?? null
   return (
-    <Collegamento to={ROTTE.classifica()} direzione="scheda" className="riepilogo entra">
-      <Copertina gioco="generale" formato="carta" className="riepilogo__fondo" />
-      <span className="riepilogo__testo">
-        <span className="riepilogo__ciao">Ciao {nome}</span>
-        <span className="riepilogo__punti">
-          <Numero valore={oggi?.generale.punti ?? 0} />
-          <span className="riepilogo__unita"> punti oggi</span>
-        </span>
-        <span className="riepilogo__posto">
-          {!oggi
-            ? ' '
-            : posizione
-              ? `${posizione}º su ${oggi.generale.giocatori} in classifica`
-              : fatte === 0
-                ? 'Non sei ancora in classifica'
-                : 'In classifica fra poco'}
+    <Collegamento to={ROTTE.classifica()} className="eroe eroe--arena giornata">
+      <span className="eroe__testa">
+        <span className="eroe__occhiello">La tua giornata</span>
+        <span className="eroe__capsula">
+          Classifica
+          <IconChevronRight size={14} />
         </span>
       </span>
+
+      <span className="giornata__corpo">
+        <span className="giornata__numeri">
+          <span className="giornata__numero u-tabnum">
+            {posizione ? `${posizione}º` : <Numero valore={generale?.punti ?? 0} />}
+            {posizione && generale && <span className="giornata__su"> su {generale.giocatori}</span>}
+          </span>
+          <span className="giornata__punti">
+            {!generale ? (
+              ' '
+            ) : posizione ? (
+              <>
+                <Numero valore={generale.punti} /> punti oggi
+              </>
+            ) : fatte === 0 ? (
+              'Gioca la prima classificata'
+            ) : (
+              'punti oggi'
+            )}
+          </span>
+        </span>
+        <Podietto podio={generale?.podio ?? []} io={io} />
+      </span>
+
       <span
-        className="riepilogo__anelli"
+        className="giornata__anelli"
         aria-label={`${fatte} classificate su ${GIOCHI.length}`}
         style={{ '--giochi': GIOCHI.length } as CSSProperties}
       >
@@ -132,9 +120,44 @@ function Riepilogo({
             colore={`var(--${g.id}-1)`}
           />
         ))}
+        <span className="giornata__fatte u-tabnum">
+          {fatte}/{GIOCHI.length}
+        </span>
       </span>
-      <IconChevronRight size={20} className="riepilogo__freccia" />
     </Collegamento>
+  )
+}
+
+const ORDINE_PODIO = [1, 0, 2] as const
+
+/** Il podio di oggi, piccolo: il primo al centro e piu' in alto. Vuoto, restano i gradini. */
+function Podietto({ podio, io }: { podio: OggiRisposta['generale']['podio']; io: string }) {
+  const nomi = podio.map((p, i) => `${i + 1}º ${p.displayName}`).join(', ')
+  return (
+    <span className="podietto" role="img" aria-label={podio.length > 0 ? `Il podio di oggi: ${nomi}` : 'Podio vuoto'}>
+      {ORDINE_PODIO.map((i) => {
+        const p = podio[i]
+        return (
+          <span
+            key={i}
+            className={`podietto__posto podietto__posto--${i + 1}${p?.playerId === io ? ' is-io' : ''}`}
+            style={{ '--n': i } as CSSProperties}
+          >
+            {p ? (
+              <Avatar
+                nickname={p.nickname}
+                color={p.avatarColor}
+                size={i === 0 ? 40 : 32}
+                medal={(i + 1) as 1 | 2 | 3}
+              />
+            ) : (
+              <span className="podietto__vuoto" />
+            )}
+            <span className="podietto__gradino">{i + 1}</span>
+          </span>
+        )
+      })}
+    </span>
   )
 }
 
@@ -159,7 +182,7 @@ function CartaClassificata({
   return (
     <Collegamento
       to={stato?.a ?? a}
-      className={`carta carta--${id}${fatta ? ' is-fatta' : ''}`}
+      className={`carta carta--${id}${fatta ? ' is-fatta' : ''}${stato?.fase === 'da-giocare' ? ' is-nuova' : ''}`}
       style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
     >
       <Copertina gioco={id} formato="icona" className="carta__icona" />

@@ -4,7 +4,8 @@
  * Tutto sta su giochi.simonerecchia.com, e ogni indirizzo dice dove si e' con
  * le parole del gioco: il nome del gioco, poi la modalità, poi la partita.
  *
- *   /                                   i giochi, e le classificate di oggi
+ *   /                                   l'Arena: le classificate di oggi
+ *   /salotto                            il Salotto: le libere e i giochi da tavolo, e chi c'e'
  *   /wordle                             porta alla parola di oggi: un gioco non ha una pagina sua
  *   /wordle/classificata                la parola di oggi
  *   /wordle/libera                      una parola a caso
@@ -41,7 +42,8 @@
  *   /classifica/generale                la generale per intero
  *   /classifica/fortuna                 chi ha vinto di piu' ai giochi della Fortuna
  *   /classifica/wordle                  quella di un gioco (?periodo=week&indietro=1)
- *   /profilo
+ *   /profilo                            le impostazioni e gli amici online
+ *   /amici/:nickname                    il profilo di un amico, da cui lo si invita a giocare
  *
  * I vecchi indirizzi — /insieme/..., /battaglia/..., /wordle/3 — portano a
  * quelli nuovi (vedi App.tsx), e i vecchi sottodomini dei giochi portano qui
@@ -78,7 +80,9 @@ export const SLUG_TAVOLIERE: Record<GiocoTavoliere, string> = {
 
 export const ROTTE = {
   home: '/',
+  salotto: '/salotto',
   profilo: '/profilo',
+  amico: (nickname: string) => `/amici/${encodeURIComponent(nickname)}`,
   fortuna: '/fortuna',
   ruota: '/crazy-time',
   slot: '/slot',

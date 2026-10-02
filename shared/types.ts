@@ -439,6 +439,24 @@ export interface GiocatoreBreve {
   avatarColor: string
 }
 
+/** Un amico online, per il profilo e il Salotto: chi e', e dove si trova. */
+export interface AmicoOnline extends GiocatoreBreve {
+  attivita: Attivita
+}
+
+export interface AmiciRisposta {
+  online: AmicoOnline[]
+}
+
+/** Il profilo di un altro giocatore, come lo vede chi lo apre: per invitarlo a giocare. */
+export interface ProfiloAmico extends GiocatoreBreve {
+  /** Quando e' entrato nel gruppo. */
+  createdAt: string
+  online: boolean
+  /** Dove si trova, se e' online. */
+  attivita: Attivita | null
+}
+
 export interface GiocatoreOnline extends GiocatoreBreve {
   attivita: Attivita
   /** In una partita di battaglia navale: non si puo' sfidare. */
@@ -1160,7 +1178,13 @@ export interface OggiRisposta {
   battaglia: BattagliaSummary
   quiz: QuizSummary
   /** Come si sta oggi nella classifica generale, con quel che hanno dato o tolto i giochi della Fortuna. */
-  generale: { posizione: number | null; punti: number; giocatori: number }
+  generale: {
+    posizione: number | null
+    punti: number
+    giocatori: number
+    /** I primi tre di oggi, fra chi ha fatto punti. */
+    podio: Array<GiocatoreBreve & { punti: number }>
+  }
 }
 
 /* ───────────────────────────────  Crazy Time  ──────────────────────────────── */

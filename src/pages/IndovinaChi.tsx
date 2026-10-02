@@ -151,7 +151,7 @@ export default function IndovinaChi() {
   return (
     <Pagina
       titolo="Indovina chi"
-      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+      indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}
       eroe={<Copertina gioco="indovina" formato="eroe" transizione="copertina-indovina" />}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>

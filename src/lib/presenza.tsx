@@ -15,7 +15,7 @@ import { api } from '@/lib/api'
 
 /** Dove si trova il giocatore, dall'indirizzo: e' quel che vedono gli altri nella sala. */
 export function attivitaDa(pathname: string): Attivita {
-  if (pathname === '/') return 'hub'
+  if (pathname === '/' || pathname.startsWith('/salotto')) return 'hub'
   if (pathname.startsWith('/wordle')) return 'wordle'
   if (pathname.startsWith('/scarabeo')) return 'scarabeo'
   if (pathname.startsWith('/cruciverba')) return 'cruciverba'
@@ -32,7 +32,7 @@ export function attivitaDa(pathname: string): Attivita {
   if (pathname.startsWith('/blackjack')) return 'blackjack'
   if (pathname.startsWith('/fortuna')) return 'fortuna'
   if (pathname.startsWith('/classifica')) return 'classifica'
-  if (pathname.startsWith('/profilo')) return 'profilo'
+  if (pathname.startsWith('/profilo') || pathname.startsWith('/amici')) return 'profilo'
   return 'altro'
 }
 

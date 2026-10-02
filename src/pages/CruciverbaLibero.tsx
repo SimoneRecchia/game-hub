@@ -35,7 +35,7 @@ export default function CruciverbaLibero() {
   }, [vai, tentativo])
 
   return (
-    <Pagina titolo="Schema libero" intera indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}>
+    <Pagina titolo="Schema libero" intera indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}>
       {errore ? (
         <Vuoto
           icona={<IconShuffle size={28} />}

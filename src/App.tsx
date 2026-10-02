@@ -10,7 +10,9 @@ import { BattagliaGate } from './games/battaglia/BattagliaGate'
 import { QuizGate } from './games/quiz/sfida/QuizGate'
 import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
-import Home from './pages/Home'
+import Arena from './pages/Arena'
+import Salotto from './pages/Salotto'
+import Amico from './pages/Amico'
 import Classifica from './pages/Classifica'
 import Profilo from './pages/Profilo'
 import Fortuna from './pages/Fortuna'
@@ -128,10 +130,12 @@ export default function App() {
       <Shell>
         <Suspense fallback={null}>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Arena />} />
+            <Route path={ROTTE.salotto} element={<Salotto />} />
             <Route path="/classifica" element={<Classifica />} />
             <Route path="/classifica/:gioco" element={<Classifica />} />
             <Route path="/profilo" element={<Profilo />} />
+            <Route path="/amici/:nickname" element={<Amico />} />
 
             <Route path="/wordle/classificata" element={<Wordle />} />
             <Route path="/wordle/libera" element={<WordleLibero />} />

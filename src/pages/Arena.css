@@ -1,0 +1,332 @@
+/* ─────────────────────────  La giornata  ───────────────────────── */
+
+/*
+ * La carta della giornata e' un eroe dell'Arena (Vetrina.css): qui c'e' il
+ * suo contenuto, il posto grande a sinistra e il podio a destra, gli anelli
+ * sotto. Sta in un contenitore perché anelli e podio si misurano sulla
+ * larghezza della carta: su un telefono piccolo sei anelli da quaranta punti
+ * non ci starebbero.
+ */
+.giornata {
+  container-type: inline-size;
+}
+
+.giornata__corpo {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.giornata__numeri {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.giornata__numero {
+  font-family: var(--font-rounded);
+  font-size: min(var(--text-hero), 17cqw);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: var(--tracking-display);
+  text-shadow: 0 4px 18px rgba(20, 10, 80, 0.35);
+}
+
+.giornata__su {
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  opacity: 0.85;
+}
+
+.giornata__punti {
+  min-height: 1.4em;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  opacity: 0.92;
+}
+
+.giornata__anelli {
+  --spazio: 6px;
+  display: flex;
+  align-items: center;
+  gap: var(--spazio);
+  margin-top: auto;
+}
+
+.giornata__anelli .anello {
+  --lato: min(38px, calc((76cqw - (var(--giochi, 6) - 1) * var(--spazio)) / var(--giochi, 6)));
+  color: #fff;
+  padding: 3px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  width: var(--lato) !important;
+  height: var(--lato) !important;
+}
+
+.giornata__anelli .anello svg {
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+}
+
+.giornata__fatte {
+  margin-left: auto;
+  font-family: var(--font-rounded);
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  opacity: 0.9;
+}
+
+/* ─────────────────────────  Il podio piccolo  ───────────────────────── */
+
+.podietto {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.podietto__posto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  animation: podietto-sale 700ms var(--ease-spring) both;
+  animation-delay: calc(240ms + var(--n) * 90ms);
+}
+
+@keyframes podietto-sale {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+.podietto__posto.is-io .avatar {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 16px rgba(255, 255, 255, 0.8);
+}
+
+.podietto__vuoto {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3);
+}
+
+.podietto__posto--1 .podietto__vuoto {
+  width: 40px;
+  height: 40px;
+}
+
+/* I gradini: d'oro, d'argento e di bronzo, di vetro sopra il blu. */
+.podietto__gradino {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 22px;
+  border-radius: 8px 8px 3px 3px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12));
+  box-shadow: inset 0 1.5px 0 var(--gradino);
+  font-family: var(--font-rounded);
+  font-size: var(--text-caption-1);
+  font-weight: 900;
+}
+
+.podietto__posto--1 .podietto__gradino {
+  --gradino: var(--oro, #f4c430);
+  width: 46px;
+  height: 34px;
+}
+
+.podietto__posto--2 .podietto__gradino {
+  --gradino: var(--argento, #c9d1dc);
+}
+
+.podietto__posto--3 .podietto__gradino {
+  --gradino: var(--bronzo, #d08a4e);
+  height: 16px;
+}
+
+/* ─────────────────────────  Le carte delle classificate  ───────────────────────── */
+
+.arena__carte {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+@media (min-width: 640px) {
+  .arena__carte {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.carta {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  column-gap: var(--sp-4);
+  row-gap: var(--sp-3);
+  height: 100%;
+  min-height: 150px;
+  padding: var(--sp-4);
+  border-radius: 28px;
+  background:
+    radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--c1) 16%, transparent), transparent 60%),
+    var(--surface);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 22%, transparent);
+  color: var(--label);
+  transition:
+    transform var(--dur-base) var(--ease-spring),
+    box-shadow var(--dur-base) var(--ease-out);
+}
+
+/* Il filo nel colore del gioco, sul lato: la gara di ogni gioco ha la sua corsia. */
+.carta::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, var(--c1), var(--c2));
+}
+
+/* Tutta la carta e' il collegamento alla partita: si preme tutta. */
+.carta:active {
+  transform: scale(0.975);
+}
+
+@media (hover: hover) {
+  .carta:hover {
+    transform: translateY(-3px);
+    box-shadow:
+      var(--shadow-md),
+      inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 32%, transparent);
+  }
+}
+
+.carta__icona {
+  --lato: 62px;
+  grid-row: 1 / 3;
+  box-shadow:
+    0 8px 18px color-mix(in srgb, var(--c2) 30%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform var(--dur-slow) var(--ease-spring);
+}
+
+@media (hover: hover) {
+  .carta:hover .carta__icona {
+    transform: rotate(-6deg) scale(1.06);
+  }
+}
+
+.carta__testo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.carta__nome {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+
+.carta__stato {
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--c2) 78%, var(--label));
+}
+
+.carta__dettaglio {
+  font-size: var(--text-footnote);
+  line-height: 1.35;
+  color: var(--label-secondary);
+}
+
+.carta__azione {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.carta__azione .anello {
+  color: var(--label);
+}
+
+.carta__bottone {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--c2) 88%, #000);
+  color: #fff;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  box-shadow: 0 6px 14px color-mix(in srgb, var(--c2) 28%, transparent);
+}
+
+/* Una classificata ancora da giocare chiama: un anello che si allarga dal bottone, ogni tanto. */
+.carta.is-nuova .carta__bottone::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--c1) 70%, transparent);
+  animation: carta-chiama 2.6s var(--ease-out) infinite;
+}
+
+@keyframes carta-chiama {
+  0%,
+  40% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--c1) 60%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 12px color-mix(in srgb, var(--c1) 0%, transparent);
+  }
+}
+
+.carta__bottone.is-rivedi {
+  background: var(--fill-tertiary);
+  color: var(--label);
+  box-shadow: none;
+}
+
+.scheletro--riga {
+  height: 0.95em;
+  width: 58%;
+  border-radius: 6px;
+}
+
+.scheletro--riga-corta {
+  height: 0.8em;
+  width: 82%;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .podietto__posto,
+  .carta.is-nuova .carta__bottone::after {
+    animation: none;
+  }
+}
