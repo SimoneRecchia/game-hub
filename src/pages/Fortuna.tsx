@@ -6,20 +6,23 @@ import { Numero, Sezione } from '@/components/Elementi'
 import { IconInfo, IconPlay } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
-import { statoRuota, statoSlot, type StatoRuota } from '@/games/stato'
+import { TavoliDegliAmici } from '@/games/blackjack/Amici'
+import { statoBlackjack, statoRuota, statoSlot, type StatoRuota } from '@/games/stato'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
+import { NOME_BLACKJACK, PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { gameDate } from '@shared/daily'
-import { NOME_CRAZY_TIME, PUNTATA_MINIMA, conSegno, resa } from '@shared/ruota'
+import { NOME_CRAZY_TIME, PUNTATA_MINIMA, resa } from '@shared/ruota'
 import { NOME_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import type { FortunaRisposta, GiocoFortuna } from '@shared/types'
 import '@/games/cruciverba/ComeSiGioca.css'
 import './Fortuna.css'
 
 /** I giochi della scheda, nell'ordine in cui si vedono. */
-const GIOCHI: ReadonlyArray<{ id: Extract<GiocoFortuna, 'ruota' | 'slot'>; nome: string; a: string }> = [
+const GIOCHI: ReadonlyArray<{ id: GiocoFortuna; nome: string; a: string }> = [
   { id: 'ruota', nome: NOME_CRAZY_TIME, a: ROTTE.ruota },
   { id: 'slot', nome: NOME_SLOT, a: ROTTE.slot },
+  { id: 'blackjack', nome: NOME_BLACKJACK, a: ROTTE.blackjack },
 ]
 
 const RESA = Math.round(resa(1) * 100)
@@ -27,17 +30,18 @@ const RESA = Math.round(resa(1) * 100)
 /**
  * La scheda della Fortuna: i giochi d'azzardo, che puntano tutti lo stesso
  * saldo — i punti fatti oggi nelle classificate, piu' quel che i giochi hanno
- * gia' dato o tolto. In cima il saldo, con da dove viene; sotto una carta per
- * gioco, con com'e' andata oggi e quel che si puo' fare.
+ * gia' dato o tolto. In cima il saldo, e basta: quanto si e' vinto o perso non
+ * si dice. Sotto una carta per gioco, e i tavoli del blackjack degli amici
+ * online, a cui ci si siede con un tocco.
  *
  * I dati arrivano con una richiesta sola (`/api/fortuna`) e restano in memoria,
  * come quelli della schermata iniziale.
  */
 export default function Fortuna() {
-  const { dati } = useDati<FortunaRisposta>('/fortuna')
+  const { dati, ricarica } = useDati<FortunaRisposta>('/fortuna')
   const [regole, setRegole] = useState(false)
-  const stati: Record<string, StatoRuota> | null = dati
-    ? { ruota: statoRuota(dati.ruota, dati.puzzleNumber), slot: statoSlot(dati) }
+  const stati: Record<GiocoFortuna, StatoRuota> | null = dati
+    ? { ruota: statoRuota(dati.ruota, dati.puzzleNumber), slot: statoSlot(dati), blackjack: statoBlackjack(dati) }
     : null
 
   return (
@@ -56,17 +60,17 @@ export default function Fortuna() {
         <ul className="fortuna__giochi">
           {GIOCHI.map((g, i) => (
             <li key={g.id} className="entra" style={{ '--n': i + 1 } as CSSProperties}>
-              <CartaFortuna
-                id={g.id}
-                nome={g.nome}
-                a={g.a}
-                netto={dati?.netti[g.id] ?? null}
-                stato={stati?.[g.id] ?? null}
-              />
+              <CartaFortuna id={g.id} nome={g.nome} a={g.a} stato={stati?.[g.id] ?? null} />
             </li>
           ))}
         </ul>
       </Sezione>
+
+      {dati && dati.blackjack.tavoli.length > 0 && !dati.blackjack.mioTavolo && (
+        <Sezione titolo="Al tavolo">
+          <TavoliDegliAmici tavoli={dati.blackjack.tavoli} onCambio={() => void ricarica()} />
+        </Sezione>
+      )}
 
       <Sheet open={regole} onClose={() => setRegole(false)} title="Come funziona">
         <div className="cru-aiuto">
@@ -83,6 +87,10 @@ export default function Fortuna() {
               <li>
                 <strong>{NOME_SLOT}</strong>: da {PUNTATA_MINIMA_SLOT} a 10 punti a giro.
               </li>
+              <li>
+                <strong>{NOME_BLACKJACK}</strong>: da {PUNTATA_MINIMA_BJ} punti a tutto il saldo, al tavolo con gli
+                amici o da solo.
+              </li>
             </ul>
           </section>
           <section className="cru-aiuto__sezione">
@@ -98,37 +106,18 @@ export default function Fortuna() {
   )
 }
 
-/** Il saldo di oggi, grande, con da dove viene: le classificate, e quel che ha dato o tolto ogni gioco. */
+/** Il saldo di oggi, grande: quel che si puo' puntare adesso. */
 function Saldo({ dati }: { dati: FortunaRisposta | null }) {
-  const voci: Array<[string, number]> = dati
-    ? [
-        ['Classificate', dati.classificate],
-        [NOME_CRAZY_TIME, dati.netti.ruota],
-        [NOME_SLOT, dati.netti.slot],
-      ]
-    : []
   const vuoto = dati !== null && dati.saldo < PUNTATA_MINIMA_SLOT
   return (
     <section className="fortuna-saldo entra" aria-label="Il saldo di oggi">
       <span className="fortuna-saldo__luci" aria-hidden="true" />
       <Copertina gioco="fortuna" formato="icona" className="fortuna-saldo__icona" />
-      <p className="fortuna-saldo__etichetta">Saldo di oggi</p>
+      <p className="fortuna-saldo__etichetta">Saldo</p>
       <p className="fortuna-saldo__numero u-tabnum">
         {dati ? <Numero valore={dati.saldo} /> : <span className="scheletro scheletro--riga-corta" />}
         <span className="fortuna-saldo__unita"> punti</span>
       </p>
-      {dati && (
-        <ul className="fortuna-saldo__voci">
-          {voci.map(([nome, valore], i) => (
-            <li key={nome} className="fortuna-saldo__voce">
-              <span>{nome}</span>
-              <span className={`u-tabnum${i > 0 && valore > 0 ? ' is-piu' : i > 0 && valore < 0 ? ' is-meno' : ''}`}>
-                {i === 0 ? valore : conSegno(valore)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
       {vuoto && (
         <Collegamento to={ROTTE.home} direzione="scheda" className="fortuna-saldo__vuoto">
           Gioca le classificate di oggi: i loro punti sono il saldo
@@ -138,25 +127,12 @@ function Saldo({ dati }: { dati: FortunaRisposta | null }) {
   )
 }
 
-/** La carta di un gioco: la copertina, com'e' andata oggi, e il bottone. Tutta la carta porta al gioco. */
-function CartaFortuna({
-  id,
-  nome,
-  a,
-  netto,
-  stato,
-}: {
-  id: 'ruota' | 'slot'
-  nome: string
-  a: string
-  netto: number | null
-  stato: StatoRuota | null
-}) {
-  const tono = netto !== null && netto > 0 ? ' is-piu' : netto !== null && netto < 0 ? ' is-meno' : ''
+/** La carta di un gioco: la copertina, a che punto e', e il bottone. Tutta la carta porta al gioco. */
+function CartaFortuna({ id, nome, a, stato }: { id: GiocoFortuna; nome: string; a: string; stato: StatoRuota | null }) {
   return (
     <Collegamento
       to={stato?.a ?? a}
-      className={`fortuna-carta fortuna-carta--${id}${tono}`}
+      className={`fortuna-carta fortuna-carta--${id}`}
       style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
     >
       <span className="fortuna-carta__luce" aria-hidden="true" />

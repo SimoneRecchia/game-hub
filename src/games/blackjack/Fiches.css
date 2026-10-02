@@ -1,0 +1,96 @@
+/*
+ * Le fiches del blackjack: il disco nel colore del taglio, l'orlo a tacche
+ * bianche, l'anello tratteggiato e il valore in mezzo. Lo spessore e' un'ombra
+ * secca sotto il disco, come per i tasti: e' quel che fa sembrare una pila una
+ * pila.
+ */
+.bj-fiche {
+  --d: var(--bj-fiche-lato, 36px);
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--d);
+  height: var(--d);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.28), transparent 60%),
+    radial-gradient(circle, var(--fiche) 0 53%, transparent 54%),
+    repeating-conic-gradient(#fff 0 11deg, var(--fiche) 11deg 45deg);
+  box-shadow:
+    inset 0 0 0 calc(var(--d) * 0.035) rgba(0, 0, 0, 0.28),
+    0 calc(var(--d) * 0.07) 0 color-mix(in srgb, var(--fiche) 55%, #000),
+    0 calc(var(--d) * 0.1) calc(var(--d) * 0.14) rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--d) * 0.3);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+}
+
+.bj-fiche::after {
+  content: '';
+  position: absolute;
+  inset: 20%;
+  border-radius: 50%;
+  border: calc(var(--d) * 0.035) dashed rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+.bj-fiche__valore {
+  position: relative;
+  z-index: 1;
+  letter-spacing: -0.02em;
+}
+
+/* La pila: i pezzi uno sull'altro, ognuno un po' piu' su. */
+.bj-pila {
+  --spessore: calc(var(--bj-fiche-lato, 36px) * 0.13);
+  position: relative;
+  display: inline-grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.bj-pila__pezzi {
+  position: relative;
+  display: grid;
+  width: var(--bj-fiche-lato, 36px);
+  height: var(--bj-fiche-lato, 36px);
+}
+
+.bj-pila__fiche {
+  grid-area: 1 / 1;
+  transform: translateY(calc(var(--i) * var(--spessore) * -1));
+  animation: bj-fiche-cade 0.32s cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
+  animation-delay: calc(var(--i) * 45ms);
+}
+
+@keyframes bj-fiche-cade {
+  from {
+    transform: translateY(calc(var(--i) * var(--spessore) * -1 - 18px)) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.bj-pila__targhetta {
+  min-width: 2.4em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(8, 20, 12, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(242, 210, 122, 0.45);
+  color: var(--bj-scritta);
+  font-family: var(--font-rounded);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bj-pila__fiche {
+    animation: none;
+  }
+}

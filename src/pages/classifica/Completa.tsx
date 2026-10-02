@@ -13,20 +13,21 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
-import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
-import type { GiocoClassificato, LeaderboardScope } from '@shared/types'
+import { conSegno } from '@shared/ruota'
+import type { GiocoClassificato, GiocoFortuna, LeaderboardScope } from '@shared/types'
 import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
-import { NOMI_CLASSIFICHE, ORDINE_GIOCHI, vociDi, type Risposta, type Voce } from './voci'
+import { GIOCHI_FORTUNA, NOMI_CLASSIFICHE, ORDINE_GIOCHI, vociDi, type Risposta, type Voce } from './voci'
 
 const LEDE: Record<ChiaveClassifica, string> = {
-  generale: 'Tutte le classificate, fino a 100 punti ciascuna, e Crazy Time.',
+  generale: 'Tutte le classificate, fino a 100 punti ciascuna, e i giochi della Fortuna.',
   wordle: '100 punti al primo tentativo, 50 al sesto.',
   scarabeo: 'Pareggiare il computer vale 100 punti.',
   cruciverba: '100 punti se lo completi senza aiuti.',
   sudoku: '100 punti se lo risolvi senza aiuti.',
   battaglia: 'Meno colpi, più punti.',
   quiz: '20 punti per aver giocato, 8 per ogni risposta giusta.',
+  fortuna: 'Quel che Crazy Time, la slot e il blackjack hanno dato o tolto.',
 }
 
 /**
@@ -96,7 +97,10 @@ export function Completa({
           titolo={periodo.scope === 'today' && periodo.indietro === 0 ? 'Ancora nessuno oggi' : 'Nessuno ha giocato'}
           azione={
             chiave !== 'generale' && comprendeOggi(periodo, oggi) ? (
-              <Button variant="tinted" onClick={() => vai(ROTTE.classificata(chiave))}>
+              <Button
+                variant="tinted"
+                onClick={() => vai(chiave === 'fortuna' ? ROTTE.fortuna : ROTTE.classificata(chiave))}
+              >
                 Gioca
               </Button>
             ) : undefined
@@ -162,6 +166,7 @@ function Podio({ voci, meId, onApri }: { voci: Voce[]; meId: string; onApri: (v:
             <Avatar nickname={v.nickname} color={v.avatarColor} size={posto === 1 ? 64 : 50} medal={posto} />
             <span className="cl-podio__nome">{v.displayName}</span>
             <span className="cl-podio__punti">
+              {v.conSegno && v.punti > 0 && '+'}
               <Numero valore={v.punti} />
             </span>
             <span className="cl-podio__breve">{v.breve}</span>
@@ -202,13 +207,15 @@ function RigaVoce({
             {io && <span className="cl-tu">tu</span>}
           </span>
           {voce.composizione && voce.punti > 0 ? (
-            <BarraGiochi punti={voce.composizione} ruota={voce.ruota ?? 0} totale={voce.punti} inCima={inCima} />
+            <BarraGiochi punti={voce.composizione} fortuna={voce.fortuna} totale={voce.punti} inCima={inCima} />
           ) : (
             <span className="cl-riga__sotto">{voce.sotto}</span>
           )}
         </span>
         {voce.segni}
-        <span className="cl-riga__punti u-tabnum">{formatNumber(voce.punti)}</span>
+        <span className="cl-riga__punti u-tabnum">
+          {voce.conSegno ? conSegno(voce.punti) : formatNumber(voce.punti)}
+        </span>
       </button>
     </li>
   )
@@ -217,35 +224,43 @@ function RigaVoce({
 /**
  * Di che cosa e' fatto un totale della generale: un tratto per gioco, nel suo
  * colore, lungo quanto i suoi punti. La barra intera e' lunga quanto il totale
- * in rapporto al primo, così si vede anche quanto manca. Quel che ha dato
- * Crazy Time e' un tratto in fondo; quel che ha tolto accorcia la barra, che e'
- * lunga quanto il totale.
+ * in rapporto al primo, così si vede anche quanto manca. Quel che hanno dato i
+ * giochi della Fortuna sono tratti in fondo; quel che hanno tolto accorcia la
+ * barra, che e' lunga quanto il totale.
  */
 function BarraGiochi({
   punti,
-  ruota,
+  fortuna,
   totale,
   inCima,
 }: {
   punti: Record<GiocoClassificato, number>
-  ruota: number
+  fortuna?: Record<GiocoFortuna, number>
   totale: number
   inCima: number
 }) {
   const lunghezza = inCima > 0 ? Math.max(6, (100 * totale) / inCima) : 100
   const giochi = ORDINE_GIOCHI.filter((g) => punti[g] > 0)
-  const voci = giochi.map((g) => `${NOMI_CLASSIFICHE[g]} ${punti[g]}`)
+  const azzardo = GIOCHI_FORTUNA.filter(([g]) => (fortuna?.[g] ?? 0) !== 0)
+  const voci = [
+    ...giochi.map((g) => `${NOMI_CLASSIFICHE[g]} ${punti[g]}`),
+    ...azzardo.map(([g, nome]) => `${nome} ${conSegno(fortuna![g])}`),
+  ]
   return (
     <span
       className="cl-barra"
       style={{ '--lunghezza': `${lunghezza}%` } as CSSProperties}
       role="img"
-      aria-label={[...voci, ...(ruota !== 0 ? [`${NOME_CRAZY_TIME} ${conSegno(ruota)}`] : [])].join(', ')}
+      aria-label={voci.join(', ')}
     >
       {giochi.map((g) => (
         <span key={g} className="cl-barra__tratto" style={{ flexGrow: punti[g], background: `var(--${g}-1)` }} />
       ))}
-      {ruota > 0 && <span className="cl-barra__tratto" style={{ flexGrow: ruota, background: 'var(--ruota-2)' }} />}
+      {azzardo
+        .filter(([g]) => fortuna![g] > 0)
+        .map(([g]) => (
+          <span key={g} className="cl-barra__tratto" style={{ flexGrow: fortuna![g], background: `var(--${g}-2)` }} />
+        ))}
     </span>
   )
 }

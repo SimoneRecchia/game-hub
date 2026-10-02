@@ -93,45 +93,6 @@
   font-weight: 800;
 }
 
-.fortuna-saldo__voci {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-2);
-  margin: var(--sp-3) 0 0;
-  padding: var(--sp-3) 0 0;
-  list-style: none;
-  border-top: 1px solid rgba(244, 196, 48, 0.25);
-}
-
-.fortuna-saldo__voce {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-  font-size: var(--text-caption-1);
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.fortuna-saldo__voce > span:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.fortuna-saldo__voce > span:last-child {
-  font-family: var(--font-rounded);
-  font-size: var(--text-headline);
-  font-weight: 900;
-  color: #fff;
-}
-
-.fortuna-saldo__voce .is-piu {
-  color: var(--ct-piu);
-}
-
-.fortuna-saldo__voce .is-meno {
-  color: var(--ct-meno);
-}
-
 .fortuna-saldo__vuoto {
   margin-top: var(--sp-3);
   padding: 10px 14px;
@@ -196,6 +157,10 @@
 
 .fortuna-carta--slot .fortuna-carta__luce {
   animation-delay: 1.2s;
+}
+
+.fortuna-carta--blackjack .fortuna-carta__luce {
+  animation-delay: 2.4s;
 }
 
 @keyframes fortuna-riflesso {

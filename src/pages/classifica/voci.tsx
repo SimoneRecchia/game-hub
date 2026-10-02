@@ -4,12 +4,16 @@ import { IconFlame, IconPeople } from '@/components/Icons'
 import type { ChiaveClassifica } from '@/games/classifiche'
 import { formatDuration, formatNumber, formatPercent } from '@/lib/format'
 import { DOMANDE_PER_PARTITA } from '@shared/quiz'
+import { NOME_BLACKJACK } from '@shared/blackjack'
 import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
+import { NOME_SLOT } from '@shared/slot'
 import type {
   BattagliaLeaderboard,
   CruciverbaLeaderboard,
+  FortunaLeaderboard,
   GeneraleLeaderboard,
   GiocoClassificato,
+  GiocoFortuna,
   LeaderboardResponse,
   QuizLeaderboard,
   ScarabeoLeaderboard,
@@ -30,6 +34,7 @@ export type Risposta =
   | SudokuLeaderboard
   | BattagliaLeaderboard
   | QuizLeaderboard
+  | FortunaLeaderboard
 
 export interface Voce {
   rank: number
@@ -46,9 +51,11 @@ export interface Voce {
   segni?: ReactNode
   /** Nella generale, i punti di ogni gioco: la barra sotto il nome. */
   composizione?: Record<GiocoClassificato, number>
-  /** Nella generale, quel che ha dato o tolto Crazy Time: e' gia' nei punti. */
-  ruota?: number
-  dettaglio: { etichetta: string; valore: string; forte?: boolean; gioco?: GiocoClassificato | 'ruota' }[]
+  /** Nella generale, quel che hanno dato o tolto i giochi della Fortuna: e' gia' nei punti. */
+  fortuna?: Record<GiocoFortuna, number>
+  /** I punti si leggono con il segno: nella Fortuna si puo' andare sotto zero. */
+  conSegno?: boolean
+  dettaglio: { etichetta: string; valore: string; forte?: boolean; gioco?: GiocoClassificato | GiocoFortuna }[]
   nota?: string
 }
 
@@ -60,7 +67,15 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   sudoku: 'Sudoku',
   battaglia: 'Battaglia navale',
   quiz: 'Quiz',
+  fortuna: 'Fortuna',
 }
+
+/** I giochi della Fortuna, nell'ordine in cui si mostrano, con il loro nome. */
+export const GIOCHI_FORTUNA: ReadonlyArray<[GiocoFortuna, string]> = [
+  ['ruota', NOME_CRAZY_TIME],
+  ['slot', NOME_SLOT],
+  ['blackjack', NOME_BLACKJACK],
+]
 
 /** I giochi, nell'ordine in cui si mostrano. */
 export const ORDINE_GIOCHI: GiocoClassificato[] = ['wordle', 'scarabeo', 'cruciverba', 'sudoku', 'battaglia', 'quiz']
@@ -93,7 +108,7 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
               : `${partite(r.partite)} · ${giochi} ${giochi === 1 ? 'gioco' : 'giochi'}`,
           breve: partite(r.partite),
           composizione: r.perGioco,
-          ruota: r.ruota,
+          fortuna: { ruota: r.ruota, slot: r.slot, blackjack: r.blackjack },
           segni:
             r.assist > 0 ? (
               <span className="cl-segno" title={`${r.assist} punti in compagnia`}>
@@ -103,12 +118,33 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             ) : undefined,
           dettaglio: [
             ...ORDINE_GIOCHI.map((g) => ({ etichetta: NOMI_CLASSIFICHE[g], valore: formatNumber(r.perGioco[g]), gioco: g })),
-            ...(r.ruota !== 0
-              ? [{ etichetta: NOME_CRAZY_TIME, valore: conSegno(r.ruota), gioco: 'ruota' as const }]
-              : []),
+            ...GIOCHI_FORTUNA.filter(([g]) => r[g] !== 0).map(([g, nome]) => ({
+              etichetta: nome,
+              valore: conSegno(r[g]),
+              gioco: g,
+            })),
             { etichetta: 'Totale', valore: formatNumber(r.punti), forte: true },
             ...(r.assist > 0 ? [{ etichetta: 'Di cui in compagnia', valore: formatNumber(r.assist) }] : []),
             { etichetta: 'Partite classificate', valore: formatNumber(r.partite) },
+          ],
+        }
+      })
+
+    case 'fortuna':
+      return (risposta as FortunaLeaderboard).rows.map((r) => {
+        const giocate = `${formatNumber(r.giocate)} ${r.giocate === 1 ? 'giocata' : 'giocate'}`
+        const conti = GIOCHI_FORTUNA.filter(([g]) => r.netti[g] !== 0).map(
+          ([g, nome]) => `${nome} ${conSegno(r.netti[g])}`,
+        )
+        return {
+          ...r,
+          conSegno: true,
+          sotto: [...conti, giocate].join(' · '),
+          breve: giocate,
+          dettaglio: [
+            ...GIOCHI_FORTUNA.map(([g, nome]) => ({ etichetta: nome, valore: conSegno(r.netti[g]), gioco: g })),
+            { etichetta: 'Totale', valore: conSegno(r.punti), forte: true },
+            { etichetta: 'Giocate', valore: formatNumber(r.giocate) },
           ],
         }
       })

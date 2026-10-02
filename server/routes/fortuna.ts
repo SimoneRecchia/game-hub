@@ -6,6 +6,7 @@ import { saldoDi } from '../lib/fortuna'
 import { requireVerified } from '../lib/session'
 import { riepilogoRuota } from '../lib/ruotaStore'
 import { riepilogoSlot } from '../lib/slotStore'
+import { riepilogoBlackjack } from '../lib/blackjackStore'
 import { today } from '../lib/wordleStore'
 
 /**
@@ -16,7 +17,11 @@ export const fortunaRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/
   const db = c.env.DB
   const io = c.get('player').id
   const quando = today()
-  const [saldo, slot] = await Promise.all([saldoDi(db, io, quando.puzzleNumber), riepilogoSlot(db, io)])
+  const [saldo, slot, blackjack] = await Promise.all([
+    saldoDi(db, io, quando.puzzleNumber),
+    riepilogoSlot(db, io),
+    riepilogoBlackjack(db, io),
+  ])
   const ruota = await riepilogoRuota(db, io, saldo)
   return c.json<FortunaRisposta>({
     puzzleNumber: quando.puzzleNumber,
@@ -28,5 +33,6 @@ export const fortunaRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/
     giocate: saldo.giocate,
     ruota,
     slot,
+    blackjack,
   })
 })

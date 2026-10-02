@@ -9,8 +9,9 @@
 
 import { CASELLE_FLOTTA } from '@shared/battaglia'
 import { NOMI_CATEGORIE } from '@shared/quiz'
-import { PUNTATA_MINIMA, conSegno, nomeDi, spicchiDelGiorno } from '@shared/ruota'
+import { PUNTATA_MINIMA, nomeDi, spicchiDelGiorno } from '@shared/ruota'
 import { PUNTATA_MASSIMA_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
+import { PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   BattagliaSummary,
@@ -330,8 +331,9 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
 export type StatoRuota = Omit<StatoOggi, 'gioco' | 'punti' | 'avanzamento'> & { avanzamento: number | null }
 
 /**
- * Crazy Time nella schermata iniziale: quel che ha dato o tolto oggi, e quanto
- * si puo' puntare adesso. `numero` e' il giorno, che dice gli spicchi.
+ * Crazy Time nella scheda della Fortuna: quanto si puo' puntare adesso. Quel
+ * che ha dato o tolto oggi non si dice: al tavolo si guarda il saldo. `numero`
+ * e' il giorno, che dice gli spicchi.
  */
 export function statoRuota(s: RuotaSummary, numero: number): StatoRuota {
   const a = ROTTE.ruota
@@ -340,11 +342,10 @@ export function statoRuota(s: RuotaSummary, numero: number): StatoRuota {
     const dettaglio = spicchio ? nomeDi(spicchio) : ''
     return { fase: 'in-corso', titolo: 'Sfida in corso', dettaglio, avanzamento: null, azione: 'Continua', a }
   }
-  const conto = `Oggi ${conSegno(s.netto)} in ${s.giri} ${s.giri === 1 ? 'giro' : 'giri'}`
   if (s.saldo < PUNTATA_MINIMA) {
     return {
       fase: 'non-pronta',
-      titolo: s.giri > 0 ? conto : 'Prima le classificate',
+      titolo: 'Prima le classificate',
       dettaglio: `Servono ${PUNTATA_MINIMA} punti di oggi`,
       avanzamento: s.giri > 0 ? null : Math.max(0, s.saldo) / PUNTATA_MINIMA,
       azione: '',
@@ -353,7 +354,7 @@ export function statoRuota(s: RuotaSummary, numero: number): StatoRuota {
   }
   return {
     fase: 'da-giocare',
-    titolo: s.giri > 0 ? conto : 'Da girare',
+    titolo: 'Da girare',
     dettaglio: `Puoi puntare fino a ${s.saldo} punti`,
     avanzamento: null,
     azione: 'Gira',
@@ -361,21 +362,16 @@ export function statoRuota(s: RuotaSummary, numero: number): StatoRuota {
   }
 }
 
-/**
- * La slot nella scheda della Fortuna: quel che ha dato o tolto oggi, e quanto si
- * puo' puntare adesso. Una domanda in sospeso si riprende dalla slot.
- */
+/** La slot nella scheda della Fortuna: quanto si puo' puntare adesso. Una domanda in sospeso si riprende dalla slot. */
 export function statoSlot(s: FortunaRisposta): StatoRuota {
   const a = ROTTE.slot
   if (s.slot.stato === 'sfida') {
     return { fase: 'in-corso', titolo: 'Domanda in sospeso', dettaglio: '', avanzamento: null, azione: 'Continua', a }
   }
-  const giri = s.giocate.slot
-  const conto = `Oggi ${conSegno(s.netti.slot)} in ${giri} ${giri === 1 ? 'giro' : 'giri'}`
   if (s.saldo < PUNTATA_MINIMA_SLOT) {
     return {
       fase: 'non-pronta',
-      titolo: giri > 0 ? conto : 'Prima le classificate',
+      titolo: 'Prima le classificate',
       dettaglio: `Serve ${PUNTATA_MINIMA_SLOT} punto di oggi`,
       avanzamento: null,
       azione: '',
@@ -384,10 +380,53 @@ export function statoSlot(s: FortunaRisposta): StatoRuota {
   }
   return {
     fase: 'da-giocare',
-    titolo: giri > 0 ? conto : 'Da giocare',
+    titolo: 'Da giocare',
     dettaglio: `Puntate da ${PUNTATA_MINIMA_SLOT} a ${Math.min(PUNTATA_MASSIMA_SLOT, s.saldo)} punti`,
     avanzamento: null,
     azione: 'Gioca',
     a,
+  }
+}
+
+/**
+ * Il blackjack nella scheda della Fortuna: il tavolo a cui si e' seduti, o
+ * quelli degli amici, o un tavolo nuovo.
+ */
+export function statoBlackjack(s: FortunaRisposta): StatoRuota {
+  const { mioTavolo, tavoli } = s.blackjack
+  if (mioTavolo) {
+    return {
+      fase: 'in-corso',
+      titolo: 'Al tavolo',
+      dettaglio: '',
+      avanzamento: null,
+      azione: 'Torna al tavolo',
+      a: ROTTE.tavoloBJ(mioTavolo),
+    }
+  }
+  const amici = tavoli.flatMap((t) => t.giocatori.map((g) => g.displayName))
+  const chi =
+    amici.length === 0
+      ? ''
+      : amici.length === 1
+        ? `${amici[0]} è al tavolo`
+        : `${amici.slice(0, 2).join(' e ')} al tavolo`
+  if (s.saldo < PUNTATA_MINIMA_BJ) {
+    return {
+      fase: 'non-pronta',
+      titolo: chi || 'Prima le classificate',
+      dettaglio: `Servono ${PUNTATA_MINIMA_BJ} punti di oggi`,
+      avanzamento: null,
+      azione: '',
+      a: ROTTE.blackjack,
+    }
+  }
+  return {
+    fase: 'da-giocare',
+    titolo: chi || 'Da giocare',
+    dettaglio: `Puntate da ${PUNTATA_MINIMA_BJ} punti`,
+    avanzamento: null,
+    azione: tavoli.length > 0 ? 'Siediti' : 'Gioca',
+    a: ROTTE.blackjack,
   }
 }
