@@ -1,0 +1,63 @@
+/* I tuoi numeri in un gioco, nel foglio che si apre dalla sua classifica. */
+
+.conti {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.conti__gruppo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.conti__titolo {
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.conti__voci {
+  margin: 0;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--fill-quaternary);
+}
+
+.conti__voce {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--text-subhead);
+}
+
+.conti__voce + .conti__voce {
+  box-shadow: inset 0 0.5px 0 var(--separator);
+}
+
+.conti__voce dt {
+  color: var(--label-secondary);
+}
+
+.conti__voce dd {
+  margin: 0;
+  font-weight: 700;
+  color: var(--label);
+  text-align: right;
+}
+
+.conti__attesa {
+  height: 180px;
+  border-radius: var(--r-lg);
+}
+
+.conti__testo {
+  margin-bottom: var(--sp-2);
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+  color: var(--label-secondary);
+}

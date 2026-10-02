@@ -63,6 +63,12 @@ export const COOP_POLL_INBOX_MS = 8_000
  */
 export const PRESENZA_ONLINE_MS = 45_000
 export const PRESENZA_SCRITTURA_MS = 20_000
+/**
+ * Ogni quanto il profilo e il Salotto rileggono chi e' online: fuori dal giro
+ * della presenza, e solo mentre li si guarda. Chi entra si vede entro un
+ * quarto di minuto, che per sapere chi c'e' basta.
+ */
+export const AMICI_POLL_MS = 15_000
 
 /** Quanto aspetta una sfida: chi sfida sta guardando lo schermo, non torna fra un'ora. */
 export const SFIDA_SCADENZA_MS = 120_000

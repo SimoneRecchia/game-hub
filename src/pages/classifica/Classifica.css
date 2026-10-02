@@ -758,6 +758,19 @@
   color: var(--label-secondary);
 }
 
+/* Dal foglio di un altro giocatore, il suo profilo: da li' lo si invita a giocare. */
+.cl-dettaglio__profilo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 700;
+}
+
 /* ─────────────────────────────  Mentre carica  ───────────────────────────── */
 
 .cl-scheletro {

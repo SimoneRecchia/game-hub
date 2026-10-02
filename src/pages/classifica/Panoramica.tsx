@@ -41,7 +41,7 @@ export function Panoramica({ scope, indietro }: { scope: LeaderboardScope; indie
   const a = (chiave: ChiaveClassifica) => indirizzoClassifica(chiave, periodo.scope, periodo.indietro)
 
   return (
-    <Pagina titolo="Classifica">
+    <Pagina titolo="Classifica" indietro={{ a: ROTTE.home, etichetta: 'Arena' }}>
       <SceltaPeriodo scope={scope} indietro={indietro} onCambia={cambia} />
 
       {errore && !mostrati ? (

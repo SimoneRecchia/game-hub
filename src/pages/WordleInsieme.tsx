@@ -162,7 +162,7 @@ export default function WordleInsieme() {
     <Pagina
       titolo={titolo}
       intera
-      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Arena' }}
       azioni={view && <Avatar nickname={view.hostName} color={view.hostAvatarColor} size={32} />}
     >
       <div className="insieme">

@@ -1,12 +1,12 @@
 import { useState, type CSSProperties } from 'react'
-import { useNavigazione } from '@/app/navigazione'
+import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Copertina } from '@/components/Copertina'
 import { Numero, Vuoto } from '@/components/Elementi'
-import { IconTrophy } from '@/components/Icons'
-import { Pagina } from '@/components/Pagina'
+import { IconChart, IconChevronRight, IconTrophy } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
 import { indirizzoClassifica, percorsoClassifica, type ChiaveClassifica } from '@/games/classifiche'
 import { usePlayer } from '@/lib/auth'
@@ -15,6 +15,7 @@ import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
 import { conSegno } from '@shared/ruota'
 import type { GiocoClassificato, GiocoFortuna, LeaderboardScope } from '@shared/types'
+import { ContiDi } from './Conti'
 import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
 import { GIOCHI_FORTUNA, NOMI_CLASSIFICHE, ORDINE_GIOCHI, vociDi, type Risposta, type Voce } from './voci'
@@ -49,6 +50,9 @@ export function Completa({
   const { dati, errore, ricarica } = useDati<Risposta>(percorsoClassifica(chiave, scope, indietro))
   const { mostrati, vecchi } = useUltimi(dati)
   const [aperta, setAperta] = useState<Voce | null>(null)
+  const [conti, setConti] = useState(false)
+  // I conti di ogni gioco, classificate e libere: sono le statistiche di chi guarda, e stanno con la sua classifica.
+  const gioco: GiocoClassificato | null = chiave === 'generale' || chiave === 'fortuna' ? null : chiave
 
   const cambia = (s: LeaderboardScope, i: number) =>
     vai(indirizzoClassifica(chiave, s, i), { replace: true, direzione: 'nessuna' })
@@ -71,6 +75,13 @@ export function Completa({
       sopra="Classifica"
       sotto={LEDE[chiave]}
       indietro={{ a: indirizzoClassifica(null, scope, indietro), etichetta: 'Classifica' }}
+      azioni={
+        gioco && (
+          <BottoneBarra etichetta="I tuoi numeri" onClick={() => setConti(true)}>
+            <IconChart size={20} />
+          </BottoneBarra>
+        )
+      }
     >
       <SceltaPeriodo scope={scope} indietro={indietro} onCambia={cambia} />
 
@@ -128,8 +139,14 @@ export function Completa({
       )}
 
       <Sheet open={aperta !== null} onClose={() => setAperta(null)} title={aperta?.displayName}>
-        {aperta && <Dettaglio voce={aperta} />}
+        {aperta && <Dettaglio voce={aperta} io={aperta.playerId === me.id} />}
       </Sheet>
+
+      {gioco && (
+        <Sheet open={conti} onClose={() => setConti(false)} title="I tuoi numeri">
+          {conti && <ContiDi gioco={gioco} />}
+        </Sheet>
+      )}
     </Pagina>
   )
 }
@@ -265,7 +282,7 @@ function BarraGiochi({
   )
 }
 
-function Dettaglio({ voce }: { voce: Voce }) {
+function Dettaglio({ voce, io }: { voce: Voce; io: boolean }) {
   return (
     <div className="cl-dettaglio">
       <div className="cl-dettaglio__testa">
@@ -287,6 +304,12 @@ function Dettaglio({ voce }: { voce: Voce }) {
         ))}
       </dl>
       {voce.nota && <p className="cl-dettaglio__nota">{voce.nota}</p>}
+      {!io && (
+        <Collegamento to={ROTTE.amico(voce.nickname)} stato={{ da: 'Classifica' }} className="cl-dettaglio__profilo">
+          Il profilo di {voce.displayName}
+          <IconChevronRight size={16} />
+        </Collegamento>
+      )}
     </div>
   )
 }
