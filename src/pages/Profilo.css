@@ -1,5 +1,5 @@
 /*
- * Il profilo: chi sei, come stai andando, le impostazioni.
+ * Il profilo: chi sei, gli amici online, le impostazioni.
  */
 
 .profilo-testa {
@@ -27,47 +27,45 @@
   color: var(--label-secondary);
 }
 
-/* Tre tessere di numeri, come i riepiloghi di Salute. */
-.profilo-numeri {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-2);
+/* Gli amici online: una riga ciascuno, con il punto verde sull'avatar, che non vuole il quadratino colorato. */
+.riga__icona:has(.profilo-amici__avatar) {
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: none;
 }
 
-.profilo-tessera {
+.profilo-amici__avatar {
+  position: relative;
+  display: inline-grid;
+}
+
+.profilo-amici__online {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.profilo-amici__nessuno {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
-  border-radius: var(--r-xl);
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
-}
-
-.profilo-tessera__etichetta {
-  font-size: var(--text-caption-1);
-  font-weight: 600;
+  box-shadow: var(--shadow-sm);
   color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  font-weight: 600;
 }
 
-.profilo-tessera__valore {
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: var(--tracking-tight);
-  color: var(--label);
-}
-
-.profilo-tessera__nota {
-  font-size: var(--text-caption-2);
-  color: var(--label-tertiary);
-}
-
-.profilo__punti {
-  font-family: var(--font-rounded);
-  font-weight: 800;
-  color: var(--label);
+.profilo-amici__attesa {
+  height: 64px;
 }
 
 .profilo__email {
@@ -84,63 +82,6 @@
   font-size: var(--text-subhead);
   line-height: 1.45;
   color: var(--label-secondary);
-}
-
-/* ---------- I conti di un gioco, nel foglio ---------- */
-
-.profilo-sheet {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-5);
-}
-
-.profilo-conti {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-
-.profilo-conti__titolo {
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--label-tertiary);
-}
-
-.profilo-conti__voci {
-  margin: 0;
-  overflow: hidden;
-  border-radius: var(--r-lg);
-  background: var(--fill-quaternary);
-}
-
-.profilo-conti__voce {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
-  font-size: var(--text-subhead);
-}
-
-.profilo-conti__voce + .profilo-conti__voce {
-  box-shadow: inset 0 0.5px 0 var(--separator);
-}
-
-.profilo-conti__voce dt {
-  color: var(--label-secondary);
-}
-
-.profilo-conti__voce dd {
-  margin: 0;
-  font-weight: 700;
-  color: var(--label);
-  text-align: right;
-}
-
-.profilo-conti__attesa {
-  height: 180px;
-  border-radius: var(--r-lg);
 }
 
 /* ---------- Fonti ---------- */

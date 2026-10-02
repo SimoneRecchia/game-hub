@@ -262,6 +262,22 @@
   --blackjack-1: #1fa463;
   --blackjack-2: #0b4f30;
 
+  /* ---- Le tre schede ----
+     Ognuna ha il suo colore, per l'icona accesa nella barra, la lente sotto e
+     la luce in cima alla pagina: l'Arena l'indaco della generale, perché e' la
+     sua gara; il Salotto il pesca e il rosa di una lampada accesa; la Fortuna il
+     verde del quadrifoglio. Dicono dove si e', non che cosa si e' scelto. */
+  --arena-1: #6d5fff;
+  --arena-2: #3d2fc4;
+  --arena: #5546ee;
+  --arena: light-dark(#5546ee, #a59dff);
+  --salotto-1: #ffb48a;
+  --salotto-2: #f0718f;
+  --salotto: #e2593c;
+  --salotto: light-dark(#e2593c, #ff9f7f);
+  --fortuna: #0f9a5c;
+  --fortuna: light-dark(#0f9a5c, #48dd8f);
+
   /* ---- Crazy Time da casinò ----
      Il palco e' scuro in tutti e due i temi, come una sala; l'oro della
      cornice e delle lampadine, il nero del banco, il blu e il rosso della

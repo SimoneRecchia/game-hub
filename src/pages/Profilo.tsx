@@ -1,37 +1,19 @@
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useState } from 'react'
+import { useLocation } from 'react-router-dom'
+import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Copertina } from '@/components/Copertina'
-import { Elenco, Numero, Riga, Sezione } from '@/components/Elementi'
-import { IconBook, IconLogout, IconMail, IconPerson } from '@/components/Icons'
+import { Elenco, Riga, Sezione } from '@/components/Elementi'
+import { IconBook, IconLogout, IconMail, IconPeople, IconPerson } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
-import { GIOCHI } from '@/games/catalog'
-import { StatsPanel } from '@/games/wordle/StatsPanel'
-import { leggiStatistiche } from '@/games/quiz/statistiche'
-import { leggiContiSudoku } from '@/games/sudoku/libera'
+import { useAmiciOnline } from '@/games/amici/amici'
 import { useAuth, usePlayer } from '@/lib/auth'
-import { useDati } from '@/lib/dati'
-import { formatDuration, formatGameDate, formatNumber } from '@/lib/format'
+import { formatGameDate } from '@/lib/format'
+import { DOVE } from '@/lib/presenza'
 import { useSuoni } from '@/lib/suoni'
 import { useTheme, type ThemePreference } from '@/lib/theme'
-import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
-import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
-import type {
-  BattagliaLeaderboard,
-  CruciverbaLeaderboard,
-  CruciverbaLiberaRisposta,
-  GeneraleLeaderboard,
-  GiocoClassificato,
-  LobbyBattaglia,
-  PlayerStats,
-  QuizLeaderboard,
-  ScarabeoLeaderboard,
-  StatisticheScarabeoLibero,
-  SudokuLeaderboard,
-  WordleLiberaRisposta,
-} from '@shared/types'
 import './Profilo.css'
 
 const TEMI: { value: ThemePreference; label: string }[] = [
@@ -46,28 +28,25 @@ const SUONI: { value: 'si' | 'no'; label: string }[] = [
 ]
 
 /**
- * Il profilo: come si sta andando, gioco per gioco, e le impostazioni.
- *
- * In cima la classifica generale da sempre — e' il numero che riassume tutto —
- * poi una riga per gioco con i suoi punti; toccandola si aprono i conti di quel
- * gioco, classificate e libere. I dettagli si chiedono al server solo lì,
- * quando si aprono: il profilo si guarda spesso, i conti di rado.
+ * Il profilo, che si apre dall'avatar in alto a destra delle schede: chi sei,
+ * gli amici online — toccandone uno se ne apre il profilo, da cui lo si
+ * invita a giocare — e le impostazioni. I punti e i conti di ogni gioco stanno
+ * nella classifica, che e' dove si guarda come si sta andando.
  */
 export default function Profilo() {
   const player = usePlayer()
   const { logout } = useAuth()
   const { preference, setTheme } = useTheme()
   const [suoni, impostaSuoni] = useSuoni()
-  const { dati: generale } = useDati<GeneraleLeaderboard>('/leaderboard/generale?scope=all')
-  const [aperto, setAperto] = useState<GiocoClassificato | null>(null)
+  const amici = useAmiciOnline()
+  const { state } = useLocation()
+  const da = (state as { da?: string } | null)?.da ?? 'Arena'
   const [uscita, setUscita] = useState(false)
   const [fonti, setFonti] = useState(false)
   const [busy, setBusy] = useState(false)
 
-  const io = generale?.me ?? null
-
   return (
-    <Pagina titolo="Profilo">
+    <Pagina titolo="Profilo" indietro={{ a: ROTTE.home, etichetta: da }}>
       <section className="profilo-testa entra">
         <Avatar nickname={player.nickname} color={player.avatarColor} size={76} />
         <div className="profilo-testa__chi">
@@ -78,29 +57,32 @@ export default function Profilo() {
         </div>
       </section>
 
-      <section className="profilo-numeri entra" style={{ '--n': 1 } as CSSProperties}>
-        <Tessera
-          etichetta="Posizione"
-          valore={io ? `${io.rank}º` : '—'}
-          nota={generale ? `su ${generale.rows.length}` : ' '}
-        />
-        <Tessera etichetta="Punti" valore={io ? <Numero valore={io.punti} /> : '0'} nota="da sempre" />
-        <Tessera etichetta="Classificate" valore={io ? <Numero valore={io.partite} /> : '0'} nota="giocate" />
-      </section>
-
-      <Sezione titolo="I tuoi giochi">
-        <Elenco>
-          {GIOCHI.map((g) => (
-            <Riga
-              key={g.id}
-              icona={<Copertina gioco={g.id} formato="icona" />}
-              titolo={g.nome}
-              sotto={io && io.perGioco[g.id] > 0 ? 'Punti da sempre' : 'Ancora nessuna classificata'}
-              valore={<span className="u-tabnum profilo__punti">{formatNumber(io?.perGioco[g.id] ?? 0)}</span>}
-              onClick={() => setAperto(g.id)}
-            />
-          ))}
-        </Elenco>
+      <Sezione titolo="Amici online">
+        {amici === null ? (
+          <div className="profilo-amici__attesa scheletro" aria-hidden="true" />
+        ) : amici.length === 0 ? (
+          <div className="profilo-amici__nessuno">
+            <IconPeople size={22} />
+            <span>Nessun amico online adesso</span>
+          </div>
+        ) : (
+          <Elenco>
+            {amici.map((a) => (
+              <Riga
+                key={a.playerId}
+                icona={
+                  <span className="profilo-amici__avatar">
+                    <Avatar nickname={a.nickname} color={a.avatarColor} size={34} />
+                    <span className="profilo-amici__online" aria-hidden="true" />
+                  </span>
+                }
+                titolo={a.displayName}
+                sotto={DOVE[a.attivita]}
+                a={ROTTE.amico(a.nickname)}
+              />
+            ))}
+          </Elenco>
+        )}
       </Sezione>
 
       <Sezione titolo="Aspetto">
@@ -137,19 +119,6 @@ export default function Profilo() {
         </Elenco>
       </Sezione>
 
-      <Sheet
-        open={aperto !== null}
-        onClose={() => setAperto(null)}
-        title={aperto ? GIOCHI.find((g) => g.id === aperto)?.nome : undefined}
-      >
-        {aperto === 'wordle' && <ContiWordle />}
-        {aperto === 'scarabeo' && <ContiScarabeo />}
-        {aperto === 'cruciverba' && <ContiCruciverba />}
-        {aperto === 'sudoku' && <ContiSudoku />}
-        {aperto === 'battaglia' && <ContiBattaglia />}
-        {aperto === 'quiz' && <ContiQuiz />}
-      </Sheet>
-
       <Sheet open={fonti} onClose={() => setFonti(false)} title="Fonti e licenze">
         <Fonti />
       </Sheet>
@@ -178,253 +147,6 @@ export default function Profilo() {
         </Button>
       </Sheet>
     </Pagina>
-  )
-}
-
-function Tessera({ etichetta, valore, nota }: { etichetta: string; valore: ReactNode; nota: string }) {
-  return (
-    <div className="profilo-tessera">
-      <span className="profilo-tessera__etichetta">{etichetta}</span>
-      <span className="profilo-tessera__valore">{valore}</span>
-      <span className="profilo-tessera__nota">{nota}</span>
-    </div>
-  )
-}
-
-/* ─────────────────────────────  I conti di ogni gioco  ───────────────────────────── */
-
-function Conti({ titolo, voci }: { titolo: string; voci: { etichetta: string; valore: string }[] }) {
-  return (
-    <div className="profilo-conti">
-      <p className="profilo-conti__titolo">{titolo}</p>
-      <dl className="profilo-conti__voci">
-        {voci.map((v) => (
-          <div key={v.etichetta} className="profilo-conti__voce">
-            <dt>{v.etichetta}</dt>
-            <dd className="u-tabnum">{v.valore}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
-  )
-}
-
-function Attesa() {
-  return <div className="profilo-conti__attesa scheletro" aria-hidden="true" />
-}
-
-function ContiWordle() {
-  const { dati: stats } = useDati<PlayerStats>('/wordle/stats')
-  const { dati: libera } = useDati<WordleLiberaRisposta>('/wordle/libera')
-  return (
-    <div className="profilo-sheet">
-      {!stats ? (
-        <Attesa />
-      ) : stats.played === 0 && stats.assistScore === 0 ? (
-        <p className="profilo__testo">Ancora nessuna classificata.</p>
-      ) : (
-        // Gli assist bastano a riempire il pannello: chi ha giocato solo in
-        // compagnia ha punti in classifica, e vederli qui a zero sarebbe una smentita.
-        <StatsPanel stats={stats} />
-      )}
-      {libera && libera.statistiche.giocate > 0 && (
-        <Conti
-          titolo="Parole libere"
-          voci={[
-            { etichetta: 'Giocate', valore: formatNumber(libera.statistiche.giocate) },
-            { etichetta: 'Indovinate', valore: formatNumber(libera.statistiche.vinte) },
-            { etichetta: 'Di fila', valore: formatNumber(libera.statistiche.serie) },
-          ]}
-        />
-      )}
-    </div>
-  )
-}
-
-function ContiScarabeo() {
-  const { dati } = useDati<ScarabeoLeaderboard>('/leaderboard/scarabeo?scope=all')
-  const { dati: libera } = useDati<StatisticheScarabeoLibero>('/scarabeo/libera')
-  const me = dati?.me
-  return (
-    <div className="profilo-sheet">
-      {!dati ? (
-        <Attesa />
-      ) : (
-        <Conti
-          titolo="Classificate"
-          voci={[
-            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
-            { etichetta: 'Giornate', valore: formatNumber(me?.giornate ?? 0) },
-            { etichetta: 'Giornata migliore', valore: `${formatNumber(me?.migliore ?? 0)} sul tabellone` },
-            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
-          ]}
-        />
-      )}
-      {libera && libera.giocate > 0 && (
-        <Conti
-          titolo="Contro il computer"
-          voci={[
-            { etichetta: 'Partite', valore: formatNumber(libera.giocate) },
-            { etichetta: 'Vinte', valore: formatNumber(libera.vinte) },
-            { etichetta: 'Perse', valore: formatNumber(libera.perse) },
-            { etichetta: 'Miglior punteggio', valore: formatNumber(libera.migliore) },
-          ]}
-        />
-      )}
-    </div>
-  )
-}
-
-function ContiCruciverba() {
-  const { dati } = useDati<CruciverbaLeaderboard>('/leaderboard/cruciverba?scope=all')
-  const { dati: libera } = useDati<CruciverbaLiberaRisposta>('/cruciverba/libera')
-  const me = dati?.me
-  return (
-    <div className="profilo-sheet">
-      {!dati ? (
-        <Attesa />
-      ) : (
-        <Conti
-          titolo="Classificate"
-          voci={[
-            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
-            { etichetta: 'Schemi completati', valore: formatNumber(me?.giornate ?? 0) },
-            {
-              etichetta: 'Tempo medio',
-              valore: me && me.giornate > 0 ? formatDuration(me.tempoMs / me.giornate) : '—',
-            },
-            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
-          ]}
-        />
-      )}
-      {libera && libera.completate > 0 && (
-        <Conti
-          titolo="Schemi liberi"
-          voci={[{ etichetta: 'Completati', valore: formatNumber(libera.completate) }]}
-        />
-      )}
-    </div>
-  )
-}
-
-function ContiSudoku() {
-  const { dati } = useDati<SudokuLeaderboard>('/leaderboard/sudoku?scope=all')
-  // Le libere stanno nel telefono: si leggono una volta, all'apertura del foglio.
-  const [libere] = useState(leggiContiSudoku)
-  const me = dati?.me
-  const risolti = LIVELLI.filter((l) => libere[l].risolti > 0)
-  return (
-    <div className="profilo-sheet">
-      {!dati ? (
-        <Attesa />
-      ) : (
-        <Conti
-          titolo="Classificate"
-          voci={[
-            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
-            { etichetta: 'Sudoku risolti', valore: formatNumber(me?.giornate ?? 0) },
-            {
-              etichetta: 'Tempo medio',
-              valore: me && me.giornate > 0 ? formatDuration(me.tempoMs / me.giornate) : '—',
-            },
-            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
-          ]}
-        />
-      )}
-      {risolti.length > 0 && (
-        <Conti
-          titolo="Schemi liberi"
-          voci={risolti.map((l) => ({
-            etichetta: NOMI_LIVELLI[l],
-            valore: `${formatNumber(libere[l].risolti)}${libere[l].record !== null ? ` · ${formatDuration(libere[l].record!)}` : ''}`,
-          }))}
-        />
-      )}
-    </div>
-  )
-}
-
-function ContiBattaglia() {
-  const { dati } = useDati<BattagliaLeaderboard>('/leaderboard/battaglia?scope=all')
-  const { dati: lobby } = useDati<LobbyBattaglia>('/battaglia/lobby')
-  const me = dati?.me
-  const computer = lobby ? Object.values(lobby.controComputer) : []
-  const vinteComputer = computer.reduce((n, r) => n + r.vinte, 0)
-  const perseComputer = computer.reduce((n, r) => n + r.perse, 0)
-  return (
-    <div className="profilo-sheet">
-      {!dati ? (
-        <Attesa />
-      ) : (
-        <Conti
-          titolo="Classificate"
-          voci={[
-            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
-            { etichetta: 'Battaglie', valore: formatNumber(me?.giornate ?? 0) },
-            { etichetta: 'Vinte', valore: formatNumber(me?.vinte ?? 0) },
-            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
-          ]}
-        />
-      )}
-      {lobby && vinteComputer + perseComputer + lobby.vinte + lobby.perse > 0 && (
-        <Conti
-          titolo="Partite libere"
-          voci={[
-            { etichetta: 'Contro il computer', valore: vinteEPerse(vinteComputer, perseComputer) },
-            { etichetta: 'Contro gli amici', valore: vinteEPerse(lobby.vinte, lobby.perse) },
-          ]}
-        />
-      )}
-    </div>
-  )
-}
-
-/** "1 vinta, 3 perse". */
-function vinteEPerse(vinte: number, perse: number): string {
-  return `${vinte} ${vinte === 1 ? 'vinta' : 'vinte'}, ${perse} ${perse === 1 ? 'persa' : 'perse'}`
-}
-
-function ContiQuiz() {
-  const { dati } = useDati<QuizLeaderboard>('/leaderboard/quiz?scope=all')
-  // Le libere del quiz non vanno al server: i loro conti stanno in questo browser.
-  const [libere] = useState(leggiStatistiche)
-  const me = dati?.me
-  const domande = (me?.giornate ?? 0) * DOMANDE_PER_PARTITA
-  return (
-    <div className="profilo-sheet">
-      {!dati ? (
-        <Attesa />
-      ) : (
-        <Conti
-          titolo="Classificate"
-          voci={[
-            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
-            { etichetta: 'Quiz finiti', valore: formatNumber(me?.giornate ?? 0) },
-            {
-              etichetta: 'Risposte giuste',
-              valore: me && domande > 0 ? `${formatNumber(me.giuste)} su ${formatNumber(domande)}` : '—',
-            },
-            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
-          ]}
-        />
-      )}
-      {libere.partite > 0 && (
-        <Conti
-          titolo="Quiz liberi, su questo dispositivo"
-          voci={[
-            { etichetta: 'Partite', valore: formatNumber(libere.partite) },
-            {
-              etichetta: 'Risposte giuste',
-              valore: `${formatNumber(libere.giuste)} su ${formatNumber(libere.domande)}`,
-            },
-            ...CATEGORIE.filter((c) => libere.migliori[c] !== undefined).map((c) => ({
-              etichetta: NOMI_CATEGORIE[c],
-              valore: `record ${libere.migliori[c]}%`,
-            })),
-          ]}
-        />
-      )}
-    </div>
   )
 }
 

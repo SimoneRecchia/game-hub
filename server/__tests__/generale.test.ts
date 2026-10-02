@@ -80,7 +80,21 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     expect(await puntiClassificateDi(db as unknown as D1Database, bruno.id, n)).toBe(0)
 
     const oggi = (await chiama<OggiRisposta>('GET', '/oggi', bruno)).dati
-    expect(oggi.generale).toEqual({ posizione: 2, punti: 0, giocatori: 2 })
+    // Il podio di oggi e' di chi ha fatto punti: Bruno, a zero, non ci sale.
+    expect(oggi.generale).toEqual({
+      posizione: 2,
+      punti: 0,
+      giocatori: 2,
+      podio: [
+        {
+          playerId: anna.id,
+          nickname: 'anna',
+          displayName: 'anna',
+          avatarColor: expect.any(String),
+          punti: 45 + 20 + 70 + 97 + 84 + 76,
+        },
+      ],
+    })
     expect(oggi.cruciverba.status).toBe('assente')
     expect(oggi.wordle.status).toBe('new')
     expect(oggi.battaglia.classificata.stato).toBe('nuova')

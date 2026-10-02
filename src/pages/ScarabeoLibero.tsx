@@ -83,7 +83,7 @@ export default function ScarabeoLibero() {
       <Pagina
         key="scelta"
         titolo="Scarabeo"
-        indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+        indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}
         azioni={
           <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
             <IconInfo size={21} />
@@ -104,7 +104,7 @@ export default function ScarabeoLibero() {
       key="partita"
       titolo="Contro il computer"
       intera
-      indietro={{ a: ROTTE.home, etichetta: 'Giochi' }}
+      indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}
       azioni={
         <>
           <BottoneBarra etichetta="Le mosse" onClick={() => setStoria(true)}>

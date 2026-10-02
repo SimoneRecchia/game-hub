@@ -56,6 +56,48 @@ export const IconFortunaFill = (p: IconProps) => (
   </Svg>
 )
 
+/** La medaglia dell'Arena: il nastro, il disco e la stella. */
+const STELLA = 'M12 11.6l1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 17l-2.1 1.07.4-2.34-1.7-1.66 2.35-.34Z'
+
+export const IconArena = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M8.6 3.2 6.4 9.2M15.4 3.2l2.2 6" />
+    <path d="M8.6 3.2h6.8" />
+    <circle cx="12" cy="15" r="6" />
+    <path d={STELLA} strokeWidth={1.4} />
+  </Svg>
+)
+
+export const IconArenaFill = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M8.6 3.2 6.4 9.2M15.4 3.2l2.2 6" />
+    <path d="M8.6 3.2h6.8" />
+    {/* Il disco pieno con la stella vuota: la stella e' un buco, cosi' prende il colore del fondo. */}
+    <path d={`M12 9a6 6 0 1 1 0 12 6 6 0 1 1 0-12Z${STELLA}`} fill="currentColor" fillRule="evenodd" />
+  </Svg>
+)
+
+/** La poltrona del Salotto: lo schienale, i braccioli, il cuscino e i piedini. */
+const POLTRONA =
+  'M3.8 11.2a2 2 0 0 1 2 2V15h12.4v-1.8a2 2 0 1 1 4 0v3.6c0 .9-.7 1.6-1.6 1.6' +
+  'H3.4c-.9 0-1.6-.7-1.6-1.6v-3.6a2 2 0 0 1 2-2Z'
+
+export const IconSalotto = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 11.6V8.2A3.2 3.2 0 0 1 9.2 5h5.6A3.2 3.2 0 0 1 18 8.2v3.4" />
+    <path d={POLTRONA} />
+    <path d="M5 18.4V20M19 18.4V20" />
+  </Svg>
+)
+
+export const IconSalottoFill = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6 13V8.2A3.2 3.2 0 0 1 9.2 5h5.6A3.2 3.2 0 0 1 18 8.2V13Z" fill="currentColor" />
+    <path d={POLTRONA} fill="currentColor" />
+    <path d="M5 18.4V20M19 18.4V20" />
+  </Svg>
+)
+
 export const IconTrophy = (p: IconProps) => (
   <Svg {...p}>
     <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />

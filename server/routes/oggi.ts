@@ -16,9 +16,10 @@ import {
 import { today } from '../lib/wordleStore'
 
 /**
- * La schermata iniziale in una richiesta: le classificate di oggi e la
- * posizione nella classifica generale del giorno. I giochi della Fortuna hanno
- * la loro scheda, e la loro richiesta (`/fortuna`).
+ * La schermata iniziale in una richiesta: le classificate di oggi, la
+ * posizione nella classifica generale del giorno e i primi tre, che la
+ * classifica calcola comunque. I giochi della Fortuna hanno la loro scheda, e
+ * la loro richiesta (`/fortuna`).
  *
  * Una e non sei perché il piano gratuito delle Pages Functions conta le
  * richieste, e la schermata iniziale e' quella che si apre di piu'. Come i
@@ -51,6 +52,16 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
       posizione: generale.me?.rank ?? null,
       punti: generale.me?.punti ?? 0,
       giocatori: generale.rows.length,
+      podio: generale.rows
+        .filter((r) => r.punti > 0)
+        .slice(0, 3)
+        .map((r) => ({
+          playerId: r.playerId,
+          nickname: r.nickname,
+          displayName: r.displayName,
+          avatarColor: r.avatarColor,
+          punti: r.punti,
+        })),
     },
   })
 })
