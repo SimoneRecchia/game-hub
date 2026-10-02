@@ -77,6 +77,16 @@
   --c2: var(--ruota-2);
 }
 
+.copertina--slot {
+  --c1: var(--slot-1);
+  --c2: var(--slot-2);
+}
+
+.copertina--fortuna {
+  --c1: var(--fortuna-1);
+  --c2: var(--fortuna-2);
+}
+
 .copertina__disegno {
   position: absolute;
   inset: 0;

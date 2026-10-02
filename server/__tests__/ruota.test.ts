@@ -12,7 +12,7 @@ import {
   type Spicchio,
 } from '../../shared/ruota'
 import type { DomandaCompleta } from '../../shared/quiz-domande'
-import type { GeneraleLeaderboard, OggiRisposta, RuotaStato } from '../../shared/types'
+import type { FortunaRisposta, GeneraleLeaderboard, OggiRisposta, RuotaStato } from '../../shared/types'
 import { today } from '../lib/wordleStore'
 import { ProvaD1, applica, banco, type Giocatore } from './banco'
 
@@ -152,7 +152,9 @@ describe('Crazy Time', () => {
     expect(me?.perGioco).toMatchObject({ quiz: 90, cruciverba: 90 })
     const oggi = (await b.chiama<OggiRisposta>('GET', '/oggi', io)).dati
     expect(oggi.generale.punti).toBe(0)
-    expect(oggi.ruota).toEqual({ saldo: 0, netto: -180, giri: 2, stato: 'gioca', spicchio: BANCO })
+    const fortuna = (await b.chiama<FortunaRisposta>('GET', '/fortuna', io)).dati
+    expect(fortuna.ruota).toEqual({ saldo: 0, netto: -180, giri: 2, stato: 'gioca', spicchio: BANCO })
+    expect(fortuna).toMatchObject({ classificate: 180, saldo: 0, netti: { ruota: -180 }, giocate: { ruota: 2 } })
   })
 
   it('si punta da dieci a tutto il saldo, in punti interi', async () => {
@@ -368,8 +370,8 @@ describe('Crazy Time', () => {
       .prepare('INSERT INTO ruota_giornate (player_id, puzzle_number, netto, giri) VALUES (?, ?, 40, 1)')
       .run(io.id, today().puzzleNumber)
     expect(await stato(b, io)).toMatchObject({ netto: 40, giri: 1, saldo: 220, giro: null })
-    const oggi = await b.chiama<OggiRisposta>('GET', '/oggi', io)
-    expect(oggi.dati.ruota).toMatchObject({ stato: 'gioca', spicchio: null })
+    const fortuna = await b.chiama<FortunaRisposta>('GET', '/fortuna', io)
+    expect(fortuna.dati.ruota).toMatchObject({ stato: 'gioca', spicchio: null })
     expect((await b.chiama('POST', '/ruota/moneta', io)).status).toBe(409)
     expect((await gira(b, io, 20, BANCO)).giro).toMatchObject({ n: 2, delta: -20 })
   })

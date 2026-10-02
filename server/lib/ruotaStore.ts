@@ -1,7 +1,7 @@
 /**
  * Crazy Time sul server: quanti giri si vuole, ognuno con la sua puntata, presa
- * dal saldo di oggi — i punti delle classificate piu' quel che la ruota ha gia'
- * dato o tolto.
+ * dal saldo di oggi — i punti delle classificate piu' quel che i giochi della
+ * Fortuna, questo compreso, hanno gia' dato o tolto (server/lib/fortuna.ts).
  *
  * Come al casinò la puntata si paga subito: ogni giro nasce con `delta` uguale
  * alla puntata persa, e solo un minigioco vinto lo cambia nella vincita meno la
@@ -17,14 +17,15 @@
  * li', come nel quiz.
  *
  * D1 non ha transazioni interattive: il saldo si controlla dentro l'`INSERT`
- * del giro, sulla somma dei giri gia' scritti, così due giri partiti insieme non
- * vanno oltre quel che c'e'; la chiave (giocatore, giorno, numero) fa il resto.
+ * del giro, sui conti gia' scritti di tutti i giochi della Fortuna, così due
+ * puntate partite insieme non vanno oltre quel che c'e'; la chiave (giocatore,
+ * giorno, numero) fa il resto.
  * Ogni scrittura riscrive nello stesso batch il conto della giornata
  * (`ruota_giornate`), che e' quel che legge la classifica generale.
  */
 
 import { msToNextPuzzle } from '../../shared/daily'
-import { MARGINE_RETE_MS, type CategoriaQuiz } from '../../shared/quiz'
+import type { CategoriaQuiz } from '../../shared/quiz'
 import { rispostaGiusta, senzaRisposta, type DomandaCompleta } from '../../shared/quiz-domande'
 import {
   DISPOSIZIONE_RUOTA,
@@ -33,16 +34,21 @@ import {
   MOLTIPLICATORI_MONETA,
   PUNTATA_MINIMA,
   deltaDi,
-  improntaDomanda,
   puntataValida,
   spicchiDelGiorno,
   vincitaDi,
-  type DomandaRuota,
   type LatoMoneta,
   type Spicchio,
 } from '../../shared/ruota'
 import type { GiroRuota, RispostaQuiz, RuotaStato, RuotaSummary, SfidaRuotaVista } from '../../shared/types'
-import { puntiClassificateDi } from './generale'
+import {
+  categorieDisponibili,
+  domandaNuova,
+  domandaScaduta,
+  nettoFortunaSql,
+  saldoDi,
+  type SaldoFortuna,
+} from './fortuna'
 import { fail, nowIso } from './http'
 import { limiteMs } from './quizStore'
 import { today } from './wordleStore'
@@ -112,15 +118,6 @@ function diQuestaRuota(row: GiroRow | null): row is GiroRow & { spicchio: number
   return row !== null && row.spicchio !== null && row.disposizione === DISPOSIZIONE_RUOTA
 }
 
-/** Il conto della giornata: quel che Crazy Time ha dato o tolto, e in quanti giri. */
-async function contoDi(db: D1Database, playerId: string, numero: number): Promise<{ netto: number; giri: number }> {
-  const riga = await db
-    .prepare('SELECT netto, giri FROM ruota_giornate WHERE player_id = ? AND puzzle_number = ?')
-    .bind(playerId, numero)
-    .first<{ netto: number; giri: number }>()
-  return riga ?? { netto: 0, giri: 0 }
-}
-
 /** Il conto della giornata rifatto dai giri: va nello stesso batch di ogni scrittura, ed e' sempre giusto. */
 function riconta(db: D1Database, playerId: string, numero: number): D1PreparedStatement {
   return db
@@ -142,40 +139,8 @@ function leggiSfida(row: GiroRow): SfidaSalvata | null {
   }
 }
 
-/** Le domande che un giocatore ha gia' avuto oggi, come "categoria:impronta". */
-async function domandeViste(db: D1Database, playerId: string, numero: number): Promise<string[]> {
-  const { results } = await db
-    .prepare('SELECT domanda FROM ruota_giocate WHERE player_id = ? AND puzzle_number = ? AND domanda IS NOT NULL')
-    .bind(playerId, numero)
-    .all<{ domanda: string }>()
-  return results.map((r) => r.domanda)
-}
-
-/**
- * Le categorie che oggi hanno domande che il giocatore non ha ancora avuto: lo
- * spicchio di una categoria senza domande, o con tutte gia' viste, non esce.
- * La colonna di `ruota_domande` si chiama ancora `materia`, da quando le
- * domande erano per materia, e porta la categoria: rinominarla avrebbe rotto
- * il codice di prima nel minuto fra la migrazione e la pubblicazione.
- */
-async function categorieDisponibili(db: D1Database, playerId: string, numero: number): Promise<Set<string>> {
-  const [{ results }, viste] = await Promise.all([
-    db
-      .prepare('SELECT materia, json_array_length(domande) AS quante FROM ruota_domande WHERE puzzle_number = ?')
-      .bind(numero)
-      .all<{ materia: string; quante: number }>(),
-    domandeViste(db, playerId, numero),
-  ])
-  const usate = new Map<string, number>()
-  for (const v of viste) {
-    const categoria = v.slice(0, v.indexOf(':'))
-    usate.set(categoria, (usate.get(categoria) ?? 0) + 1)
-  }
-  return new Set(results.filter((r) => r.quante > (usate.get(r.materia) ?? 0)).map((r) => r.materia))
-}
-
 function scaduta(row: GiroRow, d: DomandaCompleta, adesso: number): boolean {
-  return row.aperta_at !== null && adesso > Date.parse(row.aperta_at) + limiteMs(d) + MARGINE_RETE_MS
+  return domandaScaduta(row.aperta_at, d, adesso)
 }
 
 function rispostaVista(d: DomandaCompleta, s: Extract<SfidaSalvata, { tipo: 'domanda' }>): RispostaQuiz {
@@ -243,18 +208,17 @@ async function chiudiScaduta(db: D1Database, row: GiroRow | null, adesso: number
 export async function statoRuota(db: D1Database, playerId: string): Promise<RuotaStato> {
   const quando = today()
   const adesso = Date.now()
-  const [classificate, conto, row] = await Promise.all([
-    puntiClassificateDi(db, playerId, quando.puzzleNumber),
-    contoDi(db, playerId, quando.puzzleNumber),
+  const [fortuna, row] = await Promise.all([
+    saldoDi(db, playerId, quando.puzzleNumber),
     ultimoGiro(db, playerId, quando.puzzleNumber).then((r) => chiudiScaduta(db, r, adesso)),
   ])
   return {
     puzzleNumber: quando.puzzleNumber,
     date: quando.date,
-    classificate,
-    netto: conto.netto,
-    giri: conto.giri,
-    saldo: Math.max(0, classificate + conto.netto),
+    classificate: fortuna.classificate,
+    netto: fortuna.netti.ruota,
+    giri: fortuna.giocate.ruota,
+    saldo: fortuna.saldo,
     // Un giro di una ruota di prima non si mostra: i suoi spicchi non sono questi.
     giro: diQuestaRuota(row) ? vistaGiro(row, adesso) : null,
     msToNextPuzzle: msToNextPuzzle(),
@@ -270,12 +234,8 @@ export async function statoRuota(db: D1Database, playerId: string): Promise<Ruot
  */
 export async function gira(db: D1Database, playerId: string, puntata: unknown): Promise<void> {
   const numero = today().puzzleNumber
-  const [ultimo, classificate, conto] = await Promise.all([
-    ultimoGiro(db, playerId, numero),
-    puntiClassificateDi(db, playerId, numero),
-    contoDi(db, playerId, numero),
-  ])
-  const saldo = classificate + conto.netto
+  const [ultimo, fortuna] = await Promise.all([ultimoGiro(db, playerId, numero), saldoDi(db, playerId, numero)])
+  const { classificate, saldo } = fortuna
   if (saldo < PUNTATA_MINIMA) fail(409, 'POCHI_PUNTI', `Per girare servono almeno ${PUNTATA_MINIMA} punti di oggi.`)
   if (!puntataValida(puntata, saldo)) fail(400, 'PUNTATA', `Si puntano da ${PUNTATA_MINIMA} a ${saldo} punti.`)
   if (ultimo && Date.now() - Date.parse(ultimo.created_at) < INTERVALLO_GIRI_MS) {
@@ -304,15 +264,15 @@ export async function gira(db: D1Database, playerId: string, puntata: unknown): 
         .bind(adesso, playerId, numero, ultimo.n),
     )
   }
-  // Il saldo si guarda qui, sui giri gia' scritti: un giro partito nello stesso istante non lo ha visto.
+  // Il saldo si guarda qui, sui conti gia' scritti: una puntata partita nello stesso istante, anche a un
+  // altro gioco della Fortuna, non lo ha visto.
   scritture.push(
     db
       .prepare(
         `INSERT OR IGNORE INTO ruota_giocate
            (player_id, puzzle_number, n, puntata, spicchio, stato, delta, sfida, disposizione, created_at, updated_at)
          SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10
-          WHERE ?11 + (SELECT COALESCE(SUM(delta), 0) FROM ruota_giocate
-                        WHERE player_id = ?1 AND puzzle_number = ?2) >= ?4`,
+          WHERE ?11 + ${nettoFortunaSql('?1', '?2')} >= ?4`,
       )
       .bind(
         playerId,
@@ -378,21 +338,7 @@ export async function apriDomanda(db: D1Database, playerId: string): Promise<voi
   if (sfida.moltiplicatore === undefined) {
     fail(409, 'MOLTIPLICATORE', 'Prima gira la ruota dei moltiplicatori.')
   }
-  const [voce, viste] = await Promise.all([
-    db
-      .prepare('SELECT domande FROM ruota_domande WHERE puzzle_number = ? AND materia = ?')
-      .bind(row.puzzle_number, sfida.categoria)
-      .first<{ domande: string }>(),
-    domandeViste(db, playerId, row.puzzle_number),
-  ])
-  const domande = voce ? (JSON.parse(voce.domande) as DomandaRuota[]) : []
-  if (domande.length === 0) fail(503, 'DOMANDE_ASSENTI', 'Le domande di oggi non sono ancora pronte.')
-  const giaViste = new Set(viste)
-  const chiave = (d: DomandaRuota) => `${sfida.categoria}:${improntaDomanda(d.domanda)}`
-  const nuove = domande.filter((d) => !giaViste.has(chiave(d)))
-  // Finite quelle nuove — due giri partiti insieme — se ne ripete una piuttosto che lasciare la sfida aperta.
-  const fra = nuove.length > 0 ? nuove : domande
-  const scelta = fra[aCaso(fra.length)]
+  const scelta = await domandaNuova(db, playerId, row.puzzle_number, sfida.categoria, aCaso)
   const adesso = nowIso()
   await db
     .prepare(
@@ -401,7 +347,7 @@ export async function apriDomanda(db: D1Database, playerId: string): Promise<voi
     )
     .bind(
       JSON.stringify({ ...sfida, domanda: scelta.domanda }),
-      chiave(scelta),
+      scelta.chiave,
       adesso,
       adesso,
       playerId,
@@ -469,19 +415,16 @@ export async function lanciaMoneta(db: D1Database, playerId: string): Promise<vo
   if (esito.meta.changes !== 1) fail(409, 'CONFLITTO', 'La moneta è già stata lanciata: ricarico.')
 }
 
-/**
- * Crazy Time nella schermata iniziale: di sola lettura. Il saldo e il netto li
- * sa gia' chi chiama, dalla generale del giorno.
- */
-export async function riepilogoRuota(
-  db: D1Database,
-  playerId: string,
-  saldo: number,
-  netto: number,
-): Promise<RuotaSummary> {
-  const numero = today().puzzleNumber
-  const [row, conto] = await Promise.all([ultimoGiro(db, playerId, numero), contoDi(db, playerId, numero)])
+/** Crazy Time nella scheda della Fortuna: di sola lettura. Il saldo lo sa gia' chi chiama. */
+export async function riepilogoRuota(db: D1Database, playerId: string, fortuna: SaldoFortuna): Promise<RuotaSummary> {
+  const row = await ultimoGiro(db, playerId, today().puzzleNumber)
   const nostro = diQuestaRuota(row)
   const aperta = nostro && row.stato !== 'fatto'
-  return { saldo, netto, giri: conto.giri, stato: aperta ? 'sfida' : 'gioca', spicchio: nostro ? row.spicchio : null }
+  return {
+    saldo: fortuna.saldo,
+    netto: fortuna.netti.ruota,
+    giri: fortuna.giocate.ruota,
+    stato: aperta ? 'sfida' : 'gioca',
+    spicchio: nostro ? row.spicchio : null,
+  }
 }

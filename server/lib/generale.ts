@@ -5,9 +5,10 @@
  * cento punti, qualunque sia il gioco (vedi shared/punti.ts), quindi sommarle
  * non richiede un tasso di cambio inventato. Chi gioca a tutto ogni giorno puo'
  * fare fino a cinquecento punti; chi gioca solo al Wordle fino a cento, e
- * nella classifica del Wordle compete alla pari con tutti. Crazy Time si somma
- * a parte (`ruota`): non e' una classificata, ma quel che da' o toglie e' fatto
- * con i punti delle classificate, e va dove vanno loro.
+ * nella classifica del Wordle compete alla pari con tutti. I giochi della
+ * Fortuna — Crazy Time, la slot, il blackjack — si sommano a parte (`ruota`,
+ * `slot`, `blackjack`): non sono classificate, ma quel che danno o tolgono e'
+ * fatto con i punti delle classificate, e va dove vanno loro.
  *
  * Un aggregato per gioco, uniti qui. Non una query sola: le tabelle non hanno
  * niente in comune se non il giocatore, e una UNION con
@@ -24,8 +25,10 @@ export interface TotaliGenerale {
   displayName: string
   avatarColor: string
   perGioco: Record<GiocoClassificato, number>
-  /** Quel che ha dato o tolto la ruota: si somma ai punti, e non e' una partita. */
+  /** Quel che hanno dato o tolto i giochi della Fortuna: si sommano ai punti, e non sono partite. */
   ruota: number
+  slot: number
+  blackjack: number
   assist: number
   partite: number
 }
@@ -49,7 +52,9 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.sudoku +
       g.perGioco.battaglia +
       g.perGioco.quiz +
-      g.ruota,
+      g.ruota +
+      g.slot +
+      g.blackjack,
   }))
   return conPunti
     .sort((a, b) => {
@@ -75,7 +80,7 @@ export async function classificaGenerale(
 ): Promise<GeneraleLeaderboard> {
   const { da, a } = periodo
 
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, ruota] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, ruota, fortuna] = await Promise.all([
     /*
      * Il Wordle come nella sua classifica: i punti delle proprie parole piu'
      * quelli delle giornate giocate in compagnia. Una giornata conta come una
@@ -149,6 +154,14 @@ export async function classificaGenerale(
       )
       .bind(da, a)
       .all<Parziale>(),
+    // La slot e il blackjack: lo stesso conto per giornata, un gioco per riga.
+    db
+      .prepare(
+        `SELECT player_id, gioco, COALESCE(SUM(netto), 0) AS punti
+           FROM fortuna_giornate WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id, gioco`,
+      )
+      .bind(da, a)
+      .all<{ player_id: string; gioco: 'slot' | 'blackjack'; punti: number }>(),
   ])
 
   const totali = new Map<string, TotaliGenerale>()
@@ -162,6 +175,8 @@ export async function classificaGenerale(
         avatarColor: '',
         perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, battaglia: 0, quiz: 0 },
         ruota: 0,
+        slot: 0,
+        blackjack: 0,
         assist: 0,
         partite: 0,
       }
@@ -184,6 +199,7 @@ export async function classificaGenerale(
   somma('battaglia', battaglia.results)
   somma('quiz', quiz.results)
   for (const r of ruota.results) di(r.player_id).ruota += r.punti
+  for (const r of fortuna.results) di(r.player_id)[r.gioco] += r.punti
 
   if (totali.size > 0) {
     // Gli id in un parametro solo, come JSON: D1 accetta al massimo cento parametri per istruzione, e con
@@ -217,8 +233,9 @@ export async function classificaGenerale(
 
 /**
  * I punti delle classificate di un giocatore in una giornata: quelli della
- * generale di quel giorno senza Crazy Time, ma di lui solo. Crazy Time li legge
- * a ogni giro, e la generale intera leggerebbe le partite di tutti. Le somme sono
+ * generale di quel giorno senza i giochi della Fortuna, ma di lui solo. Il
+ * saldo della Fortuna li legge a ogni giocata, e la generale intera leggerebbe
+ * le partite di tutti. Le somme sono
  * quelle di `classificaGenerale`, gioco per gioco: un test le tiene d'accordo.
  */
 export async function puntiClassificateDi(db: D1Database, playerId: string, numero: number): Promise<number> {

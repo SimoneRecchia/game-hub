@@ -13,6 +13,7 @@ import { TavoloGate } from './games/tavolo/TavoloGate'
 import Home from './pages/Home'
 import Classifica from './pages/Classifica'
 import Profilo from './pages/Profilo'
+import Fortuna from './pages/Fortuna'
 import NotFound from './pages/NotFound'
 import VerifyEmail from './pages/VerifyEmail'
 import Welcome from './pages/Welcome'
@@ -64,15 +65,18 @@ const QuizLibero = lazy(caricaQuizLibero)
 const QuizDuello = lazy(caricaQuizDuello)
 const QuizInvito = lazy(caricaQuizInvito)
 
-/* E Crazy Time, la ruota dei punti di oggi. */
+/* E i giochi della Fortuna: Crazy Time e la slot, che puntano i punti di oggi. */
 const caricaRuota = () => import('./pages/Ruota')
 const Ruota = lazy(caricaRuota)
+const caricaSlot = () => import('./pages/Slot')
+const Slot = lazy(caricaSlot)
 
 function usePrecarica() {
   useEffect(() => {
     const t = window.setTimeout(() => {
       const pezzi = [caricaSala, caricaComputer, caricaPartita, caricaInvito, caricaQuiz, caricaQuizLibero]
-      void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito, caricaRuota].map((c) => c())).catch(() => {})
+      const fortuna = [caricaRuota, caricaSlot]
+      void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna].map((c) => c())).catch(() => {})
     }, 2_500)
     return () => window.clearTimeout(t)
   }, [])
@@ -150,7 +154,9 @@ export default function App() {
             <Route path="/quiz/duello/:id" element={<QuizDuello />} />
             <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
 
+            <Route path={ROTTE.fortuna} element={<Fortuna />} />
             <Route path={ROTTE.ruota} element={<Ruota />} />
+            <Route path={ROTTE.slot} element={<Slot />} />
             <Route path="/ruota" element={<Navigate to={ROTTE.ruota} replace />} />
 
             <Route path="/indovina-chi" element={<IndovinaChi />} />

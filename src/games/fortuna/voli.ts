@@ -8,6 +8,7 @@
  * Senza animazioni non vola niente: le funzioni chiamano subito chi aspetta.
  */
 import { suona } from '@/lib/suoni'
+import './voli.css'
 
 export interface Punto {
   x: number

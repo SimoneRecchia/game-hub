@@ -12,6 +12,8 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
     avatarColor: '#000',
     perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, battaglia: 0, quiz: 0, ...perGioco },
     ruota: 0,
+    slot: 0,
+    blackjack: 0,
     assist,
     partite,
   }
@@ -21,6 +23,11 @@ describe('l’ordine della classifica generale', () => {
   it('somma tutti i giochi', () => {
     const [riga] = ordinaGenerale([totali('a', { wordle: 80, scarabeo: 70, cruciverba: 95, battaglia: 84, quiz: 76 })])
     expect(riga.punti).toBe(405)
+  })
+
+  it('e quel che hanno dato o tolto i giochi della Fortuna', () => {
+    const [riga] = ordinaGenerale([{ ...totali('a', { wordle: 80, quiz: 76 }), ruota: -40, slot: 25, blackjack: -11 }])
+    expect(riga.punti).toBe(80 + 76 - 40 + 25 - 11)
   })
 
   it('a pari punti passa avanti chi ha meno punti assist, poi chi ha giocato meno partite', () => {
@@ -66,8 +73,10 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     ])
     expect(g.me?.perGioco).toEqual({ wordle: 65, scarabeo: 70, cruciverba: 97, sudoku: 0, battaglia: 84, quiz: 76 })
     expect(g.me?.partite).toBe(5)
-    // Crazy Time legge i punti di oggi di un giocatore solo: devono essere quelli della generale.
-    expect(await puntiClassificateDi(db as unknown as D1Database, anna.id, n)).toBe(g.me!.punti - g.me!.ruota)
+    // La Fortuna legge i punti di oggi di un giocatore solo: devono essere quelli della generale.
+    expect(await puntiClassificateDi(db as unknown as D1Database, anna.id, n)).toBe(
+      g.me!.punti - g.me!.ruota - g.me!.slot - g.me!.blackjack,
+    )
     expect(await puntiClassificateDi(db as unknown as D1Database, bruno.id, n)).toBe(0)
 
     const oggi = (await chiama<OggiRisposta>('GET', '/oggi', bruno)).dati
