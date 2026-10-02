@@ -83,6 +83,14 @@ export type NomeSuono =
   | 'tripla'
   /** I tre sette. */
   | 'jackpot'
+  /** Una carta che parte dal sabot e scivola sul panno. */
+  | 'carta'
+  /** Una carta del banco che si gira. */
+  | 'giraCarta'
+  /** Asso e dieci con le prime due carte. */
+  | 'blackjack'
+  /** Oltre il ventuno. */
+  | 'sballato'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -736,5 +744,34 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
       const f = monete[Math.floor(Math.random() * monete.length)]
       campanello(u, accordo + 0.1 + i * 0.045 + Math.random() * 0.03, vario(f), 0.045 * v, { eco: 0.45, durata: 0.3 })
     }
+  },
+
+  // La carta dal sabot: lo strappo della carta che esce, e il fruscio sul panno.
+  carta: (u, t, v) => {
+    soffio(u, t, 0.09, 0.16 * v, { tipo: 'highpass', da: 2600, a: 5200, q: 0.7 }, { attacco: 0.003, eco: 0.04 })
+    soffio(u, t + 0.06, 0.22, 0.1 * v, { tipo: 'bandpass', da: 1800, a: 700, q: 0.9 }, { attacco: 0.02, eco: 0.06 })
+    legno(u, t + 0.25, vario(980, 0.06), 0.035 * v, 0.01)
+  },
+
+  // La carta del banco che si gira: lo schiocco secco del cartoncino.
+  giraCarta: (u, t, v) => {
+    soffio(u, t, 0.05, 0.18 * v, { tipo: 'bandpass', da: 3200, a: 1400, q: 1.4 }, { attacco: 0.002, eco: 0.05 })
+    colpo(u, t + 0.03, voce(u, 0.07 * v, 0.02), vario(2600, 0.06), 0.012, 0.6)
+  },
+
+  // Il blackjack: due accordi che salgono, e il campanello d'oro che resta.
+  blackjack: (u, t, v) => {
+    ;[N.G4, N.C5, N.E5, N.G5].forEach((f, i) => marimba(u, t + i * 0.06, f, 0.24 * v, { eco: 0.25 }))
+    ;[N.C5, N.E5, N.G5, N.C6].forEach((f, i) => marimba(u, t + 0.34 + i * 0.06, f, 0.26 * v, { eco: 0.3 }))
+    const accordo = t + 0.66
+    ;[N.C6, N.E6, N.G6].forEach((f) => campanello(u, accordo, f, 0.13 * v, { eco: 0.5, durata: 1.5 }))
+    campanello(u, accordo + 0.12, N.C7, 0.1 * v, { eco: 0.55, durata: 1.4 })
+  },
+
+  // Sballato: due note che cadono, e il panno che si prende le fiches.
+  sballato: (u, t, v) => {
+    scivolo(u, t, 440, 330, 0.18, 0.12 * v)
+    scivolo(u, t + 0.2, 392, 196, 0.5, 0.13 * v)
+    tonfo(u, t + 0.2, 0.12 * v, { da: 110, a: 45, durata: 0.4 })
   },
 }

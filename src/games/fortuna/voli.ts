@@ -20,7 +20,8 @@ const COLORI_FICHES = ['var(--ct-rosso)', 'var(--ct-blu)', 'var(--ct-piu)', 'var
 
 const ridotto = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-function strato(): HTMLElement {
+/** Lo strato del body in cui volano le fiches, le monete e le carte raccolte. */
+export function strato(): HTMLElement {
   let s = document.querySelector<HTMLElement>('.ct-voli')
   if (!s) {
     s = document.createElement('div')
@@ -168,4 +169,47 @@ export function perdiFiches(da: Punto, importo: number): void {
       { duration: 900, delay: 120 + i * 60, easing: 'cubic-bezier(0.5, 0, 0.75, 0.4)', fill: 'forwards' },
     ).finished.then(() => el.remove())
   }
+}
+
+/**
+ * Una fiche sola, da dove la si tocca a dove la si posa: la puntata del
+ * blackjack, fiche dopo fiche. Si risolve quando arriva, con il suo suono.
+ */
+export function volaFiche(da: Punto, a: Punto, valore: number, colore: string): Promise<void> {
+  if (ridotto()) {
+    suona('fiche', { volume: 0.6 })
+    return Promise.resolve()
+  }
+  const el = pezzo('ct-volo--fiche', String(valore), colore)
+  return el
+    .animate(arco(da, a, 60, [1, 0.9], 360), {
+      duration: 380,
+      easing: 'cubic-bezier(0.3, 0.1, 0.25, 1)',
+      fill: 'forwards',
+    })
+    .finished.then(() => {
+      el.remove()
+      suona('fiche', { volume: 0.6 })
+    })
+}
+
+/**
+ * Le fiches di una puntata da un posto all'altro, in pila: al banco quando la
+ * mano e' persa, dal banco alla puntata quando e' vinta. `colori` sono quelli
+ * della pila, dal basso.
+ */
+export function spostaFiches(da: Punto, a: Punto, colori: readonly string[], ritardo = 0): Promise<void> {
+  if (ridotto() || colori.length === 0) return Promise.resolve()
+  const voli = colori.slice(0, 6).map((colore, i) => {
+    const el = pezzo('ct-volo--fiche', '', colore)
+    return el
+      .animate(arco({ x: da.x, y: da.y - i * 3 }, { x: a.x, y: a.y - i * 3 }, 40 + i * 6, [0.85, 0.85], 0), {
+        duration: 520,
+        delay: ritardo + i * 55,
+        easing: 'cubic-bezier(0.45, 0, 0.25, 1)',
+        fill: 'forwards',
+      })
+      .finished.then(() => el.remove())
+  })
+  return Promise.all(voli).then(() => suona('fiche', { volume: 0.7 }))
 }

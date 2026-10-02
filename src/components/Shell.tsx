@@ -6,6 +6,7 @@ import { GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
 import { usePlayer } from '@/lib/auth'
 import { NOME_CRAZY_TIME } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
+import { NOME_BLACKJACK } from '@shared/blackjack'
 import { Avatar } from './Avatar'
 import { Copertina } from './Copertina'
 import {
@@ -35,6 +36,7 @@ const PERCORSI_GIOCHI = [...GIOCHI.map((g) => ROTTE.gioco(g.id)), ...GIOCHI_DA_T
 const GIOCHI_FORTUNA = [
   { id: 'ruota', nome: NOME_CRAZY_TIME, a: ROTTE.ruota },
   { id: 'slot', nome: NOME_SLOT, a: ROTTE.slot },
+  { id: 'blackjack', nome: NOME_BLACKJACK, a: ROTTE.blackjack },
 ] as const
 const PERCORSI_FORTUNA = [ROTTE.fortuna, ...GIOCHI_FORTUNA.map((g) => g.a)]
 

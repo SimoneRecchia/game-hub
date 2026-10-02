@@ -474,7 +474,7 @@ export default function RuotaPagina() {
       {/* Durante la domanda il palco resta, nascosto: tornando, il tabellone e le ruote sono quelli di prima. */}
       <div className="ct" hidden={inDomanda}>
         {stato && (
-          <Tabellone {...(conto ?? { saldo, netto: stato.netto, giri: stato.giri })} saldoRef={saldoRef} />
+          <Tabellone saldo={conto?.saldo ?? saldo} puntata={scelta} saldoRef={saldoRef} />
         )}
         <div className="ct-corpo">
           <div className={`ct-palco is-${scena}${luci === 'perso' ? ' is-scosso' : ''}`}>

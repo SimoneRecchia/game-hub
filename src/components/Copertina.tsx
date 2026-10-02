@@ -5,7 +5,7 @@ import './Copertina.css'
 type Formato = 'icona' | 'carta' | 'eroe'
 
 /** Un gioco, la classifica generale, i giochi della Fortuna o la Fortuna stessa. */
-type Soggetto = GiocoClassificato | GiocoDaTavolo | 'generale' | 'ruota' | 'slot' | 'fortuna'
+type Soggetto = GiocoClassificato | GiocoDaTavolo | 'generale' | 'ruota' | 'slot' | 'blackjack' | 'fortuna'
 
 interface Props {
   gioco: Soggetto
@@ -495,6 +495,28 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
       <rect x={88} y={56} width={7} height={14} rx={3} fill="#fff" fillOpacity={0.8} />
       <path d="M92 62 L101 30" stroke="#fff" strokeWidth={4} strokeLinecap="round" />
       <circle cx={101} cy={27} r={7} fill="#fff" />
+    </g>
+  ),
+
+  // Il blackjack: un asso e un re a ventaglio, e una fiche davanti.
+  blackjack: (
+    <g fontFamily={TONDO} fontWeight={900}>
+      <g transform="rotate(-14 52 66)">
+        <rect x={26} y={26} width={46} height={64} rx={7} fill="#fff" fillOpacity={0.7} />
+        <text x={34} y={44} fontSize={15} fill="var(--c2)" fillOpacity={0.8}>
+          K
+        </text>
+      </g>
+      <g transform="rotate(10 68 62)">
+        <rect x={46} y={22} width={46} height={64} rx={7} fill="#fff" fillOpacity={0.97} />
+        <text x={54} y={40} fontSize={15} fill="var(--c2)">
+          A
+        </text>
+        <path d="M69 44c4 6 12 9 12 16 0 4.5-3.6 7-7.4 6-2-.5-3.2-1.7-3.8-3 .3 3.4 1.6 5.6 4.3 7.4h-10.2c2.7-1.8 4-4 4.3-7.4-.6 1.3-1.8 2.5-3.8 3-3.8 1-7.4-1.5-7.4-6 0-7 8-10 12-16z" fill="var(--c2)" />
+      </g>
+      <circle cx={84} cy={90} r={15} fill="#fff" />
+      <circle cx={84} cy={90} r={10} fill="var(--c2)" fillOpacity={0.85} />
+      <circle cx={84} cy={90} r={6.5} fill="none" stroke="#fff" strokeWidth={1.6} strokeDasharray="2.6 2" />
     </g>
   ),
 
