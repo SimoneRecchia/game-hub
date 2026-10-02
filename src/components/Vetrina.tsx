@@ -38,15 +38,17 @@ export function Vetrina({
 }) {
   const player = usePlayer()
 
-  // Sulla Fortuna Safari tinge la zona dell'orologio di scuro, come la pagina; uscendo torna com'era.
+  // Sulla Fortuna Safari tinge la zona dell'orologio di scuro, come la pagina; uscendo torna com'era. Le
+  // meta sono due, una per schema, finché il tema non si cambia dal profilo (`theme.ts` le fa una sola).
   useEffect(() => {
     if (scheda !== 'fortuna') return
-    const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]')
-    if (!meta) return
-    const prima = meta.content
-    meta.content = FONDO_FORTUNA
+    const meta = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')]
+    const prima = meta.map((m) => m.content)
+    for (const m of meta) m.content = FONDO_FORTUNA
     return () => {
-      meta.content = prima
+      meta.forEach((m, i) => {
+        m.content = prima[i]
+      })
     }
   }, [scheda])
 
