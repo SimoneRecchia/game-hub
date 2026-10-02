@@ -266,6 +266,19 @@ export function secondiDellaDomanda(d: { cartina?: unknown; lunga?: 1 }): number
   return d.cartina ? SECONDI_CARTINA : d.lunga ? SECONDI_LUNGA : SECONDI_SCELTA
 }
 
+/**
+ * Una scelta e' l'id di un'opzione o di un posto della cartina. Gli id li fanno
+ * i generatori dai dati — "chi:Nikola Tesla", "10-04/2", "citta:Monaco di
+ * Baviera" — e hanno spazi, accenti e barre: il server controlla solo che sia
+ * un testo corto, senza caratteri di controllo. Accettava le sole lettere
+ * semplici, e le risposte a quelle domande gli arrivavano come errori.
+ */
+export const SCELTA_MASSIMA = 80
+
+export function sceltaValida(valore: unknown): valore is string {
+  return typeof valore === 'string' && valore.length > 0 && valore.length <= SCELTA_MASSIMA && !/\p{Cc}/u.test(valore)
+}
+
 /** I tempi che si scelgono nella libera, per le domande a scelta: sulla cartina sono il doppio. */
 export const SECONDI_LIBERI = [10, 15, 20, 30] as const
 

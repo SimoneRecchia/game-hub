@@ -9,7 +9,7 @@
 
 import { CASELLE_FLOTTA } from '@shared/battaglia'
 import { NOMI_CATEGORIE } from '@shared/quiz'
-import { PUNTATA_MINIMA, SPICCHI, conSegno, nomeDi } from '@shared/ruota'
+import { PUNTATA_MINIMA, conSegno, nomeDi, spicchiDelGiorno } from '@shared/ruota'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   BattagliaSummary,
@@ -327,11 +327,14 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
  */
 export type StatoRuota = Omit<StatoOggi, 'gioco' | 'punti' | 'avanzamento'> & { avanzamento: number | null }
 
-/** Crazy Time nella schermata iniziale: quel che ha dato o tolto oggi, e quanto si puo' puntare adesso. */
-export function statoRuota(s: RuotaSummary): StatoRuota {
+/**
+ * Crazy Time nella schermata iniziale: quel che ha dato o tolto oggi, e quanto
+ * si puo' puntare adesso. `numero` e' il giorno, che dice gli spicchi.
+ */
+export function statoRuota(s: RuotaSummary, numero: number): StatoRuota {
   const a = ROTTE.ruota
   if (s.stato === 'sfida') {
-    const spicchio = s.spicchio === null ? undefined : SPICCHI[s.spicchio]
+    const spicchio = s.spicchio === null ? undefined : spicchiDelGiorno(numero)[s.spicchio]
     const dettaglio = spicchio ? nomeDi(spicchio) : ''
     return { fase: 'in-corso', titolo: 'Sfida in corso', dettaglio, avanzamento: null, azione: 'Continua', a }
   }

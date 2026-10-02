@@ -1,8 +1,9 @@
 /*
- * Gli spicchi delle due ruote. Il banco e' nero con l'oro: e' la casa. Le
- * domande hanno il colore della loro materia, quello del quiz; la moneta e'
- * viola. Sulla ruota dei moltiplicatori il colore dice quanto vale lo
- * spicchio, dal blu del ×1,25 all'oro del ×3.
+ * Gli spicchi delle due ruote. Il banco e' nero con l'oro: e' la casa. Il
+ * triplo e' d'oro, come il ×3 dei moltiplicatori. Le domande hanno il colore
+ * della materia della loro categoria, quello del quiz; la moneta e' viola.
+ * Sulla ruota dei moltiplicatori il colore dice quanto vale lo spicchio, dal
+ * blu del ×1,25 all'oro del ×3.
  */
 .ct-spicchio {
   stroke: rgba(0, 0, 0, 0.25);
@@ -17,6 +18,10 @@
   fill: var(--ct-moneta);
 }
 
+.ct-spicchio.is-fisso {
+  fill: var(--ct-m3);
+}
+
 .ct-spicchio.is-materia-geografia {
   fill: var(--materia-geografia-2);
 }
@@ -25,9 +30,7 @@
   fill: var(--materia-storia-2);
 }
 
-.ct-spicchio.is-materia-arte,
-.ct-spicchio.is-materia-libri,
-.ct-spicchio.is-materia-cinema {
+.ct-spicchio.is-materia-cultura {
   fill: var(--materia-cultura-2);
 }
 
@@ -94,9 +97,18 @@
 
 /* Sull'oro del ×3 e sull'ambra del ×1,5 la scritta e' scura: il bianco non si leggerebbe. */
 .ct-scritta.is-m3,
-.ct-scritta.is-m15 {
+.ct-scritta.is-m15,
+.ct-scritta.is-fisso {
   fill: #3d2300;
   stroke: rgba(255, 255, 255, 0.35);
+}
+
+/* Il ×3 del triplo: grande e dritto come un'icona, perché e' il numero che si guarda. */
+.ct-scritta.is-numero {
+  font-size: 19px;
+  letter-spacing: 0;
+  stroke-width: 1.4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .ct-icona {

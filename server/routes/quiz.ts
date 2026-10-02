@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { msToNextPuzzle } from '../../shared/daily'
+import { sceltaValida } from '../../shared/quiz'
 import type { QuizDatiRisposta, QuizEsito, QuizState, QuizSummary } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
@@ -21,12 +22,10 @@ import {
 import { riepilogoQuiz } from '../lib/riepiloghi'
 import { duelliQuiz, sfideQuiz } from './quizSfide'
 
-/** Una scelta e' un id di opzione o di un posto sulla cartina: corto, e di caratteri semplici. */
+/** Una scelta e' un id di opzione o di un posto sulla cartina (`sceltaValida`). Null e' il tempo finito. */
 function leggiScelta(valore: unknown): string | null {
   if (valore === null || valore === undefined) return null
-  if (typeof valore !== 'string' || !/^[A-Za-z0-9:_-]{1,40}$/.test(valore)) {
-    fail(400, 'SCELTA', 'La risposta non è valida.')
-  }
+  if (!sceltaValida(valore)) fail(400, 'SCELTA', 'La risposta non è valida.')
   return valore
 }
 
