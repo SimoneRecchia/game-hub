@@ -75,7 +75,7 @@ export default function Home() {
               id="ruota"
               nome={NOME_CRAZY_TIME}
               a={ROTTE.ruota}
-              stato={oggi?.ruota ? statoRuota(oggi.ruota) : null}
+              stato={oggi?.ruota ? statoRuota(oggi.ruota, oggi.puzzleNumber) : null}
             />
           </li>
         </ul>

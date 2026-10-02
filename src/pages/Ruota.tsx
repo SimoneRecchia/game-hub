@@ -1,4 +1,15 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi, type DatiAdesivo } from '@/components/Adesivo'
@@ -9,29 +20,30 @@ import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { ComeSiGiocaRuota } from '@/games/ruota/ComeSiGioca'
 import {
-  COLORI_MATERIE_RUOTA,
   DisegnoMoltiplicatori,
   DisegnoRuota,
-  ICONE_MATERIE_RUOTA,
   coloreDelMoltiplicatore,
+  coloreDellaCategoria,
+  iconaDellaCategoria,
 } from '@/games/ruota/disegni'
+import { VISTA } from '@/games/ruota/geometria'
 import { Intermezzo, PIOGGIA_MS, PioggiaDiMonete, type DatiIntermezzo } from '@/games/ruota/Intermezzo'
 import { LineaPuntata } from '@/games/ruota/LineaPuntata'
 import { Moneta } from '@/games/ruota/Moneta'
 import { RuotaFisica, type Meta, type Mozzo } from '@/games/ruota/RuotaFisica'
+import { centroDi, incassaMonete, perdiFiches, puntaFiches, type Punto } from '@/games/ruota/voli'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
+import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
 import {
   INTERVALLO_GIRI_MS,
   MOLTIPLICATORI,
   NOME_CRAZY_TIME,
-  NOMI_MATERIE_RUOTA,
   PUNTATA_MINIMA,
-  SPICCHI,
   conSegno,
   scriviMoltiplicatore,
-  type MateriaRuota,
+  spicchiDelGiorno,
 } from '@shared/ruota'
 import type { GiroRuota, RuotaStato } from '@shared/types'
 import './Ruota.css'
@@ -49,6 +61,20 @@ const RIVELA_MS = 2_000
 const MONETA_IN_VISTA_MS = 2_700
 /** Quanto resta l'invito a lanciare piu' forte. */
 const DEBOLE_MS = 2_200
+/** Quanto ci mette la ruota a tornare, dopo una domanda: le monete partono quando e' ferma. */
+const RITORNO_MS = 720
+
+/** Quante monete volano al saldo per una vincita: piu' vale il moltiplicatore, piu' sono. */
+const moneteDi = (moltiplicatore: number) => Math.round(4 + moltiplicatore * 3)
+
+/** Il centro del mozzo della ruota grande, sullo schermo: da li' partono e li' arrivano fiches e monete. */
+function centroDelMozzo(): Punto | null {
+  const el = document.querySelector('.ct-ruota.is-principale')
+  if (!el) return null
+  const r = el.getBoundingClientRect()
+  if (r.width === 0) return null
+  return { x: r.left + (r.width * -VISTA.x) / VISTA.larghezza, y: r.top + (r.height * -VISTA.y) / VISTA.altezza }
+}
 
 /** La scena di un giro: la ruota, o il minigioco a cui e' arrivato. */
 function scenaDi(giro: GiroRuota | null): NomeScena {
@@ -82,14 +108,18 @@ function useDopo() {
 }
 
 /**
- * Crazy Time: si punta, si trascina la ruota e la si lascia andare. Il banco si
- * tiene la puntata; una domanda porta alla ruota dei moltiplicatori e poi alla
- * domanda; la moneta alla moneta da lanciare. Ogni passaggio ha la sua
+ * Crazy Time: si punta, si trascina la ruota e la si lascia andare. La puntata
+ * si paga al lancio, e si vede: le fiches volano dal saldo alla ruota, e il
+ * saldo scende. Il banco se la tiene, e le fiches scivolano via; il triplo la
+ * restituisce per tre; una domanda porta alla ruota dei moltiplicatori e poi
+ * alla domanda; la moneta alla moneta da lanciare. Una vincita torna al saldo
+ * in monete, che lo fanno salire quando arrivano. Ogni passaggio ha la sua
  * transizione, e finito il minigioco si torna alla ruota com'era, con l'esito
  * sul mozzo.
  *
- * Il server decide tutto e risponde con lo stato intero; qui si fa vedere,
- * nell'ordine giusto: prima la ruota che gira, poi l'esito. Lo stato di una
+ * Il server decide tutto e risponde con lo stato intero, anche l'esito che la
+ * ruota non ha ancora mostrato; qui si fa vedere nell'ordine giusto, e il
+ * tabellone resta fermo (`conto`) finché il momento non arriva. Lo stato di una
  * pagina riaperta dice in che scena si era.
  */
 export default function RuotaPagina() {
@@ -125,6 +155,10 @@ export default function RuotaPagina() {
   const [regole, setRegole] = useState(false)
   const [pioggia, setPioggia] = useState(0)
   const { adesivo, accoda } = useCodaAdesivi()
+  // Il saldo sul tabellone: da li' partono le fiches e li' arrivano le monete.
+  const saldoRef = useRef<HTMLSpanElement>(null)
+  // Com'e' finita la domanda, da raccontare sulla ruota quando si torna: le monete al saldo, o le fiches al banco.
+  const daRaccontare = useRef<{ vinto: boolean; moltiplicatore: number; puntata: number } | null>(null)
   // Lo stato di adesso, per chi lo legge a ruota ferma o a moneta caduta: arrivano dopo il disegno.
   const ultimo = useRef(stato)
   useEffect(() => {
@@ -207,10 +241,28 @@ export default function RuotaPagina() {
   const giro = stato?.giro ?? null
   const sfida = giro?.sfida ?? null
   const saldo = stato?.saldo ?? 0
+  const numero = stato?.puzzleNumber ?? 1
+  // Gli spicchi di oggi, con le categorie del giorno: cambiano solo con il giorno, e la ruota non si ridisegna.
+  const spicchi = useMemo(() => spicchiDelGiorno(numero), [numero])
+  const disegnoRuota = useMemo(() => <DisegnoRuota spicchi={spicchi} />, [spicchi])
   const puoGirare = saldo >= PUNTATA_MINIMA
   // Si punta quanto si vuole, dalla minima a tutto il saldo; finché non la si cambia, la puntata e' quella di prima.
   const scelta = Math.min(saldo, Math.max(PUNTATA_MINIMA, puntata ?? giro?.puntata ?? PUNTATA_MINIMA))
   const girando = inGioco !== null
+
+  /**
+   * Una vincita che torna al saldo: le monete volano da `da` al tabellone, che
+   * smette di stare fermo quando arriva la prima. Senza da dove partire, il
+   * tabellone si muove subito.
+   */
+  const incassa = (moltiplicatore: number, da: Punto | null) => {
+    const a = centroDi(saldoRef.current)
+    if (!da || !a) {
+      setConto(null)
+      return
+    }
+    void incassaMonete(da, a, moneteDi(moltiplicatore), () => setConto(null))
+  }
 
   /* ───────────────────────────────  La ruota  ─────────────────────────────── */
 
@@ -220,10 +272,16 @@ export default function RuotaPagina() {
     setLuci('attesa')
     setInGioco(scelta)
     setRiposata(false)
+    // La puntata si paga adesso: il saldo scende, e le fiches volano sulla ruota.
+    if (stato) setConto({ saldo: stato.saldo - scelta, netto: stato.netto - scelta, giri: stato.giri + 1 })
+    const da = centroDi(saldoRef.current)
+    const a = centroDelMozzo()
+    if (da && a) void puntaFiches(da, a, scelta)
     const nuovo = await chiedi('/ruota/gira', { puntata: scelta })
     if (!nuovo?.giro) {
-      setAnnulla((a) => a + 1)
+      setAnnulla((x) => x + 1)
       setInGioco(null)
+      setConto(null)
       return
     }
     setStato(nuovo)
@@ -233,15 +291,33 @@ export default function RuotaPagina() {
   const fermataRuota = () => {
     setInGioco(null)
     const g = ultimo.current?.giro
-    if (!g) return
-    const s = SPICCHI[g.spicchio]
+    if (!g) {
+      setConto(null)
+      return
+    }
+    const s = spicchi[g.spicchio]
     if (s.tipo === 'banco') {
+      setConto(null)
       setEsito(true)
       setLuci('perso')
       accoda(adesivoBanco(g.puntata))
+      const mozzo = centroDelMozzo()
+      if (mozzo) perdiFiches(mozzo, g.puntata)
       dopo(1_700, () => setLuci('attesa'))
       return
     }
+    if (s.tipo === 'fisso') {
+      setEsito(true)
+      setLuci('vinto')
+      suona('bonus')
+      accoda(adesivoVincita(g.delta + g.puntata, g.puntata, s.moltiplicatore))
+      setPioggia((p) => p + 1)
+      dopo(PIOGGIA_MS, () => setPioggia(0))
+      incassa(s.moltiplicatore, centroDelMozzo())
+      dopo(2_200, () => setLuci('attesa'))
+      return
+    }
+    setConto(null)
     setLuci('vinto')
     suona('bonus')
     dopo(FESTA_LUCI_MS, () => {
@@ -258,10 +334,10 @@ export default function RuotaPagina() {
             }
           : {
               chiave: Date.now(),
-              titolo: NOMI_MATERIE_RUOTA[s.materia],
+              titolo: NOMI_CATEGORIE[s.categoria],
               sotto: 'Gira i moltiplicatori',
-              colore: COLORI_MATERIE_RUOTA[s.materia],
-              icona: <IconaMateria materia={s.materia} />,
+              colore: coloreDellaCategoria(s.categoria),
+              icona: <IconaCategoria categoria={s.categoria} />,
               verso: 'moltiplicatori',
             },
       )
@@ -307,14 +383,28 @@ export default function RuotaPagina() {
   const rispondi = async (risposta: string | null) => {
     const nuovo = await chiedi('/ruota/risposta', { scelta: risposta })
     if (!nuovo?.giro) return
+    const g = nuovo.giro
+    const palio = palioDi(g)
+    // Il tabellone e' nascosto dalla domanda: la vincita la si vede arrivare tornando alla ruota.
+    const vinto = g.delta > 0 && !!palio
+    if (vinto) setConto({ saldo: nuovo.saldo - palio.vincita, netto: nuovo.netto - palio.vincita, giri: nuovo.giri })
+    daRaccontare.current = { vinto, moltiplicatore: palio?.moltiplicatore ?? 1, puntata: g.puntata }
     setStato(nuovo)
-    annuncia(nuovo.giro)
+    annuncia(g)
   }
 
   const allaRuota = () => {
     setScena('ruota')
     setEsito(true)
     setRivelato(false)
+    const racconto = daRaccontare.current
+    daRaccontare.current = null
+    if (!racconto) return
+    dopo(RITORNO_MS, () => {
+      const mozzo = centroDelMozzo()
+      if (racconto.vinto) incassa(racconto.moltiplicatore, mozzo)
+      else if (mozzo) perdiFiches(mozzo, racconto.puntata)
+    })
   }
 
   /* ───────────────────────────────  La moneta  ─────────────────────────────── */
@@ -332,29 +422,42 @@ export default function RuotaPagina() {
   }
 
   const caduta = () => {
-    setConto(null)
     setMonetaCaduta(true)
     const g = ultimo.current?.giro
-    if (!g) return
+    if (!g) {
+      setConto(null)
+      return
+    }
     annuncia(g)
+    const palio = palioDi(g)
+    const moneta = centroDi(document.querySelector('.ct-scena--moneta .ct-moneta'))
+    if (g.delta > 0 && palio) incassa(palio.moltiplicatore, moneta)
+    else {
+      setConto(null)
+      if (moneta) perdiFiches(moneta, g.puntata)
+    }
     dopo(MONETA_IN_VISTA_MS, allaRuota)
   }
 
   /* ───────────────────────────────  La pagina  ─────────────────────────────── */
 
   const palio = palioDi(giro)
+  // Sul mozzo: la puntata, poi la puntata in gioco, poi quel che e' tornato, o quel che si e' perso.
   const mozzo: Mozzo =
     inGioco !== null
-      ? { testo: String(inGioco), sotto: 'puntata' }
+      ? { testo: String(inGioco), sotto: 'in gioco' }
       : esito && giro?.stato === 'fatto'
-        ? { testo: conSegno(giro.delta), sotto: 'punti', tono: giro.delta > 0 ? 'piu' : 'meno' }
+        ? giro.delta > 0
+          ? { testo: conSegno(giro.delta + giro.puntata), sotto: 'vinti', tono: 'piu' }
+          : { testo: conSegno(-giro.puntata), sotto: 'persi', tono: 'meno' }
         : puoGirare
           ? { testo: String(scelta), sotto: 'puntata' }
           : { testo: String(saldo), sotto: 'saldo' }
   const mozzoM: Mozzo = rivelato && palio ? { testo: scriviMoltiplicatore(palio.moltiplicatore) } : { testo: '×?' }
   const prontaRuota = scena === 'ruota' && !intermezzo && puoGirare && !girando && riposata && !inviando
   const prontaM = scena === 'moltiplicatori' && !intermezzo && !girandoM && !rivelato && !inviando
-  const materia = sfida?.tipo === 'domanda' ? sfida.materia : null
+  const categoria = sfida?.tipo === 'domanda' ? sfida.categoria : null
+  const inDomanda = scena === 'domanda' && sfida?.tipo === 'domanda'
 
   return (
     <Pagina
@@ -367,7 +470,7 @@ export default function RuotaPagina() {
         </BottoneBarra>
       }
     >
-      {scena === 'domanda' && sfida?.tipo === 'domanda' ? (
+      {inDomanda && sfida?.tipo === 'domanda' && (
         <Suspense fallback={<div className="ct-attesa" aria-hidden="true" />}>
           {sfida.domanda ? (
             <DomandaRuota
@@ -380,136 +483,139 @@ export default function RuotaPagina() {
           ) : inviando ? (
             <div className="ct-attesa" aria-hidden="true" />
           ) : (
-            <Pronti materia={sfida.materia} vincita={sfida.vincita} onVia={() => void apriDomanda()} />
+            <Pronti categoria={sfida.categoria} vincita={sfida.vincita} onVia={() => void apriDomanda()} />
           )}
         </Suspense>
-      ) : (
-        <div className="ct">
-          {stato && <Tabellone {...(conto ?? { saldo, netto: stato.netto, giri: stato.giri })} />}
-          <div className="ct-corpo">
-            <div className={`ct-palco is-${scena}${luci === 'perso' ? ' is-scosso' : ''}`}>
-              <span className="ct-palco__luce" aria-hidden="true" />
-              <span className="ct-palco__scintille" aria-hidden="true" />
-              <span className="ct-palco__insegna" aria-hidden="true">
-                Crazy <span>Time</span>
-              </span>
-              {!stato ? (
-                <div className="ct-palco__attesa" aria-hidden="true" />
-              ) : (
-                <>
-                  <Scena attiva={scena === 'ruota'} nome="ruota">
-                    <RuotaFisica
-                      spicchi={SPICCHI.length}
-                      disegno={<DisegnoRuota />}
-                      fermaSu={fermaSu}
-                      pronta={prontaRuota}
-                      onLancio={() => void lanciaRuota()}
-                      onFerma={fermataRuota}
-                      onDebole={() => setDebole(true)}
-                      annulla={annulla}
-                      luci={luci}
-                      lampade={24}
-                      durataMinima={3_600}
-                      mozzo={mozzo}
-                      invito={prontaRuota}
-                      etichetta="La ruota: trascinala e lasciala andare per girarla"
-                      classe="is-principale"
+      )}
+      {/* Durante la domanda il palco resta, nascosto: tornando, il tabellone e le ruote sono quelli di prima. */}
+      <div className="ct" hidden={inDomanda}>
+        {stato && (
+          <Tabellone {...(conto ?? { saldo, netto: stato.netto, giri: stato.giri })} saldoRef={saldoRef} />
+        )}
+        <div className="ct-corpo">
+          <div className={`ct-palco is-${scena}${luci === 'perso' ? ' is-scosso' : ''}`}>
+            <span className="ct-palco__luce" aria-hidden="true" />
+            <span className="ct-palco__scintille" aria-hidden="true" />
+            <span className="ct-palco__insegna" aria-hidden="true">
+              Crazy <span>Time</span>
+            </span>
+            {!stato ? (
+              <div className="ct-palco__attesa" aria-hidden="true" />
+            ) : (
+              <>
+                <Scena attiva={scena === 'ruota'} nome="ruota">
+                  <RuotaFisica
+                    spicchi={spicchi.length}
+                    disegno={disegnoRuota}
+                    fermaSu={fermaSu}
+                    pronta={prontaRuota}
+                    onLancio={() => void lanciaRuota()}
+                    onFerma={fermataRuota}
+                    onDebole={() => setDebole(true)}
+                    annulla={annulla}
+                    luci={luci}
+                    lampade={24}
+                    durataMinima={3_600}
+                    mozzo={mozzo}
+                    fiche={inGioco !== null}
+                    invito={prontaRuota}
+                    etichetta="La ruota: trascinala e lasciala andare per girarla"
+                    classe="is-principale"
+                  />
+                </Scena>
+                <Scena attiva={scena === 'moltiplicatori'} nome="moltiplicatori">
+                  {categoria && <Cartello categoria={categoria} />}
+                  <RuotaFisica
+                    spicchi={MOLTIPLICATORI.length}
+                    disegno={<DisegnoMoltiplicatori />}
+                    fermaSu={fermaSuM}
+                    pronta={prontaM}
+                    onLancio={() => void lanciaMoltiplicatori()}
+                    onFerma={fermataMoltiplicatori}
+                    onDebole={() => setDebole(true)}
+                    annulla={annullaM}
+                    luci={luciM}
+                    lampade={24}
+                    durataMinima={2_800}
+                    mozzo={mozzoM}
+                    invito={prontaM}
+                    etichetta="La ruota dei moltiplicatori: trascinala e lasciala andare"
+                    classe="is-moltiplicatori"
+                  />
+                  {rivelato && palio && <Rivelazione {...palio} />}
+                </Scena>
+                <Scena attiva={scena === 'moneta'} nome="moneta">
+                  {sfida?.tipo === 'moneta' && (
+                    <Moneta
+                      key={giro?.n}
+                      moltiplicatore={sfida.moltiplicatore}
+                      uscito={sfida.uscito}
+                      lanciabile={scena === 'moneta' && !intermezzo && giro?.stato === 'sfida' && !inviando}
+                      annulla={annullaMoneta}
+                      onTocca={() => void lanciaMoneta()}
+                      onCaduta={caduta}
                     />
-                  </Scena>
-                  <Scena attiva={scena === 'moltiplicatori'} nome="moltiplicatori">
-                    {materia && <Cartello materia={materia} />}
-                    <RuotaFisica
-                      spicchi={MOLTIPLICATORI.length}
-                      disegno={<DisegnoMoltiplicatori />}
-                      fermaSu={fermaSuM}
-                      pronta={prontaM}
-                      onLancio={() => void lanciaMoltiplicatori()}
-                      onFerma={fermataMoltiplicatori}
-                      onDebole={() => setDebole(true)}
-                      annulla={annullaM}
-                      luci={luciM}
-                      lampade={24}
-                      durataMinima={2_800}
-                      mozzo={mozzoM}
-                      invito={prontaM}
-                      etichetta="La ruota dei moltiplicatori: trascinala e lasciala andare"
-                      classe="is-moltiplicatori"
-                    />
-                    {rivelato && palio && <Rivelazione {...palio} />}
-                  </Scena>
-                  <Scena attiva={scena === 'moneta'} nome="moneta">
-                    {sfida?.tipo === 'moneta' && (
-                      <Moneta
-                        key={giro?.n}
-                        moltiplicatore={sfida.moltiplicatore}
-                        uscito={sfida.uscito}
-                        lanciabile={scena === 'moneta' && !intermezzo && giro?.stato === 'sfida' && !inviando}
-                        annulla={annullaMoneta}
-                        onTocca={() => void lanciaMoneta()}
-                        onCaduta={caduta}
-                      />
-                    )}
-                  </Scena>
-                </>
-              )}
-              <Intermezzo
-                dati={intermezzo}
-                onMezzo={() => intermezzo && setScena(intermezzo.verso)}
-                onFine={() => setIntermezzo(null)}
-              />
-            </div>
+                  )}
+                </Scena>
+              </>
+            )}
+            <Intermezzo
+              dati={intermezzo}
+              onMezzo={() => intermezzo && setScena(intermezzo.verso)}
+              onFine={() => setIntermezzo(null)}
+            />
+          </div>
 
-            <section className="ct-pannello" aria-live="polite">
-              {errore ? (
-                <p className="ct-nota">{errore}</p>
-              ) : !stato ? null : scena === 'moltiplicatori' ? (
-                <Indicazione titolo={rivelato && palio ? `In palio ${palio.vincita} punti` : 'Gira i moltiplicatori'}>
-                  {rivelato && palio
-                    ? `${giro?.puntata} ${scriviMoltiplicatore(palio.moltiplicatore)}, se rispondi giusto`
+          <section className="ct-pannello" aria-live="polite">
+            {errore ? (
+              <p className="ct-nota">{errore}</p>
+            ) : !stato ? null : scena === 'moltiplicatori' ? (
+              <Indicazione titolo={rivelato && palio ? `In palio ${palio.vincita} punti` : 'Gira i moltiplicatori'}>
+                {rivelato && palio
+                  ? `${giro?.puntata} ${scriviMoltiplicatore(palio.moltiplicatore)}, se rispondi giusto`
+                  : debole
+                    ? 'Più forte: trascinala e lasciala andare'
+                    : 'Trascina la ruota e lasciala andare'}
+              </Indicazione>
+            ) : scena === 'moneta' && sfida?.tipo === 'moneta' ? (
+              <Indicazione
+                titolo={
+                  sfida.uscito && monetaCaduta
+                    ? sfida.uscito === 'blu'
+                      ? `Blu: vinci ${sfida.vincita}!`
+                      : 'Rosso: vince il banco'
+                    : 'Tocca la moneta'
+                }
+              >
+                <span className="ct-lati">
+                  <span className="ct-lato is-blu">
+                    Blu {scriviMoltiplicatore(sfida.moltiplicatore)} · vinci {sfida.vincita}
+                  </span>
+                  <span className="ct-lato is-rosso">Rosso · banco</span>
+                </span>
+              </Indicazione>
+            ) : !puoGirare ? (
+              <PochiPunti saldo={saldo} onClassificate={() => vai(ROTTE.home)} />
+            ) : (
+              <>
+                <LineaPuntata min={PUNTATA_MINIMA} max={saldo} valore={scelta} onChange={setPuntata} />
+                <p className={`ct-suggerimento${debole ? ' is-debole' : ''}`}>
+                  <ManoCheTrascina />
+                  {girando
+                    ? `${inGioco} punti in gioco`
                     : debole
                       ? 'Più forte: trascinala e lasciala andare'
-                      : 'Trascina la ruota e lasciala andare'}
-                </Indicazione>
-              ) : scena === 'moneta' && sfida?.tipo === 'moneta' ? (
-                <Indicazione
-                  titolo={
-                    sfida.uscito && monetaCaduta
-                      ? sfida.uscito === 'blu'
-                        ? `Blu: vinci ${sfida.vincita}!`
-                        : 'Rosso: vince il banco'
-                      : 'Tocca la moneta'
-                  }
-                >
-                  <span className="ct-lati">
-                    <span className="ct-lato is-blu">
-                      Blu {scriviMoltiplicatore(sfida.moltiplicatore)} · vinci {sfida.vincita}
-                    </span>
-                    <span className="ct-lato is-rosso">Rosso · banco</span>
-                  </span>
-                </Indicazione>
-              ) : !puoGirare ? (
-                <PochiPunti saldo={saldo} onClassificate={() => vai(ROTTE.home)} />
-              ) : (
-                <>
-                  <LineaPuntata min={PUNTATA_MINIMA} max={saldo} valore={scelta} onChange={setPuntata} />
-                  <p className={`ct-suggerimento${debole ? ' is-debole' : ''}`}>
-                    <ManoCheTrascina />
-                    {girando
-                      ? `Puntata di ${inGioco} punti`
-                      : debole
-                        ? 'Più forte: trascinala e lasciala andare'
-                        : 'Trascina la ruota per girarla'}
-                  </p>
-                </>
-              )}
-            </section>
-          </div>
+                      : 'Trascina la ruota per girarla'}
+                </p>
+              </>
+            )}
+          </section>
         </div>
-      )}
+      </div>
 
       <Adesivo adesivo={adesivo} />
       {pioggia > 0 && <PioggiaDiMonete key={pioggia} />}
-      <ComeSiGiocaRuota open={regole} onClose={() => setRegole(false)} />
+      <ComeSiGiocaRuota open={regole} onClose={() => setRegole(false)} numero={numero} />
     </Pagina>
   )
 }
@@ -527,10 +633,22 @@ function Scena({ attiva, nome, children }: { attiva: boolean; nome: string; chil
 
 /**
  * Il tabellone in cima: il saldo, che conta quando cambia, e quel che Crazy Time
- * ha dato o tolto oggi. A ogni cambio del saldo la differenza sale e svanisce:
- * la puntata pagata al lancio, la vincita all'esito.
+ * ha dato o tolto oggi. A ogni cambio del saldo la differenza sale e svanisce,
+ * grande, e il tabellone si accende: rosso per la puntata pagata al lancio,
+ * d'oro per la vincita che arriva. `saldoRef` e' il numero, da dove partono le
+ * fiches e dove arrivano le monete.
  */
-function Tabellone({ saldo, netto, giri }: { saldo: number; netto: number; giri: number }) {
+function Tabellone({
+  saldo,
+  netto,
+  giri,
+  saldoRef,
+}: {
+  saldo: number
+  netto: number
+  giri: number
+  saldoRef: RefObject<HTMLSpanElement | null>
+}) {
   const prima = useRef(saldo)
   const [variazione, setVariazione] = useState<{ chiave: number; quanto: number } | null>(null)
   useEffect(() => {
@@ -541,9 +659,16 @@ function Tabellone({ saldo, netto, giri }: { saldo: number; netto: number; giri:
   const tono = netto > 0 ? ' is-piu' : netto < 0 ? ' is-meno' : ''
   return (
     <div className="ct-tabellone">
+      {variazione && (
+        <span
+          key={variazione.chiave}
+          className={`ct-tabellone__lampo${variazione.quanto > 0 ? ' is-incassa' : ' is-paga'}`}
+          aria-hidden="true"
+        />
+      )}
       <span className="ct-tabellone__voce">
         <span className="ct-tabellone__etichetta">Saldo</span>
-        <span className="ct-tabellone__saldo">
+        <span className="ct-tabellone__saldo" ref={saldoRef}>
           <Numero valore={saldo} />
           {variazione && (
             <span
@@ -569,12 +694,12 @@ function Tabellone({ saldo, netto, giri }: { saldo: number; netto: number; giri:
   )
 }
 
-/** Il cartello sopra la ruota dei moltiplicatori: di che materia sara' la domanda. */
-function Cartello({ materia }: { materia: MateriaRuota }) {
+/** Il cartello sopra la ruota dei moltiplicatori: di che categoria sara' la domanda. */
+function Cartello({ categoria }: { categoria: CategoriaQuiz }) {
   return (
-    <p className="ct-cartello" style={{ '--colore': COLORI_MATERIE_RUOTA[materia] } as CSSProperties}>
-      <IconaMateria materia={materia} piccola />
-      Domanda di {NOMI_MATERIE_RUOTA[materia].toLowerCase()}
+    <p className="ct-cartello" style={{ '--colore': coloreDellaCategoria(categoria) } as CSSProperties}>
+      <IconaCategoria categoria={categoria} piccola />
+      Domanda: {NOMI_CATEGORIE[categoria]}
     </p>
   )
 }
@@ -597,10 +722,18 @@ function Rivelazione({ moltiplicatore, vincita }: { moltiplicatore: number; vinc
 }
 
 /** La domanda pronta ma non ancora aperta, come quando si riapre la pagina: il tempo parte dal Via. */
-function Pronti({ materia, vincita, onVia }: { materia: MateriaRuota; vincita: number | null; onVia: () => void }) {
+function Pronti({
+  categoria,
+  vincita,
+  onVia,
+}: {
+  categoria: CategoriaQuiz
+  vincita: number | null
+  onVia: () => void
+}) {
   return (
     <div className="ct-pronti">
-      <Cartello materia={materia} />
+      <Cartello categoria={categoria} />
       {vincita !== null && (
         <p className="ct-pronti__palio">
           In palio <span className="u-tabnum">{vincita}</span> punti
@@ -634,8 +767,8 @@ function PochiPunti({ saldo, onClassificate }: { saldo: number; onClassificate: 
   )
 }
 
-function IconaMateria({ materia, piccola = false }: { materia: MateriaRuota; piccola?: boolean }) {
-  const Icona = ICONE_MATERIE_RUOTA[materia]
+function IconaCategoria({ categoria, piccola = false }: { categoria: CategoriaQuiz; piccola?: boolean }) {
+  const Icona = iconaDellaCategoria(categoria)
   return <Icona size={piccola ? 18 : 34} />
 }
 

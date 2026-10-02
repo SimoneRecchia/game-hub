@@ -13,6 +13,7 @@ import {
   dentroVista,
   diGeografia,
   giornataDelQuiz,
+  sceltaValida,
   type CategoriaQuiz,
   type ModoQuiz,
 } from '../quiz'
@@ -226,6 +227,23 @@ describe('le domande', () => {
         }
       }
     }
+  })
+
+  it('una scelta e’ un testo corto, anche con spazi, accenti e barre', () => {
+    for (const id of ['cap:FR', 'chi:Nikola Tesla', 'da:André-Marie Ampère', '10-04/2', 'g:dose assorbita']) {
+      expect(sceltaValida(id), id).toBe(true)
+    }
+    expect(sceltaValida('chi:Neville Francis Fitzgerald Chamberlain')).toBe(true)
+    for (const id of [null, 42, '', 'x'.repeat(81), 'a\nb', 'a\u0000b']) {
+      expect(sceltaValida(id), String(id)).toBe(false)
+    }
+  })
+
+  it('una domanda con un id che il server non accetterebbe non e’ valida', () => {
+    const d = tante('capitali', 'scelta', 'mondo', 1)[0]
+    expect(domandaValida(d)).toBe(true)
+    const rotta = { ...d, opzioni: d.opzioni.map((o) => (o.id === d.giusta ? o : { ...o, id: `${o.id}\n` })) }
+    expect(domandaValida(rotta)).toBe(false)
   })
 
   it('arrivano fino a cinquanta per partita, se i dati bastano', () => {

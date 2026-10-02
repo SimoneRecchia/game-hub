@@ -9,7 +9,8 @@
  * chiude com'e'.
  *
  * Tutto quel che e' a caso lo decide il server, con `crypto.getRandomValues`:
- * lo spicchio della ruota e il moltiplicatore della moneta quando si gira, il
+ * lo spicchio della ruota — fra quelli del giorno, con le sue categorie — e il
+ * moltiplicatore della moneta quando si gira, il
  * moltiplicatore della domanda quando si gira la sua ruota, il lato della
  * moneta quando la si lancia. Il browser riceve solo dove fermare le ruote, e
  * la moneta. La domanda si apre quando la si chiede, con il suo tempo che parte
@@ -31,14 +32,13 @@ import {
   MOLTIPLICATORI,
   MOLTIPLICATORI_MONETA,
   PUNTATA_MINIMA,
-  SPICCHI,
   deltaDi,
   improntaDomanda,
   puntataValida,
+  spicchiDelGiorno,
   vincitaDi,
   type DomandaRuota,
   type LatoMoneta,
-  type MateriaRuota,
   type Spicchio,
 } from '../../shared/ruota'
 import type { GiroRuota, RispostaQuiz, RuotaStato, RuotaSummary, SfidaRuotaVista } from '../../shared/types'
@@ -70,10 +70,9 @@ type SfidaSalvata =
   | { tipo: 'moneta'; moltiplicatore: number; uscito?: LatoMoneta }
   | {
       tipo: 'domanda'
-      materia: MateriaRuota
+      categoria: CategoriaQuiz
       moltiplicatore?: number
       spicchioMoltiplicatore?: number
-      categoria?: CategoriaQuiz
       domanda?: DomandaCompleta
       scelta?: string | null
       giusta?: boolean
@@ -90,9 +89,13 @@ export function aCaso(n: number): number {
   }
 }
 
-/** Uno spicchio a caso fra quelli che si possono giocare: tutti, tranne le domande di una materia senza domande. */
-export function spicchioACaso(possibile: (s: Spicchio) => boolean, caso: (n: number) => number = aCaso): number {
-  const buoni = SPICCHI.flatMap((s, i) => (possibile(s) ? [i] : []))
+/** Uno spicchio a caso fra quelli che si possono giocare: tutti, tranne le domande di una categoria senza domande. */
+export function spicchioACaso(
+  spicchi: readonly Spicchio[],
+  possibile: (s: Spicchio) => boolean,
+  caso: (n: number) => number = aCaso,
+): number {
+  const buoni = spicchi.flatMap((s, i) => (possibile(s) ? [i] : []))
   return buoni[caso(buoni.length)]
 }
 
@@ -139,7 +142,7 @@ function leggiSfida(row: GiroRow): SfidaSalvata | null {
   }
 }
 
-/** Le domande che un giocatore ha gia' avuto oggi, come "materia:impronta". */
+/** Le domande che un giocatore ha gia' avuto oggi, come "categoria:impronta". */
 async function domandeViste(db: D1Database, playerId: string, numero: number): Promise<string[]> {
   const { results } = await db
     .prepare('SELECT domanda FROM ruota_giocate WHERE player_id = ? AND puzzle_number = ? AND domanda IS NOT NULL')
@@ -149,21 +152,24 @@ async function domandeViste(db: D1Database, playerId: string, numero: number): P
 }
 
 /**
- * Le materie che oggi hanno domande che il giocatore non ha ancora avuto: lo
- * spicchio di una materia senza domande, o con tutte gia' viste, non esce.
+ * Le categorie che oggi hanno domande che il giocatore non ha ancora avuto: lo
+ * spicchio di una categoria senza domande, o con tutte gia' viste, non esce.
+ * La colonna di `ruota_domande` si chiama ancora `materia`, da quando le
+ * domande erano per materia, e porta la categoria: rinominarla avrebbe rotto
+ * il codice di prima nel minuto fra la migrazione e la pubblicazione.
  */
-async function materieDisponibili(db: D1Database, playerId: string, numero: number): Promise<Set<MateriaRuota>> {
+async function categorieDisponibili(db: D1Database, playerId: string, numero: number): Promise<Set<string>> {
   const [{ results }, viste] = await Promise.all([
     db
       .prepare('SELECT materia, json_array_length(domande) AS quante FROM ruota_domande WHERE puzzle_number = ?')
       .bind(numero)
-      .all<{ materia: MateriaRuota; quante: number }>(),
+      .all<{ materia: string; quante: number }>(),
     domandeViste(db, playerId, numero),
   ])
   const usate = new Map<string, number>()
   for (const v of viste) {
-    const materia = v.slice(0, v.indexOf(':'))
-    usate.set(materia, (usate.get(materia) ?? 0) + 1)
+    const categoria = v.slice(0, v.indexOf(':'))
+    usate.set(categoria, (usate.get(categoria) ?? 0) + 1)
   }
   return new Set(results.filter((r) => r.quante > (usate.get(r.materia) ?? 0)).map((r) => r.materia))
 }
@@ -200,11 +206,10 @@ export function vistaGiro(row: GiroRow & { spicchio: number }, adesso: number): 
     const m = salvata.moltiplicatore ?? null
     sfida = {
       tipo: 'domanda',
-      materia: salvata.materia,
+      categoria: salvata.categoria,
       moltiplicatore: m,
       spicchioMoltiplicatore: salvata.spicchioMoltiplicatore ?? null,
       vincita: m === null ? null : vincitaDi(row.puntata, m),
-      categoria: salvata.categoria ?? null,
       domanda: d ? senzaRisposta(d) : null,
       limiteMs: d ? limiteMs(d) : null,
       restanteMs: aperta ? Math.max(0, limiteMs(d) - (adesso - Date.parse(row.aperta_at!))) : null,
@@ -257,10 +262,11 @@ export async function statoRuota(db: D1Database, playerId: string): Promise<Ruot
 }
 
 /**
- * Un giro. Lo spicchio esce qui, a caso, e la puntata e' gia' pagata: il banco
- * la tiene, un minigioco la puo' restituire moltiplicata. La moneta ha subito
- * il suo moltiplicatore, che si vede prima di lanciarla. Un minigioco
- * dell'ultimo giro lasciato a meta' si chiude: vale gia' perso.
+ * Un giro. Lo spicchio esce qui, a caso fra quelli del giorno, e la puntata e'
+ * gia' pagata: il banco la tiene, il triplo la restituisce per tre subito, un
+ * minigioco la puo' restituire moltiplicata. La moneta ha subito il suo
+ * moltiplicatore, che si vede prima di lanciarla. Un minigioco dell'ultimo
+ * giro lasciato a meta' si chiude: vale gia' perso.
  */
 export async function gira(db: D1Database, playerId: string, puntata: unknown): Promise<void> {
   const numero = today().puzzleNumber
@@ -275,15 +281,16 @@ export async function gira(db: D1Database, playerId: string, puntata: unknown): 
   if (ultimo && Date.now() - Date.parse(ultimo.created_at) < INTERVALLO_GIRI_MS) {
     fail(429, 'TROPPO_PRESTO', 'La ruota sta ancora girando.')
   }
-  const materie = await materieDisponibili(db, playerId, numero)
-  const indice = spicchioACaso((s) => s.tipo !== 'domanda' || materie.has(s.materia))
-  const s = SPICCHI[indice]
+  const spicchi = spicchiDelGiorno(numero)
+  const categorie = await categorieDisponibili(db, playerId, numero)
+  const indice = spicchioACaso(spicchi, (s) => s.tipo !== 'domanda' || categorie.has(s.categoria))
+  const s = spicchi[indice]
   const sfida: SfidaSalvata | null =
-    s.tipo === 'banco'
-      ? null
-      : s.tipo === 'moneta'
-        ? { tipo: 'moneta', moltiplicatore: MOLTIPLICATORI_MONETA[aCaso(MOLTIPLICATORI_MONETA.length)] }
-        : { tipo: 'domanda', materia: s.materia }
+    s.tipo === 'moneta'
+      ? { tipo: 'moneta', moltiplicatore: MOLTIPLICATORI_MONETA[aCaso(MOLTIPLICATORI_MONETA.length)] }
+      : s.tipo === 'domanda'
+        ? { tipo: 'domanda', categoria: s.categoria }
+        : null
   const n = (ultimo?.n ?? 0) + 1
   const adesso = nowIso()
   const scritture: D1PreparedStatement[] = []
@@ -314,7 +321,7 @@ export async function gira(db: D1Database, playerId: string, puntata: unknown): 
         puntata,
         indice,
         sfida ? 'sfida' : 'fatto',
-        deltaDi(puntata, null),
+        deltaDi(puntata, s.tipo === 'fisso' ? s.moltiplicatore : null),
         sfida ? JSON.stringify(sfida) : null,
         DISPOSIZIONE_RUOTA,
         adesso,
@@ -360,8 +367,8 @@ export async function giraMoltiplicatore(db: D1Database, playerId: string): Prom
 }
 
 /**
- * Apre la domanda: una a caso fra quelle della materia di oggi che il giocatore
- * non ha ancora avuto, e il tempo parte adesso. Prima va girata la ruota dei
+ * Apre la domanda: una a caso fra quelle della categoria di oggi che il
+ * giocatore non ha ancora avuto, e il tempo parte adesso. Prima va girata la ruota dei
  * moltiplicatori; se e' gia' aperta la ridà com'e', con il tempo che le resta.
  */
 export async function apriDomanda(db: D1Database, playerId: string): Promise<void> {
@@ -374,14 +381,14 @@ export async function apriDomanda(db: D1Database, playerId: string): Promise<voi
   const [voce, viste] = await Promise.all([
     db
       .prepare('SELECT domande FROM ruota_domande WHERE puzzle_number = ? AND materia = ?')
-      .bind(row.puzzle_number, sfida.materia)
+      .bind(row.puzzle_number, sfida.categoria)
       .first<{ domande: string }>(),
     domandeViste(db, playerId, row.puzzle_number),
   ])
   const domande = voce ? (JSON.parse(voce.domande) as DomandaRuota[]) : []
   if (domande.length === 0) fail(503, 'DOMANDE_ASSENTI', 'Le domande di oggi non sono ancora pronte.')
   const giaViste = new Set(viste)
-  const chiave = (d: DomandaRuota) => `${sfida.materia}:${improntaDomanda(d.domanda)}`
+  const chiave = (d: DomandaRuota) => `${sfida.categoria}:${improntaDomanda(d.domanda)}`
   const nuove = domande.filter((d) => !giaViste.has(chiave(d)))
   // Finite quelle nuove — due giri partiti insieme — se ne ripete una piuttosto che lasciare la sfida aperta.
   const fra = nuove.length > 0 ? nuove : domande
@@ -393,7 +400,7 @@ export async function apriDomanda(db: D1Database, playerId: string): Promise<voi
         WHERE player_id = ? AND puzzle_number = ? AND n = ? AND stato = 'sfida'`,
     )
     .bind(
-      JSON.stringify({ ...sfida, categoria: scelta.categoria, domanda: scelta.domanda }),
+      JSON.stringify({ ...sfida, domanda: scelta.domanda }),
       chiave(scelta),
       adesso,
       adesso,

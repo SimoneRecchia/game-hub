@@ -69,6 +69,8 @@ interface Props {
   /** Quanto dura almeno la frenata, in millisecondi. */
   durataMinima: number
   mozzo: Mozzo
+  /** La puntata e' sulla ruota: il mozzo si fa fiche, finché non si sa com'e' andata. */
+  fiche?: boolean
   /** La freccia che dice di trascinarla, finché non la si tocca. */
   invito?: boolean
   etichetta: string
@@ -320,7 +322,9 @@ export function RuotaFisica(props: Props) {
   return (
     <div
       ref={radice}
-      className={`ct-ruota ${props.classe ?? ''} is-luci-${props.luci}${props.pronta ? ' is-pronta' : ''}`}
+      className={`ct-ruota ${props.classe ?? ''} is-luci-${props.luci}${props.pronta ? ' is-pronta' : ''}${
+        props.fiche ? ' has-fiche' : ''
+      }`}
       role="button"
       tabIndex={props.pronta ? 0 : -1}
       aria-disabled={!props.pronta}

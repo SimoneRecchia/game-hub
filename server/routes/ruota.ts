@@ -1,16 +1,15 @@
 import { Hono } from 'hono'
+import { sceltaValida } from '../../shared/quiz'
 import type { RuotaStato } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
 import { apriDomanda, gira, giraMoltiplicatore, lanciaMoneta, rispondi, statoRuota } from '../lib/ruotaStore'
 import { requireVerified } from '../lib/session'
 
-/** Una scelta e' l'id di un'opzione: corto, e di caratteri semplici. Null e' il tempo finito. */
+/** Una scelta e' l'id di un'opzione (`sceltaValida`). Null e' il tempo finito. */
 function leggiScelta(valore: unknown): string | null {
   if (valore === null || valore === undefined) return null
-  if (typeof valore !== 'string' || !/^[A-Za-z0-9:_-]{1,40}$/.test(valore)) {
-    fail(400, 'SCELTA', 'La risposta non è valida.')
-  }
+  if (!sceltaValida(valore)) fail(400, 'SCELTA', 'La risposta non è valida.')
   return valore
 }
 

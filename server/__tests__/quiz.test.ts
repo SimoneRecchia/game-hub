@@ -142,12 +142,29 @@ describe('il quiz del giorno', () => {
     expect((await apri(chiama, io)).aperta?.indice).toBe(2)
   })
 
-  it('rifiuta le risposte che non sono un id', async () => {
+  it('accetta gli id con gli spazi e gli accenti dei nomi, e rifiuta quel che non e’ un id', async () => {
     const { chiama, giocatore, db } = banco()
-    preparaGiornata(db)
+    // Gli id come li fa la scienza: prima il server li rifiutava, e la risposta finiva in un errore.
+    const ampere = {
+      tipo: 'nome-unita',
+      testo: 'Da chi prende il nome l’ampere?',
+      opzioni: ['André-Marie Ampère', 'James Prescott Joule', 'Blaise Pascal', 'Nikola Tesla'].map((chi) => ({
+        id: `da:${chi}`,
+        testo: chi,
+      })),
+      giusta: 'da:André-Marie Ampère',
+      risposta: 'André-Marie Ampère',
+      soggetto: 'un:ampere',
+    } as DomandaCompleta
+    preparaGiornata(db, [ampere, ...domandeDiProva().slice(1)])
     const io = await giocatore('anna')
     await apri(chiama, io)
-    expect((await rispondi(chiama, io, 0, '<script>' as string)).status).toBe(400)
+    for (const cattiva of [42, '', 'x'.repeat(81), 'a\nb']) {
+      expect((await rispondi(chiama, io, 0, cattiva as string)).status).toBe(400)
+    }
+    const r = await rispondi(chiama, io, 0, 'da:André-Marie Ampère')
+    expect(r.status, JSON.stringify(r.dati)).toBe(200)
+    expect(r.dati.risposta.giusta).toBe(true)
   })
 
   it('va in classifica con i punti e, a pari punti, con il tempo', async () => {
