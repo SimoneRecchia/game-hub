@@ -27,6 +27,8 @@
  *   /fortuna                            i giochi d'azzardo: si puntano i punti delle classificate
  *   /crazy-time                         Crazy Time (/ruota ci porta)
  *   /slot                               la slot
+ *   /blackjack                          la sala del blackjack: un tavolo nuovo, o quello di un amico
+ *   /blackjack/tavolo/:id               un tavolo, fino a cinque giocatori
  *   /indovina-chi                       Indovina chi: la sala, i personaggi, le regole
  *   /indovina-chi/partita/:id           una partita
  *   /indovina-chi/invito/:codice        un invito arrivato con un link
@@ -37,6 +39,7 @@
  *   /scacchi/invito/:codice             un invito arrivato con un link
  *   /classifica                         tutte le classifiche: la generale e i giochi
  *   /classifica/generale                la generale per intero
+ *   /classifica/fortuna                 chi ha vinto di piu' ai giochi della Fortuna
  *   /classifica/wordle                  quella di un gioco (?periodo=week&indietro=1)
  *   /profilo
  *
@@ -79,9 +82,15 @@ export const ROTTE = {
   fortuna: '/fortuna',
   ruota: '/crazy-time',
   slot: '/slot',
+  blackjack: '/blackjack',
+  tavoloBJ: (id: string) => `/blackjack/tavolo/${id}`,
   /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero. */
   classifica: (chiave?: ChiaveClassifica) =>
-    !chiave ? '/classifica' : chiave === 'generale' ? '/classifica/generale' : `/classifica/${SLUG[chiave]}`,
+    !chiave
+      ? '/classifica'
+      : chiave === 'generale' || chiave === 'fortuna'
+        ? `/classifica/${chiave}`
+        : `/classifica/${SLUG[chiave]}`,
   /** L'indirizzo del gioco, radice delle sue schermate: da solo porta alla classificata. */
   gioco: (gioco: GiocoClassificato) => `/${SLUG[gioco]}`,
   classificata: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/classificata`,

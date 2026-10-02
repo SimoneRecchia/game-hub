@@ -65,17 +65,21 @@ const QuizLibero = lazy(caricaQuizLibero)
 const QuizDuello = lazy(caricaQuizDuello)
 const QuizInvito = lazy(caricaQuizInvito)
 
-/* E i giochi della Fortuna: Crazy Time e la slot, che puntano i punti di oggi. */
+/* E i giochi della Fortuna: Crazy Time, la slot e il blackjack, che puntano i punti di oggi. */
 const caricaRuota = () => import('./pages/Ruota')
 const Ruota = lazy(caricaRuota)
 const caricaSlot = () => import('./pages/Slot')
 const Slot = lazy(caricaSlot)
+const caricaBlackjack = () => import('./pages/Blackjack')
+const Blackjack = lazy(caricaBlackjack)
+const caricaTavoloBJ = () => import('./pages/BlackjackTavolo')
+const BlackjackTavolo = lazy(caricaTavoloBJ)
 
 function usePrecarica() {
   useEffect(() => {
     const t = window.setTimeout(() => {
       const pezzi = [caricaSala, caricaComputer, caricaPartita, caricaInvito, caricaQuiz, caricaQuizLibero]
-      const fortuna = [caricaRuota, caricaSlot]
+      const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ]
       void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna].map((c) => c())).catch(() => {})
     }, 2_500)
     return () => window.clearTimeout(t)
@@ -157,6 +161,8 @@ export default function App() {
             <Route path={ROTTE.fortuna} element={<Fortuna />} />
             <Route path={ROTTE.ruota} element={<Ruota />} />
             <Route path={ROTTE.slot} element={<Slot />} />
+            <Route path={ROTTE.blackjack} element={<Blackjack />} />
+            <Route path="/blackjack/tavolo/:id" element={<BlackjackTavolo />} />
             <Route path="/ruota" element={<Navigate to={ROTTE.ruota} replace />} />
 
             <Route path="/indovina-chi" element={<IndovinaChi />} />

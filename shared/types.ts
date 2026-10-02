@@ -11,6 +11,8 @@ import type { Lato, Personaggi, Risposta } from './indovina'
 import type { GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
 import type { LatoMoneta } from './ruota'
+import type { Carta, ManoBJ } from './blackjack'
+import type { FaseBJ } from './blackjack-tavolo'
 
 export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
 
@@ -425,6 +427,7 @@ export type Attivita =
   | 'ruota'
   | 'fortuna'
   | 'slot'
+  | 'blackjack'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -1061,7 +1064,7 @@ export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' 
 export type GiocoDaTavolo = 'indovina' | GiocoTavoliere
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
-export type ChiaveClassifica = GiocoClassificato | 'generale'
+export type ChiaveClassifica = GiocoClassificato | 'generale' | 'fortuna'
 
 /** Una riga dell'anteprima di una classifica: chi, e quanti punti. */
 export interface RigaAnteprima {
@@ -1121,6 +1124,28 @@ export interface GeneraleLeaderboard {
   updatedAt: string
   rows: GeneraleRow[]
   me: GeneraleRow | null
+}
+
+/** Una riga della classifica della Fortuna: chi ha vinto di piu' ai giochi d'azzardo, nel periodo. */
+export interface FortunaRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Quel che Crazy Time, la slot e il blackjack hanno dato o tolto, insieme: puo' essere sotto zero. */
+  punti: number
+  netti: Record<GiocoFortuna, number>
+  /** I giri della ruota e della slot, e le mani del blackjack. */
+  giocate: number
+}
+
+export interface FortunaLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: FortunaRow[]
+  me: FortunaRow | null
 }
 
 /** Tutto quel che serve alla schermata iniziale, in una richiesta. */
@@ -1234,6 +1259,8 @@ export interface FortunaRisposta {
   ruota: RuotaSummary
   /** `sfida` se l'ultimo giro della slot aspetta la risposta alla domanda. */
   slot: { stato: 'gioca' | 'sfida' }
+  /** Il tavolo a cui si e' seduti, e quelli degli amici online. */
+  blackjack: { mioTavolo: string | null; tavoli: TavoloInSala[] }
 }
 
 /** Un giro della slot, come lo vede chi gioca: la domanda senza la risposta finché non si risponde. */
@@ -1269,6 +1296,63 @@ export interface SlotStato {
   /** Le categorie del giorno, nell'ordine dei simboli dei rulli (shared/ruota.ts, categorieDelGiorno). */
   categorie: CategoriaQuiz[]
   giro: GiroSlot | null
+  msToNextPuzzle: number
+}
+
+/** Un tavolo del blackjack visto dalla sala: chi ci gioca, e quanti posti restano. */
+export interface TavoloInSala {
+  id: string
+  giocatori: GiocatoreBreve[]
+  liberi: number
+}
+
+/** La sala del blackjack: il saldo, il conto di oggi, il tavolo a cui si e' seduti e quelli degli amici. */
+export interface SalaBlackjack {
+  puzzleNumber: number
+  date: string
+  msToNextPuzzle: number
+  classificate: number
+  saldo: number
+  /** Quel che il blackjack ha dato o tolto oggi, e in quanti giri. */
+  netto: number
+  giri: number
+  mioTavolo: string | null
+  tavoli: TavoloInSala[]
+}
+
+/** Un posto del tavolo come lo vedono tutti: le carte non hanno niente da nascondere. */
+export interface PostoVistaBJ {
+  giocatore: GiocatoreBreve
+  /** La puntata del giro, raddoppi e divisioni compresi: zero per chi guarda. */
+  puntata: number
+  mani: ManoBJ[]
+  /** A giro finito: quel che il giro gli ha dato o tolto. */
+  delta: number | null
+  /** Si e' alzato a giro in corso. */
+  via: boolean
+  /** Ha la pagina aperta, o ha fatto qualcosa da poco. */
+  presente: boolean
+}
+
+/** Il tavolo per chi lo guarda, con il suo saldo. */
+export interface VistaTavoloBJ {
+  id: string
+  versione: number
+  giro: number
+  fase: FaseBJ
+  /** Quanto manca alla scadenza della fase o del turno, dall'ora del server; null se non c'e'. */
+  scadenzaMs: number | null
+  /** La scadenza del turno conta: c'e' qualcuno che aspetta. */
+  aTempo: boolean
+  banco: Carta[]
+  turno: { posto: number; mano: number } | null
+  posti: (PostoVistaBJ | null)[]
+  /** Il posto di chi guarda, o null se non e' seduto. */
+  mio: number | null
+  classificate: number
+  saldo: number
+  netto: number
+  giri: number
   msToNextPuzzle: number
 }
 

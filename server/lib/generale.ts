@@ -16,7 +16,15 @@
  * unire in memoria — le righe sono una per giocatore per gioco.
  */
 
-import type { GeneraleLeaderboard, GeneraleRow, GiocoClassificato, PeriodoClassifica } from '../../shared/types'
+import type {
+  FortunaLeaderboard,
+  FortunaRow,
+  GeneraleLeaderboard,
+  GeneraleRow,
+  GiocoClassificato,
+  GiocoFortuna,
+  PeriodoClassifica,
+} from '../../shared/types'
 import { nowIso } from './http'
 
 export interface TotaliGenerale {
@@ -222,6 +230,77 @@ export async function classificaGenerale(
   }
 
   const rows = ordinaGenerale([...totali.values()])
+  return {
+    scope: periodo.scope,
+    periodo,
+    updatedAt: nowIso(),
+    rows,
+    me: rows.find((r) => r.playerId === viewerId) ?? null,
+  }
+}
+
+/**
+ * La classifica della Fortuna: quel che Crazy Time, la slot e il blackjack
+ * hanno dato o tolto nel periodo, tutti insieme. E' gia' dentro la generale;
+ * qui si vede da solo, chi ha vinto di piu' e chi ha perso. Ci sta chi ha
+ * giocato almeno una volta; a pari conto passa avanti chi ha giocato meno,
+ * perché ha rischiato meno per lo stesso risultato.
+ */
+export async function classificaFortuna(
+  db: D1Database,
+  periodo: PeriodoClassifica,
+  viewerId: string,
+): Promise<FortunaLeaderboard> {
+  const { da, a } = periodo
+  const { results } = await db
+    .prepare(
+      `SELECT g.player_id, g.gioco, SUM(g.netto) AS netto, SUM(g.giocate) AS giocate,
+              p.nickname, p.display_name, p.avatar_color
+         FROM (SELECT player_id, 'ruota' AS gioco, netto, giri AS giocate FROM ruota_giornate
+                WHERE puzzle_number BETWEEN ?1 AND ?2
+               UNION ALL
+               SELECT player_id, gioco, netto, giocate FROM fortuna_giornate
+                WHERE puzzle_number BETWEEN ?1 AND ?2) g
+         JOIN players p ON p.id = g.player_id
+        GROUP BY g.player_id, g.gioco`,
+    )
+    .bind(da, a)
+    .all<{
+      player_id: string
+      gioco: GiocoFortuna
+      netto: number
+      giocate: number
+      nickname: string
+      display_name: string
+      avatar_color: string
+    }>()
+  const righe = new Map<string, Omit<FortunaRow, 'rank'>>()
+  for (const r of results) {
+    let riga = righe.get(r.player_id)
+    if (!riga) {
+      riga = {
+        playerId: r.player_id,
+        nickname: r.nickname,
+        displayName: r.display_name || r.nickname,
+        avatarColor: r.avatar_color,
+        punti: 0,
+        netti: { ruota: 0, slot: 0, blackjack: 0 },
+        giocate: 0,
+      }
+      righe.set(r.player_id, riga)
+    }
+    riga.netti[r.gioco] += r.netto
+    riga.punti += r.netto
+    riga.giocate += r.giocate
+  }
+  const rows = [...righe.values()]
+    .filter((r) => r.giocate > 0)
+    .sort((x, y) => {
+      if (x.punti !== y.punti) return y.punti - x.punti
+      if (x.giocate !== y.giocate) return x.giocate - y.giocate
+      return x.nickname.localeCompare(y.nickname, 'it', { sensitivity: 'base' })
+    })
+    .map((r, i) => ({ rank: i + 1, ...r }))
   return {
     scope: periodo.scope,
     periodo,

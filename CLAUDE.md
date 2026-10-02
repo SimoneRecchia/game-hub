@@ -376,22 +376,38 @@ e dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
 ognuna si apre per intero (`/classifica/generale`, `/classifica/wordle`). Non
 si normalizza per giornata ("il migliore prende cento"): cambierebbe le
 classifiche di ieri ogni volta che qualcuno gioca. Alla generale si aggiungono
-solo i giochi della Fortuna, che non sono classificate (vedi sotto).
+solo i giochi della Fortuna, che non sono classificate (vedi sotto), con un
+tratto loro nella barra di ogni giocatore; e la Fortuna ha una classifica sua
+(`/classifica/fortuna`, `classificaFortuna`), che mette in fila quel che i tre
+giochi hanno dato o tolto nel periodo: si va sotto zero, e a pari conto passa
+avanti chi ha giocato meno.
 
 **La Fortuna e' la quarta scheda, e i suoi giochi puntano un saldo solo.**
-Crazy Time e la slot stanno nella scheda Fortuna (`/fortuna`, il quadrifoglio),
-con il saldo di oggi in cima: i punti delle classificate piu' quel che i giochi
-della Fortuna hanno dato o tolto oggi (`saldoDi` in `server/lib/fortuna.ts`).
-Quel che si vince a un gioco si punta all'altro. Ogni gioco controlla il saldo
-dentro la sua scrittura con lo stesso pezzo di SQL (`nettoFortunaSql`), sui
-conti di tutti: Crazy Time ha il suo `ruota_giornate`, gli altri
-`fortuna_giornate`, una riga per giocatore, giorno e gioco, riscritta nel batch
-di ogni giocata. Il blackjack e' gia' nel `CHECK` di quella tabella. Crazy Time
-e' rimasto nelle sue tabelle perché spostarne i conti avrebbe voluto copiare i
-giorni passati, e nei minuti del deploy il codice di prima avrebbe scritto dove
-il nuovo non leggeva. La generale li somma tutti e li tiene ognuno nella sua
-colonna (`GeneraleRow.ruota`, `slot`, `blackjack`); la scheda ha la sua
-richiesta (`/api/fortuna`), e la schermata iniziale non mostra piu' Crazy Time.
+Crazy Time, la slot e il blackjack stanno nella scheda Fortuna (`/fortuna`, il
+quadrifoglio), con il saldo di oggi in cima: i punti delle classificate piu'
+quel che i giochi della Fortuna hanno dato o tolto oggi (`saldoDi` in
+`server/lib/fortuna.ts`). Quel che si vince a un gioco si punta all'altro. Ogni
+gioco controlla il saldo dentro la sua scrittura con lo stesso pezzo di SQL
+(`nettoFortunaSql`), sui conti di tutti: Crazy Time ha il suo `ruota_giornate`,
+gli altri `fortuna_giornate`, una riga per giocatore, giorno e gioco, riscritta
+nel batch di ogni giocata. Il blackjack e' gia' nel `CHECK` di quella tabella.
+Crazy Time e' rimasto nelle sue tabelle perché spostarne i conti avrebbe voluto
+copiare i giorni passati, e nei minuti del deploy il codice di prima avrebbe
+scritto dove il nuovo non leggeva. La generale li somma tutti e li tiene ognuno
+nella sua colonna (`GeneraleRow.ruota`, `slot`, `blackjack`); la scheda ha la
+sua richiesta (`/api/fortuna`), e la schermata iniziale non mostra piu' Crazy
+Time.
+
+**Nei giochi della Fortuna si vedono il saldo e la puntata, e basta.** Il
+tabellone in cima a ogni gioco (`Tabellone` in `src/games/fortuna/`) ha due
+voci, il saldo di adesso e la puntata in gioco o scelta; la scheda della
+Fortuna ha il saldo grande, senza scomporlo. Quel che si e' vinto o perso oggi,
+e da quanto si e' partiti — i punti delle classificate — non si dicono, per
+scelta: al tavolo si guarda quel che si ha davanti. Le carte della scheda
+dicono quanto si puo' puntare, non com'e' andata. Il momento di un giro invece
+si vede tutto — l'adesivo con la vincita, il mozzo della ruota, le fasce sulle
+mani del blackjack — perché e' il gioco. Il conto della giornata resta nella
+classifica della Fortuna, che e' il posto dove si va a guardarlo.
 
 **Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta
 nella scheda della Fortuna (`/crazy-time`; `/ruota`, l'indirizzo di quando si
@@ -544,12 +560,11 @@ moneta si lancia toccandola. Mentre e' in aria il tabellone resta com'era
 sarebbe la soluzione. Una vincita ha l'adesivo d'oro e la pioggia di monete, il
 banco l'adesivo bordato e un sussulto del palco. Dopo un giro il pannello torna
 alla puntata, che resta quella di prima finché non la si cambia, come al
-tavolo. Il tabellone in cima dice il saldo e quel che Crazy Time ha dato o
-tolto oggi, e in quanti giri; nella scheda della Fortuna la carta dice lo
-stesso e quanto si puo' puntare, e non ha l'anello, perché Crazy Time non
-finisce: c'e' solo finché mancano i punti per la prima puntata. La ruota si
-riprende in mano `INTERVALLO_GIRI_MS` dopo il lancio: senza animazioni si
-fermerebbe subito, e il server direbbe di no.
+tavolo. Il tabellone in cima dice il saldo e la puntata; nella scheda della
+Fortuna la carta dice quanto si puo' puntare, e non ha l'anello, perché Crazy
+Time non finisce: c'e' solo finché mancano i punti per la prima puntata. La
+ruota si riprende in mano `INTERVALLO_GIRI_MS` dopo il lancio: senza animazioni
+si fermerebbe subito, e il server direbbe di no.
 
 **La puntata e la vincita si vedono andare e venire.** Al lancio una pila di
 fiches vola dal saldo al mozzo, che diventa una fiche "in gioco", e il saldo
@@ -618,6 +633,95 @@ che pagano, il display la segna, le monete cadono nel vassoio e da li' volano
 al saldo, che sale quando arriva la prima. Dal ×20 c'e' l'adesivo d'oro, dal
 ×100 la pioggia di monete, e i tre sette sono il jackpot, con le luci a
 raffica.
+
+**Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
+europee dei casinò italiani (`shared/blackjack.ts`): niente carta coperta — il
+banco prende la seconda dopo i giocatori, e se fa blackjack si prende anche
+raddoppi e divisioni — il banco sta su tutti i 17, si raddoppia con due carte
+qualunque, anche dopo una divisione, si divide fino a quattro mani e gli assi
+una volta, con una carta. Niente assicurazione e niente resa. L'unica regola
+diversa e' il pagamento del blackjack, alla pari e non 3 a 2: con il 3 a 2 chi
+gioca al meglio riceverebbe il 99,4%, piu' della slot e di Crazy Time; cosi' il
+97,1% (`resaBlackjack`, un conto esatto con la strategia migliore, a mazzo
+infinito). Il sabot si rimescola a ogni carta, come le macchine dei casinò
+online: ogni carta e' a caso fra le cinquantadue, con `crypto.getRandomValues`,
+e contare non serve. Un test gioca quattrocentomila mani con `consiglio` e
+trova la stessa resa del conto. Il panno lo dice ("IL BLACKJACK PAGA 1 A 1"),
+come lo dicono i tavoli veri che pagano 6 a 5. Si punta da `PUNTATA_MINIMA_BJ`
+a tutto il saldo: la vincita massima e' quanto si e' messo sul tavolo, che il
+saldo deve coprire, quindi un giro al piu' raddoppia la giornata.
+
+**Il tavolo va avanti con le richieste, non con un orologio.** Un tavolo
+(`shared/blackjack-tavolo.ts`) ha fino a `POSTI_BJ` giocatori e tre fasi: le
+puntate, il gioco, la fine. Da soli si punta e le carte arrivano subito; con
+altri al tavolo la prima puntata apre `PUNTATE_MS` per le loro, e si
+distribuisce quando hanno puntato tutti quelli che ci sono. Chi deve decidere
+ha `TURNO_MS`, ma solo se qualcuno lo aspetta: da soli si pensa quanto si
+vuole, e chi si siede mentre un altro pensa gli lascia un turno intero. Sul
+server non c'e' un timer: le scadenze le applica la prima richiesta che arriva
+dopo, da chiunque venga (`avanza`), e ogni scadenza che ne segue parte da
+quella di prima, non da adesso, cosi' un tavolo letto dopo un minuto e' quello
+che sarebbe stato guardandolo tutto il tempo. Il banco gioca nella stessa
+richiesta dell'ultima mossa, e la fine resta in vista quanto serve a girare le
+sue carte (`durataFine`). Le regole sono funzioni pure su una bozza
+(`BozzaBJ`), che dicono che cosa e' cambiato (`MovimentoBJ`): i test le provano
+con un mazzo deciso e un orologio finto.
+
+**Una scrittura del tavolo e' un batch con l'impronta.** Lo stato intero sta in
+`bj_tavoli.stato` e si riscrive a ogni cambio, condizionato alla versione
+letta; nello stesso batch le righe delle mani (`bj_mani`, il registro dei
+conti) e dei posti (`bj_seduti`) si scrivono solo se il tavolo ha preso la
+scrittura, perché l'`UPDATE` del tavolo mette in `scrittura` un'impronta nuova
+e le altre istruzioni la cercano. Un conflitto — due giocatori che scrivono
+insieme — rilegge e riprova; una mossa porta il giro, la mano e quante carte
+ha, quindi riprovare non fa mai la mossa due volte, e un doppio tocco risponde
+`MOSSA_VECCHIA`. Il saldo si guarda nell'`UPDATE` del tavolo, sui conti di
+tutti i giochi della Fortuna, e `fortuna_giornate` si riconta nello stesso
+batch. Un giocatore siede a un tavolo alla volta: la chiave di `bj_seduti` e'
+lui, e un secondo posto fa fallire il batch intero. Una mano lasciata a meta'
+su un tavolo che nessuno guarda piu' conta persa, come la sfida di Crazy Time;
+i tavoli fermi da un giorno si cancellano quando se ne apre uno.
+
+**Chi c'e' al tavolo lo dice la presenza.** Un posto e' attivo se il giocatore
+ha la pagina del blackjack aperta, per la presenza, o ha fatto qualcosa da poco
+(`ASSENTE_MS`); non lo e' se la presenza lo vede in un'altra schermata dopo
+l'ultima cosa fatta al tavolo, perché cambiando schermata la presenza si scrive
+subito (`altrove`). Chi non c'e' e non ha puntato lascia il posto; chi si alza
+a giro in corso lascia le mani, che stanno e si pagano alla fine, e libera
+subito `bj_seduti`; chi si alza durante le puntate si riprende la puntata.
+Lasciare la pagina dall'app e' alzarsi: la pagina lo chiede quando si smonta,
+un giro dopo, perché in sviluppo React smonta e rimonta. Chiudere la scheda o
+ricaricarla no — una mano in corso non si perde per un ricaricamento — e se non
+si torna e' la presenza a liberare il posto. La sala aspetta l'uscita
+(`finitaLUscita`) prima di leggere, altrimenti direbbe ancora "Torna al
+tavolo". I tavoli degli amici sono quelli con qualcuno seduto e presente, nella
+sala e nella scheda della Fortuna, e "Siediti" porta al loro.
+
+**Le carte arrivano nell'ordine del tavolo.** Il server risponde con tutte le
+carte del giro, magari anche quelle del banco; il telefono le fa arrivare con
+un piano (`pianoDi` in `src/games/blackjack/piano.ts`): la distribuzione come
+al tavolo vero, una a testa dalla sinistra del banco, la sua, la seconda a
+testa, poi le carte chieste una alla volta e quelle del banco piu' lente, dopo
+un respiro. Una carta vola dal sabot girandosi a meta' strada (una Web
+Animation sull'elemento, con il ritardo del piano), e il totale di una mano
+conta solo le carte arrivate. Le mani hanno un nome (`id`) che non cambia
+quando una divisione sposta le altre: la carta che passa nella mano nuova
+scivola, e le carte gia' viste non rivolano. Il saldo resta fermo (`conto`)
+finché la vincita non arriva in monete; a fine giro il croupier raccoglie le
+carte negli scarti (copie nello strato dei voli, perché il tavolo passa intanto
+al giro dopo). Il controllo e' di un secondo e mezzo quando si aspetta
+qualcuno, di quattro quando tocca a me, di cinque da soli — solo per vedere chi
+si siede — e subito dopo una scadenza.
+
+**Il tavolo e' una mezzaluna, e io sto in fondo al centro.** Dritto dalla parte
+del banco, con la rastrelliera, il sabot a destra (la sinistra del banco, da
+dove si comincia) e gli scarti a sinistra; curvo dalla parte dei giocatori, con
+il bordo imbottito. Gli altri stanno due per lato, lungo il bordo, nell'ordine
+dei posti da sinistra; il mio posto e' sempre in fondo al centro, con il
+cerchio della puntata, e le mie carte le piu' grandi. Tutto si misura sul
+tavolo, che e' un contenitore (`cqw`, `cqh`): le scritte ad arco hanno un tetto
+anche sull'altezza, perché di traverso un arco largo quanto il panno copriva le
+mie carte.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —

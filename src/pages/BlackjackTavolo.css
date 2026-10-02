@@ -1,0 +1,946 @@
+/*
+ * Il tavolo del blackjack. In cima il tabellone, in mezzo il tavolo — un panno
+ * verde a mezzaluna, dritto dalla parte del banco e curvo da quella dei
+ * giocatori, con il bordo imbottito — e sotto i comandi. Il tavolo e' un
+ * contenitore: carte, posti e scritte si misurano sulla sua larghezza e
+ * sulla sua altezza, cosi' sta nello schermo senza scorrere a ogni misura.
+ *
+ * Sul panno, come ai tavoli veri: la rastrelliera delle fiches del banco in
+ * alto al centro, il sabot a destra (la sinistra del banco, da dove si
+ * comincia), gli scarti a sinistra, le carte del banco, le scritte lungo
+ * l'arco, i posti degli altri sull'arco e il mio in basso al centro, con il
+ * cerchio della puntata.
+ */
+.bj {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  animation: bj-entra 460ms var(--ease-out) both;
+}
+
+@keyframes bj-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.bj-errore {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-4);
+  margin: auto;
+  text-align: center;
+}
+
+/* ─────────────────────────────  Il panno  ───────────────────────────── */
+
+.bj-tavolo {
+  --carta-banco: min(13cqw, 11cqh, 88px);
+  --carta-mia: min(16.5cqw, 13.5cqh, 104px);
+  --carta-altri: min(7cqw, 6.4cqh, 46px);
+  position: relative;
+  flex: 1;
+  min-height: 240px;
+  container-type: size;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 26px 26px 50% 50% / 26px 26px 20% 20%;
+  background:
+    radial-gradient(62% 46% at 50% 40%, rgba(255, 255, 255, 0.13), transparent 70%),
+    repeating-radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 0.03) 0 1px, transparent 1px 3px),
+    radial-gradient(120% 95% at 50% 22%, var(--bj-panno-1), var(--bj-panno-2) 64%, var(--bj-panno-3));
+  box-shadow:
+    inset 0 22px 50px rgba(0, 0, 0, 0.28),
+    var(--shadow-md);
+}
+
+/* Il bordo imbottito, di pelle scura con il filo d'oro, sopra a tutto. */
+.bj-tavolo__bordo {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 9px var(--bj-bordo),
+    inset 0 0 0 10px rgba(255, 255, 255, 0.1),
+    inset 0 0 0 11.5px rgba(242, 210, 122, 0.55),
+    inset 0 0 0 13px rgba(0, 0, 0, 0.25),
+    inset 0 16px 24px rgba(0, 0, 0, 0.2);
+}
+
+/* La luce sopra il tavolo: respira piano, e si accende quando il giro si chiude. */
+.bj-tavolo__luce {
+  position: absolute;
+  inset: -10% 10% 30%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 246, 214, 0.12), transparent);
+  pointer-events: none;
+  animation: bj-luce 6s var(--ease-in-out) infinite;
+}
+
+@keyframes bj-luce {
+  50% {
+    opacity: 0.6;
+    transform: scale(1.06);
+  }
+}
+
+.bj-tavolo.is-chiuso .bj-tavolo__luce {
+  background: radial-gradient(closest-side, rgba(255, 214, 90, 0.22), transparent);
+}
+
+/* La rastrelliera del banco: le colonne di fiches viste dall'alto, nel vassoio di plastica scura. */
+.bj-rastrelliera {
+  position: absolute;
+  top: 3.5cqh;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  width: min(36cqw, 230px);
+  height: min(5.4cqh, 34px);
+  padding: 3px;
+  border-radius: 7px;
+  background: linear-gradient(180deg, #2b2f35, #0f1114);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 4px 10px rgba(0, 0, 0, 0.35);
+  transform: translateX(-50%);
+}
+
+.bj-rastrelliera__colonna {
+  --c: var(--bj-fiche-10);
+  flex: 1;
+  border-radius: 3px;
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.35), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.35)),
+    repeating-linear-gradient(180deg, var(--c) 0 3px, color-mix(in srgb, var(--c) 55%, #fff) 3px 4px);
+}
+
+.bj-rastrelliera__colonna.is-25 {
+  --c: var(--bj-fiche-25);
+}
+
+.bj-rastrelliera__colonna.is-50 {
+  --c: var(--bj-fiche-50);
+}
+
+.bj-rastrelliera__colonna.is-100 {
+  --c: #4a4f5a;
+}
+
+.bj-rastrelliera__colonna.is-500 {
+  --c: var(--bj-fiche-500);
+}
+
+/* Il sabot: la cassa scura con il frontale inclinato, e la carta che spunta dalla bocca. */
+.bj-sabot {
+  position: absolute;
+  top: 3cqh;
+  right: 6cqw;
+  z-index: 2;
+  width: min(15cqw, 92px);
+  height: min(11cqh, 70px);
+}
+
+.bj-sabot__cassa {
+  position: absolute;
+  inset: 0;
+  border-radius: 6px 6px 10px 4px;
+  background:
+    linear-gradient(90deg, transparent 18%, rgba(255, 255, 255, 0.08) 19% 21%, transparent 22%),
+    repeating-linear-gradient(180deg, var(--bj-dorso-1) 0 2px, #f4f1ea 2px 3px) 20% 18% / 72% 62% no-repeat,
+    linear-gradient(160deg, #3a3d44, #121417);
+  clip-path: polygon(0 18%, 100% 0, 100% 100%, 22% 100%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+.bj-sabot__bocca {
+  position: absolute;
+  left: 2%;
+  bottom: 8%;
+  width: 44%;
+  height: 46%;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(45deg, var(--bj-dorso-2) 0 3px, var(--bj-dorso-1) 3px 6px),
+    var(--bj-dorso-1);
+  box-shadow:
+    inset 0 0 0 2px #fbfaf6,
+    0 2px 6px rgba(0, 0, 0, 0.45);
+  transform: rotate(-24deg);
+}
+
+/* Gli scarti: il porta carte di plastica trasparente. */
+.bj-scarti {
+  position: absolute;
+  top: 3.5cqh;
+  left: 6cqw;
+  z-index: 1;
+  width: min(9cqw, 56px);
+  height: min(10cqh, 64px);
+  border-radius: 6px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.04));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* Le scritte lungo l'arco, in oro, come stampate sul panno. */
+.bj-scritte {
+  position: absolute;
+  top: 34cqh;
+  left: 50%;
+  z-index: 0;
+  width: min(98cqw, 600px, 78cqh);
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.bj-scritte__grande {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 2.5px;
+  fill: var(--bj-scritta);
+  opacity: 0.92;
+}
+
+.bj-scritte__piccola {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  fill: var(--bj-scritta-chiara);
+}
+
+.bj-scritte__filo {
+  fill: none;
+  stroke: var(--bj-scritta);
+  stroke-width: 1.1;
+  opacity: 0.45;
+}
+
+/* ─────────────────────────────  Il banco  ───────────────────────────── */
+
+.bj-banco {
+  --bj-carta: var(--carta-banco);
+  position: absolute;
+  top: 13.5cqh;
+  left: 50%;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+.bj-banco__carte {
+  display: flex;
+  align-items: flex-end;
+  gap: calc(var(--bj-carta) * 0.12);
+  min-height: calc(var(--bj-carta) * 1.4);
+}
+
+.bj-banco__nome {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--bj-scritta-chiara);
+}
+
+/* ─────────────────────────────  Le mani  ───────────────────────────── */
+
+.bj-mano {
+  position: relative;
+  display: grid;
+  justify-items: center;
+}
+
+.bj-mano__carte {
+  --passo: calc(var(--bj-carta) * 0.34);
+  --su: calc(var(--bj-carta) * 0.08);
+  position: relative;
+  width: calc(var(--bj-carta) + (var(--n) - 1) * var(--passo));
+  height: calc(var(--bj-carta) * 1.4 + (var(--n) - 1) * var(--su));
+  transition: width 0.3s var(--ease-out), height 0.3s var(--ease-out);
+}
+
+.bj-mano--banco .bj-mano__carte {
+  --passo: calc(var(--bj-carta) * 0.62);
+  --su: 0px;
+}
+
+.bj-mano__carta {
+  position: absolute;
+  left: calc(var(--i) * var(--passo));
+  top: calc((var(--n) - 1 - var(--i)) * var(--su));
+  z-index: var(--i);
+  transition:
+    left 0.3s var(--ease-out),
+    top 0.3s var(--ease-out);
+}
+
+/* Il totale: una targhetta scura in alto a sinistra della mano, che si gonfia a ogni carta. */
+.bj-mano__totale {
+  position: absolute;
+  top: -11px;
+  left: -12px;
+  z-index: 20;
+  min-width: 30px;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(5, 22, 13, 0.9);
+  box-shadow:
+    0 0 0 1.5px rgba(242, 210, 122, 0.75),
+    0 3px 8px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  animation: bj-totale 0.34s var(--ease-spring);
+}
+
+@keyframes bj-totale {
+  from {
+    transform: scale(1.35);
+  }
+}
+
+.bj-mano__totale.is-ventuno {
+  color: var(--bj-scritta);
+}
+
+.bj-mano__totale.is-bj {
+  background: linear-gradient(160deg, #fff2b8, #e9b93a 55%, #a8741a);
+  color: #3d2300;
+}
+
+.bj-mano__totale.is-oltre {
+  background: linear-gradient(160deg, #ff6b6b, #b5162b);
+  box-shadow:
+    0 0 0 1.5px #fff,
+    0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+.bj-mano:has(.bj-mano__totale.is-oltre) .bj-mano__carte {
+  animation: bj-trema 0.5s var(--ease-out);
+}
+
+@keyframes bj-trema {
+  20%,
+  60% {
+    transform: translateX(-6px) rotate(-1.5deg);
+  }
+  40%,
+  80% {
+    transform: translateX(6px) rotate(1.5deg);
+  }
+}
+
+/* La mano che si sta giocando, fra quelle divise: si alza, con l'alone. */
+.bj-mano.is-attiva .bj-mano__carte {
+  filter: drop-shadow(0 0 10px rgba(255, 214, 90, 0.75));
+  transform: translateY(-6px);
+  transition: transform 0.25s var(--ease-out);
+}
+
+/* L'esito, a giro chiuso: una fascia di traverso sopra le carte. */
+.bj-mano__esito {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  z-index: 21;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: rgba(30, 33, 40, 0.92);
+  box-shadow:
+    0 0 0 2px #fff,
+    0 6px 16px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  animation: bj-esito 0.55s var(--ease-spring) backwards;
+}
+
+@keyframes bj-esito {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-8deg) scale(2.2);
+  }
+}
+
+.bj-mano__esito.is-vinta,
+.bj-mano__esito.is-blackjack {
+  background: linear-gradient(160deg, #fff2b8, #e9b93a 55%, #a8741a);
+  color: #3d2300;
+}
+
+.bj-mano__esito.is-persa,
+.bj-mano__esito.is-sballata {
+  background: linear-gradient(160deg, #ff6b6b, #b5162b);
+}
+
+.bj-mano.is-persa .bj-mano__carte,
+.bj-mano.is-sballata .bj-mano__carte {
+  filter: saturate(0.5) brightness(0.8);
+  transition: filter 0.6s;
+}
+
+.bj-mano.is-vinta .bj-mano__carte,
+.bj-mano.is-blackjack .bj-mano__carte {
+  filter: drop-shadow(0 0 14px rgba(255, 214, 90, 0.85));
+}
+
+/* ─────────────────────────────  Il mio posto  ───────────────────────────── */
+
+.bj-mio {
+  --bj-carta: var(--carta-mia);
+  position: absolute;
+  left: 50%;
+  bottom: 5cqh;
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  gap: 1.6cqh;
+  transform: translateX(-50%);
+}
+
+.bj-mio.is-mani-2 {
+  --bj-carta: calc(var(--carta-mia) * 0.8);
+}
+
+.bj-mio.is-mani-3 {
+  --bj-carta: calc(var(--carta-mia) * 0.66);
+}
+
+.bj-mio.is-mani-4 {
+  --bj-carta: calc(var(--carta-mia) * 0.56);
+}
+
+.bj-mio__mani {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: calc(var(--bj-carta) * 0.32);
+  min-height: calc(var(--bj-carta) * 1.4 + 14px);
+}
+
+.bj-mano--mia .bj-mano__totale {
+  font-size: 16px;
+}
+
+/* Il cerchio della puntata, stampato sul panno; quando tocca puntare, respira. */
+.bj-mio__cerchio {
+  --lato: min(19cqw, 12.5cqh, 96px);
+  --bj-fiche-lato: calc(var(--lato) * 0.56);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--lato);
+  height: var(--lato);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 2px rgba(242, 210, 122, 0.75),
+    inset 0 0 0 6px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 7px rgba(242, 210, 122, 0.25),
+    0 0 0 5px rgba(242, 210, 122, 0.08);
+}
+
+.bj-mio__cerchio.is-puntata {
+  animation: bj-cerchio 1.8s var(--ease-in-out) infinite;
+}
+
+@keyframes bj-cerchio {
+  50% {
+    box-shadow:
+      inset 0 0 0 2px rgba(255, 236, 160, 1),
+      inset 0 0 0 6px rgba(0, 0, 0, 0.1),
+      inset 0 0 0 7px rgba(242, 210, 122, 0.4),
+      0 0 22px 4px rgba(255, 214, 90, 0.35);
+  }
+}
+
+/* La pila sta nel cerchio, e l'importo accanto, fuori: l'anello del tempo non lo copre. */
+.bj-mio__cerchio .bj-pila {
+  position: static;
+  margin-top: calc(var(--bj-fiche-lato) * 0.3);
+}
+
+.bj-mio__cerchio .bj-pila__targhetta {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 10px);
+  font-size: 14px;
+  transform: translateY(-50%);
+}
+
+.bj-mio__cerchio .bj-pila.is-vinta .bj-pila__pezzi {
+  filter: drop-shadow(0 0 12px rgba(255, 214, 90, 0.9));
+}
+
+.bj-mio__invito {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18%;
+  font-size: 10px;
+  line-height: 1.2;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bj-scritta-chiara);
+}
+
+/* ─────────────────────────────  Gli altri  ───────────────────────────── */
+
+.bj-altro {
+  --bj-carta: var(--carta-altri);
+  --bj-fiche-lato: min(5cqh, 24px);
+  position: absolute;
+  left: calc(var(--x) * 1cqw);
+  top: calc(var(--y) * 1cqh);
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  width: 23cqw;
+  transform: translateX(-50%);
+  transition: opacity 0.4s;
+}
+
+.bj-altro.is-via,
+.bj-altro.is-assente {
+  opacity: 0.5;
+}
+
+.bj-altro__mani {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  min-height: calc(var(--bj-carta) * 1.4);
+}
+
+.bj-mano--piccola .bj-mano__totale {
+  top: -8px;
+  left: -8px;
+  min-width: 22px;
+  padding: 1px 5px;
+  font-size: 11px;
+}
+
+.bj-mano--piccola .bj-mano__esito {
+  padding: 2px 6px;
+  font-size: 9px;
+}
+
+.bj-altro__chi {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.bj-altro__avatar {
+  position: relative;
+  display: grid;
+  flex: none;
+}
+
+.bj-altro.is-turno .bj-altro__avatar > .avatar {
+  box-shadow: 0 0 0 2px var(--bj-scritta), 0 0 14px rgba(255, 214, 90, 0.8);
+}
+
+.bj-altro__nome {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.92);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bj-altro.is-libero {
+  top: calc(var(--y) * 1cqh + 2cqh);
+  gap: 4px;
+  opacity: 0.55;
+}
+
+.bj-altro__cerchio {
+  width: min(7cqh, 34px);
+  height: min(7cqh, 34px);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px rgba(242, 210, 122, 0.55);
+}
+
+.bj-altro.is-libero .bj-altro__nome {
+  color: var(--bj-scritta-chiara);
+  font-weight: 600;
+}
+
+.bj-altro__pila .bj-pila__targhetta {
+  font-size: 10px;
+}
+
+.bj-altro__delta {
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: rgba(5, 22, 13, 0.85);
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: 12px;
+  font-weight: 900;
+  animation: bj-totale 0.4s var(--ease-spring);
+}
+
+.bj-altro__delta.is-piu {
+  background: linear-gradient(160deg, #fff2b8, #e9b93a);
+  color: #3d2300;
+}
+
+.bj-altro__delta.is-meno {
+  color: #ff9aa5;
+}
+
+/* L'anello del tempo: si consuma attorno a chi deve decidere, rosso negli ultimi secondi. */
+.bj-anello {
+  position: absolute;
+  inset: -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
+  pointer-events: none;
+  transform: rotate(-90deg);
+}
+
+.bj-anello__fondo {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 2.5;
+}
+
+.bj-anello__tempo {
+  fill: none;
+  stroke: var(--bj-scritta);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.22s linear;
+}
+
+.bj-anello.is-poco .bj-anello__tempo {
+  stroke: #ff6b6b;
+}
+
+/* ─────────────────────────────  I comandi  ───────────────────────────── */
+
+.bj-comandi {
+  flex: none;
+  display: grid;
+  align-content: end;
+  gap: var(--sp-2);
+  min-height: 112px;
+}
+
+.bj-comandi__riga {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.bj-puntate {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.bj-gettoni {
+  display: flex;
+  justify-content: center;
+  gap: clamp(6px, 2.4vw, 14px);
+}
+
+.bj-gettone {
+  --bj-fiche-lato: clamp(44px, 12.5vw, 56px);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  transition:
+    transform 0.15s var(--ease-out),
+    opacity 0.2s;
+}
+
+.bj-gettone:hover:not(:disabled) {
+  transform: translateY(-3px);
+}
+
+.bj-gettone:active:not(:disabled) {
+  transform: translateY(2px) scale(0.95);
+}
+
+.bj-gettone:disabled {
+  opacity: 0.3;
+  filter: grayscale(0.5);
+  cursor: default;
+}
+
+.bj-tasto {
+  min-width: 64px;
+  min-height: 46px;
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--fill-secondary);
+  color: var(--label);
+  font: inherit;
+  font-weight: 800;
+}
+
+.bj-tasto:disabled {
+  opacity: 0.4;
+}
+
+.bj-distribuisci {
+  flex: 1;
+  max-width: 280px;
+  min-height: 50px;
+  padding: 0 var(--sp-5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, #ffe58a, var(--bj-scritta) 55%, #c9962a);
+  color: #3d2300;
+  font-family: var(--font-rounded);
+  font-size: 17px;
+  font-weight: 900;
+  box-shadow:
+    0 4px 0 #8a6416,
+    0 8px 18px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out);
+}
+
+.bj-distribuisci:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #8a6416,
+    0 3px 8px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.bj-distribuisci:disabled {
+  opacity: 0.5;
+}
+
+.bj-comandi__mosse {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.bj-mosse {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+
+.bj-mossa {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--label);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.bj-mossa__segno {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.28),
+    0 8px 14px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out);
+}
+
+.bj-mossa:active:not(:disabled) .bj-mossa__segno {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.28),
+    0 3px 6px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+.bj-mossa.is-carta .bj-mossa__segno {
+  background: linear-gradient(180deg, #4bdc86, #149247);
+}
+
+.bj-mossa.is-stai .bj-mossa__segno {
+  background: linear-gradient(180deg, #ff7676, #c3222f);
+}
+
+.bj-mossa.is-raddoppia .bj-mossa__segno {
+  background: linear-gradient(180deg, #ffd25e, #d98a0b);
+  font-size: 20px;
+}
+
+.bj-mossa.is-dividi .bj-mossa__segno {
+  background: linear-gradient(180deg, #7aa7ff, #3b5ee0);
+}
+
+.bj-mossa:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+.bj-stato {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  min-height: 46px;
+  color: var(--label);
+  font-weight: 700;
+  text-align: center;
+}
+
+.bj-stato__chi {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bj-stato__barra {
+  overflow: hidden;
+  width: min(72%, 280px);
+  height: 5px;
+  border-radius: 3px;
+  background: var(--fill-tertiary);
+}
+
+.bj-stato__pieno {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--bj-panno-1);
+  transform-origin: left center;
+  transition: transform 0.22s linear;
+}
+
+.bj-stato__pieno.is-poco {
+  background: #e5484d;
+}
+
+/* ─────────────────────────────  Le misure  ───────────────────────────── */
+
+/* Su un telefono basso le scritte si fanno da parte, e gli altri stanno piu' su. */
+@container (max-height: 420px) {
+  .bj-scritte {
+    top: 32cqh;
+    opacity: 0.75;
+  }
+}
+
+/* Su un telefono basso i comandi si stringono: le fiches e i bottoni un po' piu' piccoli. */
+@media (max-height: 640px) {
+  .bj-gettone {
+    --bj-fiche-lato: 42px;
+  }
+
+  .bj-mossa__segno {
+    width: 48px;
+    height: 48px;
+    font-size: 21px;
+  }
+
+  .bj-stato {
+    min-height: 34px;
+  }
+}
+
+/*
+ * Telefono di traverso: il tavolo prende tutta l'altezza, e tabellone e
+ * comandi vanno a destra, in colonna.
+ */
+@media (orientation: landscape) and (max-height: 560px) {
+  .pagina--intera:has(.bj) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .bj {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 32%);
+    grid-template-rows: auto minmax(0, 1fr);
+    column-gap: var(--sp-3);
+  }
+
+  .bj .ct-tabellone {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .bj-tavolo {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    min-height: 0;
+    --carta-banco: min(9cqw, 13cqh, 80px);
+    --carta-mia: min(11cqw, 16cqh, 96px);
+    --carta-altri: min(5.4cqw, 8cqh, 44px);
+  }
+
+  .bj-comandi {
+    grid-column: 2;
+    grid-row: 2;
+    align-content: center;
+  }
+
+  .bj-gettoni {
+    flex-wrap: wrap;
+  }
+
+  .bj-gettone {
+    --bj-fiche-lato: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bj,
+  .bj-tavolo__luce,
+  .bj-mio__cerchio.is-puntata,
+  .bj-mano__totale,
+  .bj-mano__esito,
+  .bj-mano:has(.bj-mano__totale.is-oltre) .bj-mano__carte {
+    animation: none;
+  }
+}

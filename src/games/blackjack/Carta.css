@@ -1,0 +1,89 @@
+/*
+ * Le carte del blackjack (Carta.tsx). La misura la decide chi le mette sul
+ * tavolo, con `--bj-carta` (la larghezza): l'altezza e' sempre il 140% della
+ * larghezza, come una carta da gioco.
+ */
+.bj-definizioni {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.bj-carta {
+  --l: var(--bj-carta, 64px);
+  position: relative;
+  flex: none;
+  width: var(--l);
+  height: calc(var(--l) * 1.4);
+}
+
+.bj-carta__volo {
+  position: absolute;
+  inset: 0;
+  perspective: calc(var(--l) * 9);
+}
+
+.bj-carta__giro {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.bj-faccia,
+.bj-dorso {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--l) * 0.09);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 calc(var(--l) * 0.03) calc(var(--l) * 0.08) rgba(0, 0, 0, 0.38),
+    0 0 0 0.5px rgba(0, 0, 0, 0.25);
+}
+
+.bj-dorso {
+  transform: rotateY(180deg);
+}
+
+.bj-faccia {
+  color: var(--bj-nero-carta);
+}
+
+.bj-faccia.is-rossa {
+  color: var(--bj-rosso-carta);
+}
+
+.bj-faccia__fondo {
+  fill: #fffefa;
+}
+
+.bj-faccia__valore {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.bj-faccia__figura {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 36px;
+  font-weight: 700;
+}
+
+/* Il posto della carta che il banco prende dopo: un'ombra tratteggiata sul panno. */
+.bj-carta--posto {
+  border: 1.5px dashed rgba(255, 246, 214, 0.32);
+  border-radius: calc(var(--l) * 0.09);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Le carte raccolte a fine giro: copie nello strato dei voli (raccolta.ts). */
+.bj-raccolta {
+  position: absolute;
+  margin: 0;
+  will-change: transform;
+}
