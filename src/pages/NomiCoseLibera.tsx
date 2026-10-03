@@ -74,7 +74,14 @@ export default function NomiCoseLibera() {
       r.esito === 'vinta'
         ? { tono: 'vivace', titolo: 'Hai vinto!', sotto, colore: COLORE, durata, suono: 'vittoria' }
         : r.esito === 'persa'
-          ? { tono: 'bordato', titolo: 'Ha vinto il computer', sotto, colore: 'var(--nomi-2)', durata, suono: 'sconfitta' }
+          ? {
+              tono: 'bordato',
+              titolo: 'Ha vinto il computer',
+              sotto,
+              colore: 'var(--nomi-2)',
+              durata,
+              suono: 'sconfitta',
+            }
           : { tono: 'vivace', titolo: 'Pari', sotto, colore: COLORE, durata, suono: 'pareggio' },
     )
     setVinta(r.esito === 'vinta')
