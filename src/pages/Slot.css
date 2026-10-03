@@ -4,20 +4,20 @@
  * quello delle slot di una volta, disegnato perché sembri un oggetto: la lacca
  * rossa con i fianchi tondi, l'insegna ad arco con le lampadine, i rulli
  * d'avorio dietro un vetro curvo, il display a led, il banco dei comandi
- * inclinato verso chi gioca, la pancia illuminata con le categorie del giorno,
- * il vassoio delle monete, lo zoccolo, e sul fianco la leva di cromo.
+ * inclinato verso chi gioca, con le fiches e il bottone, il vassoio delle
+ * monete, lo zoccolo, e sul fianco la leva di cromo.
  *
  * Tutto si misura sulla larghezza del mobile (`--w`, e il suo centesimo
  * `--u`): quella che ci sta con la leva da tutti e due i lati, cosi' il mobile
  * resta al centro, o quella che lascia l'altezza. Le parti hanno altezze fisse
- * in centesimi; la pancia prende quel che avanza, fino a un tetto.
+ * in centesimi; il fronte, con i rulli, prende quel che avanza, fino a un
+ * tetto, e quel che resta lo divide la sala sopra e sotto il mobile.
  */
 
 /*
  * La larghezza e' una lunghezza vera, calcolata sul mobile e ereditata: senza
  * la registrazione le unita' del contenitore si risolverebbero dove si usa la
- * variabile, e dentro la pancia, che e' un contenitore anche lei, varrebbero
- * le sue.
+ * variabile, e dentro un contenitore annidato varrebbero le sue.
  */
 @property --w {
   syntax: '<length>';
@@ -181,16 +181,23 @@
 
 .slot-macchina {
   /* La larghezza: quella che lascia la leva da tutti e due i lati, o quella che lascia l'altezza. */
-  --w: min((100cqw - 20px) / 1.28, (100cqh - 32px) / 1.68);
+  --w: min((100cqw - 20px) / 1.28, (100cqh - 32px) / 1.65);
   --u: calc(var(--w) / 100);
   position: relative;
   display: grid;
-  /* `minmax(0, ...)`: la striscia dei rulli e' alta quaranta rulli, e lasciata al contenuto allargherebbe la riga. */
+  /*
+   * L'insegna, il fronte, il banco, il vassoio e lo zoccolo. Il fronte e' alto
+   * almeno cento centesimi e prende quel che avanza, fino a un tetto: i rulli
+   * si allungano, come i rulli veri, e i simboli prendono un po' d'aria. Oltre
+   * il tetto il mobile resta quello, al centro della sala. `minmax(0, ...)` e
+   * non `auto`: la striscia dei rulli e' alta quaranta rulli, e lasciata al
+   * contenuto allargherebbe la riga.
+   */
   grid-template-rows:
-    calc(var(--u) * 30) calc(var(--u) * 100) calc(var(--u) * 20) minmax(0, 1fr) calc(var(--u) * 10)
+    calc(var(--u) * 30) minmax(calc(var(--u) * 100), 1fr) calc(var(--u) * 20) calc(var(--u) * 10)
     calc(var(--u) * 5);
   width: var(--w);
-  height: min(100cqh - 32px, var(--w) * 2.04);
+  height: min(100cqh - 32px, var(--w) * 1.89);
   border-radius: calc(var(--u) * 12) calc(var(--u) * 12) calc(var(--u) * 4) calc(var(--u) * 4);
   /*
    * La lacca, con i fianchi tondi: da ogni lato una fascia d'ombra sul bordo,
@@ -237,8 +244,7 @@
   transition: opacity 400ms var(--ease-out);
 }
 
-.slot-sala.is-vinto .slot-macchina::before,
-.slot-sala.is-jackpot .slot-macchina::before {
+.slot-sala:is(.is-vinto, .is-palco, .is-jackpot) .slot-macchina::before {
   background: radial-gradient(closest-side, rgba(255, 214, 90, 0.5), rgba(255, 120, 40, 0.16) 60%, transparent);
   animation: slot-riverbero 0.32s steps(2) infinite;
 }
@@ -264,6 +270,58 @@
     radial-gradient(calc(var(--u) * 62) calc(var(--u) * 6) at 50% var(--piede), rgba(0, 0, 0, 0.85), transparent),
     radial-gradient(calc(var(--u) * 80) calc(var(--u) * 24) at 50% var(--piede), rgba(227, 32, 63, 0.3), transparent),
     radial-gradient(calc(var(--u) * 110) calc(var(--u) * 34) at 50% 0, rgba(255, 79, 163, 0.12), transparent);
+}
+
+/*
+ * Il lustro: quando si vince, una fascia di luce passa di traverso sulla
+ * lacca, come il faro della sala che ci scorre sopra; al palco passa tre volte
+ * e piu' in fretta. Sta sotto le parti del mobile, quindi si vede sui fianchi
+ * e fra un pezzo e l'altro.
+ */
+.slot-lustro {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.slot-lustro::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -60%;
+  width: 45%;
+  background: linear-gradient(
+    100deg,
+    transparent,
+    rgba(255, 255, 255, 0.5) 42%,
+    rgba(255, 240, 200, 0.8) 50%,
+    rgba(255, 255, 255, 0.5) 58%,
+    transparent
+  );
+  transform: skewX(-18deg);
+  opacity: 0;
+}
+
+.slot-sala:is(.is-vinto, .is-jackpot) .slot-lustro::before {
+  animation: slot-lustro 1.1s var(--ease-in-out) 0.15s 2 both;
+}
+
+.slot-sala.is-palco .slot-lustro::before {
+  animation: slot-lustro 0.8s var(--ease-in-out) 0.1s 3 both;
+}
+
+@keyframes slot-lustro {
+  from {
+    left: -60%;
+    opacity: 1;
+  }
+  to {
+    left: 130%;
+    opacity: 1;
+  }
 }
 
 .slot-macchina.is-scossa {
@@ -355,6 +413,24 @@
 .slot-insegna.is-poco .slot-insegna__lampadina {
   animation: slot-corsa 0.32s linear 3;
   animation-delay: calc(var(--i) * -0.32s / 25);
+}
+
+/* Il palco: le lampadine corrono il doppio, nel colore della vincita, finché dura. */
+.slot-insegna.is-palco .slot-insegna__lampadina {
+  animation: slot-corsa-vinta 0.24s linear infinite;
+  animation-delay: calc(var(--i) * -0.24s / 25);
+}
+
+@keyframes slot-corsa-vinta {
+  0%,
+  60% {
+    fill: #7a6230;
+    filter: none;
+  }
+  70% {
+    fill: var(--vinta);
+    filter: drop-shadow(0 0 6px var(--vinta));
+  }
 }
 
 @keyframes slot-lampadina {
@@ -511,12 +587,16 @@
   animation-duration: 0.9s;
 }
 
-.slot-sala.is-vinto .slot-fronte__led,
-.slot-sala.is-jackpot .slot-fronte__led {
+.slot-sala:is(.is-vinto, .is-palco, .is-jackpot) .slot-fronte__led {
   background: linear-gradient(180deg, #fff6c2, var(--vinta), #fff6c2, var(--vinta), #fff6c2);
   background-size: 100% 200%;
   box-shadow: 0 0 calc(var(--u) * 3.3) var(--vinta);
   animation-duration: 0.5s;
+}
+
+.slot-sala.is-palco .slot-fronte__led {
+  box-shadow: 0 0 calc(var(--u) * 4.5) var(--vinta);
+  animation-duration: 0.28s;
 }
 
 .slot-sala.is-poco .slot-fronte__led {
@@ -894,6 +974,19 @@
   }
 }
 
+/* Il jackpot: i sette bruciano piu' forte, con le cornici di fuoco; restano accesi nel buio della festa. */
+.slot-sala.is-jackpot .slot-rulli[data-vince='7'] .is-vincente svg {
+  animation-duration: 0.22s;
+}
+
+.slot-sala.is-jackpot .slot-rulli__cornice {
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 0.8) #ffd23f,
+    0 0 calc(var(--u) * 5) #ff5a3c,
+    0 0 calc(var(--u) * 10) rgba(255, 140, 0, 0.75);
+  animation-duration: 0.22s;
+}
+
 /* Una categoria del quiz: la tessera tonda nel colore della materia, con l'anello d'oro. */
 .slot-simbolo--categoria {
   padding: 12%;
@@ -968,8 +1061,7 @@
   border-right: calc(var(--u) * 3.3) solid #e3132f;
 }
 
-.slot-sala.is-vinto .slot-vetro__linea,
-.slot-sala.is-jackpot .slot-vetro__linea {
+.slot-sala:is(.is-vinto, .is-palco, .is-jackpot) .slot-vetro__linea {
   background: var(--vinta);
   box-shadow: 0 0 calc(var(--u) * 3.3) var(--vinta);
   animation: slot-linea 0.3s steps(2) 8;
@@ -1421,6 +1513,83 @@
   }
 }
 
+/* La puntata che cambia, quando arriva la fiche: le cifre scattano, come su un display vero. */
+.slot-display__voce.is-puntata {
+  position: relative;
+  align-self: stretch;
+  justify-content: center;
+}
+
+.slot-display__voce.is-puntata .slot-display__cifre {
+  animation: slot-cifra 0.26s var(--ease-out);
+}
+
+@keyframes slot-cifra {
+  from {
+    transform: scale(1.35);
+    filter: brightness(1.6);
+  }
+}
+
+/* Al tetto le cifre si fanno d'ambra, e accanto c'e' MAX, che lampeggia quando una fiche non entra. */
+.slot-display__voce.is-massimo .slot-display__cifre {
+  color: #ffb02e;
+  text-shadow:
+    0 0 calc(var(--u) * 1.3) rgba(255, 176, 46, 0.9),
+    0 0 calc(var(--u) * 3.3) rgba(255, 176, 46, 0.5);
+}
+
+.slot-display__max {
+  position: absolute;
+  right: 0;
+  bottom: calc(var(--u) * 1.4);
+  padding: 0 calc(var(--u) * 0.7);
+  border-radius: calc(var(--u) * 0.7);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 176, 46, 0.6),
+    0 0 calc(var(--u) * 1.2) rgba(255, 176, 46, 0.35);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: calc(var(--u) * 2.7);
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffb02e;
+  text-shadow: 0 0 calc(var(--u) * 1) rgba(255, 176, 46, 0.9);
+  animation: slot-max 0.44s steps(2) 3;
+}
+
+@keyframes slot-max {
+  50% {
+    opacity: 0.12;
+  }
+}
+
+/* A puntata zero, al posto della vincita: l'invito a mettere le fiches, che lampeggia come "insert coin". */
+.slot-display__voce.is-invito {
+  align-self: stretch;
+  justify-content: center;
+}
+
+.slot-display__invito {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: calc(var(--u) * 3.1);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-transform: uppercase;
+  color: #ffb02e;
+  text-shadow: 0 0 calc(var(--u) * 1) rgba(255, 176, 46, 0.85);
+  animation: slot-invito 1.2s steps(1) infinite;
+}
+
+@keyframes slot-invito {
+  60% {
+    opacity: 0.3;
+  }
+}
+
 /* ─────────────────────────────  Il banco dei comandi  ───────────────────────────── */
 
 /*
@@ -1453,6 +1622,14 @@
     0 calc(var(--u) * 3.3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55);
   transform: rotateX(22deg);
   transform-origin: 50% 0;
+}
+
+/* Le fiches e, accanto, il tasto che azzera la puntata. */
+.slot-banco__fiches {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2.2);
+  min-width: 0;
 }
 
 .slot-gettoni {
@@ -1509,14 +1686,13 @@
   --fiche: #1b1b22;
 }
 
-.slot-gettone.is-scelto {
-  transform: translateY(calc(var(--u) * -1.6));
+/* Le fiches si sommano: ogni tocco ne posa una, e il gettone si abbassa sul banco come premuto. */
+.slot-gettone:active:not(:disabled) {
+  transform: translateY(calc(var(--u) * 0.9)) scale(0.96);
   box-shadow:
     inset 0 0 0 1.5px rgba(0, 0, 0, 0.3),
-    0 0 0 calc(var(--u) * 0.7) #ffd23f,
-    0 0 calc(var(--u) * 3.6) rgba(255, 214, 90, 0.95),
-    0 calc(var(--u) * 2.6) 0 color-mix(in srgb, var(--fiche) 55%, #000),
-    0 calc(var(--u) * 3.6) calc(var(--u) * 3.3) rgba(0, 0, 0, 0.45);
+    0 calc(var(--u) * 0.4) 0 color-mix(in srgb, var(--fiche) 55%, #000),
+    0 calc(var(--u) * 0.8) calc(var(--u) * 1.2) rgba(0, 0, 0, 0.45);
 }
 
 .slot-gettone:disabled {
@@ -1524,7 +1700,55 @@
   cursor: default;
 }
 
+/*
+ * Azzera: un tasto del banco come quelli delle slot vere, una placca d'ambra
+ * illuminata da dietro, con la scritta scura, nella sua cornice di cromo. Il
+ * tasto e' piccolo come gli altri del mobile; il tocco ha un margine in piu'.
+ */
+.slot-azzera {
+  position: relative;
+  flex: none;
+  height: calc(var(--u) * 7.4);
+  padding: 0 calc(var(--u) * 2.2);
+  border: 0;
+  border-radius: calc(var(--u) * 1.6);
+  background: linear-gradient(180deg, #fff8dc, #ffd56b 55%, #e8a417);
+  box-shadow:
+    inset 0 calc(var(--u) * 0.4) 0 rgba(255, 255, 255, 0.8),
+    inset 0 calc(var(--u) * -0.5) calc(var(--u) * 0.8) rgba(140, 80, 0, 0.45),
+    0 0 0 calc(var(--u) * 0.6) #2b2f38,
+    0 0 0 calc(var(--u) * 1) #9aa1ad,
+    0 calc(var(--u) * 1.2) 0 calc(var(--u) * 0.6) #1a1c22,
+    0 0 calc(var(--u) * 3) rgba(255, 200, 80, 0.55);
+  color: #3a2200;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--u) * 3.2);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out);
+}
+
+.slot-azzera::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * -2.6) calc(var(--u) * -1.6);
+}
+
+.slot-azzera:active:not(:disabled) {
+  transform: translateY(calc(var(--u) * 0.8));
+}
+
+.slot-azzera:disabled {
+  filter: grayscale(0.9) brightness(0.5);
+  cursor: default;
+}
+
 .slot-gettone:focus-visible,
+.slot-azzera:focus-visible,
 .slot-gira:focus-visible {
   outline: 3px solid var(--ct-oro-chiaro);
   outline-offset: 2px;
@@ -1584,137 +1808,6 @@
 @keyframes slot-gira-respira {
   50% {
     filter: brightness(1.15) drop-shadow(0 0 calc(var(--u) * 4) rgba(255, 79, 120, 0.85));
-  }
-}
-
-/* ─────────────────────────────  La pancia  ───────────────────────────── */
-
-/*
- * La pancia, sotto il banco: un vetro illuminato con i raggi che girano, la
- * domanda e le sei categorie del giorno, come sui mobili veri c'e' il gioco
- * che si vince. Prende l'altezza che avanza, e quel che ci sta dentro si
- * misura su di lei (e' un contenitore): troppo bassa, resta solo la luce.
- */
-.slot-pancia {
-  min-height: 0;
-  padding: calc(var(--u) * 2.4) calc(var(--u) * 6) calc(var(--u) * 1);
-}
-
-.slot-pancia__vetro {
-  position: relative;
-  height: 100%;
-  container-type: size;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  border-radius: calc(var(--u) * 3);
-  background: radial-gradient(120% 140% at 50% 120%, #5a1a8a, #1a0530 60%, #0b0214);
-  box-shadow:
-    inset 0 0 0 calc(var(--u) * 0.6) var(--oro-2),
-    inset 0 0 0 calc(var(--u) * 1.1) var(--oro-3),
-    inset 0 calc(var(--u) * 1.5) calc(var(--u) * 3) rgba(0, 0, 0, 0.6);
-}
-
-.slot-pancia__raggi {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: max(240cqw, 240cqh);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  background: repeating-conic-gradient(rgba(255, 79, 163, 0.2) 0 8deg, transparent 8deg 20deg);
-  -webkit-mask-image: radial-gradient(closest-side, #000, transparent 70%);
-  mask-image: radial-gradient(closest-side, #000, transparent 70%);
-  animation: slot-raggi 24s linear infinite;
-}
-
-.slot-sala.is-gira .slot-pancia__raggi {
-  animation-duration: 6s;
-}
-
-.slot-sala.is-vinto .slot-pancia__raggi,
-.slot-sala.is-jackpot .slot-pancia__raggi {
-  background: repeating-conic-gradient(rgba(255, 214, 90, 0.32) 0 8deg, transparent 8deg 20deg);
-  animation-duration: 3s;
-}
-
-@keyframes slot-raggi {
-  to {
-    rotate: 360deg;
-  }
-}
-
-.slot-pancia__titolo {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-  font-family: var(--font-rounded);
-  font-size: min(14cqh, 5cqw);
-  font-weight: 900;
-  line-height: 1;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #ffe9a8;
-  text-shadow:
-    0 0 1.2cqh rgba(255, 79, 163, 0.9),
-    0 0.4cqh 0 #7a3c00;
-}
-
-.slot-pancia__titolo b {
-  color: var(--ct-oro);
-}
-
-/* Il punto di domanda nella scritta, grande quanto le lettere. */
-.slot-pancia__titolo .slot-simbolo {
-  width: 1.5em;
-  height: 1.5em;
-  margin-block: -0.25em;
-  padding: 0;
-}
-
-/* I margini e le misure di quel che sta nel vetro sono in unita' del vetro: il vetro stesso conta quelle della sala. */
-.slot-pancia__categorie {
-  position: relative;
-  display: flex;
-  gap: 2cqw;
-  margin-top: 7cqh;
-}
-
-.slot-pancia__categorie .slot-simbolo {
-  width: min(34cqh, 13cqw);
-  height: min(34cqh, 13cqw);
-  padding: 0;
-}
-
-.slot-pancia__categorie .slot-simbolo__tessera {
-  box-shadow:
-    inset 0 0 0 0.6cqh #f4c430,
-    inset 0 -3px 6px rgba(0, 0, 0, 0.25),
-    0 2px 4px rgba(0, 0, 0, 0.4);
-}
-
-/* Bassa, la pancia tiene solo le categorie; ancora piu' bassa, solo i raggi. */
-@container (max-height: 70px) {
-  .slot-pancia__titolo {
-    display: none;
-  }
-
-  .slot-pancia__categorie {
-    margin-top: 0;
-  }
-
-  .slot-pancia__categorie .slot-simbolo {
-    width: min(64cqh, 13cqw);
-    height: min(64cqh, 13cqw);
-  }
-}
-
-@container (max-height: 30px) {
-  .slot-pancia__categorie {
-    display: none;
   }
 }
 
@@ -1946,10 +2039,16 @@
   .slot-rulli__cornice::after,
   .slot-rivela,
   .slot-display__cifre,
+  .slot-display__invito,
   .slot-gira,
-  .slot-pancia__raggi,
+  .slot-lustro::before,
   .slot-vassoio__moneta {
     animation: none !important;
+  }
+
+  /* Il MAX non lampeggia: si accende una volta, piano. */
+  .slot-display__max {
+    animation: slot-max-calmo 0.6s var(--ease-out);
   }
 
   /* Senza animazioni i punti di domanda mostrano subito la categoria, e niente salta fuori. */
@@ -1959,5 +2058,11 @@
 
   .slot-pezzi {
     display: none;
+  }
+}
+
+@keyframes slot-max-calmo {
+  from {
+    opacity: 0.2;
   }
 }
