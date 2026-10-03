@@ -785,11 +785,11 @@ leva da tutti e due i lati — cosi' il mobile resta al centro e la leva sporge
 nel margine — o quella che lascia l'altezza, e `--u` ne e' il centesimo: le
 parti hanno altezze fisse in centesimi, e la pancia, sotto il banco, prende
 quel che avanza fino a un tetto. La pancia e' un vetro illuminato, con i raggi
-che girano e una stella d'oro dove si incontrano, e non dice niente: c'erano
-quanto vale la domanda e le categorie del giorno, che sono gia' nelle regole e
-sui punti di domanda. Quando le si sono tolte se n'e' andata anche lei, con i
-rulli allungati al suo posto, e il mobile non era piu' quello che piaceva: si
-toglie quel che informa, non il disegno. `--w` e' registrata con `@property`,
+che girano, e non dice niente: c'erano quanto vale la domanda e le categorie
+del giorno, che sono gia' nelle regole e sui punti di domanda. Quando le si sono
+tolte se n'e' andata anche lei, con i rulli allungati al suo posto, e il mobile
+non era piu' quello che piaceva: si toglie quel che informa, non il disegno, e
+non ci si mette altro. `--w` e' registrata con `@property`,
 quindi i figli ereditano una lunghezza vera: non registrata, le unita' del
 contenitore si risolverebbero dove la si usa, e dentro la pancia, che e' un
 contenitore anche lei, varrebbero le sue.
