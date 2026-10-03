@@ -23,6 +23,7 @@ import { classificaQuiz } from './quizStore'
 import { classificaScarabeo } from './scarabeoStore'
 import { classificaSudoku } from './sudokuStore'
 import { classificaTris } from './trisStore'
+import { classificaNomi } from './nomiStore'
 
 interface RigaQualunque {
   rank: number
@@ -56,7 +57,7 @@ export async function panoramica(
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<PanoramicaClassifiche> {
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, generale, fortuna] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, nomi, generale, fortuna] = await Promise.all([
     leaderboard(db, periodo, numeroDiOggi, viewerId),
     classificaScarabeo(db, periodo, numeroDiOggi, viewerId),
     classificaCruciverba(db, periodo, numeroDiOggi, viewerId),
@@ -64,6 +65,7 @@ export async function panoramica(
     classificaBattaglia(db, periodo, numeroDiOggi, viewerId),
     classificaQuiz(db, periodo, numeroDiOggi, viewerId),
     classificaTris(db, periodo, numeroDiOggi, viewerId),
+    classificaNomi(db, periodo, numeroDiOggi, viewerId),
     classificaGenerale(db, periodo, viewerId),
     classificaFortuna(db, periodo, viewerId),
   ])
@@ -102,6 +104,8 @@ export async function panoramica(
       battaglia: anteprima(battaglia.rows, battaglia.me, colPunti, aperta),
       quiz: anteprima(quiz.rows, quiz.me, colPunti, aperta),
       tris: anteprima(tris.rows, tris.me, colPunti, aperta),
+      // I punti di Nomi, cose e città arrivano la notte: chi li aspetta e' "in corso".
+      nomi: anteprima(nomi.rows, nomi.me, colPunti, (r) => oggi && r.inAttesa),
       fortuna: anteprima(fortuna.rows, fortuna.me, colPunti, () => false),
     },
   }

@@ -21,6 +21,7 @@ import { VUOTA, puntiSudoku } from '../../shared/sudoku'
 import type {
   BattagliaSummary,
   CruciverbaSummary,
+  NomiSummary,
   QuizSummary,
   ScarabeoSummary,
   SudokuSummary,
@@ -35,6 +36,7 @@ import { latoDi, partitaAperta, partitaBreve, quantiOnline, recordDi, statoClass
 import { giornata as giornataQuiz, giornataQuiz as domandeDelGiorno, partitaDi as partitaQuiz, risposteDi } from './quizStore'
 import { puntiQuiz } from '../../shared/quiz'
 import { PARTITE_TRIS, puntiTris } from '../../shared/tris'
+import { CATEGORIE_PER_PARTITA } from '../../shared/nomi-cose'
 import {
   giornata as giornataSudoku,
   partitaDi as partitaSudoku,
@@ -42,6 +44,7 @@ import {
   svelateDi as svelateSudoku,
 } from './sudokuStore'
 import { giornata as giornataTris, partiteDi as partiteTris, serieDi as serieTris } from './trisStore'
+import { giornata as giornataNomi, partitaDi as partitaNomi, risposteDi as risposteNomi, scaduta } from './nomiStore'
 
 export async function riepilogoWordle(db: D1Database, playerId: string): Promise<WordleSummary> {
   const when = today()
@@ -220,6 +223,33 @@ export async function riepilogoTris(db: D1Database, playerId: string): Promise<T
     esiti,
     totale: PARTITE_TRIS,
     punti: row?.status === 'done' ? row.score : puntiTris(vinte, patte),
+    msToNextPuzzle: msToNextPuzzle(),
+  }
+}
+
+/**
+ * Nomi, cose e città: a che punto e' la partita di oggi, e i punti di ieri,
+ * contati stanotte, che valgono oggi. Non chiude le partite scadute, ma le
+ * dice finite: il tempo e' passato, e la pagina le chiudera' quando la si
+ * riapre.
+ */
+export async function riepilogoNomi(db: D1Database, playerId: string): Promise<NomiSummary> {
+  const quando = giornataNomi()
+  const [row, ieri] = await Promise.all([
+    partitaNomi(db, playerId, quando.puzzleNumber),
+    db
+      .prepare('SELECT score FROM nomi_partite WHERE player_id = ? AND puzzle_number = ? AND score IS NOT NULL')
+      .bind(playerId, quando.puzzleNumber - 1)
+      .first<{ score: number }>(),
+  ])
+  return {
+    puzzleNumber: quando.puzzleNumber,
+    date: quando.date,
+    status: !row ? 'nuova' : scaduta(row, Date.now()) ? 'done' : row.status,
+    scritte: row ? Object.keys(risposteNomi(row)).length : 0,
+    valide: row?.status === 'done' ? row.valide : null,
+    totale: CATEGORIE_PER_PARTITA,
+    ieri: ieri?.score ?? null,
     msToNextPuzzle: msToNextPuzzle(),
   }
 }

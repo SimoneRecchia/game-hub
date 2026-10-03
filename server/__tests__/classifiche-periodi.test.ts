@@ -115,6 +115,7 @@ describe('la panoramica delle classifiche', () => {
       'cruciverba',
       'fortuna',
       'generale',
+      'nomi',
       'quiz',
       'scarabeo',
       'sudoku',

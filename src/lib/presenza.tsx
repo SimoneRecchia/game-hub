@@ -23,6 +23,7 @@ export function attivitaDa(pathname: string): Attivita {
   if (pathname.startsWith('/battaglia')) return 'battaglia'
   if (pathname.startsWith('/quiz')) return 'quiz'
   if (pathname.startsWith('/tris')) return 'tris'
+  if (pathname.startsWith('/nomi-cose-citta')) return 'nomi'
   if (pathname.startsWith('/indovina-chi')) return 'indovina'
   if (pathname.startsWith('/scacchi')) return 'scacchi'
   if (pathname.startsWith('/dama')) return 'dama'
@@ -47,6 +48,7 @@ export const DOVE: Record<Attivita, string> = {
   battaglia: 'alla battaglia navale',
   quiz: 'gioca al quiz',
   tris: 'gioca a tris',
+  nomi: 'gioca a Nomi, cose e città',
   indovina: 'gioca a Indovina chi',
   scacchi: 'gioca a scacchi',
   dama: 'gioca a dama',

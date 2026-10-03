@@ -70,6 +70,10 @@
   --c1: var(--tris-1);
   --c2: var(--tris-2);
 }
+.copertina--nomi {
+  --c1: var(--nomi-1);
+  --c2: var(--nomi-2);
+}
 
 .copertina--go {
   --c1: var(--go-1);

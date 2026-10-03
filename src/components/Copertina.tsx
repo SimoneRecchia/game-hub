@@ -416,6 +416,38 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
     </g>
   ),
 
+  // Il foglio a righe con la lettera del giorno nel tondo, tre risposte scritte e la matita che le scrive.
+  nomi: (
+    <g transform="rotate(-6 60 60)">
+      <rect x={20} y={14} width={76} height={92} rx={7} fill="#fff" fillOpacity={0.24} />
+      <path d="M33 14v92" stroke="#fff" strokeOpacity={0.45} strokeWidth={2} />
+      <circle cx={52} cy={33} r={13} fill="#fff" />
+      <text
+        x={52}
+        y={39.2}
+        textAnchor="middle"
+        fontFamily={TONDO}
+        fontWeight={800}
+        fontSize={18}
+        fill="var(--c2)"
+      >
+        B
+      </text>
+      <g stroke="#fff" strokeLinecap="round" fill="none">
+        <path d="M40 60h46M40 75h46M40 90h46" strokeOpacity={0.4} strokeWidth={1.6} />
+        <path d="M42 56c6-3 10 2 16-1s9-2 14 0" strokeWidth={3.6} />
+        <path d="M42 71c5-3 9 1 14-1s8-3 12 0" strokeWidth={3.6} />
+        <path d="M42 86c4-2 7 1 11-1" strokeWidth={3.6} />
+      </g>
+      <g transform="rotate(-38 82 86)">
+        <rect x={60} y={81} width={36} height={10} rx={2} fill="#fff" />
+        <rect x={60} y={81} width={7} height={10} rx={2} fill="#fff" fillOpacity={0.55} />
+        <path d="M96 81l10 5-10 5z" fill="#fff" fillOpacity={0.75} />
+        <path d="M103 84.5l3 1.5-3 1.5z" fill="var(--c2)" />
+      </g>
+    </g>
+  ),
+
   // Un angolo di goban: le linee, un punto di riferimento, e le pietre di una partita appena cominciata.
   // Il cancelletto tracciato a mano, i segni di una partita e la fila fatta.
   tris: (

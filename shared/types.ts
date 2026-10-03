@@ -10,11 +10,12 @@ import type { ImpostazioniSfida } from './quiz-sfida'
 import type { Lato, Personaggi, Risposta } from './indovina'
 import type { GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
+import type { CategoriaNomi, PiuDate, RispostaContata } from './nomi-cose'
 import type { LatoMoneta } from './ruota'
 import type { Carta, ManoBJ } from './blackjack'
 import type { FaseBJ } from './blackjack-tavolo'
 
-export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz' | 'tris'
+export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz' | 'tris' | 'nomi'
 
 export interface Player {
   id: string
@@ -480,6 +481,86 @@ export interface TrisLeaderboard {
   me: TrisRow | null
 }
 
+/* ─────────────────────────────  Nomi, cose e città  ───────────────────────────── */
+
+export type NomiStatus = 'playing' | 'done'
+
+/** La partita di un giorno contata la notte: i punti, e ogni risposta con quanti l'hanno data. */
+export interface RisultatoNomi {
+  puzzleNumber: number
+  lettera: string
+  categorie: CategoriaNomi[]
+  punti: number
+  tempoMs: number
+  /** Quanti hanno giocato quel giorno: e' la misura della rarita'. */
+  giocatori: number
+  risposte: Partial<Record<CategoriaNomi, RispostaContata>>
+  /** Le risposte piu' date di ogni categoria. */
+  piuDate: PiuDate
+}
+
+export interface NomiStato {
+  puzzleNumber: number
+  date: string
+  /** 'nuova' finché non si comincia: la lettera e le categorie non si vedono. */
+  status: 'nuova' | NomiStatus
+  lettera: string | null
+  categorie: CategoriaNomi[] | null
+  risposte: Partial<Record<CategoriaNomi, string>>
+  /** Il tempo di una partita, da quando si comincia. */
+  tempoTotaleMs: number
+  /** Il tempo che resta, a partita in corso. */
+  restanteMs: number | null
+  /** Dalla partenza alla consegna, a partita consegnata. */
+  tempoMs: number | null
+  /**
+   * A partita consegnata, quali risposte il gioco conosce: si sa subito. I
+   * punti, che dipendono dalle risposte di tutti, arrivano la notte. null se
+   * il lessico non si e' potuto leggere.
+   */
+  riconosciute: Partial<Record<CategoriaNomi, boolean>> | null
+  /** La partita di ieri, contata stanotte: i suoi punti valgono nella classifica di oggi. */
+  ieri: RisultatoNomi | null
+  msToNextPuzzle: number
+}
+
+export interface NomiSummary {
+  puzzleNumber: number
+  date: string
+  status: 'nuova' | NomiStatus
+  /** Le risposte scritte, a partita cominciata. */
+  scritte: number
+  /** Quelle che valgono, a partita consegnata: null finché non si sa. */
+  valide: number | null
+  totale: number
+  /** I punti di ieri, contati stanotte: null se ieri non ha giocato o non sono ancora contati. */
+  ieri: number | null
+  msToNextPuzzle: number
+}
+
+export interface NomiRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: le partite contate, del giorno prima di ogni giorno del periodo. */
+  punti: number
+  giornate: number
+  /** Le risposte valide, su tutte le giornate contate. */
+  valide: number
+  /** Ha giocato oggi, e i suoi punti arrivano stanotte. */
+  inAttesa: boolean
+}
+
+export interface NomiLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: NomiRow[]
+  me: NomiRow | null
+}
+
 /* ─────────────────────────────  Battaglia navale  ──────────────────────── */
 
 /** Dove si trova un giocatore nell'app: lo dice il giro di controllo degli inviti. */
@@ -497,6 +578,7 @@ export type Attivita =
   | 'forza4'
   | 'go'
   | 'tris'
+  | 'nomi'
   | 'ruota'
   | 'fortuna'
   | 'slot'
@@ -1155,7 +1237,15 @@ export interface PeriodoClassifica {
 /* ──────────────────────────  La classifica generale  ───────────────────────── */
 
 /** I giochi che hanno una classificata, e quindi una classifica. */
-export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz' | 'tris'
+export type GiocoClassificato =
+  | 'wordle'
+  | 'scarabeo'
+  | 'cruciverba'
+  | 'sudoku'
+  | 'battaglia'
+  | 'quiz'
+  | 'tris'
+  | 'nomi'
 
 /** I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha senso, contro il computer). */
 export type GiocoDaTavolo = 'indovina' | GiocoTavoliere
@@ -1257,6 +1347,7 @@ export interface OggiRisposta {
   battaglia: BattagliaSummary
   quiz: QuizSummary
   tris: TrisSummary
+  nomi: NomiSummary
   /** Come si sta oggi nella classifica generale, con quel che hanno dato o tolto i giochi della Fortuna. */
   generale: {
     posizione: number | null

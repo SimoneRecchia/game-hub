@@ -7,6 +7,7 @@ import { scarabeoRoutes } from './routes/scarabeo'
 import { cruciverbaRoutes } from './routes/cruciverba'
 import { sudokuRoutes } from './routes/sudoku'
 import { trisRoutes } from './routes/tris'
+import { nomiRoutes } from './routes/nomi'
 import { battagliaRoutes, invitiPubblici } from './routes/battaglia'
 import { quizRoutes } from './routes/quiz'
 import { indovinaRoutes } from './routes/indovina'
@@ -54,6 +55,7 @@ export function createApp() {
   app.route('/cruciverba', cruciverbaRoutes)
   app.route('/sudoku', sudokuRoutes)
   app.route('/tris', trisRoutes)
+  app.route('/nomi', nomiRoutes)
   app.route('/battaglia', battagliaRoutes)
   app.route('/quiz', quizRoutes)
   app.route('/indovina', indovinaRoutes)
