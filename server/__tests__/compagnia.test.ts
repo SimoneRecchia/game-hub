@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Dawg } from '../../shared/dawg'
-import { leggioDa, sacchettoDelGiorno, tabelloneVuoto } from '../../shared/scarabeo'
+import { leggiiDa, leggioDa, sacchettoDaSeme, sacchettoDelGiorno, tabelloneVuoto } from '../../shared/scarabeo'
 import { mosseLegali } from '../../shared/scarabeo-motore'
 import { puntiScarabeo } from '../../shared/punti'
 import type {
@@ -16,7 +16,9 @@ import type {
   ScarabeoLeaderboard,
   ScarabeoState,
   VistaCompagnia,
+  WordleLiberaState,
 } from '../../shared/types'
+import { GUESS_SET } from '../../shared/words/guesses'
 import { giornata as giornataCruciverba } from '../lib/cruciverbaStore'
 import { puntiClassificateDi } from '../lib/generale'
 import { giornata as giornataScarabeo } from '../lib/scarabeoStore'
@@ -271,5 +273,137 @@ describe('lo Scarabeo in compagnia', () => {
     expect(await puntiClassificateDi(b.db as unknown as D1Database, bruno.id, numero)).toBe(
       puntiScarabeo(altra.punti, 200),
     )
+  })
+})
+
+describe('le libere in compagnia', () => {
+  /** Anna invita Bruno a guardare la sua libera, Bruno accetta: la compagnia. */
+  async function aGuardare(b: Banco, anna: Giocatore, bruno: Giocatore, gioco: string, partita: object) {
+    const invito = await b.chiama<CompagniaHost>('POST', `/compagnia/libera/${gioco}/invita`, anna, {
+      playerId: bruno.id,
+      ...partita,
+    })
+    expect(invito.status).toBe(201)
+    expect(invito.dati).toMatchObject({ modalita: 'libera', puzzleNumber: null })
+    const arrivati = (await b.chiama<PresenzaRisposta>('POST', '/presenza', bruno, { attivita: 'hub' })).dati
+    expect(arrivati.compagnia[0]).toMatchObject({ gioco, modalita: 'libera', conta: false, host: { nickname: 'anna' } })
+    const accettato = await b.chiama<{ conta: boolean }>('POST', `/compagnia/partita/${invito.dati.id}/accetta`, bruno)
+    expect(accettato.dati.conta).toBe(false)
+    return invito.dati.id
+  }
+
+  it('il Wordle libero: chi guarda vede la partita, suggerisce parole, e segue la partita nuova', async () => {
+    const b = banco()
+    const [anna, bruno] = [await b.giocatore('anna'), await b.giocatore('bruno')]
+    const prima = (await b.chiama<WordleLiberaState>('POST', '/wordle/libera', anna)).dati
+    const id = await aGuardare(b, anna, bruno, 'wordle', { partitaId: prima.id })
+
+    const vista = (await b.chiama<VistaCompagnia>('GET', `/compagnia/partita/${id}`, bruno)).dati
+    expect(vista).toMatchObject({ gioco: 'wordle', modalita: 'libera', aperta: true, conta: false })
+    expect((vista.partita as WordleLiberaState).answer).toBeNull()
+
+    const parola = [...GUESS_SET].find((p) => p !== 'zzzzz')!
+    expect((await b.chiama('POST', `/compagnia/partita/${id}/suggerisci`, bruno, { parola: 'qqqqq' })).status).toBe(400)
+    expect((await b.chiama('POST', `/compagnia/partita/${id}/suggerisci`, bruno, { parola })).status).toBe(201)
+    const host = (await b.chiama<CompagniaHost>('GET', '/compagnia/libera/wordle', anna)).dati
+    expect(host.suggerimenti[0]).toMatchObject({ usato: false, proposta: { gioco: 'wordle', parola } })
+    await b.chiama('POST', `/wordle/libera/${prima.id}/guess`, anna, { guess: parola })
+    const dopo = (await b.chiama<CompagniaHost>('GET', '/compagnia/libera/wordle', anna)).dati
+    expect(dopo.suggerimenti[0].usato).toBe(true)
+
+    // Una partita nuova: chi guarda la segue.
+    const seconda = (await b.chiama<WordleLiberaState>('POST', '/wordle/libera', anna)).dati
+    await b.chiama('POST', '/compagnia/libera/wordle/partita', anna, { partitaId: seconda.id })
+    const segue = (await b.chiama<VistaCompagnia>('GET', `/compagnia/partita/${id}`, bruno)).dati
+    expect((segue.partita as WordleLiberaState).id).toBe(seconda.id)
+    // I suggerimenti erano per l'altra parola.
+    expect(segue.suggerimenti).toEqual([])
+    // La partita di un altro non si fa guardare.
+    const altra = (await b.chiama<WordleLiberaState>('POST', '/wordle/libera', bruno)).dati
+    expect((await b.chiama('POST', '/compagnia/libera/wordle/partita', anna, { partitaId: altra.id })).status).toBe(404)
+
+    // Anna chiude: chi guardava non vede piu' niente, e un invito nuovo riapre da capo.
+    await b.chiama('POST', '/compagnia/libera/wordle/chiudi', anna)
+    expect((await b.chiama('GET', `/compagnia/partita/${id}`, bruno)).status).toBe(403)
+    expect((await b.chiama('GET', '/compagnia/libera/wordle', anna)).dati).toBeNull()
+    const riaperta = await b.chiama<CompagniaHost>('POST', '/compagnia/libera/wordle/invita', anna, {
+      playerId: bruno.id,
+    })
+    expect(riaperta.dati).toMatchObject({ id, ospiti: [{ nickname: 'bruno', stato: 'invito' }], suggerimenti: [] })
+  })
+
+  it('lo Scarabeo libero: le mosse arrivano dal telefono dell’host, e si suggerisce solo al suo turno', async () => {
+    const b = banco()
+    const [anna, bruno] = [await b.giocatore('anna'), await b.giocatore('bruno')]
+    const seme = 12345
+    const stato = { seme, livello: 'normale', mosse: [] as unknown[] }
+    const id = await aGuardare(b, anna, bruno, 'scarabeo', { stato })
+
+    const [leggio] = leggiiDa(sacchettoDaSeme(seme), [], 2).leggii
+    const migliore = mosseLegali(dawg, tabelloneVuoto(), leggio, true).sort((x, y) => y.punti - x.punti)[0]
+    const sug = await b.chiama<VistaCompagnia>('POST', `/compagnia/partita/${id}/suggerisci`, bruno, {
+      posa: migliore.posa,
+    })
+    expect(sug.status).toBe(201)
+    expect(sug.dati).toMatchObject({ gioco: 'scarabeo', modalita: 'libera', partita: { seme } })
+    expect(sug.dati.suggerimenti[0].proposta).toMatchObject({ gioco: 'scarabeo', turno: 0, punti: migliore.punti })
+
+    // Anna gioca la posa suggerita: tocca al computer, e la posa risulta giocata.
+    stato.mosse.push({ tipo: 'posa', posa: migliore.posa })
+    await b.chiama('POST', '/compagnia/libera/scarabeo/partita', anna, { stato })
+    const vista = (await b.chiama<VistaCompagnia>('GET', `/compagnia/partita/${id}`, bruno)).dati
+    expect(vista.suggerimenti[0].usato).toBe(true)
+    const tardi = await b.chiama('POST', `/compagnia/partita/${id}/suggerisci`, bruno, { posa: migliore.posa })
+    expect(tardi).toMatchObject({ status: 409, dati: { code: 'TOCCA_AL_COMPUTER' } })
+    // Uno stato che non si legge non entra.
+    const rotto = await b.chiama('POST', '/compagnia/libera/scarabeo/partita', anna, { stato: { seme: 'x' } })
+    expect(rotto.status).toBe(400)
+
+    // Una mossa in piu' tiene i suggerimenti; una partita nuova, con un altro seme, li porta via.
+    stato.mosse.push({ tipo: 'passo' })
+    await b.chiama('POST', '/compagnia/libera/scarabeo/partita', anna, { stato })
+    expect((await b.chiama<VistaCompagnia>('GET', `/compagnia/partita/${id}`, bruno)).dati.suggerimenti).toHaveLength(1)
+    const nuova = { ...stato, seme: seme + 1, mosse: [] }
+    await b.chiama('POST', '/compagnia/libera/scarabeo/partita', anna, { stato: nuova })
+    expect((await b.chiama<VistaCompagnia>('GET', `/compagnia/partita/${id}`, bruno)).dati.suggerimenti).toEqual([])
+  })
+
+  it('il cruciverba libero si guarda come quello del giorno, e non da’ punti a nessuno', async () => {
+    const b = banco()
+    b.db.sqlite
+      .prepare(
+        `INSERT INTO cruciverba_schemi_liberi (id, righe, colonne, soluzione, definizioni, created_at)
+         VALUES (1, 4, 4, ?, '{}', '2026-09-26T00:00:00.000Z')`,
+      )
+      .run(SOLUZIONE)
+    const [anna, bruno] = [await b.giocatore('anna'), await b.giocatore('bruno')]
+    const p = (await b.chiama<CruciverbaState>('POST', '/cruciverba/libera', anna)).dati
+    const id = await aGuardare(b, anna, bruno, 'cruciverba', { partitaId: p.partitaId })
+    const vista = (await b.chiama<VistaCompagnia>('GET', `/compagnia/partita/${id}`, bruno)).dati
+    expect(vista.partita).toMatchObject({ modalita: 'libera', soluzione: null })
+    const sug = await b.chiama('POST', `/compagnia/partita/${id}/suggerisci`, bruno, {
+      definizione: 'o0',
+      parola: 'cane',
+    })
+    expect(sug.status).toBe(201)
+    await b.chiama('PUT', `/cruciverba/libera/${p.partitaId}/lettere`, anna, {
+      lettere: SOLUZIONE,
+      versione: p.versione,
+    })
+    const fine = (await b.chiama<VistaCompagnia>('GET', `/compagnia/partita/${id}`, bruno)).dati
+    expect(fine).toMatchObject({ conta: false, mioPunteggio: null, partita: { soluzione: SOLUZIONE } })
+    const classifica = (await b.chiama<CruciverbaLeaderboard>('GET', '/leaderboard/cruciverba?scope=today', bruno)).dati
+    expect(classifica.rows).toEqual([])
+  })
+
+  it('un invito a una libera vale poche ore', async () => {
+    const b = banco()
+    const [anna, bruno] = [await b.giocatore('anna'), await b.giocatore('bruno')]
+    const p = (await b.chiama<WordleLiberaState>('POST', '/wordle/libera', anna)).dati
+    await b.chiama('POST', '/compagnia/libera/wordle/invita', anna, { playerId: bruno.id, partitaId: p.id })
+    const vecchio = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
+    b.db.sqlite.prepare('UPDATE compagnie_ospiti SET created_at = ?').run(vecchio)
+    const arrivati = await b.chiama<PresenzaRisposta>('POST', '/presenza', bruno, { attivita: 'hub' })
+    expect(arrivati.dati.compagnia).toEqual([])
   })
 })

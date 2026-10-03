@@ -30,6 +30,7 @@ import ScarabeoInsieme from './pages/ScarabeoInsieme'
 import Cruciverba from './pages/Cruciverba'
 import CruciverbaLibero from './pages/CruciverbaLibero'
 import CruciverbaInsieme from './pages/CruciverbaInsieme'
+import WordleLiberaInsieme from './pages/WordleLiberaInsieme'
 import Sudoku from './pages/Sudoku'
 import SudokuLibero from './pages/SudokuLibero'
 import BattagliaClassificata from './pages/BattagliaClassificata'
@@ -170,15 +171,18 @@ export default function App() {
             <Route path="/wordle/classificata" element={<Wordle />} />
             <Route path="/wordle/libera" element={<WordleLibero />} />
             <Route path="/wordle/insieme/:roomId" element={<WordleInsieme />} />
+            <Route path="/wordle/libera/insieme/:id" element={<WordleLiberaInsieme />} />
 
             <Route path="/scarabeo/classificata" element={<Scarabeo />} />
             <Route path="/scarabeo/libera" element={<ScarabeoLibero />} />
             <Route path="/scarabeo/insieme/:id" element={<ScarabeoInsieme />} />
+            <Route path="/scarabeo/libera/insieme/:id" element={<ScarabeoInsieme />} />
 
             <Route path="/cruciverba/classificata" element={<Cruciverba />} />
             <Route path="/cruciverba/libera" element={<CruciverbaLibero />} />
             <Route path="/cruciverba/libera/:id" element={<Cruciverba />} />
             <Route path="/cruciverba/insieme/:id" element={<CruciverbaInsieme />} />
+            <Route path="/cruciverba/libera/insieme/:id" element={<CruciverbaInsieme />} />
 
             <Route path="/sudoku/classificata" element={<Sudoku />} />
             <Route path="/sudoku/libera" element={<SudokuLibero />} />

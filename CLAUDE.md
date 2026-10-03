@@ -1171,6 +1171,31 @@ le due righe. Sul telefono di traverso campo e gruppo diventano
 `display: contents` e i giocatori vanno a destra del tavoliere: sopra e sotto
 non ci starebbero.
 
+**Con gli amici si gioca in due modi, e un gioco nuovo sceglie il suo.** I
+giochi con una soluzione — il Wordle, il cruciverba, lo Scarabeo — si giocano
+**in compagnia**: uno gioca, gli altri guardano e suggeriscono, nella
+classificata con il suo stesso punteggio e nella libera senza punti. I giochi a
+turni o a tempo fra due — la battaglia, il quiz, il tris, Nomi cose e città, i
+tavolieri — si giocano **in sfida**, e solo nelle libere: la classificata e' una
+partita uguale per tutti, e un amico la cambierebbe. Contro il computer dove ha
+senso: non in Indovina chi, che si gioca parlandosi, ne' nel quiz, dove il
+computer saprebbe tutte le risposte, e li' si gioca da soli. Il sudoku resta da
+solo: guardarlo fare non insegna niente, e suggerire una cifra vorrebbe dire
+darla. Contro chi si gioca lo dice l'interruttore Computer | Amico, ricordato
+per gioco. Un gioco nuovo prende le regole della sua famiglia invece di
+inventarne di nuove.
+
+**Le libere del Wordle, del cruciverba e dello Scarabeo si guardano in
+compagnia.** Una compagnia per host e gioco (`modalita = 'libera'`) segue la
+partita che l'host sta giocando: il suo indirizzo sul server (`partita_id`), o
+le mosse dello Scarabeo libero, che sta tutto nel suo telefono e le manda a ogni
+mossa (`stato`, ricontrollate dal server con `statoLibera` prima di accettare un
+suggerimento). Chi guarda la vede cambiare quando l'host passa a un'altra
+partita, e suggerisce come nella classificata. Non ci sono punti, quindi chi e'
+dentro si puo' mandare via, e la compagnia si chiude quando si vuole: chiusa, si
+porta via inviti e suggerimenti. Un invito a una libera vale due ore
+(`INVITO_LIBERO_MS`), perché si gioca adesso.
+
 **Ogni gioco ha una classificata e una libera.** La **classificata** e' una al
 giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
 punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:

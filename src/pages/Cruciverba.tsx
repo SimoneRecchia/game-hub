@@ -71,10 +71,17 @@ export default function Cruciverba() {
   const { vai } = useNavigazione()
 
   const stato = g.stato
-  // In compagnia si gioca la classificata, finché non e' finita, e solo se e' la propria.
+  // In compagnia si gioca la classificata finché non e' finita, e solo se e' la propria; nelle libere sempre,
+  // e chi guarda segue lo schema che si sta giocando.
   const inCompagnia = stato?.inCompagnia ?? null
-  const ospitante = !libera && !!stato && !g.finita && !inCompagnia
-  const compagnia = useCompagniaHost('cruciverba', ospitante, compagniaAperta)
+  const ospitante = libera ? !!stato : !!stato && !g.finita && !inCompagnia
+  const compagnia = useCompagniaHost(
+    'cruciverba',
+    libera ? 'libera' : 'classificata',
+    ospitante,
+    compagniaAperta,
+    libera && stato ? { partitaId: stato.partitaId } : null,
+  )
   const dentro = compagnia.compagnia?.ospiti.filter((o) => o.stato === 'dentro').length ?? 0
   // Chi gioca la giornata in compagnia non ha una griglia sua: la partita e' quella dell'host.
   useEffect(() => {
@@ -331,6 +338,7 @@ export default function Cruciverba() {
 
       <PannelloCompagnia
         gioco="cruciverba"
+        modalita={libera ? 'libera' : 'classificata'}
         open={compagniaAperta}
         onClose={() => setCompagniaAperta(false)}
         compagnia={compagnia.compagnia}
@@ -340,6 +348,7 @@ export default function Cruciverba() {
         onInvita={compagnia.invita}
         onRitira={compagnia.ritira}
         onCaricaGiocatori={compagnia.caricaGiocatori}
+        onChiudi={compagnia.chiudi}
       />
 
       <Sheet open={elenco} onClose={() => setElenco(false)} title="Definizioni">

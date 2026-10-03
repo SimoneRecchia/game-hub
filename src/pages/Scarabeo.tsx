@@ -45,7 +45,7 @@ export default function Scarabeo() {
   // In compagnia si gioca la classificata finché non e' chiusa, e solo se e' la propria.
   const inCompagnia = stato?.inCompagnia ?? null
   const ospitante = !!stato && !finita && !inCompagnia
-  const compagnia = useCompagniaHost('scarabeo', ospitante, compagniaAperta)
+  const compagnia = useCompagniaHost('scarabeo', 'classificata', ospitante, compagniaAperta)
   const dentro = compagnia.compagnia?.ospiti.filter((o) => o.stato === 'dentro').length ?? 0
   // Chi gioca la giornata in compagnia non muove: la partita e' quella dell'host.
   useEffect(() => {
@@ -164,6 +164,7 @@ export default function Scarabeo() {
 
       <PannelloCompagnia
         gioco="scarabeo"
+        modalita="classificata"
         open={compagniaAperta}
         onClose={() => setCompagniaAperta(false)}
         compagnia={compagnia.compagnia}

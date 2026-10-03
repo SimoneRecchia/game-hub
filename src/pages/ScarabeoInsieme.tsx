@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
@@ -11,7 +11,7 @@ import { IconaScheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { etichettaScarabeo } from '@/games/compagnia/etichette'
-import { Campo, ElencoMosse, Tabellino } from '@/games/scarabeo/Campo'
+import { Campo, ElencoMosse, Tabellino, type VoceMossa } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
 import { preparaComputer } from '@/games/scarabeo/computer'
 import { useComposizione } from '@/games/scarabeo/useComposizione'
@@ -20,15 +20,76 @@ import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { COOP_POLL_VIEW_MS } from '@shared/config'
-import type { CellaPiena, ScarabeoState, VistaCompagnia } from '@shared/types'
+import { LATO, sacchettoDaSeme } from '@shared/scarabeo'
+import { MOSSE_A_TESTA, statoLibera } from '@shared/scarabeo-computer'
+import type { CellaPiena, VistaCompagnia } from '@shared/types'
 import './Scarabeo.css'
 import './WordleInsieme.css'
 
 const NESSUNA: readonly CellaPiena[] = []
 const NESSUNO: readonly string[] = []
 
+/** Quel che si guarda della partita dell'host, sia la classificata del giorno sia una libera contro il computer. */
+interface Tavola {
+  celle: CellaPiena[]
+  leggio: string[]
+  restanti: number
+  punti: number
+  computer: number
+  mosse: VoceMossa[]
+  mosseUsate: number
+  mosseTotali: number
+  finita: boolean
+  /** Tocca all'host: nella libera puo' toccare al computer, e allora non si suggerisce. */
+  tocca: boolean
+  /** Nella libera, com'e' finita. */
+  esito: 'vinta' | 'persa' | 'pari' | null
+}
+
+function tavolaDi(vista: VistaCompagnia | null): Tavola | null {
+  if (vista?.gioco !== 'scarabeo') return null
+  if (vista.modalita === 'classificata') {
+    const s = vista.partita
+    const finita = s.status === 'done'
+    return {
+      celle: s.celle,
+      leggio: s.leggio,
+      restanti: s.restanti,
+      punti: s.punti,
+      computer: s.computer.punti,
+      mosse: s.mosse,
+      mosseUsate: s.mosseUsate,
+      mosseTotali: s.mosseTotali,
+      finita,
+      tocca: !finita,
+      esito: null,
+    }
+  }
+  if (!vista.partita) return null
+  // La libera sta nel telefono dell'host: qui arrivano le mosse, e il resto si ricava come la' (statoLibera).
+  const s = statoLibera(vista.partita, sacchettoDaSeme(vista.partita.seme))
+  const celle: CellaPiena[] = []
+  s.tabellone.forEach((casella, i) => {
+    if (casella) celle.push({ r: Math.floor(i / LATO), c: i % LATO, lettera: casella.lettera, jolly: casella.jolly })
+  })
+  return {
+    celle,
+    leggio: s.mioLeggio,
+    restanti: s.restanti,
+    punti: s.mieiPunti,
+    computer: s.puntiComputer,
+    mosse: s.giocate.map((g, i) => ({ ...g, numero: i + 1, autore: g.mia ? undefined : 'Computer' })),
+    mosseUsate: s.mieMosse,
+    mosseTotali: MOSSE_A_TESTA,
+    finita: s.finita,
+    tocca: s.turno === 'io',
+    esito: s.esito,
+  }
+}
+
 /**
- * Lo Scarabeo di un collega, visto da chi gioca in sua compagnia.
+ * Lo Scarabeo di un collega, visto da chi gioca in sua compagnia: la
+ * classificata del giorno, o una sua libera contro il computer.
  *
  * Il tabellone e il leggio sono i suoi, aggiornati a polling. Chi guarda
  * compone una posa con le sue tessere, come se toccasse a lui, e invece di
@@ -50,15 +111,18 @@ export default function ScarabeoInsieme() {
     try {
       const fresca = await api<VistaCompagnia>(`/compagnia/partita/${id}`)
       if (fresca.gioco !== 'scarabeo') {
-        vai(ROTTE.insiemeA(fresca.gioco, id), { replace: true, direzione: 'nessuna' })
+        vai(ROTTE.insiemeA(fresca.gioco, id, fresca.modalita), { replace: true, direzione: 'nessuna' })
         return
       }
       caricata.current = true
       setVista(fresca)
       setErrore(null)
     } catch (err) {
-      if (err instanceof ApiFetchError && (err.status === 403 || err.status === 404)) setErrore(err.message)
-      else if (!caricata.current) setErrore(err instanceof ApiFetchError ? err.message : 'Non riesco a caricarla.')
+      if (err instanceof ApiFetchError && (err.status === 403 || err.status === 404)) {
+        setErrore(caricata.current ? 'La partita non è più condivisa.' : err.message)
+      } else if (!caricata.current) {
+        setErrore(err instanceof ApiFetchError ? err.message : 'Non riesco a caricarla.')
+      }
     }
   }, [id, vai])
 
@@ -72,17 +136,18 @@ export default function ScarabeoInsieme() {
     return () => window.clearInterval(t)
   }, [carica])
 
-  const stato: ScarabeoState | null = vista?.gioco === 'scarabeo' ? vista.partita : null
-  const finita = stato?.status === 'done'
+  const libera = vista?.modalita === 'libera'
+  const tavola = useMemo(() => tavolaDi(vista), [vista])
+  const finita = tavola?.finita ?? false
   const c = useComposizione({
-    celle: stato?.celle ?? NESSUNA,
-    leggio: stato?.leggio ?? NESSUNO,
-    bloccata: !stato || finita || inviando,
+    celle: tavola?.celle ?? NESSUNA,
+    leggio: tavola?.leggio ?? NESSUNO,
+    bloccata: !tavola || finita || !tavola.tocca || inviando,
   })
   const sconosciute = useParoleSconosciute(c.anteprima)
 
   const suggerisci = useCallback(async () => {
-    if (inviando || !stato) return
+    if (inviando || !tavola) return
     if (c.sospese.length === 0) {
       c.avvisa('Posa almeno una tessera.')
       return
@@ -114,18 +179,17 @@ export default function ScarabeoInsieme() {
     } finally {
       setInviando(false)
     }
-  }, [c, id, inviando, sconosciute, stato])
+  }, [c, id, inviando, sconosciute, tavola])
 
   // Chi gioca con l'host finisce con lui: la stessa festa, se ha battuto il computer.
-  const festa = useFesta(
-    stato ? !finita : null,
-    !!finita && !!vista?.conta && stato.punti >= stato.computer.punti && stato.punti > 0,
-  )
+  const vinta = !!tavola && tavola.punti >= tavola.computer && tavola.punti > 0
+  const vale = libera ? tavola?.esito === 'vinta' : !!vista?.conta && vinta
+  const festa = useFesta(tavola ? !finita : null, finita && vale)
   useEffect(() => {
     if (festa) suona('vittoria')
   }, [festa])
-  // Una mossa nuova dell'host si sente come una tessera posata.
-  const mosse = stato?.mosseUsate ?? 0
+  // Una mossa nuova, dell'host o del computer, si sente come una tessera posata.
+  const mosse = tavola?.mosse.length ?? 0
   const viste = useRef<number | null>(null)
   useEffect(() => {
     if (viste.current !== null && mosse > viste.current) suona('posa')
@@ -133,11 +197,20 @@ export default function ScarabeoInsieme() {
   }, [mosse])
 
   const host = vista?.host
+  const fineTitolo = !tavola
+    ? ''
+    : libera
+      ? tavola.esito === 'vinta'
+        ? `${host?.displayName} ha battuto il computer`
+        : tavola.esito === 'pari'
+          ? 'Pari con il computer'
+          : 'Il computer ha fatto di più'
+      : 'Giornata chiusa'
   return (
     <Pagina
       titolo={host ? `Con ${host.displayName}` : 'In compagnia'}
       intera
-      indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
+      indietro={libera ? { a: ROTTE.libere, etichetta: 'Libere' } : { a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
         <>
           <BottoneBarra etichetta="Le sue mosse" onClick={() => setStoria(true)}>
@@ -154,25 +227,32 @@ export default function ScarabeoInsieme() {
           titolo="La partita non si è aperta"
           testo={errore}
           azione={
-            <Button variant="tinted" onClick={() => vai(ROTTE.home, { direzione: 'indietro' })}>
-              Torna alle Giornaliere
+            <Button
+              variant="tinted"
+              onClick={() => vai(libera ? ROTTE.libere : ROTTE.home, { direzione: 'indietro' })}
+            >
+              {libera ? 'Torna alle Libere' : 'Torna alle Giornaliere'}
             </Button>
           }
         />
-      ) : !stato || !vista || !host ? (
+      ) : !vista || !host ? (
         <div className="scr__attesa" aria-hidden="true" />
+      ) : !tavola ? (
+        <Vuoto titolo="Ancora niente" testo={`Aspetto che ${host.displayName} cominci una partita…`} />
       ) : (
         <Campo
           c={c}
           sconosciute={sconosciute}
-          bloccato={finita || inviando}
-          restanti={stato.restanti}
+          bloccato={finita || inviando || !tavola.tocca}
+          restanti={tavola.restanti}
           suggerisci
           testa={
             <>
               <div className={`insieme__assist${vista.conta ? '' : ' is-spettatore'}`}>
                 <IconPeople size={14} />
-                {vista.conta ? (
+                {libera ? (
+                  <span>La partita libera di {host.displayName}</span>
+                ) : vista.conta ? (
                   vista.mioPunteggio !== null && finita ? (
                     <span>
                       La tua partita di oggi · <strong>+{vista.mioPunteggio}</strong> in classifica
@@ -197,16 +277,21 @@ export default function ScarabeoInsieme() {
                 avviso={c.messaggio}
                 posa={c.anteprima}
                 sconosciute={sconosciute}
-                io={stato.punti}
-                altro={stato.computer.punti}
+                io={tavola.punti}
+                altro={tavola.computer}
                 nomeAltro="Computer"
-                notaAltro="stesse tessere"
+                notaAltro={libera ? undefined : 'stesse tessere'}
+                turno={libera && !finita ? (tavola.tocca ? 'io' : 'altro') : null}
                 sotto={
                   finita
-                    ? 'Giornata chiusa'
-                    : `Mossa ${Math.min(stato.mosseUsate + 1, stato.mosseTotali)} di ${stato.mosseTotali}`
+                    ? libera
+                      ? 'Partita finita'
+                      : 'Giornata chiusa'
+                    : !tavola.tocca
+                      ? 'Tocca al computer'
+                      : `Mossa ${Math.min(tavola.mosseUsate + 1, tavola.mosseTotali)} di ${tavola.mosseTotali}`
                 }
-                avanzamento={stato.computer.punti > 0 ? stato.punti / stato.computer.punti : 0}
+                avanzamento={libera ? undefined : tavola.computer > 0 ? tavola.punti / tavola.computer : 0}
                 onApri={() => setStoria(true)}
               />
               {!finita && (
@@ -218,7 +303,7 @@ export default function ScarabeoInsieme() {
                       c.avvisa('Quella posa è di un turno passato.')
                     }
                   }}
-                  disabled={inviando}
+                  disabled={inviando || !tavola.tocca}
                 />
               )}
             </>
@@ -226,15 +311,17 @@ export default function ScarabeoInsieme() {
           fine={
             finita ? (
               <div className="scr-fine">
-                <p className="scr-fine__titolo">Giornata chiusa</p>
+                <p className="scr-fine__titolo">{fineTitolo}</p>
                 <p className="scr-fine__nota">
-                  {stato.punti} contro {stato.computer.punti} del computer
+                  {tavola.punti} contro {tavola.computer} del computer
                 </p>
-                <div className="scr-fine__azioni">
-                  <Button variant="tinted" onClick={() => vai(ROTTE.classifica('scarabeo'))}>
-                    Classifica
-                  </Button>
-                </div>
+                {!libera && (
+                  <div className="scr-fine__azioni">
+                    <Button variant="tinted" onClick={() => vai(ROTTE.classifica('scarabeo'))}>
+                      Classifica
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : undefined
           }
@@ -250,10 +337,10 @@ export default function ScarabeoInsieme() {
         onClose={() => setStoria(false)}
         title={host ? `Le mosse di ${host.displayName}` : 'Le mosse'}
       >
-        {stato && (
+        {tavola && (
           <ElencoMosse
-            mosse={stato.mosse}
-            totale={stato.mosse.length > 0 ? stato.punti : undefined}
+            mosse={tavola.mosse}
+            totale={tavola.mosse.length > 0 && !libera ? tavola.punti : undefined}
             vuoto="Nessuna mossa, per ora."
           />
         )}
