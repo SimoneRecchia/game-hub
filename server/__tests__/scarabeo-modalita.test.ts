@@ -55,11 +55,11 @@ describe('lo Scarabeo classificato, contro il riferimento del computer', () => {
     expect(classifica.dati.rows[0]).toMatchObject({ punti: puntiScarabeo(mossa.punti, 200), punteggio: mossa.punti })
   })
 
-  it('i punti arrivano a cento e non oltre', () => {
+  it('i punti arrivano al tetto e non oltre', () => {
     expect(puntiScarabeo(0, 245)).toBe(0)
-    expect(puntiScarabeo(122, 245)).toBe(50)
-    expect(puntiScarabeo(245, 245)).toBe(100)
-    expect(puntiScarabeo(600, 245)).toBe(100)
+    expect(puntiScarabeo(122, 245)).toBe(75)
+    expect(puntiScarabeo(245, 245)).toBe(150)
+    expect(puntiScarabeo(600, 245)).toBe(150)
   })
 })
 

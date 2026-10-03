@@ -105,9 +105,9 @@ describe('la difficoltà e il generatore', () => {
 })
 
 describe('i punti e le note', () => {
-  it('cento senza aiuti, tre per cifra svelata, uno per errore, mai sotto zero', () => {
-    expect(puntiSudoku(0, 0)).toBe(100)
-    expect(puntiSudoku(2, 5)).toBe(89)
+  it('centocinquanta senza aiuti, cinque per cifra svelata, due per errore, mai sotto zero', () => {
+    expect(puntiSudoku(0, 0)).toBe(150)
+    expect(puntiSudoku(2, 5)).toBe(130)
     expect(puntiSudoku(60, 0)).toBe(0)
   })
 

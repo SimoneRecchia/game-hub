@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { suona } from '@/lib/suoni'
-import { NERA, VUOTA, grigliaPiena } from '@shared/cruciverba'
+import { NERA, PUNTI_COMPLETO, VUOTA, grigliaPiena } from '@shared/cruciverba'
 import type {
   CruciverbaEsito,
   CruciverbaState,
@@ -71,7 +71,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
   const [segnalate, setSegnalate] = useState<Set<number>>(new Set())
   const [selezione, setSelezione] = useState<Selezione | null>(null)
   const [tempoMs, setTempoMs] = useState(0)
-  const [punti, setPunti] = useState(100)
+  const [punti, setPunti] = useState(PUNTI_COMPLETO)
   const [finita, setFinita] = useState(false)
   const [messaggio, setMessaggio] = useState<string | null>(null)
   /** L'esito dell'ultimo controllo, per l'adesivo al centro: quante lettere erano sbagliate. */

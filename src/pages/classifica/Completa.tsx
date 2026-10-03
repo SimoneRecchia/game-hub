@@ -14,21 +14,27 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
+import { TETTI } from '@shared/punti'
+import { DOMANDE_PER_PARTITA, PUNTI_BASE_QUIZ, PUNTI_QUIZ } from '@shared/quiz'
 import { conSegno } from '@shared/ruota'
+import { ATTEMPT_POINTS } from '@shared/scoring'
 import type { GiocoClassificato, GiocoFortuna, LeaderboardScope } from '@shared/types'
 import { ContiDi } from './Conti'
 import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
 import { GIOCHI_FORTUNA, NOMI_CLASSIFICHE, ORDINE_GIOCHI, vociDi, type Risposta, type Voce } from './voci'
 
+/** Quanto vale ogni risposta giusta della classificata del quiz. */
+const PUNTI_PER_GIUSTA = (PUNTI_QUIZ - PUNTI_BASE_QUIZ) / DOMANDE_PER_PARTITA
+
 const LEDE: Record<ChiaveClassifica, string> = {
   generale: 'Tutte le classificate e i giochi della Fortuna.',
-  wordle: '100 punti al primo tentativo, 50 al sesto.',
-  scarabeo: 'Pareggiare il computer vale 100 punti.',
-  cruciverba: '100 punti se lo completi senza aiuti.',
-  sudoku: '100 punti se lo risolvi senza aiuti.',
+  wordle: `${ATTEMPT_POINTS[0]} punti al primo tentativo, ${ATTEMPT_POINTS[ATTEMPT_POINTS.length - 1]} al sesto.`,
+  scarabeo: `Pareggiare il computer vale ${TETTI.scarabeo} punti.`,
+  cruciverba: `${TETTI.cruciverba} punti se lo completi senza aiuti.`,
+  sudoku: `${TETTI.sudoku} punti se lo risolvi senza aiuti.`,
   battaglia: 'Meno colpi, più punti.',
-  quiz: '20 punti per aver giocato, 8 per ogni risposta giusta.',
+  quiz: `${PUNTI_BASE_QUIZ} punti per aver giocato, ${PUNTI_PER_GIUSTA} per ogni risposta giusta.`,
   tris: '10 punti per la serie, 8 per ogni vittoria, 4 per ogni patta.',
   fortuna: 'Quel che Crazy Time, la slot e il blackjack hanno dato o tolto.',
 }

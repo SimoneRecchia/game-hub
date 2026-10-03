@@ -1,10 +1,10 @@
 /**
  * La classifica generale: la somma delle classificate di tutti i giochi.
  *
- * Si puo' fare adesso e non si poteva prima: ogni classificata vale al massimo
- * cento punti, qualunque sia il gioco (vedi shared/punti.ts), quindi sommarle
- * non richiede un tasso di cambio inventato. Chi gioca a tutto ogni giorno puo'
- * fare fino a cinquecento punti; chi gioca solo al Wordle fino a cento, e
+ * Si puo' fare adesso e non si poteva prima: ogni classificata ha un tetto
+ * deciso, secondo il tempo che chiede (`TETTI` in shared/punti.ts), quindi
+ * sommarle non richiede un tasso di cambio inventato. Chi gioca a tutto ogni
+ * giorno puo' fare la somma dei tetti; chi gioca solo al Wordle fino al suo, e
  * nella classifica del Wordle compete alla pari con tutti. I giochi della
  * Fortuna — Crazy Time, la slot, il blackjack — si sommano a parte (`ruota`,
  * `slot`, `blackjack`): non sono classificate, ma quel che danno o tolgono e'

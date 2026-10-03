@@ -571,12 +571,12 @@ export function schemaDelGiorno(numero: number, data: string): SchemaSudoku | nu
 
 /* ─────────────────────────────  I punti  ───────────────────────────── */
 
-/** Cento a chi lo completa senza aiuti, come il cruciverba. */
-export const PUNTI_COMPLETO = 100
-/** Una cifra svelata. */
-export const COSTO_SVELATA = 3
+/** Centocinquanta a chi lo completa senza aiuti (vedi shared/punti.ts). */
+export const PUNTI_COMPLETO = 150
+/** Una cifra svelata: quanto una lettera del cruciverba. */
+export const COSTO_SVELATA = 5
 /** Una cifra sbagliata segnalata da un controllo: ricontrollare la stessa non costa. */
-export const COSTO_ERRORE = 1
+export const COSTO_ERRORE = 2
 
 export function puntiSudoku(svelate: number, errori: number): number {
   return Math.max(0, PUNTI_COMPLETO - svelate * COSTO_SVELATA - errori * COSTO_ERRORE)

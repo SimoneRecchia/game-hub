@@ -292,19 +292,21 @@ export const MARGINE_RETE_MS = 3_000
 /* ───────────────────────────────  I punti  ─────────────────────────────── */
 
 /** Quel che vale una partita finita, anche senza risposte giuste. */
-export const PUNTI_BASE_QUIZ = 20
+export const PUNTI_BASE_QUIZ = 15
+/** Tutte giuste: il tetto del quiz (vedi shared/punti.ts). */
+export const PUNTI_QUIZ = 75
 
 /**
- * I punti in classifica di una partita: venti per averla finita, e il resto in
- * proporzione alle risposte giuste. Dieci giuste su dieci fanno cento; tre su
- * dieci, una partita storta, 44: circa la metà, come vuole il principio comune
- * a tutti i giochi (vedi shared/punti.ts). Il tempo non da' punti: e' lo
+ * I punti in classifica di una partita: quindici per averla finita, e il resto
+ * in proporzione alle risposte giuste. Dieci giuste su dieci fanno settantacinque;
+ * tre su dieci, una partita storta, 33: circa la metà, come vuole il principio
+ * comune a tutti i giochi (vedi shared/punti.ts). Il tempo non da' punti: e' lo
  * spareggio in classifica.
  */
 export function puntiQuiz(giuste: number, domande: number): number {
   if (domande <= 0) return 0
   const quota = Math.min(Math.max(giuste, 0), domande) / domande
-  return Math.round(PUNTI_BASE_QUIZ + (100 - PUNTI_BASE_QUIZ) * quota)
+  return Math.round(PUNTI_BASE_QUIZ + (PUNTI_QUIZ - PUNTI_BASE_QUIZ) * quota)
 }
 
 /* ─────────────────────────  La giornata della classificata  ───────────────── */

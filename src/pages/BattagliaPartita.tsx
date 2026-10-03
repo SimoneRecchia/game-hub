@@ -38,6 +38,7 @@ import {
   type IdNave,
   type Nave,
 } from '@shared/battaglia'
+import { TETTI } from '@shared/punti'
 import type { VistaBattaglia } from '@shared/types'
 import './Battaglia.css'
 
@@ -627,7 +628,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
         {vista.modalita === 'classificata' && vista.punti !== null && (
           <p className="bat-fine__punti">
             <Numero valore={vista.punti} />
-            <span className="bat-fine__su"> / 100 in classifica</span>
+            <span className="bat-fine__su"> / {TETTI.battaglia} in classifica</span>
           </p>
         )}
         {fraAmici && messaggioRivincita(r, nome) && (
