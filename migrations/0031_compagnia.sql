@@ -5,8 +5,10 @@
 -- Una tabella per tutti i giochi che vengono dopo il Wordle, che resta nelle
 -- sue. `gioco` non ha un CHECK: un gioco nuovo non deve rifare la tabella (in
 -- SQLite cambiare un CHECK vuol dire rifarla), e a tenerlo chiuso basta il
--- tipo `GiocoInCompagnia`. La modalita' prepara le libere, dove una compagnia
--- e' legata a una partita (`partita_id`) e non a una giornata.
+-- tipo. Nelle libere la compagnia e' dell'host per quel gioco, e segue la
+-- partita che sta giocando (`partita_id`); lo Scarabeo libero, che sta tutto
+-- nel suo telefono, ci scrive le mosse (`stato`), e ogni scrittura ha la sua
+-- `versione`.
 
 CREATE TABLE compagnie (
   id            TEXT PRIMARY KEY,
@@ -15,13 +17,19 @@ CREATE TABLE compagnie (
   host_id       TEXT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
   puzzle_number INTEGER,
   partita_id    TEXT,
+  stato         TEXT,
+  versione      INTEGER NOT NULL DEFAULT 0,
   created_at    TEXT NOT NULL,
+  updated_at    TEXT,
   chiusa_at     TEXT
 );
 
 -- Una compagnia per host, gioco e giornata: la crea il primo invito.
 CREATE UNIQUE INDEX idx_compagnie_giornata ON compagnie (gioco, host_id, puzzle_number)
   WHERE modalita = 'classificata';
+-- Nelle libere una per host e gioco: la riapre il primo invito dopo che l'ha chiusa.
+CREATE UNIQUE INDEX idx_compagnie_libere ON compagnie (gioco, host_id)
+  WHERE modalita = 'libera';
 
 CREATE TABLE compagnie_ospiti (
   compagnia_id TEXT NOT NULL REFERENCES compagnie(id) ON DELETE CASCADE,

@@ -68,9 +68,9 @@ export default function CruciverbaInsieme() {
   const carica = useCallback(async () => {
     try {
       const fresca = await api<VistaCompagnia>(`/compagnia/partita/${id}`)
-      // Un indirizzo dello Scarabeo arrivato qui: la partita e' dell'altro gioco.
+      // Un indirizzo di un altro gioco arrivato qui: la partita e' sua.
       if (fresca.gioco !== 'cruciverba') {
-        vai(ROTTE.insiemeA(fresca.gioco, id), { replace: true, direzione: 'nessuna' })
+        vai(ROTTE.insiemeA(fresca.gioco, id, fresca.modalita), { replace: true, direzione: 'nessuna' })
         return
       }
       caricata.current = true
@@ -78,8 +78,12 @@ export default function CruciverbaInsieme() {
       setErrore(null)
     } catch (err) {
       // Un errore di rete durante il polling non svuota la schermata: si dice solo se non c'e' ancora niente.
-      if (err instanceof ApiFetchError && (err.status === 403 || err.status === 404)) setErrore(err.message)
-      else if (!caricata.current) setErrore(err instanceof ApiFetchError ? err.message : 'Non riesco a caricarla.')
+      // Chi guardava e la compagnia si chiude: lo si dice cosi', non come un errore.
+      if (err instanceof ApiFetchError && (err.status === 403 || err.status === 404)) {
+        setErrore(caricata.current ? 'La partita non è più condivisa.' : err.message)
+      } else if (!caricata.current) {
+        setErrore(err instanceof ApiFetchError ? err.message : 'Non riesco a caricarla.')
+      }
     }
   }, [id, vai])
 
@@ -93,6 +97,14 @@ export default function CruciverbaInsieme() {
 
   const stato: CruciverbaState | null = vista?.gioco === 'cruciverba' ? vista.partita : null
   const finita = stato?.status === 'done'
+  const libera = vista?.modalita === 'libera'
+
+  // Nelle libere l'host passa a un altro schema: le proposte e la casella erano per quello di prima.
+  const idPartita = stato?.partitaId ?? null
+  useEffect(() => {
+    setMie(new Map())
+    setSelezione(null)
+  }, [idPartita])
   const definizioni = useMemo(() => stato?.definizioni ?? [], [stato?.definizioni])
   const numeri = useMemo(() => numeriDelleCaselle(definizioni), [definizioni])
 
@@ -277,7 +289,7 @@ export default function CruciverbaInsieme() {
       titolo={host ? `Con ${host.displayName}` : 'In compagnia'}
       intera
       larga
-      indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
+      indietro={libera ? { a: ROTTE.libere, etichetta: 'Libere' } : { a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
         <>
           {host && <Avatar nickname={host.nickname} color={host.avatarColor} size={32} />}
@@ -291,12 +303,19 @@ export default function CruciverbaInsieme() {
         {errore ? (
           <div className="cru__ripiego">
             <p>{errore}</p>
-            <Button variant="tinted" onClick={() => vai(ROTTE.home, { direzione: 'indietro' })}>
-              Torna alle Giornaliere
+            <Button
+              variant="tinted"
+              onClick={() => vai(libera ? ROTTE.libere : ROTTE.home, { direzione: 'indietro' })}
+            >
+              {libera ? 'Torna alle Libere' : 'Torna alle Giornaliere'}
             </Button>
           </div>
-        ) : !stato || !vista ? (
+        ) : !vista ? (
           <div className="cru__attesa" aria-hidden="true" />
+        ) : !stato ? (
+          <div className="cru__ripiego">
+            <p>Aspetto che {vista.host.displayName} apra uno schema…</p>
+          </div>
         ) : (
           <>
             <div className="cru__principale">
@@ -305,6 +324,8 @@ export default function CruciverbaInsieme() {
                 <IconPeople size={14} />
                 {messaggio ? (
                   <span aria-live="polite">{messaggio}</span>
+                ) : libera ? (
+                  <span>Lo schema libero di {vista.host.displayName}</span>
                 ) : vista.conta ? (
                   vista.mioPunteggio !== null ? (
                     <span>
@@ -342,9 +363,11 @@ export default function CruciverbaInsieme() {
                   <p className="cru__fine-punti u-tabnum">{stato.punti} punti</p>
                   <p className="cru__fine-dettaglio u-tabnum">in {formatCronometro(stato.tempoMs)}</p>
                   <div className="cru__fine-azioni">
-                    <Button variant="tinted" onClick={() => vai(ROTTE.classifica('cruciverba'))}>
-                      Classifica
-                    </Button>
+                    {!libera && (
+                      <Button variant="tinted" onClick={() => vai(ROTTE.classifica('cruciverba'))}>
+                        Classifica
+                      </Button>
+                    )}
                     <Button variant="tinted" onClick={() => setElenco(true)}>
                       Definizioni e fonti
                     </Button>

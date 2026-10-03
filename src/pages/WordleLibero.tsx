@@ -3,7 +3,7 @@ import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Adesivo } from '@/components/Adesivo'
 import { Coriandoli, useFesta } from '@/components/Elementi'
-import { IconChart, IconInfo, IconShuffle } from '@/components/Icons'
+import { IconChart, IconInfo, IconPeople, IconShuffle } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Scheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
@@ -13,6 +13,9 @@ import { IconaWordle, TITOLI_VITTORIA, Tentativi, adesivoFine, notaWordle } from
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { useWordleLibero } from '@/games/wordle/useWordle'
+import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
+import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
+import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { api } from '@/lib/api'
 import { MAX_ATTEMPTS, WORD_LENGTH } from '@shared/config'
 import type { StatisticheWordleLibero, WordleLiberaRisposta } from '@shared/types'
@@ -34,7 +37,17 @@ export default function WordleLibero() {
   const [aiuto, setAiuto] = useState(false)
   const [statistiche, setStatistiche] = useState<StatisticheWordleLibero | null>(null)
   const [cambio, setCambio] = useState(false)
+  const [compagniaAperta, setCompagniaAperta] = useState(false)
   const finita = !!game.state && game.state.status !== 'playing'
+  // Chi guarda segue la parola che si sta giocando, e la prossima.
+  const compagnia = useCompagniaHost(
+    'wordle',
+    'libera',
+    !!game.state,
+    compagniaAperta,
+    game.state ? { partitaId: game.state.id } : null,
+  )
+  const dentro = compagnia.compagnia?.ospiti.filter((o) => o.stato === 'dentro').length ?? 0
 
   // Le statistiche delle libere, rilette a ogni partita chiusa.
   useEffect(() => {
@@ -62,6 +75,11 @@ export default function WordleLibero() {
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={
         <>
+          {game.state && (
+            <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setCompagniaAperta(true)} badge={dentro}>
+              <IconPeople size={21} />
+            </BottoneBarra>
+          )}
           {finita ? (
             <BottoneBarra etichetta="Rivedi il risultato" onClick={game.openResult}>
               <IconChart size={20} />
@@ -133,19 +151,46 @@ export default function WordleLibero() {
                 </Button>
               </div>
             ) : (
-              <Keyboard
-                states={game.keyboard}
-                onLetter={game.press}
-                onEnter={game.submit}
-                onBackspace={game.backspace}
-                disabled={game.loading || finita || game.revealing !== null}
-              />
+              <>
+                {/* I suggerimenti di chi guarda: toccarne uno riempie la riga, non la invia. */}
+                <Suggerimenti
+                  suggerimenti={compagnia.compagnia?.suggerimenti ?? []}
+                  etichetta={(s) => ({
+                    parola: s.proposta.gioco === 'wordle' ? s.proposta.parola.toUpperCase() : '',
+                    nota: '',
+                  })}
+                  onScegli={(s) => s.proposta.gioco === 'wordle' && game.fill(s.proposta.parola)}
+                  disabled={game.revealing !== null || game.submitting}
+                />
+                <Keyboard
+                  states={game.keyboard}
+                  onLetter={game.press}
+                  onEnter={game.submit}
+                  onBackspace={game.backspace}
+                  disabled={game.loading || finita || game.revealing !== null}
+                />
+              </>
             )}
           </>
         )}
       </div>
 
       <HowToPlay open={aiuto} onClose={() => setAiuto(false)} />
+
+      <PannelloCompagnia
+        gioco="wordle"
+        modalita="libera"
+        open={compagniaAperta}
+        onClose={() => setCompagniaAperta(false)}
+        compagnia={compagnia.compagnia}
+        giocatori={compagnia.giocatori}
+        occupato={compagnia.occupato}
+        errore={compagnia.errore}
+        onInvita={compagnia.invita}
+        onRitira={compagnia.ritira}
+        onCaricaGiocatori={compagnia.caricaGiocatori}
+        onChiudi={compagnia.chiudi}
+      />
 
       {game.state && (
         <Sheet

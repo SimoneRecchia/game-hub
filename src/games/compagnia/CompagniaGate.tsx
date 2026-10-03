@@ -9,19 +9,35 @@ import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { usePresenza } from '@/lib/presenza'
 import { suona } from '@/lib/suoni'
-import type { GiocoInCompagnia, InvitoCompagnia } from '@shared/types'
+import type { GiocoLiberoInCompagnia, InvitoCompagnia } from '@shared/types'
 import '@/games/wordle/coop/InviteAlert.css'
 
-/** Che cosa si gioca, detto con il suo articolo. */
-const PARTITA: Record<GiocoInCompagnia, string> = {
-  cruciverba: 'il cruciverba di oggi',
-  scarabeo: 'lo Scarabeo di oggi',
+/** Che cosa si gioca, detto con il suo articolo: la classificata di oggi, o una libera. */
+const PARTITA: Record<'classificata' | 'libera', Record<GiocoLiberoInCompagnia, string>> = {
+  classificata: {
+    wordle: 'il Wordle di oggi',
+    cruciverba: 'il cruciverba di oggi',
+    scarabeo: 'lo Scarabeo di oggi',
+  },
+  libera: {
+    wordle: 'una partita libera di Wordle',
+    cruciverba: 'un cruciverba libero',
+    scarabeo: 'una partita libera di Scarabeo',
+  },
 }
 
 /** Quel che costa accettare a chi aveva gia' cominciato. */
-const COMINCIATA: Record<GiocoInCompagnia, string> = {
+const COMINCIATA: Record<GiocoLiberoInCompagnia, string> = {
+  wordle: 'I tentativi che hai già fatto non contano più.',
   cruciverba: 'Quel che hai già scritto nel tuo cruciverba non conta più.',
   scarabeo: 'Le mosse che hai già fatto non contano più.',
+}
+
+/** Che cosa si suggerisce. */
+const SUGGERIMENTI: Record<GiocoLiberoInCompagnia, string> = {
+  wordle: 'parole',
+  cruciverba: 'parole',
+  scarabeo: 'mosse',
 }
 
 /**
@@ -57,7 +73,7 @@ export function CompagniaGate() {
         await api(`/compagnia/partita/${invito.compagniaId}/accetta`, { method: 'POST' })
         risposto()
         aggiorna()
-        vai(ROTTE.insiemeA(invito.gioco, invito.compagniaId))
+        vai(ROTTE.insiemeA(invito.gioco, invito.compagniaId, invito.modalita))
       }}
       onRifiuta={async () => {
         risposto()
@@ -109,11 +125,13 @@ function AvvisoCompagnia({
         <div className="avviso__testa">
           <Avatar nickname={invito.host.nickname} color={invito.host.avatarColor} size={64} />
           <p className="avviso__testo">
-            <strong>{host}</strong> vuole giocare con te {PARTITA[invito.gioco]}.
+            <strong>{host}</strong> vuole giocare con te {PARTITA[invito.modalita][invito.gioco]}.
           </p>
         </div>
 
-        {invito.conta ? (
+        {invito.modalita === 'libera' ? (
+          <p className="avviso__sereno">Guardi la partita e suggerisci {SUGGERIMENTI[invito.gioco]}.</p>
+        ) : invito.conta ? (
           <div className="avviso__insieme">
             <p className="avviso__insieme-titolo">Diventa la tua partita di oggi</p>
             <p>

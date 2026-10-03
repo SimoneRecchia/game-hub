@@ -4,17 +4,19 @@ import { Button } from '@/components/Button'
 import { IconCheck, IconClose } from '@/components/Icons'
 import { Sheet } from '@/components/Sheet'
 import { MAX_COOP_GUESTS } from '@shared/config'
-import type { CompagniaHost, GiocoInCompagnia, InvitabileCompagnia } from '@shared/types'
+import type { CompagniaHost, GiocoLiberoInCompagnia, InvitabileCompagnia, ModalitaCompagnia } from '@shared/types'
 import '@/games/wordle/coop/InvitePanel.css'
 
 /** Che cosa vede e fa chi accetta, gioco per gioco. */
-const LEDE: Record<GiocoInCompagnia, string> = {
+const LEDE: Record<GiocoLiberoInCompagnia, string> = {
+  wordle: 'Chi accetta vede la tua partita e ti suggerisce parole.',
   cruciverba: 'Chi accetta vede la tua griglia e ti suggerisce parole.',
   scarabeo: 'Chi accetta vede il tuo tabellone e ti suggerisce mosse.',
 }
 
 interface Props {
-  gioco: GiocoInCompagnia
+  gioco: GiocoLiberoInCompagnia
+  modalita: ModalitaCompagnia
   open: boolean
   onClose: () => void
   compagnia: CompagniaHost | null
@@ -24,15 +26,20 @@ interface Props {
   onInvita: (playerId: string) => void
   onRitira: (playerId: string) => void
   onCaricaGiocatori: () => void
+  /** Nelle libere: basta compagnia. */
+  onChiudi?: () => void
 }
 
 /**
  * Il pannello dell'host: chi invitare, chi e' dentro, quanti posti restano. Lo
- * stesso del Wordle, con le stesse regole: chi ha accettato non si manda via,
- * perché la sua giornata e' ormai la tua partita.
+ * stesso del Wordle, con le stesse regole: nella classificata chi ha accettato
+ * non si manda via, perché la sua giornata e' ormai la tua partita. Nelle
+ * libere non ci sono punti: si manda via chi si vuole, e si chiude quando si
+ * vuole.
  */
 export function PannelloCompagnia({
   gioco,
+  modalita,
   open,
   onClose,
   compagnia,
@@ -42,7 +49,9 @@ export function PannelloCompagnia({
   onInvita,
   onRitira,
   onCaricaGiocatori,
+  onChiudi,
 }: Props) {
+  const libera = modalita === 'libera'
   useEffect(() => {
     if (open) onCaricaGiocatori()
   }, [open, onCaricaGiocatori])
@@ -80,7 +89,7 @@ export function PannelloCompagnia({
                       : 'In attesa di risposta'}
                   </span>
                 </span>
-                {o.stato === 'dentro' ? (
+                {o.stato === 'dentro' && !libera ? (
                   <span className="invita__spunta" aria-hidden="true">
                     <IconCheck size={16} />
                   </span>
@@ -90,7 +99,9 @@ export function PannelloCompagnia({
                     className="invita__ritira"
                     onClick={() => onRitira(o.playerId)}
                     disabled={occupato}
-                    aria-label={`Ritira l'invito a ${o.displayName}`}
+                    aria-label={
+                      o.stato === 'dentro' ? `Manda via ${o.displayName}` : `Ritira l'invito a ${o.displayName}`
+                    }
                   >
                     <IconClose size={16} />
                   </button>
@@ -120,18 +131,22 @@ export function PannelloCompagnia({
                     <Avatar nickname={g.nickname} color={g.avatarColor} size={34} />
                     <span className="invita__riga-corpo">
                       <span className="invita__nome">{g.displayName}</span>
-                      <span className={`invita__stato${g.occupato || g.haGiocato ? '' : ' is-avviso'}`}>
-                        {g.occupato
-                          ? 'Gioca già in compagnia'
-                          : g.haGiocato
-                            ? 'Ha già giocato oggi'
-                            : g.online
-                              ? 'Online · non ha ancora giocato'
-                              : 'Non ha ancora giocato oggi'}
-                      </span>
+                      {libera ? (
+                        <span className="invita__stato">{g.online ? 'Online' : 'Non è online'}</span>
+                      ) : (
+                        <span className={`invita__stato${g.occupato || g.haGiocato ? '' : ' is-avviso'}`}>
+                          {g.occupato
+                            ? 'Gioca già in compagnia'
+                            : g.haGiocato
+                              ? 'Ha già giocato oggi'
+                              : g.online
+                                ? 'Online · non ha ancora giocato'
+                                : 'Non ha ancora giocato oggi'}
+                        </span>
+                      )}
                     </span>
                     <Button
-                      variant={g.haGiocato ? 'tinted' : 'plain'}
+                      variant={g.haGiocato || (libera && g.online) ? 'tinted' : 'plain'}
                       onClick={() => onInvita(g.playerId)}
                       disabled={occupato || g.occupato}
                     >
@@ -144,7 +159,16 @@ export function PannelloCompagnia({
           </div>
         )}
 
-        <p className="invita__nota">Chi non ha ancora giocato prende il tuo stesso punteggio.</p>
+        {libera ? (
+          ospiti.length > 0 &&
+          onChiudi && (
+            <Button variant="plain" fullWidth onClick={onChiudi} disabled={occupato}>
+              Smetti di giocare in compagnia
+            </Button>
+          )
+        ) : (
+          <p className="invita__nota">Chi non ha ancora giocato prende il tuo stesso punteggio.</p>
+        )}
       </div>
     </Sheet>
   )

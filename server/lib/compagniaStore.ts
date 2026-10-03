@@ -21,8 +21,10 @@ import type {
   CompagniaHost,
   GiocatoreBreve,
   GiocoInCompagnia,
+  GiocoLiberoInCompagnia,
   InvitabileCompagnia,
   InvitoCompagnia,
+  ModalitaCompagnia,
   OspiteCompagnia,
   PropostaCompagnia,
   StatoOspite,
@@ -31,6 +33,13 @@ import type {
 import { fail, newId, nowIso } from './http'
 
 export const GIOCHI_IN_COMPAGNIA: readonly GiocoInCompagnia[] = ['cruciverba', 'scarabeo']
+export const GIOCHI_LIBERI_IN_COMPAGNIA: readonly GiocoLiberoInCompagnia[] = ['wordle', 'cruciverba', 'scarabeo']
+
+/**
+ * Quanto vale un invito a una libera: si gioca adesso, e un invito di stamattina
+ * a guardare una partita di allora non vuol dire piu' niente.
+ */
+const INVITO_LIBERO_MS = 2 * 60 * 60 * 1000
 
 /** Quanti suggerimenti si mostrano: bastano gli ultimi. */
 const SUGGERIMENTI_MOSTRATI = 30
@@ -58,15 +67,42 @@ export function leggiGioco(valore: string | undefined): GiocoInCompagnia {
   return valore as GiocoInCompagnia
 }
 
+export function leggiGiocoLibero(valore: string | undefined): GiocoLiberoInCompagnia {
+  if (!GIOCHI_LIBERI_IN_COMPAGNIA.includes(valore as GiocoLiberoInCompagnia)) {
+    fail(404, 'GIOCO_SCONOSCIUTO', 'Questo gioco non si gioca in compagnia.')
+  }
+  return valore as GiocoLiberoInCompagnia
+}
+
 export interface CompagniaRow {
   id: string
-  gioco: GiocoInCompagnia
-  modalita: 'classificata' | 'libera'
+  gioco: GiocoLiberoInCompagnia
+  modalita: ModalitaCompagnia
   host_id: string
-  puzzle_number: number
+  /** La giornata, nella classificata; null nelle libere. */
+  puzzle_number: number | null
+  /** La partita dell'host: quella del giorno, o la libera che sta giocando. */
   partita_id: string | null
+  /** Lo Scarabeo libero dell'host, che sta nel suo telefono: le mosse, in JSON. */
+  stato: string | null
+  versione: number
   created_at: string
+  updated_at: string | null
   chiusa_at: string | null
+}
+
+/** Una compagnia della classificata: ha sempre la sua giornata, e un gioco che si gioca in compagnia. */
+export type CompagniaDelGiorno = CompagniaRow & {
+  gioco: GiocoInCompagnia
+  modalita: 'classificata'
+  puzzle_number: number
+}
+
+const dellaClassificata = (gioco: GiocoLiberoInCompagnia): gioco is GiocoInCompagnia =>
+  GIOCHI_IN_COMPAGNIA.includes(gioco as GiocoInCompagnia)
+
+export function delGiorno(c: CompagniaRow): c is CompagniaDelGiorno {
+  return c.modalita === 'classificata' && c.puzzle_number !== null && dellaClassificata(c.gioco)
 }
 
 /** La giornata di un giocatore in un gioco: quel che serve a sapere se puo' giocare in compagnia. */
@@ -104,14 +140,14 @@ export async function compagniaDelGiorno(
   gioco: GiocoInCompagnia,
   hostId: string,
   numero: number,
-): Promise<CompagniaRow | null> {
+): Promise<CompagniaDelGiorno | null> {
   return db
     .prepare(
       `SELECT * FROM compagnie
         WHERE gioco = ? AND modalita = 'classificata' AND host_id = ? AND puzzle_number = ?`,
     )
     .bind(gioco, hostId, numero)
-    .first<CompagniaRow>()
+    .first<CompagniaDelGiorno>()
 }
 
 /** La compagnia dell'host, creata al primo invito. */
@@ -121,7 +157,7 @@ export async function apriCompagnia(
   hostId: string,
   numero: number,
   partitaId: string,
-): Promise<CompagniaRow> {
+): Promise<CompagniaDelGiorno> {
   await db
     .prepare(
       `INSERT OR IGNORE INTO compagnie (id, gioco, modalita, host_id, puzzle_number, partita_id, created_at)
@@ -132,6 +168,90 @@ export async function apriCompagnia(
   const riga = await compagniaDelGiorno(db, gioco, hostId, numero)
   if (!riga) throw new Error('Compagnia non trovata subito dopo la creazione')
   return riga
+}
+
+/** La compagnia delle libere dell'host per un gioco, se c'e' ed e' aperta. */
+export async function compagniaLibera(
+  db: D1Database,
+  gioco: GiocoLiberoInCompagnia,
+  hostId: string,
+): Promise<CompagniaRow | null> {
+  return db
+    .prepare(
+      `SELECT * FROM compagnie
+        WHERE gioco = ? AND modalita = 'libera' AND host_id = ? AND chiusa_at IS NULL`,
+    )
+    .bind(gioco, hostId)
+    .first<CompagniaRow>()
+}
+
+/**
+ * La compagnia delle libere, creata o riaperta al primo invito: una per host
+ * e gioco, che segue la partita libera che l'host sta giocando.
+ */
+export async function apriCompagniaLibera(
+  db: D1Database,
+  gioco: GiocoLiberoInCompagnia,
+  hostId: string,
+): Promise<CompagniaRow> {
+  const adesso = nowIso()
+  await db
+    .prepare(
+      `INSERT INTO compagnie (id, gioco, modalita, host_id, created_at, updated_at)
+            VALUES (?, ?, 'libera', ?, ?, ?)
+       ON CONFLICT (gioco, host_id) WHERE modalita = 'libera'
+       DO UPDATE SET chiusa_at = NULL, updated_at = excluded.updated_at
+                WHERE compagnie.chiusa_at IS NOT NULL`,
+    )
+    .bind(newId('cmp'), gioco, hostId, adesso, adesso)
+    .run()
+  const riga = await compagniaLibera(db, gioco, hostId)
+  if (!riga) throw new Error('Compagnia libera non trovata subito dopo la creazione')
+  return riga
+}
+
+/**
+ * La partita che l'host sta giocando, perché chi guarda la segua: l'indirizzo
+ * della libera sul server, o le mosse dello Scarabeo libero, che sta nel suo
+ * telefono. Ogni scrittura alza la versione.
+ *
+ * Una partita nuova — un'altra libera, o uno Scarabeo con un altro seme — porta
+ * via i suggerimenti della vecchia: erano per quella, e una parola provata la'
+ * qui sembrerebbe ancora da provare. Il `DELETE` viene prima nel batch perché
+ * confronta la partita di prima con quella nuova.
+ */
+export async function aggiornaLibera(
+  db: D1Database,
+  compagniaId: string,
+  partita: { partitaId: string | null; stato: string | null },
+): Promise<void> {
+  await db.batch([
+    db
+      .prepare(
+        `DELETE FROM compagnie_suggerimenti WHERE compagnia_id = ?1 AND EXISTS (
+           SELECT 1 FROM compagnie WHERE id = ?1
+             AND (partita_id IS NOT ?2 OR json_extract(stato, '$.seme') IS NOT json_extract(?3, '$.seme')))`,
+      )
+      .bind(compagniaId, partita.partitaId, partita.stato),
+    db
+      .prepare(
+        `UPDATE compagnie SET partita_id = ?, stato = ?, versione = versione + 1, updated_at = ?
+          WHERE id = ? AND chiusa_at IS NULL`,
+      )
+      .bind(partita.partitaId, partita.stato, nowIso(), compagniaId),
+  ])
+}
+
+/**
+ * Chiude la compagnia delle libere: chi guardava smette, e con lui inviti e
+ * suggerimenti. Riaprendola si ricomincia da capo.
+ */
+export async function chiudiCompagnia(db: D1Database, compagniaId: string): Promise<void> {
+  await db.batch([
+    db.prepare('UPDATE compagnie SET chiusa_at = ? WHERE id = ?').bind(nowIso(), compagniaId),
+    db.prepare('DELETE FROM compagnie_ospiti WHERE compagnia_id = ?').bind(compagniaId),
+    db.prepare('DELETE FROM compagnie_suggerimenti WHERE compagnia_id = ?').bind(compagniaId),
+  ])
 }
 
 interface RigaGiocatore {
@@ -266,7 +386,11 @@ export async function rispondi(
  * resterebbe legato a una partita che non paga piu' nessuno; cosi' invece non
  * cambia niente, e chi chiama lo dice.
  */
-export async function entraNellaGiornata(db: D1Database, compagnia: CompagniaRow, guestId: string): Promise<boolean> {
+export async function entraNellaGiornata(
+  db: D1Database,
+  compagnia: CompagniaDelGiorno,
+  guestId: string,
+): Promise<boolean> {
   const t = TABELLA[compagnia.gioco]
   const esito = await db
     .prepare(
@@ -363,47 +487,108 @@ export async function invitabili(
   }))
 }
 
+/**
+ * Chi si puo' invitare a guardare una libera: tutti, perché non ci sono punti
+ * da proteggere. Chi ha l'app aperta per primo, che e' chi risponde adesso.
+ */
+export async function invitabiliLiberi(
+  db: D1Database,
+  hostId: string,
+  compagniaId: string | null,
+  adesso: number,
+): Promise<InvitabileCompagnia[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT p.id, p.nickname, p.display_name, p.avatar_color,
+              CASE WHEN ?1 IS NULL THEN 0 ELSE EXISTS (
+                SELECT 1 FROM compagnie_ospiti o
+                 WHERE o.compagnia_id = ?1 AND o.guest_id = p.id
+                   AND o.stato IN ('invito', 'dentro')) END AS invitato,
+              COALESCE(pr.visto_at >= ?3, 0)                AS online
+         FROM players p
+         LEFT JOIN presenza pr ON pr.player_id = p.id
+        WHERE p.id != ?2
+        ORDER BY online DESC, p.last_seen_at DESC
+        LIMIT 100`,
+    )
+    .bind(compagniaId, hostId, new Date(adesso - PRESENZA_ONLINE_MS).toISOString())
+    .all<RigaGiocatore & { invitato: number; online: number }>()
+  return results.map((r) => ({
+    ...breve(r),
+    haGiocato: false,
+    occupato: false,
+    invitato: r.invitato === 1,
+    online: r.online === 1,
+  }))
+}
+
 /* ──────────────────────────  Gli inviti arrivati  ───────────────────────── */
 
 /**
- * Gli inviti di oggi da accettare o rifiutare, per il giro di controllo.
+ * Gli inviti da accettare o rifiutare, per il giro di controllo: quelli della
+ * classificata di oggi, e quelli delle libere delle ultime ore.
  *
- * Non ci sono quelli di un gioco che si gioca gia' in compagnia — accettarne
- * un altro non darebbe un secondo punteggio — ne' quelli di un host che ha
- * gia' finito, perché non si entra in una partita chiusa.
+ * Della classificata non ci sono quelli di un gioco che si gioca gia' in
+ * compagnia — accettarne un altro non darebbe un secondo punteggio — ne'
+ * quelli di un host che ha gia' finito, perché non si entra in una partita
+ * chiusa.
  */
-export async function invitiRicevuti(db: D1Database, guestId: string, numero: number): Promise<InvitoCompagnia[]> {
+export async function invitiRicevuti(
+  db: D1Database,
+  guestId: string,
+  numero: number,
+  adesso = Date.now(),
+): Promise<InvitoCompagnia[]> {
   const { results } = await db
     .prepare(
-      `SELECT c.id AS compagnia_id, c.gioco, c.puzzle_number, c.host_id, o.created_at,
+      `SELECT c.id AS compagnia_id, c.gioco, c.modalita, c.puzzle_number, c.host_id, o.created_at,
               p.id, p.nickname, p.display_name, p.avatar_color
          FROM compagnie_ospiti o
          JOIN compagnie c ON c.id = o.compagnia_id
          JOIN players p ON p.id = c.host_id
-        WHERE o.guest_id = ? AND o.stato = 'invito'
-          AND c.modalita = 'classificata' AND c.puzzle_number = ? AND c.chiusa_at IS NULL
+        WHERE o.guest_id = ?1 AND o.stato = 'invito' AND c.chiusa_at IS NULL
+          AND ((c.modalita = 'classificata' AND c.puzzle_number = ?2)
+            OR (c.modalita = 'libera' AND o.created_at >= ?3))
         ORDER BY o.created_at DESC`,
     )
-    .bind(guestId, numero)
+    .bind(guestId, numero, new Date(adesso - INVITO_LIBERO_MS).toISOString())
     .all<
       RigaGiocatore & {
         compagnia_id: string
-        gioco: GiocoInCompagnia
-        puzzle_number: number
+        gioco: GiocoLiberoInCompagnia
+        modalita: ModalitaCompagnia
+        puzzle_number: number | null
         host_id: string
         created_at: string
       }
     >()
   if (results.length === 0) return []
 
-  const validi = results.filter((r) => GIOCHI_IN_COMPAGNIA.includes(r.gioco))
+  const liberi: InvitoCompagnia[] = results
+    .filter((r) => r.modalita === 'libera' && GIOCHI_LIBERI_IN_COMPAGNIA.includes(r.gioco))
+    .map((r) => ({
+      compagniaId: r.compagnia_id,
+      gioco: r.gioco,
+      modalita: 'libera',
+      puzzleNumber: null,
+      host: breve(r),
+      createdAt: r.created_at,
+      conta: false,
+      cominciata: false,
+    }))
+
+  const validi = results.flatMap((r) =>
+    r.modalita === 'classificata' && r.puzzle_number !== null && dellaClassificata(r.gioco)
+      ? [{ ...r, gioco: r.gioco, puzzle_number: r.puzzle_number }]
+      : [],
+  )
   const mie = new Map<GiocoInCompagnia, Giornata | null>()
   await Promise.all(
     [...new Set(validi.map((r) => r.gioco))].map(async (g) => mie.set(g, await giornataDi(db, g, guestId, numero))),
   )
   const host = await Promise.all(validi.map((r) => giornataDi(db, r.gioco, r.host_id, numero)))
 
-  return validi.flatMap((r, i) => {
+  const delGiorno = validi.flatMap((r, i): InvitoCompagnia[] => {
     const mia = mie.get(r.gioco) ?? null
     const suaInCorso = host[i]?.status === 'playing' && host[i]?.in_compagnia === null
     if (!suaInCorso || mia?.in_compagnia) return []
@@ -412,6 +597,7 @@ export async function invitiRicevuti(db: D1Database, guestId: string, numero: nu
       {
         compagniaId: r.compagnia_id,
         gioco: r.gioco,
+        modalita: 'classificata',
         puzzleNumber: r.puzzle_number,
         host: breve(r),
         createdAt: r.created_at,
@@ -420,6 +606,7 @@ export async function invitiRicevuti(db: D1Database, guestId: string, numero: nu
       },
     ]
   })
+  return [...delGiorno, ...liberi]
 }
 
 /* ────────────────────────────  I suggerimenti  ─────────────────────────── */
@@ -488,6 +675,7 @@ export async function vistaHost(
   return {
     id: compagnia.id,
     gioco: compagnia.gioco,
+    modalita: compagnia.modalita,
     puzzleNumber: compagnia.puzzle_number,
     maxOspiti: MAX_COOP_GUESTS,
     ospiti: await ospitiDi(db, compagnia.id),
