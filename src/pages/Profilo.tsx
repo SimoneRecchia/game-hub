@@ -207,7 +207,7 @@ function Fonti() {
         <a href="https://www.wikidata.org" target="_blank" rel="noreferrer">
           Wikidata
         </a>{' '}
-        (CC0) e da napolux/paroleitaliane (MIT).
+        (CC0), da napolux/paroleitaliane e da hermitdave/FrequencyWords (MIT).
       </p>
       <p>
         <strong>Cruciverba.</strong> Definizioni dal{' '}
