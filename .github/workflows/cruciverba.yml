@@ -9,7 +9,9 @@ name: Scorte notturne
 #    dei punti della classificata, fino a due mesi da oggi;
 #  - i sudoku del giorno, fino a due mesi da oggi;
 #  - le domande del quiz, fino a due mesi da oggi, e il riassunto dei dati da
-#    Wikidata e Natural Earth per le partite libere.
+#    Wikidata e Natural Earth per le partite libere;
+#  - i punti di Nomi, cose e città delle giornate finite, se il workflow che
+#    li conta a mezzanotte (nomi.yml) e' saltato.
 #
 # Gli script fanno solo quel che manca, e quel che hanno scritto non cambia
 # piu': di solito una giornata per tipo. Due mesi perché un workflow
@@ -77,6 +79,12 @@ jobs:
 
       - name: Il quiz
         run: npx vite-node scripts/genera-quiz.ts -- --remote --giorni 60
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: I punti di Nomi, cose e città
+        run: npx vite-node scripts/punteggi-nomi.ts -- --remote
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

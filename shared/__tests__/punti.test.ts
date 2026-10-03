@@ -12,6 +12,7 @@ import {
   puntiTris,
 } from '../punti'
 import { PARTITE_TRIS } from '../tris'
+import { BASE_NOMI, CATEGORIE_PER_PARTITA, TEMPO_NOMI_MS, puntiNomi } from '../nomi-cose'
 import { PUNTI_BASE_QUIZ } from '../quiz'
 import { COSTO_ERRORE as ERRORE_SUDOKU, COSTO_SVELATA as SVELATA_SUDOKU } from '../sudoku'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
@@ -31,8 +32,13 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(Object.keys(MASSIMI).sort()).toEqual(Object.keys(TETTI).sort())
   })
 
+  it('sono otto classificate, e valgono ottocento: cento a gioco in media', () => {
+    expect(Object.keys(TETTI)).toHaveLength(8)
+    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(800)
+  })
+
   it('i tetti seguono il tempo che chiede ogni gioco, ma nessuno vale piu’ di tre volte un altro', () => {
-    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'battaglia', 'quiz', 'wordle', 'tris'] as const
+    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'battaglia', 'quiz', 'wordle', 'nomi', 'tris'] as const
     for (let i = 1; i < ordine.length; i += 1) expect(TETTI[ordine[i]]).toBeLessThanOrEqual(TETTI[ordine[i - 1]])
     const valori = Object.values(TETTI)
     expect(Math.max(...valori) / Math.min(...valori)).toBeLessThanOrEqual(3.2)
@@ -77,6 +83,11 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
   it('nel tris la serie perfetta vale il tetto', () => {
     expect(puntiTris(PARTITE_TRIS, 0)).toBe(TETTI.tris)
   })
+
+  it('in Nomi, cose e città cinque risposte che non ha dato nessun altro, consegnate subito, valgono il tetto', () => {
+    const rare = Array.from({ length: CATEGORIE_PER_PARTITA }, () => ({ scritta: true, uguali: 1 }))
+    expect(puntiNomi(rare, 1000, 0)).toBe(TETTI.nomi)
+  })
 })
 
 /**
@@ -120,6 +131,17 @@ describe('una giornata storta si recupera', () => {
     expect(puntiTris(0, 0)).toBeGreaterThan(0)
     // Una vittoria vale due patte: la patta e' il risultato di chi gioca bene contro chi gioca bene.
     expect(puntiTris(1, 0) - puntiTris(0, 0)).toBe(2 * (puntiTris(0, 1) - puntiTris(0, 0)))
+  })
+
+  it('in Nomi, cose e città una partita normale vale piu’ della meta’ del tetto, e scrivere vale qualcosa', () => {
+    // Quattro risposte valide su cinque, date da un giocatore su cinque, in due minuti: una partita normale.
+    const normali = [1, 2, 3, 4].map(() => ({ scritta: true, uguali: 200 }))
+    const normale = puntiNomi([...normali, { scritta: true, uguali: null }], 1000, (TEMPO_NOMI_MS * 2) / 3)
+    expect(normale / TETTI.nomi).toBeGreaterThan(0.5)
+    expect(normale / TETTI.nomi).toBeLessThan(0.8)
+    // Una sola risposta, sbagliata: si e' giocato, e vale la base.
+    expect(puntiNomi([{ scritta: true, uguali: null }], 1000, TEMPO_NOMI_MS)).toBe(BASE_NOMI)
+    expect(puntiNomi([{ scritta: false, uguali: null }], 1000, 0)).toBe(0)
   })
 
   it('nel quiz una partita storta vale circa la metà di una perfetta, e finirla vale sempre qualcosa', () => {

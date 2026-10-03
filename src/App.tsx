@@ -10,6 +10,7 @@ import { BattagliaGate } from './games/battaglia/BattagliaGate'
 import { QuizGate } from './games/quiz/sfida/QuizGate'
 import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
+import { NomiGate } from './games/nomi/sfida/NomiGate'
 import Giornaliere from './pages/Giornaliere'
 import Libere from './pages/Libere'
 import Amico from './pages/Amico'
@@ -47,6 +48,14 @@ import { GIOCHI_TAVOLIERE } from '@shared/tavolo'
  */
 const caricaTris = () => import('./pages/Tris')
 const Tris = lazy(caricaTris)
+const caricaNomi = () => import('./pages/NomiCose')
+const caricaNomiLibera = () => import('./pages/NomiCoseLibera')
+const caricaNomiSfida = () => import('./pages/NomiCoseSfida')
+const caricaNomiInvito = () => import('./pages/NomiCoseInvito')
+const NomiCose = lazy(caricaNomi)
+const NomiCoseLibera = lazy(caricaNomiLibera)
+const NomiCoseSfida = lazy(caricaNomiSfida)
+const NomiCoseInvito = lazy(caricaNomiInvito)
 const caricaSala = () => import('./pages/TavoloSala')
 const caricaComputer = () => import('./pages/TavoloComputer')
 const caricaPartita = () => import('./pages/TavoloPartita')
@@ -82,7 +91,19 @@ const BlackjackTavolo = lazy(caricaTavoloBJ)
 function usePrecarica() {
   useEffect(() => {
     const t = window.setTimeout(() => {
-      const pezzi = [caricaSala, caricaComputer, caricaPartita, caricaInvito, caricaQuiz, caricaQuizLibero, caricaTris]
+      const pezzi = [
+        caricaSala,
+        caricaComputer,
+        caricaPartita,
+        caricaInvito,
+        caricaQuiz,
+        caricaQuizLibero,
+        caricaTris,
+        caricaNomi,
+        caricaNomiLibera,
+        caricaNomiSfida,
+        caricaNomiInvito,
+      ]
       const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ]
       void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna].map((c) => c())).catch(() => {})
     }, 2_500)
@@ -92,7 +113,8 @@ function usePrecarica() {
 
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
 const INVITO = new RegExp(
-  '^/(?:battaglia-navale/invito|quiz/sfida|(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera)/invito)/([a-z0-9]+)/?$',
+  '^/(?:battaglia-navale/invito|quiz/sfida|' +
+    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|nomi-cose-citta)/invito)/([a-z0-9]+)/?$',
 )
 
 export default function App() {
@@ -130,6 +152,7 @@ export default function App() {
       <QuizGate />
       <IndovinaGate />
       <TavoloGate />
+      <NomiGate />
       <Shell>
         <Suspense fallback={null}>
           <Routes>
@@ -166,6 +189,11 @@ export default function App() {
             <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
 
             <Route path="/tris/classificata" element={<Tris />} />
+
+            <Route path="/nomi-cose-citta/classificata" element={<NomiCose />} />
+            <Route path="/nomi-cose-citta/libera" element={<NomiCoseLibera />} />
+            <Route path="/nomi-cose-citta/sfida/:id" element={<NomiCoseSfida />} />
+            <Route path="/nomi-cose-citta/invito/:codice" element={<NomiCoseInvito />} />
 
             <Route path={ROTTE.fortuna} element={<Fortuna />} />
             <Route path={ROTTE.ruota} element={<Ruota />} />

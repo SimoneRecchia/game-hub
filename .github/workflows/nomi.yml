@@ -1,0 +1,47 @@
+name: Punti di Nomi, cose e città
+
+# I punti di una partita di Nomi, cose e città dipendono dalle risposte di
+# tutti, quindi si contano a giornata chiusa e valgono nella classifica del
+# giorno dopo: qui, subito dopo la mezzanotte italiana, perché la classifica
+# di oggi abbia i punti di ieri appena comincia. Lo script conta solo le
+# giornate finite e non ancora contate, quindi le due ore — una e' la
+# mezzanotte con l'ora legale, l'altra con quella solare — non contano due
+# volte. Se un giro salta, lo recuperano il workflow notturno e il deploy.
+on:
+  schedule:
+    - cron: '7 22,23 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: punti-nomi
+  cancel-in-progress: false
+
+jobs:
+  conta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Controllo dei segreti
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ]; then
+            echo "::error::Mancano i segreti CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID (vedi DEPLOY.md)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: I punti delle giornate finite
+        run: npx vite-node scripts/punteggi-nomi.ts -- --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -163,6 +163,17 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # I punti di Nomi, cose e città delle giornate finite e non ancora
+      # contate: di solito nessuna, ci pensa nomi.yml a mezzanotte. Non ferma
+      # la pubblicazione: una giornata non contata resta "in attesa".
+      - name: I punti di Nomi, cose e città
+        if: steps.segreti.outputs.pronto == 'si'
+        continue-on-error: true
+        run: npx vite-node scripts/punteggi-nomi.ts -- --remote
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: Pubblica su Cloudflare Pages
         if: steps.segreti.outputs.pronto == 'si'
         run: npx wrangler pages deploy dist --project-name game-hub --branch main

@@ -173,6 +173,27 @@ export const TAVOLO_POLL_A_TEMPO_MS = 1_000
  */
 export const TAVOLO_MARGINE_TEMPO_MS = 3_000
 
+/* ─────────────────────  Nomi, cose e città fra amici  ───────────────────── */
+
+/** Un invito con il link vale un'ora: si gioca in due nello stesso momento, come la sfida a quiz. */
+export const NOMI_SFIDA_LINK_MS = 60 * 60_000
+
+/** Il tre-due-uno, dall'accettazione al via: la lettera si vede insieme. */
+export const NOMI_SFIDA_VIA_MS = 4_000
+
+/** Le sfide ferme da due giorni si cancellano: non hanno classifica, e non serve tenerle. */
+export const NOMI_SFIDA_CONSERVA_MS = 2 * 24 * 60 * 60_000
+
+/**
+ * Il ritmo: a partita in corso un secondo, perché lo stop dell'altro va visto
+ * subito; mentre si aspetta l'altro un secondo e mezzo; a partita finita piu'
+ * largo, per vedere se chiede la rivincita. Tre minuti di partita sono meno di
+ * duecento richieste a testa.
+ */
+export const NOMI_SFIDA_POLL_MS = 1_000
+export const NOMI_SFIDA_POLL_ATTESA_MS = 1_500
+export const NOMI_SFIDA_POLL_FINE_MS = 3_000
+
 /* ─────────────────────────  Email e verifica  ───────────────────────── */
 
 export const EMAIL_MAX = 254
