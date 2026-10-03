@@ -136,7 +136,7 @@ export interface ScarabeoState {
   mosseTotali: number
   /** Il punteggio del tabellone. */
   punti: number
-  /** I punti in classifica: il punteggio in rapporto a quello del computer, fino a cento. */
+  /** I punti in classifica: il punteggio in rapporto a quello del computer, fino al tetto dello Scarabeo. */
   puntiClassifica: number
   /**
    * Il computer, con le stesse tessere: il punteggio sempre — e' il traguardo —
@@ -1193,8 +1193,8 @@ export interface PanoramicaClassifiche {
 
 /**
  * Una riga della classifica generale: la somma delle classificate di tutti i
- * giochi. Si puo' sommare perché ogni classificata vale al massimo cento punti
- * (vedi shared/punti.ts).
+ * giochi. Si puo' sommare perché ogni classificata ha un tetto deciso (vedi
+ * shared/punti.ts).
  */
 export interface GeneraleRow {
   rank: number

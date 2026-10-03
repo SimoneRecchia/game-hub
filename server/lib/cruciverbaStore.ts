@@ -9,7 +9,6 @@
  */
 
 import {
-  COSTO_ERRORE,
   grigliaIniziale,
   punteggio,
   schemaVuoto,
@@ -198,11 +197,6 @@ export function registraControllo(
     }
   }
   return { segnalate: dopo, nuovi }
-}
-
-/** Il costo dei nuovi errori: sta qui perché ha lo stesso nome del resto del conto. */
-export function costoErrori(nuovi: number): number {
-  return nuovi * COSTO_ERRORE
 }
 
 /**
@@ -487,7 +481,7 @@ export interface TotaliCruciverba {
  *
  * L'ordine: **punti** del periodo — contano solo i cruciverba completati —
  * poi il **tempo**, piu' corto prima: due cruciverba completati senza aiuti
- * valgono cento punti a testa, e fra i due passa avanti chi ci ha messo meno.
+ * valgono il tetto a testa, e fra i due passa avanti chi ci ha messo meno.
  * Chi ha una partita aperta e nessuna chiusa sta in fondo, con la sua etichetta.
  * Infine il nickname, perché due righe identiche non si scambino di posto.
  */

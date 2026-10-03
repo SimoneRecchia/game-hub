@@ -81,14 +81,16 @@ il test che verifica la condizione numerica cade prima di quello sull'ordine:
 guarda quello.
 
 **La scala dei punti e' derivata, non scritta a mano**: base di partecipazione
-piu' gradino per tentativo risparmiato, cioe' `[100, 90, 80, 70, 60, 50]`, e
-venti per una parola non indovinata. Il rapporto fra la giornata migliore e la
-peggiore e' **2:1** di proposito: con il 6:1 di una volta due giornate
+piu' gradino per tentativo risparmiato, cioe' `[70, 63, 56, 49, 42, 35]`, e
+quattordici per una parola non indovinata. Il rapporto fra la giornata migliore
+e la peggiore e' **2:1** di proposito: con il 6:1 di una volta due giornate
 sfortunate decidevano la classifica, e una vittoria al sesto tentativo valeva
 un sesto di una perfetta. C'e' un test su entrambi i lati del compromesso — che
 sia recuperabile, e che il gradino non sia simbolico. I bonus di velocità (fino
 a uno) e di costanza (fino a tre) sono spareggi: sommati restano sotto il
-gradino di dieci.
+gradino di sette. Fino alla ridistribuzione dei punti la scala era la stessa
+moltiplicata per dieci settimi, da cento a cinquanta e venti: le giornate di
+allora valgono quel che valevano.
 
 **La classificata del Wordle e' una parola sola al giorno**, la stessa per
 tutti, come la partita del giorno di ogni altro gioco; chi ne vuole altre ha la
@@ -121,9 +123,9 @@ devono restare d'accordo.
 giocatore e' una sola: o la propria partita, o quella di chi lo ha invitato. Nel
 secondo caso `wordle_games.spectated = 1`, la propria board rifiuta i tentativi
 (`GIOCATA_INSIEME`) e `assist_score` porta **lo stesso punteggio dell'host**.
-Sei persone su una parola indovinata al terzo tentativo fanno ottanta punti a
-testa, come chi la indovina da solo: e' quello che rende accettare un invito una
-scelta neutra invece di una rinuncia. `payAssists` filtra su
+Sei persone su una parola indovinata al terzo tentativo fanno cinquantasei
+punti a testa, come chi la indovina da solo: e' quello che rende accettare un
+invito una scelta neutra invece di una rinuncia. `payAssists` filtra su
 `assist_score IS NULL`, così due richieste ravvicinate non pagano due volte.
 
 **Una giornata giocata in compagnia conta per la streak** (`assist_status`).
@@ -277,9 +279,11 @@ finito.** `statoDa` manda lo schema con i punti al posto delle lettere, e la
 `voce` di ogni definizione solo a partita chiusa: "Milano" accanto a "Città
 dell'Italia settentrionale" sarebbe la risposta.
 
-**Nel cruciverba il tempo non da' punti.** Cento a chi lo completa senza
-aiuti, tre in meno per ogni lettera svelata, uno per ogni errore segnalato da
-un controllo — e ricontrollare lo stesso errore non costa (`registraControllo`).
+**Nel cruciverba il tempo non da' punti.** Centosessanta a chi lo completa
+senza aiuti, cinque in meno per ogni lettera svelata, due per ogni errore
+segnalato da un controllo — e ricontrollare lo stesso errore non costa
+(`registraControllo`). La partita conta gli errori (`errori`), non quel che
+costano: il costo lo applica `punteggio`, una volta sola.
 Il tempo e' lo spareggio in classifica: lo conta il browser a pagina visibile,
 perché un cruciverba si fa a pezzi, e il server lo limita a quanto e' passato
 davvero fra due scritture (`tempoDichiarato`).
@@ -307,8 +311,9 @@ chiede di tirare a indovinare non esce mai: `valuta` non ci arriva, e il
 generatore lo scarta.
 
 **Nel sudoku la soluzione resta sul server, e gli aiuti costano come nel
-cruciverba.** Cento a chi lo risolve senza aiuti, tre in meno per ogni cifra
-svelata, uno per ogni cifra sbagliata trovata da un controllo — e ricontrollare
+cruciverba.** Centocinquanta a chi lo risolve senza aiuti, cinque in meno per
+ogni cifra svelata, due per ogni cifra sbagliata trovata da un controllo — e
+ricontrollare
 la stessa cifra sbagliata non costa (`segnalate` tiene la cifra, con lo stesso
 `registraControllo`). Due cifre uguali che si vedono si segnano subito nel
 browser, perché si vedono a occhio; se una cifra e' sbagliata lo sa solo il
@@ -365,21 +370,26 @@ dopo tre minuti senza colpi, o cinque senza flotta.
 **Ogni classificata ha il suo tetto, e la generale e' la somma.**
 Prima una giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche
 centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
-gioco misura quel che gli e' proprio dentro un tetto deciso
-(`TETTI` in `shared/punti.ts`, che ha la tabella di tutti): cento per quasi
-tutte, cinquanta per il tris, che si gioca in due minuti. Il Wordle misura i
-tentativi, lo Scarabeo il punteggio in rapporto al computer, il cruciverba e il
-sudoku gli aiuti, la battaglia i colpi, il quiz le risposte giuste (venti per
-aver giocato, otto per ogni giusta), il tris le vittorie e le patte. Tutti
-tengono il principio del Wordle — **giocarla bene vale circa il
-doppio di giocarla male**, non dieci volte tanto — e
-`shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
-per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
+gioco misura quel che gli e' proprio dentro un tetto deciso (`TETTI` in
+`shared/punti.ts`, che ha la tabella di tutti), che segue il tempo che una
+giornata chiede a chi la gioca bene: il cruciverba 160, lo Scarabeo e il sudoku
+150, la battaglia 85, il quiz 75, il Wordle 70, il tris 50. Non in proporzione
+diretta: un cruciverba chiede dieci volte il tempo del tris e vale tre volte
+tanto, cosi' nessun gioco da solo decide la generale. Per un periodo tutte
+valevano cento: una partita perfetta a tris valeva una perfetta a sudoku. Le
+giornate di allora restano come sono, perché i punti si salvano a fine partita
+e non si ricalcolano. Il Wordle misura i tentativi, lo Scarabeo il punteggio in
+rapporto al computer, il cruciverba e il sudoku gli aiuti, la battaglia i colpi,
+il quiz le risposte giuste (quindici per aver giocato, sei per ogni giusta), il
+tris le vittorie e le patte. Tutti tengono il principio del Wordle —
+**giocarla bene vale circa il doppio di giocarla male**, non dieci volte tanto
+— e `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del
+compromesso per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
 `/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna
 e dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
 ognuna si apre per intero (`/classifica/generale`, `/classifica/wordle`). Non
-si normalizza per giornata ("il migliore prende cento"): cambierebbe le
+si normalizza per giornata ("il migliore prende tutto il tetto"): cambierebbe le
 classifiche di ieri ogni volta che qualcuno gioca. Alla generale si aggiungono
 solo i giochi della Fortuna, che non sono classificate (vedi sotto), con un
 tratto loro nella barra di ogni giocatore; e la Fortuna ha una classifica sua
@@ -1082,7 +1092,7 @@ arriva, e chi gioca tanto partirebbe avvantaggiato.
 mosse di ogni giornata con le tessere del giorno, e scrive il punteggio in
 `scarabeo_computer` con `INSERT OR IGNORE`: il riferimento di una giornata non
 cambia, altrimenti due giocatori dello stesso giorno avrebbero punti su scale
-diverse. I punti sono `100 × punteggio / riferimento`, fino a cento
+diverse. I punti sono `150 × punteggio / riferimento`, fino al tetto
 (`puntiScarabeo`): il rapporto invece di una scala fissa tiene conto della
 fortuna del sacchetto. Non si fa nel Worker — una mossa del computer costa
 decine di millisecondi — e se la riga manca si usa `RIFERIMENTO_SCARABEO`. Le

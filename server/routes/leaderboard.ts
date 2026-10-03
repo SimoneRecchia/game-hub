@@ -56,7 +56,7 @@ export const leaderboardRoutes = new Hono<AppEnv>()
 
   /**
    * La classifica generale: la somma delle classificate di tutti i giochi.
-   * Ha senso perché ognuna vale al massimo cento punti (shared/punti.ts).
+   * Ha senso perché ognuna ha un tetto deciso (shared/punti.ts).
    */
   .get('/generale', async (c) => {
     const result = await classificaGenerale(c.env.DB, leggiPeriodo(c), c.get('player').id)

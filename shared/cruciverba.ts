@@ -24,10 +24,12 @@ export const BIANCA = '.'
 export const VUOTA = ' '
 
 /**
- * Il punteggio: cento punti a chi lo completa senza aiuti.
+ * Il punteggio: centosessanta punti a chi lo completa senza aiuti, il tetto
+ * piu' alto di tutte le classificate, perché e' quella che chiede piu' tempo
+ * (vedi shared/punti.ts).
  *
- * Una lettera svelata costa tre punti, un errore segnalato da un controllo uno
- * solo. Il rapporto e' voluto: il controllo dice **dove** si e' sbagliato, lo
+ * Una lettera svelata costa cinque punti, un errore segnalato da un controllo
+ * due. Il rapporto e' voluto: il controllo dice **dove** si e' sbagliato, lo
  * svelamento dice anche **cosa** va scritto, e chiedere la risposta deve costare
  * piu' che chiedere conferma. Controllare una griglia giusta non costa niente,
  * e ricontrollare lo stesso errore non lo si paga due volte.
@@ -36,9 +38,9 @@ export const VUOTA = ' '
  * cruciverba si fa a pezzi, in pausa caffe', e un bonus di velocità
  * premierebbe chi ha mezz'ora di fila invece di chi lo risolve meglio.
  */
-export const PUNTI_COMPLETO = 100
-export const COSTO_SVELATA = 3
-export const COSTO_ERRORE = 1
+export const PUNTI_COMPLETO = 160
+export const COSTO_SVELATA = 5
+export const COSTO_ERRORE = 2
 
 export type Direzione = 'o' | 'v'
 
