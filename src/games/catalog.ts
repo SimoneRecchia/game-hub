@@ -74,8 +74,8 @@ export const GIOCHI: readonly Gioco[] = [
     nome: 'Nomi, cose e città',
     motto: 'Una lettera, cinque categorie',
     classificata: 'Una lettera al giorno, la stessa per tutti.',
-    libera: 'Una lettera a caso, contro il computer.',
-    liberaBreve: 'Contro il computer',
+    libera: 'Una lettera a caso, contro il computer o contro un amico.',
+    liberaBreve: 'Contro chi vuoi',
   },
   {
     id: 'tris',

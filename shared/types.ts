@@ -561,6 +561,77 @@ export interface NomiLeaderboard {
   me: NomiRow | null
 }
 
+/* ─────────────────────────  Nomi, cose e città fra amici  ───────────────────────── */
+
+export type StatoSfidaNomi = 'invito' | 'in_corso' | 'finita' | 'rifiutata' | 'annullata'
+
+/** Una sfida arrivata, da accettare o rifiutare. */
+export interface InvitoNomi {
+  id: string
+  da: GiocatoreBreve
+  scadeTraMs: number
+  rivincita: boolean
+}
+
+/** L'ultima sfida mandata dalla sala, com'e' andata: a un amico o con un link. */
+export interface InvitoNomiMandato {
+  id: string
+  a: GiocatoreBreve | null
+  codice: string | null
+  stato: 'attesa' | 'accettato' | 'rifiutato' | 'annullato' | 'scaduto'
+  scadeTraMs: number
+  partitaId: string | null
+}
+
+/** La sfida aperta, in breve: per la sala e il giro di controllo. */
+export interface SfidaNomiBreve {
+  id: string
+  avversario: GiocatoreBreve
+}
+
+export interface SalaNomi {
+  /** Chi e' online: `occupato` vuol dire in un'altra sfida a Nomi, cose e città. */
+  giocatori: GiocatoreOnline[]
+  invito: InvitoNomiMandato | null
+  partita: SfidaNomiBreve | null
+}
+
+/** Un foglio della sfida: le risposte, e a partita finita quali valgono e i punti di ognuna. */
+export interface FoglioSfidaNomi {
+  risposte: Partial<Record<CategoriaNomi, string>>
+  /** Per categoria, nell'ordine della partita: la forma riconosciuta, o null. */
+  forme: (string | null)[] | null
+  punti: number[] | null
+  totale: number | null
+}
+
+export interface VistaSfidaNomi {
+  id: string
+  stato: StatoSfidaNomi
+  avversario: GiocatoreBreve | null
+  /** L'avversario ha il telefono acceso sull'app. */
+  online: boolean
+  /** La lettera e le categorie, da quando si comincia. */
+  lettera: string | null
+  categorie: CategoriaNomi[] | null
+  /** Quanto manca al via, durante il tre-due-uno. */
+  inizioTraMs: number | null
+  /** Il tempo che resta per scrivere, a partita in corso e prima dello stop. */
+  restanteMs: number | null
+  tempoTotaleMs: number
+  /** Chi ha detto stop, e fra quanto le risposte non si salvano piu'. */
+  stop: { di: 'io' | 'avversario' | 'tempo'; chiudeTraMs: number } | null
+  mie: FoglioSfidaNomi
+  /** Il foglio dell'altro, solo a partita finita. */
+  sue: FoglioSfidaNomi | null
+  /** Quante risposte ha scritto l'altro, mentre si gioca. */
+  scritteAvversario: number
+  vincitore: 'io' | 'avversario' | 'pari' | null
+  serie: { mie: number; sue: number; partite: number }
+  /** La rivincita chiesta: da chi, e se e' gia' diventata una partita. */
+  rivincita: { id: string; mia: boolean; stato: StatoSfidaNomi } | null
+}
+
 /* ─────────────────────────────  Battaglia navale  ──────────────────────── */
 
 /** Dove si trova un giocatore nell'app: lo dice il giro di controllo degli inviti. */
@@ -690,8 +761,8 @@ export interface InvitoConLink {
   codice: string
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
-  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi o un gioco da tavoliere. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina' | GiocoTavoliere
+  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere o Nomi, cose. */
+  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | GiocoTavoliere
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -721,6 +792,10 @@ export interface PresenzaRisposta {
   tavolo: InvitoTavolo[]
   /** La partita a scacchi, dama, Forza 4 o go aperta. */
   partitaTavolo: PartitaTavoloBreve | null
+  /** Le sfide a Nomi, cose e città arrivate, rivincite comprese. */
+  nomi: InvitoNomi[]
+  /** La sfida a Nomi, cose e città aperta. */
+  partitaNomi: SfidaNomiBreve | null
 }
 
 /* ─────────────────────────────  Indovina chi  ──────────────────────── */

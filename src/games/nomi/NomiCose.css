@@ -600,3 +600,60 @@
   justify-content: center;
   gap: var(--sp-2);
 }
+
+/* ---------- La sfida ---------- */
+
+.nomi-testa__stop {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+  color: var(--red);
+}
+
+/* Il tre-due-uno: un numero grande che salta fuori, uno al secondo. */
+.nomi-via {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  min-height: 320px;
+  text-align: center;
+}
+
+.nomi-via__chi {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.nomi-via__numero {
+  font-family: var(--font-rounded);
+  font-size: clamp(4rem, 22vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--nomi-ink);
+  animation: nomi-via 900ms var(--ease-bounce) both;
+}
+
+@keyframes nomi-via {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-12deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nomi-via__numero {
+    animation: none;
+  }
+}
+
+/* Contro chi, in cima alla libera: come nelle sale dei tavolieri. */
+.nomi-scelte {
+  display: grid;
+  gap: var(--sp-3);
+}

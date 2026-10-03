@@ -142,7 +142,9 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
                   <strong>{sfida.da.displayName}</strong>{' '}
                   {sfida.gioco === 'quiz'
                     ? 'ti sfida a un quiz.'
-                    : sfida.gioco === 'indovina'
+                    : sfida.gioco === 'nomi'
+                      ? 'ti sfida a Nomi, cose e città.'
+                      : sfida.gioco === 'indovina'
                       ? 'ti invita a Indovina chi.'
                       : sfida.gioco === 'scacchi' ||
                           sfida.gioco === 'dama' ||

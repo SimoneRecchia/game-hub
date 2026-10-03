@@ -7,6 +7,7 @@ import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
 import { riepilogoNomi } from '../lib/riepiloghi'
 import { lessicoPer } from '../lib/lessicoNomi'
+import { sfideNomi } from './nomiSfide'
 import {
   apriPartita,
   categorieDi,
@@ -142,3 +143,5 @@ export const nomiRoutes = new Hono<AppEnv>()
     const tempo = adesso - Date.parse(row.iniziata_at)
     return stato(c, await chiudi(c.env.DB, row, risposte, tempo, forme, adesso), adesso)
   })
+
+  .route('/sfide', sfideNomi)
