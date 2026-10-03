@@ -1,8 +1,9 @@
 import { memo, useEffect, useRef, type CSSProperties } from 'react'
 import { suona } from '@/lib/suoni'
 import type { CategoriaQuiz } from '@shared/quiz'
-import { RULLI, finestra } from '@shared/slot'
+import { RULLI, lineaDi, righeDelleDomande, type CodiceSlot } from '@shared/slot'
 import { Simbolo } from './simboli'
+import { Pezzi, Rivela, type VincitaRulli } from './vincite'
 
 /**
  * I tre rulli della slot. Girano verso il basso, come quelli veri, e si
@@ -17,8 +18,8 @@ import { Simbolo } from './simboli'
  *
  * Il disegno e' fermo: a ogni fotogramma si scrive solo lo spostamento della
  * striscia di ogni rullo (tre giri dei suoi simboli), come la rotazione della
- * ruota di Crazy Time. Passare dallo stato di React ridisegnerebbe duecento
- * simboli sessanta volte al secondo.
+ * ruota di Crazy Time. Passare dallo stato di React ridisegnerebbe
+ * trecentosessanta simboli sessanta volte al secondo.
  */
 
 /** Simboli al secondo, a tutta velocita'. */
@@ -32,7 +33,7 @@ const INCASTRO_MS = 220
 /** Il primo rullo si ferma almeno questo dopo la leva, gli altri questo dopo quello prima. */
 const PRIMO_MS = 900
 const DOPO_MS = 420
-/** L'attesa del terzo rullo quando i primi due promettono una tripla o i tre sette. */
+/** L'attesa del terzo rullo quando i primi due promettono la domanda o i tre sette. */
 const SUSPENSE_MS = 1_100
 /** Sotto questa velocita' i simboli si leggono di nuovo: niente sfocato. */
 const NITIDO = 9
@@ -63,16 +64,12 @@ function spostamento(pos: number): string {
   return `translate3d(0, ${(-(d - 1) * 100) / (N * COPIE)}%, 0)`
 }
 
-/** Se i primi due rulli promettono qualcosa: la stessa categoria in vista, o due sette sulla linea. */
+/** Se i primi due rulli promettono qualcosa: un punto di domanda in vista su tutti e due, o due sette sulla linea. */
 export function promette(fermate: readonly number[]): boolean {
-  const righe = finestra(fermate)
-  const linea = righe[1]
-  if (linea[0] === '7' && linea[1] === '7') return true
-  for (let k = 0; k < 6; k += 1) {
-    const codice = String(k)
-    if ([0, 1].every((r) => righe.some((riga) => riga[r] === codice))) return true
-  }
-  return false
+  const [primo, secondo] = righeDelleDomande(fermate)
+  if (primo >= 0 && secondo >= 0) return true
+  const linea = lineaDi(fermate)
+  return linea[0] === '7' && linea[1] === '7'
 }
 
 export interface MetaRulli {
@@ -85,7 +82,7 @@ export const Rulli = memo(function Rulli({
   categorie,
   inMoto,
   meta,
-  vincenti,
+  vincita,
   onFermo,
   onFine,
 }: {
@@ -94,8 +91,8 @@ export const Rulli = memo(function Rulli({
   inMoto: boolean
   /** Dove fermarsi. Quella che c'e' quando i rulli compaiono e' dove stanno gia' fermi. */
   meta: MetaRulli | null
-  /** Le caselle da accendere, a rulli fermi: [rullo, riga]. */
-  vincenti: ReadonlyArray<readonly [number, number]>
+  /** Quel che paga, a rulli fermi: le caselle si accendono, ognuna con la sua animazione. */
+  vincita: VincitaRulli | null
   onFermo?: (rullo: number) => void
   onFine?: () => void
 }) {
@@ -220,17 +217,18 @@ export const Rulli = memo(function Rulli({
     return () => cancelAnimationFrame(id)
   }, [])
 
-  // I simboli che pagano saltano fuori dal rullo: le loro caselle, nel giro di mezzo della striscia.
+  // I simboli che pagano si muovono, ognuno a modo suo: le loro caselle, nel giro di mezzo della striscia.
+  const caselle = vincita?.caselle
   useEffect(() => {
     const accese: Element[] = []
-    for (const [rullo, riga] of vincenti) {
+    for (const [rullo, riga] of caselle ?? []) {
       const casella = strisce.current[rullo]?.children[N + modulo(stati.current[rullo].fermata) - 1 + riga]
       if (!casella) continue
       casella.classList.add('is-vincente')
       accese.push(casella)
     }
     return () => accese.forEach((c) => c.classList.remove('is-vincente'))
-  }, [vincenti])
+  }, [caselle])
 
   // Il ticchettio mentre girano: uno ogni 90 ms, finché il terzo non si ferma.
   useEffect(() => {
@@ -242,22 +240,32 @@ export const Rulli = memo(function Rulli({
   }, [inMoto])
 
   return (
-    <div className="slot-rulli">
+    <div className="slot-rulli" data-vince={vincita?.tipo}>
       {RULLI.map((rullo, r) => (
         <div key={r} className="slot-rullo" ref={(el) => void (contenitori.current[r] = el)}>
-          <div className="slot-rullo__striscia" ref={(el) => void (strisce.current[r] = el)}>
+          <div
+            className="slot-rullo__striscia"
+            ref={(el) => void (strisce.current[r] = el)}
+            style={{ '--celle': rullo.length * COPIE } as CSSProperties}
+          >
             <Striscia simboli={rullo} categorie={categorie} />
           </div>
           <span className="slot-rullo__ombra" aria-hidden="true" />
         </div>
       ))}
       <div className="slot-rulli__luci" aria-hidden="true">
-        {vincenti.map(([rullo, riga]) => (
+        {vincita?.caselle.map(([rullo, riga], k) => (
           <span
-            key={`${rullo}-${riga}`}
+            key={`${vincita.tipo}-${rullo}-${riga}`}
             className="slot-rulli__luce"
-            style={{ '--rullo': rullo, '--riga': riga } as CSSProperties}
-          />
+            style={{ '--rullo': rullo, '--riga': riga, '--k': k } as CSSProperties}
+          >
+            {vincita.tipo === 'Q' && vincita.categoria && (
+              <Rivela categoria={vincita.categoria} categorie={categorie} k={k} />
+            )}
+            <span className="slot-rulli__cornice" />
+            <Pezzi tipo={vincita.tipo} k={k} />
+          </span>
         ))}
       </div>
     </div>
@@ -269,7 +277,7 @@ const Striscia = memo(function Striscia({
   simboli,
   categorie,
 }: {
-  simboli: readonly string[]
+  simboli: readonly CodiceSlot[]
   categorie: readonly CategoriaQuiz[]
 }) {
   return (
@@ -277,7 +285,7 @@ const Striscia = memo(function Striscia({
       {Array.from({ length: COPIE }, (_, copia) =>
         simboli.map((s, i) => (
           <span key={`${copia}-${i}`} className="slot-rullo__casella">
-            <Simbolo codice={s as never} categorie={categorie} />
+            <Simbolo codice={s} categorie={categorie} />
           </span>
         )),
       )}
