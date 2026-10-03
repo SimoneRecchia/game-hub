@@ -214,14 +214,16 @@ describe('le regole di ogni materia', () => {
     for (const d of tante('arte', 5)) if (d.immagine) expect(PERCORSO_IMMAGINE.test(d.immagine.f)).toBe(true)
   })
 
-  it('in "Accadde oggi" i fatti fra cui scegliere sono tutti di anni diversi', () => {
-    for (const d of tante('oggi', 30, { tipi: ['oggi-fatto'] })) {
-      if (d.tipo !== 'oggi-fatto') continue
-      // Gli id sono "giorno/posto": il giorno, perché non si confondano con quelli degli altri giorni.
-      expect(d.opzioni.every((o) => o.id.startsWith(`${OGGI.giorno}/`))).toBe(true)
-      const anni = d.opzioni.map((o) => OGGI.fatti[Number(o.id.split('/')[1])].anno)
-      expect(new Set(anni).size).toBe(anni.length)
+  it('in "Accadde oggi" si racconta il fatto e si chiede l’anno, sempre', () => {
+    const domande = tante('oggi', 30)
+    expect(domande.length).toBeGreaterThan(0)
+    for (const d of domande) {
+      expect(['oggi-anno', 'oggi-nato']).toContain(d.tipo)
+      expect(d.testo.endsWith('In che anno?')).toBe(true)
+      expect(d.opzioni.every((o) => o.id.startsWith('anno:'))).toBe(true)
     }
+    // Anche chi chiede le domande "che cosa accadde" di prima riceve quelle sull'anno.
+    expect(tante('oggi', 10, { tipi: ['oggi-fatto'] }).every((d) => d.tipo !== 'oggi-fatto')).toBe(true)
   })
 
   it('in "Accadde oggi" dicono "è nata" per le donne', () => {

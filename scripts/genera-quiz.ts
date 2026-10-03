@@ -90,9 +90,16 @@ const MEMORIA_GIORNI = 35
  * quello delle categorie con il modo — a scelta o sulla cartina — e del
  * `luogo` di ogni domanda, che la cartina mostra a risposta data; il 3 quello
  * delle altre materie, con il calendario che passa da tutte e la scheda che
- * insegna.
+ * insegna; il 4 quello di "Accadde oggi" che chiede sempre l'anno. Il 4 rifà
+ * solo le giornate di "Accadde oggi" (`formatoMinimo`): quelle delle altre
+ * categorie scritte col 3 sono già come le farebbe adesso.
  */
-const FORMATO = 3
+const FORMATO = 4
+
+/** Il formato sotto il quale una giornata di una categoria va rifatta. */
+const formatoMinimo = (categoria: CategoriaQuiz) => (categoria === 'oggi' ? 4 : 3)
+/** Lo stesso, in SQL, sulla colonna `categoria` di `quiz_giornate`. */
+const FORMATO_MINIMO = `CASE WHEN categoria = 'oggi' THEN 4 ELSE 3 END`
 
 /** Un pezzo di geometrie per riga, sotto i cento kB di una istruzione di D1. */
 const PEZZO_MASSIMO = 90_000
@@ -141,7 +148,7 @@ const ruotaPronta = (numero: number, fatte: ReadonlySet<string>) =>
 
 /** Una giornata che si puo' rifare: nel futuro, di un formato vecchio, e che nessuno ha aperto. */
 const DA_RIFARE = (numero: number) =>
-  `puzzle_number = ${numero} AND formato < ${FORMATO} AND puzzle_number > ${DA}
+  `puzzle_number = ${numero} AND formato < ${FORMATO_MINIMO} AND puzzle_number > ${DA}
    AND NOT EXISTS (SELECT 1 FROM quiz_partite p WHERE p.puzzle_number = ${numero})`
 
 /* ───────────────────────────────  I dati  ─────────────────────────────── */
@@ -150,7 +157,7 @@ if (SCRIVE && SE_MANCA) {
   const [giornate] = interroga<{ n: number }>(
     `SELECT COUNT(*) AS n FROM quiz_giornate g
       WHERE puzzle_number >= ${DA} AND puzzle_number < ${DA + GIORNI}
-        AND (formato >= ${FORMATO} OR puzzle_number = ${DA}
+        AND (formato >= ${FORMATO_MINIMO} OR puzzle_number = ${DA}
              OR EXISTS (SELECT 1 FROM quiz_partite p WHERE p.puzzle_number = g.puzzle_number))`,
   )
   const [sezioni] = interroga<{ n: number; geo: number; citta: number }>(
@@ -377,7 +384,7 @@ if (SCRIVE) {
 /** Una giornata resta com'e' se e' di oggi o del passato, se e' del formato giusto, o se qualcuno l'ha aperta. */
 const resta = (numero: number) => {
   const g = esistenti.get(numero)
-  return !!g && (numero <= DA || g.formato >= FORMATO || g.giocata)
+  return !!g && (numero <= DA || g.formato >= formatoMinimo(g.categoria) || g.giocata)
 }
 const giaFatte = [...esistenti.keys()].filter((n) => n >= DA && resta(n)).length
 console.log(`Quiz: le giornate dal ${DA} al ${DA + GIORNI - 1}, ${giaFatte} già pronte`)
