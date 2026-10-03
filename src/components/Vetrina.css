@@ -1,8 +1,8 @@
 /*
- * Le tre schede — l'Arena, il Salotto, la Fortuna — hanno la stessa forma: il
- * titolo grande, l'eroe in cima, le carte. Il carattere sta qui: la luce in
- * cima alla pagina nel colore della scheda, il movimento dell'eroe — le luci
- * di uno stadio che passano, le bolle di una lampada, le lampadine di
+ * Le tre schede — le Libere, le Giornaliere, la Fortuna — hanno la stessa
+ * forma: il titolo grande, l'eroe in cima, le carte. Il carattere sta qui: la
+ * luce in cima alla pagina nel colore della scheda, il movimento dell'eroe —
+ * le luci di una gara che passano, le bolle di una lampada, le lampadine di
  * un'insegna — e la Fortuna, scura in tutti e due i temi come una sala da
  * gioco: `color-scheme: dark` sulla pagina, e i token si girano da soli.
  */
@@ -10,17 +10,17 @@
   display: contents;
 }
 
-.pagina:has(.vetrina--arena) {
+.pagina:has(.vetrina--giornaliere) {
   background:
-    radial-gradient(75% 320px at 6% 0, color-mix(in srgb, var(--arena-1) 20%, transparent), transparent),
-    radial-gradient(60% 280px at 100% 0, color-mix(in srgb, var(--arena-2) 12%, transparent), transparent);
+    radial-gradient(75% 320px at 6% 0, color-mix(in srgb, var(--giornaliere-1) 20%, transparent), transparent),
+    radial-gradient(60% 280px at 100% 0, color-mix(in srgb, var(--giornaliere-2) 12%, transparent), transparent);
   background-repeat: no-repeat;
 }
 
-.pagina:has(.vetrina--salotto) {
+.pagina:has(.vetrina--libere) {
   background:
-    radial-gradient(75% 320px at 4% 0, color-mix(in srgb, var(--salotto-1) 26%, transparent), transparent),
-    radial-gradient(60% 280px at 100% 0, color-mix(in srgb, var(--salotto-2) 14%, transparent), transparent);
+    radial-gradient(75% 320px at 4% 0, color-mix(in srgb, var(--libere-1) 26%, transparent), transparent),
+    radial-gradient(60% 280px at 100% 0, color-mix(in srgb, var(--libere-2) 14%, transparent), transparent);
   background-repeat: no-repeat;
 }
 
@@ -57,8 +57,8 @@ body:has(.vetrina--fortuna) .tabbar {
   transform: scale(0.9);
 }
 
-.pagina:has(.vetrina--arena) .vetrina__trofeo {
-  color: var(--arena);
+.pagina:has(.vetrina--giornaliere) .vetrina__trofeo {
+  color: var(--giornaliere);
 }
 
 .pagina:has(.vetrina--fortuna) .vetrina__trofeo {
@@ -129,9 +129,9 @@ a.eroe:active {
   white-space: nowrap;
 }
 
-/* ─────────────  L'Arena: le luci dello stadio  ───────────── */
+/* ─────────────  Le Giornaliere: le luci della gara  ───────────── */
 
-.eroe--arena {
+.eroe--giornaliere {
   background:
     radial-gradient(120% 90% at 100% 0, rgba(255, 214, 90, 0.26), transparent 55%),
     linear-gradient(140deg, #7d6fff 0%, #5140e8 45%, #2b1f92 100%);
@@ -141,24 +141,24 @@ a.eroe:active {
 }
 
 /* Le righe del campo: diagonali che scorrono piano. */
-.eroe--arena::before {
+.eroe--giornaliere::before {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.07) 0 2px, transparent 2px 26px);
   background-size: 200% 100%;
-  animation: arena-righe 14s linear infinite;
+  animation: giornaliere-righe 14s linear infinite;
 }
 
-@keyframes arena-righe {
+@keyframes giornaliere-righe {
   to {
     background-position: -200% 0;
   }
 }
 
 /* Il lampo dei riflettori che attraversa la carta, ogni tanto. */
-.eroe--arena::after {
+.eroe--giornaliere::after {
   content: '';
   position: absolute;
   top: -20%;
@@ -168,10 +168,10 @@ a.eroe:active {
   width: 38%;
   background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.24), transparent);
   transform: skewX(-18deg);
-  animation: arena-lampo 6.5s var(--ease-in-out) infinite;
+  animation: giornaliere-lampo 6.5s var(--ease-in-out) infinite;
 }
 
-@keyframes arena-lampo {
+@keyframes giornaliere-lampo {
   0%,
   58% {
     left: -50%;
@@ -181,9 +181,9 @@ a.eroe:active {
   }
 }
 
-/* ─────────────  Il Salotto: le bolle della lampada  ───────────── */
+/* ─────────────  Le Libere: le bolle di una lampada  ───────────── */
 
-.eroe--salotto {
+.eroe--libere {
   color: #fff;
   background: linear-gradient(135deg, #ffbd92 0%, #ff9a7c 42%, #ec6a8e 100%);
   box-shadow:
@@ -191,17 +191,17 @@ a.eroe:active {
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-.eroe--salotto::before,
-.eroe--salotto::after {
+.eroe--libere::before,
+.eroe--libere::after {
   content: '';
   position: absolute;
   z-index: -1;
   border-radius: 50%;
   filter: blur(2px);
-  animation: salotto-bolla 16s var(--ease-in-out) infinite alternate;
+  animation: libere-bolla 16s var(--ease-in-out) infinite alternate;
 }
 
-.eroe--salotto::before {
+.eroe--libere::before {
   width: 220px;
   height: 220px;
   right: -60px;
@@ -209,7 +209,7 @@ a.eroe:active {
   background: radial-gradient(closest-side, rgba(255, 244, 214, 0.75), transparent);
 }
 
-.eroe--salotto::after {
+.eroe--libere::after {
   width: 260px;
   height: 260px;
   left: -90px;
@@ -219,7 +219,7 @@ a.eroe:active {
   animation-direction: alternate-reverse;
 }
 
-@keyframes salotto-bolla {
+@keyframes libere-bolla {
   to {
     transform: translate(-40px, 30px) scale(1.15);
   }
@@ -274,10 +274,10 @@ a.eroe:active {
 
 @media (prefers-reduced-motion: reduce) {
   .eroe,
-  .eroe--arena::before,
-  .eroe--arena::after,
-  .eroe--salotto::before,
-  .eroe--salotto::after,
+  .eroe--giornaliere::before,
+  .eroe--giornaliere::after,
+  .eroe--libere::before,
+  .eroe--libere::after,
   .eroe--fortuna::before {
     animation: none !important;
   }

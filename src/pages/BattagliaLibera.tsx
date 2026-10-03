@@ -182,7 +182,7 @@ export default function BattagliaLibera() {
   return (
     <Pagina
       titolo="Battaglia navale"
-      indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}
+      indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
           <IconInfo size={21} />

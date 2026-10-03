@@ -122,6 +122,7 @@ function Saldo({ dati }: { dati: FortunaRisposta | null }) {
   return (
     <Collegamento
       to={ROTTE.classifica('fortuna')}
+      stato={{ da: 'Fortuna' }}
       className="eroe eroe--fortuna saldo-fortuna"
       aria-label={dati ? `Saldo: ${dati.saldo} punti. La classifica della Fortuna` : 'La classifica della Fortuna'}
     >

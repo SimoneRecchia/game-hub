@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
@@ -29,11 +30,14 @@ import { NOMI_CLASSIFICHE, ORDINE_GIOCHI } from './voci'
 export function Panoramica({ scope, indietro }: { scope: LeaderboardScope; indietro: number }) {
   const { vai } = useNavigazione()
   const io = usePlayer().id
+  // Da quale scheda si arriva, per la freccia indietro: le Giornaliere o la Fortuna.
+  const { state } = useLocation()
+  const da = (state as { da?: string } | null)?.da ?? 'Giornaliere'
   const { dati, errore, ricarica } = useDati<PanoramicaClassifiche>(percorsoPanoramica(scope, indietro))
   const { mostrati, vecchi } = useUltimi(dati)
 
   const cambia = (s: LeaderboardScope, i: number) =>
-    vai(indirizzoClassifica(null, s, i), { replace: true, direzione: 'nessuna' })
+    vai(indirizzoClassifica(null, s, i), { replace: true, direzione: 'nessuna', state })
 
   const oggi = numeroDiOggi()
   const periodo = mostrati?.periodo ?? periodoDi(scope, oggi, indietro)
@@ -41,7 +45,7 @@ export function Panoramica({ scope, indietro }: { scope: LeaderboardScope; indie
   const a = (chiave: ChiaveClassifica) => indirizzoClassifica(chiave, periodo.scope, periodo.indietro)
 
   return (
-    <Pagina titolo="Classifica" indietro={{ a: ROTTE.home, etichetta: 'Arena' }}>
+    <Pagina titolo="Classifica" indietro={{ a: ROTTE.home, etichetta: da }}>
       <SceltaPeriodo scope={scope} indietro={indietro} onCambia={cambia} />
 
       {errore && !mostrati ? (

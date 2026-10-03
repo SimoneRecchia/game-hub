@@ -13,33 +13,34 @@ import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
 import { gameDate } from '@shared/daily'
 import type { OggiRisposta } from '@shared/types'
-import './Arena.css'
+import './Giornaliere.css'
 
 /**
- * L'Arena, la scheda principale: le classificate di oggi, che fanno la
- * classifica. In cima la giornata — dove sei nella generale di oggi, i punti,
- * chi sta sul podio, e un anello per gioco — che porta alla classifica; sotto
- * una carta per gioco, che porta dritta alla partita di oggi.
+ * Le Giornaliere, la scheda principale e quella che si apre per prima: le
+ * classificate di oggi, che fanno la classifica. In cima la giornata — dove
+ * sei nella generale di oggi, i punti, chi sta sul podio, e un anello per
+ * gioco — che porta alla classifica; sotto una carta per gioco, che porta
+ * dritta alla partita di oggi.
  *
  * I dati arrivano con una richiesta sola (`/api/oggi`), e restano in memoria:
  * tornando qui dalla partita si vedono subito, e si aggiornano da soli.
  */
-export default function Arena() {
+export default function Giornaliere() {
   const player = usePlayer()
   const { dati: oggi } = useDati<OggiRisposta>('/oggi')
   const stati = oggi ? statiDiOggi(oggi) : null
 
   return (
     <Vetrina
-      scheda="arena"
-      titolo="Arena"
+      scheda="giornaliere"
+      titolo="Giornaliere"
       sopra={formatGameDate(oggi?.date ?? gameDate())}
       classifica={ROTTE.classifica()}
     >
       <Giornata io={player.id} oggi={oggi ?? null} stati={stati} />
 
       <Sezione titolo="Le classificate di oggi">
-        <ul className="arena__carte">
+        <ul className="giornaliere__carte">
           {GIOCHI.map((g, i) => (
             <li key={g.id} className="entra" style={{ '--n': i + 1 } as CSSProperties}>
               <CartaClassificata
@@ -74,7 +75,7 @@ function Giornata({
   const generale = oggi?.generale ?? null
   const posizione = generale?.posizione ?? null
   return (
-    <Collegamento to={ROTTE.classifica()} className="eroe eroe--arena giornata">
+    <Collegamento to={ROTTE.classifica()} stato={{ da: 'Giornaliere' }} className="eroe eroe--giornaliere giornata">
       <span className="eroe__testa">
         <span className="eroe__occhiello">La tua giornata</span>
         <span className="eroe__capsula">
@@ -182,7 +183,7 @@ function CartaClassificata({
   return (
     <Collegamento
       to={stato?.a ?? a}
-      className={`carta carta--${id}${fatta ? ' is-fatta' : ''}${stato?.fase === 'da-giocare' ? ' is-nuova' : ''}`}
+      className={`carta carta--${id}${fatta ? ' is-fatta' : ''}`}
       style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
     >
       <Copertina gioco={id} formato="icona" className="carta__icona" />

@@ -27,7 +27,7 @@ export default function SudokuLibero() {
       <Pagina
         key="scelta"
         titolo="Sudoku"
-        indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}
+        indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
         azioni={
           <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
             <IconInfo size={21} />
@@ -45,7 +45,7 @@ export default function SudokuLibero() {
       key="partita"
       titolo="Schema libero"
       intera
-      indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}
+      indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={
         <>
           <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>

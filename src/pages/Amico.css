@@ -24,7 +24,7 @@
   height: 160px;
   translate: -50% 0;
   border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--salotto) 24%, transparent), transparent);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--libere) 24%, transparent), transparent);
 }
 
 .amico-testa.is-online .amico-testa__alone {
@@ -90,7 +90,7 @@
 
 /* ─────────────────────────  I giochi  ───────────────────────── */
 
-/* Tre per riga, come le tessere del Salotto: la copertina, il nome, e cosa fa il tocco. */
+/* Tre per riga, come le tessere delle Libere: la copertina, il nome, e cosa fa il tocco. */
 .amico-giochi {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
