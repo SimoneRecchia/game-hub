@@ -79,17 +79,24 @@ describe('la classificata del giorno, contro il computer', () => {
     expect(v.vincitore).toBe('io')
     expect(v.flottaNemica).not.toBeNull()
     const atteso = puntiBattaglia({ vinta: true, colpi: 21, aSegno: 17 })
-    expect(atteso).toBe(98)
+    expect(atteso).toBe(83)
     expect(v.punti).toBe(atteso)
 
     const classifica = (await chiama<BattagliaLeaderboard>('GET', '/leaderboard/battaglia?scope=today', io)).dati
-    expect(classifica.rows[0]).toMatchObject({ nickname: 'bruno', punti: 98, vinte: 1, giornate: 1, colpi: 21, oggi: 98 })
+    expect(classifica.rows[0]).toMatchObject({
+      nickname: 'bruno',
+      punti: 83,
+      vinte: 1,
+      giornate: 1,
+      colpi: 21,
+      oggi: 83,
+    })
 
     const lobby = (await chiama<LobbyBattaglia>('GET', '/battaglia/lobby', io)).dati
-    expect(lobby.classificata).toMatchObject({ stato: 'finita', punti: 98, vinta: true, colpi: 21 })
+    expect(lobby.classificata).toMatchObject({ stato: 'finita', punti: 83, vinta: true, colpi: 21 })
   })
 
-  it('arrendersi vale tre punti per ogni casella colpita', async () => {
+  it('arrendersi vale due punti per ogni casella colpita', async () => {
     const { chiama, giocatore } = banco()
     const io = await giocatore('carla')
     let v = (await chiama<VistaBattaglia>('POST', '/battaglia/classificata', io)).dati
@@ -98,7 +105,7 @@ describe('la classificata del giorno, contro il computer', () => {
     v = await spara(chiama, io, v, bersagli[0])
     v = await spara(chiama, io, v, bersagli[1])
     const resa = (await chiama<VistaBattaglia>('POST', `/battaglia/partite/${v.id}/resa`, io)).dati
-    expect(resa).toMatchObject({ stato: 'finita', vincitore: 'avversario', motivo: 'resa', punti: 6 })
+    expect(resa).toMatchObject({ stato: 'finita', vincitore: 'avversario', motivo: 'resa', punti: 4 })
   })
 })
 

@@ -1,9 +1,16 @@
 import { Sheet } from '@/components/Sheet'
-import { DOMANDE_PER_PARTITA, PUNTI_BASE_QUIZ, SECONDI_CARTINA, SECONDI_LUNGA, SECONDI_SCELTA } from '@shared/quiz'
+import {
+  DOMANDE_PER_PARTITA,
+  PUNTI_BASE_QUIZ,
+  PUNTI_QUIZ,
+  SECONDI_CARTINA,
+  SECONDI_LUNGA,
+  SECONDI_SCELTA,
+} from '@shared/quiz'
 import '@/games/cruciverba/ComeSiGioca.css'
 
 export function ComeSiGiocaQuiz({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const perGiusta = (100 - PUNTI_BASE_QUIZ) / DOMANDE_PER_PARTITA
+  const perGiusta = (PUNTI_QUIZ - PUNTI_BASE_QUIZ) / DOMANDE_PER_PARTITA
   return (
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="cru-aiuto">

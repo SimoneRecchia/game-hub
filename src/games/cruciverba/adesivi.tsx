@@ -1,4 +1,5 @@
 import type { DatiAdesivo } from '@/components/Adesivo'
+import { PUNTI_COMPLETO } from '@shared/cruciverba'
 import './adesivi.css'
 
 /**
@@ -37,7 +38,7 @@ export function adesivoCompletato(punti: number): Omit<DatiAdesivo, 'id'> {
   return {
     tono: 'vivace',
     titolo: 'Completato!',
-    sotto: punti >= 100 ? 'Senza aiuti' : `${punti} punti`,
+    sotto: punti >= PUNTI_COMPLETO ? 'Senza aiuti' : `${punti} punti`,
     colore: INCHIOSTRO,
     durata: ADESIVO_COMPLETATO_MS,
     disegno: <Matita />,

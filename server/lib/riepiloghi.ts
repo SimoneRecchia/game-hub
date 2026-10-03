@@ -13,7 +13,7 @@
  * per gioco, e il piano gratuito le conta.
  */
 
-import { caselleBianche, caselleScritte, punteggio } from '../../shared/cruciverba'
+import { PUNTI_COMPLETO, caselleBianche, caselleScritte, punteggio } from '../../shared/cruciverba'
 import { msToNextPuzzle } from '../../shared/daily'
 import { MOSSE_PER_GIORNATA } from '../../shared/scarabeo'
 import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
@@ -128,7 +128,7 @@ export async function riepilogoCruciverba(db: D1Database, playerId: string): Pro
     status: !schema ? 'assente' : row ? row.status : 'new',
     scritte: row ? caselleScritte(row.lettere) : 0,
     bianche: schema ? caselleBianche(schema.soluzione) : 0,
-    punti: row ? (row.status === 'done' ? row.score : punteggio(svelateDi(row).length, row.errori)) : 100,
+    punti: row ? (row.status === 'done' ? row.score : punteggio(svelateDi(row).length, row.errori)) : PUNTI_COMPLETO,
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
   }
@@ -148,7 +148,11 @@ export async function riepilogoSudoku(db: D1Database, playerId: string): Promise
     livello: schema?.livello ?? null,
     vuote,
     scritte,
-    punti: row ? (row.status === 'done' ? row.score : puntiSudoku(svelateSudoku(row).length, row.errori)) : 100,
+    punti: !row
+      ? puntiSudoku(0, 0)
+      : row.status === 'done'
+        ? row.score
+        : puntiSudoku(svelateSudoku(row).length, row.errori),
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
   }

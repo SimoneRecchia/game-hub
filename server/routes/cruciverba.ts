@@ -19,7 +19,6 @@ import { requireVerified } from '../lib/session'
 import { casoCrittografico } from '../lib/wordleLibera'
 import {
   apriPartita,
-  costoErrori,
   giornata,
   identitaDelGiorno,
   identitaLibera,
@@ -166,7 +165,8 @@ async function scrivi(
     errate = caselleSbagliate(lettere, soluzione).filter((k) => !dove || dove.has(k))
     const controllo = registraControllo(segnalate, lettere, errate)
     segnalate = controllo.segnalate
-    errori += costoErrori(controllo.nuovi)
+    // `errori` conta gli errori; quanto costano lo decide `punteggio`.
+    errori += controllo.nuovi
   }
 
   if (azione.tipo === 'svela') {
