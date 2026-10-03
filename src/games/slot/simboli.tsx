@@ -7,11 +7,12 @@ import type { CodiceSlot, SimboloClassico } from '@shared/slot'
  * I simboli della slot, come sui rulli delle slot di una volta: frutta lucida,
  * la campana d'oro, la barra nera e il sette rosso bordato d'oro. Sono SVG con
  * i gradienti scritti una volta sola (`DefinizioniSlot`), perché sui rulli i
- * simboli sono duecentosettanta e ognuno con i suoi gradienti peserebbe.
+ * simboli sono trecentosessanta e ognuno con i suoi gradienti peserebbe.
  *
- * Le categorie del quiz sono tessere tonde nel colore della loro materia, con
- * l'icona del quiz e l'anello d'oro: si riconoscono subito, e si vede che non
- * sono frutta.
+ * Il punto di domanda e' una tessera tonda con l'anello nei colori delle
+ * categorie del giorno, perché la domanda viene da una di loro: si vede subito
+ * che non e' frutta. Quando ne escono tre si girano, e dietro c'e' la
+ * categoria (`TesseraCategoria`).
  */
 
 /** I gradienti dei simboli: una volta per pagina, in un SVG che non si vede. */
@@ -43,6 +44,16 @@ export const DefinizioniSlot = memo(function DefinizioniSlot() {
           <stop offset="0.45" stopColor="#8136dc" />
           <stop offset="1" stopColor="#300863" />
         </radialGradient>
+        <radialGradient id="slot-uva" cx="34%" cy="28%" r="80%">
+          <stop offset="0" stopColor="#efffc4" />
+          <stop offset="0.45" stopColor="#86cc3e" />
+          <stop offset="1" stopColor="#2c6410" />
+        </radialGradient>
+        <radialGradient id="slot-domanda" cx="40%" cy="32%" r="75%">
+          <stop offset="0" stopColor="#8f4ff0" />
+          <stop offset="0.6" stopColor="#4a1690" />
+          <stop offset="1" stopColor="#1e0640" />
+        </radialGradient>
         <linearGradient id="slot-oro" x1="0" y1="0" x2="0.4" y2="1">
           <stop offset="0" stopColor="#fff6c2" />
           <stop offset="0.4" stopColor="#f4c430" />
@@ -72,6 +83,20 @@ type ProprietaRiflesso = { cx: number; cy: number; rx: number; ry: number; giro?
 const Riflesso = ({ cx, cy, rx, ry, giro = -30 }: ProprietaRiflesso) => (
   <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="#fff" opacity={0.55} transform={`rotate(${giro} ${cx} ${cy})`} />
 )
+
+/** Il grappolo: dieci acini, dalla fila di dietro a quella davanti, quattro, tre, due e uno. */
+const ACINI: ReadonlyArray<readonly [number, number]> = [
+  [23, 34],
+  [41, 34],
+  [59, 34],
+  [77, 34],
+  [32, 49],
+  [50, 49],
+  [68, 49],
+  [41, 64],
+  [59, 64],
+  [50, 79],
+]
 
 const DISEGNI: Record<SimboloClassico, ReactElement> = {
   C: (
@@ -151,6 +176,23 @@ const DISEGNI: Record<SimboloClassico, ReactElement> = {
       <Riflesso cx={36} cy={44} rx={8} ry={5} giro={-40} />
     </g>
   ),
+  U: (
+    <g>
+      <path d="M50 26 C50 18 53 13 58 9" stroke="#5a3a12" strokeWidth={3} fill="none" strokeLinecap="round" />
+      <path
+        d="M54 16 C62 6 78 8 84 15 C74 23 61 23 54 16 Z"
+        fill="url(#slot-foglia)"
+        stroke="#2c5a14"
+        strokeWidth={1.5}
+      />
+      {ACINI.map(([x, y]) => (
+        <g key={`${x}${y}`}>
+          <circle cx={x} cy={y} r={9.5} fill="url(#slot-uva)" stroke="#24520e" strokeWidth={1.5} />
+          <circle cx={x - 3} cy={y - 3.5} r={2.2} fill="#fff" opacity={0.6} />
+        </g>
+      ))}
+    </g>
+  ),
   B: (
     <g>
       <circle cx={50} cy={16} r={6} fill="url(#slot-oro)" stroke="#7a4706" strokeWidth={1.5} />
@@ -214,38 +256,99 @@ const DISEGNI: Record<SimboloClassico, ReactElement> = {
   ),
 }
 
+const CLASSI: Record<CodiceSlot, string> = {
+  C: 'ciliegia',
+  L: 'limone',
+  O: 'arancia',
+  P: 'prugna',
+  U: 'uva',
+  B: 'campana',
+  R: 'bar',
+  '7': 'sette',
+  Q: 'domanda',
+}
+
+/** Un tratto dell'anello del punto di domanda: la sua fetta, con un filo di stacco dalle altre. */
+function arco(i: number, n: number): string {
+  const r = 42
+  const da = ((i / n) * 360 - 90 + 4) * (Math.PI / 180)
+  const a = (((i + 1) / n) * 360 - 90 - 4) * (Math.PI / 180)
+  const punto = (x: number) => `${(50 + r * Math.cos(x)).toFixed(2)} ${(50 + r * Math.sin(x)).toFixed(2)}`
+  return `M${punto(da)} A${r} ${r} 0 0 1 ${punto(a)}`
+}
+
+/** Il punto di domanda: la tessera viola, l'anello nei colori delle categorie del giorno, e il segno d'oro. */
+function Domanda({ categorie }: { categorie: readonly CategoriaQuiz[] }) {
+  return (
+    <g>
+      <circle cx={50} cy={50} r={47} fill="url(#slot-oro)" stroke="#7a4706" strokeWidth={1.5} />
+      <circle cx={50} cy={50} r={46} fill="#1e0640" />
+      {categorie.length > 0 ? (
+        categorie.map((c, i) => (
+          <path
+            key={c}
+            d={arco(i, categorie.length)}
+            stroke={coloreDellaCategoria(c)}
+            strokeWidth={7}
+            strokeLinecap="round"
+            fill="none"
+          />
+        ))
+      ) : (
+        <circle cx={50} cy={50} r={42} stroke="url(#slot-oro)" strokeWidth={7} fill="none" />
+      )}
+      <circle cx={50} cy={50} r={36} fill="url(#slot-domanda)" stroke="url(#slot-oro)" strokeWidth={2.5} />
+      <text
+        x={50}
+        y={53}
+        textAnchor="middle"
+        dominantBaseline="central"
+        fontFamily="ui-rounded, -apple-system, 'SF Pro Rounded', system-ui, sans-serif"
+        fontWeight={900}
+        fontSize={50}
+        fill="url(#slot-oro)"
+        stroke="#4a2400"
+        strokeWidth={2.5}
+        paintOrder="stroke"
+      >
+        ?
+      </text>
+      <Riflesso cx={38} cy={30} rx={10} ry={4.5} giro={-28} />
+    </g>
+  )
+}
+
 /**
- * Un simbolo: la frutta e gli altri classici, o una categoria del giorno, che
- * sui rulli e' la sua cifra. `categorie` dice quale categoria e' ogni cifra.
+ * Un simbolo dei rulli. `categorie` serve solo al punto di domanda, che ha
+ * l'anello nei loro colori.
  */
 export const Simbolo = memo(function Simbolo({
   codice,
-  categorie,
+  categorie = [],
 }: {
   codice: CodiceSlot
-  categorie: readonly CategoriaQuiz[]
+  categorie?: readonly CategoriaQuiz[]
 }) {
-  // Le categorie sono le cifre da 0 a 5: il 7 e' il sette.
-  if (/^[0-5]$/.test(codice)) {
-    const categoria = categorie[Number(codice)]
-    if (!categoria) return <span className="slot-simbolo" />
-    const Icona = iconaDellaCategoria(categoria)
-    return (
-      <span
-        className="slot-simbolo slot-simbolo--categoria"
-        style={{ '--colore': coloreDellaCategoria(categoria) } as CSSProperties}
-      >
-        <span className="slot-simbolo__tessera">
-          <Icona size={30} />
-        </span>
-      </span>
-    )
-  }
   return (
-    <span className={`slot-simbolo slot-simbolo--${codice === '7' ? 'sette' : codice}`}>
+    <span className={`slot-simbolo slot-simbolo--${CLASSI[codice]}`}>
       <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-        {DISEGNI[codice as SimboloClassico]}
+        {codice === 'Q' ? <Domanda categorie={categorie} /> : DISEGNI[codice]}
       </svg>
     </span>
   )
 })
+
+/** Una categoria del quiz: la tessera tonda nel colore della sua materia, con l'icona e l'anello d'oro. */
+export function TesseraCategoria({ categoria }: { categoria: CategoriaQuiz }) {
+  const Icona = iconaDellaCategoria(categoria)
+  return (
+    <span
+      className="slot-simbolo slot-simbolo--categoria"
+      style={{ '--colore': coloreDellaCategoria(categoria) } as CSSProperties}
+    >
+      <span className="slot-simbolo__tessera">
+        <Icona size={30} />
+      </span>
+    </span>
+  )
+}

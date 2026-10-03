@@ -79,10 +79,23 @@ export type NomeSuono =
   | 'rullo'
   /** Un rullo che si ferma e si incastra. */
   | 'fermo'
-  /** Tre categorie uguali alla slot: c'e' una domanda. */
+  /** Tre punti di domanda alla slot: c'e' una domanda. */
   | 'tripla'
-  /** I tre sette. */
+  /** I tre sette, con la festa. */
   | 'jackpot'
+  /** Una ciliegia alla slot, che ridà la puntata: suona lo stesso, come nelle slot vere. */
+  | 'ciliegia'
+  /** Due o tre ciliegie. */
+  | 'ciliegie'
+  /** Le triple della slot: ognuna il suo suono. */
+  | 'limoni'
+  | 'arance'
+  | 'prugne'
+  | 'uva'
+  | 'campane'
+  | 'bar'
+  /** I tre sette, prima della festa. */
+  | 'sette'
   /** Una carta che parte dal sabot e scivola sul panno. */
   | 'carta'
   /** Una carta del banco che si gira. */
@@ -725,7 +738,7 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     legno(u, t, vario(640, 0.03), 0.15 * v)
   },
 
-  // La tripla di una categoria: tre campanelli che salgono, e l'accordo del quiz.
+  // Tre punti di domanda: tre campanelli che salgono, uno per tessera che si gira, e l'accordo del quiz.
   tripla: (u, t, v) => {
     ;[N.C6, N.E6, N.G6].forEach((f, i) => campanello(u, t + i * 0.12, f, 0.13 * v, { eco: 0.4, durata: 0.7 }))
     marimba(u, t + 0.36, N.C5, 0.2 * v, { eco: 0.3 })
@@ -744,6 +757,80 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
       const f = monete[Math.floor(Math.random() * monete.length)]
       campanello(u, accordo + 0.1 + i * 0.045 + Math.random() * 0.03, vario(f), 0.045 * v, { eco: 0.45, durata: 0.3 })
     }
+  },
+
+  // Una ciliegia: due gocce di marimba, alte e corte, e un tintinnio. La puntata torna, e si sente lo stesso.
+  ciliegia: (u, t, v) => {
+    marimba(u, t, N.E6, 0.16 * v, { eco: 0.2, durata: 0.5 })
+    marimba(u, t + 0.08, N.A6, 0.14 * v, { eco: 0.25, durata: 0.5 })
+    campanello(u, t + 0.16, vario(N.E7, 0.03), 0.05 * v, { eco: 0.25, durata: 0.3 })
+  },
+
+  // Due o tre ciliegie: quattro note che salgono saltellando, e il campanello.
+  ciliegie: (u, t, v) => {
+    ;[N.C6, N.E6, N.G6, N.C7].forEach((f, i) => marimba(u, t + i * 0.07, f, 0.17 * v, { eco: 0.25, durata: 0.6 }))
+    campanello(u, t + 0.3, N.E7, 0.07 * v, { eco: 0.4, durata: 0.8 })
+  },
+
+  // I limoni: lo squittio della spremuta che sale, due note aspre e una goccia.
+  limoni: (u, t, v) => {
+    scivolo(u, t, 380, 1100, 0.14, 0.09 * v)
+    marimba(u, t + 0.12, N.B5, 0.16 * v, { eco: 0.2, durata: 0.5 })
+    marimba(u, t + 0.2, N.E6, 0.16 * v, { eco: 0.25, durata: 0.6 })
+    goccia(u, t + 0.28, 1500, 0.06 * v)
+  },
+
+  // Le arance: una palla che rimbalza, sempre piu' bassa e piu' fitta, e si ferma su un accordo.
+  arance: (u, t, v) => {
+    const note = [N.G6, N.E6, N.C6, N.G5, N.E5]
+    ;[0, 0.15, 0.26, 0.34, 0.39].forEach((d, i) => {
+      marimba(u, t + d, note[i], (0.18 - i * 0.025) * v, { eco: 0.2, durata: 0.4 })
+      legno(u, t + d, 900 - i * 60, (0.06 - i * 0.008) * v)
+    })
+    marimba(u, t + 0.5, N.C6, 0.16 * v, { eco: 0.3 })
+    marimba(u, t + 0.5, N.G6, 0.12 * v, { eco: 0.3 })
+  },
+
+  // Le prugne: bolle che salgono, e un accordo morbido sotto.
+  prugne: (u, t, v) => {
+    ;[520, 700, 880, 1180, 1500].forEach((f, i) => goccia(u, t + i * 0.06, vario(f, 0.04), 0.09 * v))
+    marimba(u, t + 0.1, N.C5, 0.14 * v, { eco: 0.3 })
+    marimba(u, t + 0.1, N.G5, 0.12 * v, { eco: 0.3 })
+    marimba(u, t + 0.32, N.E6, 0.14 * v, { eco: 0.35, durata: 0.8 })
+  },
+
+  // L'uva: un tremolo fra due note, come un grappolo scosso, che si apre nell'accordo.
+  uva: (u, t, v) => {
+    for (let i = 0; i < 10; i += 1) {
+      marimba(u, t + i * 0.045, i % 2 === 0 ? N.A5 : N.C6, (0.1 + i * 0.006) * v, { eco: 0.2, durata: 0.3 })
+    }
+    const accordo = t + 0.48
+    ;[N.A5, N.C6, N.E6].forEach((f) => marimba(u, accordo, f, 0.16 * v, { eco: 0.3 }))
+    campanello(u, accordo, N.A6, 0.08 * v, { eco: 0.45, durata: 1 })
+  },
+
+  // Le campane: din, don, din, con il bronzo che risuona a lungo.
+  campane: (u, t, v) => {
+    campanello(u, t, N.G5, 0.2 * v, { eco: 0.5, durata: 1.6 })
+    campanello(u, t + 0.32, N.D5, 0.2 * v, { eco: 0.5, durata: 1.8 })
+    campanello(u, t + 0.64, N.G5, 0.18 * v, { eco: 0.55, durata: 1.8 })
+    campanello(u, t + 0.64, N.B5, 0.1 * v, { eco: 0.55, durata: 1.6 })
+  },
+
+  // Il BAR: la scarica dell'insegna al neon che si accende, lo sfrigolio, e un accordo.
+  bar: (u, t, v) => {
+    soffio(u, t, 0.18, 0.16 * v, { tipo: 'highpass', da: 2400, a: 7000, q: 0.7 }, { attacco: 0.003, eco: 0.1 })
+    scivolo(u, t + 0.02, 180, 1400, 0.22, 0.08 * v)
+    ;[0.24, 0.3, 0.36].forEach((d) => colpo(u, t + d, voce(u, 0.05 * v, 0.05), vario(5200, 0.1), 0.01, 0.7))
+    ;[N.E5, N.A5, N.C6, N.E6].forEach((f) => marimba(u, t + 0.4, f, 0.13 * v, { eco: 0.35 }))
+  },
+
+  // I sette: una sirena che sale, e il colpo della cassa. Poi arriva la festa del jackpot.
+  sette: (u, t, v) => {
+    scivolo(u, t, 260, 1560, 0.6, 0.12 * v)
+    soffio(u, t, 0.6, 0.16 * v, { tipo: 'bandpass', da: 400, a: 5000, q: 1 }, { attacco: 0.3, eco: 0.3 })
+    tonfo(u, t + 0.6, 0.3 * v, { da: 140, a: 45, durata: 0.5 })
+    ;[N.C6, N.E6, N.G6].forEach((f) => campanello(u, t + 0.6, f, 0.12 * v, { eco: 0.5, durata: 1.2 }))
   },
 
   // La carta dal sabot: lo strappo della carta che esce, e il fruscio sul panno.

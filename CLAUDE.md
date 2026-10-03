@@ -584,47 +584,64 @@ stato di React ridisegnerebbe la pagina a ogni fotogramma. Durante la domanda
 la pagina della ruota resta montata e nascosta (`hidden`): rimontarla farebbe
 ricontare il tabellone da zero e ridisegnare le ruote.
 
-**La slot e' una slot classica, e rende come Crazy Time.** Tre rulli di trenta
-fermate, tre righe in vista e una linea (`shared/slot.ts`): pagano tre uguali
-sulla linea (`PREMI`, dal ×20 dei limoni al ×300 dei sette) e le ciliegie da
-sinistra, anche una sola (`CILIEGIE`). Sui rulli ci sono anche le sei categorie
-del giorno di Crazy Time, come cifre da 0 a 5: valgono dovunque nella finestra,
-come gli scatter delle slot vere, e tre della stessa categoria, una per rullo,
-aprono una domanda che giusta paga `VINCITA_DOMANDA` volte la puntata. Ogni
-categoria c'e' una volta per rullo, a cinque fermate dalle altre: in una
-finestra se ne vede al massimo una, e due triple insieme non possono uscire.
-Come nelle slot vere si vince di rado e quasi sempre poco — una volta ogni sei
-o sette giri, e piu' della meta' delle volte e' una ciliegia — e i premi grossi
-sono rari: i sette una volta ogni ventisettemila giri. La resa la conta
-`contaSlot` su tutte le 27.000 combinazioni: la linea il 79%, con le domande
-tutte giuste il 97%, come Crazy Time, e `shared/__tests__/slot.test.ts` la
-tiene li'. Si punta da 1 a `PUNTATA_MASSIMA_SLOT`, dieci, e non tutto il saldo
-come a Crazy Time: il ×300 dei sette su un saldo intero darebbe in un giro
-decine di migliaia di punti, e la generale non vorrebbe piu' dire niente.
+**La slot rende come Crazy Time, e fa vincere come le slot vere.** Tre rulli di
+quaranta fermate, tre righe in vista e una linea (`shared/slot.ts`). Sulla linea
+pagano tre uguali (`PREMI`, dal ×5 dei limoni al ×300 dei sette) e le ciliegie
+dovunque stiano (`CILIEGIE`): una ridà la puntata, due la pagano cinque volte,
+tre venti. Il punto di domanda vale dovunque nella finestra, come gli scatter
+delle slot vere: tre in vista, uno per rullo, aprono una domanda che giusta paga
+`VINCITA_DOMANDA` volte la puntata, e su un rullo stanno ad almeno tre fermate
+l'uno dall'altro, quindi se ne vede uno alla volta. Le frequenze vengono dai PAR
+sheet, i fogli che i costruttori danno ai casinò (Harrigan e Dixon, "PAR Sheets,
+probabilities, and slot machine play", Journal of Gambling Issues 23, 2009). Si
+vince qualcosa un giro ogni tre, come il 33,5% di Lobstermania a quindici linee,
+e tre vincite su quattro sono una ciliegia sola, che ridà la puntata: le vincite
+che non sono vincite, che nelle slot vere sono la maggior parte (a Lobstermania
+il 61% delle vincite non supera la puntata) ed e' quel che tiene incollati. Poi
+i limoni, la tripla che si vede di piu' (una ogni sessantacinque giri), e ogni
+premio piu' alto e' piu' raro: dal ×20 una volta ogni cinquecento giri, i sette
+una ogni sessantaquattromila. La domanda esce ogni cinquanta giri circa e fa
+poco meno di un terzo della resa, come le funzioni speciali delle slot video
+(Starburst: il 27%). La resa la conta `contaSlot` su tutte le 64.000
+combinazioni: la linea il 66,6%, con le domande tutte giuste il 97%, come Crazy
+Time, e `shared/__tests__/slot.test.ts` tiene ferme la resa, la frequenza, la
+scala delle triple e le vincite grosse. Si punta da 1 a `PUNTATA_MASSIMA_SLOT`,
+dieci, e non tutto il saldo come a Crazy Time: il ×300 dei sette su un saldo
+intero darebbe in un giro decine di migliaia di punti, e la generale non
+vorrebbe piu' dire niente.
 
 **La domanda della slot e' quella di Crazy Time.** Le stesse trenta domande per
-categoria della notte (`ruota_domande`), e chi ne ha avuta una a un gioco non
-la rivede all'altro: `domandeViste` guarda `ruota_giocate` e `slot_giri`. Come
-alla ruota, una categoria che oggi non ha piu' domande da dare a quel giocatore
-non fa tripla: le fermate si ripescano (`fermateACaso`). La domanda si apre con
-il Via, con il tempo del quiz, e una lasciata a meta' la chiude il giro dopo:
-la puntata era gia' pagata, e la linea aveva gia' pagato il suo. Il resto e'
-come a Crazy Time: le fermate le sceglie il server, il saldo si controlla
-nell'`INSERT`, fra due giri passa `INTERVALLO_SLOT_MS`, e un giro dei rulli di
-prima (`DISPOSIZIONE_SLOT`) conta nel saldo e non si mostra.
+categoria della notte (`ruota_domande`), e chi ne ha avuta una a un gioco non la
+rivede all'altro: `domandeViste` guarda `ruota_giocate` e `slot_giri`. La
+categoria la pesca il server con le fermate, fra quelle del giorno che hanno
+ancora domande da dare a quel giocatore; se non ce n'e' nessuna i tre punti di
+domanda non escono, e le fermate si ripescano (`fermateACaso`), come lo spicchio
+senza domande alla ruota. Sui rulli i punti di domanda si girano e la mostrano.
+La domanda si apre con il Via, con il tempo del quiz, e una lasciata a meta' la
+chiude il giro dopo: la puntata era gia' pagata, e la linea aveva gia' pagato il
+suo. La pagina mostra prima la linea e poi i punti di domanda, e una festa in
+mezzo li coprirebbe: insieme a una domanda la linea paga al piu' le prugne, ×15,
+e un test lo tiene. Il resto e' come a Crazy Time: le fermate le sceglie il
+server, il saldo si controlla nell'`INSERT`, fra due giri passa
+`INTERVALLO_SLOT_MS`, e un giro dei rulli di prima (`DISPOSIZIONE_SLOT`) conta
+nel saldo e non si mostra, e una sua domanda rimasta aperta non si gioca piu'
+(`NESSUN_GIRO`): la chiude il giro dopo, persa. Per questo la disposizione 2,
+quella dei quaranta simboli con il punto di domanda, non ha voluto una
+migrazione.
 
-**I rulli frenano con un salto che non si vede.** `Rulli` (`src/games/slot/`)
-li fa girare verso il basso, sfocati, finché non arriva l'esito; poi ogni
-rullo, al suo momento, salta di colpo cinque fermate prima della sua — a quella
-velocita' i simboli non si leggono — e da li' frena con `1 - (1 - t)^3`, passa
-un filo oltre e torna indietro, come un rullo che si incastra. Cosi' i tre si
-fermano a tempi fissi, il primo 0,9 secondi dopo la leva e gli altri ogni 0,42,
-qualunque sia la fermata; se i primi due promettono una tripla o i tre sette il
-terzo gira un secondo in piu', con il bordo che pulsa. La striscia di un rullo
-sono tre giri dei suoi simboli, e a ogni fotogramma si scrive solo il suo
-spostamento, come la rotazione della ruota. Le righe del mobile sono `minmax(0,
-...)`: la striscia e' alta trenta rulli, e lasciata al contenuto allargherebbe
-la sua riga.
+**I rulli frenano con un salto che non si vede.** `Rulli` (`src/games/slot/`) li
+fa girare verso il basso, sfocati, finché non arriva l'esito; poi ogni rullo, al
+suo momento, salta di colpo cinque fermate prima della sua — a quella velocita'
+i simboli non si leggono — e da li' frena con `1 - (1 - t)^3`, passa un filo
+oltre e torna indietro, come un rullo che si incastra. Cosi' i tre si fermano a
+tempi fissi, il primo 0,9 secondi dopo la leva e gli altri ogni 0,42, qualunque
+sia la fermata; se i primi due mostrano un punto di domanda, o due sette sulla
+linea, il terzo gira un secondo in piu', con il bordo che pulsa. La striscia di
+un rullo sono tre giri dei suoi simboli, e a ogni fotogramma si scrive solo il
+suo spostamento, come la rotazione della ruota. Le righe del mobile sono
+`minmax(0, ...)`: la striscia e' alta quaranta rulli, e lasciata al contenuto
+allargherebbe la sua riga. Quante caselle ha lo dice `--celle`, che scrive
+`Rulli`: cambiare le fermate non tocca il CSS.
 
 **La leva si tira col dito, e viene verso chi guarda.** `Leva` sta sul fianco
 destro del mobile e ruota nel piano del fianco: tirandola il pomo scende e
@@ -639,9 +656,32 @@ partono e la leva torna su con una molla; un tocco senza trascinare la tira
 tutta, e Invio e lo spazio anche, perché e' un bottone. Accanto ai gettoni
 c'e' "Gira", per chi non vuole tirare. Il resto si vede come a Crazy Time: le
 fiches volano dal saldo al display della puntata e il saldo scende alla leva;
-una vincita accende i simboli che pagano, che saltano fuori dal rullo, il
-display la segna, le monete cadono nel vassoio e da li' volano al saldo, che
-sale quando arriva la prima.
+una vincita accende i simboli che pagano, ognuno a modo suo (vedi sotto), il
+display la segna con il suo nome, le monete cadono nel vassoio e da li' volano
+al saldo, che sale quando arriva la prima.
+
+**Ogni vincita della slot ha il suo momento, anche la piu' piccola.** Nelle slot
+vere una ciliegia che ridà la puntata suona e lampeggia come un premio, e chi
+gioca la ricorda come una vincita (Dixon e altri, Universita' di Waterloo, sulle
+"losses disguised as wins"): qui succede un giro ogni quattro, quindi deve
+esserci, ed essere diversa dalle altre. `VINCITE` (`src/games/slot/vincite.tsx`)
+da' a ogni combinazione il nome sul display, il suono e i pezzi che saltano
+fuori dai simboli — le scintille della ciliegia, le ciliegie lanciate, le gocce
+dei limoni, le fette d'arancia, le bolle delle prugne, gli acini che rimbalzano,
+le onde delle campane, le scariche del BAR, le stelle dei sette, i punti di
+domanda; `Slot.css` il colore (`--vinta`, sulla linea, sulle cornici, sui led e
+sulle lampadine) e l'animazione del simbolo, sotto `data-vince`: la ciliegia
+saltella, le ciliegie dondolano dal picciolo, i limoni si spremono, le arance
+rotolano, le prugne tremano molli, l'uva si scuote, le campane suonano, il BAR
+sfarfalla come un neon, i sette bruciano. I tre punti di domanda si girano uno
+dopo l'altro e dietro c'e' la categoria (`Rivela`). Una ciliegia sola si
+festeggia in fretta (`POCO_MS`, le luci `poco`), perché la leva torni pronta
+presto. Le monete di una vincita, arrivando, liberano il tabellone (`conto`)
+solo se nel frattempo non e' partito un altro giro (`leve`): altrimenti
+mostrerebbero il saldo del giro nuovo prima che i rulli si fermino, e dopo una
+festa, che rende subito la leva, succedeva. I pezzi sono elementi del DOM
+animati dal CSS, al piu' trenta, con la strada calcolata da un numero fisso e
+non a caso: il disegno resta una funzione pura.
 
 **Dal ×20 c'e' la festa delle slot vere.** `FestaSlot` (`src/games/slot/`)
 prende lo schermo: il lampo, i raggi, la scritta — BIG WIN dal ×20, MEGA WIN
