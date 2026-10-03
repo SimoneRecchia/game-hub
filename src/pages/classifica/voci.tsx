@@ -101,6 +101,23 @@ const giornate = (n: number) => `${formatNumber(n)} ${n === 1 ? 'giornata' : 'gi
 const decimale = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
 const inCorso = <Etichetta tono="arancio">in corso</Etichetta>
+
+/** I punti fatti in compagnia, accanto al nome: spiegano gli spareggi. */
+function segniDi(assist: number, aperta: boolean) {
+  if (assist <= 0) return aperta ? inCorso : undefined
+  return (
+    <>
+      <span className="cl-segno" title={`${assist} punti in compagnia`}>
+        <IconPeople size={13} />
+        {assist}
+      </span>
+      {aperta && inCorso}
+    </>
+  )
+}
+
+const diCuiInCompagnia = (assist: number) =>
+  assist > 0 ? [{ etichetta: 'Di cui in compagnia', valore: formatNumber(assist) }] : []
 const inArrivo = <Etichetta tono="brand">in arrivo</Etichetta>
 
 interface Contesto {
@@ -207,32 +224,46 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
           ? `${r.inCorso ? 'In corso · ' : ''}${formatNumber(r.punteggio)} sul tabellone`
           : `${giornate(r.giornate)} · migliore ${formatNumber(r.migliore)}`,
         breve: giorno ? `${formatNumber(r.punteggio)} sul tabellone` : giornate(r.giornate),
-        segni: r.inCorso ? inCorso : undefined,
+        segni: segniDi(r.assist, r.inCorso),
         dettaglio: [
           { etichetta: 'Punti in classifica', valore: formatNumber(r.punti), forte: true },
+          ...diCuiInCompagnia(r.assist),
           { etichetta: 'Punteggio sul tabellone', valore: formatNumber(r.punteggio) },
           { etichetta: 'Giornate', valore: formatNumber(r.giornate) },
           { etichetta: 'Giornata migliore', valore: formatNumber(r.migliore) },
         ],
-        nota: 'A pari punti conta il punteggio sul tabellone.',
+        nota:
+          r.assist > 0
+            ? 'A pari punti passa avanti chi ne ha fatti meno in compagnia.'
+            : 'A pari punti conta il punteggio sul tabellone.',
       }))
 
     case 'cruciverba':
-      return (risposta as CruciverbaLeaderboard).rows.map((r) => ({
-        ...r,
-        sotto:
-          r.giornate === 0
-            ? 'In corso'
-            : `${r.giornate} ${r.giornate === 1 ? 'completato' : 'completati'} · ${formatDuration(r.tempoMs)}`,
-        breve: r.giornate > 0 ? formatDuration(r.tempoMs) : 'in corso',
-        segni: r.inCorso ? inCorso : undefined,
-        dettaglio: [
-          { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
-          { etichetta: 'Schemi completati', valore: formatNumber(r.giornate) },
-          { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
-        ],
-        nota: 'A pari punti conta il tempo.',
-      }))
+      return (risposta as CruciverbaLeaderboard).rows.map((r) => {
+        // Il tempo di una giornata in compagnia era dell'host: chi ha solo quelle non ne ha.
+        const soloInCompagnia = r.assist > 0 && r.tempoMs === 0
+        return {
+          ...r,
+          sotto:
+            r.giornate === 0
+              ? 'In corso'
+              : `${r.giornate} ${r.giornate === 1 ? 'completato' : 'completati'}${
+                  soloInCompagnia ? ' in compagnia' : ` · ${formatDuration(r.tempoMs)}`
+                }`,
+          breve: r.giornate === 0 ? 'in corso' : soloInCompagnia ? 'in compagnia' : formatDuration(r.tempoMs),
+          segni: segniDi(r.assist, r.inCorso),
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            ...diCuiInCompagnia(r.assist),
+            { etichetta: 'Schemi completati', valore: formatNumber(r.giornate) },
+            { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
+          ],
+          nota:
+            r.assist > 0
+              ? 'A pari punti passa avanti chi ne ha fatti meno in compagnia.'
+              : 'A pari punti conta il tempo.',
+        }
+      })
 
     case 'sudoku':
       return (risposta as SudokuLeaderboard).rows.map((r) => ({

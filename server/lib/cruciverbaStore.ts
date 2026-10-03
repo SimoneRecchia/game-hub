@@ -63,6 +63,10 @@ export interface Partita {
 export interface PartitaRow extends Partita {
   puzzle_number: number
   date: string
+  /** La compagnia in cui si gioca la giornata: la partita e' dell'host, e questa resta chiusa. */
+  in_compagnia: string | null
+  /** I punti dell'host, per chi gioca la giornata con lui. */
+  assist_score: number | null
 }
 
 export interface PartitaLiberaRow extends Partita {
@@ -474,20 +478,26 @@ export interface TotaliCruciverba {
   giornate: number
   tempoMs: number
   inCorso: boolean
+  /** I punti delle giornate giocate in compagnia di qualcun altro. */
+  assist: number
 }
 
 /**
  * Mette in fila i giocatori del cruciverba.
  *
  * L'ordine: **punti** del periodo — contano solo i cruciverba completati —
- * poi il **tempo**, piu' corto prima: due cruciverba completati senza aiuti
- * valgono il tetto a testa, e fra i due passa avanti chi ci ha messo meno.
- * Chi ha una partita aperta e nessuna chiusa sta in fondo, con la sua etichetta.
- * Infine il nickname, perché due righe identiche non si scambino di posto.
+ * poi **meno punti fatti in compagnia**, la regola del Wordle: a pari punti
+ * passa avanti chi li ha fatti con le proprie partite. Poi il **tempo**, piu'
+ * corto prima: due cruciverba completati senza aiuti valgono il tetto a testa,
+ * e fra i due passa avanti chi ci ha messo meno; una giornata in compagnia non
+ * ne porta, perché il tempo era dell'host. Chi ha una partita aperta e nessuna
+ * chiusa sta in fondo, con la sua etichetta. Infine il nickname, perché due
+ * righe identiche non si scambino di posto.
  */
 export function ordinaCruciverba(giocatori: TotaliCruciverba[]): CruciverbaRow[] {
   const inFila = [...giocatori].sort((a, b) => {
     if (a.punti !== b.punti) return b.punti - a.punti
+    if (a.assist !== b.assist) return a.assist - b.assist
     if ((a.giornate > 0) !== (b.giornate > 0)) return a.giornate > 0 ? -1 : 1
     if (a.tempoMs !== b.tempoMs) return a.tempoMs - b.tempoMs
     return a.nickname.localeCompare(b.nickname, 'it', { sensitivity: 'base' })
@@ -504,6 +514,7 @@ interface AggregatoRow {
   giornate: number
   tempo: number
   in_corso: number
+  assist: number
 }
 
 export async function classificaCruciverba(
@@ -523,11 +534,14 @@ export async function classificaCruciverba(
               p.nickname     AS nickname,
               p.display_name AS display_name,
               p.avatar_color AS avatar_color,
-              COALESCE(SUM(CASE WHEN g.status = 'done' THEN g.score END), 0)    AS punti,
+              COALESCE(SUM(CASE WHEN g.status = 'done' THEN COALESCE(g.assist_score, g.score) END), 0) AS punti,
               SUM(CASE WHEN g.status = 'done' THEN 1 ELSE 0 END)               AS giornate,
-              COALESCE(SUM(CASE WHEN g.status = 'done' THEN g.tempo_ms END), 0) AS tempo,
+              COALESCE(SUM(CASE WHEN g.status = 'done' AND g.in_compagnia IS NULL
+                                THEN g.tempo_ms END), 0)                       AS tempo,
               MAX(CASE WHEN g.puzzle_number = ? AND g.status = 'playing'
-                       THEN 1 ELSE 0 END)                                      AS in_corso
+                       THEN 1 ELSE 0 END)                                      AS in_corso,
+              COALESCE(SUM(CASE WHEN g.status = 'done' AND g.in_compagnia IS NOT NULL
+                                THEN COALESCE(g.assist_score, 0) END), 0)      AS assist
          FROM players p
          JOIN cruciverba_games g ON g.player_id = p.id AND g.puzzle_number BETWEEN ? AND ?
         GROUP BY p.id
@@ -546,6 +560,7 @@ export async function classificaCruciverba(
       giornate: r.giornate,
       tempoMs: r.tempo,
       inCorso: r.in_corso === 1,
+      assist: r.assist,
     })),
   )
 

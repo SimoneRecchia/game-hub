@@ -1,4 +1,5 @@
 import { Sheet } from '@/components/Sheet'
+import { MAX_COOP_GUESTS } from '@shared/config'
 import { TETTI } from '@shared/punti'
 import { BONUS_SCARABEO, DISTRIBUZIONE, JOLLY, MOSSE_PER_GIORNATA, TESSERE_LEGGIO, VALORI } from '@shared/scarabeo'
 import './ComeSiGioca.css'
@@ -118,6 +119,10 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
             </li>
             <li>
               <strong>Libera</strong>: a turni contro il computer. Non conta per la classifica.
+            </li>
+            <li>
+              <strong>In compagnia</strong>: inviti fino a {MAX_COOP_GUESTS} persone a suggerirti mosse. Chi gioca
+              con te prende il tuo stesso punteggio.
             </li>
           </ul>
         </section>

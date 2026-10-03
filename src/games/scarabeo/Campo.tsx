@@ -22,6 +22,8 @@ interface Props {
   /** Tessere rimaste nel sacchetto: senza, non si cambia. */
   restanti: number
   evidenziate?: ReadonlySet<number>
+  /** Chi guarda in compagnia compone e suggerisce: niente cambio e niente passo, e il bottone lo dice. */
+  suggerisci?: boolean
   onGioca: () => void
   onPassa: () => void
   onCambia: (tessere: string[]) => void
@@ -45,6 +47,7 @@ export function Campo({
   attesa,
   restanti,
   evidenziate,
+  suggerisci = false,
   onGioca,
   onPassa,
   onCambia,
@@ -82,6 +85,7 @@ export function Campo({
   const anteprima = c.anteprima
   const sbagliata = (sconosciute?.length ?? 0) > 0
   const nonEsiste = sconosciute?.length === 1 ? 'non esiste' : 'non esistono'
+  const verbo = suggerisci ? 'Suggerisci' : 'Gioca'
   const etichetta = attesa
     ? attesa
     : sbagliata
@@ -89,8 +93,8 @@ export function Campo({
       : anteprima && !anteprima.ok
         ? 'Posa non valida'
         : anteprima?.ok
-          ? `Gioca · +${anteprima.punti}${anteprima.scarabeo ? ' scarabeo!' : ''}`
-          : 'Gioca'
+          ? `${verbo} · +${anteprima.punti}${anteprima.scarabeo ? ' scarabeo!' : ''}`
+          : verbo
 
   return (
     <div className="scr">
@@ -141,16 +145,20 @@ export function Campo({
               <Button variant="plain" onClick={c.mischia} disabled={bloccato} aria-label="Mischia il leggio">
                 <IconShuffle size={17} /> Mischia
               </Button>
-              <Button
-                variant="plain"
-                onClick={() => setCambio(true)}
-                disabled={bloccato || restanti === 0 || c.mano.length === 0}
-              >
-                Cambia
-              </Button>
-              <Button variant="plain" onClick={onPassa} disabled={bloccato}>
-                Passa
-              </Button>
+              {!suggerisci && (
+                <>
+                  <Button
+                    variant="plain"
+                    onClick={() => setCambio(true)}
+                    disabled={bloccato || restanti === 0 || c.mano.length === 0}
+                  >
+                    Cambia
+                  </Button>
+                  <Button variant="plain" onClick={onPassa} disabled={bloccato}>
+                    Passa
+                  </Button>
+                </>
+              )}
             </div>
           )}
 
@@ -184,6 +192,7 @@ export function Campo({
 export function Tabellino({
   io,
   altro,
+  nomeIo = 'Tu',
   nomeAltro,
   notaAltro,
   turno,
@@ -198,6 +207,8 @@ export function Tabellino({
 }: {
   io: number
   altro: number
+  /** Chi gioca a sinistra: "Tu", o l'host per chi guarda in compagnia. */
+  nomeIo?: string
   nomeAltro: string
   /** L'avatar di chi gioca e l'icona dell'avversario, accanto ai nomi. */
   iconaIo?: ReactNode
@@ -228,7 +239,7 @@ export function Tabellino({
       <span className={`scr-tab__lato${turno === 'io' ? ' is-turno' : ''}`}>
         <span className="scr-tab__nome">
           {iconaIo}
-          Tu
+          {nomeIo}
         </span>
         <span className="scr-tab__punti u-tabnum">{io}</span>
       </span>

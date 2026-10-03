@@ -71,3 +71,9 @@
     transform: translateY(6px) scale(0.94);
   }
 }
+
+/* Dove va la parola, o quanto vale la posa: nel cruciverba e nello Scarabeo in compagnia. */
+.suggerimento__nota {
+  font-size: var(--text-caption-2);
+  color: var(--label-secondary);
+}

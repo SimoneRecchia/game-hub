@@ -11,11 +11,14 @@
 
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
 import {
+  JOLLY,
   MOSSE_PER_GIORNATA,
+  TESSERE_LEGGIO,
   leggioDa,
   rigioca,
   sacchettoDelGiorno,
   type Mossa,
+  type Posa,
 } from '../../shared/scarabeo'
 import type {
   CellaPiena,
@@ -44,6 +47,10 @@ export interface PartitaRow {
   punti: number
   started_at: string
   finished_at: string | null
+  /** La compagnia in cui si gioca la giornata: la partita e' dell'host, e questa resta chiusa. */
+  in_compagnia: string | null
+  /** I punti dell'host, per chi gioca la giornata con lui. */
+  assist_score: number | null
 }
 
 /** La partita del computer sulle tessere del giorno: il riferimento della classificata. */
@@ -111,6 +118,60 @@ export function mosseDi(row: PartitaRow): Mossa[] {
     return parsed as Mossa[]
   } catch {
     return []
+  }
+}
+
+/**
+ * Le posizioni arrivate dal client, ripulite.
+ *
+ * Tutto quel che viene da fuori e' da trattare come sospetto: una posa con
+ * coordinate finte o con una lettera che non e' sul leggio sarebbe un modo di
+ * fabbricarsi un punteggio. La forma la controlla questa funzione, la legalita'
+ * della mossa `validaPosa`, e il possesso delle tessere `verificaLeggio`.
+ */
+export function leggiPosa(body: unknown): Posa[] {
+  const posa = (body as { posa?: unknown })?.posa
+  if (!Array.isArray(posa) || posa.length === 0) {
+    fail(400, 'POSA_VUOTA', 'Non hai posato nessuna tessera.')
+  }
+  if (posa.length > TESSERE_LEGGIO) {
+    fail(400, 'TROPPE_TESSERE', `Non puoi posare più di ${TESSERE_LEGGIO} tessere.`)
+  }
+
+  return posa.map((raw) => {
+    const p = raw as { r?: unknown; c?: unknown; lettera?: unknown; jolly?: unknown }
+    const r = Number(p.r)
+    const c = Number(p.c)
+    const lettera = String(p.lettera ?? '').toLowerCase()
+    if (!Number.isInteger(r) || !Number.isInteger(c) || lettera.length !== 1) {
+      fail(400, 'POSA_MALFORMATA', 'Una tessera posata non è valida.')
+    }
+    return { r, c, lettera, jolly: p.jolly === true }
+  })
+}
+
+/**
+ * Le tessere posate devono essere quelle in mano.
+ *
+ * Un jolly conta come jolly, non come la lettera che rappresenta: altrimenti
+ * chiunque potrebbe dichiarare jolly una tessera che non ha e giocarla per la
+ * lettera che gli serve.
+ */
+export function verificaLeggio(leggio: readonly string[], posa: readonly Posa[]): void {
+  const mano = [...leggio]
+  for (const p of posa) {
+    const serve = p.jolly ? JOLLY : p.lettera
+    const i = mano.indexOf(serve)
+    if (i < 0) {
+      fail(
+        409,
+        'LEGGIO',
+        p.jolly
+          ? 'Non hai un jolly da giocare.'
+          : `Non hai la tessera "${p.lettera.toUpperCase()}".`,
+      )
+    }
+    mano.splice(i, 1)
   }
 }
 
@@ -248,6 +309,13 @@ export async function aggiungiMossa(
 
 /* ────────────────────────────  La classifica  ─────────────────────────── */
 
+/**
+ * I punti in classifica di una giornata: i propri, o quelli dell'host per chi
+ * l'ha giocata in sua compagnia. La generale e il saldo della Fortuna usano la
+ * stessa espressione (`server/lib/generale.ts`).
+ */
+const PUNTI_DELLA_GIORNATA = 'CASE WHEN g.in_compagnia IS NULL THEN g.punti ELSE COALESCE(g.assist_score, 0) END'
+
 export interface TotaliScarabeo {
   playerId: string
   nickname: string
@@ -259,17 +327,20 @@ export interface TotaliScarabeo {
   migliore: number
   oggi: number | null
   inCorso: boolean
+  /** I punti delle giornate giocate in compagnia di qualcun altro. */
+  assist: number
 }
 
 /**
  * Mette in fila i giocatori di Scarabeo.
  *
- * L'ordine: **punti in classifica** del periodo, poi il **punteggio del
- * tabellone** — a pari punti ha giocato meglio chi ha fatto di piu' sul
- * tabellone, che conta anche le giornate in cui si e' battuto il computer —
- * poi **meno giornate**, perché lo stesso totale in meno partite e' un gioco
- * migliore, e infine il nickname, così due righe identiche non si scambiano di
- * posto a ogni ricarica.
+ * L'ordine: **punti in classifica** del periodo, poi **meno punti fatti in
+ * compagnia** — la regola del Wordle: a pari punti passa avanti chi li ha
+ * fatti con le proprie partite — poi il **punteggio del tabellone** — a pari
+ * punti ha giocato meglio chi ha fatto di piu' sul tabellone, che conta anche
+ * le giornate in cui si e' battuto il computer — poi **meno giornate**, perché
+ * lo stesso totale in meno partite e' un gioco migliore, e infine il nickname,
+ * così due righe identiche non si scambiano di posto a ogni ricarica.
  *
  * Funzione pura e fuori da SQL per la stessa ragione della classifica del
  * Wordle: le righe sono poche e una catena di spareggi in SQL non si legge.
@@ -277,6 +348,7 @@ export interface TotaliScarabeo {
 export function ordinaScarabeo(giocatori: TotaliScarabeo[]): ScarabeoRow[] {
   const inFila = [...giocatori].sort((a, b) => {
     if (a.punti !== b.punti) return b.punti - a.punti
+    if (a.assist !== b.assist) return a.assist - b.assist
     if (a.punteggio !== b.punteggio) return b.punteggio - a.punteggio
     if (a.giornate !== b.giornate) return a.giornate - b.giornate
     return a.nickname.localeCompare(b.nickname, 'it', { sensitivity: 'base' })
@@ -296,6 +368,7 @@ interface AggregatoRow {
   migliore: number
   oggi: number | null
   in_corso: number
+  assist: number
 }
 
 export async function classificaScarabeo(
@@ -315,13 +388,15 @@ export async function classificaScarabeo(
               p.nickname     AS nickname,
               p.display_name AS display_name,
               p.avatar_color AS avatar_color,
-              COALESCE(SUM(g.punti), 0)                                     AS punti,
-              COALESCE(SUM(g.score), 0)                                     AS punteggio,
+              COALESCE(SUM(${PUNTI_DELLA_GIORNATA}), 0)                     AS punti,
+              COALESCE(SUM(CASE WHEN g.in_compagnia IS NULL THEN g.score ELSE 0 END), 0) AS punteggio,
               COUNT(g.id)                                                   AS giornate,
-              COALESCE(MAX(g.score), 0)                                     AS migliore,
-              MAX(CASE WHEN g.puzzle_number = ? THEN g.punti END)           AS oggi,
+              COALESCE(MAX(CASE WHEN g.in_compagnia IS NULL THEN g.score END), 0) AS migliore,
+              MAX(CASE WHEN g.puzzle_number = ? THEN ${PUNTI_DELLA_GIORNATA} END) AS oggi,
               MAX(CASE WHEN g.puzzle_number = ? AND g.status = 'playing'
-                       THEN 1 ELSE 0 END)                                   AS in_corso
+                       THEN 1 ELSE 0 END)                                   AS in_corso,
+              COALESCE(SUM(CASE WHEN g.in_compagnia IS NOT NULL
+                                THEN COALESCE(g.assist_score, 0) ELSE 0 END), 0) AS assist
          FROM players p
          JOIN scarabeo_games g ON g.player_id = p.id AND g.puzzle_number BETWEEN ? AND ?
         GROUP BY p.id`,
@@ -341,6 +416,7 @@ export async function classificaScarabeo(
       migliore: r.migliore,
       oggi: r.oggi,
       inCorso: r.in_corso === 1,
+      assist: r.assist,
     })),
   )
 

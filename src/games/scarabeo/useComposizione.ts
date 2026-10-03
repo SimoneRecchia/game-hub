@@ -51,6 +51,8 @@ export interface Composizione {
   sposta: (da: number, a: number) => void
   /** Posa la tessera i-esima su una casella precisa: e' dove la lascia chi la trascina sul tabellone. */
   posaSu: (indice: number, r: number, c: number) => boolean
+  /** Mette sul tabellone una posa intera, presa dal leggio: un suggerimento di chi gioca in compagnia. */
+  proponi: (posa: readonly Posa[]) => boolean
   annulla: () => void
   avvisa: (testo: string) => void
 }
@@ -317,6 +319,30 @@ export function useComposizione({
     setJollyAperto((j) => (j === null ? null : nuovo(j)))
   }, [])
 
+  const proponi = useCallback(
+    (posa: readonly Posa[]): boolean => {
+      if (bloccata || posa.length === 0) return false
+      // Ogni tessera dal leggio, il jolly per il jolly: se non ci sono tutte, la posa e' di un leggio di prima.
+      const prese = new Set<number>()
+      const scelte: InSospeso[] = []
+      for (const p of posa) {
+        if (fisso[p.r * LATO + p.c]) return false
+        const serve = p.jolly ? JOLLY : p.lettera
+        const indice = mano.findIndex((t, i) => t === serve && !prese.has(i))
+        if (indice < 0) return false
+        prese.add(indice)
+        scelte.push({ posa: { ...p }, indice })
+      }
+      setSospese(scelte)
+      setCursore(null)
+      setJollyAperto(null)
+      haptic('tap')
+      suona('posa')
+      return true
+    },
+    [bloccata, fisso, mano],
+  )
+
   const annulla = useCallback(() => {
     setSospese([])
     setCursore(null)
@@ -339,6 +365,7 @@ export function useComposizione({
     mischia,
     sposta,
     posaSu,
+    proponi,
     annulla,
     avvisa,
   }

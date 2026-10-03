@@ -17,6 +17,7 @@ function giocatore(nickname: string, punti: number, giornate: number, tempoMs: n
     giornate,
     tempoMs,
     inCorso: giornate === 0,
+    assist: 0,
   }
 }
 
