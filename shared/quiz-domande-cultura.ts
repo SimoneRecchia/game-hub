@@ -1595,28 +1595,6 @@ function oggi(dati: DatiOggi, c: Contesto): DomandaCompleta[] {
         spiegazione: schedaFatto(x),
       }
     }
-    if (v.fatto && tipo === 'oggi-fatto') {
-      const x = v.fatto
-      // Gli altri fatti sono dello stesso giorno, di un altro anno: la risposta e' una sola.
-      const altri = fatti.filter((y) => y.anno !== x.anno && !stessoTesto(y.t, x.t))
-      const sbagliati = distrattori(c, altri, c.sbagliate, (y) => scarto(y, x) + (y.t.length > 120 ? 0.5 : 0))
-      const opzioni = conGiusta(
-        c,
-        opzione(x.id, x.t),
-        sbagliati.map((y) => opzione(y.id, y.t)),
-      )
-      if (!opzioni) return null
-      return {
-        tipo,
-        testo: `Che cosa accadde il ${data} ${annoInLettere(x.anno)}?`,
-        lunga: 1,
-        opzioni,
-        giusta: x.id,
-        risposta: x.t,
-        soggetto: x.id,
-        spiegazione: schedaFatto(x),
-      }
-    }
     if (v.nato && tipo === 'oggi-nato') {
       const n = v.nato
       const opzioni = opzioniAnni(c, n.anno)
@@ -1634,8 +1612,10 @@ function oggi(dati: DatiOggi, c: Contesto): DomandaCompleta[] {
     return null
   }
 
-  // I fatti e i nati sono due liste: le domande su ognuna vengono dalle sue voci.
-  const perFatti = c.tipi ? ['oggi-anno', 'oggi-fatto'].some((t) => c.tipi!.has(t as TipoDomanda)) : true
+  // I fatti e i nati sono due liste: le domande su ognuna vengono dalle sue voci. Di un fatto si chiede
+  // sempre l'anno: scegliere fra quattro fatti poco noti di quel giorno non si poteva indovinare, mentre
+  // l'anno lo avvicina anche chi non conosce il fatto ("oggi-fatto" resta nei tipi per le partite di prima).
+  const perFatti = c.tipi ? c.tipi.has('oggi-anno') : true
   const perNati = c.tipi ? c.tipi.has('oggi-nato') : true
   const quanteNati = perNati ? (perFatti ? Math.round(c.quante * 0.3) : c.quante) : 0
   const voceFatti: Voce[] = fatti.map((x) => ({ id: x.id, f: x.f, fatto: x }))
@@ -1643,10 +1623,7 @@ function oggi(dati: DatiOggi, c: Contesto): DomandaCompleta[] {
   const suiFatti = perFatti
     ? componi(
         preferendo(voceFatti, (v) => v.id, c.evitare, c.quante - quanteNati),
-        [
-          ['oggi-anno', 65],
-          ['oggi-fatto', 35],
-        ],
+        [['oggi-anno', 100]],
         { ...c, quante: c.quante - quanteNati },
         fai,
       )

@@ -141,7 +141,7 @@ export const TIPI: Record<CategoriaAttuale, Record<ModoQuiz, readonly TipoDomand
   lirica: { scelta: ['compositore-opera', 'opera-di', 'citta-opera'], cartina: [] },
   nobel: { scelta: ['nobel-anno', 'premio-nobel', 'anno-nobel'], cartina: [] },
   storia: { scelta: ['anno-evento', 'secolo-evento', 'prima-evento'], cartina: [] },
-  oggi: { scelta: ['oggi-anno', 'oggi-fatto', 'oggi-nato'], cartina: [] },
+  oggi: { scelta: ['oggi-anno', 'oggi-nato'], cartina: [] },
   scienza: {
     scelta: [
       'simbolo-elemento',
