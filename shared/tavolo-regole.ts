@@ -1,5 +1,5 @@
 /**
- * Le regole dei tre giochi da tavoliere dietro una faccia sola, per chi le
+ * Le regole dei giochi da tavoliere dietro una faccia sola, per chi le
  * applica senza sapere a cosa si gioca: il server, che controlla ogni mossa
  * delle partite fra amici, e il telefono, che gioca contro il computer.
  *
@@ -16,6 +16,7 @@ import * as dama from './dama'
 import * as forza4 from './forza4'
 import * as go from './go'
 import * as scacchi from './scacchi'
+import * as tris from './tris'
 import type { EsitoTavoliere, GiocoTavoliere, Parte } from './tavolo'
 
 export interface RegoleTavoliere {
@@ -47,6 +48,11 @@ export interface RegoleTavoliere {
   varianteDi?(posizione: string): string | null
   /** Il gioco si e' fermato per contare, e le mosse non valgono piu': nel go, dopo due passi. */
   conteggio?(posizione: string): boolean
+  /**
+   * Il tempo per ogni mossa, se il gioco ne ha uno: chi lo lascia passare
+   * perde. Nel tris, dove senza tempo chi ci pensa abbastanza non sbaglia mai.
+   */
+  tempoMossaMs?: number
 }
 
 const REGOLE_FORZA4: RegoleTavoliere = {
@@ -176,11 +182,32 @@ const REGOLE_GO: RegoleTavoliere = {
   },
 }
 
+const REGOLE_TRIS: RegoleTavoliere = {
+  iniziale: tris.scrivi(tris.posizioneIniziale()),
+  tratto: (posizione) => tris.leggi(posizione)?.tratto ?? null,
+  gioca(posizione, mossa) {
+    const p = tris.leggi(posizione)
+    if (!p || !/^[0-8]$/.test(mossa)) return null
+    const dopo = tris.gioca(p, Number(mossa))
+    // Come nel Forza 4, un segno resta dov'e': nessuna posizione torna.
+    return dopo ? { posizione: tris.scrivi(dopo), irreversibile: true, mossa } : null
+  },
+  chiave: (posizione) => posizione,
+  esito(posizione) {
+    const p = tris.leggi(posizione)
+    const fine = p ? tris.esito(p) : null
+    return fine ? { vincitore: fine.vincitore, motivo: fine.fine } : null
+  },
+  patta: false,
+  tempoMossaMs: tris.TEMPO_MOSSA_TRIS_MS,
+}
+
 const REGOLE: Record<GiocoTavoliere, RegoleTavoliere> = {
   scacchi: REGOLE_SCACCHI,
   dama: REGOLE_DAMA,
   forza4: REGOLE_FORZA4,
   go: REGOLE_GO,
+  tris: REGOLE_TRIS,
 }
 
 /** La posizione di partenza di una partita nuova: quella di una variante, se c'e' e il gioco la conosce. */

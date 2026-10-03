@@ -1,0 +1,198 @@
+/*
+ * La serie del giorno del tris: la fila delle cinque partite in cima, poi la
+ * tavola dei tavolieri — il computer sopra, io sotto — e il piede, che fra una
+ * partita e l'altra dice com'e' andata e fa cominciare la prossima.
+ */
+.tris-pagina {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--sp-2);
+}
+
+.tris-attesa {
+  flex: 1;
+  min-height: 240px;
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  animation: tris-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes tris-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ---------- La serie ---------- */
+
+.tris-serie {
+  display: flex;
+  flex: none;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 2px 0;
+  list-style: none;
+}
+
+.tris-serie__tessera {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 11px;
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 1.5px var(--separator);
+  color: var(--label-secondary);
+  font-family: var(--font-rounded);
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  transition:
+    transform 0.2s var(--ease-spring),
+    box-shadow 0.2s;
+}
+
+.tris-serie__tessera:not(:disabled) {
+  cursor: pointer;
+}
+
+.tris-serie__tessera:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+/* La partita in corso: l'indaco della scelta, che respira. */
+.tris-serie__tessera.is-in-corso {
+  box-shadow: inset 0 0 0 2px var(--brand);
+  color: var(--brand);
+  animation: tris-respira 1.6s var(--ease-in-out) infinite;
+}
+
+@keyframes tris-respira {
+  50% {
+    transform: scale(0.92);
+  }
+}
+
+/* Com'e' finita: la vinta nel colore del gioco, la patta neutra, la persa velata. */
+.tris-serie__tessera.is-vinta {
+  background: linear-gradient(150deg, var(--tris-1), var(--tris-2));
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-key);
+  color: #fff;
+}
+
+.tris-serie__tessera.is-patta {
+  background: var(--fill-secondary);
+  box-shadow: none;
+  color: var(--label);
+}
+
+.tris-serie__tessera.is-persa {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--separator);
+  color: var(--label-secondary);
+}
+
+.tris-serie__tessera.is-scelta {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.tris-serie__tessera:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.tris-serie__uguale {
+  font-size: 1.15em;
+  line-height: 1;
+}
+
+/* ---------- Fra una partita e l'altra ---------- */
+
+.tris-prossima,
+.tris-fine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  width: min(100%, 560px);
+  text-align: center;
+}
+
+.tris-prossima__appena {
+  margin: 0;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.tris-prossima__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+}
+
+.tris-prossima__riga {
+  margin: 0 0 var(--sp-2);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* ---------- La serie finita ---------- */
+
+.tris-fine__valore {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+.tris-fine__dettaglio {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.tris-fine__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.tris-fine__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tris-fine__piede {
+  margin: var(--sp-2) 0 0;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tris-serie__tessera.is-in-corso {
+    animation: none;
+  }
+}

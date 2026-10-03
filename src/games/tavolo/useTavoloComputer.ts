@@ -36,6 +36,11 @@ export interface PartitaControComputer {
   morte: number[] | null
   confermaConteggio: () => void
   riprendi: () => void
+  /** Nei giochi con il tempo per mossa, quando tocca a me: quando finisce, e quanto dura. */
+  scadenza: number | null
+  tempoMs: number | null
+  /** Il mio tempo e' finito: la partita e' persa. */
+  scaduto: () => void
 }
 
 /** Il seme del computer: a caso, perché due partite uguali non si ripetano mossa per mossa. */
@@ -86,6 +91,20 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
   const regole = regoleDi(gioco)
   const fermo = !partita.esito && (regole.conteggio?.(partita.posizione) ?? false)
   const tocca = !partita.esito && !fermo && regole.tratto(partita.posizione) === computer
+  const mio = !partita.esito && !fermo && regole.tratto(partita.posizione) === partita.mia
+
+  // Il tempo della mossa, nei giochi che ce l'hanno: riparte a ogni mio turno, e riaprendo la pagina.
+  const tempoMs = regole.tempoMossaMs ?? null
+  const [scadenza, setScadenza] = useState<number | null>(null)
+  useEffect(() => {
+    setScadenza(tempoMs && mio ? Date.now() + tempoMs : null)
+  }, [tempoMs, mio, partita.mosse.length])
+  const scaduto = useCallback(() => {
+    const p = attuale.current
+    if (p.esito) return
+    setScadenza(null)
+    setPartita(conta({ ...p, esito: { vincitore: altraParte(p.mia), motivo: 'tempo' } }))
+  }, [])
 
   // Il go fermo per contare: la stima delle pietre morte, nel Worker, una volta per posizione.
   const [morte, setMorte] = useState<{ posizione: string; morte: number[] } | null>(null)
@@ -206,5 +225,8 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
     morte: stima,
     confermaConteggio,
     riprendi,
+    scadenza,
+    tempoMs,
+    scaduto,
   }
 }

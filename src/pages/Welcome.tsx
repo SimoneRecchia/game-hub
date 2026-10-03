@@ -128,8 +128,8 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
           <Marchio lato={96} />
           <h1 className="welcome__title">Giochi</h1>
           <p className="welcome__lede">
-            Wordle, Scarabeo, Cruciverba, Sudoku, Battaglia navale e Quiz, ogni giorno uguali per tutti. E scacchi,
-            dama, Forza 4, go e Indovina chi, con gli amici.
+            Wordle, Scarabeo, Cruciverba, Sudoku, Battaglia navale, Quiz e Tris, ogni giorno uguali per tutti. E
+            scacchi, dama, Forza 4, go e Indovina chi, con gli amici.
           </p>
         </header>
 
@@ -147,7 +147,8 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
                       : sfida.gioco === 'scacchi' ||
                           sfida.gioco === 'dama' ||
                           sfida.gioco === 'forza4' ||
-                          sfida.gioco === 'go'
+                          sfida.gioco === 'go' ||
+                          sfida.gioco === 'tris'
                         ? `ti invita a giocare ${A_GIOCO[sfida.gioco]}.`
                         : 'ti sfida a battaglia navale.'}{' '}
                   {isRegister ? 'Registrati e gioca subito.' : 'Entra e gioca subito.'}

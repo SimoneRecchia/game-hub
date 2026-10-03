@@ -11,6 +11,7 @@ import type {
   QuizLeaderboard,
   ScarabeoLeaderboard,
   SudokuLeaderboard,
+  TrisLeaderboard,
 } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
@@ -21,6 +22,7 @@ import { classificaCruciverba } from '../lib/cruciverbaStore'
 import { classificaSudoku } from '../lib/sudokuStore'
 import { classificaBattaglia } from '../lib/battagliaStore'
 import { classificaQuiz } from '../lib/quizStore'
+import { classificaTris } from '../lib/trisStore'
 import { classificaFortuna, classificaGenerale } from '../lib/generale'
 import { panoramica } from '../lib/panoramica'
 import { today } from '../lib/wordleStore'
@@ -95,4 +97,10 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/quiz', async (c) => {
     const result = await classificaQuiz(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<QuizLeaderboard>(result)
+  })
+
+  /** Il tris: i punti delle serie finite, poi le vittorie. */
+  .get('/tris', async (c) => {
+    const result = await classificaTris(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
+    return c.json<TrisLeaderboard>(result)
   })

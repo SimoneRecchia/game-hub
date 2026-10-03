@@ -161,6 +161,17 @@ export const TAVOLO_CONSERVA_MS = 7 * 24 * 60 * 60_000
 /** Il ritmo in partita: stretto quando si aspetta l'altro, largo quando tocca a te. */
 export const TAVOLO_POLL_ATTESA_MS = 1_500
 export const TAVOLO_POLL_TURNO_MS = 4_000
+/**
+ * Nei giochi con il tempo per mossa (il tris) si guarda piu' spesso: la mossa
+ * dell'altro arriva con il ritardo del giro, e il mio tempo intanto corre.
+ */
+export const TAVOLO_POLL_A_TEMPO_MS = 1_000
+/**
+ * Quanto il server aspetta oltre il tempo di una mossa, per la rete, come nel
+ * quiz: allo scadere del suo orologio il telefono non muove piu', quindi non e'
+ * tempo in piu' per pensare.
+ */
+export const TAVOLO_MARGINE_TEMPO_MS = 3_000
 
 /* ─────────────────────────  Email e verifica  ───────────────────────── */
 

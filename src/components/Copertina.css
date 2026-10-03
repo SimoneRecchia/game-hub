@@ -66,6 +66,10 @@
   --c1: var(--forza4-1);
   --c2: var(--forza4-2);
 }
+.copertina--tris {
+  --c1: var(--tris-1);
+  --c2: var(--tris-2);
+}
 
 .copertina--go {
   --c1: var(--go-1);

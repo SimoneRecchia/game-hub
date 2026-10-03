@@ -2,7 +2,7 @@
  * Tutte le classifiche di un periodo in una richiesta, per la schermata che le
  * mette una sotto l'altra: di ognuna i primi tre, quanti sono, e dove sei tu.
  *
- * Una richiesta e non sei, come la schermata iniziale: le Pages Functions
+ * Una richiesta e non una per classifica, come la schermata iniziale: le Pages Functions
  * gratuite contano le richieste. Le classifiche sono quelle di sempre, con i
  * loro spareggi; qui si tagliano soltanto.
  */
@@ -22,6 +22,7 @@ import { leaderboard } from './leaderboard'
 import { classificaQuiz } from './quizStore'
 import { classificaScarabeo } from './scarabeoStore'
 import { classificaSudoku } from './sudokuStore'
+import { classificaTris } from './trisStore'
 
 interface RigaQualunque {
   rank: number
@@ -55,13 +56,14 @@ export async function panoramica(
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<PanoramicaClassifiche> {
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, generale, fortuna] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, generale, fortuna] = await Promise.all([
     leaderboard(db, periodo, numeroDiOggi, viewerId),
     classificaScarabeo(db, periodo, numeroDiOggi, viewerId),
     classificaCruciverba(db, periodo, numeroDiOggi, viewerId),
     classificaSudoku(db, periodo, numeroDiOggi, viewerId),
     classificaBattaglia(db, periodo, numeroDiOggi, viewerId),
     classificaQuiz(db, periodo, numeroDiOggi, viewerId),
+    classificaTris(db, periodo, numeroDiOggi, viewerId),
     classificaGenerale(db, periodo, viewerId),
     classificaFortuna(db, periodo, viewerId),
   ])
@@ -76,6 +78,7 @@ export async function panoramica(
       ...sudoku.rows.filter((r) => r.inCorso),
       ...battaglia.rows.filter((r) => r.inCorso),
       ...quiz.rows.filter((r) => r.inCorso),
+      ...tris.rows.filter((r) => r.inCorso),
     ].map((r) => r.playerId),
   )
   const colPunti = (r: { punti: number }) => r.punti
@@ -98,6 +101,7 @@ export async function panoramica(
       sudoku: anteprima(sudoku.rows, sudoku.me, colPunti, aperta),
       battaglia: anteprima(battaglia.rows, battaglia.me, colPunti, aperta),
       quiz: anteprima(quiz.rows, quiz.me, colPunti, aperta),
+      tris: anteprima(tris.rows, tris.me, colPunti, aperta),
       fortuna: anteprima(fortuna.rows, fortuna.me, colPunti, () => false),
     },
   }

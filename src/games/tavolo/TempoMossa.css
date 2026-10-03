@@ -1,0 +1,67 @@
+/*
+ * Il tempo della mossa, nella riga di chi deve muovere: una pista corta che si
+ * svuota e i secondi accanto. La barra segue `--quota` con una transizione
+ * lunga quanto un giro dell'orologio, cosi' scende senza scatti.
+ */
+.tempo-mossa {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+}
+
+.tempo-mossa__pista {
+  position: relative;
+  width: 54px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--fill-tertiary);
+}
+
+.tempo-mossa__barra {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--brand);
+  transform: scaleX(var(--quota, 1));
+  transform-origin: left center;
+  transition:
+    transform 0.1s linear,
+    background-color 0.2s;
+}
+
+.tempo-mossa__secondi {
+  display: inline-block;
+  min-width: 1.4em;
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  text-align: right;
+  color: var(--label-secondary);
+}
+
+.tempo-mossa.is-poco .tempo-mossa__barra {
+  background: var(--red);
+}
+
+.tempo-mossa.is-poco .tempo-mossa__secondi {
+  color: var(--red);
+  animation: tempo-mossa-batte 1s ease-out infinite;
+}
+
+@keyframes tempo-mossa-batte {
+  0% {
+    transform: scale(1.25);
+  }
+  30%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tempo-mossa.is-poco .tempo-mossa__secondi {
+    animation: none;
+  }
+}

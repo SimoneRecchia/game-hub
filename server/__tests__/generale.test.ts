@@ -10,7 +10,7 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
     nickname,
     displayName: nickname,
     avatarColor: '#000',
-    perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, battaglia: 0, quiz: 0, ...perGioco },
+    perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, battaglia: 0, quiz: 0, tris: 0, ...perGioco },
     ruota: 0,
     slot: 0,
     blackjack: 0,
@@ -49,7 +49,7 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     const adesso = new Date().toISOString()
     const sql = (q: string, ...p: unknown[]) => db.sqlite.prepare(q).run(...p)
 
-    // Anna: Wordle 45 + 20, Scarabeo 70, cruciverba 97 (finito), battaglia 84, quiz 76.
+    // Anna: Wordle 45 + 20, Scarabeo 70, cruciverba 97 (finito), battaglia 84, quiz 76, tris 38.
     sql(`INSERT INTO wordle_games (id, player_id, puzzle_number, slot, date, answer, status, attempts, guesses, started_at, score)
          VALUES ('w1', ?, ?, 1, 'x', 'carta', 'won', 2, '[]', ?, 45)`, anna.id, n, adesso)
     sql(`INSERT INTO wordle_games (id, player_id, puzzle_number, slot, date, answer, status, attempts, guesses, started_at, score)
@@ -62,17 +62,28 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
          VALUES ('b1', 'classificata', ?, NULL, ?, 'finita', '[]', 84, 'a', ?, ?)`, anna.id, n, adesso, adesso)
     sql(`INSERT INTO quiz_partite (id, player_id, puzzle_number, date, status, giuste, score, started_at, updated_at)
          VALUES ('q1', ?, ?, 'x', 'done', 7, 76, ?, ?)`, anna.id, n, adesso, adesso)
+    sql(`INSERT INTO tris_partite
+           (id, player_id, puzzle_number, date, status, vinte, patte, score, started_at, updated_at)
+         VALUES ('t1', ?, ?, 'x', 'done', 2, 3, 38, ?, ?)`, anna.id, n, adesso, adesso)
     // Bruno: solo un cruciverba ancora aperto, che vale zero.
     sql(`INSERT INTO cruciverba_games (id, player_id, puzzle_number, date, status, lettere, score, started_at, updated_at)
          VALUES ('c2', ?, ?, 'x', 'playing', 'x', 0, ?, ?)`, bruno.id, n, adesso, adesso)
 
     const g = (await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', anna)).dati
     expect(g.rows.map((r) => [r.nickname, r.punti])).toEqual([
-      ['anna', 45 + 20 + 70 + 97 + 84 + 76],
+      ['anna', 45 + 20 + 70 + 97 + 84 + 76 + 38],
       ['bruno', 0],
     ])
-    expect(g.me?.perGioco).toEqual({ wordle: 65, scarabeo: 70, cruciverba: 97, sudoku: 0, battaglia: 84, quiz: 76 })
-    expect(g.me?.partite).toBe(5)
+    expect(g.me?.perGioco).toEqual({
+      wordle: 65,
+      scarabeo: 70,
+      cruciverba: 97,
+      sudoku: 0,
+      battaglia: 84,
+      quiz: 76,
+      tris: 38,
+    })
+    expect(g.me?.partite).toBe(6)
     // La Fortuna legge i punti di oggi di un giocatore solo: devono essere quelli della generale.
     expect(await puntiClassificateDi(db as unknown as D1Database, anna.id, n)).toBe(
       g.me!.punti - g.me!.ruota - g.me!.slot - g.me!.blackjack,
@@ -91,7 +102,7 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
           nickname: 'anna',
           displayName: 'anna',
           avatarColor: expect.any(String),
-          punti: 45 + 20 + 70 + 97 + 84 + 76,
+          punti: 45 + 20 + 70 + 97 + 84 + 76 + 38,
         },
       ],
     })

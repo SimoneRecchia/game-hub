@@ -27,7 +27,7 @@ import './Tavolo.css'
 const ATTESA_FINE_MS = 450
 
 /**
- * Una partita con un amico a scacchi, a dama, a Forza 4 o a go. Le mosse passano
+ * Una partita con un amico a scacchi, a dama, a Forza 4, a go o a tris. Le mosse passano
  * dal server, che le controlla con le stesse regole del telefono; qui si
  * vedono subito, e l'altro le riceve al suo prossimo giro di controllo.
  */
@@ -201,6 +201,16 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
           }}
           turno={inCorso && !conteggio ? (v.tuoTurno ? 'io' : 'altro') : null}
           onMossa={g.muovi}
+          tempo={
+            inCorso && v.tempo && g.scadenza !== null
+              ? {
+                  scadenza: g.scadenza,
+                  totaleMs: v.tempo.mossaMs,
+                  di: v.tuoTurno ? 'io' : 'altro',
+                  onScaduto: v.tuoTurno ? g.scaduto : undefined,
+                }
+              : null
+          }
           conteggio={
             conto && morte
               ? {

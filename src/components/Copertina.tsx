@@ -417,6 +417,26 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
   ),
 
   // Un angolo di goban: le linee, un punto di riferimento, e le pietre di una partita appena cominciata.
+  // Il cancelletto tracciato a mano, i segni di una partita e la fila fatta.
+  tris: (
+    <g transform="rotate(-6 60 60)" fill="none" strokeLinecap="round">
+      <path
+        d="M47 21c-1.2 26 1.2 52 0 78M73 21c1.2 26-1.2 52 0 78M21 47c26-1.2 52 1.2 78 0M21 73c26 1.2 52-1.2 78 0"
+        stroke="#fff"
+        strokeOpacity={0.5}
+        strokeWidth={4}
+      />
+      <path
+        d="M27 27l15 15M42 27L27 42M52.5 52.5l15 15M67.5 52.5l-15 15M78 78l15 15M93 78L78 93"
+        stroke="#fff"
+        strokeWidth={6}
+      />
+      <circle cx={85.5} cy={34.5} r={8.5} stroke="#fff" strokeOpacity={0.8} strokeWidth={5.5} />
+      <circle cx={34.5} cy={60} r={8.5} stroke="#fff" strokeOpacity={0.8} strokeWidth={5.5} />
+      <path d="M22 22L98 98" stroke="var(--c2)" strokeWidth={4.5} />
+    </g>
+  ),
+
   go: (
     <g transform="rotate(-6 60 60)">
       <rect x={18} y={18} width={84} height={84} rx={6} fill="#fff" fillOpacity={0.16} />

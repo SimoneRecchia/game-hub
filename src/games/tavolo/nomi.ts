@@ -12,6 +12,7 @@ export const A_GIOCO: Record<GiocoTavoliere, string> = {
   dama: 'a dama',
   forza4: 'a Forza 4',
   go: 'a go',
+  tris: 'a tris',
 }
 
 /** Una variante come si legge: il goban "13 × 13". Null per i giochi che non ne hanno. */
@@ -26,4 +27,5 @@ export const SEGNI: Record<GiocoTavoliere, readonly [string, string]> = {
   forza4: ['var(--f4-rosso)', 'var(--f4-giallo)'],
   // Nel go comincia il Nero.
   go: ['#232326', '#f5f4f0'],
+  tris: ['var(--tris-croce)', 'var(--tris-cerchio)'],
 }
