@@ -9,7 +9,10 @@
  * versione letta, così un doppio tocco non muove due volte.
  *
  * Il server non sa giocare: controlla le mosse con le regole di ciascun gioco
- * (shared/tavolo-regole.ts) sulla posizione salvata, e basta.
+ * (shared/tavolo-regole.ts) sulla posizione salvata, e basta. Nei giochi con il
+ * tempo per mossa (il tris) controlla anche l'orologio: una mossa che non arriva
+ * in tempo perde la partita, e lo applica la prima richiesta che arriva dopo
+ * (`chiudiSeScaduta`), come il tempo delle domande del quiz.
  */
 
 import {
@@ -20,6 +23,7 @@ import {
   TAVOLO_ATTESA_MS,
   TAVOLO_CONSERVA_MS,
   TAVOLO_LINK_MS,
+  TAVOLO_MARGINE_TEMPO_MS,
 } from '../../shared/config'
 import { regoleDi } from '../../shared/tavolo-regole'
 import type { GiocoTavoliere, MotivoTavoliere, Parte } from '../../shared/tavolo'
@@ -561,6 +565,39 @@ export function primoDellaRivincita(row: PartitaRow, nuovoA: string): Lato {
 /* ─────────────────────────────  La partita  ───────────────────────────── */
 
 /**
+ * Fino a quando ha tempo chi ha la mossa, nei giochi con il tempo per mossa;
+ * null negli altri, e finché ognuno dei due non ha mosso una volta: la prima
+ * mossa di ciascuno e' senza tempo, perché chi ha mandato l'invito arriva al
+ * tavoliere un momento dopo chi l'ha accettato.
+ */
+export function scadenzaMossa(row: PartitaRow): number | null {
+  const ms = regoleDi(row.gioco).tempoMossaMs
+  if (!ms || row.stato !== 'in_corso' || !row.mossa_at || mosseDi(row).length < 2) return null
+  return Date.parse(row.mossa_at) + ms
+}
+
+/**
+ * Chiude la partita se chi ha la mossa ha lasciato passare il tempo, margine
+ * della rete compreso: vince l'altro. La scrittura e' condizionata come le
+ * altre, e se un'altra richiesta l'ha gia' chiusa si rilegge.
+ */
+export async function chiudiSeScaduta(db: D1Database, row: PartitaRow, adesso: number): Promise<PartitaRow> {
+  const scade = scadenzaMossa(row)
+  const turno = diTurno(row)
+  if (scade === null || !turno || adesso <= scade + TAVOLO_MARGINE_TEMPO_MS) return row
+  try {
+    return await salvaPartita(
+      db,
+      row,
+      { stato: 'finita', vincitore: altroLato(turno), motivo: 'tempo', patta: null },
+      adesso,
+    )
+  } catch {
+    return (await partitaPerId(db, row.id)) ?? row
+  }
+}
+
+/**
  * Da quanto l'altro ha la mossa senza farla, e se si puo' chiudere la partita a
  * proprio favore: dopo cinque minuti se l'altro ha chiuso l'app, dopo mezz'ora
  * comunque. Nel conteggio del go si aspetta l'altro quando io ho accettato e
@@ -623,8 +660,17 @@ export async function vistaTavolo(db: D1Database, row: PartitaRow, io: Lato, ade
       : null,
     attesaMs,
     puoiReclamare: inCorso && puoi,
+    tempo: tempoDellaMossa(row, adesso),
     versione: row.versione,
   }
+}
+
+/** Il tempo della mossa per la vista: quanto dura, e quanto ne resta a chi ha il tratto. */
+function tempoDellaMossa(row: PartitaRow, adesso: number): VistaTavolo['tempo'] {
+  const scade = scadenzaMossa(row)
+  const ms = regoleDi(row.gioco).tempoMossaMs
+  if (scade === null || !ms) return null
+  return { mossaMs: ms, restanteMs: Math.max(0, scade - adesso) }
 }
 
 export interface CambiPartita {

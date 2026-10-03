@@ -1,5 +1,5 @@
 /**
- * I giochi a turni su un tavoliere — scacchi, dama, Forza 4 e go — visti da chi
+ * I giochi a turni su un tavoliere — scacchi, dama, Forza 4, go e tris — visti da chi
  * non sa quale si sta giocando: il server che tiene le partite fra amici, la
  * sala, il telefono che gioca contro il computer.
  *
@@ -9,9 +9,9 @@
  * parlarne insieme.
  */
 
-export type GiocoTavoliere = 'scacchi' | 'dama' | 'forza4' | 'go'
+export type GiocoTavoliere = 'scacchi' | 'dama' | 'forza4' | 'go' | 'tris'
 
-export const GIOCHI_TAVOLIERE: readonly GiocoTavoliere[] = ['scacchi', 'dama', 'forza4', 'go']
+export const GIOCHI_TAVOLIERE: readonly GiocoTavoliere[] = ['scacchi', 'dama', 'forza4', 'go', 'tris']
 
 /** Chi muove: 0 chi comincia, 1 l'altro. */
 export type Parte = 0 | 1
@@ -36,6 +36,10 @@ export type MotivoTavoliere =
   | 'pieno'
   // Go: si conta, e vince chi ha piu' punti.
   | 'punti'
+  // Tris (con il pieno del Forza 4).
+  | 'tris'
+  // Chi ha il tempo per mossa: lo ha lasciato passare.
+  | 'tempo'
   // Tutti.
   | 'resa'
   | 'patta'

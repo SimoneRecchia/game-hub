@@ -69,6 +69,14 @@ export const GIOCHI: readonly Gioco[] = [
     libera: 'Scegli materia, categoria e numero di domande.',
     liberaBreve: 'Quiz libero',
   },
+  {
+    id: 'tris',
+    nome: 'Tris',
+    motto: 'Tre in fila, dieci secondi a mossa',
+    classificata: 'Cinque partite contro il computer del giorno, lo stesso per tutti.',
+    libera: 'Contro il computer o contro un amico.',
+    liberaBreve: 'Contro chi vuoi',
+  },
 ]
 
 export function giocoDi(id: GiocoClassificato): Gioco {
@@ -88,7 +96,8 @@ export interface GiocoTavolo {
 /**
  * I giochi da tavolo: niente partita del giorno e niente classifica, solo
  * partite quando si vuole, con gli amici — e contro il computer dove ha senso.
- * Indovina chi non ce l'ha: si gioca parlandosi.
+ * Indovina chi non ce l'ha: si gioca parlandosi. Il tris non sta qui: ha la
+ * sua classificata, e le partite da tavolo sono la sua libera.
  */
 export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
   {
@@ -128,6 +137,15 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
   },
 ]
 
+/** Il tris fra i tavolieri: la sua sala e' la libera della classificata, e non sta fra i giochi da tavolo. */
+const TRIS_DA_TAVOLO: GiocoTavolo = {
+  id: 'tris',
+  nome: 'Tris',
+  motto: 'Tre in fila, dieci secondi a mossa',
+  conChi: 'Amici o computer',
+  slug: 'tris/libera',
+}
+
 export function giocoTavoloDi(id: GiocoDaTavolo): GiocoTavolo {
-  return GIOCHI_DA_TAVOLO.find((g) => g.id === id)!
+  return [...GIOCHI_DA_TAVOLO, TRIS_DA_TAVOLO].find((g) => g.id === id)!
 }

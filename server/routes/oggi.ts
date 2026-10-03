@@ -11,6 +11,7 @@ import {
   riepilogoQuiz,
   riepilogoScarabeo,
   riepilogoSudoku,
+  riepilogoTris,
   riepilogoWordle,
 } from '../lib/riepiloghi'
 import { today } from '../lib/wordleStore'
@@ -21,7 +22,7 @@ import { today } from '../lib/wordleStore'
  * classifica calcola comunque. I giochi della Fortuna hanno la loro scheda, e
  * la loro richiesta (`/fortuna`).
  *
- * Una e non sei perché il piano gratuito delle Pages Functions conta le
+ * Una e non una per gioco perché il piano gratuito delle Pages Functions conta le
  * richieste, e la schermata iniziale e' quella che si apre di piu'. Come i
  * riepiloghi che la compongono, non apre niente: e' di sola lettura.
  */
@@ -29,13 +30,14 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
   const db = c.env.DB
   const io = c.get('player').id
   const quando = today()
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, generale] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, generale] = await Promise.all([
     riepilogoWordle(db, io),
     riepilogoScarabeo(db, io),
     riepilogoCruciverba(db, io),
     riepilogoSudoku(db, io),
     riepilogoBattaglia(db, io),
     riepilogoQuiz(db, io),
+    riepilogoTris(db, io),
     classificaGenerale(db, periodoDi('today', quando.puzzleNumber), io),
   ])
   return c.json<OggiRisposta>({
@@ -48,6 +50,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     sudoku,
     battaglia,
     quiz,
+    tris,
     generale: {
       posizione: generale.me?.rank ?? null,
       punti: generale.me?.punti ?? 0,

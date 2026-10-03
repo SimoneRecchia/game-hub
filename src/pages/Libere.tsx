@@ -15,7 +15,7 @@ import type { AmicoOnline, GiocatoreBreve, GiocoDaTavolo } from '@shared/types'
 import './Libere.css'
 
 /**
- * Le libere dei sei giochi: portano alla scelta della partita. Hanno la
+ * Le libere dei giochi classificati: portano alla scelta della partita. Hanno la
  * stessa copertina delle carte delle Giornaliere, quindi niente transizione
  * condivisa.
  */
@@ -38,7 +38,7 @@ const IN_VISTA = 4
 /**
  * Le Libere: le partite che non contano, quando si vuole e con chi c'e'. In
  * cima chi e' online, che si tocca per aprirne il profilo e invitarlo a
- * giocare; sotto le partite in corso con gli amici, le libere dei sei giochi e
+ * giocare; sotto le partite in corso con gli amici, le libere dei giochi classificati e
  * i giochi da tavolo.
  */
 export default function Libere() {

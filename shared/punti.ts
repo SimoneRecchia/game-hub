@@ -1,11 +1,11 @@
 /**
  * I punti in classifica di tutti i giochi, in un posto solo.
  *
- * La regola comune: **una partita classificata vale al massimo cento punti**,
- * qualunque sia il gioco. E' quel che rende confrontabili i giochi fra loro e
- * possibile la classifica generale, che e' la loro somma: una giornata di un
- * gioco non deve valere il doppio di quella di un altro solo perché ha piu'
- * mosse o piu' caselle.
+ * La regola comune: **ogni classificata ha il suo tetto** (`TETTI`), e la
+ * classifica generale e' la somma. Cento per quasi tutte; il tris, che si gioca
+ * in un paio di minuti, cinquanta: una giornata di un gioco non deve valere
+ * quanto quella di un altro che chiede dieci volte il tempo, ne' il doppio solo
+ * perché ha piu' mosse o piu' caselle.
  *
  * Dentro quel tetto, ogni gioco misura quel che gli e' proprio, e tutti tengono
  * lo stesso principio del Wordle: **giocarla bene vale circa il doppio di
@@ -18,6 +18,7 @@
  *   Sudoku       risolto, meno gli aiuti               90-100   0*        100
  *   Battaglia    colpi per affondare la flotta         75-85    ~30       100
  *   Quiz         risposte giuste su dieci              60-90    20        100
+ *   Tris         vinte e patte su cinque partite       30-40    10         50
  *
  *   * la parola non indovinata vale venti, la peggiore indovinata cinquanta;
  *     un cruciverba o un sudoku svelato per intero non e' stato risolto: vale zero.
@@ -31,13 +32,27 @@ import { PUNTI_COMPLETO } from './cruciverba'
 import { CASELLE_FLOTTA } from './battaglia'
 import { DOMANDE_PER_PARTITA, puntiQuiz } from './quiz'
 import { puntiSudoku } from './sudoku'
+import { PARTITE_TRIS, puntiTris } from './tris'
+import type { GiocoClassificato } from './types'
 
 export { punteggio as puntiCruciverba } from './cruciverba'
 export { puntiQuiz } from './quiz'
 export { puntiSudoku } from './sudoku'
+export { puntiTris } from './tris'
 
-/** Il tetto di una partita classificata, per tutti i giochi. */
+/** Il tetto delle classificate che valgono cento. */
 export const PUNTI_MASSIMI = 100
+
+/** Il tetto di ogni classificata: quanto vale una giornata perfetta. Un test lo confronta con le formule. */
+export const TETTI: Record<GiocoClassificato, number> = {
+  wordle: PUNTI_MASSIMI,
+  scarabeo: PUNTI_MASSIMI,
+  cruciverba: PUNTI_MASSIMI,
+  sudoku: PUNTI_MASSIMI,
+  battaglia: PUNTI_MASSIMI,
+  quiz: PUNTI_MASSIMI,
+  tris: 50,
+}
 
 /* ─────────────────────────────  Scarabeo  ─────────────────────────── */
 
@@ -99,11 +114,12 @@ export function puntiBattaglia({
 
 /* ─────────────────────────  I tetti, per i test  ─────────────────── */
 
-export const MASSIMI = {
+export const MASSIMI: Record<GiocoClassificato, number> = {
   wordle: MAX_DAY_SCORE,
   cruciverba: PUNTI_COMPLETO,
   sudoku: puntiSudoku(0, 0),
   scarabeo: PUNTI_MASSIMI,
   battaglia: PUNTI_MASSIMI,
   quiz: puntiQuiz(DOMANDE_PER_PARTITA, DOMANDE_PER_PARTITA),
-} as const
+  tris: puntiTris(PARTITE_TRIS, 0),
+}

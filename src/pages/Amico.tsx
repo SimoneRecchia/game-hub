@@ -22,6 +22,7 @@ import './Amico.css'
 const NOMI: Record<GiocoInsieme, string> = {
   battaglia: 'Battaglia navale',
   quiz: 'Sfida a quiz',
+  tris: 'Tris',
   indovina: 'Indovina chi',
   scacchi: 'Scacchi',
   dama: 'Dama',

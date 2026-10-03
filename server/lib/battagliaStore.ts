@@ -56,6 +56,7 @@ export const ATTIVITA: readonly Attivita[] = [
   'sudoku',
   'battaglia',
   'quiz',
+  'tris',
   'indovina',
   'scacchi',
   'dama',

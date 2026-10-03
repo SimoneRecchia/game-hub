@@ -14,7 +14,7 @@ import type { LatoMoneta } from './ruota'
 import type { Carta, ManoBJ } from './blackjack'
 import type { FaseBJ } from './blackjack-tavolo'
 
-export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
+export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz' | 'tris'
 
 export interface Player {
   id: string
@@ -408,6 +408,78 @@ export interface SudokuLeaderboard {
   me: SudokuRow | null
 }
 
+/* ────────────────────────────────  Tris  ───────────────────────────── */
+
+export type TrisStatus = 'playing' | 'done'
+
+/** Com'e' finita una partita della serie, per chi gioca. */
+export type EsitoPartitaTris = 'vinta' | 'patta' | 'persa'
+
+/** Una partita della serie del giorno, come la vede chi gioca. */
+export interface PartitaTris {
+  /** Le mosse dall'inizio, del giocatore e del computer, a turno: le caselle da 0 a 8. */
+  mosse: number[]
+  /** Il segno del giocatore: 0 comincia, ed e' la X. */
+  segno: 0 | 1
+  /** Com'e' finita; null finché si gioca. */
+  esito: EsitoPartitaTris | null
+  /** Persa perché e' scaduto il tempo della mossa. */
+  tempo: boolean
+}
+
+export interface TrisStato {
+  puzzleNumber: number
+  date: string
+  status: TrisStatus
+  /** Le partite finite e quella in corso, in ordine. */
+  partite: PartitaTris[]
+  /** Quante partite ha la serie. */
+  totale: number
+  /** Il tempo che resta per la mossa, se una partita e' in corso; null fra una partita e l'altra. */
+  restanteMs: number | null
+  tempoMossaMs: number
+  /** I punti fatti finora: a serie finita, quelli della classifica. */
+  punti: number
+  /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni mossa. */
+  versione: number
+  msToNextPuzzle: number
+}
+
+export interface TrisSummary {
+  puzzleNumber: number
+  date: string
+  status: 'new' | TrisStatus
+  /** Le partite finite, com'e' andata ognuna. */
+  esiti: EsitoPartitaTris[]
+  totale: number
+  punti: number
+  msToNextPuzzle: number
+}
+
+export interface TrisRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: solo le serie finite. */
+  punti: number
+  /** Serie finite nel periodo. */
+  giornate: number
+  vinte: number
+  patte: number
+  /** true se oggi ha una serie cominciata e non finita. */
+  inCorso: boolean
+}
+
+export interface TrisLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: TrisRow[]
+  me: TrisRow | null
+}
+
 /* ─────────────────────────────  Battaglia navale  ──────────────────────── */
 
 /** Dove si trova un giocatore nell'app: lo dice il giro di controllo degli inviti. */
@@ -424,6 +496,7 @@ export type Attivita =
   | 'dama'
   | 'forza4'
   | 'go'
+  | 'tris'
   | 'ruota'
   | 'fortuna'
   | 'slot'
@@ -655,7 +728,7 @@ export interface VistaIndovina {
   versione: number
 }
 
-/* ────────────────────  Scacchi, dama, Forza 4 e go, fra amici  ──────────────────── */
+/* ────────────────────  Scacchi, dama, Forza 4, go e tris, fra amici  ──────────────────── */
 
 export type StatoTavolo = 'invito' | 'in_corso' | 'finita' | 'rifiutata' | 'annullata'
 
@@ -738,6 +811,12 @@ export interface VistaTavolo {
   /** Da quanto l'altro ha la mossa senza farla; oltre un tanto si puo' chiudere la partita. */
   attesaMs: number
   puoiReclamare: boolean
+  /**
+   * Nei giochi con il tempo per mossa (il tris), a partita in corso: quanto
+   * dura una mossa, e quanto ne resta a chi ha il tratto quando parte la
+   * risposta. Allo scadere chi ha il tratto perde.
+   */
+  tempo: { mossaMs: number; restanteMs: number } | null
   versione: number
 }
 
@@ -1076,7 +1155,7 @@ export interface PeriodoClassifica {
 /* ──────────────────────────  La classifica generale  ───────────────────────── */
 
 /** I giochi che hanno una classificata, e quindi una classifica. */
-export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz'
+export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz' | 'tris'
 
 /** I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha senso, contro il computer). */
 export type GiocoDaTavolo = 'indovina' | GiocoTavoliere
@@ -1177,6 +1256,7 @@ export interface OggiRisposta {
   sudoku: SudokuSummary
   battaglia: BattagliaSummary
   quiz: QuizSummary
+  tris: TrisSummary
   /** Come si sta oggi nella classifica generale, con quel che hanno dato o tolto i giochi della Fortuna. */
   generale: {
     posizione: number | null

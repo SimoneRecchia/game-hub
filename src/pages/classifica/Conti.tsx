@@ -14,9 +14,11 @@ import type {
   LobbyBattaglia,
   PlayerStats,
   QuizLeaderboard,
+  SalaTavolo,
   ScarabeoLeaderboard,
   StatisticheScarabeoLibero,
   SudokuLeaderboard,
+  TrisLeaderboard,
   WordleLiberaRisposta,
 } from '@shared/types'
 import './Conti.css'
@@ -41,6 +43,8 @@ export function ContiDi({ gioco }: { gioco: GiocoClassificato }) {
       return <ContiBattaglia />
     case 'quiz':
       return <ContiQuiz />
+    case 'tris':
+      return <ContiTris />
   }
 }
 
@@ -275,6 +279,79 @@ function ContiQuiz() {
               etichetta: NOMI_CATEGORIE[c],
               valore: `record ${libere.migliori[c]}%`,
             })),
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
+interface ContoTris {
+  vinte: number
+  perse: number
+  patte: number
+}
+
+/**
+ * Le partite contro il computer, sommate su tutti i livelli: le scrive
+ * `tavolo/locale.ts` nel telefono, e qui si leggono dalla sua chiave senza
+ * importarlo, perché porta con se' le regole di tutti i tavolieri.
+ */
+function contiComputerTris(): ContoTris {
+  const conto = { vinte: 0, perse: 0, patte: 0 }
+  try {
+    const salvati = JSON.parse(localStorage.getItem('giochi.tris.computer.conti') ?? '{}') as Record<
+      string,
+      Partial<ContoTris>
+    >
+    for (const c of Object.values(salvati)) {
+      conto.vinte += Number(c?.vinte) || 0
+      conto.perse += Number(c?.perse) || 0
+      conto.patte += Number(c?.patte) || 0
+    }
+  } catch {
+    /* senza localStorage non c'e' niente da contare */
+  }
+  return conto
+}
+
+/** "2 vinte, 1 patta, 3 perse". */
+function vintePattePerse({ vinte, patte, perse }: ContoTris): string {
+  return `${vinte} ${vinte === 1 ? 'vinta' : 'vinte'}, ${patte} ${patte === 1 ? 'patta' : 'patte'}, ${perse} ${
+    perse === 1 ? 'persa' : 'perse'
+  }`
+}
+
+function ContiTris() {
+  const { dati } = useDati<TrisLeaderboard>('/leaderboard/tris?scope=all')
+  const { dati: sala } = useDati<SalaTavolo>('/tavolo/sala?gioco=tris')
+  // Le partite contro il computer stanno nel telefono: si leggono una volta, all'apertura del foglio.
+  const [computer] = useState(contiComputerTris)
+  const me = dati?.me
+  const amici = sala?.record
+  const contate = (c: ContoTris) => c.vinte + c.perse + c.patte
+  const libere = contate(computer) + (amici ? contate(amici) : 0)
+  return (
+    <div className="conti">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Serie finite', valore: formatNumber(me?.giornate ?? 0) },
+            { etichetta: 'Vinte', valore: formatNumber(me?.vinte ?? 0) },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {libere > 0 && (
+        <Conti
+          titolo="Partite libere"
+          voci={[
+            { etichetta: 'Contro il computer', valore: vintePattePerse(computer) },
+            ...(amici ? [{ etichetta: 'Contro gli amici', valore: vintePattePerse(amici) }] : []),
           ]}
         />
       )}

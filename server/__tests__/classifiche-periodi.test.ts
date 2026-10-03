@@ -118,6 +118,7 @@ describe('la panoramica delle classifiche', () => {
       'quiz',
       'scarabeo',
       'sudoku',
+      'tris',
       'wordle',
     ])
 

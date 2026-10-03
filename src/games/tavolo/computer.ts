@@ -31,12 +31,13 @@ const inAttesa = new Map<number, Attesa>()
 let prossimo = 1
 
 function crea(gioco: GiocoTavoliere): Worker {
-  // Tre costruttori scritti per intero: Vite trova i Worker solo se l'indirizzo e' scritto li'.
+  // I costruttori scritti per intero: Vite trova i Worker solo se l'indirizzo e' scritto li'.
   if (gioco === 'scacchi') {
     return new Worker(new URL('../scacchi/computer.worker.ts', import.meta.url), { type: 'module' })
   }
   if (gioco === 'dama') return new Worker(new URL('../dama/computer.worker.ts', import.meta.url), { type: 'module' })
   if (gioco === 'go') return new Worker(new URL('../go/computer.worker.ts', import.meta.url), { type: 'module' })
+  if (gioco === 'tris') return new Worker(new URL('../tris/computer.worker.ts', import.meta.url), { type: 'module' })
   return new Worker(new URL('../forza4/computer.worker.ts', import.meta.url), { type: 'module' })
 }
 
