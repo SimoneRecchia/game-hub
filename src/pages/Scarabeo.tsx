@@ -5,7 +5,7 @@ import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, Numero, Vuoto, useFesta } from '@/components/Elementi'
-import { IconComputer, IconInfo, IconList, IconTrophy } from '@/components/Icons'
+import { IconComputer, IconInfo, IconList, IconPeople, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { IconaScheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
@@ -13,6 +13,10 @@ import { Campo, ElencoMosse, Tabellino } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
 import { adesivoFineScarabeo, adesivoMossa } from '@/games/scarabeo/adesivi'
 import { useScarabeo } from '@/games/scarabeo/useScarabeo'
+import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
+import { etichettaScarabeo } from '@/games/compagnia/etichette'
+import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
+import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { usePlayer } from '@/lib/auth'
 import { formatCountdown } from '@/lib/format'
@@ -33,9 +37,20 @@ export default function Scarabeo() {
   const [aiuto, setAiuto] = useState(false)
   const [storia, setStoria] = useState(false)
   const [delComputer, setDelComputer] = useState(false)
+  const [compagniaAperta, setCompagniaAperta] = useState(false)
+  const { vai } = useNavigazione()
 
   const stato = g.stato
   const finita = stato?.status === 'done'
+  // In compagnia si gioca la classificata finché non e' chiusa, e solo se e' la propria.
+  const inCompagnia = stato?.inCompagnia ?? null
+  const ospitante = !!stato && !finita && !inCompagnia
+  const compagnia = useCompagniaHost('scarabeo', 'classificata', ospitante, compagniaAperta)
+  const dentro = compagnia.compagnia?.ospiti.filter((o) => o.stato === 'dentro').length ?? 0
+  // Chi gioca la giornata in compagnia non muove: la partita e' quella dell'host.
+  useEffect(() => {
+    if (inCompagnia) vai(ROTTE.insiemeA('scarabeo', inCompagnia.id), { replace: true, direzione: 'nessuna' })
+  }, [inCompagnia, vai])
   // Battere il computer e' la vittoria della classificata: la festa e' per quella.
   const festa = useFesta(
     stato ? !finita : null,
@@ -65,6 +80,11 @@ export default function Scarabeo() {
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
         <>
+          {ospitante && (
+            <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setCompagniaAperta(true)} badge={dentro}>
+              <IconPeople size={21} />
+            </BottoneBarra>
+          )}
           <BottoneBarra etichetta="Le tue mosse" onClick={() => setStoria(true)}>
             <IconList size={20} />
           </BottoneBarra>
@@ -93,28 +113,45 @@ export default function Scarabeo() {
           bloccato={finita || g.inviando}
           restanti={stato.restanti}
           testa={
-            <Tabellino
-              iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
-              iconaAltro={
-                <IconaScheda>
-                  <IconComputer size={12} />
-                </IconaScheda>
-              }
-              avviso={g.messaggio}
-              posa={g.anteprima}
-              sconosciute={g.sconosciute}
-              io={stato.punti}
-              altro={stato.computer.punti}
-              nomeAltro="Computer"
-              notaAltro="stesse tessere"
-              sotto={
-                finita
-                  ? 'Giornata chiusa'
-                  : `Mossa ${Math.min(stato.mosseUsate + 1, stato.mosseTotali)} di ${stato.mosseTotali} · ${stato.restanti} nel sacchetto`
-              }
-              avanzamento={stato.computer.punti > 0 ? stato.punti / stato.computer.punti : 0}
-              onApri={() => setStoria(true)}
-            />
+            <>
+              <Tabellino
+                iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
+                iconaAltro={
+                  <IconaScheda>
+                    <IconComputer size={12} />
+                  </IconaScheda>
+                }
+                avviso={g.messaggio}
+                posa={g.anteprima}
+                sconosciute={g.sconosciute}
+                io={stato.punti}
+                altro={stato.computer.punti}
+                nomeAltro="Computer"
+                notaAltro="stesse tessere"
+                sotto={
+                  finita
+                    ? 'Giornata chiusa'
+                    : `Mossa ${Math.min(stato.mosseUsate + 1, stato.mosseTotali)} di ${stato.mosseTotali} · ` +
+                      `${stato.restanti} nel sacchetto`
+                }
+                avanzamento={stato.computer.punti > 0 ? stato.punti / stato.computer.punti : 0}
+                onApri={() => setStoria(true)}
+              />
+              {/* Le pose suggerite da chi gioca in compagnia: toccarne una la mette sul tabellone,
+                  e giocarla resta all'host. */}
+              {ospitante && (
+                <Suggerimenti
+                  suggerimenti={compagnia.compagnia?.suggerimenti ?? []}
+                  etichetta={etichettaScarabeo}
+                  onScegli={(s) => {
+                    if (s.proposta.gioco === 'scarabeo' && !g.proponi(s.proposta.posa)) {
+                      g.avvisa('Quelle tessere non sono più sul leggio.')
+                    }
+                  }}
+                  disabled={g.inviando}
+                />
+              )}
+            </>
           }
           fine={finita ? <Chiusa stato={stato} onMosseComputer={() => setDelComputer(true)} /> : undefined}
           onGioca={g.gioca}
@@ -124,6 +161,20 @@ export default function Scarabeo() {
       )}
 
       <ComeSiGiocaScarabeo open={aiuto} onClose={() => setAiuto(false)} />
+
+      <PannelloCompagnia
+        gioco="scarabeo"
+        modalita="classificata"
+        open={compagniaAperta}
+        onClose={() => setCompagniaAperta(false)}
+        compagnia={compagnia.compagnia}
+        giocatori={compagnia.giocatori}
+        occupato={compagnia.occupato}
+        errore={compagnia.errore}
+        onInvita={compagnia.invita}
+        onRitira={compagnia.ritira}
+        onCaricaGiocatori={compagnia.caricaGiocatori}
+      />
 
       <Sheet open={storia} onClose={() => setStoria(false)} title="Le tue mosse">
         {stato && (

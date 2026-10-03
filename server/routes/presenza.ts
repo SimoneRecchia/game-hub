@@ -3,6 +3,7 @@ import type { Attivita, CoopInvite, PresenzaRisposta } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { requireVerified } from '../lib/session'
 import { participation, pendingInvites } from '../lib/coopStore'
+import { invitiRicevuti as invitiCompagnia } from '../lib/compagniaStore'
 import { today } from '../lib/wordleStore'
 import { duelloAperto, sfideQuizRicevute } from '../lib/quizSfideStore'
 import {
@@ -36,8 +37,9 @@ import {
  * Il giro di controllo che ogni schermata fa ogni pochi secondi.
  *
  * Una richiesta sola per tutto: dice al server che il giocatore c'e' (e
- * dove), e gli riporta gli inviti del Wordle in compagnia, le sfide a
- * battaglia navale, a quiz, a Indovina chi, ai giochi da tavoliere e a Nomi, cose e città, le partite e il duello
+ * dove), e gli riporta gli inviti a giocare in compagnia — il Wordle, il
+ * cruciverba, lo Scarabeo — le sfide a battaglia navale, a quiz, a Indovina
+ * chi, ai giochi da tavoliere e a Nomi, cose e città, le partite e il duello
  * aperti. Tenerle separate
  * moltiplicherebbe le richieste, e il piano gratuito delle Pages Functions ne
  * concede centomila al giorno per tutto il sito.
@@ -58,8 +60,20 @@ export const presenzaRoutes = new Hono<AppEnv>()
     // Gli inviti del Wordle: la stessa regola di /coop/inbox. Chi gioca gia' la
     // giornata in una stanza non ne riceve altri.
     const when = today()
-    const [mia, sfide, aperta, quiz, duello, indovina, apertaIndovina, tavolo, apertaTavolo, nomi, apertaNomi] =
-      await Promise.all([
+    const [
+      mia,
+      sfide,
+      aperta,
+      quiz,
+      duello,
+      indovina,
+      apertaIndovina,
+      tavolo,
+      apertaTavolo,
+      nomi,
+      apertaNomi,
+      compagnia,
+    ] = await Promise.all([
       participation(db, io, when.puzzleNumber),
       sfideRicevute(db, io, adesso),
       partitaAperta(db, io),
@@ -71,6 +85,7 @@ export const presenzaRoutes = new Hono<AppEnv>()
       partitaTavoloAperta(db, io, adesso),
       invitiNomi(db, io, adesso),
       sfidaNomiAperta(db, io, adesso),
+      invitiCompagnia(db, io, when.puzzleNumber),
     ])
     const coop: CoopInvite[] = mia?.spectated ? [] : await pendingInvites(db, io, when)
 
@@ -97,5 +112,6 @@ export const presenzaRoutes = new Hono<AppEnv>()
       // Come per gli altri: chi e' gia' in una sfida a Nomi, cose e città non ne riceve altre.
       nomi: apertaNomi ? [] : nomi,
       partitaNomi: apertaNomi && latoInNomi ? await sfidaNomiBreve(db, apertaNomi, latoInNomi) : null,
+      compagnia,
     })
   })

@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { msToNextPuzzle } from '../../shared/daily'
 import {
-  JOLLY,
   MOSSE_PER_GIORNATA,
   TESSERE_LEGGIO,
   leggioDa,
@@ -10,7 +9,6 @@ import {
   tabelloneDa,
   validaPosa,
   type Mossa,
-  type Posa,
 } from '../../shared/scarabeo'
 import type { ScarabeoState, ScarabeoSummary, StatisticheScarabeoLibero } from '../../shared/types'
 import { MOSSE_A_TESTA, LIVELLI, statoLibera, type Livello } from '../../shared/scarabeo-computer'
@@ -24,65 +22,39 @@ import {
   apriPartita,
   computerDelGiorno,
   giornata,
+  leggiPosa,
   mosseDi,
   statisticheLibere,
   statoDa,
+  verificaLeggio,
+  type ComputerRow,
+  type PartitaRow,
 } from '../lib/scarabeoStore'
+import { compagniaBreve, pagaOspiti } from '../lib/compagniaStore'
 import { paroleSconosciute } from '../lib/dizionario'
 import { riepilogoScarabeo } from '../lib/riepiloghi'
 
 /**
- * Le posizioni arrivate dal client, ripulite.
+ * La partita di oggi di chi muove, con il riferimento del computer.
  *
- * Tutto quel che viene da fuori e' da trattare come sospetto: una posa con
- * coordinate finte o con una lettera che non e' sul leggio sarebbe un modo di
- * fabbricarsi un punteggio. La forma la controlla questa funzione, la legalita'
- * della mossa `validaPosa`, e il possesso delle tessere `verificaLeggio`.
+ * Chi gioca la giornata in compagnia non muove: la partita e' dell'host, e la
+ * sua resta chiusa — sono le stesse tessere, e le ha viste giocare.
  */
-function leggiPosa(body: unknown): Posa[] {
-  const posa = (body as { posa?: unknown })?.posa
-  if (!Array.isArray(posa) || posa.length === 0) {
-    fail(400, 'POSA_VUOTA', 'Non hai posato nessuna tessera.')
+async function perMuovere(db: D1Database, playerId: string): Promise<{ row: PartitaRow; computer: ComputerRow }> {
+  const quando = giornata()
+  const [row, computer] = await Promise.all([
+    apriPartita(db, playerId, quando),
+    computerDelGiorno(db, quando.puzzleNumber),
+  ])
+  if (row.in_compagnia) {
+    fail(409, 'GIOCATA_INSIEME', 'Oggi lo Scarabeo lo giochi in compagnia: le mosse sono di chi ti ha invitato.')
   }
-  if (posa.length > TESSERE_LEGGIO) {
-    fail(400, 'TROPPE_TESSERE', `Non puoi posare più di ${TESSERE_LEGGIO} tessere.`)
-  }
-
-  return posa.map((raw) => {
-    const p = raw as { r?: unknown; c?: unknown; lettera?: unknown; jolly?: unknown }
-    const r = Number(p.r)
-    const c = Number(p.c)
-    const lettera = String(p.lettera ?? '').toLowerCase()
-    if (!Number.isInteger(r) || !Number.isInteger(c) || lettera.length !== 1) {
-      fail(400, 'POSA_MALFORMATA', 'Una tessera posata non è valida.')
-    }
-    return { r, c, lettera, jolly: p.jolly === true }
-  })
+  return { row, computer }
 }
 
-/**
- * Le tessere posate devono essere quelle in mano.
- *
- * Un jolly conta come jolly, non come la lettera che rappresenta: altrimenti
- * chiunque potrebbe dichiarare jolly una tessera che non ha e giocarla per la
- * lettera che gli serve.
- */
-function verificaLeggio(leggio: readonly string[], posa: readonly Posa[]): void {
-  const mano = [...leggio]
-  for (const p of posa) {
-    const serve = p.jolly ? JOLLY : p.lettera
-    const i = mano.indexOf(serve)
-    if (i < 0) {
-      fail(
-        409,
-        'LEGGIO',
-        p.jolly
-          ? 'Non hai un jolly da giocare.'
-          : `Non hai la tessera "${p.lettera.toUpperCase()}".`,
-      )
-    }
-    mano.splice(i, 1)
-  }
+/** Dopo ogni mossa dell'host, chi gioca con lui ha i suoi punti; alla fine la giornata si chiude per tutti. */
+function aggiornaOspiti(db: D1Database, row: PartitaRow) {
+  return pagaOspiti(db, 'scarabeo', row.player_id, row.puzzle_number, row.punti, row.status === 'done')
 }
 
 export const scarabeoRoutes = new Hono<AppEnv>()
@@ -96,7 +68,10 @@ export const scarabeoRoutes = new Hono<AppEnv>()
       apriPartita(c.env.DB, c.get('player').id, quando),
       computerDelGiorno(c.env.DB, quando.puzzleNumber),
     ])
-    return c.json<ScarabeoState>(statoDa(row, computer, msToNextPuzzle()))
+    const stato = statoDa(row, computer, msToNextPuzzle())
+    // Chi gioca in compagnia lo deve sapere qui: la schermata lo porta alla partita dell'host.
+    if (row.in_compagnia) stato.inCompagnia = await compagniaBreve(c.env.DB, row.in_compagnia, row.assist_score)
+    return c.json<ScarabeoState>(stato)
   })
 
   /**
@@ -113,11 +88,7 @@ export const scarabeoRoutes = new Hono<AppEnv>()
   /** Gioca una posa. */
   .post('/mossa', async (c) => {
     const posa = leggiPosa(await c.req.json().catch(() => ({})))
-    const quando = giornata()
-    const [row, computer] = await Promise.all([
-      apriPartita(c.env.DB, c.get('player').id, quando),
-      computerDelGiorno(c.env.DB, quando.puzzleNumber),
-    ])
+    const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
 
     if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
       fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
@@ -155,6 +126,7 @@ export const scarabeoRoutes = new Hono<AppEnv>()
 
     const mossa: Mossa = { tipo: 'posa', posa }
     const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, esito.punti)
+    await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
 
@@ -165,16 +137,13 @@ export const scarabeoRoutes = new Hono<AppEnv>()
    * il limite di dieci mosse non vorrebbe dire niente.
    */
   .post('/passo', async (c) => {
-    const quando = giornata()
-    const [row, computer] = await Promise.all([
-      apriPartita(c.env.DB, c.get('player').id, quando),
-      computerDelGiorno(c.env.DB, quando.puzzleNumber),
-    ])
+    const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
     if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
       fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
     }
 
     const aggiornata = await aggiungiMossa(c.env.DB, row, computer, { tipo: 'passo' }, 0)
+    await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
 
@@ -190,11 +159,7 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     const chieste = Array.isArray(body.tessere) ? body.tessere.map((t) => String(t)) : []
     if (chieste.length === 0) fail(400, 'CAMBIO_VUOTO', 'Scegli almeno una tessera da cambiare.')
 
-    const quando = giornata()
-    const [row, computer] = await Promise.all([
-      apriPartita(c.env.DB, c.get('player').id, quando),
-      computerDelGiorno(c.env.DB, quando.puzzleNumber),
-    ])
+    const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
     if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
       fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
     }
@@ -211,6 +176,7 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     }
 
     const aggiornata = await aggiungiMossa(c.env.DB, row, computer, { tipo: 'cambio', tessere: chieste }, 0)
+    await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
 
@@ -222,11 +188,7 @@ export const scarabeoRoutes = new Hono<AppEnv>()
    * corso" fino a mezzanotte.
    */
   .post('/chiudi', async (c) => {
-    const quando = giornata()
-    const [row, computer] = await Promise.all([
-      apriPartita(c.env.DB, c.get('player').id, quando),
-      computerDelGiorno(c.env.DB, quando.puzzleNumber),
-    ])
+    const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
     if (row.status === 'done') {
       return c.json<ScarabeoState>(statoDa(row, computer, msToNextPuzzle()))
     }
@@ -243,13 +205,9 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     }
 
     const { punti } = rigioca(mosseDi(row))
-    return c.json<ScarabeoState>(
-      statoDa(
-        { ...row, status: 'done', score: punti, punti: puntiScarabeo(punti, computer.punti) },
-        computer,
-        msToNextPuzzle(),
-      ),
-    )
+    const chiusa: PartitaRow = { ...row, status: 'done', score: punti, punti: puntiScarabeo(punti, computer.punti) }
+    await aggiornaOspiti(c.env.DB, chiusa)
+    return c.json<ScarabeoState>(statoDa(chiusa, computer, msToNextPuzzle()))
   })
 
   /* ─────────────────────────  Le partite libere  ───────────────────────── */

@@ -1,6 +1,6 @@
 /** Tipi condivisi tra client React e Pages Functions. */
 
-import type { MossaGiocata } from './scarabeo'
+import type { Mossa, MossaGiocata } from './scarabeo'
 import type { Esito, IdNave, Nave } from './battaglia'
 import type { LivelloBattaglia } from './battaglia-computer'
 import type { CategoriaQuiz, ModoQuiz } from './quiz'
@@ -146,6 +146,8 @@ export interface ScarabeoState {
   computer: { punti: number; mosse: MossaGiocata[] | null }
   status: ScarabeoStatus
   msToNextPuzzle: number
+  /** La giornata si gioca in compagnia di qualcuno: la partita e' la sua. */
+  inCompagnia?: CompagniaBreve | null
 }
 
 /** Riepilogo per la card dell'hub. */
@@ -160,6 +162,8 @@ export interface ScarabeoSummary {
   mosseUsate: number
   mosseTotali: number
   msToNextPuzzle: number
+  /** La giornata si gioca in compagnia di qualcuno: i punti sono i suoi. */
+  inCompagnia?: CompagniaBreve | null
 }
 
 /** Le partite libere di Scarabeo contro il computer, per livello. */
@@ -191,6 +195,8 @@ export interface ScarabeoRow {
   oggi: number | null
   /** true se la giornata di oggi e' ancora aperta. */
   inCorso: boolean
+  /** I punti delle giornate giocate in compagnia di qualcun altro: a pari punti passa avanti chi ne ha meno. */
+  assist: number
 }
 
 export interface ScarabeoLeaderboard {
@@ -253,6 +259,8 @@ export interface CruciverbaState {
   /** La soluzione, solo a partita chiusa. */
   soluzione: string | null
   msToNextPuzzle: number
+  /** La giornata si gioca in compagnia di qualcuno: la partita e' la sua. */
+  inCompagnia?: CompagniaBreve | null
 }
 
 /** La risposta a una scrittura: poco, perché si salva a ogni parola. */
@@ -294,6 +302,8 @@ export interface CruciverbaSummary {
   punti: number
   tempoMs: number
   msToNextPuzzle: number
+  /** La giornata si gioca in compagnia di qualcuno: i punti sono i suoi. */
+  inCompagnia?: CompagniaBreve | null
 }
 
 export interface CruciverbaRow {
@@ -310,6 +320,8 @@ export interface CruciverbaRow {
   tempoMs: number
   /** true se oggi ha un cruciverba aperto e non ancora finito. */
   inCorso: boolean
+  /** I punti delle giornate giocate in compagnia di qualcun altro: a pari punti passa avanti chi ne ha meno. */
+  assist: number
 }
 
 export interface CruciverbaLeaderboard {
@@ -796,6 +808,8 @@ export interface PresenzaRisposta {
   nomi: InvitoNomi[]
   /** La sfida a Nomi, cose e città aperta. */
   partitaNomi: SfidaNomiBreve | null
+  /** Gli inviti a giocare in compagnia il cruciverba o lo Scarabeo di qualcuno. */
+  compagnia: InvitoCompagnia[]
 }
 
 /* ─────────────────────────────  Indovina chi  ──────────────────────── */
@@ -1804,3 +1818,129 @@ export interface InvitablePlayer {
   /** Già invitato in questa stanza. */
   invited: boolean
 }
+
+/* ─────────────────────────────  La compagnia  ─────────────────────────── */
+
+/**
+ * I giochi che si giocano in compagnia oltre al Wordle, che ha le sue tabelle:
+ * l'host gioca la classificata, gli invitati guardano e suggeriscono, e
+ * prendono il suo stesso punteggio.
+ */
+export type GiocoInCompagnia = 'cruciverba' | 'scarabeo'
+
+/** Le libere che si giocano in compagnia: uno gioca, gli altri guardano e suggeriscono, senza punti. */
+export type GiocoLiberoInCompagnia = 'wordle' | 'cruciverba' | 'scarabeo'
+
+export type ModalitaCompagnia = 'classificata' | 'libera'
+
+export type StatoOspite = 'invito' | 'dentro' | 'rifiutato'
+
+/** Un invitato, come lo vede l'host. */
+export interface OspiteCompagnia extends GiocatoreBreve {
+  stato: StatoOspite
+  /** Quanti suggerimenti ha mandato. */
+  suggerimenti: number
+}
+
+/**
+ * Quel che un invitato propone. Nel Wordle una parola, nel cruciverba una
+ * parola per una definizione; nello Scarabeo una posa per il turno dell'host,
+ * con le parole che forma e i punti che farebbe: il server l'ha gia'
+ * controllata sul tabellone, sul leggio e sul dizionario.
+ */
+export type PropostaCompagnia =
+  | { gioco: 'wordle'; parola: string }
+  | { gioco: 'cruciverba'; definizione: string; parola: string }
+  | { gioco: 'scarabeo'; turno: number; posa: CellaPiena[]; parole: string[]; punti: number }
+
+export interface SuggerimentoCompagnia {
+  id: string
+  da: GiocatoreBreve
+  createdAt: string
+  /** Gia' nella partita dell'host: la parola provata o scritta nella griglia, la posa giocata. */
+  usato: boolean
+  proposta: PropostaCompagnia
+}
+
+/** La compagnia dell'host: chi ha invitato e che cosa gli suggeriscono. */
+export interface CompagniaHost {
+  id: string
+  gioco: GiocoLiberoInCompagnia
+  modalita: ModalitaCompagnia
+  /** La giornata, nella classificata. */
+  puzzleNumber: number | null
+  maxOspiti: number
+  ospiti: OspiteCompagnia[]
+  /** Dal piu' recente. */
+  suggerimenti: SuggerimentoCompagnia[]
+}
+
+/** Chi si puo' invitare. */
+export interface InvitabileCompagnia extends GiocatoreBreve {
+  /** Ha gia' giocato la classificata di oggi: accettando guarda e suggerisce, ma i punti restano i suoi. */
+  haGiocato: boolean
+  /** Gli e' gia' arrivato l'invito, o e' gia' dentro. */
+  invitato: boolean
+  /** Gioca gia' in compagnia di qualcun altro, o ha gia' qualcuno nella sua: non si puo' invitare. */
+  occupato: boolean
+  /** Ha l'app aperta adesso: l'invito lo vede subito. */
+  online: boolean
+}
+
+/** Un invito arrivato, per il giro di controllo. */
+export interface InvitoCompagnia {
+  compagniaId: string
+  gioco: GiocoLiberoInCompagnia
+  modalita: ModalitaCompagnia
+  puzzleNumber: number | null
+  host: GiocatoreBreve
+  createdAt: string
+  /**
+   * true se accettando la classificata di oggi diventa questa partita, con il
+   * punteggio dell'host. false se l'ha gia' giocata, o se e' una libera: puo'
+   * dare una mano, e i suoi punti restano quelli.
+   */
+  conta: boolean
+  /** Aveva cominciato la sua: accettando, quel che ha fatto non conta piu'. */
+  cominciata: boolean
+}
+
+/** La compagnia di cui fa parte la giornata di un invitato: per la sua schermata e la carta del giorno. */
+export interface CompagniaBreve {
+  id: string
+  host: GiocatoreBreve
+  /** Il punteggio dell'host, quando c'e'. */
+  punti: number | null
+}
+
+/** Lo Scarabeo libero dell'host, che sta nel suo telefono: il seme, il livello e le mosse di tutti e due. */
+export interface ScarabeoLiberoCondiviso {
+  seme: number
+  livello: 'facile' | 'normale' | 'difficile'
+  mosse: Mossa[]
+}
+
+interface VistaCompagniaComune {
+  compagniaId: string
+  modalita: ModalitaCompagnia
+  host: GiocatoreBreve
+  /** false quando l'host ha chiuso la compagnia. */
+  aperta: boolean
+  /** La giornata di chi guarda e' questa partita: prende il punteggio dell'host. */
+  conta: boolean
+  /** Il punteggio di chi guarda, quando c'e'. */
+  mioPunteggio: number | null
+  /** Quelli di tutti gli invitati, dal piu' recente. */
+  suggerimenti: SuggerimentoCompagnia[]
+}
+
+/**
+ * La partita dell'host vista da un invitato: lo stesso stato che vede l'host,
+ * soluzione compresa solo alla fine. Nelle libere la partita puo' mancare,
+ * finché l'host non ne apre una.
+ */
+export type VistaCompagnia =
+  | (VistaCompagniaComune & { gioco: 'cruciverba'; partita: CruciverbaState | null })
+  | (VistaCompagniaComune & { gioco: 'scarabeo'; modalita: 'classificata'; partita: ScarabeoState })
+  | (VistaCompagniaComune & { gioco: 'scarabeo'; modalita: 'libera'; partita: ScarabeoLiberoCondiviso | null })
+  | (VistaCompagniaComune & { gioco: 'wordle'; partita: WordleLiberaState | null })

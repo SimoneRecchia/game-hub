@@ -15,6 +15,7 @@ import { tavoloRoutes } from './routes/tavolo'
 import { presenzaRoutes } from './routes/presenza'
 import { leaderboardRoutes } from './routes/leaderboard'
 import { coopRoutes } from './routes/coop'
+import { compagniaRoutes } from './routes/compagnia'
 import { oggiRoutes } from './routes/oggi'
 import { ruotaRoutes } from './routes/ruota'
 import { slotRoutes } from './routes/slot'
@@ -65,6 +66,7 @@ export function createApp() {
   app.route('/presenza', presenzaRoutes)
   app.route('/leaderboard', leaderboardRoutes)
   app.route('/coop', coopRoutes)
+  app.route('/compagnia', compagniaRoutes)
   app.route('/oggi', oggiRoutes)
   app.route('/ruota', ruotaRoutes)
   app.route('/slot', slotRoutes)

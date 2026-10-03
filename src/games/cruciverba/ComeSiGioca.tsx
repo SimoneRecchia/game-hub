@@ -1,5 +1,6 @@
 import { Sheet } from '@/components/Sheet'
 import { pluralize } from '@/lib/format'
+import { MAX_COOP_GUESTS } from '@shared/config'
 import { COSTO_ERRORE, COSTO_SVELATA, PUNTI_COMPLETO } from '@shared/cruciverba'
 import './ComeSiGioca.css'
 
@@ -56,6 +57,10 @@ export function ComeSiGiocaCruciverba({ open, onClose }: { open: boolean; onClos
             </li>
             <li>
               <strong>Libera</strong>: uno schema a caso. Non conta per la classifica.
+            </li>
+            <li>
+              <strong>In compagnia</strong>: inviti fino a {MAX_COOP_GUESTS} persone a suggerirti parole. Chi gioca
+              con te prende il tuo stesso punteggio.
             </li>
           </ul>
         </section>

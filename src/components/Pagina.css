@@ -145,6 +145,17 @@ html:not([data-transizione]) .pagina {
   white-space: nowrap;
 }
 
+/*
+ * Con tre bottoni a destra, su un telefono stretto, del nome della schermata di
+ * prima resterebbe una lettera: meglio la freccia sola, come fa iOS quando il
+ * titolo non lascia posto.
+ */
+@media (max-width: 380px) {
+  .pagina__barra-dentro:has(.pagina__lato--destra > :nth-child(3)) .pagina__indietro-nome {
+    display: none;
+  }
+}
+
 /* ───────────────────────────  Il corpo  ─────────────────────────── */
 
 .pagina__corpo {

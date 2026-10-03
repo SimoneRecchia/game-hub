@@ -15,6 +15,7 @@ import { PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   BattagliaSummary,
+  CompagniaBreve,
   CruciverbaSummary,
   FortunaRisposta,
   GiocoClassificato,
@@ -94,7 +95,31 @@ export function statoWordle(s: WordleSummary): StatoOggi {
   }
 }
 
+/**
+ * La giornata giocata in compagnia di qualcuno: la carta porta alla sua
+ * partita, e dice con chi. I punti sono quelli dell'host.
+ */
+function inCompagnia(
+  gioco: 'scarabeo' | 'cruciverba',
+  fatta: boolean,
+  insieme: CompagniaBreve,
+  punti: number | null,
+): StatoOggi {
+  const con = `Con ${insieme.host.displayName}`
+  return {
+    gioco,
+    fase: fatta ? 'fatta' : 'in-corso',
+    titolo: 'In compagnia',
+    dettaglio: punti !== null && (fatta || gioco === 'scarabeo') ? `${con} · ${punti} punti` : con,
+    punti,
+    avanzamento: fatta ? 1 : 0.5,
+    azione: fatta ? 'Rivedi' : 'Torna alla partita',
+    a: ROTTE.insiemeA(gioco, insieme.id),
+  }
+}
+
 export function statoScarabeo(s: ScarabeoSummary): StatoOggi {
+  if (s.inCompagnia) return inCompagnia('scarabeo', s.status === 'done', s.inCompagnia, s.puntiClassifica)
   const base = {
     gioco: 'scarabeo' as const,
     avanzamento: s.status === 'done' ? 1 : s.mosseUsate / s.mosseTotali,
@@ -132,6 +157,9 @@ export function statoScarabeo(s: ScarabeoSummary): StatoOggi {
 }
 
 export function statoCruciverba(s: CruciverbaSummary): StatoOggi {
+  if (s.inCompagnia) {
+    return inCompagnia('cruciverba', s.status === 'done', s.inCompagnia, s.status === 'done' ? s.punti : null)
+  }
   const base = {
     gioco: 'cruciverba' as const,
     avanzamento: s.status === 'done' ? 1 : s.bianche > 0 ? s.scritte / s.bianche : 0,

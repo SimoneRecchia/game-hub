@@ -4,7 +4,7 @@ import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, Elenco, Riga, Sezione, Tacche, Vuoto, useFesta } from '@/components/Elementi'
-import { IconComputer, IconFlag, IconInfo, IconList, IconRefresh } from '@/components/Icons'
+import { IconComputer, IconInfo, IconList, IconPeople, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { IconaScheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
@@ -18,6 +18,10 @@ import {
   adesivoMossa,
 } from '@/games/scarabeo/adesivi'
 import { useScarabeoLibero, type ScarabeoLiberoController } from '@/games/scarabeo/useScarabeoLibero'
+import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
+import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
+import { etichettaScarabeo } from '@/games/compagnia/etichette'
+import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { usePlayer } from '@/lib/auth'
 import { LIVELLI, MOSSE_A_TESTA, type Livello } from '@shared/scarabeo-computer'
 import './Scarabeo.css'
@@ -38,8 +42,12 @@ export default function ScarabeoLibero() {
   const [storia, setStoria] = useState(false)
   const [risultato, setRisultato] = useState(false)
   const [abbandono, setAbbandono] = useState(false)
+  const [compagniaAperta, setCompagniaAperta] = useState(false)
   const stato = g.stato
   const finita = stato?.finita ?? false
+  // La partita sta nel telefono: chi guarda la riceve a ogni mossa, e niente quando si abbandona.
+  const compagnia = useCompagniaHost('scarabeo', 'libera', true, compagniaAperta, { stato: g.partita })
+  const dentro = compagnia.compagnia?.ospiti.filter((o) => o.stato === 'dentro').length ?? 0
   const festa = useFesta(stato ? !stato.finita : null, risultato && finita && stato?.esito === 'vinta')
 
   const io = usePlayer()
@@ -107,14 +115,12 @@ export default function ScarabeoLibero() {
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={
         <>
+          <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setCompagniaAperta(true)} badge={dentro}>
+            <IconPeople size={21} />
+          </BottoneBarra>
           <BottoneBarra etichetta="Le mosse" onClick={() => setStoria(true)}>
             <IconList size={20} />
           </BottoneBarra>
-          {!finita && (
-            <BottoneBarra etichetta="Abbandona la partita" onClick={() => setAbbandono(true)}>
-              <IconFlag size={19} />
-            </BottoneBarra>
-          )}
           <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
             <IconInfo size={21} />
           </BottoneBarra>
@@ -141,28 +147,44 @@ export default function ScarabeoLibero() {
           restanti={stato.restanti}
           evidenziate={g.ultimaDelComputer}
           testa={
-            <Tabellino
-              iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
-              iconaAltro={
-                <IconaScheda>
-                  <IconComputer size={12} />
-                </IconaScheda>
-              }
-              avviso={g.messaggio}
-              posa={g.anteprima}
-              sconosciute={g.sconosciute}
-              io={stato.mieiPunti}
-              altro={stato.puntiComputer}
-              nomeAltro="Computer"
-              notaAltro={NOMI[livello].toLowerCase()}
-              turno={turno}
-              sotto={
-                finita
-                  ? 'Partita finita'
-                  : `Mossa ${Math.min(stato.mieMosse + (stato.turno === 'io' ? 1 : 0), MOSSE_A_TESTA)} di ${MOSSE_A_TESTA} · ${stato.restanti} nel sacchetto`
-              }
-              onApri={() => setStoria(true)}
-            />
+            <>
+              <Tabellino
+                iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
+                iconaAltro={
+                  <IconaScheda>
+                    <IconComputer size={12} />
+                  </IconaScheda>
+                }
+                avviso={g.messaggio}
+                posa={g.anteprima}
+                sconosciute={g.sconosciute}
+                io={stato.mieiPunti}
+                altro={stato.puntiComputer}
+                nomeAltro="Computer"
+                notaAltro={NOMI[livello].toLowerCase()}
+                turno={turno}
+                sotto={
+                  finita
+                    ? 'Partita finita'
+                    : `Mossa ${Math.min(stato.mieMosse + (stato.turno === 'io' ? 1 : 0), MOSSE_A_TESTA)} di ` +
+                      `${MOSSE_A_TESTA} · ${stato.restanti} nel sacchetto`
+                }
+                onApri={() => setStoria(true)}
+              />
+              {/* Le pose suggerite da chi guarda: toccarne una la mette sul tabellone, e giocarla resta a te. */}
+              {!finita && stato.turno === 'io' && (
+                <Suggerimenti
+                  suggerimenti={compagnia.compagnia?.suggerimenti ?? []}
+                  etichetta={etichettaScarabeo}
+                  onScegli={(s) => {
+                    if (s.proposta.gioco === 'scarabeo' && !g.proponi(s.proposta.posa)) {
+                      g.avvisa('Quelle tessere non sono più sul leggio.')
+                    }
+                  }}
+                  disabled={g.pensa}
+                />
+              )}
+            </>
           }
           fine={finita ? <FineLibera g={g} onRisultato={() => setRisultato(true)} /> : undefined}
           onGioca={g.gioca}
@@ -178,7 +200,36 @@ export default function ScarabeoLibero() {
           mosse={stato.giocate.map((m) => ({ ...m, autore: m.mia ? 'Tu' : 'Computer' }))}
           vuoto="Nessuna mossa, per ora."
         />
+        {/* Abbandonare sta qui, come chiudere la giornata nella classificata: si decide guardando le mosse. */}
+        {!finita && (
+          <div className="scr-storia__chiudi">
+            <Button
+              variant="tinted"
+              onClick={() => {
+                setStoria(false)
+                setAbbandono(true)
+              }}
+            >
+              Abbandona la partita
+            </Button>
+          </div>
+        )}
       </Sheet>
+
+      <PannelloCompagnia
+        gioco="scarabeo"
+        modalita="libera"
+        open={compagniaAperta}
+        onClose={() => setCompagniaAperta(false)}
+        compagnia={compagnia.compagnia}
+        giocatori={compagnia.giocatori}
+        occupato={compagnia.occupato}
+        errore={compagnia.errore}
+        onInvita={compagnia.invita}
+        onRitira={compagnia.ritira}
+        onCaricaGiocatori={compagnia.caricaGiocatori}
+        onChiudi={compagnia.chiudi}
+      />
 
       <Sheet open={abbandono} onClose={() => setAbbandono(false)} title="Abbandonare la partita?">
         <p className="scr-storia__lede">Non conterà nelle statistiche.</p>
