@@ -1810,10 +1810,9 @@
 /*
  * La pancia, sotto il banco: un vetro illuminato nella cornice d'oro, con i
  * raggi che girano — piano in attesa, svelti mentre i rulli girano, d'oro per
- * una vincita — e la stella dove si incontrano. Non dice niente: le regole e
- * le categorie del giorno stanno nel foglio della "i". Prende l'altezza che
- * avanza, e quel che ci sta dentro si misura su di lei (e' un contenitore):
- * troppo bassa, resta solo la luce.
+ * una vincita. Non dice niente: le regole e le categorie del giorno stanno nel
+ * foglio della "i". Prende l'altezza che avanza, e i raggi si misurano su di
+ * lei (e' un contenitore).
  */
 .slot-pancia {
   min-height: 0;
@@ -1858,49 +1857,6 @@
 @keyframes slot-raggi {
   to {
     rotate: 360deg;
-  }
-}
-
-/* La stella: l'oro e lo spessore delle lettere dell'insegna, con lo stesso alone; per una vincita lampeggia. */
-.slot-pancia__stella {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  height: min(78cqh, 34cqw);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  overflow: visible;
-  filter: drop-shadow(0 0 calc(var(--u) * 2) rgba(255, 79, 163, 0.9));
-}
-
-.slot-pancia__spessore {
-  fill: #7a3c00;
-  stroke: #7a3c00;
-  stroke-width: 3;
-  stroke-linejoin: round;
-}
-
-.slot-pancia__faccia {
-  fill: url(#slot-pancia-oro);
-  stroke: #fff8d6;
-  stroke-width: 3;
-  stroke-linejoin: round;
-  paint-order: stroke;
-}
-
-.slot-sala:is(.is-vinto, .is-palco, .is-jackpot) .slot-pancia__stella {
-  animation: slot-stella 0.32s steps(2) infinite;
-}
-
-@keyframes slot-stella {
-  50% {
-    filter: drop-shadow(0 0 calc(var(--u) * 3) #fff6c2) brightness(1.4);
-  }
-}
-
-@container (max-height: 24px) {
-  .slot-pancia__stella {
-    display: none;
   }
 }
 
@@ -2135,7 +2091,6 @@
   .slot-display__invito,
   .slot-gira,
   .slot-pancia__raggi,
-  .slot-pancia__stella,
   .slot-lustro::before,
   .slot-vassoio__moneta {
     animation: none !important;

@@ -746,40 +746,15 @@ function TabellaBreve() {
 }
 
 /**
- * La stella della pancia, in un quadrato di cento: cinque punte piene, e il
- * centro un poco sotto, perché stia in mezzo.
- */
-const STELLA = Array.from({ length: 10 }, (_, k) => {
-  const a = -Math.PI / 2 + (Math.PI * k) / 5
-  const r = k % 2 === 0 ? 44 : 20
-  return `${(50 + r * Math.cos(a)).toFixed(1)},${(54 + r * Math.sin(a)).toFixed(1)}`
-}).join(' ')
-
-/**
  * La pancia del mobile, sotto il banco: il vetro illuminato con i raggi, come
- * sui mobili veri, e dove i raggi si incontrano una stella d'oro in rilievo,
- * come le lettere dell'insegna. E' disegno e basta: le regole e le categorie
- * del giorno le dice il foglio della "i".
+ * sui mobili veri. E' disegno e basta: le regole e le categorie del giorno le
+ * dice il foglio della "i".
  */
 function Pancia() {
   return (
     <div className="slot-pancia" aria-hidden="true">
       <div className="slot-pancia__vetro">
         <span className="slot-pancia__raggi" />
-        <svg className="slot-pancia__stella" viewBox="0 0 100 100">
-          <defs>
-            <linearGradient id="slot-pancia-oro" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#fffbe0" />
-              <stop offset="0.45" stopColor="#ffd84a" />
-              <stop offset="0.7" stopColor="#e89a10" />
-              <stop offset="1" stopColor="#fff0a0" />
-            </linearGradient>
-          </defs>
-          {[5, 3.5, 2].map((d) => (
-            <polygon key={d} points={STELLA} transform={`translate(0 ${d})`} className="slot-pancia__spessore" />
-          ))}
-          <polygon points={STELLA} className="slot-pancia__faccia" />
-        </svg>
       </div>
     </div>
   )
