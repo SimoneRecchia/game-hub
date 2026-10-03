@@ -1,6 +1,6 @@
 /* ─────────────────────────  Chi c'e'  ───────────────────────── */
 
-/* L'eroe del Salotto (Vetrina.css): gli amici online, in fila, con quel che fanno. */
+/* L'eroe delle Libere (Vetrina.css): gli amici online, in fila, con quel che fanno. */
 .chi-ce {
   min-height: 176px;
 }
@@ -148,7 +148,7 @@
 
 /* ─────────────────────────  Le partite in corso  ───────────────────────── */
 
-.salotto__in-corso {
+.libere__in-corso {
   display: grid;
   gap: var(--sp-2);
   margin: 0;
@@ -200,8 +200,8 @@
 .in-corso__turno {
   padding: 3px 9px;
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--salotto) 15%, transparent);
-  color: var(--salotto);
+  background: color-mix(in srgb, var(--libere) 15%, transparent);
+  color: var(--libere);
   font-size: var(--text-caption-1);
   font-weight: 800;
   white-space: nowrap;
@@ -219,9 +219,9 @@
  * nome, su un fondo appena tinto del colore del gioco. Tre per riga sul
  * telefono, di piu' dove c'e' posto; le colonne sono `minmax(0, 1fr)`, perché
  * "Battaglia navale" non allarghi la sua. Sotto il dito o il puntatore la
- * copertina galleggia un poco: e' il Salotto, si gioca senza fretta.
+ * copertina galleggia un poco: nelle Libere si gioca senza fretta.
  */
-.salotto__tessere {
+.libere__tessere {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-3);
@@ -231,18 +231,18 @@
 }
 
 @media (min-width: 560px) {
-  .salotto__tessere {
+  .libere__tessere {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 900px) {
-  .salotto__tessere {
+  .libere__tessere {
     grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 
-.salotto-tessera {
+.libere-tessera {
   position: relative;
   overflow: hidden;
   display: flex;
@@ -265,11 +265,11 @@
     box-shadow var(--dur-base) var(--ease-out);
 }
 
-.salotto-tessera:active {
+.libere-tessera:active {
   transform: scale(0.95);
 }
 
-.salotto-tessera .copertina {
+.libere-tessera .copertina {
   --lato: 54px;
   flex: none;
   box-shadow: 0 8px 18px color-mix(in srgb, var(--c2) 26%, transparent);
@@ -277,19 +277,19 @@
 }
 
 @media (hover: hover) {
-  .salotto-tessera:hover {
+  .libere-tessera:hover {
     transform: translateY(-3px);
     box-shadow:
       var(--shadow-md),
       inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 30%, transparent);
   }
 
-  .salotto-tessera:hover .copertina {
+  .libere-tessera:hover .copertina {
     transform: translateY(-3px) rotate(-4deg) scale(1.05);
   }
 }
 
-.salotto-tessera__nome {
+.libere-tessera__nome {
   font-size: var(--text-footnote);
   font-weight: 700;
   line-height: 1.25;

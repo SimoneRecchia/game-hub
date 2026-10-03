@@ -9,7 +9,7 @@ import { Pagina } from '@/components/Pagina'
 export default function NotFound() {
   const { vai } = useNavigazione()
   return (
-    <Pagina titolo="Non trovata" indietro={{ a: ROTTE.home, etichetta: 'Arena' }}>
+    <Pagina titolo="Non trovata" indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}>
       <Vuoto
         icona={<Marchio lato={64} animato={false} />}
         titolo="Questa pagina non esiste"

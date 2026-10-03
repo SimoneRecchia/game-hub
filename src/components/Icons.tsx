@@ -2,7 +2,8 @@
  * Icone inline in stile SF Symbols: tratto 1.8, terminazioni tonde.
  * Inline invece che da libreria per non aggiungere peso al bundle.
  */
-import type { SVGProps } from 'react'
+import { useId, type SVGProps } from 'react'
+import { gameDate } from '@shared/daily'
 
 type IconProps = SVGProps<SVGSVGElement> & { size?: number }
 
@@ -47,56 +48,107 @@ export const IconFortuna = (p: IconProps) => (
   </Svg>
 )
 
+/**
+ * Pieno, le foglie sono staccate e un po' piu' grandi, senza il tratto: col
+ * tratto si toccavano al centro, e il quadrifoglio diventava una macchia.
+ */
+const fogliaPiena = (g: number) =>
+  `rotate(${g} 12 12) translate(0 -0.8) translate(12 11.4) scale(1.18) translate(-12 -11.4)`
+
 export const IconFortunaFill = (p: IconProps) => (
   <Svg {...p}>
     {[0, 90, 180, 270].map((g) => (
-      <path key={g} d={FOGLIA} transform={`rotate(${g} 12 12)`} fill="currentColor" />
+      <path key={g} d={FOGLIA} transform={fogliaPiena(g)} fill="currentColor" stroke="none" />
     ))}
-    <path d="M13 13c1.6 2.4 2.5 4.8 2.3 7.6" />
+    <path d="M12.9 12.9c1.7 2.5 2.6 5 2.4 7.7" strokeWidth={2} />
   </Svg>
 )
 
-/** La medaglia dell'Arena: il nastro, il disco e la stella. */
-const STELLA = 'M12 11.6l1.05 2.13 2.35.34-1.7 1.66.4 2.34L12 17l-2.1 1.07.4-2.34-1.7-1.66 2.35-.34Z'
+/**
+ * Le icone piene con dei buchi — il numero del calendario, la croce e i tasti
+ * del controller — li fanno con una maschera, che vuole un id solo suo: la
+ * stessa icona sta nella tab bar e nella barra laterale.
+ */
+function useMaschera(nome: string) {
+  return `${nome}${useId().replace(/[^\w-]/g, '')}`
+}
 
-export const IconArena = (p: IconProps) => (
+/**
+ * Il giorno di oggi, per il calendario delle Giornaliere: cambia quando
+ * cambiano le classificate. Due cifre sono un po' piu' piccole, altrimenti
+ * toccano i lati.
+ */
+function Giorno({ colore }: { colore: string }) {
+  const giorno = Number(gameDate().slice(8, 10))
+  const due = giorno > 9
+  return (
+    <text
+      x="12"
+      y={due ? 17.5 : 17.9}
+      textAnchor="middle"
+      fontSize={due ? 9.4 : 10.5}
+      fontWeight="800"
+      fill={colore}
+      stroke="none"
+      style={{ fontFamily: 'var(--font-rounded)' }}
+    >
+      {giorno}
+    </text>
+  )
+}
+
+/** Il calendario delle Giornaliere, con il giorno di oggi: le classificate sono quelle di oggi. */
+export const IconGiornaliere = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M8.6 3.2 6.4 9.2M15.4 3.2l2.2 6" />
-    <path d="M8.6 3.2h6.8" />
-    <circle cx="12" cy="15" r="6" />
-    <path d={STELLA} strokeWidth={1.4} />
+    <rect x="3.5" y="5" width="17" height="15.5" rx="3" />
+    <path d="M8 3v4M16 3v4" />
+    <Giorno colore="currentColor" />
   </Svg>
 )
 
-export const IconArenaFill = (p: IconProps) => (
+export function IconGiornaliereFill(p: IconProps) {
+  const id = useMaschera('giorno')
+  return (
+    <Svg {...p}>
+      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+        <rect width="24" height="24" fill="#fff" stroke="none" />
+        <Giorno colore="#000" />
+      </mask>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="3" fill="currentColor" mask={`url(#${id})`} />
+      <path d="M8 2.6v2.6M16 2.6v2.6" />
+    </Svg>
+  )
+}
+
+/** Il controller delle Libere: la croce a sinistra, due tasti a destra. */
+const CONTROLLER =
+  'M7.5 6.5H16.5C18.9 6.5 20.4 8 20.9 10.4L21.8 15.2C22.2 17.4 20.9 19 19.1 19C17.9 19 17.2 18.4 16.5 17.5' +
+  'L15.6 16.3C15.3 15.9 14.8 15.7 14.3 15.7H9.7C9.2 15.7 8.7 15.9 8.4 16.3L7.5 17.5C6.8 18.4 6.1 19 4.9 19' +
+  'C3.1 19 1.8 17.4 2.2 15.2L3.1 10.4C3.6 8 5.1 6.5 7.5 6.5Z'
+
+export const IconLibere = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M8.6 3.2 6.4 9.2M15.4 3.2l2.2 6" />
-    <path d="M8.6 3.2h6.8" />
-    {/* Il disco pieno con la stella vuota: la stella e' un buco, cosi' prende il colore del fondo. */}
-    <path d={`M12 9a6 6 0 1 1 0 12 6 6 0 1 1 0-12Z${STELLA}`} fill="currentColor" fillRule="evenodd" />
+    <path d={CONTROLLER} />
+    <path d="M6 11.1h3M7.5 9.6v3" />
+    <circle cx="16.4" cy="12.2" r="1.05" fill="currentColor" stroke="none" />
+    <circle cx="18.2" cy="10.2" r="1.05" fill="currentColor" stroke="none" />
   </Svg>
 )
 
-/** La poltrona del Salotto: lo schienale, i braccioli, il cuscino e i piedini. */
-const POLTRONA =
-  'M3.8 11.2a2 2 0 0 1 2 2V15h12.4v-1.8a2 2 0 1 1 4 0v3.6c0 .9-.7 1.6-1.6 1.6' +
-  'H3.4c-.9 0-1.6-.7-1.6-1.6v-3.6a2 2 0 0 1 2-2Z'
-
-export const IconSalotto = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M6 11.6V8.2A3.2 3.2 0 0 1 9.2 5h5.6A3.2 3.2 0 0 1 18 8.2v3.4" />
-    <path d={POLTRONA} />
-    <path d="M5 18.4V20M19 18.4V20" />
-  </Svg>
-)
-
-export const IconSalottoFill = (p: IconProps) => (
-  <Svg {...p}>
-    <path d="M6 13V8.2A3.2 3.2 0 0 1 9.2 5h5.6A3.2 3.2 0 0 1 18 8.2V13Z" fill="currentColor" />
-    <path d={POLTRONA} fill="currentColor" />
-    <path d="M5 18.4V20M19 18.4V20" />
-  </Svg>
-)
+export function IconLibereFill(p: IconProps) {
+  const id = useMaschera('controller')
+  return (
+    <Svg {...p}>
+      <mask id={id} maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+        <rect width="24" height="24" fill="#fff" stroke="none" />
+        <path d="M5.6 11.1h3.8M7.5 9.2v3.8" stroke="#000" strokeWidth={1.7} />
+        <circle cx="16.4" cy="12.2" r="1.2" fill="#000" stroke="none" />
+        <circle cx="18.2" cy="10.2" r="1.2" fill="#000" stroke="none" />
+      </mask>
+      <path d={CONTROLLER} fill="currentColor" mask={`url(#${id})`} />
+    </Svg>
+  )
+}
 
 export const IconTrophy = (p: IconProps) => (
   <Svg {...p}>

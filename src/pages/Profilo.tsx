@@ -40,7 +40,7 @@ export default function Profilo() {
   const [suoni, impostaSuoni] = useSuoni()
   const amici = useAmiciOnline()
   const { state } = useLocation()
-  const da = (state as { da?: string } | null)?.da ?? 'Arena'
+  const da = (state as { da?: string } | null)?.da ?? 'Giornaliere'
   const [uscita, setUscita] = useState(false)
   const [fonti, setFonti] = useState(false)
   const [busy, setBusy] = useState(false)
