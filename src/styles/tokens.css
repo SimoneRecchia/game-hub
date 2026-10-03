@@ -253,6 +253,8 @@
   --forza4-2: #0b7f71;
   --go-1: #a8579a;
   --go-2: #612457;
+  --tris-1: #a6cf2c;
+  --tris-2: #4f8a12;
   --ruota-1: #ffb020;
   --ruota-2: #e5383b;
   --slot-1: #ff4fa3;
@@ -547,6 +549,19 @@
   --go-legno: light-dark(#deb66a, #b8914f);
   --go-linea: #3f2e10;
   --go-linea: light-dark(#3f2e10, #2a1e0a);
+  /* Il tris: un foglio a quadretti e due penne, la blu della croce e la rossa
+     del cerchio, come sul quaderno. In scuro il foglio si abbassa e
+     l'inchiostro si schiarisce. */
+  --tris-foglio: #fbfaf6;
+  --tris-foglio: light-dark(#fbfaf6, #24262d);
+  --tris-quadretti: #dde5f0;
+  --tris-quadretti: light-dark(#dde5f0, #30343e);
+  --tris-tratto: #3b404c;
+  --tris-tratto: light-dark(#3b404c, #c7cbd4);
+  --tris-croce: #2f5bd3;
+  --tris-croce: light-dark(#2f5bd3, #8aaaff);
+  --tris-cerchio: #d8433b;
+  --tris-cerchio: light-dark(#d8433b, #ff8a80);
 
   /* ---- Il cruciverba ----
      Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:

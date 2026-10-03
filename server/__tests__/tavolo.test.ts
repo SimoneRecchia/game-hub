@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { TEMPO_MOSSA_TRIS_MS } from '../../shared/tris'
 import type { InvitoConLink, PresenzaRisposta, SalaTavolo, VistaTavolo } from '../../shared/types'
 import { banco, type Giocatore } from './banco'
 
@@ -50,7 +51,7 @@ describe('i giochi da tavoliere fra amici, dalle API', () => {
     // Non si invita chi non e' online, e non a un gioco che non c'e'.
     expect((await chiama('POST', '/tavolo/inviti', anna, { gioco: 'forza4', playerId: bruno.id })).status).toBe(409)
     await online(chiama, bruno)
-    expect((await chiama('POST', '/tavolo/inviti', anna, { gioco: 'tris', playerId: bruno.id })).status).toBe(400)
+    expect((await chiama('POST', '/tavolo/inviti', anna, { gioco: 'briscola', playerId: bruno.id })).status).toBe(400)
 
     const invito = await chiama<{ id: string }>('POST', '/tavolo/inviti', anna, { gioco: 'forza4', playerId: bruno.id })
     expect((await online(chiama, bruno)).tavolo).toMatchObject([
@@ -290,5 +291,53 @@ describe('i giochi da tavoliere fra amici, dalle API', () => {
     expect((await vista(chiama, aperta.dati.partitaId, carla)).stato).toBe('in_corso')
     // Chi e' gia' in partita non ne apre un'altra.
     expect((await chiama('POST', '/tavolo/inviti', carla, { gioco: 'forza4' })).status).toBe(409)
+  })
+
+  it('nel tris ogni mossa ha il suo tempo, tranne la prima di ciascuno', async () => {
+    const { chiama, giocatore, db } = banco()
+    const anna = await giocatore('anna')
+    const bruno = await giocatore('bruno')
+    const id = await partita(chiama, anna, bruno, 'tris')
+    const { primo, secondo } = await colori(chiama, id, anna, bruno)
+    const indietro = (ms: number) =>
+      db.sqlite
+        .prepare('UPDATE tavolo_partite SET mossa_at = ? WHERE id = ?')
+        .run(new Date(Date.now() - ms).toISOString(), id)
+
+    // La prima mossa di ciascuno e' senza tempo: chi ha mandato l'invito arriva al tavoliere dopo.
+    indietro(60_000)
+    expect(await vista(chiama, id, primo)).toMatchObject({ stato: 'in_corso', tempo: null })
+    expect((await muovi(chiama, id, primo, '4')).status).toBe(200)
+    indietro(60_000)
+    expect((await muovi(chiama, id, secondo, '0')).status).toBe(200)
+
+    // Poi dieci secondi, piu' il margine della rete.
+    const conTempo = await vista(chiama, id, secondo)
+    expect(conTempo.tempo?.mossaMs).toBe(TEMPO_MOSSA_TRIS_MS)
+    expect(conTempo.tempo?.restanteMs).toBeGreaterThan(TEMPO_MOSSA_TRIS_MS - 2_000)
+    indietro(TEMPO_MOSSA_TRIS_MS + 1_000)
+    expect((await muovi(chiama, id, primo, '8')).status).toBe(200)
+    indietro(TEMPO_MOSSA_TRIS_MS + 10_000)
+    // La mossa arrivata tardi non passa: la partita e' gia' persa per il tempo.
+    const tardi = await muovi(chiama, id, secondo, '2')
+    expect(tardi.dati).toMatchObject({ stato: 'finita', vincitore: 'avversario', motivo: 'tempo', tempo: null })
+    expect(tardi.dati.mosse).toEqual(['4', '0', '8'])
+    expect((await vista(chiama, id, primo)).vincitore).toBe('io')
+  })
+
+  it('nel tris chi vede finire il suo tempo lo dice, e la partita e’ persa subito', async () => {
+    const { chiama, giocatore } = banco()
+    const anna = await giocatore('anna')
+    const bruno = await giocatore('bruno')
+    const id = await partita(chiama, anna, bruno, 'tris')
+    const { primo, secondo } = await colori(chiama, id, anna, bruno)
+    expect((await muovi(chiama, id, primo, '4')).status).toBe(200)
+    // Prima che ognuno abbia mosso una volta non c'e' tempo da perdere.
+    expect((await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/tempo`, secondo)).dati.stato).toBe('in_corso')
+    expect((await muovi(chiama, id, secondo, '0')).status).toBe(200)
+    // Lo dice solo chi ha la mossa.
+    expect((await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/tempo`, secondo)).dati.stato).toBe('in_corso')
+    const fine = (await chiama<VistaTavolo>('POST', `/tavolo/partite/${id}/tempo`, primo)).dati
+    expect(fine).toMatchObject({ stato: 'finita', vincitore: 'avversario', motivo: 'tempo' })
   })
 })

@@ -25,6 +25,11 @@
  *   /quiz/libera/:materia               le categorie e le opzioni di una materia
  *   /quiz/duello/:id                    una sfida a quiz fra due
  *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
+ *   /tris/classificata                  le cinque partite di oggi contro il computer
+ *   /tris/libera                        la sala: contro il computer, o con un amico
+ *   /tris/libera/computer               la partita contro il computer, nel telefono
+ *   /tris/libera/partita/:id            una partita con un amico
+ *   /tris/libera/invito/:codice         un invito arrivato con un link
  *   /fortuna                            i giochi d'azzardo: si puntano i punti delle classificate
  *   /crazy-time                         Crazy Time (/ruota ci porta)
  *   /slot                               la slot
@@ -63,6 +68,7 @@ export const SLUG: Record<GiocoClassificato, string> = {
   sudoku: 'sudoku',
   battaglia: 'battaglia-navale',
   quiz: 'quiz',
+  tris: 'tris',
 }
 
 export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null {
@@ -70,12 +76,17 @@ export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null 
   return trovato ?? null
 }
 
-/** Lo stesso per i giochi da tavoliere: "forza-4", non "forza4". */
+/**
+ * Lo stesso per i giochi da tavoliere: "forza-4", non "forza4". Il tris ha una
+ * classificata, e le sue partite fra amici e contro il computer sono la sua
+ * libera: la sala sta a /tris/libera.
+ */
 export const SLUG_TAVOLIERE: Record<GiocoTavoliere, string> = {
   scacchi: 'scacchi',
   dama: 'dama',
   forza4: 'forza-4',
   go: 'go',
+  tris: 'tris/libera',
 }
 
 export const ROTTE = {

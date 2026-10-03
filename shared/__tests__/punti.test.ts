@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { CASELLE, CASELLE_FLOTTA } from '../battaglia'
 import { COSTO_SVELATA, PUNTI_COMPLETO, punteggio as puntiCruciverba } from '../cruciverba'
-import { MASSIMI, PUNTI_MASSIMI, RIFERIMENTO_SCARABEO, puntiBattaglia, puntiQuiz, puntiScarabeo, puntiSudoku } from '../punti'
+import {
+  MASSIMI,
+  RIFERIMENTO_SCARABEO,
+  TETTI,
+  puntiBattaglia,
+  puntiQuiz,
+  puntiScarabeo,
+  puntiSudoku,
+  puntiTris,
+} from '../punti'
+import { PARTITE_TRIS } from '../tris'
 import { COSTO_ERRORE as ERRORE_SUDOKU, COSTO_SVELATA as SVELATA_SUDOKU } from '../sudoku'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
@@ -11,11 +21,17 @@ import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../sc
  * generale comincia a pesare un gioco piu' degli altri senza che nessuno lo
  * abbia deciso.
  */
-describe('una classificata vale al massimo cento punti', () => {
-  it('in tutti i giochi', () => {
+describe('ogni classificata vale al massimo il suo tetto', () => {
+  it('in tutti i giochi, e la formula di ognuno ci arriva', () => {
     for (const [gioco, massimo] of Object.entries(MASSIMI)) {
-      expect(massimo, gioco).toBe(PUNTI_MASSIMI)
+      expect(massimo, gioco).toBe(TETTI[gioco as keyof typeof TETTI])
     }
+    expect(Object.keys(MASSIMI).sort()).toEqual(Object.keys(TETTI).sort())
+  })
+
+  it('il tris vale meno degli altri: si gioca in due minuti', () => {
+    expect(TETTI.tris).toBeLessThan(TETTI.wordle)
+    expect(puntiTris(PARTITE_TRIS, 0)).toBe(TETTI.tris)
   })
 
   it('nel Wordle i bonus restano uno spareggio', () => {
@@ -87,6 +103,13 @@ describe('una giornata storta si recupera', () => {
     // Due cifre svelate e tre errori: una giornata con qualche aiuto resta sopra il novanta.
     expect(puntiSudoku(2, 3)).toBeGreaterThanOrEqual(90)
     expect(puntiSudoku(60, 0)).toBe(0)
+  })
+
+  it('nel tris una serie storta vale piu’ della meta’ di una perfetta, e finirla vale sempre qualcosa', () => {
+    expect(puntiTris(1, 2) / puntiTris(PARTITE_TRIS, 0)).toBeGreaterThan(0.5)
+    expect(puntiTris(0, 0)).toBeGreaterThan(0)
+    // Una vittoria vale due patte: la patta e' il risultato di chi gioca bene contro chi gioca bene.
+    expect(puntiTris(1, 0) - puntiTris(0, 0)).toBe(2 * (puntiTris(0, 1) - puntiTris(0, 0)))
   })
 
   it('nel quiz una partita storta vale circa la metà di una perfetta, e finirla vale sempre qualcosa', () => {

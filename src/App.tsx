@@ -45,6 +45,8 @@ import { GIOCHI_TAVOLIERE } from '@shared/tavolo'
  * schermata di prima resta finché la nuova non e' pronta; e il pezzo si
  * scarica quando il telefono e' libero, cosi' di solito c'e' gia'.
  */
+const caricaTris = () => import('./pages/Tris')
+const Tris = lazy(caricaTris)
 const caricaSala = () => import('./pages/TavoloSala')
 const caricaComputer = () => import('./pages/TavoloComputer')
 const caricaPartita = () => import('./pages/TavoloPartita')
@@ -80,7 +82,7 @@ const BlackjackTavolo = lazy(caricaTavoloBJ)
 function usePrecarica() {
   useEffect(() => {
     const t = window.setTimeout(() => {
-      const pezzi = [caricaSala, caricaComputer, caricaPartita, caricaInvito, caricaQuiz, caricaQuizLibero]
+      const pezzi = [caricaSala, caricaComputer, caricaPartita, caricaInvito, caricaQuiz, caricaQuizLibero, caricaTris]
       const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ]
       void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna].map((c) => c())).catch(() => {})
     }, 2_500)
@@ -89,8 +91,9 @@ function usePrecarica() {
 }
 
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
-const INVITO =
-  /^\/(?:battaglia-navale\/invito|quiz\/sfida|(?:indovina-chi|scacchi|dama|forza-4|go)\/invito)\/([a-z0-9]+)\/?$/
+const INVITO = new RegExp(
+  '^/(?:battaglia-navale/invito|quiz/sfida|(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera)/invito)/([a-z0-9]+)/?$',
+)
 
 export default function App() {
   const { player, checking, config } = useAuth()
@@ -162,6 +165,8 @@ export default function App() {
             <Route path="/quiz/duello/:id" element={<QuizDuello />} />
             <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
 
+            <Route path="/tris/classificata" element={<Tris />} />
+
             <Route path={ROTTE.fortuna} element={<Fortuna />} />
             <Route path={ROTTE.ruota} element={<Ruota />} />
             <Route path={ROTTE.slot} element={<Slot />} />
@@ -174,7 +179,8 @@ export default function App() {
             <Route path="/indovina-chi/invito/:codice" element={<IndovinaInvito />} />
             <Route path="/indovina-chi/set/:id" element={<IndovinaSet />} />
 
-            {/* Scacchi, dama, Forza 4 e go: la sala, contro il computer, la partita con un amico, l'invito. */}
+            {/* Scacchi, dama, Forza 4, go e tris: la sala, contro il computer, la partita con un amico, l'invito.
+                La sala del tris e' la sua libera, a /tris/libera. */}
             {GIOCHI_TAVOLIERE.flatMap((g) => {
               const a = ROTTE.tavolo(g)
               return [
