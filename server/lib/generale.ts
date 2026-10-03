@@ -27,6 +27,14 @@ import type {
 } from '../../shared/types'
 import { nowIso } from './http'
 
+/**
+ * I punti di una giornata di Scarabeo e di cruciverba: i propri, o quelli
+ * dell'host per chi l'ha giocata in sua compagnia. Nello Scarabeo contano
+ * anche le partite in corso, nel cruciverba solo le completate.
+ */
+const PUNTI_SCARABEO = 'CASE WHEN in_compagnia IS NULL THEN punti ELSE COALESCE(assist_score, 0) END'
+const PUNTI_CRUCIVERBA = "CASE WHEN status = 'done' THEN COALESCE(assist_score, score) ELSE 0 END"
+
 export interface TotaliGenerale {
   playerId: string
   nickname: string
@@ -110,10 +118,16 @@ export async function classificaGenerale(
       )
       .bind(da, a)
       .all<Parziale>(),
+    /*
+     * Lo Scarabeo e il cruciverba come nelle loro classifiche: la giornata
+     * giocata in compagnia vale i punti dell'host, e sono punti assist.
+     */
     db
       .prepare(
-        `SELECT player_id, COALESCE(SUM(punti), 0) AS punti,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS partite
+        `SELECT player_id,
+                COALESCE(SUM(${PUNTI_SCARABEO}), 0)                                         AS punti,
+                COALESCE(SUM(CASE WHEN in_compagnia IS NOT NULL THEN COALESCE(assist_score, 0) END), 0) AS assist,
+                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)                         AS partite
            FROM scarabeo_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
       )
       .bind(da, a)
@@ -121,8 +135,10 @@ export async function classificaGenerale(
     db
       .prepare(
         `SELECT player_id,
-                COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
+                COALESCE(SUM(${PUNTI_CRUCIVERBA}), 0)                                       AS punti,
+                COALESCE(SUM(CASE WHEN status = 'done' AND in_compagnia IS NOT NULL
+                                  THEN COALESCE(assist_score, 0) END), 0)                AS assist,
+                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)                         AS partite
            FROM cruciverba_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
       )
       .bind(da, a)
@@ -351,8 +367,8 @@ export async function puntiClassificateDi(db: D1Database, playerId: string, nume
          (SELECT COALESCE(SUM(CASE WHEN spectated = 1 THEN COALESCE(assist_score, 0)
                                    ELSE COALESCE(score, 0) END), 0)
             FROM wordle_games WHERE player_id = ?1 AND puzzle_number = ?2)
-       + (SELECT COALESCE(SUM(punti), 0) FROM scarabeo_games WHERE player_id = ?1 AND puzzle_number = ?2)
-       + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
+       + (SELECT COALESCE(SUM(${PUNTI_SCARABEO}), 0) FROM scarabeo_games WHERE player_id = ?1 AND puzzle_number = ?2)
+       + (SELECT COALESCE(SUM(${PUNTI_CRUCIVERBA}), 0)
             FROM cruciverba_games WHERE player_id = ?1 AND puzzle_number = ?2)
        + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
             FROM sudoku_games WHERE player_id = ?1 AND puzzle_number = ?2)

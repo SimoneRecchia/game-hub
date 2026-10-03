@@ -11,6 +11,7 @@ import { QuizGate } from './games/quiz/sfida/QuizGate'
 import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
 import { NomiGate } from './games/nomi/sfida/NomiGate'
+import { CompagniaGate } from './games/compagnia/CompagniaGate'
 import Giornaliere from './pages/Giornaliere'
 import Libere from './pages/Libere'
 import Amico from './pages/Amico'
@@ -25,8 +26,10 @@ import WordleLibero from './pages/WordleLibero'
 import WordleInsieme from './pages/WordleInsieme'
 import Scarabeo from './pages/Scarabeo'
 import ScarabeoLibero from './pages/ScarabeoLibero'
+import ScarabeoInsieme from './pages/ScarabeoInsieme'
 import Cruciverba from './pages/Cruciverba'
 import CruciverbaLibero from './pages/CruciverbaLibero'
+import CruciverbaInsieme from './pages/CruciverbaInsieme'
 import Sudoku from './pages/Sudoku'
 import SudokuLibero from './pages/SudokuLibero'
 import BattagliaClassificata from './pages/BattagliaClassificata'
@@ -153,6 +156,7 @@ export default function App() {
       <IndovinaGate />
       <TavoloGate />
       <NomiGate />
+      <CompagniaGate />
       <Shell>
         <Suspense fallback={null}>
           <Routes>
@@ -169,10 +173,12 @@ export default function App() {
 
             <Route path="/scarabeo/classificata" element={<Scarabeo />} />
             <Route path="/scarabeo/libera" element={<ScarabeoLibero />} />
+            <Route path="/scarabeo/insieme/:id" element={<ScarabeoInsieme />} />
 
             <Route path="/cruciverba/classificata" element={<Cruciverba />} />
             <Route path="/cruciverba/libera" element={<CruciverbaLibero />} />
             <Route path="/cruciverba/libera/:id" element={<Cruciverba />} />
+            <Route path="/cruciverba/insieme/:id" element={<CruciverbaInsieme />} />
 
             <Route path="/sudoku/classificata" element={<Sudoku />} />
             <Route path="/sudoku/libera" element={<SudokuLibero />} />

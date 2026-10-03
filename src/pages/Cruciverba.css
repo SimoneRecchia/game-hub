@@ -364,3 +364,10 @@
     width: min(100%, 420px);
   }
 }
+
+/* Chi guarda in compagnia: il bottone che suggerisce la parola, fra la definizione e la tastiera. */
+.cru-insieme__invio {
+  flex: none;
+  width: min(100%, 640px);
+  margin-inline: auto;
+}

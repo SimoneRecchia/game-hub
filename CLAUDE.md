@@ -136,6 +136,34 @@ distribuzione. `server/lib/leaderboard.ts` e `playerStats` devono restare
 d'accordo su entrambe le regole — il totale del profilo e' quello che si vede in
 classifica.
 
+**Il cruciverba e lo Scarabeo si giocano in compagnia come il Wordle.** Le
+regole sono le stesse — una partecipazione al giorno, lo stesso punteggio
+dell'host, a pari punti avanti chi ne ha fatti meno in compagnia — in tabelle
+loro (`compagnie`, `compagnie_ospiti`, `compagnie_suggerimenti`), fatte per i
+giochi che verranno: `gioco` non ha un `CHECK`, e il tipo `GiocoInCompagnia` lo
+tiene chiuso. Chi accetta prima di aver finito la propria partita ci lega la
+giornata (`in_compagnia`), e la sua partita rifiuta le scritture
+(`GIOCATA_INSIEME`): lo schema e le tessere sono gli stessi, e li ha visti
+giocare. Tre buchi della stanza del Wordle qui sono chiusi: si entra solo in una
+partita ancora in corso, perché un host che ha finito non pagherebbe più nessuno
+(`entraNellaGiornata` lo controlla nello stesso `UPDATE`); un host non gioca in
+compagnia di altri, ne' chi ha qualcuno nella propria; e chi e' dentro non si
+manda via, perché la sua giornata e' ormai quella. Il cruciverba paga a partita
+completata, lo Scarabeo a ogni mossa — li' anche una partita in corso ha i suoi
+punti in classifica — e `pagaOspiti` scrive un valore invece di sommarlo, cosi'
+due richieste ravvicinate non pagano due volte. Nel cruciverba il tempo di una
+giornata in compagnia non conta: era dell'host.
+
+**Un suggerimento non dice se e' giusto.** Nel cruciverba il server guarda solo
+la forma — una definizione che c'e', una parola lunga quanto lei — perché
+rifiutare le parole sbagliate vorrebbe dire rispondere a chi chiede la soluzione
+una parola alla volta. Nello Scarabeo invece la posa passa dagli stessi
+controlli di una mossa, sul tabellone e sul leggio dell'host e sul dizionario,
+cosi' l'host vede solo pose che puo' giocare, con i loro punti. Un invitato ha
+un suggerimento per chiave, la definizione o il turno dell'host, e se e' gia'
+nella partita non lo dice una colonna ma la partita stessa (`usato`). Toccarlo
+lo mette nella partita dell'host senza giocarlo: la mossa resta sua.
+
 **Nessuna parola con j, k, w, x, y** negli elenchi: la tastiera del gioco ha 21
 tasti e quelle lettere non sarebbero digitabili.
 
@@ -330,20 +358,21 @@ non fa record.
 
 **La presenza e' un giro solo per tutta l'app.** `PresenzaProvider`
 (`src/lib/presenza.tsx`) chiama `POST /api/presenza` ogni otto secondi a pagina
-visibile: dice al server dove si trova il giocatore e riporta gli inviti del
-Wordle in compagnia, le sfide a battaglia navale, a quiz, a Indovina chi, ai
-tavolieri e a Nomi, cose e città (rivincite comprese), le partite e il duello
-aperti. Gli avvisi fuori dalle rotte (`CoopGate`, `BattagliaGate`, `QuizGate`,
-`IndovinaGate`, `TavoloGate`, `NomiGate`) si danno la precedenza in
-quest'ordine: due insieme non si leggerebbero. Prima gli
+visibile: dice al server dove si trova il giocatore e riporta gli inviti a
+giocare in compagnia il Wordle, il cruciverba e lo Scarabeo, le sfide a
+battaglia navale, a quiz, a Indovina chi, ai tavolieri e a Nomi, cose e città
+(rivincite comprese), le partite e il duello aperti. Gli avvisi fuori dalle
+rotte (`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`, `TavoloGate`,
+`NomiGate`, `CompagniaGate`) si danno la precedenza in quest'ordine: due insieme
+non si leggerebbero, e gli inviti del cruciverba e dello Scarabeo, che valgono
+tutto il giorno, aspettano le sfide, che scadono in pochi minuti. Prima gli
 inviti del Wordle avevano il loro polling: due giri separati avrebbero
 raddoppiato le richieste, e le Pages Functions gratuite ne contano centomila al
 giorno per tutto il sito. La scrittura in `presenza` passa solo ogni venti
 secondi o al cambio di attivita' (`segnaPresenza`), e a pagina nascosta il giro
-si ferma: un telefono in tasca non e' "online" per chi vuole sfidarlo. Gli
-amici online invece non stanno nel giro: `GET /api/amici` lo chiedono solo il
-profilo, le Libere e il profilo di un amico, ogni `AMICI_POLL_MS` e mentre li
-si guarda.
+si ferma: un telefono in tasca non e' "online" per chi vuole sfidarlo. Gli amici
+online invece non stanno nel giro: `GET /api/amici` lo chiedono solo il profilo,
+le Libere e il profilo di un amico, ogni `AMICI_POLL_MS` e mentre li si guarda.
 
 **Nella battaglia navale la flotta dell'avversario non esce dal server.**
 `vistaPer` manda la propria flotta, i colpi con il loro esito e le navi gia'
@@ -821,12 +850,12 @@ racconta i tentativi di quel giorno, mentre la serie resta quella di adesso;
 "in corso" e la fiamma della serie si mostrano solo in un periodo che arriva a
 oggi, perché una partita rimasta aperta ieri non e' in corso, e' non finita.
 
-**A pari punti passa avanti chi ne ha fatti meno in compagnia.** Nel Wordle e
-nella generale lo spareggio sono gli assist, **al contrario** di prima: una
-giornata in compagnia vale quanto una da soli, ma fra due totali uguali vince chi
-li ha fatti con le proprie partite. `rankPlayers` e `ordinaGenerale` devono
-restare d'accordo; poi, nella generale, conta chi ci e' arrivato con meno
-partite.
+**A pari punti passa avanti chi ne ha fatti meno in compagnia.** Nel Wordle, nel
+cruciverba, nello Scarabeo e nella generale lo spareggio sono gli assist, **al
+contrario** di prima: una giornata in compagnia vale quanto una da soli, ma fra
+due totali uguali vince chi li ha fatti con le proprie partite. `rankPlayers`,
+`ordinaCruciverba`, `ordinaScarabeo` e `ordinaGenerale` devono restare
+d'accordo; poi, nella generale, conta chi ci e' arrivato con meno partite.
 
 **I giochi da tavolo non hanno classificata.** Sono partite quando si vuole,
 con gli amici — e contro il computer dove ha senso — senza punti ne'

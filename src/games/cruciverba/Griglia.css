@@ -128,6 +128,19 @@
   pointer-events: none;
 }
 
+/*
+ * La lettera che propone chi guarda in compagnia, e che nella griglia
+ * dell'host non c'e' ancora: nel colore della scelta, e inclinata come una
+ * parola scritta a matita.
+ */
+.ccella.is-proposta:not(.is-attiva) {
+  color: var(--brand);
+}
+
+.ccella.is-proposta .ccella__lettera {
+  font-style: italic;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ccella {
     transition: none;

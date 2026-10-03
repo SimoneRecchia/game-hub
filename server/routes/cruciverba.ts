@@ -36,10 +36,12 @@ import {
   tempoDichiarato,
   type Identita,
   type Partita,
+  type PartitaRow,
   type Schema,
   type TabellaPartite,
 } from '../lib/cruciverbaStore'
 import { riepilogoCruciverba } from '../lib/riepiloghi'
+import { compagniaBreve, pagaOspiti } from '../lib/compagniaStore'
 
 /** Una richiesta di aiuto riguarda al massimo una parola: la piu' lunga ne ha dieci. */
 const CASELLE_PER_RICHIESTA = 12
@@ -62,6 +64,8 @@ interface Bersaglio {
   schema: Schema
   tabella: TabellaPartite
   identita: Identita
+  /** La compagnia in cui si gioca la giornata, per chi e' stato invitato: la partita e' dell'host. */
+  inCompagnia?: string | null
 }
 
 /**
@@ -108,7 +112,7 @@ async function delGiorno(c: Context<AppEnv>): Promise<Bersaglio> {
   const quando = giornata()
   const schema = await schemaObbligatorio(c.env.DB, quando.puzzleNumber)
   const row = await apriPartita(c.env.DB, c.get('player').id, quando, schema)
-  return { row, schema, tabella: 'cruciverba_games', identita: identitaDelGiorno(row) }
+  return { row, schema, tabella: 'cruciverba_games', identita: identitaDelGiorno(row), inCompagnia: row.in_compagnia }
 }
 
 /** Una partita libera del giocatore, dal suo indirizzo. */
@@ -137,6 +141,10 @@ async function scrivi(
   const { row, schema, tabella, identita } = bersaglio
   const azione = leggiAzione(corpo, schema.soluzione)
 
+  // Chi gioca la giornata in compagnia non scrive: lo schema e' quello dell'host, e l'ha visto riempire.
+  if (bersaglio.inCompagnia) {
+    fail(409, 'GIOCATA_INSIEME', 'Oggi il cruciverba lo giochi in compagnia: la griglia è di chi ti ha invitato.')
+  }
   if (row.status === 'done') return c.json<CruciverbaEsito>(esitoFinito(bersaglio))
   if (Number(corpo.versione) !== row.versione) {
     fail(409, 'CONFLITTO', 'Il cruciverba è cambiato su un altro dispositivo: ricarico.')
@@ -195,6 +203,10 @@ async function scrivi(
     status: completa ? 'done' : 'playing',
     score: completa ? punti : 0,
   })
+  // Il cruciverba del giorno completato: chi lo giocava in compagnia prende gli stessi punti.
+  if (completa && tabella === 'cruciverba_games') {
+    await pagaOspiti(c.env.DB, 'cruciverba', row.player_id, identita.numero, punti, true)
+  }
 
   return c.json<CruciverbaEsito>({
     versione: dopo.versione,
@@ -224,8 +236,13 @@ export const cruciverbaRoutes = new Hono<AppEnv>()
 
   /** Il cruciverba di oggi, aperto al primo accesso. */
   .get('/state', async (c) => {
-    const { row, schema, identita } = await delGiorno(c)
-    return c.json<CruciverbaState>(statoDa(row, schema, identita, msToNextPuzzle()))
+    const { row, schema, identita, inCompagnia } = await delGiorno(c)
+    const stato = statoDa(row, schema, identita, msToNextPuzzle())
+    // Chi gioca in compagnia lo deve sapere qui: la schermata lo porta alla partita dell'host.
+    if (inCompagnia) {
+      stato.inCompagnia = await compagniaBreve(c.env.DB, inCompagnia, (row as PartitaRow).assist_score)
+    }
+    return c.json<CruciverbaState>(stato)
   })
 
   /**
