@@ -25,6 +25,8 @@
  *   /quiz/libera/:materia               le categorie e le opzioni di una materia
  *   /quiz/duello/:id                    una sfida a quiz fra due
  *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
+ *   /nomi-cose-citta/classificata       la lettera di oggi, la stessa per tutti
+ *   /nomi-cose-citta/libera             una lettera a caso, contro il computer
  *   /tris/classificata                  le cinque partite di oggi contro il computer
  *   /tris/libera                        la sala: contro il computer, o con un amico
  *   /tris/libera/computer               la partita contro il computer, nel telefono
@@ -69,6 +71,7 @@ export const SLUG: Record<GiocoClassificato, string> = {
   battaglia: 'battaglia-navale',
   quiz: 'quiz',
   tris: 'tris',
+  nomi: 'nomi-cose-citta',
 }
 
 export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null {

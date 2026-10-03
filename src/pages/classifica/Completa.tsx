@@ -36,6 +36,7 @@ const LEDE: Record<ChiaveClassifica, string> = {
   battaglia: 'Meno colpi, più punti.',
   quiz: `${PUNTI_BASE_QUIZ} punti per aver giocato, ${PUNTI_PER_GIUSTA} per ogni risposta giusta.`,
   tris: '10 punti per la serie, 8 per ogni vittoria, 4 per ogni patta.',
+  nomi: `Fino a ${TETTI.nomi} punti, che valgono il giorno dopo: di più per le risposte date da pochi.`,
   fortuna: 'Quel che Crazy Time, la slot e il blackjack hanno dato o tolto.',
 }
 

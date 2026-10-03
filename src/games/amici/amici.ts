@@ -38,6 +38,7 @@ export const DOVE_BREVE: Record<Attivita, string> = {
   battaglia: 'Battaglia',
   quiz: 'Quiz',
   tris: 'Tris',
+  nomi: 'Nomi, cose',
   indovina: 'Indovina chi',
   scacchi: 'Scacchi',
   dama: 'Dama',

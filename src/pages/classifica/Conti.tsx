@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { StatsPanel } from '@/games/wordle/StatsPanel'
 import { leggiStatistiche } from '@/games/quiz/statistiche'
 import { leggiContiSudoku } from '@/games/sudoku/libera'
+import { leggiContiNomi } from '@/games/nomi/conti'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatNumber } from '@/lib/format'
 import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
@@ -12,6 +13,7 @@ import type {
   CruciverbaLiberaRisposta,
   GiocoClassificato,
   LobbyBattaglia,
+  NomiLeaderboard,
   PlayerStats,
   QuizLeaderboard,
   SalaTavolo,
@@ -45,6 +47,8 @@ export function ContiDi({ gioco }: { gioco: GiocoClassificato }) {
       return <ContiQuiz />
     case 'tris':
       return <ContiTris />
+    case 'nomi':
+      return <ContiNomi />
   }
 }
 
@@ -352,6 +356,40 @@ function ContiTris() {
           voci={[
             { etichetta: 'Contro il computer', valore: vintePattePerse(computer) },
             ...(amici ? [{ etichetta: 'Contro gli amici', valore: vintePattePerse(amici) }] : []),
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
+function ContiNomi() {
+  const { dati } = useDati<NomiLeaderboard>('/leaderboard/nomi?scope=all')
+  // Le partite contro il computer stanno nel telefono: si leggono una volta, all'apertura del foglio.
+  const [libere] = useState(leggiContiNomi)
+  const me = dati?.me
+  return (
+    <div className="conti">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Partite contate', valore: formatNumber(me?.giornate ?? 0) },
+            { etichetta: 'Risposte valide', valore: formatNumber(me?.valide ?? 0) },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {libere.partite > 0 && (
+        <Conti
+          titolo="Contro il computer"
+          voci={[
+            { etichetta: 'Partite', valore: formatNumber(libere.partite) },
+            { etichetta: 'Vinte', valore: formatNumber(libere.vinte) },
+            { etichetta: 'Risposte valide', valore: formatNumber(libere.valide) },
           ]}
         />
       )}

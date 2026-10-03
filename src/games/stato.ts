@@ -18,6 +18,7 @@ import type {
   CruciverbaSummary,
   FortunaRisposta,
   GiocoClassificato,
+  NomiSummary,
   OggiRisposta,
   QuizSummary,
   RuotaSummary,
@@ -364,6 +365,46 @@ export function statoTris(s: TrisSummary): StatoOggi {
   }
 }
 
+/**
+ * Nomi, cose e città: la partita di oggi, e nel dettaglio i punti di ieri, che
+ * la notte ha contato e valgono oggi. Quelli di oggi arriveranno stanotte.
+ */
+export function statoNomi(s: NomiSummary): StatoOggi {
+  const base = { gioco: 'nomi' as const, a: ROTTE.classificata('nomi'), punti: s.ieri }
+  const ieri = s.ieri !== null ? `Ieri ${s.ieri} punti` : null
+  if (s.status === 'done') {
+    return {
+      ...base,
+      avanzamento: 1,
+      fase: 'fatta',
+      titolo:
+        s.valide !== null
+          ? `${s.valide} ${s.valide === 1 ? 'valida' : 'valide'} su ${s.totale}`
+          : `${s.scritte} ${s.scritte === 1 ? 'risposta' : 'risposte'} su ${s.totale}`,
+      dettaglio: 'I punti arrivano stanotte',
+      azione: 'Rivedi',
+    }
+  }
+  if (s.status === 'nuova') {
+    return {
+      ...base,
+      avanzamento: 0,
+      fase: 'da-giocare',
+      titolo: 'Da giocare',
+      dettaglio: ieri ?? `Una lettera, ${s.totale} categorie`,
+      azione: 'Gioca',
+    }
+  }
+  return {
+    ...base,
+    avanzamento: s.totale > 0 ? s.scritte / s.totale : 0,
+    fase: 'in-corso',
+    titolo: `${s.scritte} ${s.scritte === 1 ? 'risposta' : 'risposte'} su ${s.totale}`,
+    dettaglio: 'Il tempo corre',
+    azione: 'Continua',
+  }
+}
+
 export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, StatoOggi> {
   return {
     wordle: statoWordle(oggi.wordle),
@@ -373,6 +414,7 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     battaglia: statoBattaglia(oggi.battaglia),
     quiz: statoQuiz(oggi.quiz),
     tris: statoTris(oggi.tris),
+    nomi: statoNomi(oggi.nomi),
   }
 }
 

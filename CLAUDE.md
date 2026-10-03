@@ -373,15 +373,18 @@ centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
 gioco misura quel che gli e' proprio dentro un tetto deciso (`TETTI` in
 `shared/punti.ts`, che ha la tabella di tutti), che segue il tempo che una
 giornata chiede a chi la gioca bene: il cruciverba 160, lo Scarabeo e il sudoku
-150, la battaglia 85, il quiz 75, il Wordle 70, il tris 50. Non in proporzione
-diretta: un cruciverba chiede dieci volte il tempo del tris e vale tre volte
-tanto, cosi' nessun gioco da solo decide la generale. Per un periodo tutte
+150, la battaglia 85, il quiz 75, il Wordle 70, Nomi, cose e città 60, il tris
+50. Sono otto, e fanno ottocento: cento a gioco in media, e un test lo tiene.
+Non in proporzione diretta: un cruciverba chiede dieci volte il tempo del tris
+e vale tre volte tanto, cosi' nessun gioco da solo decide la generale. Per un
+periodo tutte
 valevano cento: una partita perfetta a tris valeva una perfetta a sudoku. Le
 giornate di allora restano come sono, perché i punti si salvano a fine partita
 e non si ricalcolano. Il Wordle misura i tentativi, lo Scarabeo il punteggio in
 rapporto al computer, il cruciverba e il sudoku gli aiuti, la battaglia i colpi,
 il quiz le risposte giuste (quindici per aver giocato, sei per ogni giusta), il
-tris le vittorie e le patte. Tutti tengono il principio del Wordle —
+tris le vittorie e le patte, Nomi, cose e città le risposte valide, di piu'
+quelle date da pochi. Tutti tengono il principio del Wordle —
 **giocarla bene vale circa il doppio di giocarla male**, non dieci volte tanto
 — e `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del
 compromesso per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
@@ -1059,6 +1062,64 @@ quinta. I punti si scrivono a serie finita, come in ogni classificata, e nella
 classifica del tris a pari punti passa avanti chi ha vinto di piu'. Guardare la
 pagina non apre niente: la riga nasce con la prima partita (`/tris/partita`).
 
+**Nomi, cose e città si conta la notte, e vale il giorno dopo.** Una risposta
+vale di piu' quanto meno l'hanno data gli altri, quindi i punti si fanno quando
+hanno giocato tutti: li scrive `scripts/punteggi-nomi.ts`, che il workflow
+`nomi.yml` lancia alle 22:07 e alle 23:07 UTC — una delle due e' la mezzanotte
+italiana, con l'ora legale o con la solare — e che il workflow notturno e il
+deploy rilanciano per le giornate rimaste indietro. Conta solo le giornate non
+ancora contate (`giocatori IS NULL`) e finite davvero: qualche minuto dopo la
+mezzanotte, quando anche una partita cominciata alle 23:59 ha finito il suo
+tempo (`primoGiornoAperto`). Per questo ogni conto di Nomi, cose e città e'
+spostato di un giorno: la classifica di un periodo prende le partite dal giorno
+prima del suo primo al giorno prima del suo ultimo (`classificaNomi`), la
+generale lo stesso, e i punti di ieri stanno nelle classificate di oggi anche
+per il saldo della Fortuna (`puntiClassificateDi`). Chi ha giocato oggi sta in
+classifica "in arrivo", a zero. Il conto non si fa nel Worker: con molti
+giocatori passerebbe di molto i dieci millisecondi, e vuole il lessico intero.
+
+**La rarita' e' un logaritmo, perché con cinquemila giocatori non valga tutto
+zero.** Quindici punti per aver scritto almeno una risposta, da quattro a nove
+per ogni risposta valida, e il tempo che toglie al piu' un quarto alle risposte:
+al massimo sessanta (`shared/nomi-cose.ts`). La rarita' di una risposta e'
+`ln(giocatori / uguali) / ln(giocatori)`: uno su cinquemila vale nove, tutti
+quattro, dieci su cinquemila ancora piu' di sette e mezzo. Una scala lineare
+("una su cinque l'hanno scritta in mille") darebbe il minimo a quasi tutte le
+risposte di una partita affollata. Due risposte sono uguali se il lessico le
+riconosce nella stessa forma: "le arance" e "arancia" sono la stessa.
+
+**La giornata la fissa chi comincia per primo, e la lettera si vede solo
+cominciando.** La lettera gira su diciannove giorni (`letteraDelGiorno`), le
+cinque categorie si pescano fra quelle che con la lettera hanno almeno dodici
+parole (`categorieDelGiorno`, sui conti del lessico); `nomi_giornate` le fissa
+con `INSERT OR IGNORE`, perché un lessico rifatto non cambi la giornata di chi
+l'ha gia' giocata. `/state` non apre niente; `/inizia` fa partire il tempo,
+tre minuti. Le risposte si salvano mentre si scrive, una richiesta dopo una
+pausa e una subito quando la pagina si nasconde (`keepalive`), e una partita
+lasciata a meta' la chiude la prima richiesta dopo il tempo, con le risposte
+salvate e il tempo intero, come nel quiz.
+
+**Alla consegna si sa quali risposte valgono, e la notte non lo cambia.** Il
+server legge il lessico della lettera dagli asset, come il dizionario dello
+Scarabeo (`server/lib/lessicoNomi.ts`), e ne apre solo le cinque categorie del
+giorno; le forme riconosciute vanno in `forme`, e la notte conta quelle, non le
+ricalcola: quel che il gioco ha detto valere vale anche se nel frattempo il
+lessico e' cambiato. Se il lessico non si legge la consegna va avanti, e lo dice
+la notte. Nella classificata il telefono il lessico non lo scarica: sarebbe
+l'elenco delle risposte giuste, e le piu' rare, a portata di mano.
+
+**La libera e' contro il computer, e si dice stop.** Come al tavolo, chi finisce
+per primo dice «stop!» e smettono tutti di scrivere: il computer lo dice quando
+ha finito, prima o dopo secondo il livello, e conta solo quel che aveva scritto
+fino allo stop dell'altro (`risultato` in `src/games/nomi/libera.ts`). Scrive
+le parole note del lessico (`note`, come le scriverebbe una persona, le piu'
+comuni per prime), non quelle rare: con le rare vincerebbe sempre, e le sue
+risposte non sembrerebbero di nessuno. I punti sono quelli del tavolo (venti a
+chi e' l'unico a rispondere, dieci per una risposta diversa, cinque per una
+uguale: `puntiSfida`, in shared/ per la sfida fra amici). Tutto sta nel
+telefono; il conto delle partite in `src/games/nomi/conti.ts`, a parte, perché
+lo legge la classifica.
+
 **Le righe dei giocatori sono larghe quanto il tavoliere.** In `Tavola` il
 gruppo — l'altro, il tavoliere, io — e' una griglia larga quanto il tavoliere:
 le righe hanno `width: 0` e `min-width: 100%`, quindi la riempiono senza
@@ -1073,7 +1134,7 @@ punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
 Wordle con una parola a caso, Scarabeo a turni contro il computer, cruciverba
 da una scorta di schemi, battaglia contro il computer o contro un amico, quiz
 sulla materia, la categoria, il modo, la zona o l'ambito e le opzioni che si
-scelgono. Gli
+scelgono, Nomi, cose e città con una lettera a caso contro il computer. Gli
 indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 (`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
 nuovi in `App.tsx`); `/<gioco>` da solo porta alla classificata.

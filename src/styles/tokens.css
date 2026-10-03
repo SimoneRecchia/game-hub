@@ -255,6 +255,8 @@
   --go-2: #612457;
   --tris-1: #a6cf2c;
   --tris-2: #4f8a12;
+  --nomi-1: #ffc61a;
+  --nomi-2: #b97300;
   --ruota-1: #ffb020;
   --ruota-2: #e5383b;
   --slot-1: #ff4fa3;
@@ -562,6 +564,24 @@
   --tris-croce: light-dark(#2f5bd3, #8aaaff);
   --tris-cerchio: #d8433b;
   --tris-cerchio: light-dark(#d8433b, #ff8a80);
+  /* Nomi, cose e città: il foglio a righe del quaderno, con il margine rosso,
+     e la matita gialla che fa da orologio. In scuro il foglio si abbassa e la
+     grafite si schiarisce, come per il tris. */
+  --nomi-foglio: #fffdf7;
+  --nomi-foglio: light-dark(#fffdf7, #24262d);
+  --nomi-riga: #c8d7ee;
+  --nomi-riga: light-dark(#c8d7ee, #363d4c);
+  --nomi-margine: #ec8b83;
+  --nomi-margine: light-dark(#ec8b83, #8f4b47);
+  --nomi-grafite: #2b3245;
+  --nomi-grafite: light-dark(#2b3245, #d9dee8);
+  --nomi-legno: #f1c98f;
+  --nomi-legno: light-dark(#f1c98f, #c9a26b);
+  --nomi-gomma: #f39bb0;
+  --nomi-gomma: light-dark(#f39bb0, #c9718a);
+  /* Il giallo della matita non si legge su bianco: per le parole, un ocra scuro. */
+  --nomi-ink: #8a5a00;
+  --nomi-ink: light-dark(#8a5a00, #ffd25e);
 
   /* ---- Il cruciverba ----
      Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:

@@ -16,6 +16,7 @@ import type {
   GiocoClassificato,
   GiocoFortuna,
   LeaderboardResponse,
+  NomiLeaderboard,
   QuizLeaderboard,
   ScarabeoLeaderboard,
   SudokuLeaderboard,
@@ -37,6 +38,7 @@ export type Risposta =
   | BattagliaLeaderboard
   | QuizLeaderboard
   | TrisLeaderboard
+  | NomiLeaderboard
   | FortunaLeaderboard
 
 export interface Voce {
@@ -71,6 +73,7 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   battaglia: 'Battaglia navale',
   quiz: 'Quiz',
   tris: 'Tris',
+  nomi: 'Nomi, cose e città',
   fortuna: 'Fortuna',
 }
 
@@ -89,6 +92,7 @@ export const ORDINE_GIOCHI: GiocoClassificato[] = [
   'sudoku',
   'battaglia',
   'quiz',
+  'nomi',
   'tris',
 ]
 
@@ -97,6 +101,7 @@ const giornate = (n: number) => `${formatNumber(n)} ${n === 1 ? 'giornata' : 'gi
 const decimale = new Intl.NumberFormat('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
 const inCorso = <Etichetta tono="arancio">in corso</Etichetta>
+const inArrivo = <Etichetta tono="brand">in arrivo</Etichetta>
 
 interface Contesto {
   /** Il periodo e' un giorno solo: si racconta com'e' andata quel giorno. */
@@ -309,6 +314,24 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             { etichetta: 'Perse', valore: formatNumber(Math.max(0, perse)) },
           ],
           nota: 'A pari punti contano le vittorie.',
+        }
+      })
+
+    case 'nomi':
+      return (risposta as NomiLeaderboard).rows.map((r) => {
+        const valide = `${formatNumber(r.valide)} ${r.valide === 1 ? 'risposta valida' : 'risposte valide'}`
+        return {
+          ...r,
+          sotto: r.giornate === 0 ? 'Punti in arrivo' : giorno ? valide : `${giornate(r.giornate)} · ${valide}`,
+          breve: r.giornate > 0 ? `${r.valide} valide` : 'in arrivo',
+          // Chi ha gia' dei punti e ne aspetta altri: chi non ne ha ancora lo dice gia' la riga.
+          segni: r.inAttesa && oggi && r.giornate > 0 ? inArrivo : undefined,
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            { etichetta: 'Partite contate', valore: formatNumber(r.giornate) },
+            { etichetta: 'Risposte valide', valore: formatNumber(r.valide) },
+          ],
+          nota: 'I punti arrivano la notte e valgono il giorno dopo. A pari punti contano le risposte valide.',
         }
       })
   }
