@@ -64,6 +64,7 @@ describe('le migrazioni', () => {
       'tris_partite',
       'nomi_giornate',
       'nomi_partite',
+      'nomi_sfide',
     ]) {
       expect(tabelle).toContain(t)
     }

@@ -54,11 +54,12 @@ export const DOVE_BREVE: Record<Attivita, string> = {
 }
 
 /** I giochi a cui si invita un amico: quelli che si giocano in due, nella libera. */
-export type GiocoInsieme = 'battaglia' | 'quiz' | 'tris' | 'indovina' | 'scacchi' | 'dama' | 'forza4' | 'go'
+export type GiocoInsieme = 'battaglia' | 'quiz' | 'nomi' | 'tris' | 'indovina' | 'scacchi' | 'dama' | 'forza4' | 'go'
 
 export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
   'quiz',
+  'nomi',
   'tris',
   'indovina',
   'scacchi',
@@ -95,6 +96,10 @@ export async function invitaA(gioco: GiocoInsieme, amico: GiocatoreBreve): Promi
     await api('/battaglia/sfida', { method: 'POST', body: { playerId } })
     return ROTTE.libera('battaglia')
   }
+  if (gioco === 'nomi') {
+    await api('/nomi/sfide', { method: 'POST', body: { playerId } })
+    return salaDi('nomi')
+  }
   if (gioco === 'indovina') {
     const set = scelta('giochi.indovina.set', false)
     await api('/indovina/inviti', {
@@ -114,6 +119,15 @@ export async function invitaA(gioco: GiocoInsieme, amico: GiocatoreBreve): Promi
 export function salaDi(gioco: GiocoInsieme): string {
   if (gioco === 'quiz') return `${ROTTE.libera('quiz')}?sfida=1`
   if (gioco === 'battaglia') return ROTTE.libera('battaglia')
+  if (gioco === 'nomi') {
+    // La libera si apre dalla parte dell'amico, dove si vede l'invito in attesa (la chiave di NomiCoseLibera).
+    try {
+      localStorage.setItem('giochi.nomi.contro', 'amico')
+    } catch {
+      /* senza localStorage si apre com'era: l'invito resta nella parte dell'amico */
+    }
+    return ROTTE.libera('nomi')
+  }
   if (gioco === 'indovina') return ROTTE.indovina
   return ROTTE.tavolo(gioco)
 }

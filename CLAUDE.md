@@ -331,10 +331,11 @@ non fa record.
 **La presenza e' un giro solo per tutta l'app.** `PresenzaProvider`
 (`src/lib/presenza.tsx`) chiama `POST /api/presenza` ogni otto secondi a pagina
 visibile: dice al server dove si trova il giocatore e riporta gli inviti del
-Wordle in compagnia, le sfide a battaglia navale, a quiz e a Indovina chi
-(rivincite comprese), le partite e il duello aperti. Gli avvisi fuori dalle
-rotte (`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`) si danno la
-precedenza in quest'ordine: due insieme non si leggerebbero. Prima gli
+Wordle in compagnia, le sfide a battaglia navale, a quiz, a Indovina chi, ai
+tavolieri e a Nomi, cose e città (rivincite comprese), le partite e il duello
+aperti. Gli avvisi fuori dalle rotte (`CoopGate`, `BattagliaGate`, `QuizGate`,
+`IndovinaGate`, `TavoloGate`, `NomiGate`) si danno la precedenza in
+quest'ordine: due insieme non si leggerebbero. Prima gli
 inviti del Wordle avevano il loro polling: due giri separati avrebbero
 raddoppiato le richieste, e le Pages Functions gratuite ne contano centomila al
 giorno per tutto il sito. La scrittura in `presenza` passa solo ogni venti
@@ -1108,17 +1109,30 @@ lessico e' cambiato. Se il lessico non si legge la consegna va avanti, e lo dice
 la notte. Nella classificata il telefono il lessico non lo scarica: sarebbe
 l'elenco delle risposte giuste, e le piu' rare, a portata di mano.
 
-**La libera e' contro il computer, e si dice stop.** Come al tavolo, chi finisce
-per primo dice «stop!» e smettono tutti di scrivere: il computer lo dice quando
-ha finito, prima o dopo secondo il livello, e conta solo quel che aveva scritto
-fino allo stop dell'altro (`risultato` in `src/games/nomi/libera.ts`). Scrive
-le parole note del lessico (`note`, come le scriverebbe una persona, le piu'
-comuni per prime), non quelle rare: con le rare vincerebbe sempre, e le sue
-risposte non sembrerebbero di nessuno. I punti sono quelli del tavolo (venti a
-chi e' l'unico a rispondere, dieci per una risposta diversa, cinque per una
-uguale: `puntiSfida`, in shared/ per la sfida fra amici). Tutto sta nel
-telefono; il conto delle partite in `src/games/nomi/conti.ts`, a parte, perché
-lo legge la classifica.
+**La libera e' contro il computer o un amico, e si dice stop.** Come al tavolo,
+chi finisce per primo dice «stop!» e smettono tutti di scrivere: il computer lo
+dice quando ha finito, prima o dopo secondo il livello, e conta solo quel che
+aveva scritto fino allo stop dell'altro (`risultato` in
+`src/games/nomi/libera.ts`). Scrive le parole note del lessico (`note`, come le
+scriverebbe una persona, le piu' comuni per prime), non quelle rare: con le rare
+vincerebbe sempre, e le sue risposte non sembrerebbero di nessuno. I punti sono
+quelli del tavolo (venti a chi e' l'unico a rispondere, dieci per una risposta
+diversa, cinque per una uguale: `puntiSfida`, in shared/ per la sfida fra
+amici). Tutto sta nel telefono; il conto delle partite in
+`src/games/nomi/conti.ts`, a parte, perché lo legge la classifica.
+
+**Fra amici l'invito e' gia' la partita, e la lettera esce solo dal via.** Come
+in Indovina chi (`nomi_sfide`): quando l'altro accetta, nello stesso `UPDATE`
+il server pesca la lettera e le categorie e fissa il via, qualche secondo dopo
+(`NOMI_SFIDA_VIA_MS`, il tre-due-uno); prima del via la lettera non esce. Si
+scrive insieme, ognuno nella sua colonna, quindi due scritture nello stesso
+istante non si pestano. Chi finisce dice stop, e l'altro lo vede al giro dopo,
+un secondo, e manda subito il suo foglio: vale quel che arriva entro il margine
+della rete. Lo stop o il tempo che finisce non si scrivono da soli: la partita
+la chiude la prima richiesta che arriva dopo, che riconosce i due fogli con il
+lessico e conta i punti come al tavolo. Il foglio dell'altro esce solo a
+partita chiusa, prima si sa solo quante risposte ha scritto. La rivincita
+porta avanti la serie, come nella battaglia.
 
 **Le righe dei giocatori sono larghe quanto il tavoliere.** In `Tavola` il
 gruppo — l'altro, il tavoliere, io — e' una griglia larga quanto il tavoliere:

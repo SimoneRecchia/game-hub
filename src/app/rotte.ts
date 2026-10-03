@@ -26,7 +26,9 @@
  *   /quiz/duello/:id                    una sfida a quiz fra due
  *   /quiz/sfida/:codice                 una sfida a quiz arrivata con un link
  *   /nomi-cose-citta/classificata       la lettera di oggi, la stessa per tutti
- *   /nomi-cose-citta/libera             una lettera a caso, contro il computer
+ *   /nomi-cose-citta/libera             una lettera a caso, contro il computer o un amico
+ *   /nomi-cose-citta/sfida/:id          una sfida con un amico
+ *   /nomi-cose-citta/invito/:codice     una sfida arrivata con un link
  *   /tris/classificata                  le cinque partite di oggi contro il computer
  *   /tris/libera                        la sala: contro il computer, o con un amico
  *   /tris/libera/computer               la partita contro il computer, nel telefono
@@ -122,6 +124,8 @@ export const ROTTE = {
   materiaQuiz: (materia: MateriaQuiz) => `/quiz/libera/${materia}`,
   duelloQuiz: (id: string) => `/quiz/duello/${id}`,
   invitoQuiz: (codice: string) => `/quiz/sfida/${codice}`,
+  sfidaNomi: (id: string) => `/nomi-cose-citta/sfida/${id}`,
+  invitoNomi: (codice: string) => `/nomi-cose-citta/invito/${codice}`,
 
   indovina: '/indovina-chi',
   partitaIndovina: (id: string) => `/indovina-chi/partita/${id}`,

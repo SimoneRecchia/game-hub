@@ -6,25 +6,49 @@ import { Coriandoli, Elenco, Riga, Sezione, Tacche, useFesta } from '@/component
 import { IconComputer, IconInfo, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Pillola, Scheda } from '@/components/Scheda'
+import { SegmentedControl } from '@/components/SegmentedControl'
 import { ComeSiGiocaNomi } from '@/games/nomi/ComeSiGioca'
 import { leggiContiNomi } from '@/games/nomi/conti'
 import { FoglioDaScrivere, FoglioScritto, Lettera, type RigaScritta } from '@/games/nomi/Foglio'
 import { LIVELLI_NOMI, NOMI_LIVELLI_NOMI, altrePossibili } from '@/games/nomi/libera'
 import { Matita } from '@/games/nomi/Matita'
 import { useNomiLibera, type NomiLibera } from '@/games/nomi/useNomiLibera'
+import { SalaAmico } from '@/games/nomi/sfida/SalaAmico'
 import { CATEGORIE_NOMI, TEMPO_NOMI_MS } from '@shared/nomi-cose'
 import '@/games/nomi/NomiCose.css'
 
 const COLORE = 'linear-gradient(135deg, var(--nomi-1), var(--nomi-2))'
 
+type Contro = 'computer' | 'amico'
+const CHIAVE_CONTRO = 'giochi.nomi.contro'
+
+function leggiContro(): Contro {
+  try {
+    return localStorage.getItem(CHIAVE_CONTRO) === 'amico' ? 'amico' : 'computer'
+  } catch {
+    return 'computer'
+  }
+}
+
 /**
- * Nomi, cose e città libera, contro il computer: si sceglie la difficoltà e si
- * comincia, con una lettera a caso. Il computer scrive anche lui, e quando ha
- * finito dice stop: da li' non si scrive piu', come al tavolo.
+ * Nomi, cose e città libera, contro il computer o contro un amico, come le
+ * sale dei tavolieri: un interruttore in cima, ricordato. Contro il computer
+ * si sceglie la difficoltà e si comincia, con una lettera a caso; il computer
+ * scrive anche lui, e quando ha finito dice stop: da li' non si scrive piu',
+ * come al tavolo. Con un amico si manda la sfida, e si gioca nella sua pagina.
  */
 export default function NomiCoseLibera() {
   const g = useNomiLibera()
   const [regole, setRegole] = useState(false)
+  const [contro, setContro] = useState<Contro>(leggiContro)
+  const scegliContro = (c: Contro) => {
+    setContro(c)
+    try {
+      localStorage.setItem(CHIAVE_CONTRO, c)
+    } catch {
+      /* senza localStorage la scelta non si ricorda */
+    }
+  }
 
   // Gli adesivi della fine: lo stop del computer, poi com'e' andata.
   const { adesivo, accoda } = useCodaAdesivi()
@@ -71,7 +95,18 @@ export default function NomiCoseLibera() {
         indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
         azioni={info}
       >
-        <SceltaLivello g={g} />
+        <div className="nomi-scelte">
+          <SegmentedControl
+            ariaLabel="Contro chi"
+            value={contro}
+            onChange={scegliContro}
+            options={[
+              { value: 'computer', label: 'Computer' },
+              { value: 'amico', label: 'Amico' },
+            ]}
+          />
+        </div>
+        {contro === 'computer' ? <SceltaLivello g={g} /> : <SalaAmico />}
         <ComeSiGiocaNomi open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )

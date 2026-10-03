@@ -32,7 +32,9 @@ export function ComeSiGiocaNomi({ open, onClose }: { open: boolean; onClose: () 
               <strong>Classificata</strong>: una lettera al giorno, la stessa per tutti.
             </li>
             <li>
-              <strong>Libera</strong>: una lettera a caso, contro il computer. Non conta per la classifica.
+              <strong>Libera</strong>: una lettera a caso, contro il computer o un amico. Chi finisce per primo dice
+              stop, e si smette di scrivere tutti. Venti punti se in una categoria rispondi solo tu, dieci per una
+              risposta diversa, cinque per una uguale. Non conta per la classifica.
             </li>
           </ul>
         </section>
