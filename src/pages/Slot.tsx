@@ -14,7 +14,8 @@ import { ComeSiGiocaSlot } from '@/games/slot/ComeSiGioca'
 import { FestaSlot, livelloDi, type DatiFesta } from '@/games/slot/Festa'
 import { Leva } from '@/games/slot/Leva'
 import { Rulli, type MetaRulli } from '@/games/slot/Rulli'
-import { DefinizioniSlot, Simbolo } from '@/games/slot/simboli'
+import { DefinizioniSlot, Simbolo, TesseraCategoria } from '@/games/slot/simboli'
+import { VINCITE, type VincitaRulli } from '@/games/slot/vincite'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
@@ -26,9 +27,8 @@ import {
   PUNTATE_SLOT,
   VINCITA_DOMANDA,
   lineaDi,
-  righeDellaTripla,
-  simboliVincenti,
-  type CodiceSlot,
+  righeDelleDomande,
+  vincitaDellaLinea,
 } from '@shared/slot'
 import type { GiroSlot, SlotStato } from '@shared/types'
 import './Slot.css'
@@ -36,32 +36,47 @@ import './Slot.css'
 const DomandaRuota = lazy(() => import('@/games/ruota/DomandaRuota'))
 
 type Fase = 'pronta' | 'gira' | 'paga' | 'tripla' | 'domanda'
-type Luci = 'attesa' | 'gira' | 'vinto' | 'jackpot'
+/** Le luci della sala: una ciliegia sola ha la sua, piu' corta, perché esce un giro ogni quattro. */
+type Luci = 'attesa' | 'gira' | 'poco' | 'vinto' | 'jackpot'
 
-/** Quanto si festeggia una vincita prima delle monete al saldo, e quanto una tripla prima della domanda. */
+/**
+ * Quanto si festeggia una vincita prima delle monete al saldo, e poi prima di
+ * poter rigirare: le monete arrivano 760 ms dopo la partenza
+ * (`incassaMonete`). Una ciliegia sola, che ridà la puntata, meno. Poi quanto
+ * i punti di domanda si girano prima della domanda.
+ */
 const FESTA_MS = 900
-const TRIPLA_MS = 1_400
+const RESTA_MS = 900
+const POCO_MS = 500
+const RESTA_POCO_MS = 850
+const TRIPLA_MS = 1_500
 const RITORNO_MS = 650
 
 /** Le monete che cadono nel vassoio, e poi volano al saldo: piu' vale la vincita, piu' sono. */
 const moneteDi = (premio: number) => Math.min(24, Math.round(3 + Math.sqrt(premio) * 2))
 
-/** Le caselle da accendere: i simboli che pagano sulla linea, o le tre della categoria. */
-function vincentiDi(g: GiroSlot | null, tripla: boolean): Array<[number, number]> {
-  if (!g) return []
-  if (tripla && g.tripla) return righeDellaTripla(g.fermate, g.tripla.indice).map((riga, rullo) => [rullo, riga])
-  return simboliVincenti(lineaDi(g.fermate)).map((rullo) => [rullo, 1])
+/** Quel che paga la linea di un giro, da mostrare sui rulli: la combinazione e i simboli che la fanno. */
+function vincitaDi(g: GiroSlot): VincitaRulli | null {
+  const v = vincitaDellaLinea(lineaDi(g.fermate))
+  return v && { tipo: v.combinazione, caselle: v.simboli.map((rullo) => [rullo, 1] as const) }
 }
 
+/** I tre punti di domanda di un giro, che girandosi mostrano la categoria. */
+function domandaDi(g: GiroSlot): VincitaRulli | null {
+  if (!g.tripla) return null
+  const caselle = righeDelleDomande(g.fermate).map((riga, rullo) => [rullo, riga] as const)
+  return { tipo: 'Q', caselle, categoria: g.tripla.categoria }
+}
 
 /**
  * La slot: si sceglie la puntata, si tira la leva, e i tre rulli girano e si
  * fermano uno dopo l'altro. La puntata si paga alla leva, e si vede: le fiches
  * volano dal saldo alla fessura del mobile, e il saldo scende. Quando il terzo
- * rullo si ferma, quel che paga si accende; le monete cadono nel vassoio e da
- * li' volano al saldo, che sale quando arriva la prima. Tre simboli della
- * stessa categoria, dovunque nella finestra, aprono una domanda: l'intermezzo
- * con la categoria, poi la domanda del quiz, e tornando alla slot la vincita.
+ * rullo si ferma, quel che paga si accende, ogni combinazione a modo suo, con
+ * il suo nome sul display (`VINCITE`); le monete cadono nel vassoio e da li'
+ * volano al saldo, che sale quando arriva la prima. Tre punti di domanda,
+ * dovunque nella finestra, si girano e mostrano la categoria: l'intermezzo,
+ * poi la domanda del quiz, e tornando alla slot la vincita.
  *
  * Il server sa gia' l'esito quando risponde alla leva, ma i rulli no: qui si
  * mostra nell'ordine giusto, e il tabellone resta fermo (`conto`) finché il
@@ -78,7 +93,8 @@ export default function SlotPagina() {
   const [inMoto, setInMoto] = useState(false)
   const [meta, setMeta] = useState<MetaRulli | null>(null)
   const [conto, setConto] = useState<{ saldo: number; netto: number; giri: number } | null>(null)
-  const [vincenti, setVincenti] = useState<Array<[number, number]>>([])
+  /** Quel che paga, sui rulli e sul display: la combinazione della linea, o i tre punti di domanda. */
+  const [vinta, setVinta] = useState<VincitaRulli | null>(null)
   const [vincita, setVincita] = useState<number | null>(null)
   const [luci, setLuci] = useState<Luci>('attesa')
   const [vassoio, setVassoio] = useState(0)
@@ -90,6 +106,8 @@ export default function SlotPagina() {
   const [inviando, setInviando] = useState(false)
   /** Fra due giri passa un attimo: senza animazioni i rulli si fermano subito, e il server direbbe di no. */
   const [riposata, setRiposata] = useState(true)
+  /** Cresce a ogni leva: le monete di un giro finito, arrivando, non liberano il tabellone del giro dopo. */
+  const leve = useRef(0)
   const saldoRef = useRef<HTMLSpanElement>(null)
   const puntataRef = useRef<HTMLSpanElement>(null)
   const vassoioRef = useRef<HTMLDivElement>(null)
@@ -155,24 +173,32 @@ export default function SlotPagina() {
   const scelta = Math.min(massimo, puntata ?? giro?.puntata ?? PUNTATA_MINIMA_SLOT)
   const puoGiocare = saldo >= PUNTATA_MINIMA_SLOT && fase === 'pronta' && !inMoto && riposata && !inviando
 
-  /** La vincita che torna al saldo: le monete volano dal vassoio, e il tabellone si muove quando arriva la prima. */
+  /**
+   * La vincita che torna al saldo: le monete volano dal vassoio, e il tabellone si muove quando arriva la prima.
+   * Se intanto e' partito un altro giro non lo tocca: mostrerebbe il saldo del giro nuovo prima dei rulli.
+   */
   const incassa = (premio: number) => {
+    const leva = leve.current
+    const ancora = () => leve.current === leva
     const da = centroDi(vassoioRef.current)
     const a = centroDi(saldoRef.current)
     if (!da || !a) {
       setConto(null)
       return
     }
-    void incassaMonete(da, a, moneteDi(premio), () => setConto(null)).then(() => setVassoio(0))
+    void incassaMonete(da, a, moneteDi(premio), () => ancora() && setConto(null)).then(
+      () => ancora() && setVassoio(0),
+    )
   }
 
   /* ───────────────────────────────  La leva  ─────────────────────────────── */
 
   const tira = async () => {
     if (!puoGiocare || !stato) return
+    leve.current += 1
     setFase('gira')
     setInMoto(true)
-    setVincenti([])
+    setVinta(null)
     setVincita(null)
     setVassoio(0)
     setLuci('gira')
@@ -207,41 +233,48 @@ export default function SlotPagina() {
       setLuci('attesa')
       return
     }
-    const vinta = g.premio * g.puntata
+    const linea = vincitaDi(g)
+    const importo = g.premio * g.puntata
     const livello = livelloDi(g.premio, g.premio >= PREMI['7'])
-    if (g.premio > 0) {
+    // Una ciliegia sola ridà la puntata: si festeggia lo stesso, come nelle slot vere, ma in fretta.
+    const poco = g.premio <= 1
+    const incasso = poco ? POCO_MS : FESTA_MS
+    const resta = poco ? RESTA_POCO_MS : RESTA_MS
+    if (linea && g.premio > 0) {
       setFase('paga')
-      setVincenti(vincentiDi(g, false))
-      setVincita(vinta)
+      setVinta(linea)
+      setVincita(importo)
       setVassoio(moneteDi(g.premio))
-      setLuci(g.premio >= PREMI['7'] ? 'jackpot' : 'vinto')
+      setLuci(g.premio >= PREMI['7'] ? 'jackpot' : poco ? 'poco' : 'vinto')
+      suona(VINCITE[linea.tipo].suono)
       if (livello) {
         // Dal x20 la festa delle slot vere: le monete vanno al saldo quando finisce.
-        const sotto = `${g.puntata} × ${g.premio}`
-        dopo(FESTA_MS, () => setFesta({ chiave: Date.now(), livello, vincita: vinta, sotto, premio: g.premio }))
+        const sotto = `${VINCITE[linea.tipo].nome}, ${g.puntata} × ${g.premio}`
+        dopo(FESTA_MS, () => setFesta({ chiave: Date.now(), livello, vincita: importo, sotto, premio: g.premio }))
       } else {
-        suona('incasso')
-        suona('incasso', { ritardo: 0.12 })
-        dopo(FESTA_MS, () => incassa(g.premio))
+        dopo(incasso, () => incassa(g.premio))
       }
     } else {
       setConto(null)
     }
-    if (g.tripla) {
-      // La tripla dopo la linea, se ha pagato anche lei: la linea paga al massimo il x20 delle ciliegie insieme a
-      // una tripla, quindi niente festa davanti alla domanda.
-      dopo(g.premio > 0 ? FESTA_MS + 700 : 0, () => {
+    const domanda = domandaDi(g)
+    if (domanda && g.tripla) {
+      // I punti di domanda dopo la linea, se ha pagato anche lei: insieme a una domanda la linea paga al piu' le
+      // prugne, x15, quindi niente festa davanti alla domanda.
+      const { categoria } = g.tripla
+      dopo(g.premio > 0 ? incasso + resta : 0, () => {
         setFase('tripla')
-        setVincenti(vincentiDi(g, true))
+        setVinta(domanda)
+        setVincita(null)
         setLuci('vinto')
-        suona('tripla')
-        dopo(TRIPLA_MS, () => apriTripla(g.tripla!.categoria, g.vincitaDomanda ?? 0))
+        suona(VINCITE.Q.suono)
+        dopo(TRIPLA_MS, () => apriTripla(categoria, g.vincitaDomanda ?? 0))
       })
       return
     }
     // Con la festa, la slot torna pronta quando la festa finisce.
     if (livello) return
-    dopo(g.premio > 0 ? FESTA_MS + 900 : 0, () => {
+    dopo(g.premio > 0 ? incasso + resta : 0, () => {
       setFase('pronta')
       setLuci('attesa')
     })
@@ -288,11 +321,13 @@ export default function SlotPagina() {
     const g = ultimo.current?.giro
     setFase('pronta')
     setLuci('attesa')
-    setVincenti([])
-    if (g?.risposta?.giusta && g.vincitaDomanda) {
+    setVinta(null)
+    if (g?.risposta?.giusta && g.vincitaDomanda && g.tripla) {
       const vale = g.vincitaDomanda
       const s = ultimo.current
       setConto(s ? { saldo: s.saldo - vale, netto: s.netto - vale, giri: s.giri } : null)
+      // Sul display la domanda, nel colore della sua categoria; i rulli restano spenti.
+      setVinta({ tipo: 'Q', caselle: [], categoria: g.tripla.categoria })
       dopo(RITORNO_MS, () => {
         setVincita(vale)
         setVassoio(moneteDi(VINCITA_DOMANDA))
@@ -353,7 +388,11 @@ export default function SlotPagina() {
       )}
       <div className="slot" hidden={!!inDomanda}>
         {quanto && <Tabellone saldo={quanto.saldo} puntata={scelta} saldoRef={saldoRef} />}
-        <div className={`slot-sala is-${luci}`}>
+        <div
+          className={`slot-sala is-${luci}`}
+          data-vince={vinta?.tipo}
+          style={vinta?.categoria ? ({ '--vinta': coloreDellaCategoria(vinta.categoria) } as CSSProperties) : undefined}
+        >
           <span className="slot-sala__luci" aria-hidden="true" />
           <div className={`slot-macchina${scossa ? ' is-scossa' : ''}`}>
             <span className="slot-fianco" aria-hidden="true" />
@@ -364,13 +403,7 @@ export default function SlotPagina() {
               <TabellaBreve />
               <div className="slot-vetro">
                 {stato ? (
-                  <Rulli
-                    categorie={categorie}
-                    inMoto={inMoto}
-                    meta={meta}
-                    vincenti={vincenti}
-                    onFine={fermati}
-                  />
+                  <Rulli categorie={categorie} inMoto={inMoto} meta={meta} vincita={vinta} onFine={fermati} />
                 ) : (
                   <div className="slot-rulli is-attesa" />
                 )}
@@ -386,10 +419,10 @@ export default function SlotPagina() {
                     {scelta}
                   </span>
                 </span>
-                <span className={`slot-display__voce is-vincita${vincita ? ' is-accesa' : ''}`}>
-                  <span className="slot-display__etichetta">Vincita</span>
-                  <span className="slot-display__cifre u-tabnum" key={vincita ?? 0}>
-                    {vincita ?? '–'}
+                <span className={`slot-display__voce is-vincita${vinta ? ' is-accesa' : ''}`}>
+                  <span className="slot-display__etichetta">{vinta ? VINCITE[vinta.tipo].nome : 'Vincita'}</span>
+                  <span className="slot-display__cifre u-tabnum" key={`${vinta?.tipo}${vincita}`}>
+                    {vincita ?? (vinta?.tipo === 'Q' ? '?' : '–')}
                   </span>
                 </span>
               </div>
@@ -528,7 +561,7 @@ function TabellaBreve() {
         <span key={s} className="slot-tabella__voce">
           <span className="slot-tabella__simboli">
             {[0, 1, 2].map((i) => (
-              <Simbolo key={i} codice={s} categorie={[]} />
+              <Simbolo key={i} codice={s} />
             ))}
           </span>
           <span className="slot-tabella__valore u-tabnum">×{x}</span>
@@ -539,8 +572,9 @@ function TabellaBreve() {
 }
 
 /**
- * La pancia del mobile, sotto il banco: quel che si vince con tre categorie
- * uguali, e le sei di oggi. Le regole dicono lo stesso a parole.
+ * La pancia del mobile, sotto il banco: quel che si vince con tre punti di
+ * domanda, e le sei categorie di oggi, da cui viene la domanda. Le regole
+ * dicono lo stesso a parole.
  */
 function Pancia({ categorie }: { categorie: readonly CategoriaQuiz[] }) {
   return (
@@ -548,11 +582,11 @@ function Pancia({ categorie }: { categorie: readonly CategoriaQuiz[] }) {
       <div className="slot-pancia__vetro">
         <span className="slot-pancia__raggi" />
         <span className="slot-pancia__titolo">
-          Tre uguali = domanda <b className="u-tabnum">×{VINCITA_DOMANDA}</b>
+          Tre <Simbolo codice="Q" categorie={categorie} /> = domanda <b className="u-tabnum">×{VINCITA_DOMANDA}</b>
         </span>
         <span className="slot-pancia__categorie">
-          {categorie.map((_, i) => (
-            <Simbolo key={i} codice={String(i) as CodiceSlot} categorie={categorie} />
+          {categorie.map((c) => (
+            <TesseraCategoria key={c} categoria={c} />
           ))}
         </span>
       </div>

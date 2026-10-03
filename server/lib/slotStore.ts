@@ -7,10 +7,11 @@
  * cambia. Una domanda lasciata a meta' conta persa, e il giro dopo la chiude.
  *
  * Le fermate dei rulli le sceglie il server, con `crypto.getRandomValues`: il
- * browser riceve solo dove fermarli. La tripla di una categoria che oggi non ha
- * piu' domande da dare a quel giocatore non esce — si ripesca — come lo
- * spicchio di quella categoria non esce alla ruota. La domanda si apre quando
- * la si chiede, con il suo tempo che parte li', come nel quiz.
+ * browser riceve solo dove fermarli. Tre punti di domanda in vista aprono una
+ * domanda di una categoria del giorno pescata fra quelle che hanno ancora
+ * domande da dare a quel giocatore, come lo spicchio alla ruota; se non ce n'e'
+ * nessuna, le fermate si ripescano. La domanda si apre quando la si chiede,
+ * con il suo tempo che parte li', come nel quiz.
  *
  * Il saldo si controlla dentro l'`INSERT` del giro, sui conti gia' scritti di
  * tutti i giochi della Fortuna; ogni scrittura riscrive nello stesso batch il
@@ -28,11 +29,11 @@ import {
   PUNTATA_MINIMA_SLOT,
   RULLI,
   VINCITA_DOMANDA,
+  apreDomanda,
   deltaSlot,
   lineaDi,
   premioDellaLinea,
   puntataSlotValida,
-  triplaDiCategoria,
 } from '../../shared/slot'
 import type { GiroSlot, RispostaQuiz, SlotStato } from '../../shared/types'
 import { categorieDisponibili, domandaNuova, domandaScaduta, nettoFortunaSql, saldoDi } from './fortuna'
@@ -110,7 +111,6 @@ function rispostaVista(s: DomandaSalvata): RispostaQuiz {
 /** Il giro come lo vede chi gioca: la domanda senza la risposta finché non si risponde. */
 export function vistaGiroSlot(row: GiroSlotRow, adesso: number): GiroSlot {
   const fermate = JSON.parse(row.fermate) as number[]
-  const indice = triplaDiCategoria(fermate)
   const salvata = leggiDomanda(row)
   const d = salvata?.domanda
   const aperta = row.stato === 'domanda' && d && row.aperta_at
@@ -119,7 +119,7 @@ export function vistaGiroSlot(row: GiroSlotRow, adesso: number): GiroSlot {
     puntata: row.puntata,
     fermate,
     premio: row.premio,
-    tripla: row.categoria && indice !== null ? { indice, categoria: row.categoria as CategoriaQuiz } : null,
+    tripla: row.categoria ? { categoria: row.categoria as CategoriaQuiz } : null,
     stato: row.stato,
     delta: row.delta,
     vincitaDomanda: row.categoria ? row.puntata * VINCITA_DOMANDA : null,
@@ -172,9 +172,10 @@ export async function statoSlot(db: D1Database, playerId: string): Promise<SlotS
 }
 
 /**
- * Le fermate di un giro: a caso, una per rullo. Se la tripla e' di una
- * categoria che oggi non ha domande da dare, si ripesca: e' come se quelle
- * fermate non ci fossero, come lo spicchio della stessa categoria alla ruota.
+ * Le fermate di un giro: a caso, una per rullo. Con tre punti di domanda in
+ * vista si pesca anche la categoria, fra quelle del giorno che hanno ancora
+ * domande da dare; se non ce n'e' nessuna si ripesca tutto, ed e' come se
+ * quelle fermate non ci fossero, come lo spicchio senza domande alla ruota.
  */
 export function fermateACaso(
   categorie: readonly CategoriaQuiz[],
@@ -183,15 +184,15 @@ export function fermateACaso(
 ): { fermate: number[]; categoria: CategoriaQuiz | null } {
   for (;;) {
     const fermate = RULLI.map((r) => caso(r.length))
-    const k = triplaDiCategoria(fermate)
-    if (k === null) return { fermate, categoria: null }
-    if (disponibili.has(categorie[k])) return { fermate, categoria: categorie[k] }
+    if (!apreDomanda(fermate)) return { fermate, categoria: null }
+    const possibili = categorie.filter((c) => disponibili.has(c))
+    if (possibili.length > 0) return { fermate, categoria: possibili[caso(possibili.length)] }
   }
 }
 
 /**
  * Un giro. Le fermate escono qui, e la puntata e' gia' pagata: la linea la
- * restituisce moltiplicata subito, la tripla di una categoria apre una domanda.
+ * restituisce moltiplicata subito, tre punti di domanda aprono una domanda.
  * Una domanda dell'ultimo giro lasciata a meta' si chiude: vale gia' persa.
  */
 export async function giraSlot(db: D1Database, playerId: string, puntata: unknown): Promise<void> {
@@ -260,16 +261,16 @@ export async function giraSlot(db: D1Database, playerId: string, puntata: unknow
   }
 }
 
-/** L'ultimo giro di oggi con una tripla, o un errore che dice perché non c'e'. */
+/** L'ultimo giro di oggi con i tre punti di domanda, o un errore che dice perché non c'e'. */
 async function giroConTripla(db: D1Database, playerId: string): Promise<GiroSlotRow & { categoria: string }> {
   const row = await ultimoGiroSlot(db, playerId, today().puzzleNumber)
   if (!diQuestiRulli(row)) fail(409, 'NESSUN_GIRO', 'Non hai ancora tirato la leva.')
-  if (!row.categoria) fail(409, 'NESSUNA_DOMANDA', 'I rulli non hanno fatto una tripla.')
+  if (!row.categoria) fail(409, 'NESSUNA_DOMANDA', 'I rulli non hanno fatto tre punti di domanda.')
   return row as GiroSlotRow & { categoria: string }
 }
 
 /**
- * Apre la domanda: una a caso fra quelle della categoria della tripla che il
+ * Apre la domanda: una a caso fra quelle della categoria del giro che il
  * giocatore non ha ancora avuto, alla slot o alla ruota, e il tempo parte
  * adesso. Se e' gia' aperta resta com'e', con il tempo che le resta.
  */

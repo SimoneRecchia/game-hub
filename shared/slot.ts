@@ -4,73 +4,70 @@
  * puntata si paga al giro, come a Crazy Time: il giro nasce con la puntata
  * persa, e una vincita la restituisce moltiplicata.
  *
- * Sulla linea pagano i simboli di sempre (`PREMI`): tre uguali, e le ciliegie
- * anche da sole, contate da sinistra. Sui rulli ci sono anche le sei categorie
- * del quiz di oggi — le stesse della ruota di Crazy Time (`categorieDelGiorno`)
- * — e valgono dovunque nella finestra, come gli scatter delle slot vere: tre
- * della stessa categoria, una per rullo, aprono una domanda, che giusta paga
- * `VINCITA_DOMANDA` volte la puntata.
+ * Sulla linea pagano le ciliegie, dovunque stiano (`CILIEGIE`): una ridà la
+ * puntata, due la pagano cinque volte, tre venti; e tre simboli uguali
+ * (`PREMI`), dai limoni ai sette. Il punto di domanda vale dovunque nella
+ * finestra, come gli scatter delle slot vere: tre in vista, uno per rullo,
+ * aprono una domanda di una delle categorie del giorno — le stesse della ruota
+ * di Crazy Time — che giusta paga `VINCITA_DOMANDA` volte la puntata.
  *
- * Come nelle slot vere si vince di rado e quasi sempre poco: una volta ogni sei
- * o sette giri, e piu' della meta' delle volte e' una ciliegia sola. Una tripla
- * di frutta capita ogni qualche centinaio di giri e paga venti volte e piu', i
- * sette una volta ogni ventisettemila e pagano trecento. La resa di chi
- * risponde sempre giusto e' quella di Crazy Time (`resaSlot`, 97,1%): nemmeno
- * qui si batte il banco, e nessuno dei giochi della Fortuna conviene piu' degli
- * altri. I conti sono esatti, sulle fermate dei rulli, e li tengono fermi i
- * test.
+ * I conti sono quelli delle slot vere. Si vince un giro ogni tre, come nelle
+ * slot video a piu' linee studiate sui PAR sheet ufficiali (il 33,5% dei giri
+ * di Lucky Larry's Lobstermania a quindici linee, Harrigan e Dixon, 2009), e
+ * quasi sempre poco: tre vincite su quattro sono una ciliegia sola, che ridà
+ * la puntata, come la ciliegia sola che fa la grande parte delle vincite delle
+ * slot a tre rulli. I limoni sono la tripla che si vede di piu', una volta ogni
+ * sessantacinque giri; poi le arance, le prugne, le tre ciliegie, l'uva, le
+ * campane, il BAR, e i sette una volta ogni sessantaquattromila. Dal ×20 in su
+ * si vince una volta ogni cinquecento giri. La domanda esce una volta ogni
+ * cinquanta giri e fa poco meno di un terzo della resa, come le funzioni
+ * speciali delle slot video. La resa di chi risponde sempre giusto e' quella di
+ * Crazy Time (`contaSlot`, 97%): nemmeno qui si batte il banco, e nessuno dei
+ * giochi della Fortuna conviene piu' degli altri. I conti sono esatti, su tutte
+ * le fermate dei rulli, e li tengono fermi i test.
  */
 
-/** Un simbolo sui rulli: i sette classici, e le sei categorie del giorno come cifre (in `categorieDelGiorno`). */
-export type CodiceSlot = 'C' | 'L' | 'O' | 'P' | 'B' | 'R' | '7' | '0' | '1' | '2' | '3' | '4' | '5'
-export type SimboloClassico = Exclude<CodiceSlot, '0' | '1' | '2' | '3' | '4' | '5'>
-
-export const NOMI_SIMBOLI: Record<SimboloClassico, string> = {
-  C: 'Ciliegia',
-  L: 'Limone',
-  O: 'Arancia',
-  P: 'Prugna',
-  B: 'Campana',
-  R: 'BAR',
-  '7': 'Sette',
-}
+/** Un simbolo sui rulli: la frutta, la campana, il BAR, il sette e il punto di domanda. */
+export type CodiceSlot = 'C' | 'L' | 'O' | 'P' | 'U' | 'B' | 'R' | '7' | 'Q'
+export type SimboloClassico = Exclude<CodiceSlot, 'Q'>
 
 /**
- * I rulli, dall'alto: trenta fermate ciascuno. Ogni categoria c'e' una volta
- * sola per rullo, a cinque fermate dalle altre: nella finestra se ne vede al
- * massimo una, e due triple insieme non possono uscire. Fra una categoria e
- * l'altra quattro simboli classici, mai due uguali vicini.
+ * I rulli, dall'alto: quaranta fermate ciascuno. I punti di domanda sono a
+ * dieci fermate l'uno dall'altro sui primi due rulli e a tredici sul terzo:
+ * nella finestra di un rullo se ne vede al massimo uno. Mai due simboli uguali
+ * vicini, e i piu' rari lontani fra loro.
  */
 export const RULLI: readonly (readonly CodiceSlot[])[] = [
   [
-    '0', 'L', 'C', 'O', 'P', '1', 'L', 'R', 'O', 'C', '2', '7', 'L', 'P', 'O',
-    '3', 'C', 'L', 'B', 'P', '4', 'O', 'L', 'C', 'R', '5', 'B', 'O', 'L', 'P',
+    'Q', 'P', 'L', 'O', 'R', 'L', 'P', 'U', 'L', 'B', 'Q', 'P', 'L', 'C', 'O', 'L', 'U', 'R', 'L', 'O',
+    'Q', 'L', 'B', 'P', 'L', 'U', 'O', 'L', 'C', 'O', 'Q', 'L', 'O', 'P', 'L', '7', 'O', 'U', 'P', 'C',
   ],
   [
-    '2', 'O', 'L', 'P', 'C', '4', 'L', 'B', 'O', 'P', '0', 'R', 'L', 'C', 'O',
-    '5', 'P', '7', 'L', 'O', '1', 'L', 'P', 'B', 'C', '3', 'O', 'R', 'L', 'P',
+    'U', 'L', 'O', 'C', 'B', 'Q', 'L', 'O', 'P', 'L', 'O', 'C', 'L', 'O', 'P', 'Q', 'L', 'C', 'B', 'L',
+    'O', 'P', 'L', 'O', 'U', 'Q', 'L', 'C', '7', 'B', 'O', 'R', 'L', 'O', 'C', 'Q', 'P', 'O', 'L', 'P',
   ],
   [
-    '4', 'P', 'O', 'L', 'B', '0', 'O', 'L', 'R', 'P', '3', 'L', 'O', 'C', 'P',
-    '1', 'O', '7', 'L', 'P', '5', 'L', 'B', 'O', 'C', '2', 'R', 'L', 'O', 'P',
+    'P', 'C', 'U', 'Q', 'L', 'O', 'P', 'B', 'L', 'O', 'C', 'L', 'O', 'U', 'R', 'P', 'Q', 'O', 'C', 'L',
+    'O', 'U', 'B', 'L', 'C', 'O', 'L', 'P', 'O', 'Q', 'L', 'C', 'O', 'P', 'U', 'L', 'B', '7', 'R', 'L',
   ],
 ]
 
-/** Tre uguali sulla linea: quante volte la puntata. */
+/** Tre uguali sulla linea: quante volte la puntata. Le ciliegie hanno il loro conto. */
 export const PREMI: Record<Exclude<SimboloClassico, 'C'>, number> = {
   '7': 300,
   R: 100,
   B: 50,
-  P: 30,
-  O: 25,
-  L: 20,
+  U: 25,
+  P: 15,
+  O: 10,
+  L: 5,
 }
 
-/** Le ciliegie sulla linea, da sinistra: una paga due volte la puntata, due cinque, tre venticinque. */
-export const CILIEGIE: readonly number[] = [0, 2, 5, 25]
+/** Le ciliegie sulla linea, dovunque: una ridà la puntata, due la pagano cinque volte, tre venti. */
+export const CILIEGIE: readonly number[] = [0, 1, 5, 20]
 
 /** Una domanda vinta: quante volte la puntata. */
-export const VINCITA_DOMANDA = 30
+export const VINCITA_DOMANDA = 15
 
 export const PUNTATA_MINIMA_SLOT = 1
 /** Le puntate dei tasti, come i gettoni di una slot: l'ultima e' il massimo. */
@@ -84,7 +81,7 @@ export const PUNTATA_MASSIMA_SLOT = PUNTATE_SLOT[PUNTATE_SLOT.length - 1]
 export const INTERVALLO_SLOT_MS = 2_000
 
 /** La disposizione dei rulli: un giro salvato con un'altra non si mostra, perché le sue fermate sono altri simboli. */
-export const DISPOSIZIONE_SLOT = 1
+export const DISPOSIZIONE_SLOT = 2
 
 export const NOME_SLOT = 'Slot'
 
@@ -111,41 +108,49 @@ export function lineaDi(fermate: readonly number[]): CodiceSlot[] {
   return fermate.map((f, r) => RULLI[r][giro(r, f)])
 }
 
-/** Quante volte la puntata paga la linea: tre uguali, o le ciliegie da sinistra. Zero se niente. */
-export function premioDellaLinea(linea: readonly CodiceSlot[]): number {
-  const [a, b, c] = linea
-  if (a === b && b === c && a in PREMI) return PREMI[a as keyof typeof PREMI]
-  let ciliegie = 0
-  while (ciliegie < linea.length && linea[ciliegie] === 'C') ciliegie += 1
-  return CILIEGIE[ciliegie]
-}
-
-/** Le ciliegie che pagano, da sinistra: per accendere i simboli giusti. */
-export function simboliVincenti(linea: readonly CodiceSlot[]): number[] {
-  const [a, b, c] = linea
-  if (a === b && b === c && a in PREMI) return [0, 1, 2]
-  const vincenti: number[] = []
-  for (let i = 0; i < linea.length && linea[i] === 'C'; i += 1) vincenti.push(i)
-  return vincenti
-}
-
 /**
- * La categoria che fa tripla, come indice in `categorieDelGiorno`: la stessa
- * su tutti e tre i rulli, in una riga qualunque. Null se non c'e'.
+ * Le combinazioni che pagano: una, due o tre ciliegie, o tre uguali. Ognuna
+ * ha la sua animazione, quindi il nome viaggia con il premio.
  */
-export function triplaDiCategoria(fermate: readonly number[]): number | null {
-  const righe = finestra(fermate)
-  for (let k = 0; k < 6; k += 1) {
-    const codice = String(k) as CodiceSlot
-    if ([0, 1, 2].every((r) => righe.some((riga) => riga[r] === codice))) return k
-  }
-  return null
+export type CombinazioneSlot = 'C1' | 'C2' | 'C3' | Exclude<SimboloClassico, 'C'>
+
+export interface VincitaLinea {
+  combinazione: CombinazioneSlot
+  /** Quante volte la puntata. */
+  premio: number
+  /** I simboli che pagano, come rulli: le tre caselle, o le ciliegie. */
+  simboli: number[]
 }
 
-/** Dove sta la categoria della tripla, rullo per rullo (la riga, da 0 in alto): per accenderla. */
-export function righeDellaTripla(fermate: readonly number[], k: number): number[] {
+/** Quel che paga la linea: tre uguali, o le ciliegie dovunque stiano. Null se niente. */
+export function vincitaDellaLinea(linea: readonly CodiceSlot[]): VincitaLinea | null {
+  const [a, b, c] = linea
+  if (a === b && b === c && a !== 'C' && a !== 'Q') return { combinazione: a, premio: PREMI[a], simboli: [0, 1, 2] }
+  const ciliegie = linea.flatMap((s, i) => (s === 'C' ? [i] : []))
+  if (ciliegie.length === 0) return null
+  const combinazione = `C${ciliegie.length}` as 'C1' | 'C2' | 'C3'
+  return { combinazione, premio: CILIEGIE[ciliegie.length], simboli: ciliegie }
+}
+
+/** Quante volte la puntata paga la linea. Zero se niente. */
+export function premioDellaLinea(linea: readonly CodiceSlot[]): number {
+  return vincitaDellaLinea(linea)?.premio ?? 0
+}
+
+/** I simboli che pagano sulla linea, come rulli: per accenderli. */
+export function simboliVincenti(linea: readonly CodiceSlot[]): number[] {
+  return vincitaDellaLinea(linea)?.simboli ?? []
+}
+
+/** Dove sta il punto di domanda in ogni rullo: la riga, da 0 in alto, o -1 se nella finestra non c'e'. */
+export function righeDelleDomande(fermate: readonly number[]): number[] {
   const righe = finestra(fermate)
-  return [0, 1, 2].map((r) => righe.findIndex((riga) => riga[r] === String(k)))
+  return [0, 1, 2].map((r) => righe.findIndex((riga) => riga[r] === 'Q'))
+}
+
+/** Tre punti di domanda in vista, uno per rullo, in una riga qualunque: si apre una domanda. */
+export function apreDomanda(fermate: readonly number[]): boolean {
+  return righeDelleDomande(fermate).every((riga) => riga >= 0)
 }
 
 /** Quel che un giro da' o toglie alla giornata: la vincita meno la puntata. */
@@ -158,34 +163,44 @@ export interface ConteggioSlot {
   resa: number
   /** Quanto rende la sola linea. */
   linea: number
-  /** Ogni quanti giri la linea paga qualcosa, come frazione dei giri. */
+  /** Quanti giri pagano qualcosa, linea o domanda, come frazione dei giri. */
   frequenza: number
-  /** Ogni quanti giri esce una domanda, come frazione dei giri. */
+  /** Delle vincite, quante ridanno solo la puntata. */
+  pariAllaPuntata: number
+  /** Quanti giri pagano dal ×20 in su. */
+  grosse: number
+  /** Quanti giri aprono una domanda. */
   domanda: number
-  /** La probabilita' dei tre sette. */
-  sette: number
+  /** Ogni combinazione della linea, come frazione dei giri. */
+  combinazioni: Record<CombinazioneSlot, number>
 }
 
 /**
- * La resa esatta, su tutte le fermate dei rulli: 27.000 combinazioni, tutte
+ * La resa esatta, su tutte le fermate dei rulli: 64.000 combinazioni, tutte
  * con la stessa probabilita'. `giuste` e' la frazione delle domande
  * indovinate: 1 per chi sa tutto.
  */
 export function contaSlot(giuste = 1): ConteggioSlot {
   const [n0, n1, n2] = RULLI.map((r) => r.length)
+  const combinazioni = { C1: 0, C2: 0, C3: 0, L: 0, O: 0, P: 0, U: 0, B: 0, R: 0, '7': 0 }
   let linea = 0
   let vincite = 0
+  let pari = 0
+  let grosse = 0
   let domande = 0
-  let sette = 0
   for (let a = 0; a < n0; a += 1) {
     for (let b = 0; b < n1; b += 1) {
       for (let c = 0; c < n2; c += 1) {
-        const l = lineaDi([a, b, c])
-        const premio = premioDellaLinea(l)
-        linea += premio
-        if (premio > 0) vincite += 1
-        if (l[0] === '7' && l[1] === '7' && l[2] === '7') sette += 1
-        if (triplaDiCategoria([a, b, c]) !== null) domande += 1
+        const v = vincitaDellaLinea(lineaDi([a, b, c]))
+        const domanda = apreDomanda([a, b, c])
+        if (v) {
+          linea += v.premio
+          combinazioni[v.combinazione] += 1
+          if (v.premio >= 20) grosse += 1
+        }
+        if (domanda) domande += 1
+        if (v || domanda) vincite += 1
+        if (v?.premio === 1 && !domanda) pari += 1
       }
     }
   }
@@ -194,7 +209,11 @@ export function contaSlot(giuste = 1): ConteggioSlot {
     resa: (linea + domande * VINCITA_DOMANDA * giuste) / tutte,
     linea: linea / tutte,
     frequenza: vincite / tutte,
+    pariAllaPuntata: pari / vincite,
+    grosse: grosse / tutte,
     domanda: domande / tutte,
-    sette: sette / tutte,
+    combinazioni: Object.fromEntries(
+      Object.entries(combinazioni).map(([k, n]) => [k, n / tutte]),
+    ) as Record<CombinazioneSlot, number>,
   }
 }
