@@ -4,20 +4,21 @@
  * quello delle slot di una volta, disegnato perché sembri un oggetto: la lacca
  * rossa con i fianchi tondi, l'insegna ad arco con le lampadine, i rulli
  * d'avorio dietro un vetro curvo, il display a led, il banco dei comandi
- * inclinato verso chi gioca, con le fiches e il bottone, il vassoio delle
- * monete, lo zoccolo, e sul fianco la leva di cromo.
+ * inclinato verso chi gioca, con le fiches e il bottone, la pancia di vetro
+ * illuminata, il vassoio delle monete, lo zoccolo, e sul fianco la leva di
+ * cromo.
  *
  * Tutto si misura sulla larghezza del mobile (`--w`, e il suo centesimo
  * `--u`): quella che ci sta con la leva da tutti e due i lati, cosi' il mobile
  * resta al centro, o quella che lascia l'altezza. Le parti hanno altezze fisse
- * in centesimi; il fronte, con i rulli, prende quel che avanza, fino a un
- * tetto, e quel che resta lo divide la sala sopra e sotto il mobile.
+ * in centesimi; la pancia prende quel che avanza, fino a un tetto.
  */
 
 /*
  * La larghezza e' una lunghezza vera, calcolata sul mobile e ereditata: senza
  * la registrazione le unita' del contenitore si risolverebbero dove si usa la
- * variabile, e dentro un contenitore annidato varrebbero le sue.
+ * variabile, e dentro la pancia, che e' un contenitore anche lei, varrebbero
+ * le sue.
  */
 @property --w {
   syntax: '<length>';
@@ -181,23 +182,16 @@
 
 .slot-macchina {
   /* La larghezza: quella che lascia la leva da tutti e due i lati, o quella che lascia l'altezza. */
-  --w: min((100cqw - 20px) / 1.28, (100cqh - 32px) / 1.65);
+  --w: min((100cqw - 20px) / 1.28, (100cqh - 32px) / 1.68);
   --u: calc(var(--w) / 100);
   position: relative;
   display: grid;
-  /*
-   * L'insegna, il fronte, il banco, il vassoio e lo zoccolo. Il fronte e' alto
-   * almeno cento centesimi e prende quel che avanza, fino a un tetto: i rulli
-   * si allungano, come i rulli veri, e i simboli prendono un po' d'aria. Oltre
-   * il tetto il mobile resta quello, al centro della sala. `minmax(0, ...)` e
-   * non `auto`: la striscia dei rulli e' alta quaranta rulli, e lasciata al
-   * contenuto allargherebbe la riga.
-   */
+  /* `minmax(0, ...)`: la striscia dei rulli e' alta quaranta rulli, e lasciata al contenuto allargherebbe la riga. */
   grid-template-rows:
-    calc(var(--u) * 30) minmax(calc(var(--u) * 100), 1fr) calc(var(--u) * 20) calc(var(--u) * 10)
+    calc(var(--u) * 30) calc(var(--u) * 100) calc(var(--u) * 20) minmax(0, 1fr) calc(var(--u) * 10)
     calc(var(--u) * 5);
   width: var(--w);
-  height: min(100cqh - 32px, var(--w) * 1.89);
+  height: min(100cqh - 32px, var(--w) * 2.04);
   border-radius: calc(var(--u) * 12) calc(var(--u) * 12) calc(var(--u) * 4) calc(var(--u) * 4);
   /*
    * La lacca, con i fianchi tondi: da ogni lato una fascia d'ombra sul bordo,
@@ -1811,6 +1805,61 @@
   }
 }
 
+/* ─────────────────────────────  La pancia  ───────────────────────────── */
+
+/*
+ * La pancia, sotto il banco: un vetro illuminato nella cornice d'oro, con i
+ * raggi che girano — piano in attesa, svelti mentre i rulli girano, d'oro per
+ * una vincita. Non dice niente: le regole e le categorie del giorno stanno nel
+ * foglio della "i". Prende l'altezza che avanza, e i raggi si misurano su di
+ * lei (e' un contenitore).
+ */
+.slot-pancia {
+  min-height: 0;
+  padding: calc(var(--u) * 2.4) calc(var(--u) * 6) calc(var(--u) * 1);
+}
+
+.slot-pancia__vetro {
+  position: relative;
+  height: 100%;
+  container-type: size;
+  overflow: hidden;
+  border-radius: calc(var(--u) * 3);
+  background: radial-gradient(120% 140% at 50% 120%, #5a1a8a, #1a0530 60%, #0b0214);
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 0.6) var(--oro-2),
+    inset 0 0 0 calc(var(--u) * 1.1) var(--oro-3),
+    inset 0 calc(var(--u) * 1.5) calc(var(--u) * 3) rgba(0, 0, 0, 0.6);
+}
+
+.slot-pancia__raggi {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(240cqw, 240cqh);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: repeating-conic-gradient(rgba(255, 79, 163, 0.2) 0 8deg, transparent 8deg 20deg);
+  -webkit-mask-image: radial-gradient(closest-side, #000, transparent 70%);
+  mask-image: radial-gradient(closest-side, #000, transparent 70%);
+  animation: slot-raggi 24s linear infinite;
+}
+
+.slot-sala.is-gira .slot-pancia__raggi {
+  animation-duration: 6s;
+}
+
+.slot-sala:is(.is-vinto, .is-palco, .is-jackpot) .slot-pancia__raggi {
+  background: repeating-conic-gradient(rgba(255, 214, 90, 0.32) 0 8deg, transparent 8deg 20deg);
+  animation-duration: 3s;
+}
+
+@keyframes slot-raggi {
+  to {
+    rotate: 360deg;
+  }
+}
+
 /* ─────────────────────────────  Il vassoio e lo zoccolo  ───────────────────────────── */
 
 /* Il vassoio, piu' largo in fondo: lo si guarda dall'alto, e il fondo si vede in prospettiva. */
@@ -2041,6 +2090,7 @@
   .slot-display__cifre,
   .slot-display__invito,
   .slot-gira,
+  .slot-pancia__raggi,
   .slot-lustro::before,
   .slot-vassoio__moneta {
     animation: none !important;
