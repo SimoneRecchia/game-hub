@@ -1379,8 +1379,11 @@ vecchio **nel futuro e che nessuno ha aperto** si riscrive (`DA_RIFARE`), perch�
 nessuno l'ha vista. Il 2 e' quello del modo e del `luogo` di ogni domanda, che la
 cartina mostra a risposta data; il 3 quello delle altre materie, con il
 calendario nuovo: le giornate gia' scritte con il calendario di sola geografia
-si rifanno, se nessuno le ha aperte. Oggi e il passato restano come sono, anche
-di un formato vecchio, e la colonna `formato` (migrazione `0016`) dice di quale.
+si rifanno, se nessuno le ha aperte. Il 4 e' quello di "Accadde oggi" che
+chiede sempre l'anno (vedi sotto), e rifà solo le giornate di "Accadde oggi"
+(`formatoMinimo`): quelle delle altre categorie scritte col 3 sono gia' come le
+farebbe adesso. Oggi e il passato restano come sono, anche di un formato
+vecchio, e la colonna `formato` (migrazione `0016`) dice di quale.
 
 **Le città si giocano solo nella libera.** Sono troppe e troppo difficili per
 una partita uguale per tutti: `CATEGORIE_CLASSIFICATA` non le ha. La libera
@@ -1563,6 +1566,14 @@ file, che a volte dice il quadro: e' lo stesso compromesso del codice del paese
 nell'indirizzo delle bandiere, e il tempo resta la difesa della classifica. Il
 posto del quadro lo tengono le sue proporzioni (`r`) prima che arrivi, e un
 quadro che non arriva lo dice senza bloccare la domanda.
+
+**"Accadde oggi" chiede sempre l'anno.** Si racconta il fatto, o chi e' nato
+quel giorno, e si sceglie l'anno. Le domande "Che cosa accadde il 4 ottobre
+1957?", con quattro fatti dello stesso giorno fra cui scegliere, non si
+potevano fare: i fatti di un giorno sono spesso poco noti, mentre l'anno lo
+avvicina anche chi non conosce il fatto. Il tipo `oggi-fatto` resta fra i tipi
+solo per le partite gia' giocate, e i generatori non lo fanno piu', nemmeno a
+chi lo chiede.
 
 **"Accadde oggi" fuori dalla classificata non gioca il giorno del quiz.** Quando
 la classificata di oggi e' "Accadde oggi", i suoi fatti sono gli stessi del
