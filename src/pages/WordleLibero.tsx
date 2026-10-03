@@ -59,7 +59,7 @@ export default function WordleLibero() {
     <Pagina
       titolo="Parola libera"
       intera
-      indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}
+      indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={
         <>
           {finita ? (

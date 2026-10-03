@@ -262,7 +262,7 @@ function Menu() {
             )} di risposte giuste`
           : undefined
       }
-      indietro={{ a: ROTTE.salotto, etichetta: 'Salotto' }}
+      indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />

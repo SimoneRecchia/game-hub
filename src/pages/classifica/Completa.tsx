@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react'
+import { useLocation } from 'react-router-dom'
 import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
@@ -47,6 +48,10 @@ export function Completa({
 }) {
   const { vai } = useNavigazione()
   const me = usePlayer()
+  // Da dove si arriva, per la freccia indietro: dalla panoramica, o dal trofeo di una scheda. Cambiando
+  // periodo l'indirizzo si sostituisce, e lo stato va con lui.
+  const { state } = useLocation()
+  const da = (state as { da?: string } | null)?.da ?? 'Classifica'
   const { dati, errore, ricarica } = useDati<Risposta>(percorsoClassifica(chiave, scope, indietro))
   const { mostrati, vecchi } = useUltimi(dati)
   const [aperta, setAperta] = useState<Voce | null>(null)
@@ -55,7 +60,7 @@ export function Completa({
   const gioco: GiocoClassificato | null = chiave === 'generale' || chiave === 'fortuna' ? null : chiave
 
   const cambia = (s: LeaderboardScope, i: number) =>
-    vai(indirizzoClassifica(chiave, s, i), { replace: true, direzione: 'nessuna' })
+    vai(indirizzoClassifica(chiave, s, i), { replace: true, direzione: 'nessuna', state })
 
   const oggi = numeroDiOggi()
   const periodo = mostrati?.periodo ?? periodoDi(scope, oggi, indietro)
@@ -74,7 +79,7 @@ export function Completa({
       titolo={NOMI_CLASSIFICHE[chiave]}
       sopra="Classifica"
       sotto={LEDE[chiave]}
-      indietro={{ a: indirizzoClassifica(null, scope, indietro), etichetta: 'Classifica' }}
+      indietro={{ a: indirizzoClassifica(null, scope, indietro), etichetta: da }}
       azioni={
         gioco && (
           <BottoneBarra etichetta="I tuoi numeri" onClick={() => setConti(true)}>

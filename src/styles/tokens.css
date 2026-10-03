@@ -264,17 +264,18 @@
 
   /* ---- Le tre schede ----
      Ognuna ha il suo colore, per l'icona accesa nella barra, la lente sotto e
-     la luce in cima alla pagina: l'Arena l'indaco della generale, perché e' la
-     sua gara; il Salotto il pesca e il rosa di una lampada accesa; la Fortuna il
-     verde del quadrifoglio. Dicono dove si e', non che cosa si e' scelto. */
-  --arena-1: #6d5fff;
-  --arena-2: #3d2fc4;
-  --arena: #5546ee;
-  --arena: light-dark(#5546ee, #a59dff);
-  --salotto-1: #ffb48a;
-  --salotto-2: #f0718f;
-  --salotto: #e2593c;
-  --salotto: light-dark(#e2593c, #ff9f7f);
+     la luce in cima alla pagina: le Giornaliere l'indaco della generale,
+     perché e' la loro gara; le Libere il pesca e il rosa di una lampada accesa;
+     la Fortuna il verde del quadrifoglio. Dicono dove si e', non che cosa si e'
+     scelto. */
+  --giornaliere-1: #6d5fff;
+  --giornaliere-2: #3d2fc4;
+  --giornaliere: #5546ee;
+  --giornaliere: light-dark(#5546ee, #a59dff);
+  --libere-1: #ffb48a;
+  --libere-2: #f0718f;
+  --libere: #e2593c;
+  --libere: light-dark(#e2593c, #ff9f7f);
   --fortuna: #0f9a5c;
   --fortuna: light-dark(#0f9a5c, #48dd8f);
 

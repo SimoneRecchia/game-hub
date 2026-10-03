@@ -85,8 +85,13 @@ html:not([data-transizione]) .pagina {
   min-width: 0;
 }
 
+/*
+ * I bottoni a destra sono tondi, ognuno col suo fondo: a quattro punti l'uno
+ * dall'altro si toccavano, e l'anello dell'avatar ci finiva sopra.
+ */
 .pagina__lato--destra {
   justify-content: flex-end;
+  gap: var(--sp-3);
 }
 
 .pagina__titolo-barra {

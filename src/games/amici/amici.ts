@@ -6,7 +6,7 @@ import { AMICI_POLL_MS } from '@shared/config'
 import type { AmiciRisposta, AmicoOnline, Attivita, GiocatoreBreve } from '@shared/types'
 
 /**
- * Gli amici online e gli inviti ai giochi liberi, per il profilo, il Salotto e
+ * Gli amici online e gli inviti ai giochi liberi, per il profilo, le Libere e
  * il profilo di un amico. Gli inviti sono quelli delle sale: questo li manda e
  * porta nella sala, che li trova in attesa e aspetta la risposta.
  */
@@ -28,7 +28,7 @@ export function useAmiciOnline(): AmicoOnline[] | null {
   return dati?.online ?? null
 }
 
-/** Dove si trova un amico, in una parola: sotto il suo avatar nel Salotto. */
+/** Dove si trova un amico, in una parola: sotto il suo avatar nelle Libere. */
 export const DOVE_BREVE: Record<Attivita, string> = {
   hub: 'In giro',
   wordle: 'Wordle',
