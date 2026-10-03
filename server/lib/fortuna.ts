@@ -88,7 +88,7 @@ export async function domandeViste(db: D1Database, playerId: string, numero: num
 /**
  * Le categorie che oggi hanno domande che il giocatore non ha ancora avuto: lo
  * spicchio di una categoria senza domande, o con tutte gia' viste, non esce, e
- * alla slot la sua tripla non apre una domanda. La colonna di `ruota_domande`
+ * alla slot i punti di domanda non la pescano. La colonna di `ruota_domande`
  * si chiama ancora `materia`, da quando le domande erano per materia, e porta
  * la categoria.
  */

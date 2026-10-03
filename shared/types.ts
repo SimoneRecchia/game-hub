@@ -1295,8 +1295,8 @@ export interface GiroSlot {
   fermate: number[]
   /** Quante volte la puntata paga la linea: zero se niente. */
   premio: number
-  /** La tripla di una categoria, se c'e': il suo indice fra quelle del giorno, e la categoria. */
-  tripla: { indice: number; categoria: CategoriaQuiz } | null
+  /** I tre punti di domanda, se ci sono: la categoria della domanda, scelta fra quelle del giorno. */
+  tripla: { categoria: CategoriaQuiz } | null
   stato: 'sfida' | 'domanda' | 'fatto'
   /** Quel che il giro da' o toglie: la vincita meno la puntata, e la domanda se e' vinta. */
   delta: number
@@ -1317,7 +1317,7 @@ export interface SlotStato {
   /** Quel che la slot ha dato o tolto oggi, e in quanti giri. */
   netto: number
   giri: number
-  /** Le categorie del giorno, nell'ordine dei simboli dei rulli (shared/ruota.ts, categorieDelGiorno). */
+  /** Le categorie del giorno, da cui viene la domanda (shared/ruota.ts, categorieDelGiorno). */
   categorie: CategoriaQuiz[]
   giro: GiroSlot | null
   msToNextPuzzle: number

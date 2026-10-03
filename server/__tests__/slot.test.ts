@@ -1,18 +1,26 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { CategoriaQuiz } from '../../shared/quiz'
 import type { DomandaCompleta } from '../../shared/quiz-domande'
 import { categorieDelGiorno, improntaDomanda, spicchiDelGiorno, type DomandaRuota } from '../../shared/ruota'
-import { DISPOSIZIONE_SLOT, PUNTATA_MASSIMA_SLOT, VINCITA_DOMANDA, lineaDi, triplaDiCategoria } from '../../shared/slot'
+import {
+  DISPOSIZIONE_SLOT,
+  PUNTATA_MASSIMA_SLOT,
+  VINCITA_DOMANDA,
+  apreDomanda,
+  lineaDi,
+  premioDellaLinea,
+} from '../../shared/slot'
 import type { FortunaRisposta, GeneraleLeaderboard, RuotaStato, SlotStato } from '../../shared/types'
 import { today } from '../lib/wordleStore'
 import { banco, type Giocatore } from './banco'
 
 type Banco = ReturnType<typeof banco>
 
-/** Le fermate delle prove: i tre sette, una ciliegia sola, niente, e la tripla della prima categoria. */
-const SETTE = [11, 17, 17]
-const CILIEGIA = [2, 2, 2]
-const NIENTE = [3, 2, 2]
-const TRIPLA = [1, 11, 6]
+/** Le fermate delle prove: i tre sette, una ciliegia sola, niente, e tre punti di domanda in vista. */
+const SETTE = [35, 28, 37]
+const CILIEGIA = [13, 1, 4]
+const NIENTE = [2, 2, 6]
+const DOMANDA = [1, 5, 2]
 const CATEGORIE = categorieDelGiorno(today().puzzleNumber)
 
 /**
@@ -66,9 +74,9 @@ function domanda(quale = 0): DomandaCompleta {
   } as unknown as DomandaCompleta
 }
 
-/** Le domande di oggi, `quante` per ognuna delle sei categorie, come le scrive la notte per Crazy Time. */
-function domandeDiOggi(b: Banco, quante = 1) {
-  for (const categoria of CATEGORIE) {
+/** Le domande di oggi, `quante` per ognuna delle categorie, come le scrive la notte per Crazy Time. */
+function domandeDiOggi(b: Banco, quante = 1, categorie: readonly CategoriaQuiz[] = CATEGORIE) {
+  for (const categoria of categorie) {
     const voci: DomandaRuota[] = Array.from({ length: quante }, (_, i) => ({ categoria, domanda: domanda(i) }))
     b.db.sqlite
       .prepare(
@@ -106,10 +114,11 @@ async function generaleDiOggi(b: Banco, io: Giocatore) {
 describe('la slot', () => {
   it('le fermate delle prove sono quel che dicono', () => {
     expect(lineaDi(SETTE)).toEqual(['7', '7', '7'])
-    expect(lineaDi(CILIEGIA)[0]).toBe('C')
-    expect(lineaDi(CILIEGIA)[1]).not.toBe('C')
-    expect(triplaDiCategoria(NIENTE)).toBeNull()
-    expect(triplaDiCategoria(TRIPLA)).toBe(0)
+    expect(lineaDi(CILIEGIA).filter((c) => c === 'C')).toHaveLength(1)
+    expect(premioDellaLinea(lineaDi(NIENTE))).toBe(0)
+    expect(premioDellaLinea(lineaDi(DOMANDA))).toBe(0)
+    for (const f of [SETTE, CILIEGIA, NIENTE]) expect(apreDomanda(f)).toBe(false)
+    expect(apreDomanda(DOMANDA)).toBe(true)
   })
 
   it('senza i punti delle classificate non si gioca', async () => {
@@ -130,18 +139,20 @@ describe('la slot', () => {
     expect(niente.giro).toMatchObject({ n: 1, fermate: NIENTE, premio: 0, tripla: null, stato: 'fatto', delta: -5 })
     expect(niente).toMatchObject({ saldo: 95, netto: -5, giri: 1, categorie: CATEGORIE })
 
+    // Una ciliegia sola ridà la puntata: una vincita che non cambia il saldo.
     const ciliegia = await gira(b, io, 5, ...CILIEGIA)
-    expect(ciliegia.giro).toMatchObject({ n: 2, premio: 2, delta: 5 })
+    expect(ciliegia.giro).toMatchObject({ n: 2, premio: 1, delta: 0 })
+    expect(ciliegia.saldo).toBe(95)
     const sette = await gira(b, io, 10, ...SETTE)
     expect(sette.giro).toMatchObject({ n: 3, premio: 300, delta: 2990 })
-    expect(sette).toMatchObject({ saldo: 100 - 5 + 5 + 2990, netto: 2990, giri: 3 })
+    expect(sette).toMatchObject({ saldo: 100 - 5 + 2990, netto: 2985, giri: 3 })
 
     const me = await generaleDiOggi(b, io)
-    expect(me).toMatchObject({ punti: 100 + 2990, slot: 2990, ruota: 0, blackjack: 0 })
+    expect(me).toMatchObject({ punti: 100 + 2985, slot: 2985, ruota: 0, blackjack: 0 })
     const riga = b.db.sqlite
       .prepare('SELECT netto, giocate FROM fortuna_giornate WHERE player_id = ? AND gioco = ?')
       .get(io.id, 'slot')
-    expect(riga).toEqual({ netto: 2990, giocate: 3 })
+    expect(riga).toEqual({ netto: 2985, giocate: 3 })
   })
 
   it('si punta da uno a dieci, e mai piu’ del saldo', async () => {
@@ -218,14 +229,14 @@ describe('la slot', () => {
     expect(await stato(b, io)).toMatchObject({ saldo: 0, giri: 0 })
   })
 
-  it('tre simboli della stessa categoria, dovunque in vista: una domanda, e giusta paga trenta volte', async () => {
+  it('tre punti di domanda, dovunque in vista: una domanda, e giusta paga quindici volte', async () => {
     const b = banco()
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 50, 50)
     domandeDiOggi(b, 2)
-    const giro = (await gira(b, io, 4, ...TRIPLA)).giro!
+    const giro = (await gira(b, io, 4, ...DOMANDA)).giro!
     expect(giro).toMatchObject({
-      tripla: { indice: 0, categoria: CATEGORIE[0] },
+      tripla: { categoria: CATEGORIE[0] },
       stato: 'sfida',
       delta: -4,
       vincitaDomanda: 4 * VINCITA_DOMANDA,
@@ -250,8 +261,8 @@ describe('la slot', () => {
     expect(giusta.dati.saldo).toBe(100 + 4 * VINCITA_DOMANDA - 4)
     expect((await b.chiama('POST', '/slot/risposta', io, { scelta: 'lis' })).status).toBe(409)
 
-    // La stessa categoria un'altra volta: l'altra domanda, e sbagliata non paga.
-    await gira(b, io, 4, ...TRIPLA)
+    // Un'altra volta la stessa categoria: l'altra domanda, e sbagliata non paga.
+    await gira(b, io, 4, ...DOMANDA)
     caso(0)
     const altra = (await b.chiama<SlotStato>('POST', '/slot/domanda', io)).dati.giro!
     expect(altra.domanda?.testo).toBe(domanda(0).testo)
@@ -264,7 +275,7 @@ describe('la slot', () => {
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 50, 50)
     domandeDiOggi(b, 3)
-    await gira(b, io, 2, ...TRIPLA)
+    await gira(b, io, 2, ...DOMANDA)
     caso(0)
     await b.chiama('POST', '/slot/domanda', io)
     b.db.sqlite
@@ -273,7 +284,7 @@ describe('la slot', () => {
     const tardi = (await stato(b, io)).giro!
     expect(tardi).toMatchObject({ stato: 'fatto', delta: -2, risposta: { scelta: null, giusta: false } })
 
-    await gira(b, io, 2, ...TRIPLA)
+    await gira(b, io, 2, ...DOMANDA)
     const dopo = await gira(b, io, 2, ...NIENTE)
     expect(dopo.giro).toMatchObject({ n: 3, stato: 'fatto' })
     const seconda = b.db.sqlite.prepare('SELECT stato FROM slot_giri WHERE player_id = ? AND n = 2').get(io.id)
@@ -281,13 +292,23 @@ describe('la slot', () => {
     expect(dopo).toMatchObject({ netto: -6, giri: 3 })
   })
 
-  it('una categoria senza domande non fa tripla: le fermate si ripescano', async () => {
+  it('la categoria si pesca fra quelle del giorno che hanno ancora domande', async () => {
     const b = banco()
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 50, 50)
-    // Nessuna domanda: la tripla della prova non puo' uscire, ed esce il giro dopo nella coda.
-    const r = await gira(b, io, 1, ...TRIPLA, ...CILIEGIA)
-    expect(r.giro).toMatchObject({ fermate: CILIEGIA, tripla: null, premio: 2 })
+    domandeDiOggi(b, 1, [CATEGORIE[2], CATEGORIE[4]])
+    // Dopo le fermate, il caso sceglie fra le due categorie con le domande: la seconda.
+    const r = await gira(b, io, 1, ...DOMANDA, 1)
+    expect(r.giro).toMatchObject({ fermate: DOMANDA, tripla: { categoria: CATEGORIE[4] }, stato: 'sfida' })
+  })
+
+  it('senza domande da dare, i punti di domanda non escono: le fermate si ripescano', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 50, 50)
+    // Nessuna domanda: le fermate della prova non possono uscire, ed escono quelle dopo nella coda.
+    const r = await gira(b, io, 1, ...DOMANDA, ...CILIEGIA)
+    expect(r.giro).toMatchObject({ fermate: CILIEGIA, tripla: null, premio: 1 })
   })
 
   it('chi ha visto una domanda alla ruota non la rivede alla slot', async () => {
@@ -303,7 +324,7 @@ describe('la slot', () => {
          VALUES (?, ?, 1, 10, 1, 'fatto', -10, ?, 3, ?, ?)`,
       )
       .run(io.id, today().puzzleNumber, vista, new Date(0).toISOString(), new Date(0).toISOString())
-    await gira(b, io, 1, ...TRIPLA)
+    await gira(b, io, 1, ...DOMANDA)
     caso(0)
     const aperta = (await b.chiama<SlotStato>('POST', '/slot/domanda', io)).dati.giro!
     expect(aperta.domanda?.testo).toBe(domanda(1).testo)
