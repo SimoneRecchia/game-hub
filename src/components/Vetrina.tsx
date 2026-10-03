@@ -7,17 +7,17 @@ import { IconTrophy } from './Icons'
 import { Pagina } from './Pagina'
 import './Vetrina.css'
 
-export type SchedaVetrina = 'arena' | 'salotto' | 'fortuna'
+export type SchedaVetrina = 'giornaliere' | 'libere' | 'fortuna'
 
 /** Il colore della barra di stato di iOS sulla Fortuna, che e' scura in tutti e due i temi: quello del suo fondo. */
 const FONDO_FORTUNA = '#0d0716'
 
 /**
- * La pagina di una scheda: l'Arena, il Salotto, la Fortuna. Hanno la stessa
- * forma — il titolo grande con la data, in alto a destra la classifica, dove
- * c'e', e l'avatar che porta al profilo, poi l'eroe e le carte — e ognuna il
- * suo carattere, che sta nel CSS: la luce in cima alla pagina nel colore della
- * scheda, e la Fortuna scura come una sala da gioco.
+ * La pagina di una scheda: le Libere, le Giornaliere, la Fortuna. Hanno la
+ * stessa forma — il titolo grande con la data, in alto a destra la
+ * classifica, dove c'e', e l'avatar che porta al profilo, poi l'eroe e le
+ * carte — e ognuna il suo carattere, che sta nel CSS: la luce in cima alla
+ * pagina nel colore della scheda, e la Fortuna scura come una sala da gioco.
  */
 export function Vetrina({
   scheda,
@@ -60,7 +60,12 @@ export function Vetrina({
         <>
           {azioni}
           {classifica && (
-            <Collegamento to={classifica} className="bottone-barra vetrina__trofeo" aria-label="Classifica">
+            <Collegamento
+              to={classifica}
+              stato={{ da: titolo }}
+              className="bottone-barra vetrina__trofeo"
+              aria-label="Classifica"
+            >
               <IconTrophy size={20} />
             </Collegamento>
           )}

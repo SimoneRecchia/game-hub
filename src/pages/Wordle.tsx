@@ -47,7 +47,7 @@ export default function Wordle() {
     <Pagina
       titolo={title}
       intera
-      indietro={{ a: ROTTE.home, etichetta: 'Arena' }}
+      indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
         <>
           {!finished && (

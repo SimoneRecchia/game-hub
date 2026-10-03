@@ -336,7 +336,7 @@ giorno per tutto il sito. La scrittura in `presenza` passa solo ogni venti
 secondi o al cambio di attivita' (`segnaPresenza`), e a pagina nascosta il giro
 si ferma: un telefono in tasca non e' "online" per chi vuole sfidarlo. Gli
 amici online invece non stanno nel giro: `GET /api/amici` lo chiedono solo il
-profilo, il Salotto e il profilo di un amico, ogni `AMICI_POLL_MS` e mentre li
+profilo, le Libere e il profilo di un amico, ogni `AMICI_POLL_MS` e mentre li
 si guarda.
 
 **Nella battaglia navale la flotta dell'avversario non esce dal server.**
@@ -398,7 +398,7 @@ Crazy Time e' rimasto nelle sue tabelle perché spostarne i conti avrebbe voluto
 copiare i giorni passati, e nei minuti del deploy il codice di prima avrebbe
 scritto dove il nuovo non leggeva. La generale li somma tutti e li tiene ognuno
 nella sua colonna (`GeneraleRow.ruota`, `slot`, `blackjack`); la scheda ha la
-sua richiesta (`/api/fortuna`), e l'Arena non mostra Crazy Time.
+sua richiesta (`/api/fortuna`), e le Giornaliere non mostrano Crazy Time.
 
 **Nei giochi della Fortuna si vedono il saldo e la puntata, e basta.** Il
 tabellone in cima a ogni gioco (`Tabellone` in `src/games/fortuna/`) ha due
@@ -774,12 +774,11 @@ partite.
 
 **I giochi da tavolo non hanno classificata.** Sono partite quando si vuole,
 con gli amici — e contro il computer dove ha senso — senza punti ne'
-classifica: nel Salotto stanno con le libere, e nella barra laterale sotto il
-Salotto (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in
-`GiocoClassificato`, che
-porta con se' classifiche, anelli e statistiche. Sono Indovina chi, che il
-computer non ce l'ha — si gioca parlandosi — e scacchi, dama, Forza 4 e go,
-con un amico o contro il computer.
+classifica: nelle Libere stanno con le libere dei sei giochi, e nella barra
+laterale sotto le Libere (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in
+`GiocoClassificato`, che porta con se' classifiche, anelli e statistiche. Sono
+Indovina chi, che il computer non ce l'ha — si gioca parlandosi — e scacchi,
+dama, Forza 4 e go, con un amico o contro il computer.
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -1337,28 +1336,46 @@ perché e' lì che partono le transizioni: avanti, indietro, scheda, con le View
 Transitions dove ci sono. React Router aggiorna lo stato dentro una transizione
 di React, quindi `TransizioniProvider` fa aspettare la View Transition finché la
 rotta nuova e' montata (guarda la chiave della location), con un tetto di 700 ms.
+I bottoni a destra della barra stanno a dodici punti l'uno dall'altro
+(`.pagina__lato--destra`): a quattro, come a sinistra, si toccavano, e
+l'anello dell'avatar ci finiva sopra.
 
-**Le schede sono tre: l'Arena, il Salotto e la Fortuna.** L'Arena (`/`, la
-medaglia) ha le classificate di oggi, che sono la parte principale; il Salotto
-(`/salotto`, la poltrona) le partite che non contano, le libere e i giochi da
-tavolo, con chi c'e' online; la Fortuna i giochi d'azzardo. Il profilo e la
-classifica non sono schede: il profilo si apre dall'avatar in alto a destra di
-ogni scheda, la classifica dal trofeo accanto e dall'eroe dell'Arena e della
-Fortuna, che portano alla loro. Mentre si guardano il profilo e gli amici
-nessuna scheda e' accesa, e la lente si spegne dov'era (`Shell.tsx`). La
-freccia indietro del profilo dice da dove si e' venuti: lo porta lo stato della
-history (`stato` di `Collegamento`).
+**Le schede sono tre: le Libere, le Giornaliere e la Fortuna, in
+quest'ordine.** Le Giornaliere (`/`, il calendario) hanno le classificate di
+oggi, che sono la parte principale: stanno al centro della barra e sono la
+pagina che si apre per prima, anche dall'app installata (`start_url`). Le
+Libere (`/libere`, il controller) hanno le partite che non contano, le libere
+dei sei giochi e i giochi da tavolo, con chi c'e' online; la Fortuna (il
+quadrifoglio) i giochi d'azzardo. Si chiamavano Arena e Salotto, e `/salotto`
+porta ancora alle Libere. Il profilo e la classifica non sono schede: il
+profilo si apre dall'avatar in alto a destra di ogni scheda, la classifica dal
+trofeo accanto e dall'eroe delle Giornaliere e della Fortuna, che portano alla
+loro. Mentre si guardano il profilo e gli amici nessuna scheda e' accesa, e la
+lente si spegne dov'era (`Shell.tsx`). Quale scheda e' accesa lo decide prima
+`delGiorno`: `/quiz/classificata` sta anche sotto `/quiz`, che e' delle
+Libere. La freccia indietro del profilo e delle classifiche dice da dove si e'
+venuti: lo porta lo stato della history (`stato` di `Collegamento`), e la
+classifica lo tiene cambiando periodo, perché l'indirizzo si sostituisce.
+
+**Le icone delle schede si riconoscono anche piene.** Il calendario delle
+Giornaliere ha il giorno di oggi (`Giorno` in `Icons.tsx`, con due cifre un
+po' piu' piccole, che altrimenti toccano i lati). Pieni, il calendario e il
+controller hanno il numero, la croce e i tasti bucati con una maschera, che
+vuole un id solo suo (`useId`): la stessa icona sta nella tab bar e nella
+barra laterale. Il quadrifoglio pieno ha le foglie staccate e senza tratto:
+col tratto si toccavano al centro, e diventava una macchia.
 
 **Le tre schede hanno la stessa forma, e ognuna il suo carattere.** `Vetrina`
 (`src/components/`) e' la pagina di tutte e tre: il titolo grande con la data,
 i bottoni in alto, l'eroe e le carte. Il carattere sta in `Vetrina.css`: la
-luce in cima alla pagina nel colore della scheda (`--arena`, `--salotto`,
+luce in cima alla pagina nel colore della scheda (`--giornaliere`, `--libere`,
 `--fortuna`, che dicono dove si e' e non che cosa si e' scelto), il movimento
-dell'eroe — le righe e il lampo dei riflettori di uno stadio, le bolle di una
-lampada, le lampadine di un'insegna — e le carte: l'Arena con la corsia del
-gioco e il bottone che chiama le classificate da giocare, il Salotto con le
-tessere che galleggiano. L'eroe dell'Arena e' la giornata: il posto nella
-generale di oggi, i punti, il podio e un anello per gioco. Il podio arriva con
+dell'eroe — le righe e il lampo dei riflettori di una gara, le bolle di una
+lampada, le lampadine di un'insegna — e le tessere delle Libere, che
+galleggiano. Le carte delle classificate sono quelle di prima: una striscia
+nel colore del gioco sul lato c'e' stata per un giorno, e sapeva di gia'
+visto. L'eroe delle Giornaliere e' la giornata: il posto nella generale di
+oggi, i punti, il podio e un anello per gioco. Il podio arriva con
 `/api/oggi` (`generale.podio`), che la generale la calcola comunque: nessuna
 richiesta in piu' per la schermata che si apre di piu'.
 
@@ -1372,14 +1389,14 @@ sopra una sala scura.
 
 **Gli amici sono tutti gli altri del gruppo.** Non c'e' una lista da tenere:
 l'app e' fra colleghi, e chi c'e' lo dice la presenza (`server/lib/amici.ts`).
-Il profilo ha gli amici online, il Salotto li mette nell'eroe, e toccandone uno
+Il profilo ha gli amici online, le Libere li mettono nell'eroe, e toccandone uno
 si apre il suo profilo (`/amici/:nickname`, anche dal foglio di un giocatore in
 classifica), con i giochi a cui invitarlo. Gli inviti sono quelli delle sale
 (`invitaA` in `src/games/amici/amici.ts`): si manda l'invito e si va nella sala
 del gioco, che lo trova in attesa e aspetta la risposta come se lo si fosse
 mandato da li'. Se l'amico non e' online si va nella sala, da cui lo si invita
-con un link; il quiz apre la libera con l'amico in vista (`?sfida=1`), perché
-la sfida la prepara il telefono di chi sfida. Il lato del goban e il set di
+con un link; il quiz apre la libera con l'amico in vista (`?sfida=1`), perché la
+sfida la prepara il telefono di chi sfida. Il lato del goban e il set di
 Indovina chi sono quelli scelti l'ultima volta nella sala, letti dalle loro
 chiavi del `localStorage` senza importare `tavolo/locale.ts`, che porta con se'
 le regole di tutti i tavolieri.
@@ -1413,13 +1430,14 @@ scelta: la difficoltà contro il computer, gli inviti con un amico. Il colore
 contro il computer non si sceglie: cambia a ogni partita (`prossimaParte` in
 `tavolo/locale.ts`), come nelle rivincite fra amici.
 
-**Un gioco non ha una pagina sua.** Dall'Arena una carta del giorno porta dritta
-alla partita di oggi, e dal Salotto le libere dei sei giochi e i giochi da
-tavolo portano a sceglierle. Le pagine di ogni gioco, con la classificata, la
+**Un gioco non ha una pagina sua.** Dalle Giornaliere una carta del giorno porta
+dritta alla partita di oggi, e dalle Libere le libere dei sei giochi e i giochi
+da tavolo portano a sceglierle. Le pagine di ogni gioco, con la classificata, la
 libera e un podio, erano un passaggio in piu' da attraversare ogni giorno:
 l'indirizzo del gioco (`/wordle`, quello dei sottodomini) porta alla
 classificata (`AllaClassificata` in `App.tsx`), e la freccia indietro di una
-classificata torna all'Arena, quella di una libera o di una sala al Salotto.
+classificata torna alle Giornaliere, quella di una libera o di una sala alle
+Libere.
 Le voci di un controllo segmentato sono larghe uguali e si stringono
 (`min-width: 0`): altrimenti la capsula che le segue non ci sta sopra, e su un
 telefono stretto l'ultima voce esce dalla carta.
@@ -1625,7 +1643,7 @@ punti oltre il bordo destro di un telefono largo 320. Le colonne di una griglia
 di carte sono `minmax(0, 1fr)`. Un altro guaio aveva la fila di capsule della
 classifica di prima: scorreva di lato, e lo scatto (`scroll-snap`) senza
 `scroll-padding` la fermava con la prima capsula contro il bordo dello schermo.
-Nelle classifiche niente scorre piu' di lato, e nemmeno nel Salotto, dove le
+Nelle classifiche niente scorre piu' di lato, e nemmeno nelle Libere, dove le
 libere erano un carosello e ora sono una griglia, e gli amici dell'eroe sono
 cinque posti fissi: oltre il quarto c'e' un tondo con il numero.
 
@@ -1755,8 +1773,8 @@ cambiata anche lì.
 ## Cose che sembrano sbagliate e non lo sono
 
 **Le classi CSS sono di tutta l'app.** Ogni foglio di stile finisce nello stesso
-CSS, quindi un nome comune collide: le tessere del Salotto si chiamano
-`salotto-tessera` perché `.tessera` e' quella del leggio dello Scarabeo, e con
+CSS, quindi un nome comune collide: le tessere delle Libere si chiamano
+`libere-tessera` perché `.tessera` e' quella del leggio dello Scarabeo, e con
 lo stesso nome prendevano il suo legno. Un nome nuovo va cercato prima nel
 resto del CSS.
 
@@ -1785,7 +1803,7 @@ In classifica può comparire chi ha **zero partite** e un punteggio pieno: sono
 le giornate giocate nella stanza di qualcun altro, che valgono come le proprie
 ma i cui tentativi non sono suoi. Per lo stesso motivo il profilo mostra il
 pannello statistiche anche con `played === 0`, se ci sono giornate in compagnia,
-e la carta della giornata nell'Arena non si nasconde.
+e la carta della giornata nelle Giornaliere non si nasconde.
 
 La **streak resta viva** se l'ultima vittoria è di ieri e oggi non si è ancora
 giocato. Si azzera solo se si è saltato un giorno o se si è giocato oggi e

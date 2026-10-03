@@ -6,7 +6,7 @@ import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
 
 /**
- * Gli amici online, per il profilo e il Salotto, e il profilo di uno, da cui
+ * Gli amici online, per il profilo e le Libere, e il profilo di uno, da cui
  * lo si invita a giocare. Non stanno nel giro della presenza, che parte ogni
  * otto secondi da ogni schermata: la lista serve solo dove la si guarda.
  */

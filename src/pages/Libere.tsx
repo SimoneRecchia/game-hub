@@ -12,11 +12,12 @@ import { formatGameDate } from '@/lib/format'
 import { usePresenza } from '@/lib/presenza'
 import { gameDate } from '@shared/daily'
 import type { AmicoOnline, GiocatoreBreve, GiocoDaTavolo } from '@shared/types'
-import './Salotto.css'
+import './Libere.css'
 
 /**
  * Le libere dei sei giochi: portano alla scelta della partita. Hanno la
- * stessa copertina delle carte dell'Arena, quindi niente transizione condivisa.
+ * stessa copertina delle carte delle Giornaliere, quindi niente transizione
+ * condivisa.
  */
 const LIBERE: ReadonlyArray<{ id: Gioco['id']; nome: string; a: string }> = GIOCHI.map((g) => ({
   id: g.id,
@@ -35,23 +36,23 @@ const DA_TAVOLO: ReadonlyArray<{ id: GiocoTavolo['id']; nome: string; a: string 
 const IN_VISTA = 4
 
 /**
- * Il Salotto: le partite che non contano, quando si vuole e con chi c'e'. In
+ * Le Libere: le partite che non contano, quando si vuole e con chi c'e'. In
  * cima chi e' online, che si tocca per aprirne il profilo e invitarlo a
  * giocare; sotto le partite in corso con gli amici, le libere dei sei giochi e
  * i giochi da tavolo.
  */
-export default function Salotto() {
+export default function Libere() {
   const amici = useAmiciOnline()
   const { dati: presenza } = usePresenza()
   const inCorso = partiteInCorso(presenza)
 
   return (
-    <Vetrina scheda="salotto" titolo="Salotto" sopra={formatGameDate(gameDate())}>
+    <Vetrina scheda="libere" titolo="Libere" sopra={formatGameDate(gameDate())}>
       <ChiCe amici={amici} />
 
       {inCorso.length > 0 && (
         <Sezione titolo="In corso">
-          <ul className="salotto__in-corso">
+          <ul className="libere__in-corso">
             {inCorso.map((p, i) => (
               <li key={p.a} className="entra" style={{ '--n': i + 1 } as CSSProperties}>
                 <Collegamento to={p.a} className="in-corso">
@@ -70,8 +71,8 @@ export default function Salotto() {
         </Sezione>
       )}
 
-      <Sezione titolo="Libere">
-        <ul className="salotto__tessere">
+      <Sezione titolo="I giochi">
+        <ul className="libere__tessere">
           {LIBERE.map((l, i) => (
             <li key={l.id} className="entra" style={{ '--n': i + 2 } as CSSProperties}>
               <Tessera id={l.id} nome={l.nome} a={l.a} />
@@ -81,7 +82,7 @@ export default function Salotto() {
       </Sezione>
 
       <Sezione titolo="Da tavolo">
-        <ul className="salotto__tessere">
+        <ul className="libere__tessere">
           {DA_TAVOLO.map((l, i) => (
             <li key={l.id} className="entra" style={{ '--n': i + LIBERE.length + 2 } as CSSProperties}>
               <Tessera id={l.id} nome={l.nome} a={l.a} transizione={`copertina-${l.id}`} />
@@ -108,11 +109,11 @@ function Tessera({
   return (
     <Collegamento
       to={a}
-      className="salotto-tessera"
+      className="libere-tessera"
       style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
     >
       <Copertina gioco={id} formato="icona" transizione={transizione} />
-      <span className="salotto-tessera__nome">{nome}</span>
+      <span className="libere-tessera__nome">{nome}</span>
     </Collegamento>
   )
 }
@@ -122,7 +123,7 @@ function ChiCe({ amici }: { amici: AmicoOnline[] | null }) {
   const visti = amici?.slice(0, IN_VISTA) ?? []
   const altri = amici ? amici.length - visti.length : 0
   return (
-    <section className="eroe eroe--salotto chi-ce" aria-label="Chi c'è">
+    <section className="eroe eroe--libere chi-ce" aria-label="Chi c'è">
       <span className="eroe__testa">
         <span className="eroe__occhiello">Chi c'è</span>
         {amici && amici.length > 0 && (
@@ -147,7 +148,7 @@ function ChiCe({ amici }: { amici: AmicoOnline[] | null }) {
         <ul className="chi-ce__amici">
           {visti.map((a, i) => (
             <li key={a.playerId} style={{ '--n': i } as CSSProperties}>
-              <Collegamento to={ROTTE.amico(a.nickname)} stato={{ da: 'Salotto' }} className="chi-ce__amico">
+              <Collegamento to={ROTTE.amico(a.nickname)} stato={{ da: 'Libere' }} className="chi-ce__amico">
                 <span className="chi-ce__avatar">
                   <Avatar nickname={a.nickname} color={a.avatarColor} size={52} />
                   <span className="chi-ce__online" aria-hidden="true" />
@@ -159,7 +160,7 @@ function ChiCe({ amici }: { amici: AmicoOnline[] | null }) {
           ))}
           {altri > 0 && (
             <li>
-              <Collegamento to={ROTTE.profilo} stato={{ da: 'Salotto' }} className="chi-ce__amico">
+              <Collegamento to={ROTTE.profilo} stato={{ da: 'Libere' }} className="chi-ce__amico">
                 <span className="chi-ce__altri u-tabnum">+{altri}</span>
                 <span className="chi-ce__nome">Altri</span>
               </Collegamento>

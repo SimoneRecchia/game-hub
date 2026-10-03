@@ -439,7 +439,7 @@ export interface GiocatoreBreve {
   avatarColor: string
 }
 
-/** Un amico online, per il profilo e il Salotto: chi e', e dove si trova. */
+/** Un amico online, per il profilo e le Libere: chi e', e dove si trova. */
 export interface AmicoOnline extends GiocatoreBreve {
   attivita: Attivita
 }

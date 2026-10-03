@@ -9,14 +9,21 @@ import { NOME_SLOT } from '@shared/slot'
 import { NOME_BLACKJACK } from '@shared/blackjack'
 import { Avatar } from './Avatar'
 import { Copertina } from './Copertina'
-import { IconArena, IconArenaFill, IconFortuna, IconFortunaFill, IconSalotto, IconSalottoFill } from './Icons'
+import {
+  IconFortuna,
+  IconFortunaFill,
+  IconGiornaliere,
+  IconGiornaliereFill,
+  IconLibere,
+  IconLibereFill,
+} from './Icons'
 import './Shell.css'
 
 interface Scheda {
   a: string
   nome: string
-  Icona: typeof IconArena
-  IconaPiena: typeof IconArena
+  Icona: typeof IconFortuna
+  IconaPiena: typeof IconFortuna
   /** Il colore della scheda: l'icona accesa e la lente sotto. */
   colore: string
   /** Le rotte che appartengono a questa sezione, oltre alla sua. */
@@ -35,36 +42,43 @@ const GIOCHI_FORTUNA = [
 const PERCORSI_FORTUNA = [ROTTE.fortuna, ...GIOCHI_FORTUNA.map((g) => g.a)]
 
 /**
- * Le tre schede: l'Arena con le classificate di oggi, che sono la parte
- * principale, il Salotto con le partite che non contano, e la Fortuna. La
- * classifica si apre dall'Arena e dalla Fortuna, il profilo dall'avatar in
- * alto a destra: non sono schede, e mentre li si guarda nessuna e' accesa.
- * L'ordine dei controlli conta: `/quiz/classificata` e' dell'Arena, il resto
- * del quiz del Salotto.
+ * Le classificate di oggi e quel che ci gira intorno: le partite, quelle in
+ * compagnia, la classifica (tranne quella della Fortuna). Viene prima delle
+ * Libere, perché `/quiz/classificata` sta anche sotto `/quiz`.
+ */
+const delGiorno = (p: string) =>
+  p === '/' ||
+  GIOCHI.some((g) => sotto(p, ROTTE.classificata(g.id))) ||
+  p.startsWith('/wordle/insieme/') ||
+  (sotto(p, ROTTE.classifica()) && !sotto(p, ROTTE.classifica('fortuna')))
+
+/**
+ * Le tre schede: le Libere, con le partite che non contano, le Giornaliere al
+ * centro, con le classificate di oggi, che sono la parte principale e la
+ * pagina d'apertura, e la Fortuna. La classifica si apre dalle Giornaliere e
+ * dalla Fortuna, il profilo dall'avatar in alto a destra: non sono schede, e
+ * mentre li si guarda nessuna e' accesa.
  */
 const SCHEDE: Scheda[] = [
   {
-    a: ROTTE.home,
-    nome: 'Arena',
-    Icona: IconArena,
-    IconaPiena: IconArenaFill,
-    colore: 'var(--arena)',
+    a: ROTTE.libere,
+    nome: 'Libere',
+    Icona: IconLibere,
+    IconaPiena: IconLibereFill,
+    colore: 'var(--libere)',
     sotto: (p) =>
-      p === '/' ||
-      GIOCHI.some((g) => sotto(p, ROTTE.classificata(g.id))) ||
-      p.startsWith('/wordle/insieme/') ||
-      (sotto(p, ROTTE.classifica()) && !sotto(p, ROTTE.classifica('fortuna'))),
+      !delGiorno(p) &&
+      (sotto(p, ROTTE.libere) ||
+        GIOCHI.some((g) => sotto(p, ROTTE.gioco(g.id))) ||
+        GIOCHI_DA_TAVOLO.some((g) => sotto(p, `/${g.slug}`))),
   },
   {
-    a: ROTTE.salotto,
-    nome: 'Salotto',
-    Icona: IconSalotto,
-    IconaPiena: IconSalottoFill,
-    colore: 'var(--salotto)',
-    sotto: (p) =>
-      sotto(p, ROTTE.salotto) ||
-      GIOCHI.some((g) => sotto(p, ROTTE.gioco(g.id))) ||
-      GIOCHI_DA_TAVOLO.some((g) => sotto(p, `/${g.slug}`)),
+    a: ROTTE.home,
+    nome: 'Giornaliere',
+    Icona: IconGiornaliere,
+    IconaPiena: IconGiornaliereFill,
+    colore: 'var(--giornaliere)',
+    sotto: delGiorno,
   },
   {
     a: ROTTE.fortuna,
@@ -75,6 +89,9 @@ const SCHEDE: Scheda[] = [
     sotto: (p) => PERCORSI_FORTUNA.some((g) => sotto(p, g)) || sotto(p, ROTTE.classifica('fortuna')),
   },
 ]
+
+/** Dove sta la lente prima di aver visto una scheda: al centro, sulle Giornaliere. */
+const DEL_GIORNO = SCHEDE.findIndex((s) => s.a === ROTTE.home)
 
 /**
  * Il guscio dell'app: le sezioni e il contenuto.
@@ -93,7 +110,7 @@ export function Shell({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   // Il profilo, un amico: nessuna scheda accesa, e la lente resta dov'era, spenta.
   const trovata = SCHEDE.findIndex((s) => s.sotto(pathname))
-  const ultima = useRef(0)
+  const ultima = useRef(DEL_GIORNO)
   if (trovata >= 0) ultima.current = trovata
   const attiva = trovata
   const lente = { transform: `translateX(${ultima.current * 100}%)`, '--lente': SCHEDE[ultima.current].colore }
@@ -157,15 +174,15 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
         })}
       </nav>
 
-      <p className="laterale__titolo">Arena</p>
+      <p className="laterale__titolo">Libere</p>
       <nav className="laterale__voci">
-        {GIOCHI.map((g) => {
-          // Il gioco porta alla partita di oggi, e resta acceso in tutte le sue schermate.
-          const dentro = sotto(pathname, ROTTE.classificata(g.id))
+        {GIOCHI_DA_TAVOLO.map((g) => {
+          const a = `/${g.slug}`
+          const dentro = sotto(pathname, a)
           return (
             <Collegamento
               key={g.id}
-              to={ROTTE.classificata(g.id)}
+              to={a}
               direzione="scheda"
               className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
             >
@@ -176,15 +193,15 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
         })}
       </nav>
 
-      <p className="laterale__titolo">Salotto</p>
+      <p className="laterale__titolo">Giornaliere</p>
       <nav className="laterale__voci">
-        {GIOCHI_DA_TAVOLO.map((g) => {
-          const a = `/${g.slug}`
-          const dentro = sotto(pathname, a)
+        {GIOCHI.map((g) => {
+          // Il gioco porta alla partita di oggi, e resta acceso in tutte le sue schermate.
+          const dentro = sotto(pathname, ROTTE.classificata(g.id))
           return (
             <Collegamento
               key={g.id}
-              to={a}
+              to={ROTTE.classificata(g.id)}
               direzione="scheda"
               className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
             >

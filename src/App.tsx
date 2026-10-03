@@ -10,8 +10,8 @@ import { BattagliaGate } from './games/battaglia/BattagliaGate'
 import { QuizGate } from './games/quiz/sfida/QuizGate'
 import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
-import Arena from './pages/Arena'
-import Salotto from './pages/Salotto'
+import Giornaliere from './pages/Giornaliere'
+import Libere from './pages/Libere'
 import Amico from './pages/Amico'
 import Classifica from './pages/Classifica'
 import Profilo from './pages/Profilo'
@@ -130,8 +130,8 @@ export default function App() {
       <Shell>
         <Suspense fallback={null}>
           <Routes>
-            <Route path="/" element={<Arena />} />
-            <Route path={ROTTE.salotto} element={<Salotto />} />
+            <Route path="/" element={<Giornaliere />} />
+            <Route path={ROTTE.libere} element={<Libere />} />
             <Route path="/classifica" element={<Classifica />} />
             <Route path="/classifica/:gioco" element={<Classifica />} />
             <Route path="/profilo" element={<Profilo />} />
@@ -192,6 +192,7 @@ export default function App() {
             <Route path="/insieme/:roomId" element={<Vecchio verso={(p) => ROTTE.insieme(p.roomId ?? '')} />} />
             <Route path="/battaglia" element={<Navigate to={ROTTE.classificata('battaglia')} replace />} />
             <Route path="/battaglia/:id" element={<Vecchio verso={(p) => ROTTE.partitaBattaglia(p.id ?? '')} />} />
+            <Route path="/salotto" element={<Navigate to={ROTTE.libere} replace />} />
             {/* Le cinque parole di prima: ora la classificata e' una parola sola. */}
             <Route path="/wordle/classificata/:slot" element={<Navigate to={ROTTE.classificata('wordle')} replace />} />
             <Route path="/wordle/:slot" element={<Navigate to={ROTTE.classificata('wordle')} replace />} />
