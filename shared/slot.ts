@@ -70,7 +70,7 @@ export const CILIEGIE: readonly number[] = [0, 1, 5, 20]
 export const VINCITA_DOMANDA = 15
 
 export const PUNTATA_MINIMA_SLOT = 1
-/** Le puntate dei tasti, come i gettoni di una slot: l'ultima e' il massimo. */
+/** Le fiches della slot: ogni tocco aggiunge il suo valore alla puntata, fino al massimo, che e' la piu' grande. */
 export const PUNTATE_SLOT: readonly number[] = [1, 2, 5, 10]
 export const PUNTATA_MASSIMA_SLOT = PUNTATE_SLOT[PUNTATE_SLOT.length - 1]
 

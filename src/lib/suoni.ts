@@ -96,6 +96,20 @@ export type NomeSuono =
   | 'bar'
   /** I tre sette, prima della festa. */
   | 'sette'
+  /** La puntata della slot arrivata al massimo: un tocco morbido, non un errore. */
+  | 'tetto'
+  /** Una manciata di monete che salta fuori: le vincite piccole della slot. */
+  | 'manciata'
+  /** Le vincite di mezzo della slot: una fanfara corta, e la fontana di monete. */
+  | 'fanfara'
+  /** La festa del SUPER WIN: la fanfara, e una corsa di campanelli piu' in alto. */
+  | 'superVincita'
+  /** Il jackpot: il campanello elettrico delle slot di una volta, e la sirena del faro. */
+  | 'sirena'
+  /** Una lettera del JACKPOT che cade: il colpo, e la lamiera che vibra. */
+  | 'schianto'
+  /** Un fuoco d'artificio che esplode. */
+  | 'botto'
   /** Una carta che parte dal sabot e scivola sul panno. */
   | 'carta'
   /** Una carta del banco che si gira. */
@@ -110,6 +124,8 @@ export interface OpzioniSuono {
   volume?: number
   /** Secondi di attesa prima di suonare. */
   ritardo?: number
+  /** Quanto piu' alto, per i suoni che lo prevedono: 2 e' un'ottava sopra. Il contatore della festa sale cosi'. */
+  altezza?: number
 }
 
 /* ─────────────────────────────  Acceso o spento  ──────────────────────────── */
@@ -249,7 +265,7 @@ export function suona(nome: NomeSuono, opzioni: OpzioniSuono = {}): void {
     ultimi.set(nome, adesso)
   }
   try {
-    PARTITURE[nome](u, contesto.currentTime + 0.01 + (opzioni.ritardo ?? 0), opzioni.volume ?? 1)
+    PARTITURE[nome](u, contesto.currentTime + 0.01 + (opzioni.ritardo ?? 0), opzioni.volume ?? 1, opzioni.altezza ?? 1)
   } catch {
     // Un suono che non parte non ferma il gioco.
   }
@@ -477,7 +493,8 @@ const vario = (x: number, quanto = 0.03) => x * (1 - quanto + Math.random() * qu
 
 /* ──────────────────────────────  Le partiture  ───────────────────────────── */
 
-type Partitura = (u: Uscita, t: number, v: number) => void
+/** Una partitura: dove suona, quando, quanto forte e, se la prevede, quanto piu' in alto (`OpzioniSuono.altezza`). */
+type Partitura = (u: Uscita, t: number, v: number, altezza?: number) => void
 
 export const PARTITURE: Record<NomeSuono, Partitura> = {
   tocco: (u, t, v) => legno(u, t, vario(1700), 0.09 * v),
@@ -708,10 +725,11 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     })
   },
 
-  // Una moneta che cade sulle altre: un tintinnio corto, ogni volta un po' diverso.
-  incasso: (u, t, v) => {
-    campanello(u, t, vario(N.C7, 0.04), 0.06 * v, { eco: 0.2, durata: 0.22 })
-    legno(u, t, vario(1300, 0.06), 0.05 * v, 0.01)
+  // Una moneta che cade sulle altre: un tintinnio corto, ogni volta un po' diverso. Il contatore della festa lo
+  // suona sempre piu' alto, mentre il numero cresce.
+  incasso: (u, t, v, altezza = 1) => {
+    campanello(u, t, vario(N.C7 * altezza, 0.04), 0.06 * v, { eco: 0.2, durata: 0.22 })
+    legno(u, t, vario(1300 * altezza, 0.06), 0.05 * v, 0.01)
   },
 
   // Fra una scena e l'altra: un soffio che passa, e un accordo d'apertura.
@@ -831,6 +849,85 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     soffio(u, t, 0.6, 0.16 * v, { tipo: 'bandpass', da: 400, a: 5000, q: 1 }, { attacco: 0.3, eco: 0.3 })
     tonfo(u, t + 0.6, 0.3 * v, { da: 140, a: 45, durata: 0.5 })
     ;[N.C6, N.E6, N.G6].forEach((f) => campanello(u, t + 0.6, f, 0.12 * v, { eco: 0.5, durata: 1.2 }))
+  },
+
+  // La puntata al massimo: due tocchi morbidi sulla stessa nota, come un fermo che non si lascia spingere oltre.
+  tetto: (u, t, v) => {
+    legno(u, t, 980, 0.05 * v, 0.01)
+    marimba(u, t, N.G5, 0.12 * v, { eco: 0.1, durata: 0.35 })
+    marimba(u, t + 0.09, N.G5, 0.08 * v, { eco: 0.12, durata: 0.4 })
+  },
+
+  // Una manciata di monete che salta fuori e ricade: tintinnii fitti, ognuno un po' diverso dall'altro.
+  manciata: (u, t, v) => {
+    const monete = [N.E7, N.G7, N.C7, N.A7, N.D7]
+    for (let i = 0; i < 9; i += 1) {
+      const d = i * 0.045 + (i % 3) * 0.012
+      campanello(u, t + d, vario(monete[i % monete.length], 0.02), (0.05 - i * 0.003) * v, { eco: 0.3, durata: 0.25 })
+      legno(u, t + d, vario(1500, 0.08), 0.03 * v, 0.01)
+    }
+  },
+
+  // Le vincite di mezzo: tre note che salgono, l'accordo che resta, e le monete della fontana.
+  fanfara: (u, t, v) => {
+    ;[N.G5, N.C6, N.E6].forEach((f, i) => marimba(u, t + i * 0.08, f, 0.22 * v, { eco: 0.25 }))
+    const accordo = t + 0.24
+    ;[N.C6, N.E6, N.G6].forEach((f) => campanello(u, accordo, f, 0.1 * v, { eco: 0.4, durata: 1.1 }))
+    marimba(u, accordo, N.C5, 0.16 * v, { eco: 0.3, durata: 1 })
+    const monete = [N.E7, N.G7, N.A7, N.C7]
+    for (let i = 0; i < 8; i += 1) {
+      campanello(u, accordo + 0.12 + i * 0.07, vario(monete[i % monete.length]), 0.035 * v, { eco: 0.4, durata: 0.3 })
+    }
+  },
+
+  // Il SUPER WIN: la fanfara della vincita, poi una corsa di campanelli che sale di un'ottava e si apre.
+  superVincita: (u, t, v) => {
+    PARTITURE.vincita(u, t, v)
+    ;[N.C6, N.E6, N.G6, N.C7, N.E7, N.G7].forEach((f, i) =>
+      campanello(u, t + 0.62 + i * 0.06, f, 0.08 * v, { eco: 0.5, durata: 0.8 }),
+    )
+    marimba(u, t + 0.98, N.C6, 0.2 * v, { eco: 0.4, durata: 1.2 })
+    marimba(u, t + 0.98, N.G6, 0.16 * v, { eco: 0.4, durata: 1.2 })
+  },
+
+  // Il jackpot delle slot di una volta: il campanello elettrico che squilla a raffica, e sotto la sirena del faro
+  // che sale e scende due volte.
+  sirena: (u, t, v) => {
+    for (let i = 0; i < 26; i += 1) {
+      const forza = Math.min(1, (i + 1) / 3) * (1 - i / 34)
+      campanello(u, t + i * 0.052, vario(2350, 0.006), 0.05 * forza * v, { eco: 0.25, durata: 0.16 })
+    }
+    const o = u.ctx.createOscillator()
+    o.type = 'sawtooth'
+    o.frequency.setValueAtTime(560, t)
+    ;[1180, 560, 1180, 560].forEach((f, i) => o.frequency.linearRampToValueAtTime(f, t + 0.38 * (i + 1)))
+    const filtro = u.ctx.createBiquadFilter()
+    filtro.type = 'lowpass'
+    filtro.frequency.value = 1600
+    const g = u.ctx.createGain()
+    g.gain.setValueAtTime(0, t)
+    g.gain.linearRampToValueAtTime(1, t + 0.08)
+    g.gain.setValueAtTime(1, t + 1.3)
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6)
+    o.connect(filtro).connect(g).connect(voce(u, 0.045 * v, 0.2))
+    o.start(t)
+    o.stop(t + 1.65)
+  },
+
+  // Una lettera del JACKPOT che cade: il colpo sordo, lo spostamento d'aria, e la lamiera che vibra.
+  schianto: (u, t, v) => {
+    tonfo(u, t, 0.42 * v, { da: 150, a: 38, durata: 0.42 })
+    soffio(u, t, 0.22, 0.2 * v, { tipo: 'lowpass', da: 2600, a: 300, q: 0.8 }, { attacco: 0.002, eco: 0.2 })
+    campanello(u, t, vario(N.C5 * 1.5, 0.01), 0.07 * v, { eco: 0.35, durata: 0.5 })
+  },
+
+  // Un fuoco d'artificio: il botto lontano, e lo sfrigolio delle scintille che ricadono.
+  botto: (u, t, v) => {
+    tonfo(u, t, 0.2 * v, { da: 90, a: 36, durata: 0.5 })
+    soffio(u, t, 0.5, 0.22 * v, { tipo: 'lowpass', da: 1800, a: 160, q: 0.6 }, { attacco: 0.003, eco: 0.35 })
+    for (let i = 0; i < 6; i += 1) {
+      colpo(u, t + 0.12 + i * 0.07 + Math.random() * 0.03, voce(u, 0.04 * v, 0.2), vario(5200, 0.15), 0.012, 0.6)
+    }
   },
 
   // La carta dal sabot: lo strappo della carta che esce, e il fruscio sul panno.
