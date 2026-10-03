@@ -1,4 +1,5 @@
 import { Sheet } from '@/components/Sheet'
+import { pluralize } from '@/lib/format'
 import { COSTO_ERRORE, COSTO_SVELATA, PUNTI_COMPLETO } from '@shared/cruciverba'
 import './ComeSiGioca.css'
 
@@ -28,7 +29,8 @@ export function ComeSiGiocaCruciverba({ open, onClose }: { open: boolean; onClos
               Completarlo senza aiuti vale <strong>{PUNTI_COMPLETO} punti</strong>.
             </li>
             <li>
-              <strong>Controlla</strong>: {COSTO_ERRORE} punto per ogni lettera sbagliata.
+              <strong>Controlla</strong>: {COSTO_ERRORE} {pluralize(COSTO_ERRORE, 'punto', 'punti')} per ogni lettera
+              sbagliata.
             </li>
             <li>
               <strong>Svela</strong>: {COSTO_SVELATA} punti per ogni lettera mancante o sbagliata.

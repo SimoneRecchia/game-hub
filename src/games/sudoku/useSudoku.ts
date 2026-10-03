@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
-import { NOTE_VUOTE, noteDaTesto, noteInTesto } from '@shared/sudoku'
+import { NOTE_VUOTE, PUNTI_COMPLETO, noteDaTesto, noteInTesto } from '@shared/sudoku'
 import type { SudokuEsito, SudokuState } from '@shared/types'
 import { useCronometro } from './useCronometro'
 import { useEditor } from './useEditor'
@@ -27,7 +27,7 @@ export function useSudoku(): SudokuInCorso & { stato: SudokuState | null; loadEr
   const [svelate, setSvelate] = useState<ReadonlySet<number>>(new Set())
   // Le caselle segnalate, con la cifra che avevano: rosse finché hanno quella cifra.
   const [segnalate, setSegnalate] = useState<ReadonlyMap<number, string>>(new Map())
-  const [punti, setPunti] = useState(100)
+  const [punti, setPunti] = useState(PUNTI_COMPLETO)
   const [finita, setFinita] = useState(false)
   const [messaggio, setMessaggio] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)

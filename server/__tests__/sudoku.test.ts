@@ -67,7 +67,13 @@ describe('il sudoku del giorno, dalle API', () => {
     expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM sudoku_games').get()?.n).toBe(0)
 
     const stato = (await chiama<SudokuState>('GET', '/sudoku/state', io)).dati
-    expect(stato).toMatchObject({ dati: SCHEMA.dati, cifre: SCHEMA.dati, note: NOTE_VUOTE, status: 'playing', punti: 100 })
+    expect(stato).toMatchObject({
+      dati: SCHEMA.dati,
+      cifre: SCHEMA.dati,
+      note: NOTE_VUOTE,
+      status: 'playing',
+      punti: 150,
+    })
     expect(stato.soluzione).toBeNull()
   })
 
@@ -86,17 +92,17 @@ describe('il sudoku del giorno, dalle API', () => {
     expect((await chiama('PUT', '/sudoku/cifre', io, { cifre: scrivi(6), versione: stato.versione })).status).toBe(409)
   })
 
-  it('il controllo fa pagare gli errori nuovi, lo svelare tre punti, e la griglia giusta chiude', async () => {
+  it('il controllo fa pagare gli errori nuovi, lo svelare cinque punti, e la griglia giusta chiude', async () => {
     const { chiama, giocatore } = preparaBanco()
     const io = await giocatore('dario')
     await chiama('GET', '/sudoku/state', io)
 
     const controllo = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, { cifre: scrivi(4, true), versione: 0 })
     expect(controllo.dati.errate).toHaveLength(1)
-    expect(controllo.dati.punti).toBe(99)
+    expect(controllo.dati.punti).toBe(148)
     // Lo stesso errore ricontrollato non costa.
     const di_nuovo = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, { cifre: scrivi(4, true), versione: 1 })
-    expect(di_nuovo.dati.punti).toBe(99)
+    expect(di_nuovo.dati.punti).toBe(148)
 
     const vuota = [...SCHEMA.dati].findIndex((d, k) => d === VUOTA && k > 40)
     const svelata = await chiama<SudokuEsito>('POST', '/sudoku/svela', io, {
@@ -105,20 +111,20 @@ describe('il sudoku del giorno, dalle API', () => {
       caselle: [vuota],
     })
     expect(svelata.dati.rivelate).toEqual({ [vuota]: SCHEMA.soluzione[vuota] })
-    expect(svelata.dati.punti).toBe(96)
+    expect(svelata.dati.punti).toBe(143)
     // Una data non si svela.
     const data = [...SCHEMA.dati].findIndex((d) => d !== VUOTA)
     expect((await chiama('POST', '/sudoku/svela', io, { cifre: scrivi(4), versione: 3, caselle: [data] })).status).toBe(400)
 
     const finita = await chiama<SudokuEsito>('PUT', '/sudoku/cifre', io, { cifre: SCHEMA.soluzione, versione: 3 })
-    expect(finita.dati).toMatchObject({ status: 'done', punti: 96 })
+    expect(finita.dati).toMatchObject({ status: 'done', punti: 143 })
     expect(finita.dati.stato?.soluzione).toBe(SCHEMA.soluzione)
 
     const classifica = (await chiama<SudokuLeaderboard>('GET', '/leaderboard/sudoku?scope=today', io)).dati
-    expect(classifica.me).toMatchObject({ rank: 1, punti: 96, giornate: 1 })
+    expect(classifica.me).toMatchObject({ rank: 1, punti: 143, giornate: 1 })
     const generale = (await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', io)).dati
-    expect(generale.me?.perGioco.sudoku).toBe(96)
-    expect((await chiama<OggiRisposta>('GET', '/oggi', io)).dati.sudoku).toMatchObject({ status: 'done', punti: 96 })
+    expect(generale.me?.perGioco.sudoku).toBe(143)
+    expect((await chiama<OggiRisposta>('GET', '/oggi', io)).dati.sudoku).toMatchObject({ status: 'done', punti: 143 })
   })
 
   it('una griglia piena ma sbagliata non chiude, e lo dice', async () => {

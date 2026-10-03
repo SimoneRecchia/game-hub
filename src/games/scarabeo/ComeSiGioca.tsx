@@ -1,4 +1,5 @@
 import { Sheet } from '@/components/Sheet'
+import { TETTI } from '@shared/punti'
 import { BONUS_SCARABEO, DISTRIBUZIONE, JOLLY, MOSSE_PER_GIORNATA, TESSERE_LEGGIO, VALORI } from '@shared/scarabeo'
 import './ComeSiGioca.css'
 
@@ -112,8 +113,8 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
               nomi propri: &ldquo;città&rdquo; si scrive CITTA.
             </li>
             <li>
-              <strong>Classificata</strong>: tessere uguali per tutti. Pareggiare il computer vale 100
-              punti in classifica, farne la metà 50.
+              <strong>Classificata</strong>: tessere uguali per tutti. Pareggiare il computer vale{' '}
+              {TETTI.scarabeo} punti in classifica, farne la metà {TETTI.scarabeo / 2}.
             </li>
             <li>
               <strong>Libera</strong>: a turni contro il computer. Non conta per la classifica.

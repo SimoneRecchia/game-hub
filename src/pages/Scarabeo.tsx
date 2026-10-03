@@ -16,6 +16,7 @@ import { useScarabeo } from '@/games/scarabeo/useScarabeo'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { usePlayer } from '@/lib/auth'
 import { formatCountdown } from '@/lib/format'
+import { TETTI } from '@shared/punti'
 import type { ScarabeoState } from '@shared/types'
 import './Scarabeo.css'
 
@@ -24,7 +25,7 @@ import './Scarabeo.css'
  *
  * Le tessere sono le stesse per tutti, e il computer le ha già giocate: il suo
  * punteggio sta sempre in vista a destra, come il traguardo da raggiungere —
- * pareggiarlo vale cento punti in classifica. Le sue mosse invece si vedono
+ * pareggiarlo vale il tetto dello Scarabeo in classifica. Le sue mosse si vedono
  * solo a giornata chiusa: sarebbero la soluzione.
  */
 export default function Scarabeo() {
@@ -186,7 +187,7 @@ function Chiusa({ stato, onMosseComputer }: { stato: ScarabeoState; onMosseCompu
       <p className="scr-fine__titolo">{titolo}</p>
       <p className="scr-fine__punti">
         <Numero valore={stato.puntiClassifica} />
-        <span className="scr-fine__su"> / 100</span>
+        <span className="scr-fine__su"> / {TETTI.scarabeo}</span>
       </p>
       <p className="scr-fine__nota">
         punti in classifica · {stato.punti} contro {stato.computer.punti}

@@ -10,9 +10,10 @@ import './classifica/Classifica.css'
  * Le classifiche: la generale, che somma le classificate di tutti i giochi, e
  * quella di ogni gioco, per giorno, settimana, mese o da sempre.
  *
- * Si possono sommare perché ogni classificata vale al massimo cento punti
- * (vedi shared/punti.ts); ogni gioco tiene comunque la sua, con i suoi
- * spareggi, perché chi gioca solo al cruciverba vuole sapere come va lì.
+ * Si possono sommare perché ogni classificata ha un tetto deciso, secondo il
+ * tempo che chiede (vedi shared/punti.ts); ogni gioco tiene comunque la sua,
+ * con i suoi spareggi, perché chi gioca solo al cruciverba vuole sapere come
+ * va lì.
  *
  * /classifica le mette tutte insieme, i primi tre di ognuna; /classifica/generale
  * e /classifica/<gioco> ne aprono una per intero. Il periodo sta nell'indirizzo

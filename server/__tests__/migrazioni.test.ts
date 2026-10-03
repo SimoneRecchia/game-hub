@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_ATTEMPTS } from '../../shared/config'
-import { scoreFor, speedBonus, streakBonus, type ScoreInput } from '../../shared/scoring'
+import { speedBonus, streakBonus, type ScoreInput } from '../../shared/scoring'
 import { ProvaD1, applica, migrazioni } from './banco'
 
 /**
@@ -15,6 +15,19 @@ function scalaCinqueParole(input: ScoreInput, slot: number): number {
   const usati = Math.min(Math.max(input.attempts, 1), MAX_ATTEMPTS)
   const punti = [25, 10, 7, 4, 4][i] + [5, 2, 1, 1, 1][i] * (MAX_ATTEMPTS - usati)
   return slot === 1 ? punti + speedBonus(input.durationMs) + streakBonus(input.streak) : punti
+}
+
+/**
+ * La scala della parola sola com'era dalla migrazione 0014 alla ridistribuzione
+ * dei punti — cento al primo tentativo, cinquanta al sesto, venti a chi non
+ * indovina — che e' quella che la 0014 scrive. Il codice adesso ha quella da
+ * settanta (shared/scoring.ts): i punti salvati non si riscrivono.
+ */
+function scalaParolaSola(input: ScoreInput): number {
+  if (input.status === 'playing') return 0
+  if (input.status === 'lost') return 20
+  const usati = Math.min(Math.max(input.attempts, 1), MAX_ATTEMPTS)
+  return 40 + 10 * (MAX_ATTEMPTS + 1 - usati) + speedBonus(input.durationMs) + streakBonus(input.streak)
 }
 
 function giocatore(db: ProvaD1, id: string) {
@@ -145,7 +158,7 @@ describe('la scala del Wordle divisa a meta’', () => {
 })
 
 describe('una parola sola al giorno', () => {
-  it('ricalcola la parola del giorno come shared/scoring.ts e archivia le altre', () => {
+  it('ricalcola la parola del giorno sulla scala da cento e archivia le altre', () => {
     const db = new ProvaD1('0014')
     giocatore(db, 'pl_a')
     const adesso = new Date().toISOString()
@@ -175,7 +188,7 @@ describe('una parola sola al giorno', () => {
       const c = casi[i]
       expect(r.slot).toBe(1)
       expect(r.score, JSON.stringify(c)).toBe(
-        scoreFor({ status: c.status, attempts: c.attempts, durationMs: c.durata, streak: c.serie }),
+        scalaParolaSola({ status: c.status, attempts: c.attempts, durationMs: c.durata, streak: c.serie }),
       )
     })
     // Le parole in piu' non spariscono: stanno in archivio, intere.
