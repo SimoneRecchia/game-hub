@@ -60,6 +60,7 @@ import {
 import { riepilogoBattaglia } from '../lib/riepiloghi'
 import { invitoQuizConLink } from '../lib/quizSfideStore'
 import { invitoIndovinaConLink } from '../lib/indovinaStore'
+import { invitoNomiConLink } from '../lib/nomiSfideStore'
 import { invitoTavoloConLink } from '../lib/tavoloStore'
 
 /** La partita richiesta, e il lato di chi chiede: chi non ci gioca non la vede. */
@@ -404,7 +405,8 @@ export const invitiPubblici = new Hono<AppEnv>().get('/:codice', async (c) => {
     (await invitoConLink(c.env.DB, codice, adesso)) ??
     (await invitoQuizConLink(c.env.DB, codice, adesso)) ??
     (await invitoIndovinaConLink(c.env.DB, codice, adesso)) ??
-    (await invitoTavoloConLink(c.env.DB, codice, adesso))
+    (await invitoTavoloConLink(c.env.DB, codice, adesso)) ??
+    (await invitoNomiConLink(c.env.DB, codice, adesso))
   if (!invito) fail(404, 'LINK_NON_TROVATO', 'Questo invito non esiste.')
   return c.json<InvitoConLink>(invito)
 })

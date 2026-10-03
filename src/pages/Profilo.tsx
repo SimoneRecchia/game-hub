@@ -187,6 +187,29 @@ function Fonti() {
         ).
       </p>
       <p>
+        <strong>Nomi, cose e città.</strong> Parole dal{' '}
+        <a href="https://it.wiktionary.org" target="_blank" rel="noreferrer">
+          Wikizionario
+        </a>{' '}
+        e dal{' '}
+        <a href="https://en.wiktionary.org" target="_blank" rel="noreferrer">
+          Wiktionary
+        </a>
+        , estratte da{' '}
+        <a href="https://kaikki.org" target="_blank" rel="noreferrer">
+          kaikki.org
+        </a>{' '}
+        (
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.it" target="_blank" rel="noreferrer">
+          CC BY-SA 4.0
+        </a>
+        ), da{' '}
+        <a href="https://www.wikidata.org" target="_blank" rel="noreferrer">
+          Wikidata
+        </a>{' '}
+        (CC0), da napolux/paroleitaliane e da hermitdave/FrequencyWords (MIT).
+      </p>
+      <p>
         <strong>Cruciverba.</strong> Definizioni dal{' '}
         <a href="https://it.wiktionary.org" target="_blank" rel="noreferrer">
           Wikizionario

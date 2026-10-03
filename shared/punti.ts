@@ -16,7 +16,10 @@
  *   Battaglia    5-8 minuti                  85
  *   Quiz         3-4 minuti                  75
  *   Wordle       3-5 minuti                  70
+ *   Nomi, cose   2-3 minuti                  60
  *   Tris         2-3 minuti                  50
+ *
+ * Sono otto, e la somma e' ottocento: cento a gioco in media.
  *
  * Dentro il suo tetto ogni gioco misura quel che gli e' proprio, e tutti
  * tengono lo stesso principio del Wordle: **giocarla bene vale circa il doppio
@@ -29,6 +32,7 @@
  *   Sudoku       risolto, meno gli aiuti              135-150    0*       150
  *   Battaglia    colpi per affondare la flotta         64-72    ~25        85
  *   Quiz         risposte giuste su dieci              45-69     15        75
+ *   Nomi, cose   risposte valide, rare e veloci        35-45     15        60
  *   Tris         vinte e patte su cinque partite       30-40     10        50
  *
  *   * la parola non indovinata vale quattordici, la peggiore indovinata
@@ -48,6 +52,7 @@ import { CASELLE_FLOTTA } from './battaglia'
 import { DOMANDE_PER_PARTITA, puntiQuiz } from './quiz'
 import { puntiSudoku } from './sudoku'
 import { PARTITE_TRIS, puntiTris } from './tris'
+import { MASSIMO_NOMI } from './nomi-cose'
 import type { GiocoClassificato } from './types'
 
 export { punteggio as puntiCruciverba } from './cruciverba'
@@ -64,6 +69,7 @@ export const TETTI: Record<GiocoClassificato, number> = {
   quiz: 75,
   wordle: 70,
   tris: 50,
+  nomi: 60,
 }
 
 /* ─────────────────────────────  Scarabeo  ─────────────────────────── */
@@ -134,4 +140,5 @@ export const MASSIMI: Record<GiocoClassificato, number> = {
   battaglia: puntiBattaglia({ vinta: true, colpi: CASELLE_FLOTTA, aSegno: CASELLE_FLOTTA }),
   quiz: puntiQuiz(DOMANDE_PER_PARTITA, DOMANDE_PER_PARTITA),
   tris: puntiTris(PARTITE_TRIS, 0),
+  nomi: MASSIMO_NOMI,
 }

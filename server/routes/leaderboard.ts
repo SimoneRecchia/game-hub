@@ -6,6 +6,7 @@ import type {
   GeneraleLeaderboard,
   CruciverbaLeaderboard,
   LeaderboardResponse,
+  NomiLeaderboard,
   PanoramicaClassifiche,
   PeriodoClassifica,
   QuizLeaderboard,
@@ -23,6 +24,7 @@ import { classificaSudoku } from '../lib/sudokuStore'
 import { classificaBattaglia } from '../lib/battagliaStore'
 import { classificaQuiz } from '../lib/quizStore'
 import { classificaTris } from '../lib/trisStore'
+import { classificaNomi } from '../lib/nomiStore'
 import { classificaFortuna, classificaGenerale } from '../lib/generale'
 import { panoramica } from '../lib/panoramica'
 import { today } from '../lib/wordleStore'
@@ -103,4 +105,10 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/tris', async (c) => {
     const result = await classificaTris(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<TrisLeaderboard>(result)
+  })
+
+  /** Nomi, cose e città: i punti contati la notte, che valgono il giorno dopo. */
+  .get('/nomi', async (c) => {
+    const result = await classificaNomi(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
+    return c.json<NomiLeaderboard>(result)
   })

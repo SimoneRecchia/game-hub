@@ -1,0 +1,659 @@
+/*
+ * Nomi, cose e città: il foglio a righe del quaderno, con il margine rosso, e
+ * la matita gialla che fa da orologio. La lettera e' un timbro tondo nel giallo
+ * della matita; le risposte si scrivono sulle righe, una per categoria.
+ */
+.nomi-pagina {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  width: min(100%, 560px);
+  margin-inline: auto;
+  padding-bottom: var(--sp-4);
+}
+
+.nomi-attesa {
+  flex: 1;
+  min-height: 280px;
+  border-radius: var(--r-lg);
+  background: var(--fill-quaternary);
+  animation: nomi-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes nomi-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ---------- La lettera ---------- */
+
+.nomi-lettera {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 64px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #ffe27a, var(--nomi-1) 48%, var(--nomi-2));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -3px 0 rgba(120, 70, 0, 0.18),
+    0 6px 18px color-mix(in srgb, var(--nomi-2) 30%, transparent);
+  color: #3d2800;
+  font-family: var(--font-rounded);
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1;
+  transform: rotate(-4deg);
+}
+
+/* Prima di cominciare: il tondo c'e', la lettera no. */
+.nomi-lettera.is-nascosta {
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--nomi-2) 55%, transparent);
+  color: var(--nomi-ink);
+}
+
+.nomi-lettera.is-piccola {
+  width: 30px;
+  font-size: 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transform: none;
+}
+
+/* ---------- In gioco: la lettera e la matita ---------- */
+
+.nomi-testa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-1) var(--sp-1) 0;
+}
+
+.nomi-testa .nomi-lettera {
+  animation: nomi-timbro 520ms var(--ease-bounce) both;
+}
+
+@keyframes nomi-timbro {
+  from {
+    opacity: 0;
+    transform: scale(1.8) rotate(-24deg);
+  }
+}
+
+.nomi-testa__tempo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nomi-testa__con {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.matita {
+  --punta: 22px;
+  --fondo: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* La punta resta a destra, dove scrive: la matita si accorcia dalla parte della gomma. */
+.matita__pista {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+  height: 16px;
+  min-width: 0;
+}
+
+.matita__corpo {
+  display: flex;
+  width: calc(var(--fondo) + var(--punta) + (100% - var(--fondo) - var(--punta)) * var(--quota));
+  height: 100%;
+  filter: drop-shadow(0 1.5px 1px rgba(0, 0, 0, 0.18));
+  transition: width 0.12s linear;
+}
+
+.matita__gomma {
+  width: 14px;
+  border-radius: 5px 0 0 5px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--nomi-gomma) 70%, #fff), var(--nomi-gomma));
+}
+
+.matita__ghiera {
+  width: 10px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 3px, rgba(0, 0, 0, 0.14) 3px 4px),
+    linear-gradient(180deg, #eef0f3, #b8bdc6 55%, #d6d9df);
+}
+
+/* Le tre facce della matita esagonale: la luce sopra, il giallo, l'ombra sotto. */
+.matita__legno {
+  flex: 1;
+  min-width: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--nomi-1) 55%, #fff) 0 30%,
+    var(--nomi-1) 30% 68%,
+    var(--nomi-2) 68% 100%
+  );
+  transition: filter 0.3s;
+}
+
+.matita__punta {
+  width: var(--punta);
+  background: linear-gradient(90deg, var(--nomi-legno) 62%, var(--nomi-grafite) 62%);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.matita__tempo {
+  min-width: 3.1em;
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 700;
+  text-align: right;
+  color: var(--label);
+}
+
+/* Con poco tempo la matita si fa rossa e trema, e i secondi pure. */
+.matita.is-poco .matita__legno {
+  filter: hue-rotate(-38deg) saturate(1.4);
+}
+
+.matita.is-poco .matita__corpo {
+  animation: nomi-trema 0.9s var(--ease-in-out) infinite;
+}
+
+.matita.is-poco .matita__tempo {
+  color: var(--red);
+}
+
+@keyframes nomi-trema {
+  20% {
+    transform: translateX(-1px) rotate(-1deg);
+  }
+  40% {
+    transform: translateX(1px) rotate(1deg);
+  }
+  60% {
+    transform: none;
+  }
+}
+
+/* ---------- Il foglio ---------- */
+
+.nomi-foglio {
+  --margine: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-4) var(--sp-3) calc(var(--margine) + 12px);
+  border-radius: var(--r-lg);
+  background-color: var(--nomi-foglio);
+  /* Il margine rosso del quaderno. */
+  background-image: linear-gradient(
+    90deg,
+    transparent calc(var(--margine) - 1px),
+    var(--nomi-margine) calc(var(--margine) - 1px) calc(var(--margine) + 1px),
+    transparent calc(var(--margine) + 1px)
+  );
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  list-style: none;
+}
+
+.nomi-riga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: end;
+  column-gap: var(--sp-2);
+  padding-top: 8px;
+}
+
+.nomi-riga__categoria {
+  grid-column: 1 / -1;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+/* Si scrive sulla riga: nessun riquadro, solo il filo del quaderno, che si fa indaco quando ci si scrive. */
+.nomi-riga__campo {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  padding: 6px 2px 5px;
+  border: 0;
+  border-bottom: 1.5px solid var(--nomi-riga);
+  border-radius: 0;
+  background: transparent;
+  color: var(--nomi-grafite);
+  font-family: var(--font-rounded);
+  /* Diciassette punti: sotto i sedici Safari ingrandisce la pagina quando il campo prende il fuoco. */
+  font-size: 17px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color var(--dur-fast);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.nomi-riga__campo::placeholder {
+  color: color-mix(in srgb, var(--nomi-grafite) 28%, transparent);
+  font-weight: 500;
+}
+
+.nomi-riga:focus-within .nomi-riga__campo {
+  border-bottom: 2px solid var(--brand);
+  padding-bottom: 4.5px;
+}
+
+.nomi-riga.is-fuori .nomi-riga__campo {
+  border-bottom-color: var(--orange);
+}
+
+.nomi-riga__avviso {
+  grid-column: 1 / -1;
+  padding-top: 3px;
+  font-size: var(--text-caption-2);
+  font-weight: 600;
+  color: var(--orange);
+}
+
+/* ---------- Il foglio consegnato ---------- */
+
+.nomi-foglio.is-scritto .nomi-riga {
+  padding-bottom: 6px;
+  border-bottom: 1.5px solid var(--nomi-riga);
+}
+
+.nomi-foglio.is-scritto .nomi-riga:last-child {
+  border-bottom: 0;
+}
+
+.nomi-riga__risposta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-top: 3px;
+}
+
+.nomi-riga__testo {
+  overflow: hidden;
+  font-family: var(--font-rounded);
+  font-size: var(--text-body);
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--nomi-grafite);
+}
+
+.nomi-riga.is-sbagliata .nomi-riga__testo {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--red) 70%, transparent);
+  text-decoration-thickness: 2px;
+  color: var(--label-secondary);
+}
+
+.nomi-riga.is-vuota .nomi-riga__testo {
+  color: var(--label-tertiary);
+}
+
+.nomi-riga__nota {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+.nomi-riga__punti {
+  align-self: center;
+  font-family: var(--font-rounded);
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  color: var(--nomi-ink);
+}
+
+.nomi-riga__segno {
+  display: grid;
+  align-self: center;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+}
+
+.nomi-riga.is-giusta .nomi-riga__segno {
+  background: var(--tile-correct);
+}
+
+.nomi-riga.is-sbagliata .nomi-riga__segno {
+  background: var(--red);
+}
+
+/* ---------- Prima di cominciare ---------- */
+
+.nomi-inizio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-6) var(--sp-2) var(--sp-2);
+  text-align: center;
+}
+
+.nomi-inizio .nomi-lettera {
+  width: 104px;
+  margin-bottom: var(--sp-3);
+  font-size: 3.2rem;
+  animation: nomi-dondola 2.8s var(--ease-in-out) infinite;
+}
+
+@keyframes nomi-dondola {
+  50% {
+    transform: rotate(5deg) translateY(-3px);
+  }
+}
+
+.nomi-inizio__sopra {
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--nomi-ink);
+}
+
+.nomi-inizio__titolo {
+  margin: 0;
+  font-size: var(--text-title-1);
+  font-weight: 900;
+  letter-spacing: var(--tracking-display);
+  line-height: 1.1;
+}
+
+.nomi-inizio__testo {
+  max-width: 30ch;
+  margin: 0;
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+  color: var(--label-secondary);
+}
+
+.nomi-inizio__regole {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+
+.nomi-inizio__regole span {
+  padding: 6px 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.nomi-inizio__regole strong {
+  font-weight: 800;
+  color: var(--label);
+}
+
+/* ---------- Consegnata ---------- */
+
+.nomi-scheda {
+  --scheda-padding: 12px;
+}
+
+.nomi-fine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: var(--sp-2) 0 var(--sp-1);
+  text-align: center;
+}
+
+.nomi-fine__valore {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+}
+
+.nomi-fine__dettaglio,
+.nomi-fine__piede {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.nomi-fine__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin: var(--sp-2) 0;
+}
+
+.nomi-fine__link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* ---------- Ieri ---------- */
+
+.nomi-ieri__conto {
+  margin: 0;
+  padding: 0 var(--sp-1);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.nomi-ieri__piu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-2) var(--sp-1) 0;
+  border-top: 1px solid var(--separator);
+}
+
+.nomi-ieri__titolo {
+  margin: 0;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.nomi-ieri__elenco {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nomi-ieri__elenco li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px var(--sp-2);
+}
+
+.nomi-ieri__categoria {
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  color: var(--label);
+}
+
+.nomi-ieri__risposte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.nomi-ieri__risposta {
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--nomi-1) 22%, transparent);
+  font-size: var(--text-footnote);
+  color: var(--label);
+}
+
+.nomi-ieri__risposta .u-tabnum {
+  font-weight: 700;
+  color: var(--nomi-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nomi-testa .nomi-lettera,
+  .nomi-inizio .nomi-lettera,
+  .matita.is-poco .matita__corpo {
+    animation: none;
+  }
+
+  .matita__corpo {
+    transition: none;
+  }
+}
+
+/* ---------- La libera ---------- */
+
+/* Il computer che scrive: un puntino per categoria, che si riempie quando scrive. */
+.nomi-computer {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0 var(--sp-1);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.nomi-computer__puntini {
+  display: inline-flex;
+  gap: 5px;
+}
+
+.nomi-computer__puntini span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--separator-opaque);
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+.nomi-computer__puntini span.is-scritta {
+  background: var(--nomi-2);
+  box-shadow: none;
+  animation: nomi-puntino 360ms var(--ease-bounce);
+}
+
+@keyframes nomi-puntino {
+  from {
+    transform: scale(0.2);
+  }
+}
+
+.nomi-conti,
+.nomi-guasto {
+  margin: var(--sp-2) var(--sp-1) 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.nomi-guasto {
+  color: var(--red);
+}
+
+.nomi-libera__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+/* ---------- La sfida ---------- */
+
+.nomi-testa__stop {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+  color: var(--red);
+}
+
+/* Il tre-due-uno: un numero grande che salta fuori, uno al secondo. */
+.nomi-via {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  min-height: 320px;
+  text-align: center;
+}
+
+.nomi-via__chi {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.nomi-via__numero {
+  font-family: var(--font-rounded);
+  font-size: clamp(4rem, 22vw, 7rem);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--nomi-ink);
+  animation: nomi-via 900ms var(--ease-bounce) both;
+}
+
+@keyframes nomi-via {
+  from {
+    opacity: 0;
+    transform: scale(0.3) rotate(-12deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nomi-via__numero {
+    animation: none;
+  }
+}
+
+/* Contro chi, in cima alla libera: come nelle sale dei tavolieri. */
+.nomi-scelte {
+  display: grid;
+  gap: var(--sp-3);
+}

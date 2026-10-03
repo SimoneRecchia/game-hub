@@ -70,6 +70,14 @@ export const GIOCHI: readonly Gioco[] = [
     liberaBreve: 'Quiz libero',
   },
   {
+    id: 'nomi',
+    nome: 'Nomi, cose e città',
+    motto: 'Una lettera, cinque categorie',
+    classificata: 'Una lettera al giorno, la stessa per tutti.',
+    libera: 'Una lettera a caso, contro il computer o contro un amico.',
+    liberaBreve: 'Contro chi vuoi',
+  },
+  {
     id: 'tris',
     nome: 'Tris',
     motto: 'Tre in fila, dieci secondi a mossa',

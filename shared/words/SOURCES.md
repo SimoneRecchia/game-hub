@@ -153,6 +153,44 @@ nel profilo.
 Rigenerare: `node scripts/build-dizionario.mjs` (scarica circa 120 MB in
 `scripts/.cache/`, non versionata), poi `npm run dawg:build`.
 
+## Nomi, cose e città
+
+Il lessico di «Nomi, cose e città» (`public/dati/nomi-cose/<lettera>.json`, un
+file per lettera) dice se una risposta sta nella sua categoria: se «aquila» è
+un animale, «Ancona» una città, «chitarra» uno strumento. È permissivo di
+proposito, come il dizionario dello Scarabeo: in una partita a tempo
+rifiutare una risposta giusta è peggio che accettarne una insolita.
+
+| Fonte | Cosa dà | Licenza |
+| --- | --- | --- |
+| Wikizionario italiano, estrazione di [kaikki.org](https://kaikki.org/itwiktionary/) | I nomi comuni con il loro ambito (Zoologia, Botanica, Professioni, Abbigliamento, Anatomia, Gastronomia, Colori, Strumenti musicali), i verbi, gli aggettivi, i nomi di persona | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it) |
+| Wiktionary inglese, voci italiane, estrazione di [kaikki.org](https://kaikki.org/dictionary/Italian/) | Le stesse cose dalle sue categorie («Fruits», «Occupations», «Musical instruments», «Body parts»…), e altri nomi, verbi e aggettivi | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it) |
+| [Wikidata](https://www.wikidata.org), con il motore [QLever](https://qlever.dev) | I comuni italiani, le città del mondo con almeno 50.000 abitanti e le capitali, gli stati, i fiumi, i laghi e i mari con una voce sulla Wikipedia in italiano, i nomi italiani delle specie animali e vegetali, i nomi di persona, i mestieri, gli sport, gli strumenti, i colori, i vestiti, i frutti, gli ortaggi e i piatti | [CC0](https://creativecommons.org/publicdomain/zero/1.0/deed.it) |
+| [`napolux/paroleitaliane`](https://github.com/napolux/paroleitaliane) — `9000_nomi_propri.txt` | Nomi di persona (quelli che sono solo luoghi, come «milano», restano fuori) | MIT |
+| [`napolux/paroleitaliane`](https://github.com/napolux/paroleitaliane) — `280000_parole_italiane.txt`, `lista_badwords.txt` | Le parole attestate, che decidono quali voci del Wiktionary inglese entrano fra le cose, i verbi e gli aggettivi; le parolacce, che restano fuori da tutto | MIT |
+| [`hermitdave/FrequencyWords`](https://github.com/hermitdave/FrequencyWords) — `it_50k.txt` | Quanto è comune una parola, per le parole note (`note`) | MIT |
+
+Ogni file ha anche le parole note di ogni categoria (`note`): fino a quaranta,
+scritte come le scriverebbe una persona («L'Aquila», «Mar Rosso», «caffè») e
+dalla più nota, che il computer della libera usa come risposte. Quanto è nota
+una parola lo dicono, per i nomi, quanti italiani nati dal 1940 lo portano;
+per città, paesi e acque, in quante Wikipedia hanno una voce (tutte e due da
+Wikidata); per il resto, la frequenza nei sottotitoli italiani.
+
+Le parole sono salvate come le confronta il gioco — minuscole, senza accenti,
+spazi e apostrofi — e al singolare e al maschile dove si può: «le arance» e
+«pittrice» si ritrovano provando le forme base. Restano fuori le voci che il
+Wiktionary dà solo come volgari, offensive, antiche o dialettali, e le
+etichette di Wikidata che sono nomi scientifici («Vulpes vulpes») o non
+sembrano italiane.
+
+I file contengono parole del Wikizionario e del Wiktionary, e sono quindi
+anch'essi sotto **CC BY-SA 4.0**; la fonte è citata nel profilo, in «Fonti e
+licenze».
+
+Rigenerare: `npm run nomi:lessico` (usa le estrazioni del Wiktionary già in
+`scripts/.cache/`, e vi salva le risposte di QLever).
+
 ## I pezzi degli scacchi
 
 I pezzi della scacchiera (`src/games/scacchi/pezzi.ts`) sono i disegni di Colin
