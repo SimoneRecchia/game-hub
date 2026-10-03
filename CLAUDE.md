@@ -783,14 +783,16 @@ la festa le monete vanno al saldo. Una domanda giusta ha la festa del ×20.
 **Il mobile si misura sulla sua larghezza.** `--w` e' quella che ci sta con la
 leva da tutti e due i lati — cosi' il mobile resta al centro e la leva sporge
 nel margine — o quella che lascia l'altezza, e `--u` ne e' il centesimo: le
-parti hanno altezze fisse in centesimi, e il fronte, con i rulli, prende quel
-che avanza fino a un tetto: i rulli si allungano, come quelli veri, e i simboli
-prendono aria; oltre il tetto il mobile resta quello, al centro della sala. La
-pancia con le categorie del giorno non c'e' piu': diceva sul mobile quel che
-dicono gia' le regole, e le categorie restano sui punti di domanda e nelle
-regole. `--w` e' registrata con `@property`, quindi i figli ereditano una
-lunghezza vera: non registrata, le unita' del contenitore si risolverebbero
-dove la si usa, e dentro un contenitore annidato varrebbero le sue.
+parti hanno altezze fisse in centesimi, e la pancia, sotto il banco, prende
+quel che avanza fino a un tetto. La pancia e' un vetro illuminato, con i raggi
+che girano, e non dice niente: c'erano quanto vale la domanda e le categorie
+del giorno, che sono gia' nelle regole e sui punti di domanda. Quando le si sono
+tolte se n'e' andata anche lei, con i rulli allungati al suo posto, e il mobile
+non era piu' quello che piaceva: si toglie quel che informa, non il disegno, e
+non ci si mette altro. `--w` e' registrata con `@property`,
+quindi i figli ereditano una lunghezza vera: non registrata, le unita' del
+contenitore si risolverebbero dove la si usa, e dentro la pancia, che e' un
+contenitore anche lei, varrebbero le sue.
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
 europee dei casinò italiani (`shared/blackjack.ts`): niente carta coperta — il

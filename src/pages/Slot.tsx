@@ -625,6 +625,7 @@ export default function SlotPagina() {
                 </button>
               </div>
             </div>
+            <Pancia />
             <div className="slot-vassoio" ref={vassoioRef} aria-hidden="true">
               {Array.from({ length: vassoio }, (_, i) => (
                 <span key={i} className="slot-vassoio__moneta" style={{ '--i': i } as CSSProperties} />
@@ -740,6 +741,21 @@ function TabellaBreve() {
           <span className="slot-tabella__valore u-tabnum">×{x}</span>
         </span>
       ))}
+    </div>
+  )
+}
+
+/**
+ * La pancia del mobile, sotto il banco: il vetro illuminato con i raggi, come
+ * sui mobili veri. E' disegno e basta: le regole e le categorie del giorno le
+ * dice il foglio della "i".
+ */
+function Pancia() {
+  return (
+    <div className="slot-pancia" aria-hidden="true">
+      <div className="slot-pancia__vetro">
+        <span className="slot-pancia__raggi" />
+      </div>
     </div>
   )
 }
