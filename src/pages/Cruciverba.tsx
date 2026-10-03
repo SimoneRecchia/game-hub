@@ -7,7 +7,15 @@ import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { FoglioAiuti, VoceAiuto } from '@/components/Aiuti'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { Sheet } from '@/components/Sheet'
-import { IconChevronLeft, IconChevronRight, IconClock, IconInfo, IconShuffle, IconTrophy } from '@/components/Icons'
+import {
+  IconChevronLeft,
+  IconChevronRight,
+  IconClock,
+  IconInfo,
+  IconPeople,
+  IconShuffle,
+  IconTrophy,
+} from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/Toast'
@@ -17,6 +25,10 @@ import { ElencoDefinizioni } from '@/games/cruciverba/ElencoDefinizioni'
 import { Griglia } from '@/games/cruciverba/Griglia'
 import { Tastiera } from '@/games/cruciverba/Tastiera'
 import { CRUCIVERBA_DEL_GIORNO, indirizziLiberi, useCruciverba } from '@/games/cruciverba/useCruciverba'
+import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
+import { etichettaCruciverba } from '@/games/compagnia/etichette'
+import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
+import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown, formatCronometro, pluralize } from '@/lib/format'
 import {
@@ -55,8 +67,19 @@ export default function Cruciverba() {
   const [aiuto, setAiuto] = useState(false)
   const [elenco, setElenco] = useState(false)
   const [aiuti, setAiuti] = useState(false)
+  const [compagniaAperta, setCompagniaAperta] = useState(false)
+  const { vai } = useNavigazione()
 
   const stato = g.stato
+  // In compagnia si gioca la classificata, finché non e' finita, e solo se e' la propria.
+  const inCompagnia = stato?.inCompagnia ?? null
+  const ospitante = !libera && !!stato && !g.finita && !inCompagnia
+  const compagnia = useCompagniaHost('cruciverba', ospitante, compagniaAperta)
+  const dentro = compagnia.compagnia?.ospiti.filter((o) => o.stato === 'dentro').length ?? 0
+  // Chi gioca la giornata in compagnia non ha una griglia sua: la partita e' quella dell'host.
+  useEffect(() => {
+    if (inCompagnia) vai(ROTTE.insiemeA('cruciverba', inCompagnia.id), { replace: true, direzione: 'nessuna' })
+  }, [inCompagnia, vai])
   const numeri = useMemo(
     () => numeriDelleCaselle(stato?.definizioni ?? []),
     [stato?.definizioni],
@@ -67,7 +90,7 @@ export default function Cruciverba() {
     () => [...g.lettere].filter((l) => l !== VUOTA && l !== '#').length,
     [g.lettere],
   )
-  const fogliAperti = aiuto || elenco || aiuti
+  const fogliAperti = aiuto || elenco || aiuti || compagniaAperta
 
   // La tastiera vera. Quando un foglio e' aperto le lettere non devono finire
   // nella griglia che sta dietro.
@@ -149,9 +172,16 @@ export default function Cruciverba() {
       larga
       indietro={libera ? { a: ROTTE.libere, etichetta: 'Libere' } : { a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
-        <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
-          <IconInfo size={21} />
-        </BottoneBarra>
+        <>
+          {ospitante && (
+            <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setCompagniaAperta(true)} badge={dentro}>
+              <IconPeople size={21} />
+            </BottoneBarra>
+          )}
+          <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
+            <IconInfo size={21} />
+          </BottoneBarra>
+        </>
       }
     >
       <div className="cru">
@@ -258,6 +288,21 @@ export default function Cruciverba() {
                       </button>
                     </div>
                   )}
+                  {/* I suggerimenti di chi gioca in compagnia: toccarne uno scrive la parola, che si
+                      salva come le altre. Quel che resta nella griglia lo decide l'host. */}
+                  {ospitante && (
+                    <Suggerimenti
+                      suggerimenti={compagnia.compagnia?.suggerimenti ?? []}
+                      etichetta={(s) => etichettaCruciverba(s, stato.definizioni)}
+                      onScegli={(s) => {
+                        if (s.proposta.gioco !== 'cruciverba') return
+                        const { definizione, parola } = s.proposta
+                        const d = stato.definizioni.find((x) => x.chiave === definizione)
+                        if (d) g.riempi(d, parola)
+                      }}
+                      disabled={g.inviando}
+                    />
+                  )}
                   <Tastiera
                     direzione={g.selezione?.direzione ?? 'o'}
                     disabled={false}
@@ -283,6 +328,19 @@ export default function Cruciverba() {
       </div>
 
       <ComeSiGiocaCruciverba open={aiuto} onClose={() => setAiuto(false)} />
+
+      <PannelloCompagnia
+        gioco="cruciverba"
+        open={compagniaAperta}
+        onClose={() => setCompagniaAperta(false)}
+        compagnia={compagnia.compagnia}
+        giocatori={compagnia.giocatori}
+        occupato={compagnia.occupato}
+        errore={compagnia.errore}
+        onInvita={compagnia.invita}
+        onRitira={compagnia.ritira}
+        onCaricaGiocatori={compagnia.caricaGiocatori}
+      />
 
       <Sheet open={elenco} onClose={() => setElenco(false)} title="Definizioni">
         {stato && (

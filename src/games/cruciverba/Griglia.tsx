@@ -14,6 +14,8 @@ interface Props {
   parola: ReadonlySet<number>
   svelate: ReadonlySet<number>
   segnalate: ReadonlySet<number>
+  /** Le lettere proposte da chi guarda in compagnia, che nella griglia dell'host non ci sono. */
+  proposte?: ReadonlySet<number>
   onTocca: (casella: number) => void
 }
 
@@ -35,6 +37,7 @@ export const Griglia = memo(function Griglia({
   parola,
   svelate,
   segnalate,
+  proposte,
   onTocca,
 }: Props) {
   return (
@@ -54,6 +57,7 @@ export const Griglia = memo(function Griglia({
           attiva === k ? 'is-attiva' : '',
           segnalate.has(k) ? 'is-errata' : '',
           svelate.has(k) ? 'is-svelata' : '',
+          proposte?.has(k) ? 'is-proposta' : '',
         ]
           .filter(Boolean)
           .join(' ')

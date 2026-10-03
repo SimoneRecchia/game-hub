@@ -409,6 +409,33 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
     pianificaSalvataggio(false)
   }, [corrente, pianificaSalvataggio, selezione, svelate])
 
+  /**
+   * Una parola intera su una definizione, dal suggerimento di chi gioca in
+   * compagnia: si scrive come se la si fosse battuta, e si salva come le altre.
+   * Le caselle svelate restano quelle giuste.
+   */
+  const riempi = useCallback(
+    (d: DefinizioneCruciverba, parola: string) => {
+      if (finitaRef.current) return
+      let dopo = lettereRef.current
+      d.caselle.forEach((k, i) => {
+        if (!svelate.has(k) && parola[i]) dopo = sostituisci(dopo, k, parola[i])
+      })
+      suona('posa')
+      lettereRef.current = dopo
+      setLettere(dopo)
+      setSegnalate((prima) => {
+        if (!d.caselle.some((k) => prima.has(k))) return prima
+        const s = new Set(prima)
+        for (const k of d.caselle) s.delete(k)
+        return s
+      })
+      setSelezione({ casella: d.caselle[0], direzione: d.direzione })
+      pianificaSalvataggio(grigliaPiena(dopo))
+    },
+    [pianificaSalvataggio, svelate],
+  )
+
   /* ───────────────────────────────  Aiuti  ─────────────────────────────── */
 
   const controlla = useCallback(
@@ -507,6 +534,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
     sposta,
     scrivi,
     cancella,
+    riempi,
     controlla,
     svela,
   }

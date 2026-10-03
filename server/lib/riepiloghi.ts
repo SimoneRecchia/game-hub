@@ -31,6 +31,7 @@ import type {
 } from '../../shared/types'
 import { today } from './wordleStore'
 import { giornata as giornataScarabeo } from './scarabeoStore'
+import { compagniaBreve } from './compagniaStore'
 import { giornata as giornataCruciverba, schemaDelGiorno, svelateDi, type PartitaRow } from './cruciverbaStore'
 import { latoDi, partitaAperta, partitaBreve, quantiOnline, recordDi, statoClassificata } from './battagliaStore'
 import { giornata as giornataQuiz, giornataQuiz as domandeDelGiorno, partitaDi as partitaQuiz, risposteDi } from './quizStore'
@@ -87,11 +88,18 @@ export async function riepilogoScarabeo(db: D1Database, playerId: string): Promi
   const [row, computer] = await Promise.all([
     db
       .prepare(
-        `SELECT status, turns, score, punti FROM scarabeo_games
+        `SELECT status, turns, score, punti, in_compagnia, assist_score FROM scarabeo_games
           WHERE player_id = ? AND puzzle_number = ?`,
       )
       .bind(playerId, quando.puzzleNumber)
-      .first<{ status: 'playing' | 'done'; turns: number; score: number; punti: number }>(),
+      .first<{
+        status: 'playing' | 'done'
+        turns: number
+        score: number
+        punti: number
+        in_compagnia: string | null
+        assist_score: number | null
+      }>(),
     // Sola lettura anche qui: il riferimento di ripiego lo scrive la partita, non l'hub.
     db
       .prepare('SELECT punti FROM scarabeo_computer WHERE puzzle_number = ?')
@@ -99,16 +107,19 @@ export async function riepilogoScarabeo(db: D1Database, playerId: string): Promi
       .first<{ punti: number }>(),
   ])
 
+  // In compagnia la giornata e' quella dell'host: i suoi punti, man mano che li fa.
+  const insieme = row?.in_compagnia ? await compagniaBreve(db, row.in_compagnia, row.assist_score) : null
   return {
     puzzleNumber: quando.puzzleNumber,
     date: quando.date,
     status: row ? row.status : 'new',
-    punti: row?.score ?? 0,
-    puntiClassifica: row?.punti ?? 0,
+    punti: insieme ? 0 : (row?.score ?? 0),
+    puntiClassifica: insieme ? (row?.assist_score ?? 0) : (row?.punti ?? 0),
     computer: computer?.punti ?? RIFERIMENTO_SCARABEO,
-    mosseUsate: row?.turns ?? 0,
+    mosseUsate: insieme ? 0 : (row?.turns ?? 0),
     mosseTotali: MOSSE_PER_GIORNATA,
     msToNextPuzzle: msToNextPuzzle(),
+    inCompagnia: insieme,
   }
 }
 
@@ -118,12 +129,32 @@ export async function riepilogoCruciverba(db: D1Database, playerId: string): Pro
   const row = schema
     ? await db
         .prepare(
-          `SELECT status, lettere, score, svelate, errori, tempo_ms FROM cruciverba_games
+          `SELECT status, lettere, score, svelate, errori, tempo_ms, in_compagnia, assist_score FROM cruciverba_games
             WHERE player_id = ? AND puzzle_number = ?`,
         )
         .bind(playerId, quando.puzzleNumber)
-        .first<Pick<PartitaRow, 'status' | 'lettere' | 'score' | 'svelate' | 'errori' | 'tempo_ms'>>()
+        .first<
+          Pick<
+            PartitaRow,
+            'status' | 'lettere' | 'score' | 'svelate' | 'errori' | 'tempo_ms' | 'in_compagnia' | 'assist_score'
+          >
+        >()
     : null
+
+  // In compagnia la giornata e' quella dell'host: i punti arrivano quando la completa.
+  if (row?.in_compagnia) {
+    return {
+      puzzleNumber: quando.puzzleNumber,
+      date: quando.date,
+      status: row.status,
+      scritte: 0,
+      bianche: schema ? caselleBianche(schema.soluzione) : 0,
+      punti: row.assist_score ?? 0,
+      tempoMs: 0,
+      msToNextPuzzle: msToNextPuzzle(),
+      inCompagnia: await compagniaBreve(db, row.in_compagnia, row.assist_score),
+    }
+  }
 
   return {
     puzzleNumber: quando.puzzleNumber,

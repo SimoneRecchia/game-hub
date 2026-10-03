@@ -12,8 +12,10 @@
  *   /wordle/insieme/:stanza             la partita di un collega che ti ha invitato
  *   /scarabeo/classificata              le dieci mosse di oggi
  *   /scarabeo/libera                    contro il computer
+ *   /scarabeo/insieme/:compagnia        lo Scarabeo di un collega che ti ha invitato
  *   /cruciverba/classificata            lo schema di oggi
  *   /cruciverba/libera/:partita         uno schema libero
+ *   /cruciverba/insieme/:compagnia      il cruciverba di un collega che ti ha invitato
  *   /sudoku/classificata                lo schema di oggi
  *   /sudoku/libera                      uno schema nuovo, della difficoltà che vuoi
  *   /battaglia-navale/classificata      la battaglia di oggi contro il computer
@@ -62,7 +64,7 @@
 
 import type { MateriaQuiz } from '@shared/quiz'
 import type { GiocoTavoliere } from '@shared/tavolo'
-import type { ChiaveClassifica, GiocoClassificato } from '@shared/types'
+import type { ChiaveClassifica, GiocoClassificato, GiocoInCompagnia } from '@shared/types'
 
 /** Il pezzo di indirizzo di ogni gioco: "battaglia-navale", non "battaglia". */
 export const SLUG: Record<GiocoClassificato, string> = {
@@ -117,6 +119,8 @@ export const ROTTE = {
   libera: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/libera`,
 
   insieme: (stanza: string) => `/wordle/insieme/${stanza}`,
+  /** Il cruciverba o lo Scarabeo di oggi di un collega che ti ha invitato. */
+  insiemeA: (gioco: GiocoInCompagnia, compagnia: string) => `/${SLUG[gioco]}/insieme/${compagnia}`,
   cruciverbaLibero: (partita: string) => `/cruciverba/libera/${partita}`,
   partitaBattaglia: (id: string) => `/battaglia-navale/partita/${id}`,
   invitoBattaglia: (codice: string) => `/battaglia-navale/invito/${codice}`,
