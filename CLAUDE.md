@@ -452,10 +452,10 @@ Fortuna ha il saldo grande, senza scomporlo. Quel che si e' vinto o perso oggi,
 e da quanto si e' partiti — i punti delle classificate — non si dicono, per
 scelta: al tavolo si guarda quel che si ha davanti. Le carte della scheda
 dicono quanto si puo' puntare, non com'e' andata. Il momento di un giro invece
-si vede tutto — l'adesivo con la vincita, il display e la festa della slot, il
-mozzo della ruota, le fasce sulle mani del blackjack — perché e' il gioco. Il
-conto della giornata resta nella classifica della Fortuna, che e' il posto dove
-si va a guardarlo.
+si vede tutto — l'adesivo con la vincita, il display, le targhe e la festa della
+slot, il mozzo della ruota, le fasce sulle mani del blackjack — perché e' il
+gioco. Il conto della giornata resta nella classifica della Fortuna, che e' il
+posto dove si va a guardarlo.
 
 **Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta
 nella scheda della Fortuna (`/crazy-time`; `/ruota`, l'indirizzo di quando si
@@ -651,9 +651,24 @@ poco meno di un terzo della resa, come le funzioni speciali delle slot video
 combinazioni: la linea il 66,6%, con le domande tutte giuste il 97%, come Crazy
 Time, e `shared/__tests__/slot.test.ts` tiene ferme la resa, la frequenza, la
 scala delle triple e le vincite grosse. Si punta da 1 a `PUNTATA_MASSIMA_SLOT`,
-dieci, e non tutto il saldo come a Crazy Time: il ×300 dei sette su un saldo
-intero darebbe in un giro decine di migliaia di punti, e la generale non
-vorrebbe piu' dire niente.
+dieci, con le fiches che si sommano (vedi sotto), e non tutto il saldo come a
+Crazy Time: il ×300 dei sette su un saldo intero darebbe in un giro decine di
+migliaia di punti, e la generale non vorrebbe piu' dire niente.
+
+**Le fiches si sommano, e la puntata la dice il display.** Ogni tocco di una
+fiche aggiunge il suo valore, quindi si punta qualunque cifra fra uno e dieci;
+erano un gruppo di scelte, e il tocco sostituiva la puntata invece di
+aggiungere. Una fiche che passerebbe il tetto — dieci, o il saldo se e' meno —
+si ferma li', e il display lo dice con il MAX che lampeggia e un tocco morbido
+(`tetto` in `suoni.ts`), mai con un errore: e' quel che fanno le slot vere. La
+fiche vola dal bottone al display, che conta quando arriva, mentre la puntata
+e' gia' cresciuta (`inVoloFiches`): una leva tirata con le fiches ancora in
+aria paga la puntata intera, e il display la mostra subito. "Azzera" rimanda
+la pila al banco. A puntata zero la leva e "Gira" non vanno, e al posto della
+vincita il display dice "Tocca le fiches", che lampeggia come l'"insert coin"
+delle slot vere: e' cosi' che comincia ogni giornata, perché la puntata resta
+quella dell'ultimo giro di oggi. Le fiches sono bottoni ("Aggiungi 5"), e la
+puntata la annuncia subito una regione `polite`, senza aspettare il volo.
 
 **La domanda della slot e' quella di Crazy Time.** Le stesse trenta domande per
 categoria della notte (`ruota_domande`), e chi ne ha avuta una a un gioco non la
@@ -686,7 +701,10 @@ un rullo sono tre giri dei suoi simboli, e a ogni fotogramma si scrive solo il
 suo spostamento, come la rotazione della ruota. Le righe del mobile sono
 `minmax(0, ...)`: la striscia e' alta quaranta rulli, e lasciata al contenuto
 allargherebbe la sua riga. Quante caselle ha lo dice `--celle`, che scrive
-`Rulli`: cambiare le fermate non tocca il CSS.
+`Rulli`: cambiare le fermate non tocca il CSS. Senza animazioni i rulli si
+fermano dentro l'effetto di `Rulli`, che React fa girare prima di quelli della
+pagina: per questo la leva scrive subito lo stato nuovo in `ultimo`, altrimenti
+`fermati` leggerebbe il giro di prima e la vincita non si vedrebbe.
 
 **La leva si tira col dito, e viene verso chi guarda.** `Leva` sta sul fianco
 destro del mobile e ruota nel piano del fianco: tirandola il pomo scende e
@@ -698,12 +716,12 @@ ed e' lo stesso punto di vista del fianco del mobile (`.slot-fianco` in
 al centro del mobile, come all'inizio, il pomo che veniva avanti scappava di
 lato, e la leva girava come la lancetta di un orologio. Oltre `SOGLIA` i rulli
 partono e la leva torna su con una molla; un tocco senza trascinare la tira
-tutta, e Invio e lo spazio anche, perché e' un bottone. Accanto ai gettoni
-c'e' "Gira", per chi non vuole tirare. Il resto si vede come a Crazy Time: le
-fiches volano dal saldo al display della puntata e il saldo scende alla leva;
-una vincita accende i simboli che pagano, ognuno a modo suo (vedi sotto), il
-display la segna con il suo nome, le monete cadono nel vassoio e da li' volano
-al saldo, che sale quando arriva la prima.
+tutta, e Invio e lo spazio anche, perché e' un bottone. Accanto alle fiches
+c'e' "Azzera", e in fondo al banco "Gira", per chi non vuole tirare. Il resto
+si vede come a Crazy Time: le fiches volano dal saldo al display della puntata
+e il saldo scende alla leva; una vincita accende i simboli che pagano, ognuno a
+modo suo (vedi sotto), il display la segna con il suo nome, le monete cadono
+nel vassoio e da li' volano al saldo, che sale quando arriva la prima.
 
 **Ogni vincita della slot ha il suo momento, anche la piu' piccola.** Nelle slot
 vere una ciliegia che ridà la puntata suona e lampeggia come un premio, e chi
@@ -719,34 +737,60 @@ sulle lampadine) e l'animazione del simbolo, sotto `data-vince`: la ciliegia
 saltella, le ciliegie dondolano dal picciolo, i limoni si spremono, le arance
 rotolano, le prugne tremano molli, l'uva si scuote, le campane suonano, il BAR
 sfarfalla come un neon, i sette bruciano. I tre punti di domanda si girano uno
-dopo l'altro e dietro c'e' la categoria (`Rivela`). Una ciliegia sola si
-festeggia in fretta (`POCO_MS`, le luci `poco`), perché la leva torni pronta
-presto. Le monete di una vincita, arrivando, liberano il tabellone (`conto`)
-solo se nel frattempo non e' partito un altro giro (`leve`): altrimenti
-mostrerebbero il saldo del giro nuovo prima che i rulli si fermino, e dopo una
-festa, che rende subito la leva, succedeva. I pezzi sono elementi del DOM
-animati dal CSS, al piu' trenta, con la strada calcolata da un numero fisso e
-non a caso: il disegno resta una funzione pura.
+dopo l'altro e dietro c'e' la categoria (`Rivela`). Le monete di una vincita,
+arrivando, liberano il tabellone (`conto`) solo se nel frattempo non e' partito
+un altro giro (`leve`): altrimenti mostrerebbero il saldo del giro nuovo prima
+che i rulli si fermino, e dopo una festa, che rende subito la leva, succedeva.
+I pezzi sono elementi del DOM animati dal CSS, al piu' trenta, con la strada
+calcolata da un numero fisso e non a caso: il disegno resta una funzione pura.
+
+**Il momento di una vincita cresce con la sua rarita'.** `momentoDi`
+(`src/games/slot/momenti.ts`) da' a ogni vincita il suo gradino, e un test
+verifica che l'ordine sia quello delle frequenze vere di `contaSlot`: piu' una
+combinazione e' rara, mai meno festa. La targhetta della ciliegia sola, un
+giro su quattro; la targa di due ciliegie e dei limoni, uno su trentadue e uno
+su sessantacinque; il palco delle arance e delle prugne, uno su centoventisette
+e uno su quattrocentoventisette; poi la festa (vedi sotto). I primi tre stanno
+sul mobile (`Targa`): l'adesivo dei giochi fatto insegna da casino', laccata,
+con la foglia d'oro, le lampadine che le corrono attorno e la luce che passa,
+davanti all'insegna in cima, dove non copre mai la linea. La targhetta dura
+poco piu' di un secondo, perché la leva deve tornare pronta presto (`TEMPI`);
+la targa e' piu' grande, con le monete che saltano fuori e una luce che passa
+sulla lacca del mobile; il palco ha i raggi che girano dietro il mobile, la
+fontana di monete e le lampadine che corrono il doppio. Le monete ricadono
+oltre i fianchi, e quelle che cadrebbero davanti ai rulli si spengono prima.
+Senza animazioni la targa compare e se ne va, e la sua durata va rimessa:
+`base.css` porta tutte le animazioni a un niente, e la targa sparirebbe subito.
 
 **Dal ×20 c'e' la festa delle slot vere.** `FestaSlot` (`src/games/slot/`)
-prende lo schermo: il lampo, i raggi, la scritta — BIG WIN dal ×20, MEGA WIN
-dal ×100, JACKPOT per i tre sette — con la luce che le passa sopra, la vincita
-che conta da zero e una fontana di monete con le scintille, che per il jackpot
-piovono anche dall'alto. Le monete sono un canvas: cento elementi animati dal
-DOM costerebbero troppo a un telefono. Un tocco finisce il conto, un altro
-chiude, e finita la festa le monete vanno al saldo. Una domanda giusta ha la
-festa del ×20.
+prende lo schermo: il lampo, i raggi, la scritta, con la luce che le passa
+sopra, la vincita che conta da zero con il tintinnio che sale di tono
+(`altezza` di `suona`), e una fontana di monete con le scintille. Ogni gradino
+ha il suo colore e qualcosa in piu' di quello prima: BIG WIN dal ×20, SUPER WIN
+per le campane, con l'alone e i raggi al contrario, MEGA WIN per il BAR, con la
+seconda onda, il terremoto e le monete che esplodono da dietro la scritta. Il
+JACKPOT dei sette, una volta ogni sessantaquattromila giri, e' un'altra cosa:
+la sala si spegne tranne i rulli, dove i sette bruciano; dalla cima del mobile
+si alza il faro, come la candela delle slot vere, e i suoi fasci spazzano il
+buio mentre squilla il campanello elettrico (`sirena`); le lettere cadono una
+alla volta, ognuna con la sua onda, e a ogni colpo lo schermo trema; poi il
+lampo, i fuochi d'artificio e un conto lungo, che sale di un'ottava. Monete e
+fuochi sono un canvas, con un seme fisso per gradino: cento elementi animati
+dal DOM costerebbero troppo a un telefono, e la stessa festa e' sempre la
+stessa. Un tocco finisce il conto, o salta il buio, un altro chiude, e finita
+la festa le monete vanno al saldo. Una domanda giusta ha la festa del ×20.
 
 **Il mobile si misura sulla sua larghezza.** `--w` e' quella che ci sta con la
 leva da tutti e due i lati — cosi' il mobile resta al centro e la leva sporge
 nel margine — o quella che lascia l'altezza, e `--u` ne e' il centesimo: le
-parti hanno altezze fisse in centesimi, e la pancia, con le categorie del
-giorno, prende quel che avanza fino a un tetto. `--w` e' registrata con
-`@property`, quindi i figli ereditano una lunghezza vera: non registrata, le
-unita' del contenitore si risolverebbero dove la si usa, e dentro la pancia,
-che e' un contenitore anche lei, varrebbero le sue. Per lo stesso motivo i
-margini dentro il vetro della pancia stanno sui figli: il vetro stesso conta
-le unita' della sala.
+parti hanno altezze fisse in centesimi, e il fronte, con i rulli, prende quel
+che avanza fino a un tetto: i rulli si allungano, come quelli veri, e i simboli
+prendono aria; oltre il tetto il mobile resta quello, al centro della sala. La
+pancia con le categorie del giorno non c'e' piu': diceva sul mobile quel che
+dicono gia' le regole, e le categorie restano sui punti di domanda e nelle
+regole. `--w` e' registrata con `@property`, quindi i figli ereditano una
+lunghezza vera: non registrata, le unita' del contenitore si risolverebbero
+dove la si usa, e dentro un contenitore annidato varrebbero le sue.
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
 europee dei casinò italiani (`shared/blackjack.ts`): niente carta coperta — il
