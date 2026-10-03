@@ -217,3 +217,49 @@ describe('una parola sola al giorno', () => {
     expect(ospite?.score).toBe(0)
   })
 })
+
+describe('il tris fra i giochi da tavoliere', () => {
+  it('la tabella delle partite si rifà senza il CHECK sul gioco, e le righe restano com’erano', () => {
+    const db = new ProvaD1('0028')
+    giocatore(db, 'pl_a')
+    giocatore(db, 'pl_b')
+    const adesso = new Date().toISOString()
+    db.sqlite
+      .prepare(
+        `INSERT INTO tavolo_partite (id, gioco, giocatore_a, giocatore_b, invitato, codice, stato, primo, posizione,
+           mosse, chiavi, vincitore, motivo, patta, patta_n, rivincita_di, serie_a, serie_b, partite_serie, versione,
+           created_at, iniziata_at, mossa_at, updated_at, finita_at, morte, morte_ok, punti)
+         VALUES ('t1', 'go', 'pl_a', 'pl_b', NULL, 'cod1', 'finita', 'b', '9:x', '["D4","passo"]', '["k1"]', 'a',
+           'punti', NULL, 3, 't0', 2, 1, 3, 17, ?, ?, ?, ?, ?, '[4,5]', 'a', '{"a":45,"b":38.5}')`,
+      )
+      .run(adesso, adesso, adesso, adesso, adesso)
+    const prima = db.sqlite.prepare('SELECT * FROM tavolo_partite').all()
+    // Prima il tris non entrava.
+    expect(() =>
+      db.sqlite
+        .prepare(
+          `INSERT INTO tavolo_partite (id, gioco, giocatore_a, stato, posizione, created_at, updated_at)
+           VALUES ('t2', 'tris', 'pl_a', 'invito', '.........', ?, ?)`,
+        )
+        .run(adesso, adesso),
+    ).toThrow()
+
+    applica(db, '0028_tris.sql')
+    expect(db.sqlite.prepare('SELECT * FROM tavolo_partite').all()).toEqual(prima)
+    db.sqlite
+      .prepare(
+        `INSERT INTO tavolo_partite (id, gioco, giocatore_a, stato, posizione, created_at, updated_at)
+         VALUES ('t2', 'tris', 'pl_a', 'invito', '.........', ?, ?)`,
+      )
+      .run(adesso, adesso)
+    const indici = db.sqlite
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'tavolo_partite'")
+      .all()
+      .map((r) => r.name)
+    for (const i of ['a', 'b', 'invitato', 'rivincita', 'aggiornata']) expect(indici).toContain(`idx_tavolo_${i}`)
+    // Le chiavi esterne ci sono ancora: un giocatore cancellato si porta via le sue partite.
+    db.sqlite.prepare("DELETE FROM players WHERE id = 'pl_b'").run()
+    expect(db.sqlite.prepare("SELECT id FROM tavolo_partite WHERE id = 't1'").all()).toEqual([])
+  })
+})
+

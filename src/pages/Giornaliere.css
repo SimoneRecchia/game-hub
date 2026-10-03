@@ -4,8 +4,8 @@
  * La carta della giornata e' l'eroe delle Giornaliere (Vetrina.css): qui
  * c'e' il suo contenuto, il posto grande a sinistra e il podio a destra, gli
  * anelli sotto. Sta in un contenitore perché anelli e podio si misurano sulla
- * larghezza della carta: su un telefono piccolo sei anelli da quaranta punti
- * non ci starebbero.
+ * larghezza della carta: su un telefono piccolo gli anelli di tutti i giochi,
+ * da quaranta punti, non ci starebbero.
  */
 .giornata {
   container-type: inline-size;

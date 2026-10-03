@@ -1,0 +1,156 @@
+/*
+ * La griglia del tris.
+ *
+ * Un foglio a quadretti con il cancelletto disegnato sopra, e le nove caselle
+ * da toccare sopra il disegno. Si misura sul contenitore come gli altri
+ * tavolieri: e' quadrata, e prende quel che c'e' in larghezza o in altezza.
+ * Ogni segno si traccia come a penna, con `stroke-dashoffset` su un
+ * `pathLength` di uno: la lunghezza vera non serve.
+ */
+.tris {
+  --tuo: var(--tris-croce);
+  position: relative;
+  width: min(100cqw, var(--campo-alto, 100cqh), 440px);
+  aspect-ratio: 1;
+  border-radius: 22px;
+  background-color: var(--tris-foglio);
+  background-image:
+    linear-gradient(var(--tris-quadretti) 1px, transparent 1px),
+    linear-gradient(90deg, var(--tris-quadretti) 1px, transparent 1px);
+  background-position: -1px -1px;
+  background-size: calc(100% / 12) calc(100% / 12);
+  box-shadow:
+    var(--edge-light),
+    0 0 0 1px var(--separator),
+    var(--shadow-md);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tris--cerchio {
+  --tuo: var(--tris-cerchio);
+}
+
+.tris__disegno {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tris__linee path {
+  stroke: var(--tris-tratto);
+  stroke-width: 1.7;
+  stroke-opacity: 0.82;
+}
+
+.tris__segno path {
+  stroke-width: 3.6;
+}
+
+.tris__segno--croce path {
+  stroke: var(--tris-croce);
+}
+
+.tris__segno--cerchio path {
+  stroke: var(--tris-cerchio);
+}
+
+/* Il segno appena fatto si traccia: la croce un tratto dopo l'altro, il cerchio in un giro. */
+.tris__segno.is-nuovo path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tris-traccia 0.2s cubic-bezier(0.5, 0.1, 0.4, 1) calc(var(--i, 0) * 0.17s) forwards;
+}
+
+.tris__segno--cerchio.is-nuovo path {
+  animation-duration: 0.36s;
+}
+
+@keyframes tris-traccia {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* A partita finita la fila si cancella con un tratto, dopo che l'ultimo segno e' arrivato. */
+.tris__fila {
+  stroke-width: 2.8;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: tris-traccia 0.42s cubic-bezier(0.6, 0, 0.3, 1) 0.4s forwards;
+}
+
+.tris__fila--croce {
+  stroke: var(--tris-croce);
+}
+
+.tris__fila--cerchio {
+  stroke: var(--tris-cerchio);
+}
+
+/* Con una fila fatta gli altri segni si attenuano: il tris si legge al primo sguardo. */
+.tris.is-fatta .tris__segno:not(.is-fila) {
+  opacity: 0.32;
+  transition: opacity 0.4s 0.7s;
+}
+
+.tris__caselle {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+}
+
+.tris__casella {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 16px;
+  background: transparent;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tris__casella:not(:disabled) {
+  cursor: pointer;
+}
+
+/*
+ * Dove toccare: col puntatore sopra o col fuoco della tastiera, un velo del
+ * colore del mio segno. Solo dove c'e' un puntatore: sui telefoni :hover resta
+ * acceso dopo il tocco, sulla casella appena giocata.
+ */
+@media (hover: hover) {
+  .tris__casella:not(:disabled):hover {
+    background: color-mix(in srgb, var(--tuo) 9%, transparent);
+  }
+}
+
+.tris__casella:focus-visible {
+  background: color-mix(in srgb, var(--tuo) 9%, transparent);
+}
+
+.tris__casella:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -4px;
+}
+
+.tris__casella:not(:disabled):active {
+  background: color-mix(in srgb, var(--tuo) 16%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tris__segno.is-nuovo path,
+  .tris__fila {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

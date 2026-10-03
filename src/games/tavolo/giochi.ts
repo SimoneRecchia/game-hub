@@ -2,6 +2,7 @@ import { Damiera } from '@/games/dama/Damiera'
 import { Griglia } from '@/games/forza4/Griglia'
 import { Goban } from '@/games/go/Goban'
 import { Scacchiera } from '@/games/scacchi/Scacchiera'
+import { TRIS } from '@/games/tris/descrizione'
 import * as dama from '@shared/dama'
 import * as go from '@shared/go'
 import * as scacchi from '@shared/scacchi'
@@ -93,6 +94,7 @@ const GIOCHI: Record<GiocoTavoliere, GiocoDelTavoliere> = {
   dama: DAMA,
   forza4: FORZA4,
   go: GO,
+  tris: TRIS,
 }
 
 export function giocoDelTavoliere(gioco: GiocoTavoliere): GiocoDelTavoliere {

@@ -326,3 +326,8 @@
   --c1: var(--go-1);
   --c2: var(--go-2);
 }
+
+.tav-computer--tris {
+  --c1: var(--tris-1);
+  --c2: var(--tris-2);
+}

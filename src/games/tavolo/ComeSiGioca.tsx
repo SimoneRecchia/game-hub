@@ -5,6 +5,23 @@ import '@/games/cruciverba/ComeSiGioca.css'
 
 /** Le regole di ogni gioco da tavoliere, il minimo per giocare: lo scopo, come si muove, come finisce. */
 const REGOLE: Record<GiocoTavoliere, { lede: string; sezioni: { titolo: string; righe: ReactNode[] }[] }> = {
+  tris: {
+    lede: 'Metti tre segni in fila, in orizzontale, in verticale o in diagonale, prima dell’altro.',
+    sezioni: [
+      {
+        titolo: 'Il turno',
+        righe: [
+          'Tocca una casella libera. Comincia la croce.',
+          'Hai dieci secondi per ogni mossa: allo scadere perdi.',
+          'Con un amico la prima mossa di ciascuno è senza tempo.',
+        ],
+      },
+      {
+        titolo: 'La fine',
+        righe: ['Vince chi fa tre in fila.', 'Se la griglia si riempie prima, è patta.'],
+      },
+    ],
+  },
   forza4: {
     lede: 'Metti quattro dischi del tuo colore in fila, in orizzontale, in verticale o in diagonale, prima dell’altro.',
     sezioni: [
@@ -128,9 +145,19 @@ export function ComeSiGiocaTavoliere({
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">Con chi</h3>
           <ul className="cru-aiuto__elenco">
-            <li>Contro il computer, a tre livelli: il colore cambia a ogni partita, e alla prima cominci tu.</li>
-            <li>Con un amico online, o con un link. A partita finita, «Gioca ancora» scambia i colori.</li>
-            <li>Non c’è classifica.</li>
+            <li>
+              Contro il computer, a tre livelli: {gioco === 'tris' ? 'il segno' : 'il colore'} cambia a ogni partita, e
+              alla prima cominci tu.
+            </li>
+            <li>
+              Con un amico online, o con un link. A partita finita, «Gioca ancora» scambia{' '}
+              {gioco === 'tris' ? 'i segni' : 'i colori'}.
+            </li>
+            <li>
+              {gioco === 'tris'
+                ? 'Qui non si fanno punti: quelli si fanno con la serie del giorno, la classificata.'
+                : 'Non c’è classifica.'}
+            </li>
           </ul>
         </section>
       </div>

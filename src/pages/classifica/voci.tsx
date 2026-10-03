@@ -4,6 +4,7 @@ import { IconFlame, IconPeople } from '@/components/Icons'
 import type { ChiaveClassifica } from '@/games/classifiche'
 import { formatDuration, formatNumber, formatPercent } from '@/lib/format'
 import { DOMANDE_PER_PARTITA } from '@shared/quiz'
+import { PARTITE_TRIS } from '@shared/tris'
 import { NOME_BLACKJACK } from '@shared/blackjack'
 import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
@@ -18,6 +19,7 @@ import type {
   QuizLeaderboard,
   ScarabeoLeaderboard,
   SudokuLeaderboard,
+  TrisLeaderboard,
 } from '@shared/types'
 
 /**
@@ -34,6 +36,7 @@ export type Risposta =
   | SudokuLeaderboard
   | BattagliaLeaderboard
   | QuizLeaderboard
+  | TrisLeaderboard
   | FortunaLeaderboard
 
 export interface Voce {
@@ -67,6 +70,7 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   sudoku: 'Sudoku',
   battaglia: 'Battaglia navale',
   quiz: 'Quiz',
+  tris: 'Tris',
   fortuna: 'Fortuna',
 }
 
@@ -78,7 +82,15 @@ export const GIOCHI_FORTUNA: ReadonlyArray<[GiocoFortuna, string]> = [
 ]
 
 /** I giochi, nell'ordine in cui si mostrano. */
-export const ORDINE_GIOCHI: GiocoClassificato[] = ['wordle', 'scarabeo', 'cruciverba', 'sudoku', 'battaglia', 'quiz']
+export const ORDINE_GIOCHI: GiocoClassificato[] = [
+  'wordle',
+  'scarabeo',
+  'cruciverba',
+  'sudoku',
+  'battaglia',
+  'quiz',
+  'tris',
+]
 
 const partite = (n: number) => `${formatNumber(n)} ${n === 1 ? 'partita' : 'partite'}`
 const giornate = (n: number) => `${formatNumber(n)} ${n === 1 ? 'giornata' : 'giornate'}`
@@ -277,6 +289,26 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
           ],
           nota: 'A pari punti conta il tempo.',
+        }
+      })
+
+    case 'tris':
+      return (risposta as TrisLeaderboard).rows.map((r) => {
+        const perse = r.giornate * PARTITE_TRIS - r.vinte - r.patte
+        const conto = `${r.vinte} ${r.vinte === 1 ? 'vinta' : 'vinte'}, ${r.patte} ${r.patte === 1 ? 'patta' : 'patte'}`
+        return {
+          ...r,
+          sotto: r.giornate === 0 ? 'In corso' : giorno ? conto : `${giornate(r.giornate)} · ${conto}`,
+          breve: r.giornate > 0 ? `${r.vinte} ${r.vinte === 1 ? 'vinta' : 'vinte'}` : 'in corso',
+          segni: r.inCorso ? inCorso : undefined,
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            { etichetta: 'Serie finite', valore: formatNumber(r.giornate) },
+            { etichetta: 'Vinte', valore: formatNumber(r.vinte) },
+            { etichetta: 'Patte', valore: formatNumber(r.patte) },
+            { etichetta: 'Perse', valore: formatNumber(Math.max(0, perse)) },
+          ],
+          nota: 'A pari punti contano le vittorie.',
         }
       })
   }

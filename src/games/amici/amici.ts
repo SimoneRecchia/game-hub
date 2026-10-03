@@ -37,6 +37,7 @@ export const DOVE_BREVE: Record<Attivita, string> = {
   sudoku: 'Sudoku',
   battaglia: 'Battaglia',
   quiz: 'Quiz',
+  tris: 'Tris',
   indovina: 'Indovina chi',
   scacchi: 'Scacchi',
   dama: 'Dama',
@@ -52,11 +53,12 @@ export const DOVE_BREVE: Record<Attivita, string> = {
 }
 
 /** I giochi a cui si invita un amico: quelli che si giocano in due, nella libera. */
-export type GiocoInsieme = 'battaglia' | 'quiz' | 'indovina' | 'scacchi' | 'dama' | 'forza4' | 'go'
+export type GiocoInsieme = 'battaglia' | 'quiz' | 'tris' | 'indovina' | 'scacchi' | 'dama' | 'forza4' | 'go'
 
 export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
   'quiz',
+  'tris',
   'indovina',
   'scacchi',
   'dama',

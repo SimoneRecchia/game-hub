@@ -362,14 +362,16 @@ occupati i due giocatori, altrimenti chi chiude l'app a meta' non potrebbe piu'
 essere sfidato. Chi resta ad aspettare puo' chiedere la vittoria a tavolino
 dopo tre minuti senza colpi, o cinque senza flotta.
 
-**Ogni classificata vale al massimo cento punti, e la generale e' la somma.**
+**Ogni classificata ha il suo tetto, e la generale e' la somma.**
 Prima una giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche
 centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
-gioco misura quel che gli e' proprio dentro lo stesso tetto (`shared/punti.ts`,
-che ha la tabella di tutti): il Wordle i tentativi, lo Scarabeo il punteggio in
-rapporto al computer, il cruciverba e il sudoku gli aiuti, la battaglia i
-colpi, il quiz le risposte giuste (venti per aver giocato, otto per ogni
-giusta). Tutti tengono il principio del Wordle — **giocarla bene vale circa il
+gioco misura quel che gli e' proprio dentro un tetto deciso
+(`TETTI` in `shared/punti.ts`, che ha la tabella di tutti): cento per quasi
+tutte, cinquanta per il tris, che si gioca in due minuti. Il Wordle misura i
+tentativi, lo Scarabeo il punteggio in rapporto al computer, il cruciverba e il
+sudoku gli aiuti, la battaglia i colpi, il quiz le risposte giuste (venti per
+aver giocato, otto per ogni giusta), il tris le vittorie e le patte. Tutti
+tengono il principio del Wordle — **giocarla bene vale circa il
 doppio di giocarla male**, non dieci volte tanto — e
 `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
 per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
@@ -814,11 +816,12 @@ partite.
 
 **I giochi da tavolo non hanno classificata.** Sono partite quando si vuole,
 con gli amici — e contro il computer dove ha senso — senza punti ne'
-classifica: nelle Libere stanno con le libere dei sei giochi, e nella barra
-laterale sotto le Libere (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in
-`GiocoClassificato`, che porta con se' classifiche, anelli e statistiche. Sono
-Indovina chi, che il computer non ce l'ha — si gioca parlandosi — e scacchi,
-dama, Forza 4 e go, con un amico o contro il computer.
+classifica: nelle Libere stanno con le libere dei giochi classificati, e nella
+barra laterale sotto le Libere (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`),
+non in `GiocoClassificato`, che porta con se' classifiche, anelli e
+statistiche. Sono Indovina chi, che il computer non ce l'ha — si gioca
+parlandosi — e scacchi, dama, Forza 4 e go, con un amico o contro il computer.
+Il tris e' un tavoliere ma non sta qui: ha la sua classificata (vedi sotto).
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -860,11 +863,12 @@ TURN: fra due reti che non si lasciano attraversare il canale non si apre, e
 la pagina lo dice. Il ripiego e' il file del set (`setFile.ts`), che si manda
 come un documento qualunque e si apre da "Nuovo set".
 
-**Scacchi, dama, Forza 4 e go passano da una faccia sola.** `RegoleTavoliere`
-(`shared/tavolo-regole.ts`) mette i quattro giochi dietro le stesse funzioni,
-in testo: la posizione come la scrive ogni gioco (il FEN, le 32 caselle della
-dama, le 42 del Forza 4, il goban) e la mossa nella notazione piu' semplice da
-controllare ("e2e4", "22x13x6", la colonna, "D4" o "passo"). Il server la usa per ogni mossa
+**Scacchi, dama, Forza 4, go e tris passano da una faccia sola.**
+`RegoleTavoliere` (`shared/tavolo-regole.ts`) mette i cinque giochi dietro le
+stesse funzioni, in testo: la posizione come la scrive ogni gioco (il FEN, le
+32 caselle della dama, le 42 del Forza 4, il goban, le 9 del tris) e la mossa
+nella notazione piu' semplice da controllare ("e2e4", "22x13x6", la colonna,
+"D4" o "passo", la casella). Il server la usa per ogni mossa
 delle partite fra amici e il telefono per quelle contro il computer, quindi le
 regole sono le stesse per costruzione. Il server non rigioca la partita:
 `tavolo_partite.posizione` sta accanto alle mosse e la mossa si controlla su
@@ -991,6 +995,60 @@ tracciato SVG con i buchi (`evenodd`) sopra lo strato dei dischi, e le colonne
 da toccare stanno sopra tutto. La caduta dura la radice della distanza, come
 quella di un sasso.
 
+**Il tris ha una classificata, e i tavolieri sono la sua libera.** La
+classificata e' una serie di cinque partite contro il computer del giorno
+(`/tris/classificata`); la libera e' quella dei giochi da tavoliere: il tris
+sta in `GIOCHI_TAVOLIERE` e in `RegoleTavoliere`, con la sala a `/tris/libera`
+(`SLUG_TAVOLIERE`), contro il computer o con un amico. Non sta in
+`GIOCHI_DA_TAVOLO`, che sono i giochi senza classificata, e le pagine dei
+tavolieri lo trovano con `giocoTavoloDi`. Per farlo entrare la migrazione
+`0028` ha rifatto `tavolo_partite` senza il `CHECK` sul gioco, che in SQLite
+non si allarga: il gioco lo controlla il server, e un gioco nuovo non deve
+volerla rifare un'altra volta. Prima delle migrazioni il deploy scrive nel log
+il segnalibro di Time Travel di D1, da cui si torna a com'era se una tabella
+rifatta andasse storta.
+
+**Nel tris ogni mossa ha dieci secondi, e il tempo lo tiene il server.** Senza
+tempo chi ci pensa abbastanza non sbaglia mai, e il tris finisce sempre patta.
+Nella classificata `mossa_at` e' quando e' partito il tempo della mossa da
+fare: una mossa che arriva oltre il tempo piu' `MARGINE_MOSSA_TRIS_MS` (tre
+secondi, come nel quiz) non vale e la partita e' persa, e una partita lasciata
+a meta' la chiude la prima richiesta che arriva dopo (`chiudiScaduta`). Allo
+scadere il telefono lo dice lui (`/tris/tempo`), senza aspettare il margine: e'
+una resa. Fra amici e' lo stesso (`tempoMossaMs` in `RegoleTavoliere`,
+`scadenzaMossa` e `chiudiSeScaduta` in `tavoloStore.ts`), tranne la prima mossa
+di ciascuno, che e' senza tempo: chi ha mandato l'invito arriva al tavoliere un
+momento dopo chi l'ha accettato, quando la sala se ne accorge. Nelle partite a
+tempo il giro di controllo e' di un secondo (`TAVOLO_POLL_A_TEMPO_MS`): la
+mossa dell'altro arriva con il ritardo del giro, e intanto il mio tempo corre.
+Contro il computer il tempo sta nel telefono, e riparte a ogni turno.
+
+**Il computer del tris e' lo stesso per tutti, e ogni partita si puo'
+vincere.** Il tris e' risolto: il valore di ogni posizione sta in una tabella
+(`shared/tris-valori.ts`, che scrive `scripts/genera-tris-valori.ts` e un test
+ricalcola con il minimax), perché il minimax a ogni isolato nuovo costava sei
+dei dieci millisecondi. Il computer sbaglia come una persona: una svista
+sottile, che lascia una forchetta, tanto piu' spesso quanto meno sono le mosse
+giuste; una grossa, che non para una fila, di rado. Nella classificata le
+sviste vengono dal seme della partita e dalla posizione (`mossaDelGiorno`),
+quindi chi gioca le stesse mosse trova le stesse risposte. Ogni partita ha un
+punto debole (`debolezzaDi`): una posizione, raggiungibile tenendo la patta, in
+cui il computer sbaglia di sicuro. Si cerca una svista sottile, mai sulla prima
+risposta (`PRIMA_MOSSA_DEBOLE`), che sarebbe un'apertura fortunata e non una
+strada; quando comincia il computer di solito non ce n'e' — chi ha la mossa in
+piu' perde con una forchetta solo alla quinta — e allora e' una fila lasciata
+aperta. Un test verifica su quattrocento giorni che ogni partita si possa
+vincere. Chi gioca bene ne vince circa una su due; chi sbaglia ogni tanto una
+su tre, e ne perde una su cinque.
+
+**La serie del tris conta finita.** Dieci punti per averla finita, otto per
+ogni vittoria e quattro per ogni patta (`puntiTris`), fino a cinquanta: la
+patta e' quel che fa chi gioca bene contro chi gioca bene, e vale la meta'
+della vittoria, non zero. Il giocatore comincia la prima, la terza e la
+quinta. I punti si scrivono a serie finita, come in ogni classificata, e nella
+classifica del tris a pari punti passa avanti chi ha vinto di piu'. Guardare la
+pagina non apre niente: la riga nasce con la prima partita (`/tris/partita`).
+
 **Le righe dei giocatori sono larghe quanto il tavoliere.** In `Tavola` il
 gruppo — l'altro, il tavoliere, io — e' una griglia larga quanto il tavoliere:
 le righe hanno `width: 0` e `min-width: 100%`, quindi la riempiono senza
@@ -1011,7 +1069,8 @@ indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 nuovi in `App.tsx`); `/<gioco>` da solo porta alla classificata.
 I giochi da tavolo non hanno ne' l'una ne' l'altra: la
 loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`, `/invito/:codice`
-(`/scacchi`, `/dama`, `/forza-4`, `/go`).
+(`/scacchi`, `/dama`, `/forza-4`, `/go`). Il tris ha le due cose: la sua libera
+e' una sala da tavoliere, a `/tris/libera`.
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
 esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso

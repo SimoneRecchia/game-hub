@@ -12,6 +12,7 @@ import {
   altroLato,
   chiaviDi,
   chiudiInvito,
+  chiudiSeScaduta,
   diTurno,
   giocatoriOnline,
   inConteggio,
@@ -29,6 +30,7 @@ import {
   recordTavolo,
   rivincitaDi,
   salvaPartita,
+  scadenzaMossa,
   serieDopo,
   ultimoInvito,
   vistaTavolo,
@@ -68,12 +70,16 @@ function contaGo(row: PartitaRow, morte: readonly number[]): { punti: { a: numbe
   }
 }
 
-/** La partita richiesta, e il lato di chi chiede: chi non ci gioca non la vede. */
+/**
+ * La partita richiesta, e il lato di chi chiede: chi non ci gioca non la vede.
+ * Se chi aveva la mossa ha lasciato passare il suo tempo, la partita e' gia'
+ * chiusa.
+ */
 async function partitaMia(c: Context<AppEnv>): Promise<{ row: PartitaRow; io: Lato }> {
-  const row = await partitaPerId(c.env.DB, c.req.param('id') ?? '')
-  const io = row ? latoDi(row, c.get('player').id) : null
-  if (!row || !io) fail(404, 'PARTITA_NON_TROVATA', 'Partita non trovata.')
-  return { row, io }
+  const letta = await partitaPerId(c.env.DB, c.req.param('id') ?? '')
+  const io = letta ? latoDi(letta, c.get('player').id) : null
+  if (!letta || !io) fail(404, 'PARTITA_NON_TROVATA', 'Partita non trovata.')
+  return { row: await chiudiSeScaduta(c.env.DB, letta, Date.now()), io }
 }
 
 async function corpoDi(c: Context<AppEnv>): Promise<Record<string, unknown>> {
@@ -174,6 +180,8 @@ export const tavoloRoutes = new Hono<AppEnv>()
   .post('/partite/:id/mossa', async (c) => {
     const { row, io } = await partitaMia(c)
     const corpo = await corpoDi(c)
+    // Arrivata dopo il tempo: la partita e' gia' chiusa, e la vista lo dice.
+    if (row.stato === 'finita' && row.motivo === 'tempo') return rispondi(c, row, io)
     inCorso(row)
     if (Number(corpo.versione) !== row.versione) fail(409, 'CONFLITTO', 'La partita è cambiata: la ricarico.')
     if (diTurno(row) !== io) fail(409, 'NON_TOCCA', 'Non è il tuo turno.')
@@ -231,6 +239,22 @@ export const tavoloRoutes = new Hono<AppEnv>()
     }
     if (corpo.azione === 'rifiuta') return rispondi(c, await salvaPartita(c.env.DB, row, { patta: null }, ora), io)
     fail(400, 'AZIONE', 'Azione sconosciuta.')
+  })
+
+  /**
+   * Il tempo della mossa e' finito sul mio telefono: la partita e' persa. Lo
+   * dico io, quindi non si aspetta il margine della rete: e' una resa.
+   */
+  .post('/partite/:id/tempo', async (c) => {
+    const { row, io } = await partitaMia(c)
+    if (row.stato !== 'in_corso' || scadenzaMossa(row) === null || diTurno(row) !== io) return rispondi(c, row, io)
+    const dopo = await salvaPartita(
+      c.env.DB,
+      row,
+      { stato: 'finita', vincitore: altroLato(io), motivo: 'tempo', patta: null },
+      Date.now(),
+    )
+    return rispondi(c, dopo, io)
   })
 
   /** Abbandona: vince l'altro. */

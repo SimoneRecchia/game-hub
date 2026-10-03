@@ -22,13 +22,14 @@ import { useUltimi } from './useUltimi'
 import { GIOCHI_FORTUNA, NOMI_CLASSIFICHE, ORDINE_GIOCHI, vociDi, type Risposta, type Voce } from './voci'
 
 const LEDE: Record<ChiaveClassifica, string> = {
-  generale: 'Tutte le classificate, fino a 100 punti ciascuna, e i giochi della Fortuna.',
+  generale: 'Tutte le classificate e i giochi della Fortuna.',
   wordle: '100 punti al primo tentativo, 50 al sesto.',
   scarabeo: 'Pareggiare il computer vale 100 punti.',
   cruciverba: '100 punti se lo completi senza aiuti.',
   sudoku: '100 punti se lo risolvi senza aiuti.',
   battaglia: 'Meno colpi, più punti.',
   quiz: '20 punti per aver giocato, 8 per ogni risposta giusta.',
+  tris: '10 punti per la serie, 8 per ogni vittoria, 4 per ogni patta.',
   fortuna: 'Quel che Crazy Time, la slot e il blackjack hanno dato o tolto.',
 }
 

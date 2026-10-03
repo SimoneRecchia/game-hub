@@ -43,6 +43,10 @@ export function testoFine(
       return { titolo, riga: vinto ? `${Altro} non può più muovere` : 'Non puoi più muovere' }
     case 'forza4':
       return { titolo, riga: 'Quattro in fila' }
+    case 'tris':
+      return { titolo, riga: 'Tre in fila' }
+    case 'tempo':
+      return { titolo, riga: vinto ? `${Altro} ha finito il tempo` : 'Hai finito il tempo' }
     case 'punti': {
       if (!punti) return { titolo, riga: 'Ai punti' }
       const scarto = formatta(Math.abs(punti.io - punti.avversario))
@@ -62,6 +66,7 @@ const COLORE: Record<GiocoTavoliere, string> = {
   dama: 'linear-gradient(155deg, var(--dama-1), var(--dama-2) 80%)',
   forza4: 'linear-gradient(155deg, var(--forza4-1), var(--forza4-2) 80%)',
   go: 'linear-gradient(155deg, var(--go-1), var(--go-2) 80%)',
+  tris: 'linear-gradient(155deg, var(--tris-1), var(--tris-2) 80%)',
 }
 
 const BORDO: Record<GiocoTavoliere, string> = {
@@ -69,6 +74,7 @@ const BORDO: Record<GiocoTavoliere, string> = {
   dama: 'var(--dama-2)',
   forza4: 'var(--forza4-2)',
   go: 'var(--go-2)',
+  tris: 'var(--tris-2)',
 }
 
 /** L'adesivo della fine, nel colore del gioco: vivace per una vittoria, bordato per il resto. */
@@ -96,6 +102,6 @@ export function adesivoFine(
     sotto: riga,
     colore: BORDO[gioco],
     durata: ADESIVO_FINE_MS,
-    suono: vincitore === null ? 'pareggio' : motivo === 'resa' ? 'esce' : 'sconfitta',
+    suono: vincitore === null ? 'pareggio' : motivo === 'resa' ? 'esce' : motivo === 'tempo' ? 'scaduto' : 'sconfitta',
   }
 }

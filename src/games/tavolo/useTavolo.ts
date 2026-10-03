@@ -3,7 +3,7 @@ import { useToast } from '@/components/Toast'
 import { semeDi } from '@/games/go/conteggio'
 import { ApiFetchError, api } from '@/lib/api'
 import { suona } from '@/lib/suoni'
-import { TAVOLO_POLL_ATTESA_MS, TAVOLO_POLL_TURNO_MS } from '@shared/config'
+import { TAVOLO_POLL_ATTESA_MS, TAVOLO_POLL_A_TEMPO_MS, TAVOLO_POLL_TURNO_MS } from '@shared/config'
 import { regoleDi } from '@shared/tavolo-regole'
 import type { VistaTavolo } from '@shared/types'
 import { stimaDelleMorte } from './computer'
@@ -27,6 +27,13 @@ export interface PartitaConAmico {
   proponiMorte: (morte: number[]) => void
   accettaConteggio: () => void
   riprendiGioco: () => void
+  /**
+   * Nei giochi con il tempo per mossa: quando finisce quello di chi ha la
+   * mossa, sull'orologio del telefono. Null mentre la mia mossa viaggia.
+   */
+  scadenza: number | null
+  /** Il mio tempo e' finito: lo dico al server, e la partita e' persa. */
+  scaduto: () => void
 }
 
 /**
@@ -43,6 +50,7 @@ export function useTavolo(id: string): PartitaConAmico {
   const [inVolo, setInVolo] = useState<{ posizione: string; mosse: string[] } | null>(null)
   const [errore, setErrore] = useState<string | null>(null)
   const [inviando, setInviando] = useState(false)
+  const [scadenza, setScadenza] = useState<number | null>(null)
   const vistaRef = useRef(vista)
   vistaRef.current = vista
   const toast = useToast()
@@ -54,6 +62,8 @@ export function useTavolo(id: string): PartitaConAmico {
       suona('invito', { volume: 0.6 })
     }
     setVista(v)
+    // Il tempo che resta e' contato quando parte la risposta: da adesso, sull'orologio del telefono.
+    setScadenza(v.tempo ? Date.now() + v.tempo.restanteMs : null)
   }, [])
 
   const carica = useCallback(async () => {
@@ -78,7 +88,9 @@ export function useTavolo(id: string): PartitaConAmico {
       ? POLL_FINE_MS
       : stato === 'in_corso' && vista?.tuoTurno
         ? TAVOLO_POLL_TURNO_MS
-        : TAVOLO_POLL_ATTESA_MS
+        : vista?.tempo
+          ? TAVOLO_POLL_A_TEMPO_MS
+          : TAVOLO_POLL_ATTESA_MS
   const aperta = stato === 'in_corso' || stato === 'finita' || stato === 'invito'
   useEffect(() => {
     if (!aperta) return
@@ -178,5 +190,7 @@ export function useTavolo(id: string): PartitaConAmico {
     proponiMorte: (morte) => void azione('conteggio', { azione: 'proponi', morte }),
     accettaConteggio: () => void azione('conteggio', { azione: 'accetta' }),
     riprendiGioco: () => void azione('conteggio', { azione: 'riprendi' }),
+    scadenza: inVolo ? null : scadenza,
+    scaduto: () => void azione('tempo'),
   }
 }

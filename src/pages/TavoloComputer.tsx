@@ -25,7 +25,7 @@ import './Tavolo.css'
 const ATTESA_FINE_MS = 450
 
 /**
- * Una partita contro il computer, a scacchi, a dama, a Forza 4 o a go. Sta tutta
+ * Una partita contro il computer, a scacchi, a dama, a Forza 4, a go o a tris. Sta tutta
  * nel telefono: il computer pensa in un Web Worker, e la partita si salva a
  * ogni mossa, cosi' si riprende da dove la si era lasciata.
  */
@@ -163,6 +163,11 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
         }}
         turno={finita || fermo ? null : mioTurno ? 'io' : 'altro'}
         onMossa={g.muovi}
+        tempo={
+          g.scadenza !== null && g.tempoMs !== null
+            ? { scadenza: g.scadenza, totaleMs: g.tempoMs, di: 'io', onScaduto: g.scaduto }
+            : null
+        }
         conteggio={conto && morte ? { morte: new Set(morte), proprietario: conto.proprietario } : undefined}
         piede={piede}
       />

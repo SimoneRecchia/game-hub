@@ -3,6 +3,7 @@ import { Button } from '@/components/Button'
 import { Pillola } from '@/components/Scheda'
 import { altraParte, type Parte } from '@shared/tavolo'
 import { SEGNI } from './nomi'
+import { TempoMossa } from './TempoMossa'
 import type { GiocoDelTavoliere, PropsTavoliere } from './tipi'
 import './Tavola.css'
 
@@ -27,8 +28,19 @@ interface Props {
   onMossa: (mossa: string) => void
   /** Nel go, a gioco fermo: le pietre morte e il territorio sul goban. */
   conteggio?: PropsTavoliere['conteggio']
+  /** Nei giochi con il tempo per mossa: fino a quando ha tempo chi deve muovere, nella sua riga. */
+  tempo?: TempoTavola | null
   /** Sotto il tavoliere: il turno, le proposte, la fine. */
   piede: ReactNode
+}
+
+export interface TempoTavola {
+  /** L'istante, sull'orologio del telefono, in cui il tempo finisce. */
+  scadenza: number
+  totaleMs: number
+  di: 'io' | 'altro'
+  /** Il mio tempo e' finito. */
+  onScaduto?: () => void
 }
 
 /**
@@ -38,7 +50,8 @@ interface Props {
  * stanno mai sopra il tavoliere.
  */
 export function Tavola(props: Props) {
-  const { descrizione, posizione, mosse, mia, attivo, finita, io, altro, turno, onMossa, conteggio, piede } = props
+  const { descrizione, posizione, mosse, mia, attivo, finita, io, altro, turno, onMossa, conteggio, tempo, piede } =
+    props
   const { Tavoliere } = descrizione
   return (
     <div className={`tav tav--${descrizione.gioco}`}>
@@ -49,6 +62,7 @@ export function Tavola(props: Props) {
             parte={altraParte(mia)}
             descrizione={descrizione}
             turno={turno === 'altro'}
+            tempo={tempo?.di === 'altro' ? tempo : null}
             classe="tav-g--altro"
           />
           <Tavoliere
@@ -61,7 +75,14 @@ export function Tavola(props: Props) {
             onMossa={onMossa}
             conteggio={conteggio}
           />
-          <Giocatore g={io} parte={mia} descrizione={descrizione} turno={turno === 'io'} classe="tav-g--io" />
+          <Giocatore
+            g={io}
+            parte={mia}
+            descrizione={descrizione}
+            turno={turno === 'io'}
+            tempo={tempo?.di === 'io' ? tempo : null}
+            classe="tav-g--io"
+          />
         </div>
       </div>
       <div className="tav__piede">{piede}</div>
@@ -74,12 +95,14 @@ function Giocatore({
   parte,
   descrizione,
   turno,
+  tempo,
   classe,
 }: {
   g: GiocatoreTavola
   parte: Parte
   descrizione: GiocoDelTavoliere
   turno: boolean
+  tempo: TempoTavola | null
   classe: string
 }) {
   const segno = { '--segno': SEGNI[descrizione.gioco][parte] } as CSSProperties
@@ -94,6 +117,15 @@ function Giocatore({
           {g.nota && <span className="tav-g__nota"> · {g.nota}</span>}
         </span>
       </span>
+      {tempo && (
+        <TempoMossa
+          key={tempo.scadenza}
+          scadenza={tempo.scadenza}
+          totaleMs={tempo.totaleMs}
+          mio={tempo.di === 'io'}
+          onScaduto={tempo.onScaduto}
+        />
+      )}
     </div>
   )
 }
