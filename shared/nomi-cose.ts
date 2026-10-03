@@ -130,8 +130,11 @@ export function normalizza(testo: string): string {
 /** Gli articoli che si tolgono davanti: "il gatto" vale "gatto". */
 const ARTICOLO = /^\s*(?:(?:il|lo|la|i|gli|le|un|uno|una)\s+|(?:l|un|dell|all|nell)\s*['’]\s*)/i
 
-/** Le parole che stanno davanti al nome di un'acqua e non ne fanno parte: "il lago di Garda" e' "Garda". */
-const DAVANTI_ACQUE = new RegExp(
+/**
+ * Le parole che stanno davanti al nome di un'acqua e non ne fanno parte: "il
+ * lago di Garda" e' "Garda". Le toglie anche lo script del lessico.
+ */
+export const DAVANTI_ACQUE = new RegExp(
   '^\\s*(?:(?:il|lo|la|l[\'’])\\s*)?(?:fiume|torrente|lago|laghi|mar|mare|oceano|golfo|canale|stretto)\\s+' +
     '(?:(?:di|del|della|dello|dei|degli|delle|d[\'’])\\s*)?',
   'i',
