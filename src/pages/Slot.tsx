@@ -7,14 +7,16 @@ import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
-import { centroDi, incassaMonete, puntaFiches } from '@/games/fortuna/voli'
+import { centroDi, incassaMonete, puntaFiches, spostaFiches, volaFiche } from '@/games/fortuna/voli'
 import { coloreDellaCategoria, iconaDellaCategoria } from '@/games/ruota/disegni'
 import { Intermezzo, type DatiIntermezzo } from '@/games/ruota/Intermezzo'
 import { ComeSiGiocaSlot } from '@/games/slot/ComeSiGioca'
-import { FestaSlot, livelloDi, type DatiFesta } from '@/games/slot/Festa'
+import { FestaSlot, type DatiFesta } from '@/games/slot/Festa'
 import { Leva } from '@/games/slot/Leva'
+import { eFesta, momentoDi, type Momento, type MomentoMobile } from '@/games/slot/momenti'
 import { Rulli, type MetaRulli } from '@/games/slot/Rulli'
-import { DefinizioniSlot, Simbolo, TesseraCategoria } from '@/games/slot/simboli'
+import { DefinizioniSlot, Simbolo } from '@/games/slot/simboli'
+import { DURATA_TARGA, Targa, type DatiTarga } from '@/games/slot/Targa'
 import { VINCITE, type VincitaRulli } from '@/games/slot/vincite'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
@@ -23,6 +25,7 @@ import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
 import {
   INTERVALLO_SLOT_MS,
   PREMI,
+  PUNTATA_MASSIMA_SLOT,
   PUNTATA_MINIMA_SLOT,
   PUNTATE_SLOT,
   VINCITA_DOMANDA,
@@ -36,21 +39,53 @@ import './Slot.css'
 const DomandaRuota = lazy(() => import('@/games/ruota/DomandaRuota'))
 
 type Fase = 'pronta' | 'gira' | 'paga' | 'tripla' | 'domanda'
-/** Le luci della sala: una ciliegia sola ha la sua, piu' corta, perché esce un giro ogni quattro. */
-type Luci = 'attesa' | 'gira' | 'poco' | 'vinto' | 'jackpot'
+/**
+ * Le luci della sala, che seguono il momento della vincita: la ciliegia sola
+ * fa tre giri di corsa e basta, la targa accende tutto e fa passare la luce
+ * sulla lacca, il palco fa correre le lampadine il doppio, il jackpot lampeggia.
+ */
+type Luci = 'attesa' | 'gira' | 'poco' | 'vinto' | 'palco' | 'jackpot'
+
+const LUCI_DEL_MOMENTO: Record<Momento, Luci> = {
+  targhetta: 'poco',
+  targa: 'vinto',
+  palco: 'palco',
+  big: 'vinto',
+  super: 'vinto',
+  mega: 'vinto',
+  jackpot: 'jackpot',
+}
 
 /**
- * Quanto si festeggia una vincita prima delle monete al saldo, e poi prima di
- * poter rigirare: le monete arrivano 760 ms dopo la partenza
- * (`incassaMonete`). Una ciliegia sola, che ridà la puntata, meno. Poi quanto
- * i punti di domanda si girano prima della domanda.
+ * Le vincite sul mobile: quando le monete partono dal vassoio verso il saldo
+ * (ci arrivano 760 ms dopo, `incassaMonete`), e quando la slot torna pronta,
+ * appena dopo la targa. La ciliegia sola esce un giro ogni quattro, quindi rende
+ * la leva in fretta; piu' la vincita e' rara, piu' il momento dura.
  */
+const TEMPI: Record<MomentoMobile, { incasso: number; pronta: number }> = {
+  targhetta: { incasso: 500, pronta: 1_350 },
+  targa: { incasso: 950, pronta: 1_900 },
+  palco: { incasso: 1_700, pronta: 2_800 },
+}
+
+/** Dal ×20 i simboli che pagano si vedono un attimo prima che la festa prenda lo schermo. */
 const FESTA_MS = 900
-const RESTA_MS = 900
-const POCO_MS = 500
-const RESTA_POCO_MS = 850
+/** Quanto i punti di domanda si girano prima della domanda, e quanto si torna alla slot prima della festa. */
 const TRIPLA_MS = 1_500
 const RITORNO_MS = 650
+
+/** La puntata in fiches, dalle piu' grandi: la pila che torna indietro quando la si azzera. */
+function inFiches(puntata: number): number[] {
+  const pezzi: number[] = []
+  let resto = puntata
+  for (const valore of [...PUNTATE_SLOT].reverse()) {
+    while (resto >= valore) {
+      pezzi.push(valore)
+      resto -= valore
+    }
+  }
+  return pezzi
+}
 
 /** Le monete che cadono nel vassoio, e poi volano al saldo: piu' vale la vincita, piu' sono. */
 const moneteDi = (premio: number) => Math.min(24, Math.round(3 + Math.sqrt(premio) * 2))
@@ -69,14 +104,17 @@ function domandaDi(g: GiroSlot): VincitaRulli | null {
 }
 
 /**
- * La slot: si sceglie la puntata, si tira la leva, e i tre rulli girano e si
- * fermano uno dopo l'altro. La puntata si paga alla leva, e si vede: le fiches
- * volano dal saldo alla fessura del mobile, e il saldo scende. Quando il terzo
- * rullo si ferma, quel che paga si accende, ogni combinazione a modo suo, con
- * il suo nome sul display (`VINCITE`); le monete cadono nel vassoio e da li'
- * volano al saldo, che sale quando arriva la prima. Tre punti di domanda,
- * dovunque nella finestra, si girano e mostrano la categoria: l'intermezzo,
- * poi la domanda del quiz, e tornando alla slot la vincita.
+ * La slot: si mettono le fiches, si tira la leva, e i tre rulli girano e si
+ * fermano uno dopo l'altro. Ogni fiche aggiunge il suo valore alla puntata,
+ * fino al massimo; "Azzera" la riporta a zero, e a zero la leva non si tira.
+ * La puntata si paga alla leva, e si vede: le fiches volano dal saldo alla
+ * fessura del mobile, e il saldo scende. Quando il terzo rullo si ferma, quel
+ * che paga si accende, ogni combinazione a modo suo, con il suo nome sul
+ * display (`VINCITE`), e il suo momento, piu' grande quanto e' piu' rara
+ * (`momentoDi`): una targa sul mobile, o la festa. Le monete cadono nel vassoio
+ * e da li' volano al saldo, che sale quando arriva la prima. Tre punti di
+ * domanda, dovunque nella finestra, si girano e mostrano la categoria:
+ * l'intermezzo, poi la domanda del quiz, e tornando alla slot la vincita.
  *
  * Il server sa gia' l'esito quando risponde alla leva, ma i rulli no: qui si
  * mostra nell'ordine giusto, e il tabellone resta fermo (`conto`) finché il
@@ -89,7 +127,13 @@ export default function SlotPagina() {
   const [stato, setStato] = useState<SlotStato | null>(null)
   const [errore, setErrore] = useState<string | null>(null)
   const [fase, setFase] = useState<Fase>('pronta')
+  /** La puntata messa con le fiches; finché non se ne tocca una, quella dell'ultimo giro di oggi. */
   const [puntata, setPuntata] = useState<number | null>(null)
+  /** Le fiches in volo verso il display: la puntata e' gia' cresciuta, il display la conta quando arrivano. */
+  const [inVoloFiches, setInVoloFiches] = useState(0)
+  /** Cresce a ogni fiche che non entra: il MAX del display lampeggia. */
+  const [lampoMax, setLampoMax] = useState(0)
+  const [targa, setTarga] = useState<DatiTarga | null>(null)
   const [inMoto, setInMoto] = useState(false)
   const [meta, setMeta] = useState<MetaRulli | null>(null)
   const [conto, setConto] = useState<{ saldo: number; netto: number; giri: number } | null>(null)
@@ -108,9 +152,14 @@ export default function SlotPagina() {
   const [riposata, setRiposata] = useState(true)
   /** Cresce a ogni leva: le monete di un giro finito, arrivando, non liberano il tabellone del giro dopo. */
   const leve = useRef(0)
+  /** Cresce quando si azzera o si tira la leva: le fiches ancora in volo, arrivando, non contano piu'. */
+  const voliFiches = useRef(0)
   const saldoRef = useRef<HTMLSpanElement>(null)
   const puntataRef = useRef<HTMLSpanElement>(null)
   const vassoioRef = useRef<HTMLDivElement>(null)
+  const gettoniRef = useRef<HTMLDivElement>(null)
+  const vetroRef = useRef<HTMLDivElement>(null)
+  const macchinaRef = useRef<HTMLDivElement>(null)
   const ultimo = useRef(stato)
   useEffect(() => {
     ultimo.current = stato
@@ -168,10 +217,76 @@ export default function SlotPagina() {
   const giro = stato?.giro ?? null
   const saldo = stato?.saldo ?? 0
   const categorie = useMemo(() => stato?.categorie ?? [], [stato?.categorie])
-  const massimo = Math.max(PUNTATA_MINIMA_SLOT, Math.min(PUNTATE_SLOT[PUNTATE_SLOT.length - 1], saldo))
-  // La puntata resta quella di prima finché non la si cambia, come al tavolo; mai piu' del saldo.
-  const scelta = Math.min(massimo, puntata ?? giro?.puntata ?? PUNTATA_MINIMA_SLOT)
-  const puoGiocare = saldo >= PUNTATA_MINIMA_SLOT && fase === 'pronta' && !inMoto && riposata && !inviando
+  /** Si punta fino a dieci, e mai piu' del saldo: il ×300 dei sette su un saldo intero sfascerebbe la generale. */
+  const tetto = Math.min(PUNTATA_MASSIMA_SLOT, saldo)
+  const ferma = fase === 'pronta' && !inMoto
+  // La puntata resta quella di prima finché non la si cambia, come al tavolo. A slot ferma mai oltre il tetto;
+  // mentre i rulli girano e' quella del giro, anche se il saldo, che il server ha gia' contato, e' sceso sotto.
+  const voluta = puntata ?? giro?.puntata ?? 0
+  const scelta = ferma ? Math.min(tetto, voluta) : voluta
+  /** Quel che dice il display: la puntata, meno le fiches che non ci sono ancora arrivate. */
+  const mostrata = Math.max(0, scelta - inVoloFiches)
+  /** Al tetto, quando il display ci e' arrivato: la fiche che lo riempie dice MAX quando si posa. */
+  const alMassimo = ferma && scelta > 0 && scelta >= tetto && inVoloFiches === 0
+  const puoPuntare = ferma && saldo >= PUNTATA_MINIMA_SLOT
+  const puoGiocare = puoPuntare && scelta >= PUNTATA_MINIMA_SLOT && riposata && !inviando
+  const senzaPuntata = puoPuntare && mostrata === 0
+
+  /** Una fiche che non entra, o che riempie la puntata: il MAX lampeggia, con un tocco morbido. Mai un errore. */
+  const segnaMassimo = () => {
+    setLampoMax((n) => n + 1)
+    suona('tetto', { ritardo: 0.06 })
+  }
+
+  /**
+   * Una fiche: la puntata cresce del suo valore, fino al tetto, e la fiche vola
+   * dal bottone al display, che conta quando arriva. Una che va oltre si ferma
+   * al tetto, e lo dice.
+   */
+  const aggiungi = (valore: number, bottone: HTMLElement) => {
+    if (!puoPuntare) return
+    const nuova = Math.min(tetto, scelta + valore)
+    const oltre = scelta + valore > tetto
+    if (nuova <= scelta) {
+      segnaMassimo()
+      return
+    }
+    const quanto = nuova - scelta
+    const volo = voliFiches.current
+    setPuntata(nuova)
+    setInVoloFiches((n) => n + quanto)
+    const posa = () => {
+      if (volo !== voliFiches.current) return
+      setInVoloFiches((n) => Math.max(0, n - quanto))
+      if (oltre) segnaMassimo()
+    }
+    const da = centroDi(bottone)
+    const a = centroDi(puntataRef.current)
+    const colore = getComputedStyle(bottone).getPropertyValue('--fiche').trim() || 'var(--ct-blu)'
+    if (da && a) void volaFiche(da, a, valore, colore).then(posa)
+    else {
+      suona('fiche', { volume: 0.6 })
+      posa()
+    }
+  }
+
+  /** Azzera: le fiches tornano dal display al banco, in pila, e la leva aspetta la puntata nuova. */
+  const azzera = () => {
+    if (!puoPuntare || scelta === 0) return
+    voliFiches.current += 1
+    setInVoloFiches(0)
+    setPuntata(0)
+    const da = centroDi(puntataRef.current)
+    const a = centroDi(gettoniRef.current)
+    // Il colore di ogni fiche e' quello del suo bottone, scritto una volta in Slot.css.
+    const coloreDi = (valore: number) => {
+      const bottone = gettoniRef.current?.querySelector(`.slot-gettone.is-${valore}`)
+      return (bottone && getComputedStyle(bottone).getPropertyValue('--fiche').trim()) || 'var(--ct-blu)'
+    }
+    const pila = inFiches(mostrata).map(coloreDi)
+    if (da && a && pila.length > 0) void spostaFiches(da, a, pila)
+    else suona('fiche', { volume: 0.4 })
+  }
 
   /**
    * La vincita che torna al saldo: le monete volano dal vassoio, e il tabellone si muove quando arriva la prima.
@@ -196,6 +311,11 @@ export default function SlotPagina() {
   const tira = async () => {
     if (!puoGiocare || !stato) return
     leve.current += 1
+    // La leva paga la puntata che c'e': le fiches ancora in volo sono gia' sue, e il display la dice intera.
+    voliFiches.current += 1
+    setInVoloFiches(0)
+    setPuntata(scelta)
+    setTarga(null)
     setFase('gira')
     setInMoto(true)
     setVinta(null)
@@ -219,11 +339,30 @@ export default function SlotPagina() {
       setFase('pronta')
       return
     }
+    // Subito, e non con l'effetto: senza animazioni i rulli si fermano nell'effetto di `Rulli`, che viene prima di
+    // quelli della pagina, e `fermati` leggerebbe il giro di prima.
+    ultimo.current = nuovo
     setStato(nuovo)
     setMeta({ fermate: nuovo.giro.fermate, chiave: `g${nuovo.giro.n}` })
   }
 
-  /** Il terzo rullo si e' fermato: quel che paga si accende, le monete cadono, poi la domanda se c'e'. */
+  /**
+   * Il jackpot comincia al buio, e la festa deve sapere dove stanno i rulli, che restano accesi con i sette che
+   * bruciano, e la cima del mobile, da dove si alza il faro.
+   */
+  const scenaDelJackpot = (): Pick<DatiFesta, 'rulli' | 'faro'> => {
+    const v = vetroRef.current?.getBoundingClientRect()
+    const m = macchinaRef.current?.getBoundingClientRect()
+    return {
+      ...(v && { rulli: { x: v.left + v.width / 2, y: v.top + v.height / 2, r: Math.max(v.width, v.height) * 0.56 } }),
+      ...(m && { faro: { x: m.left + m.width / 2, y: m.top } }),
+    }
+  }
+
+  /**
+   * Il terzo rullo si e' fermato: quel che paga si accende, con il momento che le spetta — una targa sul mobile, o
+   * dal ×20 la festa — le monete cadono, poi la domanda se c'e'.
+   */
   const fermati = () => {
     setInMoto(false)
     const s = ultimo.current
@@ -235,24 +374,30 @@ export default function SlotPagina() {
     }
     const linea = vincitaDi(g)
     const importo = g.premio * g.puntata
-    const livello = livelloDi(g.premio, g.premio >= PREMI['7'])
-    // Una ciliegia sola ridà la puntata: si festeggia lo stesso, come nelle slot vere, ma in fretta.
-    const poco = g.premio <= 1
-    const incasso = poco ? POCO_MS : FESTA_MS
-    const resta = poco ? RESTA_POCO_MS : RESTA_MS
-    if (linea && g.premio > 0) {
+    const momento = linea ? momentoDi(g.premio) : null
+    /** Quando il momento della linea e' finito: poi la domanda, o la slot di nuovo pronta. */
+    let finito = 0
+    if (linea && momento) {
       setFase('paga')
       setVinta(linea)
       setVincita(importo)
       setVassoio(moneteDi(g.premio))
-      setLuci(g.premio >= PREMI['7'] ? 'jackpot' : poco ? 'poco' : 'vinto')
+      setLuci(LUCI_DEL_MOMENTO[momento])
       suona(VINCITE[linea.tipo].suono)
-      if (livello) {
-        // Dal x20 la festa delle slot vere: le monete vanno al saldo quando finisce.
+      if (eFesta(momento)) {
+        // Dal ×20 la festa delle slot vere: le monete vanno al saldo quando finisce.
         const sotto = `${VINCITE[linea.tipo].nome}, ${g.puntata} × ${g.premio}`
-        dopo(FESTA_MS, () => setFesta({ chiave: Date.now(), livello, vincita: importo, sotto, premio: g.premio }))
+        const scena = momento === 'jackpot' ? scenaDelJackpot() : {}
+        dopo(FESTA_MS, () =>
+          setFesta({ chiave: Date.now(), livello: momento, vincita: importo, sotto, premio: g.premio, ...scena }),
+        )
       } else {
-        dopo(incasso, () => incassa(g.premio))
+        // Sotto il ×20 la targa sul mobile, che non copre la linea; le monete partono mentre se ne va.
+        const chiave = Date.now()
+        setTarga({ chiave, momento, nome: VINCITE[linea.tipo].nome, vincita: importo })
+        dopo(DURATA_TARGA[momento], () => setTarga((t) => (t?.chiave === chiave ? null : t)))
+        dopo(TEMPI[momento].incasso, () => incassa(g.premio))
+        finito = TEMPI[momento].pronta
       }
     } else {
       setConto(null)
@@ -260,9 +405,9 @@ export default function SlotPagina() {
     const domanda = domandaDi(g)
     if (domanda && g.tripla) {
       // I punti di domanda dopo la linea, se ha pagato anche lei: insieme a una domanda la linea paga al piu' le
-      // prugne, x15, quindi niente festa davanti alla domanda.
+      // prugne, ×15, quindi una targa e mai una festa davanti alla domanda.
       const { categoria } = g.tripla
-      dopo(g.premio > 0 ? incasso + resta : 0, () => {
+      dopo(finito, () => {
         setFase('tripla')
         setVinta(domanda)
         setVincita(null)
@@ -273,8 +418,8 @@ export default function SlotPagina() {
       return
     }
     // Con la festa, la slot torna pronta quando la festa finisce.
-    if (livello) return
-    dopo(g.premio > 0 ? incasso + resta : 0, () => {
+    if (momento && eFesta(momento)) return
+    dopo(finito, () => {
       setFase('pronta')
       setLuci('attesa')
     })
@@ -351,6 +496,7 @@ export default function SlotPagina() {
 
   const inDomanda = fase === 'domanda' && giro?.tripla
   const quanto = conto ?? (stato ? { saldo: stato.saldo, netto: stato.netto, giri: stato.giri } : null)
+  const classeVincita = `slot-display__voce is-vincita${vinta ? ' is-accesa' : ''}${senzaPuntata ? ' is-invito' : ''}`
   return (
     <Pagina
       titolo="Slot"
@@ -387,21 +533,22 @@ export default function SlotPagina() {
         </Suspense>
       )}
       <div className="slot" hidden={!!inDomanda}>
-        {quanto && <Tabellone saldo={quanto.saldo} puntata={scelta} saldoRef={saldoRef} />}
+        {quanto && <Tabellone saldo={quanto.saldo} puntata={mostrata > 0 ? mostrata : null} saldoRef={saldoRef} />}
         <div
           className={`slot-sala is-${luci}`}
           data-vince={vinta?.tipo}
           style={vinta?.categoria ? ({ '--vinta': coloreDellaCategoria(vinta.categoria) } as CSSProperties) : undefined}
         >
           <span className="slot-sala__luci" aria-hidden="true" />
-          <div className={`slot-macchina${scossa ? ' is-scossa' : ''}`}>
+          <div className={`slot-macchina${scossa ? ' is-scossa' : ''}`} ref={macchinaRef}>
+            <span className="slot-lustro" aria-hidden="true" />
             <span className="slot-fianco" aria-hidden="true" />
             <Insegna luci={luci} />
             <div className="slot-fronte">
               <span className="slot-fronte__led is-sinistra" aria-hidden="true" />
               <span className="slot-fronte__led is-destra" aria-hidden="true" />
               <TabellaBreve />
-              <div className="slot-vetro">
+              <div className="slot-vetro" ref={vetroRef}>
                 {stato ? (
                   <Rulli categorie={categorie} inMoto={inMoto} meta={meta} vincita={vinta} onFine={fermati} />
                 ) : (
@@ -412,47 +559,72 @@ export default function SlotPagina() {
                 <span className="slot-vetro__freccia is-destra" aria-hidden="true" />
                 <span className="slot-vetro__riflesso" aria-hidden="true" />
               </div>
-              <div className="slot-display" aria-live="polite">
-                <span className="slot-display__voce">
-                  <span className="slot-display__etichetta">Puntata</span>
-                  <span className="slot-display__cifre u-tabnum" ref={puntataRef}>
-                    {scelta}
+              <div className="slot-display">
+                <span className={`slot-display__voce is-puntata${alMassimo ? ' is-massimo' : ''}`}>
+                  <span className="slot-display__etichetta" aria-hidden="true">
+                    Puntata
+                  </span>
+                  <span className="slot-display__cifre u-tabnum" ref={puntataRef} key={mostrata} aria-hidden="true">
+                    {mostrata}
+                  </span>
+                  {alMassimo && (
+                    <span className="slot-display__max" key={lampoMax} aria-hidden="true">
+                      Max
+                    </span>
+                  )}
+                  {/* La puntata per chi ascolta: subito, senza aspettare le fiches in volo. */}
+                  <span className="u-visually-hidden" aria-live="polite" aria-atomic="true">
+                    {`Puntata ${scelta}${alMassimo ? ', il massimo' : ''}`}
                   </span>
                 </span>
-                <span className={`slot-display__voce is-vincita${vinta ? ' is-accesa' : ''}`}>
-                  <span className="slot-display__etichetta">{vinta ? VINCITE[vinta.tipo].nome : 'Vincita'}</span>
-                  <span className="slot-display__cifre u-tabnum" key={`${vinta?.tipo}${vincita}`}>
-                    {vincita ?? (vinta?.tipo === 'Q' ? '?' : '–')}
-                  </span>
+                <span className={classeVincita} aria-live="polite" aria-atomic="true">
+                  {senzaPuntata ? (
+                    <span className="slot-display__invito">Tocca le fiches</span>
+                  ) : (
+                    <>
+                      <span className="slot-display__etichetta">{vinta ? VINCITE[vinta.tipo].nome : 'Vincita'}</span>
+                      <span className="slot-display__cifre u-tabnum" key={`${vinta?.tipo}${vincita}`}>
+                        {vincita ?? (vinta?.tipo === 'Q' ? '?' : '–')}
+                      </span>
+                    </>
+                  )}
                 </span>
               </div>
             </div>
             <div className="slot-banco">
               <div className="slot-banco__piano">
-                <div className="slot-gettoni" role="radiogroup" aria-label="Puntata">
-                  {PUNTATE_SLOT.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      role="radio"
-                      aria-checked={p === scelta}
-                      className={`slot-gettone is-${p}${p === scelta ? ' is-scelto' : ''}`}
-                      disabled={p > saldo || fase !== 'pronta' || inMoto}
-                      onClick={() => {
-                        suona('fiche', { volume: 0.6 })
-                        setPuntata(p)
-                      }}
-                    >
-                      <span className="u-tabnum">{p}</span>
-                    </button>
-                  ))}
+                <div className="slot-banco__fiches">
+                  <div className="slot-gettoni" ref={gettoniRef} role="group" aria-label="Fiches">
+                    {PUNTATE_SLOT.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        className={`slot-gettone is-${p}`}
+                        aria-label={`Aggiungi ${p}`}
+                        disabled={!puoPuntare}
+                        onClick={(e) => aggiungi(p, e.currentTarget)}
+                      >
+                        <span className="u-tabnum" aria-hidden="true">
+                          {p}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="slot-azzera"
+                    aria-label="Azzera la puntata"
+                    disabled={!puoPuntare || scelta === 0}
+                    onClick={azzera}
+                  >
+                    Azzera
+                  </button>
                 </div>
                 <button type="button" className="slot-gira" disabled={!puoGiocare} onClick={() => void tira()}>
                   <span className="slot-gira__testo">Gira</span>
                 </button>
               </div>
             </div>
-            <Pancia categorie={categorie} />
             <div className="slot-vassoio" ref={vassoioRef} aria-hidden="true">
               {Array.from({ length: vassoio }, (_, i) => (
                 <span key={i} className="slot-vassoio__moneta" style={{ '--i': i } as CSSProperties} />
@@ -460,6 +632,7 @@ export default function SlotPagina() {
             </div>
             <span className="slot-zoccolo" aria-hidden="true" />
             <Leva attiva={puoGiocare} onTira={() => void tira()} />
+            {targa && <Targa key={targa.chiave} dati={targa} />}
           </div>
           {intermezzo && (
             <Intermezzo dati={intermezzo} onMezzo={() => setFase('domanda')} onFine={() => setIntermezzo(null)} />
@@ -567,29 +740,6 @@ function TabellaBreve() {
           <span className="slot-tabella__valore u-tabnum">×{x}</span>
         </span>
       ))}
-    </div>
-  )
-}
-
-/**
- * La pancia del mobile, sotto il banco: quel che si vince con tre punti di
- * domanda, e le sei categorie di oggi, da cui viene la domanda. Le regole
- * dicono lo stesso a parole.
- */
-function Pancia({ categorie }: { categorie: readonly CategoriaQuiz[] }) {
-  return (
-    <div className="slot-pancia" aria-hidden="true">
-      <div className="slot-pancia__vetro">
-        <span className="slot-pancia__raggi" />
-        <span className="slot-pancia__titolo">
-          Tre <Simbolo codice="Q" categorie={categorie} /> = domanda <b className="u-tabnum">×{VINCITA_DOMANDA}</b>
-        </span>
-        <span className="slot-pancia__categorie">
-          {categorie.map((c) => (
-            <TesseraCategoria key={c} categoria={c} />
-          ))}
-        </span>
-      </div>
     </div>
   )
 }

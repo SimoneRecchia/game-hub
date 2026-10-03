@@ -1,14 +1,6 @@
-import { useMemo } from 'react'
 import { Sheet } from '@/components/Sheet'
 import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
-import {
-  CILIEGIE,
-  PREMI,
-  PUNTATA_MASSIMA_SLOT,
-  PUNTATA_MINIMA_SLOT,
-  VINCITA_DOMANDA,
-  contaSlot,
-} from '@shared/slot'
+import { CILIEGIE, PREMI, PUNTATA_MASSIMA_SLOT, PUNTATA_MINIMA_SLOT, VINCITA_DOMANDA } from '@shared/slot'
 import { Simbolo } from './simboli'
 import '@/games/cruciverba/ComeSiGioca.css'
 
@@ -32,17 +24,13 @@ export function ComeSiGiocaSlot({
   onClose: () => void
   categorie: readonly CategoriaQuiz[]
 }) {
-  // Quanto restituisce ogni cento punti a chi risponde sempre giusto, e ogni quanti giri si vince: i conti esatti
-  // sono 64.000 combinazioni, e si fanno quando le regole si aprono.
-  const conto = useMemo(() => (open ? contaSlot(1) : null), [open])
-  const resa = conto ? Math.round(conto.resa * 100) : null
-  const unaOgni = conto ? Math.round(1 / conto.frequenza) : null
   return (
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="cru-aiuto slot-regole">
         <p className="cru-aiuto__lede">
-          Scegli la puntata, da {PUNTATA_MINIMA_SLOT} a {PUNTATA_MASSIMA_SLOT} punti, e tira la leva. La puntata la
-          paghi subito; paga la linea di mezzo, e la vincita è la puntata per il premio.
+          Tocca le fiches per puntare: si sommano, da {PUNTATA_MINIMA_SLOT} a {PUNTATA_MASSIMA_SLOT} punti, e Azzera
+          riparte da zero. Poi tira la leva: la puntata la paghi subito, paga la linea di mezzo, e la vincita è la
+          puntata per il premio.
         </p>
 
         <section className="cru-aiuto__sezione">
@@ -88,14 +76,6 @@ export function ComeSiGiocaSlot({
             Tre punti di domanda, uno per rullo, anche fuori dalla linea: rispondi a una domanda, e giusta vinci{' '}
             {VINCITA_DOMANDA} volte la puntata. Le categorie di oggi:{' '}
             {categorie.map((c) => NOMI_CATEGORIE[c]).join(', ')}.
-          </p>
-        </section>
-
-        <section className="cru-aiuto__sezione">
-          <h3 className="cru-aiuto__titolo">Vince il banco</h3>
-          <p className="cru-aiuto__testo">
-            Si vince qualcosa una volta ogni {unaOgni} giri circa, quasi sempre poco. A chi risponde sempre giusto la
-            slot restituisce in media il {resa}% di quel che punta, come gli altri giochi della Fortuna.
           </p>
         </section>
       </div>
