@@ -193,6 +193,12 @@
     animation-delay: 0ms !important;
   }
 
+  /*
+   * Anche l'alone, che fa comparire e sparire tutto: con la durata di un
+   * attimo della regola generale finiva subito sul suo ultimo fotogramma,
+   * trasparente, e con lui spariva l'adesivo intero.
+   */
+  .adesivo,
   .adesivo__carta {
     animation-duration: var(--durata) !important;
   }

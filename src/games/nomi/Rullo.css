@@ -1,0 +1,374 @@
+/*
+ * Il rullo delle lettere: lo stesso tondo giallo della lettera del foglio, con
+ * l'alfabeto del gioco inciso sul bordo e una finestra di carta in mezzo,
+ * dove le lettere corrono dal basso in alto, come un contachilometri. La
+ * finestra ha l'ombra di un cilindro: le lettere che arrivano e quelle che
+ * se ne vanno si piegano nel buio.
+ *
+ * Ferma, la lettera timbra: la finestra si scioglie nel giallo, e il tondo
+ * diventa la lettera del foglio — quella che vola via (`.nomi-volo`) e'
+ * disegnata uguale, per non far vedere il cambio.
+ */
+.nomi-rullo {
+  --lato: clamp(112px, 34vw, 156px);
+  --n: 19;
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--lato);
+  aspect-ratio: 1;
+}
+
+.nomi-rullo__tondo {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 28%, #ffe27a, var(--nomi-1) 48%, var(--nomi-2));
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -5px 0 rgba(120, 70, 0, 0.2),
+    0 14px 34px color-mix(in srgb, var(--nomi-2) 34%, transparent);
+  transform: rotate(-4deg);
+}
+
+/* A rullo fermo, prima di cominciare, il tondo dondola: aspetta. */
+.nomi-rullo.is-fermo .nomi-rullo__tondo {
+  animation: nomi-rullo-dondola 2.8s var(--ease-in-out) infinite;
+}
+
+@keyframes nomi-rullo-dondola {
+  50% {
+    transform: rotate(3deg) translateY(-3px);
+  }
+}
+
+/* L'alfabeto inciso sul bordo: gira con le lettere, e quella sotto la tacca e' quella nella finestra. */
+.nomi-rullo__anello {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.nomi-rullo__anello span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.3em;
+  height: 1.3em;
+  margin: -0.65em 0 0 -0.65em;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.074);
+  font-weight: 800;
+  line-height: 1.3em;
+  text-align: center;
+  color: rgba(61, 40, 0, 0.5);
+  transform: rotate(calc(var(--i) * 360deg / var(--n))) translateY(calc(var(--lato) * -0.405));
+}
+
+/* La tacca in cima, che indica la lettera. */
+.nomi-rullo__tacca {
+  position: absolute;
+  left: 50%;
+  top: 1.5%;
+  width: 0;
+  height: 0;
+  margin-left: -5px;
+  border: 5px solid transparent;
+  border-top: 7px solid #3d2800;
+  opacity: 0.75;
+  transition: opacity 0.35s var(--ease-out);
+}
+
+.nomi-rullo__finestra {
+  position: relative;
+  width: 48%;
+  height: 52%;
+  overflow: hidden;
+  border-radius: 16%;
+  background: var(--nomi-foglio);
+  box-shadow:
+    inset 0 3px 7px rgba(0, 0, 0, 0.28),
+    inset 0 -2px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 3px rgba(120, 70, 0, 0.22);
+  transition:
+    background-color 0.3s var(--ease-out),
+    box-shadow 0.3s var(--ease-out),
+    transform 0.3s var(--ease-out);
+}
+
+/* Il cilindro: buio in cima e in fondo. */
+.nomi-rullo__finestra::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(0, 0, 0, 0.32), transparent 30%, transparent 70%, rgba(0, 0, 0, 0.32));
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease-out);
+}
+
+.nomi-rullo__striscia {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  height: calc(var(--celle) * 100%);
+  will-change: transform;
+}
+
+.nomi-rullo__striscia span {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.36);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--nomi-grafite);
+  transition: color 0.3s var(--ease-out);
+}
+
+.nomi-rullo.is-mosso .nomi-rullo__striscia {
+  filter: blur(1.2px);
+}
+
+/* Nella finestra a rullo fermo: il punto di domanda, o i secondi del tre-due-uno, che saltano fuori. */
+.nomi-rullo__faccia {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--nomi-foglio);
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.36);
+  font-weight: 900;
+  line-height: 1;
+  color: var(--nomi-ink);
+  animation: nomi-faccia 460ms var(--ease-bounce) both;
+}
+
+@keyframes nomi-faccia {
+  from {
+    opacity: 0;
+    transform: translateY(40%) scale(0.6);
+  }
+}
+
+.nomi-rullo:not(.is-fermo) .nomi-rullo__faccia {
+  animation: nomi-faccia-via 220ms var(--ease-out) forwards;
+}
+
+@keyframes nomi-faccia-via {
+  to {
+    opacity: 0;
+    transform: translateY(-60%);
+  }
+}
+
+/*
+ * La lettera ferma: la finestra si scioglie nel giallo, l'alfabeto si spegne,
+ * e la lettera prende l'inchiostro scuro del timbro. Il tondo batte.
+ */
+/* La finestra si allarga quanto serve perché la lettera sia grande come sul foglio: la meta' del tondo. */
+.nomi-rullo.is-arrivato .nomi-rullo__finestra {
+  background-color: transparent;
+  box-shadow: none;
+  transform: scale(1.39);
+}
+
+.nomi-rullo.is-arrivato .nomi-rullo__finestra::after,
+.nomi-rullo.is-arrivato .nomi-rullo__anello,
+.nomi-rullo.is-arrivato .nomi-rullo__tacca {
+  opacity: 0;
+}
+
+.nomi-rullo.is-arrivato .nomi-rullo__striscia span {
+  color: #3d2800;
+}
+
+.nomi-rullo.is-arrivato .nomi-rullo__tondo {
+  animation: nomi-rullo-timbra 520ms var(--ease-bounce) both;
+}
+
+@keyframes nomi-rullo-timbra {
+  0% {
+    transform: rotate(-4deg) scale(1);
+  }
+  30% {
+    transform: rotate(-7deg) scale(1.14);
+  }
+  100% {
+    transform: rotate(-4deg) scale(1);
+  }
+}
+
+/* I raggi: una ruota di luce gialla dietro il tondo, che gira e si allarga. */
+.nomi-rullo__raggi,
+.nomi-rullo__onda {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.nomi-rullo__raggi {
+  width: 250%;
+  aspect-ratio: 1;
+  background: repeating-conic-gradient(
+    color-mix(in srgb, var(--nomi-1) 80%, #fff) 0 8deg,
+    transparent 8deg 20deg
+  );
+  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent 72%);
+  mask: radial-gradient(closest-side, #000 30%, transparent 72%);
+  transform: translate(-50%, -50%) scale(0.4);
+}
+
+.nomi-rullo.is-arrivato .nomi-rullo__raggi {
+  animation: nomi-raggi 1150ms var(--ease-out) both;
+}
+
+@keyframes nomi-raggi {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+  }
+  22% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.08) rotate(36deg);
+  }
+}
+
+/* L'onda: un anello che parte dal bordo del tondo e si allarga. */
+.nomi-rullo__onda {
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 0 0 4px var(--nomi-1);
+  transform: translate(-50%, -50%);
+}
+
+.nomi-rullo.is-arrivato .nomi-rullo__onda {
+  animation: nomi-onda 700ms var(--ease-out) both;
+}
+
+@keyframes nomi-onda {
+  0% {
+    opacity: 0.9;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.75);
+  }
+}
+
+/* Le scintille: otto puntini che schizzano via dal bordo. */
+.nomi-rullo__scintille {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.nomi-rullo__scintille span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--nomi-1);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--nomi-1) 70%, transparent);
+  opacity: 0;
+  transform: rotate(calc(var(--k) * 45deg + 22deg)) translateY(0);
+}
+
+.nomi-rullo__scintille span:nth-child(even) {
+  width: 5px;
+  height: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  background: var(--nomi-margine);
+}
+
+.nomi-rullo.is-arrivato .nomi-rullo__scintille span {
+  animation: nomi-scintilla 760ms var(--ease-out) both;
+}
+
+@keyframes nomi-scintilla {
+  0% {
+    opacity: 1;
+    transform: rotate(calc(var(--k) * 45deg + 22deg)) translateY(calc(var(--lato) * -0.45));
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(calc(var(--k) * 45deg + 22deg)) translateY(calc(var(--lato) * -0.95)) scale(0.4);
+  }
+}
+
+/* ---------- La scena, quando il foglio non c'e' ancora ---------- */
+
+.nomi-partenza {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(14px, 4vh, 28px);
+  min-height: 0;
+  padding: var(--sp-4) 0;
+  /* I raggi del timbro escono dal tondo: senza, in orizzontale, la pagina scorrerebbe di lato. */
+  overflow: clip;
+  text-align: center;
+}
+
+.nomi-partenza__sopra {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
+.nomi-partenza__sotto {
+  margin: 0;
+  min-height: 1.3em;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  color: var(--nomi-ink);
+}
+
+/* ---------- La lettera che vola sul foglio ---------- */
+
+/* Le misure le scrive il volo: il tondo del rullo, e la lettera grande la meta' del tondo, come sul foglio. */
+.nomi-volo {
+  position: fixed;
+  z-index: 80;
+  margin: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nomi-rullo.is-fermo .nomi-rullo__tondo,
+  .nomi-rullo.is-arrivato .nomi-rullo__tondo {
+    animation: none;
+  }
+
+  .nomi-rullo__raggi,
+  .nomi-rullo__onda,
+  .nomi-rullo__scintille {
+    display: none;
+  }
+}

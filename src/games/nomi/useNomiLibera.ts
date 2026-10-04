@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { suona } from '@/lib/suoni'
 import { TEMPO_NOMI_MS, type CategoriaNomi, type FileLessicoNomi, type LessicoNomi } from '@shared/nomi-cose'
 import { registraPartitaNomi } from './conti'
 import {
@@ -15,7 +14,12 @@ import {
 } from './libera'
 import type { RisposteNomi } from './useNomiDelGiorno'
 
-export type FaseLibera = 'scelta' | 'carica' | 'gioco' | 'fine'
+/**
+ * `pronta`: il lessico c'e' e la lettera si sa, ma il tempo non corre ancora.
+ * Parte quando la lettera si vede (`parti`), cioe' quando il rullo si ferma: la
+ * scena non toglie tempo a chi gioca, e non lo regala al computer.
+ */
+export type FaseLibera = 'scelta' | 'carica' | 'pronta' | 'gioco' | 'fine'
 
 /** Chi ha detto stop: io, il computer, o nessuno prima della fine del tempo. */
 export type ChiStop = 'io' | 'computer' | 'tempo'
@@ -33,6 +37,8 @@ export interface NomiLibera {
   risultato: RisultatoLibero | null
   guasto: string | null
   nuova: (livello: LivelloNomi) => void
+  /** La lettera si vede: da qui corre il tempo, e il computer comincia a scrivere. */
+  parti: () => void
   scrivi: (categoria: CategoriaNomi, testo: string) => void
   dicoStop: () => void
   tempoFinito: () => void
@@ -41,7 +47,8 @@ export interface NomiLibera {
 
 /**
  * Una partita libera contro il computer, tutta nel telefono. Il lessico della
- * lettera si scarica quando si comincia, e il tempo parte quando e' arrivato.
+ * lettera si scarica quando si comincia, e il tempo parte quando la lettera si
+ * vede.
  */
 export function useNomiLibera(): NomiLibera {
   const [fase, setFase] = useState<FaseLibera>('scelta')
@@ -101,13 +108,9 @@ export function useNomiLibera(): NomiLibera {
         const p = nuovaPartita(letto, lettera, categorie, livello)
         lessico.current = lessicoDellaPartita(letto, categorie)
         finita.current = false
-        inizio.current = Date.now()
         setFile(letto)
         setPartita(p)
-        setAdesso(inizio.current)
-        setScadenza(inizio.current + TEMPO_NOMI_MS)
-        setFase('gioco')
-        suona('via')
+        setFase('pronta')
       })
       .catch(() => {
         if (mia !== richiesta.current) return
@@ -115,6 +118,14 @@ export function useNomiLibera(): NomiLibera {
         setFase('scelta')
       })
   }, [])
+
+  const parti = useCallback(() => {
+    if (fase !== 'pronta') return
+    inizio.current = Date.now()
+    setAdesso(inizio.current)
+    setScadenza(inizio.current + TEMPO_NOMI_MS)
+    setFase('gioco')
+  }, [fase])
 
   const scrivi = useCallback(
     (categoria: CategoriaNomi, testo: string) => {
@@ -143,6 +154,7 @@ export function useNomiLibera(): NomiLibera {
     risultato,
     guasto,
     nuova,
+    parti,
     scrivi,
     dicoStop: () => chiudi('io'),
     tempoFinito: () => chiudi('tempo'),

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
-import { suona } from '@/lib/suoni'
 import type { CategoriaNomi } from '@shared/nomi-cose'
 import type { NomiStato } from '@shared/types'
 
@@ -169,11 +168,9 @@ export function useNomiDelGiorno(): NomiDelGiorno {
     const s = statoRef.current
     if (!s || s.status !== 'nuova' || occupato) return
     setOccupato(true)
+    // Il suono della partenza e' quello del rullo che si ferma sulla lettera.
     api<NomiStato>('/nomi/inizia', { method: 'POST' })
-      .then((dopo) => {
-        suona('via')
-        applica(dopo, true)
-      })
+      .then((dopo) => applica(dopo, true))
       .catch(() => ricarica())
   }, [applica, occupato, ricarica])
 

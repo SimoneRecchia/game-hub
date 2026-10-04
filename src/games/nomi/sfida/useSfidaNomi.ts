@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { ApiFetchError, api } from '@/lib/api'
-import { suona } from '@/lib/suoni'
 import { NOMI_SFIDA_POLL_ATTESA_MS, NOMI_SFIDA_POLL_FINE_MS, NOMI_SFIDA_POLL_MS } from '@shared/config'
 import type { CategoriaNomi } from '@shared/nomi-cose'
 import type { VistaSfidaNomi } from '@shared/types'
@@ -51,7 +50,6 @@ export function useSfidaNomi(id: string): SfidaNomi {
 
   const applica = useCallback(
     (v: VistaSfidaNomi) => {
-      const prima = vistaRef.current
       vistaRef.current = v
       setVista(v)
       setErrore(null)
@@ -64,7 +62,7 @@ export function useSfidaNomi(id: string): SfidaNomi {
         setRisposte(risposteRef.current)
       }
       if (v.stato === 'finita') setRisposte(v.mie.risposte)
-      if (v.stop && !prima?.stop && v.stop.di === 'avversario') suona('scaduto')
+      // Lo stop dell'altro non suona qui: suona il suo timbro, nella pagina della sfida.
       // La rivincita accettata: si va alla partita nuova, tutti e due.
       if (v.rivincita?.stato === 'in_corso') vai(ROTTE.sfidaNomi(v.rivincita.id), { replace: true })
     },

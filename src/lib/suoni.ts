@@ -124,6 +124,17 @@ export type NomeSuono =
   | 'blackjack'
   /** Oltre il ventuno. */
   | 'sballato'
+  /** Una lettera del rullo di Nomi, cose e città che passa davanti alla finestra. */
+  | 'aletta'
+  /** Il rullo si ferma sulla lettera: il timbro, e l'accordo che si apre. */
+  | 'lettera'
+  /** Qualcuno dice stop: il fischietto, e il timbro che si abbatte sul foglio. */
+  | 'stop'
+  /** La penna della correzione: la spunta di una risposta che vale, la croce di una che non vale. */
+  | 'spunta'
+  | 'croce'
+  /** L'evidenziatore su una risposta che ha dato solo uno. */
+  | 'evidenzia'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -463,6 +474,39 @@ function goccia(u: Uscita, t: number, f: number, volume: number) {
   o.connect(g).connect(v)
   o.start(t)
   o.stop(t + 0.08)
+}
+
+/**
+ * Un fischietto d'arbitro: una nota alta che trilla, e il soffio che ci passa
+ * dentro. Il trillo e' la pallina del fischietto, che fa tremare la nota.
+ */
+function fischio(u: Uscita, t: number, durata: number, volume: number) {
+  const v = voce(u, volume, 0.12)
+  const o = u.ctx.createOscillator()
+  o.type = 'sine'
+  o.frequency.setValueAtTime(2750, t)
+  const trillo = u.ctx.createOscillator()
+  trillo.type = 'sine'
+  trillo.frequency.setValueAtTime(34, t)
+  const ampiezza = u.ctx.createGain()
+  ampiezza.gain.setValueAtTime(180, t)
+  trillo.connect(ampiezza).connect(o.frequency)
+  const g = u.ctx.createGain()
+  g.gain.setValueAtTime(0, t)
+  g.gain.linearRampToValueAtTime(1, t + 0.012)
+  g.gain.setValueAtTime(1, t + durata - 0.03)
+  g.gain.linearRampToValueAtTime(0, t + durata)
+  o.connect(g).connect(v)
+  o.start(t)
+  o.stop(t + durata + 0.02)
+  trillo.start(t)
+  trillo.stop(t + durata + 0.02)
+  soffio(u, t, durata, volume * 1.6, { tipo: 'bandpass', da: 2900, a: 2700, q: 3 }, { attacco: 0.01, eco: 0.06 })
+}
+
+/** Un tratto di penna sulla carta: il graffio della punta, che sale o scende con il tratto. */
+function tratto(u: Uscita, t: number, durata: number, volume: number, da: number, a: number) {
+  soffio(u, t, durata, volume, { tipo: 'bandpass', da, a, q: 1.5 }, { attacco: 0.004, eco: 0.03 })
 }
 
 /* ─────────────────────────────────  Le note  ─────────────────────────────── */
@@ -994,5 +1038,49 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     scivolo(u, t, 440, 330, 0.18, 0.12 * v)
     scivolo(u, t + 0.2, 392, 196, 0.5, 0.13 * v)
     tonfo(u, t + 0.2, 0.12 * v, { da: 110, a: 45, durata: 0.4 })
+  },
+
+  // Un'aletta del rullo delle lettere: lo scatto di un cartoncino, piu' morbido della lancetta di Crazy Time.
+  aletta: (u, t, v) => {
+    colpo(u, t, voce(u, 0.07 * v, 0.02), vario(3400, 0.08), 0.014, 0.7)
+    legno(u, t, vario(1500, 0.05), 0.045 * v, 0.01)
+  },
+
+  // La lettera trovata: il timbro che batte, e un accordo che si apre in un luccichio.
+  lettera: (u, t, v) => {
+    tonfo(u, t, 0.26 * v, { da: 150, a: 60, durata: 0.24 })
+    legno(u, t, 640, 0.16 * v)
+    ;[N.C5, N.G5, N.C6, N.E6].forEach((f, i) => marimba(u, t + 0.04 + i * 0.045, f, 0.2 * v, { eco: 0.3 }))
+    campanello(u, t + 0.2, N.G6, 0.09 * v, { eco: 0.5, durata: 1 })
+    campanello(u, t + 0.27, N.C7, 0.07 * v, { eco: 0.55, durata: 0.9 })
+  },
+
+  // Lo stop: il fischio d'arbitro, corto e lungo, e il timbro che batte sul foglio quando l'adesivo atterra.
+  stop: (u, t, v) => {
+    fischio(u, t, 0.08, 0.045 * v)
+    fischio(u, t + 0.11, 0.13, 0.05 * v)
+    tonfo(u, t + 0.23, 0.34 * v, { da: 130, a: 44, durata: 0.36 })
+    soffio(u, t + 0.23, 0.18, 0.2 * v, { tipo: 'lowpass', da: 2200, a: 300, q: 0.8 }, { attacco: 0.002, eco: 0.15 })
+    legno(u, t + 0.23, 420, 0.2 * v)
+  },
+
+  // La spunta della penna: il tratto che scende e quello che risale, e una nota che sale.
+  spunta: (u, t, v) => {
+    tratto(u, t, 0.05, 0.1 * v, 2600, 1900)
+    tratto(u, t + 0.045, 0.09, 0.12 * v, 2200, 4200)
+    marimba(u, t + 0.07, N.E6, 0.12 * v, { eco: 0.2, durata: 0.5 })
+  },
+
+  // La croce: due tratti di penna, e una nota bassa.
+  croce: (u, t, v) => {
+    tratto(u, t, 0.08, 0.12 * v, 3000, 1800)
+    tratto(u, t + 0.11, 0.08, 0.12 * v, 3000, 1800)
+    marimba(u, t + 0.12, N.A3, 0.14 * v, { eco: 0.08, durata: 0.4 })
+  },
+
+  // L'evidenziatore: la passata morbida del pennarello, e un luccichio.
+  evidenzia: (u, t, v) => {
+    soffio(u, t, 0.22, 0.1 * v, { tipo: 'bandpass', da: 900, a: 1500, q: 0.9 }, { attacco: 0.03, eco: 0.08 })
+    ;[N.E7, N.G7].forEach((f, i) => campanello(u, t + 0.12 + i * 0.06, f, 0.05 * v, { eco: 0.5, durata: 0.5 }))
   },
 }

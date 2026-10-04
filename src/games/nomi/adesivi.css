@@ -1,0 +1,170 @@
+/*
+ * Gli adesivi di Nomi, cose e città: il timbro dello stop e la matita che
+ * scrive la spunta. Le durate sono frazioni di `--durata`, come quelle degli
+ * altri adesivi.
+ */
+
+/*
+ * Il timbro: carta del foglio, la cornice doppia nell'inchiostro, le lettere
+ * larghe e storte. Si abbatte dall'alto — grande, poi schiacciato, poi fermo —
+ * e l'inchiostro non e' pieno: la carta ci si vede attraverso a puntini, come
+ * su un timbro vero. Vale per tutti e due i toni, quindi i selettori ne
+ * nominano uno.
+ */
+.adesivo.nomi-timbro.is-vivace .adesivo__carta,
+.adesivo.nomi-timbro.is-bordato .adesivo__carta {
+  position: relative;
+  min-width: 0;
+  padding: 12px 30px 14px;
+  border-radius: 16px;
+  background: var(--nomi-foglio);
+  color: var(--adesivo-colore);
+  box-shadow:
+    inset 0 0 0 4px var(--adesivo-colore),
+    inset 0 0 0 8px var(--nomi-foglio),
+    inset 0 0 0 10px var(--adesivo-colore),
+    0 16px 44px rgba(0, 0, 0, 0.28);
+  transform-origin: 50% 70%;
+  animation:
+    nomi-timbra calc(var(--durata) * 0.3) cubic-bezier(0.3, 0, 0.4, 1) both,
+    adesivo-via calc(var(--durata) * 0.2) ease-in calc(var(--durata) * 0.8) forwards;
+}
+
+@keyframes nomi-timbra {
+  0% {
+    opacity: 0;
+    transform: scale(2.3) rotate(-16deg);
+  }
+  45% {
+    opacity: 1;
+  }
+  55% {
+    transform: scale(0.92, 0.88) rotate(-8deg);
+  }
+  75% {
+    transform: scale(1.03) rotate(-8deg);
+  }
+  100% {
+    transform: scale(1) rotate(-8deg);
+  }
+}
+
+/* L'inchiostro a puntini: la carta che resta scoperta, sopra tutto quel che e' stampato. */
+.adesivo.nomi-timbro .adesivo__carta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--nomi-foglio);
+  /*
+   * Il rumore di un filtro SVG, tagliato a soglia: un puntino dove il rumore e'
+   * alto. La stringa va a capo con la barra rovesciata, che in CSS la continua.
+   */
+  --inchiostro: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E\
+%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' seed='4'/%3E\
+%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 11 -6.9'/%3E%3C/filter%3E\
+%3Crect width='140' height='140' filter='url(%23f)'/%3E%3C/svg%3E");
+  -webkit-mask: var(--inchiostro);
+  mask: var(--inchiostro);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.adesivo.nomi-timbro .adesivo__titolo {
+  font-size: 3.1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--adesivo-colore);
+}
+
+.adesivo.nomi-timbro .adesivo__sotto {
+  margin-top: 6px;
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--adesivo-colore);
+  opacity: 1;
+}
+
+/* Sul giallo della matita le scritte sono d'inchiostro scuro: il bianco non si leggerebbe. */
+.adesivo.nomi-giallo.is-vivace .adesivo__carta {
+  color: #3d2800;
+}
+
+/* ---------- La matita che scrive la spunta ---------- */
+
+.nomi-scrive__segno {
+  fill: none;
+  stroke: #3d2800;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: nomi-scrive-segno calc(var(--durata) * 0.26) cubic-bezier(0.5, 0.1, 0.4, 1) calc(var(--durata) * 0.16)
+    forwards;
+}
+
+@keyframes nomi-scrive-segno {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* La matita segue il tratto: la sua punta e' l'origine, e le tappe sono quelle del segno. */
+.nomi-scrive__matita {
+  animation: nomi-scrive-matita calc(var(--durata) * 0.26) cubic-bezier(0.5, 0.1, 0.4, 1) calc(var(--durata) * 0.16)
+    both;
+}
+
+@keyframes nomi-scrive-matita {
+  0% {
+    transform: translate(30px, 44px) rotate(-40deg);
+  }
+  26% {
+    transform: translate(45px, 61px) rotate(-40deg);
+  }
+  100% {
+    transform: translate(87px, 16px) rotate(-40deg);
+  }
+}
+
+.nomi-scrive__legno {
+  fill: #ffe27a;
+  stroke: rgba(80, 50, 0, 0.35);
+  stroke-width: 1;
+}
+
+.nomi-scrive__gomma {
+  fill: #f39bb0;
+}
+
+.nomi-scrive__punta {
+  fill: #f1c98f;
+}
+
+.nomi-scrive__grafite {
+  fill: #2b3245;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Il timbro compare e sparisce, gia' storto, senza abbattersi. */
+  .adesivo.nomi-timbro.is-vivace .adesivo__carta,
+  .adesivo.nomi-timbro.is-bordato .adesivo__carta {
+    animation: adesivo-alone var(--durata) linear both;
+    transform: rotate(-8deg);
+  }
+
+  .nomi-scrive__segno {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+
+  .nomi-scrive__matita {
+    animation: none;
+    transform: translate(87px, 16px) rotate(-40deg);
+  }
+}

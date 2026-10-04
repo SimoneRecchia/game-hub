@@ -2020,11 +2020,15 @@ carta chiara bordata di colore che trema (una cosa brutta, o dell'avversario).
 Sta nel body, non ferma niente e passa da solo; le sue animazioni sono frazioni
 di `--durata`. `useCodaAdesivi` li mette in fila — la mossa e poi la fine
 della partita, il mio colpo e poi quello del computer — perché due adesivi
-insieme si coprirebbero. Ogni gioco ha il suo carattere dentro lo stesso
+insieme si coprirebbero. Con il movimento ridotto l'adesivo compare e sparisce
+senza muoversi: anche l'alone ha la sua `--durata`, perché la regola generale
+lo portava subito al suo ultimo fotogramma, trasparente, e con lui spariva
+l'adesivo intero. Ogni gioco ha il suo carattere dentro lo stesso
 stile, senza prendere quello degli altri: il Wordle una tavoletta con gli
 alloggi incavati (`--slot`) e le stelle della vittoria, lo Scarabeo il legno
 della cornice e del leggio (`--legno-*`) e lo scarabeo d'oro quando si posano
-tutte e otto le tessere, il cruciverba la matita. La definizione in corso
+tutte e otto le tessere, Nomi, cose e città il foglio del gioco su carta
+(vedi sotto), il cruciverba la matita. La definizione in corso
 non ha piu' le righe del quaderno: a passo fisso non combaciavano con quelle
 del testo, e sembravano cancellature.
 
@@ -2189,6 +2193,75 @@ la barretta e poi il livello, e i punti restano su una riga.
 **Il foglio degli aiuti e' uno solo** (`FoglioAiuti`, `src/components/Aiuti.tsx`),
 per il cruciverba e per il sudoku: quanto vale adesso la partita, e un bottone
 per aiuto con quel che costa. Nel sudoku libero i costi non ci sono.
+
+**Nomi, cose e città e' il foglio del gioco su carta.** Una pagina del
+quaderno a righe, con il margine rosso fra le categorie e le risposte e le
+righe vuote fino in fondo; in cima la lettera nel tondo giallo e la matita
+che fa da orologio. Le risposte sono scritte a mano: `--font-mano` e' il
+carattere a mano che il telefono ha gia' (Noteworthy su iPhone e Mac, Segoe
+Print su Windows, Coming Soon su Android), e dove non c'e' il tondo — niente
+da scaricare, come i suoni. Il campo ha l'altezza scritta, perché quei
+caratteri hanno misure diverse. La colonna delle categorie e' in `vw` e non in
+percentuale: il margine rosso e la colonna si misurano su scatole diverse, e
+in percentuale non combaciavano.
+
+**La lettera esce da un rullo, come al tavolo, dove uno dice l'alfabeto a
+mente e un altro lo ferma.** `RulloLettera` (`src/games/nomi/Rullo.tsx`) fa
+correre le lettere del gioco nella finestra di un tondo giallo, con
+l'alfabeto inciso sul bordo che gira insieme, e si ferma sulla lettera con i
+raggi, l'onda e il suono. Parte dal tocco su Comincia, dalla difficoltà nella
+libera, dal via della sfida, dove prima i secondi del tre-due-uno saltano
+fuori nella finestra; quando la lettera arriva frena come i rulli della slot,
+con un salto che a lettere sfocate non si vede, sempre in avanti
+nell'alfabeto (`inizioFrenata`). Poi la lettera vola al suo posto sul foglio
+(`VoloLettera`): e' una copia del tondo grande che rimpicciolisce — ingrandire
+quello piccolo verrebbe sfocato — e il posto sul foglio aspetta vuoto finché
+non arriva. Nella classificata e nella sfida il tempo intanto corre, perché
+e' quello del server: per questo la scena e' corta, e riaprendo la pagina non
+si rifà. Nella libera il tempo parte quando la lettera e' ferma, per chi gioca
+e per il computer (la fase `pronta`, poi `parti` in `useNomiLibera`): prima
+partiva con le parole, e il rullo toglieva un paio di secondi a uno e li
+regalava all'altro. Un test lo prova sull'hook vero, fatto girare su un React
+da banco (`nomi/__tests__/hook.test.ts`). Senza animazioni la lettera compare
+e basta.
+
+**Lo stop e' un timbro.** Un adesivo con la sua classe (`nomi-timbro`, in
+`adesivi.tsx`): una carta del colore del foglio con la cornice doppia
+d'inchiostro e la scritta storta, che si abbatte dall'alto; sotto, la pagina
+sobbalza e si sentono il fischio d'arbitro e il colpo (`stop`). Chi dice stop
+e chi lo riceve vedono lo stesso timbro, con la sua riga sotto; il tempo
+finito e' lo stesso timbro, arancione. I puntini dell'inchiostro sono il
+rumore di un filtro SVG usato come maschera. Le tre pagine timbrano con lo
+stesso `useTimbro` (`nomi/useScena.ts`, che ha anche il volo della lettera e
+quel che viene dopo la correzione), e il timbro si ricorda quando e' sceso:
+la correzione aspetta quel che ne resta, anche quando la fine arriva dal
+server mentre e' ancora sul foglio.
+
+**Il foglio si corregge davanti a chi guarda, e solo dopo arriva l'adesivo.**
+A partita finita passa la penna di chi corregge (`CartaScritta`): una riga
+ogni `PASSO_CORREZIONE_MS`, la spunta verde o la croce rossa con il tratto che
+cancella, i punti nella colonna dietro la doppia riga rossa, l'evidenziatore
+sulle risposte che ha dato solo chi le ha scritte: al tavolo quelle da venti,
+ieri quelle di "Solo tu", se non si giocava da soli, perché da soli lo
+sarebbero tutte. Poi la somma, e per ultima la pillola dell'esito, per non
+dirlo prima. L'adesivo della fine, e i coriandoli, aspettano
+`tempiCorrezione(...).fine`, e il CSS disegna con le stesse variabili
+(`--attesa`, `--passo-correzione`, `--totale`, `--fine`): un test legge
+`NomiCose.css` e controlla che il lavoro di ogni riga stia nel suo tempo. Il
+passo ha un nome lungo perché `--passo`, sul foglio, e' l'altezza delle
+righe, e con lo stesso nome la correzione le schiacciava. L'attesa si decide
+al primo disegno del foglio corretto (`useCorrezione`) e non cambia piu'. La
+correzione e' solo per la fine vista arrivare. Le parole che si potevano
+scrivere, e le piu' date di ieri, stanno su un post-it.
+
+**Negli ultimi secondi il foglio si fa urgente.** Da venti la matita e' rossa
+e trema, da dieci i secondi battono uno alla volta e il bordo del foglio
+pulsa, gli ultimi cinque si sentono. A partita finita la pagina scorre
+dentro, con il margine degli anelli: il foglio di oggi e quello di ieri non
+stanno in uno schermo, e prima quello di ieri restava tagliato fuori, senza
+modo di vederlo. Su un computer i due fogli stanno affiancati; con il
+telefono di traverso l'intestazione si fa una riga e lo stop va a destra del
+foglio, sotto il pollice.
 
 **Le durate delle animazioni delle caselle sono replicate in
 `src/games/wordle/useWordle.ts`** (`REVEAL_*`, `BOUNCE_MS`, `SHAKE_MS`): il
