@@ -226,6 +226,49 @@
   opacity: 0.45;
 }
 
+/*
+ * La linea dell'assicurazione: una fascia fra due fili, con la scritta in
+ * mezzo, come sui tavoli veri. Quando il banco la offre a me, si accende.
+ */
+.bj-scritte__assicurazione {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  fill: var(--bj-scritta);
+  opacity: 0.92;
+}
+
+.bj-scritte__bordo {
+  fill: none;
+  stroke: var(--bj-scritta);
+  stroke-width: 1.1;
+  opacity: 0.55;
+}
+
+.bj-scritte.is-offerta .bj-scritte__assicurazione {
+  animation: bj-linea-scritta 1.6s var(--ease-in-out) infinite;
+}
+
+.bj-scritte.is-offerta .bj-scritte__bordo {
+  animation: bj-linea-bordo 1.6s var(--ease-in-out) infinite;
+}
+
+@keyframes bj-linea-scritta {
+  50% {
+    fill: #fff4c8;
+    opacity: 1;
+  }
+}
+
+@keyframes bj-linea-bordo {
+  50% {
+    stroke: #fff4c8;
+    stroke-width: 2;
+    opacity: 1;
+  }
+}
+
 /* ─────────────────────────────  Il banco  ───────────────────────────── */
 
 .bj-banco {
@@ -410,6 +453,7 @@
 
 .bj-mio {
   --bj-carta: var(--carta-mia);
+  --lato-cerchio: min(19cqw, 12.5cqh, 96px);
   position: absolute;
   left: 50%;
   bottom: 5cqh;
@@ -424,12 +468,9 @@
   --bj-carta: calc(var(--carta-mia) * 0.8);
 }
 
-.bj-mio.is-mani-3 {
-  --bj-carta: calc(var(--carta-mia) * 0.66);
-}
-
+.bj-mio.is-mani-3,
 .bj-mio.is-mani-4 {
-  --bj-carta: calc(var(--carta-mia) * 0.56);
+  --bj-carta: calc(var(--carta-mia) * 0.66);
 }
 
 .bj-mio__mani {
@@ -440,13 +481,46 @@
   min-height: calc(var(--bj-carta) * 1.4 + 14px);
 }
 
+/*
+ * Tre o quattro mani, dopo gli split, vanno su due righe, due per riga, e si
+ * giocano da sinistra e dall'alto: in fila sola coprivano i posti degli altri
+ * ai lati, e le fasce degli esiti si sovrapponevano.
+ */
+.bj-mio.is-mani-3 .bj-mio__mani,
+.bj-mio.is-mani-4 .bj-mio__mani {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  justify-content: center;
+  justify-items: center;
+  align-items: end;
+  column-gap: calc(var(--bj-carta) * 0.5);
+  row-gap: 20px;
+}
+
+.bj-mio.is-mani-3 .bj-mano:last-child {
+  grid-column: 1 / -1;
+}
+
+/* Con piu' mani le fasce si stringono: una per mano, senza coprire quella accanto. */
+.bj-mio:is(.is-mani-2, .is-mani-3, .is-mani-4) .bj-mano__esito {
+  padding: 3px 7px;
+  font-size: 10px;
+  letter-spacing: 0.03em;
+}
+
 .bj-mano--mia .bj-mano__totale {
   font-size: 16px;
 }
 
+/* La puntata e, alla sua sinistra, l'assicurazione: il cerchio e' l'unico che occupa posto. */
+.bj-mio__puntate {
+  position: relative;
+  display: grid;
+}
+
 /* Il cerchio della puntata, stampato sul panno; quando tocca puntare, respira. */
 .bj-mio__cerchio {
-  --lato: min(19cqw, 12.5cqh, 96px);
+  --lato: var(--lato-cerchio);
   --bj-fiche-lato: calc(var(--lato) * 0.56);
   position: relative;
   display: grid;
@@ -506,6 +580,105 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--bj-scritta-chiara);
+}
+
+/*
+ * Il posto della mia assicurazione, a sinistra della puntata: un cerchio piu'
+ * piccolo, che compare quando il banco mostra l'asso e respira finché si puo'
+ * scegliere. Ci si posa una fiche sola, con l'importo; a giro chiuso la fascia
+ * dice se e' stata pagata o persa.
+ */
+.bj-assicurazione {
+  --lato: calc(var(--lato-cerchio) * 0.64);
+  --bj-fiche-lato: calc(var(--lato) * 0.8);
+  position: absolute;
+  top: 50%;
+  right: calc(100% + max(10px, 3cqw));
+  display: grid;
+  place-items: center;
+  width: var(--lato);
+  height: var(--lato);
+  border-radius: 50%;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(242, 210, 122, 0.7),
+    inset 0 0 0 5px rgba(0, 0, 0, 0.1);
+  transform: translateY(-50%);
+  animation: bj-assicurazione-entra 0.4s var(--ease-spring) backwards;
+}
+
+@keyframes bj-assicurazione-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.4);
+  }
+}
+
+.bj-assicurazione.is-offerta {
+  animation:
+    bj-assicurazione-entra 0.4s var(--ease-spring) backwards,
+    bj-cerchio 1.6s var(--ease-in-out) 0.4s infinite;
+}
+
+.bj-assicurazione__segno {
+  --scudo: rgba(242, 210, 122, 0.22);
+  --spunta: var(--bj-scritta);
+  width: 54%;
+  height: 54%;
+  stroke: var(--bj-scritta);
+  stroke-width: 1.4;
+}
+
+.bj-assicurazione__fiche {
+  animation: bj-totale 0.36s var(--ease-spring);
+}
+
+.bj-assicurazione__fiche.is-vinta {
+  filter: drop-shadow(0 0 12px rgba(255, 214, 90, 0.9));
+}
+
+/* La fascia dell'assicurazione: come quella delle mani, d'oro se paga e rossa se e' persa. */
+.bj-assicurazione__esito {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 2;
+  padding: 2px 7px;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1.5px #fff,
+    0 4px 10px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  animation: bj-esito 0.55s var(--ease-spring) backwards;
+}
+
+.bj-assicurazione__esito.is-pagata {
+  background: linear-gradient(160deg, #fff2b8, #e9b93a 55%, #a8741a);
+  color: #3d2300;
+}
+
+.bj-assicurazione__esito.is-persa {
+  background: linear-gradient(160deg, #ff6b6b, #b5162b);
+}
+
+/* Lo scudo dell'assicurazione: il colore lo dicono `--scudo` e `--spunta`, dove lo si usa. */
+.bj-scudo {
+  flex: none;
+  fill: var(--scudo, currentColor);
+}
+
+.bj-scudo__spunta {
+  fill: none;
+  stroke: var(--spunta, #fff);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ─────────────────────────────  Gli altri  ───────────────────────────── */
@@ -620,6 +793,30 @@
 
 .bj-altro__delta.is-meno {
   color: #ff9aa5;
+}
+
+/* L'assicurazione degli altri: lo scudo e l'importo, accanto alla loro puntata. */
+.bj-altro__assicurazione {
+  --scudo: var(--bj-scritta);
+  --spunta: #08200f;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px 1px 4px;
+  border-radius: var(--r-pill);
+  background: rgba(8, 20, 12, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(242, 210, 122, 0.45);
+  color: var(--bj-scritta);
+  font-family: var(--font-rounded);
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.5;
+  animation: bj-totale 0.36s var(--ease-spring);
+}
+
+.bj-altro__assicurazione .bj-scudo {
+  width: 11px;
+  height: 11px;
 }
 
 /* L'anello del tempo: si consuma attorno a chi deve decidere, rosso negli ultimi secondi. */
@@ -818,6 +1015,97 @@
   background: linear-gradient(180deg, #7aa7ff, #3b5ee0);
 }
 
+/* Lo split: due carte che si separano. */
+.bj-mossa__icona {
+  width: 58%;
+  height: 58%;
+  fill: rgba(255, 255, 255, 0.22);
+  stroke: #fff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/*
+ * L'assicurazione, quando il banco la offre: sopra le mosse, nel verde del
+ * panno con il filo d'oro, con quel che costa. Si vede finché si puo' scegliere,
+ * al posto di "Tocca a te", e il tempo che resta sta sotto.
+ */
+.bj-comandi__offerta {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+}
+
+.bj-offerta {
+  --scudo: var(--bj-scritta);
+  --spunta: #08200f;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: center;
+  width: min(100%, 320px);
+  min-height: 44px;
+  padding: 0 7px 0 14px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--bj-panno-1), var(--bj-panno-2));
+  box-shadow:
+    inset 0 0 0 1.5px rgba(242, 210, 122, 0.75),
+    0 3px 0 var(--bj-panno-3),
+    0 6px 14px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  animation: bj-offerta-entra 0.45s var(--ease-spring) backwards;
+  transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out);
+}
+
+@keyframes bj-offerta-entra {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.92);
+  }
+}
+
+.bj-offerta:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 0 0 1.5px rgba(242, 210, 122, 0.75),
+    0 1px 0 var(--bj-panno-3),
+    0 3px 8px rgba(0, 0, 0, 0.2);
+}
+
+.bj-offerta:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bj-offerta__segno {
+  width: 22px;
+  height: 22px;
+}
+
+.bj-offerta__nome {
+  flex: 1;
+  font-size: 16px;
+  text-align: left;
+}
+
+.bj-offerta__costo {
+  min-width: 2.6em;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: rgba(8, 20, 12, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(242, 210, 122, 0.45);
+  color: var(--bj-scritta);
+  font-family: var(--font-rounded);
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+}
+
 .bj-mossa:disabled {
   opacity: 0.28;
   cursor: default;
@@ -886,6 +1174,14 @@
   .bj-stato {
     min-height: 34px;
   }
+
+  .bj-offerta {
+    min-height: 40px;
+  }
+
+  .bj-offerta__nome {
+    font-size: 15px;
+  }
 }
 
 /*
@@ -919,6 +1215,25 @@
     --carta-altri: min(5.4cqw, 8cqh, 44px);
   }
 
+  /*
+   * Di traverso le mie carte arrivano piu' in alto: le scritte si stringono, e la linea dell'assicurazione
+   * resta sopra.
+   */
+  .bj-scritte {
+    width: min(98cqw, 600px, 64cqh);
+  }
+
+  /* Di traverso la larghezza c'e' e l'altezza no: tre o quattro mani restano in fila, piu' piccole e piu' larghe. */
+  .bj-mio.is-mani-3 .bj-mio__mani,
+  .bj-mio.is-mani-4 .bj-mio__mani {
+    display: flex;
+    gap: calc(var(--bj-carta) * 0.8);
+  }
+
+  .bj-mio.is-mani-4 {
+    --bj-carta: calc(var(--carta-mia) * 0.56);
+  }
+
   .bj-comandi {
     grid-column: 2;
     grid-row: 2;
@@ -940,7 +1255,15 @@
   .bj-mio__cerchio.is-puntata,
   .bj-mano__totale,
   .bj-mano__esito,
-  .bj-mano:has(.bj-mano__totale.is-oltre) .bj-mano__carte {
+  .bj-mano:has(.bj-mano__totale.is-oltre) .bj-mano__carte,
+  .bj-scritte.is-offerta .bj-scritte__assicurazione,
+  .bj-scritte.is-offerta .bj-scritte__bordo,
+  .bj-assicurazione,
+  .bj-assicurazione.is-offerta,
+  .bj-assicurazione__fiche,
+  .bj-assicurazione__esito,
+  .bj-altro__assicurazione,
+  .bj-offerta {
     animation: none;
   }
 }

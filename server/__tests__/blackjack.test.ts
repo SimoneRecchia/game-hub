@@ -214,6 +214,118 @@ describe('il blackjack da soli', () => {
   })
 })
 
+describe('l’assicurazione', () => {
+  /** La riga del registro di Anna: una per giro. */
+  function riga(b: Banco, io: Giocatore) {
+    return b.db.sqlite.prepare('SELECT puntata, delta, stato, esito FROM bj_mani WHERE player_id = ?').get(io.id) as {
+      puntata: number
+      delta: number
+      stato: string
+      esito: string | null
+    }
+  }
+
+  it('si paga dal saldo, sta nel registro con la mano, e torna 2 a 1 se il banco fa blackjack', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 100)
+    const t = await apri(b, io)
+    carte('Tc', 'Aq', '9f')
+    const dato = await ok(punta(b, io, t, 50))
+    expect(dato.posti[2]).toMatchObject({ puntata: 50, assicurazione: 0 })
+    const assicurato = await ok(muovi(b, io, dato, 'assicurazione'))
+    // La meta' della puntata, sulla linea: il turno resta, e il saldo scende subito.
+    expect(assicurato).toMatchObject({ fase: 'gioco', turno: { posto: 2, mano: 0 }, saldo: 25, netto: -75 })
+    expect(assicurato.posti[2]).toMatchObject({ puntata: 50, assicurazione: 25 })
+    expect(riga(b, io)).toMatchObject({ puntata: 75, delta: -75, stato: 'gioco' })
+
+    carte('Kp')
+    const fine = await ok(muovi(b, io, assicurato, 'stai'))
+    // Il blackjack del banco si prende la mano, 50, e l'assicurazione ne paga 50.
+    expect(fine).toMatchObject({ fase: 'fine', banco: ['Aq', 'Kp'], saldo: 100, netto: 0 })
+    expect(fine.posti[2]).toMatchObject({ delta: 0, assicurazione: 25 })
+    expect(riga(b, io)).toMatchObject({ puntata: 75, delta: 0, stato: 'fatto' })
+    expect(JSON.parse(riga(b, io).esito!)).toMatchObject({ banco: ['Aq', 'Kp'], assicurazione: 25 })
+    const giornata = b.db.sqlite
+      .prepare("SELECT netto, giocate FROM fortuna_giornate WHERE player_id = ? AND gioco = 'blackjack'")
+      .get(io.id)
+    expect(giornata).toEqual({ netto: 0, giocate: 1 })
+  })
+
+  it('si perde se il banco non fa blackjack, e la mano si paga da sola', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 100)
+    const t = await apri(b, io)
+    carte('Tc', 'Aq', '9f')
+    const assicurato = await ok(muovi(b, io, await ok(punta(b, io, t, 50)), 'assicurazione'))
+    carte('6p')
+    const fine = await ok(muovi(b, io, assicurato, 'stai'))
+    // 19 contro 17: la mano vince 50, l'assicurazione ne perde 25.
+    expect(fine.posti[2]).toMatchObject({ delta: 25 })
+    expect(fine).toMatchObject({ saldo: 125, netto: 25 })
+    expect(await generaleDiOggi(b, io)).toMatchObject({ punti: 125, blackjack: 25 })
+  })
+
+  it('un doppio tocco non assicura due volte', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 100)
+    const t = await apri(b, io)
+    carte('9c', 'Aq', '7f')
+    const dato = await ok(punta(b, io, t, 50))
+    expect((await muovi(b, io, dato, 'assicurazione')).status).toBe(200)
+    const doppio = await muovi(b, io, dato, 'assicurazione')
+    expect(doppio.status).toBe(409)
+    expect(doppio.dati).toMatchObject({ code: 'GIA_ASSICURATO' })
+    expect(riga(b, io)).toMatchObject({ puntata: 75, delta: -75 })
+    expect(await guarda(b, io, t.id)).toMatchObject({ saldo: 25 })
+  })
+
+  it('contro un dieci non c’e’, e dopo la prima mossa nemmeno', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 100)
+    const t = await apri(b, io)
+    carte('9c', 'Kq', '7f')
+    const r = await muovi(b, io, await ok(punta(b, io, t, 20)), 'assicurazione')
+    expect(r.status).toBe(400)
+    expect(r.dati).toMatchObject({ code: 'MOSSA' })
+    expect(riga(b, io)).toMatchObject({ puntata: 20 })
+  })
+
+  it('chiede il saldo, anche nella scrittura: una puntata altrove nel frattempo non lo supera', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 100)
+    const t = await apri(b, io)
+    carte('9c', 'Aq', '7f')
+    const dato = await ok(punta(b, io, t, 50))
+    // Fra la lettura del saldo, 50, e la scrittura del tavolo, se ne perdono 30 alla slot.
+    const batch = b.db.batch.bind(b.db)
+    let una = true
+    vi.spyOn(b.db, 'batch').mockImplementation(async (istruzioni) => {
+      if (una && istruzioni.some((i) => i.sql.includes('UPDATE bj_mani SET puntata'))) {
+        una = false
+        b.db.sqlite
+          .prepare(
+            `INSERT INTO fortuna_giornate (player_id, puzzle_number, gioco, netto, giocate)
+             VALUES (?, ?, 'slot', -30, 3)`,
+          )
+          .run(io.id, today().puzzleNumber)
+      }
+      return batch(istruzioni)
+    })
+    const r = await muovi(b, io, dato, 'assicurazione')
+    expect(r.status).toBe(409)
+    expect(r.dati).toMatchObject({ code: 'POCHI_PUNTI' })
+    expect(riga(b, io)).toMatchObject({ puntata: 50, delta: -50 })
+    const dopo = await guarda(b, io, t.id)
+    expect(dopo).toMatchObject({ saldo: 20 })
+    expect(dopo.posti[2]).toMatchObject({ assicurazione: 0 })
+  })
+})
+
 describe('il blackjack in compagnia', () => {
   /** Anna apre un tavolo, Bruno la vede dalla sala e si siede. */
   async function inDue() {

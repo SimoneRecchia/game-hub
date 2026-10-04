@@ -42,6 +42,12 @@ export function scomponi(importo: number): number[] {
   return fiches.sort((a, b) => b - a)
 }
 
+/** Il colore del taglio piu' grande che sta in un importo: per una fiche sola che porta un importo qualunque. */
+export function coloreFiche(importo: number): string {
+  const taglio = [...GETTONI_BJ].reverse().find((t) => t <= importo) ?? GETTONI_BJ[0]
+  return COLORE_FICHE[taglio]
+}
+
 export function Fiche({
   valore,
   className = '',

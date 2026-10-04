@@ -11,7 +11,7 @@ import './Carta.css'
  * pagina (`DefinizioniCarte`): ogni carta li usa con `<use>`.
  *
  * Una carta nuova vola dal sabot al suo posto girandosi a meta' strada
- * (`arrivo`); quella nata da una divisione scivola dalla mano accanto. Il volo
+ * (`arrivo`); quella nata da uno split scivola dalla mano accanto. Il volo
  * e' una Web Animation sull'elemento, con il ritardo che le da' il piano del
  * tavolo: passare dallo stato di React ridisegnerebbe il tavolo a ogni
  * fotogramma.

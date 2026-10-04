@@ -204,6 +204,67 @@ describe('il tavolo da soli', () => {
     expect(p.t.posti[2]!.delta).toBe(20)
   })
 
+  it('gli assi divisi prendono una carta ciascuno, e il banco gioca subito', () => {
+    const p = prova()
+    p.siedi('anna')
+    p.carte('Ac', '6q', 'Af')
+    p.punta('anna', 10)
+    expect(mosseDi(p.t, 2)).toEqual(['carta', 'stai', 'raddoppia', 'dividi'])
+    p.carte('Kp', 'Ac', 'Tq', '8c')
+    p.muovi('anna', 'dividi')
+    // Asso e re fanno 21 e non blackjack; il secondo asso ne prende un altro, e non si divide ancora.
+    expect(p.t.posti[2]!.mani).toMatchObject([
+      { carte: ['Ac', 'Kp'], assi: true, ferma: true },
+      { carte: ['Af', 'Ac'], assi: true, ferma: true },
+    ])
+    // Il banco: 6, 10, 8 = 24, sballato. Le due mani vincono alla pari.
+    expect(p.t.fase).toBe('fine')
+    expect(p.t.banco).toEqual(['6q', 'Tq', '8c'])
+    expect(p.t.posti[2]!.delta).toBe(20)
+  })
+
+  it('lo split si rifa’ fino a quattro mani, che si giocano una alla volta, anche raddoppiando', () => {
+    const p = prova()
+    p.siedi('anna')
+    p.carte('8c', '6q', '8f')
+    p.punta('anna', 10)
+    p.carte('8p', '2c')
+    p.muovi('anna', 'dividi')
+    p.carte('8q', '3c')
+    p.muovi('anna', 'dividi')
+    p.carte('8c', 'Tf')
+    p.muovi('anna', 'dividi')
+    const mani = p.t.posti[2]!.mani
+    expect(mani.map((m) => m.carte)).toEqual([
+      ['8c', '8c'],
+      ['8q', 'Tf'],
+      ['8p', '3c'],
+      ['8f', '2c'],
+    ])
+    // I nomi delle mani restano quelli: le carte gia' viste non si rimescolano.
+    expect(mani.map((m) => m.id)).toEqual([0, 3, 2, 1])
+    // Con quattro mani non si divide piu', nemmeno una coppia.
+    expect(mosseDi(p.t, 2)).toEqual(['carta', 'stai', 'raddoppia'])
+    p.carte('5p')
+    p.muovi('anna', 'raddoppia')
+    expect(p.t.turno).toEqual({ posto: 2, mano: 1 })
+    p.muovi('anna', 'stai')
+    expect(p.t.turno).toEqual({ posto: 2, mano: 2 })
+    p.carte('Kc')
+    p.muovi('anna', 'raddoppia')
+    p.carte('9c')
+    p.muovi('anna', 'carta')
+    expect(p.t.turno).toEqual({ posto: 2, mano: 3 })
+    p.carte('Tq', '3p')
+    p.muovi('anna', 'stai')
+    // Il banco fa 19: 21 raddoppiato, 18, 21 raddoppiato e 19 fanno +20, −10, +20 e pari.
+    expect(p.t.banco).toEqual(['6q', 'Tq', '3p'])
+    expect(p.t.posti[2]!.puntata).toBe(60)
+    expect(p.t.posti[2]!.delta).toBe(30)
+    // Tre split e due raddoppi: cinque volte la puntata in piu'.
+    expect(p.movimenti.flatMap((m) => (m.tipo === 'aggiunge' ? [m.quanto] : []))).toEqual([10, 10, 10, 10, 10])
+  })
+
   it('raddoppiare e dividere chiedono il saldo per un’altra puntata', () => {
     const p = prova()
     p.siedi('anna')
@@ -236,6 +297,134 @@ describe('il tavolo da soli', () => {
     expect(errore(() => p.punta('anna', 9, 9))).toBe('POCHI_PUNTI')
     expect(errore(() => p.passo((b) => b.punta('anna', 1, 12.5, 100, 7)))).toBe('PUNTATA')
     expect(errore(() => p.passo((b) => b.punta('bruno', 1, 10, 100, 7)))).toBe('NON_SEDUTO')
+  })
+})
+
+describe('l’assicurazione al tavolo', () => {
+  /** Anna da sola, con 50 sul tavolo e un asso al banco: `carte` sono la sua prima e la sua seconda. */
+  function controLAsso(prima: Carta, seconda: Carta, saldo = 1000) {
+    const p = prova()
+    p.siedi('anna')
+    p.carte(prima, 'Aq', seconda)
+    p.punta('anna', 50, saldo)
+    return p
+  }
+
+  it('si offre al turno, quando il banco mostra un asso, e solo prima di ogni altra mossa', () => {
+    const p = controLAsso('9c', '7f')
+    expect(p.t.turno).toEqual({ posto: 2, mano: 0 })
+    expect(mosseDi(p.t, 2)).toEqual(['carta', 'stai', 'raddoppia', 'assicurazione'])
+    p.carte('2p')
+    p.muovi('anna', 'carta')
+    expect(mosseDi(p.t, 2)).toEqual(['carta', 'stai'])
+    expect(errore(() => p.muovi('anna', 'assicurazione'))).toBe('MOSSA')
+  })
+
+  it('costa la meta’ della puntata, resta il turno, e paga 2 a 1 se il banco fa blackjack', () => {
+    const p = controLAsso('Tc', '9f')
+    p.muovi('anna', 'assicurazione')
+    expect(p.t.posti[2]).toMatchObject({ puntata: 50, assicurazione: 25 })
+    expect(p.movimenti).toContainEqual({ tipo: 'aggiunge', id: 'anna', giro: 1, giorno: 7, quanto: 25 })
+    // La mano si gioca ancora, ma l'assicurazione non torna.
+    expect(p.t.turno).toEqual({ posto: 2, mano: 0 })
+    expect(mosseDi(p.t, 2)).toEqual(['carta', 'stai', 'raddoppia'])
+    p.carte('Kp')
+    p.muovi('anna', 'stai')
+    // Il blackjack del banco si prende i 50 della mano, l'assicurazione ne paga 50: pari.
+    expect(p.t.banco).toEqual(['Aq', 'Kp'])
+    expect(p.t.posti[2]!.delta).toBe(0)
+    expect(p.movimenti.at(-1)).toMatchObject({ tipo: 'chiude', delta: 0, assicurazione: 25 })
+  })
+
+  it('si perde se la seconda carta del banco non fa blackjack', () => {
+    const p = controLAsso('Tc', '9f')
+    p.muovi('anna', 'assicurazione')
+    p.carte('6p')
+    p.muovi('anna', 'stai')
+    // Asso e 6 fanno 17, e il banco sta: 19 vince 50, l'assicurazione ne perde 25.
+    expect(p.t.banco).toEqual(['Aq', '6p'])
+    expect(p.t.posti[2]!.delta).toBe(25)
+    expect(p.movimenti.at(-1)).toMatchObject({ tipo: 'chiude', delta: 25, assicurazione: 25 })
+  })
+
+  it('il blackjack contro l’asso aspetta il suo turno, e assicurato sta: mezza puntata o una intera', () => {
+    const p = controLAsso('Ac', 'Kf')
+    expect(p.t.fase).toBe('gioco')
+    expect(mosseDi(p.t, 2)).toEqual(['stai', 'assicurazione'])
+    p.carte('Jp')
+    p.muovi('anna', 'assicurazione')
+    // Il banco pesca una carta sola, e fa blackjack: la mano e' pari, l'assicurazione paga 50.
+    expect(p.t.fase).toBe('fine')
+    expect(p.t.banco).toEqual(['Aq', 'Jp'])
+    expect(p.t.posti[2]!.delta).toBe(50)
+
+    const q = controLAsso('Ac', 'Kf')
+    q.carte('7p')
+    q.muovi('anna', 'assicurazione')
+    expect(q.t.banco).toEqual(['Aq', '7p'])
+    expect(q.t.posti[2]!.delta).toBe(25)
+  })
+
+  it('il blackjack che non si assicura sta, e paga 1 a 1 se il banco non lo pareggia', () => {
+    const p = controLAsso('Ac', 'Kf')
+    p.carte('7p')
+    p.muovi('anna', 'stai')
+    expect(p.t.banco).toEqual(['Aq', '7p'])
+    expect(p.t.posti[2]).toMatchObject({ delta: 50 })
+    expect(p.t.posti[2]!.assicurazione).toBeUndefined()
+  })
+
+  it('un doppio tocco non assicura due volte', () => {
+    const p = controLAsso('9c', '7f')
+    const vecchia = { giro: p.t.giro, mano: 0, carte: 2 }
+    p.muovi('anna', 'assicurazione')
+    const doppio = () =>
+      p.passo((b) => b.muovi('anna', vecchia.giro, vecchia.mano, vecchia.carte, 'assicurazione', 1000))
+    expect(errore(doppio)).toBe('GIA_ASSICURATO')
+    expect(p.t.posti[2]!.assicurazione).toBe(25)
+    expect(p.movimenti.filter((m) => m.tipo === 'aggiunge')).toHaveLength(1)
+  })
+
+  it('chiede il saldo, come il raddoppio', () => {
+    const p = controLAsso('9c', '7f', 60)
+    expect(errore(() => p.muovi('anna', 'assicurazione', 24))).toBe('POCHI_PUNTI')
+    expect(p.t.posti[2]!.assicurazione).toBeUndefined()
+    p.muovi('anna', 'assicurazione', 25)
+    expect(p.t.posti[2]!.assicurazione).toBe(25)
+  })
+
+  it('dopo l’assicurazione si fa split e si raddoppia, e l’assicurazione resta quella', () => {
+    const p = prova()
+    p.siedi('anna')
+    p.carte('8c', 'Aq', '8f')
+    p.punta('anna', 20)
+    p.muovi('anna', 'assicurazione')
+    p.carte('3p', '9c')
+    p.muovi('anna', 'dividi')
+    expect(mosseDi(p.t, 2)).toEqual(['carta', 'stai', 'raddoppia'])
+    p.carte('Kp')
+    p.muovi('anna', 'raddoppia')
+    p.carte('Tq')
+    p.muovi('anna', 'stai')
+    // Il banco fa blackjack: le mani perdono 40 e 20, l'assicurazione paga 20.
+    expect(p.t.banco).toEqual(['Aq', 'Tq'])
+    expect(p.t.posti[2]).toMatchObject({ puntata: 60, assicurazione: 10, delta: -40 })
+  })
+
+  it('se tutte le mani sballano il banco pesca lo stesso la seconda carta, per l’assicurazione', () => {
+    const p = controLAsso('Tc', '6f')
+    p.muovi('anna', 'assicurazione')
+    p.carte('Kp', 'Jc')
+    p.muovi('anna', 'carta')
+    expect(p.t.banco).toEqual(['Aq', 'Jc'])
+    // Sballato: −50; l'assicurazione: +50.
+    expect(p.t.posti[2]!.delta).toBe(0)
+    expect(p.rimaste()).toBe(0)
+    // Il giro dopo comincia senza.
+    p.avanti(p.t.scadenza! - p.adesso)
+    p.passo()
+    expect(p.t.fase).toBe('puntate')
+    expect(p.t.posti[2]).not.toHaveProperty('assicurazione')
   })
 })
 
@@ -303,6 +492,26 @@ describe('il tavolo in compagnia', () => {
     expect(p.t.fase).toBe('fine')
     expect(p.t.scadenza).toBe(primo + TURNO_MS + durataFine(p.t.banco))
     expect([p.t.posti[1]!.delta, p.t.posti[2]!.delta]).toEqual([-10, 0])
+  })
+
+  it('l’assicurazione si offre a ognuno al suo turno, e chi non decide in tempo sta senza', () => {
+    const p = inDue()
+    p.punta('anna', 10)
+    p.carte('9c', 'Tc', 'Aq', '7f', '8f')
+    p.punta('bruno', 10)
+    expect(mosseDi(p.t, 1)).toEqual(['carta', 'stai', 'raddoppia', 'assicurazione'])
+    expect(mosseDi(p.t, 2)).toEqual([])
+    p.muovi('bruno', 'assicurazione')
+    p.muovi('bruno', 'stai')
+    expect(mosseDi(p.t, 2)).toEqual(['carta', 'stai', 'raddoppia', 'assicurazione'])
+    // Anna non decide in tempo: la sua mano sta, senza assicurazione.
+    p.avanti(p.t.scadenza! - p.adesso + 1)
+    p.carte('Kp')
+    p.passo()
+    expect(p.t.fase).toBe('fine')
+    expect(p.t.posti[2]!.assicurazione).toBeUndefined()
+    // Il blackjack del banco: Bruno perde 10 e l'assicurazione gliene rende 10, Anna perde 10.
+    expect([p.t.posti[1]!.delta, p.t.posti[2]!.delta]).toEqual([0, -10])
   })
 
   it('chi si siede mentre un altro pensa da solo gli lascia il tempo di un turno intero', () => {

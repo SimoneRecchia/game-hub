@@ -175,13 +175,16 @@ function righeDel(db: D1Database, tavolo: string, impronta: string, m: Movimento
             WHERE tavolo = ?1 AND giro = ?3 AND player_id = ?4 AND stato = 'gioco' AND ${preso}`,
         )
         .bind(tavolo, impronta, m.giro, m.id, m.quanto, adesso)
-    case 'chiude':
+    case 'chiude': {
+      // L'esito tiene le mani, le carte del banco e l'assicurazione: il delta e' la loro somma.
+      const esito = JSON.stringify({ mani: m.mani, banco: m.banco, assicurazione: m.assicurazione })
       return db
         .prepare(
           `UPDATE bj_mani SET delta = ?5, stato = 'fatto', esito = ?6, updated_at = ?7
             WHERE tavolo = ?1 AND giro = ?3 AND player_id = ?4 AND stato = 'gioco' AND ${preso}`,
         )
-        .bind(tavolo, impronta, m.giro, m.id, m.delta, JSON.stringify({ mani: m.mani, banco: m.banco }), adesso)
+        .bind(tavolo, impronta, m.giro, m.id, m.delta, esito, adesso)
+    }
     case 'rimborsa':
       return db
         .prepare(
@@ -351,6 +354,7 @@ export async function vistaTavolo(
             },
             puntata: p.puntata,
             mani: p.mani,
+            assicurazione: p.assicurazione ?? 0,
             delta: p.delta,
             via: p.via === true,
             presente: lettura.attivo(p),
@@ -466,7 +470,10 @@ export async function puntaAlTavolo(db: D1Database, io: string, id: string, giro
   return suTavolo(db, id, io, (b, saldo, giorno) => b.punta(io, giro, puntata, saldo, giorno), true)
 }
 
-/** Una mossa sulla mano di turno, che il telefono indica con il numero della mano e quante carte ha. */
+/**
+ * Una mossa sulla mano di turno, che il telefono indica con il numero della
+ * mano e quante carte ha: anche l'assicurazione, che si paga come un raddoppio.
+ */
 export async function muoviAlTavolo(
   db: D1Database,
   io: string,
