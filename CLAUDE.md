@@ -2216,27 +2216,41 @@ con un salto che a lettere sfocate non si vede, sempre in avanti
 nell'alfabeto (`inizioFrenata`). Poi la lettera vola al suo posto sul foglio
 (`VoloLettera`): e' una copia del tondo grande che rimpicciolisce — ingrandire
 quello piccolo verrebbe sfocato — e il posto sul foglio aspetta vuoto finché
-non arriva. Il tempo intanto corre, perché e' quello del server: per questo
-la scena e' corta, e riaprendo la pagina non si rifà. Senza animazioni la
-lettera compare e basta.
+non arriva. Nella classificata e nella sfida il tempo intanto corre, perché
+e' quello del server: per questo la scena e' corta, e riaprendo la pagina non
+si rifà. Nella libera il tempo parte quando la lettera e' ferma, per chi gioca
+e per il computer (la fase `pronta`, poi `parti` in `useNomiLibera`): prima
+partiva con le parole, e il rullo toglieva un paio di secondi a uno e li
+regalava all'altro. Un test lo prova sull'hook vero, fatto girare su un React
+da banco (`nomi/__tests__/hook.test.ts`). Senza animazioni la lettera compare
+e basta.
 
 **Lo stop e' un timbro.** Un adesivo con la sua classe (`nomi-timbro`, in
 `adesivi.tsx`): una carta del colore del foglio con la cornice doppia
 d'inchiostro e la scritta storta, che si abbatte dall'alto; sotto, la pagina
-sobbalza (`scuoti`) e si sentono il fischio d'arbitro e il colpo (`stop`).
-Chi dice stop e chi lo riceve vedono lo stesso timbro, con la sua riga sotto;
-il tempo finito e' lo stesso timbro, arancione. I puntini dell'inchiostro
-sono il rumore di un filtro SVG usato come maschera.
+sobbalza e si sentono il fischio d'arbitro e il colpo (`stop`). Chi dice stop
+e chi lo riceve vedono lo stesso timbro, con la sua riga sotto; il tempo
+finito e' lo stesso timbro, arancione. I puntini dell'inchiostro sono il
+rumore di un filtro SVG usato come maschera. Le tre pagine timbrano con lo
+stesso `useTimbro` (`nomi/useScena.ts`, che ha anche il volo della lettera e
+quel che viene dopo la correzione), e il timbro si ricorda quando e' sceso:
+la correzione aspetta quel che ne resta, anche quando la fine arriva dal
+server mentre e' ancora sul foglio.
 
 **Il foglio si corregge davanti a chi guarda, e solo dopo arriva l'adesivo.**
 A partita finita passa la penna di chi corregge (`CartaScritta`): una riga
 ogni `PASSO_CORREZIONE_MS`, la spunta verde o la croce rossa con il tratto che
 cancella, i punti nella colonna dietro la doppia riga rossa, l'evidenziatore
-sulle risposte che ha dato solo chi le ha scritte; poi la somma, e per ultima
-la pillola dell'esito, per non dirlo prima. L'adesivo della fine, e i
-coriandoli, aspettano `tempiCorrezione(...).fine`, e il CSS disegna con le
-stesse variabili (`--attesa`, `--passo`, `--totale`, `--fine`): un test legge
-`NomiCose.css` e controlla che il lavoro di ogni riga stia nel suo tempo. La
+sulle risposte che ha dato solo chi le ha scritte: al tavolo quelle da venti,
+ieri quelle di "Solo tu", se non si giocava da soli, perché da soli lo
+sarebbero tutte. Poi la somma, e per ultima la pillola dell'esito, per non
+dirlo prima. L'adesivo della fine, e i coriandoli, aspettano
+`tempiCorrezione(...).fine`, e il CSS disegna con le stesse variabili
+(`--attesa`, `--passo-correzione`, `--totale`, `--fine`): un test legge
+`NomiCose.css` e controlla che il lavoro di ogni riga stia nel suo tempo. Il
+passo ha un nome lungo perché `--passo`, sul foglio, e' l'altezza delle
+righe, e con lo stesso nome la correzione le schiacciava. L'attesa si decide
+al primo disegno del foglio corretto (`useCorrezione`) e non cambia piu'. La
 correzione e' solo per la fine vista arrivare. Le parole che si potevano
 scrivere, e le piu' date di ieri, stanno su un post-it.
 

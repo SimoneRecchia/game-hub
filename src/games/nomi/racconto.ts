@@ -31,7 +31,8 @@ export function righeDiIeri(ieri: RisultatoNomi): RigaScritta[] {
       segno: 'giusta',
       nota: quantiLaDanno(r.uguali, ieri.giocatori),
       punti: `+${decimale(r.punti)}`,
-      rara: r.uguali <= 1,
+      // Se ha giocato solo lui, le ha date tutte solo lui: non se ne evidenzia nessuna.
+      rara: r.uguali <= 1 && ieri.giocatori > 1,
     }
   })
 }

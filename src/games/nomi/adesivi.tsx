@@ -6,7 +6,7 @@ import './adesivi.css'
 /**
  * Gli adesivi di Nomi, cose e città. Lo stop e' un timbro: una carta di carta
  * con la cornice doppia d'inchiostro, che si abbatte storta sul foglio come
- * quelli degli uffici, e il foglio sotto sobbalza (`scuoti`). Lo stesso per
+ * quelli degli uffici, e la pagina sotto sobbalza (`useTimbro`). Lo stesso per
  * chi dice stop e per chi lo riceve: cambia la riga sotto, e il tono — il mio
  * stop e' vivace, quello dell'altro bordato. Il tempo finito e' lo stesso
  * timbro, arancione.
@@ -19,12 +19,12 @@ export const ADESIVO_FINE_MS = 2_200
 
 const COLORE = 'linear-gradient(135deg, var(--nomi-1), var(--nomi-2))'
 
-/** Lo stop: io, il computer, o un amico. */
-export function adesivoStop(chi: 'io' | string): Omit<DatiAdesivo, 'id'> {
+/** Lo stop: il mio (`null`), o quello del computer o di un amico, con il suo nome. */
+export function adesivoStop(altro: string | null): Omit<DatiAdesivo, 'id'> {
   return {
-    tono: chi === 'io' ? 'vivace' : 'bordato',
+    tono: altro === null ? 'vivace' : 'bordato',
     titolo: 'Stop!',
-    sotto: chi === 'io' ? 'Hai detto stop' : `${chi} ha finito`,
+    sotto: altro === null ? 'Hai detto stop' : `${altro} ha finito`,
     colore: 'var(--nomi-timbro)',
     classe: 'nomi-timbro',
     durata: TIMBRO_MS,
@@ -121,22 +121,5 @@ function MatitaCheScrive() {
         <rect x="34" y="-4" width="6" height="8" rx="1.5" className="nomi-scrive__gomma" />
       </g>
     </svg>
-  )
-}
-
-/**
- * Il foglio che sobbalza sotto il timbro: quando l'adesivo si abbatte, a meta'
- * della sua entrata. Con il movimento ridotto non si muove.
- */
-export function scuoti(el: Element | null) {
-  if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  el.animate(
-    [
-      { transform: 'none' },
-      { transform: 'translateY(3px) rotate(-0.4deg)', offset: 0.25 },
-      { transform: 'translateY(-1.5px) rotate(0.25deg)', offset: 0.55 },
-      { transform: 'none' },
-    ],
-    { duration: 360, delay: TIMBRO_MS * 0.16, easing: 'ease-out' },
   )
 }

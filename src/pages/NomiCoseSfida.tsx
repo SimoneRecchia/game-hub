@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ROTTE } from '@/app/rotte'
-import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
+import { Adesivo, useCodaAdesivi, type DatiAdesivo } from '@/components/Adesivo'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, useFesta, Vuoto } from '@/components/Elementi'
 import { IconInfo, IconMatita, IconRefresh, IconTimbro } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Pillola } from '@/components/Scheda'
-import { adesivoFine, adesivoStop, adesivoTempo, scuoti } from '@/games/nomi/adesivi'
+import { adesivoFine, adesivoStop, adesivoTempo } from '@/games/nomi/adesivi'
 import { ComeSiGiocaNomi } from '@/games/nomi/ComeSiGioca'
-import { Altro, CartaScritta, FoglioInGioco, movimentoRidotto } from '@/games/nomi/Foglio'
+import { Altro, CartaScritta, FoglioInGioco } from '@/games/nomi/Foglio'
 import { righeAlTavolo } from '@/games/nomi/racconto'
-import { Partenza, RulloLettera, VoloLettera, type Tondo, type Volo } from '@/games/nomi/Rullo'
-import { tempiCorrezione } from '@/games/nomi/scena'
+import { Partenza, RulloLettera, VoloLettera, type Tondo } from '@/games/nomi/Rullo'
+import { movimentoRidotto, tempiCorrezione } from '@/games/nomi/scena'
 import { useSfidaNomi, type SfidaNomi } from '@/games/nomi/sfida/useSfidaNomi'
+import { useCorrezione, useDopo, useLetteraInVolo, useTimbro } from '@/games/nomi/useScena'
 import { useRestante } from '@/games/tavolo/TempoMossa'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
@@ -39,75 +40,63 @@ function Sfida({ id }: { id: string }) {
   const v = g.vista
   const [regole, setRegole] = useState(false)
   const { adesivo, accoda } = useCodaAdesivi()
+  const timbro = useTimbro(accoda)
+  const dopo = useDopo()
   const nome = v?.avversario?.displayName ?? 'L’altro'
 
   // La partenza: il rullo si ferma sulla lettera, e la lettera vola sul foglio.
   const [vistoVia, setVistoVia] = useState(false)
-  const [rivelata, setRivelata] = useState(false)
-  const [volo, setVolo] = useState<Volo | null>(null)
   useEffect(() => {
     if (g.via !== null) setVistoVia(true)
   }, [g.via])
-  const lettera = v?.lettera ?? null
-  const arrivata = useCallback(
-    (da: Tondo) => {
-      if (lettera) setVolo({ lettera, da })
-      setRivelata(true)
-    },
-    [lettera],
-  )
-  const inPartenza = v?.stato === 'in_corso' && (g.via !== null || !v.lettera || (vistoVia && !rivelata))
+  const volo = useLetteraInVolo(v?.lettera ?? null)
+  const inPartenza = v?.stato === 'in_corso' && (g.via !== null || !v.lettera || (vistoVia && !volo.arrivata))
 
   // Lo stop: il timbro, per chi lo dice e per chi lo riceve; e lo stesso, arancione, per il tempo finito.
+  // Uno solo per partita: il mio stop e il tempo che finisce possono arrivare insieme.
   const timbrato = useRef(false)
-  const timbra = useCallback(
-    (chi: 'io' | 'tempo' | string) => {
-      if (timbrato.current) return
+  const { timbra } = timbro
+  const timbraUnaVolta = useCallback(
+    (dati: Omit<DatiAdesivo, 'id'>) => {
+      if (timbrato.current) return false
       timbrato.current = true
-      accoda(chi === 'tempo' ? adesivoTempo() : adesivoStop(chi))
-      scuoti(document.querySelector('.pagina__corpo'))
-      if (chi !== 'io' && chi !== 'tempo') haptic('error')
+      timbra(dati)
+      return true
     },
-    [accoda],
+    [timbra],
   )
   const dicoStop = () => {
-    timbra('io')
+    timbraUnaVolta(adesivoStop(null))
     g.stop()
   }
   const tempoFinito = () => {
-    timbra('tempo')
+    timbraUnaVolta(adesivoTempo())
     g.tempoFinito()
   }
   useEffect(() => {
     if (v?.stato !== 'in_corso' || !v.stop || v.stop.di === 'io') return
-    timbra(v.stop.di === 'tempo' ? 'tempo' : nome)
-  }, [nome, timbra, v])
+    if (v.stop.di === 'tempo') timbraUnaVolta(adesivoTempo())
+    else if (timbraUnaVolta(adesivoStop(nome))) haptic('error')
+  }, [nome, timbraUnaVolta, v])
 
-  // La fine vista arrivare: il foglio si corregge, e poi com'e' andata. Una sfida riaperta gia' finita no.
+  // La fine vista arrivare: il foglio si corregge, quando il timbro se n'e' andato, e poi com'e' andata.
+  // Una sfida riaperta gia' finita no.
   const [giocataQui, setGiocataQui] = useState(false)
   useEffect(() => {
     if (v?.stato === 'in_corso') setGiocataQui(true)
   }, [v?.stato])
-  const correzione = giocataQui && v?.stato === 'finita' ? { attesa: 0 } : null
+  const correzione = useCorrezione(giocataQui && v?.stato === 'finita', timbro.resto)
   const [vinta, setVinta] = useState(false)
-  const raccontata = useRef(false)
-  const dopo = useRef<number | null>(null)
   useEffect(() => {
-    if (!correzione || raccontata.current || !v) return
-    raccontata.current = true
-    const quando = tempiCorrezione(v.categorie?.length ?? 0, 0, movimentoRidotto()).fine
+    if (!correzione || !v) return
+    const quando = tempiCorrezione(v.categorie?.length ?? 0, correzione.attesa, movimentoRidotto()).fine
     const esito = v.vincitore === 'io' ? 'vinta' : v.vincitore === 'avversario' ? 'persa' : 'patta'
-    dopo.current = window.setTimeout(() => {
+    dopo.programma(quando, () => {
       accoda(adesivoFine(esito, v.mie.totale ?? 0, v.sue?.totale ?? 0, nome))
       setVinta(esito === 'vinta')
-    }, quando)
-  })
-  useEffect(
-    () => () => {
-      if (dopo.current) window.clearTimeout(dopo.current)
-    },
-    [],
-  )
+    })
+    // Una volta, quando il foglio corretto compare: la correzione non cambia piu'.
+  }, [correzione])
   const festa = useFesta(v ? v.stato === 'in_corso' : null, vinta)
 
   return (
@@ -140,7 +129,7 @@ function Sfida({ id }: { id: string }) {
           testo="La sfida comincia quando arriva."
         />
       ) : inPartenza ? (
-        <Via g={g} v={v} onArrivata={arrivata} />
+        <Via g={g} v={v} onArrivata={volo.atterra} />
       ) : v.stato === 'in_corso' && v.lettera && v.categorie ? (
         <FoglioInGioco
           lettera={v.lettera}
@@ -151,7 +140,7 @@ function Sfida({ id }: { id: string }) {
           totaleMs={v.tempoTotaleMs}
           onScaduto={tempoFinito}
           entrata={vistoVia}
-          nascondiLettera={volo !== null}
+          nascondiLettera={volo.volo !== null}
           fermo={
             g.scrivibile
               ? null
@@ -190,7 +179,7 @@ function Sfida({ id }: { id: string }) {
         <div className="nomi-attesa" aria-hidden="true" />
       )}
       <ComeSiGiocaNomi open={regole} onClose={() => setRegole(false)} />
-      <VoloLettera volo={volo} onFine={() => setVolo(null)} />
+      <VoloLettera volo={volo.volo} onFine={volo.finito} />
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>

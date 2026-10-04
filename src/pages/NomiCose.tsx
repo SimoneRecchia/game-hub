@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
@@ -7,13 +7,14 @@ import { Coriandoli, useFesta, Vuoto } from '@/components/Elementi'
 import { IconComputer, IconInfo, IconPlay, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Pillola } from '@/components/Scheda'
-import { adesivoConsegna, adesivoTempo, scuoti } from '@/games/nomi/adesivi'
+import { adesivoConsegna, adesivoTempo } from '@/games/nomi/adesivi'
 import { ComeSiGiocaNomi } from '@/games/nomi/ComeSiGioca'
-import { CartaScritta, FoglioInGioco, PostIt, movimentoRidotto, type RigaScritta } from '@/games/nomi/Foglio'
+import { CartaScritta, FoglioInGioco, PostIt, type RigaScritta } from '@/games/nomi/Foglio'
 import { piuDateDi, righeDiIeri } from '@/games/nomi/racconto'
-import { RulloLettera, VoloLettera, type Tondo, type Volo } from '@/games/nomi/Rullo'
-import { TIMBRO_MS, tempiCorrezione } from '@/games/nomi/scena'
+import { RulloLettera, VoloLettera, type Tondo } from '@/games/nomi/Rullo'
+import { movimentoRidotto, tempiCorrezione } from '@/games/nomi/scena'
 import { useNomiDelGiorno } from '@/games/nomi/useNomiDelGiorno'
+import { useCorrezione, useDopo, useLetteraInVolo, useTimbro } from '@/games/nomi/useScena'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown, formatCronometro } from '@/lib/format'
 import { BASE_NOMI, CATEGORIE_PER_PARTITA, SECONDI_NOMI } from '@shared/nomi-cose'
@@ -33,11 +34,12 @@ export default function NomiCose() {
   const [regole, setRegole] = useState(false)
   const s = g.stato
   const { adesivo, accoda } = useCodaAdesivi()
+  const timbro = useTimbro(accoda)
+  const dopo = useDopo()
 
   // Il rullo gira dal tocco su Comincia finche' la lettera, ferma, non vola sul foglio.
   const [scena, setScena] = useState(false)
-  const [volo, setVolo] = useState<Volo | null>(null)
-  const [entrata, setEntrata] = useState(false)
+  const volo = useLetteraInVolo(s?.lettera ?? null)
   const comincia = () => {
     // Il rullo va al centro dello schermo: la pagina torna in cima, se si era scesi a guardare ieri.
     document.querySelector('.nomi-pagina')?.scrollTo({ top: 0 })
@@ -48,14 +50,13 @@ export default function NomiCose() {
   useEffect(() => {
     if (scena && s?.status === 'nuova' && !g.occupato) setScena(false)
   }, [scena, s, g.occupato])
-  const lettera = s?.lettera ?? null
+  const { atterra } = volo
   const arrivata = useCallback(
     (da: Tondo) => {
-      if (lettera) setVolo({ lettera, da })
-      setEntrata(true)
+      atterra(da)
       setScena(false)
     },
-    [lettera],
+    [atterra],
   )
 
   // La partita vista in corso: alla consegna il foglio si corregge, e poi l'adesivo.
@@ -64,38 +65,24 @@ export default function NomiCose() {
     if (s?.status === 'playing') setGiocataQui(true)
   }, [s?.status])
   // Il tempo finito: il timbro, e la correzione aspetta che se ne vada.
-  const scaduto = useRef<number | null>(null)
   const tempoFinito = () => {
-    scaduto.current = Date.now()
-    accoda(adesivoTempo())
-    scuoti(document.querySelector('.pagina__corpo'))
+    timbro.timbra(adesivoTempo())
     g.consegna()
   }
-  const correzione =
-    giocataQui && s?.status === 'done'
-      ? { attesa: scaduto.current === null ? 0 : Math.max(0, TIMBRO_MS - (Date.now() - scaduto.current)) }
-      : null
+  const correzione = useCorrezione(giocataQui && s?.status === 'done', timbro.resto)
 
   const [tutte, setTutte] = useState(false)
-  const raccontata = useRef(false)
-  const fine = useRef<number | null>(null)
   useEffect(() => {
-    if (!correzione || raccontata.current || !s) return
-    raccontata.current = true
+    if (!correzione || !s) return
     const scritte = Object.values(s.risposte).filter((t) => t.trim() !== '').length
     const valide = s.riconosciute ? Object.values(s.riconosciute).filter(Boolean).length : null
     const quando = tempiCorrezione(s.categorie?.length ?? 0, correzione.attesa, movimentoRidotto()).fine
-    fine.current = window.setTimeout(() => {
+    dopo.programma(quando, () => {
       accoda(adesivoConsegna(valide, scritte))
       setTutte(valide === CATEGORIE_PER_PARTITA)
-    }, quando)
-  })
-  useEffect(
-    () => () => {
-      if (fine.current) window.clearTimeout(fine.current)
-    },
-    [],
-  )
+    })
+    // Una volta, quando il foglio corretto compare: la correzione non cambia piu'.
+  }, [correzione])
   const festa = useFesta(s ? s.status === 'playing' : null, tutte)
 
   return (
@@ -136,8 +123,8 @@ export default function NomiCose() {
           scadenza={g.scadenza}
           totaleMs={s.tempoTotaleMs}
           onScaduto={tempoFinito}
-          entrata={entrata}
-          nascondiLettera={volo !== null}
+          entrata={volo.arrivata}
+          nascondiLettera={volo.volo !== null}
           azione={
             <Button size="lg" fullWidth onClick={g.consegna} disabled={g.occupato}>
               Consegna
@@ -151,7 +138,7 @@ export default function NomiCose() {
         </div>
       )}
       <ComeSiGiocaNomi open={regole} onClose={() => setRegole(false)} />
-      <VoloLettera volo={volo} onFine={() => setVolo(null)} />
+      <VoloLettera volo={volo.volo} onFine={volo.finito} />
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>

@@ -54,10 +54,13 @@ describe('la correzione del foglio', () => {
     const t = tempiCorrezione(5, 200)
     expect(variabiliCorrezione(t, 200)).toEqual({
       '--attesa': '200ms',
-      '--passo': `${PASSO_CORREZIONE_MS}ms`,
+      '--passo-correzione': `${PASSO_CORREZIONE_MS}ms`,
       '--totale': `${t.totale}ms`,
       '--fine': `${t.fine}ms`,
     })
+    // Il CSS le usa e non le dichiara: `--passo`, sul foglio, e' l'altezza delle righe, e un passo
+    // della correzione con lo stesso nome la cancellava.
+    for (const nome of Object.keys(variabiliCorrezione(t))) expect(CSS).not.toMatch(new RegExp(`${nome}\\s*:`))
     // Il lavoro di ogni riga, e quello della somma, finiscono nel tempo che scena.ts gli da'.
     const righe = animazioniDopo('--t')
     const somma = animazioniDopo('--totale')
@@ -113,6 +116,8 @@ describe('le righe del foglio', () => {
     expect(righe[2]).toMatchObject({ segno: 'sbagliata', punti: '0' })
     expect(righe[3].segno).toBe('vuota')
     expect(righe[3].punti).toBeUndefined()
+    // Da solo, ogni risposta e' "solo tu": l'evidenziatore non direbbe niente.
+    expect(righeDiIeri({ ...ieri, giocatori: 1 }).some((r) => r.rara)).toBe(false)
   })
 
   it('al tavolo: i punti di ognuno, la risposta dell’altro sotto, e l’evidenziatore solo sui venti', () => {

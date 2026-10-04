@@ -50,7 +50,6 @@ export function useSfidaNomi(id: string): SfidaNomi {
 
   const applica = useCallback(
     (v: VistaSfidaNomi) => {
-      // Lo stop dell'altro suona con il suo timbro, nella pagina della sfida.
       vistaRef.current = v
       setVista(v)
       setErrore(null)
@@ -63,6 +62,7 @@ export function useSfidaNomi(id: string): SfidaNomi {
         setRisposte(risposteRef.current)
       }
       if (v.stato === 'finita') setRisposte(v.mie.risposte)
+      // Lo stop dell'altro non suona qui: suona il suo timbro, nella pagina della sfida.
       // La rivincita accettata: si va alla partita nuova, tutti e due.
       if (v.rivincita?.stato === 'in_corso') vai(ROTTE.sfidaNomi(v.rivincita.id), { replace: true })
     },
