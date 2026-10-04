@@ -911,12 +911,12 @@
 
 /*
  * La correzione davanti a chi guarda: ogni riga al suo momento (`--attesa`
- * piu' `--passo` per riga, scritti da scena.ts), la spunta o la croce, il
+ * piu' `--passo-correzione` per riga, da scena.ts), la spunta o la croce, il
  * tratto che cancella, i punti, l'evidenziatore; poi la doppia riga e la
  * somma; per ultima la pillola dell'esito.
  */
 .nomi-carta.is-correzione .nomi-riga {
-  --t: calc(var(--attesa) + var(--i) * var(--passo));
+  --t: calc(var(--attesa) + var(--i) * var(--passo-correzione));
 }
 
 /* Prima del suo momento il segno non c'e': con le punte tonde un tratto lungo zero sarebbe un puntino. */

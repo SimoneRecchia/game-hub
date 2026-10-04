@@ -2,8 +2,8 @@
  * I tempi delle scene di Nomi, cose e città: il timbro dello stop e la
  * correzione del foglio. Stanno qui e non nei componenti perché l'adesivo
  * della fine aspetta che la correzione sia finita, e il CSS la disegna con gli
- * stessi numeri (le variabili `--attesa`, `--passo`, `--totale` e `--fine`
- * sul foglio): i test li tengono d'accordo.
+ * stessi numeri (le variabili `--attesa`, `--passo-correzione`, `--totale` e
+ * `--fine` sul foglio): i test li tengono d'accordo.
  */
 
 import { LETTERE_NOMI, PUNTI_SFIDA } from '@shared/nomi-cose'
@@ -49,14 +49,22 @@ export function tempiCorrezione(quante: number, attesa = 0, ridotto = false): Te
   return { righe, totale, fine: totale + TOTALE_MS + RESPIRO_MS }
 }
 
-/** Le variabili del CSS che disegnano la correzione, in millisecondi. */
+/**
+ * Le variabili del CSS che disegnano la correzione, in millisecondi. Il passo
+ * ha un nome suo: `--passo` sul foglio e' gia' l'altezza delle righe.
+ */
 export function variabiliCorrezione(t: TempiCorrezione, attesa = 0): Record<string, string> {
   return {
     '--attesa': `${attesa}ms`,
-    '--passo': `${PASSO_CORREZIONE_MS}ms`,
+    '--passo-correzione': `${PASSO_CORREZIONE_MS}ms`,
     '--totale': `${t.totale}ms`,
     '--fine': `${t.fine}ms`,
   }
+}
+
+/** Movimento ridotto: le scene si saltano, e i segni della correzione compaiono gia' fatti. */
+export function movimentoRidotto(): boolean {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 /** Una risposta che al tavolo ha scritto solo chi la legge: vale il massimo, e si evidenzia. */

@@ -3,8 +3,7 @@ import { createPortal } from 'react-dom'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { LETTERE_NOMI } from '@shared/nomi-cose'
-import { movimentoRidotto } from './Foglio'
-import { fermataDi, inizioFrenata } from './scena'
+import { fermataDi, inizioFrenata, movimentoRidotto } from './scena'
 import './Rullo.css'
 
 /**

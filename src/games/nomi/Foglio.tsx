@@ -1,10 +1,10 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { memo, useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
 import { Scheda } from '@/components/Scheda'
 import { useRestante } from '@/games/tavolo/TempoMossa'
 import { suona } from '@/lib/suoni'
 import { CATEGORIE_NOMI, LUNGHEZZA_MASSIMA_RISPOSTA, candidati, type CategoriaNomi } from '@shared/nomi-cose'
 import { Matita, URGENTE_S } from './Matita'
-import { tempiCorrezione, variabiliCorrezione } from './scena'
+import { movimentoRidotto, tempiCorrezione, variabiliCorrezione } from './scena'
 import type { RisposteNomi } from './useNomiDelGiorno'
 
 /** Le categorie che sono nomi propri: la tastiera comincia con la maiuscola. */
@@ -13,11 +13,6 @@ const PROPRI: readonly CategoriaNomi[] = ['nomi', 'citta', 'paesi', 'acque']
 /** La risposta comincia con la lettera, anche con l'articolo davanti o con "lago di". */
 export function cominciaCon(testo: string, categoria: CategoriaNomi, lettera: string): boolean {
   return candidati(testo, categoria).some((f) => f.startsWith(lettera))
-}
-
-/** Movimento ridotto: le scene si saltano, e i segni compaiono gia' fatti. */
-export function movimentoRidotto(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 /**
@@ -198,9 +193,10 @@ export function FoglioInGioco({
 
 /**
  * Le righe da scrivere. Invio passa alla riga dopo; sull'ultima chiude la
- * tastiera, e la consegna resta un gesto a parte.
+ * tastiera, e la consegna resta un gesto a parte. Non cambiano a ogni decimo
+ * di secondo con la matita: si ridisegnano solo quando si scrive.
  */
-function RigheDaScrivere({
+const RigheDaScrivere = memo(function RigheDaScrivere({
   lettera,
   categorie,
   risposte,
@@ -263,7 +259,7 @@ function RigheDaScrivere({
       })}
     </>
   )
-}
+})
 
 export type SegnoRiga = 'giusta' | 'sbagliata' | 'vuota'
 
@@ -384,14 +380,17 @@ export function CartaScritta({
   const anima = prima.current !== null && !ridotto
   const tempi = anima ? tempiCorrezione(righe.length, prima.current!.attesa) : null
 
+  // I suoni della penna, ognuno al suo segno; lasciando la pagina a meta' si fermano.
   useEffect(() => {
     if (!tempi) return
+    const timer: number[] = []
+    const dopo = (ms: number, fa: () => void) => timer.push(window.setTimeout(fa, ms))
     righe.forEach((r, i) => {
-      const quando = tempi.righe[i] / 1_000
-      if (r.segno === 'giusta') suona('spunta', { ritardo: quando, volume: 0.9 })
-      else if (r.segno === 'sbagliata') suona('croce', { ritardo: quando, volume: 0.9 })
-      if (r.rara) suona('evidenzia', { ritardo: quando + 0.16 })
+      if (r.segno === 'giusta') dopo(tempi.righe[i], () => suona('spunta', { volume: 0.9 }))
+      else if (r.segno === 'sbagliata') dopo(tempi.righe[i], () => suona('croce', { volume: 0.9 }))
+      if (r.rara) dopo(tempi.righe[i] + 160, () => suona('evidenzia'))
     })
+    return () => timer.forEach((t) => window.clearTimeout(t))
     // Una volta, quando il foglio compare.
   }, [])
 

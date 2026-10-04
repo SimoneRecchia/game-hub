@@ -7,15 +7,16 @@ import { IconComputer, IconInfo, IconRefresh, IconTimbro } from '@/components/Ic
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Pillola } from '@/components/Scheda'
 import { SegmentedControl } from '@/components/SegmentedControl'
-import { adesivoFine, adesivoStop, adesivoTempo, scuoti } from '@/games/nomi/adesivi'
+import { adesivoFine, adesivoStop, adesivoTempo } from '@/games/nomi/adesivi'
 import { ComeSiGiocaNomi } from '@/games/nomi/ComeSiGioca'
 import { leggiContiNomi } from '@/games/nomi/conti'
-import { Altro, CartaScritta, FoglioInGioco, PostIt, movimentoRidotto } from '@/games/nomi/Foglio'
+import { Altro, CartaScritta, FoglioInGioco, PostIt } from '@/games/nomi/Foglio'
 import { LIVELLI_NOMI, NOMI_LIVELLI_NOMI, altrePossibili, type LivelloNomi } from '@/games/nomi/libera'
 import { righeAlTavolo } from '@/games/nomi/racconto'
-import { Partenza, RulloLettera, VoloLettera, type Tondo, type Volo } from '@/games/nomi/Rullo'
-import { TIMBRO_MS, tempiCorrezione } from '@/games/nomi/scena'
+import { Partenza, RulloLettera, VoloLettera, type Tondo } from '@/games/nomi/Rullo'
+import { TIMBRO_MS, movimentoRidotto, tempiCorrezione } from '@/games/nomi/scena'
 import { useNomiLibera, type NomiLibera } from '@/games/nomi/useNomiLibera'
+import { useDopo, useLetteraInVolo, useTimbro } from '@/games/nomi/useScena'
 import { SalaAmico } from '@/games/nomi/sfida/SalaAmico'
 import { CATEGORIE_NOMI, TEMPO_NOMI_MS } from '@shared/nomi-cose'
 import '@/games/nomi/NomiCose.css'
@@ -35,7 +36,8 @@ function leggiContro(): Contro {
  * Nomi, cose e città libera, contro il computer o contro un amico, come le
  * sale dei tavolieri: un interruttore in cima, ricordato. Contro il computer
  * si sceglie la difficoltà e si comincia: il rullo gira mentre arrivano le
- * parole della lettera, e si ferma su quella. Il computer scrive anche lui, e
+ * parole della lettera, e si ferma su quella; da li' corre il tempo, per tutti
+ * e due. Il computer scrive anche lui, e
  * quando ha finito dice stop: da li' non si scrive piu', come al tavolo. Poi
  * il foglio si corregge, e si sa com'e' andata. Con un amico si manda la
  * sfida, e si gioca nella sua pagina.
@@ -58,47 +60,43 @@ export default function NomiCoseLibera() {
     g.nuova(l)
   }
   const { adesivo, accoda } = useCodaAdesivi()
+  const timbro = useTimbro(accoda)
+  const dopo = useDopo()
 
-  // La lettera: il rullo gira finche' la lettera, ferma, non vola sul foglio.
-  const [rivelata, setRivelata] = useState(false)
-  const [volo, setVolo] = useState<Volo | null>(null)
-  const [vinta, setVinta] = useState(false)
-  useEffect(() => {
-    if (g.fase !== 'carica') return
-    setRivelata(false)
-    setVinta(false)
-  }, [g.fase])
-  const lettera = g.fase === 'gioco' ? (g.partita?.lettera ?? null) : null
+  // La lettera: il rullo gira finche' la lettera, ferma, non vola sul foglio; e da li' corre il tempo.
+  const volo = useLetteraInVolo(g.fase === 'pronta' ? (g.partita?.lettera ?? null) : null)
+  const { atterra } = volo
+  const { parti } = g
   const arrivata = useCallback(
     (da: Tondo) => {
-      if (lettera) setVolo({ lettera, da })
-      setRivelata(true)
+      atterra(da)
+      parti()
     },
-    [lettera],
+    [atterra, parti],
   )
+
+  // Una partita nuova, o la scelta: niente di quella di prima arriva piu'.
+  const [vinta, setVinta] = useState(false)
+  const { ricomincia } = volo
+  useEffect(() => {
+    if (g.fase !== 'carica' && g.fase !== 'scelta') return
+    ricomincia()
+    setVinta(false)
+    dopo.annulla()
+  }, [dopo, g.fase, ricomincia])
 
   // La fine: il timbro dello stop, la correzione del foglio, e poi com'e' andata.
   const raccontata = useRef<unknown>(null)
-  const dopo = useRef<number | null>(null)
   useEffect(() => {
     const r = g.risultato
     if (g.fase !== 'fine' || !r || !g.partita || raccontata.current === r) return
     raccontata.current = r
-    accoda(g.stop === 'tempo' ? adesivoTempo() : adesivoStop(g.stop === 'io' ? 'io' : 'Il computer'))
-    scuoti(document.querySelector('.pagina__corpo'))
-    const quando = tempiCorrezione(g.partita.categorie.length, TIMBRO_MS, movimentoRidotto()).fine
-    if (dopo.current) window.clearTimeout(dopo.current)
-    dopo.current = window.setTimeout(() => {
+    timbro.timbra(g.stop === 'tempo' ? adesivoTempo() : adesivoStop(g.stop === 'io' ? null : 'Il computer'))
+    dopo.programma(tempiCorrezione(g.partita.categorie.length, TIMBRO_MS, movimentoRidotto()).fine, () => {
       accoda(adesivoFine(r.esito, r.totali[0], r.totali[1], 'il computer'))
       setVinta(r.esito === 'vinta')
-    }, quando)
-  }, [accoda, g.fase, g.partita, g.risultato, g.stop])
-  useEffect(
-    () => () => {
-      if (dopo.current) window.clearTimeout(dopo.current)
-    },
-    [],
-  )
+    })
+  }, [accoda, dopo, g.fase, g.partita, g.risultato, g.stop, timbro])
   const festa = useFesta(g.fase === 'gioco' ? true : g.fase === 'fine' ? false : null, vinta)
 
   const info = (
@@ -141,7 +139,7 @@ export default function NomiCoseLibera() {
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={info}
     >
-      {g.fase === 'carica' || (g.fase === 'gioco' && !rivelata) || !p ? (
+      {g.fase === 'carica' || g.fase === 'pronta' || !p ? (
         <Partenza
           sopra={
             <>
@@ -151,7 +149,7 @@ export default function NomiCoseLibera() {
           }
           sotto="La lettera è…"
         >
-          <RulloLettera lettera={lettera} gira onArrivato={arrivata} />
+          <RulloLettera lettera={g.fase === 'pronta' ? p!.lettera : null} gira onArrivato={arrivata} />
         </Partenza>
       ) : g.fase === 'gioco' ? (
         <FoglioInGioco
@@ -162,8 +160,8 @@ export default function NomiCoseLibera() {
           scadenza={g.scadenza}
           totaleMs={TEMPO_NOMI_MS}
           onScaduto={g.tempoFinito}
-          entrata
-          nascondiLettera={volo !== null}
+          entrata={volo.arrivata}
+          nascondiLettera={volo.volo !== null}
           altro={
             <Altro
               chi={<IconComputer size={16} />}
@@ -182,7 +180,7 @@ export default function NomiCoseLibera() {
         <Fine g={g} />
       )}
       <ComeSiGiocaNomi open={regole} onClose={() => setRegole(false)} />
-      <VoloLettera volo={volo} onFine={() => setVolo(null)} />
+      <VoloLettera volo={volo.volo} onFine={volo.finito} />
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
