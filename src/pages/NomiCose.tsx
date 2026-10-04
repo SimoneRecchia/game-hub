@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
@@ -6,11 +6,13 @@ import { Button } from '@/components/Button'
 import { Coriandoli, useFesta, Vuoto } from '@/components/Elementi'
 import { IconComputer, IconInfo, IconPlay, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
-import { Pillola, Scheda } from '@/components/Scheda'
+import { Pillola } from '@/components/Scheda'
+import { adesivoConsegna, adesivoTempo, scuoti } from '@/games/nomi/adesivi'
 import { ComeSiGiocaNomi } from '@/games/nomi/ComeSiGioca'
-import { FoglioDaScrivere, FoglioScritto, Lettera, type RigaScritta } from '@/games/nomi/Foglio'
-import { Matita } from '@/games/nomi/Matita'
+import { CartaScritta, FoglioInGioco, PostIt, movimentoRidotto, type RigaScritta } from '@/games/nomi/Foglio'
 import { piuDateDi, righeDiIeri } from '@/games/nomi/racconto'
+import { RulloLettera, VoloLettera, type Tondo, type Volo } from '@/games/nomi/Rullo'
+import { TIMBRO_MS, tempiCorrezione } from '@/games/nomi/scena'
 import { useNomiDelGiorno } from '@/games/nomi/useNomiDelGiorno'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown, formatCronometro } from '@/lib/format'
@@ -18,43 +20,82 @@ import { BASE_NOMI, CATEGORIE_PER_PARTITA, SECONDI_NOMI } from '@shared/nomi-cos
 import type { NomiStato, RisultatoNomi } from '@shared/types'
 import '@/games/nomi/NomiCose.css'
 
-/** Il colore dell'adesivo della consegna: la matita gialla. */
-const COLORE = 'linear-gradient(135deg, var(--nomi-1), var(--nomi-2))'
-
 /**
  * Nomi, cose e città, la partita del giorno: una lettera e cinque categorie,
- * le stesse per tutti, e tre minuti da quando si comincia. Alla consegna si sa
- * subito quali risposte valgono; i punti, che dipendono dalle risposte di
- * tutti, arrivano la notte, e la mattina dopo la pagina li racconta.
+ * le stesse per tutti, e tre minuti da quando si comincia. Comincia fa girare
+ * il rullo delle lettere, che si ferma sulla lettera di oggi e la porta sul
+ * foglio. Alla consegna il foglio si corregge davanti a chi guarda — quali
+ * risposte valgono si sa subito — e i punti, che dipendono dalle risposte di
+ * tutti, arrivano la notte: la mattina dopo il foglio di ieri li ha.
  */
 export default function NomiCose() {
   const g = useNomiDelGiorno()
   const [regole, setRegole] = useState(false)
   const s = g.stato
-
-  // La consegna vista in corso: l'adesivo con le valide, e i coriandoli se valgono tutte.
   const { adesivo, accoda } = useCodaAdesivi()
-  const vistaInCorso = useRef(false)
-  const [tutte, setTutte] = useState(false)
+
+  // Il rullo gira dal tocco su Comincia finche' la lettera, ferma, non vola sul foglio.
+  const [scena, setScena] = useState(false)
+  const [volo, setVolo] = useState<Volo | null>(null)
+  const [entrata, setEntrata] = useState(false)
+  const comincia = () => {
+    // Il rullo va al centro dello schermo: la pagina torna in cima, se si era scesi a guardare ieri.
+    document.querySelector('.nomi-pagina')?.scrollTo({ top: 0 })
+    setScena(true)
+    g.comincia()
+  }
+  // Se la partenza non va, il rullo si ferma e Comincia torna.
   useEffect(() => {
-    if (s?.status === 'playing') {
-      vistaInCorso.current = true
-      return
-    }
-    if (s?.status !== 'done' || !vistaInCorso.current) return
-    vistaInCorso.current = false
+    if (scena && s?.status === 'nuova' && !g.occupato) setScena(false)
+  }, [scena, s, g.occupato])
+  const lettera = s?.lettera ?? null
+  const arrivata = useCallback(
+    (da: Tondo) => {
+      if (lettera) setVolo({ lettera, da })
+      setEntrata(true)
+      setScena(false)
+    },
+    [lettera],
+  )
+
+  // La partita vista in corso: alla consegna il foglio si corregge, e poi l'adesivo.
+  const [giocataQui, setGiocataQui] = useState(false)
+  useEffect(() => {
+    if (s?.status === 'playing') setGiocataQui(true)
+  }, [s?.status])
+  // Il tempo finito: il timbro, e la correzione aspetta che se ne vada.
+  const scaduto = useRef<number | null>(null)
+  const tempoFinito = () => {
+    scaduto.current = Date.now()
+    accoda(adesivoTempo())
+    scuoti(document.querySelector('.pagina__corpo'))
+    g.consegna()
+  }
+  const correzione =
+    giocataQui && s?.status === 'done'
+      ? { attesa: scaduto.current === null ? 0 : Math.max(0, TIMBRO_MS - (Date.now() - scaduto.current)) }
+      : null
+
+  const [tutte, setTutte] = useState(false)
+  const raccontata = useRef(false)
+  const fine = useRef<number | null>(null)
+  useEffect(() => {
+    if (!correzione || raccontata.current || !s) return
+    raccontata.current = true
     const scritte = Object.values(s.risposte).filter((t) => t.trim() !== '').length
     const valide = s.riconosciute ? Object.values(s.riconosciute).filter(Boolean).length : null
-    accoda({
-      tono: valide === null || valide >= 3 ? 'vivace' : 'bordato',
-      titolo: valide === null ? 'Consegnata' : `${valide} su ${CATEGORIE_PER_PARTITA}`,
-      sotto: valide === null ? `${scritte} su ${CATEGORIE_PER_PARTITA}` : 'I punti arrivano stanotte',
-      colore: COLORE,
-      durata: 2_200,
-      suono: valide !== null && valide < 3 ? 'sbagliato' : 'giusto',
-    })
-    setTutte(valide === CATEGORIE_PER_PARTITA)
-  }, [accoda, s])
+    const quando = tempiCorrezione(s.categorie?.length ?? 0, correzione.attesa, movimentoRidotto()).fine
+    fine.current = window.setTimeout(() => {
+      accoda(adesivoConsegna(valide, scritte))
+      setTutte(valide === CATEGORIE_PER_PARTITA)
+    }, quando)
+  })
+  useEffect(
+    () => () => {
+      if (fine.current) window.clearTimeout(fine.current)
+    },
+    [],
+  )
   const festa = useFesta(s ? s.status === 'playing' : null, tutte)
 
   return (
@@ -80,71 +121,82 @@ export default function NomiCose() {
         />
       ) : !s ? (
         <div className="nomi-attesa" aria-hidden="true" />
-      ) : s.status === 'nuova' ? (
-        <div className="nomi-pagina">
-          <Inizio stato={s} occupato={g.occupato} onComincia={g.comincia} />
+      ) : s.status === 'nuova' || scena ? (
+        <div className={`nomi-pagina${s.ieri ? ' is-doppia' : ''}${scena ? ' is-via' : ''}`}>
+          <Inizio stato={s} gira={scena} occupato={g.occupato} onComincia={comincia} onArrivata={arrivata} />
           {s.ieri && <Ieri ieri={s.ieri} />}
         </div>
       ) : s.status === 'playing' && s.lettera && s.categorie ? (
-        <div className="nomi-pagina is-in-gioco">
-          <header className="nomi-testa">
-            <Lettera lettera={s.lettera} />
-            <div className="nomi-testa__tempo">
-              <p className="nomi-testa__con">Con la {s.lettera.toUpperCase()}</p>
-              {g.scadenza !== null && (
-                <Matita scadenza={g.scadenza} totaleMs={s.tempoTotaleMs} onScaduto={g.consegna} />
-              )}
-            </div>
-          </header>
-          <FoglioDaScrivere
-            lettera={s.lettera}
-            categorie={s.categorie}
-            risposte={g.risposte}
-            onScrivi={g.scrivi}
-            disabilitato={g.occupato}
-          />
-          <Button size="lg" fullWidth onClick={g.consegna} disabled={g.occupato}>
-            Consegna
-          </Button>
-        </div>
+        <FoglioInGioco
+          lettera={s.lettera}
+          categorie={s.categorie}
+          risposte={g.risposte}
+          onScrivi={g.scrivi}
+          disabilitato={g.occupato}
+          scadenza={g.scadenza}
+          totaleMs={s.tempoTotaleMs}
+          onScaduto={tempoFinito}
+          entrata={entrata}
+          nascondiLettera={volo !== null}
+          azione={
+            <Button size="lg" fullWidth onClick={g.consegna} disabled={g.occupato}>
+              Consegna
+            </Button>
+          }
+        />
       ) : (
-        <div className="nomi-pagina">
-          <Consegnata stato={s} />
+        <div className={`nomi-pagina${s.ieri ? ' is-doppia' : ''}`}>
+          <Consegnata stato={s} correzione={correzione} />
           {s.ieri && <Ieri ieri={s.ieri} />}
         </div>
       )}
       <ComeSiGiocaNomi open={regole} onClose={() => setRegole(false)} />
+      <VoloLettera volo={volo} onFine={() => setVolo(null)} />
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
   )
 }
 
-/** Prima di cominciare: la lettera e' nascosta, e il tempo non corre. */
-function Inizio({ stato, occupato, onComincia }: { stato: NomiStato; occupato: boolean; onComincia: () => void }) {
+/** Prima di cominciare: il rullo fermo sul punto di domanda, e il tempo che non corre. */
+function Inizio({
+  stato,
+  gira,
+  occupato,
+  onComincia,
+  onArrivata,
+}: {
+  stato: NomiStato
+  gira: boolean
+  occupato: boolean
+  onComincia: () => void
+  onArrivata: (da: Tondo) => void
+}) {
   return (
-    <div className="nomi-inizio">
-      <Lettera lettera={null} />
-      <p className="nomi-inizio__sopra">La lettera di oggi · #{stato.puzzleNumber}</p>
-      <h2 className="nomi-inizio__titolo">Una lettera, {CATEGORIE_PER_PARTITA} categorie</h2>
-      <p className="nomi-inizio__testo">La lettera la vedi quando cominci, e da lì parte il tempo.</p>
-      <div className="nomi-inizio__regole">
-        <span>
-          <strong className="u-tabnum">{CATEGORIE_PER_PARTITA}</strong> categorie
-        </span>
-        <span>
-          <strong className="u-tabnum">{SECONDI_NOMI / 60}</strong> minuti
-        </span>
+    <div className={`nomi-inizio${gira ? ' is-via' : ''}`}>
+      <RulloLettera lettera={gira ? stato.lettera : null} gira={gira} onArrivato={onArrivata} />
+      <div className="nomi-inizio__testi" aria-hidden={gira || undefined}>
+        <p className="nomi-inizio__sopra">La lettera di oggi · #{stato.puzzleNumber}</p>
+        <h2 className="nomi-inizio__titolo">Una lettera, {CATEGORIE_PER_PARTITA} categorie</h2>
+        <p className="nomi-inizio__testo">La lettera la vedi quando cominci, e da lì parte il tempo.</p>
+        <div className="nomi-inizio__regole">
+          <span>
+            <strong className="u-tabnum">{CATEGORIE_PER_PARTITA}</strong> categorie
+          </span>
+          <span>
+            <strong className="u-tabnum">{SECONDI_NOMI / 60}</strong> minuti
+          </span>
+        </div>
+        <Button size="lg" fullWidth onClick={onComincia} disabled={occupato || gira}>
+          <IconPlay size={17} /> Comincia
+        </Button>
       </div>
-      <Button size="lg" fullWidth onClick={onComincia} disabled={occupato}>
-        <IconPlay size={17} /> Comincia
-      </Button>
     </div>
   )
 }
 
 /** La partita di oggi consegnata: quali risposte valgono, e quando arrivano i punti. */
-function Consegnata({ stato }: { stato: NomiStato }) {
+function Consegnata({ stato, correzione }: { stato: NomiStato; correzione: { attesa: number } | null }) {
   const restano = useCountdown(stato.msToNextPuzzle)
   const categorie = stato.categorie ?? []
   const righe: RigaScritta[] = categorie.map((c) => {
@@ -153,26 +205,23 @@ function Consegnata({ stato }: { stato: NomiStato }) {
     return {
       categoria: c,
       testo,
-      segno: !testo ? 'vuota' : valida === undefined ? null : valida ? 'giusta' : 'sbagliata',
+      segno: !testo.trim() ? 'vuota' : valida === undefined ? null : valida ? 'giusta' : 'sbagliata',
     }
   })
   const valide = stato.riconosciute ? Object.values(stato.riconosciute).filter(Boolean).length : null
   return (
-    <Scheda
-      className="nomi-scheda"
-      titolo={stato.lettera ? `Oggi, con la ${stato.lettera.toUpperCase()}` : 'Oggi'}
-      icona={<Lettera lettera={stato.lettera} piccola />}
-      destra={
-        stato.tempoMs !== null ? (
-          <Pillola tono="neutra">in {formatCronometro(stato.tempoMs)}</Pillola>
-        ) : undefined
-      }
-    >
-      <FoglioScritto righe={righe} />
+    <div className="nomi-oggi">
+      <CartaScritta
+        titolo={stato.lettera ? `Oggi, con la ${stato.lettera.toUpperCase()}` : 'Oggi'}
+        lettera={stato.lettera}
+        destra={
+          stato.tempoMs !== null ? <Pillola tono="neutra">in {formatCronometro(stato.tempoMs)}</Pillola> : undefined
+        }
+        righe={righe}
+        totale={valide === null ? undefined : { etichetta: 'Valide', valore: `${valide} su ${categorie.length}` }}
+        correzione={correzione}
+      />
       <div className="nomi-fine">
-        <p className="nomi-fine__valore u-tabnum">
-          {valide === null ? 'Consegnata' : `${valide} ${valide === 1 ? 'valida' : 'valide'} su ${categorie.length}`}
-        </p>
         <p className="nomi-fine__dettaglio">I punti arrivano stanotte, e valgono nella classifica di domani.</p>
         <div className="nomi-fine__azioni">
           <Collegamento to={ROTTE.classifica('nomi')} className="nomi-fine__link">
@@ -188,46 +237,47 @@ function Consegnata({ stato }: { stato: NomiStato }) {
           La prossima lettera fra <span className="u-tabnum">{formatCountdown(restano)}</span>
         </p>
       </div>
-    </Scheda>
+    </div>
   )
 }
 
-/** La partita di ieri, contata stanotte: i punti di ogni risposta, e le piu' date da tutti. */
+/** La partita di ieri, contata stanotte: i punti di ogni risposta, e le piu' date da tutti su un post-it. */
 function Ieri({ ieri }: { ieri: RisultatoNomi }) {
-  const lettera = ieri.lettera.toUpperCase()
   const piuDate = piuDateDi(ieri)
   return (
-    <Scheda
-      className="nomi-scheda"
-      titolo={`Ieri, con la ${lettera}`}
-      icona={<Lettera lettera={ieri.lettera} piccola />}
-      destra={<Pillola tono="buona">{ieri.punti} punti</Pillola>}
-    >
-      <FoglioScritto righe={righeDiIeri(ieri)} />
-      <p className="nomi-ieri__conto">
-        {ieri.giocatori} {ieri.giocatori === 1 ? 'giocatore' : 'giocatori'} · consegnata in{' '}
-        {formatCronometro(ieri.tempoMs)}
-        {ieri.punti > 0 && ` · ${BASE_NOMI} per aver giocato`}
-      </p>
+    <div className="nomi-ieri">
+      <CartaScritta
+        titolo={`Ieri, con la ${ieri.lettera.toUpperCase()}`}
+        lettera={ieri.lettera}
+        destra={<Pillola tono="buona">{ieri.punti} punti</Pillola>}
+        righe={righeDiIeri(ieri)}
+        conPunti
+        totale={{
+          etichetta: 'Totale',
+          nota: ieri.punti > 0 ? `${BASE_NOMI} per aver giocato` : undefined,
+          valore: ieri.punti,
+        }}
+      >
+        <p className="nomi-ieri__conto">
+          {ieri.giocatori} {ieri.giocatori === 1 ? 'giocatore' : 'giocatori'} · consegnata in{' '}
+          {formatCronometro(ieri.tempoMs)}
+        </p>
+      </CartaScritta>
       {piuDate.length > 0 && (
-        <div className="nomi-ieri__piu">
-          <p className="nomi-ieri__titolo">Le più date</p>
-          <ul className="nomi-ieri__elenco">
-            {piuDate.map(({ categoria, nome, risposte }) => (
-              <li key={categoria} style={{ '--n': risposte.length } as CSSProperties}>
-                <span className="nomi-ieri__categoria">{nome}</span>
-                <span className="nomi-ieri__risposte">
-                  {risposte.map((r) => (
-                    <span key={r.testo} className="nomi-ieri__risposta">
-                      {r.testo} <span className="u-tabnum">×{r.uguali}</span>
-                    </span>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <PostIt
+          titolo="Le più date"
+          voci={piuDate.map(({ categoria, nome, risposte }) => ({
+            chiave: categoria,
+            nome,
+            parole: risposte.map((r, i) => (
+              <span key={r.testo}>
+                {i > 0 && ', '}
+                {r.testo} <span className="u-tabnum">×{r.uguali}</span>
+              </span>
+            )),
+          }))}
+        />
       )}
-    </Scheda>
+    </div>
   )
 }

@@ -1,28 +1,32 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, useFesta, Vuoto } from '@/components/Elementi'
-import { IconInfo, IconRefresh } from '@/components/Icons'
+import { IconInfo, IconMatita, IconRefresh, IconTimbro } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
-import { Pillola, Scheda } from '@/components/Scheda'
+import { Pillola } from '@/components/Scheda'
+import { adesivoFine, adesivoStop, adesivoTempo, scuoti } from '@/games/nomi/adesivi'
 import { ComeSiGiocaNomi } from '@/games/nomi/ComeSiGioca'
-import { FoglioDaScrivere, FoglioScritto, Lettera, type RigaScritta } from '@/games/nomi/Foglio'
-import { Matita } from '@/games/nomi/Matita'
+import { Altro, CartaScritta, FoglioInGioco, movimentoRidotto } from '@/games/nomi/Foglio'
+import { righeAlTavolo } from '@/games/nomi/racconto'
+import { Partenza, RulloLettera, VoloLettera, type Tondo, type Volo } from '@/games/nomi/Rullo'
+import { tempiCorrezione } from '@/games/nomi/scena'
 import { useSfidaNomi, type SfidaNomi } from '@/games/nomi/sfida/useSfidaNomi'
 import { useRestante } from '@/games/tavolo/TempoMossa'
+import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
-import type { GiocatoreBreve, VistaSfidaNomi } from '@shared/types'
+import type { VistaSfidaNomi } from '@shared/types'
 import '@/games/nomi/NomiCose.css'
-
-const COLORE = 'linear-gradient(135deg, var(--nomi-1), var(--nomi-2))'
 
 /**
  * Una sfida a Nomi, cose e città con un amico: la stessa lettera e le stesse
- * categorie per tutti e due, dal via. Chi finisce per primo dice stop, e
- * l'altro smette di scrivere; i punti si contano come al tavolo.
+ * categorie per tutti e due, dal via. Il tre-due-uno conta nella finestra del
+ * rullo, che al via gira e si ferma sulla lettera. Chi finisce per primo dice
+ * stop, e il timbro si abbatte sui due fogli; poi i fogli si correggono, e i
+ * punti si contano come al tavolo.
  */
 export default function NomiCoseSfida() {
   const { id = '' } = useParams()
@@ -34,41 +38,76 @@ function Sfida({ id }: { id: string }) {
   const g = useSfidaNomi(id)
   const v = g.vista
   const [regole, setRegole] = useState(false)
-
-  // Gli adesivi: lo stop dell'altro, poi com'e' andata.
   const { adesivo, accoda } = useCodaAdesivi()
-  const vistaInCorso = useRef(false)
-  const vistoStop = useRef(false)
-  const vistaFine = useRef(false)
-  const [vinta, setVinta] = useState(false)
+  const nome = v?.avversario?.displayName ?? 'L’altro'
+
+  // La partenza: il rullo si ferma sulla lettera, e la lettera vola sul foglio.
+  const [vistoVia, setVistoVia] = useState(false)
+  const [rivelata, setRivelata] = useState(false)
+  const [volo, setVolo] = useState<Volo | null>(null)
   useEffect(() => {
-    if (!v) return
-    if (v.stato === 'in_corso') vistaInCorso.current = true
-    if (v.stop?.di === 'avversario' && v.stato === 'in_corso' && !vistoStop.current) {
-      vistoStop.current = true
-      accoda({
-        tono: 'bordato',
-        titolo: 'Stop!',
-        sotto: `${v.avversario?.displayName ?? 'L’altro'} ha finito`,
-        colore: 'var(--nomi-2)',
-        durata: 1_500,
-      })
-    }
-    // Solo la fine vista arrivare: una sfida riaperta gia' finita non rifa' la festa.
-    if (v.stato !== 'finita' || vistaFine.current || !vistaInCorso.current) return
-    vistaFine.current = true
-    const sotto = `${v.mie.totale ?? 0} a ${v.sue?.totale ?? 0}`
-    const durata = 2_200
-    const lui = v.avversario?.displayName ?? 'l’altro'
-    accoda(
-      v.vincitore === 'io'
-        ? { tono: 'vivace', titolo: 'Hai vinto!', sotto, colore: COLORE, durata, suono: 'vittoria' }
-        : v.vincitore === 'avversario'
-          ? { tono: 'bordato', titolo: `Ha vinto ${lui}`, sotto, colore: 'var(--nomi-2)', durata, suono: 'sconfitta' }
-          : { tono: 'vivace', titolo: 'Pari', sotto, colore: COLORE, durata, suono: 'pareggio' },
-    )
-    setVinta(v.vincitore === 'io')
-  }, [accoda, v])
+    if (g.via !== null) setVistoVia(true)
+  }, [g.via])
+  const lettera = v?.lettera ?? null
+  const arrivata = useCallback(
+    (da: Tondo) => {
+      if (lettera) setVolo({ lettera, da })
+      setRivelata(true)
+    },
+    [lettera],
+  )
+  const inPartenza = v?.stato === 'in_corso' && (g.via !== null || !v.lettera || (vistoVia && !rivelata))
+
+  // Lo stop: il timbro, per chi lo dice e per chi lo riceve; e lo stesso, arancione, per il tempo finito.
+  const timbrato = useRef(false)
+  const timbra = useCallback(
+    (chi: 'io' | 'tempo' | string) => {
+      if (timbrato.current) return
+      timbrato.current = true
+      accoda(chi === 'tempo' ? adesivoTempo() : adesivoStop(chi))
+      scuoti(document.querySelector('.pagina__corpo'))
+      if (chi !== 'io' && chi !== 'tempo') haptic('error')
+    },
+    [accoda],
+  )
+  const dicoStop = () => {
+    timbra('io')
+    g.stop()
+  }
+  const tempoFinito = () => {
+    timbra('tempo')
+    g.tempoFinito()
+  }
+  useEffect(() => {
+    if (v?.stato !== 'in_corso' || !v.stop || v.stop.di === 'io') return
+    timbra(v.stop.di === 'tempo' ? 'tempo' : nome)
+  }, [nome, timbra, v])
+
+  // La fine vista arrivare: il foglio si corregge, e poi com'e' andata. Una sfida riaperta gia' finita no.
+  const [giocataQui, setGiocataQui] = useState(false)
+  useEffect(() => {
+    if (v?.stato === 'in_corso') setGiocataQui(true)
+  }, [v?.stato])
+  const correzione = giocataQui && v?.stato === 'finita' ? { attesa: 0 } : null
+  const [vinta, setVinta] = useState(false)
+  const raccontata = useRef(false)
+  const dopo = useRef<number | null>(null)
+  useEffect(() => {
+    if (!correzione || raccontata.current || !v) return
+    raccontata.current = true
+    const quando = tempiCorrezione(v.categorie?.length ?? 0, 0, movimentoRidotto()).fine
+    const esito = v.vincitore === 'io' ? 'vinta' : v.vincitore === 'avversario' ? 'persa' : 'patta'
+    dopo.current = window.setTimeout(() => {
+      accoda(adesivoFine(esito, v.mie.totale ?? 0, v.sue?.totale ?? 0, nome))
+      setVinta(esito === 'vinta')
+    }, quando)
+  })
+  useEffect(
+    () => () => {
+      if (dopo.current) window.clearTimeout(dopo.current)
+    },
+    [],
+  )
   const festa = useFesta(v ? v.stato === 'in_corso' : null, vinta)
 
   return (
@@ -100,154 +139,137 @@ function Sfida({ id }: { id: string }) {
           titolo="Aspetto che accetti"
           testo="La sfida comincia quando arriva."
         />
-      ) : v.stato === 'in_corso' && g.via !== null ? (
-        <Via via={g.via} avversario={v.avversario} />
+      ) : inPartenza ? (
+        <Via g={g} v={v} onArrivata={arrivata} />
       ) : v.stato === 'in_corso' && v.lettera && v.categorie ? (
-        <InGioco g={g} v={v} />
+        <FoglioInGioco
+          lettera={v.lettera}
+          categorie={v.categorie}
+          risposte={g.risposte}
+          onScrivi={g.scrivi}
+          scadenza={g.scrivibile ? g.scadenza : null}
+          totaleMs={v.tempoTotaleMs}
+          onScaduto={tempoFinito}
+          entrata={vistoVia}
+          nascondiLettera={volo !== null}
+          fermo={
+            g.scrivibile
+              ? null
+              : v.stop?.di === 'io'
+                ? 'Hai detto stop'
+                : v.stop?.di === 'avversario'
+                  ? `Stop! ${nome} ha finito`
+                  : 'Tempo finito'
+          }
+          altro={
+            v.avversario && (
+              <Altro
+                chi={<Avatar nickname={v.avversario.nickname} color={v.avversario.avatarColor} size={20} />}
+                nome={v.avversario.displayName}
+                scritte={v.scritteAvversario}
+                totale={v.categorie.length}
+                fermo={!g.scrivibile}
+              />
+            )
+          }
+          azione={
+            g.scrivibile ? (
+              <Button size="lg" fullWidth onClick={dicoStop} disabled={g.occupato}>
+                <IconTimbro size={20} /> Stop!
+              </Button>
+            ) : (
+              <p className="nomi-attende">
+                <IconMatita size={18} /> Si contano i punti…
+              </p>
+            )
+          }
+        />
       ) : v.stato === 'finita' ? (
-        <Fine g={g} v={v} />
+        <Fine g={g} v={v} correzione={correzione} />
       ) : (
         <div className="nomi-attesa" aria-hidden="true" />
       )}
       <ComeSiGiocaNomi open={regole} onClose={() => setRegole(false)} />
+      <VoloLettera volo={volo} onFine={() => setVolo(null)} />
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
   )
 }
 
-/** Il tre-due-uno: la lettera si vede insieme, al via. */
-function Via({ via, avversario }: { via: number; avversario: GiocatoreBreve | null }) {
-  const restante = useRestante(via) ?? 0
-  const secondi = Math.ceil(restante / 1_000)
+/**
+ * Il tre-due-uno: i secondi saltano fuori nella finestra del rullo, uno al
+ * secondo, e al via il rullo gira e si ferma sulla lettera, che si vede insieme
+ * all'altro.
+ */
+function Via({ g, v, onArrivata }: { g: SfidaNomi; v: VistaSfidaNomi; onArrivata: (da: Tondo) => void }) {
+  const restante = useRestante(g.via)
+  const secondi = restante === null ? 0 : Math.ceil(restante / 1_000)
   const ultimo = useRef(secondi)
   useEffect(() => {
     if (secondi === ultimo.current) return
     ultimo.current = secondi
-    suona(secondi > 0 ? 'tic' : 'via')
+    if (secondi > 0) suona('tic')
   }, [secondi])
+  const gira = g.via === null || secondi === 0
   return (
-    <div className="nomi-via">
-      {avversario && <Avatar nickname={avversario.nickname} color={avversario.avatarColor} size={56} />}
-      <p className="nomi-via__chi">Contro {avversario?.displayName ?? 'il tuo amico'}</p>
-      <span key={secondi} className="nomi-via__numero u-tabnum" aria-live="polite">
-        {secondi > 0 ? secondi : 'Via!'}
-      </span>
-    </div>
+    <Partenza
+      sopra={
+        v.avversario && (
+          <>
+            <Avatar nickname={v.avversario.nickname} color={v.avversario.avatarColor} size={52} />
+            <span>Contro {v.avversario.displayName}</span>
+          </>
+        )
+      }
+      sotto={gira ? 'Via!' : 'Pronti…'}
+    >
+      <RulloLettera lettera={v.lettera} gira={gira} faccia={secondi > 0 ? secondi : '?'} onArrivato={onArrivata} />
+    </Partenza>
   )
 }
 
-/** Si scrive: la lettera, il tempo, l'altro che scrive, e lo stop. */
-function InGioco({ g, v }: { g: SfidaNomi; v: VistaSfidaNomi }) {
-  const fermo = !g.scrivibile
-  return (
-    <div className="nomi-pagina is-in-gioco">
-      <header className="nomi-testa">
-        <Lettera lettera={v.lettera} />
-        <div className="nomi-testa__tempo">
-          <p className="nomi-testa__con">Con la {v.lettera!.toUpperCase()}</p>
-          {g.scadenza !== null && !fermo && (
-            <Matita scadenza={g.scadenza} totaleMs={v.tempoTotaleMs} onScaduto={g.tempoFinito} />
-          )}
-          {fermo && v.stop && (
-            <p className="nomi-testa__stop">
-              {v.stop.di === 'io' ? 'Hai detto stop' : v.stop.di === 'avversario' ? 'Stop!' : 'Tempo finito'}
-            </p>
-          )}
-        </div>
-      </header>
-      {v.avversario && (
-        <Avversario
-          avversario={v.avversario}
-          scritte={v.scritteAvversario}
-          totale={v.categorie!.length}
-          fermo={fermo}
-        />
-      )}
-      {fermo ? (
-        <>
-          <FoglioScritto
-            righe={v.categorie!.map((c) => ({ categoria: c, testo: g.risposte[c]?.trim() ?? '', segno: null }))}
-          />
-          <p className="nomi-conti">Si contano i punti…</p>
-        </>
-      ) : (
-        <>
-          <FoglioDaScrivere lettera={v.lettera!} categorie={v.categorie!} risposte={g.risposte} onScrivi={g.scrivi} />
-          <Button size="lg" fullWidth onClick={g.stop} disabled={g.occupato}>
-            Stop!
-          </Button>
-        </>
-      )}
-    </div>
-  )
-}
-
-/** L'altro che scrive: un puntino per categoria, pieno quando ha scritto. */
-function Avversario({
-  avversario,
-  scritte,
-  totale,
-  fermo,
-}: {
-  avversario: GiocatoreBreve
-  scritte: number
-  totale: number
-  fermo: boolean
-}) {
-  return (
-    <p className="nomi-computer" aria-live="polite">
-      <Avatar nickname={avversario.nickname} color={avversario.avatarColor} size={20} />
-      <span>
-        {avversario.displayName} {fermo ? 'ha scritto' : 'scrive'}
-      </span>
-      <span className="nomi-computer__puntini" aria-label={`${scritte} su ${totale}`}>
-        {Array.from({ length: totale }, (_, i) => (
-          <span key={i} className={i < scritte ? 'is-scritta' : ''} />
-        ))}
-      </span>
-    </p>
-  )
-}
-
-/** Com'e' finita: i due fogli, i punti di ogni risposta, la serie, e la rivincita. */
-function Fine({ g, v }: { g: SfidaNomi; v: VistaSfidaNomi }) {
+/** Com'e' finita: il foglio che si corregge, con le risposte dell'altro sotto le mie, la serie, e la rivincita. */
+function Fine({ g, v, correzione }: { g: SfidaNomi; v: VistaSfidaNomi; correzione: { attesa: number } | null }) {
   const categorie = v.categorie ?? []
   const nome = v.avversario?.displayName ?? 'L’altro'
-  const righe: RigaScritta[] = categorie.map((c, i) => {
-    const testo = v.mie.risposte[c]?.trim() ?? ''
-    const sua = v.sue?.risposte[c]?.trim()
-    const punti = v.mie.punti?.[i] ?? 0
-    const suoi = v.sue?.punti?.[i] ?? 0
-    return {
-      categoria: c,
-      testo,
-      segno: !testo ? 'vuota' : v.mie.forme?.[i] ? 'giusta' : 'sbagliata',
-      nota: `${nome}: ${sua || '—'}${sua ? ` · ${suoi}` : ''}`,
-      punti: punti > 0 ? `+${punti}` : undefined,
-    }
-  })
+  const righe = righeAlTavolo(
+    categorie,
+    {
+      testi: categorie.map((c) => v.mie.risposte[c]),
+      valide: categorie.map((_, i) => Boolean(v.mie.forme?.[i])),
+      punti: categorie.map((_, i) => v.mie.punti?.[i] ?? 0),
+    },
+    {
+      nome,
+      testi: categorie.map((c) => v.sue?.risposte[c]),
+      valide: categorie.map((_, i) => Boolean(v.sue?.forme?.[i])),
+      punti: categorie.map((_, i) => v.sue?.punti?.[i] ?? 0),
+    },
+  )
   const esito = v.vincitore === 'io' ? 'Hai vinto' : v.vincitore === 'avversario' ? 'Hai perso' : 'Pari'
   const chiesta = v.rivincita
   return (
     <div className="nomi-pagina">
-      <Scheda
-        className="nomi-scheda"
+      <CartaScritta
         titolo={`Con la ${v.lettera?.toUpperCase() ?? ''}`}
-        icona={<Lettera lettera={v.lettera} piccola />}
+        lettera={v.lettera}
         destra={
           <Pillola tono={v.vincitore === 'io' ? 'buona' : v.vincitore === 'avversario' ? 'cattiva' : 'neutra'}>
             {esito} {v.mie.totale ?? 0} a {v.sue?.totale ?? 0}
           </Pillola>
         }
+        righe={righe}
+        totale={{ etichetta: 'Totale', nota: `${nome} ${v.sue?.totale ?? 0}`, valore: v.mie.totale ?? 0 }}
+        conPunti
+        correzione={correzione}
       >
-        <FoglioScritto righe={righe} />
         {v.serie.partite > 1 && (
           <p className="nomi-ieri__conto u-tabnum">
             La serie: tu {v.serie.mie}, {nome} {v.serie.sue}, su {v.serie.partite}
           </p>
         )}
-      </Scheda>
+      </CartaScritta>
       <div className="nomi-libera__azioni">
         {chiesta?.stato === 'invito' && chiesta.mia ? (
           <p className="nomi-conti">Aspetto la risposta di {nome}…</p>

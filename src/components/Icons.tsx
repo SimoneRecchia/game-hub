@@ -446,6 +446,16 @@ export const IconMatita = (p: IconProps) => (
   </Svg>
 )
 
+/** Il timbro: il pomello, il collo, la base, e la riga d'inchiostro che lascia. Lo stop di Nomi, cose e città. */
+export const IconTimbro = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx="12" cy="5.5" r="2.5" />
+    <path d="M10.5 8v3M13.5 8v3" />
+    <rect x="5" y="11" width="14" height="4.5" rx="1.5" />
+    <path d="M5 19.5h14" />
+  </Svg>
+)
+
 /** La freccia che torna indietro: annulla. */
 export const IconAnnulla = (p: IconProps) => (
   <Svg {...p}>
