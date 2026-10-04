@@ -489,60 +489,124 @@ con `spicchio` NULL perché la disposizione era un'altra, e non l'ha tolta,
 perché una migrazione che cancella vorrebbe un backup.
 
 **Vince il banco, come nel Crazy Time vero, e i test lo tengono fermo.**
-Quindici spicchi (`SPICCHI_RUOTA` in `shared/ruota.ts`), non i cinquantaquattro
-della ruota vera: sette BANCO, tre QUIZ, tre MONETA, il triplo e la FORTUNA. Il
-triplo sta in cima, dove la ruota e' ferma prima del primo giro, e la fortuna di
-fronte; i banchi si alternano agli altri spicchi, con i quiz da una parte e le
-monete dall'altra. La puntata si paga al lancio — il giro nasce con
-`delta = -puntata` — e un minigioco vinto la restituisce moltiplicata
-(`vincitaDi`, per difetto), quindi non c'e' uno spicchio che lascia tutto
-com'e': sarebbe il banco con un altro nome. Il triplo la restituisce per tre
-subito, senza minigioco (`MOLTIPLICATORE_FISSO`); il quiz porta alla ruota del
-quiz e poi alla domanda, e una risposta sbagliata perde tutta la puntata,
-qualunque sia il moltiplicatore; la moneta porta uno dei quattro moltiplicatori
-di `MOLTIPLICATORI_MONETA`, deciso con il giro, che il blu paga e il rosso no;
-la fortuna fa girare la ruota fortunata (vedi sotto). Chi risponde sempre giusto
-riceve in media il 97,07% di quel che punta (`resa`), quanto alla roulette; chi
-risponde giusto a tre domande su quattro l'86%, chi tira a indovinare il 63%:
-nemmeno chi sa tutto batte il banco, come nel Crazy Time vero (dal 94 al 96%).
-La resa si conta dagli spicchi (`valoreDi`: la moneta e' blu una volta su due,
-la fortuna vale la media della ruota fortunata), quindi segue da sola ogni
-spicchio e ogni moltiplicatore, e `shared/__tests__/ruota.test.ts` la tiene
-ferma: rifatta a mano, fra il 97 e il 97,1% per chi sa, sotto la puntata per
-tutti, e in punti interi a ogni puntata fino a duemila. Lo stesso file tiene le
-disposizioni: il triplo in cima, mai due banchi o due quiz vicini, mai piu' di
-tre spicchi fra un banco e l'altro, e mai due moltiplicatori uguali vicini sulla
-ruota del quiz, nemmeno su quella fortunata. Si puo' avere fortuna una volta, e
-giocando a lungo si perde: e' quel che si vuole, perché la ruota insegni che
-vince il banco. Le regole lo dicono in una riga, con la resa, e niente scritte
-sulla ludopatia: e' una scelta, la lezione la da' la ruota.
+Venti spicchi (`SPICCHI_RUOTA` in `shared/ruota.ts`), non i cinquantaquattro
+della ruota vera: cinque BANCO, sei SPLIT, tre QUIZ, due MONETA, il triplo, la
+FORTUNA, il PACHINKO e il CASH HUNT. Il triplo sta in cima, dove la ruota e'
+ferma prima del primo giro, e la fortuna di fronte. I nove spicchi speciali
+stanno ognuno fra due semplici, un banco o uno split, mai due banchi o due
+split vicini, i quiz ad almeno sei spicchi l'uno dall'altro e le due monete una
+di fronte all'altra: sulla ruota di prima i quiz stavano tutti da una parte e
+le monete tutte dall'altra, e i banchi erano sette su quindici. La puntata si
+paga al lancio — il giro nasce con `delta = -puntata` — e quel che esce la
+restituisce moltiplicata (`vincitaDi`, per difetto). Il triplo la restituisce
+per tre e lo split a meta', subito, senza minigioco (`pagaSubito`); il quiz
+porta alla ruota del quiz e poi alla domanda, e una risposta sbagliata perde
+tutta la puntata, qualunque sia il moltiplicatore; la moneta porta uno dei
+quattro moltiplicatori di `MOLTIPLICATORI_MONETA`, deciso con il giro, che il
+blu paga e il rosso no; il Pachinko e il Cash Hunt hanno i loro (vedi sotto);
+la fortuna fa girare la ruota fortunata. Nessun esito ridà la puntata com'era,
+che sarebbe il banco con un altro nome: un premio la restituisce con qualcosa
+in piu', lo split e il ×0,5 dei minigiochi con la meta' in meno. Chi risponde
+sempre giusto riceve in media il 97,12% di quel che punta (`resa`), quanto alla
+roulette e come la slot e il blackjack; chi risponde giusto a tre domande su
+quattro l'89%, a una su due l'81%, chi tira a indovinare il 74%: nemmeno chi sa
+tutto batte il banco, come nel Crazy Time vero (dal 94 al 96%). La resa si
+conta dagli spicchi (`valoreDi`: lo split vale la meta', la moneta e' blu una
+volta su due, il Pachinko pesa ogni buca per le strade che ci portano, il Cash
+Hunt vale la media del muro, la fortuna la media della ruota fortunata), quindi
+segue da sola ogni spicchio e ogni moltiplicatore, e
+`shared/__tests__/ruota.test.ts` la tiene ferma: rifatta a mano, fra il 96,8 e
+il 97,4% per chi sa, sotto la puntata per tutti, e in punti interi a ogni
+puntata fino a duemila. Lo stesso file tiene le disposizioni delle ruote e i
+conti dei minigiochi. Si puo' avere fortuna una volta, e giocando a lungo si
+perde: e' quel che si vuole, perché la ruota insegni che vince il banco. Le
+regole lo dicono in una riga, con la resa, e niente scritte sulla ludopatia:
+e' una scelta, la lezione la da' la ruota.
+
+**Lo split e' una perdita vestita da vincita, di proposito.** Sei spicchi su
+venti restituiscono subito meta' della puntata, per difetto, e si raccontano
+come una vincita: le luci della festa, l'adesivo d'oro "Split" con la moneta
+tagliata, il suo suono (`split`), un po' di monete che tornano al saldo, che
+sale quando arrivano, e "+5 vinti" sul mozzo, che dice quel che e' tornato e
+non il conto del giro. E' la ciliegia sola della slot (vedi sotto), le "losses
+disguised as wins" delle slot vere: chi gioca la ricorda come una vincita, ed e'
+quel che tiene incollati. Il saldo non mente: era sceso della puntata al lancio,
+e risale della meta'; il travestimento sta solo nel racconto. Lo stesso vale
+per il ×0,5 del Pachinko e del Cash Hunt. Sulla ruota fortunata lo split
+diventa ×1,5, un premio vero, e resta rosa: si vede che cosa ha portato la
+fortuna.
 
 **Il giro salva la disposizione delle ruote** (`disposizione`,
 `DISPOSIZIONE_RUOTA`): i giri di una disposizione di prima contano nel saldo e
 non si mostrano, perché lo stesso indice adesso e' un altro spicchio, e una loro
 sfida rimasta aperta non si gioca piu' (`NESSUN_GIRO`): la chiude il giro dopo,
-con il `delta` che aveva gia', cioe' persa. La 4 e' quella della fortuna e della
-ruota del quiz, e vale per tutte e tre le ruote: chi cambia uno spicchio, la
-ruota fortunata o un moltiplicatore del quiz la deve far salire. Come la 3,
-quella del triplo, non ha voluto una migrazione: il minigioco sta nel giro in
-JSON (`sfida`), e i campi nuovi ci stanno senza toccare la tabella. La `0025`,
-che ha portato la 2, aveva chiuso come perse le sfide rimaste aperte.
+con il `delta` che aveva gia', cioe' persa. La 5 e' quella dei venti spicchi,
+con lo split, il Pachinko e il Cash Hunt, e vale per le ruote e per i
+minigiochi: chi cambia uno spicchio, la ruota fortunata, un moltiplicatore del
+quiz, una buca o una casella la deve far salire. Come la 3 e la 4 non ha voluto
+una migrazione: il minigioco sta nel giro in JSON (`sfida`), e i campi nuovi,
+la strada della pallina, il muro e la casella scelta, ci stanno senza toccare
+la tabella. La `0025`, che ha portato la 2, aveva chiuso come perse le sfide
+rimaste aperte.
 
 **La fortuna gira la ruota fortunata: gli stessi spicchi, con i premi saliti.**
-`SPICCHI_FORTUNATI` ha i quindici posti della ruota: il triplo diventa ×10 e la
-fortuna ×5, dei sette banchi due restano, due diventano ×3 e tre quiz; il quiz e
-la moneta restano dove sono, ma portano i moltiplicatori della fortuna. Quelli
-del quiz salgono ognuno di un gradino (`FORTUNATO`: ×1,25 a ×1,5, ×1,5 a ×2,
-×1,75 a ×2,5, ×2 a ×3, ×3 a ×5, ×4 a ×10), e la moneta paga ×2, ×3, ×4 o ×5
-(`MOLTIPLICATORI_MONETA_FORTUNATA`). Non e' un giro nuovo: e' lo stesso giro,
-con la stessa puntata. La fortuna lascia il giro in `sfida`, e `/ruota/fortuna`
-pesca lo spicchio fortunato e lo scrive nella sfida (`fortunata`); un premio o
-il banco chiudono il giro, la moneta e il quiz lo portano avanti con i
-moltiplicatori della fortuna. Si gira una volta: richiederla ridà quel che e'
-uscito, e l'`UPDATE` e' condizionato alla sfida appena letta, così due tocchi
-insieme non la girano due volte. Una pagina riaperta la ritrova da girare. A chi
-sa tutto la ruota fortunata restituisce in media 2,97 volte la puntata: poco
-meno del triplo, che e' l'unico premio sicuro, e un test lo tiene.
+`SPICCHI_FORTUNATI` ha i venti posti della ruota: il triplo diventa ×10 e la
+fortuna ×5; dei cinque banchi due restano, i due accanto al Pachinko e al Cash
+Hunt diventano ×3 e l'ultimo un quiz, e due quiz o due banchi non si toccano
+mai; ogni split diventa ×1,5. Il quiz, la moneta, il Pachinko e il Cash Hunt
+restano dove sono, ma portano i moltiplicatori della fortuna. Quelli del quiz
+salgono ognuno di un gradino (`FORTUNATO`: ×1,25 a ×1,5, ×1,5 a ×2, ×1,75 a
+×2,5, ×2 a ×3, ×3 a ×5, ×4 a ×10), la moneta paga ×2, ×3, ×4 o ×5
+(`MOLTIPLICATORI_MONETA_FORTUNATA`), e nelle buche e nelle caselle il ×0,5
+diventa ×1,5 e ogni altro raddoppia, fino al ×30 del Pachinko e al ×10 del Cash
+Hunt. Non e' un giro nuovo: e' lo stesso giro, con la stessa puntata. La
+fortuna lascia il giro in `sfida`, e `/ruota/fortuna` pesca lo spicchio
+fortunato e lo scrive nella sfida (`fortunata`); un premio o il banco chiudono
+il giro, i minigiochi lo portano avanti con i moltiplicatori della fortuna. Si
+gira una volta: richiederla ridà quel che e' uscito, e l'`UPDATE` e'
+condizionato alla sfida appena letta, così due tocchi insieme non la girano due
+volte. Una pagina riaperta la ritrova da girare. A chi sa tutto la ruota
+fortunata restituisce in media 2,62 volte la puntata: meno del triplo, che e'
+l'unico premio sicuro, e un test lo tiene.
+
+**Il Pachinko: una pallina, otto file di pioli, nove buche.** La pallina cade
+dal mezzo, e a ogni fila va a sinistra o a destra una volta su due: la buca e'
+quante volte e' andata a destra (`bucaDi`), quindi le strade sono quelle del
+triangolo di Tartaglia, 1, 8, 28, 56, 70, 56, 28, 8 e 1 su 256
+(`STRADE_PACHINKO`). Le buche da sinistra pagano ×15, ×4, ×2, ×1,5, ×0,5, ×1,5,
+×2, ×4 e ×15 (`MOLTIPLICATORI_PACHINKO`): in mezzo la piu' facile e la piu'
+povera, ai lati le piu' rare e le piu' ricche, in media 409/256 della puntata;
+dalla fortuna ×30, ×8, ×4, ×3 e ×1,5, in media 853/256. Nessuna buca ridà la
+puntata com'era. La strada la pesca il server quando si lancia
+(`/ruota/pachinko`, otto volte `aCaso(2)`), la scrive nel giro e lo chiude
+nello stesso `UPDATE` condizionato, con `riconta`, come la moneta: prima del
+lancio non esiste da nessuna parte, e chiederlo ancora ridà la strada di prima.
+Il tabellone (`Pachinko` in `src/games/ruota/`) fa cadere la pallina lungo
+quella strada, piolo dopo piolo, con due animazioni dello stesso tempo: di lato
+dritta da un piolo all'altro, in alto e in basso con il rimbalzo e la ricaduta,
+così l'arco e' quello di una cosa che cade. Ogni piolo toccato si accende e
+suona, un po' piu' alto del precedente (`pallina`); poi la buca si accende, e
+arriva l'adesivo, o la festa dal ×5. Si lancia con il bottone del pannello o
+toccando il tabellone. Dalla fortuna il tabellone arriva con le buche di
+sempre, e salgono come la ruota del quiz, i due ×15 per ultimi, contando fino
+al ×30 di tre in tre; solo dopo si lancia.
+
+**Il Cash Hunt: dodici caselle coperte e mescolate, e se ne sceglie una.** Il
+muro ha ×0,5 cinque volte, ×1,5 tre, ×2 due, ×3 e ×5 una (`MURO_CASH_HUNT`,
+in media 19/12 della puntata); dalla fortuna ×1,5, ×3, ×4, ×6 e ×10, in media
+3,375. Quando la ruota ci si ferma il server mescola il muro (`mescolaMuro`,
+con `aCaso`) e lo salva nel giro; chi gioca ne riceve solo i valori, dal piu'
+grande, e i posti mai prima di aver scelto: chiunque potrebbe leggere dov'e' il
+×5. `/ruota/cashhunt` con la casella chiude il giro con il moltiplicatore che
+c'e' sotto, e da li' il muro intero si vede; un'altra scelta ridà la prima, e
+una casella che non c'e' e' un 400. Il muro (`CashHunt`) si vede scoperto, poi
+le caselle si girano, ognuna con il suo simbolo, e si mescolano in tre giri: la
+mescolata si vede soltanto, il muro vero l'ha gia' mescolato il server.
+Toccata una casella, si gira e si fa grande, poi si girano le altre a onde, e
+si vede che cosa c'era. Le caselle sono bottoni con il nome del simbolo, e le
+frecce passano dall'una all'altra; sul telefono in piedi il muro ha tre
+colonne, di traverso quattro. Dalla fortuna il muro arriva scoperto con i
+valori di sempre, che salgono prima di coprirsi, il ×5 per ultimo fino al ×10.
 
 **La ruota del quiz ha dodici categorie, e le pesca il server a ogni giro.**
 Quando la ruota si ferma sul quiz il server sceglie le categorie dei dodici
@@ -569,16 +633,18 @@ domanda della slot.
 spicchio si pesca con `crypto.getRandomValues` (con lo scarto, perché il resto
 di una divisione favorirebbe i primi), e il browser fa solo girare le ruote fin
 li': il lancio col dito chiede `/ruota/gira`, e la risposta ha gia' l'esito, con
-il moltiplicatore della moneta e le categorie della ruota del quiz. Cosi' anche
-la ruota fortunata (`/ruota/fortuna`) e quella del quiz (`/ruota/quiz`), che a
-una seconda richiesta ridanno lo stesso spicchio, e la moneta: il lato a
-`/moneta`, che non porta niente. La puntata e' persa dal lancio: chi chiude la
-pagina davanti a una domanda difficile non si salva, e il giro dopo la chiude
-cosi' com'e'. `/domanda` vuole la ruota del quiz girata (`RUOTA_QUIZ`, 409), e
-la domanda e' quella del quiz, con le stesse regole del tempo: `/domanda` scrive
-`aperta_at`, la risposta vale entro il limite piu' `MARGINE_RETE_MS`, e una
-domanda rimasta aperta la chiude la prima `GET`. Ogni scrittura e' condizionata
-allo stato appena letto.
+il moltiplicatore della moneta, le categorie della ruota del quiz e il muro del
+Cash Hunt, che resta sul server. Cosi' anche la ruota fortunata
+(`/ruota/fortuna`) e quella del quiz (`/ruota/quiz`), che a una seconda
+richiesta ridanno lo stesso spicchio, la moneta, con il lato a `/moneta`, che
+non porta niente, e la pallina del Pachinko, con la strada a `/pachinko`. La
+puntata e' persa dal lancio: chi chiude la pagina davanti a una domanda
+difficile, a una pallina o a un muro non si salva, e il giro dopo li chiude
+cosi' come sono. `/domanda` vuole la ruota del quiz girata (`RUOTA_QUIZ`, 409),
+e la domanda e' quella del quiz, con le stesse regole del tempo: `/domanda`
+scrive `aperta_at`, la risposta vale entro il limite piu' `MARGINE_RETE_MS`, e
+una domanda rimasta aperta la chiude la prima `GET`. Ogni scrittura e'
+condizionata allo stato appena letto.
 
 **Le domande di Crazy Time si fanno la notte, con quelle del quiz.**
 `scripts/genera-quiz.ts` scrive in `ruota_domande` trenta domande per ognuna
@@ -630,14 +696,26 @@ Crazy Time vero: si leggono quando lo spicchio e' sotto la lancetta, e le parole
 lunghe si stringono (`textLength`) invece di uscire dallo spicchio; sulla ruota
 del quiz il nome della categoria corre accanto al moltiplicatore (`scarto`). Le
 icone restano dritte, e i numeri dei premi della ruota grande con loro: sono
-quel che si guarda. Il quiz ha un'icona sola, il fumetto con il punto di domanda
-(`IconaQuiz`), e la fortuna il quadrifoglio. La meta che c'e' quando la ruota
-compare e' dove sta gia' ferma, quindi tornando da un minigioco la ruota non
-rigira: sta sullo spicchio uscito, con l'esito sul mozzo. Ogni chiave nuova e'
-un giro, anche sullo stesso spicchio. Con la tastiera si lancia con Invio o lo
-spazio, e senza animazioni la ruota va subito dove deve. La domanda arriva a
-parte con la carta, le risposte e la cartina del quiz (`DomandaRuota`), che
-servono solo quando si arriva a una domanda.
+quel che si guarda. Lo split ha la moneta tagliata in due (`IconaSplit`), il
+quiz il fumetto con il punto di domanda (`IconaQuiz`), il Pachinko la pallina
+sui pioli, il Cash Hunt il mirino, la fortuna il quadrifoglio. Le facce della
+ruota grande si misurano in `misureDi`, e non nel disegno: le icone tutte nello
+stesso quadrato verso il bordo, e sotto, con uno stacco, la scritta, della
+stessa dimensione per tutti gli spicchi con l'icona; il banco dal bordo al
+mozzo; i premi il numero dritto, grande quanto sta nella larghezza dello
+spicchio, e sotto il nome, se ce l'hanno (il ×1,5 della fortuna no). La
+larghezza di una scritta si stima lettera per lettera e per eccesso
+(`larghezzaStimata`): con la stima di prima, per difetto, la scritta della
+fortuna non si stringeva e finiva sotto il quadrifoglio. Un test
+(`src/games/ruota/__tests__/geometria.test.ts`) controlla che l'icona e la
+scritta non si tocchino, che l'icona stia nella larghezza dello spicchio dove
+sta e la scritta in quella dove finisce, verso il mozzo. La meta che c'e'
+quando la ruota compare e' dove sta gia' ferma, quindi tornando da un minigioco
+la ruota non rigira: sta sullo spicchio uscito, con l'esito sul mozzo. Ogni
+chiave nuova e' un giro, anche sullo stesso spicchio. Con la tastiera si lancia
+con Invio o lo spazio, e senza animazioni la ruota va subito dove deve. La
+domanda arriva a parte con la carta, le risposte e la cartina del quiz
+(`DomandaRuota`), che servono solo quando si arriva a una domanda.
 
 **La fortuna trasforma la ruota sul posto.** Quando la ruota si ferma sulla
 fortuna il quadrifoglio salta fuori dal mozzo (`ColpoDiFortuna`, `COLPO_MS`),
@@ -652,30 +730,43 @@ spicchio, `incasso` a ogni passo del conto, `magia` all'ultimo — cosi' si sent
 quel che si vede. Dalla ruota fortunata al quiz, la ruota del quiz arriva con i
 moltiplicatori di sempre, e solo dopo salgono, uno dopo l'altro dal piu'
 piccolo, con il ×4 che conta fino al ×10: si vede che cosa ha portato la
-fortuna. Il nastro (`NastroFortuna`) dice "Ruota fortunata", "Quiz fortunato" o
-"Moneta fortunata" finché la fortuna dura, e dopo l'esito la ruota torna quella
-di sempre. Senza animazioni la ruota diventa fortunata di colpo, con il suono
-della magia; una pagina riaperta a fortuna in corso la trova gia' fortunata.
+fortuna. Lo stesso fanno le buche del Pachinko e le caselle del Cash Hunt, con
+la stessa magia (`aumento` in `magia.ts`). Il nastro (`NastroFortuna`) dice
+"Ruota fortunata", "Quiz fortunato", "Moneta fortunata", "Pachinko fortunato"
+o "Cash Hunt fortunato" finché la fortuna dura, e dopo l'esito la ruota torna
+quella di sempre. Al neon, sui palchi alti, il carattere si stringe quanto
+serve a starci, dalla lunghezza stimata della scritta (`--nastro-em`): gli
+ultimi due, alla misura di "Ruota fortunata", uscivano dai lati del palco. Sui
+palchi bassi il nastro sta in un angolo, e davanti al Pachinko e al Cash Hunt
+non c'e' (`is-tabellone`): arrivano fino all'angolo, e copriva il ×5 del muro.
+Senza animazioni la ruota diventa fortunata di colpo, con il suono della
+magia; una pagina riaperta a fortuna in corso la trova gia' fortunata.
 
 **Dal triplo c'e' la festa.** `FestaRuota` (`src/games/ruota/Festa.tsx`) prende
 lo schermo come la festa della slot: la sala si spegne, girano i raggi,
 l'insegna con le lampadine porta il moltiplicatore enorme, d'oro e con lo
 spessore, e la vincita conta da zero con le monete che tintinnano sempre piu'
-alte. Tre gradini (`festaDi`): il triplo; il ×5, con i raggi che girano anche al
-contrario, la pioggia di monete e l'onda d'urto; il ×10, il premio piu' grande,
-con il terremoto, i fuochi d'artificio e una seconda onda. Quel che viene dalla
-fortuna ha il verde e l'oro, e i quadrifogli che volano con le monete. I premi
-fissi hanno sempre la festa; una moneta o una domanda vinta solo dal ×5
-(`FESTA_MINIGIOCO`): il ×3 della moneta esce una moneta su otto, e una festa
-cosi' frequente smetterebbe di dire qualcosa. Sotto, l'adesivo d'oro e la
+alte. Tre gradini (`festaDi`): dal triplo; dal ×5, con i raggi che girano anche
+al contrario, la pioggia di monete e l'onda d'urto; dal ×10, il decuplo della
+ruota fortunata e i ×15 e ×30 del Pachinko, con il terremoto, i fuochi
+d'artificio e una seconda onda. L'insegna dice il nome del moltiplicatore, o
+quante volte, se un nome non ce l'ha (`nomeDellaFesta`: "15 VOLTE"). Quel che
+viene dalla fortuna ha il verde e l'oro, e i quadrifogli che volano con le
+monete. I premi fissi dal triplo in su hanno sempre la festa, il ×1,5 della
+fortuna l'adesivo; una moneta, una domanda, una buca o una casella vinta solo
+dal ×5 (`FESTA_MINIGIOCO`): il ×3 della moneta esce una moneta su otto, e una
+festa cosi' frequente smetterebbe di dire qualcosa. Sotto, l'adesivo d'oro e la
 pioggia di monete. Monete, quadrifogli e fuochi sono un canvas con un seme fisso
 per gradino, come nella slot. Un tocco finisce il conto, un altro chiude, e
 finita la festa le monete vanno al saldo.
 
 **Crazy Time si gioca di fila, e ogni passaggio ha la sua scena.** Il palco e'
-scuro in tutti e due i temi, come una sala, e tiene tre scene una sopra l'altra
-— la ruota, la ruota del quiz, la moneta — mentre la domanda prende la pagina
-intera, come nel quiz; la ruota fortunata non e' una scena, e' la ruota stessa.
+scuro in tutti e due i temi, come una sala, e tiene cinque scene una sopra
+l'altra — la ruota, la ruota del quiz, la moneta, il Pachinko e il Cash Hunt —
+mentre la domanda prende la pagina intera, come nel quiz; la ruota fortunata
+non e' una scena, e' la ruota stessa. Una pagina riaperta davanti a un
+Pachinko o a un Cash Hunt li riprende senza preamboli (`ripresa`): la pallina
+pronta, o le caselle gia' coperte da scegliere.
 Fra una scena e l'altra passa un intermezzo (`Intermezzo`: raggi, un lampo e
 l'insegna del minigioco; la scena cambia sotto l'insegna), e le lampadine della
 cornice dicono il momento: a turno in attesa, una corsa mentre gira, a raffica
@@ -689,30 +780,31 @@ un sussulto del palco. Dopo un giro il pannello torna alla puntata, che resta
 quella di prima finché non la si cambia, come al tavolo. Il tabellone in cima
 dice il saldo e la puntata; nella scheda della Fortuna la carta dice quanto si
 puo' puntare, o dove aspetta una sfida aperta ("Ruota fortunata", "Quiz",
-"Moneta"), e non ha l'anello, perché Crazy Time non finisce: c'e' solo finché
-mancano i punti per la prima puntata. La ruota si riprende in mano
-`INTERVALLO_GIRI_MS` dopo il lancio: senza animazioni si fermerebbe subito, e il
-server direbbe di no.
+"Moneta", "Pachinko", "Cash Hunt"), e non ha l'anello, perché Crazy Time non
+finisce: c'e' solo finché mancano i punti per la prima puntata. La ruota si
+riprende in mano `INTERVALLO_GIRI_MS` dopo il lancio: senza animazioni si
+fermerebbe subito, e il server direbbe di no.
 
 **La puntata e la vincita si vedono andare e venire.** Al lancio una pila di
 fiches vola dal saldo al mozzo, che diventa una fiche "in gioco", e il saldo
 scende subito della puntata: e' quel che succede davvero, perché il giro nasce
 con la puntata gia' tolta. Alla ruota fortunata la fiche e' gia' sul mozzo, e il
 saldo non si muove. Quando la ruota si ferma una vincita torna al saldo in
-monete — dal mozzo, o dalla moneta caduta sul blu — e il saldo sale quando
-arriva la prima; al banco le fiches cadono dal mozzo, e il mozzo dice quanto si
-e' vinto o perso. Fino ad allora il tabellone resta su quel che si e' visto
-(`conto`), poi un lampo d'oro o rosso accompagna il conto nuovo. Una domanda
-vinta o persa si racconta cosi' tornando alla ruota (`RITORNO_MS`). I voli sono
-elementi del body animati con le Web Animations (`src/games/fortuna/voli.ts`,
-che usa anche la slot), sotto gli adesivi, che dicono il momento: passare dallo
-stato di React ridisegnerebbe la pagina a ogni fotogramma. Durante la domanda la
-pagina della ruota resta montata e nascosta (`hidden`): rimontarla farebbe
-ricontare il tabellone da zero e ridisegnare le ruote. Ogni risposta del server
-passa da `aggiorna`, che scrive subito lo stato nuovo anche in `ultimo`: senza
-animazioni la ruota e la moneta si fermano dentro il loro effetto, che React fa
-girare prima di quello della pagina, e leggerebbero il giro di prima, come i
-rulli della slot (vedi sotto).
+monete — dal mozzo, dalla moneta caduta sul blu, dalla buca della pallina o
+dalla casella scelta — e il saldo sale quando arriva la prima; anche la meta'
+dello split torna cosi', in poche monete. Al banco le fiches cadono dal mozzo,
+e il mozzo dice quanto si e' vinto o perso. Fino ad allora il tabellone resta
+su quel che si e' visto (`conto`), poi un lampo d'oro o rosso accompagna il
+conto nuovo. Una domanda vinta o persa si racconta cosi' tornando alla ruota
+(`RITORNO_MS`). I voli sono elementi del body animati con le Web Animations
+(`src/games/fortuna/voli.ts`, che usa anche la slot), sotto gli adesivi, che
+dicono il momento: passare dallo stato di React ridisegnerebbe la pagina a ogni
+fotogramma. Durante la domanda la pagina della ruota resta montata e nascosta
+(`hidden`): rimontarla farebbe ricontare il tabellone da zero e ridisegnare le
+ruote. Ogni risposta del server passa da `aggiorna`, che scrive subito lo stato
+nuovo anche in `ultimo`: senza animazioni la ruota e la moneta si fermano
+dentro il loro effetto, che React fa girare prima di quello della pagina, e
+leggerebbero il giro di prima, come i rulli della slot (vedi sotto).
 
 **La slot rende come Crazy Time, e fa vincere come le slot vere.** Tre rulli di
 quaranta fermate, tre righe in vista e una linea (`shared/slot.ts`). Sulla linea

@@ -5,7 +5,11 @@ import {
   MOLTIPLICATORE_FISSO,
   MOLTIPLICATORI_MONETA,
   MOLTIPLICATORI_MONETA_FORTUNATA,
+  MOLTIPLICATORI_PACHINKO,
+  MOLTIPLICATORI_PACHINKO_FORTUNATI,
   MOLTIPLICATORI_QUIZ,
+  MURO_CASH_HUNT,
+  MURO_CASH_HUNT_FORTUNATO,
   PUNTATA_MINIMA,
   SPICCHI_FORTUNATI,
   SPICCHI_QUIZ,
@@ -24,15 +28,32 @@ const RESA = Math.round(resa(1) * 100)
 /** Gli spicchi delle due ruote, contati: una riga per specie, nell'ordine in cui si leggono le regole. */
 const chiave = (s: Spicchio) => (s.tipo === 'fisso' ? etichettaDi(s) : s.tipo)
 const SPECIE: Array<{ nome: string; chiave: string }> = [
-  { nome: 'Banco', chiave: 'banco' },
-  { nome: 'Quiz', chiave: 'quiz' },
-  { nome: 'Moneta', chiave: 'moneta' },
-  { nome: 'Fortuna', chiave: 'fortuna' },
-  ...[3, 5, 10].map((m) => ({ nome: scriviMoltiplicatore(m), chiave: scriviMoltiplicatore(m) })),
+  ...(['banco', 'split', 'quiz', 'moneta', 'pachinko', 'cashhunt', 'fortuna'] as const).map((tipo) => ({
+    nome: nomeDi({ tipo }),
+    chiave: tipo,
+  })),
+  ...[1.5, 3, 5, 10].map((m) => ({ nome: scriviMoltiplicatore(m), chiave: scriviMoltiplicatore(m) })),
 ]
 const quanti = (spicchi: readonly Spicchio[], k: string) => spicchi.filter((s) => chiave(s) === k).length
 
 const elenco = (xs: readonly number[]) => xs.map(scriviMoltiplicatore).join(', ')
+
+/** Le buche del Pachinko da un lato al mezzo: sono le stesse dall'altro lato. "1ª e 9ª", fino alla "5ª". */
+const N_BUCHE = MOLTIPLICATORI_PACHINKO.length
+const BUCHE = MOLTIPLICATORI_PACHINKO.slice(0, Math.ceil(N_BUCHE / 2)).map((m, k) => ({
+  nome: k === N_BUCHE - 1 - k ? `${k + 1}ª` : `${k + 1}ª e ${N_BUCHE - k}ª`,
+  m,
+  fortunato: MOLTIPLICATORI_PACHINKO_FORTUNATI[k],
+}))
+
+/** Le caselle del Cash Hunt, dal moltiplicatore piu' piccolo, con quante sono. */
+const CASELLE = [...new Set(MURO_CASH_HUNT)]
+  .sort((a, b) => a - b)
+  .map((m) => ({
+    m,
+    quante: MURO_CASH_HUNT.filter((x) => x === m).length,
+    fortunato: MURO_CASH_HUNT_FORTUNATO[MURO_CASH_HUNT.indexOf(m)],
+  }))
 
 export function ComeSiGiocaRuota({ open, onClose }: { open: boolean; onClose: () => void }) {
   const valori = [...new Set(MOLTIPLICATORI_QUIZ)].sort((a, b) => a - b)
@@ -52,6 +73,9 @@ export function ComeSiGiocaRuota({ open, onClose }: { open: boolean; onClose: ()
               <strong>Banco</strong>: vince il banco, e la puntata è persa.
             </li>
             <li>
+              <strong>Split</strong>: torna metà della puntata, subito.
+            </li>
+            <li>
               <strong>{nomeDi(SPICCHI_RUOTA[0])}</strong>: la puntata torna per {MOLTIPLICATORE_FISSO}, subito.
             </li>
             <li>
@@ -63,6 +87,14 @@ export function ComeSiGiocaRuota({ open, onClose }: { open: boolean; onClose: ()
               la moneta e la lanci: blu vinci, rosso vince il banco.
             </li>
             <li>
+              <strong>Pachinko</strong>: lanci la pallina, che cade fra i pioli in una delle nove buche: vinci la
+              puntata per il suo moltiplicatore.
+            </li>
+            <li>
+              <strong>Cash Hunt</strong>: dodici caselle si coprono e si mescolano. Ne scegli una, e vinci la puntata
+              per il moltiplicatore che c’è sotto.
+            </li>
+            <li>
               <strong>Fortuna</strong>: la ruota diventa la ruota fortunata, e la rigiri con la stessa puntata.
             </li>
           </ul>
@@ -71,8 +103,9 @@ export function ComeSiGiocaRuota({ open, onClose }: { open: boolean; onClose: ()
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">La ruota fortunata</h3>
           <p className="ruota-regole__testo">
-            Gli stessi spicchi, con i premi saliti: il triplo diventa ×10 e la fortuna ×5, due banchi diventano ×3 e tre
-            diventano quiz. Il quiz arriva fino al ×10, e la moneta porta {elenco(MOLTIPLICATORI_MONETA_FORTUNATA)}.
+            Gli stessi spicchi, con i premi saliti: il triplo diventa ×10, la fortuna ×5, gli split ×1,5, due banchi ×3
+            e uno quiz. Il quiz arriva fino al ×10, la moneta porta {elenco(MOLTIPLICATORI_MONETA_FORTUNATA)}, e i
+            premi del Pachinko e del Cash Hunt salgono.
           </p>
           <table className="ruota-regole">
             <thead>
@@ -88,6 +121,51 @@ export function ComeSiGiocaRuota({ open, onClose }: { open: boolean; onClose: ()
                   <td>{nome}</td>
                   <td className="u-tabnum">{quanti(SPICCHI_RUOTA, k) || '–'}</td>
                   <td className="u-tabnum">{quanti(SPICCHI_FORTUNATI, k) || '–'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        <section className="cru-aiuto__sezione">
+          <h3 className="cru-aiuto__titolo">Il Pachinko</h3>
+          <p className="ruota-regole__testo">Nove buche: le più ricche ai lati, la più facile in mezzo.</p>
+          <table className="ruota-regole">
+            <thead>
+              <tr>
+                <th>Buca</th>
+                <th>Ruota</th>
+                <th>Fortunata</th>
+              </tr>
+            </thead>
+            <tbody>
+              {BUCHE.map(({ nome, m, fortunato }) => (
+                <tr key={nome}>
+                  <td>{nome}</td>
+                  <td>{scriviMoltiplicatore(m)}</td>
+                  <td>{scriviMoltiplicatore(fortunato)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+
+        <section className="cru-aiuto__sezione">
+          <h3 className="cru-aiuto__titolo">Il Cash Hunt</h3>
+          <table className="ruota-regole">
+            <thead>
+              <tr>
+                <th>Caselle</th>
+                <th>Ruota</th>
+                <th>Fortunata</th>
+              </tr>
+            </thead>
+            <tbody>
+              {CASELLE.map(({ m, quante, fortunato }) => (
+                <tr key={m}>
+                  <td className="u-tabnum">{quante}</td>
+                  <td>{scriviMoltiplicatore(m)}</td>
+                  <td>{scriviMoltiplicatore(fortunato)}</td>
                 </tr>
               ))}
             </tbody>

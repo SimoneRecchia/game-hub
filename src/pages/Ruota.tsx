@@ -16,11 +16,15 @@ import { Button } from '@/components/Button'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
+import { CashHunt, type FaseCashHunt } from '@/games/ruota/CashHunt'
 import { ComeSiGiocaRuota } from '@/games/ruota/ComeSiGioca'
 import {
   DisegnoQuiz,
   DisegnoRuota,
+  IconaCashHunt,
+  IconaPachinko,
   IconaQuiz,
+  IconaSplit,
   Quadrifoglio,
   coloreDelMoltiplicatore,
   coloreDellaCategoria,
@@ -40,6 +44,7 @@ import {
   PASSI_RUOTA,
 } from '@/games/ruota/magia'
 import { Moneta } from '@/games/ruota/Moneta'
+import { Pachinko, type FasePachinko } from '@/games/ruota/Pachinko'
 import { RuotaFisica, type Meta, type Mozzo } from '@/games/ruota/RuotaFisica'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
@@ -50,6 +55,8 @@ import { suona } from '@/lib/suoni'
 import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
 import {
   INTERVALLO_GIRI_MS,
+  MOLTIPLICATORE_FISSO,
+  MOLTIPLICATORE_SPLIT,
   NOME_CRAZY_TIME,
   PUNTATA_MINIMA,
   SPICCHI_FORTUNATI,
@@ -64,7 +71,7 @@ import './Ruota.css'
 
 const DomandaRuota = lazy(() => import('@/games/ruota/DomandaRuota'))
 
-type NomeScena = 'ruota' | 'quiz' | 'moneta' | 'domanda'
+type NomeScena = 'ruota' | 'quiz' | 'moneta' | 'pachinko' | 'cashhunt' | 'domanda'
 type Luci = 'attesa' | 'vinto' | 'perso'
 type Quiz = Extract<SfidaRuotaVista, { tipo: 'domanda' }>
 
@@ -114,8 +121,8 @@ function centroDelMozzo(): Punto | null {
 function scenaDi(giro: GiroRuota | null): NomeScena {
   const sfida = giro?.sfida
   if (!giro || giro.stato === 'fatto' || !sfida || sfida.tipo === 'fortuna') return 'ruota'
-  if (sfida.tipo === 'moneta') return 'moneta'
-  return sfida.spicchioQuiz === null ? 'quiz' : 'domanda'
+  if (sfida.tipo === 'domanda') return sfida.spicchioQuiz === null ? 'quiz' : 'domanda'
+  return sfida.tipo
 }
 
 /** Lo spicchio dove si e' fermata la ruota grande nell'ultimo giro: quello della ruota fortunata, se c'e'. */
@@ -138,8 +145,13 @@ const NASTRI: Record<NomeScena, string> = {
   ruota: 'Ruota fortunata',
   quiz: 'Quiz fortunato',
   moneta: 'Moneta fortunata',
+  pachinko: 'Pachinko fortunato',
+  cashhunt: 'Cash Hunt fortunato',
   domanda: 'Quiz fortunato',
 }
+
+/** Quel che e' tornato al saldo da un giro chiuso: la vincita, la meta' dello split, o niente. */
+const tornatoDa = (g: GiroRuota) => g.delta + g.puntata
 
 /** Il quiz del giro, se il giro e' arrivato al quiz. */
 const quizDi = (giro: GiroRuota | null): Quiz | null => (giro?.sfida?.tipo === 'domanda' ? giro.sfida : null)
@@ -147,14 +159,16 @@ const quizDi = (giro: GiroRuota | null): Quiz | null => (giro?.sfida?.tipo === '
 /**
  * Crazy Time: si punta, si trascina la ruota e la si lascia andare. La puntata
  * si paga al lancio, e si vede: le fiches volano dal saldo alla ruota, e il
- * saldo scende. Il banco se la tiene, e le fiches scivolano via; il triplo la
- * restituisce per tre, con la festa; il quiz porta alla ruota del quiz e poi
- * alla domanda; la moneta alla moneta da lanciare. La fortuna fa saltare fuori
- * il quadrifoglio, e la ruota si trasforma sul posto nella ruota fortunata, con
- * i premi che salgono uno dopo l'altro; si rigira con la stessa puntata, e
- * dopo l'esito torna quella di sempre. Una vincita torna al saldo in monete,
- * che lo fanno salire quando arrivano. Ogni passaggio ha la sua transizione, e
- * finito il minigioco si torna alla ruota com'era, con l'esito sul mozzo.
+ * saldo scende. Il banco se la tiene, e le fiches scivolano via; lo split ne
+ * restituisce la meta', raccontata come una vincita; il triplo la restituisce
+ * per tre, con la festa; il quiz porta alla ruota del quiz e poi alla domanda;
+ * la moneta alla moneta da lanciare, il Pachinko al tabellone con la pallina, il
+ * Cash Hunt al muro delle caselle. La fortuna fa saltare fuori il quadrifoglio,
+ * e la ruota si trasforma sul posto nella ruota fortunata, con i premi che
+ * salgono uno dopo l'altro; si rigira con la stessa puntata, e dopo l'esito
+ * torna quella di sempre. Una vincita torna al saldo in monete, che lo fanno
+ * salire quando arrivano. Ogni passaggio ha la sua transizione, e finito il
+ * minigioco si torna alla ruota com'era, con l'esito sul mozzo.
  *
  * Il server decide tutto e risponde con lo stato intero, anche l'esito che la
  * ruota non ha ancora mostrato; qui si fa vedere nell'ordine giusto, e il
@@ -195,6 +209,11 @@ export default function RuotaPagina() {
   const [annullaMoneta, setAnnullaMoneta] = useState(0)
   const [conto, setConto] = useState<{ saldo: number; netto: number; giri: number } | null>(null)
   const [monetaCaduta, setMonetaCaduta] = useState(false)
+  // Il Pachinko e il Cash Hunt dicono a che punto sono, per il pannello.
+  const [faseP, setFaseP] = useState<FasePachinko>('pronta')
+  const [faseC, setFaseC] = useState<FaseCashHunt>('scoperto')
+  /** Il giro di un minigioco trovato aperto riaprendo la pagina: si riprende da dove serve, senza preamboli. */
+  const [ripresa, setRipresa] = useState<number | null>(null)
   const [regole, setRegole] = useState(false)
   const [pioggia, setPioggia] = useState(0)
   const [festa, setFesta] = useState<DatiFestaRuota | null>(null)
@@ -244,6 +263,7 @@ export default function RuotaPagina() {
           setFermaSuQ({ indice: quiz.spicchioQuiz, chiave: `q${g.n}` })
           setRivelato(true)
         }
+        if (g.stato !== 'fatto' && (g.sfida?.tipo === 'pachinko' || g.sfida?.tipo === 'cashhunt')) setRipresa(g.n)
       })
       .catch((e) => vivo && setErrore(e instanceof ApiFetchError ? e.message : 'Non riesco a caricare la ruota.'))
     return () => {
@@ -346,17 +366,54 @@ export default function RuotaPagina() {
     dopo(TORNA_MS, () => setModo('normale'))
   }
 
-  /** L'esito di un minigioco: la vincita con le monete, o il banco. Le vincite grandi hanno la festa, dopo. */
+  /**
+   * L'esito di un minigioco: la vincita con le monete, la meta' del ×0,5
+   * raccontata come una vincita, o il banco. Le vincite grandi hanno la festa,
+   * dopo.
+   */
   const annuncia = (g: GiroRuota) => {
     const palio = palioDi(g)
-    if (g.delta > 0 && palio) {
-      if (palio.moltiplicatore >= FESTA_MINIGIOCO) return
-      accoda(adesivoVincita(palio.vincita, g.puntata, palio.moltiplicatore))
-      setPioggia((p) => p + 1)
-      dopo(PIOGGIA_MS, () => setPioggia(0))
-    } else {
+    const torna = tornatoDa(g)
+    if (!palio || torna <= 0) {
       accoda(adesivoBanco(g.puntata))
+      return
     }
+    if (palio.moltiplicatore >= FESTA_MINIGIOCO) return
+    if (torna < g.puntata) {
+      accoda(adesivoMezzo(torna, g.puntata, palio.moltiplicatore))
+      return
+    }
+    accoda(adesivoVincita(torna, g.puntata, palio.moltiplicatore))
+    setPioggia((p) => p + 1)
+    dopo(PIOGGIA_MS, () => setPioggia(0))
+  }
+
+  /**
+   * L'esito del Pachinko e del Cash Hunt, che restituiscono sempre qualcosa: la
+   * festa dal ×5, se no l'adesivo; le monete partono da `da` verso il saldo, e
+   * poi si torna alla ruota.
+   */
+  const raccontaMinigioco = (g: GiroRuota, da: Punto | null, nome: string) => {
+    const palio = palioDi(g)
+    if (!palio) {
+      setConto(null)
+      dopo(MONETA_IN_VISTA_MS, allaRuota)
+      return
+    }
+    if (palio.moltiplicatore >= FESTA_MINIGIOCO) {
+      const fortunata = g.fortunata !== null
+      const { moltiplicatore, vincita } = palio
+      dopo(ridotto() ? 0 : 300, () =>
+        festeggia({ moltiplicatore, vincita, sotto: nome, fortunata }, () => {
+          incassa(moltiplicatore, da)
+          dopo(MONETA_IN_VISTA_MS - 1_000, allaRuota)
+        }),
+      )
+      return
+    }
+    annuncia(g)
+    incassa(palio.moltiplicatore, da)
+    dopo(MONETA_IN_VISTA_MS, allaRuota)
   }
 
   /* ───────────────────────────────  La ruota  ─────────────────────────────── */
@@ -437,6 +494,27 @@ export default function RuotaPagina() {
       if (fortunata) dopo(FORTUNA_IN_VISTA_MS, tornaNormale)
       return
     }
+    if (s.tipo === 'split') {
+      // Meta' della puntata torna, e si racconta come una vincita: le luci, l'adesivo d'oro, le monete al saldo.
+      setEsito(true)
+      setLuci('vinto')
+      accoda(adesivoSplit(tornatoDa(g)))
+      incassa(MOLTIPLICATORE_SPLIT, centroDelMozzo())
+      dopo(1_300, () => setLuci('attesa'))
+      return
+    }
+    if (s.tipo === 'fisso' && s.moltiplicatore < MOLTIPLICATORE_FISSO) {
+      // Il ×1,5 della ruota fortunata: un premio piccolo, con l'adesivo e la pioggia, senza la festa.
+      setEsito(true)
+      setLuci('vinto')
+      accoda(adesivoVincita(tornatoDa(g), g.puntata, s.moltiplicatore))
+      setPioggia((p) => p + 1)
+      dopo(PIOGGIA_MS, () => setPioggia(0))
+      incassa(s.moltiplicatore, centroDelMozzo())
+      dopo(1_300, () => setLuci('attesa'))
+      if (fortunata) dopo(FORTUNA_IN_VISTA_MS, tornaNormale)
+      return
+    }
     if (s.tipo === 'fisso') {
       setEsito(true)
       setLuci('vinto')
@@ -481,6 +559,19 @@ export default function RuotaPagina() {
           colore: 'var(--ct-moneta)',
           icona: <MonetaPiccola />,
           verso: 'moneta',
+        })
+        return
+      }
+      if (s.tipo === 'pachinko' || s.tipo === 'cashhunt') {
+        const pachinko = s.tipo === 'pachinko'
+        const nome = nomeDi(s)
+        setIntermezzo({
+          chiave: Date.now(),
+          titolo: fortunata ? `${nome} fortunato` : nome,
+          sotto: fortunata ? 'I premi salgono' : pachinko ? 'Lancia la pallina' : 'Scegli un simbolo',
+          colore: pachinko ? 'var(--ct-pachinko)' : 'var(--ct-cashhunt)',
+          icona: <IconaInsegna tipo={s.tipo} />,
+          verso: s.tipo,
         })
         return
       }
@@ -649,19 +740,64 @@ export default function RuotaPagina() {
     dopo(MONETA_IN_VISTA_MS, allaRuota)
   }
 
+  /* ───────────────────────────────  Il Pachinko  ─────────────────────────────── */
+
+  /** La pallina si lancia: la strada la decide il server, e finché non e' in buca il tabellone resta com'era. */
+  const lanciaPachinko = async () => {
+    if (stato) setConto({ saldo: stato.saldo, netto: stato.netto, giri: stato.giri })
+    const nuovo = await chiedi('/ruota/pachinko')
+    if (!nuovo?.giro) {
+      setConto(null)
+      return
+    }
+    aggiorna(nuovo)
+  }
+
+  const arrivoPachinko = () => {
+    const g = ultimo.current?.giro
+    if (!g) {
+      setConto(null)
+      return
+    }
+    raccontaMinigioco(g, centroDi(document.querySelector('.ct-pachinko__buca.is-uscita')), 'Pachinko')
+  }
+
+  /* ───────────────────────────────  Il Cash Hunt  ─────────────────────────────── */
+
+  /** La casella scelta va al server, che risponde con il muro intero: finché non si gira, il tabellone resta. */
+  const scegliCashHunt = async (casella: number) => {
+    if (stato) setConto({ saldo: stato.saldo, netto: stato.netto, giri: stato.giri })
+    const nuovo = await chiedi('/ruota/cashhunt', { scelta: casella })
+    if (!nuovo?.giro) {
+      setConto(null)
+      return
+    }
+    aggiorna(nuovo)
+  }
+
+  const rivelatoCashHunt = () => {
+    const g = ultimo.current?.giro
+    if (!g) {
+      setConto(null)
+      return
+    }
+    raccontaMinigioco(g, centroDi(document.querySelector('.ct-caccia__tessera.is-scelta')), 'Cash Hunt')
+  }
+
   /* ───────────────────────────────  La pagina  ─────────────────────────────── */
 
   const palio = palioDi(giro)
   const fortunata = modo === 'fortunata' || modo === 'magia'
-  // Sul mozzo: la puntata, poi la puntata in gioco, poi quel che e' tornato, o quel che si e' perso.
+  // Sul mozzo: la puntata, poi la puntata in gioco, poi quel che e' tornato — anche la meta' dello split, che si
+  // dice vinta come le altre vincite — o quel che si e' perso.
   const mozzo: Mozzo =
     inGioco !== null
       ? { testo: String(inGioco), sotto: 'in gioco' }
       : fortunaDaGirare && giro
         ? { testo: String(giro.puntata), sotto: 'in gioco' }
         : esito && giro?.stato === 'fatto'
-          ? giro.delta > 0
-            ? { testo: conSegno(giro.delta + giro.puntata), sotto: 'vinti', tono: 'piu' }
+          ? tornatoDa(giro) > 0
+            ? { testo: conSegno(tornatoDa(giro)), sotto: 'vinti', tono: 'piu' }
             : { testo: conSegno(-giro.puntata), sotto: 'persi', tono: 'meno' }
           : puoGirare
             ? { testo: String(scelta), sotto: 'puntata' }
@@ -684,6 +820,13 @@ export default function RuotaPagina() {
     modo === 'torna' ? ' is-torna' : ''
   }`
   const classeQuiz = `is-quiz${modoQ !== 'normale' ? ' is-fortunata' : ''}${modoQ === 'aumento' ? ' is-aumento' : ''}`
+  /** Il premio piu' grande del Pachinko o del Cash Hunt in scena: "fino al ×15". */
+  const finoAl =
+    sfida?.tipo === 'pachinko'
+      ? scriviMoltiplicatore(Math.max(...sfida.moltiplicatori))
+      : sfida?.tipo === 'cashhunt'
+        ? scriviMoltiplicatore(Math.max(...sfida.valori))
+        : ''
 
   return (
     <Pagina
@@ -734,7 +877,9 @@ export default function RuotaPagina() {
             <span className="ct-palco__insegna" aria-hidden="true">
               Crazy <span>Time</span>
             </span>
-            {stato && palcoFortunato && <NastroFortuna testo={NASTRI[scena]} />}
+            {stato && palcoFortunato && (
+              <NastroFortuna testo={NASTRI[scena]} tabellone={scena === 'pachinko' || scena === 'cashhunt'} />
+            )}
             {!stato ? (
               <div className="ct-palco__attesa" aria-hidden="true" />
             ) : (
@@ -802,6 +947,40 @@ export default function RuotaPagina() {
                     />
                   )}
                 </Scena>
+                <Scena attiva={scena === 'pachinko'} nome="pachinko">
+                  {sfida?.tipo === 'pachinko' && giro && (
+                    <Pachinko
+                      key={giro.n}
+                      moltiplicatori={sfida.moltiplicatori}
+                      fortunata={sfida.fortunata}
+                      percorso={sfida.percorso}
+                      via={scena === 'pachinko' && !intermezzo}
+                      subito={ripresa === giro.n}
+                      inVolo={inviando}
+                      lanciabile={scena === 'pachinko' && !intermezzo && giro.stato === 'sfida' && !inviando}
+                      onLancia={() => void lanciaPachinko()}
+                      onFase={setFaseP}
+                      onArrivo={arrivoPachinko}
+                    />
+                  )}
+                </Scena>
+                <Scena attiva={scena === 'cashhunt'} nome="cashhunt">
+                  {sfida?.tipo === 'cashhunt' && giro && (
+                    <CashHunt
+                      key={giro.n}
+                      valori={sfida.valori}
+                      fortunata={sfida.fortunata}
+                      muro={sfida.muro}
+                      scelta={sfida.scelta}
+                      via={scena === 'cashhunt' && !intermezzo}
+                      subito={ripresa === giro.n}
+                      inVolo={inviando}
+                      onScegli={(casella) => void scegliCashHunt(casella)}
+                      onFase={setFaseC}
+                      onRivelato={rivelatoCashHunt}
+                    />
+                  )}
+                </Scena>
               </>
             )}
             <Intermezzo
@@ -856,6 +1035,51 @@ export default function RuotaPagina() {
                   </span>
                   <span className="ct-lato is-rosso">Rosso · banco</span>
                 </span>
+              </Indicazione>
+            ) : scena === 'pachinko' && sfida?.tipo === 'pachinko' && giro ? (
+              <div className="ct-indicazione">
+                <p className="ct-indicazione__titolo">
+                  {faseP === 'caduta' && palio
+                    ? `${scriviMoltiplicatore(palio.moltiplicatore)}: vinci ${palio.vincita}!`
+                    : faseP === 'sale' || (intermezzo && sfida.fortunata)
+                      ? 'I premi salgono'
+                      : sfida.fortunata
+                        ? 'Lancia la pallina fortunata'
+                        : 'Lancia la pallina'}
+                </p>
+                <p className="ct-indicazione__testo">
+                  {faseP === 'caduta' && palio
+                    ? `${giro.puntata} ${scriviMoltiplicatore(palio.moltiplicatore)}`
+                    : `${giro.puntata} punti in gioco, fino al ${finoAl}`}
+                </p>
+                {faseP !== 'caduta' && (
+                  <Button
+                    size="lg"
+                    fullWidth
+                    disabled={faseP !== 'pronta' || inviando || !!intermezzo}
+                    onClick={() => void lanciaPachinko()}
+                  >
+                    Lancia
+                  </Button>
+                )}
+              </div>
+            ) : scena === 'cashhunt' && sfida?.tipo === 'cashhunt' && giro ? (
+              <Indicazione
+                titolo={
+                  (faseC === 'rivela' || faseC === 'fine') && palio
+                    ? `${scriviMoltiplicatore(palio.moltiplicatore)}: vinci ${palio.vincita}!`
+                    : faseC === 'sale'
+                      ? 'I premi salgono'
+                      : faseC === 'copre' || faseC === 'mescola'
+                        ? 'Si mescola'
+                        : faseC === 'scoperto'
+                          ? 'Guarda il muro'
+                          : 'Scegli un simbolo'
+                }
+              >
+                {(faseC === 'rivela' || faseC === 'fine') && palio
+                  ? `${giro.puntata} ${scriviMoltiplicatore(palio.moltiplicatore)}`
+                  : `${giro.puntata} punti in gioco, fino al ${finoAl}`}
               </Indicazione>
             ) : arrivaLaFortuna ? (
               <Indicazione titolo={modo === 'magia' ? 'I premi salgono' : 'Fortuna!'}>
@@ -1024,6 +1248,15 @@ function IconaQuizGrande() {
   )
 }
 
+/** Il Pachinko o il Cash Hunt, per l'insegna dell'intermezzo: le icone degli spicchi, in grande. */
+function IconaInsegna({ tipo }: { tipo: 'pachinko' | 'cashhunt' }) {
+  return (
+    <svg width="44" height="44" viewBox="-12 -12 24 24" className="ct-icona-insegna" aria-hidden="true">
+      {tipo === 'pachinko' ? <IconaPachinko lato={23} /> : <IconaCashHunt lato={23} />}
+    </svg>
+  )
+}
+
 /** Il quadrifoglio d'oro, per l'insegna della ruota fortunata. */
 function IconaFortuna() {
   return (
@@ -1060,6 +1293,39 @@ function adesivoVincita(vincita: number, puntata: number, moltiplicatore: number
     sotto: `${puntata} ${scriviMoltiplicatore(moltiplicatore)}`,
     classe: 'ct-adesivo-vincita',
     suono: 'vincita',
+  }
+}
+
+/**
+ * Lo split: d'oro come una vincita, con la moneta tagliata e quel che torna,
+ * e il suo suono. E' una perdita vestita da vincita, come la ciliegia sola
+ * della slot: il saldo, sceso della puntata, risale della meta'.
+ */
+function adesivoSplit(vincita: number): Omit<DatiAdesivo, 'id'> {
+  return {
+    durata: ADESIVO_MS,
+    tono: 'vivace',
+    titolo: 'Split',
+    sotto: `Vinci ${vincita}`,
+    disegno: (
+      <svg className="ct-adesivo-split" width="54" height="54" viewBox="-12 -12 24 24" aria-hidden="true">
+        <IconaSplit lato={23} />
+      </svg>
+    ),
+    classe: 'ct-adesivo-vincita',
+    suono: 'split',
+  }
+}
+
+/** Il ×0,5 del Pachinko e del Cash Hunt: torna meta' della puntata, e si racconta come lo split. */
+function adesivoMezzo(vincita: number, puntata: number, moltiplicatore: number): Omit<DatiAdesivo, 'id'> {
+  return {
+    durata: ADESIVO_MS,
+    tono: 'vivace',
+    titolo: `Vinci ${vincita}`,
+    sotto: `${puntata} ${scriviMoltiplicatore(moltiplicatore)}`,
+    classe: 'ct-adesivo-vincita',
+    suono: 'split',
   }
 }
 
