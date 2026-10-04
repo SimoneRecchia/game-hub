@@ -6,21 +6,26 @@
  * Come al casinò la puntata si paga subito: ogni giro nasce con `delta` uguale
  * alla puntata persa, e solo un minigioco vinto lo cambia nella vincita meno la
  * puntata. Un minigioco lasciato a meta' quindi conta perso, e il giro dopo lo
- * chiude com'e'.
+ * chiude com'e'. La ruota fortunata non e' un giro nuovo: e' lo stesso giro,
+ * con la stessa puntata, che continua.
  *
  * Tutto quel che e' a caso lo decide il server, con `crypto.getRandomValues`:
- * lo spicchio della ruota — fra quelli del giorno, con le sue categorie — e il
- * moltiplicatore della moneta quando si gira, il
- * moltiplicatore della domanda quando si gira la sua ruota, il lato della
- * moneta quando la si lancia. Il browser riceve solo dove fermare le ruote, e
- * la moneta. La domanda si apre quando la si chiede, con il suo tempo che parte
- * li', come nel quiz.
+ * lo spicchio della ruota quando si gira, e con lui il moltiplicatore della
+ * moneta e le dodici categorie della ruota del quiz; lo spicchio della ruota
+ * fortunata quando la si gira; lo spicchio della ruota del quiz quando si gira
+ * lei; il lato della moneta quando la si lancia. Il browser riceve solo dove
+ * fermare le ruote, e la moneta. La domanda si apre quando la si chiede, con il
+ * suo tempo che parte li', come nel quiz.
+ *
+ * Il minigioco sta nel giro, in JSON (`sfida`): `fortunata` e' lo spicchio
+ * della ruota fortunata, quando ci si e' arrivati da li', e i moltiplicatori
+ * sono quelli della fortuna.
  *
  * D1 non ha transazioni interattive: il saldo si controlla dentro l'`INSERT`
  * del giro, sui conti gia' scritti di tutti i giochi della Fortuna, così due
  * puntate partite insieme non vanno oltre quel che c'e'; la chiave (giocatore,
- * giorno, numero) fa il resto.
- * Ogni scrittura riscrive nello stesso batch il conto della giornata
+ * giorno, numero) fa il resto. Ogni altra scrittura e' condizionata al giro
+ * appena letto, e riscrive nello stesso batch il conto della giornata
  * (`ruota_giornate`), che e' quel che legge la classifica generale.
  */
 
@@ -28,14 +33,18 @@ import { msToNextPuzzle } from '../../shared/daily'
 import type { CategoriaQuiz } from '../../shared/quiz'
 import { rispostaGiusta, senzaRisposta, type DomandaCompleta } from '../../shared/quiz-domande'
 import {
+  CATEGORIE_RUOTA,
   DISPOSIZIONE_RUOTA,
   INTERVALLO_GIRI_MS,
-  MOLTIPLICATORI,
-  MOLTIPLICATORI_MONETA,
   PUNTATA_MINIMA,
+  SPICCHI_FORTUNATI,
+  SPICCHI_QUIZ,
+  SPICCHI_RUOTA,
+  categorieDelQuiz,
   deltaDi,
+  moltiplicatoriMoneta,
+  moltiplicatoriQuiz,
   puntataValida,
-  spicchiDelGiorno,
   vincitaDi,
   type LatoMoneta,
   type Spicchio,
@@ -71,14 +80,20 @@ export interface GiroRow {
   updated_at: string
 }
 
-/** Il minigioco come sta nel database: la domanda intera, con la risposta. */
+/**
+ * Il minigioco come sta nel database: la domanda intera, con la risposta.
+ * `fortunata` e' lo spicchio della ruota fortunata da cui si e' arrivati; la
+ * fortuna lo ha anche quando la ruota fortunata si e' fermata su un premio o
+ * sul banco, e il giro e' chiuso.
+ */
 type SfidaSalvata =
-  | { tipo: 'moneta'; moltiplicatore: number; uscito?: LatoMoneta }
+  | { tipo: 'fortuna'; fortunata?: number }
+  | { tipo: 'moneta'; moltiplicatore: number; uscito?: LatoMoneta; fortunata?: number }
   | {
       tipo: 'domanda'
-      categoria: CategoriaQuiz
-      moltiplicatore?: number
-      spicchioMoltiplicatore?: number
+      categorie: CategoriaQuiz[]
+      fortunata?: number
+      spicchioQuiz?: number
       domanda?: DomandaCompleta
       scelta?: string | null
       giusta?: boolean
@@ -95,7 +110,7 @@ export function aCaso(n: number): number {
   }
 }
 
-/** Uno spicchio a caso fra quelli che si possono giocare: tutti, tranne le domande di una categoria senza domande. */
+/** Uno spicchio a caso fra quelli che si possono giocare: tutti, tranne il quiz quando non ci sono domande. */
 export function spicchioACaso(
   spicchi: readonly Spicchio[],
   possibile: (s: Spicchio) => boolean,
@@ -139,6 +154,23 @@ function leggiSfida(row: GiroRow): SfidaSalvata | null {
   }
 }
 
+/**
+ * Le categorie che oggi hanno ancora domande da dare al giocatore, fra quelle
+ * della ruota: senza nessuna, il quiz non esce. Le righe di un formato vecchio
+ * possono portare il nome di una materia invece che di una categoria, e qui non
+ * passano.
+ */
+async function quizDisponibili(db: D1Database, playerId: string, numero: number): Promise<CategoriaQuiz[]> {
+  const disponibili = await categorieDisponibili(db, playerId, numero)
+  return CATEGORIE_RUOTA.filter((c) => disponibili.has(c))
+}
+
+/** Il moltiplicatore dello spicchio della ruota del quiz, quando la si e' girata. */
+function moltiplicatoreDelQuiz(s: Extract<SfidaSalvata, { tipo: 'domanda' }>): number | null {
+  if (s.spicchioQuiz === undefined) return null
+  return moltiplicatoriQuiz(s.fortunata !== undefined)[s.spicchioQuiz] ?? null
+}
+
 function scaduta(row: GiroRow, d: DomandaCompleta, adesso: number): boolean {
   return domandaScaduta(row.aperta_at, d, adesso)
 }
@@ -157,10 +189,15 @@ function rispostaVista(d: DomandaCompleta, s: Extract<SfidaSalvata, { tipo: 'dom
 /** Il giro come lo vede chi gioca: la domanda senza la risposta finché non si risponde. */
 export function vistaGiro(row: GiroRow & { spicchio: number }, adesso: number): GiroRuota {
   const salvata = leggiSfida(row)
+  const fortunata = salvata?.fortunata ?? null
   let sfida: SfidaRuotaVista | null = null
-  if (salvata?.tipo === 'moneta') {
+  if (salvata?.tipo === 'fortuna') {
+    // Ferma su un premio o sul banco, la ruota fortunata ha chiuso il giro: non resta niente da giocare.
+    sfida = row.stato === 'sfida' ? { tipo: 'fortuna' } : null
+  } else if (salvata?.tipo === 'moneta') {
     sfida = {
       tipo: 'moneta',
+      fortunata: fortunata !== null,
       moltiplicatore: salvata.moltiplicatore,
       vincita: vincitaDi(row.puntata, salvata.moltiplicatore),
       uscito: salvata.uscito ?? null,
@@ -168,12 +205,14 @@ export function vistaGiro(row: GiroRow & { spicchio: number }, adesso: number): 
   } else if (salvata?.tipo === 'domanda') {
     const d = salvata.domanda
     const aperta = row.stato === 'domanda' && d && row.aperta_at
-    const m = salvata.moltiplicatore ?? null
+    const m = moltiplicatoreDelQuiz(salvata)
     sfida = {
       tipo: 'domanda',
-      categoria: salvata.categoria,
+      fortunata: fortunata !== null,
+      categorie: salvata.categorie,
+      spicchioQuiz: salvata.spicchioQuiz ?? null,
+      categoria: salvata.spicchioQuiz === undefined ? null : (salvata.categorie[salvata.spicchioQuiz] ?? null),
       moltiplicatore: m,
-      spicchioMoltiplicatore: salvata.spicchioMoltiplicatore ?? null,
       vincita: m === null ? null : vincitaDi(row.puntata, m),
       domanda: d ? senzaRisposta(d) : null,
       limiteMs: d ? limiteMs(d) : null,
@@ -181,7 +220,15 @@ export function vistaGiro(row: GiroRow & { spicchio: number }, adesso: number): 
       risposta: row.stato === 'fatto' && d ? rispostaVista(d, salvata) : null,
     }
   }
-  return { n: row.n, puntata: row.puntata, spicchio: row.spicchio, stato: row.stato, delta: row.delta, sfida }
+  return {
+    n: row.n,
+    puntata: row.puntata,
+    spicchio: row.spicchio,
+    fortunata,
+    stato: row.stato,
+    delta: row.delta,
+    sfida,
+  }
 }
 
 /**
@@ -226,11 +273,33 @@ export async function statoRuota(db: D1Database, playerId: string): Promise<Ruot
 }
 
 /**
- * Un giro. Lo spicchio esce qui, a caso fra quelli del giorno, e la puntata e'
- * gia' pagata: il banco la tiene, il triplo la restituisce per tre subito, un
- * minigioco la puo' restituire moltiplicata. La moneta ha subito il suo
- * moltiplicatore, che si vede prima di lanciarla. Un minigioco dell'ultimo
- * giro lasciato a meta' si chiude: vale gia' perso.
+ * Il minigioco di uno spicchio, deciso quando la ruota ci si ferma: la moneta
+ * con il suo moltiplicatore, il quiz con le dodici categorie della sua ruota, la
+ * fortuna da girare. Il banco e i premi non ne hanno.
+ */
+function sfidaDi(s: Spicchio, fortunata: number | null, categorie: readonly CategoriaQuiz[]): SfidaSalvata | null {
+  const daFortuna = fortunata === null ? {} : { fortunata }
+  switch (s.tipo) {
+    case 'moneta': {
+      const moltiplicatori = moltiplicatoriMoneta(fortunata !== null)
+      return { tipo: 'moneta', moltiplicatore: moltiplicatori[aCaso(moltiplicatori.length)], ...daFortuna }
+    }
+    case 'quiz':
+      return { tipo: 'domanda', categorie: categorieDelQuiz(categorie, aCaso), ...daFortuna }
+    case 'fortuna':
+      return { tipo: 'fortuna' }
+    default:
+      return null
+  }
+}
+
+/**
+ * Un giro. Lo spicchio esce qui, e la puntata e' gia' pagata: il banco la
+ * tiene, il triplo la restituisce per tre subito, un minigioco la puo'
+ * restituire moltiplicata. La moneta ha subito il suo moltiplicatore, che si
+ * vede prima di lanciarla, e il quiz le sue categorie, che si vedono sulla sua
+ * ruota prima di girarla. Senza categorie con domande da dare il quiz non esce.
+ * Un minigioco dell'ultimo giro lasciato a meta' si chiude: vale gia' perso.
  */
 export async function gira(db: D1Database, playerId: string, puntata: unknown): Promise<void> {
   const numero = today().puzzleNumber
@@ -241,16 +310,10 @@ export async function gira(db: D1Database, playerId: string, puntata: unknown): 
   if (ultimo && Date.now() - Date.parse(ultimo.created_at) < INTERVALLO_GIRI_MS) {
     fail(429, 'TROPPO_PRESTO', 'La ruota sta ancora girando.')
   }
-  const spicchi = spicchiDelGiorno(numero)
-  const categorie = await categorieDisponibili(db, playerId, numero)
-  const indice = spicchioACaso(spicchi, (s) => s.tipo !== 'domanda' || categorie.has(s.categoria))
-  const s = spicchi[indice]
-  const sfida: SfidaSalvata | null =
-    s.tipo === 'moneta'
-      ? { tipo: 'moneta', moltiplicatore: MOLTIPLICATORI_MONETA[aCaso(MOLTIPLICATORI_MONETA.length)] }
-      : s.tipo === 'domanda'
-        ? { tipo: 'domanda', categoria: s.categoria }
-        : null
+  const categorie = await quizDisponibili(db, playerId, numero)
+  const indice = spicchioACaso(SPICCHI_RUOTA, (s) => s.tipo !== 'quiz' || categorie.length > 0)
+  const s = SPICCHI_RUOTA[indice]
+  const sfida = sfidaDi(s, null, categorie)
   const n = (ultimo?.n ?? 0) + 1
   const adesso = nowIso()
   const scritture: D1PreparedStatement[] = []
@@ -305,17 +368,56 @@ async function giroConSfida(db: D1Database, playerId: string): Promise<{ row: Gi
 }
 
 /**
- * La ruota dei moltiplicatori della domanda: si gira una volta, prima di
- * aprire la domanda. Lo spicchio esce qui; l'`UPDATE` e' condizionato alla
+ * La ruota fortunata: la ruota si e' fermata sulla fortuna, e si rigira con i
+ * premi saliti. E' lo stesso giro, con la stessa puntata: un premio o il banco
+ * lo chiudono, la moneta e il quiz della fortuna lo portano avanti. Si gira una
+ * volta: richiederla ridà quel che e' uscito. L'`UPDATE` e' condizionato alla
  * sfida appena letta, così due tocchi insieme non la girano due volte.
  */
-export async function giraMoltiplicatore(db: D1Database, playerId: string): Promise<void> {
+export async function giraFortuna(db: D1Database, playerId: string): Promise<void> {
   const { row, sfida } = await giroConSfida(db, playerId)
-  if (sfida.tipo !== 'domanda') fail(409, 'NESSUNA_DOMANDA', 'Questo minigioco non è una domanda.')
+  if (sfida.fortunata !== undefined) return
+  if (sfida.tipo !== 'fortuna' || row.stato !== 'sfida') {
+    fail(409, 'NESSUNA_FORTUNA', 'La ruota non si è fermata sulla fortuna.')
+  }
+  const categorie = await quizDisponibili(db, playerId, row.puzzle_number)
+  const fortunata = spicchioACaso(SPICCHI_FORTUNATI, (s) => s.tipo !== 'quiz' || categorie.length > 0)
+  const s = SPICCHI_FORTUNATI[fortunata]
+  const nuova: SfidaSalvata = sfidaDi(s, fortunata, categorie) ?? { tipo: 'fortuna', fortunata }
+  const chiude = s.tipo === 'banco' || s.tipo === 'fisso'
+  const [esito] = await db.batch([
+    db
+      .prepare(
+        `UPDATE ruota_giocate SET stato = ?, delta = ?, sfida = ?, updated_at = ?
+          WHERE player_id = ? AND puzzle_number = ? AND n = ? AND stato = 'sfida' AND sfida = ?`,
+      )
+      .bind(
+        chiude ? 'fatto' : 'sfida',
+        deltaDi(row.puntata, s.tipo === 'fisso' ? s.moltiplicatore : null),
+        JSON.stringify(nuova),
+        nowIso(),
+        playerId,
+        row.puzzle_number,
+        row.n,
+        row.sfida,
+      ),
+    riconta(db, playerId, row.puzzle_number),
+  ])
+  if (esito.meta.changes !== 1) fail(409, 'CONFLITTO', 'La ruota fortunata è già girata: ricarico.')
+}
+
+/**
+ * La ruota del quiz: si gira una volta, prima di aprire la domanda, e si ferma
+ * su una categoria con il suo moltiplicatore. Lo spicchio esce qui; l'`UPDATE`
+ * e' condizionato alla sfida appena letta, così due tocchi insieme non la
+ * girano due volte, e una seconda richiesta ridà lo stesso spicchio.
+ */
+export async function giraQuiz(db: D1Database, playerId: string): Promise<void> {
+  const { row, sfida } = await giroConSfida(db, playerId)
+  if (sfida.tipo !== 'domanda') fail(409, 'NESSUN_QUIZ', 'La ruota non si è fermata sul quiz.')
   if (row.stato !== 'sfida') fail(409, 'CONFLITTO', 'La domanda è già aperta: ricarico.')
-  if (sfida.moltiplicatore !== undefined) return
-  const spicchioMoltiplicatore = aCaso(MOLTIPLICATORI.length)
-  const nuova = { ...sfida, moltiplicatore: MOLTIPLICATORI[spicchioMoltiplicatore], spicchioMoltiplicatore }
+  if (sfida.spicchioQuiz !== undefined) return
+  const nuova = { ...sfida, spicchioQuiz: aCaso(SPICCHI_QUIZ) }
   const esito = await db
     .prepare(
       `UPDATE ruota_giocate SET sfida = ?, updated_at = ?
@@ -323,22 +425,22 @@ export async function giraMoltiplicatore(db: D1Database, playerId: string): Prom
     )
     .bind(JSON.stringify(nuova), nowIso(), playerId, row.puzzle_number, row.n, row.sfida)
     .run()
-  if (esito.meta.changes !== 1) fail(409, 'CONFLITTO', 'La ruota dei moltiplicatori è già girata: ricarico.')
+  if (esito.meta.changes !== 1) fail(409, 'CONFLITTO', 'La ruota del quiz è già girata: ricarico.')
 }
 
 /**
- * Apre la domanda: una a caso fra quelle della categoria di oggi che il
- * giocatore non ha ancora avuto, e il tempo parte adesso. Prima va girata la ruota dei
- * moltiplicatori; se e' gia' aperta la ridà com'e', con il tempo che le resta.
+ * Apre la domanda: una a caso fra quelle della categoria uscita alla ruota del
+ * quiz che il giocatore oggi non ha ancora avuto, e il tempo parte adesso.
+ * Prima va girata la ruota del quiz; se e' gia' aperta la ridà com'e', con il
+ * tempo che le resta.
  */
 export async function apriDomanda(db: D1Database, playerId: string): Promise<void> {
   const { row, sfida } = await giroConSfida(db, playerId)
   if (sfida.tipo !== 'domanda') fail(409, 'NESSUNA_DOMANDA', 'Questo minigioco non è una domanda.')
   if (row.stato !== 'sfida') return
-  if (sfida.moltiplicatore === undefined) {
-    fail(409, 'MOLTIPLICATORE', 'Prima gira la ruota dei moltiplicatori.')
-  }
-  const scelta = await domandaNuova(db, playerId, row.puzzle_number, sfida.categoria, aCaso)
+  const categoria = sfida.spicchioQuiz === undefined ? undefined : sfida.categorie[sfida.spicchioQuiz]
+  if (!categoria) fail(409, 'RUOTA_QUIZ', 'Prima gira la ruota del quiz.')
+  const scelta = await domandaNuova(db, playerId, row.puzzle_number, categoria, aCaso)
   const adesso = nowIso()
   await db
     .prepare(
@@ -378,7 +480,7 @@ export async function rispondi(db: D1Database, playerId: string, scelta: string 
           WHERE player_id = ? AND puzzle_number = ? AND n = ? AND stato = 'domanda'`,
       )
       .bind(
-        deltaDi(row.puntata, giusta ? (sfida.moltiplicatore ?? null) : null),
+        deltaDi(row.puntata, giusta ? moltiplicatoreDelQuiz(sfida) : null),
         JSON.stringify({ ...sfida, scelta: valida, giusta, ms }),
         new Date(adesso).toISOString(),
         playerId,
@@ -426,5 +528,6 @@ export async function riepilogoRuota(db: D1Database, playerId: string, fortuna: 
     giri: fortuna.giocate.ruota,
     stato: aperta ? 'sfida' : 'gioca',
     spicchio: nostro ? row.spicchio : null,
+    fortunata: nostro ? (leggiSfida(row)?.fortunata ?? null) : null,
   }
 }

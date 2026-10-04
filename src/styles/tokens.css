@@ -286,7 +286,19 @@
   /* ---- Crazy Time da casinò ----
      Il palco e' scuro in tutti e due i temi, come una sala; l'oro della
      cornice e delle lampadine, il nero del banco, il blu e il rosso della
-     moneta, e i colori dei moltiplicatori, dal blu del ×1,25 all'oro del ×3. */
+     moneta, l'azzurro del quiz, il verde e l'oro della fortuna, e i colori dei
+     moltiplicatori, dal blu del ×1,25 all'oro del ×3 e al cremisi del ×10. */
+  --ct-quiz: #1b82d6;
+  --ct-fortuna: #12a05c;
+  --ct-fortuna-scuro: #07603a;
+  --ct-fortuna-chiaro: #8ff5bf;
+  --ct-palco-fortuna-1: #0f6b45;
+  --ct-palco-fortuna-2: #021a10;
+  --ct-m175: #14a896;
+  --ct-m25: #8b5cf6;
+  --ct-m4: #ff8a1f;
+  --ct-m5: #ff6a2b;
+  --ct-m10: #d8233f;
   --ct-palco-1: #3a1a78;
   --ct-palco-2: #0b0418;
   --ct-oro-chiaro: #fff3b0;

@@ -1450,14 +1450,21 @@ export interface OggiRisposta {
 /* ───────────────────────────────  Crazy Time  ──────────────────────────────── */
 
 /**
- * Il minigioco di un giro, come lo vede chi gioca. La vincita e' quel che
- * restituisce la puntata se va bene — la puntata per il moltiplicatore — e
- * c'e' da quando il moltiplicatore e' deciso: subito per la moneta, alla ruota
- * dei moltiplicatori per la domanda.
+ * Il minigioco di un giro, come lo vede chi gioca: la ruota fortunata da
+ * girare, la moneta o il quiz. La vincita e' quel che restituisce la puntata se
+ * va bene — la puntata per il moltiplicatore — e c'e' da quando il
+ * moltiplicatore e' deciso: subito per la moneta, alla ruota del quiz per la
+ * domanda. `fortunata` dice che ci si e' arrivati dalla ruota fortunata, e che
+ * i moltiplicatori sono quelli della fortuna.
  */
 export type SfidaRuotaVista =
   | {
+      /** La ruota si e' fermata sulla fortuna: la ruota fortunata e' da girare. */
+      tipo: 'fortuna'
+    }
+  | {
       tipo: 'moneta'
+      fortunata: boolean
       /** Il moltiplicatore del blu, deciso quando la ruota si ferma sulla moneta. */
       moltiplicatore: number
       vincita: number
@@ -1466,12 +1473,18 @@ export type SfidaRuotaVista =
     }
   | {
       tipo: 'domanda'
-      /** La categoria dello spicchio, una di quelle del giorno (shared/ruota.ts, categorieDelGiorno). */
-      categoria: CategoriaQuiz
-      /** Dalla ruota dei moltiplicatori: null finché non la si gira. */
+      fortunata: boolean
+      /**
+       * Le dodici categorie della ruota del quiz, dallo spicchio in cima,
+       * pescate quando la ruota si e' fermata sul quiz: ognuna ha il
+       * moltiplicatore del suo posto (shared/ruota.ts, MOLTIPLICATORI_QUIZ).
+       */
+      categorie: CategoriaQuiz[]
+      /** Dove si e' fermata la ruota del quiz: null finché non la si gira. */
+      spicchioQuiz: number | null
+      /** La categoria e il moltiplicatore di quello spicchio. */
+      categoria: CategoriaQuiz | null
       moltiplicatore: number | null
-      /** Lo spicchio dove si e' fermata la ruota dei moltiplicatori (shared/ruota.ts, MOLTIPLICATORI). */
-      spicchioMoltiplicatore: number | null
       vincita: number | null
       /** Da quando si apre: senza la risposta finché non si risponde. */
       domanda: DomandaQuiz | null
@@ -1486,9 +1499,15 @@ export interface GiroRuota {
   /** Il numero del giro nella giornata, da 1. */
   n: number
   puntata: number
-  /** Lo spicchio dove si e' fermata la ruota, dall'alto in senso orario (shared/ruota.ts, spicchiDelGiorno). */
+  /** Lo spicchio dove si e' fermata la ruota, dall'alto in senso orario (shared/ruota.ts, SPICCHI_RUOTA). */
   spicchio: number
-  /** `sfida` finché la moneta o la domanda non si giocano, `domanda` mentre la domanda e' aperta. */
+  /**
+   * Se la ruota si e' fermata sulla fortuna: lo spicchio dove si e' fermata la
+   * ruota fortunata (SPICCHI_FORTUNATI). Null finché non la si gira, e per
+   * tutti gli altri giri.
+   */
+  fortunata: number | null
+  /** `sfida` finché la fortuna, la moneta o la domanda non si giocano, `domanda` mentre la domanda e' aperta. */
   stato: 'sfida' | 'domanda' | 'fatto'
   /**
    * Quel che il giro ha dato o tolto: la puntata si paga subito, quindi durante
@@ -1518,10 +1537,12 @@ export interface RuotaSummary {
   saldo: number
   netto: number
   giri: number
-  /** `sfida` se l'ultimo giro aspetta la moneta o la risposta. */
+  /** `sfida` se l'ultimo giro aspetta la ruota fortunata, la moneta o la risposta. */
   stato: 'gioca' | 'sfida'
   /** Lo spicchio dell'ultimo giro, se c'e'. */
   spicchio: number | null
+  /** Lo spicchio della ruota fortunata dell'ultimo giro, se ci e' arrivato e l'ha girata. */
+  fortunata: number | null
 }
 
 /* ────────────────────────────────  La Fortuna  ──────────────────────────────── */

@@ -292,6 +292,62 @@
 }
 
 /*
+ * La ruota fortunata: le lampadine verdi e oro, a raffica nella festa, e un
+ * alone verde che respira dietro la cornice.
+ */
+.ct-ruota.is-fortunata,
+.ct-ruota.is-magia {
+  --ct-lampada: #dcffe9;
+  --ct-lampada-spenta: #2c6a43;
+}
+
+/* Sotto il disegno: la scena e' un contesto di sovrapposizione, e l'alone resta dentro di lei. */
+.ct-ruota::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -5%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(90, 255, 160, 0.5), rgba(255, 220, 100, 0.22) 62%, transparent 74%);
+  opacity: 0;
+  transition: opacity 700ms var(--ease-out);
+  pointer-events: none;
+}
+
+.ct-ruota.is-fortunata::before {
+  opacity: 1;
+  animation: ct-ruota-alone 2.2s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes ct-ruota-alone {
+  to {
+    transform: scale(1.04);
+    filter: brightness(1.25);
+  }
+}
+
+.ct-ruota.is-fortunata.is-luci-vinto .ct-ruota__lampada {
+  animation-name: ct-lampada-fortuna;
+}
+
+@keyframes ct-lampada-fortuna {
+  0% {
+    fill: #fff;
+    stroke: rgba(150, 255, 190, 0.8);
+  }
+  50% {
+    fill: #46e08f;
+    stroke: rgba(255, 226, 130, 0.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-ruota.is-fortunata::before {
+    animation: none;
+  }
+}
+
+/*
  * La puntata sulla ruota: il mozzo si fa fiche, con l'orlo a tacche bianche, e
  * respira finché non si sa com'e' andata.
  */

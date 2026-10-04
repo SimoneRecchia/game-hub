@@ -44,7 +44,7 @@ export default function Fortuna() {
   const { dati, ricarica } = useDati<FortunaRisposta>('/fortuna')
   const [regole, setRegole] = useState(false)
   const stati: Record<GiocoFortuna, StatoRuota> | null = dati
-    ? { ruota: statoRuota(dati.ruota, dati.puzzleNumber), slot: statoSlot(dati), blackjack: statoBlackjack(dati) }
+    ? { ruota: statoRuota(dati.ruota), slot: statoSlot(dati), blackjack: statoBlackjack(dati) }
     : null
 
   return (

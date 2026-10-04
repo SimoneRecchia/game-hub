@@ -50,14 +50,15 @@ export function spicchioSotto(angolo: number, n: number): number {
  * spicchio e' sotto la lancetta, come sulle ruote vere. Una parola troppo lunga
  * per lo spazio si stringe (`textLength`) invece di uscire dallo spicchio; la
  * larghezza delle maiuscole si stima, perché misurarla vorrebbe il disegno gia'
- * fatto.
+ * fatto. `scarto` la sposta di fianco, perpendicolare al raggio: due scritte
+ * nello stesso spicchio stanno una accanto all'altra.
  */
-export function scrittaRadiale(centro: number, da: number, a: number, testo: string, dimensione: number) {
+export function scrittaRadiale(centro: number, da: number, a: number, testo: string, dimensione: number, scarto = 0) {
   const meta = (da + a) / 2
   const lunghezza = da - a
   const stimata = testo.length * dimensione * 0.66
   return {
-    transform: `rotate(${centro}) translate(0 ${-meta}) rotate(90)`,
+    transform: `rotate(${centro}) translate(${scarto} ${-meta}) rotate(90)`,
     fontSize: dimensione,
     ...(stimata > lunghezza ? { textLength: lunghezza, lengthAdjust: 'spacingAndGlyphs' as const } : {}),
   }

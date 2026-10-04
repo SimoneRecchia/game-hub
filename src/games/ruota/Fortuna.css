@@ -1,0 +1,461 @@
+/*
+ * La fortuna sul palco: il colpo del quadrifoglio quando la ruota ci si
+ * ferma, e il nastro della ruota fortunata finché dura.
+ */
+/* Una cella sola, grande quanto la scena: i raggi, piu' grandi, ne escono da tutte e due le parti. */
+.ct-colpo {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  grid-template: 100% / 100%;
+  place-items: center;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.ct-colpo__raggi,
+.ct-colpo__alone,
+.ct-colpo__scintilla,
+.ct-colpo__quadrifoglio {
+  grid-area: 1 / 1;
+}
+
+/* I raggi d'oro e verdi che si aprono dietro il quadrifoglio. */
+.ct-colpo__raggi {
+  width: 150cqmax;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    rgba(255, 226, 120, 0.55) 0 6deg,
+    rgba(80, 230, 150, 0.32) 6deg 12deg,
+    transparent 12deg 22deg
+  );
+  -webkit-mask: radial-gradient(closest-side, #000 12%, transparent 68%);
+  mask: radial-gradient(closest-side, #000 12%, transparent 68%);
+  animation: ct-colpo-raggi var(--durata) var(--ease-out) both;
+}
+
+@keyframes ct-colpo-raggi {
+  0% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  25% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15) rotate(80deg);
+  }
+}
+
+.ct-colpo__alone {
+  width: 70cqmin;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(140, 255, 190, 0.85), rgba(255, 230, 120, 0.35) 55%, transparent);
+  animation: ct-colpo-alone var(--durata) var(--ease-out) both;
+}
+
+@keyframes ct-colpo-alone {
+  0% {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+  30% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+.ct-colpo__quadrifoglio {
+  width: 42cqmin;
+  height: 42cqmin;
+  overflow: visible;
+  filter: drop-shadow(0 0 14px rgba(120, 255, 170, 0.9)) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
+  animation: ct-colpo-quadrifoglio var(--durata) cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+@keyframes ct-colpo-quadrifoglio {
+  0% {
+    opacity: 0;
+    transform: scale(0.1) rotate(-200deg);
+  }
+  38% {
+    opacity: 1;
+    transform: scale(1.25) rotate(12deg);
+  }
+  52% {
+    transform: scale(1) rotate(0deg);
+  }
+  78% {
+    opacity: 1;
+    transform: translateY(-4%) scale(1.06);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-34%) scale(0.7);
+  }
+}
+
+.ct-colpo__scintilla {
+  width: 10px;
+  height: 10px;
+  background: #fff6c8;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  animation: ct-colpo-scintilla calc(var(--durata) * 0.7) cubic-bezier(0.15, 0.7, 0.3, 1)
+    calc(var(--durata) * 0.18 + var(--k) * 18ms) both;
+}
+
+@keyframes ct-colpo-scintilla {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.4);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--x), var(--y)) scale(1.6) rotate(140deg);
+  }
+}
+
+/* Il quadrifoglio del colpo e' grande: le foglie hanno il filo piu' sottile. */
+.ct-quadrifoglio.is-grande .ct-quadrifoglio__foglia {
+  stroke-width: 0.35;
+}
+
+/*
+ * Il nastro della ruota fortunata: in un angolo, un poco storto, verde con
+ * l'orlo d'oro. Sui palchi alti, dove c'e' l'insegna di Crazy Time, ne prende
+ * il posto: al centro, in alto, scritto al neon.
+ */
+.ct-nastro {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 12px 5px 8px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, #19b46a, var(--ct-fortuna-scuro));
+  box-shadow:
+    0 0 0 2px var(--ct-oro),
+    0 6px 16px rgba(0, 0, 0, 0.45),
+    0 0 22px rgba(80, 255, 160, 0.45);
+  color: #fff8d6;
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(-5deg);
+  pointer-events: none;
+  animation: ct-nastro-arriva 520ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+.ct-nastro__icona {
+  width: 18px;
+  height: 18px;
+  overflow: visible;
+}
+
+.ct-nastro .ct-quadrifoglio.is-verde .ct-quadrifoglio__foglia {
+  fill: #fff3b0;
+  stroke: #0b5e36;
+}
+
+.ct-nastro .ct-quadrifoglio.is-verde .ct-quadrifoglio__gambo {
+  stroke: #fff3b0;
+}
+
+@keyframes ct-nastro-arriva {
+  from {
+    opacity: 0;
+    transform: rotate(-5deg) scale(0.4);
+  }
+}
+
+@container (min-height: 500px) and (max-aspect-ratio: 3 / 4) {
+  .ct-nastro {
+    top: 18px;
+    left: 0;
+    right: 0;
+    justify-content: center;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    transform: none;
+    color: #eafff1;
+    font-size: clamp(22px, 7.6cqw, 34px);
+    font-style: italic;
+    letter-spacing: 0.04em;
+    text-shadow:
+      0 0 4px #fff,
+      0 0 12px #39e58c,
+      0 0 26px #39e58c,
+      0 0 42px rgba(57, 229, 140, 0.6);
+    animation: ct-nastro-neon 640ms steps(1, end) both;
+  }
+
+  .ct-nastro__icona {
+    width: 1.1em;
+    height: 1.1em;
+    filter: drop-shadow(0 0 6px #ffe27a);
+  }
+}
+
+/* Su un palco piccolo e quasi quadrato la ruota lo riempie tutto: il nastro le starebbe sopra, e il verde basta. */
+@container (max-aspect-ratio: 4 / 3) and (max-width: 559.98px) and (max-height: 499.98px) {
+  .ct-nastro {
+    display: none;
+  }
+}
+
+@keyframes ct-nastro-neon {
+  0%,
+  20%,
+  40% {
+    opacity: 0.2;
+  }
+  10%,
+  30%,
+  50%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-colpo__raggi,
+  .ct-colpo__alone,
+  .ct-colpo__scintilla {
+    display: none;
+  }
+
+  .ct-colpo__quadrifoglio,
+  .ct-nastro {
+    animation: none;
+  }
+}
+
+/* Il colpo, piu' forte: la ruota si oscura un poco sotto il quadrifoglio, e un'onda d'oro si allarga. */
+.ct-colpo__velo {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(2, 10, 6, 0.6), rgba(2, 10, 6, 0.25) 60%, transparent);
+  animation: ct-colpo-velo var(--durata) var(--ease-in-out) both;
+}
+
+@keyframes ct-colpo-velo {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  25%,
+  75% {
+    opacity: 1;
+  }
+}
+
+.ct-colpo__onda {
+  grid-area: 1 / 1;
+  width: 30cqmin;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 5px rgba(255, 226, 120, 0.9),
+    0 0 30px 8px rgba(120, 255, 170, 0.7);
+  opacity: 0;
+  animation: ct-colpo-onda calc(var(--durata) * 0.6) var(--ease-out) calc(var(--durata) * 0.3) both;
+}
+
+@keyframes ct-colpo-onda {
+  from {
+    opacity: 1;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+/* ─────────────────────────────  Il premio che sale  ───────────────────────────── */
+
+.ct-premio {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  grid-template: 100% / 100%;
+  place-items: center;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.ct-premio > * {
+  grid-area: 1 / 1;
+}
+
+.ct-premio__lampo {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 250, 220, 0.95),
+    rgba(255, 220, 120, 0.35) 35%,
+    transparent 65%
+  );
+  opacity: 0;
+  animation: ct-premio-lampo 700ms var(--ease-out) var(--fine) both;
+}
+
+@keyframes ct-premio-lampo {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.ct-premio__raggi {
+  width: 120cqmin;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgba(255, 226, 120, 0.7) 0 7deg, transparent 7deg 18deg);
+  -webkit-mask: radial-gradient(closest-side, #000 18%, transparent 70%);
+  mask: radial-gradient(closest-side, #000 18%, transparent 70%);
+  opacity: 0;
+  animation: ct-premio-raggi 1400ms var(--ease-out) var(--fine) both;
+}
+
+@keyframes ct-premio-raggi {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2) rotate(50deg);
+  }
+}
+
+/* La medaglia: cremisi come il ×10, con l'orlo d'oro e le lampadine. */
+.ct-premio__medaglia {
+  display: grid;
+  grid-template: 100% / 100%;
+  place-items: center;
+  width: 30cqmin;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 36% 30%, #ff6b85, var(--ct-m10) 52%, #6d0617);
+  box-shadow:
+    0 0 0 3px #fff3b0,
+    0 0 0 7px var(--ct-oro),
+    0 0 0 9px var(--ct-oro-scuro),
+    0 0 40px 8px rgba(255, 200, 80, 0.75),
+    0 14px 30px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  animation:
+    ct-premio-arriva 460ms cubic-bezier(0.2, 0.9, 0.3, 1.4) var(--entra) both,
+    ct-premio-colpo 520ms cubic-bezier(0.2, 0.9, 0.3, 1.3) var(--fine),
+    ct-premio-via 520ms cubic-bezier(0.6, 0, 0.8, 0.4) calc(var(--fine) + 780ms) forwards;
+}
+
+@keyframes ct-premio-arriva {
+  from {
+    opacity: 0;
+    transform: scale(0.1) rotate(-30deg);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ct-premio-colpo {
+  35% {
+    transform: scale(1.32);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes ct-premio-via {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(18cqmin) scale(0.15);
+  }
+}
+
+/* I numeri stanno tutti nella stessa cella, uno sopra l'altro: se ne vede uno alla volta. */
+.ct-premio__numero {
+  grid-area: 1 / 1;
+  color: #ffe27a;
+  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
+  font-size: 13cqmin;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-shadow:
+    0 2px 0 rgba(80, 0, 12, 0.9),
+    0 0 14px rgba(255, 220, 120, 0.75);
+  opacity: 0;
+  animation:
+    ct-conto-passo var(--dura) steps(1, end) var(--da) forwards,
+    ct-premio-numero 260ms cubic-bezier(0.2, 0.9, 0.3, 1.5) var(--da) both;
+}
+
+.ct-premio__numero.is-ultimo {
+  font-size: 14cqmin;
+  animation:
+    ct-conto-ultimo 1ms linear var(--da) forwards,
+    ct-premio-numero 420ms cubic-bezier(0.2, 0.9, 0.3, 1.5) var(--da) both;
+}
+
+@keyframes ct-premio-numero {
+  from {
+    transform: scale(1.7);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-colpo__velo,
+  .ct-colpo__onda,
+  .ct-premio {
+    display: none;
+  }
+}

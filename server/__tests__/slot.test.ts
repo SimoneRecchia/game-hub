@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CategoriaQuiz } from '../../shared/quiz'
 import type { DomandaCompleta } from '../../shared/quiz-domande'
-import { categorieDelGiorno, improntaDomanda, spicchiDelGiorno, type DomandaRuota } from '../../shared/ruota'
+import { SPICCHI_RUOTA, categorieDelGiorno, improntaDomanda, type DomandaRuota } from '../../shared/ruota'
 import {
   DISPOSIZIONE_SLOT,
   PUNTATA_MASSIMA_SLOT,
@@ -186,7 +186,7 @@ describe('la slot', () => {
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 10, 10)
     domandeDiOggi(b)
-    const banchi = spicchiDelGiorno(today().puzzleNumber).findIndex((s) => s.tipo === 'banco')
+    const banchi = SPICCHI_RUOTA.findIndex((s) => s.tipo === 'banco')
     caso(banchi)
     const ruota = await b.chiama<RuotaStato>('POST', '/ruota/gira', io, { puntata: 15 })
     expect(ruota.dati).toMatchObject({ saldo: 5, netto: -15 })
