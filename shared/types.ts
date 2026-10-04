@@ -1607,10 +1607,12 @@ export interface SalaBlackjack {
 /** Un posto del tavolo come lo vedono tutti: le carte non hanno niente da nascondere. */
 export interface PostoVistaBJ {
   giocatore: GiocatoreBreve
-  /** La puntata del giro, raddoppi e divisioni compresi: zero per chi guarda. */
+  /** La puntata del giro, raddoppi e split compresi: zero per chi guarda. */
   puntata: number
   mani: ManoBJ[]
-  /** A giro finito: quel che il giro gli ha dato o tolto. */
+  /** Quel che ha messo sulla linea dell'assicurazione: zero se non si e' assicurato. */
+  assicurazione: number
+  /** A giro finito: quel che il giro gli ha dato o tolto, assicurazione compresa. */
   delta: number | null
   /** Si e' alzato a giro in corso. */
   via: boolean
