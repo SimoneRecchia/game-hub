@@ -1451,11 +1451,12 @@ export interface OggiRisposta {
 
 /**
  * Il minigioco di un giro, come lo vede chi gioca: la ruota fortunata da
- * girare, la moneta o il quiz. La vincita e' quel che restituisce la puntata se
- * va bene — la puntata per il moltiplicatore — e c'e' da quando il
- * moltiplicatore e' deciso: subito per la moneta, alla ruota del quiz per la
- * domanda. `fortunata` dice che ci si e' arrivati dalla ruota fortunata, e che
- * i moltiplicatori sono quelli della fortuna.
+ * girare, la moneta, il quiz, il Pachinko o il Cash Hunt. La vincita e' quel
+ * che restituisce la puntata se va bene — la puntata per il moltiplicatore — e
+ * c'e' da quando il moltiplicatore e' deciso: subito per la moneta, alla ruota
+ * del quiz per la domanda, a pallina caduta per il Pachinko, a casella scelta
+ * per il Cash Hunt. `fortunata` dice che ci si e' arrivati dalla ruota
+ * fortunata, e che i moltiplicatori sono quelli della fortuna.
  */
 export type SfidaRuotaVista =
   | {
@@ -1494,6 +1495,30 @@ export type SfidaRuotaVista =
       /** A risposta data, con la giusta e la scheda che insegna. */
       risposta: RispostaQuiz | null
     }
+  | {
+      tipo: 'pachinko'
+      fortunata: boolean
+      /** Le nove buche, da sinistra (shared/ruota.ts, MOLTIPLICATORI_PACHINKO): della fortuna, se si viene da li'. */
+      moltiplicatori: number[]
+      /** La strada della pallina, a lancio fatto: a ogni fila 0 a sinistra, 1 a destra. Prima non esiste. */
+      percorso: number[] | null
+      /** La buca dove e' caduta: quante volte la pallina e' andata a destra. */
+      buca: number | null
+      moltiplicatore: number | null
+      vincita: number | null
+    }
+  | {
+      tipo: 'cashhunt'
+      fortunata: boolean
+      /** I dodici moltiplicatori del muro, dal piu' grande: dove sta ognuno non si dice finché non si sceglie. */
+      valori: number[]
+      /** Il muro intero, a scelta fatta: il moltiplicatore di ogni casella, da quella in alto a sinistra. */
+      muro: number[] | null
+      /** La casella scelta. */
+      scelta: number | null
+      moltiplicatore: number | null
+      vincita: number | null
+    }
 
 export interface GiroRuota {
   /** Il numero del giro nella giornata, da 1. */
@@ -1507,11 +1532,12 @@ export interface GiroRuota {
    * tutti gli altri giri.
    */
   fortunata: number | null
-  /** `sfida` finché la fortuna, la moneta o la domanda non si giocano, `domanda` mentre la domanda e' aperta. */
+  /** `sfida` finché il minigioco o la ruota fortunata non si giocano, `domanda` mentre la domanda e' aperta. */
   stato: 'sfida' | 'domanda' | 'fatto'
   /**
    * Quel che il giro ha dato o tolto: la puntata si paga subito, quindi durante
-   * un minigioco e' la puntata persa; il triplo la restituisce per tre subito.
+   * un minigioco e' la puntata persa; il triplo la restituisce per tre subito,
+   * lo split a meta'. Quel che e' tornato e' `delta + puntata`.
    */
   delta: number
   sfida: SfidaRuotaVista | null
@@ -1537,7 +1563,7 @@ export interface RuotaSummary {
   saldo: number
   netto: number
   giri: number
-  /** `sfida` se l'ultimo giro aspetta la ruota fortunata, la moneta o la risposta. */
+  /** `sfida` se l'ultimo giro aspetta la ruota fortunata, un minigioco o la risposta. */
   stato: 'gioca' | 'sfida'
   /** Lo spicchio dell'ultimo giro, se c'e'. */
   spicchio: number | null

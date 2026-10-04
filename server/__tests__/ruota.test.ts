@@ -1,14 +1,19 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CategoriaQuiz } from '../../shared/quiz'
 import {
+  CASELLE_CASH_HUNT,
   CATEGORIE_RUOTA,
   DISPOSIZIONE_RUOTA,
   DOMANDE_PER_CATEGORIA,
   FORMATO_DOMANDE_RUOTA,
   MOLTIPLICATORI_MONETA,
   MOLTIPLICATORI_MONETA_FORTUNATA,
+  MOLTIPLICATORI_PACHINKO,
+  MOLTIPLICATORI_PACHINKO_FORTUNATI,
   MOLTIPLICATORI_QUIZ,
   MOLTIPLICATORI_QUIZ_FORTUNATI,
+  MURO_CASH_HUNT,
+  MURO_CASH_HUNT_FORTUNATO,
   POSTO_FORTUNA,
   PUNTATA_MINIMA,
   SPICCHI_FORTUNATI,
@@ -38,10 +43,19 @@ const BANCO = indice(SPICCHI_RUOTA, (s) => s.tipo === 'banco')
 const MONETA = indice(SPICCHI_RUOTA, (s) => s.tipo === 'moneta')
 const TRIPLO = indice(SPICCHI_RUOTA, (s) => s.tipo === 'fisso')
 const QUIZ = indice(SPICCHI_RUOTA, (s) => s.tipo === 'quiz')
+const SPLIT = indice(SPICCHI_RUOTA, (s) => s.tipo === 'split')
+const PACHINKO = indice(SPICCHI_RUOTA, (s) => s.tipo === 'pachinko')
+const CASH_HUNT = indice(SPICCHI_RUOTA, (s) => s.tipo === 'cashhunt')
 const DIECI = indice(SPICCHI_FORTUNATI, (s) => s.tipo === 'fisso' && s.moltiplicatore === 10)
+const UNO_E_MEZZO = indice(SPICCHI_FORTUNATI, (s) => s.tipo === 'fisso' && s.moltiplicatore === 1.5)
 const BANCO_FORTUNATO = indice(SPICCHI_FORTUNATI, (s) => s.tipo === 'banco')
 const MONETA_FORTUNATA = indice(SPICCHI_FORTUNATI, (s) => s.tipo === 'moneta')
 const QUIZ_FORTUNATO = indice(SPICCHI_FORTUNATI, (s) => s.tipo === 'quiz')
+const PACHINKO_FORTUNATO = indice(SPICCHI_FORTUNATI, (s) => s.tipo === 'pachinko')
+const CASH_HUNT_FORTUNATO = indice(SPICCHI_FORTUNATI, (s) => s.tipo === 'cashhunt')
+
+/** Un caso che mescola il muro del Cash Hunt: undici numeri, uno per scambio, dall'ultima casella. */
+const MESCOLA = [7, 3, 9, 1, 0, 5, 2, 4, 1, 1, 0]
 
 /**
  * Il caso, deciso dalla prova: ogni chiamata a `crypto.getRandomValues` prende
@@ -138,6 +152,14 @@ async function scrivi(b: Banco, io: Giocatore, rotta: string, numeri: number[] =
 }
 
 const quiz = (g: GiroRuota | null) => g?.sfida as Quiz
+
+/** Il muro del Cash Hunt dell'ultimo giro, come sta nel database: con ogni moltiplicatore al suo posto. */
+function muroSalvato(b: Banco, io: Giocatore): number[] {
+  const riga = b.db.sqlite
+    .prepare('SELECT sfida FROM ruota_giocate WHERE player_id = ? ORDER BY n DESC LIMIT 1')
+    .get(io.id) as { sfida: string }
+  return (JSON.parse(riga.sfida) as { muro: number[] }).muro
+}
 
 async function generaleDiOggi(b: Banco, io: Giocatore) {
   return (await b.chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', io)).dati.me
@@ -272,6 +294,186 @@ describe('Crazy Time', () => {
     expect(dopo.giro).toMatchObject({ spicchio: TRIPLO, stato: 'fatto', delta: 200, sfida: null })
     expect(dopo).toMatchObject({ netto: 200, saldo: 380 })
     expect((await generaleDiOggi(b, io))?.ruota).toBe(200)
+  })
+
+  it('lo split restituisce subito meta’ della puntata, per difetto, e chiude il giro', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+    const dispari = await gira(b, io, 15, SPLIT)
+    expect(dispari.giro).toMatchObject({ spicchio: SPLIT, stato: 'fatto', delta: -8, sfida: null })
+    expect(dispari).toMatchObject({ netto: -8, saldo: 172 })
+    const pari = await gira(b, io, 100, SPLIT)
+    expect(pari.giro).toMatchObject({ n: 2, delta: -50 })
+    expect(pari).toMatchObject({ netto: -58, saldo: 122 })
+    expect((await generaleDiOggi(b, io))?.ruota).toBe(-58)
+    // Non c'e' niente da giocare dopo.
+    expect((await b.chiama('POST', '/ruota/pachinko', io)).dati.code).toBe('NESSUNA_SFIDA')
+  })
+
+  it('il Pachinko: la pallina cade dove dice il server, e la buca paga il suo moltiplicatore', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+
+    const giro = (await gira(b, io, 100, PACHINKO)).giro!
+    expect(giro).toMatchObject({ spicchio: PACHINKO, fortunata: null, stato: 'sfida', delta: -100 })
+    expect(giro.sfida).toEqual({
+      tipo: 'pachinko',
+      fortunata: false,
+      moltiplicatori: [...MOLTIPLICATORI_PACHINKO],
+      percorso: null,
+      buca: null,
+      moltiplicatore: null,
+      vincita: null,
+    })
+    expect((await b.chiama<FortunaRisposta>('GET', '/fortuna', io)).dati.ruota).toMatchObject({
+      stato: 'sfida',
+      spicchio: PACHINKO,
+    })
+    expect((await b.chiama('POST', '/ruota/moneta', io)).dati.code).toBe('NESSUNA_MONETA')
+    expect((await b.chiama('POST', '/ruota/cashhunt', io, { scelta: 0 })).dati.code).toBe('NESSUN_CASH_HUNT')
+
+    // Una fila per numero: pari a sinistra, dispari a destra. Cinque volte a destra, la buca del ×1,5.
+    const caduta = await scrivi(b, io, '/ruota/pachinko', [1, 3, 0, 5, 2, 4, 7, 1])
+    const strada = [1, 1, 0, 1, 0, 0, 1, 1]
+    expect(caduta.giro).toMatchObject({
+      stato: 'fatto',
+      delta: 50,
+      sfida: { percorso: strada, buca: 5, moltiplicatore: 1.5, vincita: 150 },
+    })
+    expect(caduta).toMatchObject({ netto: 50, saldo: 230 })
+    // Si lancia una volta: chiederlo ancora ridà la strada di prima, e non paga di nuovo.
+    const ancora = await scrivi(b, io, '/ruota/pachinko', [0, 0, 0, 0, 0, 0, 0, 0])
+    expect(ancora).toMatchObject({ netto: 50, giro: { delta: 50, sfida: { percorso: strada, buca: 5 } } })
+
+    // Sempre a destra, la buca in fondo: ×15. In mezzo, la buca piu' facile: torna meta' della puntata.
+    await gira(b, io, 10, PACHINKO)
+    const destra = await scrivi(b, io, '/ruota/pachinko', [1, 1, 1, 1, 1, 1, 1, 1])
+    expect(destra.giro).toMatchObject({ delta: 140, sfida: { buca: 8, moltiplicatore: 15, vincita: 150 } })
+    await gira(b, io, 11, PACHINKO)
+    const mezzo = await scrivi(b, io, '/ruota/pachinko', [0, 1, 0, 1, 0, 1, 0, 1])
+    expect(mezzo.giro).toMatchObject({ delta: -6, sfida: { buca: 4, moltiplicatore: 0.5, vincita: 5 } })
+    expect(mezzo.netto).toBe(50 + 140 - 6)
+
+    // Un Pachinko lasciato senza lanciare la pallina e' perso: il giro dopo lo chiude.
+    await gira(b, io, 20, PACHINKO)
+    const dopo = await gira(b, io, 10, BANCO)
+    expect(dopo).toMatchObject({ giri: 5, netto: 184 - 20 - 10 })
+    expect((await b.chiama('POST', '/ruota/pachinko', io)).dati.code).toBe('NESSUNA_SFIDA')
+  })
+
+  it('il Pachinko della fortuna ha le buche della fortuna, fino al ×30', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+    await gira(b, io, 100, POSTO_FORTUNA)
+    const giro = (await scrivi(b, io, '/ruota/fortuna', [PACHINKO_FORTUNATO])).giro!
+    expect(giro).toMatchObject({
+      fortunata: PACHINKO_FORTUNATO,
+      stato: 'sfida',
+      delta: -100,
+      sfida: { tipo: 'pachinko', fortunata: true, moltiplicatori: [...MOLTIPLICATORI_PACHINKO_FORTUNATI] },
+    })
+    expect((await b.chiama<FortunaRisposta>('GET', '/fortuna', io)).dati.ruota).toMatchObject({
+      stato: 'sfida',
+      spicchio: POSTO_FORTUNA,
+      fortunata: PACHINKO_FORTUNATO,
+    })
+    const caduta = await scrivi(b, io, '/ruota/pachinko', [0, 0, 0, 0, 0, 0, 0, 0])
+    expect(caduta).toMatchObject({
+      netto: 2900,
+      saldo: 3080,
+      giro: { stato: 'fatto', delta: 2900, sfida: { buca: 0, moltiplicatore: 30, vincita: 3000 } },
+    })
+  })
+
+  it('il Cash Hunt: il muro mescolato resta sul server finché non si sceglie, e la casella scelta paga', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+
+    const girata = await gira(b, io, 100, CASH_HUNT, ...MESCOLA)
+    const muro = muroSalvato(b, io)
+    expect(muro).toHaveLength(CASELLE_CASH_HUNT)
+    expect([...muro].sort((x, y) => y - x)).toEqual([...MURO_CASH_HUNT])
+    expect(muro).not.toEqual([...MURO_CASH_HUNT])
+    expect(girata.giro).toMatchObject({ spicchio: CASH_HUNT, stato: 'sfida', delta: -100 })
+    // Chi gioca sa quali moltiplicatori ci sono, non dove: il muro non esce, in nessuna risposta.
+    expect(girata.giro!.sfida).toEqual({
+      tipo: 'cashhunt',
+      fortunata: false,
+      valori: [...MURO_CASH_HUNT],
+      muro: null,
+      scelta: null,
+      moltiplicatore: null,
+      vincita: null,
+    })
+    const segreto = JSON.stringify(muro)
+    expect(JSON.stringify(girata)).not.toContain(segreto)
+    expect(JSON.stringify(await stato(b, io))).not.toContain(segreto)
+    expect(JSON.stringify((await b.chiama('GET', '/fortuna', io)).dati)).not.toContain(segreto)
+
+    for (const scelta of [-1, CASELLE_CASH_HUNT, 1.5, '3', null, undefined]) {
+      const r = await b.chiama('POST', '/ruota/cashhunt', io, { scelta })
+      expect(r.status, String(scelta)).toBe(400)
+      expect(r.dati.code).toBe('SCELTA')
+    }
+    expect((await b.chiama('POST', '/ruota/pachinko', io)).dati.code).toBe('NESSUN_PACHINKO')
+
+    // La casella del ×5: il giro si chiude, e adesso il muro intero si vede.
+    const cinque = muro.indexOf(5)
+    const scelta = await scrivi(b, io, '/ruota/cashhunt', [], { scelta: cinque })
+    expect(scelta.giro).toMatchObject({
+      stato: 'fatto',
+      delta: 400,
+      sfida: { muro, scelta: cinque, moltiplicatore: 5, vincita: 500 },
+    })
+    expect(scelta).toMatchObject({ netto: 400, saldo: 580 })
+    // Si sceglie una volta: un'altra casella ridà la prima.
+    const altra = await scrivi(b, io, '/ruota/cashhunt', [], { scelta: muro.indexOf(0.5) })
+    expect(altra).toMatchObject({ netto: 400, giro: { delta: 400, sfida: { scelta: cinque, moltiplicatore: 5 } } })
+
+    // Una casella del ×0,5: torna meta' della puntata.
+    await gira(b, io, 30, CASH_HUNT, ...MESCOLA)
+    const mezza = await scrivi(b, io, '/ruota/cashhunt', [], { scelta: muroSalvato(b, io).indexOf(0.5) })
+    expect(mezza.giro).toMatchObject({ delta: -15, sfida: { moltiplicatore: 0.5, vincita: 15 } })
+
+    // Un Cash Hunt lasciato senza scegliere e' perso: il giro dopo lo chiude.
+    await gira(b, io, 20, CASH_HUNT)
+    const dopo = await gira(b, io, 10, BANCO)
+    expect(dopo).toMatchObject({ giri: 4, netto: 400 - 15 - 20 - 10 })
+    expect((await b.chiama('POST', '/ruota/cashhunt', io, { scelta: 0 })).dati.code).toBe('NESSUNA_SFIDA')
+  })
+
+  it('il Cash Hunt della fortuna ha il muro della fortuna, fino al ×10', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+    await gira(b, io, 100, POSTO_FORTUNA)
+    const giro = (await scrivi(b, io, '/ruota/fortuna', [CASH_HUNT_FORTUNATO, ...MESCOLA])).giro!
+    expect(giro).toMatchObject({ fortunata: CASH_HUNT_FORTUNATO, stato: 'sfida' })
+    expect(giro.sfida).toMatchObject({ tipo: 'cashhunt', fortunata: true, valori: [...MURO_CASH_HUNT_FORTUNATO] })
+    const muro = muroSalvato(b, io)
+    expect([...muro].sort((x, y) => y - x)).toEqual([...MURO_CASH_HUNT_FORTUNATO])
+    const dieci = await scrivi(b, io, '/ruota/cashhunt', [], { scelta: muro.indexOf(10) })
+    expect(dieci).toMatchObject({ netto: 900, giro: { delta: 900, sfida: { moltiplicatore: 10, vincita: 1000 } } })
+  })
+
+  it('il ×1,5 della ruota fortunata e’ un premio vero: paga subito', async () => {
+    const b = banco()
+    const io = await b.giocatore('anna')
+    puntiDiOggi(b, io, 90, 90)
+    domandeDiOggi(b)
+    await gira(b, io, 100, POSTO_FORTUNA)
+    const premio = await scrivi(b, io, '/ruota/fortuna', [UNO_E_MEZZO])
+    expect(premio.giro).toMatchObject({ fortunata: UNO_E_MEZZO, stato: 'fatto', delta: 50, sfida: null })
+    expect(premio.netto).toBe(50)
   })
 
   it('il quiz: la ruota del quiz con dodici categorie, poi la domanda, e giusta paga il moltiplicatore', async () => {
@@ -514,8 +716,9 @@ describe('Crazy Time', () => {
     const fortuna = await b.chiama<FortunaRisposta>('GET', '/fortuna', io)
     expect(fortuna.dati.ruota).toMatchObject({ stato: 'gioca', spicchio: null, fortunata: null })
     // La sua sfida non si gioca piu': la chiude il giro dopo, con la puntata gia' persa.
-    for (const rotta of ['/ruota/quiz', '/ruota/domanda', '/ruota/moneta', '/ruota/fortuna']) {
-      expect((await b.chiama('POST', rotta, io)).dati.code, rotta).toBe('NESSUN_GIRO')
+    const rotte = ['quiz', 'domanda', 'moneta', 'fortuna', 'pachinko', 'cashhunt'].map((r) => `/ruota/${r}`)
+    for (const rotta of rotte) {
+      expect((await b.chiama('POST', rotta, io, { scelta: 0 })).dati.code, rotta).toBe('NESSUN_GIRO')
     }
     expect((await gira(b, io, 20, BANCO)).giro).toMatchObject({ n: 2, delta: -20 })
     expect(await stato(b, io)).toMatchObject({ netto: -60, giri: 2 })
