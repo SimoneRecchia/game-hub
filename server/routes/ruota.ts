@@ -1,9 +1,20 @@
 import { Hono } from 'hono'
 import { sceltaValida } from '../../shared/quiz'
+import { CASELLE_CASH_HUNT } from '../../shared/ruota'
 import type { RuotaStato } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
-import { apriDomanda, gira, giraFortuna, giraQuiz, lanciaMoneta, rispondi, statoRuota } from '../lib/ruotaStore'
+import {
+  apriDomanda,
+  gira,
+  giraFortuna,
+  giraQuiz,
+  lanciaMoneta,
+  lanciaPachinko,
+  rispondi,
+  scegliCashHunt,
+  statoRuota,
+} from '../lib/ruotaStore'
 import { requireVerified } from '../lib/session'
 
 /** Una scelta e' l'id di un'opzione (`sceltaValida`). Null e' il tempo finito. */
@@ -11,6 +22,14 @@ function leggiScelta(valore: unknown): string | null {
   if (valore === null || valore === undefined) return null
   if (!sceltaValida(valore)) fail(400, 'SCELTA', 'La risposta non è valida.')
   return valore
+}
+
+/** Una casella del muro del Cash Hunt: un intero, da quella in alto a sinistra. */
+function leggiCasella(valore: unknown): number {
+  if (!Number.isInteger(valore) || (valore as number) < 0 || (valore as number) >= CASELLE_CASH_HUNT) {
+    fail(400, 'SCELTA', `Scegli una delle ${CASELLE_CASH_HUNT} caselle.`)
+  }
+  return valore as number
 }
 
 /**
@@ -49,6 +68,22 @@ export const ruotaRoutes = new Hono<AppEnv>()
   .post('/moneta', async (c) => {
     const io = c.get('player').id
     await lanciaMoneta(c.env.DB, io)
+    return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
+  })
+
+  /** Il Pachinko: la pallina cade adesso, e la sua strada la sceglie il server, una volta sola. */
+  .post('/pachinko', async (c) => {
+    const io = c.get('player').id
+    await lanciaPachinko(c.env.DB, io)
+    return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
+  })
+
+  /** Il Cash Hunt: la casella scelta, sul muro che il server ha gia' mescolato. */
+  .post('/cashhunt', async (c) => {
+    const corpo = (await c.req.json().catch(() => ({}))) as { scelta?: unknown }
+    const casella = leggiCasella(corpo.scelta)
+    const io = c.get('player').id
+    await scegliCashHunt(c.env.DB, io, casella)
     return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
   })
 

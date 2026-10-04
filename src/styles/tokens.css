@@ -289,10 +289,19 @@
   --fortuna: light-dark(#0f9a5c, #48dd8f);
 
   /* ---- Crazy Time da casinò ----
-     Il palco e' scuro in tutti e due i temi, come una sala; l'oro della
-     cornice e delle lampadine, il nero del banco, il blu e il rosso della
-     moneta, l'azzurro del quiz, il verde e l'oro della fortuna, e i colori dei
-     moltiplicatori, dal blu del ×1,25 all'oro del ×3 e al cremisi del ×10. */
+     Il palco e' scuro in tutti e due i temi, come una sala, e i suoi colori
+     sono gli stessi nei due temi, come il panno del blackjack: l'oro della
+     cornice e delle lampadine, il nero del banco, il rosa dello split, il blu e
+     il rosso della moneta, l'azzurro del quiz, il turchese del Pachinko, il
+     verde acido del Cash Hunt, il verde e l'oro della fortuna, e i colori dei
+     moltiplicatori, dall'ardesia del ×0,5 all'oro del ×3 e al cremisi del ×10. */
+  --ct-split: #e2508c;
+  --ct-split-scuro: #8f1d4f;
+  --ct-pachinko: #10a2bd;
+  --ct-pachinko-scuro: #075a6b;
+  --ct-cashhunt: #6cb52a;
+  --ct-cashhunt-scuro: #33620c;
+  --ct-m05: #5f6f96;
   --ct-quiz: #1b82d6;
   --ct-fortuna: #12a05c;
   --ct-fortuna-scuro: #07603a;

@@ -456,8 +456,8 @@ export type StatoRuota = Omit<StatoOggi, 'gioco' | 'punti' | 'avanzamento'> & { 
 /**
  * Crazy Time nella scheda della Fortuna: quanto si puo' puntare adesso. Quel
  * che ha dato o tolto oggi non si dice: al tavolo si guarda il saldo. Una sfida
- * aperta dice dove si e' fermata la ruota: la fortuna da girare, o il quiz e la
- * moneta, anche quelli della ruota fortunata.
+ * aperta dice dove si e' fermata la ruota: la fortuna da girare, o il quiz, la
+ * moneta, il Pachinko e il Cash Hunt, anche quelli della ruota fortunata.
  */
 export function statoRuota(s: RuotaSummary): StatoRuota {
   const a = ROTTE.ruota

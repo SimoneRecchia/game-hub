@@ -79,6 +79,14 @@ export type NomeSuono =
   | 'incasso'
   /** Il passaggio da una scena all'altra di Crazy Time. */
   | 'intermezzo'
+  /** Lo split: la moneta che si spacca, e un tintinnio da vincita, piu' piccolo di quello vero. */
+  | 'split'
+  /** La pallina del Pachinko contro un piolo: ogni fila un po' piu' in alto (`altezza`). */
+  | 'pallina'
+  /** La pallina che entra nella buca. */
+  | 'buca'
+  /** Le caselle del Cash Hunt che si mescolano. */
+  | 'mescola'
   /** La leva della slot che arriva in fondo. */
   | 'leva'
   /** I rulli che girano, uno scatto alla volta. */
@@ -819,6 +827,38 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     marimba(u, t + 0.32, N.G5, 0.16 * v, { eco: 0.3 })
     marimba(u, t + 0.32, N.C6, 0.18 * v, { eco: 0.3, durata: 1.1 })
     campanello(u, t + 0.32, N.E7, 0.06 * v, { eco: 0.5, durata: 0.9 })
+  },
+
+  // Lo split: la moneta che si spacca in due, poi due note che salgono e i tintinnii delle due meta'. Suona da
+  // vincita, come la ciliegia della slot, ma piu' piccolo della fanfara di una vincita vera.
+  split: (u, t, v) => {
+    legno(u, t, 1250, 0.12 * v, 0.02)
+    colpo(u, t, voce(u, 0.07 * v, 0.05), vario(4800, 0.06), 0.02, 0.7)
+    marimba(u, t + 0.06, N.G5, 0.15 * v, { eco: 0.22, durata: 0.6 })
+    marimba(u, t + 0.14, N.D6, 0.15 * v, { eco: 0.25, durata: 0.7 })
+    campanello(u, t + 0.2, vario(N.E7, 0.02), 0.05 * v, { eco: 0.3, durata: 0.35 })
+    campanello(u, t + 0.27, vario(N.A7, 0.02), 0.04 * v, { eco: 0.3, durata: 0.3 })
+  },
+
+  // La pallina del Pachinko contro un piolo: un tocco di vetro, corto e alto, che sale di fila in fila.
+  pallina: (u, t, v, altezza = 1) => {
+    campanello(u, t, vario(N.E7 * altezza, 0.02), 0.045 * v, { eco: 0.15, durata: 0.12 })
+    legno(u, t, vario(2600 * altezza, 0.04), 0.05 * v, 0.01)
+  },
+
+  // La pallina in buca: il tonfo morbido sul fondo, e l'accordo che dice che e' finita.
+  buca: (u, t, v) => {
+    tonfo(u, t, 0.2 * v, { da: 210, a: 90, durata: 0.2 })
+    legno(u, t, 760, 0.12 * v)
+    marimba(u, t + 0.08, N.C6, 0.14 * v, { eco: 0.3, durata: 0.8 })
+    marimba(u, t + 0.08, N.G6, 0.1 * v, { eco: 0.3, durata: 0.8 })
+  },
+
+  // Le caselle del Cash Hunt che si mescolano: due fruscii di carta, uno sull'altro.
+  mescola: (u, t, v) => {
+    soffio(u, t, 0.22, 0.13 * v, { tipo: 'bandpass', da: 2600, a: 1500, q: 1.4 }, { attacco: 0.02, eco: 0.06 })
+    soffio(u, t + 0.12, 0.2, 0.1 * v, { tipo: 'bandpass', da: 3000, a: 1800, q: 1.4 }, { attacco: 0.02, eco: 0.06 })
+    legno(u, t + 0.3, vario(1500, 0.05), 0.05 * v, 0.01)
   },
 
   // La leva in fondo: il colpo del meccanismo, e la molla che vibra nella cassa.

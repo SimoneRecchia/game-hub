@@ -4,17 +4,21 @@
  * Fortuna, questo compreso, hanno gia' dato o tolto (server/lib/fortuna.ts).
  *
  * Come al casinò la puntata si paga subito: ogni giro nasce con `delta` uguale
- * alla puntata persa, e solo un minigioco vinto lo cambia nella vincita meno la
+ * alla puntata persa — o a quel che il triplo e lo split restituiscono subito,
+ * meno la puntata — e solo un minigioco giocato lo cambia nella vincita meno la
  * puntata. Un minigioco lasciato a meta' quindi conta perso, e il giro dopo lo
  * chiude com'e'. La ruota fortunata non e' un giro nuovo: e' lo stesso giro,
  * con la stessa puntata, che continua.
  *
  * Tutto quel che e' a caso lo decide il server, con `crypto.getRandomValues`:
  * lo spicchio della ruota quando si gira, e con lui il moltiplicatore della
- * moneta e le dodici categorie della ruota del quiz; lo spicchio della ruota
- * fortunata quando la si gira; lo spicchio della ruota del quiz quando si gira
- * lei; il lato della moneta quando la si lancia. Il browser riceve solo dove
- * fermare le ruote, e la moneta. La domanda si apre quando la si chiede, con il
+ * moneta, le dodici categorie della ruota del quiz e il muro mescolato del Cash
+ * Hunt; lo spicchio della ruota fortunata quando la si gira; lo spicchio della
+ * ruota del quiz quando si gira lei; il lato della moneta quando la si lancia;
+ * la strada della pallina del Pachinko quando la si lascia cadere. Il browser
+ * riceve solo dove fermare le ruote, la moneta e la pallina, e del muro solo
+ * quali moltiplicatori ci sono, finché non si sceglie: chi sapesse dove sta il
+ * ×5 non sceglierebbe a caso. La domanda si apre quando la si chiede, con il
  * suo tempo che parte li', come nel quiz.
  *
  * Il minigioco sta nel giro, in JSON (`sfida`): `fortunata` e' lo spicchio
@@ -40,10 +44,17 @@ import {
   SPICCHI_FORTUNATI,
   SPICCHI_QUIZ,
   SPICCHI_RUOTA,
+  bucaDi,
   categorieDelQuiz,
   deltaDi,
+  eSfida,
+  mescolaMuro,
   moltiplicatoriMoneta,
+  moltiplicatoriPachinko,
   moltiplicatoriQuiz,
+  muroCashHunt,
+  pagaSubito,
+  percorsoACaso,
   puntataValida,
   vincitaDi,
   type LatoMoneta,
@@ -81,10 +92,10 @@ export interface GiroRow {
 }
 
 /**
- * Il minigioco come sta nel database: la domanda intera, con la risposta.
- * `fortunata` e' lo spicchio della ruota fortunata da cui si e' arrivati; la
- * fortuna lo ha anche quando la ruota fortunata si e' fermata su un premio o
- * sul banco, e il giro e' chiuso.
+ * Il minigioco come sta nel database: la domanda intera, con la risposta, e il
+ * muro del Cash Hunt con ogni casella al suo posto. `fortunata` e' lo spicchio
+ * della ruota fortunata da cui si e' arrivati; la fortuna lo ha anche quando la
+ * ruota fortunata si e' fermata su un premio o sul banco, e il giro e' chiuso.
  */
 type SfidaSalvata =
   | { tipo: 'fortuna'; fortunata?: number }
@@ -99,6 +110,8 @@ type SfidaSalvata =
       giusta?: boolean
       ms?: number
     }
+  | { tipo: 'pachinko'; fortunata?: number; percorso?: number[] }
+  | { tipo: 'cashhunt'; fortunata?: number; muro: number[]; scelta?: number }
 
 /** Un intero a caso fra zero e `n` escluso, senza la distorsione del modulo. */
 export function aCaso(n: number): number {
@@ -186,7 +199,10 @@ function rispostaVista(d: DomandaCompleta, s: Extract<SfidaSalvata, { tipo: 'dom
   }
 }
 
-/** Il giro come lo vede chi gioca: la domanda senza la risposta finché non si risponde. */
+/**
+ * Il giro come lo vede chi gioca: la domanda senza la risposta finché non si
+ * risponde, e il muro del Cash Hunt senza i posti finché non si sceglie.
+ */
 export function vistaGiro(row: GiroRow & { spicchio: number }, adesso: number): GiroRuota {
   const salvata = leggiSfida(row)
   const fortunata = salvata?.fortunata ?? null
@@ -194,6 +210,33 @@ export function vistaGiro(row: GiroRow & { spicchio: number }, adesso: number): 
   if (salvata?.tipo === 'fortuna') {
     // Ferma su un premio o sul banco, la ruota fortunata ha chiuso il giro: non resta niente da giocare.
     sfida = row.stato === 'sfida' ? { tipo: 'fortuna' } : null
+  } else if (salvata?.tipo === 'pachinko') {
+    const moltiplicatori = moltiplicatoriPachinko(fortunata !== null)
+    const percorso = salvata.percorso ?? null
+    const buca = percorso ? bucaDi(percorso) : null
+    const m = buca === null ? null : moltiplicatori[buca]
+    sfida = {
+      tipo: 'pachinko',
+      fortunata: fortunata !== null,
+      moltiplicatori: [...moltiplicatori],
+      percorso,
+      buca,
+      moltiplicatore: m,
+      vincita: m === null ? null : vincitaDi(row.puntata, m),
+    }
+  } else if (salvata?.tipo === 'cashhunt') {
+    // Il muro intero esce solo a scelta fatta: prima si dice quali moltiplicatori ci sono, non dove.
+    const scelta = salvata.scelta ?? null
+    const m = scelta === null ? null : salvata.muro[scelta]
+    sfida = {
+      tipo: 'cashhunt',
+      fortunata: fortunata !== null,
+      valori: [...muroCashHunt(fortunata !== null)],
+      muro: scelta === null ? null : [...salvata.muro],
+      scelta,
+      moltiplicatore: m,
+      vincita: m === null ? null : vincitaDi(row.puntata, m),
+    }
   } else if (salvata?.tipo === 'moneta') {
     sfida = {
       tipo: 'moneta',
@@ -274,8 +317,9 @@ export async function statoRuota(db: D1Database, playerId: string): Promise<Ruot
 
 /**
  * Il minigioco di uno spicchio, deciso quando la ruota ci si ferma: la moneta
- * con il suo moltiplicatore, il quiz con le dodici categorie della sua ruota, la
- * fortuna da girare. Il banco e i premi non ne hanno.
+ * con il suo moltiplicatore, il quiz con le dodici categorie della sua ruota, il
+ * Pachinko da lanciare, il Cash Hunt con il muro gia' mescolato, la fortuna da
+ * girare. Il banco, lo split e i premi non ne hanno.
  */
 function sfidaDi(s: Spicchio, fortunata: number | null, categorie: readonly CategoriaQuiz[]): SfidaSalvata | null {
   const daFortuna = fortunata === null ? {} : { fortunata }
@@ -286,6 +330,10 @@ function sfidaDi(s: Spicchio, fortunata: number | null, categorie: readonly Cate
     }
     case 'quiz':
       return { tipo: 'domanda', categorie: categorieDelQuiz(categorie, aCaso), ...daFortuna }
+    case 'pachinko':
+      return { tipo: 'pachinko', ...daFortuna }
+    case 'cashhunt':
+      return { tipo: 'cashhunt', muro: mescolaMuro(fortunata !== null, aCaso), ...daFortuna }
     case 'fortuna':
       return { tipo: 'fortuna' }
     default:
@@ -295,11 +343,12 @@ function sfidaDi(s: Spicchio, fortunata: number | null, categorie: readonly Cate
 
 /**
  * Un giro. Lo spicchio esce qui, e la puntata e' gia' pagata: il banco la
- * tiene, il triplo la restituisce per tre subito, un minigioco la puo'
- * restituire moltiplicata. La moneta ha subito il suo moltiplicatore, che si
- * vede prima di lanciarla, e il quiz le sue categorie, che si vedono sulla sua
- * ruota prima di girarla. Senza categorie con domande da dare il quiz non esce.
- * Un minigioco dell'ultimo giro lasciato a meta' si chiude: vale gia' perso.
+ * tiene, il triplo la restituisce per tre subito e lo split a meta', un
+ * minigioco la puo' restituire moltiplicata. La moneta ha subito il suo
+ * moltiplicatore, che si vede prima di lanciarla, il quiz le sue categorie, che
+ * si vedono sulla sua ruota prima di girarla, e il Cash Hunt il suo muro, che
+ * non si vede. Senza categorie con domande da dare il quiz non esce. Un
+ * minigioco dell'ultimo giro lasciato a meta' si chiude: vale gia' perso.
  */
 export async function gira(db: D1Database, playerId: string, puntata: unknown): Promise<void> {
   const numero = today().puzzleNumber
@@ -344,7 +393,7 @@ export async function gira(db: D1Database, playerId: string, puntata: unknown): 
         puntata,
         indice,
         sfida ? 'sfida' : 'fatto',
-        deltaDi(puntata, s.tipo === 'fisso' ? s.moltiplicatore : null),
+        deltaDi(puntata, pagaSubito(s)),
         sfida ? JSON.stringify(sfida) : null,
         DISPOSIZIONE_RUOTA,
         adesso,
@@ -370,7 +419,7 @@ async function giroConSfida(db: D1Database, playerId: string): Promise<{ row: Gi
 /**
  * La ruota fortunata: la ruota si e' fermata sulla fortuna, e si rigira con i
  * premi saliti. E' lo stesso giro, con la stessa puntata: un premio o il banco
- * lo chiudono, la moneta e il quiz della fortuna lo portano avanti. Si gira una
+ * lo chiudono, i minigiochi della fortuna lo portano avanti. Si gira una
  * volta: richiederla ridà quel che e' uscito. L'`UPDATE` e' condizionato alla
  * sfida appena letta, così due tocchi insieme non la girano due volte.
  */
@@ -384,7 +433,7 @@ export async function giraFortuna(db: D1Database, playerId: string): Promise<voi
   const fortunata = spicchioACaso(SPICCHI_FORTUNATI, (s) => s.tipo !== 'quiz' || categorie.length > 0)
   const s = SPICCHI_FORTUNATI[fortunata]
   const nuova: SfidaSalvata = sfidaDi(s, fortunata, categorie) ?? { tipo: 'fortuna', fortunata }
-  const chiude = s.tipo === 'banco' || s.tipo === 'fisso'
+  const chiude = !eSfida(s)
   const [esito] = await db.batch([
     db
       .prepare(
@@ -393,7 +442,7 @@ export async function giraFortuna(db: D1Database, playerId: string): Promise<voi
       )
       .bind(
         chiude ? 'fatto' : 'sfida',
-        deltaDi(row.puntata, s.tipo === 'fisso' ? s.moltiplicatore : null),
+        deltaDi(row.puntata, pagaSubito(s)),
         JSON.stringify(nuova),
         nowIso(),
         playerId,
@@ -515,6 +564,70 @@ export async function lanciaMoneta(db: D1Database, playerId: string): Promise<vo
     riconta(db, playerId, row.puzzle_number),
   ])
   if (esito.meta.changes !== 1) fail(409, 'CONFLITTO', 'La moneta è già stata lanciata: ricarico.')
+}
+
+/**
+ * Il Pachinko: la pallina si lascia cadere adesso, e la sua strada esce qui, una
+ * fila alla volta, a sinistra o a destra una volta su due. La buca dove finisce
+ * da' il moltiplicatore, e il giro si chiude. Si lancia una volta: chiederlo
+ * ancora ridà la strada di prima.
+ */
+export async function lanciaPachinko(db: D1Database, playerId: string): Promise<void> {
+  const { row, sfida } = await giroConSfida(db, playerId)
+  if (sfida.tipo !== 'pachinko') fail(409, 'NESSUN_PACHINKO', 'La ruota non si è fermata sul Pachinko.')
+  if (sfida.percorso) return
+  if (row.stato !== 'sfida') fail(409, 'CONFLITTO', 'La pallina è già caduta: ricarico.')
+  const percorso = percorsoACaso(aCaso)
+  const m = moltiplicatoriPachinko(sfida.fortunata !== undefined)[bucaDi(percorso)]
+  const [esito] = await db.batch([
+    db
+      .prepare(
+        `UPDATE ruota_giocate SET stato = 'fatto', delta = ?, sfida = ?, updated_at = ?
+          WHERE player_id = ? AND puzzle_number = ? AND n = ? AND stato = 'sfida' AND sfida = ?`,
+      )
+      .bind(
+        deltaDi(row.puntata, m),
+        JSON.stringify({ ...sfida, percorso }),
+        nowIso(),
+        playerId,
+        row.puzzle_number,
+        row.n,
+        row.sfida,
+      ),
+    riconta(db, playerId, row.puzzle_number),
+  ])
+  if (esito.meta.changes !== 1) fail(409, 'CONFLITTO', 'La pallina è già caduta: ricarico.')
+}
+
+/**
+ * Il Cash Hunt: si sceglie una casella del muro, che il server ha mescolato
+ * quando la ruota si e' fermata, e il suo moltiplicatore chiude il giro. Da
+ * adesso il muro intero si vede. Si sceglie una volta: un'altra scelta ridà la
+ * prima.
+ */
+export async function scegliCashHunt(db: D1Database, playerId: string, casella: number): Promise<void> {
+  const { row, sfida } = await giroConSfida(db, playerId)
+  if (sfida.tipo !== 'cashhunt') fail(409, 'NESSUN_CASH_HUNT', 'La ruota non si è fermata sul Cash Hunt.')
+  if (sfida.scelta !== undefined) return
+  if (row.stato !== 'sfida') fail(409, 'CONFLITTO', 'La casella è già scelta: ricarico.')
+  const [esito] = await db.batch([
+    db
+      .prepare(
+        `UPDATE ruota_giocate SET stato = 'fatto', delta = ?, sfida = ?, updated_at = ?
+          WHERE player_id = ? AND puzzle_number = ? AND n = ? AND stato = 'sfida' AND sfida = ?`,
+      )
+      .bind(
+        deltaDi(row.puntata, sfida.muro[casella]),
+        JSON.stringify({ ...sfida, scelta: casella }),
+        nowIso(),
+        playerId,
+        row.puzzle_number,
+        row.n,
+        row.sfida,
+      ),
+    riconta(db, playerId, row.puzzle_number),
+  ])
+  if (esito.meta.changes !== 1) fail(409, 'CONFLITTO', 'La casella è già scelta: ricarico.')
 }
 
 /** Crazy Time nella scheda della Fortuna: di sola lettura. Il saldo lo sa gia' chi chiama. */
