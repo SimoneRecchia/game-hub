@@ -233,7 +233,46 @@
   opacity: 0.85;
 }
 
+/* La moneta della fortuna: un anello verde dentro l'oro, le stelle verdi, e un alone verde che respira. */
+.ct-moneta.is-fortunata .ct-moneta__faccia {
+  box-shadow:
+    inset 0 0 0 calc(var(--lato) * 0.045) var(--ct-oro),
+    inset 0 0 0 calc(var(--lato) * 0.075) var(--ct-fortuna),
+    inset 0 0 0 calc(var(--lato) * 0.088) var(--ct-oro-scuro),
+    inset 0 calc(var(--lato) * -0.05) calc(var(--lato) * 0.1) rgba(0, 0, 0, 0.35);
+}
+
+.ct-moneta.is-fortunata .ct-moneta__stelle {
+  color: var(--ct-fortuna-chiaro);
+  opacity: 1;
+}
+
+.ct-moneta.is-fortunata .ct-moneta__salto::before {
+  content: '';
+  position: absolute;
+  inset: -16%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(90, 255, 160, 0.45), transparent 72%);
+  animation: ct-moneta-fortuna 1.6s var(--ease-in-out) infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes ct-moneta-fortuna {
+  from {
+    opacity: 0.5;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .ct-moneta.is-fortunata .ct-moneta__salto::before {
+    animation: none;
+  }
+
   .ct-moneta.is-ferma .ct-moneta__salto,
   .ct-moneta.is-carica .ct-moneta__salto,
   .ct-moneta__invito,
