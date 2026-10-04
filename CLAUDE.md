@@ -453,9 +453,9 @@ e da quanto si e' partiti — i punti delle classificate — non si dicono, per
 scelta: al tavolo si guarda quel che si ha davanti. Le carte della scheda
 dicono quanto si puo' puntare, non com'e' andata. Il momento di un giro invece
 si vede tutto — l'adesivo con la vincita, il display, le targhe e la festa della
-slot, il mozzo della ruota, le fasce sulle mani del blackjack — perché e' il
-gioco. Il conto della giornata resta nella classifica della Fortuna, che e' il
-posto dove si va a guardarlo.
+slot, il mozzo e le feste della ruota, le fasce sulle mani del blackjack —
+perché e' il gioco. Il conto della giornata resta nella classifica della
+Fortuna, che e' il posto dove si va a guardarlo.
 
 **Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta
 nella scheda della Fortuna (`/crazy-time`; `/ruota`, l'indirizzo di quando si
@@ -489,145 +489,230 @@ con `spicchio` NULL perché la disposizione era un'altra, e non l'ha tolta,
 perché una migrazione che cancella vorrebbe un backup.
 
 **Vince il banco, come nel Crazy Time vero, e i test lo tengono fermo.**
-Quindici spicchi (`FORMA_RUOTA` in `shared/ruota.ts`), non i cinquantaquattro
-della ruota vera: sei BANCO, sei domande, due monete e un triplo. La puntata si
-paga al lancio — il giro nasce con `delta = -puntata` — e un minigioco vinto la
-restituisce moltiplicata (`vincitaDi`, per difetto), quindi non c'e' uno
-spicchio che lascia tutto com'e': sarebbe il banco con un altro nome. Il triplo
-la restituisce per tre subito, senza minigioco (`MOLTIPLICATORE_FISSO`). Il
-moltiplicatore della domanda lo sceglie una seconda ruota (`MOLTIPLICATORI`: ×3
-una volta, ×2 due, ×1,5 quattro, ×1,25 cinque, in media 1,6), e una risposta
-sbagliata perde tutta la puntata, qualunque sia il moltiplicatore; quello della
-moneta e' uno dei quattro a caso, deciso con il giro (`MOLTIPLICATORI_MONETA`),
-e la moneta e' blu o rossa: il blu paga, il rosso e' il banco. Chi risponde
-sempre giusto riceve in media il 97,1% di quel che punta (`resa`), chi risponde
-giusto a tre domande su quattro l'81%: nemmeno chi sa tutto batte il banco,
-come nel Crazy Time vero (dal 94 al 96%). Il triplo e' costato due banchi:
-aggiunto ai dodici spicchi di prima, chi sa tutto avrebbe preso il 112%. Si
-puo' avere fortuna una volta, e giocando a lungo si perde: e' quel che si
-vuole, perché la ruota insegni che vince il banco. Le regole lo dicono in una
-riga, con la resa, e niente scritte sulla ludopatia: e' una scelta, la lezione
-la da' la ruota. `shared/__tests__/ruota.test.ts` misura la resa di chi sa
-tutto e di chi sta in mezzo, il valore atteso in punti interi a ogni puntata
-fino a duemila, e la disposizione: il triplo in cima, dove la ruota sta prima
-del primo giro, le monete a sette spicchi l'una dall'altra, mai due banchi o
-due domande vicini, e mai piu' di tre spicchi fra un banco e l'altro; fra i
-moltiplicatori mai due uguali vicini. Il giro salva l'indice dello spicchio e
-la disposizione con cui e' uscito (`disposizione`, `DISPOSIZIONE_RUOTA`): i
-giri di una disposizione di prima contano nel saldo e non si mostrano, perché
-lo stesso indice adesso e' un altro spicchio, e una loro sfida rimasta aperta
-non si gioca piu' (`NESSUN_GIRO`): la chiude il giro dopo, con il `delta` che
-aveva gia'. Per questo la disposizione 3, quella del triplo, non ha voluto una
-migrazione; la `0025`, che ha portato la 2, aveva chiuso come perse le sfide
-rimaste aperte.
+Quindici spicchi (`SPICCHI_RUOTA` in `shared/ruota.ts`), non i cinquantaquattro
+della ruota vera: sette BANCO, tre QUIZ, tre MONETA, il triplo e la FORTUNA. Il
+triplo sta in cima, dove la ruota e' ferma prima del primo giro, e la fortuna di
+fronte; i banchi si alternano agli altri spicchi, con i quiz da una parte e le
+monete dall'altra. La puntata si paga al lancio — il giro nasce con
+`delta = -puntata` — e un minigioco vinto la restituisce moltiplicata
+(`vincitaDi`, per difetto), quindi non c'e' uno spicchio che lascia tutto
+com'e': sarebbe il banco con un altro nome. Il triplo la restituisce per tre
+subito, senza minigioco (`MOLTIPLICATORE_FISSO`); il quiz porta alla ruota del
+quiz e poi alla domanda, e una risposta sbagliata perde tutta la puntata,
+qualunque sia il moltiplicatore; la moneta porta uno dei quattro moltiplicatori
+di `MOLTIPLICATORI_MONETA`, deciso con il giro, che il blu paga e il rosso no;
+la fortuna fa girare la ruota fortunata (vedi sotto). Chi risponde sempre giusto
+riceve in media il 97,07% di quel che punta (`resa`), quanto alla roulette; chi
+risponde giusto a tre domande su quattro l'86%, chi tira a indovinare il 63%:
+nemmeno chi sa tutto batte il banco, come nel Crazy Time vero (dal 94 al 96%).
+La resa si conta dagli spicchi (`valoreDi`: la moneta e' blu una volta su due,
+la fortuna vale la media della ruota fortunata), quindi segue da sola ogni
+spicchio e ogni moltiplicatore, e `shared/__tests__/ruota.test.ts` la tiene
+ferma: rifatta a mano, fra il 97 e il 97,1% per chi sa, sotto la puntata per
+tutti, e in punti interi a ogni puntata fino a duemila. Lo stesso file tiene le
+disposizioni: il triplo in cima, mai due banchi o due quiz vicini, mai piu' di
+tre spicchi fra un banco e l'altro, e mai due moltiplicatori uguali vicini sulla
+ruota del quiz, nemmeno su quella fortunata. Si puo' avere fortuna una volta, e
+giocando a lungo si perde: e' quel che si vuole, perché la ruota insegni che
+vince il banco. Le regole lo dicono in una riga, con la resa, e niente scritte
+sulla ludopatia: e' una scelta, la lezione la da' la ruota.
 
-**Le categorie della ruota cambiano ogni giorno.** Uno spicchio delle domande
-porta una categoria del quiz, non una materia: tre della geografia e tre delle
-altre materie, alternate sulla ruota, scelte da `categorieDelGiorno` fra le
-quattordici di `CATEGORIE_RUOTA`, e mai quelle del giorno prima. E' una catena
-dal primo giorno — ogni giorno ne pesca tre fra le quattro che ieri non
-c'erano, per ognuno dei due gruppi, con il seme del giorno — quindi la ruota di
-un giorno e' la stessa per tutti e per sempre senza una tabella che la fissi, e
-la funzione tiene l'ultimo giorno calcolato, così domani costa un passo solo.
-"Accadde oggi" non c'e', perché il file di un giorno da' fra le tredici e le
-venti domande e una categoria della ruota ne vuole trenta; non ci sono le
-città, che sono solo della libera, ne' la cartina, perché alla ruota si
-risponde a scelta. La pagina disegna la ruota del giorno della risposta del
-server (`spicchiDelGiorno(puzzleNumber)`), e le regole dicono le categorie di
-oggi.
+**Il giro salva la disposizione delle ruote** (`disposizione`,
+`DISPOSIZIONE_RUOTA`): i giri di una disposizione di prima contano nel saldo e
+non si mostrano, perché lo stesso indice adesso e' un altro spicchio, e una loro
+sfida rimasta aperta non si gioca piu' (`NESSUN_GIRO`): la chiude il giro dopo,
+con il `delta` che aveva gia', cioe' persa. La 4 e' quella della fortuna e della
+ruota del quiz, e vale per tutte e tre le ruote: chi cambia uno spicchio, la
+ruota fortunata o un moltiplicatore del quiz la deve far salire. Come la 3,
+quella del triplo, non ha voluto una migrazione: il minigioco sta nel giro in
+JSON (`sfida`), e i campi nuovi ci stanno senza toccare la tabella. La `0025`,
+che ha portato la 2, aveva chiuso come perse le sfide rimaste aperte.
+
+**La fortuna gira la ruota fortunata: gli stessi spicchi, con i premi saliti.**
+`SPICCHI_FORTUNATI` ha i quindici posti della ruota: il triplo diventa ×10 e la
+fortuna ×5, dei sette banchi due restano, due diventano ×3 e tre quiz; il quiz e
+la moneta restano dove sono, ma portano i moltiplicatori della fortuna. Quelli
+del quiz salgono ognuno di un gradino (`FORTUNATO`: ×1,25 a ×1,5, ×1,5 a ×2,
+×1,75 a ×2,5, ×2 a ×3, ×3 a ×5, ×4 a ×10), e la moneta paga ×2, ×3, ×4 o ×5
+(`MOLTIPLICATORI_MONETA_FORTUNATA`). Non e' un giro nuovo: e' lo stesso giro,
+con la stessa puntata. La fortuna lascia il giro in `sfida`, e `/ruota/fortuna`
+pesca lo spicchio fortunato e lo scrive nella sfida (`fortunata`); un premio o
+il banco chiudono il giro, la moneta e il quiz lo portano avanti con i
+moltiplicatori della fortuna. Si gira una volta: richiederla ridà quel che e'
+uscito, e l'`UPDATE` e' condizionato alla sfida appena letta, così due tocchi
+insieme non la girano due volte. Una pagina riaperta la ritrova da girare. A chi
+sa tutto la ruota fortunata restituisce in media 2,97 volte la puntata: poco
+meno del triplo, che e' l'unico premio sicuro, e un test lo tiene.
+
+**La ruota del quiz ha dodici categorie, e le pesca il server a ogni giro.**
+Quando la ruota si ferma sul quiz il server sceglie le categorie dei dodici
+spicchi (`categorieDelQuiz`) fra le quattordici di `CATEGORIE_RUOTA` — sette di
+geografia e sette delle altre materie — che quel giocatore oggi non ha ancora
+finito (`categorieDisponibili`): dodici a caso, tutte diverse; se ne restano
+meno si ripetono, ognuna lo stesso numero di volte o quasi, e se sono almeno due
+mai due uguali vicine; se non ne resta nessuna il quiz non esce, ne' sulla ruota
+ne' su quella fortunata. I moltiplicatori invece stanno fermi
+(`MOLTIPLICATORI_QUIZ`, dal ×4 in cima: ×1,25 tre volte, ×1,5 tre, ×1,75 due, ×2
+due, ×3 e ×4 una, in media 1,9), e le categorie fanno un giro a caso, così la
+prima pescata non finisce sempre sul ×4. La si gira con `/ruota/quiz`, e lo
+spicchio decide insieme la categoria della domanda e il moltiplicatore. Le
+categorie stanno nel giro: una pagina riaperta ritrova la stessa ruota. "Accadde
+oggi" non c'e', perché il file di un giorno da' fra le tredici e le venti
+domande e una categoria della ruota ne vuole trenta; non ci sono le città, che
+sono solo della libera, ne' la cartina, perché alla ruota si risponde a scelta.
+Le sei categorie del giorno (`categorieDelGiorno`: tre per gruppo, mai quelle
+del giorno prima, una catena dal primo giorno uguale per tutti) erano gli
+spicchi delle domande della ruota di prima, e restano quelle dei punti di
+domanda della slot.
 
 **L'esito lo decide il server, e una sfida lasciata a meta' e' persa.** Lo
 spicchio si pesca con `crypto.getRandomValues` (con lo scarto, perché il resto
-di una divisione favorirebbe i primi), e il browser fa solo girare la ruota fin
-li': il lancio col dito chiede `/ruota/gira`, e la risposta ha gia' l'esito.
-Cosi' anche la ruota dei moltiplicatori (`/ruota/moltiplicatore`, che a una
-seconda richiesta ridà lo stesso spicchio) e la moneta: il suo moltiplicatore
-esce con il giro, il lato a `/moneta`, che non porta niente. Lo spicchio di una
-categoria che oggi non ha piu' domande da dare a quel giocatore non esce. La
-puntata e' persa dal lancio: chi chiude la pagina davanti a una domanda
-difficile non si salva, e il giro dopo la chiude cosi' com'e'. `/domanda` vuole
-il moltiplicatore (`MOLTIPLICATORE`, 409), e la domanda e' quella del quiz, con
-le stesse regole del tempo: `/domanda` scrive `aperta_at`, la risposta vale
-entro il limite piu' `MARGINE_RETE_MS`, e una domanda rimasta aperta la chiude
-la prima `GET`. Ogni scrittura e' condizionata allo stato appena letto.
+di una divisione favorirebbe i primi), e il browser fa solo girare le ruote fin
+li': il lancio col dito chiede `/ruota/gira`, e la risposta ha gia' l'esito, con
+il moltiplicatore della moneta e le categorie della ruota del quiz. Cosi' anche
+la ruota fortunata (`/ruota/fortuna`) e quella del quiz (`/ruota/quiz`), che a
+una seconda richiesta ridanno lo stesso spicchio, e la moneta: il lato a
+`/moneta`, che non porta niente. La puntata e' persa dal lancio: chi chiude la
+pagina davanti a una domanda difficile non si salva, e il giro dopo la chiude
+cosi' com'e'. `/domanda` vuole la ruota del quiz girata (`RUOTA_QUIZ`, 409), e
+la domanda e' quella del quiz, con le stesse regole del tempo: `/domanda` scrive
+`aperta_at`, la risposta vale entro il limite piu' `MARGINE_RETE_MS`, e una
+domanda rimasta aperta la chiude la prima `GET`. Ogni scrittura e' condizionata
+allo stato appena letto.
 
 **Le domande di Crazy Time si fanno la notte, con quelle del quiz.**
 `scripts/genera-quiz.ts` scrive in `ruota_domande` trenta domande per ognuna
-delle sei categorie del giorno (`DOMANDE_PER_CATEGORIA`), fra le voci note,
-lontane dai soggetti della classificata dello stesso giorno e da quelli della
-stessa categoria dei tre giorni prima (`MEMORIA_RUOTA`): una categoria non
-torna mai il giorno dopo, e cosi' si evitano tutte le domande della sua volta
-prima. La colonna si chiama ancora `materia`, e porta la categoria: il deploy
-scrive le domande prima di pubblicare la pagina, e con una colonna rinominata
-il codice di prima si sarebbe rotto in quei minuti. Come le giornate del quiz,
-una giornata scritta non cambia, tranne le righe di un formato vecchio
-(`FORMATO_DOMANDE_RUOTA`), che si rifanno anche per oggi: erano trenta per
-materia, di categorie mescolate. Rifarle non fa rivedere niente a nessuno,
-perché chi gira non rivede una domanda lo stesso giorno e la riconosce
-dall'impronta (`improntaDomanda`, il testo e la risposta, salvata nel giro con
-la categoria), non dal posto nell'elenco; una categoria di cui ha visto tutto
-non gli esce piu' fino a domani. `--se-manca` guarda anche queste righe, e il
-formato, quindi il deploy le crea per i giorni che non le hanno.
+delle quattordici categorie, ogni giorno (`DOMANDE_PER_CATEGORIA`), fra le voci
+note, lontane dai soggetti della classificata dello stesso giorno e da quelli
+della stessa categoria dei giorni prima. Ogni categoria esce tutti i giorni,
+quindi ricordarne tre (`MEMORIA_RUOTA`) vuol dire evitare novanta soggetti prima
+di trovarne trenta nuovi, e le categorie con pochi soggetti noti ricordano meno
+giorni (`MEMORIA_CORTA`). Misurato su centoventi giorni: i mari con tre giorni
+restavano sotto le trenta domande due giorni su tre, i laghi e gli stati
+ripetevano comunque, gli oceani anche con due, e la scienza, ottanta soggetti
+divisi fra i tipi di domanda, ripete con qualunque memoria; con quei giorni ogni
+categoria fa le sue trenta senza ripetere quel che ricorda. La colonna si chiama
+ancora `materia`, e porta la categoria: il deploy scrive le domande prima di
+pubblicare la pagina, e con una colonna rinominata il codice di prima si sarebbe
+rotto in quei minuti. Come le giornate del quiz, una giornata scritta non
+cambia, tranne le righe di un formato vecchio (`FORMATO_DOMANDE_RUOTA`), che si
+rifanno anche per oggi: il 3 aveva le sei categorie del giorno, il 4 le ha
+tutte. Rifarle non fa rivedere niente a nessuno, perché chi gira non rivede una
+domanda lo stesso giorno e la riconosce dall'impronta (`improntaDomanda`, il
+testo e la risposta, salvata nel giro con la categoria), non dal posto
+nell'elenco; una categoria di cui ha visto tutto non gli esce piu' fino a
+domani. `--se-manca` guarda anche queste righe, e il formato, quindi il deploy
+le crea per i giorni che non le hanno.
 
 **La ruota si gira col dito, e si disegna una volta.** `RuotaFisica`
-(`src/games/ruota/`) e' la ruota di tutte e due: la si prende, la si trascina
-attorno al centro e la si lascia, e parte con la velocita' degli ultimi
+(`src/games/ruota/`) e' la ruota grande e quella del quiz: la si prende, la si
+trascina attorno al centro e la si lascia, e parte con la velocita' degli ultimi
 movimenti del dito (`FINESTRA_MS`). Sotto `LANCIO_MINIMO`, o con il dito fermo
 prima di lasciarla, non parte, e la pagina chiede di lanciarla piu' forte. Al
 lancio chiede l'esito e intanto gira libera, rallentando appena; quando l'esito
 arriva frena fino allo spicchio con `1 - (1 - t)^3`, una curva che comincia
 proprio alla velocita' che aveva — niente scatti — e aggiunge i giri interi che
 servono a durare almeno `durataMinima`. Si ferma dentro lo spicchio ma mai sul
-filo. Gli spicchi sono un disegno fermo (`DisegnoRuota`, che cambia solo con il
-giorno, e `DisegnoMoltiplicatori`, in `memo`), e a ogni fotogramma si scrive la
-rotazione sul gruppo che lo contiene: passare dallo stato di React
-ridisegnerebbe gli spicchi sessanta volte al secondo. La lancetta scatta a ogni
-piolo, dalla parte in cui la spinge la ruota, con il suono del tocco tenuto a
-uno ogni 45 ms (a ruota veloce sarebbe un ronzio). Le scritte vanno lungo il
+filo. Gli spicchi sono un disegno fermo (`DisegnoRuota`, che non cambia mai, e
+`DisegnoQuiz`, che cambia con le categorie del giro, in `memo`), e a ogni
+fotogramma si scrive la rotazione sul gruppo che lo contiene: passare dallo
+stato di React ridisegnerebbe gli spicchi sessanta volte al secondo. La ruota
+fortunata sta nello stesso disegno: ogni spicchio che cambia ha le due facce,
+una sopra l'altra, disegnate con l'asse in alto e poi girate al loro posto, e
+quale si vede lo decide la classe della ruota (`is-fortunata`); allo stesso modo
+i moltiplicatori della fortuna stanno sotto quelli della ruota del quiz. Lo
+scambio e' tutto nel CSS (`scaleX`, con `transform-box: fill-box` e il ritardo
+di ogni spicchio nel suo stile): la ruota non si ridisegna. La lancetta scatta a
+ogni piolo, dalla parte in cui la spinge la ruota, con il suono del tocco tenuto
+a uno ogni 45 ms (a ruota veloce sarebbe un ronzio). Le scritte vanno lungo il
 raggio, dal bordo verso il mozzo (`scrittaRadiale` in `geometria.ts`), come nel
-Crazy Time vero: si leggono quando lo spicchio e' sotto la lancetta, e le
-parole lunghe si stringono (`textLength`) invece di uscire dallo spicchio. Le
-icone restano dritte, e il ×3 del triplo con loro: e' il numero che si guarda.
-La meta che c'e' quando la ruota compare e' dove sta gia' ferma, quindi
-tornando da un minigioco la ruota non rigira: sta sullo spicchio uscito, con
-l'esito sul mozzo. Ogni chiave nuova e' un giro, anche sullo stesso spicchio.
-Con la tastiera si lancia con Invio o lo spazio, e senza animazioni la ruota va
-subito dove deve. La domanda arriva a parte con la carta, le risposte e la
-cartina del quiz (`DomandaRuota`), che servono solo quando la ruota si ferma su
-una domanda.
+Crazy Time vero: si leggono quando lo spicchio e' sotto la lancetta, e le parole
+lunghe si stringono (`textLength`) invece di uscire dallo spicchio; sulla ruota
+del quiz il nome della categoria corre accanto al moltiplicatore (`scarto`). Le
+icone restano dritte, e i numeri dei premi della ruota grande con loro: sono
+quel che si guarda. Il quiz ha un'icona sola, il fumetto con il punto di domanda
+(`IconaQuiz`), e la fortuna il quadrifoglio. La meta che c'e' quando la ruota
+compare e' dove sta gia' ferma, quindi tornando da un minigioco la ruota non
+rigira: sta sullo spicchio uscito, con l'esito sul mozzo. Ogni chiave nuova e'
+un giro, anche sullo stesso spicchio. Con la tastiera si lancia con Invio o lo
+spazio, e senza animazioni la ruota va subito dove deve. La domanda arriva a
+parte con la carta, le risposte e la cartina del quiz (`DomandaRuota`), che
+servono solo quando si arriva a una domanda.
+
+**La fortuna trasforma la ruota sul posto.** Quando la ruota si ferma sulla
+fortuna il quadrifoglio salta fuori dal mozzo (`ColpoDiFortuna`, `COLPO_MS`),
+passa l'insegna della ruota fortunata, e il palco si fa verde; poi la ruota
+diventa quella fortunata dov'e', senza sparire: due ondate partono dalla
+fortuna, sotto la lancetta, girano gli spicchi uno dopo l'altro, una per parte,
+e si incontrano sul triplo, che sale per ultimo da ×3 a ×10, un intero alla
+volta. Lo stesso conto sale in grande sopra il mozzo (`PremioCheSale`), perché
+sulla ruota il ×10 e' piccolo e magari a testa in giu'. I tempi stanno in
+`magia.ts`, e la pagina fa partire i suoni con gli stessi numeri — `sale` a ogni
+spicchio, `incasso` a ogni passo del conto, `magia` all'ultimo — cosi' si sente
+quel che si vede. Dalla ruota fortunata al quiz, la ruota del quiz arriva con i
+moltiplicatori di sempre, e solo dopo salgono, uno dopo l'altro dal piu'
+piccolo, con il ×4 che conta fino al ×10: si vede che cosa ha portato la
+fortuna. Il nastro (`NastroFortuna`) dice "Ruota fortunata", "Quiz fortunato" o
+"Moneta fortunata" finché la fortuna dura, e dopo l'esito la ruota torna quella
+di sempre. Senza animazioni la ruota diventa fortunata di colpo, con il suono
+della magia; una pagina riaperta a fortuna in corso la trova gia' fortunata.
+
+**Dal triplo c'e' la festa.** `FestaRuota` (`src/games/ruota/Festa.tsx`) prende
+lo schermo come la festa della slot: la sala si spegne, girano i raggi,
+l'insegna con le lampadine porta il moltiplicatore enorme, d'oro e con lo
+spessore, e la vincita conta da zero con le monete che tintinnano sempre piu'
+alte. Tre gradini (`festaDi`): il triplo; il ×5, con i raggi che girano anche al
+contrario, la pioggia di monete e l'onda d'urto; il ×10, il premio piu' grande,
+con il terremoto, i fuochi d'artificio e una seconda onda. Quel che viene dalla
+fortuna ha il verde e l'oro, e i quadrifogli che volano con le monete. I premi
+fissi hanno sempre la festa; una moneta o una domanda vinta solo dal ×5
+(`FESTA_MINIGIOCO`): il ×3 della moneta esce una moneta su otto, e una festa
+cosi' frequente smetterebbe di dire qualcosa. Sotto, l'adesivo d'oro e la
+pioggia di monete. Monete, quadrifogli e fuochi sono un canvas con un seme fisso
+per gradino, come nella slot. Un tocco finisce il conto, un altro chiude, e
+finita la festa le monete vanno al saldo.
 
 **Crazy Time si gioca di fila, e ogni passaggio ha la sua scena.** Il palco e'
 scuro in tutti e due i temi, come una sala, e tiene tre scene una sopra l'altra
-— la ruota, quella dei moltiplicatori, la moneta — mentre la domanda prende la
-pagina intera, come nel quiz. Fra una scena e l'altra passa un intermezzo
-(`Intermezzo`: raggi, un lampo e l'insegna del minigioco; la scena cambia sotto
-l'insegna), e le lampadine della cornice dicono il momento: a turno in attesa,
-una corsa mentre gira, a raffica su un minigioco, un lampo rosso al banco. La
-moneta si lancia toccandola. Mentre e' in aria il tabellone resta com'era
-(`conto`) e il lato si dice quando cade: la risposta del server arriva prima, e
-sarebbe la soluzione. Una vincita ha l'adesivo d'oro e la pioggia di monete, il
-banco l'adesivo bordato e un sussulto del palco. Dopo un giro il pannello torna
-alla puntata, che resta quella di prima finché non la si cambia, come al
-tavolo. Il tabellone in cima dice il saldo e la puntata; nella scheda della
-Fortuna la carta dice quanto si puo' puntare, e non ha l'anello, perché Crazy
-Time non finisce: c'e' solo finché mancano i punti per la prima puntata. La
-ruota si riprende in mano `INTERVALLO_GIRI_MS` dopo il lancio: senza animazioni
-si fermerebbe subito, e il server direbbe di no.
+— la ruota, la ruota del quiz, la moneta — mentre la domanda prende la pagina
+intera, come nel quiz; la ruota fortunata non e' una scena, e' la ruota stessa.
+Fra una scena e l'altra passa un intermezzo (`Intermezzo`: raggi, un lampo e
+l'insegna del minigioco; la scena cambia sotto l'insegna), e le lampadine della
+cornice dicono il momento: a turno in attesa, una corsa mentre gira, a raffica
+su un minigioco, un lampo rosso al banco, verdi sulla ruota fortunata. Quando la
+ruota del quiz si ferma, la categoria e il moltiplicatore saltano fuori
+(`Rivelazione`), e poi arriva la domanda. La moneta si lancia toccandola. Mentre
+e' in aria il tabellone resta com'era (`conto`) e il lato si dice quando cade:
+la risposta del server arriva prima, e sarebbe la soluzione. Una vincita ha
+l'adesivo d'oro e la pioggia di monete, o la festa, il banco l'adesivo bordato e
+un sussulto del palco. Dopo un giro il pannello torna alla puntata, che resta
+quella di prima finché non la si cambia, come al tavolo. Il tabellone in cima
+dice il saldo e la puntata; nella scheda della Fortuna la carta dice quanto si
+puo' puntare, o dove aspetta una sfida aperta ("Ruota fortunata", "Quiz",
+"Moneta"), e non ha l'anello, perché Crazy Time non finisce: c'e' solo finché
+mancano i punti per la prima puntata. La ruota si riprende in mano
+`INTERVALLO_GIRI_MS` dopo il lancio: senza animazioni si fermerebbe subito, e il
+server direbbe di no.
 
 **La puntata e la vincita si vedono andare e venire.** Al lancio una pila di
 fiches vola dal saldo al mozzo, che diventa una fiche "in gioco", e il saldo
 scende subito della puntata: e' quel che succede davvero, perché il giro nasce
-con la puntata gia' tolta. Quando la ruota si ferma una vincita torna al saldo
-in monete — dal mozzo, o dalla moneta caduta sul blu — e il saldo sale quando
+con la puntata gia' tolta. Alla ruota fortunata la fiche e' gia' sul mozzo, e il
+saldo non si muove. Quando la ruota si ferma una vincita torna al saldo in
+monete — dal mozzo, o dalla moneta caduta sul blu — e il saldo sale quando
 arriva la prima; al banco le fiches cadono dal mozzo, e il mozzo dice quanto si
 e' vinto o perso. Fino ad allora il tabellone resta su quel che si e' visto
 (`conto`), poi un lampo d'oro o rosso accompagna il conto nuovo. Una domanda
 vinta o persa si racconta cosi' tornando alla ruota (`RITORNO_MS`). I voli sono
 elementi del body animati con le Web Animations (`src/games/fortuna/voli.ts`,
 che usa anche la slot), sotto gli adesivi, che dicono il momento: passare dallo
-stato di React ridisegnerebbe la pagina a ogni fotogramma. Durante la domanda
-la pagina della ruota resta montata e nascosta (`hidden`): rimontarla farebbe
-ricontare il tabellone da zero e ridisegnare le ruote.
+stato di React ridisegnerebbe la pagina a ogni fotogramma. Durante la domanda la
+pagina della ruota resta montata e nascosta (`hidden`): rimontarla farebbe
+ricontare il tabellone da zero e ridisegnare le ruote. Ogni risposta del server
+passa da `aggiorna`, che scrive subito lo stato nuovo anche in `ultimo`: senza
+animazioni la ruota e la moneta si fermano dentro il loro effetto, che React fa
+girare prima di quello della pagina, e leggerebbero il giro di prima, come i
+rulli della slot (vedi sotto).
 
 **La slot rende come Crazy Time, e fa vincere come le slot vere.** Tre rulli di
 quaranta fermate, tre righe in vista e una linea (`shared/slot.ts`). Sulla linea
@@ -673,10 +758,11 @@ puntata la annuncia subito una regione `polite`, senza aspettare il volo.
 **La domanda della slot e' quella di Crazy Time.** Le stesse trenta domande per
 categoria della notte (`ruota_domande`), e chi ne ha avuta una a un gioco non la
 rivede all'altro: `domandeViste` guarda `ruota_giocate` e `slot_giri`. La
-categoria la pesca il server con le fermate, fra quelle del giorno che hanno
-ancora domande da dare a quel giocatore; se non ce n'e' nessuna i tre punti di
-domanda non escono, e le fermate si ripescano (`fermateACaso`), come lo spicchio
-senza domande alla ruota. Sui rulli i punti di domanda si girano e la mostrano.
+categoria la pesca il server con le fermate, fra le sei del giorno
+(`categorieDelGiorno`) che hanno ancora domande da dare a quel giocatore; se non
+ce n'e' nessuna i tre punti di domanda non escono, e le fermate si ripescano
+(`fermateACaso`), come lo spicchio senza domande alla ruota. Sui rulli i punti
+di domanda si girano e la mostrano.
 La domanda si apre con il Via, con il tempo del quiz, e una lasciata a meta' la
 chiude il giro dopo: la puntata era gia' pagata, e la linea aveva gia' pagato il
 suo. La pagina mostra prima la linea e poi i punti di domanda, e una festa in

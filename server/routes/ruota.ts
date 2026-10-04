@@ -3,7 +3,7 @@ import { sceltaValida } from '../../shared/quiz'
 import type { RuotaStato } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
-import { apriDomanda, gira, giraMoltiplicatore, lanciaMoneta, rispondi, statoRuota } from '../lib/ruotaStore'
+import { apriDomanda, gira, giraFortuna, giraQuiz, lanciaMoneta, rispondi, statoRuota } from '../lib/ruotaStore'
 import { requireVerified } from '../lib/session'
 
 /** Una scelta e' l'id di un'opzione (`sceltaValida`). Null e' il tempo finito. */
@@ -31,10 +31,17 @@ export const ruotaRoutes = new Hono<AppEnv>()
     return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
   })
 
-  /** La ruota dei moltiplicatori della domanda: il moltiplicatore lo sceglie il server. */
-  .post('/moltiplicatore', async (c) => {
+  /** La ruota fortunata, con la puntata del giro: lo spicchio lo sceglie il server, una volta sola. */
+  .post('/fortuna', async (c) => {
     const io = c.get('player').id
-    await giraMoltiplicatore(c.env.DB, io)
+    await giraFortuna(c.env.DB, io)
+    return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
+  })
+
+  /** La ruota del quiz: la categoria e il moltiplicatore li sceglie il server, una volta sola. */
+  .post('/quiz', async (c) => {
+    const io = c.get('player').id
+    await giraQuiz(c.env.DB, io)
     return c.json<RuotaStato>(await statoRuota(c.env.DB, io))
   })
 
