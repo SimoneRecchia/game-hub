@@ -25,11 +25,12 @@ import './Festa.css'
  * nel body, sopra a tutto, e non decide niente: la vincita e' gia' scritta, qui
  * si festeggia.
  *
- * Tre gradini, ognuno piu' grande di quello prima: il triplo, dal ×3; il
- * quintuplo, con i raggi che girano anche al contrario, la pioggia di monete e
- * l'onda d'urto; il decuplo, il premio piu' grande della ruota fortunata, con
- * il terremoto, i fuochi d'artificio e una seconda onda. Quel che viene dalla
- * fortuna ha il verde e l'oro, e i quadrifogli che volano con le monete.
+ * Tre gradini, ognuno piu' grande di quello prima: dal ×3; dal ×5, con i raggi
+ * che girano anche al contrario, la pioggia di monete e l'onda d'urto; dal ×10
+ * — il decuplo della ruota fortunata, i ×15 e i ×30 del Pachinko — con il
+ * terremoto, i fuochi d'artificio e una seconda onda. L'insegna dice il nome
+ * del moltiplicatore, o quante volte, se un nome non ce l'ha. Quel che viene
+ * dalla fortuna ha il verde e l'oro, e i quadrifogli che volano con le monete.
  *
  * Le monete, i quadrifogli e i fuochi sono un canvas, con un seme fisso per
  * gradino: la stessa festa e' sempre la stessa.
@@ -45,6 +46,19 @@ export function festaDi(moltiplicatore: number): LivelloFestaRuota | null {
   return null
 }
 
+/** I moltiplicatori che hanno un nome: gli altri, come i ×15 e i ×30 del Pachinko, si dicono in volte. */
+const NOMI_DEI_MOLTIPLICATORI: Record<number, string> = {
+  3: 'TRIPLO',
+  4: 'QUADRUPLO',
+  5: 'QUINTUPLO',
+  6: 'SESTUPLO',
+  8: 'OTTUPLO',
+  10: 'DECUPLO',
+}
+
+/** Il nome sull'insegna della festa: "TRIPLO", "DECUPLO", "15 VOLTE". */
+export const nomeDellaFesta = (m: number) => NOMI_DEI_MOLTIPLICATORI[m] ?? `${String(m).replace('.', ',')} VOLTE`
+
 export interface DatiFestaRuota {
   chiave: number
   moltiplicatore: number
@@ -58,7 +72,6 @@ export interface DatiFestaRuota {
 type Fase = 'conta' | 'finita'
 
 interface Livello {
-  nome: string
   /** Quanto conta il numero, e quanto resta in vista dopo. */
   conta: number
   resta: number
@@ -79,7 +92,6 @@ interface Livello {
 
 const LIVELLI: Record<LivelloFestaRuota, Livello> = {
   triplo: {
-    nome: 'TRIPLO',
     conta: 1_700,
     resta: 1_200,
     getto: 110,
@@ -93,7 +105,6 @@ const LIVELLI: Record<LivelloFestaRuota, Livello> = {
     seme: 0x3a,
   },
   cinque: {
-    nome: 'QUINTUPLO',
     conta: 2_300,
     resta: 1_400,
     getto: 135,
@@ -107,7 +118,6 @@ const LIVELLI: Record<LivelloFestaRuota, Livello> = {
     seme: 0x5c,
   },
   dieci: {
-    nome: 'DECUPLO',
     conta: 3_300,
     resta: 2_200,
     getto: 150,
@@ -444,7 +454,7 @@ export function FestaRuota({ dati, onFine }: { dati: DatiFestaRuota; onFine: () 
                 {testo}
               </text>
             </svg>
-            <span className="ct-festa__nome">{liv.nome}</span>
+            <span className="ct-festa__nome">{nomeDellaFesta(dati.moltiplicatore)}</span>
           </div>
           <div className="ct-festa__vincita u-tabnum">+{numero.toLocaleString('it-IT')}</div>
           {dati.sotto && <div className="ct-festa__sotto">{dati.sotto}</div>}

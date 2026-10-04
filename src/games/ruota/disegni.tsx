@@ -7,12 +7,13 @@ import {
   SPICCHI_FORTUNATI,
   SPICCHI_QUIZ,
   SPICCHI_RUOTA,
-  etichettaDi,
+  eSfida,
   nomeSullaRuota,
   scriviMoltiplicatore,
   type Spicchio,
+  type TipoSpicchio,
 } from '@shared/ruota'
-import { MOZZO, PIOLI, RAGGIO, punto, scrittaRadiale } from './geometria'
+import { MOZZO, PIOLI, RAGGIO, RAGGIO_PIOLO, misureDi, punto, scrittaRadiale } from './geometria'
 import {
   CONTO_DIECI,
   CONTO_QUIZ,
@@ -33,6 +34,7 @@ export const coloreDellaCategoria = (c: CategoriaQuiz) => `var(--materia-${mater
 
 /** Il colore di un moltiplicatore, dovunque lo si mostri: piu' vale, piu' e' prezioso. */
 export const COLORI_MOLTIPLICATORI: Record<string, string> = {
+  '0.5': 'var(--ct-m05)',
   '1.25': 'var(--ct-m125)',
   '1.5': 'var(--ct-m15)',
   '1.75': 'var(--ct-m175)',
@@ -41,13 +43,17 @@ export const COLORI_MOLTIPLICATORI: Record<string, string> = {
   '3': 'var(--ct-m3)',
   '4': 'var(--ct-m4)',
   '5': 'var(--ct-m5)',
+  '6': 'var(--ct-m5)',
+  '8': 'var(--ct-m10)',
   '10': 'var(--ct-m10)',
+  '15': 'var(--ct-m10)',
+  '30': 'var(--ct-m10)',
 }
 
 export const coloreDelMoltiplicatore = (m: number) => COLORI_MOLTIPLICATORI[String(m)] ?? 'var(--ct-oro)'
 
 /** La classe di un moltiplicatore: "is-m125", "is-m10". */
-const classeDelValore = (m: number) => `is-m${String(m).replace('.', '')}`
+export const classeDelValore = (m: number) => `is-m${String(m).replace('.', '')}`
 
 /** Lo spicchio di `n` con l'asse in alto, centrato sull'origine: ogni spicchio si disegna cosi', e poi si gira. */
 function spicchioLocale(n: number, raggio = RAGGIO): string {
@@ -67,21 +73,29 @@ function Raggiere({ n }: { n: number }) {
       })}
       {Array.from({ length: n }, (_, i) => {
         const [x, y] = punto(PIOLI, (i * 360) / n)
-        return <circle key={`p${i}`} className="ct-piolo" cx={x} cy={y} r={1.9} />
+        return <circle key={`p${i}`} className="ct-piolo" cx={x} cy={y} r={RAGGIO_PIOLO} />
       })}
     </>
   )
 }
 
+/* ─────────────────────────────  Le icone degli spicchi  ───────────────────────────── */
+
+/*
+ * Ogni icona si disegna dentro un quadrato di lato `lato`, con il centro
+ * nell'origine: sulla ruota sta dove dice `misureDi`, e non esce dal suo posto.
+ */
+
 /** La moneta dello spicchio: mezza blu e mezza rossa, con l'orlo d'oro. */
-function IconaMoneta({ lato }: { lato: number }) {
+export function IconaMoneta({ lato }: { lato: number }) {
   const r = lato / 2
+  const dentro = r * 0.82
   return (
     <g className="ct-icona-moneta">
       <circle r={r} className="ct-icona-moneta__orlo" />
-      <path d={`M0 ${-r + 1.6}A${r - 1.6} ${r - 1.6} 0 0 0 0 ${r - 1.6}Z`} className="ct-icona-moneta__blu" />
-      <path d={`M0 ${-r + 1.6}A${r - 1.6} ${r - 1.6} 0 0 1 0 ${r - 1.6}Z`} className="ct-icona-moneta__rosso" />
-      <circle r={r - 1.6} className="ct-icona-moneta__filo" />
+      <path d={`M0 ${-dentro}A${dentro} ${dentro} 0 0 0 0 ${dentro}Z`} className="ct-icona-moneta__blu" />
+      <path d={`M0 ${-dentro}A${dentro} ${dentro} 0 0 1 0 ${dentro}Z`} className="ct-icona-moneta__rosso" />
+      <circle r={dentro} className="ct-icona-moneta__filo" />
     </g>
   )
 }
@@ -97,6 +111,59 @@ export function IconaQuiz({ lato }: { lato: number }) {
       <text className="ct-icona-quiz__segno" x={12} y={11.4}>
         ?
       </text>
+    </g>
+  )
+}
+
+/** Il taglio a zigzag della moneta dello split, dall'alto in basso, e le sue due meta'. */
+const TAGLIO = 'M0 -8.8L1.4 -5.2L-1.1 -1.8L1.3 1.6L-1 5L0 8.8'
+const MEZZA_SINISTRA = `${TAGLIO}A8.8 8.8 0 0 1 0 -8.8Z`
+const MEZZA_DESTRA = `${TAGLIO}A8.8 8.8 0 0 0 0 -8.8Z`
+
+/**
+ * Lo split: una moneta d'oro tagliata in due, le meta' staccate e storte. Si
+ * legge come una moneta, e lo e': ne torna meta'.
+ */
+export function IconaSplit({ lato }: { lato: number }) {
+  return (
+    <g className="ct-icona-split" transform={`scale(${lato / 24})`}>
+      <g transform="translate(-2.3 0.7) rotate(-13)">
+        <path className="ct-icona-split__mezza" d={MEZZA_SINISTRA} />
+        <path className="ct-icona-split__filo" d="M-1 -6.1A6.2 6.2 0 0 0 -1 6.1" />
+      </g>
+      <g transform="translate(2.3 -0.7) rotate(13)">
+        <path className="ct-icona-split__mezza" d={MEZZA_DESTRA} />
+        <path className="ct-icona-split__filo" d="M1 -6.1A6.2 6.2 0 0 1 1 6.1" />
+      </g>
+    </g>
+  )
+}
+
+/** I pioli dell'icona del Pachinko: un triangolo di sei, come quelli del tabellone. */
+const PIOLI_ICONA: ReadonlyArray<readonly [number, number]> = [
+  [0, -0.5], [-4.2, 3.6], [4.2, 3.6], [-8.4, 7.7], [0, 7.7], [8.4, 7.7],
+]
+
+/** Il Pachinko: la pallina che cade sul triangolo dei pioli. */
+export function IconaPachinko({ lato }: { lato: number }) {
+  return (
+    <g className="ct-icona-pachinko" transform={`scale(${lato / 24})`}>
+      {PIOLI_ICONA.map(([x, y]) => (
+        <circle key={`${x},${y}`} className="ct-icona-pachinko__piolo" cx={x} cy={y} r={1.9} />
+      ))}
+      <path className="ct-icona-pachinko__scia" d="M-6.5 -10.6Q-4.6 -9.6 -3.3 -7.2" />
+      <circle className="ct-icona-pachinko__pallina" cx={-1.6} cy={-6.8} r={3.4} />
+    </g>
+  )
+}
+
+/** Il Cash Hunt: il mirino del cannone che sceglie la casella. */
+export function IconaCashHunt({ lato }: { lato: number }) {
+  return (
+    <g className="ct-icona-caccia" transform={`scale(${lato / 24})`}>
+      <circle className="ct-icona-caccia__anello" r={7.6} />
+      <path className="ct-icona-caccia__croce" d="M0 -10.6V-4.6M0 4.6V10.6M-10.6 0H-4.6M4.6 0H10.6" />
+      <circle className="ct-icona-caccia__centro" r={2.4} />
     </g>
   )
 }
@@ -117,14 +184,30 @@ export function Quadrifoglio({ lato, classe = '' }: { lato: number; classe?: str
   )
 }
 
-/** Il raggio dove sta l'icona, verso il bordo, e dove sta la scritta, fra l'icona e il mozzo. */
-const ICONA_A = 77
-const ICONA = 18
-const SCRITTA_DA = 65
-const SCRITTA_A = 28
+/** Quanto e' grande il quadrifoglio disegnato con `lato`: le foglie e il gambo, con il loro filo. */
+const QUADRIFOGLIO_PIENO = 16.4
 
-/** I nomi dei moltiplicatori fissi, lungo il raggio: il triplo, il quintuplo, il decuplo. */
-const NOMI_FISSI: Record<number, string> = { 3: 'TRIPLO', 5: 'QUINTUPLO', 10: 'DECUPLO' }
+/** L'icona di uno spicchio, dentro il suo quadrato: quella del quiz, della moneta, dei minigiochi, della fortuna. */
+export function IconaSpicchio({ tipo, lato }: { tipo: TipoSpicchio; lato: number }) {
+  switch (tipo) {
+    case 'quiz':
+      return <IconaQuiz lato={lato} />
+    case 'moneta':
+      return <IconaMoneta lato={lato} />
+    case 'split':
+      return <IconaSplit lato={lato} />
+    case 'pachinko':
+      return <IconaPachinko lato={lato} />
+    case 'cashhunt':
+      return <IconaCashHunt lato={lato} />
+    case 'fortuna':
+      return <Quadrifoglio lato={(lato * 16) / QUADRIFOGLIO_PIENO} />
+    default:
+      return null
+  }
+}
+
+/* ─────────────────────────────  La ruota grande  ───────────────────────────── */
 
 /** Le stelline di uno spicchio che si gira: escono dal centro dello spicchio, ognuna per la sua strada. */
 const STELLINE = Array.from({ length: 7 }, (_, k) => {
@@ -155,18 +238,25 @@ function Stelline({ y }: { y: number }) {
 }
 
 /** Quando compare un passo del conto, e quanto resta: l'ultimo resta. */
-function tempiDelConto(passi: readonly PassoDelConto[], k: number): CSSProperties {
+export function tempiDelConto(passi: readonly PassoDelConto[], k: number): CSSProperties {
   const ultimo = k === passi.length - 1
   return { '--da': `${passi[k].ms}ms`, '--dura': `${ultimo ? 0 : passi[k + 1].ms - passi[k].ms}ms` } as CSSProperties
 }
 
+/** La classe di uno spicchio, per il suo colore: "is-banco", "is-fisso is-m3". */
+const classeDi = (s: Spicchio) =>
+  s.tipo === 'fisso' ? `is-fisso ${classeDelValore(s.moltiplicatore)}` : `is-${s.tipo}`
+
 /**
  * Una faccia di uno spicchio della ruota, disegnata con l'asse in alto: il
- * banco nero con la scritta d'oro; i premi fissi con il numero grande e dritto,
- * e il nome lungo il raggio; il quiz azzurro con il fumetto; la moneta viola
- * con la moneta blu e rossa; la fortuna verde con il quadrifoglio d'oro. Il
- * quiz e la moneta della ruota fortunata hanno l'oro sul bordo e la scritta
- * d'oro. Il ×10 conta da ×4: e' il triplo che sale.
+ * banco nero con la scritta d'oro dal bordo al mozzo; i premi fissi con il
+ * numero dritto verso il bordo, e sotto il nome lungo il raggio, se ce l'hanno;
+ * gli altri con l'icona verso il bordo e sotto il nome. Lo split e' rosa con la
+ * moneta tagliata, il quiz azzurro con il fumetto, la moneta viola, il Pachinko
+ * turchese con la pallina e i pioli, il Cash Hunt verde con il mirino, la
+ * fortuna verde con il quadrifoglio d'oro. I minigiochi della ruota fortunata
+ * hanno l'oro sul bordo e la scritta d'oro. Il ×10 conta da ×4: e' il triplo
+ * che sale. Le misure sono quelle di `misureDi`.
  */
 function Faccia({
   s,
@@ -180,72 +270,59 @@ function Faccia({
   conto?: readonly PassoDelConto[]
 }) {
   const forma = spicchioLocale(SPICCHI_RUOTA.length)
-  const doro = fortunata && (s.tipo === 'quiz' || s.tipo === 'moneta')
-  const classe = s.tipo === 'fisso' ? `is-fisso ${classeDelValore(s.moltiplicatore)}` : `is-${s.tipo}`
-  let contenuto: ReactNode
-  if (s.tipo === 'banco') {
-    contenuto = (
-      <text className="ct-scritta is-banco" {...scrittaRadiale(0, 88, 34, 'BANCO', 11)}>
-        BANCO
-      </text>
-    )
-  } else if (s.tipo === 'fisso') {
-    const numero = etichettaDi(s)
-    const nome = NOMI_FISSI[s.moltiplicatore] ?? numero
-    const valore = classeDelValore(s.moltiplicatore)
-    const classeNumero = `ct-scritta is-fisso ${valore} is-numero${numero.length > 2 ? ' is-lungo' : ''}`
-    contenuto = (
-      <>
-        {conto ? (
-          conto.map((p, k) =>
-            k === 0 ? null : (
-              <text
-                key={p.valore}
-                className={`${classeNumero} ct-conto${k === conto.length - 1 ? ' is-ultimo' : ''}`}
-                y={-ICONA_A + 4}
-                style={tempiDelConto(conto, k)}
-              >
-                {scriviMoltiplicatore(p.valore)}
-              </text>
-            ),
-          )
-        ) : (
-          <text className={classeNumero} y={-ICONA_A + 4}>
-            {numero}
+  const doro = fortunata && eSfida(s)
+  const { icona, numero, scritta } = misureDi(s)
+  const valore = s.tipo === 'fisso' ? classeDelValore(s.moltiplicatore) : ''
+  const classeScritta = [
+    'ct-scritta',
+    s.tipo === 'banco' && 'is-banco',
+    s.tipo === 'fisso' && `is-fisso ${valore}`,
+    s.tipo === 'fortuna' && 'is-fortuna',
+    doro && 'is-doro',
+  ]
+    .filter(Boolean)
+    .join(' ')
+  let cifre: ReactNode = null
+  if (numero) {
+    const classeNumero = `ct-scritta is-fisso ${valore} is-numero`
+    cifre = conto ? (
+      conto.map((p, k) =>
+        k === 0 ? null : (
+          <text
+            key={p.valore}
+            className={`${classeNumero} ct-conto${k === conto.length - 1 ? ' is-ultimo' : ''}`}
+            y={-numero.centro}
+            fontSize={numero.dimensione}
+            style={tempiDelConto(conto, k)}
+          >
+            {scriviMoltiplicatore(p.valore)}
           </text>
-        )}
-        <text className={`ct-scritta is-fisso ${valore}`} {...scrittaRadiale(0, SCRITTA_DA - 4, SCRITTA_A, nome, 7.6)}>
-          {nome}
-        </text>
-      </>
-    )
-  } else {
-    const testo = etichettaDi(s)
-    contenuto = (
-      <>
-        <g className="ct-icona" transform={`translate(0 ${-ICONA_A})`}>
-          {s.tipo === 'quiz' ? (
-            <IconaQuiz lato={ICONA + 3} />
-          ) : s.tipo === 'moneta' ? (
-            <IconaMoneta lato={ICONA + 2} />
-          ) : (
-            <Quadrifoglio lato={ICONA + 6} />
-          )}
-        </g>
-        <text
-          className={`ct-scritta${doro ? ' is-doro' : ''}${s.tipo === 'fortuna' ? ' is-fortuna' : ''}`}
-          {...scrittaRadiale(0, SCRITTA_DA, SCRITTA_A, testo, s.tipo === 'quiz' ? 10 : 7.6)}
-        >
-          {testo}
-        </text>
-      </>
+        ),
+      )
+    ) : (
+      <text className={classeNumero} y={-numero.centro} fontSize={numero.dimensione}>
+        {numero.testo}
+      </text>
     )
   }
   return (
     <>
-      <path className={`ct-spicchio ${classe}`} d={forma} />
+      <path className={`ct-spicchio ${classeDi(s)}`} d={forma} />
       {(doro || s.tipo === 'fortuna') && <path className="ct-spicchio-oro" d={forma} fill={`url(#${oro})`} />}
-      {contenuto}
+      {icona && (
+        <g className="ct-icona" transform={`translate(0 ${-icona.centro})`}>
+          <IconaSpicchio tipo={s.tipo} lato={icona.lato} />
+        </g>
+      )}
+      {cifre}
+      {scritta && (
+        <text
+          className={classeScritta}
+          {...scrittaRadiale(0, scritta.da, scritta.a, scritta.testo, scritta.dimensione, 0, scritta.spaziatura)}
+        >
+          {scritta.testo}
+        </text>
+      )}
     </>
   )
 }
@@ -263,6 +340,7 @@ export const DisegnoRuota = memo(function DisegnoRuota() {
   const oro = `${useId().replace(/:/g, '')}-oro`
   const n = SPICCHI_RUOTA.length
   const passo = 360 / n
+  const dieci = misureDi(SPICCHI_FORTUNATI[POSTO_DIECI]).numero
   return (
     <>
       <defs>
@@ -274,16 +352,16 @@ export const DisegnoRuota = memo(function DisegnoRuota() {
       </defs>
       {SPICCHI_RUOTA.map((s, i) => {
         const cambia = cambiaConLaFortuna(i)
-        const dieci = i === POSTO_DIECI
+        const eDieci = i === POSTO_DIECI
         return (
           <g
             key={i}
-            className={`ct-posto${cambia ? ' cambia' : ''}${dieci ? ' is-dieci' : ''}`}
+            className={`ct-posto${cambia ? ' cambia' : ''}${eDieci ? ' is-dieci' : ''}`}
             transform={`rotate(${i * passo + passo / 2})`}
             style={
               {
                 '--ritardo': `${ritardoDellaRuota(i)}ms`,
-                ...(dieci ? { '--fine': `${CONTO_DIECI[CONTO_DIECI.length - 1].ms}ms` } : {}),
+                ...(eDieci ? { '--fine': `${CONTO_DIECI[CONTO_DIECI.length - 1].ms}ms` } : {}),
               } as CSSProperties
             }
           >
@@ -292,12 +370,12 @@ export const DisegnoRuota = memo(function DisegnoRuota() {
             </g>
             {cambia && (
               <g className="ct-faccia is-fortunata">
-                <Faccia s={SPICCHI_FORTUNATI[i]} fortunata oro={oro} conto={dieci ? CONTO_DIECI : undefined} />
+                <Faccia s={SPICCHI_FORTUNATI[i]} fortunata oro={oro} conto={eDieci ? CONTO_DIECI : undefined} />
               </g>
             )}
             <path className="ct-lampo" d={spicchioLocale(n)} />
-            {cambia && <Stelline y={-58} />}
-            {dieci && <circle className="ct-onda" cy={-ICONA_A + 2} r={10} />}
+            {cambia && <Stelline y={-56} />}
+            {eDieci && dieci && <circle className="ct-onda" cy={-dieci.centro} r={9} />}
           </g>
         )
       })}
@@ -305,6 +383,8 @@ export const DisegnoRuota = memo(function DisegnoRuota() {
     </>
   )
 })
+
+/* ─────────────────────────────  La ruota del quiz  ───────────────────────────── */
 
 /** Dove stanno le scritte della ruota del quiz: il moltiplicatore grande e, di fianco, il nome della categoria. */
 const VALORE_DA = 70
@@ -329,7 +409,7 @@ export const DisegnoQuiz = memo(function DisegnoQuiz({ categorie }: { categorie:
     <text
       key={x}
       className={`ct-scritta is-moltiplicatore ${classeDelValore(x)}${classe}`}
-      {...scrittaRadiale(0, VALORE_DA, VALORE_A, scriviMoltiplicatore(x), 13.5, SCARTO_VALORE)}
+      {...scrittaRadiale(0, VALORE_DA, VALORE_A, scriviMoltiplicatore(x), 13.5, SCARTO_VALORE, 0.02)}
       style={stile}
     >
       {scriviMoltiplicatore(x)}
@@ -380,7 +460,7 @@ export const DisegnoQuiz = memo(function DisegnoQuiz({ categorie }: { categorie:
                   )
                 : valore(MOLTIPLICATORI_QUIZ_FORTUNATI[i])}
             </g>
-            <text className="ct-scritta is-categoria" {...scrittaRadiale(0, 75, 40, nome, 6.4, SCARTO_NOME)}>
+            <text className="ct-scritta is-categoria" {...scrittaRadiale(0, 75, 40, nome, 6.4, SCARTO_NOME, 0.08)}>
               {nome}
             </text>
             <Stelline y={-56} />

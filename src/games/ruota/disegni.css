@@ -1,8 +1,10 @@
 /*
- * Gli spicchi delle ruote. Il banco e' nero con l'oro: e' la casa. Il triplo
- * e' d'oro; il quiz azzurro, con il fumetto; la moneta viola; la fortuna verde,
- * con il quadrifoglio d'oro. Sulla ruota fortunata il ×5 e' arancio e il ×10
- * cremisi, e il quiz e la moneta hanno l'oro sul bordo. Sulla ruota del quiz il
+ * Gli spicchi delle ruote. Il banco e' nero con l'oro: e' la casa. Lo split e'
+ * rosa, con la moneta tagliata; il triplo d'oro; il quiz azzurro, con il
+ * fumetto; la moneta viola; il Pachinko turchese, con la pallina e i pioli; il
+ * Cash Hunt verde acido, con il mirino; la fortuna verde, con il quadrifoglio
+ * d'oro. Sulla ruota fortunata il ×1,5 e' ambra, il ×5 arancio e il ×10
+ * cremisi, e i minigiochi hanno l'oro sul bordo. Sulla ruota del quiz il
  * colore e' quello della materia della categoria, e quello del moltiplicatore
  * dice quanto vale, dal bianco dei piccoli all'oro dei grandi.
  */
@@ -15,12 +17,24 @@
   fill: var(--ct-banco);
 }
 
+.ct-spicchio.is-split {
+  fill: var(--ct-split);
+}
+
 .ct-spicchio.is-moneta {
   fill: var(--ct-moneta);
 }
 
 .ct-spicchio.is-quiz {
   fill: var(--ct-quiz);
+}
+
+.ct-spicchio.is-pachinko {
+  fill: var(--ct-pachinko);
+}
+
+.ct-spicchio.is-cashhunt {
+  fill: var(--ct-cashhunt);
 }
 
 .ct-spicchio.is-fortuna {
@@ -30,6 +44,14 @@
 .ct-spicchio.is-fisso,
 .ct-spicchio.is-fisso.is-m3 {
   fill: var(--ct-m3);
+}
+
+/*
+ * Il ×1,5 della ruota fortunata e' lo split diventato un premio vero: resta
+ * rosa, con il numero al posto della moneta tagliata.
+ */
+.ct-spicchio.is-fisso.is-m15 {
+  fill: var(--ct-split);
 }
 
 .ct-spicchio.is-fisso.is-m5 {
@@ -92,6 +114,11 @@
 
 /* ─────────────────────────────  Le scritte  ───────────────────────────── */
 
+/*
+ * Le dimensioni le scrive il disegno, misurate (geometria.ts, `misureDi`); qui
+ * ci sono i colori e le spaziature fra le lettere, che le misure conoscono: se
+ * ne cambia una, va cambiata anche li'.
+ */
 .ct-scritta {
   fill: #fff;
   font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
@@ -117,23 +144,17 @@
   stroke: rgba(255, 255, 255, 0.35);
 }
 
-/* Sull'arancio del ×5 e sul cremisi del ×10 la scritta e' d'oro chiaro. */
-.ct-scritta.is-fisso.is-m5,
-.ct-scritta.is-fisso.is-m10 {
+/* Sull'arancio del ×5, sul cremisi del ×10 e sul rosa del ×1,5 la scritta e' d'oro chiaro. */
+.ct-scritta.is-fisso:is(.is-m5, .is-m10, .is-m15) {
   fill: #fff3b0;
   stroke: rgba(60, 0, 10, 0.55);
 }
 
 /* I numeri dei premi fissi: grandi e dritti come un'icona, perché sono i numeri che si guardano. */
 .ct-scritta.is-numero {
-  font-size: 19px;
   letter-spacing: 0;
-  stroke-width: 1.4px;
+  stroke-width: 1.2px;
   font-variant-numeric: tabular-nums;
-}
-
-.ct-scritta.is-numero.is-lungo {
-  font-size: 15.5px;
 }
 
 /* La fortuna, e il quiz e la moneta della ruota fortunata: la scritta d'oro. */
@@ -197,6 +218,52 @@
 .ct-icona-moneta__filo {
   fill: none;
   stroke: rgba(255, 255, 255, 0.55);
+  stroke-width: 0.6;
+}
+
+.ct-icona-split__mezza {
+  fill: var(--ct-oro);
+  stroke: var(--ct-oro-scuro);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
+}
+
+.ct-icona-split__filo {
+  fill: none;
+  stroke: rgba(255, 246, 200, 0.85);
+  stroke-width: 0.9;
+}
+
+.ct-icona-pachinko__piolo {
+  fill: #fff;
+  stroke: rgba(0, 40, 50, 0.35);
+  stroke-width: 0.6;
+}
+
+.ct-icona-pachinko__pallina {
+  fill: var(--ct-oro-chiaro);
+  stroke: var(--ct-oro-scuro);
+  stroke-width: 0.8;
+}
+
+.ct-icona-pachinko__scia {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.ct-icona-caccia__anello,
+.ct-icona-caccia__croce {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+}
+
+.ct-icona-caccia__centro {
+  fill: var(--ct-oro-chiaro);
+  stroke: rgba(40, 60, 0, 0.5);
   stroke-width: 0.6;
 }
 
