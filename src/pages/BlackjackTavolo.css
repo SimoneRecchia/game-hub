@@ -1215,7 +1215,10 @@
     --carta-altri: min(5.4cqw, 8cqh, 44px);
   }
 
-  /* Di traverso le mie carte arrivano piu' in alto: le scritte si stringono, e la linea dell'assicurazione resta sopra. */
+  /*
+   * Di traverso le mie carte arrivano piu' in alto: le scritte si stringono, e la linea dell'assicurazione
+   * resta sopra.
+   */
   .bj-scritte {
     width: min(98cqw, 600px, 64cqh);
   }
