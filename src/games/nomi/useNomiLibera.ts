@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { suona } from '@/lib/suoni'
 import { TEMPO_NOMI_MS, type CategoriaNomi, type FileLessicoNomi, type LessicoNomi } from '@shared/nomi-cose'
 import { registraPartitaNomi } from './conti'
 import {
@@ -107,7 +106,6 @@ export function useNomiLibera(): NomiLibera {
         setAdesso(inizio.current)
         setScadenza(inizio.current + TEMPO_NOMI_MS)
         setFase('gioco')
-        suona('via')
       })
       .catch(() => {
         if (mia !== richiesta.current) return

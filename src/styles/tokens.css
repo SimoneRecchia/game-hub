@@ -34,6 +34,11 @@
     ui-rounded, -apple-system, BlinkMacSystemFont, 'SF Pro Rounded',
     'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+  /* Le risposte di Nomi, cose e città, scritte a mano: il carattere a mano
+     che il telefono ha gia' (Noteworthy su iPhone e Mac, Segoe Print su
+     Windows, Coming Soon su Android), e dove non c'e' il tondo. Niente da
+     scaricare, come i suoni. */
+  --font-mano: Noteworthy, 'Segoe Print', 'Ink Free', casual, var(--font-rounded);
 
   /* Due misure sopra la scala di sistema: servono ai numeri del gioco, che
      sono l'elemento grafico principale e non un titolo di sezione. */
@@ -594,6 +599,20 @@
   /* Il giallo della matita non si legge su bianco: per le parole, un ocra scuro. */
   --nomi-ink: #8a5a00;
   --nomi-ink: light-dark(#8a5a00, #ffd25e);
+  /* L'inchiostro del timbro dello stop, l'evidenziatore delle risposte che ha
+     dato solo uno, e il post-it delle parole che si potevano scrivere. In
+     scuro il post-it e' ambra spenta: il giallo mescolato al nero diventa
+     verde oliva. */
+  --nomi-timbro: #cf3428;
+  --nomi-timbro: light-dark(#cf3428, #ff7a68);
+  --nomi-evidenziatore: rgba(255, 204, 0, 0.5);
+  --nomi-evidenziatore: light-dark(rgba(255, 204, 0, 0.5), rgba(255, 190, 30, 0.32));
+  --nomi-postit: #fff2a6;
+  --nomi-postit: light-dark(#fff2a6, #463a1c);
+  --nomi-postit-ink: #4a3b00;
+  --nomi-postit-ink: light-dark(#4a3b00, #fbe7a1);
+  --nomi-nastro: rgba(255, 255, 255, 0.55);
+  --nomi-nastro: light-dark(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.14));
 
   /* ---- Il cruciverba ----
      Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:
