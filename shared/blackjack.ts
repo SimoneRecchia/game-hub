@@ -1,19 +1,28 @@
 /**
- * Il blackjack, con le regole europee dei casinò italiani: il banco prende la
- * seconda carta solo dopo i giocatori, e sta su tutti i 17. Si raddoppia con
- * due carte qualunque, anche dopo aver diviso; si divide fino a quattro mani,
- * gli assi una volta sola e con una carta ciascuno, e un 21 dopo una divisione
- * non e' blackjack. Niente assicurazione e niente resa.
+ * Il blackjack, con le regole europee dei casinò italiani (i regolamenti di
+ * Venezia e di Sanremo): il banco prende la seconda carta solo dopo i
+ * giocatori, e sta su tutti i 17. Si raddoppia con due carte qualunque, anche
+ * dopo uno split; lo split si fa con due carte dello stesso valore, fino a
+ * quattro mani, gli assi una volta sola e con una carta ciascuno, e un 21 dopo
+ * uno split non e' blackjack. Quando il banco mostra un asso ci si puo'
+ * assicurare contro il suo blackjack: la meta' della puntata sulla linea, che
+ * paga 2 a 1 se la seconda carta del banco e' un dieci. Niente resa: quei
+ * regolamenti non ce l'hanno.
  *
  * Una regola e' diversa da quella dei casinò: **il blackjack paga 1 a 1**, non
  * 3 a 2. E' il prezzo della resa uguale per tutti i giochi della Fortuna: con
  * il 3 a 2 chi gioca al meglio riceverebbe il 99,4% di quel che punta, piu'
  * della slot e di Crazy Time; pagato alla pari il 97,1% (`resaBlackjack`, il
  * conto esatto con la strategia migliore). Le regole dicono "il blackjack paga
- * 1 a 1", come lo dicono certi tavoli veri.
+ * 1 a 1", come lo dicono certi tavoli veri. Per lo stesso motivo manca il
+ * "blackjack alla pari" dei casinò, il pagamento subito contro l'asso: la'
+ * costa mezza puntata, qui sarebbe un regalo. Chi ha un blackjack contro
+ * l'asso si assicura come tutti, e l'assicurazione fa i suoi conti: mezza
+ * puntata se il banco non fa blackjack, una intera se lo fa.
  *
  * Il banco non guarda la carta coperta, perché non ce l'ha: se fa blackjack con
- * la seconda carta, chi ha raddoppiato o diviso perde tutto quel che ha messo.
+ * la seconda carta, chi ha raddoppiato o fatto split perde tutto quel che ha
+ * messo, e l'assicurazione si decide con quella carta, a fine giro.
  * Il sabot si rimescola a ogni carta, come le macchine dei casinò online:
  * ogni carta e' a caso fra le cinquantadue, e contarle non serve.
  *
@@ -28,7 +37,9 @@ export const SEMI = ['c', 'q', 'f', 'p'] as const
 
 /** Il blackjack paga la puntata una volta: e' una vincita come le altre, ma subito e sicura. */
 export const PAGA_BLACKJACK = 1
-/** Le mani massime di un giocatore, dopo le divisioni. */
+/** L'assicurazione paga 2 a 1: due volte quel che si e' messo sulla linea, se il banco fa blackjack. */
+export const PAGA_ASSICURAZIONE = 2
+/** Le mani massime di un giocatore, dopo gli split. */
 export const MANI_MASSIME = 4
 
 export const NOME_BLACKJACK = 'Blackjack'
@@ -70,12 +81,12 @@ export const sballata = (carte: readonly Carta[]) => totaleDi(carte).totale > 21
 
 /** Una mano del giocatore: le carte, la puntata (raddoppiata, se lo e'), e com'e' nata. */
 export interface ManoBJ {
-  /** Al tavolo, il nome della mano nel posto: resta lo stesso quando una divisione sposta le altre. */
+  /** Al tavolo, il nome della mano nel posto: resta lo stesso quando uno split sposta le altre. */
   id?: number
   carte: Carta[]
   puntata: number
   raddoppiata?: boolean
-  /** Nata da una divisione: un 21 con due carte non e' blackjack. */
+  /** Nata da uno split: un 21 con due carte non e' blackjack. */
   divisa?: boolean
   /** Un asso diviso: una carta sola, e la mano e' ferma. */
   assi?: boolean
@@ -83,7 +94,10 @@ export interface ManoBJ {
   ferma?: boolean
 }
 
+/** Le mosse di una mano: carta, stai, raddoppio e split (`dividi`, il nome che ha sempre avuto qui). */
 export type AzioneBJ = 'carta' | 'stai' | 'raddoppia' | 'dividi'
+/** Le mosse di chi tocca: quelle della mano, e l'assicurazione, che e' una puntata a parte. */
+export type MossaBJ = AzioneBJ | 'assicurazione'
 
 /** Le mosse che una mano puo' fare adesso. `mani` sono tutte le mani del giocatore, per il tetto delle divisioni. */
 export function azioniPossibili(mano: ManoBJ, mani: number): AzioneBJ[] {
@@ -101,7 +115,7 @@ export function azioniPossibili(mano: ManoBJ, mani: number): AzioneBJ[] {
 
 /**
  * Una mossa su una mano: le carte nuove arrivano da `pesca`. Restituisce le
- * mani che ne escono, una o due (la divisione), e la puntata in piu' che la
+ * mani che ne escono, una o due (lo split), e la puntata in piu' che la
  * mossa chiede al saldo.
  */
 export function giocaAzione(
@@ -119,7 +133,7 @@ export function giocaAzione(
     const doppia = { ...mano, carte, puntata: mano.puntata * 2, raddoppiata: true, ferma: true }
     return { mani: [doppia], inPiu: mano.puntata }
   }
-  // La divisione: due mani da una carta, e a ognuna la seconda. Gli assi ne prendono una sola, e stanno.
+  // Lo split: due mani da una carta, e a ognuna la seconda. Gli assi ne prendono una sola, e stanno.
   const [a, b] = mano.carte
   const assi = a[0] === 'A'
   const nuova = (c: Carta): ManoBJ => {
@@ -159,6 +173,47 @@ export function deltaMano(mano: ManoBJ, banco: readonly Carta[]): number {
   if (esito === 'vinta') return mano.puntata
   if (esito === 'pari') return 0
   return -mano.puntata
+}
+
+/* ─────────────────────────────  L'assicurazione  ───────────────────────────── */
+
+/**
+ * Quanto costa l'assicurazione: la meta' della puntata iniziale, per difetto.
+ * I regolamenti dicono "non superiore alla meta'", e i punti sono interi: su
+ * 25 se ne mettono 12.
+ */
+export const costoAssicurazione = (puntata: number) => Math.floor(puntata / 2)
+
+/** Il banco offre l'assicurazione: mostra un asso, e la sua seconda carta deve ancora venire. */
+export const assicurazioneOfferta = (banco: readonly Carta[]) => banco.length === 1 && banco[0][0] === 'A'
+
+/**
+ * Ci si puo' assicurare adesso: il banco mostra un asso, e le carte sono
+ * ancora quelle della distribuzione — una mano di due carte, nessuna mossa
+ * fatta. Una volta sola per giro: chi si assicura poi raddoppia o fa split,
+ * ma l'assicurazione resta quella.
+ */
+export function assicurabile(banco: readonly Carta[], mani: readonly ManoBJ[], assicurazione = 0): boolean {
+  if (!assicurazioneOfferta(banco) || assicurazione > 0 || mani.length !== 1) return false
+  return mani[0].carte.length === 2 && !mani[0].ferma
+}
+
+/** Quel che l'assicurazione da' o toglie, con le carte del banco: 2 a 1 se e' blackjack, persa se no. */
+export function deltaAssicurazione(quanto: number, banco: readonly Carta[]): number {
+  if (quanto <= 0) return 0
+  return eBlackjack(banco) ? quanto * PAGA_ASSICURAZIONE : -quanto
+}
+
+/** Le mosse di chi tocca, sulla mano `mano`: quelle della mano, e l'assicurazione quando c'e'. */
+export function mossePossibili(
+  mani: readonly ManoBJ[],
+  mano: number,
+  banco: readonly Carta[],
+  assicurazione = 0,
+): MossaBJ[] {
+  const mosse: MossaBJ[] = azioniPossibili(mani[mano], mani.length)
+  if (assicurabile(banco, mani, assicurazione)) mosse.push('assicurazione')
+  return mosse
 }
 
 /** Una carta a caso fra le cinquantadue, con il caso che si da': il sabot si rimescola a ogni carta. */
@@ -337,11 +392,33 @@ export function consiglio(mano: ManoBJ, scoperta: Carta, mani: number): AzioneBJ
 }
 
 /**
+ * Quanto rende l'assicurazione per ogni punto messo sulla linea. Con il sabot
+ * che si rimescola a ogni carta la seconda carta del banco e' un dieci quattro
+ * volte su tredici, qualunque cosa ci sia sul tavolo: 4/13 per due, meno 9/13,
+ * fa −1/13. Vale lo stesso con un blackjack in mano, che assicurato prende
+ * mezza puntata o una intera invece di una o niente.
+ */
+export function valoreAssicurazione(): number {
+  const bj = analisiDi(1).blackjackDelBanco
+  return bj * PAGA_ASSICURAZIONE - (1 - bj)
+}
+
+/**
+ * Se conviene assicurarsi: mai, con qualunque mano, perché l'assicurazione
+ * rende meno di zero (`valoreAssicurazione`). E' la scelta della strategia con
+ * cui si conta la resa, che quindi non cambia.
+ */
+export function consiglioAssicurazione(): boolean {
+  return valoreAssicurazione() > 0
+}
+
+/**
  * La resa esatta con la strategia migliore, a mazzo infinito: il valore atteso
- * di ogni mano iniziale contro ogni carta del banco. Con il sabot che si
- * rimescola a ogni carta il mazzo e' davvero infinito, quindi il conto e'
- * quello del gioco. `pagaBlackjack` serve ai test, per vedere che con il 3 a 2
- * la resa sarebbe quella dei libri.
+ * di ogni mano iniziale contro ogni carta del banco, senza assicurazione
+ * (`consiglioAssicurazione`). Con il sabot che si rimescola a ogni carta il
+ * mazzo e' davvero infinito, quindi il conto e' quello del gioco.
+ * `pagaBlackjack` serve ai test, per vedere che con il 3 a 2 la resa sarebbe
+ * quella dei libri.
  */
 export function resaBlackjack(pagaBlackjack = PAGA_BLACKJACK): number {
   let totale = 0

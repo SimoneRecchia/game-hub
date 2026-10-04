@@ -795,11 +795,13 @@ contenitore si risolverebbero dove la si usa, e dentro la pancia, che e' un
 contenitore anche lei, varrebbero le sue.
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
-europee dei casinò italiani (`shared/blackjack.ts`): niente carta coperta — il
-banco prende la seconda dopo i giocatori, e se fa blackjack si prende anche
-raddoppi e divisioni — il banco sta su tutti i 17, si raddoppia con due carte
-qualunque, anche dopo una divisione, si divide fino a quattro mani e gli assi
-una volta, con una carta. Niente assicurazione e niente resa. L'unica regola
+europee dei casinò italiani, controllate sui regolamenti di Venezia e di
+Sanremo (`shared/blackjack.ts`): niente carta coperta — il banco prende la
+seconda dopo i giocatori, e se fa blackjack si prende anche raddoppi e split —
+il banco sta su tutti i 17, si raddoppia con due carte qualunque, anche dopo
+uno split, lo split si fa con due carte dello stesso valore fino a quattro
+mani, e gli assi una volta, con una carta. C'e' l'assicurazione (vedi sotto);
+la resa no, perché quei regolamenti non ce l'hanno. L'unica regola
 diversa e' il pagamento del blackjack, alla pari e non 3 a 2: con il 3 a 2 chi
 gioca al meglio riceverebbe il 99,4%, piu' della slot e di Crazy Time; cosi' il
 97,1% (`resaBlackjack`, un conto esatto con la strategia migliore, a mazzo
@@ -810,6 +812,30 @@ trova la stessa resa del conto. Il panno lo dice ("IL BLACKJACK PAGA 1 A 1"),
 come lo dicono i tavoli veri che pagano 6 a 5. Si punta da `PUNTATA_MINIMA_BJ`
 a tutto il saldo: la vincita massima e' quanto si e' messo sul tavolo, che il
 saldo deve coprire, quindi un giro al piu' raddoppia la giornata.
+
+**L'assicurazione costa meta' puntata, paga 2 a 1, e non conviene mai.** Come
+a Venezia e a Sanremo si offre quando il banco mostra un asso, sulla linea che
+il panno dice ("L'ASSICURAZIONE PAGA 2 A 1"), e paga se la seconda carta del
+banco fa blackjack; dopo si puo' ancora raddoppiare o fare split, e
+l'assicurazione resta quella. I regolamenti dicono "non superiore alla meta'":
+qui e' la meta', per difetto (`costoAssicurazione`, 12 su 25), perché i punti
+sono interi. Si offre al turno di ognuno, prima di ogni altra mossa, e non a
+tutti insieme dopo la distribuzione come fa il croupier: senza carta coperta e
+con il sabot che si rimescola a ogni carta, le carte uscite prima non dicono
+niente della seconda del banco. Per questo contro l'asso il blackjack non sta
+da solo: aspetta il suo turno, e la scelta e' sua. Il "blackjack alla pari"
+dei casinò, il pagamento subito contro l'asso, qui non c'e': la' costa mezza
+puntata rispetto al 3 a 2, qui, con il blackjack gia' pagato alla pari, sarebbe
+un regalo. Chi ha un blackjack si assicura come tutti, e prende mezza puntata
+se il banco non fa blackjack, una intera se lo fa: lo stesso prezzo di quel
+pagamento, un tredicesimo di quel che si mette sulla linea. L'assicurazione
+rende meno di zero (`valoreAssicurazione`, −1/13 a mazzo infinito), quindi la
+strategia migliore non la prende (`consiglioAssicurazione`) e la resa resta il
+97,1%. Si paga come un raddoppio: un movimento `aggiunge` nella scrittura del
+tavolo, con il saldo guardato nell'`UPDATE` e `fortuna_giornate` ricontato
+nello stesso batch, e l'esito in `bj_mani` la tiene accanto alle mani. Un
+doppio tocco risponde `GIA_ASSICURATO`. Se tutte le mani sballano, il banco
+pesca lo stesso la seconda carta: e' quella che decide l'assicurazione.
 
 **Il tavolo va avanti con le richieste, non con un orologio.** Un tavolo
 (`shared/blackjack-tavolo.ts`) ha fino a `POSTI_BJ` giocatori e tre fasi: le
@@ -865,11 +891,15 @@ testa, poi le carte chieste una alla volta e quelle del banco piu' lente, dopo
 un respiro. Una carta vola dal sabot girandosi a meta' strada (una Web
 Animation sull'elemento, con il ritardo del piano), e il totale di una mano
 conta solo le carte arrivate. Le mani hanno un nome (`id`) che non cambia
-quando una divisione sposta le altre: la carta che passa nella mano nuova
-scivola, e le carte gia' viste non rivolano. Il saldo resta fermo (`conto`)
-finché la vincita non arriva in monete; a fine giro il croupier raccoglie le
-carte negli scarti (copie nello strato dei voli, perché il tavolo passa intanto
-al giro dopo). Il controllo e' di un secondo e mezzo quando si aspetta
+quando uno split sposta le altre: la carta che passa nella mano nuova
+scivola, e le carte gia' viste non rivolano. Una carta e' nuova anche quando
+al suo posto ce n'era un'altra (`CarteViste` tiene la carta, non solo il
+posto): dopo uno split la seconda carta passa nella mano nuova, e quella che
+arriva al suo posto, prima, non volava dal sabot, cambiava faccia e basta.
+Il saldo resta fermo (`conto`) finché la vincita non arriva in monete, dalla
+puntata o dall'assicurazione; a fine giro il croupier raccoglie le carte negli
+scarti (copie nello strato dei voli, perché il tavolo passa intanto al giro
+dopo). Il controllo e' di un secondo e mezzo quando si aspetta
 qualcuno, di quattro quando tocca a me, di cinque da soli — solo per vedere chi
 si siede — e subito dopo una scadenza.
 
@@ -881,7 +911,22 @@ dei posti da sinistra; il mio posto e' sempre in fondo al centro, con il
 cerchio della puntata, e le mie carte le piu' grandi. Tutto si misura sul
 tavolo, che e' un contenitore (`cqw`, `cqh`): le scritte ad arco hanno un tetto
 anche sull'altezza, perché di traverso un arco largo quanto il panno copriva le
-mie carte.
+mie carte. Sotto le scritte c'e' la linea dell'assicurazione, che si accende
+quando il banco la offre; la fiche dell'assicurazione invece sta in un cerchio
+piu' piccolo a sinistra della puntata, perché sui telefoni bassi la linea passa
+a un dito dalle mie carte. Tre o quattro mani, dopo gli split, vanno su due
+righe, due per riga: in fila sola coprivano i posti degli altri ai lati, e le
+fasce degli esiti si sovrapponevano. Di traverso restano in fila, piu' piccole
+e piu' larghe: li' la larghezza c'e', ed e' l'altezza che manca.
+
+**Le mosse si chiamano come ai tavoli italiani, e ci sono sempre tutte.**
+Carta, Stai, Raddoppia e Split, spente quando non si possono fare, e
+l'Assicurazione quando il banco la offre, al posto di "Tocca a te" (il tempo
+resta, sotto). Lo split si chiamava "Dividi", con il segno ⇆, e chi giocava
+non lo riconosceva come lo split: il nome e' quello che si sente al tavolo, il
+segno sono due carte che si separano, e le regole dicono "Split (dividere)".
+L'assicurazione non ha un tondo fra le mosse perché non e' una mossa della
+mano: e' una puntata a parte, che si offre una volta e poi sparisce.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —

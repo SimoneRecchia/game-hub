@@ -1,15 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import {
+  SEMI,
+  VALORI,
+  assicurabile,
   azioniPossibili,
   cartaACaso,
   consiglio,
+  consiglioAssicurazione,
+  costoAssicurazione,
+  deltaAssicurazione,
   deltaMano,
   eBlackjack,
   esitoMano,
   giocaAzione,
   giocaBanco,
+  mossePossibili,
   resaBlackjack,
   totaleDi,
+  valoreAssicurazione,
   type Carta,
   type ManoBJ,
 } from '../blackjack'
@@ -116,6 +124,71 @@ describe('il banco e i pagamenti', () => {
   })
 })
 
+describe('l’assicurazione', () => {
+  it('costa la meta’ della puntata, per difetto', () => {
+    expect(costoAssicurazione(50)).toBe(25)
+    expect(costoAssicurazione(25)).toBe(12)
+    expect(costoAssicurazione(10)).toBe(5)
+  })
+
+  it('si offre quando il banco mostra un asso, finché la mano e’ quella della distribuzione', () => {
+    const coppia = [mano(['8c', '8q'])]
+    expect(assicurabile(['Ap'], coppia)).toBe(true)
+    expect(mossePossibili(coppia, 0, ['Ap'])).toEqual(['carta', 'stai', 'raddoppia', 'dividi', 'assicurazione'])
+    // Contro un dieci no, e nemmeno quando il banco ha gia' la seconda carta.
+    expect(assicurabile(['Kp'], coppia)).toBe(false)
+    expect(assicurabile(['Ap', '6c'], coppia)).toBe(false)
+    // Dopo una carta, uno split o lo stare, e' tardi; una volta assicurati, basta.
+    expect(assicurabile(['Ap'], [mano(['8c', '8q', '2f'])])).toBe(false)
+    expect(assicurabile(['Ap'], [mano(['8c', '3q']), mano(['8q', 'Kf'])])).toBe(false)
+    expect(assicurabile(['Ap'], [mano(['8c', '8q'], { ferma: true })])).toBe(false)
+    expect(assicurabile(['Ap'], coppia, 5)).toBe(false)
+    // Il blackjack contro l'asso: si sta, o ci si assicura.
+    expect(mossePossibili([mano(['Ac', 'Kq'])], 0, ['Ap'])).toEqual(['stai', 'assicurazione'])
+  })
+
+  it('paga 2 a 1 se il banco fa blackjack con la seconda carta, e si perde se no', () => {
+    expect(deltaAssicurazione(25, ['Ap', 'Kq'])).toBe(50)
+    expect(deltaAssicurazione(25, ['Ap', '6q'])).toBe(-25)
+    // Il 21 del banco con tre carte non e' blackjack.
+    expect(deltaAssicurazione(25, ['Ap', '5q', '5c'])).toBe(-25)
+    expect(deltaAssicurazione(0, ['Ap', 'Kq'])).toBe(0)
+  })
+
+  it('con un blackjack assicurato si prende mezza puntata, o una intera se il banco fa blackjack', () => {
+    const bj = mano(['Ac', 'Kq'], { puntata: 50 })
+    const assicurato = (banco: Carta[]) => deltaMano(bj, banco) + deltaAssicurazione(costoAssicurazione(50), banco)
+    expect(assicurato(['Ap', '6c', 'Tf'])).toBe(25)
+    expect(assicurato(['Ap', 'Jc'])).toBe(50)
+    // Senza assicurazione: una puntata intera, o niente.
+    expect(deltaMano(bj, ['Ap', '6c', 'Tf'])).toBe(50)
+    expect(deltaMano(bj, ['Ap', 'Jc'])).toBe(0)
+  })
+
+  it('a mazzo infinito rende −1/13 di quel che si mette, e il conto lo dice', () => {
+    expect(valoreAssicurazione()).toBeCloseTo(-1 / 13, 12)
+    // Tutte le seconde carte del banco, una per una: 16 dieci su 52.
+    let somma = 0
+    for (const v of VALORI) for (const s of SEMI) somma += deltaAssicurazione(13, ['Ap', v + s])
+    expect(somma / 52).toBe(-1)
+  })
+
+  it('il consiglio non si assicura mai, nemmeno con un blackjack', () => {
+    expect(consiglioAssicurazione()).toBe(false)
+    // Assicurato, il blackjack contro l'asso vale meno: 8,5/13 della puntata invece di 9/13.
+    const bj = mano(['Ac', 'Kq'], { puntata: 2 })
+    let libero = 0
+    let assicurato = 0
+    for (const v of VALORI) {
+      const banco = ['Ap', `${v}c`]
+      libero += deltaMano(bj, banco) / 13
+      assicurato += (deltaMano(bj, banco) + deltaAssicurazione(1, banco)) / 13
+    }
+    expect(libero).toBeCloseTo(18 / 13, 12)
+    expect(assicurato).toBeCloseTo(17 / 13, 12)
+  })
+})
+
 describe('la resa del blackjack', () => {
   it('con il blackjack pagato 1 a 1 e la strategia migliore e’ quella di Crazy Time e della slot', () => {
     const bj = resaBlackjack()
@@ -142,11 +215,14 @@ describe('la resa del blackjack', () => {
     const pesca = () => cartaACaso((n) => Math.floor(caso() * n))
     let puntato = 0
     let reso = 0
+    let assicurazioni = 0
     const giri = 400_000
     for (let g = 0; g < giri; g += 1) {
       const scoperta = pesca()
       let mani: ManoBJ[] = [{ carte: [pesca(), pesca()], puntata: 1 }]
       puntato += 1
+      // Contro l'asso il consiglio dice se assicurarsi, prima di ogni mossa: non lo dice mai.
+      if (assicurabile([scoperta], mani) && consiglioAssicurazione()) assicurazioni += 1
       if (eBlackjack(mani[0].carte)) mani[0].ferma = true
       for (let i = 0; i < mani.length; i += 1) {
         while (!mani[i].ferma) {
@@ -162,5 +238,6 @@ describe('la resa del blackjack', () => {
     const media = 1 + reso / puntato
     // Uno scarto tipico di 1,15 puntate a mano: con quattrocentomila mani, quattro scarti sono lo 0,7%.
     expect(Math.abs(media - resaBlackjack())).toBeLessThan(0.0075)
+    expect(assicurazioni).toBe(0)
   })
 })

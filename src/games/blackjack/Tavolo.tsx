@@ -3,7 +3,7 @@ import { Avatar } from '@/components/Avatar'
 import { conSegno } from '@shared/ruota'
 import { esitoMano, type EsitoMano } from '@shared/blackjack'
 import type { PostoVistaBJ } from '@shared/types'
-import { PilaFiches, scomponi } from './Fiches'
+import { Fiche, PilaFiches, coloreFiche, scomponi } from './Fiches'
 import { Mano } from './Mano'
 import { chiaveCarta, type ArrivoCarta } from './piano'
 
@@ -20,13 +20,23 @@ export interface CarteInGioco {
   onAtterra: (chiave: string) => void
 }
 
-/** Le scritte sul panno, lungo l'arco, come sui tavoli veri: quanto paga il blackjack e come gioca il banco. */
-export function Scritte() {
+/**
+ * Le scritte sul panno, lungo l'arco, come sui tavoli veri: quanto paga il
+ * blackjack, come gioca il banco, e la linea dell'assicurazione, che si
+ * accende quando il banco la offre (`offerta`).
+ */
+export function Scritte({ offerta = false }: { offerta?: boolean }) {
   return (
-    <svg className="bj-scritte" viewBox="0 0 400 112" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <svg
+      className={`bj-scritte${offerta ? ' is-offerta' : ''}`}
+      viewBox="0 0 400 136"
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden="true"
+    >
       <defs>
         <path id="bj-arco-grande" d="M 26 22 Q 200 104 374 22" />
         <path id="bj-arco-piccolo" d="M 70 60 Q 200 122 330 60" />
+        <path id="bj-arco-assicurazione" d="M 88 92 Q 200 153 312 92" />
       </defs>
       <path d="M 44 44 Q 200 122 356 44" className="bj-scritte__filo" />
       <text className="bj-scritte__grande">
@@ -39,9 +49,75 @@ export function Scritte() {
           IL BANCO STA SU TUTTI I 17
         </textPath>
       </text>
+      <g className="bj-scritte__linea">
+        <path d="M 80 76 Q 200 136 320 76" className="bj-scritte__bordo" />
+        <path d="M 98 100 Q 200 160 302 100" className="bj-scritte__bordo" />
+        <text className="bj-scritte__assicurazione">
+          <textPath href="#bj-arco-assicurazione" startOffset="50%" textAnchor="middle">
+            L’ASSICURAZIONE PAGA 2 A 1
+          </textPath>
+        </text>
+      </g>
     </svg>
   )
 }
+
+/** Il segno dell'assicurazione: uno scudo, sul bottone e sul panno. */
+export function SegnoAssicurazione({ className = '' }: { className?: string }) {
+  return (
+    <svg className={`bj-scudo ${className}`} viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12 2.5 20 5.6v5.7c0 4.9-3.3 8.7-8 10.2-4.7-1.5-8-5.3-8-10.2V5.6z" />
+      <path d="m8.4 12.2 2.5 2.5 4.8-5" className="bj-scudo__spunta" />
+    </svg>
+  )
+}
+
+/**
+ * Il posto della mia assicurazione, accanto alla puntata: si accende quando il
+ * banco la offre, tiene la fiche quando ci si assicura e, a giro chiuso, dice
+ * com'e' andata con la sua fascia. Senza offerta e senza fiche non c'e'. La
+ * fiche e' una sola, con l'importo: la meta' della puntata non e' sempre un
+ * taglio, e pagata 2 a 1 diventa il triplo.
+ */
+export const PostoAssicurazione = forwardRef(function PostoAssicurazione(
+  {
+    importo,
+    offerta,
+    esito,
+    pila,
+  }: {
+    importo: number
+    offerta: boolean
+    esito: 'pagata' | 'persa' | null
+    /** La fiche a giro chiuso: pagata 2 a 1, o andata via. */
+    pila: 'ferma' | 'vinta' | 'via'
+  },
+  ref: Ref<HTMLDivElement>,
+) {
+  if (!offerta && importo === 0) return null
+  const valore = pila === 'vinta' ? importo * 3 : importo
+  return (
+    <div className={`bj-assicurazione${offerta ? ' is-offerta' : ''}${esito ? ` is-${esito}` : ''}`} ref={ref}>
+      {importo === 0 ? (
+        <SegnoAssicurazione className="bj-assicurazione__segno" />
+      ) : (
+        pila !== 'via' && (
+          <Fiche
+            key={valore}
+            valore={valore}
+            className={`bj-assicurazione__fiche${pila === 'vinta' ? ' is-vinta' : ''}`}
+            style={{ '--fiche': coloreFiche(valore) } as CSSProperties}
+          />
+        )
+      )}
+      {esito && (
+        <span className={`bj-assicurazione__esito is-${esito}`} key={esito}>
+          {esito === 'pagata' ? 'Pagata' : 'Persa'}
+        </span>
+      )}
+    </div>
+  )
+})
 
 /** Il sabot, in alto a destra: le carte escono dalla bocca. */
 export const Sabot = forwardRef(function Sabot(_: unknown, bocca: Ref<HTMLSpanElement>) {
@@ -137,6 +213,12 @@ export function PostoAltro({
       {posto.puntata > 0 && !(chiuso && posto.delta !== null) && (
         <PilaFiches pezzi={scomponi(posto.puntata)} massimo={5} className="bj-altro__pila" />
       )}
+      {posto.assicurazione > 0 && !(chiuso && posto.delta !== null) && (
+        <span className="bj-altro__assicurazione u-tabnum" aria-label={`Assicurazione ${posto.assicurazione}`}>
+          <SegnoAssicurazione />
+          {posto.assicurazione}
+        </span>
+      )}
       {chiuso && posto.delta !== null && (
         <span className={`bj-altro__delta u-tabnum${posto.delta > 0 ? ' is-piu' : posto.delta < 0 ? ' is-meno' : ''}`}>
           {posto.delta === 0 ? 'Pari' : conSegno(posto.delta)}
@@ -186,14 +268,19 @@ export function Stato({ children, tempo }: { children: ReactNode; tempo?: { rest
       <span className="bj-stato__testo" aria-live={tempo ? 'off' : 'polite'}>
         {children}
       </span>
-      {tempo && (
-        <span className="bj-stato__barra" aria-hidden="true">
-          <span
-            className={`bj-stato__pieno${tempo.resta < 5_000 ? ' is-poco' : ''}`}
-            style={{ transform: `scaleX(${Math.max(0, Math.min(1, tempo.resta / tempo.tutto))})` }}
-          />
-        </span>
-      )}
+      {tempo && <BarraTempo {...tempo} />}
     </div>
+  )
+}
+
+/** La barra del tempo che resta: sotto la riga di stato, o sotto l'assicurazione quando prende il suo posto. */
+export function BarraTempo({ resta, tutto }: { resta: number; tutto: number }) {
+  return (
+    <span className="bj-stato__barra" aria-hidden="true">
+      <span
+        className={`bj-stato__pieno${resta < 5_000 ? ' is-poco' : ''}`}
+        style={{ transform: `scaleX(${Math.max(0, Math.min(1, resta / tutto))})` }}
+      />
+    </span>
   )
 }

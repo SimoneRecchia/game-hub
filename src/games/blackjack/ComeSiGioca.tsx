@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Sheet } from '@/components/Sheet'
-import { MANI_MASSIME, PUNTATA_MINIMA_BJ, resaBlackjack } from '@shared/blackjack'
+import { MANI_MASSIME, PUNTATA_MINIMA_BJ, costoAssicurazione, resaBlackjack } from '@shared/blackjack'
 import { POSTI_BJ, PUNTATE_MS, TURNO_MS } from '@shared/blackjack-tavolo'
 import '@/games/cruciverba/ComeSiGioca.css'
 
@@ -25,11 +25,19 @@ export function ComeSiGiocaBlackjack({ open, onClose }: { open: boolean; onClose
               <strong>Stai</strong>: ti fermi.
             </li>
             <li>
-              <strong>Raddoppia</strong>: con due carte, punti altrettanto e prendi una carta sola.
+              <strong>Raddoppia</strong>: con due carte, anche dopo uno split, punti altrettanto e prendi una carta
+              sola.
             </li>
             <li>
-              <strong>Dividi</strong>: due carte dello stesso valore diventano due mani, con un'altra
-              puntata. Fino a {MANI_MASSIME} mani; gli assi divisi prendono una carta sola.
+              <strong>Split</strong> (dividere): due carte dello stesso valore diventano due mani, con un'altra
+              puntata uguale, e si giocano una alla volta. Si rifà fino a {MANI_MASSIME} mani; gli assi divisi
+              prendono una carta sola, e asso e dieci dopo uno split fanno 21, non blackjack.
+            </li>
+            <li>
+              <strong>Assicurazione</strong>: quando il banco mostra un asso, prima di ogni altra mossa. Costa metà
+              della puntata, per difetto ({costoAssicurazione(25)} su 25), e paga 2 a 1 se il banco fa blackjack con
+              la seconda carta; se no è persa. Con un blackjack in mano, assicurato prendi mezza puntata, o una
+              intera se il banco fa blackjack.
             </li>
           </ul>
         </section>
@@ -38,14 +46,15 @@ export function ComeSiGiocaBlackjack({ open, onClose }: { open: boolean; onClose
           <h3 className="cru-aiuto__titolo">Il banco</h3>
           <p className="cru-aiuto__testo">
             Il banco prende la seconda carta dopo i giocatori, e sta su tutti i 17. Se fa blackjack, si prende anche
-            i raddoppi e le divisioni.
+            i raddoppi e gli split.
           </p>
         </section>
 
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">I pagamenti</h3>
           <p className="cru-aiuto__testo">
-            Una mano vinta paga la puntata, il pari la restituisce. Il blackjack paga 1 a 1, come una vittoria.
+            Una mano vinta paga la puntata, il pari la restituisce. Il blackjack paga 1 a 1, come una vittoria;
+            l'assicurazione 2 a 1.
           </p>
         </section>
 
@@ -60,8 +69,8 @@ export function ComeSiGiocaBlackjack({ open, onClose }: { open: boolean; onClose
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">Vince il banco</h3>
           <p className="cru-aiuto__testo">
-            Chi gioca al meglio riceve in media il {resa ?? 97}% di quel che punta, come agli altri giochi della
-            Fortuna.
+            Chi gioca al meglio non si assicura mai, e riceve in media il {resa ?? 97}% di quel che punta, come agli
+            altri giochi della Fortuna.
           </p>
         </section>
       </div>
