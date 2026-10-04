@@ -58,9 +58,10 @@ export function Mano({
       style={{ '--n': Math.max(1, carte.length), ...style } as CSSProperties}
     >
       <div className="bj-mano__carte">
+        {/* Una carta nuova al posto di un'altra, come dopo uno split, e' un'altra carta: vola anche lei. */}
         {carte.map((c, i) => (
           <CartaBJ
-            key={chiavi[i]}
+            key={`${chiavi[i]}:${c}`}
             carta={c}
             arrivo={arrivi.get(chiavi[i]) ?? null}
             onAtterra={() => onAtterra(chiavi[i])}

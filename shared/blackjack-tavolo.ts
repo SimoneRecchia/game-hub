@@ -14,6 +14,13 @@
  * gioca, le mani si pagano, e le carte restano in vista quanto serve a vederle
  * girare (`durataFine`), poi si riparte.
  *
+ * L'assicurazione si offre a ognuno al suo turno, prima di ogni altra mossa,
+ * e non tutta insieme dopo la distribuzione come fa il croupier: senza carta
+ * coperta, e con il sabot che si rimescola a ogni carta, le carte uscite prima
+ * non dicono niente della seconda del banco, e nessuno sceglie sapendone di
+ * piu'. Per questo contro l'asso anche il blackjack aspetta il suo turno,
+ * invece di stare da solo: la scelta e' sua.
+ *
  * Le scadenze non le fa scattare un orologio, perché sul server non ce n'e'
  * uno: le applica la prima richiesta che arriva dopo (`avanza`), da chiunque
  * venga, e ogni scadenza che ne segue parte da quella di prima e non da
@@ -26,15 +33,19 @@
 
 import {
   PUNTATA_MINIMA_BJ,
-  azioniPossibili,
+  assicurazioneOfferta,
+  costoAssicurazione,
+  deltaAssicurazione,
   deltaMano,
   eBlackjack,
   giocaAzione,
   giocaBanco,
+  mossePossibili,
   sballata,
   type AzioneBJ,
   type Carta,
   type ManoBJ,
+  type MossaBJ,
 } from './blackjack'
 import { PRESENZA_ONLINE_MS } from './config'
 
@@ -63,7 +74,9 @@ export interface PostoBJ {
   /** La giornata della puntata: il giro si paga su quella, anche se finisce dopo mezzanotte. */
   giorno: number
   mani: ManoBJ[]
-  /** A giro finito: quel che il giro gli ha dato o tolto. */
+  /** Quel che ha messo sulla linea dell'assicurazione, se il banco mostrava un asso e si e' assicurato. */
+  assicurazione?: number
+  /** A giro finito: quel che il giro gli ha dato o tolto, assicurazione compresa. */
   delta: number | null
   /** L'ultima volta che ha fatto qualcosa al tavolo: sedersi, puntare, una mossa. */
   visto: number
@@ -81,13 +94,26 @@ export interface TavoloBJ {
   turno: { posto: number; mano: number } | null
 }
 
-/** Quel che un cambio del tavolo chiede al database: i posti occupati e i conti della giornata. */
+/**
+ * Quel che un cambio del tavolo chiede al database: i posti occupati e i conti
+ * della giornata. `aggiunge` e' quel che si mette sul tavolo dopo la puntata:
+ * il raddoppio, lo split, l'assicurazione.
+ */
 export type MovimentoBJ =
   | { tipo: 'siede'; id: string }
   | { tipo: 'alza'; id: string }
   | { tipo: 'punta'; id: string; giro: number; giorno: number; puntata: number }
   | { tipo: 'aggiunge'; id: string; giro: number; giorno: number; quanto: number }
-  | { tipo: 'chiude'; id: string; giro: number; giorno: number; delta: number; mani: ManoBJ[]; banco: Carta[] }
+  | {
+      tipo: 'chiude'
+      id: string
+      giro: number
+      giorno: number
+      delta: number
+      mani: ManoBJ[]
+      banco: Carta[]
+      assicurazione: number
+    }
   | { tipo: 'rimborsa'; id: string; giro: number; giorno: number }
 
 export interface ContestoBJ {
@@ -255,7 +281,8 @@ export class BozzaBJ {
     for (const k of giocano) {
       const mano = this.t.posti[k]!.mani[0]
       mano.carte.push(this.c.pesca())
-      if (eBlackjack(mano.carte)) mano.ferma = true
+      // Il blackjack sta da solo, tranne contro l'asso: prima si sceglie se assicurarlo.
+      if (eBlackjack(mano.carte) && !assicurazioneOfferta(this.t.banco)) mano.ferma = true
     }
     this.t.fase = 'gioco'
     this.cercaTurno({ posto: 0, mano: 0 }, quando + durataDistribuzione(giocano.length))
@@ -285,8 +312,8 @@ export class BozzaBJ {
 
   /**
    * Una mossa, sulla mano che il telefono ha visto (`mano`, con `carte` carte):
-   * un doppio tocco non chiede due carte. Raddoppiare e dividere chiedono
-   * un'altra puntata uguale, e il saldo deve averla.
+   * un doppio tocco non chiede due carte. Raddoppiare e fare split chiedono
+   * un'altra puntata uguale, l'assicurazione la meta', e il saldo deve averle.
    */
   muovi(id: string, giro: unknown, mano: unknown, carte: unknown, azione: unknown, saldo: number) {
     const k = postoDi(this.t, id)
@@ -298,8 +325,14 @@ export class BozzaBJ {
     const p = this.t.posti[k]!
     const attuale = p.mani[turno.mano]
     if (carte !== attuale.carte.length) throw new RegolaBJ('MOSSA_VECCHIA', 'Questa mano è già cambiata.')
-    if (!azioniPossibili(attuale, p.mani.length).includes(azione as AzioneBJ)) {
+    // Un doppio tocco sull'assicurazione: la mano e' la stessa, ma la linea ha gia' le sue fiches.
+    if (azione === 'assicurazione' && p.assicurazione) throw new RegolaBJ('GIA_ASSICURATO', 'Sei già assicurato.')
+    if (!mossePossibili(p.mani, turno.mano, this.t.banco, p.assicurazione).includes(azione as MossaBJ)) {
       throw new RegolaBJ('MOSSA', 'Questa mossa non si può fare.')
+    }
+    if (azione === 'assicurazione') {
+      this.assicura(p, saldo)
+      return
     }
     if ((azione === 'raddoppia' || azione === 'dividi') && saldo < attuale.puntata) {
       throw new RegolaBJ('POCHI_PUNTI', `Servono altri ${attuale.puntata} punti.`)
@@ -320,6 +353,22 @@ export class BozzaBJ {
     this.cercaTurno(turno, this.c.adesso + CARTA_MS)
   }
 
+  /**
+   * L'assicurazione: la meta' della puntata, per difetto, sulla linea. Il turno
+   * resta, con il tempo di una decisione nuova, perché la mano si gioca ancora;
+   * un blackjack invece non ha piu' niente da decidere, e sta.
+   */
+  private assicura(p: PostoBJ, saldo: number) {
+    const turno = this.t.turno!
+    const quanto = costoAssicurazione(p.mani[0].puntata)
+    if (saldo < quanto) throw new RegolaBJ('POCHI_PUNTI', `Servono altri ${quanto} punti.`)
+    p.assicurazione = quanto
+    p.visto = this.c.adesso
+    this.movimenti.push({ tipo: 'aggiunge', id: p.id, giro: this.t.giro, giorno: p.giorno, quanto })
+    if (eBlackjack(p.mani[0].carte)) p.mani[0].ferma = true
+    this.cercaTurno(turno, this.c.adesso)
+  }
+
   /** La mano di turno sta, perché il tempo e' finito o chi la gioca si e' alzato. */
   private staPerForza(base: number) {
     const turno = this.t.turno!
@@ -328,17 +377,21 @@ export class BozzaBJ {
   }
 
   /**
-   * Il banco. Se nessuna mano e' rimasta in piedi non pesca; se restano solo
-   * blackjack pesca una carta, per vedere se fa blackjack anche lui; se no
-   * pesca fino a 17. Poi si paga, e il giro resta in vista per la sua fine.
+   * Il banco. Se restano mani in piedi che non sono blackjack pesca fino a 17;
+   * se restano solo blackjack, o solo assicurazioni, pesca una carta, per
+   * vedere se fa blackjack; se non resta niente non pesca. Poi si paga,
+   * l'assicurazione con le mani, e il giro resta in vista per la sua fine.
    */
   private giocaIlBanco(base: number) {
-    const vive = this.t.posti.filter(inGioco).flatMap((p) => p.mani.filter((m) => !sballata(m.carte)))
-    if (vive.length > 0 && vive.every((m) => eBlackjack(m.carte, m.divisa))) this.t.banco.push(this.c.pesca())
-    else if (vive.length > 0) this.t.banco = giocaBanco(this.t.banco, this.c.pesca)
-    for (const p of this.t.posti) {
-      if (!inGioco(p)) continue
-      p.delta = p.mani.reduce((s, m) => s + deltaMano(m, this.t.banco), 0)
+    const giocano = this.t.posti.filter(inGioco)
+    const vive = giocano.flatMap((p) => p.mani.filter((m) => !sballata(m.carte)))
+    const assicurati = giocano.some((p) => (p.assicurazione ?? 0) > 0)
+    if (vive.some((m) => !eBlackjack(m.carte, m.divisa))) this.t.banco = giocaBanco(this.t.banco, this.c.pesca)
+    else if (vive.length > 0 || assicurati) this.t.banco.push(this.c.pesca())
+    for (const p of giocano) {
+      const assicurazione = p.assicurazione ?? 0
+      const mani = p.mani.reduce((s, m) => s + deltaMano(m, this.t.banco), 0)
+      p.delta = mani + deltaAssicurazione(assicurazione, this.t.banco)
       this.movimenti.push({
         tipo: 'chiude',
         id: p.id,
@@ -347,6 +400,7 @@ export class BozzaBJ {
         delta: p.delta,
         mani: p.mani,
         banco: this.t.banco,
+        assicurazione,
       })
     }
     this.t.fase = 'fine'
@@ -365,7 +419,10 @@ export class BozzaBJ {
       const p = this.t.posti[k]
       if (!p) continue
       if (p.via || !this.attivo(p)) this.libera(k)
-      else Object.assign(p, { puntata: 0, giorno: 0, mani: [], delta: null })
+      else {
+        Object.assign(p, { puntata: 0, giorno: 0, mani: [], delta: null })
+        delete p.assicurazione
+      }
     }
   }
 
@@ -412,10 +469,10 @@ export class BozzaBJ {
   }
 }
 
-/** Le mosse che puo' fare adesso la mano di turno, per i bottoni: nessuna se non tocca a lui. */
-export function mosseDi(t: TavoloBJ, posto: number): AzioneBJ[] {
+/** Le mosse che puo' fare adesso chi tocca, assicurazione compresa: nessuna se non tocca a lui. */
+export function mosseDi(t: TavoloBJ, posto: number): MossaBJ[] {
   if (t.fase !== 'gioco' || t.turno?.posto !== posto) return []
   const p = t.posti[posto]
   if (!p) return []
-  return azioniPossibili(p.mani[t.turno.mano], p.mani.length)
+  return mossePossibili(p.mani, t.turno.mano, t.banco, p.assicurazione)
 }

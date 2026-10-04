@@ -57,7 +57,10 @@ export const blackjackRoutes = new Hono<AppEnv>()
     return c.json<VistaTavoloBJ>(await vistaTavolo(c.env.DB, id, io, letto))
   })
 
-  /** Una mossa sulla mano di turno: il giro, la mano e quante carte ha, perché un doppio tocco non conti due volte. */
+  /**
+   * Una mossa sulla mano di turno, assicurazione compresa: il giro, la mano e
+   * quante carte ha, perché un doppio tocco non conti due volte.
+   */
   .post('/tavolo/:id/mossa', async (c) => {
     const corpo = (await c.req.json().catch(() => ({}))) as {
       giro?: unknown
