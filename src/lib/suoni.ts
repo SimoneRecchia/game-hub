@@ -61,8 +61,14 @@ export type NomeSuono =
   | 'bonus'
   /** Vince il banco. */
   | 'banco'
-  /** La ruota dei moltiplicatori si ferma. */
+  /** La ruota del quiz si ferma. */
   | 'moltiplicatore'
+  /** La ruota si ferma sulla fortuna: l'arpa magica che sale, e il quadrifoglio che luccica. */
+  | 'quadrifoglio'
+  /** Un premio che sale, sulla ruota fortunata o sulla ruota del quiz: ogni volta un po' piu' in alto. */
+  | 'sale'
+  /** Il premio piu' grande arrivato in cima: l'accordo che si apre, e la cascata di campanelli. */
+  | 'magia'
   | 'monetaLancio'
   | 'monetaCade'
   /** Una puntata vinta: la fanfara, e le monete. */
@@ -678,6 +684,37 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     scivolo(u, t + 0.28, 470, 300, 0.26, 0.12 * v)
     scivolo(u, t + 0.56, 420, 160, 0.7, 0.13 * v)
     tonfo(u, t + 0.56, 0.14 * v, { da: 90, a: 40, durata: 0.45 })
+  },
+
+  // La fortuna: un'arpa che sale di due ottave sulla scala pentatonica, il soffio della magia, e i campanelli.
+  quadrifoglio: (u, t, v) => {
+    const arpa = [N.C5, N.D5, N.E5, N.G5, N.A5, N.C6, N.D6, N.E6, N.G6, N.A6, N.C7]
+    arpa.forEach((f, i) => marimba(u, t + i * 0.042, f, (0.12 + i * 0.008) * v, { eco: 0.4, durata: 0.7 }))
+    soffio(u, t, 0.9, 0.12 * v, { tipo: 'bandpass', da: 900, a: 6200, q: 1.2 }, { attacco: 0.25, eco: 0.5 })
+    const accordo = t + 0.5
+    ;[N.C6, N.E6, N.G6].forEach((f) => campanello(u, accordo, f, 0.11 * v, { eco: 0.55, durata: 1.5 }))
+    const scintille = [N.C7, N.D7, N.E7, N.G7, N.A7]
+    for (let i = 0; i < 8; i += 1) {
+      const f = scintille[Math.floor(Math.random() * scintille.length)]
+      campanello(u, accordo + 0.08 + i * 0.07, vario(f), 0.035 * v, { eco: 0.6, durata: 0.4 })
+    }
+  },
+
+  // Un premio che sale: un fischio che va su, e il campanello alla sua altezza. Le ondate lo suonano sempre piu' alto.
+  sale: (u, t, v, altezza = 1) => {
+    scivolo(u, t, 520 * altezza, 1560 * altezza, 0.16, 0.06 * v)
+    campanello(u, t + 0.12, vario(N.E6 * altezza, 0.01), 0.1 * v, { eco: 0.45, durata: 0.6 })
+    marimba(u, t + 0.12, N.E5 * altezza, 0.1 * v, { eco: 0.3, durata: 0.5 })
+  },
+
+  // Il premio piu' grande, arrivato: il colpo, l'accordo pieno che si apre in alto, e una cascata di campanelli.
+  magia: (u, t, v) => {
+    tonfo(u, t, 0.26 * v, { da: 140, a: 48, durata: 0.5 })
+    soffio(u, t, 0.7, 0.16 * v, { tipo: 'bandpass', da: 5200, a: 700, q: 0.9 }, { attacco: 0.004, eco: 0.4 })
+    ;[N.C5, N.G5, N.C6, N.E6, N.G6].forEach((f) => marimba(u, t + 0.02, f, 0.17 * v, { eco: 0.4, durata: 1.3 }))
+    ;[N.C7, N.E7, N.G7].forEach((f) => campanello(u, t + 0.05, f, 0.07 * v, { eco: 0.6, durata: 1.6 }))
+    const cascata = [N.A7, N.G7, N.E7, N.D7, N.C7, N.A6, N.G6, N.E6]
+    cascata.forEach((f, i) => campanello(u, t + 0.25 + i * 0.06, f, 0.05 * v, { eco: 0.6, durata: 0.5 }))
   },
 
   // Il moltiplicatore: un arpeggio che sale veloce e si apre in un accordo che luccica.

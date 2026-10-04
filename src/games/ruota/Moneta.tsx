@@ -18,7 +18,7 @@ type Fase = 'ferma' | 'carica' | 'aria' | 'caduta'
 /**
  * La moneta del Crazy Time: una faccia blu con il suo moltiplicatore, una rossa
  * del banco. Si lancia toccandola: sale girando su se stessa, ricade, rimbalza
- * e resta sul lato uscito.
+ * e resta sul lato uscito. Quella della ruota fortunata ha l'orlo verde e oro.
  *
  * Il lato lo decide il server: al tocco la moneta si carica, come una mano che
  * prende lo slancio, e parte quando arriva la risposta, già sapendo dove
@@ -28,12 +28,15 @@ type Fase = 'ferma' | 'carica' | 'aria' | 'caduta'
 export function Moneta({
   moltiplicatore,
   uscito,
+  fortunata = false,
   lanciabile,
   annulla,
   onTocca,
   onCaduta,
 }: {
   moltiplicatore: number
+  /** La moneta della ruota fortunata: l'orlo verde, e il blu che paga di piu'. */
+  fortunata?: boolean
   /** Il lato uscito: c'e' da quando il server ha lanciato. */
   uscito: LatoMoneta | null
   lanciabile: boolean
@@ -129,7 +132,12 @@ export function Moneta({
 
   const blu = scriviMoltiplicatore(moltiplicatore)
   return (
-    <div ref={radice} className={`ct-moneta is-${fase}${fase === 'caduta' ? ` is-uscito-${faccia}` : ''}`}>
+    <div
+      ref={radice}
+      className={`ct-moneta is-${fase}${fase === 'caduta' ? ` is-uscito-${faccia}` : ''}${
+        fortunata ? ' is-fortunata' : ''
+      }`}
+    >
       <div ref={ombra} className="ct-moneta__ombra" aria-hidden="true" />
       <div ref={salto} className="ct-moneta__salto">
         <button

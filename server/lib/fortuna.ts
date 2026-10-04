@@ -10,9 +10,10 @@
  * della giocata (`ruota_giornate` per Crazy Time, `fortuna_giornate` per gli
  * altri), quindi i conti sono sempre quelli delle giocate.
  *
- * Le domande della slot sono quelle di Crazy Time: le stesse categorie del
- * giorno, le stesse trenta domande per categoria (`ruota_domande`), e chi ne
- * ha avuta una a un gioco non la rivede all'altro.
+ * Le domande della slot sono quelle di Crazy Time: le stesse trenta domande
+ * per categoria (`ruota_domande`), di tutte le quattordici categorie alla
+ * ruota del quiz e delle sei del giorno alla slot, e chi ne ha avuta una a un
+ * gioco non la rivede all'altro.
  */
 
 import { MARGINE_RETE_MS } from '../../shared/quiz'
@@ -86,9 +87,9 @@ export async function domandeViste(db: D1Database, playerId: string, numero: num
 }
 
 /**
- * Le categorie che oggi hanno domande che il giocatore non ha ancora avuto: lo
- * spicchio di una categoria senza domande, o con tutte gia' viste, non esce, e
- * alla slot i punti di domanda non la pescano. La colonna di `ruota_domande`
+ * Le categorie che oggi hanno domande che il giocatore non ha ancora avuto: una
+ * categoria senza domande, o con tutte gia' viste, non va sulla ruota del quiz,
+ * e alla slot i punti di domanda non la pescano. La colonna di `ruota_domande`
  * si chiama ancora `materia`, da quando le domande erano per materia, e porta
  * la categoria.
  */

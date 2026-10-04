@@ -34,12 +34,12 @@
  * gia' pronto non c'e' ragione di chiederle — né di fermare una pubblicazione
  * perché uno di loro non risponde.
  *
- * Qui si fanno anche le domande delle sfide di Crazy Time: trenta per ognuna
- * delle sei categorie del giorno (`ruota_domande`, `categorieDelGiorno`), con
- * lo stesso generatore e le stesse fonti, e
- * anche loro una volta scritte non cambiano — tranne quelle di un formato
- * vecchio (`FORMATO_DOMANDE_RUOTA`), che si rifanno anche per oggi: il server
- * riconosce una domanda gia' vista dalla sua impronta, non dal posto
+ * Qui si fanno anche le domande del quiz di Crazy Time, che sono anche quelle
+ * della slot: trenta per ognuna delle quattordici categorie, ogni giorno
+ * (`ruota_domande`, `CATEGORIE_RUOTA`), con lo stesso generatore e le stesse
+ * fonti, e anche loro una volta scritte non cambiano — tranne quelle di un
+ * formato vecchio (`FORMATO_DOMANDE_RUOTA`), che si rifanno anche per oggi: il
+ * server riconosce una domanda gia' vista dalla sua impronta, non dal posto
  * nell'elenco, quindi rifare l'elenco non fa rivedere niente a nessuno.
  */
 
@@ -54,7 +54,7 @@ import { CATEGORIE_CULTURA, giornoDellAnno, type DatiCultura, type DatiOggi } fr
 import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI, cittaInBreve, type DatiQuiz } from '../shared/quiz-dati'
 import { indicizza, type DomandaCompleta } from '../shared/quiz-domande'
 import { domandeDelGiornoQuiz, eCultura, generaPartita, type FontiQuiz } from '../shared/quiz-domande-cultura'
-import { DOMANDE_PER_CATEGORIA, FORMATO_DOMANDE_RUOTA, categorieDelGiorno, type DomandaRuota } from '../shared/ruota'
+import { CATEGORIE_RUOTA, DOMANDE_PER_CATEGORIA, FORMATO_DOMANDE_RUOTA, type DomandaRuota } from '../shared/ruota'
 import type { Topologia } from '../shared/topojson'
 import {
   Q_ALIAS_FIUMI,
@@ -142,9 +142,9 @@ function semeDellaRuota(numero: number, categoria: CategoriaQuiz): number {
   return h >>> 0
 }
 
-/** Le categorie della ruota di un giorno che hanno gia' le loro domande, del formato di adesso. */
+/** Un giorno di Crazy Time e' pronto quando tutte le categorie hanno le loro domande, del formato di adesso. */
 const ruotaPronta = (numero: number, fatte: ReadonlySet<string>) =>
-  categorieDelGiorno(numero).every((c) => fatte.has(`${numero}:${c}`))
+  CATEGORIE_RUOTA.every((c) => fatte.has(`${numero}:${c}`))
 
 /** Una giornata che si puo' rifare: nel futuro, di un formato vecchio, e che nessuno ha aperto. */
 const DA_RIFARE = (numero: number) =>
@@ -431,17 +431,27 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
 /* ──────────────────────────  Le domande di Crazy Time  ─────────────────────────── */
 
 /**
- * Per ogni giorno e ognuna delle sei categorie della sua ruota
- * (`categorieDelGiorno`), `DOMANDE_PER_CATEGORIA` domande a scelta: a chi gira
- * e cade su quella categoria ne tocca una che quel giorno non ha ancora avuto.
- * Non ripetono i soggetti della classificata dello stesso giorno — una sfida
- * non deve svelare il quiz di oggi — ne' quelli della stessa categoria dei
- * giorni appena prima (`MEMORIA_RUOTA`: una categoria non torna mai il giorno
- * dopo, e cosi' le domande della sua volta prima si evitano tutte). Sono fra le
- * piu' note, come al livello facile: una sfida deve essere di chi sa, non di
- * chi ha studiato la Filocalia.
+ * Per ogni giorno e ognuna delle quattordici categorie (`CATEGORIE_RUOTA`),
+ * `DOMANDE_PER_CATEGORIA` domande a scelta: a chi gira e cade su quella
+ * categoria, alla ruota del quiz o alla slot, ne tocca una che quel giorno non
+ * ha ancora avuto. Non ripetono i soggetti della classificata dello stesso
+ * giorno — una sfida non deve svelare il quiz di oggi — ne' quelli della
+ * stessa categoria dei giorni appena prima (`MEMORIA_RUOTA`). Sono fra le piu'
+ * note, come al livello facile: una sfida deve essere di chi sa, non di chi ha
+ * studiato la Filocalia.
  */
 const MEMORIA_RUOTA = 3
+/**
+ * Le categorie che di soggetti noti ne hanno pochi, e ricordano meno giorni:
+ * ogni categoria esce tutti i giorni, e tre giorni sono novanta soggetti da
+ * evitare prima dei trenta nuovi. Misurato su centoventi giorni: i mari con
+ * tre giorni restavano sotto le trenta domande in due giorni su tre; i laghi e
+ * gli stati ne ripetevano comunque, e gli oceani con due; la scienza ha ottanta
+ * soggetti noti divisi fra i tipi di domanda, e ne ripete con qualunque
+ * memoria. Con questi giorni ogni categoria fa le sue trenta senza ripetere
+ * quelli che ricorda.
+ */
+const MEMORIA_CORTA: Partial<Record<CategoriaQuiz, number>> = { stati: 2, mari: 2, laghi: 2, oceani: 1, scienza: 0 }
 const ruotaFatte = new Map<string, DomandaRuota[]>()
 const chiaveRuota = (numero: number, categoria: string) => `${numero}:${categoria}`
 if (SCRIVE) {
@@ -456,10 +466,9 @@ if (SCRIVE) {
     }
   }
 }
-const ruotaMancanti = (numero: number) =>
-  categorieDelGiorno(numero).filter((c) => !ruotaFatte.has(chiaveRuota(numero, c)))
+const ruotaMancanti = (numero: number) => CATEGORIE_RUOTA.filter((c) => !ruotaFatte.has(chiaveRuota(numero, c)))
 const ruotaDaFare = Array.from({ length: GIORNI }, (_, i) => ruotaMancanti(DA + i).length).reduce((a, b) => a + b, 0)
-const ruotaTutte = GIORNI * categorieDelGiorno(DA).length
+const ruotaTutte = GIORNI * CATEGORIE_RUOTA.length
 console.log(
   `Crazy Time: le domande dal ${DA} al ${DA + GIORNI - 1}, ` +
     `${ruotaTutte - ruotaDaFare} categorie su ${ruotaTutte} già pronte`,
@@ -468,7 +477,7 @@ for (let numero = DA; numero < (SCRIVE ? DA + GIORNI : DA + 1); numero += 1) {
   const data = dateForPuzzleNumber(numero)
   for (const categoria of ruotaMancanti(numero)) {
     const evitare = new Set((esistenti.get(numero)?.domande ?? []).map((d) => d.soggetto))
-    for (let prima = numero - MEMORIA_RUOTA; prima < numero; prima += 1) {
+    for (let prima = numero - (MEMORIA_CORTA[categoria] ?? MEMORIA_RUOTA); prima < numero; prima += 1) {
       for (const d of ruotaFatte.get(chiaveRuota(prima, categoria)) ?? []) evitare.add(d.domanda.soggetto)
     }
     const caso = mulberry32(semeDellaRuota(numero, categoria))

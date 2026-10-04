@@ -18,15 +18,27 @@ import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { ComeSiGiocaRuota } from '@/games/ruota/ComeSiGioca'
 import {
-  DisegnoMoltiplicatori,
+  DisegnoQuiz,
   DisegnoRuota,
+  IconaQuiz,
+  Quadrifoglio,
   coloreDelMoltiplicatore,
   coloreDellaCategoria,
   iconaDellaCategoria,
 } from '@/games/ruota/disegni'
+import { FestaRuota, type DatiFestaRuota } from '@/games/ruota/Festa'
+import { COLPO_MS, ColpoDiFortuna, NastroFortuna, PremioCheSale } from '@/games/ruota/Fortuna'
 import { VISTA } from '@/games/ruota/geometria'
 import { Intermezzo, PIOGGIA_MS, PioggiaDiMonete, type DatiIntermezzo } from '@/games/ruota/Intermezzo'
 import { LineaPuntata } from '@/games/ruota/LineaPuntata'
+import {
+  CONTO_DIECI,
+  CONTO_QUIZ,
+  DURATA_AUMENTO_MS,
+  DURATA_MAGIA_MS,
+  PASSI_QUIZ,
+  PASSI_RUOTA,
+} from '@/games/ruota/magia'
 import { Moneta } from '@/games/ruota/Moneta'
 import { RuotaFisica, type Meta, type Mozzo } from '@/games/ruota/RuotaFisica'
 import { Tabellone } from '@/games/fortuna/Tabellone'
@@ -38,34 +50,56 @@ import { suona } from '@/lib/suoni'
 import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
 import {
   INTERVALLO_GIRI_MS,
-  MOLTIPLICATORI,
   NOME_CRAZY_TIME,
   PUNTATA_MINIMA,
+  SPICCHI_FORTUNATI,
+  SPICCHI_QUIZ,
+  SPICCHI_RUOTA,
   conSegno,
+  nomeDi,
   scriviMoltiplicatore,
-  spicchiDelGiorno,
 } from '@shared/ruota'
-import type { GiroRuota, RuotaStato } from '@shared/types'
+import type { GiroRuota, RuotaStato, SfidaRuotaVista } from '@shared/types'
 import './Ruota.css'
 
 const DomandaRuota = lazy(() => import('@/games/ruota/DomandaRuota'))
 
-type NomeScena = 'ruota' | 'moltiplicatori' | 'moneta' | 'domanda'
+type NomeScena = 'ruota' | 'quiz' | 'moneta' | 'domanda'
 type Luci = 'attesa' | 'vinto' | 'perso'
+type Quiz = Extract<SfidaRuotaVista, { tipo: 'domanda' }>
+
+/**
+ * La ruota grande: quella di sempre, la fortuna che arriva (il palco si fa verde
+ * ma la ruota e' ancora quella), la magia che la trasforma, la ruota fortunata,
+ * e il ritorno a quella di sempre.
+ */
+type ModoRuota = 'normale' | 'preludio' | 'magia' | 'fortunata' | 'torna'
+/** La ruota del quiz: con i moltiplicatori di sempre, mentre salgono, o con quelli della fortuna. */
+type ModoQuiz = 'normale' | 'aumento' | 'fortunata'
 
 /** Quanto resta un adesivo, quanto festeggiano le luci prima del passaggio, quanto si guarda il moltiplicatore. */
 const ADESIVO_MS = 2_300
 const FESTA_LUCI_MS = 950
-const RIVELA_MS = 2_000
+const RIVELA_MS = 2_200
 /** La moneta caduta resta in vista, prima di tornare alla ruota: il lato uscito si deve vedere. */
 const MONETA_IN_VISTA_MS = 2_700
 /** Quanto resta l'invito a lanciare piu' forte. */
 const DEBOLE_MS = 2_200
 /** Quanto ci mette la ruota a tornare, dopo una domanda: le monete partono quando e' ferma. */
 const RITORNO_MS = 720
+/** Quanto si guarda la ruota fortunata ferma, con l'esito sul mozzo, prima che torni quella di sempre. */
+const FORTUNA_IN_VISTA_MS = 2_000
+/** Quanto ci mette la ruota fortunata a tornare quella di sempre. */
+const TORNA_MS = 700
+/** Dopo la festa: le monete volano al saldo, e poi la fortuna se ne va. */
+const DOPO_FESTA_MS = 1_400
+/** Dal ×5 in su, anche una moneta o una domanda vinta ha la festa. */
+const FESTA_MINIGIOCO = 5
 
 /** Quante monete volano al saldo per una vincita: piu' vale il moltiplicatore, piu' sono. */
-const moneteDi = (moltiplicatore: number) => Math.round(4 + moltiplicatore * 3)
+const moneteDi = (moltiplicatore: number) => Math.round(4 + Math.min(moltiplicatore, 6) * 3)
+
+const ridotto = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /** Il centro del mozzo della ruota grande, sullo schermo: da li' partono e li' arrivano fiches e monete. */
 function centroDelMozzo(): Punto | null {
@@ -76,30 +110,51 @@ function centroDelMozzo(): Punto | null {
   return { x: r.left + (r.width * -VISTA.x) / VISTA.larghezza, y: r.top + (r.height * -VISTA.y) / VISTA.altezza }
 }
 
-/** La scena di un giro: la ruota, o il minigioco a cui e' arrivato. */
+/** La scena di un giro: la ruota, o il minigioco a cui e' arrivato. La ruota fortunata si gira sulla ruota. */
 function scenaDi(giro: GiroRuota | null): NomeScena {
   const sfida = giro?.sfida
-  if (!giro || giro.stato === 'fatto' || !sfida) return 'ruota'
+  if (!giro || giro.stato === 'fatto' || !sfida || sfida.tipo === 'fortuna') return 'ruota'
   if (sfida.tipo === 'moneta') return 'moneta'
-  return sfida.moltiplicatore === null ? 'moltiplicatori' : 'domanda'
+  return sfida.spicchioQuiz === null ? 'quiz' : 'domanda'
+}
+
+/** Lo spicchio dove si e' fermata la ruota grande nell'ultimo giro: quello della ruota fortunata, se c'e'. */
+function fermataDi(g: GiroRuota): Meta {
+  return g.fortunata !== null ? { indice: g.fortunata, chiave: `f${g.n}` } : { indice: g.spicchio, chiave: `p${g.n}` }
 }
 
 /** Il moltiplicatore e la vincita del minigioco di un giro, quando ci sono. */
 function palioDi(giro: GiroRuota | null): { moltiplicatore: number; vincita: number } | null {
   const s = giro?.sfida
-  if (!s || s.moltiplicatore === null || s.vincita === null) return null
+  if (!s || s.tipo === 'fortuna' || s.moltiplicatore === null || s.vincita === null) return null
   return { moltiplicatore: s.moltiplicatore, vincita: s.vincita }
 }
+
+/** Lo spicchio dove si e' fermata la ruota grande: quello della ruota fortunata, se c'e'. */
+const spicchioDi = (g: GiroRuota) => (g.fortunata !== null ? SPICCHI_FORTUNATI[g.fortunata] : SPICCHI_RUOTA[g.spicchio])
+
+/** Il nastro della fortuna, scena per scena. */
+const NASTRI: Record<NomeScena, string> = {
+  ruota: 'Ruota fortunata',
+  quiz: 'Quiz fortunato',
+  moneta: 'Moneta fortunata',
+  domanda: 'Quiz fortunato',
+}
+
+/** Il quiz del giro, se il giro e' arrivato al quiz. */
+const quizDi = (giro: GiroRuota | null): Quiz | null => (giro?.sfida?.tipo === 'domanda' ? giro.sfida : null)
 
 /**
  * Crazy Time: si punta, si trascina la ruota e la si lascia andare. La puntata
  * si paga al lancio, e si vede: le fiches volano dal saldo alla ruota, e il
  * saldo scende. Il banco se la tiene, e le fiches scivolano via; il triplo la
- * restituisce per tre; una domanda porta alla ruota dei moltiplicatori e poi
- * alla domanda; la moneta alla moneta da lanciare. Una vincita torna al saldo
- * in monete, che lo fanno salire quando arrivano. Ogni passaggio ha la sua
- * transizione, e finito il minigioco si torna alla ruota com'era, con l'esito
- * sul mozzo.
+ * restituisce per tre, con la festa; il quiz porta alla ruota del quiz e poi
+ * alla domanda; la moneta alla moneta da lanciare. La fortuna fa saltare fuori
+ * il quadrifoglio, e la ruota si trasforma sul posto nella ruota fortunata, con
+ * i premi che salgono uno dopo l'altro; si rigira con la stessa puntata, e
+ * dopo l'esito torna quella di sempre. Una vincita torna al saldo in monete,
+ * che lo fanno salire quando arrivano. Ogni passaggio ha la sua transizione, e
+ * finito il minigioco si torna alla ruota com'era, con l'esito sul mozzo.
  *
  * Il server decide tutto e risponde con lo stato intero, anche l'esito che la
  * ruota non ha ancora mostrato; qui si fa vedere nell'ordine giusto, e il
@@ -113,7 +168,7 @@ export default function RuotaPagina() {
   const [stato, setStato] = useState<RuotaStato | null>(null)
   const [errore, setErrore] = useState<string | null>(null)
   const [scena, setScena] = useState<NomeScena>('ruota')
-  const [intermezzo, setIntermezzo] = useState<(DatiIntermezzo & { verso: NomeScena }) | null>(null)
+  const [intermezzo, setIntermezzo] = useState<(DatiIntermezzo & { verso: NomeScena | 'fortunata' }) | null>(null)
   /** La puntata scelta: finché non la si tocca e' quella del giro di prima. */
   const [puntata, setPuntata] = useState<number | null>(null)
   const [inviando, setInviando] = useState(false)
@@ -123,14 +178,18 @@ export default function RuotaPagina() {
   const [annulla, setAnnulla] = useState(0)
   const [luci, setLuci] = useState<Luci>('attesa')
   const [esito, setEsito] = useState(false)
+  const [modo, setModo] = useState<ModoRuota>('normale')
+  /** Il colpo del quadrifoglio, quando la ruota si ferma sulla fortuna. */
+  const [colpo, setColpo] = useState<number | null>(null)
   /** Fra due giri passano tre secondi: senza animazioni la ruota si ferma subito, e il server direbbe di no. */
   const [riposata, setRiposata] = useState(true)
   const [debole, setDebole] = useState(false)
-  // La ruota dei moltiplicatori.
-  const [fermaSuM, setFermaSuM] = useState<Meta | null>(null)
-  const [girandoM, setGirandoM] = useState(false)
-  const [annullaM, setAnnullaM] = useState(0)
-  const [luciM, setLuciM] = useState<Luci>('attesa')
+  // La ruota del quiz.
+  const [fermaSuQ, setFermaSuQ] = useState<Meta | null>(null)
+  const [girandoQ, setGirandoQ] = useState(false)
+  const [annullaQ, setAnnullaQ] = useState(0)
+  const [luciQ, setLuciQ] = useState<Luci>('attesa')
+  const [modoQ, setModoQ] = useState<ModoQuiz>('normale')
   const [rivelato, setRivelato] = useState(false)
   // La moneta: mentre e' in aria il tabellone resta com'era, e il lato si dice quando cade.
   const [annullaMoneta, setAnnullaMoneta] = useState(0)
@@ -138,16 +197,30 @@ export default function RuotaPagina() {
   const [monetaCaduta, setMonetaCaduta] = useState(false)
   const [regole, setRegole] = useState(false)
   const [pioggia, setPioggia] = useState(0)
+  const [festa, setFesta] = useState<DatiFestaRuota | null>(null)
+  /** Che cosa fare quando la festa finisce: le monete al saldo, e quel che viene dopo. */
+  const dopoLaFesta = useRef<(() => void) | null>(null)
   const { adesivo, accoda } = useCodaAdesivi()
   // Il saldo sul tabellone: da li' partono le fiches e li' arrivano le monete.
   const saldoRef = useRef<HTMLSpanElement>(null)
   // Com'e' finita la domanda, da raccontare sulla ruota quando si torna: le monete al saldo, o le fiches al banco.
-  const daRaccontare = useRef<{ vinto: boolean; moltiplicatore: number; puntata: number } | null>(null)
+  const daRaccontare = useRef<{ vinto: boolean; moltiplicatore: number; puntata: number; vincita: number } | null>(
+    null,
+  )
   // Lo stato di adesso, per chi lo legge a ruota ferma o a moneta caduta: arrivano dopo il disegno.
   const ultimo = useRef(stato)
   useEffect(() => {
     ultimo.current = stato
   })
+  /**
+   * Lo stato arrivato dal server, subito anche per `ultimo`: senza animazioni la
+   * ruota e la moneta si fermano dentro il loro effetto, che React fa girare
+   * prima di quello della pagina, e leggerebbero il giro di prima.
+   */
+  const aggiorna = (nuovo: RuotaStato) => {
+    ultimo.current = nuovo
+    setStato(nuovo)
+  }
 
   const leggi = useCallback(() => api<RuotaStato>('/ruota'), [])
 
@@ -159,13 +232,17 @@ export default function RuotaPagina() {
         const g = s.giro
         setStato(s)
         setScena(scenaDi(g))
-        if (g) {
-          setFermaSu({ indice: g.spicchio, chiave: `p${g.n}` })
-          setEsito(g.stato === 'fatto')
-          if (g.sfida?.tipo === 'domanda' && g.sfida.spicchioMoltiplicatore !== null) {
-            setFermaSuM({ indice: g.sfida.spicchioMoltiplicatore, chiave: `m${g.n}` })
-            setRivelato(true)
-          }
+        if (!g) return
+        setFermaSu(fermataDi(g))
+        setEsito(g.stato === 'fatto')
+        // Una fortuna ancora in gioco: la ruota e' gia' quella fortunata, e cosi' la ruota del quiz che ne viene.
+        const fortunata = g.stato !== 'fatto' && (g.sfida?.tipo === 'fortuna' || g.fortunata !== null)
+        if (fortunata) setModo('fortunata')
+        const quiz = quizDi(g)
+        if (quiz?.fortunata) setModoQ('fortunata')
+        if (quiz && quiz.spicchioQuiz !== null) {
+          setFermaSuQ({ indice: quiz.spicchioQuiz, chiave: `q${g.n}` })
+          setRivelato(true)
         }
       })
       .catch((e) => vivo && setErrore(e instanceof ApiFetchError ? e.message : 'Non riesco a caricare la ruota.'))
@@ -210,29 +287,25 @@ export default function RuotaPagina() {
     [toast, leggi],
   )
 
-  /** L'esito di un minigioco: la vincita con le monete, o il banco. */
-  const annuncia = (g: GiroRuota) => {
-    const palio = palioDi(g)
-    if (g.delta > 0 && palio) {
-      accoda(adesivoVincita(palio.vincita, g.puntata, palio.moltiplicatore))
-      setPioggia((p) => p + 1)
-      dopo(PIOGGIA_MS, () => setPioggia(0))
-    } else {
-      accoda(adesivoBanco(g.puntata))
-    }
-  }
-
   const giro = stato?.giro ?? null
   const sfida = giro?.sfida ?? null
+  const quiz = quizDi(giro)
   const saldo = stato?.saldo ?? 0
-  const numero = stato?.puzzleNumber ?? 1
-  // Gli spicchi di oggi, con le categorie del giorno: cambiano solo con il giorno, e la ruota non si ridisegna.
-  const spicchi = useMemo(() => spicchiDelGiorno(numero), [numero])
-  const disegnoRuota = useMemo(() => <DisegnoRuota spicchi={spicchi} />, [spicchi])
   const puoGirare = saldo >= PUNTATA_MINIMA
   // Si punta quanto si vuole, dalla minima a tutto il saldo; finché non la si cambia, la puntata e' quella di prima.
   const scelta = Math.min(saldo, Math.max(PUNTATA_MINIMA, puntata ?? giro?.puntata ?? PUNTATA_MINIMA))
   const girando = inGioco !== null
+  /** La ruota fortunata da girare: la puntata e' gia' sul tavolo. */
+  const fortunaDaGirare = giro?.stato === 'sfida' && sfida?.tipo === 'fortuna'
+  const inSfida = !!giro && giro.stato !== 'fatto'
+  // Il disegno della ruota non cambia mai, e quello della ruota del quiz cambia con le sue categorie.
+  const disegnoRuota = useMemo(() => <DisegnoRuota />, [])
+  const categorie = quiz?.categorie ?? null
+  const chiaveCategorie = categorie?.join(',') ?? ''
+  const disegnoQuiz = useMemo(
+    () => (chiaveCategorie ? <DisegnoQuiz categorie={chiaveCategorie.split(',') as CategoriaQuiz[]} /> : null),
+    [chiaveCategorie],
+  )
 
   /**
    * Una vincita che torna al saldo: le monete volano da `da` al tabellone, che
@@ -248,14 +321,67 @@ export default function RuotaPagina() {
     void incassaMonete(da, a, moneteDi(moltiplicatore), () => setConto(null))
   }
 
+  /** La festa di un premio grande; quando finisce, `poi`. */
+  const festeggia = (dati: Omit<DatiFestaRuota, 'chiave'>, poi: () => void) => {
+    dopoLaFesta.current = poi
+    setLuci('vinto')
+    setFesta({ ...dati, chiave: Date.now() })
+  }
+
+  const fineFesta = () => {
+    setFesta(null)
+    setLuci('attesa')
+    const poi = dopoLaFesta.current
+    dopoLaFesta.current = null
+    poi?.()
+  }
+
+  /** La fortuna se ne va: la ruota fortunata torna quella di sempre, con un'ultima luce. */
+  const tornaNormale = () => {
+    if (ridotto()) {
+      setModo('normale')
+      return
+    }
+    setModo('torna')
+    dopo(TORNA_MS, () => setModo('normale'))
+  }
+
+  /** L'esito di un minigioco: la vincita con le monete, o il banco. Le vincite grandi hanno la festa, dopo. */
+  const annuncia = (g: GiroRuota) => {
+    const palio = palioDi(g)
+    if (g.delta > 0 && palio) {
+      if (palio.moltiplicatore >= FESTA_MINIGIOCO) return
+      accoda(adesivoVincita(palio.vincita, g.puntata, palio.moltiplicatore))
+      setPioggia((p) => p + 1)
+      dopo(PIOGGIA_MS, () => setPioggia(0))
+    } else {
+      accoda(adesivoBanco(g.puntata))
+    }
+  }
+
   /* ───────────────────────────────  La ruota  ─────────────────────────────── */
 
   const lanciaRuota = async () => {
     setEsito(false)
     setDebole(false)
     setLuci('attesa')
-    setInGioco(scelta)
     setRiposata(false)
+    // La ruota fortunata: la puntata e' gia' sul mozzo, e il saldo resta com'e' finché non si sa.
+    if (fortunaDaGirare && giro) {
+      setInGioco(giro.puntata)
+      if (stato) setConto({ saldo: stato.saldo, netto: stato.netto, giri: stato.giri })
+      const nuovo = await chiedi('/ruota/fortuna')
+      if (!nuovo?.giro || nuovo.giro.fortunata === null) {
+        setAnnulla((x) => x + 1)
+        setInGioco(null)
+        setConto(null)
+        return
+      }
+      aggiorna(nuovo)
+      setFermaSu(fermataDi(nuovo.giro))
+      return
+    }
+    setInGioco(scelta)
     // La puntata si paga adesso: il saldo scende, e le fiches volano sulla ruota.
     if (stato) setConto({ saldo: stato.saldo - scelta, netto: stato.netto - scelta, giri: stato.giri + 1 })
     const da = centroDi(saldoRef.current)
@@ -268,8 +394,27 @@ export default function RuotaPagina() {
       setConto(null)
       return
     }
-    setStato(nuovo)
-    setFermaSu({ indice: nuovo.giro.spicchio, chiave: `p${nuovo.giro.n}` })
+    aggiorna(nuovo)
+    setFermaSu(fermataDi(nuovo.giro))
+  }
+
+  /** La fortuna: il palco si fa verde, la ruota si trasforma, e i premi salgono uno dopo l'altro, con i loro suoni. */
+  const avviaMagia = () => {
+    setIntermezzo(null)
+    if (ridotto()) {
+      setModo('fortunata')
+      suona('magia')
+      return
+    }
+    setModo('magia')
+    setLuci('vinto')
+    PASSI_RUOTA.forEach((ms, k) => suona('sale', { ritardo: ms / 1000, altezza: 1 + k * 0.07 }))
+    CONTO_DIECI.slice(1).forEach((p, k) => suona('incasso', { ritardo: p.ms / 1000, altezza: 1 + k * 0.11 }))
+    suona('magia', { ritardo: CONTO_DIECI[CONTO_DIECI.length - 1].ms / 1000 })
+    dopo(DURATA_MAGIA_MS, () => {
+      setModo('fortunata')
+      setLuci('attesa')
+    })
   }
 
   const fermataRuota = () => {
@@ -279,7 +424,8 @@ export default function RuotaPagina() {
       setConto(null)
       return
     }
-    const s = spicchi[g.spicchio]
+    const fortunata = g.fortunata !== null
+    const s = spicchioDi(g)
     if (s.tipo === 'banco') {
       setConto(null)
       setEsito(true)
@@ -288,76 +434,128 @@ export default function RuotaPagina() {
       const mozzo = centroDelMozzo()
       if (mozzo) perdiFiches(mozzo, g.puntata)
       dopo(1_700, () => setLuci('attesa'))
+      if (fortunata) dopo(FORTUNA_IN_VISTA_MS, tornaNormale)
       return
     }
     if (s.tipo === 'fisso') {
       setEsito(true)
       setLuci('vinto')
       suona('bonus')
-      accoda(adesivoVincita(g.delta + g.puntata, g.puntata, s.moltiplicatore))
-      setPioggia((p) => p + 1)
-      dopo(PIOGGIA_MS, () => setPioggia(0))
-      incassa(s.moltiplicatore, centroDelMozzo())
-      dopo(2_200, () => setLuci('attesa'))
+      const vincita = g.delta + g.puntata
+      const sotto = `${g.puntata} ${scriviMoltiplicatore(s.moltiplicatore)}`
+      dopo(ridotto() ? 0 : 450, () =>
+        festeggia({ moltiplicatore: s.moltiplicatore, vincita, sotto, fortunata }, () => {
+          incassa(s.moltiplicatore, centroDelMozzo())
+          if (fortunata) dopo(DOPO_FESTA_MS, tornaNormale)
+        }),
+      )
       return
     }
     setConto(null)
     setLuci('vinto')
+    if (s.tipo === 'fortuna') {
+      suona('quadrifoglio')
+      setColpo(Date.now())
+      dopo(ridotto() ? 300 : COLPO_MS, () => {
+        setColpo(null)
+        setLuci('attesa')
+        setIntermezzo({
+          chiave: Date.now(),
+          titolo: 'Ruota fortunata',
+          sotto: 'I premi salgono',
+          colore: 'var(--ct-fortuna)',
+          icona: <IconaFortuna />,
+          verso: 'fortunata',
+        })
+      })
+      return
+    }
     suona('bonus')
     dopo(FESTA_LUCI_MS, () => {
       setLuci('attesa')
-      setIntermezzo(
-        s.tipo === 'moneta'
-          ? {
-              chiave: Date.now(),
-              titolo: 'Moneta',
-              sotto: 'Blu vinci, rosso vince il banco',
-              colore: 'var(--ct-moneta)',
-              icona: <MonetaPiccola />,
-              verso: 'moneta',
-            }
-          : {
-              chiave: Date.now(),
-              titolo: NOMI_CATEGORIE[s.categoria],
-              sotto: 'Gira i moltiplicatori',
-              colore: coloreDellaCategoria(s.categoria),
-              icona: <IconaCategoria categoria={s.categoria} />,
-              verso: 'moltiplicatori',
-            },
-      )
+      if (s.tipo === 'moneta') {
+        setIntermezzo({
+          chiave: Date.now(),
+          titolo: fortunata ? 'Moneta fortunata' : 'Moneta',
+          sotto: 'Blu vinci, rosso vince il banco',
+          colore: 'var(--ct-moneta)',
+          icona: <MonetaPiccola />,
+          verso: 'moneta',
+        })
+        return
+      }
+      // Il quiz: la ruota del quiz arriva con i moltiplicatori di sempre; dalla fortuna poi salgono.
+      setModoQ('normale')
+      setRivelato(false)
+      setIntermezzo({
+        chiave: Date.now(),
+        titolo: fortunata ? 'Quiz fortunato' : 'Quiz',
+        sotto: fortunata ? 'I moltiplicatori salgono' : 'Gira la ruota del quiz',
+        colore: 'var(--ct-quiz)',
+        icona: <IconaQuizGrande />,
+        verso: 'quiz',
+      })
     })
   }
 
-  /* ───────────────────────────  I moltiplicatori  ──────────────────────────── */
+  /* ───────────────────────────  La ruota del quiz  ──────────────────────────── */
 
-  const lanciaMoltiplicatori = async () => {
-    setGirandoM(true)
-    setLuciM('attesa')
-    setRivelato(false)
-    const nuovo = await chiedi('/ruota/moltiplicatore')
-    const s = nuovo?.giro?.sfida
-    if (!nuovo?.giro || s?.tipo !== 'domanda' || s.spicchioMoltiplicatore === null) {
-      setAnnullaM((a) => a + 1)
-      setGirandoM(false)
+  /** Dalla fortuna: i moltiplicatori della ruota del quiz salgono uno dopo l'altro, il ×4 fino al ×10. */
+  const avviaAumento = () => {
+    if (ridotto()) {
+      setModoQ('fortunata')
+      suona('magia')
       return
     }
-    setStato(nuovo)
-    setFermaSuM({ indice: s.spicchioMoltiplicatore, chiave: `m${nuovo.giro.n}` })
+    setModoQ('aumento')
+    setLuciQ('vinto')
+    PASSI_QUIZ.forEach((ms, k) => suona('sale', { ritardo: ms / 1000, altezza: 1 + k * 0.09 }))
+    CONTO_QUIZ.slice(1).forEach((p, k) => suona('incasso', { ritardo: p.ms / 1000, altezza: 1 + k * 0.13 }))
+    suona('magia', { ritardo: CONTO_QUIZ[CONTO_QUIZ.length - 1].ms / 1000 })
+    dopo(DURATA_AUMENTO_MS, () => {
+      setModoQ('fortunata')
+      setLuciQ('attesa')
+    })
+  }
+
+  const fineIntermezzo = () => {
+    const verso = intermezzo?.verso
+    if (verso === 'fortunata') {
+      avviaMagia()
+      return
+    }
+    setIntermezzo(null)
+    if (verso === 'quiz' && quizDi(ultimo.current?.giro ?? null)?.fortunata) dopo(250, avviaAumento)
+  }
+
+  const lanciaQuiz = async () => {
+    setGirandoQ(true)
+    setLuciQ('attesa')
+    setRivelato(false)
+    const nuovo = await chiedi('/ruota/quiz')
+    const q = quizDi(nuovo?.giro ?? null)
+    if (!nuovo?.giro || !q || q.spicchioQuiz === null) {
+      setAnnullaQ((a) => a + 1)
+      setGirandoQ(false)
+      return
+    }
+    aggiorna(nuovo)
+    setFermaSuQ({ indice: q.spicchioQuiz, chiave: `q${nuovo.giro.n}` })
   }
 
   const apriDomanda = async () => {
     setScena('domanda')
     const nuovo = await chiedi('/ruota/domanda')
-    if (nuovo) setStato(nuovo)
+    if (nuovo) aggiorna(nuovo)
   }
 
-  const fermataMoltiplicatori = () => {
-    setGirandoM(false)
-    setLuciM('vinto')
+  const fermataQuiz = () => {
+    setGirandoQ(false)
+    setLuciQ('vinto')
     setRivelato(true)
     suona('moltiplicatore')
     dopo(RIVELA_MS, () => {
-      setLuciM('attesa')
+      setLuciQ('attesa')
       void apriDomanda()
     })
   }
@@ -372,8 +570,13 @@ export default function RuotaPagina() {
     // Il tabellone e' nascosto dalla domanda: la vincita la si vede arrivare tornando alla ruota.
     const vinto = g.delta > 0 && !!palio
     if (vinto) setConto({ saldo: nuovo.saldo - palio.vincita, netto: nuovo.netto - palio.vincita, giri: nuovo.giri })
-    daRaccontare.current = { vinto, moltiplicatore: palio?.moltiplicatore ?? 1, puntata: g.puntata }
-    setStato(nuovo)
+    daRaccontare.current = {
+      vinto,
+      moltiplicatore: palio?.moltiplicatore ?? 1,
+      puntata: g.puntata,
+      vincita: palio?.vincita ?? 0,
+    }
+    aggiorna(nuovo)
     annuncia(g)
   }
 
@@ -383,11 +586,24 @@ export default function RuotaPagina() {
     setRivelato(false)
     const racconto = daRaccontare.current
     daRaccontare.current = null
-    if (!racconto) return
+    const fortunata = ultimo.current?.giro?.fortunata != null
+    if (!racconto) {
+      if (fortunata) dopo(FORTUNA_IN_VISTA_MS, tornaNormale)
+      return
+    }
     dopo(RITORNO_MS, () => {
       const mozzo = centroDelMozzo()
-      if (racconto.vinto) incassa(racconto.moltiplicatore, mozzo)
-      else if (mozzo) perdiFiches(mozzo, racconto.puntata)
+      const { vinto, moltiplicatore, puntata: p, vincita } = racconto
+      if (vinto && moltiplicatore >= FESTA_MINIGIOCO) {
+        festeggia({ moltiplicatore, vincita, sotto: 'Domanda giusta', fortunata }, () => {
+          incassa(moltiplicatore, centroDelMozzo())
+          if (fortunata) dopo(DOPO_FESTA_MS, tornaNormale)
+        })
+        return
+      }
+      if (vinto) incassa(moltiplicatore, mozzo)
+      else if (mozzo) perdiFiches(mozzo, p)
+      if (fortunata) dopo(FORTUNA_IN_VISTA_MS, tornaNormale)
     })
   }
 
@@ -402,7 +618,7 @@ export default function RuotaPagina() {
       setAnnullaMoneta((a) => a + 1)
       return
     }
-    setStato(nuovo)
+    aggiorna(nuovo)
   }
 
   const caduta = () => {
@@ -415,6 +631,16 @@ export default function RuotaPagina() {
     annuncia(g)
     const palio = palioDi(g)
     const moneta = centroDi(document.querySelector('.ct-scena--moneta .ct-moneta'))
+    if (g.delta > 0 && palio && palio.moltiplicatore >= FESTA_MINIGIOCO) {
+      const fortunata = g.fortunata !== null
+      dopo(ridotto() ? 0 : 600, () =>
+        festeggia({ moltiplicatore: palio.moltiplicatore, vincita: palio.vincita, sotto: 'Blu', fortunata }, () => {
+          incassa(palio.moltiplicatore, centroDi(document.querySelector('.ct-scena--moneta .ct-moneta')))
+          dopo(MONETA_IN_VISTA_MS - 1_000, allaRuota)
+        }),
+      )
+      return
+    }
     if (g.delta > 0 && palio) incassa(palio.moltiplicatore, moneta)
     else {
       setConto(null)
@@ -426,22 +652,38 @@ export default function RuotaPagina() {
   /* ───────────────────────────────  La pagina  ─────────────────────────────── */
 
   const palio = palioDi(giro)
+  const fortunata = modo === 'fortunata' || modo === 'magia'
   // Sul mozzo: la puntata, poi la puntata in gioco, poi quel che e' tornato, o quel che si e' perso.
   const mozzo: Mozzo =
     inGioco !== null
       ? { testo: String(inGioco), sotto: 'in gioco' }
-      : esito && giro?.stato === 'fatto'
-        ? giro.delta > 0
-          ? { testo: conSegno(giro.delta + giro.puntata), sotto: 'vinti', tono: 'piu' }
-          : { testo: conSegno(-giro.puntata), sotto: 'persi', tono: 'meno' }
-        : puoGirare
-          ? { testo: String(scelta), sotto: 'puntata' }
-          : { testo: String(saldo), sotto: 'saldo' }
-  const mozzoM: Mozzo = rivelato && palio ? { testo: scriviMoltiplicatore(palio.moltiplicatore) } : { testo: '×?' }
-  const prontaRuota = scena === 'ruota' && !intermezzo && puoGirare && !girando && riposata && !inviando
-  const prontaM = scena === 'moltiplicatori' && !intermezzo && !girandoM && !rivelato && !inviando
-  const categoria = sfida?.tipo === 'domanda' ? sfida.categoria : null
-  const inDomanda = scena === 'domanda' && sfida?.tipo === 'domanda'
+      : fortunaDaGirare && giro
+        ? { testo: String(giro.puntata), sotto: 'in gioco' }
+        : esito && giro?.stato === 'fatto'
+          ? giro.delta > 0
+            ? { testo: conSegno(giro.delta + giro.puntata), sotto: 'vinti', tono: 'piu' }
+            : { testo: conSegno(-giro.puntata), sotto: 'persi', tono: 'meno' }
+          : puoGirare
+            ? { testo: String(scelta), sotto: 'puntata' }
+            : { testo: String(saldo), sotto: 'saldo' }
+  const mozzoQ: Mozzo = rivelato && palio ? { testo: scriviMoltiplicatore(palio.moltiplicatore) } : { testo: '×?' }
+  const libera = scena === 'ruota' && !intermezzo && !girando && !inviando && !festa && colpo === null
+  const prontaRuota =
+    libera && (fortunaDaGirare ? modo === 'fortunata' : modo === 'normale' && !inSfida && puoGirare && riposata)
+  const prontaQ =
+    scena === 'quiz' && !intermezzo && !girandoQ && !rivelato && !inviando && modoQ !== 'aumento' && !!quiz
+  const inDomanda = scena === 'domanda' && !!quiz
+  /** Quel che c'e' in palio alla ruota del quiz, quando si e' fermata: la categoria e il moltiplicatore. */
+  const inPalio =
+    rivelato && palio && quiz?.categoria ? { categoria: NOMI_CATEGORIE[quiz.categoria], ...palio } : null
+  /** Dal colpo del quadrifoglio alla ruota fortunata pronta: il pannello lo dice, e la ruota non si prende. */
+  const arrivaLaFortuna = colpo !== null || intermezzo?.verso === 'fortunata' || modo === 'preludio' || modo === 'magia'
+  // Il palco e' verde finché la fortuna dura: dall'insegna della ruota fortunata al ritorno a quella di sempre.
+  const palcoFortunato = modo === 'preludio' || modo === 'magia' || modo === 'fortunata'
+  const classeRuota = `is-principale${fortunata ? ' is-fortunata' : ''}${modo === 'magia' ? ' is-magia' : ''}${
+    modo === 'torna' ? ' is-torna' : ''
+  }`
+  const classeQuiz = `is-quiz${modoQ !== 'normale' ? ' is-fortunata' : ''}${modoQ === 'aumento' ? ' is-aumento' : ''}`
 
   return (
     <Pagina
@@ -454,42 +696,52 @@ export default function RuotaPagina() {
         </BottoneBarra>
       }
     >
-      {inDomanda && sfida?.tipo === 'domanda' && (
+      {inDomanda && quiz && (
         <Suspense fallback={<div className="ct-attesa" aria-hidden="true" />}>
-          {sfida.domanda ? (
+          {quiz.domanda && quiz.categoria ? (
             <DomandaRuota
               key={`${giro?.n}-${giro?.stato}`}
-              sfida={sfida}
+              sfida={{ ...quiz, categoria: quiz.categoria }}
               inviando={inviando}
               onRispondi={(r) => void rispondi(r)}
               onTorna={allaRuota}
             />
-          ) : inviando ? (
+          ) : inviando || !quiz.categoria ? (
             <div className="ct-attesa" aria-hidden="true" />
           ) : (
-            <Pronti categoria={sfida.categoria} vincita={sfida.vincita} onVia={() => void apriDomanda()} />
+            <Pronti categoria={quiz.categoria} vincita={quiz.vincita} onVia={() => void apriDomanda()} />
           )}
         </Suspense>
       )}
       {/* Durante la domanda il palco resta, nascosto: tornando, il tabellone e le ruote sono quelli di prima. */}
       <div className="ct" hidden={inDomanda}>
         {stato && (
-          <Tabellone saldo={conto?.saldo ?? saldo} puntata={scelta} saldoRef={saldoRef} />
+          <Tabellone
+            saldo={conto?.saldo ?? saldo}
+            puntata={inSfida && giro ? giro.puntata : scelta}
+            saldoRef={saldoRef}
+          />
         )}
         <div className="ct-corpo">
-          <div className={`ct-palco is-${scena}${luci === 'perso' ? ' is-scosso' : ''}`}>
+          <div
+            className={`ct-palco is-${scena}${luci === 'perso' ? ' is-scosso' : ''}${
+              palcoFortunato ? ' is-fortunata' : ''
+            }`}
+          >
+            <span className="ct-palco__fortuna" aria-hidden="true" />
             <span className="ct-palco__luce" aria-hidden="true" />
             <span className="ct-palco__scintille" aria-hidden="true" />
             <span className="ct-palco__insegna" aria-hidden="true">
               Crazy <span>Time</span>
             </span>
+            {stato && palcoFortunato && <NastroFortuna testo={NASTRI[scena]} />}
             {!stato ? (
               <div className="ct-palco__attesa" aria-hidden="true" />
             ) : (
               <>
                 <Scena attiva={scena === 'ruota'} nome="ruota">
                   <RuotaFisica
-                    spicchi={spicchi.length}
+                    spicchi={SPICCHI_RUOTA.length}
                     disegno={disegnoRuota}
                     fermaSu={fermaSu}
                     pronta={prontaRuota}
@@ -501,32 +753,40 @@ export default function RuotaPagina() {
                     lampade={24}
                     durataMinima={3_600}
                     mozzo={mozzo}
-                    fiche={inGioco !== null}
+                    fiche={inGioco !== null || fortunaDaGirare}
                     invito={prontaRuota}
-                    etichetta="La ruota: trascinala e lasciala andare per girarla"
-                    classe="is-principale"
+                    etichetta={
+                      fortunaDaGirare
+                        ? 'La ruota fortunata: trascinala e lasciala andare per girarla'
+                        : 'La ruota: trascinala e lasciala andare per girarla'
+                    }
+                    classe={classeRuota}
                   />
+                  {colpo !== null && <ColpoDiFortuna chiave={colpo} />}
+                  {modo === 'magia' && <PremioCheSale passi={CONTO_DIECI} />}
                 </Scena>
-                <Scena attiva={scena === 'moltiplicatori'} nome="moltiplicatori">
-                  {categoria && <Cartello categoria={categoria} />}
-                  <RuotaFisica
-                    spicchi={MOLTIPLICATORI.length}
-                    disegno={<DisegnoMoltiplicatori />}
-                    fermaSu={fermaSuM}
-                    pronta={prontaM}
-                    onLancio={() => void lanciaMoltiplicatori()}
-                    onFerma={fermataMoltiplicatori}
-                    onDebole={() => setDebole(true)}
-                    annulla={annullaM}
-                    luci={luciM}
-                    lampade={24}
-                    durataMinima={2_800}
-                    mozzo={mozzoM}
-                    invito={prontaM}
-                    etichetta="La ruota dei moltiplicatori: trascinala e lasciala andare"
-                    classe="is-moltiplicatori"
-                  />
-                  {rivelato && palio && <Rivelazione {...palio} />}
+                <Scena attiva={scena === 'quiz'} nome="quiz">
+                  {disegnoQuiz && (
+                    <RuotaFisica
+                      spicchi={SPICCHI_QUIZ}
+                      disegno={disegnoQuiz}
+                      fermaSu={fermaSuQ}
+                      pronta={prontaQ}
+                      onLancio={() => void lanciaQuiz()}
+                      onFerma={fermataQuiz}
+                      onDebole={() => setDebole(true)}
+                      annulla={annullaQ}
+                      luci={luciQ}
+                      lampade={24}
+                      durataMinima={2_800}
+                      mozzo={mozzoQ}
+                      invito={prontaQ}
+                      etichetta="La ruota del quiz: trascinala e lasciala andare"
+                      classe={classeQuiz}
+                    />
+                  )}
+                  {modoQ === 'aumento' && <PremioCheSale passi={CONTO_QUIZ} />}
+                  {rivelato && palio && quiz?.categoria && <Rivelazione categoria={quiz.categoria} {...palio} />}
                 </Scena>
                 <Scena attiva={scena === 'moneta'} nome="moneta">
                   {sfida?.tipo === 'moneta' && (
@@ -534,6 +794,7 @@ export default function RuotaPagina() {
                       key={giro?.n}
                       moltiplicatore={sfida.moltiplicatore}
                       uscito={sfida.uscito}
+                      fortunata={sfida.fortunata}
                       lanciabile={scena === 'moneta' && !intermezzo && giro?.stato === 'sfida' && !inviando}
                       annulla={annullaMoneta}
                       onTocca={() => void lanciaMoneta()}
@@ -545,21 +806,37 @@ export default function RuotaPagina() {
             )}
             <Intermezzo
               dati={intermezzo}
-              onMezzo={() => intermezzo && setScena(intermezzo.verso)}
-              onFine={() => setIntermezzo(null)}
+              onMezzo={() => {
+                if (!intermezzo) return
+                if (intermezzo.verso === 'fortunata') setModo('preludio')
+                else setScena(intermezzo.verso)
+              }}
+              onFine={fineIntermezzo}
             />
           </div>
 
           <section className="ct-pannello" aria-live="polite">
             {errore ? (
               <p className="ct-nota">{errore}</p>
-            ) : !stato ? null : scena === 'moltiplicatori' ? (
-              <Indicazione titolo={rivelato && palio ? `In palio ${palio.vincita} punti` : 'Gira i moltiplicatori'}>
-                {rivelato && palio
-                  ? `${giro?.puntata} ${scriviMoltiplicatore(palio.moltiplicatore)}, se rispondi giusto`
-                  : debole
-                    ? 'Più forte: trascinala e lasciala andare'
-                    : 'Trascina la ruota e lasciala andare'}
+            ) : !stato ? null : scena === 'quiz' && quiz ? (
+              <Indicazione
+                titolo={
+                  rivelato && palio
+                    ? `In palio ${palio.vincita} punti`
+                    : modoQ === 'aumento'
+                      ? 'I moltiplicatori salgono'
+                      : quiz.fortunata
+                        ? 'Gira il quiz fortunato'
+                        : 'Gira la ruota del quiz'
+                }
+              >
+                {inPalio
+                  ? `${inPalio.categoria} ${scriviMoltiplicatore(inPalio.moltiplicatore)}, se rispondi giusto`
+                  : modoQ === 'aumento'
+                    ? `Fino al ×10, con ${giro?.puntata} punti in gioco`
+                    : debole
+                      ? 'Più forte: trascinala e lasciala andare'
+                      : 'Trascina la ruota e lasciala andare'}
               </Indicazione>
             ) : scena === 'moneta' && sfida?.tipo === 'moneta' ? (
               <Indicazione
@@ -568,7 +845,9 @@ export default function RuotaPagina() {
                     ? sfida.uscito === 'blu'
                       ? `Blu: vinci ${sfida.vincita}!`
                       : 'Rosso: vince il banco'
-                    : 'Tocca la moneta'
+                    : sfida.fortunata
+                      ? 'Tocca la moneta fortunata'
+                      : 'Tocca la moneta'
                 }
               >
                 <span className="ct-lati">
@@ -578,6 +857,24 @@ export default function RuotaPagina() {
                   <span className="ct-lato is-rosso">Rosso · banco</span>
                 </span>
               </Indicazione>
+            ) : arrivaLaFortuna ? (
+              <Indicazione titolo={modo === 'magia' ? 'I premi salgono' : 'Fortuna!'}>
+                La ruota diventa la ruota fortunata
+              </Indicazione>
+            ) : fortunaDaGirare && giro ? (
+              <div className="ct-indicazione">
+                <p className="ct-indicazione__titolo">Gira la ruota fortunata</p>
+                <p className={`ct-suggerimento${debole ? ' is-debole' : ''}`}>
+                  <ManoCheTrascina />
+                  {girando
+                    ? `${giro.puntata} punti in gioco`
+                    : debole
+                      ? 'Più forte: trascinala e lasciala andare'
+                      : `${giro.puntata} punti in gioco, fino al ×10`}
+                </p>
+              </div>
+            ) : inSfida && giro && !girando ? (
+              <Indicazione titolo={nomeDi(spicchioDi(giro))}>{giro.puntata} punti in gioco</Indicazione>
             ) : !puoGirare ? (
               <PochiPunti saldo={saldo} onClassificate={() => vai(ROTTE.home)} />
             ) : (
@@ -599,7 +896,8 @@ export default function RuotaPagina() {
 
       <Adesivo adesivo={adesivo} />
       {pioggia > 0 && <PioggiaDiMonete key={pioggia} />}
-      <ComeSiGiocaRuota open={regole} onClose={() => setRegole(false)} numero={numero} />
+      {festa && <FestaRuota key={festa.chiave} dati={festa} onFine={fineFesta} />}
+      <ComeSiGiocaRuota open={regole} onClose={() => setRegole(false)} />
     </Pagina>
   )
 }
@@ -615,19 +913,30 @@ function Scena({ attiva, nome, children }: { attiva: boolean; nome: string; chil
   )
 }
 
-
-/** Il cartello sopra la ruota dei moltiplicatori: di che categoria sara' la domanda. */
+/** Il cartello della categoria della domanda: l'icona e il nome, nel colore della sua materia. */
 function Cartello({ categoria }: { categoria: CategoriaQuiz }) {
   return (
     <p className="ct-cartello" style={{ '--colore': coloreDellaCategoria(categoria) } as CSSProperties}>
       <IconaCategoria categoria={categoria} piccola />
-      Domanda: {NOMI_CATEGORIE[categoria]}
+      {NOMI_CATEGORIE[categoria]}
     </p>
   )
 }
 
-/** Il moltiplicatore uscito, che salta fuori dalla ruota con quel che mette in palio. */
-function Rivelazione({ moltiplicatore, vincita }: { moltiplicatore: number; vincita: number }) {
+/**
+ * Dove si e' fermata la ruota del quiz: la categoria, che salta fuori con la
+ * sua icona, il moltiplicatore enorme con i suoi raggi, e quel che mette in
+ * palio.
+ */
+function Rivelazione({
+  categoria,
+  moltiplicatore,
+  vincita,
+}: {
+  categoria: CategoriaQuiz
+  moltiplicatore: number
+  vincita: number
+}) {
   return (
     <div
       className="ct-rivela"
@@ -635,6 +944,7 @@ function Rivelazione({ moltiplicatore, vincita }: { moltiplicatore: number; vinc
       aria-hidden="true"
     >
       <span className="ct-rivela__raggi" />
+      <Cartello categoria={categoria} />
       <span className="ct-rivela__valore">{scriviMoltiplicatore(moltiplicatore)}</span>
       <span className="ct-rivela__palio">
         in palio <span className="u-tabnum">{vincita}</span>
@@ -701,6 +1011,24 @@ function MonetaPiccola() {
       <circle r="19" fill="var(--ct-oro)" stroke="var(--ct-oro-scuro)" strokeWidth="1.4" />
       <path d="M0 -16A16 16 0 0 0 0 16Z" fill="var(--ct-blu)" />
       <path d="M0 -16A16 16 0 0 1 0 16Z" fill="var(--ct-rosso)" />
+    </svg>
+  )
+}
+
+/** Il fumetto del quiz, per l'insegna. */
+function IconaQuizGrande() {
+  return (
+    <svg width="40" height="40" viewBox="-13 -13 26 26" className="ct-icona-insegna" aria-hidden="true">
+      <IconaQuiz lato={24} />
+    </svg>
+  )
+}
+
+/** Il quadrifoglio d'oro, per l'insegna della ruota fortunata. */
+function IconaFortuna() {
+  return (
+    <svg width="44" height="44" viewBox="-11 -11 22 22" aria-hidden="true">
+      <Quadrifoglio lato={19} />
     </svg>
   )
 }
