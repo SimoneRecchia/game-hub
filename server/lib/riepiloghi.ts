@@ -19,7 +19,6 @@ import { MOSSE_PER_GIORNATA } from '../../shared/scarabeo'
 import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
 import { VUOTA, puntiSudoku } from '../../shared/sudoku'
 import type {
-  BattagliaSummary,
   CruciverbaSummary,
   NomiSummary,
   QuizSummary,
@@ -33,7 +32,6 @@ import { today } from './wordleStore'
 import { giornata as giornataScarabeo } from './scarabeoStore'
 import { compagniaBreve } from './compagniaStore'
 import { giornata as giornataCruciverba, schemaDelGiorno, svelateDi, type PartitaRow } from './cruciverbaStore'
-import { latoDi, partitaAperta, partitaBreve, quantiOnline, recordDi, statoClassificata } from './battagliaStore'
 import { giornata as giornataQuiz, giornataQuiz as domandeDelGiorno, partitaDi as partitaQuiz, risposteDi } from './quizStore'
 import { puntiQuiz } from '../../shared/quiz'
 import { PARTITE_TRIS, puntiTris } from '../../shared/tris'
@@ -189,23 +187,6 @@ export async function riepilogoSudoku(db: D1Database, playerId: string): Promise
         : puntiSudoku(svelateSudoku(row).length, row.errori),
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
-  }
-}
-
-export async function riepilogoBattaglia(db: D1Database, playerId: string): Promise<BattagliaSummary> {
-  const adesso = Date.now()
-  const [online, aperta, classificata, record] = await Promise.all([
-    quantiOnline(db, playerId, adesso),
-    partitaAperta(db, playerId),
-    statoClassificata(db, playerId, today().puzzleNumber, msToNextPuzzle()),
-    recordDi(db, playerId),
-  ])
-  const lato = aperta ? latoDi(aperta, playerId) : null
-  return {
-    online,
-    partita: aperta && lato ? await partitaBreve(db, aperta, lato) : null,
-    classificata,
-    ...record,
   }
 }
 

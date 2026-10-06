@@ -21,10 +21,6 @@
  *   /cruciverba/libera/insieme/:compagnia  un suo cruciverba libero, da guardare
  *   /sudoku/classificata                lo schema di oggi
  *   /sudoku/libera                      uno schema nuovo, della difficoltà che vuoi
- *   /battaglia-navale/classificata      la battaglia di oggi contro il computer
- *   /battaglia-navale/libera            contro il computer o contro un amico
- *   /battaglia-navale/partita/:id       una partita
- *   /battaglia-navale/invito/:codice    un invito arrivato con un link
  *   /quiz/classificata                  le dieci domande di oggi
  *   /quiz/libera                        il menu delle materie; con ?categoria=… la partita
  *   /quiz/libera/:materia               le categorie e le opzioni di una materia
@@ -44,6 +40,9 @@
  *   /slot                               la slot
  *   /blackjack                          la sala del blackjack: un tavolo nuovo, o quello di un amico
  *   /blackjack/tavolo/:id               un tavolo, fino a cinque giocatori
+ *   /battaglia-navale                   la sala: contro il computer, o con un amico
+ *   /battaglia-navale/partita/:id       una partita
+ *   /battaglia-navale/invito/:codice    un invito arrivato con un link
  *   /indovina-chi                       Indovina chi: la sala, i personaggi, le regole
  *   /indovina-chi/partita/:id           una partita
  *   /indovina-chi/invito/:codice        un invito arrivato con un link
@@ -59,8 +58,9 @@
  *   /profilo                            le impostazioni e gli amici online
  *   /amici/:nickname                    il profilo di un amico, da cui lo si invita a giocare
  *
- * I vecchi indirizzi — /insieme/..., /battaglia/..., /wordle/3 — portano a
- * quelli nuovi (vedi App.tsx), e i vecchi sottodomini dei giochi portano qui
+ * I vecchi indirizzi — /insieme/..., /battaglia/..., /wordle/3, la classificata
+ * e la libera della battaglia — portano a quelli nuovi (vedi App.tsx), e i
+ * vecchi sottodomini dei giochi portano qui
  * (vedi index.html): un link salvato o una schermata aggiunta alla Home non si
  * rompono.
  */
@@ -69,13 +69,12 @@ import type { MateriaQuiz } from '@shared/quiz'
 import type { GiocoTavoliere } from '@shared/tavolo'
 import type { ChiaveClassifica, GiocoClassificato, GiocoLiberoInCompagnia, ModalitaCompagnia } from '@shared/types'
 
-/** Il pezzo di indirizzo di ogni gioco: "battaglia-navale", non "battaglia". */
+/** Il pezzo di indirizzo di ogni gioco: "nomi-cose-citta", non "nomi". */
 export const SLUG: Record<GiocoClassificato, string> = {
   wordle: 'wordle',
   scarabeo: 'scarabeo',
   cruciverba: 'cruciverba',
   sudoku: 'sudoku',
-  battaglia: 'battaglia-navale',
   quiz: 'quiz',
   tris: 'tris',
   nomi: 'nomi-cose-citta',
@@ -126,6 +125,8 @@ export const ROTTE = {
   insiemeA: (gioco: GiocoLiberoInCompagnia, compagnia: string, modalita: ModalitaCompagnia = 'classificata') =>
     modalita === 'libera' ? `/${SLUG[gioco]}/libera/insieme/${compagnia}` : `/${SLUG[gioco]}/insieme/${compagnia}`,
   cruciverbaLibero: (partita: string) => `/cruciverba/libera/${partita}`,
+  /** La battaglia navale e' un gioco da tavolo: la sala sta all'indirizzo del gioco. */
+  battaglia: '/battaglia-navale',
   partitaBattaglia: (id: string) => `/battaglia-navale/partita/${id}`,
   invitoBattaglia: (codice: string) => `/battaglia-navale/invito/${codice}`,
   /** La pagina di una materia del quiz libero, con le sue categorie e le opzioni. */

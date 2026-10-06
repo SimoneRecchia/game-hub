@@ -8,11 +8,9 @@ import { formatDuration, formatNumber } from '@/lib/format'
 import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
 import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
 import type {
-  BattagliaLeaderboard,
   CruciverbaLeaderboard,
   CruciverbaLiberaRisposta,
   GiocoClassificato,
-  LobbyBattaglia,
   NomiLeaderboard,
   PlayerStats,
   QuizLeaderboard,
@@ -41,8 +39,6 @@ export function ContiDi({ gioco }: { gioco: GiocoClassificato }) {
       return <ContiCruciverba />
     case 'sudoku':
       return <ContiSudoku />
-    case 'battaglia':
-      return <ContiBattaglia />
     case 'quiz':
       return <ContiQuiz />
     case 'tris':
@@ -204,46 +200,6 @@ function ContiSudoku() {
       )}
     </div>
   )
-}
-
-function ContiBattaglia() {
-  const { dati } = useDati<BattagliaLeaderboard>('/leaderboard/battaglia?scope=all')
-  const { dati: lobby } = useDati<LobbyBattaglia>('/battaglia/lobby')
-  const me = dati?.me
-  const computer = lobby ? Object.values(lobby.controComputer) : []
-  const vinteComputer = computer.reduce((n, r) => n + r.vinte, 0)
-  const perseComputer = computer.reduce((n, r) => n + r.perse, 0)
-  return (
-    <div className="conti">
-      {!dati ? (
-        <Attesa />
-      ) : (
-        <Conti
-          titolo="Classificate"
-          voci={[
-            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
-            { etichetta: 'Battaglie', valore: formatNumber(me?.giornate ?? 0) },
-            { etichetta: 'Vinte', valore: formatNumber(me?.vinte ?? 0) },
-            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
-          ]}
-        />
-      )}
-      {lobby && vinteComputer + perseComputer + lobby.vinte + lobby.perse > 0 && (
-        <Conti
-          titolo="Partite libere"
-          voci={[
-            { etichetta: 'Contro il computer', valore: vinteEPerse(vinteComputer, perseComputer) },
-            { etichetta: 'Contro gli amici', valore: vinteEPerse(lobby.vinte, lobby.perse) },
-          ]}
-        />
-      )}
-    </div>
-  )
-}
-
-/** "1 vinta, 3 perse". */
-function vinteEPerse(vinte: number, perse: number): string {
-  return `${vinte} ${vinte === 1 ? 'vinta' : 'vinte'}, ${perse} ${perse === 1 ? 'persa' : 'perse'}`
 }
 
 function ContiQuiz() {

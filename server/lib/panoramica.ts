@@ -14,7 +14,6 @@ import type {
   PeriodoClassifica,
   RigaAnteprima,
 } from '../../shared/types'
-import { classificaBattaglia } from './battagliaStore'
 import { classificaCruciverba } from './cruciverbaStore'
 import { classificaFortuna, classificaGenerale } from './generale'
 import { nowIso } from './http'
@@ -57,12 +56,11 @@ export async function panoramica(
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<PanoramicaClassifiche> {
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, nomi, generale, fortuna] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, quiz, tris, nomi, generale, fortuna] = await Promise.all([
     leaderboard(db, periodo, numeroDiOggi, viewerId),
     classificaScarabeo(db, periodo, numeroDiOggi, viewerId),
     classificaCruciverba(db, periodo, numeroDiOggi, viewerId),
     classificaSudoku(db, periodo, numeroDiOggi, viewerId),
-    classificaBattaglia(db, periodo, numeroDiOggi, viewerId),
     classificaQuiz(db, periodo, numeroDiOggi, viewerId),
     classificaTris(db, periodo, numeroDiOggi, viewerId),
     classificaNomi(db, periodo, numeroDiOggi, viewerId),
@@ -78,7 +76,6 @@ export async function panoramica(
       ...scarabeo.rows.filter((r) => r.inCorso),
       ...cruciverba.rows.filter((r) => r.inCorso),
       ...sudoku.rows.filter((r) => r.inCorso),
-      ...battaglia.rows.filter((r) => r.inCorso),
       ...quiz.rows.filter((r) => r.inCorso),
       ...tris.rows.filter((r) => r.inCorso),
     ].map((r) => r.playerId),
@@ -101,7 +98,6 @@ export async function panoramica(
       scarabeo: anteprima(scarabeo.rows, scarabeo.me, colPunti, aperta),
       cruciverba: anteprima(cruciverba.rows, cruciverba.me, colPunti, aperta),
       sudoku: anteprima(sudoku.rows, sudoku.me, colPunti, aperta),
-      battaglia: anteprima(battaglia.rows, battaglia.me, colPunti, aperta),
       quiz: anteprima(quiz.rows, quiz.me, colPunti, aperta),
       tris: anteprima(tris.rows, tris.me, colPunti, aperta),
       // I punti di Nomi, cose e città arrivano la notte: chi li aspetta e' "in corso".

@@ -20,8 +20,6 @@ function vista(parziale: Partial<VistaBattaglia> = {}): VistaBattaglia {
     id: 'p1',
     modalita: 'computer',
     livello: 'normale',
-    puzzleNumber: null,
-    punti: null,
     stato: 'battaglia',
     avversario: { playerId: 'cpu', nickname: 'computer', displayName: 'Computer', avatarColor: '#888', online: true },
     miaFlotta: FLOTTA_DI_PROVA,
@@ -173,8 +171,8 @@ describe('il turno contro il computer, un pezzo per volta', () => {
   })
 
   it('la fine arriva dopo l’ultimo affondamento, non al suo posto', () => {
-    const finita = vista({ stato: 'finita', vincitore: 'io', motivo: 'flotta', punti: 88, flottaNemica: FLOTTA_DI_PROVA })
-    expect(senzaFine(finita)).toMatchObject({ stato: 'battaglia', vincitore: null, punti: null, flottaNemica: null })
+    const finita = vista({ stato: 'finita', vincitore: 'io', motivo: 'flotta', flottaNemica: FLOTTA_DI_PROVA })
+    expect(senzaFine(finita)).toMatchObject({ stato: 'battaglia', vincitore: null, flottaNemica: null })
     // Una resa non ha un colpo da guardare: si va dritti alla fine.
     const resa = vista({ stato: 'finita', vincitore: 'io', motivo: 'resa' })
     expect(senzaFine(resa)).toBe(resa)

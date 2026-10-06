@@ -10,6 +10,11 @@
  * `slot`, `blackjack`): non sono classificate, ma quel che danno o tolgono e'
  * fatto con i punti delle classificate, e va dove vanno loro.
  *
+ * La battaglia navale ha avuto una classificata fino al 6 ottobre 2026: le sue
+ * partite di allora restano nella generale dei periodi che le comprendono, in
+ * una colonna a parte (`battaglia`), perché una giornata vale quel che valeva.
+ * Dopo non ce ne sono, e la colonna resta a zero.
+ *
  * Un aggregato per gioco, uniti qui. Non una query sola: le tabelle non hanno
  * niente in comune se non il giocatore, e una UNION con
  * colonne diverse per ogni gioco sarebbe piu' difficile da leggere che da
@@ -41,6 +46,8 @@ export interface TotaliGenerale {
   displayName: string
   avatarColor: string
   perGioco: Record<GiocoClassificato, number>
+  /** La battaglia classificata, nei giorni in cui c'era. */
+  battaglia: number
   /** Quel che hanno dato o tolto i giochi della Fortuna: si sommano ai punti, e non sono partite. */
   ruota: number
   slot: number
@@ -66,10 +73,10 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.scarabeo +
       g.perGioco.cruciverba +
       g.perGioco.sudoku +
-      g.perGioco.battaglia +
       g.perGioco.quiz +
       g.perGioco.tris +
       g.perGioco.nomi +
+      g.battaglia +
       g.ruota +
       g.slot +
       g.blackjack,
@@ -152,6 +159,7 @@ export async function classificaGenerale(
       )
       .bind(da, a)
       .all<Parziale>(),
+    // La battaglia, nei giorni in cui aveva una classificata.
     db
       .prepare(
         `SELECT giocatore_a AS player_id,
@@ -221,7 +229,8 @@ export async function classificaGenerale(
         nickname: '',
         displayName: '',
         avatarColor: '',
-        perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, battaglia: 0, quiz: 0, tris: 0, nomi: 0 },
+        perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, quiz: 0, tris: 0, nomi: 0 },
+        battaglia: 0,
         ruota: 0,
         slot: 0,
         blackjack: 0,
@@ -232,10 +241,11 @@ export async function classificaGenerale(
     }
     return t
   }
-  const somma = (gioco: GiocoClassificato, righe: Parziale[]) => {
+  const somma = (gioco: GiocoClassificato | 'battaglia', righe: Parziale[]) => {
     for (const r of righe) {
       const t = di(r.player_id)
-      t.perGioco[gioco] += r.punti
+      if (gioco === 'battaglia') t.battaglia += r.punti
+      else t.perGioco[gioco] += r.punti
       t.partite += r.partite
       t.assist += r.assist ?? 0
     }
@@ -358,7 +368,8 @@ export async function classificaFortuna(
  * saldo della Fortuna li legge a ogni giocata, e la generale intera leggerebbe
  * le partite di tutti. Le somme sono
  * quelle di `classificaGenerale`, gioco per gioco: un test le tiene d'accordo.
- * Nomi, cose e città conta la partita di ieri, che la notte ha contato.
+ * Nomi, cose e città conta la partita di ieri, che la notte ha contato, e la
+ * battaglia c'e' ancora perché la generale la conta nei giorni in cui c'era.
  */
 export async function puntiClassificateDi(db: D1Database, playerId: string, numero: number): Promise<number> {
   const riga = await db

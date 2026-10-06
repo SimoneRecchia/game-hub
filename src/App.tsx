@@ -33,8 +33,7 @@ import CruciverbaInsieme from './pages/CruciverbaInsieme'
 import WordleLiberaInsieme from './pages/WordleLiberaInsieme'
 import Sudoku from './pages/Sudoku'
 import SudokuLibero from './pages/SudokuLibero'
-import BattagliaClassificata from './pages/BattagliaClassificata'
-import BattagliaLibera from './pages/BattagliaLibera'
+import BattagliaSala from './pages/BattagliaSala'
 import BattagliaPartita from './pages/BattagliaPartita'
 import BattagliaInvito from './pages/BattagliaInvito'
 import IndovinaChi from './pages/IndovinaChi'
@@ -187,8 +186,8 @@ export default function App() {
             <Route path="/sudoku/classificata" element={<Sudoku />} />
             <Route path="/sudoku/libera" element={<SudokuLibero />} />
 
-            <Route path="/battaglia-navale/classificata" element={<BattagliaClassificata />} />
-            <Route path="/battaglia-navale/libera" element={<BattagliaLibera />} />
+            {/* La battaglia e' un gioco da tavolo: la sala sta all'indirizzo del gioco. */}
+            <Route path={ROTTE.battaglia} element={<BattagliaSala />} />
             <Route path="/battaglia-navale/partita/:id" element={<BattagliaPartita />} />
             <Route path="/battaglia-navale/invito/:codice" element={<BattagliaInvito />} />
 
@@ -234,7 +233,10 @@ export default function App() {
 
             {/* I vecchi indirizzi, perché i link salvati e le icone sulla Home non si rompano. */}
             <Route path="/insieme/:roomId" element={<Vecchio verso={(p) => ROTTE.insieme(p.roomId ?? '')} />} />
-            <Route path="/battaglia" element={<Navigate to={ROTTE.classificata('battaglia')} replace />} />
+            <Route path="/battaglia" element={<Navigate to={ROTTE.battaglia} replace />} />
+            {/* La classificata della battaglia non c'e' piu', e la libera e' diventata la sala. */}
+            <Route path="/battaglia-navale/classificata" element={<Navigate to={ROTTE.battaglia} replace />} />
+            <Route path="/battaglia-navale/libera" element={<Navigate to={ROTTE.battaglia} replace />} />
             <Route path="/battaglia/:id" element={<Vecchio verso={(p) => ROTTE.partitaBattaglia(p.id ?? '')} />} />
             <Route path="/salotto" element={<Navigate to={ROTTE.libere} replace />} />
             {/* Le cinque parole di prima: ora la classificata e' una parola sola. */}

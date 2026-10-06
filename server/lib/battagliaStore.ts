@@ -17,20 +17,10 @@ import {
   SFIDA_SCADENZA_MS,
 } from '../../shared/config'
 import { disponiACaso, esitoDelColpo, naviAffondate, type Nave } from '../../shared/battaglia'
-import {
-  casoDelColpo,
-  colpoDelComputer,
-  flottaDelGiorno,
-  semeDelGiorno,
-  type LivelloBattaglia,
-} from '../../shared/battaglia-computer'
+import { casoDelColpo, colpoDelComputer, type LivelloBattaglia } from '../../shared/battaglia-computer'
 import { mulberry32 } from '../../shared/daily'
-import { puntiBattaglia } from '../../shared/punti'
 import type {
   Attivita,
-  BattagliaLeaderboard,
-  BattagliaRow,
-  ClassificataBattaglia,
   ColpoVisto,
   GiocatoreBreve,
   GiocatoreOnline,
@@ -40,7 +30,6 @@ import type {
   LinkBattaglia,
   ModalitaBattaglia,
   PartitaBreve,
-  PeriodoClassifica,
   StatoBattaglia,
   VistaBattaglia,
 } from '../../shared/types'
@@ -216,14 +205,6 @@ export async function giocatoriOnline(
     occupato: r.occupato === 1,
     invitato: r.invitato === 1,
   }))
-}
-
-export async function quantiOnline(db: D1Database, ioId: string, adesso: number): Promise<number> {
-  const riga = await db
-    .prepare('SELECT COUNT(*) AS n FROM presenza WHERE visto_at >= ? AND player_id != ?')
-    .bind(prima(adesso, PRESENZA_ONLINE_MS), ioId)
-    .first<{ n: number }>()
-  return riga?.n ?? 0
 }
 
 /* ──────────────────────────────  Le sfide  ─────────────────────────────── */
@@ -566,8 +547,6 @@ export async function vistaPer(
     id: row.id,
     modalita: row.modalita,
     livello: row.livello,
-    puzzleNumber: row.puzzle_number,
-    punti: row.stato === 'finita' ? row.punti : null,
     stato: row.stato,
     avversario: { ...avversario, online },
     miaFlotta: mia,
@@ -684,54 +663,6 @@ export function colpoDelComputerIn(row: PartitaRow): number {
   )
 }
 
-/**
- * La classificata di oggi del giocatore: aperta alla prima richiesta, con la
- * flotta del computer uguale per tutti e il computer al livello facile. Una
- * sola per giornata — l'indice unico lo garantisce anche con due richieste
- * ravvicinate.
- */
-export async function apriClassificata(
-  db: D1Database,
-  playerId: string,
-  puzzleNumber: number,
-): Promise<PartitaRow> {
-  const adesso = nowIso()
-  await db
-    .prepare(
-      `INSERT OR IGNORE INTO battaglia_partite
-         (id, modalita, giocatore_a, giocatore_b, livello, seme, puzzle_number, stato,
-          flotta_b, colpi, versione, created_at, updated_at)
-       VALUES (?, 'classificata', ?, NULL, 'facile', ?, ?, 'disposizione', ?, '[]', 0, ?, ?)`,
-    )
-    .bind(
-      newId('bat'),
-      playerId,
-      semeDelGiorno(puzzleNumber),
-      puzzleNumber,
-      JSON.stringify(flottaDelGiorno(puzzleNumber)),
-      adesso,
-      adesso,
-    )
-    .run()
-  const row = await classificataDi(db, playerId, puzzleNumber)
-  if (!row) throw new Error('Classificata non trovata subito dopo la creazione')
-  return row
-}
-
-export async function classificataDi(
-  db: D1Database,
-  playerId: string,
-  puzzleNumber: number,
-): Promise<PartitaRow | null> {
-  return db
-    .prepare(
-      `SELECT * FROM battaglia_partite
-        WHERE modalita = 'classificata' AND giocatore_a = ? AND puzzle_number = ?`,
-    )
-    .bind(playerId, puzzleNumber)
-    .first<PartitaRow>()
-}
-
 /** La partita libera aperta contro il computer, se c'e'. */
 export async function partitaComputerAperta(db: D1Database, playerId: string): Promise<PartitaRow | null> {
   return db
@@ -813,39 +744,7 @@ export async function nuovaControComputer(
   return row
 }
 
-/**
- * I punti della classificata a partita finita: vedi `puntiBattaglia`. Il
- * giocatore spara per primo, quindi i suoi colpi sono i pari.
- */
-export function puntiDellaClassificata(row: PartitaRow): number {
-  const miei = colpiDelLato(row, 'a')
-  return puntiBattaglia({
-    vinta: row.vincitore === 'a',
-    colpi: miei.length,
-    aSegno: miei.filter((c) => c.esito !== 'acqua').length,
-  })
-}
-
-/** Com'e' messa la classificata di oggi: per l'hub e per la sala. */
-export async function statoClassificata(
-  db: D1Database,
-  playerId: string,
-  puzzleNumber: number,
-  msToNextPuzzle: number,
-): Promise<ClassificataBattaglia> {
-  const row = await classificataDi(db, playerId, puzzleNumber)
-  return {
-    puzzleNumber,
-    stato: row ? row.stato : 'nuova',
-    partitaId: row?.id ?? null,
-    punti: row && row.stato === 'finita' ? row.punti : null,
-    vinta: row && row.stato === 'finita' ? row.vincitore === 'a' : null,
-    colpi: row ? colpiDelLato(row, 'a').length : 0,
-    msToNextPuzzle,
-  }
-}
-
-/* ───────────────────────  Il record e la classifica  ───────────────────── */
+/* ─────────────────────────────────  I record  ─────────────────────────────── */
 
 /** Contro gli amici: le partite contro il computer non entrano qui. */
 export async function recordDi(db: D1Database, playerId: string): Promise<{ vinte: number; perse: number }> {
@@ -887,75 +786,6 @@ export async function recordControComputer(
   }
   for (const r of results) if (r.livello in record) record[r.livello] = { vinte: r.vinte, perse: r.perse }
   return record
-}
-
-/**
- * La classifica della battaglia navale: le classificate contro il computer.
- *
- * L'ordine: **punti** del periodo, poi le **vittorie**, poi **meno colpi**
- * sparati per vincere, poi meno giornate — lo stesso totale in meno partite e'
- * un gioco migliore — e il nickname, perché due righe identiche non si
- * scambino di posto. Le partite fra amici non entrano: quelle si giocano per
- * il gusto di giocarle, e il loro conto sta nella sala.
- */
-export function ordinaBattaglia(righe: Omit<BattagliaRow, 'rank'>[]): BattagliaRow[] {
-  return [...righe]
-    .sort((x, y) => {
-      if (x.punti !== y.punti) return y.punti - x.punti
-      if (x.vinte !== y.vinte) return y.vinte - x.vinte
-      if (x.colpi !== y.colpi) return x.colpi - y.colpi
-      if (x.giornate !== y.giornate) return x.giornate - y.giornate
-      return x.nickname.localeCompare(y.nickname, 'it', { sensitivity: 'base' })
-    })
-    .map((r, i) => ({ rank: i + 1, ...r }))
-}
-
-export async function classificaBattaglia(
-  db: D1Database,
-  periodo: PeriodoClassifica,
-  numeroDiOggi: number,
-  viewerId: string,
-): Promise<BattagliaLeaderboard> {
-  /*
-   * Chi spara per primo e' il giocatore, quindi i suoi colpi sono la meta' per
-   * eccesso di tutti quelli della partita.
-   */
-  const { results } = await db
-    .prepare(
-      `SELECT p.id, p.nickname, p.display_name, p.avatar_color,
-              COALESCE(SUM(CASE WHEN b.stato = 'finita' THEN b.punti END), 0)        AS punti,
-              SUM(CASE WHEN b.stato = 'finita' THEN 1 ELSE 0 END)                   AS giornate,
-              SUM(CASE WHEN b.stato = 'finita' AND b.vincitore = 'a' THEN 1 ELSE 0 END) AS vinte,
-              COALESCE(SUM(CASE WHEN b.stato = 'finita' AND b.vincitore = 'a'
-                                THEN (json_array_length(b.colpi) + 1) / 2 END), 0)   AS colpi,
-              MAX(CASE WHEN b.puzzle_number = ?1 AND b.stato = 'finita' THEN b.punti END) AS oggi,
-              MAX(CASE WHEN b.puzzle_number = ?1 AND b.stato != 'finita' THEN 1 ELSE 0 END) AS in_corso
-         FROM battaglia_partite b
-         JOIN players p ON p.id = b.giocatore_a
-        WHERE b.modalita = 'classificata' AND b.puzzle_number BETWEEN ?2 AND ?3
-        GROUP BY p.id`,
-    )
-    .bind(numeroDiOggi, periodo.da, periodo.a)
-    .all<GiocatoreRow & { punti: number; giornate: number; vinte: number; colpi: number; oggi: number | null; in_corso: number }>()
-
-  const rows = ordinaBattaglia(
-    results.map((r) => ({
-      ...breve(r),
-      punti: r.punti,
-      giornate: r.giornate,
-      vinte: r.vinte,
-      colpi: r.colpi,
-      oggi: r.oggi,
-      inCorso: r.in_corso === 1,
-    })),
-  )
-  return {
-    scope: periodo.scope,
-    periodo,
-    updatedAt: nowIso(),
-    rows,
-    me: rows.find((r) => r.playerId === viewerId) ?? null,
-  }
 }
 
 /* ───────────────────────────  Gli inviti col link  ─────────────────────── */

@@ -15,12 +15,12 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
       scarabeo: 0,
       cruciverba: 0,
       sudoku: 0,
-      battaglia: 0,
       quiz: 0,
       tris: 0,
       nomi: 0,
       ...perGioco,
     },
+    battaglia: 0,
     ruota: 0,
     slot: 0,
     blackjack: 0,
@@ -31,8 +31,13 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
 
 describe('l’ordine della classifica generale', () => {
   it('somma tutti i giochi', () => {
-    const [riga] = ordinaGenerale([totali('a', { wordle: 80, scarabeo: 70, cruciverba: 95, battaglia: 84, quiz: 76 })])
-    expect(riga.punti).toBe(405)
+    const [riga] = ordinaGenerale([totali('a', { wordle: 80, scarabeo: 70, cruciverba: 95, quiz: 76 })])
+    expect(riga.punti).toBe(321)
+  })
+
+  it('e la battaglia dei giorni in cui aveva la sua classificata', () => {
+    const [riga] = ordinaGenerale([{ ...totali('a', { wordle: 80 }), battaglia: 84 }])
+    expect(riga.punti).toBe(164)
   })
 
   it('e quel che hanno dato o tolto i giochi della Fortuna', () => {
@@ -59,8 +64,8 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     const adesso = new Date().toISOString()
     const sql = (q: string, ...p: unknown[]) => db.sqlite.prepare(q).run(...p)
 
-    // Anna: Wordle 45 + 20, Scarabeo 70, cruciverba 97 (finito), battaglia 84, quiz 76, tris 38, e i 44 di
-    // Nomi, cose e città di ieri, contati stanotte, che valgono oggi.
+    // Anna: Wordle 45 + 20, Scarabeo 70, cruciverba 97 (finito), quiz 76, tris 38, i 44 di Nomi, cose e
+    // città di ieri, contati stanotte, che valgono oggi, e una battaglia classificata da 84, di quando c'era.
     sql(`INSERT INTO wordle_games (id, player_id, puzzle_number, slot, date, answer, status, attempts, guesses, started_at, score)
          VALUES ('w1', ?, ?, 1, 'x', 'carta', 'won', 2, '[]', ?, 45)`, anna.id, n, adesso)
     sql(`INSERT INTO wordle_games (id, player_id, puzzle_number, slot, date, answer, status, attempts, guesses, started_at, score)
@@ -96,11 +101,11 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
       scarabeo: 70,
       cruciverba: 97,
       sudoku: 0,
-      battaglia: 84,
       quiz: 76,
       tris: 38,
       nomi: 44,
     })
+    expect(g.me?.battaglia).toBe(84)
     expect(g.me?.partite).toBe(7)
     // La Fortuna legge i punti di oggi di un giocatore solo: devono essere quelli della generale.
     expect(await puntiClassificateDi(db as unknown as D1Database, anna.id, n)).toBe(
@@ -126,7 +131,8 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     })
     expect(oggi.cruciverba.status).toBe('assente')
     expect(oggi.wordle.status).toBe('new')
-    expect(oggi.battaglia.classificata.stato).toBe('nuova')
+    // La battaglia non e' piu' una classificata: la schermata di oggi non la nomina.
+    expect('battaglia' in oggi).toBe(false)
     expect(oggi.quiz.status).toBe('assente')
   })
 

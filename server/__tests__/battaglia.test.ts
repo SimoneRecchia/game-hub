@@ -4,7 +4,6 @@ import type { Nave } from '../../shared/battaglia'
 import {
   colpiDelLato,
   diTurno,
-  ordinaBattaglia,
   reclamo,
   tiratore,
   type PartitaRow,
@@ -98,31 +97,5 @@ describe('la vittoria a tavolino', () => {
     expect(reclamo(row, 'a', tardi).puoi).toBe(true)
     expect(reclamo(row, 'b', tardi).puoi).toBe(false)
     expect(reclamo(row, 'a', tardi - 1).puoi).toBe(false)
-  })
-})
-
-describe('la classifica', () => {
-  const riga = (nickname: string, punti: number, vinte: number, colpi: number, giornate = 3) => ({
-    playerId: nickname,
-    nickname,
-    displayName: nickname,
-    avatarColor: '#000',
-    punti,
-    giornate,
-    vinte,
-    colpi,
-    oggi: null,
-    inCorso: false,
-  })
-
-  it('punti prima, poi le vittorie, poi meno colpi per vincere', () => {
-    const righe = ordinaBattaglia([
-      riga('poche', 180, 2, 90),
-      riga('tante', 240, 3, 160),
-      riga('precise', 240, 3, 130),
-      riga('fortunate', 240, 2, 60),
-    ])
-    expect(righe.map((r) => r.nickname)).toEqual(['precise', 'tante', 'fortunate', 'poche'])
-    expect(righe.map((r) => r.rank)).toEqual([1, 2, 3, 4])
   })
 })
