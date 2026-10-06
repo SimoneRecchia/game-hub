@@ -818,8 +818,14 @@
   transform: none;
 }
 
-/* Il nome sotto, centrato: e' lungo quanto vuole, e non sposta l'avatar. */
+/*
+ * Il nome sotto, centrato sull'avatar, che non sposta. Un nome lungo di un
+ * posto esterno non passa sotto il bordo imbottito, che sta sopra a tutto: si
+ * ferma a `--dal-bordo` dal lato del tavolo e cresce verso il centro. La prima
+ * riga e' per i browser che non sanno fare `max()` con le percentuali.
+ */
 .bj-altro__nome {
+  --dal-bordo: 16px;
   position: absolute;
   left: 50%;
   top: calc(100% + 3px);
@@ -832,6 +838,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   transform: translateX(-50%);
+  transform: translateX(max(-50%, var(--dal-bordo) - var(--x) * 1cqw));
+}
+
+.bj-altro.is-destra .bj-altro__nome {
+  transform: translateX(-50%);
+  transform: translateX(min(-50%, (100 - var(--x)) * 1cqw - var(--dal-bordo) - 100%));
 }
 
 /* La puntata dalla parte del centro del tavolo, all'altezza dell'avatar. */
