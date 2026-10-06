@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
@@ -36,6 +36,7 @@ import {
   chiaviMano,
   esitiDelPosto,
   type CarteInGioco,
+  type LatoPosto,
 } from '@/games/blackjack/Tavolo'
 import { uscitaDalTavolo } from '@/games/blackjack/uscita'
 import { Tabellone } from '@/games/fortuna/Tabellone'
@@ -116,15 +117,12 @@ function altriPosti(mio: number | null): number[] {
 }
 
 /**
- * Dove sta ogni posto degli altri, da sinistra: due per lato, lungo il bordo
- * curvo, gli esterni piu' in alto. Il centro resta al banco e a me.
+ * I posti degli altri, da sinistra: due per lato, lungo il bordo curvo, gli
+ * esterni piu' in alto. Dove sta ognuno lo dice BlackjackTavolo.css
+ * (`data-posto`), perché dipende dalla forma del tavolo: di traverso il panno
+ * e' largo, e i posti si aprono ad arco. Il centro resta al banco e a me.
  */
-const ARCO: Array<{ x: number; y: number }> = [
-  { x: 12, y: 47 },
-  { x: 15, y: 66 },
-  { x: 85, y: 66 },
-  { x: 88, y: 47 },
-]
+const LATI: readonly LatoPosto[] = ['sinistra', 'sinistra', 'destra', 'destra']
 
 /** Il tempo che resta, contando da quando e' arrivata la vista. */
 function resta(v: VistaTavoloBJ | null, ricevuta: number, ora: number): number | null {
@@ -624,20 +622,21 @@ export default function BlackjackTavolo() {
             {vista &&
               altriPosti(vista.mio).map((k, i) => {
                 const p = vista.posti[k]
-                const stile = { '--x': ARCO[i].x, '--y': ARCO[i].y } as CSSProperties
-                if (!p || (pulita && p.via)) return <PostoLibero key={k} style={stile} />
+                const lato = LATI[i]
+                if (!p || (pulita && p.via)) return <PostoLibero key={k} lato={lato} arco={i} />
                 const visto = pulita ? { ...p, puntata: 0, mani: [], delta: null } : p
                 return (
                   <PostoAltro
                     key={k}
                     posto={visto}
                     indice={k}
+                    lato={lato}
+                    arco={i}
                     turno={pulita ? null : vista.turno}
                     banco={vista.banco}
                     chiuso={chiuso}
                     carte={carte}
                     tempo={vista.turno?.posto === k && tempoTurno && !pulita ? tempoTurno : null}
-                    style={stile}
                   />
                 )
               })}
