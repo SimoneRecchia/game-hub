@@ -13,7 +13,7 @@ import { giocoTavoloDi } from '@/games/catalog'
 import { cambiaGruppo, contaPunti } from '@/games/go/conteggio'
 import { PiedeConteggio } from '@/games/go/PiedeConteggio'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
-import { adesivoFine, testoFine } from '@/games/tavolo/fine'
+import { adesivoFine, testoFine, useFineVista } from '@/games/tavolo/fine'
 import { giocoDelTavoliere } from '@/games/tavolo/giochi'
 import { ElencoMosse, Fine, Tavola, Turno } from '@/games/tavolo/Tavola'
 import { useTavolo, type PartitaConAmico } from '@/games/tavolo/useTavolo'
@@ -71,7 +71,9 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
   // La fine: l'adesivo, una volta, e i coriandoli, solo per una partita vista in corso.
   const { adesivo, accoda } = useCodaAdesivi()
   const inCorso = v.stato === 'in_corso'
-  const festa = useFesta(inCorso, v.stato === 'finita' && v.vincitore === 'io')
+  const attesaFine = v.motivo ? (descrizione.attesaFine?.(v.motivo) ?? ATTESA_FINE_MS) : ATTESA_FINE_MS
+  const festa = useFesta(inCorso, v.stato === 'finita' && v.vincitore === 'io', attesaFine)
+  const fineVista = useFineVista(v.stato === 'finita', attesaFine)
   const eraInCorso = useRef(false)
   const vRef = useRef(v)
   vRef.current = v
@@ -86,7 +88,8 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
     if (ora.stato !== 'finita' || !ora.motivo) return
     const motivo = ora.motivo
     const adesivo = adesivoFine(ora.gioco, motivo, ora.vincitore, ora.avversario?.displayName ?? 'l’altro', ora.punti)
-    const t = setTimeout(() => accoda(adesivo), ATTESA_FINE_MS)
+    const attesa = giocoDelTavoliere(ora.gioco).attesaFine?.(motivo) ?? ATTESA_FINE_MS
+    const t = setTimeout(() => accoda(adesivo), attesa)
     return () => clearTimeout(t)
   }, [accoda, inCorso])
 
@@ -110,7 +113,7 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
 
   const piede =
     v.stato === 'finita' ? (
-      <FinePartita g={g} v={v} />
+      fineVista && <FinePartita g={g} v={v} />
     ) : conteggio ? (
       <>
         <PiedeConteggio

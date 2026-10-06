@@ -1,5 +1,5 @@
 import { Damiera } from '@/games/dama/Damiera'
-import { Griglia } from '@/games/forza4/Griglia'
+import { Griglia, attesaFine as attesaFineForza4 } from '@/games/forza4/Griglia'
 import { Goban } from '@/games/go/Goban'
 import { Scacchiera } from '@/games/scacchi/Scacchiera'
 import { TRIS } from '@/games/tris/descrizione'
@@ -25,6 +25,7 @@ const FORZA4: GiocoDelTavoliere = {
   // Le colonne una dopo l'altra non dicono niente: la griglia e' gia' la storia.
   storia: null,
   avviso: () => null,
+  attesaFine: attesaFineForza4,
 }
 
 const SCACCHI: GiocoDelTavoliere = {

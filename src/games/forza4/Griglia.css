@@ -1,95 +1,224 @@
 /*
  * La griglia del Forza 4.
  *
- * Tre strati: i dischi, la cornice con i buchi sopra, e le sette colonne da
- * toccare sopra tutto. Il disco che cade parte dalla fascia in cima e scende
- * dietro la cornice, visto solo dai buchi. La griglia e' sette per sei piu' la
- * fascia, e si misura sul contenitore: prende quel che c'e', in larghezza o in
- * altezza.
+ * Dall'alto: la fascia, dove la mano tiene il disco di chi deve giocare; il
+ * corpo, cioe' la griglia sul suo piede; e le sette colonne da toccare, sopra
+ * tutto. La griglia ha tre strati: dietro la luce della colonna e i dischi,
+ * poi la cornice con i fori, e davanti, a partita finita, le file. Si misura
+ * sul contenitore e prende quel che c'e', in larghezza o in altezza: sette
+ * caselle di larghezza, e in altezza sei di griglia, nove decimi di fascia
+ * (`FASCIA` in Griglia.tsx) e quarantacinque centesimi di piede.
  */
 .f4 {
   --tuo: var(--f4-rosso);
+  --suo: var(--f4-giallo);
   position: relative;
-  /* Sette caselle di larghezza, sei e sette decimi di altezza con la fascia. */
-  width: min(100cqw, var(--campo-alto, 100cqh) * 70 / 67, 520px);
+  width: min(100cqw, var(--campo-alto, 100cqh) * 70 / 73.5, 520px);
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* La fascia sopra la griglia, alta sette decimi di casella: da li' cadono i dischi. */
-.f4__fascia {
-  aspect-ratio: 10 / 1;
-}
-
 .f4--giallo {
   --tuo: var(--f4-giallo);
+  --suo: var(--f4-rosso);
 }
+
+.f4.is-attiva .f4__colonne {
+  cursor: pointer;
+  /* Quando tocca a me il dito sulla griglia prende la mira, e non fa scorrere la pagina. */
+  touch-action: none;
+}
+
+/* ---------- La fascia e le mani ---------- */
+
+.f4__fascia {
+  position: relative;
+  aspect-ratio: 70 / 9;
+}
+
+/*
+ * La mano: il disco di chi deve giocare, sopra la colonna dove sta. Arriva
+ * dall'alto quando il disco di prima ha toccato il fondo (`--dopo`), scivola
+ * da una colonna all'altra, e sparisce quando lascia il disco: da li' in poi e'
+ * il disco che cade, nello stesso punto.
+ */
+.f4__mano {
+  --disco: var(--f4-rosso);
+  --disco-bordo: var(--f4-rosso-scuro);
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: grid;
+  place-items: center;
+  width: calc(100% / 7);
+  opacity: 0;
+  pointer-events: none;
+  translate: calc(var(--col) * 100%) 0;
+  transform: translateY(-38%) scale(0.72);
+  transition:
+    translate var(--scivola) cubic-bezier(0.3, 0.7, 0.4, 1),
+    opacity 1ms linear var(--dopo),
+    transform 1ms linear var(--dopo);
+}
+
+.f4__mano.is-giallo {
+  --disco: var(--f4-giallo);
+  --disco-bordo: var(--f4-giallo-scuro);
+}
+
+.f4__mano.is-qui {
+  opacity: 1;
+  transform: none;
+  transition:
+    translate var(--scivola) cubic-bezier(0.3, 0.7, 0.4, 1),
+    opacity 0.2s ease-out var(--dopo),
+    transform 0.42s cubic-bezier(0.3, 1.55, 0.5, 1) var(--dopo);
+}
+
+/* In mano il disco ondeggia; quello dell'altro, che ci pensa, un po' piu' in fretta. */
+.f4__mano.is-qui::before {
+  animation: f4-ondeggia 1.7s ease-in-out infinite;
+}
+
+.f4__mano.is-pensa::before {
+  animation-duration: 1.15s;
+}
+
+@keyframes f4-ondeggia {
+  50% {
+    transform: translateY(-6%);
+  }
+}
+
+/* ---------- La griglia e i dischi ---------- */
 
 .f4__griglia {
   position: relative;
   width: 100%;
   aspect-ratio: 7 / 6;
-  /* Il fondo della griglia, dietro i buchi: un velo del colore della cornice. */
+  /* Il fondo dietro i fori: un velo del colore della cornice. */
   background: color-mix(in srgb, var(--f4-cornice) 9%, transparent);
 }
 
-.f4__dischi {
+.f4__dischi,
+.f4__uscenti {
   position: absolute;
   inset: 0;
 }
 
+/* I dischi che escono dal fondo spariscono sotto la griglia, dietro il piede. */
+.f4__uscenti {
+  overflow: hidden;
+}
+
 .f4__disco {
+  --disco: var(--f4-rosso);
+  --disco-bordo: var(--f4-rosso-scuro);
   position: absolute;
   left: calc(var(--c) * 100% / 7);
   bottom: calc(var(--r) * 100% / 6);
-  width: calc(100% / 7);
-  height: calc(100% / 6);
   display: grid;
   place-items: center;
-}
-
-.f4__disco::before {
-  content: '';
-  width: 80%;
-  height: 80%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 34% 30%, rgba(255, 255, 255, 0.45), transparent 42%),
-    radial-gradient(circle at 50% 50%, transparent 58%, rgba(0, 0, 0, 0.16) 60%, transparent 72%),
-    var(--disco);
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
-}
-
-.f4__disco.is-rosso {
-  --disco: var(--f4-rosso);
+  width: calc(100% / 7);
+  height: calc(100% / 6);
 }
 
 .f4__disco.is-giallo {
   --disco: var(--f4-giallo);
+  --disco-bordo: var(--f4-giallo-scuro);
 }
 
-/* Cade dalla fascia in cima, accelerando, e rimbalza un poco sul fondo. */
+/* Il disco come quelli veri: il bordo rilevato, la faccia con due scanalature, e la luce in alto a sinistra. */
+.f4__disco::before,
+.f4__mano::before {
+  content: '';
+  width: 78%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle closest-side,
+      transparent 0 39%,
+      rgba(0, 0, 0, 0.13) 40% 44%,
+      transparent 45% 57%,
+      rgba(0, 0, 0, 0.11) 58% 62%,
+      transparent 63%
+    ),
+    radial-gradient(circle at 33% 27%, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0) 36%),
+    radial-gradient(
+      circle closest-side,
+      var(--disco) 0 64%,
+      var(--disco-bordo) 72%,
+      var(--disco) 81%,
+      var(--disco-bordo) 100%
+    );
+  box-shadow:
+    inset 0 -2px 3px rgba(0, 0, 0, 0.22),
+    inset 0 2px 2px rgba(255, 255, 255, 0.32);
+}
+
+/*
+ * La caduta: il disco parte dalla mano, nella fascia, quando la mano e' sopra
+ * la colonna (`--attesa`), e cade accelerando. Al fondo schiaccia, rimbalza
+ * due volte e si ferma. Il punto di partenza segue la fascia: cinque righe e
+ * mezza sopra la riga di fondo, piu' meta' fascia.
+ */
 .f4__disco.is-cade {
-  --da: calc((var(--r) - 5.85) * 100%);
-  animation: f4-cade var(--caduta) both;
+  --da: calc((var(--r) - 5.95) * 100%);
+  transform-origin: 50% 88%;
+  animation:
+    f4-cade var(--caduta) var(--attesa) both,
+    f4-nasce 1ms var(--attesa) both;
 }
 
+/* Al colpo il disco si accende per un attimo, come la plastica che prende la luce. */
+.f4__disco.is-cade::before {
+  animation: f4-colpo 0.34s ease-out var(--colpo);
+}
+
+@keyframes f4-nasce {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Il primo colpo sul fondo al sessanta per cento (`IMPATTO` in Griglia.tsx), poi i rimbalzi. */
 @keyframes f4-cade {
   0% {
     transform: translateY(var(--da));
-    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.5);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
   }
-  72% {
+  60% {
     transform: translateY(0);
-    animation-timing-function: cubic-bezier(0, 0.5, 0.5, 1);
+    animation-timing-function: ease-out;
   }
-  86% {
-    transform: translateY(-8%);
-    animation-timing-function: cubic-bezier(0.5, 0, 1, 0.5);
+  66% {
+    transform: translateY(0) scale(1.07, 0.88);
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1);
+  }
+  80% {
+    transform: translateY(-11%) scale(0.98, 1.03);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  90% {
+    transform: translateY(0) scale(1.03, 0.95);
+    animation-timing-function: ease-out;
+  }
+  95% {
+    transform: translateY(-2.5%);
+    animation-timing-function: ease-in;
   }
   100% {
     transform: translateY(0);
+  }
+}
+
+@keyframes f4-colpo {
+  from {
+    filter: brightness(1.3);
   }
 }
 
@@ -97,26 +226,83 @@
 .f4__disco.is-ultimo::after {
   content: '';
   position: absolute;
-  width: 14%;
-  height: 14%;
+  width: 13%;
+  aspect-ratio: 1;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.22);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
 }
 
-/* I quattro in fila, a partita finita: un anello bianco che respira. */
-.f4__disco.is-quattro::before {
-  box-shadow:
-    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
-    0 0 0 3px #fff,
-    0 0 14px 4px rgba(255, 255, 255, 0.55);
-  animation: f4-quattro 1.4s ease-in-out 0.45s infinite;
+/*
+ * A partita nuova i dischi di prima escono dal fondo tutti insieme, come
+ * quando si tira la stecca: le colonne si aprono una dopo l'altra, da
+ * sinistra, e ognuna scende intera.
+ */
+.f4__disco.is-esce {
+  animation: f4-esce 0.62s cubic-bezier(0.55, 0, 1, 0.6) calc(var(--c) * 32ms) both;
 }
 
-@keyframes f4-quattro {
-  50% {
-    transform: scale(0.9);
+@keyframes f4-esce {
+  to {
+    transform: translateY(700%);
   }
 }
+
+/* ---------- La mira ---------- */
+
+/* La colonna dove sto per giocare si accende, dietro i fori. */
+.f4__luce {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--c) * 100% / 7);
+  width: calc(100% / 7);
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--tuo) 40%, transparent),
+    color-mix(in srgb, var(--tuo) 12%, transparent)
+  );
+  transition: left var(--scivola) cubic-bezier(0.3, 0.7, 0.4, 1);
+  animation: f4-appare 0.2s ease-out var(--dopo-mira) both;
+}
+
+/* E il foro dove cadrebbe il disco ha un anello che respira. */
+.f4__meta {
+  position: absolute;
+  left: calc(var(--c) * 100% / 7);
+  bottom: calc(var(--r) * 100% / 6);
+  display: grid;
+  place-items: center;
+  width: calc(100% / 7);
+  height: calc(100% / 6);
+  animation: f4-appare 0.2s ease-out var(--dopo-mira) both;
+}
+
+.f4__meta::before {
+  content: '';
+  box-sizing: border-box;
+  width: 70%;
+  aspect-ratio: 1;
+  border: 2px dashed var(--tuo);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--tuo) 22%, transparent);
+  animation: f4-meta 1.1s ease-in-out infinite;
+}
+
+@keyframes f4-appare {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes f4-meta {
+  50% {
+    opacity: 0.65;
+    transform: scale(0.88);
+  }
+}
+
+/* ---------- La cornice e il piede ---------- */
 
 .f4__cornice {
   position: absolute;
@@ -125,16 +311,273 @@
   height: 100%;
   overflow: visible;
   pointer-events: none;
-  filter: drop-shadow(0 3px 0 color-mix(in srgb, var(--f4-cornice) 60%, #000));
+  /* Lo spessore della plastica: sotto la cornice, e dentro ogni foro, in alto. */
+  filter: drop-shadow(0 2.5px 0 var(--f4-cornice-scura));
 }
 
-.f4__cornice path {
-  fill: var(--f4-cornice);
-  stroke: rgba(0, 0, 0, 0.12);
-  stroke-width: 0.35;
+.f4__plastica-alta {
+  stop-color: var(--f4-cornice-chiara);
 }
 
-/* Le colonne da toccare coprono anche la fascia: il dito ci arriva da sopra. */
+.f4__plastica {
+  stop-color: var(--f4-cornice);
+}
+
+.f4__plastica-bassa {
+  stop-color: var(--f4-cornice-scura);
+}
+
+.f4__riflesso {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.4);
+  stroke-width: 0.5;
+  stroke-linecap: round;
+}
+
+.f4__piede {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 70 / 4.5;
+  overflow: visible;
+  filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.22));
+}
+
+.f4__gamba {
+  fill: var(--f4-cornice-scura);
+}
+
+/* La stecca del fondo: a una partita nuova scorre di lato, e i dischi cadono. */
+.f4__barra {
+  fill: color-mix(in srgb, var(--f4-cornice-scura) 72%, #000);
+  transform-box: fill-box;
+}
+
+.f4.is-svuota .f4__barra {
+  animation: f4-leva 0.8s ease-in-out both;
+}
+
+@keyframes f4-leva {
+  25%,
+  70% {
+    transform: translateX(-7%);
+  }
+}
+
+/* Il sobbalzo della griglia quando un disco tocca il fondo: due nomi, perché riparta a ogni mossa. */
+.f4__corpo.is-scossa-0 {
+  animation: f4-scossa-0 0.24s ease-out var(--scossa);
+}
+
+.f4__corpo.is-scossa-1 {
+  animation: f4-scossa-1 0.24s ease-out var(--scossa);
+}
+
+@keyframes f4-scossa-0 {
+  30% {
+    transform: translateY(0.7%);
+  }
+  65% {
+    transform: translateY(-0.2%);
+  }
+}
+
+@keyframes f4-scossa-1 {
+  30% {
+    transform: translateY(0.7%);
+  }
+  65% {
+    transform: translateY(-0.2%);
+  }
+}
+
+/* ---------- La fine ---------- */
+
+.f4.is-vinta {
+  --vince: var(--tuo);
+}
+
+.f4.is-persa {
+  --vince: var(--suo);
+}
+
+/*
+ * Con una fila, o a griglia piena, gli altri dischi sbiadiscono, perché la
+ * fila si veda: con la trasparenza, che li fa tenui; scuriti con un filtro, il
+ * giallo veniva color oliva.
+ */
+.f4.is-spenta .f4__disco:not(.is-quattro)::before {
+  opacity: 0.55;
+  transition: opacity 0.5s ease var(--fila);
+}
+
+/*
+ * La fila si accende dall'ultimo disco verso i capi (`--passo`), un disco ogni
+ * `--passo-fila`: un anello bianco davanti alla cornice, il disco che si
+ * illumina dietro, e il tratto che li unisce e corre insieme a loro.
+ */
+.f4__disco.is-quattro::before {
+  animation:
+    f4-accende 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) calc(var(--fila) + var(--passo) * var(--passo-fila)) both,
+    f4-respira 1.8s ease-in-out calc(var(--fine-fila) + 400ms) infinite;
+}
+
+@keyframes f4-accende {
+  0% {
+    filter: none;
+    transform: none;
+  }
+  50% {
+    filter: brightness(1.35);
+    transform: scale(1.1);
+  }
+  100% {
+    filter: brightness(1.12);
+    transform: none;
+  }
+}
+
+@keyframes f4-respira {
+  0%,
+  100% {
+    filter: brightness(1.12);
+  }
+  50% {
+    filter: brightness(1.3);
+    transform: scale(0.95);
+  }
+}
+
+.f4__file {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.f4__anello {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 0.8;
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 1.2px rgba(255, 255, 255, 0.9));
+  animation: f4-anello 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) calc(var(--fila) + var(--passo) * var(--passo-fila)) both;
+}
+
+.f4__tratto,
+.f4__alone {
+  fill: none;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: f4-traccia calc(var(--passi) * var(--passo-fila)) linear var(--fila) both;
+}
+
+.f4__tratto {
+  stroke: #fff;
+  stroke-width: 1.3;
+}
+
+.f4__alone {
+  stroke: var(--vince);
+  stroke-width: 3.6;
+  opacity: 0.6;
+  filter: blur(0.5px);
+}
+
+@keyframes f4-anello {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes f4-traccia {
+  from {
+    stroke-dashoffset: 1;
+    visibility: hidden;
+  }
+  1% {
+    visibility: visible;
+  }
+  to {
+    stroke-dashoffset: 0;
+    visibility: visible;
+  }
+}
+
+/* La mia vittoria: la griglia salta, e una luce passa sulla plastica. */
+.f4.is-vinta:not(.is-subito) {
+  animation: f4-salto 0.7s cubic-bezier(0.3, 0.8, 0.4, 1) calc(var(--fine-fila) + 80ms) both;
+}
+
+@keyframes f4-salto {
+  30% {
+    transform: translateY(-3.5%) scale(1.02);
+  }
+  55% {
+    transform: none;
+  }
+  75% {
+    transform: translateY(-1.2%);
+  }
+}
+
+.f4__lampo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.f4__lampo::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  animation: f4-lampo 0.9s ease-in-out calc(var(--fine-fila) + 160ms) both;
+}
+
+.f4.is-subito .f4__lampo {
+  display: none;
+}
+
+@keyframes f4-lampo {
+  to {
+    transform: translateX(340%) skewX(-12deg);
+  }
+}
+
+/* La patta, a griglia piena: la griglia scuote la testa. */
+.f4.is-patta:not(.is-subito) {
+  animation: f4-patta 0.55s ease-in-out var(--fila) both;
+}
+
+@keyframes f4-patta {
+  20% {
+    transform: rotate(-1deg);
+  }
+  45% {
+    transform: rotate(0.8deg);
+  }
+  70% {
+    transform: rotate(-0.4deg);
+  }
+}
+
+/* ---------- Le colonne ---------- */
+
+/* Coprono anche la fascia e il piede: il dito ci arriva da sopra e da sotto. */
 .f4__colonne {
   position: absolute;
   inset: 0;
@@ -142,59 +585,17 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
+/* I bottoni sono per la tastiera e per chi legge lo schermo: il dito e il mouse li sente la griglia. */
 .f4__colonna {
-  position: relative;
   padding: 0;
   border: 0;
   border-radius: 10px;
   background: transparent;
-  cursor: pointer;
+  pointer-events: none;
   -webkit-tap-highlight-color: transparent;
-}
-
-.f4__colonna:disabled {
-  cursor: default;
 }
 
 .f4__colonna:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: -2px;
-}
-
-/* Il disco che si sta per giocare, nella fascia: con il mouse sopra la colonna, o con la tastiera. */
-.f4__fantasma {
-  position: absolute;
-  top: 0;
-  left: 10%;
-  width: 80%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: var(--tuo);
-  opacity: 0;
-  transform: translateY(-12%) scale(0.86);
-  transition:
-    opacity 0.15s,
-    transform 0.15s;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .f4.is-attiva .f4__colonna:not(:disabled):hover .f4__fantasma {
-    opacity: 0.9;
-    transform: translateY(-12%);
-  }
-
-  .f4.is-attiva .f4__colonna:not(:disabled):hover {
-    background: color-mix(in srgb, var(--tuo) 9%, transparent);
-  }
-}
-
-.f4.is-attiva .f4__colonna:focus-visible .f4__fantasma {
-  opacity: 0.9;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .f4__disco.is-cade,
-  .f4__disco.is-quattro::before {
-    animation: none;
-  }
 }
