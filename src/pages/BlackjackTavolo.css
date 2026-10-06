@@ -685,16 +685,15 @@
 
 .bj-altro {
   --bj-carta: var(--carta-altri);
-  --bj-fiche-lato: min(5cqh, 24px);
+  --bj-fiche-lato: min(4.6cqh, 22px);
+  --posto: clamp(30px, 7cqh, 34px);
   position: absolute;
   left: calc(var(--x) * 1cqw);
   top: calc(var(--y) * 1cqh);
   z-index: 3;
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  width: 23cqw;
-  transform: translateX(-50%);
+  width: var(--posto);
+  height: var(--posto);
+  transform: translate(-50%, -50%);
   transition: opacity 0.4s;
 }
 
@@ -703,12 +702,88 @@
   opacity: 0.5;
 }
 
+/*
+ * I quattro punti lungo il bordo, da sinistra, in percentuali del panno: gli
+ * esterni sotto gli scarti e il sabot, e sopra le scritte; gli interni ai lati
+ * delle mie carte.
+ */
+.bj-altro[data-posto='0'] {
+  --x: 11;
+  --y: 27;
+}
+
+.bj-altro[data-posto='1'] {
+  --x: 14;
+  --y: 64;
+}
+
+.bj-altro[data-posto='2'] {
+  --x: 86;
+  --y: 64;
+}
+
+.bj-altro[data-posto='3'] {
+  --x: 89;
+  --y: 27;
+}
+
+/* Un panno basso, in verticale: gli esterni un poco piu' giu', perché le carte non tocchino il sabot. */
+@container (max-height: 420px) and (max-aspect-ratio: 3 / 2) {
+  .bj-altro[data-posto='0'],
+  .bj-altro[data-posto='3'] {
+    --y: 29;
+  }
+
+  .bj-altro__mani {
+    bottom: calc(100% + 4px);
+  }
+}
+
+/*
+ * Un panno piu' largo che alto — il telefono di traverso — ha poca altezza e
+ * tanta larghezza: gli esterni scendono sotto gli scarti e il sabot, e gli
+ * interni si avvicinano a me, ad arco.
+ */
+@container (min-aspect-ratio: 3 / 2) {
+  .bj-altro[data-posto='0'] {
+    --x: 12;
+    --y: 42;
+  }
+
+  .bj-altro[data-posto='1'] {
+    --x: 25;
+    --y: 73;
+  }
+
+  .bj-altro[data-posto='2'] {
+    --x: 75;
+    --y: 73;
+  }
+
+  .bj-altro[data-posto='3'] {
+    --x: 88;
+    --y: 42;
+  }
+}
+
+/* L'avatar e' il posto: sta nel punto, e tutto il resto gli sta attorno. */
+.bj-altro__avatar {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* Le carte sopra l'avatar, centrate su di lui: sono le sue. */
 .bj-altro__mani {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 7px);
   display: flex;
   align-items: flex-end;
   justify-content: center;
   gap: 4px;
-  min-height: calc(var(--bj-carta) * 1.4);
+  transform: translateX(-50%);
 }
 
 .bj-mano--piccola .bj-mano__totale {
@@ -724,44 +799,68 @@
   font-size: 9px;
 }
 
-.bj-altro__chi {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.bj-altro__avatar {
-  position: relative;
-  display: grid;
-  flex: none;
-}
-
 .bj-altro.is-turno .bj-altro__avatar > .avatar {
   box-shadow: 0 0 0 2px var(--bj-scritta), 0 0 14px rgba(255, 214, 90, 0.8);
 }
 
+/*
+ * Dopo uno split le mani sono piu' d'una, e una fila centrata sull'avatar
+ * uscirebbe dal bordo del tavolo: cresce verso il centro, a partire da lui.
+ */
+.bj-altro.is-divise.is-sinistra .bj-altro__mani {
+  left: -4px;
+  transform: none;
+}
+
+.bj-altro.is-divise.is-destra .bj-altro__mani {
+  left: auto;
+  right: -4px;
+  transform: none;
+}
+
+/* Il nome sotto, centrato: e' lungo quanto vuole, e non sposta l'avatar. */
 .bj-altro__nome {
-  min-width: 0;
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 3px);
+  max-width: 24cqw;
   overflow: hidden;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1.25;
   color: rgba(255, 255, 255, 0.92);
   text-overflow: ellipsis;
   white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* La puntata dalla parte del centro del tavolo, all'altezza dell'avatar. */
+.bj-altro__puntata {
+  position: absolute;
+  top: 50%;
+  left: calc(100% + 6px);
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  transform: translateY(-50%);
+}
+
+.bj-altro.is-destra .bj-altro__puntata {
+  left: auto;
+  right: calc(100% + 6px);
+}
+
+.bj-altro__puntata:empty {
+  display: none;
 }
 
 .bj-altro.is-libero {
-  top: calc(var(--y) * 1cqh + 2cqh);
-  gap: 4px;
   opacity: 0.55;
 }
 
 .bj-altro__cerchio {
-  width: min(7cqh, 34px);
-  height: min(7cqh, 34px);
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
   box-shadow: inset 0 0 0 1.5px rgba(242, 210, 122, 0.55);
 }
