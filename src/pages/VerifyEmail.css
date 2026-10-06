@@ -64,36 +64,6 @@
   overflow-wrap: anywhere;
 }
 
-.verifica__campo {
-  display: flex;
-  justify-content: center;
-}
-
-/* Il campo del codice: grande, spaziato, si legge da lontano. */
-.verifica__input {
-  width: 100%;
-  padding: var(--sp-4) var(--sp-3);
-  border: none;
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm), inset 0 0 0 0.5px var(--separator);
-  font-family: var(--font-rounded);
-  font-size: 2rem;
-  font-weight: 700;
-  letter-spacing: 0.42em;
-  text-align: center;
-  text-indent: 0.42em;
-  outline: none;
-}
-
-.verifica__input:focus-visible {
-  box-shadow: var(--shadow-sm), inset 0 0 0 2px var(--brand);
-}
-
-.verifica__input::placeholder {
-  color: var(--label-quaternary);
-}
-
 .verifica__errore {
   font-size: var(--text-footnote);
   color: var(--red);
@@ -135,19 +105,6 @@
   color: var(--label-tertiary);
   text-align: center;
   line-height: 1.4;
-}
-
-.verifica__form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-}
-
-.verifica__campi {
-  background: var(--surface);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
 }
 
 /* Chi arriva da un invito: la partita che lo aspetta, dopo il codice. */

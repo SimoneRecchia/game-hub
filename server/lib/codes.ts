@@ -1,10 +1,9 @@
 /**
- * Codici di verifica a sei cifre.
+ * Codici a sei cifre, mandati per posta: per confermare l'email e per entrare.
  *
  * Nel database va l'impronta, non il codice: chi leggesse la tabella non deve
- * poter prendere possesso di un account in attesa di verifica. L'impronta lega
- * il codice al giocatore e allo scopo, così un codice di verifica non vale
- * come codice di reimpostazione.
+ * poter entrare in un account. L'impronta lega il codice al giocatore e allo
+ * scopo, così un codice di conferma non vale per entrare.
  */
 
 import {
@@ -13,10 +12,22 @@ import {
   CODE_RESEND_COOLDOWN_SECONDS,
   CODE_TTL_MINUTES,
 } from '../../shared/config'
-import { toBase64 } from '../../shared/password'
+import { toBase64 } from '../../shared/base64'
 import { newId, nowIso } from './http'
 
-export type CodePurpose = 'verify_email' | 'reset_password'
+/** A che serve un codice: confermare l'email appena registrata, o entrare. */
+export type CodePurpose = 'verify_email' | 'login'
+
+/**
+ * Come si chiama lo scopo nel database. Il `CHECK` della 0004 ne conosce due, e
+ * il codice per entrare ha preso il posto di quello per la password nuova, che
+ * apriva l'account allo stesso modo, con l'email: cambiare un `CHECK` in SQLite
+ * vuol dire rifare la tabella.
+ */
+const NEL_DATABASE: Record<CodePurpose, string> = {
+  verify_email: 'verify_email',
+  login: 'reset_password',
+}
 
 /**
  * Codice numerico da `CODE_LENGTH` cifre, con distribuzione uniforme.
@@ -40,7 +51,7 @@ export function generateCode(): string {
 async function hashCode(purpose: CodePurpose, playerId: string, code: string): Promise<string> {
   const digest = await crypto.subtle.digest(
     'SHA-256',
-    new TextEncoder().encode(`game-hub/code/v1/${purpose}/${playerId}/${code}`),
+    new TextEncoder().encode(`game-hub/code/v1/${NEL_DATABASE[purpose]}/${playerId}/${code}`),
   )
   return toBase64(new Uint8Array(digest))
 }
@@ -67,7 +78,7 @@ async function latestCode(
         ORDER BY created_at DESC
         LIMIT 1`,
     )
-    .bind(playerId, purpose)
+    .bind(playerId, NEL_DATABASE[purpose])
     .first<CodeRow>()
 }
 
@@ -81,6 +92,16 @@ export async function resendWaitSeconds(
   if (!row) return 0
   const elapsed = (Date.now() - new Date(row.created_at).getTime()) / 1000
   return Math.max(0, Math.ceil(CODE_RESEND_COOLDOWN_SECONDS - elapsed))
+}
+
+/** Quanti codici di uno scopo sono partiti per un giocatore nelle ultime ventiquattr'ore. */
+export async function codesLastDay(db: D1Database, playerId: string, purpose: CodePurpose): Promise<number> {
+  const da = new Date(Date.now() - 86_400_000).toISOString()
+  const riga = await db
+    .prepare('SELECT COUNT(*) AS n FROM verification_codes WHERE player_id = ? AND purpose = ? AND created_at > ?')
+    .bind(playerId, NEL_DATABASE[purpose], da)
+    .first<{ n: number }>()
+  return riga?.n ?? 0
 }
 
 /**
@@ -104,7 +125,7 @@ export async function issueCode(
         `UPDATE verification_codes SET consumed_at = ?
           WHERE player_id = ? AND purpose = ? AND consumed_at IS NULL`,
       )
-      .bind(now.toISOString(), playerId, purpose),
+      .bind(now.toISOString(), playerId, NEL_DATABASE[purpose]),
     db
       .prepare(
         `INSERT INTO verification_codes
@@ -114,7 +135,7 @@ export async function issueCode(
       .bind(
         newId('code'),
         playerId,
-        purpose,
+        NEL_DATABASE[purpose],
         await hashCode(purpose, playerId, code),
         now.toISOString(),
         expires.toISOString(),

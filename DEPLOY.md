@@ -154,12 +154,6 @@ https://wordle.simonerecchia.com/api/health
 > `game-hub.pages.dev` dovrà rifare l'accesso una volta sul dominio nuovo: i
 > punteggi non si perdono, stanno sul database e sono legati al nickname.
 
-> **Serve https.** La password viene derivata nel browser con WebCrypto, che
-> esiste solo nei contesti sicuri. Su Pages l'https c'è sempre, quindi non è un
-> problema in produzione; se però si apre il sito da un IP di rete locale in
-> http, l'accesso non funziona — e lo dice esplicitamente invece di dare un
-> errore generico.
-
 ## La vecchia Vibe Gym web
 
 La vecchia PWA è ancora online su **`vibe-gym.simonerecchia.com`** e va
@@ -185,11 +179,12 @@ viene toccato: il codice resta dov'è, se un giorno servisse.
 
 ---
 
-## Email: codici di verifica e recupero password
+## Email: il codice per entrare e la conferma
 
-L'email viene sempre raccolta alla registrazione, perché serve al recupero
-password. La **verifica con codice** invece si accende, e richiede un servizio
-di invio.
+Non ci sono password: ci si registra con il nickname e l'email, e **si entra
+con un codice di 6 cifre mandato all'email**. Chi si registra conferma l'email
+con lo stesso tipo di codice. Senza un servizio di invio, quindi, in produzione
+non entra nessuno di nuovo: resta dentro solo chi ha già una sessione.
 
 Dalle Pages Functions non si può parlare SMTP, e Cloudflare Email Routing
 riceve ma non spedisce: serve un'API HTTP. La scelta è **Resend** — 3.000 email
@@ -198,8 +193,8 @@ al mese gratis, più che sufficienti per un gruppo di colleghi.
 ### Com'è configurata
 
 È attiva: la registrazione manda un codice di 6 cifre e il gioco resta chiuso
-finché non viene confermato. Il recupero password funziona con lo stesso
-meccanismo.
+finché non viene confermato, e per entrare se ne chiede uno con il nickname o
+con l'email.
 
 Il dominio mittente è **`mail.simonerecchia.com`**, verificato su Resend nella
 regione `eu-west-1`. Un sottodominio e non la radice, così `@simonerecchia.com`
@@ -239,28 +234,29 @@ la configurazione dell'account. Per aggiungere o cambiare un dominio serve una
 chiave **Full access** — conviene crearla per l'occasione e cancellarla appena
 il dominio è verificato.
 
-Se la posta si rompe, `EMAIL_VERIFICATION = "off"` in `wrangler.toml` con commit
-e push riporta tutto allo stato di prima: l'email viene raccolta e non
-verificata, e il recupero password risponde che l'invio non è configurato.
+Se la posta si rompe, **non** si spegne `EMAIL_VERIFICATION`: senza codici non
+si entrerebbe in nessun modo, e la richiesta del codice risponderebbe che
+l'invio non c'è. Va sistemata la posta; nel frattempo chi ha una sessione resta
+dentro, perché le sessioni durano un anno.
 
 ### Com'è fatto
 
 | | |
 | --- | --- |
 | Codice | 6 cifre, valido 15 minuti, 5 tentativi poi si brucia |
+| Codici per entrare | al più 10 al giorno per account |
 | Nel database | solo l'impronta SHA-256, legata al giocatore e allo scopo |
 | Attesa fra due invii | 60 secondi |
 | Mittente | `EMAIL_FROM` in `wrangler.toml` |
 | Endpoint | `EMAIL_ENDPOINT`, vuoto = Resend (serve per cambiare fornitore) |
 
-Il recupero password chiede il **nickname**, non l'email, anche se il codice si
-può richiedere con entrambi: il salt della password si deriva dal nickname
-(vedi `shared/password.ts`), quindi una password derivata dall'email non
-funzionerebbe al login successivo. La schermata lo spiega quando serve.
+`/auth/login/code` risponde sempre allo stesso modo, anche per un nickname che
+non esiste: distinguere i due casi la trasformerebbe in un modo per scoprire chi
+è iscritto. L'email del codice scrive anche il nickname.
 
-`/auth/reset/request` risponde sempre allo stesso modo, anche per un nickname
-che non esiste: distinguere i due casi la trasformerebbe in un modo per
-scoprire chi è iscritto.
+In locale, senza la chiave di Resend, il codice per entrare torna nella risposta
+e la schermata lo mostra, solo se la richiesta arriva da localhost: in
+produzione l'indirizzo è quello del sito, e il codice non esce mai.
 
 ### Provarla in locale
 
@@ -347,11 +343,9 @@ npx wrangler d1 execute game-hub-db --remote --command "
    GROUP BY p.id ORDER BY punti DESC"
 ```
 
-**Reimpostare la password di qualcuno.** Con la verifica accesa se la
-reimposta da sé, da *Password dimenticata*. Se il servizio di posta non è
-configurato, l'unica via è cancellare il giocatore e farlo registrare di nuovo
-— ma così perde i punteggi. Cancellare solo le sessioni lo fa disconnettere
-senza toccare nient'altro:
+**Far uscire qualcuno.** Non ci sono password da reimpostare: si rientra con il
+codice all'email. Cancellare le sue sessioni lo fa uscire da tutti i
+dispositivi senza toccare nient'altro:
 
 ```bash
 npx wrangler d1 execute game-hub-db --remote \
@@ -378,11 +372,10 @@ npx wrangler d1 execute game-hub-db --remote \
 | Il build fallisce su una sintassi che in locale funziona | `NODE_VERSION` non impostata: Pages sta usando un Node più vecchio |
 | Le rotte dirette (`/wordle`, `/classifica`) danno 404 | `public/_redirects` non è finito in `dist/`: dev'esserci `/*  /index.html  200` |
 | L'accesso non resta memorizzato | Il sito è servito in `http`: il cookie è `Secure` e il browser lo scarta. Su Pages con dominio custom l'https c'è sempre |
-| Il codice non arriva | `RESEND_API_KEY` mancante, oppure il dominio non è verificato su Resend, oppure i record DKIM/SPF sono proxati (devono essere grigi) |
-| La registrazione non chiede il codice | `EMAIL_VERIFICATION` è `"off"`, o la chiave Resend non c'è: senza il modo di spedire, la verifica resta spenta di proposito |
-| La password reimpostata non funziona | È stata derivata dall'email invece che dal nickname: il salt viene dal nickname |
+| Il codice non arriva | `RESEND_API_KEY` mancante, oppure il dominio non è verificato su Resend, oppure i record DKIM/SPF sono proxati (devono essere grigi). Se arriva dopo un po', guardare anche lo spam |
+| «Adesso non si può entrare: manca l'invio delle email» | `EMAIL_VERIFICATION` è `"off"`, o la chiave Resend non c'è: senza il modo di spedire non partono codici |
+| Il codice giusto risulta sbagliato | È scaduto (15 minuti), o se n'è chiesto un altro dopo: vale solo l'ultimo |
 | Si è collegati sull'hub ma non sul gioco | `COOKIE_DOMAIN` in `wrangler.toml` non copre l'host: deve valere `simonerecchia.com` per i sottodomini di quel dominio |
-| «Apri il sito in https» al momento dell'accesso | Il sito è aperto su un'origine http che non è localhost: WebCrypto non è disponibile |
 | `wordle.simonerecchia.com` apre l'hub invece del gioco | Manca la voce in `GAME_SUBDOMAINS` in `shared/hosts.ts` |
 | Il dominio non si può assegnare | È ancora legato a un altro progetto Pages: passo 4, punto 1 |
 
@@ -396,7 +389,8 @@ Tutto dentro il piano gratuito, per un gruppo di colleghi con ampio margine:
 | Letture D1 | 5 milioni al giorno | qualche migliaio |
 | Scritture D1 | 100.000 al giorno | poche decine |
 | Spazio D1 | 5 GB | qualche megabyte |
-| CPU per richiesta | 10 ms | ~5 ms nel caso peggiore (login) |
+| CPU per richiesta | 10 ms | pochi ms |
 
-Il limite di 10 ms di CPU è la ragione per cui la derivazione della password è
-divisa fra browser e server: vedi [`shared/password.ts`](shared/password.ts).
+Il limite di 10 ms di CPU è la ragione per cui i calcoli pesanti — gli schemi,
+il computer dello Scarabeo, i punti della notte — si fanno negli script della
+notte o nel browser, mai nel Worker.

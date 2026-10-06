@@ -8,8 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AuthConfig, Player } from '@shared/types'
-import { deriveVerifier } from '@shared/password'
+import type { AuthConfig, CodiceMandato, Player } from '@shared/types'
 import { ApiFetchError, api } from './api'
 
 const CACHE_KEY = 'gh.player'
@@ -20,15 +19,18 @@ interface AuthState {
   checking: boolean
   /** null finché la configurazione non e' arrivata dal server. */
   config: AuthConfig | null
-  register: (nickname: string, email: string, password: string) => Promise<void>
-  login: (nickname: string, password: string) => Promise<void>
+  register: (nickname: string, email: string) => Promise<void>
+  /** Chiede il codice per entrare, con il nickname o con l'email. */
+  requestCode: (identifier: string) => Promise<CodiceMandato>
+  /** Entra con il codice arrivato per posta. */
+  login: (identifier: string, code: string) => Promise<void>
   logout: () => Promise<void>
   refresh: () => Promise<void>
   /** Conferma l'email col codice ricevuto. */
   verify: (code: string) => Promise<void>
   /** Rimanda il codice. Restituisce i secondi di attesa dichiarati. */
   resendCode: () => Promise<number>
-  /** Applica un giocatore aggiornato (es. dopo il recupero password). */
+  /** Applica un giocatore aggiornato. */
   apply: (player: Player) => void
 }
 
@@ -105,23 +107,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted.current) setConfig(fresh)
       })
       .catch(() => {
-        // Senza risposta si assume la configurazione minima: l'email viene
-        // raccolta comunque, ma non si promette un codice che potrebbe non
-        // arrivare.
+        // Senza risposta si assume la configurazione minima: non si promette
+        // un codice di conferma che potrebbe non arrivare.
         if (mounted.current) setConfig({ emailVerificationRequired: false })
       })
   }, [])
 
   const register = useCallback(
-    async (nickname: string, email: string, password: string) => {
-      const verifier = await deriveVerifier(nickname, password)
+    async (nickname: string, email: string) => {
       const { player: created } = await api<{ player: Player }>('/auth/register', {
         method: 'POST',
-        body: { nickname: nickname.trim(), email: email.trim(), verifier },
+        body: { nickname: nickname.trim(), email: email.trim() },
       })
       apply(created)
     },
     [apply],
+  )
+
+  const requestCode = useCallback(
+    (identifier: string) =>
+      api<CodiceMandato>('/auth/login/code', { method: 'POST', body: { identifier: identifier.trim() } }),
+    [],
   )
 
   const verify = useCallback(
@@ -143,11 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(
-    async (nickname: string, password: string) => {
-      const verifier = await deriveVerifier(nickname, password)
+    async (identifier: string, code: string) => {
       const { player: signed } = await api<{ player: Player }>('/auth/login', {
         method: 'POST',
-        body: { nickname: nickname.trim(), verifier },
+        body: { identifier: identifier.trim(), code: code.trim() },
       })
       apply(signed)
     },
@@ -168,6 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       checking,
       config,
       register,
+      requestCode,
       login,
       logout,
       refresh,
@@ -175,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resendCode,
       apply,
     }),
-    [player, checking, config, register, login, logout, refresh, verify, resendCode, apply],
+    [player, checking, config, register, requestCode, login, logout, refresh, verify, resendCode, apply],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

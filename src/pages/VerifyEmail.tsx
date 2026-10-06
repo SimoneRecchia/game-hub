@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
+import { CampoCodice } from '@/components/CampoCodice'
 import { ThemeButton } from '@/components/ThemeButton'
 import { useAuth } from '@/lib/auth'
 import { ApiFetchError, api } from '@/lib/api'
@@ -72,15 +73,6 @@ export default function VerifyEmail({ invito = null }: { invito?: string | null 
     [verify],
   )
 
-  function onChange(valore: string) {
-    const cifre = valore.replace(/\D/g, '').slice(0, CODE_LENGTH)
-    setCode(cifre)
-    setError(null)
-    // Invio automatico appena il codice e' completo: ridigitare e poi cercare
-    // il tasto e' un passaggio in più che non serve a nessuno.
-    if (cifre.length === CODE_LENGTH) void invia(cifre)
-  }
-
   async function rimanda() {
     setBusy(true)
     setError(null)
@@ -130,26 +122,19 @@ export default function VerifyEmail({ invito = null }: { invito?: string | null 
           </div>
         )}
 
-        <div className="verifica__campo">
-          <label className="u-visually-hidden" htmlFor="codice">
-            Codice di verifica
-          </label>
-          <input
-            id="codice"
-            ref={input}
-            className="verifica__input u-tabnum"
-            value={code}
-            onChange={(e) => onChange(e.target.value)}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            /* Il browser (e iOS) suggerisce il codice arrivato per posta. */
-            pattern="\d*"
-            maxLength={CODE_LENGTH}
-            placeholder={'0'.repeat(CODE_LENGTH)}
-            disabled={busy}
-            aria-invalid={error !== null}
-          />
-        </div>
+        <CampoCodice
+          id="codice"
+          ref={input}
+          etichetta="Codice di verifica"
+          valore={code}
+          onCambia={(cifre) => {
+            setCode(cifre)
+            setError(null)
+          }}
+          onCompleto={(cifre) => void invia(cifre)}
+          disabled={busy}
+          errore={error !== null}
+        />
 
         {error && (
           <p className="verifica__errore" role="alert">
