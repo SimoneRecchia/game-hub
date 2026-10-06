@@ -185,7 +185,7 @@ export default function BattagliaSala() {
     <Pagina
       titolo="Battaglia navale"
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      eroe={<Copertina gioco="battaglia" formato="eroe" transizione="copertina-battaglia" />}
+      eroe={<Copertina gioco="battaglia" formato="eroe" />}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
           <IconInfo size={21} />

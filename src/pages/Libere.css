@@ -42,6 +42,10 @@
   }
 }
 
+.pagina--ferma .chi-ce__amici > li {
+  animation: none;
+}
+
 .chi-ce__amico {
   display: flex;
   flex-direction: column;
