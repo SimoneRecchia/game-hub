@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import type { DatiAdesivo } from '@/components/Adesivo'
 import { punti as formatta } from '@/games/go/conteggio'
 import type { GiocoTavoliere, MotivoTavoliere } from '@shared/tavolo'
@@ -104,4 +105,31 @@ export function adesivoFine(
     durata: ADESIVO_FINE_MS,
     suono: vincitore === null ? 'pareggio' : motivo === 'resa' ? 'esce' : motivo === 'tempo' ? 'scaduto' : 'sconfitta',
   }
+}
+
+/**
+ * Vero quando il piede puo' dire com'e' finita: subito per una partita gia'
+ * finita quando la si apre, dopo `attesa` per una che si e' vista finire. Cosi'
+ * il risultato non arriva prima della mossa che l'ha deciso, e arriva con
+ * l'adesivo.
+ */
+export function useFineVista(finita: boolean, attesa: number): boolean {
+  const [vista, setVista] = useState(finita)
+  const vistaInCorso = useRef(!finita)
+  const attesaRef = useRef(attesa)
+  attesaRef.current = attesa
+  useEffect(() => {
+    if (!finita) {
+      vistaInCorso.current = true
+      setVista(false)
+      return
+    }
+    if (!vistaInCorso.current) {
+      setVista(true)
+      return
+    }
+    const t = window.setTimeout(() => setVista(true), attesaRef.current)
+    return () => window.clearTimeout(t)
+  }, [finita])
+  return vista
 }

@@ -6,6 +6,7 @@ import {
   casellaDi,
   colonneLibere,
   esito,
+  file,
   gioca,
   leggi,
   posizioneIniziale,
@@ -73,6 +74,33 @@ describe('le regole di Forza 4', () => {
     const scende = dopo(6, 3, 2, 2, 1, 6, 1, 1, 0, 0, 0, 0)
     expect(quattro(scende)?.disco).toBe(1)
     expect(esito(scende)).toEqual({ fine: 'forza4', vincitore: 1 })
+  })
+
+  it('le file vincenti una per una, dal capo alla coda, e insieme sono le caselle del quattro', () => {
+    /** Una posizione scritta riga per riga, dal fondo. */
+    const da = (...righe: string[]) => leggi(righe.join('').padEnd(CASELLE, '.'))!
+    // Orizzontale e verticale, dal capo: una fila ciascuna.
+    expect(file(dopo(0, 0, 1, 1, 2, 2, 3))).toEqual([[0, 1, 2, 3]])
+    expect(file(dopo(0, 1, 0, 1, 0, 1, 0))).toEqual([[0, 7, 14, 21]])
+    // Le due diagonali, dal fondo.
+    const sale = dopo(0, 1, 1, 2, 2, 3, 2, 3, 3, 6, 3)
+    expect(file(sale)).toEqual([[casellaDi(0, 0), casellaDi(1, 1), casellaDi(2, 2), casellaDi(3, 3)]])
+    const scende = dopo(6, 3, 2, 2, 1, 6, 1, 1, 0, 0, 0, 0)
+    expect(file(scende)).toEqual([[casellaDi(0, 3), casellaDi(1, 2), casellaDi(2, 1), casellaDi(3, 0)]])
+    // Cinque in fila sono una fila sola, non due di quattro.
+    const cinque = da('00000..', '11.11..')
+    expect(file(cinque)).toEqual([[0, 1, 2, 3, 4]])
+    // Due file chiuse dallo stesso disco, in fondo a sinistra e nella colonna 3: due file.
+    const due = da('0000111', '1110...', '...0...', '...0...')
+    expect(file(due)).toEqual([
+      [0, 1, 2, 3],
+      [3, 10, 17, 24],
+    ])
+    for (const p of [sale, scende, cinque, due]) {
+      expect([...new Set(file(p).flat())].sort((a, b) => a - b)).toEqual(quattro(p)!.caselle)
+    }
+    // Senza quattro, nessuna fila.
+    expect(file(dopo(0, 1, 2))).toEqual([])
   })
 
   it('dopo il quattro non si gioca più', () => {

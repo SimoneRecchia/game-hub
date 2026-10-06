@@ -143,6 +143,13 @@ export type NomeSuono =
   | 'croce'
   /** L'evidenziatore su una risposta che ha dato solo uno. */
   | 'evidenzia'
+  /** Un disco di Forza 4 che arriva in fondo alla colonna: la plastica che batte, e il rimbalzo. */
+  | 'disco'
+  /** La griglia che si svuota a una partita nuova: la stecca che scorre, e i dischi che cadono. */
+  | 'svuota'
+  /** Il mio quattro in fila che si accende, un disco alla volta; e quello dell'altro, che scende. */
+  | 'quattro'
+  | 'quattroAltro'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -1122,5 +1129,33 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
   evidenzia: (u, t, v) => {
     soffio(u, t, 0.22, 0.1 * v, { tipo: 'bandpass', da: 900, a: 1500, q: 0.9 }, { attacco: 0.03, eco: 0.08 })
     ;[N.E7, N.G7].forEach((f, i) => campanello(u, t + 0.12 + i * 0.06, f, 0.05 * v, { eco: 0.5, durata: 0.5 }))
+  },
+
+  // Il disco in fondo alla colonna: plastica dura, piu' acuta del legno, e il colpetto del rimbalzo.
+  disco: (u, t, v) => {
+    legno(u, t, vario(620, 0.05), 0.24 * v)
+    legno(u, t + 0.003, vario(1850, 0.05), 0.08 * v)
+    tonfo(u, t, 0.1 * v, { da: 180, a: 90, durata: 0.12 })
+    legno(u, t + 0.13, vario(700, 0.05), 0.07 * v)
+  },
+
+  // La griglia che si svuota: la stecca del fondo che scorre, e i dischi che cadono a grappoli.
+  svuota: (u, t, v) => {
+    soffio(u, t, 0.16, 0.12 * v, { tipo: 'bandpass', da: 700, a: 1600, q: 1.2 }, { attacco: 0.01, eco: 0.05 })
+    for (let i = 0; i < 16; i += 1) {
+      const quando = t + 0.06 + i * 0.03 + Math.random() * 0.025
+      legno(u, quando, vario(560 + (i % 5) * 140, 0.08), 0.13 * v * (1 - i / 22))
+    }
+  },
+
+  // Il mio quattro: una nota per disco che si accende, a salire, e il luccichio in cima.
+  quattro: (u, t, v) => {
+    ;[N.C5, N.E5, N.G5, N.C6].forEach((f, i) => marimba(u, t + i * 0.11, f, 0.22 * v, { eco: 0.25 }))
+    campanello(u, t + 0.4, N.E6, 0.08 * v, { eco: 0.5, durata: 0.9 })
+  },
+
+  // Il quattro dell'altro: le stesse quattro note, ma a scendere e piu' piano.
+  quattroAltro: (u, t, v) => {
+    ;[N.A4, N.E4, N.C4, N.A3].forEach((f, i) => marimba(u, t + i * 0.11, f, 0.18 * v, { eco: 0.2 }))
   },
 }
