@@ -123,6 +123,37 @@ export function quattro(p: PosizioneForza4): { disco: Disco; caselle: number[] }
   return disco === null ? null : { disco, caselle: [...vincenti].sort((a, b) => a - b) }
 }
 
+/**
+ * Le file vincenti una per una, ognuna dalla prima casella all'ultima nella sua
+ * direzione: quel che serve per tracciarle sulla griglia. Una fila di cinque e'
+ * una fila sola, e due file chiuse dallo stesso disco sono due. Insieme hanno
+ * le caselle di `quattro`.
+ */
+export function file(p: PosizioneForza4): number[][] {
+  const dentro = (r: number, c: number) => r >= 0 && r < RIGHE && c >= 0 && c < COLONNE
+  const trovate: number[][] = []
+  for (const [dr, dc] of DIREZIONI) {
+    for (let r = 0; r < RIGHE; r += 1) {
+      for (let c = 0; c < COLONNE; c += 1) {
+        const d = p.caselle[casellaDi(r, c)]
+        if (d === null) continue
+        // Si parte solo dal capo della fila: la casella prima, nella direzione, e' di un altro o vuota.
+        if (dentro(r - dr, c - dc) && p.caselle[casellaDi(r - dr, c - dc)] === d) continue
+        const fila = [casellaDi(r, c)]
+        let rr = r + dr
+        let cc = c + dc
+        while (dentro(rr, cc) && p.caselle[casellaDi(rr, cc)] === d) {
+          fila.push(casellaDi(rr, cc))
+          rr += dr
+          cc += dc
+        }
+        if (fila.length >= 4) trovate.push(fila)
+      }
+    }
+  }
+  return trovate
+}
+
 export type FineForza4 = 'forza4' | 'pieno'
 
 /** A partita finita chi ha vinto (null per la patta a griglia piena); null se si gioca ancora. */

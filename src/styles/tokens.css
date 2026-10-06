@@ -562,8 +562,16 @@
      bianche del cruciverba, e i pezzi restano quelli. */
   --f4-cornice: #129786;
   --f4-cornice: light-dark(#129786, #0d6f63);
+  /* La plastica della cornice, lucida in alto e in ombra in basso, e il piede. */
+  --f4-cornice-chiara: #22b39f;
+  --f4-cornice-chiara: light-dark(#22b39f, #148a7b);
+  --f4-cornice-scura: #0b6f63;
+  --f4-cornice-scura: light-dark(#0b6f63, #084c44);
   --f4-rosso: #e8453c;
   --f4-giallo: #f6c22b;
+  /* Il bordo rilevato dei dischi: scritti a mano, perché il giallo mescolato al nero diventa oliva. */
+  --f4-rosso-scuro: #b3271f;
+  --f4-giallo-scuro: #d99a0b;
   --scacchi-chiara: #e2e7ee;
   --scacchi-chiara: light-dark(#e2e7ee, #aab4c4);
   --scacchi-scura: #8d9db5;

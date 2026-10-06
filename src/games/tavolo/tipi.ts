@@ -1,5 +1,5 @@
 import type { ComponentType } from 'react'
-import type { GiocoTavoliere, Parte } from '@shared/tavolo'
+import type { GiocoTavoliere, MotivoTavoliere, Parte } from '@shared/tavolo'
 
 /**
  * Quel che ogni tavoliere — la scacchiera, la damiera, la griglia del Forza 4
@@ -51,4 +51,10 @@ export interface GiocoDelTavoliere {
   avviso: (posizione: string, mio: boolean) => string | null
   /** La mossa per passare, nei giochi dove si passa: nel go, "passo". */
   passo?: string
+  /**
+   * Quanto aspettano l'adesivo e la festa della fine dopo l'ultima mossa, se il
+   * tavoliere ha qualcosa da far vedere prima: nel Forza 4 il disco che cade e
+   * la fila che si accende.
+   */
+  attesaFine?: (motivo: MotivoTavoliere) => number
 }

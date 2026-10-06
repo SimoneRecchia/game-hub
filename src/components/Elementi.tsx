@@ -294,20 +294,28 @@ export function Coriandoli({ quanti = 84 }: { quanti?: number }) {
  * ieri, o riaprire il risultato, non la rifà.
  *
  * `inCorso` e' null finché non si sa (la partita sta caricando); `vinta` e' il
- * momento in cui festeggiare, di solito quando si apre il risultato.
+ * momento in cui festeggiare, di solito quando si apre il risultato. `ritardo`
+ * lascia finire prima quel che il gioco ha da far vedere, come la fila del
+ * Forza 4 che si accende.
  */
-export function useFesta(inCorso: boolean | null, vinta: boolean): boolean {
+export function useFesta(inCorso: boolean | null, vinta: boolean, ritardo = 0): boolean {
   const vistaGiocare = useRef(false)
   const [festa, setFesta] = useState(false)
+  const ritardoRef = useRef(ritardo)
+  ritardoRef.current = ritardo
   useEffect(() => {
     if (inCorso === true) vistaGiocare.current = true
   }, [inCorso])
   useEffect(() => {
     if (!vinta || !vistaGiocare.current) return
     vistaGiocare.current = false
-    setFesta(true)
-    const t = window.setTimeout(() => setFesta(false), DURATA_FESTA_MS)
-    return () => window.clearTimeout(t)
+    const attesa = ritardoRef.current
+    const inizio = window.setTimeout(() => setFesta(true), attesa)
+    const fine = window.setTimeout(() => setFesta(false), attesa + DURATA_FESTA_MS)
+    return () => {
+      window.clearTimeout(inizio)
+      window.clearTimeout(fine)
+    }
   }, [vinta])
   return festa
 }

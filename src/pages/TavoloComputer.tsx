@@ -11,7 +11,7 @@ import { Sheet } from '@/components/Sheet'
 import { contaPunti } from '@/games/go/conteggio'
 import { PiedeConteggio } from '@/games/go/PiedeConteggio'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
-import { adesivoFine, testoFine, type Chi, type PuntiFine } from '@/games/tavolo/fine'
+import { adesivoFine, testoFine, useFineVista, type Chi, type PuntiFine } from '@/games/tavolo/fine'
 import { giocoDelTavoliere } from '@/games/tavolo/giochi'
 import { ElencoMosse, Fine, Tavola, Turno } from '@/games/tavolo/Tavola'
 import { useTavoloComputer } from '@/games/tavolo/useTavoloComputer'
@@ -21,7 +21,7 @@ import { regoleDi } from '@shared/tavolo-regole'
 import { NOMI_LIVELLI } from './TavoloSala'
 import './Tavolo.css'
 
-/** L'adesivo della fine aspetta che l'ultima mossa sia arrivata al suo posto. */
+/** L'adesivo della fine aspetta che l'ultima mossa sia arrivata al suo posto, se il tavoliere non chiede di piu'. */
 const ATTESA_FINE_MS = 450
 
 /**
@@ -53,7 +53,9 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
 
   // La fine: l'adesivo, una volta, e i coriandoli, solo per una partita vista in corso.
   const { adesivo, accoda } = useCodaAdesivi()
-  const festa = useFesta(!finita, finita && vincitore === 'io')
+  const attesaFine = p.esito ? (descrizione.attesaFine?.(p.esito.motivo) ?? ATTESA_FINE_MS) : ATTESA_FINE_MS
+  const festa = useFesta(!finita, finita && vincitore === 'io', attesaFine)
+  const fineVista = useFineVista(finita, attesaFine)
   const eraInCorso = useRef(false)
   const esitoRef = useRef(p.esito)
   esitoRef.current = p.esito
@@ -68,13 +70,15 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
     if (!esito) return
     const chi: Chi = esito.vincitore === null ? null : esito.vincitore === p.mia ? 'io' : 'avversario'
     const adesivo = adesivoFine(gioco, esito.motivo, chi, 'il computer', puntiRef.current)
-    const t = setTimeout(() => accoda(adesivo), ATTESA_FINE_MS)
+    const attesa = giocoDelTavoliere(gioco).attesaFine?.(esito.motivo) ?? ATTESA_FINE_MS
+    const t = setTimeout(() => accoda(adesivo), attesa)
     return () => clearTimeout(t)
   }, [accoda, finita, gioco, p.mia])
 
   const storia = useMemo(() => (descrizione.storia ? descrizione.storia(p.mosse) : null), [descrizione, p.mosse])
 
   const piede = finita ? (
+    fineVista &&
     (() => {
       const { titolo, riga } = testoFine(p.esito!.motivo, vincitore, 'il computer', puntiFine)
       return (
