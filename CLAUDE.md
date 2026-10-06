@@ -2023,6 +2023,24 @@ commento basta a non far caricare l'immagine, mentre la stessa icona messa nella
 pagina si vede lo stesso: e' cosi' che il marchio della barra laterale era
 rotto senza che nessuno se ne accorgesse. C'e' un test.
 
+**L'icona e' fatta per il Liquid Glass, che un'app web non puo' chiedere.** I
+livelli di Icon Composer sono delle app native: di un'app web iOS 26 prende
+l'`apple-touch-icon`, ci stende sopra il vetro e ne ricava da solo le versioni
+scura, trasparente e colorata, separando il disegno dal fondo. Per questo
+l'icona e' piatta — le ombre e i riflessi li mette il vetro — con il fondo
+quasi a tinta unita e le copertine molto piu' chiare di lui: senza i colori
+resta la luminosita'. Nell'icona di prima il basso del cruciverba e della
+battaglia era scuro quanto il fondo, e il riflesso in alto a sinistra finiva
+nel disegno. L'`apple-touch-icon` e' piena e a filo, di 1024 punti: gli angoli
+li taglia iOS, un pixel trasparente diventa nero, e a 180 le icone grandi della
+Home la ingrandirebbero. Il disegno sta a un quinto dal bordo, perché in basso
+il vetro fa da lente. Tutto viene da `scripts/genera-icone.mjs`
+(`npm run icone`), che scrive anche l'impronta negli indirizzi (`?v=`): Safari
+tiene le icone per indirizzo, e chi rimette l'app sulla Home si vedrebbe quella
+di prima. Un'app gia' sulla Home tiene l'icona con cui la si e' aggiunta: per
+la nuova va tolta e rimessa. I test tengono le soglie di luminosita', l'icona
+di iOS piena e l'impronta.
+
 **La palette scura non esiste come blocco separato.** Ogni token e' un
 `light-dark(chiaro, scuro)`, che segue `color-scheme` — quindi copre sia la
 preferenza di sistema sia l'interruttore manuale, perché quello imposta

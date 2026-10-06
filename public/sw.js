@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(SHELL_CACHE)
-      .then((cache) => cache.addAll([SHELL_URL, '/manifest.webmanifest', '/icon.svg']))
+      .then((cache) => cache.addAll([SHELL_URL, '/manifest.webmanifest']))
       .then(() => self.skipWaiting()),
   )
 })
