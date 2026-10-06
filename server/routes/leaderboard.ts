@@ -2,7 +2,6 @@ import { Hono, type Context } from 'hono'
 import { PERIODI, periodoDi } from '../../shared/periodi'
 import type {
   FortunaLeaderboard,
-  BattagliaLeaderboard,
   GeneraleLeaderboard,
   CruciverbaLeaderboard,
   LeaderboardResponse,
@@ -21,7 +20,6 @@ import { leaderboard } from '../lib/leaderboard'
 import { classificaScarabeo } from '../lib/scarabeoStore'
 import { classificaCruciverba } from '../lib/cruciverbaStore'
 import { classificaSudoku } from '../lib/sudokuStore'
-import { classificaBattaglia } from '../lib/battagliaStore'
 import { classificaQuiz } from '../lib/quizStore'
 import { classificaTris } from '../lib/trisStore'
 import { classificaNomi } from '../lib/nomiStore'
@@ -87,12 +85,6 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/sudoku', async (c) => {
     const result = await classificaSudoku(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<SudokuLeaderboard>(result)
-  })
-
-  /** La battaglia navale: le classificate contro il computer, a punti. */
-  .get('/battaglia', async (c) => {
-    const result = await classificaBattaglia(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
-    return c.json<BattagliaLeaderboard>(result)
   })
 
   /** Il quiz: le risposte giuste, poi il tempo. */

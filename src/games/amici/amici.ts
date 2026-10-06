@@ -94,7 +94,7 @@ export async function invitaA(gioco: GiocoInsieme, amico: GiocatoreBreve): Promi
   if (gioco === 'quiz') return `${ROTTE.libera('quiz')}?sfida=1`
   if (gioco === 'battaglia') {
     await api('/battaglia/sfida', { method: 'POST', body: { playerId } })
-    return ROTTE.libera('battaglia')
+    return ROTTE.battaglia
   }
   if (gioco === 'nomi') {
     await api('/nomi/sfide', { method: 'POST', body: { playerId } })
@@ -118,7 +118,7 @@ export async function invitaA(gioco: GiocoInsieme, amico: GiocatoreBreve): Promi
 /** Dove porta un gioco quando l'amico non e' online: la sala, da cui lo si invita con un link. */
 export function salaDi(gioco: GiocoInsieme): string {
   if (gioco === 'quiz') return `${ROTTE.libera('quiz')}?sfida=1`
-  if (gioco === 'battaglia') return ROTTE.libera('battaglia')
+  if (gioco === 'battaglia') return ROTTE.battaglia
   if (gioco === 'nomi') {
     // La libera si apre dalla parte dell'amico, dove si vede l'invito in attesa (la chiave di NomiCoseLibera).
     try {

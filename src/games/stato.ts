@@ -7,14 +7,12 @@
  * l'avanzamento con la sua unità: le parole, le mosse, le caselle, i colpi.
  */
 
-import { CASELLE_FLOTTA } from '@shared/battaglia'
 import { NOMI_CATEGORIE } from '@shared/quiz'
 import { PUNTATA_MINIMA, SPICCHI_FORTUNATI, SPICCHI_RUOTA, nomeDi } from '@shared/ruota'
 import { PUNTATA_MASSIMA_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import { PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
-  BattagliaSummary,
   CompagniaBreve,
   CruciverbaSummary,
   FortunaRisposta,
@@ -256,42 +254,6 @@ export function statoSudoku(s: SudokuSummary): StatoOggi {
   }
 }
 
-export function statoBattaglia(s: BattagliaSummary): StatoOggi {
-  const c = s.classificata
-  const base = { gioco: 'battaglia' as const, a: ROTTE.classificata('battaglia') }
-  if (c.stato === 'finita') {
-    return {
-      ...base,
-      fase: 'fatta',
-      titolo: c.vinta ? 'Vinta' : 'Persa',
-      dettaglio: `${c.punti ?? 0} punti in ${c.colpi} colpi`,
-      punti: c.punti,
-      avanzamento: 1,
-      azione: 'Rivedi',
-    }
-  }
-  if (c.stato === 'nuova') {
-    return {
-      ...base,
-      fase: 'da-giocare',
-      titolo: 'Da giocare',
-      dettaglio: '',
-      punti: null,
-      avanzamento: 0,
-      azione: 'Gioca',
-    }
-  }
-  return {
-    ...base,
-    fase: 'in-corso',
-    titolo: c.stato === 'disposizione' ? 'Disponi la flotta' : 'In battaglia',
-    dettaglio: c.colpi > 0 ? `${c.colpi} ${c.colpi === 1 ? 'colpo sparato' : 'colpi sparati'}` : 'Tocca a te',
-    punti: null,
-    avanzamento: c.stato === 'disposizione' ? 0.1 : Math.min(0.95, c.colpi / (CASELLE_FLOTTA * 3)),
-    azione: 'Continua',
-  }
-}
-
 export function statoQuiz(s: QuizSummary): StatoOggi {
   const base = {
     gioco: 'quiz' as const,
@@ -439,7 +401,6 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     scarabeo: statoScarabeo(oggi.scarabeo),
     cruciverba: statoCruciverba(oggi.cruciverba),
     sudoku: statoSudoku(oggi.sudoku),
-    battaglia: statoBattaglia(oggi.battaglia),
     quiz: statoQuiz(oggi.quiz),
     tris: statoTris(oggi.tris),
     nomi: statoNomi(oggi.nomi),

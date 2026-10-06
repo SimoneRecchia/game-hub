@@ -1,16 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { caselleDellaNave, disponiACaso, type Nave } from '../../shared/battaglia'
-import { flottaDelGiorno } from '../../shared/battaglia-computer'
 import { mulberry32 } from '../../shared/daily'
-import { puntiBattaglia } from '../../shared/punti'
 import type {
-  BattagliaLeaderboard,
   InvitoConLink,
   LinkBattaglia,
   LobbyBattaglia,
   VistaBattaglia,
 } from '../../shared/types'
-import { today } from '../lib/wordleStore'
 import { banco, type Giocatore } from './banco'
 
 const MIA_FLOTTA: Nave[] = disponiACaso(mulberry32(7))
@@ -35,77 +31,41 @@ async function spara(chiama: Chiama, io: Giocatore, v: VistaBattaglia, casella: 
   return r.dati
 }
 
-describe('la classificata del giorno, contro il computer', () => {
-  it('ha la flotta del giorno, comincia chi gioca e il computer risponde subito', async () => {
+describe('la battaglia non ha piu\' la classificata', () => {
+  it('non si apre, e non ha classifica ne\' riepilogo per la schermata di oggi', async () => {
     const { chiama, giocatore } = banco()
     const io = await giocatore('anna')
-    let v = (await chiama<VistaBattaglia>('POST', '/battaglia/classificata', io)).dati
-    expect(v).toMatchObject({ modalita: 'classificata', livello: 'facile', stato: 'disposizione', punti: null })
-    expect(v.avversario.displayName).toBe('Il computer')
-    expect(v.avversarioPronto).toBe(true)
-    expect(v.flottaNemica).toBeNull()
-
-    // Una al giorno: chiederla di nuovo riapre la stessa.
-    const ancora = (await chiama<VistaBattaglia>('POST', '/battaglia/classificata', io)).dati
-    expect(ancora.id).toBe(v.id)
-
-    v = await disponi(chiama, io, v)
-    expect(v.stato).toBe('battaglia')
-    expect(v.tuoTurno).toBe(true)
-
-    // Un colpo sicuramente in acqua: il computer risponde nella stessa richiesta.
-    const navi = new Set(flottaDelGiorno(today().puzzleNumber).flatMap(caselleDellaNave))
-    const acqua = [...Array(100).keys()].find((k) => !navi.has(k))!
-    v = await spara(chiama, io, v, acqua)
-    expect(v.colpiMiei).toHaveLength(1)
-    expect(v.colpiSubiti).toHaveLength(1)
-    expect(v.tuoTurno).toBe(true)
+    expect((await chiama('POST', '/battaglia/classificata', io)).status).toBe(404)
+    expect((await chiama('GET', '/battaglia/summary', io)).status).toBe(404)
+    expect((await chiama('GET', '/leaderboard/battaglia?scope=all', io)).status).toBe(404)
+    const lobby = (await chiama<LobbyBattaglia>('GET', '/battaglia/lobby', io)).dati
+    expect('classificata' in lobby).toBe(false)
   })
 
-  it('affondando tutto si vince, e i punti contano i colpi in acqua', async () => {
-    const { chiama, giocatore } = banco()
+  it('una classificata rimasta aperta si finisce come una partita contro il computer, senza punti', async () => {
+    const { chiama, giocatore, db } = banco()
     const io = await giocatore('bruno')
-    let v = (await chiama<VistaBattaglia>('POST', '/battaglia/classificata', io)).dati
-    v = await disponi(chiama, io, v)
+    const flottaComputer = disponiACaso(mulberry32(11))
+    const adesso = new Date().toISOString()
+    db.sqlite
+      .prepare(
+        `INSERT INTO battaglia_partite
+           (id, modalita, giocatore_a, giocatore_b, livello, seme, puzzle_number, stato, flotta_b, colpi, versione,
+            created_at, updated_at)
+         VALUES ('bat_vecchia', 'classificata', ?, NULL, 'facile', 5, 1, 'disposizione', ?, '[]', 0, ?, ?)`,
+      )
+      .run(io.id, JSON.stringify(flottaComputer), adesso, adesso)
 
-    const bersagli = flottaDelGiorno(today().puzzleNumber).flatMap(caselleDellaNave)
-    const navi = new Set(bersagli)
-    const acque = [...Array(100).keys()].filter((k) => !navi.has(k)).slice(0, 4)
-    for (const k of [...acque, ...bersagli]) {
+    let v = (await chiama<VistaBattaglia>('GET', '/battaglia/partite/bat_vecchia', io)).dati
+    expect(v).toMatchObject({ modalita: 'classificata', livello: 'facile', stato: 'disposizione' })
+    v = await disponi(chiama, io, v)
+    for (const k of flottaComputer.flatMap(caselleDellaNave)) {
       v = await spara(chiama, io, v, k)
       if (v.stato === 'finita') break
     }
-    expect(v.stato).toBe('finita')
-    expect(v.vincitore).toBe('io')
-    expect(v.flottaNemica).not.toBeNull()
-    const atteso = puntiBattaglia({ vinta: true, colpi: 21, aSegno: 17 })
-    expect(atteso).toBe(83)
-    expect(v.punti).toBe(atteso)
-
-    const classifica = (await chiama<BattagliaLeaderboard>('GET', '/leaderboard/battaglia?scope=today', io)).dati
-    expect(classifica.rows[0]).toMatchObject({
-      nickname: 'bruno',
-      punti: 83,
-      vinte: 1,
-      giornate: 1,
-      colpi: 21,
-      oggi: 83,
-    })
-
-    const lobby = (await chiama<LobbyBattaglia>('GET', '/battaglia/lobby', io)).dati
-    expect(lobby.classificata).toMatchObject({ stato: 'finita', punti: 83, vinta: true, colpi: 21 })
-  })
-
-  it('arrendersi vale due punti per ogni casella colpita', async () => {
-    const { chiama, giocatore } = banco()
-    const io = await giocatore('carla')
-    let v = (await chiama<VistaBattaglia>('POST', '/battaglia/classificata', io)).dati
-    v = await disponi(chiama, io, v)
-    const bersagli = flottaDelGiorno(today().puzzleNumber).flatMap(caselleDellaNave)
-    v = await spara(chiama, io, v, bersagli[0])
-    v = await spara(chiama, io, v, bersagli[1])
-    const resa = (await chiama<VistaBattaglia>('POST', `/battaglia/partite/${v.id}/resa`, io)).dati
-    expect(resa).toMatchObject({ stato: 'finita', vincitore: 'avversario', motivo: 'resa', punti: 4 })
+    expect(v).toMatchObject({ stato: 'finita', vincitore: 'io' })
+    const riga = db.sqlite.prepare(`SELECT punti FROM battaglia_partite WHERE id = 'bat_vecchia'`).get()
+    expect(riga?.punti).toBeNull()
   })
 })
 
@@ -115,7 +75,7 @@ describe('la partita libera contro il computer', () => {
     const io = await giocatore('dario')
     const prima = await chiama<VistaBattaglia>('POST', '/battaglia/computer', io, { livello: 'normale' })
     expect(prima.status).toBe(201)
-    expect(prima.dati).toMatchObject({ modalita: 'computer', livello: 'normale', punti: null })
+    expect(prima.dati).toMatchObject({ modalita: 'computer', livello: 'normale' })
 
     // Non ancora cominciata: si riusa, col livello nuovo.
     const riusata = (await chiama<VistaBattaglia>('POST', '/battaglia/computer', io, { livello: 'difficile' })).dati
@@ -134,7 +94,7 @@ describe('la partita libera contro il computer', () => {
     expect((await chiama('POST', '/battaglia/computer', io, { livello: 'impossibile' })).status).toBe(400)
   })
 
-  it('le partite contro il computer non entrano in classifica e non rendono occupati', async () => {
+  it('le partite contro il computer non rendono occupati', async () => {
     const { chiama, giocatore } = banco()
     const io = await giocatore('elena')
     const altro = await giocatore('franco')
@@ -143,8 +103,6 @@ describe('la partita libera contro il computer', () => {
     await chiama('POST', '/presenza', io, { attivita: 'battaglia' })
     const lobby = (await chiama<LobbyBattaglia>('GET', '/battaglia/lobby', altro)).dati
     expect(lobby.giocatori.find((g) => g.nickname === 'elena')?.occupato).toBe(false)
-    const classifica = (await chiama<BattagliaLeaderboard>('GET', '/leaderboard/battaglia?scope=all', io)).dati
-    expect(classifica.rows).toEqual([])
   })
 })
 

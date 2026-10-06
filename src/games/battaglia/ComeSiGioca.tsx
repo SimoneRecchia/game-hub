@@ -3,7 +3,6 @@ import { Fuoco } from './Mare'
 import './Mare.css'
 import { FLOTTA } from '@shared/battaglia'
 import { LINK_SCADENZA_MS } from '@shared/config'
-import { ACQUE_PER_PUNTO, PUNTI_PER_COLPITA, TETTI } from '@shared/punti'
 import '@/games/cruciverba/ComeSiGioca.css'
 
 const ore = (ms: number) => Math.round(ms / 3_600_000)
@@ -59,23 +58,6 @@ export function ComeSiGiocaBattaglia({ open, onClose }: { open: boolean; onClose
               <span>
                 <strong>Affondata</strong>: tutta la nave è a fondo.
               </span>
-            </li>
-          </ul>
-        </section>
-
-        <section className="cru-aiuto__sezione">
-          <h3 className="cru-aiuto__titolo">Classificata e libera</h3>
-          <ul className="cru-aiuto__elenco">
-            <li>
-              <strong>Classificata.</strong> Una al giorno, contro il computer, con la stessa flotta per tutti.
-            </li>
-            <li>
-              <strong>Punti.</strong> Se vinci, {TETTI.battaglia} punti meno 1 ogni {ACQUE_PER_PUNTO} colpi in acqua. Se
-              perdi,{' '}
-              {PUNTI_PER_COLPITA} punti per casella colpita.
-            </li>
-            <li>
-              <strong>Libera.</strong> Contro il computer o un amico. Non conta per la classifica.
             </li>
           </ul>
         </section>

@@ -13,8 +13,6 @@ import {
 import {
   casoDelColpo,
   colpoDelComputer,
-  flottaDelGiorno,
-  semeDelGiorno,
   type ColpoNoto,
   type LivelloBattaglia,
 } from '../battaglia-computer'
@@ -35,16 +33,6 @@ function affonda(flotta: Nave[], livello: LivelloBattaglia, seme: number) {
   }
   return colpi
 }
-
-describe('la flotta del giorno', () => {
-  it('e’ valida, uguale per tutti e diversa da un giorno all’altro', () => {
-    expect(flottaValida(flottaDelGiorno(29)).ok).toBe(true)
-    expect(flottaDelGiorno(29)).toEqual(flottaDelGiorno(29))
-    expect(flottaDelGiorno(30)).not.toEqual(flottaDelGiorno(29))
-    expect(semeDelGiorno(29)).toBe(semeDelGiorno(29))
-    expect(semeDelGiorno(30)).not.toBe(semeDelGiorno(29))
-  })
-})
 
 describe('il computer della battaglia navale', () => {
   it('non spara mai due volte nella stessa casella e affonda sempre tutto', () => {
@@ -95,10 +83,11 @@ describe('il computer della battaglia navale', () => {
     }
   })
 
-  it('a parità di colpi ricevuti fa le stesse scelte: e’ lo stesso per tutti', () => {
-    const flotta = flottaDelGiorno(40)
-    const a = affonda(flotta, 'facile', semeDelGiorno(40))
-    const b = affonda(flotta, 'facile', semeDelGiorno(40))
+  it('con lo stesso seme, a parità di colpi ricevuti, fa le stesse scelte', () => {
+    const flotta = disponiACaso(mulberry32(40))
+    expect(flottaValida(flotta).ok).toBe(true)
+    const a = affonda(flotta, 'facile', 0x5eed_0040)
+    const b = affonda(flotta, 'facile', 0x5eed_0040)
     expect(a).toEqual(b)
   })
 })

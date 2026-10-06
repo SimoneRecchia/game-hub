@@ -7,9 +7,7 @@ import {
   type Nave,
 } from '../../shared/battaglia'
 import { LIVELLI_BATTAGLIA, type LivelloBattaglia } from '../../shared/battaglia-computer'
-import { msToNextPuzzle } from '../../shared/daily'
 import type {
-  BattagliaSummary,
   InvitoConLink,
   LinkBattaglia,
   LobbyBattaglia,
@@ -18,13 +16,11 @@ import type {
 import type { AppEnv } from '../types'
 import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
-import { today } from '../lib/wordleStore'
 import {
   accettaLink,
   accettaSfida,
   altro,
   annullaLink,
-  apriClassificata,
   colpiDelLato,
   colpiDi,
   colpoDelComputerIn,
@@ -44,20 +40,17 @@ import {
   partitaBreve,
   partitaComputerAperta,
   partitaPerId,
-  puntiDellaClassificata,
   reclamo,
   recordControComputer,
   rivincitaDi,
   recordDi,
   salvaPartita,
   sfideMandate,
-  statoClassificata,
   vistaPer,
   type CambiPartita,
   type Lato,
   type PartitaRow,
 } from '../lib/battagliaStore'
-import { riepilogoBattaglia } from '../lib/riepiloghi'
 import { invitoQuizConLink } from '../lib/quizSfideStore'
 import { invitoIndovinaConLink } from '../lib/indovinaStore'
 import { invitoNomiConLink } from '../lib/nomiSfideStore'
@@ -112,16 +105,9 @@ async function rispondi(c: Context<AppEnv>, row: PartitaRow, io: Lato, stato = 2
   return c.json<VistaBattaglia>(await vistaPer(c.env.DB, row, io, Date.now()), stato as 200)
 }
 
-/**
- * I cambi di una partita che finisce: chi vince, perché, e — nella
- * classificata — i punti, contati sulla partita come sarà dopo la scrittura.
- */
-function fine(row: PartitaRow, cambi: CambiPartita, vincitore: Lato, motivo: 'flotta' | 'resa' | 'assenza'): CambiPartita {
-  const finita: CambiPartita = { ...cambi, stato: 'finita', vincitore, motivo }
-  if (row.modalita === 'classificata') {
-    finita.punti = puntiDellaClassificata({ ...row, ...finita } as PartitaRow)
-  }
-  return finita
+/** I cambi di una partita che finisce: chi vince, e perché. */
+function fine(cambi: CambiPartita, vincitore: Lato, motivo: 'flotta' | 'resa' | 'assenza'): CambiPartita {
+  return { ...cambi, stato: 'finita', vincitore, motivo }
 }
 
 export const battagliaRoutes = new Hono<AppEnv>()
@@ -130,19 +116,18 @@ export const battagliaRoutes = new Hono<AppEnv>()
 
   /**
    * La sala: chi e' online, le sfide mandate, la partita aperta con un amico e
-   * quella col computer, l'invito col link, la classificata di oggi, i record.
+   * quella col computer, l'invito col link, i record.
    */
   .get('/lobby', async (c) => {
     const db = c.env.DB
     const io = c.get('player').id
     const adesso = Date.now()
-    const [giocatori, inviti, aperta, computer, link, classificata, record, controComputer] = await Promise.all([
+    const [giocatori, inviti, aperta, computer, link, record, controComputer] = await Promise.all([
       giocatoriOnline(db, io, adesso),
       sfideMandate(db, io, adesso),
       partitaAperta(db, io),
       partitaComputerAperta(db, io),
       linkAttivo(db, io, adesso),
-      statoClassificata(db, io, today().puzzleNumber, msToNextPuzzle()),
       recordDi(db, io),
       recordControComputer(db, io),
     ])
@@ -153,25 +138,9 @@ export const battagliaRoutes = new Hono<AppEnv>()
       partita: aperta && lato ? await partitaBreve(db, aperta, lato) : null,
       computer: computer ? await partitaBreve(db, computer, 'a') : null,
       link,
-      classificata,
       ...record,
       controComputer,
     })
-  })
-
-  /** Per la card dell'hub: di sola lettura, come gli altri riepiloghi. */
-  .get('/summary', async (c) =>
-    c.json<BattagliaSummary>(await riepilogoBattaglia(c.env.DB, c.get('player').id)),
-  )
-
-  /**
-   * La classificata di oggi: contro il computer, con la sua flotta uguale per
-   * tutti. Aperta alla prima richiesta, una sola al giorno; da qui in poi e' una
-   * partita come le altre, al suo indirizzo.
-   */
-  .post('/classificata', async (c) => {
-    const row = await apriClassificata(c.env.DB, c.get('player').id, today().puzzleNumber)
-    return rispondi(c, row, 'a')
   })
 
   /** Una partita libera contro il computer, al livello scelto. */
@@ -326,12 +295,12 @@ export const battagliaRoutes = new Hono<AppEnv>()
 
     let cambi: CambiPartita = { colpi: JSON.stringify(colpi) }
     if (affondata(provvisoria, io)) {
-      cambi = fine(row, cambi, io, 'flotta')
+      cambi = fine(cambi, io, 'flotta')
     } else if (controComputer(row)) {
       colpi.push(colpoDelComputerIn(provvisoria))
       provvisoria = { ...row, colpi: JSON.stringify(colpi) }
       cambi = { colpi: JSON.stringify(colpi) }
-      if (affondata(provvisoria, 'b')) cambi = fine(row, cambi, 'b', 'flotta')
+      if (affondata(provvisoria, 'b')) cambi = fine(cambi, 'b', 'flotta')
     }
 
     const dopo = await salvaPartita(c.env.DB, row, cambi, Date.now())
@@ -368,11 +337,11 @@ export const battagliaRoutes = new Hono<AppEnv>()
     return c.json({ invitoId }, 201)
   })
 
-  /** Abbandona: vince l'altro. Nella classificata valgono i colpi a segno fatti fin lì. */
+  /** Abbandona: vince l'altro. */
   .post('/partite/:id/resa', async (c) => {
     const { row, io } = await partitaMia(c)
     if (row.stato === 'finita') return rispondi(c, row, io)
-    const dopo = await salvaPartita(c.env.DB, row, fine(row, {}, altro(io), 'resa'), Date.now())
+    const dopo = await salvaPartita(c.env.DB, row, fine({}, altro(io), 'resa'), Date.now())
     return rispondi(c, dopo, io)
   })
 
@@ -386,7 +355,7 @@ export const battagliaRoutes = new Hono<AppEnv>()
     if (!reclamo(row, io, Date.now()).puoi) {
       fail(409, 'ANCORA_PRESTO', 'L’avversario ha ancora tempo.')
     }
-    const dopo = await salvaPartita(c.env.DB, row, fine(row, {}, io, 'assenza'), Date.now())
+    const dopo = await salvaPartita(c.env.DB, row, fine({}, io, 'assenza'), Date.now())
     return rispondi(c, dopo, io)
   })
 

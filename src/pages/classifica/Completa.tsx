@@ -22,7 +22,16 @@ import type { GiocoClassificato, GiocoFortuna, LeaderboardScope } from '@shared/
 import { ContiDi } from './Conti'
 import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
-import { GIOCHI_FORTUNA, NOMI_CLASSIFICHE, ORDINE_GIOCHI, vociDi, type Risposta, type Voce } from './voci'
+import {
+  GIOCHI_FORTUNA,
+  NOMI_CLASSIFICHE,
+  NOMI_GENERALE,
+  ORDINE_GENERALE,
+  vociDi,
+  type GiocoDellaGenerale,
+  type Risposta,
+  type Voce,
+} from './voci'
 
 /** Quanto vale ogni risposta giusta della classificata del quiz. */
 const PUNTI_PER_GIUSTA = (PUNTI_QUIZ - PUNTI_BASE_QUIZ) / DOMANDE_PER_PARTITA
@@ -33,7 +42,6 @@ const LEDE: Record<ChiaveClassifica, string> = {
   scarabeo: `Pareggiare il computer vale ${TETTI.scarabeo} punti.`,
   cruciverba: `${TETTI.cruciverba} punti se lo completi senza aiuti.`,
   sudoku: `${TETTI.sudoku} punti se lo risolvi senza aiuti.`,
-  battaglia: 'Meno colpi, più punti.',
   quiz: `${PUNTI_BASE_QUIZ} punti per aver giocato, ${PUNTI_PER_GIUSTA} per ogni risposta giusta.`,
   tris: '10 punti per la serie, 8 per ogni vittoria, 4 per ogni patta.',
   nomi: `Fino a ${TETTI.nomi} punti, che valgono il giorno dopo: di più per le risposte date da pochi.`,
@@ -264,16 +272,16 @@ function BarraGiochi({
   totale,
   inCima,
 }: {
-  punti: Record<GiocoClassificato, number>
+  punti: Record<GiocoDellaGenerale, number>
   fortuna?: Record<GiocoFortuna, number>
   totale: number
   inCima: number
 }) {
   const lunghezza = inCima > 0 ? Math.max(6, (100 * totale) / inCima) : 100
-  const giochi = ORDINE_GIOCHI.filter((g) => punti[g] > 0)
+  const giochi = ORDINE_GENERALE.filter((g) => punti[g] > 0)
   const azzardo = GIOCHI_FORTUNA.filter(([g]) => (fortuna?.[g] ?? 0) !== 0)
   const voci = [
-    ...giochi.map((g) => `${NOMI_CLASSIFICHE[g]} ${punti[g]}`),
+    ...giochi.map((g) => `${NOMI_GENERALE[g]} ${punti[g]}`),
     ...azzardo.map(([g, nome]) => `${nome} ${conSegno(fortuna![g])}`),
   ]
   return (
