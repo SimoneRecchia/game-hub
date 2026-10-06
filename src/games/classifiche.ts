@@ -11,7 +11,6 @@
 import { ROTTE } from '@/app/rotte'
 import { dateForPuzzleNumber } from '@shared/daily'
 import type {
-  BattagliaLeaderboard,
   ChiaveClassifica,
   CruciverbaLeaderboard,
   FortunaLeaderboard,
@@ -62,7 +61,6 @@ type Qualunque =
   | ScarabeoLeaderboard
   | CruciverbaLeaderboard
   | SudokuLeaderboard
-  | BattagliaLeaderboard
   | QuizLeaderboard
   | GeneraleLeaderboard
   | FortunaLeaderboard

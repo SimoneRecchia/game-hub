@@ -128,8 +128,8 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
           <Marchio lato={96} />
           <h1 className="welcome__title">Giochi</h1>
           <p className="welcome__lede">
-            Wordle, Scarabeo, Cruciverba, Sudoku, Battaglia navale, Quiz e Tris, ogni giorno uguali per tutti. E
-            scacchi, dama, Forza 4, go e Indovina chi, con gli amici.
+            Wordle, Scarabeo, Cruciverba, Sudoku, Quiz, Tris e Nomi, cose e città, ogni giorno uguali per tutti. E
+            battaglia navale, scacchi, dama, Forza 4, go e Indovina chi, con gli amici.
           </p>
         </header>
 

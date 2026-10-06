@@ -704,21 +704,6 @@
   letter-spacing: var(--tracking-tight);
 }
 
-.bat-fine__punti {
-  margin: 2px 0;
-  font-family: var(--font-rounded);
-  font-size: var(--text-large-title);
-  font-weight: 800;
-  line-height: 1.05;
-  letter-spacing: var(--tracking-tight);
-}
-
-.bat-fine__su {
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  opacity: 0.8;
-}
-
 .bat-fine__perche,
 .bat-fine__conto {
   margin: 0;

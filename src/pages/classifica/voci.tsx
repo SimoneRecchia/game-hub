@@ -9,7 +9,6 @@ import { NOME_BLACKJACK } from '@shared/blackjack'
 import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
 import type {
-  BattagliaLeaderboard,
   CruciverbaLeaderboard,
   FortunaLeaderboard,
   GeneraleLeaderboard,
@@ -35,7 +34,6 @@ export type Risposta =
   | ScarabeoLeaderboard
   | CruciverbaLeaderboard
   | SudokuLeaderboard
-  | BattagliaLeaderboard
   | QuizLeaderboard
   | TrisLeaderboard
   | NomiLeaderboard
@@ -55,12 +53,12 @@ export interface Voce {
   /** A destra del nome: la serie, gli assist, "in corso". */
   segni?: ReactNode
   /** Nella generale, i punti di ogni gioco: la barra sotto il nome. */
-  composizione?: Record<GiocoClassificato, number>
+  composizione?: Record<GiocoDellaGenerale, number>
   /** Nella generale, quel che hanno dato o tolto i giochi della Fortuna: e' gia' nei punti. */
   fortuna?: Record<GiocoFortuna, number>
   /** I punti si leggono con il segno: nella Fortuna si puo' andare sotto zero. */
   conSegno?: boolean
-  dettaglio: { etichetta: string; valore: string; forte?: boolean; gioco?: GiocoClassificato | GiocoFortuna }[]
+  dettaglio: { etichetta: string; valore: string; forte?: boolean; gioco?: GiocoDellaGenerale | GiocoFortuna }[]
   nota?: string
 }
 
@@ -70,7 +68,6 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   scarabeo: 'Scarabeo',
   cruciverba: 'Cruciverba',
   sudoku: 'Sudoku',
-  battaglia: 'Battaglia navale',
   quiz: 'Quiz',
   tris: 'Tris',
   nomi: 'Nomi, cose e città',
@@ -85,16 +82,20 @@ export const GIOCHI_FORTUNA: ReadonlyArray<[GiocoFortuna, string]> = [
 ]
 
 /** I giochi, nell'ordine in cui si mostrano. */
-export const ORDINE_GIOCHI: GiocoClassificato[] = [
-  'wordle',
-  'scarabeo',
-  'cruciverba',
-  'sudoku',
-  'battaglia',
-  'quiz',
-  'nomi',
-  'tris',
-]
+export const ORDINE_GIOCHI: GiocoClassificato[] = ['wordle', 'scarabeo', 'cruciverba', 'sudoku', 'quiz', 'nomi', 'tris']
+
+/**
+ * Quel che compone un totale della generale: le classificate di adesso, e la
+ * battaglia navale nei periodi in cui aveva la sua. Si mostra solo dove c'e'.
+ */
+export type GiocoDellaGenerale = GiocoClassificato | 'battaglia'
+
+export const ORDINE_GENERALE: GiocoDellaGenerale[] = [...ORDINE_GIOCHI, 'battaglia']
+
+export const NOMI_GENERALE: Record<GiocoDellaGenerale, string> = {
+  ...(NOMI_CLASSIFICHE as Record<GiocoClassificato, string>),
+  battaglia: 'Battaglia navale',
+}
 
 const partite = (n: number) => `${formatNumber(n)} ${n === 1 ? 'partita' : 'partite'}`
 const giornate = (n: number) => `${formatNumber(n)} ${n === 1 ? 'giornata' : 'giornate'}`
@@ -131,7 +132,8 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
   switch (chiave) {
     case 'generale':
       return (risposta as GeneraleLeaderboard).rows.map((r) => {
-        const giochi = ORDINE_GIOCHI.filter((g) => r.perGioco[g] > 0).length
+        const composizione: Record<GiocoDellaGenerale, number> = { ...r.perGioco, battaglia: r.battaglia }
+        const giochi = ORDINE_GENERALE.filter((g) => composizione[g] > 0).length
         return {
           ...r,
           sotto:
@@ -141,7 +143,7 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
                 : 'Non finita'
               : `${partite(r.partite)} · ${giochi} ${giochi === 1 ? 'gioco' : 'giochi'}`,
           breve: partite(r.partite),
-          composizione: r.perGioco,
+          composizione,
           fortuna: { ruota: r.ruota, slot: r.slot, blackjack: r.blackjack },
           segni:
             r.assist > 0 ? (
@@ -152,6 +154,9 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             ) : undefined,
           dettaglio: [
             ...ORDINE_GIOCHI.map((g) => ({ etichetta: NOMI_CLASSIFICHE[g], valore: formatNumber(r.perGioco[g]), gioco: g })),
+            ...(r.battaglia !== 0
+              ? [{ etichetta: NOMI_GENERALE.battaglia, valore: formatNumber(r.battaglia), gioco: 'battaglia' as const }]
+              : []),
             ...GIOCHI_FORTUNA.filter(([g]) => r[g] !== 0).map(([g, nome]) => ({
               etichetta: nome,
               valore: conSegno(r[g]),
@@ -282,26 +287,6 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
           { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
         ],
         nota: 'A pari punti conta il tempo.',
-      }))
-
-    case 'battaglia':
-      return (risposta as BattagliaLeaderboard).rows.map((r) => ({
-        ...r,
-        sotto:
-          r.giornate === 0
-            ? r.inCorso
-              ? 'In corso'
-              : 'Non finita'
-            : `${r.vinte} ${r.vinte === 1 ? 'vinta' : 'vinte'} su ${r.giornate}${r.vinte > 0 ? ` · ${r.colpi} colpi` : ''}`,
-        breve: r.giornate === 0 ? (r.inCorso ? 'in corso' : 'non finita') : `${r.vinte}/${r.giornate} vinte`,
-        segni: r.inCorso ? inCorso : undefined,
-        dettaglio: [
-          { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
-          { etichetta: 'Battaglie', valore: formatNumber(r.giornate) },
-          { etichetta: 'Vinte', valore: formatNumber(r.vinte) },
-          { etichetta: 'Colpi nelle vittorie', valore: formatNumber(r.colpi) },
-        ],
-        nota: 'A pari punti contano le vittorie, poi i colpi.',
       }))
 
     case 'quiz':

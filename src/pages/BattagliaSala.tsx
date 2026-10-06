@@ -3,6 +3,7 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
+import { Copertina } from '@/components/Copertina'
 import { Elenco, Riga, Sezione, Tacche, Vuoto } from '@/components/Elementi'
 import { IconCopy, IconInfo, IconShare } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
@@ -52,9 +53,10 @@ function salvaContro(c: Contro): void {
 }
 
 /**
- * La battaglia libera: contro il computer a tre livelli, o contro un amico. Un
- * interruttore sceglie quale, come nelle sale dei giochi da tavolo, e si vede
- * solo quel che serve a quella.
+ * La sala della battaglia navale, che e' un gioco da tavolo: contro il
+ * computer a tre livelli, o contro un amico. Un interruttore sceglie quale,
+ * come nelle sale degli altri giochi da tavolo, e si vede solo quel che serve
+ * a quella.
  *
  * Un amico si sfida in due modi. Se e' online, dall'elenco: gli arriva la sfida
  * in qualunque schermata sia. Se no, con un **link**: lo si manda come si
@@ -62,7 +64,7 @@ function salvaContro(c: Contro): void {
  * nella partita. In tutti e due i casi, quando l'altro accetta, questa pagina
  * porta nella partita da sola.
  */
-export default function BattagliaLibera() {
+export default function BattagliaSala() {
   const { vai } = useNavigazione()
   const toast = useToast()
   const [dati, setDati] = useState<LobbyBattaglia | null>(null)
@@ -183,6 +185,7 @@ export default function BattagliaLibera() {
     <Pagina
       titolo="Battaglia navale"
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
+      eroe={<Copertina gioco="battaglia" formato="eroe" transizione="copertina-battaglia" />}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
           <IconInfo size={21} />

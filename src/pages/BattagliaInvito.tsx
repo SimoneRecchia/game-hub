@@ -49,7 +49,7 @@ export default function BattagliaInvito() {
   }, [codice, vai])
 
   return (
-    <Pagina titolo="Invito" intera indietro={{ a: ROTTE.libera('battaglia'), etichetta: 'Battaglia' }}>
+    <Pagina titolo="Invito" intera indietro={{ a: ROTTE.battaglia, etichetta: 'Battaglia' }}>
       {errore ? (
         <Vuoto
           icona={
@@ -62,7 +62,7 @@ export default function BattagliaInvito() {
           titolo={errore.codice === 'LINK_TUO' ? 'È il tuo invito' : 'L’invito non vale più'}
           testo={errore.codice === 'LINK_TUO' ? 'Mandalo a chi vuoi sfidare.' : errore.testo}
           azione={
-            <Button variant="tinted" onClick={() => vai(ROTTE.libera('battaglia'), { replace: true })}>
+            <Button variant="tinted" onClick={() => vai(ROTTE.battaglia, { replace: true })}>
               Vai alla battaglia navale
             </Button>
           }

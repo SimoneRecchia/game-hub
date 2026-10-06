@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { CASELLE, CASELLE_FLOTTA } from '../battaglia'
 import { COSTO_ERRORE, COSTO_SVELATA, PUNTI_COMPLETO, punteggio as puntiCruciverba } from '../cruciverba'
 import {
   MASSIMI,
   RIFERIMENTO_SCARABEO,
   TETTI,
-  puntiBattaglia,
   puntiQuiz,
   puntiScarabeo,
   puntiSudoku,
@@ -32,13 +30,13 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(Object.keys(MASSIMI).sort()).toEqual(Object.keys(TETTI).sort())
   })
 
-  it('sono otto classificate, e valgono ottocento: cento a gioco in media', () => {
-    expect(Object.keys(TETTI)).toHaveLength(8)
-    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(800)
+  it("sono sette classificate, e valgono settecentoquindici: un po' piu' di cento a gioco", () => {
+    expect(Object.keys(TETTI)).toHaveLength(7)
+    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(715)
   })
 
   it('i tetti seguono il tempo che chiede ogni gioco, ma nessuno vale piu’ di tre volte un altro', () => {
-    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'battaglia', 'quiz', 'wordle', 'nomi', 'tris'] as const
+    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'quiz', 'wordle', 'nomi', 'tris'] as const
     for (let i = 1; i < ordine.length; i += 1) expect(TETTI[ordine[i]]).toBeLessThanOrEqual(TETTI[ordine[i - 1]])
     const valori = Object.values(TETTI)
     expect(Math.max(...valori) / Math.min(...valori)).toBeLessThanOrEqual(3.2)
@@ -56,10 +54,6 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(puntiScarabeo(0, 273)).toBe(0)
     // Senza riferimento del giorno si usa quello di ripiego, non una divisione per zero.
     expect(puntiScarabeo(RIFERIMENTO_SCARABEO, 0)).toBe(TETTI.scarabeo)
-  })
-
-  it('nella battaglia la vittoria perfetta vale il tetto', () => {
-    expect(puntiBattaglia({ vinta: true, colpi: CASELLE_FLOTTA, aSegno: CASELLE_FLOTTA })).toBe(TETTI.battaglia)
   })
 
   it('nel cruciverba il completo senza aiuti vale il tetto', () => {
@@ -102,15 +96,6 @@ describe('una giornata storta si recupera', () => {
 
   it('nello Scarabeo metà del computer vale metà del tetto', () => {
     expect(puntiScarabeo(150, 300)).toBe(TETTI.scarabeo / 2)
-  })
-
-  it('nella battaglia vincere è sempre meglio che perdere, anche col mare intero', () => {
-    const vittoriaPeggiore = puntiBattaglia({ vinta: true, colpi: CASELLE, aSegno: CASELLE_FLOTTA })
-    const sconfittaMigliore = puntiBattaglia({ vinta: false, colpi: CASELLE, aSegno: CASELLE_FLOTTA - 1 })
-    expect(vittoriaPeggiore).toBeGreaterThan(sconfittaMigliore)
-    expect(vittoriaPeggiore).toBeGreaterThanOrEqual(TETTI.battaglia / 2)
-    // Cinquanta colpi sono una partita giocata bene: vale piu' dell'ottanta per cento.
-    expect(puntiBattaglia({ vinta: true, colpi: 50, aSegno: CASELLE_FLOTTA })).toBeGreaterThan(0.8 * TETTI.battaglia)
   })
 
   it('nel cruciverba ogni aiuto costa poco, non tutto', () => {
