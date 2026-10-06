@@ -14,18 +14,14 @@ import { gameDate } from '@shared/daily'
 import type { AmicoOnline, GiocatoreBreve, GiocoDaTavolo } from '@shared/types'
 import './Libere.css'
 
-/**
- * Le libere dei giochi classificati: portano alla scelta della partita. Hanno la
- * stessa copertina delle carte delle Giornaliere, quindi niente transizione
- * condivisa.
- */
+/** Le libere dei giochi classificati: portano alla scelta della partita. */
 const LIBERE: ReadonlyArray<{ id: Gioco['id']; nome: string; a: string }> = GIOCHI.map((g) => ({
   id: g.id,
   nome: g.nome,
   a: ROTTE.libera(g.id),
 }))
 
-/** I giochi da tavolo, con la copertina che si allarga nella sala dove arrivano. */
+/** I giochi da tavolo: portano alla loro sala. */
 const DA_TAVOLO: ReadonlyArray<{ id: GiocoTavolo['id']; nome: string; a: string }> = GIOCHI_DA_TAVOLO.map((g) => ({
   id: g.id,
   nome: g.nome,
@@ -85,7 +81,7 @@ export default function Libere() {
         <ul className="libere__tessere">
           {DA_TAVOLO.map((l, i) => (
             <li key={l.id} className="entra" style={{ '--n': i + LIBERE.length + 2 } as CSSProperties}>
-              <Tessera id={l.id} nome={l.nome} a={l.a} transizione={`copertina-${l.id}`} />
+              <Tessera id={l.id} nome={l.nome} a={l.a} />
             </li>
           ))}
         </ul>
@@ -95,24 +91,14 @@ export default function Libere() {
 }
 
 /** Una tessera: la copertina e il nome, come le icone di un telefono, che galleggiano un poco. */
-function Tessera({
-  id,
-  nome,
-  a,
-  transizione,
-}: {
-  id: Gioco['id'] | GiocoDaTavolo
-  nome: string
-  a: string
-  transizione?: string
-}) {
+function Tessera({ id, nome, a }: { id: Gioco['id'] | GiocoDaTavolo; nome: string; a: string }) {
   return (
     <Collegamento
       to={a}
       className="libere-tessera"
       style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
     >
-      <Copertina gioco={id} formato="icona" transizione={transizione} />
+      <Copertina gioco={id} formato="icona" />
       <span className="libere-tessera__nome">{nome}</span>
     </Collegamento>
   )

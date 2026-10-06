@@ -1896,13 +1896,45 @@ indietro con il nome della schermata di prima, e `intera` per le schermate di
 gioco, che nascondono tab bar e barra laterale da sole (`body:has(.pagina--intera)`
 in `Shell.css`: una schermata non deve avvisare nessuno). Le navigazioni passano
 da `useNavigazione().vai` o da `Collegamento`, mai da `navigate` o `Link` nudi,
-perché e' lì che partono le transizioni: avanti, indietro, scheda, con le View
-Transitions dove ci sono. React Router aggiorna lo stato dentro una transizione
-di React, quindi `TransizioniProvider` fa aspettare la View Transition finché la
-rotta nuova e' montata (guarda la chiave della location), con un tetto di 700 ms.
+perché e' lì che partono i movimenti: avanti e indietro con le View Transitions
+dove ci sono, fra le schede un cambio immediato (vedi sotto). React Router
+aggiorna lo stato dentro una transizione di React, quindi `TransizioniProvider`
+fa aspettare la View Transition finché la rotta nuova e' montata (guarda la
+chiave della location), con un tetto di 700 ms.
 I bottoni a destra della barra stanno a dodici punti l'uno dall'altro
 (`.pagina__lato--destra`): a quattro, come a sinistra, si toccavano, e
 l'anello dell'avatar ci finiva sopra.
+
+**Fra le schede il cambio e' immediato, e una schermata ritrovata non
+rientra.** Al cambio di scheda c'era una dissolvenza, e a meta' si vedeva il
+fondo vuoto: sembrava che la pagina si ricaricasse. Ora e' come nella tab bar
+di iOS, la lente scivola e la pagina c'e'. Altre tre cose davano la stessa
+impressione. L'entrata della pagina per i browser senza View Transitions
+(`pagina-entra`) valeva con `html:not([data-transizione])`, e quando una
+transizione finiva e l'attributo se ne andava ripartiva: ogni pagina, appena
+arrivata, tornava trasparente e ricompariva. Adesso la decide la schermata
+quando si monta (`useEntrata`, con le regole in `src/app/movimenti.ts`), con
+una classe che non cambia piu', e un test vieta le regole legate all'assenza
+dell'attributo. Le entrate del contenuto (la cascata delle carte, l'eroe, il
+podio) ripartivano a ogni cambio di scheda e a ogni ritorno: le fa solo una
+schermata nuova, la prima dell'app o una che arriva avanti, e le altre hanno
+`pagina--ferma`, che le spegne ognuna nel suo foglio di stile. E la pagina
+nuova prendeva lo scorrimento di quella di prima, tanto che dal fondo delle
+Libere le Giornaliere si aprivano a meta': lo scorrimento lo tiene
+`TransizioniProvider`, dall'alto per una schermata nuova e dove la si era
+lasciata tornando indietro. Toccare la scheda gia' aperta riporta in cima.
+
+**Mentre la pagina scorre, la tab bar e' piena e le copertine stanno al loro
+posto.** Avanti e indietro la tab bar e' fotografata a parte, per restare
+ferma mentre la pagina scorre, e Safari ne disegnava lo sfocato come un
+rettangolo, senza gli angoli tondi: attorno alla capsula restava un riquadro,
+chiaro dove sotto c'era una carta. In quei momenti la capsula prende
+`--glass-pieno`, il vetro gia' mescolato al fondo, senza `backdrop-filter`. Le
+copertine dei giochi da tavolo avevano un nome di transizione, per allargarsi
+dalla tessera delle Libere all'eroe della sala: le sei tessere restavano a
+galla mentre la pagina scorreva via, e l'icona quadrata si stirava nel
+rettangolo dell'eroe. Ora i nomi di transizione sono solo della tab bar e
+della barra laterale, e un test lo controlla.
 
 **Le schede sono tre: le Libere, le Giornaliere e la Fortuna, in quest'ordine.**
 Le Giornaliere (`/`, il calendario) hanno le classificate di oggi, che sono la

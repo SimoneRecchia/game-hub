@@ -173,7 +173,8 @@ svg {
  *
  * avanti   la nuova entra da destra, la vecchia arretra di un terzo e si scurisce
  * indietro il contrario, con la vecchia sopra che esce a destra
- * scheda   una dissolvenza breve: fra le sezioni non c'e' un prima e un dopo
+ *
+ * Fra le schede non c'e' transizione: il cambio e' immediato, come in iOS.
  */
 ::view-transition-old(root),
 ::view-transition-new(root) {
@@ -201,15 +202,7 @@ html[data-transizione='indietro']::view-transition-new(root) {
   animation-name: vt-torna-da-sinistra;
 }
 
-html[data-transizione='scheda']::view-transition-old(root) {
-  animation: vt-sfuma 180ms var(--ease-out) both;
-}
-
-html[data-transizione='scheda']::view-transition-new(root) {
-  animation: vt-appare 260ms var(--ease-out) both;
-}
-
-/* Le copertine condivise si spostano da un posto all'altro con la stessa molla della pagina. */
+/* La barra in basso e quella laterale compaiono e spariscono con i tempi della pagina. */
 ::view-transition-group(*) {
   animation-duration: var(--dur-push);
   animation-timing-function: var(--ease-push);
@@ -241,19 +234,6 @@ html[data-transizione='scheda']::view-transition-new(root) {
   }
 }
 
-@keyframes vt-sfuma {
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes vt-appare {
-  from {
-    opacity: 0;
-    transform: scale(0.985);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
@@ -268,10 +248,20 @@ html[data-transizione='scheda']::view-transition-new(root) {
  * Gli elementi di un elenco che arrivano insieme entrano uno dopo l'altro, di
  * poco: `--n` e' la posizione. E' il dettaglio che fa sembrare viva una
  * schermata che si carica.
+ *
+ * Solo in una schermata nuova, pero'. In una ritrovata — tornando indietro, o
+ * da una scheda — `.pagina--ferma` (vedi `useEntrata`) mostra il contenuto
+ * dov'e': rifare l'entrata a ogni cambio di scheda dava l'aria di una pagina
+ * che si ricarica. Le altre entrate delle schermate (l'eroe, il podio, i
+ * giocatori) si fermano allo stesso modo, ognuna nel suo foglio di stile.
  */
 .entra {
   animation: entra 460ms var(--ease-push) both;
   animation-delay: calc(var(--n, 0) * 45ms);
+}
+
+.pagina--ferma .entra {
+  animation: none;
 }
 
 @keyframes entra {
