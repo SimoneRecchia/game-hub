@@ -31,11 +31,24 @@ export interface Player {
 /** Cosa il client deve sapere sulla configurazione, prima di disegnare la UI. */
 export interface AuthConfig {
   /**
-   * true se il codice via email e' richiesto per giocare. Quando e' false
-   * l'email viene comunque raccolta, perché serve al recupero password, ma non
-   * viene verificata.
+   * true se la posta parte: chi si registra conferma l'email con un codice, e
+   * si entra con il codice. Quando e' false (in locale, senza la chiave di
+   * Resend) l'account nasce confermato, e il codice per entrare arriva nella
+   * risposta, solo da localhost.
    */
   emailVerificationRequired: boolean
+}
+
+/**
+ * La risposta alla richiesta del codice per entrare: la stessa che l'account
+ * esista o no, perché dire "non c'e'" direbbe chi e' iscritto.
+ */
+export interface CodiceMandato {
+  ok: true
+  /** Quanto aspettare prima di chiederne un altro. */
+  cooldownSeconds: number
+  /** Solo in locale, senza la posta: il codice, che non si potrebbe leggere altrove. */
+  codiceDiProva?: string
 }
 
 /** Colore di una casella dopo la valutazione del server. */

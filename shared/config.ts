@@ -18,8 +18,6 @@ export const SESSION_TTL_DAYS = 365
 
 export const NICKNAME_MIN = 3
 export const NICKNAME_MAX = 16
-export const PASSWORD_MIN = 6
-export const PASSWORD_MAX = 128
 
 /** Nickname: lettere, numeri, underscore, punto e trattino. */
 export const NICKNAME_PATTERN = /^[a-zA-Z0-9._-]{3,16}$/
@@ -214,3 +212,9 @@ export const CODE_TTL_MINUTES = 15
 export const CODE_MAX_ATTEMPTS = 5
 /** Attesa minima fra due invii, per non trasformare il tasto in un megafono. */
 export const CODE_RESEND_COOLDOWN_SECONDS = 60
+/**
+ * Codici per entrare in un giorno, per account: oltre, non ne partono altri.
+ * Con cinque tentativi a codice e un codice al minuto, chi tira a indovinare
+ * proverebbe settemila combinazioni al giorno su un milione; cosi' cinquanta.
+ */
+export const CODE_LOGIN_PER_DAY = 10

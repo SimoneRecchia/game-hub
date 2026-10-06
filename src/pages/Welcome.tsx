@@ -1,6 +1,7 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
+import { CampoCodice } from '@/components/CampoCodice'
 import { Field } from '@/components/Field'
 import { Marchio } from '@/components/Marchio'
 import { SegmentedControl } from '@/components/SegmentedControl'
@@ -9,40 +10,45 @@ import { A_GIOCO } from '@/games/tavolo/nomi'
 import { useAuth } from '@/lib/auth'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
-import { EMAIL_PATTERN, NICKNAME_MAX, NICKNAME_MIN, PASSWORD_MIN } from '@shared/config'
-import { InsecureContextError } from '@shared/password'
+import { CODE_LENGTH, CODE_TTL_MINUTES, EMAIL_PATTERN, NICKNAME_MAX, NICKNAME_MIN } from '@shared/config'
 import type { InvitoConLink } from '@shared/types'
-import { ForgotPassword } from './ForgotPassword'
 import './Welcome.css'
 
 type Mode = 'login' | 'register'
-type Campo = 'nickname' | 'email' | 'password' | 'conferma' | null
+type Campo = 'nickname' | 'email' | 'identificativo' | 'codice' | null
 
 /**
- * Schermata di ingresso: accesso o registrazione.
+ * Schermata di ingresso: accesso o registrazione, senza password.
  *
- * In registrazione la password si scrive due volte e l'email e' obbligatoria:
- * serve al recupero, che prima non esisteva — chi dimenticava la password
- * perdeva l'account.
+ * Per entrare si scrive il nickname o l'email, e arriva un codice di sei cifre
+ * all'email dell'account. La schermata dice sempre che il codice e' partito,
+ * anche per un account che non c'e': dire il contrario direbbe chi e' iscritto.
+ * Per registrarsi bastano il nickname e l'email, che si conferma con un codice
+ * quando la posta e' attiva.
  *
  * Chi arriva da un **invito con un link** — a battaglia navale, a una sfida a
- * quiz, a una partita da tavolo — vede prima chi lo sta sfidando, e la schermata parte dalla
- * registrazione: e' quasi certamente la
- * prima volta che apre l'app. L'indirizzo resta quello dell'invito, quindi
- * appena entra la pagina dell'invito lo porta nella partita.
+ * quiz, a una partita da tavolo — vede prima chi lo sta sfidando, e la
+ * schermata parte dalla registrazione: e' quasi certamente la prima volta che
+ * apre l'app. L'indirizzo resta quello dell'invito, quindi appena entra la
+ * pagina dell'invito lo porta nella partita.
  */
 export default function Welcome({ invito = null }: { invito?: string | null }) {
-  const { login, register, config } = useAuth()
+  const { login, register, requestCode, config } = useAuth()
   const [mode, setMode] = useState<Mode>(invito ? 'register' : 'login')
   const [sfida, setSfida] = useState<InvitoConLink | null>(null)
   const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [conferma, setConferma] = useState('')
+  const [identificativo, setIdentificativo] = useState('')
+  /** Il codice e' partito: si aspetta che lo si scriva. */
+  const [inviato, setInviato] = useState(false)
+  const [codice, setCodice] = useState('')
+  /** Solo in locale, senza la posta: il codice che il server ha restituito. */
+  const [codiceDiProva, setCodiceDiProva] = useState<string | null>(null)
+  const [attesa, setAttesa] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [field, setField] = useState<Campo>(null)
   const [busy, setBusy] = useState(false)
-  const [recupero, setRecupero] = useState(false)
+  const campoCodice = useRef<HTMLInputElement>(null)
 
   const isRegister = mode === 'register'
 
@@ -59,11 +65,21 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
     }
   }, [invito])
 
+  // Il conto alla rovescia per chiederne un altro: un tasto che non va senza dire perché e' peggio di un numero.
+  useEffect(() => {
+    if (attesa <= 0) return
+    const id = window.setInterval(() => setAttesa((s) => Math.max(0, s - 1)), 1_000)
+    return () => window.clearInterval(id)
+  }, [attesa])
+
+  useEffect(() => {
+    if (inviato) campoCodice.current?.focus()
+  }, [inviato])
+
   function switchMode(next: Mode) {
     setMode(next)
     setError(null)
     setField(null)
-    setConferma('')
   }
 
   function errore(campo: Campo, testo: string) {
@@ -72,50 +88,82 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
     haptic('error')
   }
 
-  async function onSubmit(event: FormEvent) {
-    event.preventDefault()
+  /** L'errore del server sul campo giusto: il nickname, l'email, il codice. */
+  function erroreDalServer(err: unknown, altrimenti: string) {
+    haptic('error')
+    if (!(err instanceof ApiFetchError)) {
+      setError(altrimenti)
+      return
+    }
+    setError(err.message)
+    if (err.code.startsWith('NICKNAME')) setField('nickname')
+    else if (err.code.startsWith('EMAIL_') && err.code !== 'EMAIL_DISABLED') setField('email')
+    else if (err.code.startsWith('IDENTIFIER')) setField('identificativo')
+    else if (err.code.startsWith('CODE') || err.code === 'BAD_CODE_FORMAT') setField('codice')
+  }
+
+  async function chiediCodice() {
     setError(null)
     setField(null)
-
-    const name = nickname.trim()
-    if (name.length < NICKNAME_MIN || name.length > NICKNAME_MAX) {
-      return errore('nickname', `Il nickname deve avere fra ${NICKNAME_MIN} e ${NICKNAME_MAX} caratteri.`)
-    }
-    if (isRegister && !EMAIL_PATTERN.test(email.trim())) {
-      return errore('email', 'Questa email non sembra valida.')
-    }
-    if (password.length < PASSWORD_MIN) {
-      return errore('password', `La password deve avere almeno ${PASSWORD_MIN} caratteri.`)
-    }
-    // Il controllo sta qui e non solo sul server: e' un refuso di battitura,
-    // non serve un viaggio in rete per accorgersene.
-    if (isRegister && conferma !== password) {
-      return errore('conferma', 'Le due password non coincidono.')
-    }
-
+    if (identificativo.trim().length === 0) return errore('identificativo', 'Scrivi il nickname o l’email.')
     setBusy(true)
     try {
-      if (isRegister) await register(name, email.trim(), password)
-      else await login(name, password)
+      const risposta = await requestCode(identificativo)
       haptic('success')
+      setInviato(true)
+      setCodice('')
+      setAttesa(risposta.cooldownSeconds)
+      // Senza un codice nuovo (l'attesa fra due invii) vale ancora quello di prima.
+      setCodiceDiProva((prima) => risposta.codiceDiProva ?? prima)
     } catch (err) {
-      haptic('error')
-      if (err instanceof ApiFetchError) {
-        setError(err.message)
-        if (err.code.startsWith('NICKNAME')) setField('nickname')
-        else if (err.code.startsWith('EMAIL')) setField('email')
-        else if (err.code === 'BAD_CREDENTIALS') setField('password')
-      } else if (err instanceof InsecureContextError) {
-        setError(err.message)
-      } else {
-        setError(isRegister ? 'Non riesco a creare il profilo. Riprova.' : 'Non riesco a entrare. Riprova.')
-      }
+      erroreDalServer(err, 'Non riesco a mandare il codice. Riprova.')
     } finally {
       setBusy(false)
     }
   }
 
-  if (recupero) return <ForgotPassword onDone={() => setRecupero(false)} />
+  async function entra(valore: string) {
+    setError(null)
+    setField(null)
+    setBusy(true)
+    try {
+      await login(identificativo, valore)
+      haptic('success')
+    } catch (err) {
+      erroreDalServer(err, 'Non riesco a entrare. Riprova.')
+      setCodice('')
+      campoCodice.current?.focus()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function registrati() {
+    setError(null)
+    setField(null)
+    const name = nickname.trim()
+    if (name.length < NICKNAME_MIN || name.length > NICKNAME_MAX) {
+      return errore('nickname', `Il nickname deve avere fra ${NICKNAME_MIN} e ${NICKNAME_MAX} caratteri.`)
+    }
+    if (!EMAIL_PATTERN.test(email.trim())) return errore('email', 'Questa email non sembra valida.')
+    setBusy(true)
+    try {
+      await register(name, email.trim())
+      haptic('success')
+    } catch (err) {
+      erroreDalServer(err, 'Non riesco a creare il profilo. Riprova.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    if (isRegister) void registrati()
+    else if (inviato) {
+      if (codice.length === CODE_LENGTH) void entra(codice)
+    } else void chiediCodice()
+  }
 
   return (
     <div className="welcome">
@@ -175,95 +223,130 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
             ]}
           />
 
-          <div className="welcome__fields">
-            <Field
-              label="Nickname"
-              placeholder={isRegister ? 'come ti chiamiamo' : 'il tuo nickname'}
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              autoComplete="username"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              maxLength={NICKNAME_MAX}
-              required
-              error={field === 'nickname' ? error : null}
-            />
-
-            {isRegister && (
-              <Field
-                label="Email"
-                type="email"
-                placeholder="per recuperare l’account"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                inputMode="email"
-                required
-                error={field === 'email' ? error : null}
+          {isRegister ? (
+            <>
+              <div className="welcome__fields">
+                <Field
+                  label="Nickname"
+                  placeholder="come ti chiamiamo"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  maxLength={NICKNAME_MAX}
+                  required
+                  error={field === 'nickname' ? error : null}
+                />
+                <Field
+                  label="Email"
+                  type="email"
+                  placeholder="ti arriva il codice per entrare"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  inputMode="email"
+                  required
+                  error={field === 'email' ? error : null}
+                />
+              </div>
+              {error && !field && (
+                <p className="welcome__error" role="alert">
+                  {error}
+                </p>
+              )}
+              <Button type="submit" size="lg" fullWidth loading={busy}>
+                {busy ? 'Un attimo…' : sfida?.stato === 'attesa' ? 'Crea il profilo e gioca' : 'Crea il profilo'}
+              </Button>
+              {config?.emailVerificationRequired && (
+                <p className="welcome__note">Ti mandiamo un codice per confermare l’email.</p>
+              )}
+            </>
+          ) : !inviato ? (
+            <>
+              <div className="welcome__fields">
+                <Field
+                  label="Nickname o email"
+                  placeholder="come entri"
+                  value={identificativo}
+                  onChange={(e) => setIdentificativo(e.target.value)}
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  required
+                  error={field === 'identificativo' ? error : null}
+                />
+              </div>
+              {error && !field && (
+                <p className="welcome__error" role="alert">
+                  {error}
+                </p>
+              )}
+              <Button type="submit" size="lg" fullWidth loading={busy}>
+                {busy ? 'Un attimo…' : 'Mandami il codice'}
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="welcome__codice" role="status">
+                Se <strong>{identificativo.trim()}</strong> ha un account, il codice è partito per la sua
+                email. Vale {CODE_TTL_MINUTES} minuti.
+              </p>
+              <CampoCodice
+                id="codice-accesso"
+                ref={campoCodice}
+                etichetta="Codice per entrare"
+                valore={codice}
+                onCambia={(cifre) => {
+                  setCodice(cifre)
+                  setError(null)
+                  setField(null)
+                }}
+                onCompleto={(cifre) => void entra(cifre)}
+                disabled={busy}
+                errore={field === 'codice'}
               />
-            )}
-
-            <Field
-              label="Password"
-              type="password"
-              placeholder={isRegister ? `almeno ${PASSWORD_MIN} caratteri` : 'la tua password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              autoComplete={isRegister ? 'new-password' : 'current-password'}
-              minLength={PASSWORD_MIN}
-              required
-              error={field === 'password' ? error : null}
-            />
-
-            {isRegister && (
-              <Field
-                label="Ripeti"
-                type="password"
-                placeholder="la stessa password"
-                value={conferma}
-                onChange={(e) => setConferma(e.target.value)}
-                autoComplete="new-password"
-                required
-                error={field === 'conferma' ? error : null}
-              />
-            )}
-          </div>
-
-          {error && !field && (
-            <p className="welcome__error" role="alert">
-              {error}
-            </p>
-          )}
-
-          <Button type="submit" size="lg" fullWidth loading={busy}>
-            {busy
-              ? 'Un attimo…'
-              : isRegister
-                ? sfida?.stato === 'attesa'
-                  ? 'Crea il profilo e gioca'
-                  : 'Crea il profilo'
-                : 'Entra'}
-          </Button>
-
-          {!isRegister && (
-            <button
-              type="button"
-              className="welcome__link"
-              onClick={() => {
-                setError(null)
-                setRecupero(true)
-              }}
-            >
-              Password dimenticata
-            </button>
-          )}
-
-          {isRegister && config?.emailVerificationRequired && (
-            <p className="welcome__note">Ti mandiamo un codice per confermare l’email.</p>
+              {codiceDiProva && (
+                <p className="welcome__note">In locale, senza la posta: il codice è {codiceDiProva}.</p>
+              )}
+              {error && (
+                <p className="welcome__error" role="alert">
+                  {error}
+                </p>
+              )}
+              <Button type="submit" size="lg" fullWidth loading={busy} disabled={codice.length !== CODE_LENGTH}>
+                Entra
+              </Button>
+              <div className="welcome__azioni">
+                <button
+                  type="button"
+                  className="welcome__link"
+                  disabled={busy || attesa > 0}
+                  onClick={() => void chiediCodice()}
+                >
+                  {attesa > 0 ? `Rimanda il codice fra ${attesa}s` : 'Rimanda il codice'}
+                </button>
+                <button
+                  type="button"
+                  className="welcome__link welcome__link--tenue"
+                  onClick={() => {
+                    setInviato(false)
+                    setCodice('')
+                    setCodiceDiProva(null)
+                    setError(null)
+                    setField(null)
+                  }}
+                >
+                  Cambia nickname o email
+                </button>
+              </div>
+              <p className="welcome__note">Se non lo trovi, guarda nello spam.</p>
+            </>
           )}
         </form>
       </div>

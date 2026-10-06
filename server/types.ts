@@ -62,6 +62,7 @@ export interface PlayerRow {
   nickname: string
   nickname_lower: string
   display_name: string
+  /** Vuote dalla migrazione 0032: si entra con il codice, e nessuno le legge. */
   password_hash: string
   password_salt: string
   password_iterations: number
