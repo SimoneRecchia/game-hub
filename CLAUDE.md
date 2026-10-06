@@ -1088,7 +1088,16 @@ del banco, con la rastrelliera, il sabot a destra (la sinistra del banco, da
 dove si comincia) e gli scarti a sinistra; curvo dalla parte dei giocatori, con
 il bordo imbottito. Gli altri stanno due per lato, lungo il bordo, nell'ordine
 dei posti da sinistra; il mio posto e' sempre in fondo al centro, con il
-cerchio della puntata, e le mie carte le piu' grandi. Tutto si misura sul
+cerchio della puntata, e le mie carte le piu' grandi. Un posto degli altri si
+misura sull'avatar: e' lui a stare nel punto del posto, come il cerchio di un
+posto libero, e il resto gli sta attorno — le carte sopra, il nome sotto, la
+puntata dalla parte del centro (`PostoAltro`). Prima il posto si appendeva
+dall'alto, e con le carte un posto occupato scendeva rispetto a quelli liberi,
+con l'avatar spinto di lato dal nome. I punti stanno nel CSS (`data-posto`),
+perché dipendono dalla forma del panno: in verticale gli esterni stanno sotto
+gli scarti e il sabot e sopra le scritte, e su un panno piu' largo che alto
+(`@container (min-aspect-ratio: 3 / 2)`, il telefono di traverso e il
+computer) si aprono ad arco attorno a me. Tutto si misura sul
 tavolo, che e' un contenitore (`cqw`, `cqh`): le scritte ad arco hanno un tetto
 anche sull'altezza, perché di traverso un arco largo quanto il panno copriva le
 mie carte. Sotto le scritte c'e' la linea dell'assicurazione, che si accende

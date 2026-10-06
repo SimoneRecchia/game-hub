@@ -156,82 +156,103 @@ export function esitiDelPosto(p: PostoVistaBJ, banco: readonly string[], chiuso:
 }
 
 /**
+ * Da che parte del tavolo sta un posto: a sinistra la puntata va a destra
+ * dell'avatar, a destra a sinistra. E' la parte del centro, dove al tavolo
+ * vero ognuno ha il cerchio della sua puntata.
+ */
+export type LatoPosto = 'sinistra' | 'destra'
+
+/**
  * Il posto di un altro giocatore: le sue mani piccole, chi e', la sua puntata
  * e, a giro chiuso, quel che ha vinto o perso. Il turno ha l'anello che si
  * consuma con il tempo.
+ *
+ * Il posto si misura sull'avatar: e' lui a stare nel punto del posto, come il
+ * cerchio di un posto libero, e il resto gli sta attorno — le carte sopra, il
+ * nome sotto, la puntata dalla parte del centro. Cosi' un posto occupato e uno
+ * libero stanno alla stessa altezza, e le carte non spostano chi le ha.
  */
 export function PostoAltro({
   posto,
   indice,
+  lato,
+  arco,
   turno,
   banco,
   chiuso,
   carte,
   tempo,
-  style,
 }: {
   posto: PostoVistaBJ
   indice: number
+  lato: LatoPosto
+  /** Quale dei quattro punti lungo il bordo, da sinistra: dove sta lo dice il CSS. */
+  arco: number
   turno: { posto: number; mano: number } | null
   banco: readonly string[]
   chiuso: boolean
   carte: CarteInGioco
   /** Il tempo del turno, se tocca a lui e conta: quanto resta e quanto era. */
   tempo: { resta: number; tutto: number } | null
-  style?: CSSProperties
 }) {
   const mio = turno?.posto === indice
   const esiti = esitiDelPosto(posto, banco, chiuso)
+  /** Quel che ha vinto o perso: c'e' solo a giro chiuso, quando le mani sono state pagate. */
+  const delta = chiuso ? posto.delta : null
   return (
     <div
-      className={`bj-altro${mio ? ' is-turno' : ''}${posto.via ? ' is-via' : ''}${posto.presente ? '' : ' is-assente'}`}
-      style={style}
+      className={`bj-altro is-${lato}${posto.mani.length > 1 ? ' is-divise' : ''}${mio ? ' is-turno' : ''}${
+        posto.via ? ' is-via' : ''
+      }${posto.presente ? '' : ' is-assente'}`}
+      data-posto={arco}
     >
-      <div className="bj-altro__mani">
-        {posto.mani.map((m, o) => (
-          <Mano
-            key={m.id ?? o}
-            carte={m.carte}
-            chiavi={chiaviMano(carte.giro, indice, m.id ?? o, m.carte.length)}
-            arrivi={carte.arrivi}
-            inArrivo={carte.inArrivo}
-            onAtterra={carte.onAtterra}
-            divisa={m.divisa}
-            esito={esiti[o]}
-            attiva={mio && turno?.mano === o && posto.mani.length > 1}
-            className="bj-mano--piccola"
-          />
-        ))}
+      <span className="bj-altro__avatar">
+        <Avatar nickname={posto.giocatore.nickname} color={posto.giocatore.avatarColor} size={30} />
+        {tempo && <AnelloTempo {...tempo} />}
+      </span>
+      {posto.mani.length > 0 && (
+        <div className="bj-altro__mani">
+          {posto.mani.map((m, o) => (
+            <Mano
+              key={m.id ?? o}
+              carte={m.carte}
+              chiavi={chiaviMano(carte.giro, indice, m.id ?? o, m.carte.length)}
+              arrivi={carte.arrivi}
+              inArrivo={carte.inArrivo}
+              onAtterra={carte.onAtterra}
+              divisa={m.divisa}
+              esito={esiti[o]}
+              attiva={mio && turno?.mano === o && posto.mani.length > 1}
+              className="bj-mano--piccola"
+            />
+          ))}
+        </div>
+      )}
+      <span className="bj-altro__nome">{posto.giocatore.displayName}</span>
+      <div className="bj-altro__puntata">
+        {posto.puntata > 0 && delta === null && (
+          <PilaFiches pezzi={scomponi(posto.puntata)} massimo={5} className="bj-altro__pila" />
+        )}
+        {posto.assicurazione > 0 && delta === null && (
+          <span className="bj-altro__assicurazione u-tabnum" aria-label={`Assicurazione ${posto.assicurazione}`}>
+            <SegnoAssicurazione />
+            {posto.assicurazione}
+          </span>
+        )}
+        {delta !== null && (
+          <span className={`bj-altro__delta u-tabnum${delta > 0 ? ' is-piu' : delta < 0 ? ' is-meno' : ''}`}>
+            {delta === 0 ? 'Pari' : conSegno(delta)}
+          </span>
+        )}
       </div>
-      <div className="bj-altro__chi">
-        <span className="bj-altro__avatar">
-          <Avatar nickname={posto.giocatore.nickname} color={posto.giocatore.avatarColor} size={30} />
-          {tempo && <AnelloTempo {...tempo} />}
-        </span>
-        <span className="bj-altro__nome">{posto.giocatore.displayName}</span>
-      </div>
-      {posto.puntata > 0 && !(chiuso && posto.delta !== null) && (
-        <PilaFiches pezzi={scomponi(posto.puntata)} massimo={5} className="bj-altro__pila" />
-      )}
-      {posto.assicurazione > 0 && !(chiuso && posto.delta !== null) && (
-        <span className="bj-altro__assicurazione u-tabnum" aria-label={`Assicurazione ${posto.assicurazione}`}>
-          <SegnoAssicurazione />
-          {posto.assicurazione}
-        </span>
-      )}
-      {chiuso && posto.delta !== null && (
-        <span className={`bj-altro__delta u-tabnum${posto.delta > 0 ? ' is-piu' : posto.delta < 0 ? ' is-meno' : ''}`}>
-          {posto.delta === 0 ? 'Pari' : conSegno(posto.delta)}
-        </span>
-      )}
     </div>
   )
 }
 
-/** Un posto libero: un cerchio sul panno. */
-export function PostoLibero({ style }: { style?: CSSProperties }) {
+/** Un posto libero: un cerchio sul panno, nello stesso punto dell'avatar di un posto occupato. */
+export function PostoLibero({ lato, arco }: { lato: LatoPosto; arco: number }) {
   return (
-    <div className="bj-altro is-libero" style={style}>
+    <div className={`bj-altro is-libero is-${lato}`} data-posto={arco}>
       <span className="bj-altro__cerchio" />
       <span className="bj-altro__nome">Libero</span>
     </div>
