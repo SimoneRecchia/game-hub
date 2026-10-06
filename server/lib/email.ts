@@ -133,42 +133,28 @@ function bloccoNickname(nickname: string): string {
 }
 
 /**
- * Il codice per la nuova password, con il nickname scritto in chiaro.
- *
- * Il nickname serve al secondo passo — la password e' legata a lui — e chi ha
- * chiesto il codice scrivendo l'email potrebbe non ricordarlo: se l'email non
- * lo dicesse, resterebbe fermo davanti a un campo che non sa riempire.
+ * Il codice per entrare, con il nickname scritto in chiaro: si entra con il
+ * nickname o con l'email, e chi ha scritto l'email puo' non ricordarlo.
  */
-export function resetPasswordMessage(nickname: string, code: string, minuti: number): Omit<EmailMessage, 'to'> {
+export function loginMessage(nickname: string, code: string, minuti: number): Omit<EmailMessage, 'to'> {
   return {
-    subject: `${code} è il codice per la nuova password`,
-    text: `Ciao ${nickname},\n\nil codice per impostare una nuova password su Game Hub è:\n\n${code}\n\nIl tuo nickname è: ${nickname}\n\nIl codice vale ${minuti} minuti. Se non l’hai chiesto tu, ignora questo messaggio: la password non cambia.\n\ngiochi.simonerecchia.com`,
+    subject: `${code} è il tuo codice per entrare in Game Hub`,
+    text: [
+      `Ciao ${nickname},`,
+      `il codice per entrare in Game Hub è:`,
+      code,
+      `Il tuo nickname è: ${nickname}`,
+      `Il codice vale ${minuti} minuti. Se non l’hai chiesto tu, ignora questo messaggio:` +
+        ' senza il codice non entra nessuno.',
+      'giochi.simonerecchia.com',
+    ].join('\n\n'),
     html: layout(
-      'Nuova password',
+      `Ciao ${nickname}, ecco il codice per entrare`,
       `${blocoCodice(code)}
       <div style="margin:24px 0 0">${bloccoNickname(nickname)}</div>
       <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
         Il codice vale <strong>${minuti} minuti</strong>. Se non l’hai chiesto tu, ignora questo
-        messaggio: la password non cambia.
-      </p>`,
-    ),
-  }
-}
-
-/** Il nickname dimenticato, a chi lo chiede con la sua email. */
-export function nicknameMessage(nickname: string): Omit<EmailMessage, 'to'> {
-  return {
-    subject: 'Il tuo nickname su Game Hub',
-    text: `Ciao,\n\nil tuo nickname su Game Hub è:\n\n${nickname}\n\nSe non ricordi la password, nella schermata di accesso scegli «Password dimenticata».\n\nSe non l’hai chiesto tu, ignora questo messaggio.\n\ngiochi.simonerecchia.com`,
-    html: layout(
-      'Il tuo nickname',
-      `${bloccoNickname(nickname)}
-      <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
-        Se non ricordi la password, nella schermata di accesso scegli
-        <strong>Password dimenticata</strong>.
-      </p>
-      <p style="margin:12px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
-        Se non l’hai chiesto tu, ignora questo messaggio.
+        messaggio: senza il codice non entra nessuno.
       </p>`,
     ),
   }

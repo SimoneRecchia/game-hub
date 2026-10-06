@@ -75,7 +75,7 @@ Quattro scelte spiegano il resto:
   traguardi restano sul server finché la partita non è chiusa; il browser manda
   mosse e riceve esiti. Le partite si salvano come mosse, e il resto si rigioca.
 - **Dieci millisecondi di CPU per richiesta.** È il limite del piano gratuito, e
-  decide dove sta il lavoro: la password si deriva nel browser, gli schemi del
+  decide dove sta il lavoro: gli schemi del
   cruciverba e il traguardo dello Scarabeo si calcolano la notte prima, il
   computer dello Scarabeo libero gira in un Web Worker con il dizionario intero.
 - **A polling, non in realtime.** Le partite condivise si rileggono a ritmo
