@@ -7,8 +7,15 @@
   min-height: 100dvh;
 }
 
-/* Senza View Transitions la schermata nuova entra da sé, con un movimento breve. */
-html:not([data-transizione]) .pagina {
+/*
+ * Dove una View Transition non la porta, la schermata nuova entra da sé, con un
+ * movimento breve: la prima dell'app, o avanti e indietro senza le View
+ * Transitions. Lo decide la navigazione al primo disegno (`useEntrata`), con la
+ * classe. Era `html:not([data-transizione]) .pagina`, e alla fine di ogni
+ * transizione l'attributo se ne andava: la regola tornava a valere, e
+ * l'animazione ripartiva sulla pagina appena arrivata, da trasparente.
+ */
+.pagina--entra {
   animation: pagina-entra 360ms var(--ease-push) both;
 }
 

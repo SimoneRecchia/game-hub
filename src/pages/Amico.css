@@ -56,6 +56,10 @@
   }
 }
 
+.pagina--ferma .amico-testa__avatar {
+  animation: none;
+}
+
 .amico-testa__online {
   position: absolute;
   right: 4px;

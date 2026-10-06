@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactElement } from 'react'
+import type { ReactElement } from 'react'
 import type { GiocoClassificato, GiocoDaTavolo } from '@shared/types'
 import './Copertina.css'
 
@@ -10,8 +10,6 @@ type Soggetto = GiocoClassificato | GiocoDaTavolo | 'generale' | 'ruota' | 'slot
 interface Props {
   gioco: Soggetto
   formato?: Formato
-  /** Nome della transizione condivisa: la copertina della card diventa quella della pagina. */
-  transizione?: string
   className?: string
 }
 
@@ -23,10 +21,9 @@ interface Props {
  * alla testata della pagina del gioco. Bianco e trasparenze sul gradiente del
  * gioco, niente altri colori: il colore della copertina e' uno solo.
  */
-export function Copertina({ gioco, formato = 'carta', transizione, className = '' }: Props) {
-  const stile = transizione ? ({ viewTransitionName: transizione } as CSSProperties) : undefined
+export function Copertina({ gioco, formato = 'carta', className = '' }: Props) {
   return (
-    <div className={`copertina copertina--${gioco} copertina--${formato} ${className}`} style={stile} aria-hidden="true">
+    <div className={`copertina copertina--${gioco} copertina--${formato} ${className}`} aria-hidden="true">
       <svg className="copertina__disegno" viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet">
         {DISEGNI[gioco]}
       </svg>
