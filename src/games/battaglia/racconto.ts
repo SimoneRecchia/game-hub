@@ -138,7 +138,6 @@ export function senzaFine(vista: VistaBattaglia): VistaBattaglia {
     vincitore: null,
     motivo: null,
     flottaNemica: null,
-    punti: null,
     tuoTurno: false,
   }
 }

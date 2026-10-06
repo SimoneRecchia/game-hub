@@ -23,14 +23,11 @@
  *    della "densita' di probabilita'", la piu' forte che si conosca.
  *
  * I tre livelli distano una decina di colpi l'uno dall'altro, che e' la
- * differenza fra chi vince quasi sempre e chi vince una volta su due. Nella
- * classificata il computer e' il facile: la sfida del giorno e' affondare la sua
- * flotta con meno colpi possibile, e un avversario che vince spesso la
- * trasformerebbe in una lotteria.
+ * differenza fra chi vince quasi sempre e chi vince una volta su due.
  *
- * Tutto e' deterministico dal generatore che riceve: nella classificata il
- * computer e' lo stesso per tutti, e a parita' di colpi ricevuti fa le stesse
- * scelte.
+ * Tutto e' deterministico dal generatore che riceve: con lo stesso seme, a
+ * parita' di colpi ricevuti, fa le stesse scelte. Il seme sta nella partita,
+ * quindi il colpo del computer non dipende da quando lo si chiede.
  */
 
 import { mulberry32 } from './daily'
@@ -39,10 +36,8 @@ import {
   FLOTTA,
   LATO,
   casella,
-  disponiACaso,
   type Esito,
   type IdNave,
-  type Nave,
 } from './battaglia'
 
 export type LivelloBattaglia = 'facile' | 'normale' | 'difficile'
@@ -55,23 +50,6 @@ export interface ColpoNoto {
   esito: Esito
   /** La nave, solo se affondata: e' l'unico momento in cui si annuncia. */
   nave: IdNave | null
-}
-
-/** Seme della flotta del giorno: suo, indipendente da quelli degli altri giochi. */
-const SEME_FLOTTA = 0x0b47_7a61
-
-/**
- * La flotta del computer nella classificata: la stessa per tutti, ogni giorno
- * diversa. Deterministica dal numero del puzzle, come il sacchetto dello
- * Scarabeo, quindi non serve salvarla.
- */
-export function flottaDelGiorno(puzzleNumber: number): Nave[] {
-  return disponiACaso(mulberry32((SEME_FLOTTA ^ Math.imul(puzzleNumber, 0x9e37_79b9)) >>> 0))
-}
-
-/** Il seme del computer della classificata, per il giorno: anche lui uguale per tutti. */
-export function semeDelGiorno(puzzleNumber: number): number {
-  return (SEME_FLOTTA ^ Math.imul(puzzleNumber + 7919, 0x85eb_ca6b)) >>> 0
 }
 
 /** Il generatore per il colpo numero `indice`: dipende dal seme e dal turno, non dalla storia. */

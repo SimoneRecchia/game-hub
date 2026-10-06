@@ -54,14 +54,6 @@ export const GIOCHI: readonly Gioco[] = [
     liberaBreve: 'Schema libero',
   },
   {
-    id: 'battaglia',
-    nome: 'Battaglia navale',
-    motto: 'Cinque navi, un colpo per volta',
-    classificata: 'Contro il computer, la stessa flotta per tutti.',
-    libera: 'Contro il computer o contro un amico.',
-    liberaBreve: 'Contro chi vuoi',
-  },
-  {
     id: 'quiz',
     nome: 'Quiz',
     motto: 'Geografia, storia, arte, libri, cinema e scienza',
@@ -105,9 +97,17 @@ export interface GiocoTavolo {
  * I giochi da tavolo: niente partita del giorno e niente classifica, solo
  * partite quando si vuole, con gli amici — e contro il computer dove ha senso.
  * Indovina chi non ce l'ha: si gioca parlandosi. Il tris non sta qui: ha la
- * sua classificata, e le partite da tavolo sono la sua libera.
+ * sua classificata, e le partite da tavolo sono la sua libera. La battaglia
+ * navale si': la sua classificata misurava piu' la fortuna che il gioco.
  */
 export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
+  {
+    id: 'battaglia',
+    nome: 'Battaglia navale',
+    motto: 'Cinque navi, un colpo per volta',
+    conChi: 'Amici o computer',
+    slug: 'battaglia-navale',
+  },
   {
     id: 'scacchi',
     nome: 'Scacchi',

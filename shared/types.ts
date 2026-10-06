@@ -733,8 +733,9 @@ export interface InvitoInviato {
 export type StatoBattaglia = 'disposizione' | 'battaglia' | 'finita'
 
 /**
- * Contro chi, e per cosa: fra amici, contro il computer per giocare, o la
- * classificata del giorno, contro il computer con la flotta uguale per tutti.
+ * Contro chi: fra amici o contro il computer. `classificata` sono le partite
+ * del giorno di quando la battaglia ne aveva una, contro il computer: restano
+ * nel database, e i loro punti nella generale dei periodi che le comprendono.
  */
 export type ModalitaBattaglia = 'amici' | 'computer' | 'classificata'
 
@@ -745,20 +746,6 @@ export interface PartitaBreve {
   stato: StatoBattaglia
   avversario: GiocatoreBreve
   tuoTurno: boolean
-}
-
-/** La classificata di oggi, come la vedono l'hub e la sala. */
-export interface ClassificataBattaglia {
-  puzzleNumber: number
-  /** `nuova` finché non la si apre. */
-  stato: 'nuova' | StatoBattaglia
-  partitaId: string | null
-  /** A partita finita: i punti in classifica, e com'e' andata. */
-  punti: number | null
-  vinta: boolean | null
-  /** I colpi sparati finora. */
-  colpi: number
-  msToNextPuzzle: number
 }
 
 /** Un invito con un link, come lo vede chi l'ha creato. */
@@ -1112,7 +1099,6 @@ export interface LobbyBattaglia {
   computer: PartitaBreve | null
   /** L'invito con un link ancora valido, se ce n'e' uno. */
   link: LinkBattaglia | null
-  classificata: ClassificataBattaglia
   /** Contro gli amici. */
   vinte: number
   perse: number
@@ -1133,10 +1119,6 @@ export interface VistaBattaglia {
   modalita: ModalitaBattaglia
   /** Il livello del computer; null fra amici. */
   livello: LivelloBattaglia | null
-  /** La giornata, per la classificata. */
-  puzzleNumber: number | null
-  /** I punti della classificata, a partita finita. */
-  punti: number | null
   stato: StatoBattaglia
   avversario: GiocatoreBreve & { online: boolean }
   /** La mia flotta, se l'ho gia' messa in mare. */
@@ -1163,41 +1145,6 @@ export interface VistaBattaglia {
   serie: { io: number; avversario: number; partite: number } | null
   /** Fra amici, a partita finita: la rivincita chiesta, se c'e'. */
   rivincita: RivincitaBattaglia | null
-}
-
-export interface BattagliaSummary {
-  /** Quanti altri giocatori sono online adesso. */
-  online: number
-  /** La partita aperta con un amico. */
-  partita: PartitaBreve | null
-  classificata: ClassificataBattaglia
-  vinte: number
-  perse: number
-}
-
-/** La classifica della battaglia: le classificate, contro il computer. */
-export interface BattagliaRow {
-  rank: number
-  playerId: string
-  nickname: string
-  displayName: string
-  avatarColor: string
-  punti: number
-  giornate: number
-  vinte: number
-  /** Colpi sparati nelle vittorie: meno, a parita', e' meglio. */
-  colpi: number
-  /** I punti di oggi, se la classificata di oggi e' finita. */
-  oggi: number | null
-  inCorso: boolean
-}
-
-export interface BattagliaLeaderboard {
-  scope: LeaderboardScope
-  periodo: PeriodoClassifica
-  updatedAt: string
-  rows: BattagliaRow[]
-  me: BattagliaRow | null
 }
 
 /* ──────────────────────────────  Il quiz  ────────────────────────────── */
@@ -1326,18 +1273,15 @@ export interface PeriodoClassifica {
 /* ──────────────────────────  La classifica generale  ───────────────────────── */
 
 /** I giochi che hanno una classificata, e quindi una classifica. */
-export type GiocoClassificato =
-  | 'wordle'
-  | 'scarabeo'
-  | 'cruciverba'
-  | 'sudoku'
-  | 'battaglia'
-  | 'quiz'
-  | 'tris'
-  | 'nomi'
+export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'quiz' | 'tris' | 'nomi'
 
-/** I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha senso, contro il computer). */
-export type GiocoDaTavolo = 'indovina' | GiocoTavoliere
+/**
+ * I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha
+ * senso, contro il computer). La battaglia navale ha avuto una classificata
+ * fino al 6 ottobre 2026: e' piu' fortuna che bravura, e una partita del
+ * giorno non misurava niente.
+ */
+export type GiocoDaTavolo = 'battaglia' | 'indovina' | GiocoTavoliere
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
 export type ChiaveClassifica = GiocoClassificato | 'generale' | 'fortuna'
@@ -1383,6 +1327,11 @@ export interface GeneraleRow {
   avatarColor: string
   punti: number
   perGioco: Record<GiocoClassificato, number>
+  /**
+   * La battaglia classificata, nei periodi che comprendono i giorni in cui
+   * c'era: e' gia' dentro `punti`, perché una giornata vale quel che valeva.
+   */
+  battaglia: number
   /** Quel che ha dato o tolto Crazy Time nel periodo: e' gia' dentro `punti`. */
   ruota: number
   /** Quel che hanno dato o tolto la slot e il blackjack: anche questo e' gia' dentro `punti`. */
@@ -1433,7 +1382,6 @@ export interface OggiRisposta {
   scarabeo: ScarabeoSummary
   cruciverba: CruciverbaSummary
   sudoku: SudokuSummary
-  battaglia: BattagliaSummary
   quiz: QuizSummary
   tris: TrisSummary
   nomi: NomiSummary

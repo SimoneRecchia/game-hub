@@ -13,13 +13,16 @@
  *   Cruciverba   15-25 minuti               160
  *   Scarabeo     10-20 minuti               150
  *   Sudoku       10-20 minuti               150
- *   Battaglia    5-8 minuti                  85
  *   Quiz         3-4 minuti                  75
  *   Wordle       3-5 minuti                  70
  *   Nomi, cose   2-3 minuti                  60
  *   Tris         2-3 minuti                  50
  *
- * Sono otto, e la somma e' ottocento: cento a gioco in media.
+ * Sono sette, e la somma e' settecentoquindici: un po' piu' di cento a gioco.
+ * Erano otto, e facevano ottocento, finché la battaglia navale ha avuto la sua
+ * classificata (85, i colpi per affondare la flotta del giorno): era piu'
+ * fortuna che bravura, e il 6 ottobre 2026 e' diventata solo una libera. Gli
+ * altri tetti sono rimasti quelli, perché i giorni nuovi valgano come i vecchi.
  *
  * Dentro il suo tetto ogni gioco misura quel che gli e' proprio, e tutti
  * tengono lo stesso principio del Wordle: **giocarla bene vale circa il doppio
@@ -30,7 +33,6 @@
  *   Scarabeo     punti rispetto al computer           90-135    ~60       150
  *   Cruciverba   completato, meno gli aiuti           135-150    0*       160
  *   Sudoku       risolto, meno gli aiuti              135-150    0*       150
- *   Battaglia    colpi per affondare la flotta         64-72    ~25        85
  *   Quiz         risposte giuste su dieci              45-69     15        75
  *   Nomi, cose   risposte valide, rare e veloci        35-45     15        60
  *   Tris         vinte e patte su cinque partite       30-40     10        50
@@ -48,7 +50,6 @@
 
 import { MAX_DAY_SCORE } from './scoring'
 import { PUNTI_COMPLETO } from './cruciverba'
-import { CASELLE_FLOTTA } from './battaglia'
 import { DOMANDE_PER_PARTITA, puntiQuiz } from './quiz'
 import { puntiSudoku } from './sudoku'
 import { PARTITE_TRIS, puntiTris } from './tris'
@@ -65,7 +66,6 @@ export const TETTI: Record<GiocoClassificato, number> = {
   cruciverba: 160,
   scarabeo: 150,
   sudoku: 150,
-  battaglia: 85,
   quiz: 75,
   wordle: 70,
   tris: 50,
@@ -97,39 +97,6 @@ export function puntiScarabeo(punteggio: number, riferimento: number): number {
   return Math.min(TETTI.scarabeo, Math.round((TETTI.scarabeo * punteggio) / base))
 }
 
-/* ─────────────────────────────  Battaglia  ────────────────────────── */
-
-/** Un colpo in acqua costa mezzo punto: si conta a coppie. */
-export const ACQUE_PER_PUNTO = 2
-/** Ogni casella nemica colpita, in una partita persa. */
-export const PUNTI_PER_COLPITA = 2
-
-/**
- * I punti della battaglia classificata.
- *
- * Vincendo, il tetto meno un punto ogni due colpi in acqua: la flotta del
- * computer e' la stessa per tutti, quindi i colpi che servono ad affondarla sono
- * una misura esatta di come si e' giocato. Una partita da cinquanta colpi —
- * quanti ne servono a chi gioca bene — vale 69.
- *
- * Perdendo, due punti per ogni casella nemica colpita: al massimo 32, sotto la
- * vittoria peggiore possibile (44, con cento colpi). Vincere resta sempre meglio
- * che perdere, ma chi ha quasi affondato tutto non esce a mani vuote.
- */
-export function puntiBattaglia({
-  vinta,
-  colpi,
-  aSegno,
-}: {
-  vinta: boolean
-  colpi: number
-  aSegno: number
-}): number {
-  if (!vinta) return Math.min(aSegno, CASELLE_FLOTTA - 1) * PUNTI_PER_COLPITA
-  const acque = Math.max(0, colpi - CASELLE_FLOTTA)
-  return TETTI.battaglia - Math.floor(acque / ACQUE_PER_PUNTO)
-}
-
 /* ─────────────────────────  I tetti, per i test  ─────────────────── */
 
 export const MASSIMI: Record<GiocoClassificato, number> = {
@@ -137,7 +104,6 @@ export const MASSIMI: Record<GiocoClassificato, number> = {
   cruciverba: PUNTI_COMPLETO,
   sudoku: puntiSudoku(0, 0),
   scarabeo: puntiScarabeo(RIFERIMENTO_SCARABEO, RIFERIMENTO_SCARABEO),
-  battaglia: puntiBattaglia({ vinta: true, colpi: CASELLE_FLOTTA, aSegno: CASELLE_FLOTTA }),
   quiz: puntiQuiz(DOMANDE_PER_PARTITA, DOMANDE_PER_PARTITA),
   tris: puntiTris(PARTITE_TRIS, 0),
   nomi: MASSIMO_NOMI,

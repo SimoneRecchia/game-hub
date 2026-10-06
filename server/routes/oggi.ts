@@ -6,7 +6,6 @@ import type { AppEnv } from '../types'
 import { requireVerified } from '../lib/session'
 import { classificaGenerale } from '../lib/generale'
 import {
-  riepilogoBattaglia,
   riepilogoCruciverba,
   riepilogoNomi,
   riepilogoQuiz,
@@ -31,12 +30,11 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
   const db = c.env.DB
   const io = c.get('player').id
   const quando = today()
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, nomi, generale] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, quiz, tris, nomi, generale] = await Promise.all([
     riepilogoWordle(db, io),
     riepilogoScarabeo(db, io),
     riepilogoCruciverba(db, io),
     riepilogoSudoku(db, io),
-    riepilogoBattaglia(db, io),
     riepilogoQuiz(db, io),
     riepilogoTris(db, io),
     riepilogoNomi(db, io),
@@ -50,7 +48,6 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     scarabeo,
     cruciverba,
     sudoku,
-    battaglia,
     quiz,
     tris,
     nomi,

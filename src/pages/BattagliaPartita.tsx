@@ -4,7 +4,7 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Coriandoli, Numero, Vuoto, useFesta } from '@/components/Elementi'
+import { Coriandoli, Vuoto, useFesta } from '@/components/Elementi'
 import {
   IconChevronRight,
   IconComputer,
@@ -12,7 +12,6 @@ import {
   IconInfo,
   IconRefresh,
   IconTarget,
-  IconTrophy,
 } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { IconaScheda, Pillola, Scheda } from '@/components/Scheda'
@@ -38,7 +37,6 @@ import {
   type IdNave,
   type Nave,
 } from '@shared/battaglia'
-import { TETTI } from '@shared/punti'
 import type { VistaBattaglia } from '@shared/types'
 import './Battaglia.css'
 
@@ -53,12 +51,14 @@ function maiuscola(testo: string): string {
   return testo.charAt(0).toUpperCase() + testo.slice(1)
 }
 
-/** Il titolo in alto: la giornata per la classificata, l'avversario per le altre. */
+/**
+ * Il titolo in alto: l'avversario. Le classificate dei giorni in cui la
+ * battaglia ne aveva una erano contro il computer, e si vedono cosi'.
+ */
 function titoloDi(v: VistaBattaglia | null): string {
   if (!v) return 'Battaglia navale'
-  if (v.modalita === 'classificata') return `Battaglia #${v.puzzleNumber ?? ''}`
-  if (v.modalita === 'computer') return `Contro il computer`
-  return `Contro ${v.avversario.displayName}`
+  if (v.modalita === 'amici') return `Contro ${v.avversario.displayName}`
+  return 'Contro il computer'
 }
 
 /**
@@ -67,9 +67,9 @@ function titoloDi(v: VistaBattaglia | null): string {
  * resti quello della partita dall'inizio alla fine — e chi riapre l'app ci
  * torna dentro.
  *
- * La stessa schermata fa le tre modalità: la classificata del giorno e la
- * libera contro il computer — che risponde subito, nella stessa richiesta — e
- * la partita con un amico, che va a polling.
+ * La stessa schermata fa le due modalità: la partita contro il computer — che
+ * risponde subito, nella stessa richiesta — e quella con un amico, che va a
+ * polling.
  */
 export default function BattagliaPartita() {
   const { id = '' } = useParams()
@@ -77,7 +77,6 @@ export default function BattagliaPartita() {
   const [aiuto, setAiuto] = useState(false)
   const [resa, setResa] = useState(false)
   const v = g.vista
-  const classificata = v?.modalita === 'classificata'
   const festa = useFesta(v ? v.stato !== 'finita' : null, v?.stato === 'finita' && v.vincitore === 'io')
   // Le flotte in mare: comincia il combattimento.
   const inBattaglia = v?.stato === 'battaglia'
@@ -108,11 +107,7 @@ export default function BattagliaPartita() {
       titolo={titoloDi(v)}
       intera
       larga
-      indietro={
-        classificata
-          ? { a: ROTTE.home, etichetta: 'Giornaliere' }
-          : { a: ROTTE.libera('battaglia'), etichetta: 'Libera' }
-      }
+      indietro={{ a: ROTTE.battaglia, etichetta: 'Battaglia' }}
       azioni={
         <>
           {v && v.stato !== 'finita' && (
@@ -161,13 +156,7 @@ export default function BattagliaPartita() {
       <Sheet open={resa} onClose={() => setResa(false)} title="Abbandonare la partita?">
         <div className="bat-resa">
           <p>
-            {!v
-              ? ''
-              : v.modalita === 'classificata'
-                ? 'Non si rigioca. Valgono solo le caselle colpite finora.'
-                : v.modalita === 'computer'
-                  ? 'Conta come una sconfitta.'
-                  : `Vince ${v.avversario.displayName}.`}
+            {!v ? '' : v.modalita === 'amici' ? `Vince ${v.avversario.displayName}.` : 'Conta come una sconfitta.'}
           </p>
           <Button
             variant="destructive"
@@ -251,13 +240,11 @@ function Disposizione({
 
   const tipoScelto = scelta ? tipoDi(scelta) : null
   const avversario =
-    vista.modalita === 'classificata'
-      ? 'Classificata'
-      : vista.modalita === 'computer'
-        ? `Livello ${LIVELLI_NOME[vista.livello ?? 'normale']}`
-        : vista.avversarioPronto
-          ? `${vista.avversario.displayName} ti aspetta`
-          : `${vista.avversario.displayName} si prepara`
+    vista.modalita !== 'amici'
+      ? `Livello ${LIVELLI_NOME[vista.livello ?? 'normale']}`
+      : vista.avversarioPronto
+        ? `${vista.avversario.displayName} ti aspetta`
+        : `${vista.avversario.displayName} si prepara`
 
   return (
     <div className="bat-disposizione">
@@ -625,12 +612,6 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
         </span>
         <p className="bat-fine__titolo">{vinta ? 'Hai vinto!' : `Ha vinto ${nome}`}</p>
         <p className="bat-fine__perche">{perche}</p>
-        {vista.modalita === 'classificata' && vista.punti !== null && (
-          <p className="bat-fine__punti">
-            <Numero valore={vista.punti} />
-            <span className="bat-fine__su"> / {TETTI.battaglia} in classifica</span>
-          </p>
-        )}
         {fraAmici && messaggioRivincita(r, nome) && (
           <p className="bat-fine__rivincita" aria-live="polite">
             {messaggioRivincita(r, nome)}
@@ -684,14 +665,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
 
       {errore && <p className="bat__nota">{errore}</p>}
       <div className="bat-fine__azioni">
-        {vista.modalita === 'classificata' ? (
-          <>
-            <Button variant="tinted" onClick={() => vai(ROTTE.classifica('battaglia'))}>
-              <IconTrophy size={18} /> Classifica
-            </Button>
-            <Button onClick={() => vai(ROTTE.libera('battaglia'))}>Partita libera</Button>
-          </>
-        ) : fraAmici ? (
+        {fraAmici ? (
           <>
             {r?.stato === 'attesa' && r.da === 'avversario' ? (
               <>
@@ -714,7 +688,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
             {!(r?.stato === 'attesa' && r.da === 'avversario') && (
               <Button
                 variant="tinted"
-                onClick={() => vai(ROTTE.libera('battaglia'), { replace: true, direzione: 'indietro' })}
+                onClick={() => vai(ROTTE.battaglia, { replace: true, direzione: 'indietro' })}
               >
                 Altre partite
               </Button>
@@ -727,7 +701,7 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
             </Button>
             <Button
               variant="tinted"
-              onClick={() => vai(ROTTE.libera('battaglia'), { replace: true, direzione: 'indietro' })}
+              onClick={() => vai(ROTTE.battaglia, { replace: true, direzione: 'indietro' })}
             >
               Cambia livello
             </Button>

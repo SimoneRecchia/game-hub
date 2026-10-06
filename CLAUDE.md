@@ -403,16 +403,18 @@ centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
 gioco misura quel che gli e' proprio dentro un tetto deciso (`TETTI` in
 `shared/punti.ts`, che ha la tabella di tutti), che segue il tempo che una
 giornata chiede a chi la gioca bene: il cruciverba 160, lo Scarabeo e il sudoku
-150, la battaglia 85, il quiz 75, il Wordle 70, Nomi, cose e città 60, il tris
-50. Sono otto, e fanno ottocento: cento a gioco in media, e un test lo tiene.
-Non in proporzione diretta: un cruciverba chiede dieci volte il tempo del tris
-e vale tre volte tanto, cosi' nessun gioco da solo decide la generale. Per un
-periodo tutte
+150, il quiz 75, il Wordle 70, Nomi, cose e città 60, il tris 50. Sono sette, e
+fanno settecentoquindici, un po' piu' di cento a gioco, e un test lo tiene.
+Erano otto e facevano ottocento con la battaglia navale (85), che il 6 ottobre
+2026 e' uscita dalle classificate (vedi sotto): gli altri tetti sono rimasti
+quelli, perché i giorni nuovi valgano come i vecchi. Non in proporzione
+diretta: un cruciverba chiede dieci volte il tempo del tris e vale tre volte
+tanto, cosi' nessun gioco da solo decide la generale. Per un periodo tutte
 valevano cento: una partita perfetta a tris valeva una perfetta a sudoku. Le
 giornate di allora restano come sono, perché i punti si salvano a fine partita
 e non si ricalcolano. Il Wordle misura i tentativi, lo Scarabeo il punteggio in
-rapporto al computer, il cruciverba e il sudoku gli aiuti, la battaglia i colpi,
-il quiz le risposte giuste (quindici per aver giocato, sei per ogni giusta), il
+rapporto al computer, il cruciverba e il sudoku gli aiuti, il quiz le risposte
+giuste (quindici per aver giocato, sei per ogni giusta), il
 tris le vittorie e le patte, Nomi, cose e città le risposte valide, di piu'
 quelle date da pochi. Tutti tengono il principio del Wordle —
 **giocarla bene vale circa il doppio di giocarla male**, non dieci volte tanto
@@ -1132,8 +1134,9 @@ classifica: nelle Libere stanno con le libere dei giochi classificati, e nella
 barra laterale sotto le Libere (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`),
 non in `GiocoClassificato`, che porta con se' classifiche, anelli e
 statistiche. Sono Indovina chi, che il computer non ce l'ha — si gioca
-parlandosi — e scacchi, dama, Forza 4 e go, con un amico o contro il computer.
-Il tris e' un tavoliere ma non sta qui: ha la sua classificata (vedi sotto).
+parlandosi — e la battaglia navale, scacchi, dama, Forza 4 e go, con un amico
+o contro il computer. Il tris e' un tavoliere ma non sta qui: ha la sua
+classificata (vedi sotto).
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -1469,15 +1472,17 @@ porta via inviti e suggerimenti. Un invito a una libera vale due ore
 giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
 punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
 Wordle con una parola a caso, Scarabeo a turni contro il computer, cruciverba
-da una scorta di schemi, battaglia contro il computer o contro un amico, quiz
-sulla materia, la categoria, il modo, la zona o l'ambito e le opzioni che si
-scelgono, Nomi, cose e città con una lettera a caso contro il computer. Gli
+da una scorta di schemi, quiz sulla materia, la categoria, il modo, la zona o
+l'ambito e le opzioni che si scelgono, Nomi, cose e città con una lettera a
+caso contro il computer. Gli
 indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
 (`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
 nuovi in `App.tsx`); `/<gioco>` da solo porta alla classificata.
 I giochi da tavolo non hanno ne' l'una ne' l'altra: la
 loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`, `/invito/:codice`
-(`/scacchi`, `/dama`, `/forza-4`, `/go`). Il tris ha le due cose: la sua libera
+(`/scacchi`, `/dama`, `/forza-4`, `/go`); la battaglia ha la sala a
+`/battaglia-navale` e le partite a `/battaglia-navale/partita/:id`, anche
+contro il computer, che sta sul server. Il tris ha le due cose: la sua libera
 e' una sala da tavoliere, a `/tris/libera`.
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
@@ -1505,14 +1510,21 @@ statistiche. Il computer usa lo stesso motore (`shared/scarabeo-motore.ts`) del
 traguardo della classificata, con tre fasce di scelta: facile, normale,
 difficile.
 
-**Nella battaglia classificata la flotta del computer e' la stessa per tutti.**
-`flottaDelGiorno(numero)` la ricava dal numero del giorno, come il sacchetto
-dello Scarabeo: e' l'unica cosa che rende i colpi di due giocatori
-confrontabili. Il livello del computer della classificata e' il facile, e il
-suo colpo arriva nella stessa richiesta del tuo — una scrittura sola per turno;
-la pagina lo mostra dopo un respiro (`primaDelComputer` in `useBattaglia.ts`).
-Nella classificata **non si invitano amici**: sarebbe una partita diversa per
-chi ce l'ha. Contro il computer non c'e' polling: non c'e' niente da aspettare.
+**La battaglia navale non ha piu' la classificata.** Fino al 6 ottobre 2026
+c'era: una al giorno contro il computer facile, con la flotta uguale per
+tutti. Ma la partita si decide in buona parte con la fortuna dei primi colpi,
+e una giornata non misurava come si era giocato; ora la battaglia e' un gioco
+da tavolo. Le partite di allora restano in `battaglia_partite`
+(`modalita = 'classificata'`): i loro punti stanno nella generale dei periodi
+che le comprendono, in una colonna a parte (`GeneraleRow.battaglia`, e la
+stessa somma in `puntiClassificateDi`), perché una giornata vale quel che
+valeva; una rimasta a meta' si finisce come una partita contro il computer,
+senza punti. `/battaglia/classificata`, `/battaglia/summary` e
+`/leaderboard/battaglia` non ci sono piu', e i vecchi indirizzi della
+classificata e della libera portano alla sala. Contro il computer il suo
+colpo arriva nella stessa richiesta del tuo — una scrittura sola per turno —
+la pagina lo mostra dopo un respiro (`primaDelComputer` in `useBattaglia.ts`),
+e non c'e' polling: non c'e' niente da aspettare.
 
 **Il turno contro il computer si racconta a pezzi, ma la richiesta e' una.**
 Il colpo del computer arriva nella risposta al mio: `useBattaglia` lo toglie
@@ -1858,22 +1870,22 @@ I bottoni a destra della barra stanno a dodici punti l'uno dall'altro
 (`.pagina__lato--destra`): a quattro, come a sinistra, si toccavano, e
 l'anello dell'avatar ci finiva sopra.
 
-**Le schede sono tre: le Libere, le Giornaliere e la Fortuna, in
-quest'ordine.** Le Giornaliere (`/`, il calendario) hanno le classificate di
-oggi, che sono la parte principale: stanno al centro della barra e sono la
-pagina che si apre per prima, anche dall'app installata (`start_url`). Le
-Libere (`/libere`, il controller) hanno le partite che non contano, le libere
-dei sei giochi e i giochi da tavolo, con chi c'e' online; la Fortuna (il
-quadrifoglio) i giochi d'azzardo. Si chiamavano Arena e Salotto, e `/salotto`
-porta ancora alle Libere. Il profilo e la classifica non sono schede: il
-profilo si apre dall'avatar in alto a destra di ogni scheda, la classifica dal
-trofeo accanto e dall'eroe delle Giornaliere e della Fortuna, che portano alla
-loro. Mentre si guardano il profilo e gli amici nessuna scheda e' accesa, e la
-lente si spegne dov'era (`Shell.tsx`). Quale scheda e' accesa lo decide prima
-`delGiorno`: `/quiz/classificata` sta anche sotto `/quiz`, che e' delle
-Libere. La freccia indietro del profilo e delle classifiche dice da dove si e'
-venuti: lo porta lo stato della history (`stato` di `Collegamento`), e la
-classifica lo tiene cambiando periodo, perché l'indirizzo si sostituisce.
+**Le schede sono tre: le Libere, le Giornaliere e la Fortuna, in quest'ordine.**
+Le Giornaliere (`/`, il calendario) hanno le classificate di oggi, che sono la
+parte principale: stanno al centro della barra e sono la pagina che si apre per
+prima, anche dall'app installata (`start_url`). Le Libere (`/libere`, il
+controller) hanno le partite che non contano, le libere dei giochi classificati
+e i giochi da tavolo, con chi c'e' online; la Fortuna (il quadrifoglio) i giochi
+d'azzardo. Si chiamavano Arena e Salotto, e `/salotto` porta ancora alle Libere.
+Il profilo e la classifica non sono schede: il profilo si apre dall'avatar in
+alto a destra di ogni scheda, la classifica dal trofeo accanto e dall'eroe delle
+Giornaliere e della Fortuna, che portano alla loro. Mentre si guardano il
+profilo e gli amici nessuna scheda e' accesa, e la lente si spegne dov'era
+(`Shell.tsx`). Quale scheda e' accesa lo decide prima `delGiorno`:
+`/quiz/classificata` sta anche sotto `/quiz`, che e' delle Libere. La freccia
+indietro del profilo e delle classifiche dice da dove si e' venuti: lo porta lo
+stato della history (`stato` di `Collegamento`), e la classifica lo tiene
+cambiando periodo, perché l'indirizzo si sostituisce.
 
 **Le icone delle schede si riconoscono anche piene.** Il calendario delle
 Giornaliere ha il giorno di oggi (`Giorno` in `Icons.tsx`, con due cifre un
@@ -1949,14 +1961,13 @@ contro il computer non si sceglie: cambia a ogni partita (`prossimaParte` in
 `tavolo/locale.ts`), come nelle rivincite fra amici.
 
 **Un gioco non ha una pagina sua.** Dalle Giornaliere una carta del giorno porta
-dritta alla partita di oggi, e dalle Libere le libere dei sei giochi e i giochi
-da tavolo portano a sceglierle. Le pagine di ogni gioco, con la classificata, la
-libera e un podio, erano un passaggio in piu' da attraversare ogni giorno:
-l'indirizzo del gioco (`/wordle`, quello dei sottodomini) porta alla
-classificata (`AllaClassificata` in `App.tsx`), e la freccia indietro di una
-classificata torna alle Giornaliere, quella di una libera o di una sala alle
-Libere.
-Le voci di un controllo segmentato sono larghe uguali e si stringono
+dritta alla partita di oggi, e dalle Libere le libere dei giochi classificati e
+i giochi da tavolo portano a sceglierle. Le pagine di ogni gioco, con la
+classificata, la libera e un podio, erano un passaggio in piu' da attraversare
+ogni giorno: l'indirizzo del gioco (`/wordle`, quello dei sottodomini) porta
+alla classificata (`AllaClassificata` in `App.tsx`), e la freccia indietro di
+una classificata torna alle Giornaliere, quella di una libera o di una sala alle
+Libere. Le voci di un controllo segmentato sono larghe uguali e si stringono
 (`min-width: 0`): altrimenti la capsula che le segue non ci sta sopra, e su un
 telefono stretto l'ultima voce esce dalla carta.
 

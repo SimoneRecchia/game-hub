@@ -39,7 +39,7 @@ describe('gli indirizzi delle classifiche', () => {
   it('non scrivono il periodo di sempre, oggi', () => {
     expect(indirizzoClassifica(null, 'today')).toBe('/classifica')
     expect(indirizzoClassifica('generale', 'today')).toBe('/classifica/generale')
-    expect(indirizzoClassifica('battaglia', 'week', 2)).toBe('/classifica/battaglia-navale?periodo=week&indietro=2')
+    expect(indirizzoClassifica('nomi', 'week', 2)).toBe('/classifica/nomi-cose-citta?periodo=week&indietro=2')
     expect(indirizzoClassifica(null, 'today', 1)).toBe('/classifica?indietro=1')
   })
 
