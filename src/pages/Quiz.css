@@ -233,6 +233,10 @@
   }
 }
 
+.pagina--ferma :is(.quiz-materia, .quiz-tessera) {
+  animation: none;
+}
+
 .quiz-tessera__icona {
   flex: none;
   display: grid;

@@ -98,6 +98,11 @@ a.eroe:active {
   }
 }
 
+/* Una scheda ritrovata ha l'eroe gia' al suo posto (vedi `.pagina--ferma` in base.css). */
+.pagina--ferma .eroe {
+  animation: none;
+}
+
 .eroe__testa {
   display: flex;
   align-items: center;

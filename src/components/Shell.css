@@ -38,6 +38,19 @@
 }
 
 /*
+ * Durante una transizione la tab bar e' fotografata a parte, e Safari ne
+ * disegna lo sfocato come un rettangolo, senza gli angoli tondi: attorno alla
+ * capsula restava un riquadro, chiaro dove sotto c'era una carta. Per quei
+ * momenti la capsula e' piena, del colore che il vetro ha sul fondo della
+ * pagina, e lo sfocato non c'e'.
+ */
+html[data-transizione] .tabbar {
+  background: var(--glass-pieno);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/*
  * La lente sotto la sezione aperta: scivola invece di comparire, e prende il
  * colore della sezione. Le sezioni sono tre. Sul profilo e sul profilo di un
  * amico, che non sono sezioni, si spegne dov'e'.

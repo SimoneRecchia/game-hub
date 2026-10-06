@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useNavigazione } from '@/app/navigazione'
+import { useEntrata, useNavigazione } from '@/app/navigazione'
 import { IconChevronLeft } from './Icons'
 import './Pagina.css'
 import './BottoneTondo.css'
@@ -44,6 +44,11 @@ interface Props {
  *
  * La freccia indietro torna alla schermata di prima con la transizione del
  * pop; se non ce n'e' una — si e' aperto l'indirizzo da un link — va a `a`.
+ *
+ * Come entra lo decide la navigazione quando la schermata si monta
+ * (`useEntrata`): `pagina--entra` se non l'ha portata una View Transition,
+ * `pagina--ferma` se la si ritrova — indietro o da una scheda — e il contenuto
+ * non deve rientrare a cascata.
  */
 export function Pagina({
   titolo,
@@ -58,6 +63,7 @@ export function Pagina({
   children,
 }: Props) {
   const { indietro: torna } = useNavigazione()
+  const entrata = useEntrata()
   const barra = useRef<HTMLElement>(null)
   const cima = useRef<HTMLDivElement>(null)
   const sentinella = useRef<HTMLDivElement>(null)
@@ -88,8 +94,18 @@ export function Pagina({
     document.title = titolo === 'Giochi' ? 'Giochi' : `${titolo} · Giochi`
   }, [titolo])
 
+  const classi = [
+    'pagina',
+    intera && 'pagina--intera',
+    larga && 'pagina--larga',
+    entrata.daSola && 'pagina--entra',
+    !entrata.cascata && 'pagina--ferma',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div className={`pagina${intera ? ' pagina--intera' : ''}${larga ? ' pagina--larga' : ''}`}>
+    <div className={classi}>
       <header ref={barra} className={`pagina__barra${velata ? ' is-velata' : ''}${scorsa ? ' is-scorsa' : ''}`}>
         <div className="pagina__barra-dentro">
           <div className="pagina__lato">

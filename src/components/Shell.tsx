@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type ReactNode } from 'react'
+import { useRef, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
@@ -94,6 +94,20 @@ const SCHEDE: Scheda[] = [
 const DEL_GIORNO = SCHEDE.findIndex((s) => s.a === ROTTE.home)
 
 /**
+ * Il tocco sulla scheda gia' aperta la riporta in cima, come in iOS, invece di
+ * aprirla un'altra volta. Da una schermata sotto la scheda porta alla scheda.
+ */
+function inCimaSeAperta(pathname: string, a: string) {
+  return (evento: MouseEvent<HTMLAnchorElement>) => {
+    const semplice = evento.button === 0 && !evento.metaKey && !evento.ctrlKey && !evento.shiftKey && !evento.altKey
+    if (pathname !== a || !semplice) return
+    evento.preventDefault()
+    const ridotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: 0, behavior: ridotto ? 'auto' : 'smooth' })
+  }
+}
+
+/**
  * Il guscio dell'app: le sezioni e il contenuto.
  *
  * Sul telefono le sezioni sono una tab bar che **galleggia** sopra il
@@ -132,6 +146,7 @@ export function Shell({ children }: { children: ReactNode }) {
               key={s.a}
               to={s.a}
               direzione="scheda"
+              onClick={inCimaSeAperta(pathname, s.a)}
               className={`tabbar__voce${i === attiva ? ' is-attiva' : ''}`}
               style={{ '--colore': s.colore } as CSSProperties}
               aria-current={i === attiva ? 'page' : undefined}
@@ -164,6 +179,7 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
               key={s.a}
               to={s.a}
               direzione="scheda"
+              onClick={inCimaSeAperta(pathname, s.a)}
               className={`laterale__voce${i === attiva ? ' is-attiva' : ''}`}
               style={{ '--colore': s.colore } as CSSProperties}
               aria-current={i === attiva ? 'page' : undefined}

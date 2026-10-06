@@ -557,6 +557,11 @@
   }
 }
 
+/* Tornando alla classifica, il podio e le righe sono gia' dove li si era lasciati. */
+.pagina--ferma :is(.cl-podietto__posto, .cl-podio__posto, .cl-riga) {
+  animation: none;
+}
+
 /* Il filo fra due righe parte dal nome, come negli elenchi di iOS. */
 .cl-riga + .cl-riga::before {
   content: '';

@@ -105,6 +105,10 @@
   }
 }
 
+.pagina--ferma .podietto__posto {
+  animation: none;
+}
+
 .podietto__posto.is-io .avatar {
   box-shadow:
     0 0 0 2px #fff,

@@ -172,7 +172,7 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
     <Pagina
       titolo={catalogo.nome}
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      eroe={<Copertina gioco={gioco} formato="eroe" transizione={`copertina-${gioco}`} />}
+      eroe={<Copertina gioco={gioco} formato="eroe" />}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />
