@@ -1314,10 +1314,42 @@ non resta niente da prendere, salvare o chiudere; sul 13 e sul 19 le mosse sono
 sensate ma deboli.
 
 **Nel Forza 4 la cornice sta sopra i dischi.** Il disco che cade scende dietro
-la cornice e si vede solo dai buchi, come nel gioco vero: la cornice e' un
-tracciato SVG con i buchi (`evenodd`) sopra lo strato dei dischi, e le colonne
-da toccare stanno sopra tutto. La caduta dura la radice della distanza, come
-quella di un sasso.
+la cornice e si vede solo dai fori, come nel gioco vero: la cornice e' un
+tracciato SVG con i fori (`evenodd`) sopra lo strato dei dischi, la griglia sta
+su un piede con la stecca del fondo, e le colonne da toccare stanno sopra tutto.
+Il bordo di ogni foro e' un cerchio a parte, perché un gradiente si misura sul
+riquadro di chi lo usa: su un tracciato solo, l'ombra sarebbe stata una per
+tutta la griglia.
+
+**Chi deve giocare ha il disco in mano.** Le mani sono due, una per colore, e
+restano sempre nella fascia sopra la griglia (`Griglia.tsx`): quella di chi ha
+il tratto si vede, l'altra no, e ognuna si sposta da sola fra le colonne. La mia
+segue il mouse, o il dito che preme e scorre sulla griglia, e lasciando il disco
+cade; lasciato lontano dalla griglia non cade, perché ci si e' ripensato. Quella
+dell'altro va avanti e indietro mentre ci pensa. Il dito e il mouse li sente la
+griglia, che sa su quale colonna sono: i bottoni delle colonne non prendono il
+puntatore e restano per la tastiera e per chi legge lo schermo. Un disco cade
+solo se l'ho visto arrivare (`arrivi`), e prima di cadere aspetta che la mano di
+chi l'ha giocato sia sopra la sua colonna: quanto, lo dice dove stava la mano
+all'ultimo disegno. Poi schiaccia, rimbalza e la griglia sobbalza; il primo
+colpo sul fondo e' a `IMPATTO` della caduta, e li' suonano il disco, compare la
+mano dell'altro e si accende la mira. Il sobbalzo ha due nomi che si alternano
+con il numero della mossa, perché una classe che resta la stessa non fa
+ripartire un'animazione.
+
+**La fila si accende dall'ultimo disco verso i capi.** Un anello bianco davanti
+alla cornice per ogni disco, e il tratto che li unisce e cresce con loro (`file`
+in `shared/forza4.ts` da' le file una per una, dal capo alla coda). Da una parte
+dell'ultimo disco ce ne sono al piu' tre, perché con quattro in fila prima la
+partita sarebbe gia' finita: e' su quello che conta `attesaFine`, che il
+tavoliere passa alle pagine (`GiocoDelTavoliere`) perché l'adesivo, i coriandoli
+(`useFesta` con il ritardo) e il risultato nel piede (`useFineVista`) aspettino
+la fila invece di arrivare mentre il disco vincente cade. Gli altri dischi
+sbiadiscono con la trasparenza: scuriti con un filtro, il giallo veniva color
+oliva. A una partita nuova i dischi escono dal fondo; solo quando le mosse
+tornano a zero, non quando il server non prende una mossa e la griglia torna
+indietro di un disco. `griglia.test.ts` tiene d'accordo il CSS con le misure e i
+tempi del codice.
 
 **Il tris ha una classificata, e i tavolieri sono la sua libera.** La
 classificata e' una serie di cinque partite contro il computer del giorno
