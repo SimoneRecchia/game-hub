@@ -5,10 +5,9 @@ Contesto e vincoli che non si vedono guardando i file.
 ## Vincoli di piattaforma
 
 **10 ms di CPU per richiesta** sulle Pages Functions (piano gratuito Workers).
-È il vincolo che ha deciso la forma dell'autenticazione: lo stretching pesante
-della password sta nel browser, il Worker ne applica solo un secondo strato
-leggero. Non spostare le iterazioni lato server senza sapere cosa si sta
-facendo — vedi `shared/password.ts`.
+E' il vincolo che decide dove si fa un calcolo: quel che non ci sta — riempire
+uno schema, far giocare il computer, contare i punti di una notte — si fa negli
+script della notte o nel browser, mai nel Worker.
 
 **Il bundler delle Pages Functions non legge i path di `tsconfig`.** Il codice
 sotto `server/` e `functions/` deve usare import relativi (`../../shared/x`),
@@ -27,12 +26,6 @@ generale (`server/lib/generale.ts`), che con un `?` per giocatore rispondeva 500
 dal centunesimo in poi. Il banco dei test (`server/__tests__/banco.ts`) ha lo
 stesso limite, perché SQLite in locale ne regge molti di piu' e il test
 passerebbe lo stesso.
-
-**WebCrypto esiste solo nei contesti sicuri.** La derivazione della password
-gira nel browser, quindi il sito funziona in https o su localhost, non su
-un'origine http qualsiasi. `deriveVerifier` solleva `InsecureContextError` in
-quel caso, e la schermata di accesso lo mostra: non toglierlo, altrimenti torna
-un generico "qualcosa e' andato storto" impossibile da diagnosticare.
 
 **L'app ha un indirizzo solo, `giochi.<dominio>`, e i sottodomini dei giochi
 sono scorciatoie.** `wordle.<dominio>` porta a `giochi.<dominio>/wordle` prima
@@ -2510,26 +2503,42 @@ rimaste dagli indirizzi di prima; il quiz e' nato sotto `giochi.<dominio>/quiz`.
 (quello e' già di qualcun altro). Conta quando si scrivono i CNAME: puntare al
 nome del progetto invece che al sottodominio vero lascia i domini in `pending`.
 
-**Il salt della password si deriva dal nickname.** Quindi il recupero password
-richiede il nickname e non l'email: un verifier derivato dall'email non
-corrisponderebbe a quello che il login produrra' dopo, e la password nuova
-risulterebbe subito sbagliata. Vale anche per qualunque futura funzione che
-reimposti una password.
+**Si entra senza password, con un codice mandato all'email.** Ci si registra con
+il nickname e l'email; per entrare si scrive l'uno o l'altra, e arriva un codice
+di sei cifre (`/auth/login/code`, poi `/auth/login`). Le sessioni durano un
+anno, quindi il codice serve di rado: un telefono nuovo, o dopo essere usciti.
+Le password c'erano fino alla migrazione `0032`, che le ha svuotate senza
+toccare le sessioni: chi era dentro e' rimasto dentro. Le colonne restano,
+perché sono NOT NULL e toglierle vorrebbe dire rifare la tabella dei giocatori;
+nessuno le legge, e chi si registra le lascia vuote. L'impronta dei token di
+sessione usa `toBase64` di `shared/base64.ts`: se cambiasse, le sessioni salvate
+non si ritroverebbero piu' e uscirebbero tutti, e un test la tiene ferma su un
+token noto.
 
-**Il nickname dimenticato si recupera con l'email** (`POST /auth/nickname/request`,
-dal link «Non ricordi il nickname?» nella schermata della password). Risponde
-sempre allo stesso modo, che l'email sia registrata o no — il nickname lo legge
-solo chi apre quella casella — e manda al massimo un'email al minuto per
-persona, con un `UPDATE` condizionato su `players.nickname_email_at`: senza un
-limite, chiunque potrebbe riempire di posta la casella di un collega. Anche
-l'email con il codice della password scrive il nickname in chiaro, perché il
-secondo passo lo chiede e chi ha chiesto il codice con l'email potrebbe non
-ricordarlo.
+**La richiesta del codice risponde sempre allo stesso modo**, che l'account
+esista o no, e anche quando il codice non parte per l'attesa di un minuto fra
+due invii o perché quell'account ne ha gia' avuti dieci oggi
+(`CODE_LOGIN_PER_DAY`): dire "non c'e'" direbbe chi e' iscritto. Allo stesso
+modo l'ingresso ha un messaggio solo per un account che non c'e' e per un codice
+sbagliato, scaduto o bruciato. Il tetto del giorno e' quel che rende inutile
+tirare a indovinare: cinque tentativi a codice, un codice al minuto, sarebbero
+settemila combinazioni al giorno su un milione; cosi' cinquanta. L'email del
+codice scrive il nickname, perché chi entra con l'email puo' non ricordarlo, ed
+entrare con il codice conferma anche l'email.
 
-**La verifica dell'email resta spenta senza chiave Resend.**
-`emailVerificationEnabled` controlla entrambe le condizioni. Non accendere
-`EMAIL_VERIFICATION` senza la chiave: bloccherebbe ogni registrazione, perché
-il codice non partirebbe.
+**Il codice per entrare nel database si chiama `reset_password`.** Il `CHECK`
+della `0004` conosce due scopi, e cambiarlo vorrebbe dire rifare la tabella dei
+codici: il codice per entrare ha preso il posto di quello per la password nuova,
+che apriva l'account allo stesso modo, con l'email (`NEL_DATABASE` in
+`server/lib/codes.ts`).
+
+**Senza la posta in produzione non si entra.** `emailVerificationEnabled` vuole
+`EMAIL_VERIFICATION = "on"` e la chiave di Resend; senza, la registrazione crea
+l'account gia' confermato, ma la richiesta del codice risponde `EMAIL_DISABLED`,
+e resta dentro solo chi ha gia' una sessione. In locale, senza la chiave e solo
+da localhost, il codice torna nella risposta (`codiceDiProva`) e la schermata lo
+mostra: e' l'unico modo di leggerlo. Per provare il giro vero c'e' il finto
+servizio di posta di `DEPLOY.md`.
 
 ## Prima di aprire una PR
 

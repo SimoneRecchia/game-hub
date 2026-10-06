@@ -1,6 +1,6 @@
 /** Token di sessione: generazione nel Worker, hashing prima di salvarlo. */
 
-import { toBase64 } from './password'
+import { toBase64 } from './base64'
 
 const TOKEN_BYTES = 32
 

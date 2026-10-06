@@ -74,7 +74,7 @@ export async function revokeSession(c: Context<AppEnv>): Promise<void> {
   deleteCookie(c, COOKIE_NAME, { path: '/', secure: isSecure(c), ...(domain ? { domain } : {}) })
 }
 
-/** Revoca tutte le sessioni del giocatore: usato dopo un cambio password. */
+/** Revoca tutte le sessioni del giocatore: "Esci da tutti i dispositivi". */
 export async function revokeAllSessions(
   c: Context<AppEnv>,
   playerId: string,

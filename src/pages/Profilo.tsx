@@ -124,7 +124,7 @@ export default function Profilo() {
       </Sheet>
 
       <Sheet open={uscita} onClose={() => setUscita(false)} title="Vuoi uscire?">
-        <p className="profilo__testo">Per rientrare servono nickname e password.</p>
+        <p className="profilo__testo">Per rientrare ti mandiamo un codice all’email.</p>
         <Button
           variant="destructive"
           size="lg"
