@@ -151,7 +151,8 @@ function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number 
   return (
     <aside className="laterale" aria-label="Sezioni">
       <Collegamento to={ROTTE.home} direzione="scheda" className="laterale__marchio">
-        <img src="/icon.svg" alt="" width={30} height={30} />
+        {/* L'impronta nell'indirizzo la scrive npm run icone. */}
+        <img src="/icon.svg?v=cdd019ff" alt="" width={30} height={30} />
         <span>Giochi</span>
       </Collegamento>
 

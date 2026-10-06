@@ -21,6 +21,7 @@
     "sudoku:locale": "vite-node scripts/genera-sudoku.ts -- --local",
     "nomi:lessico": "vite-node scripts/genera-lessico-nomi.ts",
     "dawg:build": "node scripts/build-dawg.mjs",
+    "icone": "node scripts/genera-icone.mjs",
     "db:migrate:local": "wrangler d1 migrations apply game-hub-db --local",
     "db:migrate:remote": "wrangler d1 migrations apply game-hub-db --remote",
     "cf:dev": "wrangler pages dev --proxy 5173 -- npm run dev",
