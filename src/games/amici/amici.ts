@@ -48,6 +48,7 @@ export const DOVE_BREVE: Record<Attivita, string> = {
   fortuna: 'Fortuna',
   slot: 'Slot',
   blackjack: 'Blackjack',
+  lupus: 'Lupus',
   classifica: 'Classifica',
   profilo: 'Profilo',
   altro: 'Online',
