@@ -3,7 +3,8 @@ import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Coriandoli, Elenco, Riga, Sezione, Tacche, Vuoto, useFesta } from '@/components/Elementi'
+import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
+import { Coriandoli, Vuoto, useFesta } from '@/components/Elementi'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { IconComputer, IconInfo, IconList, IconPeople, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
@@ -375,24 +376,21 @@ function SceltaPartita({ g }: { g: ScarabeoLiberoController }) {
  * stesso elenco della battaglia navale libera: stesse tacche, stesso conto.
  */
 function SceltaLivello({ g }: { g: ScarabeoLiberoController }) {
+  const [livello, scegli] = useLivelloScelto('scarabeo', LIVELLI)
   return (
-    <Sezione titolo="Difficoltà">
-      <Elenco>
-        {LIVELLI.map((livello, i) => {
-          const conti = g.statistiche?.perLivello[livello]
-          return (
-            <Riga
-              key={livello}
-              icona={<Tacche piene={i + 1} colore="var(--scarabeo-1)" />}
-              titolo={NOMI[livello]}
-              valore={conti && conti.giocate > 0 ? `${conti.vinte}/${conti.giocate}` : undefined}
-              onClick={() => g.nuova(livello)}
-            />
-          )
-        })}
-      </Elenco>
+    <Difficolta
+      livelli={LIVELLI.map((id) => {
+        const conti = g.statistiche?.perLivello[id]
+        const valore = conti && conti.giocate > 0 ? `${conti.vinte}/${conti.giocate}` : undefined
+        return { id, nome: NOMI[id], valore }
+      })}
+      scelto={livello}
+      onScegli={scegli}
+      onComincia={() => g.nuova(livello)}
+      colore="var(--scarabeo-1)"
+    >
       {g.guasto && <p className="livelli__guasto">{g.guasto}</p>}
-    </Sezione>
+    </Difficolta>
   )
 }
 
