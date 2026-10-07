@@ -56,6 +56,7 @@ export const ATTIVITA: readonly Attivita[] = [
   'fortuna',
   'slot',
   'blackjack',
+  'lupus',
   'classifica',
   'profilo',
   'altro',

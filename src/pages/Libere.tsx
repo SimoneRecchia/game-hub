@@ -56,10 +56,12 @@ export default function Libere() {
                   <Copertina gioco={p.gioco} formato="icona" />
                   <span className="in-corso__testo">
                     <span className="in-corso__nome">{p.nome}</span>
-                    <span className="in-corso__con">con {p.avversario.displayName}</span>
+                    <span className="in-corso__con">{p.avversario ? `con ${p.avversario.displayName}` : p.sotto}</span>
                   </span>
                   {p.tuoTurno && <span className="in-corso__turno">Tocca a te</span>}
-                  <Avatar nickname={p.avversario.nickname} color={p.avversario.avatarColor} size={30} />
+                  {p.avversario && (
+                    <Avatar nickname={p.avversario.nickname} color={p.avversario.avatarColor} size={30} />
+                  )}
                   <IconChevronRight size={18} className="in-corso__freccia" />
                 </Collegamento>
               </li>
@@ -163,11 +165,16 @@ interface PartitaInCorso {
   gioco: Gioco['id'] | GiocoDaTavolo
   nome: string
   a: string
-  avversario: GiocatoreBreve
+  /** Con chi, se e' uno solo; una stanza di Lupus dice quanti sono (`sotto`). */
+  avversario?: GiocatoreBreve
+  sotto?: string
   tuoTurno: boolean
 }
 
-/** Le partite con gli amici ancora aperte, dal giro della presenza: la battaglia, Indovina chi, i tavolieri. */
+/**
+ * Le partite con gli amici ancora aperte, dal giro della presenza: la
+ * battaglia, Indovina chi, i tavolieri, la sfida a quiz e la stanza di Lupus.
+ */
 function partiteInCorso(p: ReturnType<typeof usePresenza>['dati']): PartitaInCorso[] {
   if (!p) return []
   const partite: PartitaInCorso[] = []
@@ -204,6 +211,16 @@ function partiteInCorso(p: ReturnType<typeof usePresenza>['dati']): PartitaInCor
       nome: 'Sfida a quiz',
       a: ROTTE.duelloQuiz(p.duello.id),
       avversario: p.duello.avversario,
+      tuoTurno: false,
+    })
+  }
+  if (p.stanzaLupus && p.stanzaLupus.stato !== 'finita') {
+    const s = p.stanzaLupus
+    partite.push({
+      gioco: 'lupus',
+      nome: `Lupus · ${s.codice}`,
+      a: ROTTE.stanzaLupus(s.codice),
+      sotto: s.stato === 'partita' ? 'Partita in corso' : s.iscritti === 1 ? 'Aspetti gli altri' : `In ${s.iscritti}`,
       tuoTurno: false,
     })
   }
