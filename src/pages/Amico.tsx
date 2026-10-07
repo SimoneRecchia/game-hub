@@ -31,6 +31,7 @@ const NOMI: Record<GiocoInsieme, string> = {
   forza4: 'Forza 4',
   go: 'Go',
   lupus: 'Lupus',
+  scarabocchi: 'Scarabocchi',
 }
 
 /**
@@ -90,7 +91,7 @@ export default function Amico() {
     }
     setInvio(gioco)
     try {
-      vai(await invitaA(gioco, amico, presenza?.stanzaLupus ?? null))
+      vai(await invitaA(gioco, amico, presenza?.stanzaLupus ?? null, presenza?.stanzaScarabocchi ?? null))
     } catch (e) {
       toast.show(e instanceof ApiFetchError ? e.message : 'Invito non mandato.', 'error')
       void ricarica()

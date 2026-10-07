@@ -231,5 +231,15 @@ function partiteInCorso(p: ReturnType<typeof usePresenza>['dati']): PartitaInCor
       tuoTurno: false,
     })
   }
+  if (p.stanzaScarabocchi && p.stanzaScarabocchi.stato !== 'finita') {
+    const s = p.stanzaScarabocchi
+    partite.push({
+      gioco: 'scarabocchi',
+      nome: `Scarabocchi · ${s.codice}`,
+      a: ROTTE.stanzaScarabocchi(s.codice),
+      sotto: s.stato === 'partita' ? 'Partita in corso' : s.iscritti === 1 ? 'Aspetti gli altri' : `In ${s.iscritti}`,
+      tuoTurno: false,
+    })
+  }
   return partite
 }

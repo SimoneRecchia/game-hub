@@ -52,6 +52,8 @@
  *   /lupus                              Lupus: un telefono che passa di mano, o una stanza online
  *   /lupus/telefono                     la partita a un telefono, tutta nel telefono
  *   /lupus/stanza/:codice               una stanza online, con il suo codice: l'attesa, la partita, la fine
+ *   /scarabocchi                        Scarabocchi: si apre una stanza, o si entra con un codice
+ *   /scarabocchi/stanza/:codice         una stanza: l'attesa, Indovina il disegno o il telefono senza fili, l'album
  *   /scacchi, /dama, /forza-4, /go      la sala: contro il computer, o con un amico
  *   /scacchi/computer                   la partita contro il computer, nel telefono
  *   /scacchi/partita/:id                una partita con un amico
@@ -153,6 +155,8 @@ export const ROTTE = {
   lupus: '/lupus',
   telefonoLupus: '/lupus/telefono',
   stanzaLupus: (codice: string) => `/lupus/stanza/${codice}`,
+  scarabocchi: '/scarabocchi',
+  stanzaScarabocchi: (codice: string) => `/scarabocchi/stanza/${codice}`,
 
   tavolo: (gioco: GiocoAlTavolo) => `/${SLUG_AL_TAVOLO[gioco]}`,
   computerTavolo: (gioco: GiocoTavoliere) => `/${SLUG_TAVOLIERE[gioco]}/computer`,

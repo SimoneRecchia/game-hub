@@ -56,6 +56,7 @@ import { invitoIndovinaConLink } from '../lib/indovinaStore'
 import { invitoNomiConLink } from '../lib/nomiSfideStore'
 import { invitoTavoloConLink } from '../lib/tavoloStore'
 import { invitoLupusConLink } from '../lib/lupusStore'
+import { invitoScarabocchiConLink } from '../lib/scarabocchiStore'
 
 /** La partita richiesta, e il lato di chi chiede: chi non ci gioca non la vede. */
 async function partitaMia(c: Context<AppEnv>): Promise<{ row: PartitaRow; io: Lato }> {
@@ -370,14 +371,16 @@ export const invitiPubblici = new Hono<AppEnv>().get('/:codice', async (c) => {
   const codice = c.req.param('codice')
   const adesso = Date.now()
   // I codici sono della battaglia, delle sfide a quiz, di Indovina chi o dei giochi da tavoliere: lunghi e a
-  // caso, non si incontrano. Quelli delle stanze di Lupus sono quattro lettere maiuscole, e si dettano.
+  // caso, non si incontrano. Quelli delle stanze di Lupus sono quattro lettere maiuscole, e si dettano; quelli
+  // di Scarabocchi cinque.
   const invito =
     (await invitoConLink(c.env.DB, codice, adesso)) ??
     (await invitoQuizConLink(c.env.DB, codice, adesso)) ??
     (await invitoIndovinaConLink(c.env.DB, codice, adesso)) ??
     (await invitoTavoloConLink(c.env.DB, codice, adesso)) ??
     (await invitoNomiConLink(c.env.DB, codice, adesso)) ??
-    (await invitoLupusConLink(c.env.DB, codice))
+    (await invitoLupusConLink(c.env.DB, codice)) ??
+    (await invitoScarabocchiConLink(c.env.DB, codice))
   if (!invito) fail(404, 'LINK_NON_TROVATO', 'Questo invito non esiste.')
   return c.json<InvitoConLink>(invito)
 })

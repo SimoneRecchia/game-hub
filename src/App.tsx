@@ -12,6 +12,7 @@ import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
 import { NomiGate } from './games/nomi/sfida/NomiGate'
 import { LupusGate } from './games/lupus/LupusGate'
+import { ScarabocchiGate } from './games/scarabocchi/ScarabocchiGate'
 import { CompagniaGate } from './games/compagnia/CompagniaGate'
 import Giornaliere from './pages/Giornaliere'
 import Libere from './pages/Libere'
@@ -101,6 +102,11 @@ const caricaLupusStanza = () => import('./pages/LupusStanza')
 const Lupus = lazy(caricaLupus)
 const LupusTelefono = lazy(caricaLupusTelefono)
 const LupusStanza = lazy(caricaLupusStanza)
+/* Scarabocchi: la lavagna, le due modalita' e l'album. */
+const caricaScarabocchi = () => import('./pages/Scarabocchi')
+const caricaScarabocchiStanza = () => import('./pages/ScarabocchiStanza')
+const Scarabocchi = lazy(caricaScarabocchi)
+const ScarabocchiStanza = lazy(caricaScarabocchiStanza)
 
 /* E i giochi della Fortuna: Crazy Time, la slot e il blackjack, che puntano i punti di oggi. */
 const caricaRuota = () => import('./pages/Ruota')
@@ -134,7 +140,8 @@ function usePrecarica() {
       ]
       const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ]
       const lupus = [caricaLupus, caricaLupusTelefono, caricaLupusStanza]
-      const tutti = [...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna, ...lupus]
+      const scarabocchi = [caricaScarabocchi, caricaScarabocchiStanza]
+      const tutti = [...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna, ...lupus, ...scarabocchi]
       void Promise.all(tutti.map((c) => c())).catch(() => {})
     }, 2_500)
     return () => window.clearTimeout(t)
@@ -143,7 +150,7 @@ function usePrecarica() {
 
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
 const INVITO = new RegExp(
-  '^/(?:battaglia-navale/invito|quiz/sfida|lupus/stanza|' +
+  '^/(?:battaglia-navale/invito|quiz/sfida|lupus/stanza|scarabocchi/stanza|' +
     '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|scarabeo/libera|nomi-cose-citta)/invito)/([A-Za-z0-9]+)/?$',
 )
 
@@ -184,6 +191,7 @@ export default function App() {
       <TavoloGate />
       <NomiGate />
       <LupusGate />
+      <ScarabocchiGate />
       <CompagniaGate />
       <Shell>
         <Suspense fallback={null}>
@@ -254,6 +262,9 @@ export default function App() {
             <Route path={ROTTE.lupus} element={<Lupus />} />
             <Route path={ROTTE.telefonoLupus} element={<LupusTelefono />} />
             <Route path="/lupus/stanza/:codice" element={<LupusStanza />} />
+            {/* Scarabocchi: la sala, e una stanza con il suo codice. */}
+            <Route path={ROTTE.scarabocchi} element={<Scarabocchi />} />
+            <Route path="/scarabocchi/stanza/:codice" element={<ScarabocchiStanza />} />
 
             {/* Scacchi, dama, Forza 4, go e tris: la sala, contro il computer, la partita con un amico, l'invito.
                 La sala del tris e' la sua libera, a /tris/libera. */}

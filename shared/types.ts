@@ -8,6 +8,7 @@ import type { AreaQuiz, DomandaQuiz, LuogoQuiz, SezioneQuiz, SpiegazioneQuiz } f
 import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
 import type { InvitoLupus, StanzaLupusBreve } from './lupus-stanza'
+import type { InvitoScarabocchi, StanzaScarabocchiBreve } from './scarabocchi'
 import type { Lato, Personaggi, Risposta } from './indovina'
 import type { GiocoAlTavolo, GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
@@ -792,6 +793,7 @@ export type Attivita =
   | 'slot'
   | 'blackjack'
   | 'lupus'
+  | 'scarabocchi'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -887,7 +889,7 @@ export interface InvitoConLink {
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
   /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere, Nomi o Lupus. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'lupus' | GiocoAlTavolo
+  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'lupus' | 'scarabocchi' | GiocoAlTavolo
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -927,6 +929,10 @@ export interface PresenzaRisposta {
   lupus: InvitoLupus[]
   /** La stanza di Lupus in cui sono, per tornarci. */
   stanzaLupus: StanzaLupusBreve | null
+  /** Gli inviti a una stanza di Scarabocchi. */
+  scarabocchi: InvitoScarabocchi[]
+  /** La stanza di Scarabocchi in cui sono, per tornarci. */
+  stanzaScarabocchi: StanzaScarabocchiBreve | null
 }
 
 /* ─────────────────────────────  Indovina chi  ──────────────────────── */
@@ -1426,7 +1432,7 @@ export type GiocoClassificato =
  * fino al 6 ottobre 2026: e' piu' fortuna che bravura, e una partita del
  * giorno non misurava niente.
  */
-export type GiocoDaTavolo = 'battaglia' | 'indovina' | 'lupus' | GiocoTavoliere
+export type GiocoDaTavolo = 'battaglia' | 'indovina' | 'lupus' | 'scarabocchi' | GiocoTavoliere
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
 export type ChiaveClassifica = GiocoClassificato | 'generale' | 'fortuna'
