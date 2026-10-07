@@ -90,6 +90,13 @@ export type TipoDomanda =
   | 'regista-film'
   | 'film-di'
   | 'anno-film'
+  | 'interprete-canzone'
+  | 'canzone-di'
+  | 'decennio-canzone'
+  | 'paese-interprete'
+  | 'compositore-brano'
+  | 'brano-di'
+  | 'secolo-brano'
   | 'compositore-opera'
   | 'opera-di'
   | 'citta-opera'
@@ -108,7 +115,10 @@ export type TipoDomanda =
   | 'satellite-di'
   | 'ordine-pianeta'
   | 'autore-scoperta'
+  | 'anno-scoperta'
   | 'nome-scientifico'
+  | 'gruppo-animale'
+  | 'animale-del-gruppo'
   | 'oggi-anno'
   | 'oggi-fatto'
   | 'oggi-nato'
@@ -129,7 +139,8 @@ export const TIPI: Record<CategoriaAttuale, Record<ModoQuiz, readonly TipoDomand
   bandiere: { scelta: ['bandiera-di', 'quale-bandiera'], cartina: ['dove-bandiera'] },
   stati: { scelta: ['confina-con', 'non-confina', 'senza-mare'], cartina: ['dove-stato'] },
   mari: { scelta: ['acqua-di-stato', 'stato-bagnato'], cartina: ['dove-acqua'] },
-  oceani: { scelta: ['acqua-di-stato', 'stato-bagnato'], cartina: ['dove-acqua', 'oceano-di-stato'] },
+  // Sulla cartina un oceano si cerca: "quale bagna lo stato X?" con lo stato acceso si risolve guardando.
+  oceani: { scelta: ['acqua-di-stato', 'stato-bagnato'], cartina: ['dove-acqua'] },
   fiumi: { scelta: ['stato-del-fiume', 'fiume-in-stato'], cartina: ['dove-fiume'] },
   laghi: { scelta: ['stato-del-lago', 'lago-in-stato'], cartina: ['dove-lago'] },
   arte: {
@@ -138,8 +149,11 @@ export const TIPI: Record<CategoriaAttuale, Record<ModoQuiz, readonly TipoDomand
   },
   libri: { scelta: ['autore-libro', 'libro-di', 'secolo-libro'], cartina: [] },
   cinema: { scelta: ['regista-film', 'film-di', 'anno-film'], cartina: [] },
+  canzoni: { scelta: ['interprete-canzone', 'canzone-di', 'decennio-canzone', 'paese-interprete'], cartina: [] },
+  classica: { scelta: ['compositore-brano', 'brano-di', 'secolo-brano'], cartina: [] },
   lirica: { scelta: ['compositore-opera', 'opera-di', 'citta-opera'], cartina: [] },
-  nobel: { scelta: ['nobel-anno', 'premio-nobel', 'anno-nobel'], cartina: [] },
+  // L'anno di un Nobel non lo sa nessuno: si chiede il campo, a chi lo ha vinto.
+  nobel: { scelta: ['premio-nobel'], cartina: [] },
   storia: { scelta: ['anno-evento', 'secolo-evento', 'prima-evento'], cartina: [] },
   oggi: { scelta: ['oggi-anno', 'oggi-nato'], cartina: [] },
   scienza: {
@@ -152,8 +166,10 @@ export const TIPI: Record<CategoriaAttuale, Record<ModoQuiz, readonly TipoDomand
       'nome-unita',
       'satellite-di',
       'ordine-pianeta',
+      'anno-scoperta',
       'autore-scoperta',
-      'nome-scientifico',
+      'gruppo-animale',
+      'animale-del-gruppo',
     ],
     cartina: [],
   },
@@ -164,8 +180,8 @@ export const TIPI_SCIENZA: Record<string, readonly TipoDomanda[]> = {
   chimica: ['simbolo-elemento', 'elemento-simbolo', 'formula-composto'],
   fisica: ['grandezza-unita', 'unita-grandezza', 'nome-unita'],
   astronomia: ['satellite-di', 'ordine-pianeta'],
-  scoperte: ['autore-scoperta'],
-  natura: ['nome-scientifico'],
+  scoperte: ['anno-scoperta', 'autore-scoperta'],
+  natura: ['gruppo-animale', 'animale-del-gruppo'],
 }
 
 /** I tipi che si possono scegliere per una categoria, in un modo e, per la scienza, in un argomento. */
@@ -213,6 +229,13 @@ export const NOMI_TIPI: Record<TipoDomanda, string> = {
   'regista-film': 'Chi ha diretto un film',
   'film-di': 'Un film di un regista',
   'anno-film': 'L’anno di un film',
+  'interprete-canzone': 'Chi canta una canzone',
+  'canzone-di': 'Una canzone di un artista',
+  'decennio-canzone': 'Il decennio di una canzone',
+  'paese-interprete': 'Il paese di un artista',
+  'compositore-brano': 'Chi ha composto un brano',
+  'brano-di': 'Un brano di un compositore',
+  'secolo-brano': 'Il secolo di un brano',
   'compositore-opera': 'Chi ha composto un’opera',
   'opera-di': 'Un’opera di un compositore',
   'citta-opera': 'Dove ha debuttato un’opera',
@@ -231,7 +254,10 @@ export const NOMI_TIPI: Record<TipoDomanda, string> = {
   'satellite-di': 'Il pianeta di un satellite',
   'ordine-pianeta': 'L’ordine dei pianeti',
   'autore-scoperta': 'Chi ha fatto una scoperta',
+  'anno-scoperta': 'L’anno di una scoperta',
   'nome-scientifico': 'Il nome scientifico di una specie',
+  'gruppo-animale': 'Il gruppo di un animale',
+  'animale-del-gruppo': 'L’animale di un gruppo',
   'oggi-anno': 'L’anno di un fatto',
   'oggi-fatto': 'Che cosa accadde in un anno',
   'oggi-nato': 'L’anno di nascita',
@@ -257,6 +283,10 @@ export type StratoCartina = 'paesi' | 'acque' | 'fiumi' | 'laghi' | 'capitali' |
 /** Una domanda come la vede chi gioca: senza la risposta. */
 export interface DomandaQuiz {
   tipo: TipoDomanda
+  /** La sezione, nelle partite di piu' sezioni insieme: la domanda la dice sopra il testo. */
+  categoria?: CategoriaQuiz
+  /** L'argomento della sezione, se e' uno della scienza: "chimica". */
+  ambito?: string
   testo: string
   /** La bandiera da mostrare con la domanda. */
   bandiera?: string
@@ -318,6 +348,15 @@ export interface DomandaCompleta extends DomandaQuiz {
   spiegazione?: SpiegazioneQuiz
 }
 
+/**
+ * Una sezione di una partita di piu' sezioni: una categoria, e per la scienza
+ * l'argomento — la chimica e la fisica sono due sezioni della stessa categoria.
+ */
+export interface SezioneQuiz {
+  categoria: CategoriaQuiz
+  ambito?: string
+}
+
 /** Tutto il mondo, un continente, o un paese solo (per città, fiumi e laghi). */
 export type AreaQuiz = 'mondo' | Continente | `paese:${string}`
 
@@ -326,6 +365,11 @@ export type Notorieta = 'noti' | 'misti' | 'rari'
 
 export interface RichiestaQuiz {
   categoria: CategoriaQuiz
+  /**
+   * Le sezioni di una partita di piu' sezioni insieme, nella libera: le
+   * domande si dividono fra loro. `categoria` e' quella della prima.
+   */
+  sezioni?: readonly SezioneQuiz[]
   /** A scelta, se non si dice altro. */
   modo?: ModoQuiz
   area: AreaQuiz
@@ -343,6 +387,8 @@ export interface RichiestaQuiz {
   citta?: readonly CittaQuiz[]
   /** Per le altre materie, quel che per la geografia e' la zona: un periodo, un premio, un argomento. */
   ambito?: string
+  /** Il genere, per le canzoni: "rock", "italiana". */
+  genere?: string
   /**
    * Il giorno della partita, "AAAA-MM-GG": gli anni sbagliati non lo passano.
    * La classificata lo passa sempre, perché le domande dipendano solo dal giorno.
@@ -375,6 +421,27 @@ export function indicizza(dati: DatiQuiz): IndiceQuiz {
     acque: new Map(dati.acque.map((a) => [a.id, a])),
     figlie,
   }
+}
+
+/* ────────────────────────────────  Le città  ───────────────────────────── */
+
+/** Quante città per il mondo intero, e per un continente: le piu' note. Le altre non le sa nessuno. */
+export const CITTA_NOTE_NEL_MONDO = 600
+export const CITTA_NOTE_NEL_CONTINENTE = 300
+
+/**
+ * Le città di una partita: di un paese, tutte quelle che ci sono; del mondo o
+ * di un continente, le piu' note, perché "dov'e' Ludhiana?" non e' una
+ * domanda. La libera le prende cosi' nel browser, e la notte per la
+ * classificata: le stesse, perché a risposta data la cartina ha il pallino
+ * della città giusta.
+ */
+export function cittaDellArea(ix: IndiceQuiz, elenco: readonly CittaQuiz[], area: AreaQuiz): CittaQuiz[] {
+  if (area.startsWith('paese:')) return elenco.filter((c) => c.p === area.slice(6))
+  const nellArea = area === 'mondo' ? elenco : elenco.filter((c) => ix.paesi.get(c.p)?.k.includes(area as Continente))
+  return [...nellArea]
+    .sort((a, b) => b.f - a.f)
+    .slice(0, area === 'mondo' ? CITTA_NOTE_NEL_MONDO : CITTA_NOTE_NEL_CONTINENTE)
 }
 
 /* ────────────────────────────  I posti della cartina  ───────────────────── */
@@ -434,49 +501,97 @@ export function distrattori<T extends { id: string }>(
 }
 
 /**
- * I soggetti di una partita, dal piu' facile al piu' difficile: si dividono i
- * candidati per notorietà in tre fasce e se ne prendono quattro facili,
- * quattro medi e due difficili ogni dieci. In ordine, così la partita sale.
+ * I tre gruppi di notorietà di una fila di `n` voci, dalla piu' nota: fin dove
+ * arrivano i famosi e fin dove i noti; gli altri sono il resto. A posti, non a
+ * percentuali: con le percentuali i "facili" dei quadri, che sono settecento,
+ * erano duecento, e il livello facile pescava il Martirio di san Matteo accanto
+ * alla Gioconda. I famosi sono una sessantina al piu' — la Gioconda e la Notte
+ * stellata, Bohemian Rhapsody, la capitale della Francia — e mai meno di
+ * venti, se ci sono; i noti arrivano a duecentocinquanta.
+ */
+export function gruppiDiNotorieta(n: number): [famosi: number, noti: number] {
+  const famosi = Math.min(n, Math.max(20, Math.min(60, Math.round(n * 0.2))))
+  const noti = Math.min(n, Math.max(famosi + 20, Math.min(250, Math.round(n * 0.5))))
+  return [famosi, noti]
+}
+
+/**
+ * Da quale gruppo vengono le domande, per difficoltà: il facile tutto dai
+ * famosi; il normale per meta' dai famosi e quasi tutto il resto dai noti; il
+ * difficile dagli altri, con qualcuno dei noti. Prima il normale ne prendeva
+ * quattro su dieci dal terzo piu' noto e due dall'ultimo, e il facile sei su
+ * dieci da meta' fila: i tre livelli si somigliavano, e il normale — che e'
+ * anche la classificata — era difficile per tutti.
+ */
+const PARTI: Record<Notorieta, readonly [number, number, number]> = {
+  noti: [1, 0, 0],
+  misti: [0.5, 0.4, 0.1],
+  rari: [0, 0.3, 0.7],
+}
+
+/**
+ * Da quale gruppo si completa uno che non basta, per difficoltà: verso i
+ * famosi nel facile, verso gli altri nel difficile.
+ */
+const RIPIEGO: Record<Notorieta, readonly number[]> = { noti: [0, 1, 2], misti: [1, 0, 2], rari: [2, 1, 0] }
+
+/** `quanti` in parti intere, con i resti piu' grandi: le stesse parti danno sempre gli stessi numeri. */
+function inParti(quanti: number, parti: readonly number[]): number[] {
+  const grezze = parti.map((p) => p * quanti)
+  const intere = grezze.map((g) => Math.floor(g + 1e-9))
+  let resto = quanti - intere.reduce((a, b) => a + b, 0)
+  const ordine = grezze.map((g, i) => ({ r: g - intere[i], i })).sort((a, b) => b.r - a.r || a.i - b.i)
+  for (const { i } of ordine) {
+    if (resto <= 0) break
+    intere[i] += 1
+    resto -= 1
+  }
+  return intere
+}
+
+/**
+ * I soggetti di una partita, dal piu' facile al piu' difficile: dai tre gruppi
+ * di notorietà (`gruppiDiNotorieta`) nelle parti della difficoltà (`PARTI`).
  *
- * Con i "noti" si guarda solo il terzo piu' noto, con i "rari" il resto: se la
- * fetta non basta alla partita, si allarga verso l'altra.
+ * Chi ne chiede piu' di quante sono le domande — per averne di riserva, se un
+ * soggetto non fa la sua domanda — li riceve in due pezzi: prima quelli della
+ * partita, con le parti giuste e in ordine di notorietà, poi le riserve. Tutti
+ * in ordine, le riserve dei famosi sarebbero venute prima dei noti, e una
+ * partita normale sarebbe stata tutta di famosi.
  */
 export function soggetti<T extends { f: number }>(
   tutti: readonly T[],
   quanti: number,
   caso: Caso,
   notorieta: Notorieta = 'misti',
+  perPartita: number = quanti,
 ): T[] {
-  let candidati = [...tutti].sort((a, b) => b.f - a.f)
-  if (notorieta !== 'misti') {
-    const taglio = Math.round(candidati.length * 0.35)
-    const fetta = notorieta === 'noti' ? candidati.slice(0, taglio) : candidati.slice(taglio)
-    candidati =
-      fetta.length >= quanti ? fetta : notorieta === 'noti' ? candidati.slice(0, quanti) : candidati.slice(-quanti)
+  const ordinati = [...tutti].sort((a, b) => b.f - a.f)
+  const n = ordinati.length
+  if (n <= quanti) return mescola(ordinati, caso).sort((a, b) => b.f - a.f)
+  const [famosi, noti] = gruppiDiNotorieta(n)
+  const gruppi = [ordinati.slice(0, famosi), ordinati.slice(famosi, noti), ordinati.slice(noti)].map((g) =>
+    mescola(g, caso),
+  )
+  const prendi = (quanto: number): T[] => {
+    const presi: T[] = []
+    let mancano = 0
+    inParti(quanto, PARTI[notorieta]).forEach((q, i) => {
+      const via = gruppi[i].splice(0, q)
+      presi.push(...via)
+      mancano += q - via.length
+    })
+    // Un gruppo troppo corto — i famosi di un continente piccolo — si completa con quello piu' vicino.
+    for (const i of RIPIEGO[notorieta]) {
+      if (mancano <= 0) break
+      const via = gruppi[i].splice(0, mancano)
+      presi.push(...via)
+      mancano -= via.length
+    }
+    return presi.sort((a, b) => b.f - a.f)
   }
-  if (candidati.length <= quanti) return mescola(candidati, caso).sort((a, b) => b.f - a.f)
-  const n = candidati.length
-  const fasce = [
-    candidati.slice(0, Math.ceil(n * 0.3)),
-    candidati.slice(Math.ceil(n * 0.3), Math.ceil(n * 0.7)),
-    candidati.slice(Math.ceil(n * 0.7)),
-  ]
-  const facili = Math.round(quanti * 0.4)
-  const medi = Math.round(quanti * 0.4)
-  const quote = [facili, medi, quanti - facili - medi]
-  const scelti: T[] = []
-  const avanzi: T[] = []
-  fasce.forEach((fascia, i) => {
-    const presi = mescola(fascia, caso)
-    scelti.push(...presi.slice(0, quote[i]).sort((a, b) => b.f - a.f))
-    avanzi.push(...presi.slice(quote[i]))
-  })
-  // Una fascia troppo corta si completa con quel che avanza delle altre.
-  for (const t of mescola(avanzi, caso)) {
-    if (scelti.length >= quanti) break
-    scelti.push(t)
-  }
-  return scelti.slice(0, quanti)
+  const partita = prendi(Math.min(perPartita, quanti))
+  return [...partita, ...prendi(quanti - partita.length)]
 }
 
 /* ───────────────────────────────  Le regole  ───────────────────────────── */
@@ -500,6 +615,23 @@ function capitaleDaDomanda(p: PaeseQuiz): boolean {
   const capitale = senzaAccenti(p.cap)
   const radice = paese.slice(0, Math.max(4, paese.length - 2))
   return !capitale.includes(radice) && !paese.includes(capitale)
+}
+
+/**
+ * Se il nome di una città ripete quello del suo paese o della sua regione, e
+ * quindi lo dice: "Singapore", "Città del Messico", "Tunisi", "San Salvador",
+ * "Aosta", "Reggio Emilia". Come per le capitali, e in piu' basta una parola
+ * che comincia allo stesso modo. Le capitali tengono la regola loro: "qual e'
+ * la capitale del Brasile?" ha la trappola di Rio, e Brasilia resta.
+ */
+export function cittaRipete(citta: string, di: string): boolean {
+  const nome = senzaAccenti(citta)
+  const paese = senzaAccenti(di)
+  const radice = paese.slice(0, Math.max(4, paese.length - 2))
+  if (nome.includes(radice) || paese.includes(nome)) return true
+  const inizi = (s: string) => s.split(/[^a-z]+/).filter((w) => w.length >= 5).map((w) => w.slice(0, 5))
+  const delPaese = new Set(inizi(paese))
+  return inizi(nome).some((w) => delPaese.has(w))
 }
 
 /**
@@ -645,10 +777,6 @@ export function assegna<T>(
   return scelti.map((s, i) => ({ s, tipo: ordine[i] ?? valide[0][0] }))
 }
 
-function vuole(c: Contesto, tipo: TipoDomanda): boolean {
-  return !c.tipi || c.tipi.has(tipo)
-}
-
 /* ── Capitali ── */
 
 const capitaliScelta: Generatore = (c) => {
@@ -752,11 +880,17 @@ const cittaScelta: Generatore = (c) => {
     const regioni = [...new Map(conRegione.map((x) => [x.r!, x.rn!])).entries()]
     if (!p || regioni.length < 2) return []
     const termine = suddivisione(p.id)
-    const candidati = preferendo(conRegione, (x) => x.id, c.evitare, c.quante)
+    // Aosta nella Valle d'Aosta: il nome dice la regione.
+    const candidati = preferendo(
+      conRegione.filter((x) => !cittaRipete(x.n, x.rn!)),
+      (x) => x.id,
+      c.evitare,
+      c.quante,
+    )
     const regioniUsate = new Set<string>()
     // Le quote con i nomi dei tipi della categoria: su un paese "lo stato" diventa "la regione".
     const quote = [['stato-della-citta', 0.55], ['citta-in-stato', 0.45]] as const
-    const scelti = soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta)
+    const scelti = soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta, c.quante)
     for (const { s: x, tipo } of assegna(scelti, quote, c)) {
       if (domande.length >= c.quante) break
       if (tipo === 'stato-della-citta') {
@@ -802,10 +936,17 @@ const cittaScelta: Generatore = (c) => {
     return domande
   }
 
-  const candidati = preferendo(tutte, (x) => x.id, c.evitare, c.quante)
+  // Singapore a Singapore, Città del Messico in Messico: il nome dice lo stato.
+  const candidati = preferendo(
+    tutte.filter((x) => !cittaRipete(x.n, c.ix.paesi.get(x.p)!.n)),
+    (x) => x.id,
+    c.evitare,
+    c.quante,
+  )
   const paesiUsati = new Set<string>()
   const quote = [['stato-della-citta', 0.55], ['citta-in-stato', 0.45]] as const
-  for (const { s: x, tipo } of assegna(soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta), quote, c)) {
+  const scelti = soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta, c.quante)
+  for (const { s: x, tipo } of assegna(scelti, quote, c)) {
     if (domande.length >= c.quante) break
     const p = c.ix.paesi.get(x.p)!
     // Un paese per partita, come nei fiumi: tre città della Cina sono una domanda sola.
@@ -1012,7 +1153,7 @@ const statiScelta: Generatore = (c) => {
       quanti,
     )
     let fatte = 0
-    for (const p of soggetti(candidati, quanti * 2, c.caso, c.notorieta)) {
+    for (const p of soggetti(candidati, quanti * 2, c.caso, c.notorieta, quanti)) {
       if (fatte >= quanti) break
       const suoi = new Set([p.id, ...p.conf])
       let d: DomandaCompleta | null = null
@@ -1194,7 +1335,7 @@ function perAcque(tipi: (a: AcquaQuiz) => boolean, parola: 'mare' | 'oceano'): G
       c.quante,
     )
     const quote = [['stato-bagnato', 0.5], ['acqua-di-stato', 0.5]] as const
-    for (const { s: p, tipo } of assegna(soggetti(candidati, c.quante * 2, c.caso, c.notorieta), quote, c)) {
+    for (const { s: p, tipo } of assegna(soggetti(candidati, c.quante * 2, c.caso, c.notorieta, c.quante), quote, c)) {
       if (domande.length >= c.quante) break
       const principali = acqueDi(p)
       const sue = acque.filter((a) => principali.has(a.id))
@@ -1267,79 +1408,13 @@ const mariCartina: Generatore = (c) =>
   ).map((a) => doveAcqua(c, a))
 
 /**
- * Gli oceani sulla cartina: dove sono — sono cinque, e bastano poche domande —
- * e quale bagna un paese, che si vede acceso mentre si cerca. Vale ogni oceano
- * che lo bagna, anche per poco: sulla cartina toccare l'Atlantico per il Cile
- * non e' un errore, e' la Terra del Fuoco.
+ * Gli oceani sulla cartina: dove sono, uno per domanda, cinque in tutto. Si
+ * chiedeva anche quale oceano bagna un paese, con il paese acceso mentre si
+ * cerca: bastava guardare quale acqua gli stava accanto, e non si imparava
+ * niente. Quella domanda resta a scelta, dove il paese non si vede.
  */
-const oceaniCartina: Generatore = (c) => {
-  const oceani = c.ix.dati.acque.filter(eOceano)
-  const entrambe = vuole(c, 'dove-acqua') && vuole(c, 'oceano-di-stato')
-  const quanteDove = !vuole(c, 'dove-acqua')
-    ? 0
-    : entrambe
-      ? Math.min(oceani.length, Math.ceil(c.quante * 0.4))
-      : c.quante
-  const dove = soggetti(oceani, quanteDove, c.caso, 'misti').map((a) => doveAcqua(c, a))
-  const idOceani = new Set(oceani.map((a) => a.id))
-  const candidati = preferendo(
-    c.ix.dati.paesi.filter((p) => p.num && [...acqueDi(p)].some((id) => idOceani.has(id))),
-    (p) => p.id,
-    c.evitare,
-    c.quante,
-  )
-  const principaliDi = (p: PaeseQuiz) => {
-    const peso = (a: AcquaQuiz) => p.peso[p.bagna.indexOf(a.id)] ?? 0
-    return oceani.filter((a) => acqueDi(p).has(a.id)).sort((a, b) => peso(b) - peso(a))
-  }
-  /*
-   * Mezzo mondo e' atlantico: i paesi si scelgono in modo che nessun oceano
-   * faccia piu' dei due quinti delle risposte, se ce ne sono abbastanza.
-   */
-  const quantiDiStato = c.quante - dove.length
-  const tetto = Math.max(1, Math.ceil(quantiDiStato * 0.4))
-  const perOceano = new Map<string, number>()
-  const scelti: PaeseQuiz[] = []
-  const tutti = soggetti(candidati, quantiDiStato * 3, c.caso, c.notorieta)
-  for (const p of tutti) {
-    if (scelti.length >= quantiDiStato) break
-    const oceano = principaliDi(p)[0].id
-    if ((perOceano.get(oceano) ?? 0) >= tetto) continue
-    perOceano.set(oceano, (perOceano.get(oceano) ?? 0) + 1)
-    scelti.push(p)
-  }
-  for (const p of tutti) if (scelti.length < quantiDiStato && !scelti.includes(p)) scelti.push(p)
-  const diStato: DomandaCompleta[] = vuole(c, 'oceano-di-stato')
-    ? scelti.map((p) => {
-        const principali = principaliDi(p)
-        const tutti = oceani.filter((a) => p.bagna.includes(a.id))
-        return {
-          tipo: 'oceano-di-stato' as const,
-          testo: `Quale oceano bagna ${conArticolo(p.id, p.n)}?`,
-          opzioni: [],
-          cartina: { vista: c.vista, strato: 'acque' as const, mostra: [posto.paese(p)!] },
-          giusta: principali[0].id,
-          accettate: [...new Set(tutti.flatMap((a) => acqueAccettate(c.ix, a)))],
-          risposta: principali.map((a) => a.n).join(' o '),
-          soggetto: p.id,
-          luogo: luogo(
-            principali.map((a) => a.id),
-            [posto.paese(p)],
-          ),
-        }
-      })
-    : []
-  // Le due domande alternate: un oceano da trovare ogni due o tre.
-  const tutte: DomandaCompleta[] = []
-  const passo = dove.length > 0 ? Math.max(2, Math.floor(c.quante / dove.length)) : Infinity
-  let i = 0
-  for (const d of diStato) {
-    tutte.push(d)
-    if ((tutte.length + 1) % passo === 0 && i < dove.length) tutte.push(dove[i++])
-  }
-  while (i < dove.length) tutte.push(dove[i++])
-  return tutte
-}
+const oceaniCartina: Generatore = (c) =>
+  soggetti(c.ix.dati.acque.filter(eOceano), c.quante, c.caso, c.notorieta).map((a) => doveAcqua(c, a))
 
 /* ── Fiumi e laghi ── */
 
@@ -1433,7 +1508,7 @@ function perCorsi(
     const domande: DomandaCompleta[] = []
     const paesiUsati = new Set<string>()
     const quote = [[parole.tipi[0], 0.6], [parole.tipi[1], 0.4]] as const
-    const scelti = soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta)
+    const scelti = soggetti(candidati, Math.ceil(c.quante * 1.5), c.caso, c.notorieta, c.quante)
     for (const { s: x, tipo } of assegna(scelti, quote, c)) {
       if (domande.length >= c.quante) break
       const giusto = suoPaese(x)
@@ -1647,6 +1722,8 @@ export function domandaValida(d: DomandaCompleta, risposte = RISPOSTE_PREDEFINIT
 export function senzaRisposta(d: DomandaCompleta): DomandaQuiz {
   return {
     tipo: d.tipo,
+    ...(d.categoria ? { categoria: d.categoria } : {}),
+    ...(d.ambito ? { ambito: d.ambito } : {}),
     testo: d.testo,
     ...(d.bandiera ? { bandiera: d.bandiera } : {}),
     ...(d.immagine ? { immagine: d.immagine } : {}),

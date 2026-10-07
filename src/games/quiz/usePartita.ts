@@ -29,6 +29,8 @@ import {
 import { giornoDellAnno } from '@shared/quiz-cultura'
 import { generaPartita } from '@shared/quiz-domande-cultura'
 import type { QuizEsito, QuizState, RispostaQuiz } from '@shared/types'
+import { caricaCitta } from './citta'
+import { caricaDatiQuiz } from './dati'
 import { fontiDelQuiz, giornoDellaPartita } from './fonti'
 import { leggiStatistiche, registraStatistiche, type StatisticheLibere } from './statistiche'
 
@@ -173,6 +175,23 @@ export function useQuizDelGiorno(): VistaPartita {
     }
   }, [])
 
+  // Le città del giorno, se e' il giorno delle città: a risposta data la cartina ha il pallino.
+  const [citta, setCitta] = useState<readonly CittaQuiz[] | null>(null)
+  const delleCitta = stato?.categoria === 'citta'
+  useEffect(() => {
+    if (!delleCitta) return
+    let qui = true
+    caricaDatiQuiz()
+      .then((ix) => caricaCitta(ix, 'mondo'))
+      .then((c) => qui && setCitta(c))
+      .catch(() => {
+        // Senza le città la cartina mostra il paese: la partita si gioca lo stesso.
+      })
+    return () => {
+      qui = false
+    }
+  }, [delleCitta])
+
   const applica = useCallback((s: QuizState, inizio: boolean) => {
     setStato(s)
     if (s.status === 'done') {
@@ -305,7 +324,7 @@ export function useQuizDelGiorno(): VistaPartita {
     finale: stato?.status === 'done',
     aiutiRimasti: 0,
     esclusi: NESSUNO,
-    citta: null,
+    citta,
     comincia,
     rispondi,
     avanti,
@@ -315,6 +334,11 @@ export function useQuizDelGiorno(): VistaPartita {
 }
 
 /* ───────────────────────────────  La libera  ──────────────────────────── */
+
+/** Le categorie di una partita libera: quella sola, o quelle delle sue sezioni. */
+export function categorieDi(s: Pick<ImpostazioniLibera, 'categoria' | 'sezioni'>): CategoriaQuiz[] {
+  return [...new Set(s.sezioni?.length ? s.sezioni.map((x) => x.categoria) : [s.categoria])]
+}
 
 /** Le scelte di una partita libera: le domande e come si gioca. */
 export interface ImpostazioniLibera extends Omit<RichiestaQuiz, 'citta' | 'data'>, OpzioniPartita {
@@ -402,9 +426,10 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     if (!impostazioni) return
     setFase('caricamento')
     try {
-      const oggi = impostazioni.categoria === 'oggi'
+      const categorie = categorieDi(impostazioni)
+      const oggi = categorie.includes('oggi')
       const data = oggi ? await giornoDellaPartita(impostazioni.giorno, false) : gameDate()
-      const { fonti, citta: elenco } = await fontiDelQuiz(impostazioni.categoria, impostazioni.area, data)
+      const { fonti, citta: elenco } = await fontiDelQuiz(categorie, impostazioni.area, data)
       const seme = (Math.random() * 2 ** 32) >>> 0
       caso.current = mulberry32(seme ^ 0x5bd1e995)
       const nuove = generaPartita(fonti, { ...impostazioni, citta: elenco ?? undefined, data }, mulberry32(seme))
@@ -463,9 +488,14 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     setUltima(null)
     setFase('fine')
     const risposte = fatte.slice(0, primoGiro)
-    setStatistiche(
-      registraStatistiche(impostazioni.categoria, risposte.length, risposte.filter((f) => f.risposta.giusta).length),
-    )
+    // In una partita di piu' sezioni ogni domanda conta per la sua categoria.
+    const conti = new Map<CategoriaQuiz, [number, number]>()
+    for (const f of risposte) {
+      const categoria = f.domanda.categoria ?? impostazioni.categoria
+      const [domande, giuste] = conti.get(categoria) ?? [0, 0]
+      conti.set(categoria, [domande + 1, giuste + (f.risposta.giusta ? 1 : 0)])
+    }
+    setStatistiche(registraStatistiche([...conti].map(([categoria, [d, g]]) => [categoria, d, g] as const)))
   }, [fase, impostazioni, ripassoDa, domande, finita, indice, fatte, apri])
 
   const rispondi = useCallback(

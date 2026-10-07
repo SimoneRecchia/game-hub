@@ -78,6 +78,10 @@
   fill: var(--materia-cultura-2);
 }
 
+.ct-spicchio.is-materia-musica {
+  fill: var(--materia-musica-2);
+}
+
 .ct-spicchio.is-materia-scienza {
   fill: var(--materia-scienza-2);
 }
@@ -93,6 +97,10 @@
 
 .ct-spicchio.is-quiz-categoria.is-dispari.is-materia-cultura {
   fill: color-mix(in srgb, var(--materia-cultura-2) 82%, #fff);
+}
+
+.ct-spicchio.is-quiz-categoria.is-dispari.is-materia-musica {
+  fill: color-mix(in srgb, var(--materia-musica-2) 82%, #fff);
 }
 
 .ct-spicchio.is-quiz-categoria.is-dispari.is-materia-scienza {

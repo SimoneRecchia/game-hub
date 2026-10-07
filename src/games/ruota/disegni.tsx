@@ -29,7 +29,7 @@ import './disegni.css'
 /** L'icona di una categoria: quella del quiz. */
 export const iconaDellaCategoria = (c: CategoriaQuiz): ((p: { size?: number }) => ReactElement) => ICONE_CATEGORIE[c]
 
-/** Il colore di una categoria: quello della sua materia nel quiz. Arte, libri, cinema e lirica sono la cultura. */
+/** Il colore di una categoria: quello della sua materia nel quiz. La lirica e' della musica. */
 export const coloreDellaCategoria = (c: CategoriaQuiz) => `var(--materia-${materiaDi(c)}-1)`
 
 /** Il colore di un moltiplicatore, dovunque lo si mostri: piu' vale, piu' e' prezioso. */

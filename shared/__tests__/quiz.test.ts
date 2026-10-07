@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../daily'
 import {
+  CARTINA_DEL_GIORNO,
   CATEGORIE as TUTTE_LE_CATEGORIE,
   CATEGORIE_CLASSIFICATA as CLASSIFICATA_DI_TUTTE,
   CONFINE_DEL_GIRO,
@@ -21,8 +22,10 @@ import {
   SUPERFICIE_MINIMA_CARTINA,
   TIPI,
   acqueAccettate,
+  cittaRipete,
   domandaValida,
   generaDomande,
+  gruppiDiNotorieta,
   indicizza,
   rispostaGiusta,
   senzaRisposta,
@@ -131,13 +134,15 @@ describe('la giornata della classificata', () => {
     }
   })
 
-  it('ha due giorni per giro sulla cartina, solo di geografia, e mai le città', () => {
+  it('ha due giorni per giro sulla cartina, mai sugli oceani né sulle città, che si giocano a scelta', () => {
+    expect(CLASSIFICATA_DI_TUTTE).toContain('citta')
     for (let giro = 0; giro < 100; giro += 1) {
       const giorni = Array.from({ length: n }, (_, i) => giornataDelQuiz(giro * n + i + 1))
       expect(giorni.filter((g) => g.modo === 'cartina').length).toBe(GIORNI_CARTINA_PER_GIRO)
-      for (const g of giorni) if (g.modo === 'cartina') expect(diGeografia(g.categoria)).toBe(true)
+      for (const g of giorni) if (g.modo === 'cartina') expect(CARTINA_DEL_GIORNO).toContain(g.categoria)
     }
-    for (let g = 1; g <= 1500; g += 1) expect(giornataDelQuiz(g).categoria).not.toBe('citta')
+    expect(CARTINA_DEL_GIORNO).not.toContain('oceani')
+    expect(CARTINA_DEL_GIORNO).not.toContain('citta')
   })
 })
 
@@ -268,11 +273,11 @@ describe('le opzioni della libera', () => {
     for (const d of tante('stati', 'scelta', 'mondo', 10, { tipi: ['senza-mare'] })) expect(d.tipo).toBe('senza-mare')
   })
 
-  it('con i più noti restano sul terzo più noto', () => {
-    const noti = [...ix.dati.paesi].sort((a, b) => b.f - a.f).slice(0, Math.round(ix.dati.paesi.length * 0.35))
-    const ids = new Set(noti.map((p) => p.id))
+  it('al facile restano sui famosi', () => {
+    const ordinati = [...ix.dati.paesi].sort((a, b) => b.f - a.f)
+    const famosi = new Set(ordinati.slice(0, gruppiDiNotorieta(ordinati.length)[0]).map((p) => p.id))
     for (const d of tante('bandiere', 'scelta', 'mondo', 10, { notorieta: 'noti', quante: 5 })) {
-      expect(ids.has(d.soggetto), d.testo).toBe(true)
+      expect(famosi.has(d.soggetto), d.testo).toBe(true)
     }
   })
 
@@ -413,6 +418,19 @@ describe('le categorie', () => {
     }
   })
 
+  it('sulle città non si chiede quella che ha il nome dello stato o della regione', () => {
+    const domande = [...tante('citta', 'scelta', 'mondo', 40), ...tante('citta', 'scelta', 'paese:IT', 40)]
+    expect(domande.length).toBeGreaterThan(0)
+    for (const d of domande) expect(['C33', 'C34']).not.toContain(d.soggetto)
+    expect(cittaRipete('Singapore', 'Singapore')).toBe(true)
+    expect(cittaRipete('Tunisi', 'Tunisia')).toBe(true)
+    expect(cittaRipete('San Salvador', 'El Salvador')).toBe(true)
+    expect(cittaRipete('Reggio Emilia', 'Emilia-Romagna')).toBe(true)
+    expect(cittaRipete('Roma', 'Italia')).toBe(false)
+    expect(cittaRipete('Bari', 'Puglia')).toBe(false)
+    expect(cittaRipete('Lione', 'Francia')).toBe(false)
+  })
+
   it('con un continente parlano di quel continente', () => {
     for (const continente of CONTINENTI) {
       for (const d of tante('capitali', 'scelta', continente, 5)) expect(paese(d.soggetto).k).toContain(continente)
@@ -464,18 +482,15 @@ describe('la cartina muta', () => {
     }
   })
 
-  it('sull’oceano di uno stato vale ogni oceano che lo bagna, e lo stato si vede mentre si cerca', () => {
-    let fatte = 0
-    for (const d of tante('oceani', 'cartina')) {
-      if (d.tipo !== 'oceano-di-stato') continue
-      fatte += 1
-      const p = paese(d.soggetto)
-      expect(d.cartina?.mostra).toEqual([`n${p.num}`])
-      for (const oceano of p.bagna.filter((id) => ix.acque.get(id)?.t === 'oceano')) {
-        expect(d.accettate).toContain(oceano)
-      }
+  it('gli oceani si cercano per nome: dove sono, e nient’altro', () => {
+    const domande = tante('oceani', 'cartina')
+    expect(domande.length).toBeGreaterThan(0)
+    for (const d of domande) {
+      expect(d.tipo).toBe('dove-acqua')
+      expect(d.testo.startsWith('Dov’è')).toBe(true)
+      expect(d.cartina?.mostra).toBeUndefined()
+      expect(ix.acque.get(d.giusta)?.t).toBe('oceano')
     }
-    expect(fatte).toBeGreaterThan(0)
   })
 
   it('conta giusto un mare che sta dentro quello chiesto, e non il contrario', () => {

@@ -22,13 +22,14 @@
 
 import type { DatiCinema, FilmQuiz } from '../../shared/quiz-cultura'
 import { CITTADINANZE_ITALIANE, elencoPersone, ITALIA, moderno, nomePaese, persone, statiDi } from './persone'
-import { ANNO_LETTURE, interroga, letture, ordineDichiarazioni } from './rete'
+import { interroga, letture, ordineDichiarazioni } from './rete'
 import {
   anni,
   annoSicuro,
   aPezzi,
   confrontaId,
   inOrdine,
+  lettureDiSempre,
   nomeItaliano,
   notorietaItaliana,
   numero,
@@ -54,17 +55,6 @@ const CANDIDATI_ITALIANI = 800
  * ha diretto "Biancaneve e i sette nani" non lo sa nessuno.
  */
 const PESO_ANIMAZIONE = 0.4
-/**
- * Le letture di un film uscito nell'anno delle letture, o in quello prima, sono
- * quelle dell'uscita, e non quelle di sempre: Thunderbolts* e Captain America
- * stavano fra i primi cinquanta, davanti al Padrino, e un film era del 2023 o
- * dopo uno su quattro. Contano un terzo l'anno dell'uscita e due terzi quello
- * dopo; i libri e i quadri di quegli anni fra i primi non ci sono.
- */
-function lettureDiSempre(lette: number, anno: number | undefined): number {
-  const eta = anno === undefined ? Infinity : ANNO_LETTURE - anno
-  return eta >= 2 ? lette : (lette * (Math.max(0, eta) + 1)) / 3
-}
 
 /** Anche per genere, oltre alle classi di `ANIMAZIONE`: i lungometraggi animati, e gli anime. */
 const GENERI_ANIMATI = new Set(['Q202866', 'Q29168811', 'Q17013749', 'Q28968511', 'Q1107'])

@@ -4,21 +4,24 @@ import {
   NOMI_CONTINENTI,
   NOMI_MODI,
   diGeografia,
+  materiaDi,
   nomeAmbito,
+  nomeGenere,
   type CategoriaQuiz,
   type Continente,
   type MateriaQuiz,
   type ModoQuiz,
 } from '@shared/quiz'
 import { giornoInLettere } from '@shared/quiz-cultura'
-import type { AreaQuiz, IndiceQuiz } from '@shared/quiz-domande'
+import type { AreaQuiz, IndiceQuiz, SezioneQuiz } from '@shared/quiz-domande'
 
 /** Che cosa c'e' in una materia, in una riga: sotto il suo nome, nel menu della libera. */
 export const DESCRIZIONI_MATERIE: Record<MateriaQuiz, string> = {
   geografia: 'Capitali, bandiere, mari, fiumi, città',
   storia: 'Date famose, Accadde oggi',
-  cultura: 'Quadri, libri, film, lirica',
-  scienza: 'Chimica, astronomia, natura, Nobel',
+  cultura: 'Quadri, libri, film',
+  musica: 'Canzoni, musica classica, lirica',
+  scienza: 'Chimica, astronomia, animali, Nobel',
 }
 
 /**
@@ -42,8 +45,9 @@ export const VOCI_MATERIE: Record<MateriaQuiz, readonly VoceMateria[]> = {
   geografia: perCategoria('geografia'),
   storia: perCategoria('storia'),
   cultura: perCategoria('cultura'),
+  musica: perCategoria('musica'),
+  // Gli argomenti si scelgono insieme, quanti se ne vuole: "tutta la scienza" e' sceglierli tutti.
   scienza: [
-    { categoria: 'scienza', ambito: 'tutti', nome: 'Tutta la scienza' },
     {
       categoria: 'scienza',
       ambito: 'chimica',
@@ -66,13 +70,13 @@ export const VOCI_MATERIE: Record<MateriaQuiz, readonly VoceMateria[]> = {
       categoria: 'scienza',
       ambito: 'scoperte',
       nome: 'Scoperte e invenzioni',
-      descrizione: 'Chi ha fatto le grandi scoperte e le grandi invenzioni.',
+      descrizione: 'Quando e da chi sono state fatte le grandi scoperte e invenzioni.',
     },
     {
       categoria: 'scienza',
       ambito: 'natura',
-      nome: 'Animali e piante',
-      descrizione: 'Il nome scientifico delle specie.',
+      nome: 'Animali',
+      descrizione: 'A quale gruppo appartengono: mammiferi, uccelli, rettili, pesci.',
     },
     { categoria: 'nobel', nome: 'Premi Nobel' },
   ],
@@ -99,11 +103,13 @@ export const DESCRIZIONI: Record<ModoQuiz, Record<CategoriaQuiz, string>> = {
     arte: 'Di chi è il quadro, come si intitola, di che corrente è.',
     libri: 'Chi ha scritto i libri, e quando.',
     cinema: 'Chi ha diretto i film, e in che anno sono usciti.',
+    canzoni: 'Chi canta le canzoni, e quando sono uscite.',
+    classica: 'Chi ha composto i grandi brani, e quando.',
     lirica: 'Chi ha composto le opere, e dove hanno debuttato.',
-    nobel: 'Chi ha vinto il premio Nobel, in quale campo, e quando.',
+    nobel: 'In quale campo ha vinto chi ha avuto il premio Nobel.',
     storia: 'In che anno o in che secolo, e che cosa venne prima.',
     oggi: 'Quel che è successo in questo giorno, e chi è nato.',
-    scienza: 'Elementi e formule, unità di misura, pianeti, scoperte, specie.',
+    scienza: 'Elementi e formule, unità di misura, pianeti, scoperte, animali.',
   },
   cartina: {
     capitali: 'Trova la capitale sulla cartina.',
@@ -118,11 +124,13 @@ export const DESCRIZIONI: Record<ModoQuiz, Record<CategoriaQuiz, string>> = {
     arte: 'Di chi è il quadro, come si intitola, di che corrente è.',
     libri: 'Chi ha scritto i libri, e quando.',
     cinema: 'Chi ha diretto i film, e in che anno sono usciti.',
+    canzoni: 'Chi canta le canzoni, e quando sono uscite.',
+    classica: 'Chi ha composto i grandi brani, e quando.',
     lirica: 'Chi ha composto le opere, e dove hanno debuttato.',
-    nobel: 'Chi ha vinto il premio Nobel, in quale campo, e quando.',
+    nobel: 'In quale campo ha vinto chi ha avuto il premio Nobel.',
     storia: 'In che anno o in che secolo, e che cosa venne prima.',
     oggi: 'Quel che è successo in questo giorno, e chi è nato.',
-    scienza: 'Elementi e formule, unità di misura, pianeti, scoperte, specie.',
+    scienza: 'Elementi e formule, unità di misura, pianeti, scoperte, animali.',
   },
 }
 
@@ -141,6 +149,7 @@ export function dettagliPartita(
     modo?: ModoQuiz | null
     area?: AreaQuiz
     ambito?: string | null
+    genere?: string | null
     giorno?: string | null
   },
   ix: IndiceQuiz | null,
@@ -148,8 +157,24 @@ export function dettagliPartita(
   if (diGeografia(s.categoria)) return [NOMI_MODI[s.modo ?? 'scelta'], nomeArea(s.area ?? 'mondo', ix)]
   // Il giorno e' "03-12" per una partita, "caso" per le scelte di chi vuole un giorno a caso.
   const giorno = s.giorno === 'caso' ? 'Un giorno a caso' : s.giorno ? giornoInLettere(s.giorno) : null
-  const cosa = nomeAmbito(s.categoria, s.ambito) ?? giorno
-  return cosa ? [cosa] : []
+  return [nomeAmbito(s.categoria, s.ambito) ?? giorno, nomeGenere(s.categoria, s.genere)].filter(
+    (x): x is string => !!x,
+  )
+}
+
+/**
+ * Il nome di una partita di piu' sezioni: "Città, Bandiere e Stati". Le
+ * sezioni sono le voci della pagina della materia, quindi gli argomenti della
+ * scienza si chiamano per nome: "Chimica e Fisica".
+ */
+export function nomeSezioni(materia: MateriaQuiz, sezioni: readonly SezioneQuiz[]): string {
+  const nomi = sezioni.map((x) => voceDi(materia, x.categoria, x.ambito)?.nome ?? NOMI_CATEGORIE[x.categoria])
+  return nomi.length <= 1 ? (nomi[0] ?? '') : `${nomi.slice(0, -1).join(', ')} e ${nomi[nomi.length - 1]}`
+}
+
+/** Il nome di una partita o di una sfida: la categoria, o le sue sezioni. */
+export function nomePartita(s: { categoria: CategoriaQuiz; sezioni?: readonly SezioneQuiz[] }): string {
+  return s.sezioni?.length ? nomeSezioni(materiaDi(s.categoria), s.sezioni) : NOMI_CATEGORIE[s.categoria]
 }
 
 /** Il nome di dove si gioca: "Tutto il mondo", un continente, o un paese. */

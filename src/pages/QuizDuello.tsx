@@ -13,7 +13,7 @@ import { Sheet } from '@/components/Sheet'
 import { usePlayer } from '@/lib/auth'
 import { ApiFetchError } from '@/lib/api'
 import { suona } from '@/lib/suoni'
-import { NOMI_CATEGORIE, diGeografia } from '@shared/quiz'
+import { diGeografia } from '@shared/quiz'
 import type { CittaQuiz } from '@shared/quiz-dati'
 import type { DomandaQuiz } from '@shared/quiz-domande'
 import { RALLENTY, secondiMostrati } from '@shared/quiz-sfida'
@@ -30,7 +30,7 @@ import { caricaCitta } from '@/games/quiz/citta'
 import { ComeSiGiocaQuiz } from '@/games/quiz/ComeSiGioca'
 import { useIndiceQuiz } from '@/games/quiz/dati'
 import { IconaCategoria } from '@/games/quiz/icone'
-import { dettagliPartita } from '@/games/quiz/testi'
+import { dettagliPartita, nomePartita } from '@/games/quiz/testi'
 import type { Fatta } from '@/games/quiz/usePartita'
 import {
   adesivoFineDuello,
@@ -72,8 +72,10 @@ function Duello({ id }: { id: string }) {
   const serveIndice = !!imp && diGeografia(imp.categoria) && (imp.modo === 'cartina' || imp.imparo)
   const ix = useIndiceQuiz(serveIndice)
   const [citta, setCitta] = useState<CittaQuiz[] | null>(null)
+  // Le città servono anche se sono una sezione sola di una sfida di piu' sezioni.
+  const conCitta = !!imp && (imp.sezioni?.some((x) => x.categoria === 'citta') ?? imp.categoria === 'citta')
   useEffect(() => {
-    if (!imp || imp.categoria !== 'citta' || !ix) return
+    if (!imp || !conCitta || !ix) return
     let vivo = true
     caricaCitta(ix, imp.area)
       .then((c) => vivo && setCitta(c))
@@ -81,8 +83,8 @@ function Duello({ id }: { id: string }) {
     return () => {
       vivo = false
     }
-  }, [imp, ix])
-  const datiPronti = !!imp && (!serveIndice || !!ix) && (imp.categoria !== 'citta' || citta !== null)
+  }, [imp, ix, conCitta])
+  const datiPronti = !!imp && (!serveIndice || !!ix) && (!conCitta || citta !== null)
 
   // Sono arrivato: quando lo e' anche l'altro, comincia il tre-due-uno.
   const segnato = useRef<string | null>(null)
@@ -295,7 +297,7 @@ function Attesa({ v, onEsci }: { v: VistaDuello; onEsci: () => void }) {
       <p className="duello-attesa__titolo">Aspetto {v.avversario.displayName}…</p>
       <p className="duello-attesa__testo">
         {[
-          NOMI_CATEGORIE[v.impostazioni.categoria],
+          nomePartita(v.impostazioni),
           ...dettagliPartita(v.impostazioni, null).slice(0, 1),
           `${v.totale} domande`,
         ].join(' · ')}
@@ -701,7 +703,7 @@ function Fine({ d, v }: { d: Duello; v: VistaDuello }) {
     <div className="quiz-fine duello-fine">
       <Scheda
         className="quiz-fine__scheda"
-        titolo={NOMI_CATEGORIE[v.impostazioni.categoria]}
+        titolo={nomePartita(v.impostazioni)}
         icona={
           <IconaScheda colore="var(--quiz-1)">
             <IconaCategoria categoria={v.impostazioni.categoria} size={15} />
