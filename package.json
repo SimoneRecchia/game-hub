@@ -19,6 +19,8 @@
     "quiz:cultura": "vite-node scripts/genera-cultura.ts && vite-node scripts/versioni-cultura.ts",
     "quiz:oggi": "vite-node scripts/genera-oggi.ts && vite-node scripts/versioni-cultura.ts",
     "sudoku:locale": "vite-node scripts/genera-sudoku.ts -- --local",
+    "anagrammi:locale": "vite-node scripts/genera-anagrammi.ts -- --local",
+    "anagrammi:build": "node scripts/build-anagrammi.mjs",
     "nomi:lessico": "vite-node scripts/genera-lessico-nomi.ts",
     "dawg:build": "node scripts/build-dawg.mjs",
     "icone": "node scripts/genera-icone.mjs",

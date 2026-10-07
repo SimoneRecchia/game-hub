@@ -16,7 +16,16 @@ import type { LatoMoneta } from './ruota'
 import type { Carta, ManoBJ } from './blackjack'
 import type { FaseBJ } from './blackjack-tavolo'
 
-export type GameId = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'battaglia' | 'quiz' | 'tris' | 'nomi'
+export type GameId =
+  | 'wordle'
+  | 'scarabeo'
+  | 'cruciverba'
+  | 'sudoku'
+  | 'battaglia'
+  | 'quiz'
+  | 'tris'
+  | 'nomi'
+  | 'anagrammi'
 
 export interface Player {
   id: string
@@ -522,6 +531,92 @@ export interface TrisLeaderboard {
   me: TrisRow | null
 }
 
+/* ───────────────────────────────  Anagrammi  ─────────────────────────────── */
+
+export type AnagrammiStatus = 'playing' | 'done'
+
+/** Com'e' finita una parola: trovata, persa allo scadere del tempo, o lasciata con "Passo". */
+export type EsitoAnagramma = 'trovata' | 'persa' | 'passata'
+
+/** Una parola della giornata, come la vede chi gioca: le lettere solo da quando la si apre. */
+export interface ParolaAnagrammi {
+  /** Quante lettere ha: si sa da subito. */
+  lunghezza: number
+  /** Le lettere mescolate, da quando la parola e' aperta. */
+  lettere: string | null
+  esito: EsitoAnagramma | null
+  /** In quanto la si e' trovata. */
+  ms: number | null
+  punti: number
+  aiuto: boolean
+  /** La definizione: con l'aiuto, o a parola chiusa. */
+  definizione: string | null
+  /** La parola: a parola chiusa. */
+  parola: string | null
+  /** La risposta data, se era un'altra parola con le stesse lettere. */
+  risposta: string | null
+}
+
+export interface AnagrammiStato {
+  puzzleNumber: number
+  date: string
+  status: AnagrammiStatus
+  parole: ParolaAnagrammi[]
+  /** La parola aperta, se ce n'e' una. */
+  corrente: number | null
+  /** Il tempo che resta alla parola aperta. */
+  restanteMs: number | null
+  tempoParolaMs: number
+  /** I punti fatti finora; a giornata finita, quelli della classifica. */
+  punti: number
+  /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni scrittura. */
+  versione: number
+  msToNextPuzzle: number
+}
+
+/** La risposta a un tentativo: lo stato, e se la parola era giusta. */
+export interface AnagrammiProva extends AnagrammiStato {
+  giusta: boolean
+}
+
+export interface AnagrammiSummary {
+  puzzleNumber: number
+  date: string
+  status: 'new' | AnagrammiStatus
+  /** Le parole di oggi ci sono: le scrive la notte. */
+  pronta: boolean
+  trovate: number
+  /** Le parole chiuse, trovate o no. */
+  giocate: number
+  totale: number
+  punti: number
+  msToNextPuzzle: number
+}
+
+export interface AnagrammiRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: solo le giornate finite. */
+  punti: number
+  giornate: number
+  trovate: number
+  /** Quanto ci ha messo a trovarle, in tutto: lo spareggio. */
+  tempoMs: number
+  /** true se oggi ha una giornata cominciata e non finita. */
+  inCorso: boolean
+}
+
+export interface AnagrammiLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: AnagrammiRow[]
+  me: AnagrammiRow | null
+}
+
 /* ─────────────────────────────  Nomi, cose e città  ───────────────────────────── */
 
 export type NomiStatus = 'playing' | 'done'
@@ -691,6 +786,7 @@ export type Attivita =
   | 'go'
   | 'tris'
   | 'nomi'
+  | 'anagrammi'
   | 'ruota'
   | 'fortuna'
   | 'slot'
@@ -1314,7 +1410,15 @@ export interface PeriodoClassifica {
 /* ──────────────────────────  La classifica generale  ───────────────────────── */
 
 /** I giochi che hanno una classificata, e quindi una classifica. */
-export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' | 'quiz' | 'tris' | 'nomi'
+export type GiocoClassificato =
+  | 'wordle'
+  | 'scarabeo'
+  | 'cruciverba'
+  | 'sudoku'
+  | 'quiz'
+  | 'tris'
+  | 'nomi'
+  | 'anagrammi'
 
 /**
  * I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha
@@ -1426,6 +1530,7 @@ export interface OggiRisposta {
   quiz: QuizSummary
   tris: TrisSummary
   nomi: NomiSummary
+  anagrammi: AnagrammiSummary
   /** Come si sta oggi nella classifica generale, con quel che hanno dato o tolto i giochi della Fortuna. */
   generale: {
     posizione: number | null

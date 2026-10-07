@@ -74,6 +74,10 @@
   --c1: var(--nomi-1);
   --c2: var(--nomi-2);
 }
+.copertina--anagrammi {
+  --c1: var(--anagrammi-1);
+  --c2: var(--anagrammi-2);
+}
 
 .copertina--lupus {
   --c1: var(--lupus-1);

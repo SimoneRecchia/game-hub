@@ -14,6 +14,7 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
+import { PUNTI_FINITA_ANAGRAMMI } from '@shared/anagrammi'
 import { TETTI } from '@shared/punti'
 import { DOMANDE_PER_PARTITA, PUNTI_BASE_QUIZ, PUNTI_QUIZ } from '@shared/quiz'
 import { conSegno } from '@shared/ruota'
@@ -45,6 +46,7 @@ const LEDE: Record<ChiaveClassifica, string> = {
   quiz: `${PUNTI_BASE_QUIZ} punti per aver giocato, ${PUNTI_PER_GIUSTA} per ogni risposta giusta.`,
   tris: '10 punti per la serie, 8 per ogni vittoria, 4 per ogni patta.',
   nomi: `Fino a ${TETTI.nomi} punti, che valgono il giorno dopo: di più per le risposte date da pochi.`,
+  anagrammi: `${PUNTI_FINITA_ANAGRAMMI} punti per aver giocato, fino a 10 per ogni parola: di più se la trovi subito.`,
   fortuna: 'Quel che Crazy Time, la slot e il blackjack hanno dato o tolto.',
 }
 

@@ -1,6 +1,6 @@
 name: Scorte notturne
 
-# Cinque cose che il Worker non puo' fare — ognuna costa piu' dei 10 ms di CPU
+# Sei cose che il Worker non puo' fare — ognuna costa piu' dei 10 ms di CPU
 # di una richiesta — e che si preparano qui, ogni notte, in anticipo:
 #
 #  - gli schemi del cruciverba del giorno, fino a due mesi da oggi;
@@ -10,6 +10,7 @@ name: Scorte notturne
 #  - i sudoku del giorno, fino a due mesi da oggi;
 #  - le domande del quiz, fino a due mesi da oggi, e il riassunto dei dati da
 #    Wikidata e Natural Earth per le partite libere;
+#  - le parole degli Anagrammi, fino a due mesi da oggi, dall'elenco versionato;
 #  - i punti di Nomi, cose e città delle giornate finite, se il workflow che
 #    li conta a mezzanotte (nomi.yml) e' saltato.
 #
@@ -79,6 +80,12 @@ jobs:
 
       - name: Il quiz
         run: npx vite-node scripts/genera-quiz.ts -- --remote --giorni 60
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Gli anagrammi
+        run: npx vite-node scripts/genera-anagrammi.ts -- --remote --giorni 60
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

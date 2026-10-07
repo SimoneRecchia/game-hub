@@ -1,6 +1,7 @@
 import { Hono, type Context } from 'hono'
 import { PERIODI, periodoDi } from '../../shared/periodi'
 import type {
+  AnagrammiLeaderboard,
   FortunaLeaderboard,
   GeneraleLeaderboard,
   CruciverbaLeaderboard,
@@ -23,6 +24,7 @@ import { classificaSudoku } from '../lib/sudokuStore'
 import { classificaQuiz } from '../lib/quizStore'
 import { classificaTris } from '../lib/trisStore'
 import { classificaNomi } from '../lib/nomiStore'
+import { classificaAnagrammi } from '../lib/anagrammiStore'
 import { classificaFortuna, classificaGenerale } from '../lib/generale'
 import { panoramica } from '../lib/panoramica'
 import { today } from '../lib/wordleStore'
@@ -103,4 +105,10 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/nomi', async (c) => {
     const result = await classificaNomi(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<NomiLeaderboard>(result)
+  })
+
+  /** Gli Anagrammi: i punti delle giornate finite, poi le parole trovate e il tempo. */
+  .get('/anagrammi', async (c) => {
+    const result = await classificaAnagrammi(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
+    return c.json<AnagrammiLeaderboard>(result)
   })

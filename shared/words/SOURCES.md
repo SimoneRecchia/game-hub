@@ -191,6 +191,27 @@ licenze».
 Rigenerare: `npm run nomi:lessico` (usa le estrazioni del Wiktionary già in
 `scripts/.cache/`, e vi salva le risposte di QLever).
 
+## Gli Anagrammi
+
+Le parole degli Anagrammi — `scripts/data/anagrammi.tsv.gz` per le
+classificate, `public/dati/anagrammi/libere.json` per le libere — sono le
+parole comuni che il Wikizionario definisce. Le lettere di una parola stanno in
+un elenco solo, quindi una parola delle libere non è mai l'anagramma di una
+parola del giorno.
+
+| Fonte | Cosa dà | Licenza |
+| --- | --- | --- |
+| [`hermitdave/FrequencyWords`](https://github.com/hermitdave/FrequencyWords) — `it_50k.txt` | Le parole comuni: almeno 300 occorrenze nei sottotitoli italiani di OpenSubtitles 2018, con i filtri della grafia del Wordle | MIT |
+| [`napolux/paroleitaliane`](https://github.com/napolux/paroleitaliane) — `280000_parole_italiane.txt`, `9000_nomi_propri.txt`, `lista_badwords.txt` | Le altre parole con le stesse lettere, che valgono come risposta; i nomi propri e le parolacce, che restano fuori | MIT |
+| Wikizionario italiano, estrazione di [kaikki.org](https://kaikki.org/itwiktionary/) | La definizione di ogni parola, quella scelta per il cruciverba (`scripts/data/cruciverba-definizioni.tsv.gz`) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.it) |
+
+I due file contengono le definizioni del Wikizionario, e sono quindi anch'essi
+sotto **CC BY-SA 4.0**; la fonte è citata nelle regole del gioco e nel
+profilo, in «Fonti e licenze».
+
+Rigenerare: `npm run anagrammi:build` (scarica gli elenchi di napolux e di
+hermitdave in `scripts/.cache/`).
+
 ## I pezzi degli scacchi
 
 I pezzi della scacchiera (`src/games/scacchi/pezzi.ts`) sono i disegni di Colin
