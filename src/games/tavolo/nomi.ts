@@ -1,4 +1,4 @@
-import type { GiocoTavoliere } from '@shared/tavolo'
+import type { GiocoAlTavolo, GiocoTavoliere } from '@shared/tavolo'
 
 /**
  * I nomi dei giochi da tavoliere per chi non gioca: gli avvisi degli inviti e
@@ -7,16 +7,27 @@ import type { GiocoTavoliere } from '@shared/tavolo'
  */
 
 /** Come si dice giocarci: "ti invita a giocare a scacchi". */
-export const A_GIOCO: Record<GiocoTavoliere, string> = {
+export const A_GIOCO: Record<GiocoAlTavolo, string> = {
   scacchi: 'a scacchi',
   dama: 'a dama',
   forza4: 'a Forza 4',
   go: 'a go',
   tris: 'a tris',
+  scarabeo: 'a Scarabeo',
+}
+
+/** Il nome del gioco, sopra l'avviso di un invito e accanto a una partita aperta. */
+export const NOMI_AL_TAVOLO: Record<GiocoAlTavolo, string> = {
+  scacchi: 'Scacchi',
+  dama: 'Dama',
+  forza4: 'Forza 4',
+  go: 'Go',
+  tris: 'Tris',
+  scarabeo: 'Scarabeo',
 }
 
 /** Una variante come si legge: il goban "13 × 13". Null per i giochi che non ne hanno. */
-export function nomeVariante(gioco: GiocoTavoliere, variante: string | null | undefined): string | null {
+export function nomeVariante(gioco: GiocoAlTavolo, variante: string | null | undefined): string | null {
   return gioco === 'go' && variante ? `${variante} × ${variante}` : null
 }
 

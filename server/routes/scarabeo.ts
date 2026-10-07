@@ -24,7 +24,7 @@ import {
   type PartitaRow,
 } from '../lib/scarabeoStore'
 import { compagniaBreve, pagaOspiti } from '../lib/compagniaStore'
-import { paroleSconosciute } from '../lib/dizionario'
+import { controllaNelDizionario } from '../lib/dizionario'
 import { riepilogoScarabeo } from '../lib/riepiloghi'
 
 /**
@@ -53,20 +53,6 @@ function aggiornaOspiti(db: D1Database, row: PartitaRow) {
 /** Quanti giocano: chi gioca e, nelle giornate a turni, il computer del giorno. */
 function giocatoriDi(row: PartitaRow): 1 | 2 {
   return row.contro_computer === 1 ? 2 : 1
-}
-
-/** Le parole devono esserci tutte, anche quelle di traverso. */
-async function controllaParole(env: AppEnv['Bindings'], url: string, parole: string[], diChi = '') {
-  const sconosciute = await paroleSconosciute(env, url, parole).catch(() =>
-    fail(503, 'DIZIONARIO_ASSENTE', 'Il dizionario non risponde: riprova tra poco.'),
-  )
-  if (sconosciute.length === 0) return
-  const elenco = sconosciute.map((p) => `"${p.toUpperCase()}"`).join(', ')
-  fail(
-    422,
-    diChi ? 'RISPOSTA' : 'PAROLA_SCONOSCIUTA',
-    `${diChi}${sconosciute.length === 1 ? `${elenco} non è nel dizionario.` : `${elenco} non sono nel dizionario.`}`,
-  )
 }
 
 /**
@@ -120,7 +106,10 @@ async function rispostaControllata(
   })()
   if (r.tipo !== 'posa' || !controllata) fail(422, 'RISPOSTA', 'La mossa del computer non è valida.')
   const { posa, esito } = controllata
-  await controllaParole(env, url, esito.parole.map((p) => p.parola), 'La mossa del computer non va: ')
+  await controllaNelDizionario(env, url, esito.parole.map((p) => p.parola), {
+    chi: 'La mossa del computer non va: ',
+    codice: 'RISPOSTA',
+  })
   return { mossa: { tipo: 'posa', posa }, punti: esito.punti }
 }
 
@@ -169,7 +158,7 @@ export const scarabeoRoutes = new Hono<AppEnv>()
      * non sta in piedi non c'e' motivo di leggerlo, e la risposta piu' utile e'
      * quella sulla forma della mossa.
      */
-    await controllaParole(c.env, c.req.url, esito.parole.map((p) => p.parola))
+    await controllaNelDizionario(c.env, c.req.url, esito.parole.map((p) => p.parola))
 
     const mossa: Mossa = { tipo: 'posa', posa }
     const risposta = await rispostaControllata(c.env, c.req.url, row, sacchetto, [...mosse, mossa], body)

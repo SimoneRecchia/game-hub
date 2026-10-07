@@ -7,7 +7,8 @@ import { Sezione } from '@/components/Elementi'
 import { IconChevronRight } from '@/components/Icons'
 import { Vetrina } from '@/components/Vetrina'
 import { DOVE_BREVE, useAmiciOnline } from '@/games/amici/amici'
-import { GIOCHI, GIOCHI_DA_TAVOLO, giocoTavoloDi, type Gioco, type GiocoTavolo } from '@/games/catalog'
+import { GIOCHI, GIOCHI_DA_TAVOLO, type Gioco, type GiocoTavolo } from '@/games/catalog'
+import { NOMI_AL_TAVOLO } from '@/games/tavolo/nomi'
 import { formatGameDate } from '@/lib/format'
 import { usePresenza } from '@/lib/presenza'
 import { gameDate } from '@shared/daily'
@@ -191,7 +192,7 @@ function partiteInCorso(p: ReturnType<typeof usePresenza>['dati']): PartitaInCor
   if (p.partitaTavolo) {
     partite.push({
       gioco: p.partitaTavolo.gioco,
-      nome: giocoTavoloDi(p.partitaTavolo.gioco).nome,
+      nome: NOMI_AL_TAVOLO[p.partitaTavolo.gioco],
       a: ROTTE.partitaTavolo(p.partitaTavolo.gioco, p.partitaTavolo.id),
       avversario: p.partitaTavolo.avversario,
       tuoTurno: p.partitaTavolo.tuoTurno,

@@ -22,7 +22,7 @@ import { requireVerified } from '../lib/session'
 import * as cruciverba from '../lib/cruciverbaStore'
 import * as scarabeo from '../lib/scarabeoStore'
 import { liberaPerId as wordleLiberaPerId, paroleDi, statoLibero as statoWordleLibero } from '../lib/wordleLibera'
-import { paroleSconosciute } from '../lib/dizionario'
+import { controllaNelDizionario } from '../lib/dizionario'
 import {
   aggiornaLibera,
   apriCompagnia,
@@ -280,17 +280,7 @@ async function leggiProposta(
   const esito = validaPosa(tavola.tabellone, posa, tavola.primaMossa)
   if (!esito.ok) fail(422, esito.codice, esito.errore)
   const parole = esito.parole.map((p) => p.parola)
-  const sconosciute = await paroleSconosciute(c.env, c.req.url, parole).catch(() =>
-    fail(503, 'DIZIONARIO_ASSENTE', 'Il dizionario non risponde: riprova tra poco.'),
-  )
-  if (sconosciute.length > 0) {
-    const elenco = sconosciute.map((p) => `"${p.toUpperCase()}"`).join(', ')
-    fail(
-      422,
-      'PAROLA_SCONOSCIUTA',
-      sconosciute.length === 1 ? `${elenco} non è nel dizionario.` : `${elenco} non sono nel dizionario.`,
-    )
-  }
+  await controllaNelDizionario(c.env, c.req.url, parole)
   return {
     chiave: `t${tavola.turno}`,
     proposta: { gioco: 'scarabeo', turno: tavola.turno, posa, parole, punti: esito.punti },

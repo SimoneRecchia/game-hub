@@ -16,8 +16,9 @@ import * as dama from './dama'
 import * as forza4 from './forza4'
 import * as go from './go'
 import * as scacchi from './scacchi'
+import * as scarabeo from './scarabeo-amici'
 import * as tris from './tris'
-import type { EsitoTavoliere, GiocoTavoliere, Parte } from './tavolo'
+import type { EsitoTavoliere, GiocoAlTavolo, Parte } from './tavolo'
 
 export interface RegoleTavoliere {
   /** La posizione di partenza, in testo. */
@@ -53,6 +54,21 @@ export interface RegoleTavoliere {
    * perde. Nel tris, dove senza tempo chi ci pensa abbastanza non sbaglia mai.
    */
   tempoMossaMs?: number
+  /**
+   * Una partenza nuova per ogni partita, se il gioco ne vuole una sua: nello
+   * Scarabeo il sacchetto, mescolato a caso. Senza, si parte da `iniziale`.
+   */
+  nuova?(): string
+  /**
+   * Quel che vede uno dei due, se la posizione non e' tutta pubblica: nello
+   * Scarabeo il suo leggio, e non quello dell'altro ne' il sacchetto. `parte`
+   * e' null per un invito, prima di sapere chi comincia. Senza, si vede tutto.
+   */
+  vistaDi?(posizione: string, parte: Parte | null): string
+  /** Le parole che forma una mossa, da cercare nel dizionario prima di accettarla: nello Scarabeo. */
+  parole?(posizione: string, mossa: string): string[]
+  /** La notazione piu' lunga di una mossa, se non sta nei quaranta caratteri dei tavolieri. */
+  mossaMassima?: number
 }
 
 const REGOLE_FORZA4: RegoleTavoliere = {
@@ -202,20 +218,62 @@ const REGOLE_TRIS: RegoleTavoliere = {
   tempoMossaMs: tris.TEMPO_MOSSA_TRIS_MS,
 }
 
-const REGOLE: Record<GiocoTavoliere, RegoleTavoliere> = {
+/**
+ * Lo Scarabeo fra amici: la posizione e' il seme del sacchetto con le mosse, e
+ * resta sul server; a ognuno arriva la sua vista, con il suo leggio. Le regole
+ * sono in shared/scarabeo-amici.ts, e le parole le controlla il server con il
+ * dizionario.
+ */
+const REGOLE_SCARABEO: RegoleTavoliere = {
+  iniziale: scarabeo.scriviPosizione({ seme: 0, mosse: [] }),
+  tratto(posizione) {
+    const p = scarabeo.leggiPosizione(posizione)
+    return p ? ((p.mosse.length % 2) as Parte) : null
+  },
+  gioca(posizione, mossa) {
+    const p = scarabeo.leggiPosizione(posizione)
+    const m = scarabeo.mossaDaTesto(mossa)
+    const dopo = p && m ? scarabeo.giocaScarabeo(p, m) : null
+    // Una posizione non torna mai: le tessere posate restano, e il sacchetto si svuota.
+    return dopo ? { posizione: scarabeo.scriviPosizione(dopo), irreversibile: true, mossa: scarabeo.mossaInTesto(m!) } : null
+  },
+  chiave: () => '',
+  esito(posizione) {
+    const p = scarabeo.leggiPosizione(posizione)
+    return p ? scarabeo.esitoScarabeo(p) : null
+  },
+  patta: false,
+  nuova: () => scarabeo.scriviPosizione({ seme: scarabeo.semeACaso(), mosse: [] }),
+  vistaDi(posizione, parte) {
+    const p = scarabeo.leggiPosizione(posizione) ?? { seme: 0, mosse: [] }
+    return JSON.stringify(scarabeo.vistaScarabeo(p, parte))
+  },
+  parole(posizione, mossa) {
+    const p = scarabeo.leggiPosizione(posizione)
+    const m = scarabeo.mossaDaTesto(mossa)
+    return p && m ? scarabeo.paroleDi(p, m) : []
+  },
+  mossaMassima: scarabeo.MOSSA_SCARABEO_MASSIMA,
+}
+
+const REGOLE: Record<GiocoAlTavolo, RegoleTavoliere> = {
   scacchi: REGOLE_SCACCHI,
   dama: REGOLE_DAMA,
   forza4: REGOLE_FORZA4,
   go: REGOLE_GO,
   tris: REGOLE_TRIS,
+  scarabeo: REGOLE_SCARABEO,
 }
 
-/** La posizione di partenza di una partita nuova: quella di una variante, se c'e' e il gioco la conosce. */
+/**
+ * La posizione di partenza di una partita nuova: quella di una variante, se c'e'
+ * e il gioco la conosce, o una sua per ogni partita (il sacchetto dello Scarabeo).
+ */
 export function inizialeDi(regole: RegoleTavoliere, variante: string | null | undefined): string {
-  return (variante && regole.inizialeDi?.(variante)) || regole.iniziale
+  return (variante && regole.inizialeDi?.(variante)) || regole.nuova?.() || regole.iniziale
 }
 
-export function regoleDi(gioco: GiocoTavoliere): RegoleTavoliere {
+export function regoleDi(gioco: GiocoAlTavolo): RegoleTavoliere {
   return REGOLE[gioco]
 }
 
