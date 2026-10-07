@@ -22,6 +22,7 @@
 
 import {
   JOLLY,
+  MOSSE_PER_GIORNATA,
   TESSERE_TOTALI,
   VALORI,
   leggiiDa,
@@ -46,6 +47,12 @@ export interface RegoleADue {
   /** Mosse a testa, se la partita ha un limite; null e' la partita intera, fino in fondo al sacchetto. */
   mosseATesta: number | null
 }
+
+/** La partita intera, fino in fondo al sacchetto, come al tavolo: la libera, contro il computer o un amico. */
+export const PARTITA_INTERA: RegoleADue = { mosseATesta: null }
+
+/** La classificata: dieci mosse a testa, come una giornata. */
+export const PARTITA_DEL_GIORNO: RegoleADue = { mosseATesta: MOSSE_PER_GIORNATA }
 
 /** Come e' finita una partita: le mosse a testa, l'ultima tessera posata, o sei turni senza parole. */
 export type FineADue = 'mosse' | 'chiusa' | 'ferma'

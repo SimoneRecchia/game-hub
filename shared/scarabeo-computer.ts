@@ -33,7 +33,7 @@ import {
   type Mossa,
   type MossaGiocata,
 } from './scarabeo'
-import { statoADue, type FineADue, type RegoleADue } from './scarabeo-due'
+import { PARTITA_DEL_GIORNO, PARTITA_INTERA, statoADue, type FineADue, type RegoleADue } from './scarabeo-due'
 import { mosseLegali, sceltaDelComputer, type Livello } from './scarabeo-motore'
 
 export type { Livello } from './scarabeo-motore'
@@ -41,11 +41,7 @@ export type { Livello } from './scarabeo-motore'
 /** Mosse a testa nella classificata: le dieci della giornata. La libera si gioca fino in fondo. */
 export const MOSSE_A_TESTA = MOSSE_PER_GIORNATA
 
-/** La partita libera: fino in fondo al sacchetto, come al tavolo. */
-export const PARTITA_INTERA: RegoleADue = { mosseATesta: null }
-
-/** La classificata: dieci mosse a testa. */
-export const PARTITA_DEL_GIORNO: RegoleADue = { mosseATesta: MOSSE_A_TESTA }
+export { PARTITA_DEL_GIORNO, PARTITA_INTERA } from './scarabeo-due'
 
 /** Il livello del computer della classificata: quello del traguardo. */
 export const LIVELLO_DEL_GIORNO: Livello = 'normale'

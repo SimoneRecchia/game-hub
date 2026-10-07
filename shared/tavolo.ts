@@ -13,6 +13,15 @@ export type GiocoTavoliere = 'scacchi' | 'dama' | 'forza4' | 'go' | 'tris'
 
 export const GIOCHI_TAVOLIERE: readonly GiocoTavoliere[] = ['scacchi', 'dama', 'forza4', 'go', 'tris']
 
+/**
+ * I giochi delle partite a due sul tavolo del server: i tavolieri, e lo
+ * Scarabeo fra amici, che ha le stesse partite — l'invito, i turni, la
+ * rivincita — con le tessere di ognuno nascoste all'altro (shared/scarabeo-amici.ts).
+ */
+export type GiocoAlTavolo = GiocoTavoliere | 'scarabeo'
+
+export const GIOCHI_AL_TAVOLO: readonly GiocoAlTavolo[] = [...GIOCHI_TAVOLIERE, 'scarabeo']
+
 /** Chi muove: 0 chi comincia, 1 l'altro. */
 export type Parte = 0 | 1
 
@@ -38,6 +47,9 @@ export type MotivoTavoliere =
   | 'punti'
   // Tris (con il pieno del Forza 4).
   | 'tris'
+  // Scarabeo: l'ultima tessera posata a sacchetto vuoto, o sei turni senza parole.
+  | 'ultima'
+  | 'ferma'
   // Chi ha il tempo per mossa: lo ha lasciato passare.
   | 'tempo'
   // Tutti.

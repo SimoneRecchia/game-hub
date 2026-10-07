@@ -8,7 +8,7 @@ import type { AreaQuiz, DomandaQuiz, LuogoQuiz, SezioneQuiz, SpiegazioneQuiz } f
 import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
 import type { Lato, Personaggi, Risposta } from './indovina'
-import type { GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
+import type { GiocoAlTavolo, GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
 import type { CategoriaNomi, PiuDate, RispostaContata } from './nomi-cose'
 import type { LatoMoneta } from './ruota'
@@ -789,7 +789,7 @@ export interface InvitoConLink {
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
   /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere o Nomi, cose. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | GiocoTavoliere
+  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | GiocoAlTavolo
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -914,14 +914,14 @@ export interface VistaIndovina {
   versione: number
 }
 
-/* ────────────────────  Scacchi, dama, Forza 4, go e tris, fra amici  ──────────────────── */
+/* ─────────────  Scacchi, dama, Forza 4, go, tris e Scarabeo, fra amici  ───────────── */
 
 export type StatoTavolo = 'invito' | 'in_corso' | 'finita' | 'rifiutata' | 'annullata'
 
 /** Un invito arrivato: da chi, a che gioco. */
 export interface InvitoTavolo {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   /** Per il go, il lato del goban: "13". */
   variante: string | null
   da: GiocatoreBreve
@@ -932,7 +932,7 @@ export interface InvitoTavolo {
 /** L'ultimo invito mandato dalla sala di un gioco, com'e' andato: a un amico o con un link. */
 export interface InvitoTavoloMandato {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   variante: string | null
   a: GiocatoreBreve | null
   codice: string | null
@@ -944,7 +944,7 @@ export interface InvitoTavoloMandato {
 /** Una partita aperta, in breve: per la sala, l'hub e il giro di controllo. */
 export interface PartitaTavoloBreve {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   variante: string | null
   avversario: GiocatoreBreve
   tuoTurno: boolean
@@ -963,7 +963,7 @@ export interface SalaTavolo {
 /** Una partita come la vede uno dei due. */
 export interface VistaTavolo {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   stato: StatoTavolo
   io: Lato
   /** Con che parte gioco: 0 muove per primo (il Bianco). Null finché non si e' accettato. */

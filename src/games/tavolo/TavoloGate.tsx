@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
-import { ROTTE, SLUG_TAVOLIERE } from '@/app/rotte'
+import { ROTTE, SLUG_AL_TAVOLO } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
-import { giocoTavoloDi } from '@/games/catalog'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { usePresenza } from '@/lib/presenza'
 import { suona } from '@/lib/suoni'
-import type { GiocoTavoliere } from '@shared/tavolo'
+import type { GiocoAlTavolo } from '@shared/tavolo'
 import type { InvitoTavolo, PartitaTavoloBreve } from '@shared/types'
-import { A_GIOCO, nomeVariante } from './nomi'
+import { A_GIOCO, NOMI_AL_TAVOLO, nomeVariante } from './nomi'
 import '@/games/wordle/coop/InviteAlert.css'
 
 const CHIAVE_ANNUNCIATE = 'tavolo:annunciate'
@@ -27,11 +26,11 @@ function leggiAnnunciate(chiave: string): Set<string> {
   }
 }
 
-const inPartitaDi = (pathname: string, gioco: GiocoTavoliere) =>
-  pathname.startsWith(`/${SLUG_TAVOLIERE[gioco]}/partita/`)
+const inPartitaDi = (pathname: string, gioco: GiocoAlTavolo) =>
+  pathname.startsWith(`/${SLUG_AL_TAVOLO[gioco]}/partita/`)
 
 /**
- * Gli inviti a scacchi, a dama e a Forza 4, da qualunque schermata, dallo
+ * Gli inviti a scacchi, a dama, a Forza 4, a go, a tris e a Scarabeo, da qualunque schermata, dallo
  * stesso giro di controllo degli altri. Vengono per ultimi: se c'e' gia' un
  * altro avviso aperto aspettano il loro turno, perché due avvisi insieme non
  * si leggerebbero.
@@ -65,7 +64,7 @@ export function TavoloGate() {
     !invito &&
     !altroAvviso &&
     partita &&
-    !pathname.startsWith(`/${SLUG_TAVOLIERE[partita.gioco]}`) &&
+    !pathname.startsWith(`/${SLUG_AL_TAVOLO[partita.gioco]}`) &&
     !annunciate.has(partita.id)
       ? partita
       : null
@@ -152,7 +151,7 @@ function AvvisoInvito({
   }
 
   return (
-    <Sheet open onClose={() => {}} dismissible={false} title={giocoTavoloDi(invito.gioco).nome}>
+    <Sheet open onClose={() => {}} dismissible={false} title={NOMI_AL_TAVOLO[invito.gioco]}>
       <div className="avviso">
         <div className="avviso__testa">
           <Avatar nickname={invito.da.nickname} color={invito.da.avatarColor} size={64} />
@@ -209,7 +208,7 @@ function AvvisoPartita({
   }, [partita.id])
   const nome = partita.avversario.displayName
   return (
-    <Sheet open onClose={onDopo} title={giocoTavoloDi(partita.gioco).nome}>
+    <Sheet open onClose={onDopo} title={NOMI_AL_TAVOLO[partita.gioco]}>
       <div className="avviso">
         <div className="avviso__testa">
           <Avatar nickname={partita.avversario.nickname} color={partita.avversario.avatarColor} size={64} />

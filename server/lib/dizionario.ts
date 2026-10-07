@@ -1,6 +1,7 @@
 import { Dawg } from '../../shared/dawg'
 import { BYTE_DIZIONARIO, URL_DIZIONARIO } from '../../shared/scarabeo-dizionario'
 import type { Bindings } from '../types'
+import { fail } from './http'
 
 /**
  * Il dizionario dello Scarabeo sul server: lo stesso DAWG che scarica il
@@ -42,4 +43,24 @@ export async function paroleSconosciute(env: Bindings, indirizzo: string, parole
   if (parole.length === 0) return []
   const dawg = await dizionario(env, indirizzo)
   return parole.filter((parola) => !dawg.contiene(parola))
+}
+
+/**
+ * Le parole di una mossa devono esserci tutte, anche quelle di traverso: se no
+ * la richiesta finisce qui, con le parole che mancano. `chi` apre il messaggio
+ * quando la mossa non e' di chi l'ha mandata ("La mossa del computer non va: "),
+ * e allora il codice e' un altro, perché non e' una parola che si puo' correggere.
+ */
+export async function controllaNelDizionario(
+  env: Bindings,
+  indirizzo: string,
+  parole: string[],
+  { chi = '', codice = 'PAROLA_SCONOSCIUTA' }: { chi?: string; codice?: string } = {},
+): Promise<void> {
+  const sconosciute = await paroleSconosciute(env, indirizzo, parole).catch(() =>
+    fail(503, 'DIZIONARIO_ASSENTE', 'Il dizionario non risponde: riprova tra poco.'),
+  )
+  if (sconosciute.length === 0) return
+  const elenco = sconosciute.map((p) => `"${p.toUpperCase()}"`).join(', ')
+  fail(422, codice, `${chi}${elenco} ${sconosciute.length === 1 ? 'non è' : 'non sono'} nel dizionario.`)
 }

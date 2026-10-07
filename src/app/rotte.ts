@@ -66,7 +66,7 @@
  */
 
 import type { MateriaQuiz } from '@shared/quiz'
-import type { GiocoTavoliere } from '@shared/tavolo'
+import type { GiocoAlTavolo, GiocoTavoliere } from '@shared/tavolo'
 import type { ChiaveClassifica, GiocoClassificato, GiocoLiberoInCompagnia, ModalitaCompagnia } from '@shared/types'
 
 /** Il pezzo di indirizzo di ogni gioco: "nomi-cose-citta", non "nomi". */
@@ -97,6 +97,9 @@ export const SLUG_TAVOLIERE: Record<GiocoTavoliere, string> = {
   go: 'go',
   tris: 'tris/libera',
 }
+
+/** Con lo Scarabeo, le cui partite con un amico stanno nella sua libera: la partita, l'invito con il link. */
+export const SLUG_AL_TAVOLO: Record<GiocoAlTavolo, string> = { ...SLUG_TAVOLIERE, scarabeo: 'scarabeo/libera' }
 
 export const ROTTE = {
   home: '/',
@@ -141,8 +144,8 @@ export const ROTTE = {
   invitoIndovina: (codice: string) => `/indovina-chi/invito/${codice}`,
   setIndovina: (id: string) => `/indovina-chi/set/${id}`,
 
-  tavolo: (gioco: GiocoTavoliere) => `/${SLUG_TAVOLIERE[gioco]}`,
+  tavolo: (gioco: GiocoAlTavolo) => `/${SLUG_AL_TAVOLO[gioco]}`,
   computerTavolo: (gioco: GiocoTavoliere) => `/${SLUG_TAVOLIERE[gioco]}/computer`,
-  partitaTavolo: (gioco: GiocoTavoliere, id: string) => `/${SLUG_TAVOLIERE[gioco]}/partita/${id}`,
-  invitoTavolo: (gioco: GiocoTavoliere, codice: string) => `/${SLUG_TAVOLIERE[gioco]}/invito/${codice}`,
+  partitaTavolo: (gioco: GiocoAlTavolo, id: string) => `/${SLUG_AL_TAVOLO[gioco]}/partita/${id}`,
+  invitoTavolo: (gioco: GiocoAlTavolo, codice: string) => `/${SLUG_AL_TAVOLO[gioco]}/invito/${codice}`,
 } as const

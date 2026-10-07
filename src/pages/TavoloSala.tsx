@@ -12,7 +12,7 @@ import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { giocoTavoloDi } from '@/games/catalog'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
-import { A_GIOCO, nomeVariante } from '@/games/tavolo/nomi'
+import { A_GIOCO, NOMI_AL_TAVOLO, nomeVariante } from '@/games/tavolo/nomi'
 import {
   abbandona,
   cominciata,
@@ -329,7 +329,7 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
 /** La partita aperta con un amico: in cima, perché e' la prima cosa da fare. */
 function PartitaAperta({ partita }: { partita: PartitaTavoloBreve }) {
   const { vai } = useNavigazione()
-  const nome = giocoTavoloDi(partita.gioco).nome
+  const nome = NOMI_AL_TAVOLO[partita.gioco]
   return (
     <button
       type="button"
