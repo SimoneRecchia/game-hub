@@ -59,7 +59,8 @@ export function CompagniaGate() {
     (!pathname.startsWith('/indovina-chi/partita/') && (dati?.indovina.length ?? 0) > 0) ||
     (dati?.tavolo.length ?? 0) > 0 ||
     (dati?.nomi.length ?? 0) > 0 ||
-    (dati?.lupus.length ?? 0) > 0
+    (dati?.lupus.length ?? 0) > 0 ||
+    (dati?.scarabocchi.length ?? 0) > 0
   const invito =
     altroAvviso || pathname.includes('/insieme/')
       ? null

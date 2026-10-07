@@ -508,6 +508,31 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
     </g>
   ),
 
+  // Un foglio con uno scarabocchio a colori — il sole, una casetta, il mare — e il pennarello che l'ha fatto.
+  scarabocchi: (
+    <g>
+      <g transform="rotate(-7 60 58)">
+        <rect x={16} y={20} width={88} height={70} rx={7} fill="#fff" />
+        <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx={38} cy={41} r={7.5} stroke="#ffb400" strokeWidth={4} />
+          <path
+            d="M38 27.5v-3M38 57.5v-3M24.5 41h-3M54.5 41h-3M28.5 31.5l-2-2M49.5 52.5l-2-2M28.5 50.5l-2 2M49.5 29.5l-2 2"
+            stroke="#ffb400"
+            strokeWidth={3}
+          />
+          <path d="M63 66V50l12-10 12 10v16zM71 66v-8h8v8" stroke="#ff4d5e" strokeWidth={4} />
+          <path d="M24 78c5-5 9 5 14 0s9 5 14 0 9 5 14 0 9 5 14 0 9 5 14 0" stroke="#2f8cff" strokeWidth={4} />
+        </g>
+      </g>
+      <g transform="rotate(-40 88 96)">
+        <rect x={66} y={90} width={36} height={12} rx={3} fill="#fff" />
+        <rect x={96} y={90} width={10} height={12} rx={3} fill="var(--c2)" />
+        <path d="M66 91.5l-9 4.5 9 4.5z" fill="#fff" fillOpacity={0.85} />
+        <path d="M59.5 94.8l-2.5 1.2 2.5 1.2z" fill="var(--c2)" />
+      </g>
+    </g>
+  ),
+
   // Un angolo di goban: le linee, un punto di riferimento, e le pietre di una partita appena cominciata.
   // Il cancelletto tracciato a mano, i segni di una partita e la fila fatta.
   tris: (

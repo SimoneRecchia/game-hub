@@ -37,30 +37,35 @@ import { fail, newId, nowIso } from './http'
 
 export type Lato = 'a' | 'b'
 
-export const ATTIVITA: readonly Attivita[] = [
-  'hub',
-  'wordle',
-  'scarabeo',
-  'cruciverba',
-  'sudoku',
-  'battaglia',
-  'quiz',
-  'tris',
-  'nomi',
-  'indovina',
-  'scacchi',
-  'dama',
-  'forza4',
-  'go',
-  'ruota',
-  'fortuna',
-  'slot',
-  'blackjack',
-  'lupus',
-  'classifica',
-  'profilo',
-  'altro',
-]
+/** Tutte le attivita', una per una: il tipo le vuole tutte, cosi' una nuova non finisce in 'altro' per dimenticanza. */
+const TUTTE_LE_ATTIVITA: Record<Attivita, true> = {
+  hub: true,
+  wordle: true,
+  scarabeo: true,
+  cruciverba: true,
+  sudoku: true,
+  battaglia: true,
+  quiz: true,
+  tris: true,
+  nomi: true,
+  indovina: true,
+  scacchi: true,
+  dama: true,
+  forza4: true,
+  go: true,
+  anagrammi: true,
+  ruota: true,
+  fortuna: true,
+  slot: true,
+  blackjack: true,
+  lupus: true,
+  scarabocchi: true,
+  classifica: true,
+  profilo: true,
+  altro: true,
+}
+
+export const ATTIVITA = Object.keys(TUTTE_LE_ATTIVITA) as readonly Attivita[]
 
 export interface PartitaRow {
   id: string

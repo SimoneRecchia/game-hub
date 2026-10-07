@@ -1,0 +1,985 @@
+/*
+ * Scarabocchi: la lavagna, i giocatori, le risposte, i fogli del telefono
+ * senza fili e l'album.
+ *
+ * La lavagna e' un foglio bianco in quattro terzi in tutti e due i temi: e'
+ * carta. Si misura sullo spazio che le resta (`.scr-tela-spazio` e' un
+ * contenitore), cosi' sul telefono resta posto alle risposte anche con la
+ * tastiera aperta, e su un computer non diventa piu' alta dello schermo. Le
+ * classi cominciano con `scr-` perché `.lavagna` o `.foglio` potrebbero gia'
+ * essere di un altro gioco.
+ */
+
+/* ---------- La lavagna ---------- */
+
+.scr-tela-spazio {
+  container: scr-tela / size;
+  display: flex;
+  /* Alta quanto la lavagna larga tutto lo spazio; se l'altezza non basta si stringe, e la lavagna con lei. */
+  flex: 0 1 calc(100cqw * 3 / 4);
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+}
+
+.scr-tela {
+  position: relative;
+  width: min(100cqw, 100cqh * 4 / 3);
+}
+
+.scr-lavagna {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-md);
+  background: #fff;
+  box-shadow:
+    0 0 0 1px var(--separator),
+    var(--shadow-sm);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.scr-lavagna.is-attiva {
+  cursor: crosshair;
+}
+
+.scr-lavagna--attesa {
+  background: var(--fill-quaternary);
+  animation: scr-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+.scr-lavagna--vuota {
+  display: grid;
+  place-items: center;
+  padding: var(--sp-4);
+  color: #6e6e73;
+  text-align: center;
+}
+
+/* ---------- Gli attrezzi ---------- */
+
+.scr-strumenti {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.scr-strumenti__colori {
+  display: grid;
+  grid-template-columns: repeat(13, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.scr-colore {
+  aspect-ratio: 1;
+  min-width: 0;
+  max-width: 38px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--colore);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.scr-colore[aria-pressed='true'] {
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--brand);
+  transform: scale(1.08);
+}
+
+.scr-strumenti__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.scr-strumenti__spessori {
+  display: flex;
+  flex: 1;
+  gap: var(--sp-1);
+}
+
+.scr-spessore,
+.scr-attrezzo {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label);
+  cursor: pointer;
+}
+
+.scr-spessore::after {
+  width: var(--punta);
+  height: var(--punta);
+  border-radius: 50%;
+  background: var(--label);
+  content: '';
+}
+
+.scr-spessore[aria-pressed='true'],
+.scr-attrezzo[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  box-shadow: inset 0 0 0 2px var(--brand);
+  color: var(--brand);
+}
+
+.scr-spessore[aria-pressed='true']::after {
+  background: var(--brand);
+}
+
+.scr-spessore:disabled,
+.scr-attrezzo:disabled,
+.scr-colore:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- La testa: il giro, la parola, il tempo ---------- */
+
+.scr-testa {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 44px;
+}
+
+.scr-testa__giro {
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.scr-testa__centro {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  text-align: center;
+}
+
+.scr-testa__nota {
+  color: var(--label-secondary);
+  font-weight: 600;
+}
+
+.scr-testa__parola {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+
+.scr-testa__disegna {
+  color: var(--label-secondary);
+  font-family: var(--font-text);
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.scr-testa__indizio {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  font-family: var(--font-rounded);
+  font-weight: 800;
+}
+
+.scr-indizio__vuota,
+.scr-indizio__lettera {
+  display: inline-grid;
+  place-items: end center;
+  width: 0.9em;
+  height: 1.3em;
+  border-bottom: 3px solid var(--label);
+  font-size: var(--text-title-3);
+  line-height: 1;
+}
+
+.scr-indizio__lettera {
+  color: var(--scarabocchi-2);
+}
+
+.scr-indizio__spazio {
+  width: 0.6em;
+}
+
+.scr-indizio__quante {
+  align-self: flex-start;
+  margin-left: 4px;
+  color: var(--label-secondary);
+  font-size: var(--text-caption-2);
+}
+
+.scr-orologio {
+  --quota: 0;
+  display: grid;
+  justify-self: end;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, var(--bg) 78%, transparent 80% 100%),
+    conic-gradient(var(--scarabocchi-2) calc(var(--quota) * 360deg), var(--fill-tertiary) 0);
+  font-weight: 800;
+}
+
+.scr-orologio.is-fermo {
+  visibility: hidden;
+}
+
+.scr-orologio.is-urgente {
+  background:
+    radial-gradient(closest-side, var(--bg) 78%, transparent 80% 100%),
+    conic-gradient(var(--red) calc(var(--quota) * 360deg), var(--fill-tertiary) 0);
+  color: var(--red);
+}
+
+/* ---------- La partita di Indovina il disegno ---------- */
+
+.scr-gioco,
+.scr-telefono {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  max-width: 1180px;
+  min-height: 0;
+  margin: 0 auto;
+}
+
+.scr-gioco__corpo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 0;
+}
+
+.scr-gioco__centro {
+  container-type: inline-size;
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 0;
+}
+
+/* I giocatori: sul telefono una fila di volti con i punti, che va a capo. */
+.scr-giocatori {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scr-giocatore {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.scr-giocatore.is-assente {
+  opacity: 0.45;
+}
+
+.scr-giocatore__volto {
+  position: relative;
+  display: inline-flex;
+}
+
+.scr-giocatore.is-disegna .scr-giocatore__volto .avatar {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--scarabocchi-2);
+}
+
+.scr-giocatore__segno {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  background: var(--scarabocchi-2);
+  color: #fff;
+}
+
+.scr-giocatore__segno.is-giusto {
+  background: var(--tile-correct);
+}
+
+.scr-giocatore__nome {
+  display: none;
+}
+
+.scr-giocatore__punti {
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+.scr-giocatore.is-fatto .scr-giocatore__punti {
+  color: var(--tile-correct);
+}
+
+/* Sopra la lavagna: la scelta della parola, la parola del turno, la fine. */
+.scr-sopra {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  overflow-y: auto;
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  background: rgba(255, 255, 255, 0.93);
+  color: #1d1d1f;
+  text-align: center;
+  animation: scr-compare 260ms var(--ease-out);
+}
+
+.scr-sopra--leggero {
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.scr-sopra__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+}
+
+.scr-sopra__nota {
+  margin: 0;
+  color: #6e6e73;
+  font-size: var(--text-footnote);
+}
+
+.scr-sopra__parola {
+  margin: 0;
+  color: var(--scarabocchi-2);
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  animation: scr-salta 520ms var(--ease-bounce);
+}
+
+.scr-sopra__punti {
+  display: grid;
+  gap: 4px;
+  width: min(100%, 260px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scr-sopra__punti li {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+}
+
+.scr-sopra__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.scr-scelte {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.scr-scelta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 110px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 0;
+  border-radius: var(--r-lg);
+  background: #fff;
+  box-shadow:
+    0 0 0 1.5px color-mix(in srgb, var(--scarabocchi-2) 40%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.08);
+  color: #1d1d1f;
+  font: inherit;
+  cursor: pointer;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.scr-scelta:not(:disabled):active {
+  transform: translateY(2px);
+}
+
+.scr-scelta__parola {
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+}
+
+.scr-scelta__livello {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #6e6e73;
+  font-size: var(--text-caption-1);
+}
+
+/* Le risposte: sul telefono sotto la lavagna, con il campo in fondo. */
+.scr-risposte {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-height: 112px;
+}
+
+.scr-risposte__elenco {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  overflow-y: auto;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.scr-risposta {
+  font-size: var(--text-subhead);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.scr-risposta strong {
+  font-weight: 700;
+}
+
+.scr-risposta--nota {
+  color: var(--label-secondary);
+}
+
+.scr-risposta--giusta {
+  color: var(--tile-correct);
+  font-weight: 700;
+}
+
+.scr-risposta__quasi,
+.scr-risposte__quasi {
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.scr-risposte__quasi {
+  margin: 0;
+  font-size: var(--text-footnote);
+  text-align: center;
+}
+
+.scr-risposte__campo {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.scr-campo {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--fill-tertiary);
+  color: var(--label);
+  font: inherit;
+  /* Sotto i 16 punti Safari ingrandisce la pagina quando il campo prende il fuoco. */
+  font-size: 17px;
+}
+
+.scr-campo:focus {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+
+.scr-campo--lungo {
+  flex: none;
+  padding: var(--sp-3);
+  line-height: 1.4;
+  resize: none;
+}
+
+/* Su un computer: i giocatori a sinistra, la lavagna in mezzo, le risposte a destra. */
+@media (min-width: 900px) {
+  .scr-gioco__corpo {
+    display: grid;
+    grid-template-columns: 210px minmax(0, 1fr) 290px;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .scr-giocatori {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 2px;
+    overflow-y: auto;
+  }
+
+  .scr-giocatore {
+    gap: var(--sp-2);
+    padding: 6px var(--sp-2);
+    border-radius: var(--r-md);
+  }
+
+  .scr-giocatore.is-fatto {
+    background: color-mix(in srgb, var(--tile-correct) 12%, transparent);
+  }
+
+  .scr-giocatore__nome {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-size: var(--text-subhead);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .scr-gioco__centro {
+    justify-content: center;
+  }
+
+  .scr-risposte {
+    min-height: 0;
+  }
+}
+
+/* Telefono di traverso: la pagina scorre, e la lavagna si misura sulla larghezza. */
+@media (orientation: landscape) and (max-height: 560px) {
+  .scr-tela-spazio {
+    container-type: normal;
+    min-height: 0;
+  }
+
+  .scr-tela {
+    width: min(100%, 520px);
+  }
+}
+
+/* ---------- Il telefono senza fili ---------- */
+
+.scr-compito {
+  container-type: inline-size;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-3);
+  width: 100%;
+  max-width: 760px;
+  min-height: 0;
+  margin: 0 auto;
+}
+
+.scr-compito__azioni {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+.scr-frase {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--scarabocchi-1) 16%, var(--surface));
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.scr-frase--vuota {
+  color: var(--label-secondary);
+  font-weight: 600;
+}
+
+.scr-aspetta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-8);
+  text-align: center;
+}
+
+.scr-aspetta__segno {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--tile-correct);
+  color: #fff;
+  animation: scr-salta 520ms var(--ease-bounce);
+}
+
+.scr-aspetta__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+}
+
+.scr-aspetta__volti {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scr-aspetta__volti li {
+  position: relative;
+  opacity: 0.45;
+}
+
+.scr-aspetta__volti li.is-fatto {
+  opacity: 1;
+}
+
+.scr-nota {
+  margin: 0;
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  text-align: center;
+}
+
+/* ---------- L'album ---------- */
+
+.scr-album {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-3);
+  width: 100%;
+  max-width: 640px;
+  min-height: 0;
+  margin: 0 auto;
+}
+
+.scr-album__testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.scr-album__titolo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+  text-align: center;
+}
+
+.scr-album__quale {
+  color: var(--label-secondary);
+  font-family: var(--font-text);
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+}
+
+.scr-album__fogli {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: 0;
+  margin: 0 -8px;
+  padding: 4px 8px var(--sp-4);
+  overflow-y: auto;
+  list-style: none;
+  overscroll-behavior: contain;
+}
+
+.scr-foglio {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--sp-2);
+  animation: scr-compare 420ms var(--ease-out) var(--ritardo, 0ms) both;
+}
+
+.scr-foglio__chi {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+.scr-foglio__cosa {
+  color: var(--label-secondary);
+  font-weight: 500;
+}
+
+.scr-foglio__testo {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.scr-foglio__vuoto {
+  margin: 0;
+  color: var(--label-secondary);
+  font-style: italic;
+}
+
+.scr-album .scr-tela,
+.scr-galleria .scr-tela {
+  width: 100%;
+}
+
+.scr-album__piede {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.scr-galleria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scr-galleria__disegno {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scr-galleria__parola {
+  margin: 4px 0 0;
+  font-family: var(--font-rounded);
+  font-weight: 800;
+}
+
+.scr-galleria .scr-nota {
+  text-align: left;
+}
+
+/* ---------- La sala e l'attesa ---------- */
+
+.scr-aperta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-3) var(--sp-4);
+  border: 0;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.scr-aperta__testo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.scr-aperta__titolo {
+  font-weight: 700;
+}
+
+.scr-aperta__stato {
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+}
+
+.scr-aperta__vai {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.scr-codice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.scr-codice__etichetta {
+  margin: 0;
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.scr-codice__lettere {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  user-select: all;
+}
+
+.scr-codice__azioni {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.scr-impostazioni {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.scr-impostazioni__etichetta {
+  margin: var(--sp-2) 0 0;
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.scr-iscritto__volto {
+  position: relative;
+  display: inline-flex;
+}
+
+.scr-iscritto__online {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--tile-correct);
+}
+
+.scr-attesa-breve {
+  min-height: 64px;
+}
+
+.scr-via {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.scr-ingresso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-top: var(--sp-6);
+  text-align: center;
+}
+
+.scr-ingresso__testo {
+  margin: 0;
+  font-size: var(--text-headline);
+}
+
+.scr-esci {
+  display: flex;
+  justify-content: center;
+}
+
+@keyframes scr-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes scr-compare {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes scr-salta {
+  40% {
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scr-lavagna--attesa,
+  .scr-sopra,
+  .scr-sopra__parola,
+  .scr-aspetta__segno,
+  .scr-foglio {
+    animation: none;
+  }
+}

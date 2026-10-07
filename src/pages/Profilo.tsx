@@ -241,6 +241,9 @@ function Fonti() {
         ).
       </p>
       <p>
+        <strong>Scarabocchi.</strong> Le parole da disegnare sono quelle di Nomi, cose e città, con le stesse fonti.
+      </p>
+      <p>
         <strong>Quiz.</strong> Dati da{' '}
         <a href="https://www.wikidata.org" target="_blank" rel="noreferrer">
           Wikidata
