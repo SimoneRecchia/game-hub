@@ -50,8 +50,8 @@ export function ComeSiGiocaSudoku({
             <li>
               <strong>Svela</strong>:{' '}
               {costi
-                ? `${inPunti(costi.svelata)} per cifra.`
-                : 'ogni cifra svelata costa tre volte la sua parte dei punti.'}{' '}
+                ? `${inPunti(costi.svelata)} per cifra, anche se l'avevi già scritta giusta.`
+                : 'ogni cifra svelata costa tre volte la sua parte dei punti, anche se era giusta.'}{' '}
               Svelato un terzo dello schema, vale zero.
             </li>
             <li>Il tempo conta solo a pari punti.</li>
