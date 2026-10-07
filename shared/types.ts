@@ -4,7 +4,7 @@ import type { Mossa, MossaGiocata } from './scarabeo'
 import type { Esito, IdNave, Nave } from './battaglia'
 import type { LivelloBattaglia } from './battaglia-computer'
 import type { CategoriaQuiz, ModoQuiz } from './quiz'
-import type { AreaQuiz, DomandaQuiz, LuogoQuiz, SpiegazioneQuiz } from './quiz-domande'
+import type { AreaQuiz, DomandaQuiz, LuogoQuiz, SezioneQuiz, SpiegazioneQuiz } from './quiz-domande'
 import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
 import type { Lato, Personaggi, Risposta } from './indovina'
@@ -1002,12 +1002,15 @@ export interface VistaTavolo {
 /** La partita di una sfida a quiz, in breve: quel che si legge in un invito. */
 export interface RiassuntoSfida {
   categoria: CategoriaQuiz
+  /** Le sezioni, in una sfida di piu' sezioni insieme. */
+  sezioni?: SezioneQuiz[]
   modo: ModoQuiz
   area: AreaQuiz
   quante: number
   secondi: number
-  /** Le altre materie: l'ambito, se non sono tutte, e il giorno di "Accadde oggi". */
+  /** Le altre materie: l'ambito, se non sono tutte, il genere delle canzoni e il giorno di "Accadde oggi". */
   ambito?: string
+  genere?: string
   giorno?: string
 }
 

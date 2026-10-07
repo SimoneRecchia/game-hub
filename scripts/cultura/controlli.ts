@@ -10,7 +10,9 @@
 import {
   PERCORSO_IMMAGINE,
   type DatiArte,
+  type DatiCanzoni,
   type DatiCinema,
+  type DatiClassica,
   type DatiLibri,
   type DatiLirica,
   type DatiNobel,
@@ -26,6 +28,8 @@ export interface DatiDaControllare {
   arte?: Senza<DatiArte>
   libri?: Senza<DatiLibri>
   cinema?: Senza<DatiCinema>
+  canzoni?: Senza<DatiCanzoni>
+  classica?: Senza<DatiClassica>
   lirica?: Senza<DatiLirica>
   nobel?: Senza<DatiNobel>
   storia?: Senza<DatiStoria>
@@ -41,6 +45,10 @@ const MINIMI: Record<string, number> = {
   'libri.autori': 300,
   'cinema.film': 1000,
   'cinema.registi': 400,
+  'canzoni.canzoni': 1200,
+  'canzoni.artisti': 400,
+  'classica.brani': 200,
+  'classica.compositori': 60,
   'lirica.opere': 250,
   'lirica.compositori': 80,
   'nobel.premi': 900,
@@ -51,7 +59,7 @@ const MINIMI: Record<string, number> = {
   'scienza.unita': 28,
   'scienza.astri': 40,
   'scienza.scoperte': 100,
-  'scienza.specie': 250,
+  'scienza.specie': 150,
 }
 
 const ANNO_MASSIMO = new Date().getFullYear()
@@ -156,6 +164,41 @@ export function controllaCultura(d: DatiDaControllare): string[] {
     if (!dolceVita?.it || dolceVita.p !== 'Italia') no('La dolce vita non risulta italiana')
   }
 
+  /* ── Le canzoni ── */
+  if (d.canzoni) {
+    const { canzoni, artisti } = d.canzoni
+    riferimenti('canzoni', canzoni.flatMap((x) => x.a), artisti)
+    titoliUnici('canzoni', canzoni)
+    const canzone = (n: string) => canzoni.find((x) => x.n === n)
+    const queen = artisti.find((a) => a.n === 'Queen')
+    const bohemian = canzone('Bohemian Rhapsody')
+    if (!bohemian || !queen || !bohemian.a.includes(queen.id)) no('manca Bohemian Rhapsody dei Queen')
+    else {
+      if (bohemian.anno !== 1975) no(`Bohemian Rhapsody risulta del ${bohemian.anno}`)
+      if (!bohemian.g?.includes('rock')) no('Bohemian Rhapsody non risulta rock')
+    }
+    if (!queen?.gr || queen.p !== 'Regno Unito') no('i Queen non risultano un gruppo del Regno Unito')
+    const volare = canzone('Nel blu, dipinto di blu') ?? canzone('Nel blu dipinto di blu')
+    if (!volare?.a.some((id) => artisti.find((a) => a.id === id)?.it)) no('Nel blu dipinto di blu non risulta italiana')
+    const vasco = artisti.find((a) => a.n === 'Vasco Rossi')
+    if (!vasco?.it || vasco.gr) no('Vasco Rossi non risulta un cantante italiano')
+    if (canzoni.filter((x) => x.a.some((id) => artisti.find((a) => a.id === id)?.it)).length < 200) {
+      no('troppo poche canzoni italiane')
+    }
+  }
+
+  /* ── La musica classica ── */
+  if (d.classica) {
+    const { brani, compositori } = d.classica
+    riferimenti('classica', brani.flatMap((b) => b.c), compositori)
+    titoliUnici('classica', brani)
+    const vivaldi = persona(compositori, 'Antonio Vivaldi')
+    const stagioni = brani.find((b) => b.n === 'Le quattro stagioni')
+    if (!stagioni || !vivaldi || !stagioni.c.includes(vivaldi.id)) no('mancano Le quattro stagioni di Vivaldi')
+    if (brani.some((b) => /\bn\.\s*\d/.test(b.n) && !b.n.includes('«'))) no('un brano con un numero e senza soprannome')
+    if (brani.some((b) => b.n === 'Requiem' || b.n === 'Ave Maria')) no('un brano che dice solo la sua forma')
+  }
+
   /* ── La lirica ── */
   if (d.lirica) {
     const { opere, compositori } = d.lirica
@@ -228,8 +271,13 @@ export function controllaCultura(d: DatiDaControllare): string[] {
     if (astri.filter((a) => a.tipo === 'pianeta nano').length !== 5) no('i pianeti nani non sono cinque')
     const penicillina = scoperte.find((s) => s.n === 'penicillina')
     if (!penicillina?.chi.includes('Alexander Fleming')) no('la penicillina non risulta scoperta da Alexander Fleming')
-    if (specie.find((s) => s.n === 'lupo')?.sci !== 'Canis lupus') no('il lupo non risulta Canis lupus')
-    if (specie.find((s) => s.n === 'lupo')?.regno !== 'animale') no('il lupo non risulta un animale')
+    else if (penicillina.anno !== 1928 || penicillina.v) no('la penicillina non risulta scoperta nel 1928')
+    if (scoperte.filter((s) => s.anno !== undefined).length < 60) no('troppo poche scoperte con l’anno')
+    const gruppo = (n: string) => specie.find((s) => s.n === n)?.gr
+    if (gruppo('lupo') !== 'mammiferi') no('il lupo non risulta un mammifero')
+    for (const [n, g] of [['orca', 'mammiferi'], ['gazza', 'uccelli'], ['drago di Komodo', 'rettili']] as const) {
+      if (gruppo(n) !== undefined && gruppo(n) !== g) no(`${n} non risulta fra i ${g}`)
+    }
   }
   return problemi
 }

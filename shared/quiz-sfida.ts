@@ -25,10 +25,12 @@ import {
   RISPOSTE_LIBERE,
   ambitoValido,
   diGeografia,
+  genereValido,
+  materiaDi,
   type CategoriaQuiz,
   type ModoQuiz,
 } from './quiz'
-import { NOMI_TIPI, type AreaQuiz, type Notorieta, type TipoDomanda } from './quiz-domande'
+import { NOMI_TIPI, type AreaQuiz, type Notorieta, type SezioneQuiz, type TipoDomanda } from './quiz-domande'
 
 export type LatoSfida = 'a' | 'b'
 export const LATI: readonly LatoSfida[] = ['a', 'b']
@@ -76,6 +78,8 @@ export const SFIDA_QUIZ_LINK_MS = 60 * 60_000
 /** Come si gioca una sfida: la partita la sceglie chi sfida, dentro i limiti di un duello. */
 export interface ImpostazioniSfida {
   categoria: CategoriaQuiz
+  /** Le sezioni di una sfida di piu' sezioni insieme: `categoria` e' quella della prima. */
+  sezioni?: SezioneQuiz[]
   modo: ModoQuiz
   area: AreaQuiz
   quante: (typeof QUANTE_SFIDA)[number]
@@ -96,6 +100,8 @@ export interface ImpostazioniSfida {
   bandieraCapitali?: boolean
   /** Per le altre materie, l'ambito: un periodo, un premio, un argomento. */
   ambito?: string
+  /** Il genere delle canzoni: "rock", "italiana". */
+  genere?: string
   /** Il giorno di "Accadde oggi", "03-12": lo sceglie chi sfida, e la rivincita resta lì. */
   giorno?: string
 }
@@ -131,8 +137,19 @@ export function impostazioniSfida(valore: unknown): ImpostazioniSfida | null {
   }
   const tipi = Array.isArray(x.tipi) ? x.tipi.filter((t): t is TipoDomanda => typeof t === 'string' && t in NOMI_TIPI) : []
   const notorieta = x.notorieta === 'noti' || x.notorieta === 'rari' ? x.notorieta : 'misti'
+  // Le sezioni: della materia della categoria, ognuna una volta, al piu' una per voce della pagina.
+  const viste = new Map<string, SezioneQuiz>()
+  for (const y of Array.isArray(x.sezioni) ? (x.sezioni as unknown[]).slice(0, 20) : []) {
+    const c = (y as { categoria?: unknown })?.categoria as CategoriaQuiz
+    if (!CATEGORIE.includes(c) || materiaDi(c) !== materiaDi(categoria)) continue
+    const ambito = c === 'scienza' ? ambitoValido(c, (y as { ambito?: unknown }).ambito) : 'tutti'
+    viste.set(`${c}:${ambito}`, ambito === 'tutti' ? { categoria: c } : { categoria: c, ambito })
+  }
+  const sezioni = viste.size > 1 ? [...viste.values()] : null
+  const genere = sezioni ? 'tutti' : genereValido(categoria, x.genere)
   return {
     categoria,
+    ...(sezioni ? { sezioni } : {}),
     modo,
     area: area as AreaQuiz,
     quante: vicino(QUANTE_SFIDA, x.quante, 10),
@@ -145,7 +162,8 @@ export function impostazioniSfida(valore: unknown): ImpostazioniSfida | null {
     ...(tipi.length > 0 ? { tipi } : {}),
     notorieta,
     bandieraCapitali: si(x.bandieraCapitali, true),
-    ...(geografia ? {} : { ambito: ambitoValido(categoria, x.ambito) }),
+    ...(geografia || sezioni ? {} : { ambito: ambitoValido(categoria, x.ambito) }),
+    ...(genere !== 'tutti' ? { genere } : {}),
     ...(categoria === 'oggi' && typeof x.giorno === 'string' && GIORNO.test(x.giorno) ? { giorno: x.giorno } : {}),
   }
 }

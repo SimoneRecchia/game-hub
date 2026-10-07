@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../daily'
-import { AMBITI, type CategoriaQuiz } from '../quiz'
+import { AMBITI, GENERI, type CategoriaQuiz } from '../quiz'
 import {
   CATEGORIE_CULTURA,
   PERCORSO_IMMAGINE,
+  VERTEBRATI,
   annoInLettere,
   giornoInLettere,
   numeroSecolo,
@@ -14,16 +15,44 @@ import {
   TIPI,
   TIPI_SCIENZA,
   domandaValida,
+  gruppiDiNotorieta,
   senzaRisposta,
   type DomandaCompleta,
   type TipoDomanda,
 } from '../quiz-domande'
-import { domandaSulTempo, generaPartita, type FontiQuiz } from '../quiz-domande-cultura'
+import {
+  artistaInFrase,
+  domandaSulTempo,
+  generaPartita,
+  nomeDecennio,
+  type FontiQuiz,
+} from '../quiz-domande-cultura'
 import { diElemento, diNome, genereNome, nomeConArticolo } from '../quiz-lingua'
-import { ARTE, CINEMA, LIBRI, LIRICA, NOBEL, OGGI, SCIENZA, STORIA } from './quiz-cultura-dati'
+import {
+  ARTE,
+  CANZONI,
+  CINEMA,
+  CLASSICA,
+  LIBRI,
+  LIRICA,
+  NOBEL,
+  OGGI,
+  SCIENZA,
+  STORIA,
+} from './quiz-cultura-dati'
 
 const FONTI: FontiQuiz = {
-  cultura: { arte: ARTE, libri: LIBRI, cinema: CINEMA, lirica: LIRICA, nobel: NOBEL, storia: STORIA, scienza: SCIENZA },
+  cultura: {
+    arte: ARTE,
+    libri: LIBRI,
+    cinema: CINEMA,
+    canzoni: CANZONI,
+    classica: CLASSICA,
+    lirica: LIRICA,
+    nobel: NOBEL,
+    storia: STORIA,
+    scienza: SCIENZA,
+  },
   oggi: OGGI,
 }
 
@@ -93,17 +122,119 @@ describe('le domande delle altre materie', () => {
     }
   })
 
-  it('hanno un ambito "tutti" e nomi per ogni ambito', () => {
-    for (const [categoria, ambiti] of Object.entries(AMBITI)) {
+  it('hanno un ambito "tutti" e nomi per ogni ambito, e così i generi', () => {
+    for (const [categoria, ambiti] of [...Object.entries(AMBITI), ...Object.entries(GENERI)]) {
       expect(ambiti?.[0].id, categoria).toBe('tutti')
       for (const a of ambiti ?? []) expect(a.nome.length).toBeGreaterThan(2)
     }
   })
 })
 
+describe('le difficoltà', () => {
+  const posto = (categoria: CategoriaQuiz, elenco: readonly { id: string; f: number }[]) => {
+    const ordine = [...elenco].sort((a, b) => b.f - a.f).map((x) => x.id)
+    const [famosi, noti] = gruppiDiNotorieta(ordine.length)
+    return (d: DomandaCompleta) => {
+      const i = ordine.indexOf(d.soggetto)
+      expect(i, `${categoria}: ${d.soggetto}`).toBeGreaterThanOrEqual(0)
+      return i < famosi ? 'famosi' : i < noti ? 'noti' : 'altri'
+    }
+  }
+  const conti = (domande: DomandaCompleta[], gruppo: (d: DomandaCompleta) => string) => {
+    const n = { famosi: 0, noti: 0, altri: 0 } as Record<string, number>
+    // Il paese di chi canta ha per soggetto l'artista, non la canzone.
+    for (const d of domande) if (d.tipo !== 'paese-interprete') n[gruppo(d)] += 1
+    return n
+  }
+
+  it('il facile chiede solo i famosi, il difficile quasi solo gli altri', () => {
+    for (const [categoria, elenco] of [
+      ['libri', LIBRI.libri],
+      ['cinema', CINEMA.film],
+      ['canzoni', CANZONI.canzoni],
+    ] as const) {
+      const gruppo = posto(categoria, elenco)
+      const facile = conti(tante(categoria, 20, { notorieta: 'noti' }), gruppo)
+      expect(facile.noti + facile.altri, categoria).toBe(0)
+      const difficile = conti(tante(categoria, 20, { notorieta: 'rari' }), gruppo)
+      expect(difficile.famosi, categoria).toBe(0)
+      expect(difficile.altri, categoria).toBeGreaterThan(difficile.noti)
+      // Il normale (e la classificata) sta a meta': per meta' dai famosi, e pochi degli altri.
+      const normale = conti(tante(categoria, 20), gruppo)
+      const tutte = normale.famosi + normale.noti + normale.altri
+      expect(normale.famosi / tutte, categoria).toBeGreaterThan(0.4)
+      expect(normale.altri / tutte, categoria).toBeLessThan(0.2)
+    }
+  })
+
+  it('i famosi sono una sessantina al più', () => {
+    expect(gruppiDiNotorieta(1500)).toEqual([60, 250])
+    expect(gruppiDiNotorieta(195)).toEqual([39, 98])
+    expect(gruppiDiNotorieta(50)).toEqual([20, 40])
+    expect(gruppiDiNotorieta(10)).toEqual([10, 10])
+  })
+
+  it('il facile fa meno domande difficili, e gli anni più lontani', () => {
+    const quanti = (notorieta: string) =>
+      tante('cinema', 30, { notorieta }).filter((d) => d.tipo === 'anno-film').length
+    expect(quanti('noti')).toBeLessThan(quanti('rari'))
+    const distanze = (notorieta: string) =>
+      tante('cinema', 30, { notorieta, tipi: ['anno-film'] })
+        .filter((d) => d.tipo === 'anno-film')
+        .map((d) => {
+          const anni = d.opzioni.map(annoDi).sort((a, b) => a - b)
+          return anni[anni.length - 1] - anni[0]
+        })
+    const media = (x: number[]) => x.reduce((a, b) => a + b, 0) / x.length
+    expect(media(distanze('noti'))).toBeGreaterThan(media(distanze('misti')) * 1.5)
+  })
+})
+
+describe('le partite di più categorie', () => {
+  it('dividono le domande fra le categorie, e ognuna dice la sua', () => {
+    for (let seme = 1; seme <= 20; seme += 1) {
+      const sezioni = [{ categoria: 'arte' }, { categoria: 'libri' }, { categoria: 'cinema' }]
+      const domande = partita('arte', seme, { sezioni, quante: 12 })
+      expect(domande.length).toBe(12)
+      const perCategoria = new Map<string, number>()
+      for (const d of domande) perCategoria.set(d.categoria!, (perCategoria.get(d.categoria!) ?? 0) + 1)
+      expect([...perCategoria.values()]).toEqual([4, 4, 4])
+      expect(new Set(domande.map((d) => d.soggetto)).size).toBe(12)
+      // La categoria arriva anche a chi gioca, senza la risposta.
+      for (const d of domande) expect(senzaRisposta(d).categoria).toBe(d.categoria)
+    }
+  })
+
+  it('mescolano le categorie invece di metterle una dopo l’altra', () => {
+    const sezioni = [{ categoria: 'canzoni' as const }, { categoria: 'classica' as const }]
+    const domande = partita('canzoni', 7, { sezioni, quante: 10 })
+    const cambi = domande.slice(1).filter((d, i) => d.categoria !== domande[i].categoria).length
+    expect(cambi).toBeGreaterThan(3)
+  })
+
+  it('una sezione sola resta una partita come prima, senza la sezione su ogni domanda', () => {
+    for (const d of partita('libri', 3, { sezioni: [{ categoria: 'libri' }] })) expect(d.categoria).toBeUndefined()
+  })
+
+  it('gli argomenti della scienza sono sezioni, e ognuna dice il suo', () => {
+    const sezioni = [
+      { categoria: 'scienza', ambito: 'chimica' },
+      { categoria: 'scienza', ambito: 'natura' },
+      { categoria: 'nobel' },
+    ]
+    const domande = partita('scienza', 5, { sezioni, quante: 9 })
+    expect(domande.length).toBe(9)
+    for (const d of domande) {
+      if (d.ambito === 'chimica') expect(TIPI_SCIENZA.chimica).toContain(d.tipo)
+      else if (d.ambito === 'natura') expect(TIPI_SCIENZA.natura).toContain(d.tipo)
+      else expect(d.categoria).toBe('nobel')
+    }
+  })
+})
+
 describe('gli anni e i secoli', () => {
   it('non danno l’anno zero, né un anno che deve ancora venire', () => {
-    for (const categoria of ['storia', 'oggi', 'nobel', 'cinema'] as const) {
+    for (const categoria of ['storia', 'oggi', 'scienza', 'cinema'] as const) {
       for (const d of tante(categoria)) {
         for (const o of d.opzioni.filter((x) => x.id.startsWith('anno:'))) {
           expect(annoDi(o)).not.toBe(0)
@@ -148,25 +279,151 @@ describe('gli anni e i secoli', () => {
 })
 
 describe('le regole di ogni materia', () => {
-  it('nel Nobel non danno come sbagliato chi ha vinto lo stesso premio lo stesso anno', () => {
-    for (const d of tante('nobel', 30, { tipi: ['nobel-anno'] })) {
-      if (d.tipo !== 'nobel-anno') continue
-      const [, premio, anno] = d.soggetto.split(':')
-      const vincitori = new Set(
-        NOBEL.premi.filter((x) => x.premio === premio && x.anno === Number(anno)).map((x) => x.chi),
-      )
-      for (const o of d.opzioni) if (o.id !== d.giusta) expect(vincitori.has(o.id)).toBe(false)
+  it('nel Nobel si chiede il campo, mai l’anno, e l’altro campo di chi ne ha vinti due non e’ sbagliato', () => {
+    const domande = tante('nobel', 30)
+    expect(domande.every((d) => d.tipo === 'premio-nobel')).toBe(true)
+    for (const d of domande) {
+      const [chi] = d.soggetto.split(':')
+      const vinti = new Set(NOBEL.premi.filter((x) => x.chi === chi).map((x) => `premio:${x.premio}`))
+      for (const o of d.opzioni) if (o.id !== d.giusta) expect(vinti.has(o.id)).toBe(false)
+    }
+    // Anche chi chiede le domande sull'anno di prima riceve quelle sul campo.
+    expect(tante('nobel', 5, { tipi: ['anno-nobel'] }).every((d) => d.tipo === 'premio-nobel')).toBe(true)
+  })
+
+  it('negli animali si chiede il gruppo, e gli errori sono dalla stessa parte', () => {
+    const domande = tante('scienza', 20, { ambito: 'natura' }).filter((d) => d.tipo === 'gruppo-animale')
+    expect(domande.length).toBeGreaterThan(0)
+    let vicini = 0
+    let tutti = 0
+    for (const d of domande) {
+      expect(d.testo).toMatch(/^A quale gruppo di animali appartiene /)
+      const giusto = SCIENZA.specie.find((s) => `sp:${s.id}` === d.soggetto)!.gr
+      for (const o of d.opzioni) {
+        if (o.id === d.giusta) continue
+        tutti += 1
+        if (VERTEBRATI.has(o.id.slice(3) as never) === VERTEBRATI.has(giusto)) vicini += 1
+      }
+    }
+    expect(vicini / tutti).toBeGreaterThan(0.6)
+  })
+
+  it('e quale animale e’ del gruppo: uno solo, e le sbagliate non tutte di un altro gruppo', () => {
+    const specie = new Map(SCIENZA.specie.map((s) => [`sp:${s.id}`, s]))
+    const domande = tante('scienza', 20, { ambito: 'natura' }).filter((d) => d.tipo === 'animale-del-gruppo')
+    expect(domande.length).toBeGreaterThan(0)
+    for (const d of domande) {
+      const giusto = specie.get(d.giusta)!.gr
+      expect(d.testo).toMatch(/^Quale di questi animali è un [a-z]+\?$/)
+      const sbagliate = d.opzioni.filter((o) => o.id !== d.giusta).map((o) => specie.get(o.id)!.gr)
+      for (const g of sbagliate) expect(g).not.toBe(giusto)
+      expect(new Set(sbagliate).size).toBeGreaterThan(1)
     }
   })
 
-  it('nel Nobel non danno come anno sbagliato l’altro anno di chi l’ha vinto due volte', () => {
-    const due = NOBEL.premiati[0].id
-    const anni = new Set(NOBEL.premi.filter((x) => x.chi === due).map((x) => x.anno))
-    for (let seme = 1; seme <= 60; seme += 1) {
-      for (const d of partita('nobel', seme, { tipi: ['anno-nobel'] })) {
-        if (!d.soggetto.startsWith(`${due}:`)) continue
-        for (const o of d.opzioni) if (o.id !== d.giusta) expect(anni.has(annoDi(o))).toBe(false)
+  it('"a chi si deve" nel facile chiede solo di chi e’ noto, e risponde col piu’ noto dei due', () => {
+    const scoperte = new Map(SCIENZA.scoperte.map((s) => [`sc:${s.id}`, s]))
+    const domande = tante('scienza', 40, { ambito: 'scoperte', notorieta: 'noti' }).filter(
+      (d) => d.tipo === 'autore-scoperta',
+    )
+    expect(domande.length).toBeGreaterThan(0)
+    for (const d of domande) {
+      const s = scoperte.get(d.soggetto)!
+      const migliore = Math.max(...s.chi.map((_, i) => s.cf?.[i] ?? 1))
+      expect(migliore).toBeGreaterThanOrEqual(0.5)
+      expect(s.cf?.[s.chi.indexOf(d.risposta)] ?? 1).toBe(migliore)
+    }
+  })
+
+  it('nelle scoperte si chiede di solito l’anno, con il verbo giusto', () => {
+    const domande = tante('scienza', 20, { ambito: 'scoperte' })
+    const anni = domande.filter((d) => d.tipo === 'anno-scoperta')
+    expect(anni.length).toBeGreaterThan(domande.length / 2)
+    for (const d of anni) {
+      const s = SCIENZA.scoperte.find((x) => `sc:${x.id}` === d.soggetto)!
+      const verbo = s.v === 'i' ? 'inventato' : s.v === 'f' ? 'formulato' : 'scoperto'
+      const inizio = `In che anno ${s.chi.join(' e ')} ${s.chi.length > 1 ? 'hanno' : 'ha'} ${verbo} `
+      expect(d.testo.startsWith(inizio)).toBe(true)
+      expect(d.giusta).toBe(`anno:${s.anno}`)
+    }
+  })
+
+  it('nelle canzoni il decennio non e’ mai a cavallo, e i duetti hanno chi canta fra le risposte', () => {
+    const canzoni = new Map(CANZONI.canzoni.map((x) => [x.id, x]))
+    const artisti = new Map(CANZONI.artisti.map((a) => [a.id, a]))
+    let decenni = 0
+    for (const d of tante('canzoni', 30)) {
+      const x = canzoni.get(d.soggetto)
+      if (d.tipo === 'decennio-canzone') {
+        decenni += 1
+        expect([0, 9]).not.toContain(x!.anno! % 10)
+        expect(d.giusta).toBe(`dec:${Math.floor(x!.anno! / 10) * 10}`)
       }
+      if (d.tipo === 'interprete-canzone') {
+        expect(x!.a).toContain(d.giusta)
+        for (const o of d.opzioni) if (o.id !== d.giusta) expect(x!.a).not.toContain(o.id)
+      }
+      if (d.tipo === 'canzone-di') {
+        for (const o of d.opzioni) if (o.id !== d.giusta) expect(canzoni.get(o.id)!.a).not.toContain(x!.a[0])
+      }
+      // Di chi e' italiano non si chiede il paese.
+      if (d.tipo === 'paese-interprete') expect(artisti.get(d.soggetto.slice(3))!.it).toBeUndefined()
+    }
+    expect(decenni).toBeGreaterThan(0)
+  })
+
+  it('chi canta nel ritornello o ha fatto una cover non e’ mai fra le risposte sbagliate', () => {
+    const canzoni = new Map(CANZONI.canzoni.map((x) => [x.id, x]))
+    let viste = 0
+    for (const d of tante('canzoni', 40)) {
+      const x = canzoni.get(d.soggetto)
+      if (!x) continue
+      if (d.tipo === 'interprete-canzone' && x.x) {
+        viste += 1
+        for (const o of d.opzioni) expect(x.x).not.toContain(o.id)
+      }
+      if (d.tipo === 'canzone-di') {
+        for (const o of d.opzioni) {
+          if (o.id === d.giusta) continue
+          const altra = canzoni.get(o.id)!
+          expect([...altra.a, ...(altra.x ?? [])].some((id) => x.a.includes(id))).toBe(false)
+        }
+      }
+    }
+    expect(viste).toBeGreaterThan(0)
+  })
+
+  it('nelle canzoni restano negli anni e nel genere scelti', () => {
+    const canzoni = new Map(CANZONI.canzoni.map((x) => [x.id, x]))
+    const artisti = new Map(CANZONI.artisti.map((a) => [a.id, a]))
+    const di = (d: DomandaCompleta) => canzoni.get(d.soggetto) ?? null
+    for (const d of tante('canzoni', 10, { ambito: 'anni80' })) {
+      const x = di(d)
+      if (x) expect(Math.floor(x.anno! / 10) * 10).toBe(1980)
+    }
+    for (const d of tante('canzoni', 10, { ambito: 'anni60' })) {
+      const x = di(d)
+      if (x) expect(x.anno!).toBeLessThan(1970)
+    }
+    for (const d of tante('canzoni', 10, { genere: 'rock' })) {
+      const x = di(d)
+      if (x) expect(x.g).toContain('rock')
+    }
+    for (const d of tante('canzoni', 10, { genere: 'italiana' })) {
+      const x = di(d)
+      if (x) expect(x.a.some((id) => artisti.get(id)?.it)).toBe(true)
+    }
+  })
+
+  it('nella musica classica restano nel periodo del compositore', () => {
+    const brani = new Map(CLASSICA.brani.map((b) => [b.id, b]))
+    const compositori = new Map(CLASSICA.compositori.map((p) => [p.id, p]))
+    for (const d of tante('classica', 10, { ambito: 'barocco' })) {
+      expect(compositori.get(brani.get(d.soggetto)!.c[0])!.na!).toBeLessThan(1710)
+    }
+    for (const d of tante('classica', 10, { ambito: 'romanticismo' })) {
+      const na = compositori.get(brani.get(d.soggetto)!.c[0])!.na!
+      expect(na >= 1775 && na < 1860).toBe(true)
     }
   })
 
@@ -286,6 +543,22 @@ describe('l’italiano delle altre materie', () => {
     expect(nomeConArticolo('penicillina')).toBe('la penicillina')
     expect(nomeConArticolo('radio')).toBe('la radio')
     expect(nomeConArticolo('boh')).toBeNull()
+  })
+
+  it('dice i gruppi con l’articolo, e i decenni per nome', () => {
+    expect(artistaInFrase({ n: 'Queen', gr: 1 }, true)).toBe('dei Queen')
+    expect(artistaInFrase({ n: 'U2', gr: 1 }, true)).toBe('degli U2')
+    expect(artistaInFrase({ n: 'ABBA', gr: 1 })).toBe('gli ABBA')
+    expect(artistaInFrase({ n: 'The Beatles', gr: 1 }, true)).toBe('dei Beatles')
+    expect(artistaInFrase({ n: 'The Rolling Stones', gr: 1 })).toBe('i Rolling Stones')
+    expect(artistaInFrase({ n: 'Scorpions', gr: 1 }, true)).toBe('degli Scorpions')
+    expect(artistaInFrase({ n: 'Spice Girls', gr: 1 }, true)).toBe('delle Spice Girls')
+    expect(artistaInFrase({ n: 'Il Volo', gr: 1 }, true)).toBe('del Volo')
+    expect(artistaInFrase({ n: 'Le Vibrazioni', gr: 1 }, true)).toBe('delle Vibrazioni')
+    expect(artistaInFrase({ n: 'Vasco Rossi' }, true)).toBe('di Vasco Rossi')
+    expect(nomeDecennio(1970)).toBe('Anni Settanta')
+    expect(nomeDecennio(2000)).toBe('Anni Duemila')
+    expect(nomeDecennio(2010)).toBe('Anni 2010')
   })
 
   it('scrive il giorno come si legge', () => {

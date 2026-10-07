@@ -23,13 +23,13 @@ import {
   VOCI_MATERIE,
   dettagliPartita,
   nomeArea,
+  nomePartita,
   voceDi,
   type VoceMateria,
 } from '@/games/quiz/testi'
 import { leggiStatistiche } from '@/games/quiz/statistiche'
-import { OPZIONI_PREDEFINITE, useQuizLibero, type ImpostazioniLibera } from '@/games/quiz/usePartita'
+import { OPZIONI_PREDEFINITE, categorieDi, useQuizLibero, type ImpostazioniLibera } from '@/games/quiz/usePartita'
 import { useDati } from '@/lib/dati'
-import { frecceDelGruppo } from '@/lib/gruppo'
 import { formatPercent } from '@/lib/format'
 import { gameDate } from '@shared/daily'
 import {
@@ -38,8 +38,8 @@ import {
   CON_PAESE,
   CONTINENTI,
   DOMANDE_PER_PARTITA,
+  GENERI,
   MATERIE,
-  NOMI_CATEGORIE,
   NOMI_MODI,
   QUANTE_LIBERE,
   RISPOSTE_PREDEFINITE,
@@ -50,6 +50,7 @@ import {
   diGeografia,
   eCategoria,
   eModo,
+  genereValido,
   materiaDi,
   type CategoriaQuiz,
   type Continente,
@@ -58,7 +59,7 @@ import {
 } from '@shared/quiz'
 import { giornoDellAnno, giornoInLettere } from '@shared/quiz-cultura'
 import { QUANTE_SFIDA, SECONDI_SFIDA, SECONDI_SFIDA_PREDEFINITI } from '@shared/quiz-sfida'
-import type { AreaQuiz, IndiceQuiz, Notorieta } from '@shared/quiz-domande'
+import type { AreaQuiz, IndiceQuiz, Notorieta, SezioneQuiz } from '@shared/quiz-domande'
 import { eCultura } from '@shared/quiz-domande-cultura'
 import type { QuizSummary } from '@shared/types'
 import './Quiz.css'
@@ -84,38 +85,83 @@ const LIVELLI: Array<{ notorieta: Notorieta; nome: string }> = [
   { notorieta: 'rari', nome: 'Difficile' },
 ]
 
+/** La sezione di una voce: la categoria, e l'argomento della scienza se c'e'. */
+const sezioneDi = (categoria: CategoriaQuiz, ambito?: string): SezioneQuiz =>
+  ambito && ambito !== 'tutti' ? { categoria, ambito } : { categoria }
+
+/** Come si scrive una sezione nell'indirizzo e nelle chiavi: "bandiere", "scienza.chimica". */
+const chiaveSezione = (x: SezioneQuiz) =>
+  x.ambito && x.ambito !== 'tutti' ? `${x.categoria}.${x.ambito}` : x.categoria
+
+function daChiave(k: string): SezioneQuiz | null {
+  const [categoria, ambito] = k.split('.')
+  return eCategoria(categoria) ? sezioneDi(categoria, ambito) : null
+}
+
+/** Le sezioni scelte: quelle della partita, o la sua categoria con il suo ambito. */
+function sezioniDi(s: Pick<ImpostazioniLibera, 'categoria' | 'ambito' | 'sezioni'>): SezioneQuiz[] {
+  return s.sezioni?.length ? [...s.sezioni] : [sezioneDi(s.categoria, s.ambito)]
+}
+
+/** Quante domande puo' avere una partita, se ha un tetto: gli oceani sulla cartina sono cinque. */
+function domandeMassime(s: Pick<ImpostazioniLibera, 'categoria' | 'sezioni' | 'modo'>): number | null {
+  return !s.sezioni?.length && s.categoria === 'oceani' && s.modo === 'cartina' ? 5 : null
+}
+
 /**
- * Le scelte, se stanno in piedi: una categoria che c'e', un'area o un ambito
- * che le vanno bene, numeri fra quelli previsti. Quel che non torna torna
- * com'era di solito. Le altre materie non hanno ne' la cartina ne' le zone.
+ * Le scelte, se stanno in piedi: sezioni che ci sono, tutte della stessa
+ * materia; un'area, un ambito, un genere che vanno bene a tutte; numeri fra
+ * quelli previsti. Quel che non torna torna com'era di solito. Le altre
+ * materie non hanno ne' la cartina ne' le zone, e con piu' sezioni restano
+ * solo i filtri che valgono per tutte: il modo e la zona della geografia, e
+ * gli argomenti della scienza, che sono sezioni loro. Gli anni e il genere
+ * delle canzoni, il periodo dei quadri e il giorno di "Accadde oggi" sono di
+ * una sezione sola.
  *
- * Si scelgono solo la categoria, dove o su cosa, quante domande, il tempo e la
+ * Si scelgono solo le sezioni, dove o su cosa, quante domande, il tempo e la
  * difficoltà: il resto e' come nella classificata, con la spiegazione dopo ogni
  * risposta. Le opzioni di prima — gli aiuti, i tipi di domanda, quante
  * risposte — tornano ai valori di sempre anche se erano salvate o
  * nell'indirizzo.
  */
 function valide(s: Partial<ImpostazioniLibera> | null | undefined): ImpostazioniLibera | null {
-  if (!s || !eCategoria(s.categoria)) return null
-  const categoria = s.categoria
+  if (!s) return null
+  const grezze = s.sezioni?.length ? s.sezioni : eCategoria(s.categoria) ? [sezioneDi(s.categoria, s.ambito)] : []
+  const prima = grezze.find((x) => eCategoria(x.categoria))
+  if (!prima) return null
+  const materia = materiaDi(prima.categoria)
+  const viste = new Map<string, SezioneQuiz>()
+  for (const x of grezze) {
+    if (!eCategoria(x.categoria) || materiaDi(x.categoria) !== materia) continue
+    const sezione = sezioneDi(x.categoria, ambitoValido(x.categoria, x.ambito))
+    viste.set(chiaveSezione(sezione), sezione)
+  }
+  const molte = viste.size > 1
+  // Con piu' sezioni gli ambiti restano solo dove sono una sezione: gli argomenti della scienza.
+  const sezioni = [...viste.values()].map((x) => (molte && x.categoria !== 'scienza' ? sezioneDi(x.categoria) : x))
+  const categoria = sezioni[0].categoria
   const geografia = diGeografia(categoria)
   const modo = geografia && eModo(s.modo) ? s.modo : 'scelta'
   const area = geografia ? (s.area ?? 'mondo') : 'mondo'
-  const ambito = geografia ? 'tutti' : ambitoValido(categoria, s.ambito)
+  const tutte = (elenco: readonly CategoriaQuiz[]) => sezioni.every((x) => elenco.includes(x.categoria))
   const areaBuona =
     area === 'mondo' ||
-    ((CONTINENTI as readonly string[]).includes(area) && CON_CONTINENTE.includes(categoria)) ||
-    (/^paese:[A-Z]{2}$/.test(area) && CON_PAESE.includes(categoria))
+    ((CONTINENTI as readonly string[]).includes(area) && tutte(CON_CONTINENTE)) ||
+    (/^paese:[A-Z]{2}$/.test(area) && tutte(CON_PAESE))
+  const ambito = molte || geografia ? 'tutti' : (sezioni[0].ambito ?? 'tutti')
+  const genere = molte ? 'tutti' : genereValido(categoria, s.genere)
   const quante = (QUANTE_LIBERE as readonly number[]).includes(s.quante ?? 0) ? s.quante! : DOMANDE_PER_PARTITA
   const secondi =
     s.secondi === null ? null : (SECONDI_LIBERI as readonly number[]).includes(s.secondi ?? 0) ? s.secondi! : SECONDI_SCELTA
   return {
     ...OPZIONI_PREDEFINITE,
     categoria,
+    ...(molte ? { sezioni } : {}),
     modo,
     area: areaBuona ? area : 'mondo',
     ...(ambito !== 'tutti' ? { ambito } : {}),
-    ...(categoria === 'oggi' && s.giorno === 'caso' ? { giorno: 'caso' as const } : {}),
+    ...(genere !== 'tutti' ? { genere } : {}),
+    ...(categoria === 'oggi' && !molte && s.giorno === 'caso' ? { giorno: 'caso' as const } : {}),
     quante,
     risposte: RISPOSTE_PREDEFINITE,
     notorieta: s.notorieta === 'noti' || s.notorieta === 'rari' ? s.notorieta : 'misti',
@@ -125,30 +171,43 @@ function valide(s: Partial<ImpostazioniLibera> | null | undefined): Impostazioni
   }
 }
 
-/** La partita dall'indirizzo: `?categoria=fiumi&modo=cartina&paese=IT&domande=10`. Tornare indietro riporta alle scelte. */
+/**
+ * La partita dall'indirizzo: `?categoria=fiumi&modo=cartina&paese=IT&domande=10`,
+ * o con piu' sezioni `?sezioni=citta,bandiere,stati`. Tornare indietro riporta
+ * alle scelte.
+ */
 function daIndirizzo(query: URLSearchParams): ImpostazioniLibera | null {
   const paese = query.get('paese')
   const tempo = query.get('tempo')
   const numero = (k: string) => (query.get(k) === null ? undefined : Number(query.get(k)))
+  const sezioni = (query.get('sezioni') ?? '')
+    .split(',')
+    .map(daChiave)
+    .filter((x): x is SezioneQuiz => !!x)
   return valide({
-    categoria: (query.get('categoria') ?? undefined) as CategoriaQuiz | undefined,
+    categoria: (query.get('categoria') ?? sezioni[0]?.categoria) as CategoriaQuiz | undefined,
+    ...(sezioni.length > 0 ? { sezioni } : {}),
     modo: (query.get('modo') ?? undefined) as ModoQuiz | undefined,
     area: (paese ? `paese:${paese.toUpperCase()}` : (query.get('dove') ?? 'mondo')) as AreaQuiz,
     quante: numero('domande'),
     notorieta: (query.get('noti') ?? undefined) as Notorieta | undefined,
     secondi: tempo === 'no' ? null : numero('secondi'),
     ambito: query.get('ambito') ?? undefined,
+    genere: query.get('genere') ?? undefined,
     giorno: query.get('giorno') === 'caso' ? 'caso' : undefined,
   })
 }
 
 /** L'indirizzo della partita: solo quel che non e' come di solito, così resta un indirizzo che si legge. */
 function indirizzo(s: ImpostazioniLibera): string {
-  const q = new URLSearchParams({ categoria: s.categoria })
+  const q = new URLSearchParams(
+    s.sezioni?.length ? { sezioni: s.sezioni.map(chiaveSezione).join(',') } : { categoria: s.categoria },
+  )
   if (s.modo === 'cartina') q.set('modo', 'cartina')
   if (s.area.startsWith('paese:')) q.set('paese', s.area.slice(6))
   else if (s.area !== 'mondo') q.set('dove', s.area)
   if (s.ambito && s.ambito !== 'tutti') q.set('ambito', s.ambito)
+  if (s.genere && s.genere !== 'tutti') q.set('genere', s.genere)
   if (s.giorno === 'caso') q.set('giorno', 'caso')
   q.set('domande', String(s.quante))
   if (s.secondi === null) q.set('tempo', 'no')
@@ -172,7 +231,7 @@ function scelteSalvate(): ImpostazioniLibera | null {
  * opzioni della partita invece sono una sola, per tutte le materie.
  */
 const CHIAVE_ULTIME = 'quiz-libera-materie-v1'
-type Ultima = Pick<ImpostazioniLibera, 'categoria' | 'modo' | 'area' | 'ambito' | 'giorno'>
+type Ultima = Pick<ImpostazioniLibera, 'categoria' | 'sezioni' | 'modo' | 'area' | 'ambito' | 'genere' | 'giorno'>
 
 function ultimeScelte(): Partial<Record<MateriaQuiz, Ultima>> {
   try {
@@ -190,14 +249,23 @@ function scelteDellaMateria(materia: MateriaQuiz): ImpostazioniLibera {
   const prima = VOCI_MATERIE[materia][0]
   const qui =
     ultima && materiaDi(ultima.categoria) === materia ? ultima : { categoria: prima.categoria, ambito: prima.ambito }
-  // Le opzioni della partita restano quelle di prima; la categoria, la zona e l'ambito sono di questa materia.
-  return valide({ ...salvate, area: 'mondo', ambito: undefined, giorno: undefined, tipi: undefined, ...qui }) ?? salvate
+  // Le opzioni della partita restano quelle di prima; le sezioni, la zona e i filtri sono di questa materia.
+  const pulite = { ...salvate, area: 'mondo' as const, ambito: undefined, genere: undefined, giorno: undefined }
+  return valide({ ...pulite, sezioni: undefined, tipi: undefined, ...qui }) ?? salvate
 }
 
 function salvaScelte(s: ImpostazioniLibera): void {
   try {
     localStorage.setItem(CHIAVE_SCELTE, JSON.stringify(s))
-    const ultima: Ultima = { categoria: s.categoria, modo: s.modo, area: s.area, ambito: s.ambito, giorno: s.giorno }
+    const ultima: Ultima = {
+      categoria: s.categoria,
+      sezioni: s.sezioni,
+      modo: s.modo,
+      area: s.area,
+      ambito: s.ambito,
+      genere: s.genere,
+      giorno: s.giorno,
+    }
     localStorage.setItem(CHIAVE_ULTIME, JSON.stringify({ ...ultimeScelte(), [materiaDi(s.categoria)]: ultima }))
   } catch {
     // Le scelte ricordate sono una comodità.
@@ -246,7 +314,7 @@ function Menu() {
   }, [sfida, ultima, vai])
 
   const riassunto = ultima
-    ? [NOMI_CATEGORIE[ultima.categoria], ...dettagliPartita(ultima, ix), `${ultima.quante} domande`]
+    ? [nomePartita(ultima), ...dettagliPartita(ultima, ix), `${ultima.quante} domande`]
         // Il modo si dice solo se e' la cartina: "Scelta multipla" e' come di solito.
         .filter((x) => x !== NOMI_MODI.scelta)
         .join(' · ')
@@ -352,7 +420,11 @@ function Partita({ impostazioni }: { impostazioni: ImpostazioniLibera }) {
       <PartitaQuiz
         p={p}
         classificata={false}
-        intro={{ titolo: NOMI_CATEGORIE[impostazioni.categoria], sotto: extra.join(' · ') }}
+        intro={{
+          titolo: nomePartita(impostazioni),
+          sotto: extra.join(' · '),
+          ...(impostazioni.sezioni?.length ? { testo: 'Le domande delle sezioni scelte, mescolate.' } : {}),
+        }}
         azioniFine={
           <>
             <Button size="lg" fullWidth onClick={p.riprova}>
@@ -426,7 +498,7 @@ const TEMPI_LIBERI: ReadonlyArray<number | null> = [...SECONDI_LIBERI, null]
 function Scelta({ materia }: { materia: MateriaQuiz }) {
   const { vai } = useNavigazione()
   const [scelte, setScelte] = useState(() => scelteDellaMateria(materia))
-  const [foglio, setFoglio] = useState<'zona' | 'paese' | 'ambito' | null>(null)
+  const [foglio, setFoglio] = useState<'zona' | 'paese' | 'ambito' | 'genere' | null>(null)
   // `?sfida=1`: si arriva dal menu per sfidare un amico.
   const [query] = useSearchParams()
   const [contro, setContro] = useState<Contro>(() => (query.get('sfida') === '1' ? 'amico' : leggiContro()))
@@ -435,15 +507,23 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
   const [statistiche] = useState(leggiStatistiche)
 
   const { categoria, modo = 'scelta' } = scelte
+  const sezioni = sezioniDi(scelte)
+  const molte = sezioni.length > 1
+  const scelteOra = new Set(sezioni.map(chiaveSezione))
   const geografia = diGeografia(categoria)
-  const voce = voceDi(materia, categoria, scelte.ambito)
+  // La voce scelta, se e' una sola: con piu' sezioni i filtri di una sola non ci sono.
+  const voce = molte ? null : voceDi(materia, categoria, scelte.ambito)
   const conAmico = contro === 'amico'
+  const categorie = categorieDi(scelte)
 
   // I dati servono alla partita: scaricarli mentre si sceglie la fa partire subito.
   const ix = useIndiceQuiz(geografia)
+  const daScaricare = categorie.join(',')
   useEffect(() => {
-    if (eCultura(categoria) && categoria !== 'oggi') caricaCultura(categoria).catch(() => {})
-  }, [categoria])
+    for (const c of daScaricare.split(',') as CategoriaQuiz[]) {
+      if (eCultura(c) && c !== 'oggi') caricaCultura(c).catch(() => {})
+    }
+  }, [daScaricare])
   const [contiCitta, setContiCitta] = useState<Map<string, number> | null>(null)
   useEffect(() => {
     if (!ix || categoria !== 'citta' || contiCitta) return
@@ -459,12 +539,31 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
   }, [ix, categoria, contiCitta])
 
   // "Accadde oggi" di oggi aspetta la classificata, se oggi la classificata e' proprio quella.
-  const { dati: delGiorno } = useDati<QuizSummary>(categoria === 'oggi' ? '/quiz/summary' : null)
+  const { dati: delGiorno } = useDati<QuizSummary>(categoria === 'oggi' && !molte ? '/quiz/summary' : null)
   const oggiChiuso = delGiorno?.categoria === 'oggi' && delGiorno.status !== 'done'
 
   const cambia = (nuove: Partial<ImpostazioniLibera>) => setScelte((s) => valide({ ...s, ...nuove }) ?? s)
 
-  const scegliVoce = (v: VoceMateria) => cambia({ categoria: v.categoria, ambito: v.ambito })
+  /**
+   * Una voce si accende e si spegne: le sezioni si scelgono insieme, quante se
+   * ne vuole, e ne resta sempre una. Restano nell'ordine della pagina.
+   */
+  const tocca = (v: VoceMateria) => {
+    const qui = sezioneDi(v.categoria, v.ambito)
+    const chiave = chiaveSezione(qui)
+    if (scelteOra.has(chiave) && scelteOra.size === 1) return
+    const ordine = voci.map((x) => chiaveSezione(sezioneDi(x.categoria, x.ambito)))
+    const nuove = (scelteOra.has(chiave) ? sezioni.filter((x) => chiaveSezione(x) !== chiave) : [...sezioni, qui]).sort(
+      (a, b) => ordine.indexOf(chiaveSezione(a)) - ordine.indexOf(chiaveSezione(b)),
+    )
+    const sola = nuove.length === 1
+    cambia({
+      categoria: nuove[0].categoria,
+      ambito: sola ? nuove[0].ambito : undefined,
+      genere: sola ? scelte.genere : undefined,
+      sezioni: sola ? undefined : nuove,
+    })
+  }
 
   const scegliContro = (c: Contro) => {
     setContro(c)
@@ -476,14 +575,17 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
   }
 
   // Con un amico le domande e i secondi sono quelli della sfida: si vedono quelli, e si gioca con quelli.
-  const quante = conAmico ? vicino(QUANTE_SFIDA, scelte.quante, 10) : scelte.quante
+  const massime = domandeMassime(scelte)
+  const quante = massime ?? (conAmico ? vicino(QUANTE_SFIDA, scelte.quante, 10) : scelte.quante)
   const secondi = conAmico ? vicino(SECONDI_SFIDA, scelte.secondi, SECONDI_SFIDA_PREDEFINITI) : scelte.secondi
 
   // La difficoltà scelta fa partire la partita, o la sfida; e resta per la prossima volta.
   const comincia = (notorieta: Notorieta) => {
     const pronte = { ...scelte, notorieta, quante, secondi }
-    setScelte(pronte)
-    salvaScelte(pronte)
+    // Le cinque domande degli oceani sulla cartina sono di quella partita: dopo si torna a quante se ne erano scelte.
+    const ricordate = massime === null ? pronte : { ...pronte, quante: scelte.quante }
+    setScelte(ricordate)
+    salvaScelte(ricordate)
     if (conAmico) {
       setSfida(true)
       return
@@ -492,16 +594,20 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
     vai(indirizzo(oggiChiuso ? { ...pronte, giorno: 'caso' } : pronte))
   }
 
-  const conContinente = CON_CONTINENTE.includes(categoria)
-  const conPaese = CON_PAESE.includes(categoria)
+  // La zona vale se vale per tutte le sezioni: gli oceani non hanno continenti, le bandiere non hanno paesi.
+  const conContinente = categorie.every((c) => CON_CONTINENTE.includes(c))
+  const conPaese = categorie.every((c) => CON_PAESE.includes(c))
   const paese = scelte.area.startsWith('paese:') ? scelte.area.slice(6) : null
   const elencoPaesi = useMemo(
     () => (ix && conPaese ? paesiCon(ix, categoria, contiCitta) : []),
     [ix, conPaese, categoria, contiCitta],
   )
   // L'ambito si sceglie solo se la voce non e' gia' un argomento: la chimica non ha altro da scegliere.
-  const ambiti = voce?.ambito === undefined ? AMBITI[categoria] : undefined
+  const ambiti = voce && voce.ambito === undefined ? AMBITI[categoria] : undefined
   const ambito = ambiti?.find((a) => a.id === (scelte.ambito ?? 'tutti'))
+  // Il genere, per le canzoni: un secondo filtro, oltre agli anni.
+  const generi = voce ? GENERI[categoria] : undefined
+  const genere = generi?.find((g) => g.id === (scelte.genere ?? 'tutti'))
   // Sulla cartina il tempo e' il doppio: si mostrano i secondi veri del modo scelto.
   const perModo = modo === 'cartina' ? 2 : 1
   const voci = VOCI_MATERIE[materia]
@@ -529,15 +635,10 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
         ]}
       />
 
-      <Sezione titolo="Categoria">
-        <div
-          className={`quiz-categorie quiz-colori--${materia}`}
-          role="radiogroup"
-          aria-label="Categoria"
-          onKeyDown={frecceDelGruppo}
-        >
+      <Sezione titolo="Sezioni" nota="Scegline una o più">
+        <div className={`quiz-categorie quiz-colori--${materia}`} role="group" aria-label="Sezioni">
           {voci.map((v, i) => {
-            const scelta = v === voce
+            const scelta = scelteOra.has(chiaveSezione(sezioneDi(v.categoria, v.ambito)))
             // I record sono per categoria: gli argomenti della scienza non hanno il loro.
             const tutta = v.ambito === undefined || v.ambito === 'tutti'
             const record = tutta ? statistiche.migliori[v.categoria] : undefined
@@ -545,12 +646,11 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
               <button
                 key={`${v.categoria}:${v.ambito ?? ''}`}
                 type="button"
-                role="radio"
+                role="checkbox"
                 aria-checked={scelta}
-                tabIndex={scelta || (!voce && i === 0) ? 0 : -1}
                 className={`quiz-tessera${scelta ? ' is-scelta' : ''}`}
                 style={{ '--n': i } as CSSProperties}
-                onClick={() => scegliVoce(v)}
+                onClick={() => tocca(v)}
               >
                 <span className="quiz-tessera__icona" aria-hidden="true">
                   <IconaCategoria categoria={v.categoria} ambito={v.ambito} size={19} />
@@ -610,7 +710,8 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
               onClick={() => setFoglio('ambito')}
             />
           )}
-          {categoria === 'oggi' && (
+          {generi && genere && <RigaFoglio titolo="Genere" valore={genere.nome} onClick={() => setFoglio('genere')} />}
+          {categoria === 'oggi' && !molte && (
             <Scelte titolo="Giorno" sotto={oggiChiuso ? 'Oggi si gioca dopo il quiz del giorno' : undefined}>
               <SegmentedControl
                 ariaLabel="Quale giorno"
@@ -627,13 +728,15 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
             </Scelte>
           )}
           <Scelte titolo="Domande" valore={String(quante)}>
-            <Cursore
-              ariaLabel="Domande"
-              valori={conAmico ? QUANTE_SFIDA : QUANTE_LIBERE}
-              valore={quante}
-              etichetta={String}
-              onChange={(n) => cambia({ quante: n })}
-            />
+            {massime === null && (
+              <Cursore
+                ariaLabel="Domande"
+                valori={conAmico ? QUANTE_SFIDA : QUANTE_LIBERE}
+                valore={quante}
+                etichetta={String}
+                onChange={(n) => cambia({ quante: n })}
+              />
+            )}
           </Scelte>
           <Scelte titolo="Tempo per domanda" valore={secondi === null ? 'Senza limite' : `${secondi * perModo} s`}>
             <Cursore
@@ -727,6 +830,24 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
         </Sheet>
       )}
 
+      {generi && (
+        <Sheet open={foglio === 'genere'} onClose={() => setFoglio(null)} title="Genere">
+          <Elenco>
+            {generi.map((g) => (
+              <Riga
+                key={g.id}
+                titolo={g.nome}
+                scelta={(scelte.genere ?? 'tutti') === g.id}
+                onClick={() => {
+                  cambia({ genere: g.id })
+                  setFoglio(null)
+                }}
+              />
+            ))}
+          </Elenco>
+        </Sheet>
+      )}
+
       <ComeSiGiocaQuiz open={regole} onClose={() => setRegole(false)} />
     </Pagina>
   )
@@ -791,7 +912,7 @@ function Scelte({
   titolo: string
   sotto?: string
   valore?: string
-  children: ReactNode
+  children?: ReactNode
 }) {
   return (
     <div className="quiz-impostazione">

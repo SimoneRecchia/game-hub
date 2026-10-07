@@ -26,14 +26,25 @@ export function leggiStatistiche(): StatisticheLibere {
   return { partite: 0, domande: 0, giuste: 0, migliori: {} }
 }
 
-export function registraStatistiche(categoria: CategoriaQuiz, domande: number, giuste: number): StatisticheLibere {
+/**
+ * Una partita finita: le domande e le giuste di ogni sua categoria — una sola,
+ * o quelle di una partita di piu' sezioni. Il record di una categoria conta
+ * solo le sue domande.
+ */
+export function registraStatistiche(
+  perCategoria: ReadonlyArray<readonly [CategoriaQuiz, number, number]>,
+): StatisticheLibere {
   const s = leggiStatistiche()
-  const quota = domande > 0 ? Math.round((100 * giuste) / domande) : 0
+  const migliori = { ...s.migliori }
+  for (const [categoria, domande, giuste] of perCategoria) {
+    const quota = domande > 0 ? Math.round((100 * giuste) / domande) : 0
+    migliori[categoria] = Math.max(migliori[categoria] ?? 0, quota)
+  }
   const nuove: StatisticheLibere = {
     partite: s.partite + 1,
-    domande: s.domande + domande,
-    giuste: s.giuste + giuste,
-    migliori: { ...s.migliori, [categoria]: Math.max(s.migliori[categoria] ?? 0, quota) },
+    domande: s.domande + perCategoria.reduce((n, [, d]) => n + d, 0),
+    giuste: s.giuste + perCategoria.reduce((n, [, , g]) => n + g, 0),
+    migliori,
   }
   try {
     localStorage.setItem(CHIAVE_STATISTICHE, JSON.stringify(nuove))

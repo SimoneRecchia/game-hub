@@ -461,14 +461,17 @@
   /* ---- Le materie del quiz ----
      Un colore per materia, sulle icone del menu della libera e delle sue
      pagine: si riconoscono prima di leggere. Il mare per la geografia, il
-     bronzo per la storia, il rosa del quiz per l'arte, il petrolio per la
-     scienza: nessuno e' il verde di "giusta" ne' l'indaco della selezione. */
+     bronzo per la storia, il rosa del quiz per l'arte, l'orchidea per la
+     musica, il petrolio per la scienza: nessuno e' il verde di "giusta" ne'
+     l'indaco della selezione. */
   --materia-geografia-1: #3db3ea;
   --materia-geografia-2: #1f6fd1;
   --materia-storia-1: #e9a85a;
   --materia-storia-2: #b0652a;
   --materia-cultura-1: #f25f8f;
   --materia-cultura-2: #c2266a;
+  --materia-musica-1: #b45ce8;
+  --materia-musica-2: #7c2fb8;
   --materia-scienza-1: #35b9b2;
   --materia-scienza-2: #177a85;
 

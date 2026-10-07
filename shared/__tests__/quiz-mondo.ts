@@ -215,6 +215,7 @@ const LAZIO: [string, string] = ['R2', 'Lazio']
 const CAMPANIA: [string, string] = ['R3', 'Campania']
 const TOSCANA: [string, string] = ['R4', 'Toscana']
 const PUGLIA: [string, string] = ['R5', 'Puglia']
+const VALLE_D_AOSTA: [string, string] = ['R6', 'Valle d’Aosta']
 
 export const CITTA: CittaQuiz[] = [
   citta('C1', 'Milano', 'IT', [9.19, 45.46], 0.97, LOMBARDIA),
@@ -249,6 +250,9 @@ export const CITTA: CittaQuiz[] = [
   citta('C30', 'Melbourne', 'AU', [144.96, -37.81], 0.9),
   citta('C31', 'Il Cairo', 'EG', [31.24, 30.04], 0.95),
   citta('C32', 'Alessandria', 'EG', [29.92, 31.2], 0.8),
+  // Due nomi che dicono la risposta: lo stato, la regione.
+  citta('C33', 'Città del Messico', 'MX', [-99.13, 19.43], 0.97),
+  citta('C34', 'Aosta', 'IT', [7.32, 45.74], 0.6, VALLE_D_AOSTA),
 ]
 
 export const MONDO: DatiQuiz = {

@@ -102,6 +102,36 @@ describe('le impostazioni di una sfida', () => {
     expect(impostazioniSfida({ categoria: 'fiumi', modo: 'cartina', area: 'marte' })).toBeNull()
   })
 
+  it('con piu’ sezioni tengono quelle della stessa materia, una volta sola, e niente filtri di una sezione', () => {
+    const imp = impostazioniSfida({
+      categoria: 'citta',
+      modo: 'scelta',
+      sezioni: [{ categoria: 'citta' }, { categoria: 'bandiere' }, { categoria: 'citta' }, { categoria: 'arte' }],
+      genere: 'rock',
+    })
+    expect(imp?.sezioni).toEqual([{ categoria: 'citta' }, { categoria: 'bandiere' }])
+    expect(imp?.genere).toBeUndefined()
+    // Una sezione sola non e' una partita di piu' sezioni: resta la categoria, con il suo genere.
+    const sola = impostazioniSfida({
+      categoria: 'canzoni',
+      modo: 'scelta',
+      sezioni: [{ categoria: 'canzoni' }],
+      genere: 'rock',
+    })
+    expect(sola?.sezioni).toBeUndefined()
+    expect(sola?.genere).toBe('rock')
+    // Gli argomenti della scienza sono sezioni loro.
+    const scienza = impostazioniSfida({
+      categoria: 'scienza',
+      modo: 'scelta',
+      sezioni: [{ categoria: 'scienza', ambito: 'chimica' }, { categoria: 'scienza', ambito: 'natura' }],
+    })
+    expect(scienza?.sezioni).toEqual([
+      { categoria: 'scienza', ambito: 'chimica' },
+      { categoria: 'scienza', ambito: 'natura' },
+    ])
+  })
+
   it('sulla cartina il tempo e’ il doppio', () => {
     expect(limiteMs({ secondi: 15 }, false)).toBe(15_000)
     expect(limiteMs({ secondi: 15 }, true)).toBe(30_000)

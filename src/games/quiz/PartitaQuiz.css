@@ -582,6 +582,22 @@
   }
 }
 
+/* La sezione della domanda, nelle partite di piu' sezioni: sopra il testo, o accanto sulla cartina. */
+.quiz-carta__sezione {
+  flex: none;
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--quiz-lettera-ink);
+}
+
+.quiz-carta.is-cartina .quiz-carta__sezione {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--quiz-lettera);
+}
+
 /* Il bollo della categoria, sulle domande senza immagine. */
 .quiz-carta__emblema {
   flex: none;
