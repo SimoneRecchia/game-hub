@@ -31,15 +31,16 @@
  *   gioco        cosa misura                          tipico    pessimo   perfetto
  *   Wordle       i tentativi                           49-63     14*       70 (+4)
  *   Scarabeo     punti rispetto al computer           90-135    ~60       150
- *   Cruciverba   completato, meno gli aiuti           135-150    0*       160
- *   Sudoku       risolto, meno gli aiuti              135-150    0*       150
+ *   Cruciverba   completato, meno gli aiuti           150-158    0*       160
+ *   Sudoku       risolto, meno gli aiuti              140-150    0*       150
  *   Quiz         risposte giuste su dieci              45-69     15        75
  *   Nomi, cose   risposte valide, rare e veloci        35-45     15        60
  *   Tris         vinte e patte su cinque partite       30-40     10        50
  *
  *   * la parola non indovinata vale quattordici, la peggiore indovinata
  *     trentacinque; un cruciverba o un sudoku svelato per intero non e' stato
- *     risolto: vale zero.
+ *     risolto: vale zero. Ogni casella svelata toglie la sua parte, e svelarne
+ *     un quarto lascia tre quarti dei punti (vedi shared/aiuti.ts).
  *
  * I pochi punti oltre il tetto del Wordle sono i bonus di velocità e costanza,
  * che servono da spareggio e restano sotto il gradino di un tentativo.
@@ -51,7 +52,7 @@
 import { MAX_DAY_SCORE } from './scoring'
 import { PUNTI_COMPLETO } from './cruciverba'
 import { DOMANDE_PER_PARTITA, puntiQuiz } from './quiz'
-import { puntiSudoku } from './sudoku'
+import { PUNTI_COMPLETO as PUNTI_SUDOKU } from './sudoku'
 import { PARTITE_TRIS, puntiTris } from './tris'
 import { MASSIMO_NOMI } from './nomi-cose'
 import type { GiocoClassificato } from './types'
@@ -102,7 +103,7 @@ export function puntiScarabeo(punteggio: number, riferimento: number): number {
 export const MASSIMI: Record<GiocoClassificato, number> = {
   wordle: MAX_DAY_SCORE,
   cruciverba: PUNTI_COMPLETO,
-  sudoku: puntiSudoku(0, 0),
+  sudoku: PUNTI_SUDOKU,
   scarabeo: puntiScarabeo(RIFERIMENTO_SCARABEO, RIFERIMENTO_SCARABEO),
   quiz: puntiQuiz(DOMANDE_PER_PARTITA, DOMANDE_PER_PARTITA),
   tris: puntiTris(PARTITE_TRIS, 0),

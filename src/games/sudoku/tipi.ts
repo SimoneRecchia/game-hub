@@ -1,11 +1,6 @@
+import type { CostiAiuti } from '@shared/aiuti'
 import type { LivelloSudoku } from '@shared/sudoku'
 import type { Editor } from './useEditor'
-
-/** Quanto costano gli aiuti: nella classificata tolgono punti, nella libera niente. */
-export interface Aiuti {
-  costoErrore: number
-  costoSvelata: number
-}
 
 /**
  * Un sudoku in corso, visto dalla schermata: la stessa per la classificata e
@@ -28,7 +23,8 @@ export interface SudokuInCorso {
   inviando: boolean
   /** L'esito dell'ultimo controllo, per l'adesivo: quante cifre erano sbagliate. */
   ultimoControllo: { id: number; ambito: 'casella' | 'tutto'; errate: number } | null
-  aiuti: Aiuti | null
+  /** Quanto costano gli aiuti, gli stessi conti del server: nella classificata tolgono punti, nella libera niente. */
+  aiuti: CostiAiuti | null
   controlla: (ambito: 'casella' | 'tutto') => void
   svela: () => void
 }

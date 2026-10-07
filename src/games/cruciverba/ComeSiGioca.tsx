@@ -1,10 +1,20 @@
 import { Sheet } from '@/components/Sheet'
-import { pluralize } from '@/lib/format'
+import { inPunti } from '@/lib/format'
+import type { CostiAiuti } from '@shared/aiuti'
 import { MAX_COOP_GUESTS } from '@shared/config'
-import { COSTO_ERRORE, COSTO_SVELATA, PUNTI_COMPLETO } from '@shared/cruciverba'
+import { PUNTI_COMPLETO } from '@shared/cruciverba'
 import './ComeSiGioca.css'
 
-export function ComeSiGiocaCruciverba({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** Le regole. I costi degli aiuti sono quelli dello schema aperto: senza, si dice la regola. */
+export function ComeSiGiocaCruciverba({
+  open,
+  onClose,
+  costi = null,
+}: {
+  open: boolean
+  onClose: () => void
+  costi?: CostiAiuti | null
+}) {
   return (
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="cru-aiuto">
@@ -30,11 +40,17 @@ export function ComeSiGiocaCruciverba({ open, onClose }: { open: boolean; onClos
               Completarlo senza aiuti vale <strong>{PUNTI_COMPLETO} punti</strong>.
             </li>
             <li>
-              <strong>Controlla</strong>: {COSTO_ERRORE} {pluralize(COSTO_ERRORE, 'punto', 'punti')} per ogni lettera
-              sbagliata.
+              <strong>Controlla</strong>:{' '}
+              {costi
+                ? `${inPunti(costi.errore)} per ogni lettera sbagliata.`
+                : 'ogni lettera sbagliata costa metà di una lettera svelata.'}
             </li>
             <li>
-              <strong>Svela</strong>: {COSTO_SVELATA} punti per ogni lettera mancante o sbagliata.
+              <strong>Svela</strong>:{' '}
+              {costi
+                ? `${inPunti(costi.svelata)} per ogni lettera mancante o sbagliata.`
+                : 'ogni lettera mancante o sbagliata toglie la sua parte dei punti.'}{' '}
+              Svelarlo tutto vale zero.
             </li>
             <li>Il tempo conta solo a pari punti.</li>
           </ul>

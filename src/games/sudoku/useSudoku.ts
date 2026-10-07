@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
-import { NOTE_VUOTE, PUNTI_COMPLETO, noteDaTesto, noteInTesto } from '@shared/sudoku'
+import { NOTE_VUOTE, PUNTI_COMPLETO, costiSudoku, noteDaTesto, noteInTesto } from '@shared/sudoku'
 import type { SudokuEsito, SudokuState } from '@shared/types'
 import { useCronometro } from './useCronometro'
 import { useEditor } from './useEditor'
-import type { Aiuti, SudokuInCorso } from './tipi'
+import type { SudokuInCorso } from './tipi'
 
 /** Dopo quanto dall'ultima cifra si salva: abbastanza per non scrivere a ogni tocco. */
 const ATTESA_SALVATAGGIO_MS = 900
@@ -226,7 +226,8 @@ export function useSudoku(): SudokuInCorso & { stato: SudokuState | null; loadEr
     [segnalate, editor.cifre],
   )
 
-  const aiuti: Aiuti = { costoErrore: 1, costoSvelata: 3 }
+  // Dallo schema, con gli stessi conti del server: erano scritti qui, e quando il server li ha cambiati sono rimasti.
+  const aiuti = useMemo(() => (stato ? costiSudoku(stato.dati) : null), [stato?.dati])
 
   return {
     stato,

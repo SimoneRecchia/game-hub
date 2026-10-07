@@ -55,3 +55,8 @@ export function formatNumber(value: number): string {
 export function pluralize(count: number, singular: string, plural: string): string {
   return count === 1 ? singular : plural
 }
+
+/** Dei punti, al singolare quando e' uno: "1 punto", "3 punti". */
+export function inPunti(n: number): string {
+  return `${n} ${pluralize(n, 'punto', 'punti')}`
+}

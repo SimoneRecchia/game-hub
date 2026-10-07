@@ -4,6 +4,7 @@ import {
   CASELLE,
   VUOTA,
   caselleSbagliate,
+  costiSudoku,
   grigliaPiena,
   puntiSudoku,
   rispettaLeDate,
@@ -141,7 +142,7 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
 
   const piena = grigliaPiena(cifre)
   const completa = piena && caselleSbagliate(cifre, soluzione).length === 0
-  const punti = puntiSudoku(svelate.length, errori)
+  const punti = puntiSudoku(svelate.length, errori, costiSudoku(schema.dati))
   const dopo = await salvaPartita(c.env.DB, row, {
     cifre,
     note,

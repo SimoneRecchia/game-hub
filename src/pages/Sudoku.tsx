@@ -47,7 +47,7 @@ export default function Sudoku() {
       ) : (
         <PartitaSudoku p={g} fine={<Fine stato={stato} />} dettaglioRisolto={`${g.punti} punti`} />
       )}
-      <ComeSiGiocaSudoku open={regole} onClose={() => setRegole(false)} />
+      <ComeSiGiocaSudoku open={regole} onClose={() => setRegole(false)} costi={g.aiuti} />
     </Pagina>
   )
 }
