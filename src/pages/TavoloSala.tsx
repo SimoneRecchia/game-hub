@@ -3,7 +3,8 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Copertina } from '@/components/Copertina'
-import { Elenco, Riga, Sezione, Tacche } from '@/components/Elementi'
+import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
+import { Riga } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
@@ -54,6 +55,7 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
   const [locale, setLocale] = useState(() => leggiPartita(gioco))
   const [conti, setConti] = useState(() => leggiConti(gioco))
   const [conferma, setConferma] = useState<LivelloTavoliere | null>(null)
+  const [livello, setLivello] = useLivelloScelto(gioco, LIVELLI_TAVOLIERE)
   const sala = useSalaTavolo(gioco, variante)
 
   // La partita contro il computer puo' essere cambiata altrove: si rilegge tornando qui.
@@ -129,9 +131,18 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
       </div>
 
       {vista === 'computer' ? (
-        <Sezione titolo="Difficoltà">
-          <Elenco>
-            {inCorsoLocale && (
+        <Difficolta
+          livelli={LIVELLI_TAVOLIERE.map((id) => {
+            const c = conti[id]
+            const giocate = c.vinte + c.perse + c.patte
+            return { id, nome: NOMI_LIVELLI[id], valore: giocate > 0 ? `${c.vinte}/${giocate}` : undefined }
+          })}
+          scelto={livello}
+          onScegli={setLivello}
+          onComincia={() => scegliLivello(livello)}
+          colore={`var(--${gioco}-1)`}
+          sopra={
+            inCorsoLocale && (
               <Riga
                 icona={<span className="tavolo-riga__segno" aria-hidden="true" />}
                 titolo="Riprendi la partita"
@@ -143,22 +154,9 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
                   .join(' · ')}
                 a={ROTTE.computerTavolo(gioco)}
               />
-            )}
-            {LIVELLI_TAVOLIERE.map((livello, i) => {
-              const c = conti[livello]
-              const giocate = c.vinte + c.perse + c.patte
-              return (
-                <Riga
-                  key={livello}
-                  icona={<Tacche piene={i + 1} colore={`var(--${gioco}-1)`} />}
-                  titolo={NOMI_LIVELLI[livello]}
-                  valore={giocate > 0 ? `${c.vinte}/${giocate}` : undefined}
-                  onClick={() => scegliLivello(livello)}
-                />
-              )
-            })}
-          </Elenco>
-        </Sezione>
+            )
+          }
+        />
       ) : (
         <InvitaAmico sala={sala} />
       )}
