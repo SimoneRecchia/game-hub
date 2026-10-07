@@ -1172,7 +1172,7 @@ d'accordo; poi, nella generale, conta chi ci e' arrivato con meno partite.
 **I giochi da tavolo non hanno classificata.** Sono partite quando si vuole, con
 gli amici — e contro il computer dove ha senso — senza punti ne' classifica:
 nelle Libere stanno con le libere dei giochi classificati, ognuno nella sua
-famiglia (vedi sotto), e nella barra laterale sotto le Libere
+famiglia (vedi sotto), anche nel menu laterale del computer
 (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in `GiocoClassificato`, che
 porta con se' classifiche, anelli e statistiche. Sono Indovina chi e Lupus, che
 il computer non ce l'hanno — si giocano parlandosi — e la battaglia navale,
@@ -2225,6 +2225,21 @@ profilo e gli amici nessuna scheda e' accesa, e la lente si spegne dov'era
 indietro del profilo e delle classifiche dice da dove si e' venuti: lo porta lo
 stato della history (`stato` di `Collegamento`), e la classifica lo tiene
 cambiando periodo, perché l'indirizzo si sostituisce.
+
+**Sul computer le schede sono una dock, e il menu a sinistra e' della scheda
+aperta.** La capsula della tab bar resta, in basso al centro del contenuto come
+la dock del Mac, con l'icona e il nome sulla stessa riga; il menu ha i giochi
+della scheda nelle famiglie delle Libere (`MENU_LATERALE` in `src/app/menu.ts`),
+che si chiudono con la chevron e restano chiuse (`laterale-chiuse` nel
+`localStorage`), tranne quella del gioco aperto. Toccando un gioco si apre al
+centro la sua configurazione, o la partita di oggi nelle Giornaliere, che con la
+Fortuna hanno in cima la classifica. Prima il menu aveva insieme le tre schede e
+i giochi di tutte e tre, con le libere dei giochi classificati che mancavano, e
+non si capiva che cosa fosse che cosa. La pagina delle Libere, sul computer,
+mette le famiglie affiancate, ognuna in una carta con una riga per gioco e il
+suo motto: i giochi sono gia' nel menu, e lì si dice che cosa sono. Nella
+Fortuna il menu si fa scuro con la pagina, come la dock. Sul telefono non cambia
+niente, e un test tiene il menu d'accordo con le famiglie e con le classificate.
 
 **Le icone delle schede si riconoscono anche piene.** Il calendario delle
 Giornaliere ha il giorno di oggi (`Giorno` in `Icons.tsx`, con due cifre un
