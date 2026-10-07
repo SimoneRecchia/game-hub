@@ -161,6 +161,28 @@ const TRIS_DA_TAVOLO: GiocoTavolo = {
   slug: 'tris/libera',
 }
 
+/**
+ * Le famiglie dei giochi nelle Libere, come li cerca chi vuole giocare: un
+ * gioco con la classificata e uno senza stanno insieme se si somigliano. Prima
+ * erano due, "I giochi" e "Da tavolo", cioe' quelli con la classificata e gli
+ * altri, che e' come sono fatti e non a che cosa si gioca. Lupus sta da solo:
+ * e' l'unico che si gioca in tanti.
+ */
+export const CATEGORIE_LIBERE: readonly CategoriaLibere[] = [
+  { nome: 'Enigmistica', giochi: ['wordle', 'cruciverba', 'sudoku'] },
+  { nome: 'Parole', giochi: ['scarabeo', 'nomi'] },
+  { nome: 'Cultura', giochi: ['quiz'] },
+  { nome: 'Strategia', giochi: ['scacchi', 'dama', 'go', 'forza4', 'tris'] },
+  { nome: 'Da tavolo', giochi: ['battaglia', 'indovina'] },
+  { nome: 'In gruppo', giochi: ['lupus'] },
+]
+
+/** Una famiglia di giochi nelle Libere: il nome e i giochi, nell'ordine in cui si mostrano. */
+export interface CategoriaLibere {
+  nome: string
+  giochi: ReadonlyArray<GiocoClassificato | GiocoDaTavolo>
+}
+
 export function giocoTavoloDi(id: GiocoDaTavolo): GiocoTavolo {
   return [...GIOCHI_DA_TAVOLO, TRIS_DA_TAVOLO].find((g) => g.id === id)!
 }
