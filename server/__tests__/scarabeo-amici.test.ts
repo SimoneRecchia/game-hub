@@ -37,7 +37,7 @@ async function partita(chiama: Chiama, anna: Giocatore, bruno: Giocatore) {
 
 describe('lo Scarabeo fra amici, sul tavolo del server', () => {
   it('ognuno vede il suo leggio, e nessuno il sacchetto', async () => {
-    const { chiama, giocatore } = banco()
+    const { chiama, giocatore, db } = banco()
     const anna = await giocatore('anna')
     const bruno = await giocatore('bruno')
     const { id, primo, secondo } = await partita(chiama, anna, bruno)
@@ -52,7 +52,10 @@ describe('lo Scarabeo fra amici, sul tavolo del server', () => {
     expect(v2.leggio).toHaveLength(8)
     expect(v1).toMatchObject({ tessereAltro: 8, restanti: 120 - 16, punti: { io: 0, altro: 0 }, leggioAltro: null })
     // Il seme non esce, e del leggio dell'altro si sa solo quante tessere ha.
-    expect(mia.posizione).not.toMatch(/"s"|seme/)
+    const salvata = db.sqlite.prepare('SELECT posizione FROM tavolo_partite WHERE id = ?').get(id)?.posizione
+    const seme = String((JSON.parse(String(salvata)) as { s: number }).s)
+    expect(mia.posizione).not.toContain(seme)
+    expect(mia.posizione).not.toMatch(/"(s|seme)":/)
     expect(Object.keys(v1).sort()).toEqual(
       ['aggiustamento', 'fine', 'leggio', 'leggioAltro', 'mosse', 'punti', 'restanti', 'tessereAltro'].sort(),
     )
@@ -130,7 +133,8 @@ describe('lo Scarabeo fra amici, sul tavolo del server', () => {
     expect(fine.aggiustamento.io).toBeLessThan(0)
     expect(fine.punti.io).toBe(migliore.punti + fine.aggiustamento.io)
     const perLui = await vista(chiama, id, secondo)
-    expect(perLui.vincitore).toBe(fine.punti.io > fine.punti.altro ? 'avversario' : 'io')
+    const atteso = fine.punti.io === fine.punti.altro ? null : fine.punti.io > fine.punti.altro ? 'avversario' : 'io'
+    expect(perLui.vincitore).toBe(atteso)
     const sala = (await chiama<SalaTavolo>('GET', '/tavolo/sala?gioco=scarabeo', primo)).dati
     expect(sala.record.vinte + sala.record.perse + sala.record.patte).toBe(1)
 
