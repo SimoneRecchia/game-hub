@@ -1108,7 +1108,13 @@ gli scarti e il sabot e sopra le scritte, e su un panno piu' largo che alto
 computer) si aprono ad arco attorno a me. Tutto si misura sul
 tavolo, che e' un contenitore (`cqw`, `cqh`): le scritte ad arco hanno un tetto
 anche sull'altezza, perché di traverso un arco largo quanto il panno copriva le
-mie carte. Sotto le scritte c'e' la linea dell'assicurazione, che si accende
+mie carte. Le scritte e i fili sono archi dello stesso centro (`Scritte` in
+`Tavolo.tsx`): erano curve ognuna con la sua, piu' strette quanto piu' in
+basso, e la scritta piccola toccava il filo. I percorsi sono piu' lunghi delle
+scritte, perché un carattere piu' largo non le tagli ai capi, e la fascia
+dell'assicurazione e' misurata sulla sua scritta in Georgia, il piu' largo dei
+tre caratteri del panno (con Times e Noto Serif, che e' quello di Android).
+Sotto le scritte c'e' la linea dell'assicurazione, che si accende
 quando il banco la offre; la fiche dell'assicurazione invece sta in un cerchio
 piu' piccolo a sinistra della puntata, perché sui telefoni bassi la linea passa
 a un dito dalle mie carte. Tre o quattro mani, dopo gli split, vanno su due
@@ -2266,6 +2272,12 @@ figlio piu' largo del padre lo spingerebbero a destra): il contenuto resta
 largo com'era, e le misure in `cqw` e `cqh` non cambiano perché contano il
 contenuto e non il riquadro. Un contenitore nuovo che ritaglia vuole lo stesso
 margine.
+
+**Una svg non e' piu' larga di chi la contiene.** `base.css` da' a tutte le svg
+`max-width: 100%`, e l'anello del tempo del blackjack, che sporge attorno al
+cerchio della puntata (`calc(100% + 10px)`), si stringeva solo in larghezza:
+veniva ovale, e girato di un quarto anche spostato di lato. Una svg che deve
+sporgere vuole `max-width: none`.
 
 **Una traccia `auto` si allarga fino al contenuto.** Le carte della
 panoramica delle classifiche stavano in una griglia senza colonne scritte, cioe'
