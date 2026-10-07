@@ -9,6 +9,7 @@ import {
   VUOTA,
   caselleSbagliate,
   contaSoluzioni,
+  costiSudoku,
   doppioni,
   generaSchema,
   grigliaCompleta,
@@ -105,10 +106,11 @@ describe('la difficoltà e il generatore', () => {
 })
 
 describe('i punti e le note', () => {
-  it('centocinquanta senza aiuti, cinque per cifra svelata, due per errore, mai sotto zero', () => {
-    expect(puntiSudoku(0, 0)).toBe(150)
-    expect(puntiSudoku(2, 5)).toBe(130)
-    expect(puntiSudoku(60, 0)).toBe(0)
+  it('centocinquanta senza aiuti, tre per cifra svelata, uno per errore, mai sotto zero', () => {
+    const costi = costiSudoku(schemaDelGiorno(31, '2026-09-28')!.dati)
+    expect(puntiSudoku(0, 0, costi)).toBe(150)
+    expect(puntiSudoku(2, 5, costi)).toBe(139)
+    expect(puntiSudoku(60, 0, costi)).toBe(0)
   })
 
   it('le note stanno in 243 caratteri e tornano uguali', () => {

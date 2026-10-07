@@ -14,6 +14,7 @@
  * chiavi delle definizioni salvate ritrovino le loro caselle.
  */
 
+import { costiAiuti, puntiConAiuti, type CostiAiuti } from './aiuti'
 import { ALFABETO } from './wordle'
 
 /** La casella nera, nello schema e nella soluzione. */
@@ -28,19 +29,17 @@ export const VUOTA = ' '
  * piu' alto di tutte le classificate, perché e' quella che chiede piu' tempo
  * (vedi shared/punti.ts).
  *
- * Una lettera svelata costa cinque punti, un errore segnalato da un controllo
- * due. Il rapporto e' voluto: il controllo dice **dove** si e' sbagliato, lo
- * svelamento dice anche **cosa** va scritto, e chiedere la risposta deve costare
- * piu' che chiedere conferma. Controllare una griglia giusta non costa niente,
- * e ricontrollare lo stesso errore non lo si paga due volte.
+ * Una lettera svelata costa la sua parte dei centosessanta, e un errore
+ * segnalato da un controllo la metà (vedi shared/aiuti.ts): in uno schema di
+ * ottanta lettere, due punti e uno. Il controllo dice **dove** si e' sbagliato,
+ * lo svelamento anche **cosa** va scritto. Controllare una griglia giusta non
+ * costa niente, e ricontrollare lo stesso errore non lo si paga due volte.
  *
  * Il tempo non entra nei punti: sta in classifica come spareggio. Un
  * cruciverba si fa a pezzi, in pausa caffe', e un bonus di velocità
  * premierebbe chi ha mezz'ora di fila invece di chi lo risolve meglio.
  */
 export const PUNTI_COMPLETO = 160
-export const COSTO_SVELATA = 5
-export const COSTO_ERRORE = 2
 
 export type Direzione = 'o' | 'v'
 
@@ -167,9 +166,14 @@ export function caselleBianche(schema: string): number {
   return n
 }
 
+/** Quanto costano gli aiuti in questo schema: le caselle da trovare sono tutte le bianche. */
+export function costiCruciverba(schema: string): CostiAiuti {
+  return costiAiuti(PUNTI_COMPLETO, caselleBianche(schema))
+}
+
 /** Quanto vale la giornata, con questi aiuti. Mai sotto zero. */
-export function punteggio(svelate: number, errori: number): number {
-  return Math.max(0, PUNTI_COMPLETO - svelate * COSTO_SVELATA - errori * COSTO_ERRORE)
+export function punteggio(svelate: number, errori: number, costi: CostiAiuti): number {
+  return puntiConAiuti(PUNTI_COMPLETO, costi, svelate, errori)
 }
 
 /**

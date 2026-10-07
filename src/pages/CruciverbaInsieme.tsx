@@ -20,7 +20,7 @@ import { formatCronometro } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { COOP_POLL_VIEW_MS } from '@shared/config'
-import { VUOTA, caselleBianche, caselleScritte, numeriDelleCaselle } from '@shared/cruciverba'
+import { VUOTA, caselleBianche, caselleScritte, costiCruciverba, numeriDelleCaselle } from '@shared/cruciverba'
 import { isGameLetter } from '@shared/wordle'
 import type { CruciverbaState, DefinizioneCruciverba, VistaCompagnia } from '@shared/types'
 import './Cruciverba.css'
@@ -460,7 +460,11 @@ export default function CruciverbaInsieme() {
         )}
       </div>
 
-      <ComeSiGiocaCruciverba open={aiuto} onClose={() => setAiuto(false)} />
+      <ComeSiGiocaCruciverba
+        open={aiuto}
+        onClose={() => setAiuto(false)}
+        costi={stato ? costiCruciverba(stato.schema) : null}
+      />
       <Sheet open={elenco} onClose={() => setElenco(false)} title="Definizioni">
         {stato && (
           <ElencoDefinizioni

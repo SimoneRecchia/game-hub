@@ -1,11 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  COSTO_ERRORE,
-  COSTO_SVELATA,
   PUNTI_COMPLETO,
   caselleBianche,
   caselleSbagliate,
   caselleScritte,
+  costiCruciverba,
   grigliaIniziale,
   grigliaPiena,
   grigliaValida,
@@ -82,16 +81,18 @@ describe('la griglia del giocatore', () => {
 })
 
 describe('il punteggio', () => {
-  it('vale cento senza aiuti', () => {
-    expect(punteggio(0, 0)).toBe(PUNTI_COMPLETO)
+  const costi = costiCruciverba(SOLUZIONE)
+
+  it('vale il tetto senza aiuti', () => {
+    expect(punteggio(0, 0, costi)).toBe(PUNTI_COMPLETO)
   })
 
   it('svelare costa piu\' che controllare: la risposta vale piu\' della conferma', () => {
-    expect(COSTO_SVELATA).toBeGreaterThan(COSTO_ERRORE)
-    expect(punteggio(2, 3)).toBe(PUNTI_COMPLETO - 2 * COSTO_SVELATA - 3 * COSTO_ERRORE)
+    expect(costi.svelata).toBeGreaterThan(costi.errore)
+    expect(punteggio(2, 3, costi)).toBe(PUNTI_COMPLETO - 2 * costi.svelata - 3 * costi.errore)
   })
 
   it('non scende sotto zero', () => {
-    expect(punteggio(80, 50)).toBe(0)
+    expect(punteggio(80, 50, costi)).toBe(0)
   })
 })

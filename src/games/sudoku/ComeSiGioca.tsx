@@ -1,9 +1,19 @@
 import { Sheet } from '@/components/Sheet'
-import { pluralize } from '@/lib/format'
-import { COSTO_ERRORE, COSTO_SVELATA, PUNTI_COMPLETO } from '@shared/sudoku'
+import { inPunti } from '@/lib/format'
+import type { CostiAiuti } from '@shared/aiuti'
+import { PUNTI_COMPLETO } from '@shared/sudoku'
 import '@/games/cruciverba/ComeSiGioca.css'
 
-export function ComeSiGiocaSudoku({ open, onClose }: { open: boolean; onClose: () => void }) {
+/** Le regole. I costi degli aiuti sono quelli dello schema del giorno: senza, si dice la regola. */
+export function ComeSiGiocaSudoku({
+  open,
+  onClose,
+  costi = null,
+}: {
+  open: boolean
+  onClose: () => void
+  costi?: CostiAiuti | null
+}) {
   return (
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="cru-aiuto">
@@ -31,11 +41,17 @@ export function ComeSiGiocaSudoku({ open, onClose }: { open: boolean; onClose: (
               Completarlo senza aiuti vale <strong>{PUNTI_COMPLETO} punti</strong>.
             </li>
             <li>
-              <strong>Controlla</strong>: {COSTO_ERRORE} {pluralize(COSTO_ERRORE, 'punto', 'punti')} per ogni cifra
-              sbagliata.
+              <strong>Controlla</strong>:{' '}
+              {costi
+                ? `${inPunti(costi.errore)} per ogni cifra sbagliata.`
+                : 'ogni cifra sbagliata costa metà di una cifra svelata.'}
             </li>
             <li>
-              <strong>Svela</strong>: {COSTO_SVELATA} punti per cifra.
+              <strong>Svela</strong>:{' '}
+              {costi
+                ? `${inPunti(costi.svelata)} per cifra.`
+                : 'ogni cifra svelata toglie la sua parte dei punti.'}{' '}
+              Svelarlo tutto vale zero.
             </li>
             <li>Il tempo conta solo a pari punti.</li>
           </ul>
