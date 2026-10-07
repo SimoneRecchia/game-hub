@@ -26,6 +26,11 @@
   --m2: var(--materia-cultura-2);
 }
 
+.quiz-colori--musica {
+  --m1: var(--materia-musica-1);
+  --m2: var(--materia-musica-2);
+}
+
 .quiz-colori--scienza {
   --m1: var(--materia-scienza-1);
   --m2: var(--materia-scienza-2);

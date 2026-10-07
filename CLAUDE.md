@@ -679,12 +679,13 @@ pubblicare la pagina, e con una colonna rinominata il codice di prima si sarebbe
 rotto in quei minuti. Come le giornate del quiz, una giornata scritta non
 cambia, tranne le righe di un formato vecchio (`FORMATO_DOMANDE_RUOTA`), che si
 rifanno anche per oggi: il 3 aveva le sei categorie del giorno, il 4 le ha
-tutte. Rifarle non fa rivedere niente a nessuno, perché chi gira non rivede una
-domanda lo stesso giorno e la riconosce dall'impronta (`improntaDomanda`, il
-testo e la risposta, salvata nel giro con la categoria), non dal posto
-nell'elenco; una categoria di cui ha visto tutto non gli esce piu' fino a
-domani. `--se-manca` guarda anche queste righe, e il formato, quindi il deploy
-le crea per i giorni che non le hanno.
+tutte, il 5 ha le domande piu' facili del quiz (il campo dei Nobel, il gruppo
+degli animali). Rifarle non fa rivedere niente a nessuno, perché chi gira non
+rivede una domanda lo stesso giorno e la riconosce dall'impronta
+(`improntaDomanda`, il testo e la risposta, salvata nel giro con la categoria),
+non dal posto nell'elenco; una categoria di cui ha visto tutto non gli esce piu'
+fino a domani. `--se-manca` guarda anche queste righe, e il formato, quindi il
+deploy le crea per i giorni che non le hanno.
 
 **La ruota si gira col dito, e si disegna una volta.** `RuotaFisica`
 (`src/games/ruota/`) e' la ruota grande e quella del quiz: la si prende, la si
@@ -1658,19 +1659,20 @@ scrive in `quiz_giornate` le dieci domande di ogni giornata, risposte comprese,
 con `INSERT OR IGNORE`: come gli schemi del cruciverba, una giornata scritta non
 cambia piu'. Sono deterministiche dal numero del giorno, evitano i soggetti
 della stessa categoria delle cinque settimane prima, e categoria e modo li
-decide `giornataDelQuiz`: giri di quindici giorni, uno per categoria della
-classificata, in un ordine mescolato ogni volta. Le otto categorie delle altre
-materie fanno da divisori — ogni giorno di geografia sta dopo una di loro, e
-ogni giro comincia con una di loro — quindi due giorni di geografia non sono
+decide `giornataDelQuiz`: giri di diciotto giorni, uno per categoria — tutte, le
+città comprese — in un ordine mescolato ogni volta. Le dieci categorie delle
+altre materie fanno da divisori — ogni giorno di geografia sta dopo una di loro,
+e ogni giro comincia con una di loro — quindi due giorni di geografia non sono
 mai di fila, nemmeno a cavallo di due giri. Al confine i primi quattro giorni
 non ripetono gli ultimi quattro del giro prima (`CONFINE_DEL_GIRO`), quindi una
 categoria non torna prima di cinque giorni: prima al cambio di giro si leggeva
 "Libri, Fiumi, Libri, Fiumi". Il calendario lo usa solo lo script della notte,
 il server legge la categoria dalla giornata salvata: cambiarlo tocca solo i
-giorni ancora da scrivere. Due giorni di geografia per giro sono sulla
-cartina muta (`GIORNI_CARTINA_PER_GIRO`). Se la giornata manca il gioco
-risponde `QUIZ_ASSENTE` (503) e la card dell'hub dice "Non ancora pronto": in
-locale, `npm run quiz:locale`.
+giorni ancora da scrivere. Due giorni di geografia per giro sono sulla cartina
+muta (`GIORNI_CARTINA_PER_GIRO`), mai quelli degli oceani e delle città
+(`CARTINA_DEL_GIORNO`): gli oceani sono cinque, e seicento pallini sul mondo non
+sono una partita. Se la giornata manca il gioco risponde `QUIZ_ASSENTE` (503) e
+la card dell'hub dice "Non ancora pronto": in locale, `npm run quiz:locale`.
 
 L'unica eccezione al "non cambia piu'" e' `FORMATO`: una giornata di un formato
 vecchio **nel futuro e che nessuno ha aperto** si riscrive (`DA_RIFARE`), perché
@@ -1680,36 +1682,98 @@ calendario nuovo: le giornate gia' scritte con il calendario di sola geografia
 si rifanno, se nessuno le ha aperte. Il 4 e' quello di "Accadde oggi" che
 chiede sempre l'anno (vedi sotto), e rifà solo le giornate di "Accadde oggi"
 (`formatoMinimo`): quelle delle altre categorie scritte col 3 sono gia' come le
-farebbe adesso. Oggi e il passato restano come sono, anche di un formato
+farebbe adesso. Il 5 e' quello delle domande piu' facili (vedi sotto), con il
+calendario delle diciotto categorie, e rifà tutte le giornate future che
+nessuno ha aperto: domani puo' avere la categoria di oggi, ed e' il prezzo di
+un calendario nuovo. Oggi e il passato restano come sono, anche di un formato
 vecchio, e la colonna `formato` (migrazione `0016`) dice di quale.
 
-**Le città si giocano solo nella libera.** Sono troppe e troppo difficili per
-una partita uguale per tutti: `CATEGORIE_CLASSIFICATA` non le ha. La libera
-comincia da un menu delle materie (`/quiz/libera`), e ogni materia ha la sua
-pagina (`/quiz/libera/geografia`, `VOCI_MATERIE` in `quiz/testi.ts`) con le
-sottocategorie e le opzioni; la partita sta all'indirizzo del menu con le
-scelte (`?categoria=…`), così i link di prima funzionano ancora. Al posto della
-zona le altre materie hanno l'ambito (`AMBITI`: un periodo, un premio), "Accadde
-oggi" il giorno. Gli argomenti della scienza no: chimica e astronomia chiedono
-cose diverse, e nella pagina sono sottocategorie (una categoria con l'ambito
-fisso), mentre per il modello e per la classificata la scienza resta una
-categoria sola. Le opzioni della partita sono una per tutte le materie; la
-categoria, la zona e l'ambito si ricordano per materia. Anche il resto
-della classificata e' fisso — dieci domande, il tempo del server, la cartina o
-la scheda che insegnano, "Avanti" a mano, niente aiuti — e la libera ne sceglie
-poco, con le stesse tre sezioni in tutte le materie: la categoria, la partita
-(come si risponde, nella geografia; dove o su cosa; quante domande, con
-`QUANTE_LIBERE` fino a cinquanta, e il tempo) e la difficoltà, che fa partire
-la partita come nelle sale dei giochi da tavolo. In cima, "Da solo | Con un
-amico" come Computer | Amico nelle sale: con un amico la difficoltà apre il
-foglio della sfida, e i cursori mostrano i valori della sfida (`QUANTE_SFIDA`,
-`SECONDI_SFIDA`), il piu' vicino a quello scelto prima: cinquanta domande da
-soli sono venti in due. La spiegazione dopo ogni risposta c'e' sempre. Le
-opzioni di prima — gli aiuti, i tipi di domanda, quante risposte, la morte
-improvvisa — c'erano e non le usava nessuno: il motore le ha ancora (la sfida e
-il server le leggono), ma `valide` le rimette ai valori di sempre, anche da un
-indirizzo o da una scelta salvata. L'indirizzo porta solo quel che non e' come
-di solito, così una partita si condivide con un link che si legge.
+**Le città entrano nella classificata, ma solo a scelta.** Erano della sola
+libera, perché le principali di un paese lontano non le sa nessuno; ora la
+classificata le pesca fra le note — le seicento piu' note del mondo, le trecento
+di ogni continente (`cittaDellArea`, la stessa regola per lo script della notte
+e per il browser) — e non le gioca mai sulla cartina. Una città che ha il nome
+del suo stato o della sua regione non si chiede (`cittaRipete`): "quale di
+queste città si trova a Singapore?" si risponde leggendo. La libera comincia da
+un menu delle materie (`/quiz/libera`), e ogni materia ha la sua pagina
+(`/quiz/libera/geografia`, `VOCI_MATERIE` in `quiz/testi.ts`) con le sezioni e
+le opzioni; la partita sta all'indirizzo del menu con le scelte
+(`?categoria=…`), così i link di prima funzionano ancora. Al posto della zona le
+altre materie hanno l'ambito (`AMBITI`: un periodo, un premio), "Accadde oggi"
+il giorno. Gli argomenti della scienza no: chimica e astronomia chiedono cose
+diverse, e nella pagina sono sottocategorie (una categoria con l'ambito fisso),
+mentre per il modello e per la classificata la scienza resta una categoria sola.
+Le opzioni della partita sono una per tutte le materie; le sezioni, la zona e
+l'ambito si ricordano per materia. Anche il resto della classificata e' fisso —
+dieci domande, il tempo del server, la cartina o la scheda che insegnano,
+"Avanti" a mano, niente aiuti — e la libera ne sceglie poco, con le stesse tre
+parti in tutte le materie: le sezioni, la partita (come si risponde, nella
+geografia; dove o su cosa; quante domande, con `QUANTE_LIBERE` fino a cinquanta,
+e il tempo) e la difficoltà, che fa partire la partita come nelle sale dei
+giochi da tavolo. In cima, "Da solo | Con un amico" come Computer | Amico nelle
+sale: con un amico la difficoltà apre il foglio della sfida, e i cursori
+mostrano i valori della sfida (`QUANTE_SFIDA`, `SECONDI_SFIDA`), il piu' vicino
+a quello scelto prima: cinquanta domande da soli sono venti in due. La
+spiegazione dopo ogni risposta c'e' sempre. Le opzioni di prima — gli aiuti, i
+tipi di domanda, quante risposte, la morte improvvisa — c'erano e non le usava
+nessuno: il motore le ha ancora (la sfida e il server le leggono), ma `valide`
+le rimette ai valori di sempre, anche da un indirizzo o da una scelta salvata.
+L'indirizzo porta solo quel che non e' come di solito, così una partita si
+condivide con un link che si legge.
+
+**Una libera mescola le sezioni di una materia.** Le tessere della pagina si
+scelgono anche insieme — le bandiere con le città e gli stati, la chimica con i
+Nobel — e sono caselle da spuntare, almeno una. `partitaMista` divide le
+domande in parti uguali, prende dalle altre quel che manca a una sezione corta
+(gli oceani sulla cartina sono cinque), non ripete un soggetto fra due
+sezioni e le mescola tenendo la salita della difficoltà; ogni domanda porta la
+sua sezione (`categoria`, `ambito`), che la carta mostra sopra il testo con il
+suo emblema. L'indirizzo le elenca (`?sezioni=bandiere,citta`), e la sfida le
+porta nelle impostazioni, che il server rilegge: una materia sola, almeno due
+sezioni. La zona resta solo se la capiscono tutte, cioe' nella geografia; gli
+anni, il genere e il giorno valgono per una sezione sola, e mescolando si
+tolgono.
+
+**Le difficoltà sono fasce di notorietà, non fette dell'elenco.**
+`gruppiDiNotorieta` divide un elenco in famosi (il quinto piu' noto, fra venti
+e sessanta), noti (fino alla meta', al piu' duecentocinquanta) e il resto, e
+`soggetti` pesca da ogni fascia: il facile solo i famosi; il normale meta'
+famosi, quattro decimi noti e un decimo il resto; il difficile nessun famoso e
+sette decimi il resto. Prima le fasce erano percentuali dell'elenco: fra mille
+quadri il facile pescava nei primi trecento, e per chi giocava le tre
+difficoltà erano la stessa. Le domande difficili di per se' (`DIFFICILI`: la
+corrente di un quadro, il secolo di un libro, l'anno di un film) pesano un
+terzo al facile e piu' del doppio al difficile, e al facile gli anni sbagliati
+sono due volte piu' lontani.
+
+**Le domande da tirare a indovinare non ci sono piu'.** L'anno di un Nobel non
+lo sa nessuno: dei Nobel si chiede il campo, e il campo di chi ne ha vinti due
+non e' mai una risposta sbagliata. I nomi scientifici non servono a nessuno: di
+un animale si chiede il gruppo (mammiferi, uccelli, rettili, insetti...), con le
+sbagliate della stessa parte, vertebrati o no, o quale di quattro e' del gruppo
+("quale di questi animali è un mammifero?"), con le sbagliate non tutte dello
+stesso gruppo, che direbbero la risposta a chi non sa; le piante non ci sono
+piu', e nemmeno l'uomo. I nomi degli animali sono quelli di Wikidata, il piu'
+breve, tranne dove e' di un dialetto o da manuale ("bisata", "carcarodonte"): li
+corregge `NOMI_SPECIE`. Delle scoperte si chiede soprattutto l'anno, con il
+verbo che le spetta (`v`: "ha inventato il telefono", "ha formulato la
+relatività", "ha scoperto la penicillina"). Chi si nomina in una domanda
+dev'essere noto quanto vuole la difficoltà (`NOTA_PER_NOME`, la fascia della
+persona nel file): "quale di queste canzoni è di Sergio Ortega?" non la sa
+nemmeno chi canta «El pueblo unido», e "a chi si deve la chitarra elettrica?"
+nel facile non esce, perché George Beauchamp non lo conosce nessuno (`cf`, le
+Wikipedia di chi ha fatto la scoperta). E sulla cartina gli oceani si cercano
+per nome: "quale oceano bagna il Cile" con la cartina davanti si risponde
+guardando, non sapendo; a scelta resta.
+
+**Le canzoni si scelgono per anni e per genere, e la lirica sta nella
+musica.** La Musica ha le canzoni, la musica classica e la lirica, che prima
+stava con l'arte. Le canzoni hanno gli anni come ambito (fino ai Sessanta, un
+decennio, dal 2010) e il genere in un foglio suo (`GENERI`: pop, rock, rap,
+dance, R&B e soul, e le italiane); la classica il periodo del compositore
+(barocco, classicismo, romanticismo, Novecento) o i compositori italiani. Si
+chiede chi la canta, quale canzone e' di un artista, in che decennio e' uscita
+(mai a cavallo di due), e da dove viene chi la canta, se non e' italiano.
 
 **Nel quiz il tempo lo tiene il server, e la risposta resta li'.** Il telefono
 riceve una domanda alla volta senza la risposta (`senzaRisposta`), e l'orologio
@@ -1802,7 +1866,8 @@ accordi"), e il verbo segue il tipo del fatto: "si combatté", "fu firmato",
 diventa «Battaglia di Canne»: in che anno?, che e' brutta ma giusta.
 
 **Le altre materie del quiz sono file statici, e il server non li legge.**
-Arte, libri, cinema, lirica, Nobel, storia e scienza stanno in
+Arte, libri, cinema, canzoni, musica classica, lirica, Nobel, storia e scienza
+stanno in
 `public/dati/quiz/<materia>.json`, "Accadde oggi" in
 `public/dati/quiz/oggi/MM-GG.json`, uno per giorno dell'anno. Li scrivono
 `npm run quiz:cultura` e `npm run quiz:oggi` da Wikidata (con QLever) e da
@@ -1830,13 +1895,27 @@ ha diretti non lo sa nessuno. E i film usciti nell'anno delle letture, o in
 quello prima, le contano a un terzo e a due terzi (`lettureDiSempre`): le
 letture dell'uscita non sono quelle di sempre, e senza uno su quattro dei primi
 cinquanta era del 2023 o dopo, Thunderbolts* davanti al Padrino. Libri, quadri e
-opere di quegli anni fra i primi non ce ne sono.
+opere di quegli anni fra i primi non ce ne sono; le canzoni hanno la stessa
+regola, e le italiane pesano due volte e mezzo (`PESO_ITALIANE`): hanno meno
+Wikipedia delle straniere, chi gioca le conosce meglio, e senza erano una su
+sette.
+
+**Per Wikidata una canzone e' spesso una composizione, e chi la canta lo dice
+la descrizione.** "Bohemian Rhapsody" e "Imagine" non sono canzoni ma
+composizioni musicali, di cui la canzone e' una sottoclasse: escludere le
+composizioni toglieva proprio le piu' famose. Fra gli interpreti di Wikidata ci
+sono cover e ritornelli (Susan Boyle in "Like a Prayer"): quando la descrizione
+italiana ne nomina qualcuno ("singolo di Madonna del 1989") la risposta e' lui,
+e gli altri restano nella canzone (`x`) senza essere mai risposte sbagliate;
+quando ne nomina un altro la canzone resta fuori. Fuori anche quel che e' di
+prima del 1950 e quel che non e' di nessuno — i canti tradizionali, gli inni, le
+filastrocche: "La cucaracha" non e' di Bill Haley.
 
 **Una risposta sbagliata deve essere sicuramente sbagliata, e credibile.** I
 generatori delle altre materie (`shared/quiz-domande-cultura.ts`) scartano le
-opzioni che potrebbero essere giuste: chi ha vinto lo stesso Nobel nello stesso
-anno non e' mai fra le sbagliate, e l'altro anno di chi ne ha vinti due non e'
-un anno sbagliato; una corrente sbagliata e' una che al tempo del quadro non
+opzioni che potrebbero essere giuste: l'altro campo di chi ha vinto due Nobel
+non e' un campo sbagliato, ne' l'altro interprete di un duetto un cantante
+sbagliato; una corrente sbagliata e' una che al tempo del quadro non
 c'era, di venticinque anni almeno; un titolo che hanno piu' quadri
 ("Autoritratto") non si chiede. Gli anni sbagliati sono vicini a quello giusto,
 tanto piu' vicini quanto piu' e' recente (di uno per l'anno scorso, di cento
@@ -2100,13 +2179,14 @@ chiude, quindi le tessere sono bottoni e la scelta la dice `aria-current`, come
 le righe con la spunta (`Riga scelta`) del foglio del periodo.
 
 **I gruppi di scelte e i fogli seguono WAI-ARIA anche con la tastiera.**
-`SegmentedControl` e le tessere delle categorie sono radio group: Tab entra
-sulla scelta fatta e le frecce passano alle altre (`frecceDelGruppo` in
-`src/lib/gruppo.ts`, con le voci a `tabIndex` 0 o -1). Il foglio (`Sheet`) e' un
-dialog modale: il fuoco entra, Tab ci gira dentro, e alla chiusura torna su quel
-che l'aveva aperto. L'effetto che lo fa non dipende da `onClose`, che chi apre
-il foglio passa nuova a ogni giro: ripartendo a ogni render riportava il fuoco
-sul pannello, anche mentre si scriveva nella ricerca dei paesi.
+`SegmentedControl` e' un radio group: Tab entra sulla scelta fatta e le frecce
+passano alle altre (`frecceDelGruppo` in `src/lib/gruppo.ts`, con le voci a
+`tabIndex` 0 o -1). Le tessere delle sezioni del quiz invece sono caselle da
+spuntare in un `group`, perché se ne sceglie piu' d'una. Il foglio (`Sheet`) e'
+un dialog modale: il fuoco entra, Tab ci gira dentro, e alla chiusura torna su
+quel che l'aveva aperto. L'effetto che lo fa non dipende da `onClose`, che chi
+apre il foglio passa nuova a ogni giro: ripartendo a ogni render riportava il
+fuoco sul pannello, anche mentre si scriveva nella ricerca dei paesi.
 
 **I testi dicono cosa fare, non perché.** Titoli di poche parole, e niente
 righe che spiegano quel che si vede: "Non conta per la classifica" sotto una

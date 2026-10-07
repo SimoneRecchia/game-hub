@@ -9,6 +9,7 @@ import { formatCronometro } from '@/lib/format'
 import { suona } from '@/lib/suoni'
 import {
   NOMI_CATEGORIE,
+  nomeAmbito,
   NOMI_MODI,
   PUNTI_BASE_QUIZ,
   SECONDI_CARTINA,
@@ -42,8 +43,12 @@ interface Props {
   classificata: boolean
   /** Sotto il risultato: i bottoni che portano via. */
   azioniFine: ReactNode
-  /** Il titolo dell'intro e la riga sopra, se non sono quelli del quiz di oggi. */
-  intro?: { titolo: string; sotto?: string }
+  /**
+   * Il titolo dell'intro e la riga sopra, se non sono quelli del quiz di oggi;
+   * `testo` al posto della descrizione della categoria, per le partite di piu'
+   * sezioni. Il titolo e' anche quello della fine.
+   */
+  intro?: { titolo: string; sotto?: string; testo?: string }
 }
 
 /**
@@ -114,7 +119,7 @@ export function PartitaQuiz({ p, classificata, azioniFine, intro }: Props) {
       {(p.fase === 'domanda' || p.fase === 'esito') && p.categoria && <Gioco p={p} categoria={p.categoria} />}
 
       {p.fase === 'fine' && (
-        <Fine p={p} classificata={classificata} onRivedi={() => setRiepilogo(true)}>
+        <Fine p={p} classificata={classificata} titolo={intro?.titolo} onRivedi={() => setRiepilogo(true)}>
           {azioniFine}
         </Fine>
       )}
@@ -157,7 +162,7 @@ function Intro({ p, categoria, intro }: { p: VistaPartita; categoria: CategoriaQ
       </div>
       <p className="quiz-intro__sopra">{intro?.sotto ?? 'Il quiz di oggi'}</p>
       <h2 className="quiz-intro__titolo">{intro?.titolo ?? NOMI_CATEGORIE[categoria]}</h2>
-      <p className="quiz-intro__testo">{descrizione(categoria, p.modo)}</p>
+      <p className="quiz-intro__testo">{intro?.testo ?? descrizione(categoria, p.modo)}</p>
       <div className="quiz-intro__regole">
         <span>
           <strong className="u-tabnum">{p.totale}</strong> domande
@@ -288,7 +293,7 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
         titolo={titolo}
         icona={
           <IconaScheda colore="var(--quiz-1)">
-            <IconaCategoria categoria={categoria} size={15} />
+            <IconaCategoria categoria={d.categoria ?? categoria} ambito={d.ambito} size={15} />
           </IconaScheda>
         }
         destra={<Tempo p={p} />}
@@ -434,6 +439,7 @@ export function CartaDomanda({
             draggable={false}
           />
         )}
+        <Sezione d={d} />
         <p className="quiz-carta__testo">{d.testo}</p>
       </section>
     )
@@ -445,9 +451,10 @@ export function CartaDomanda({
     <section className={`quiz-carta${aspetto}${esito}`} aria-live="polite">
       {!insegna && !d.bandiera && !d.immagine && (
         <span className="quiz-carta__emblema" aria-hidden="true">
-          <IconaCategoria categoria={categoria} size={40} />
+          <IconaCategoria categoria={d.categoria ?? categoria} ambito={d.ambito} size={40} />
         </span>
       )}
+      <Sezione d={d} />
       {insegna && d.bandiera && (
         <img className="quiz-carta__bandierina" src={urlBandiera(d.bandiera, 160)} alt="" draggable={false} />
       )}
@@ -477,6 +484,12 @@ export function CartaDomanda({
       )}
     </section>
   )
+}
+
+/** Di quale sezione e' la domanda, nelle partite di piu' sezioni: "Bandiere", "Chimica". */
+function Sezione({ d }: { d: DomandaQuiz }) {
+  if (!d.categoria) return null
+  return <span className="quiz-carta__sezione">{nomeAmbito(d.categoria, d.ambito) ?? NOMI_CATEGORIE[d.categoria]}</span>
 }
 
 /** Quanto e' largo sullo schermo il quadro di una domanda, e quello di una risposta: per scegliere la misura. */
@@ -827,11 +840,14 @@ function Lettera({ o, i, stato, esito }: { o: OpzioneQuiz; i: number; stato: str
 function Fine({
   p,
   classificata,
+  titolo,
   onRivedi,
   children,
 }: {
   p: VistaPartita
   classificata: boolean
+  /** Il nome della partita, se non e' quello della categoria: "Città, Bandiere e Stati". */
+  titolo?: string
   onRivedi: () => void
   children: ReactNode
 }) {
@@ -842,7 +858,7 @@ function Fine({
     <div className="quiz-fine">
       <Scheda
         className="quiz-fine__scheda"
-        titolo={p.categoria ? NOMI_CATEGORIE[p.categoria] : 'Quiz'}
+        titolo={titolo ?? (p.categoria ? NOMI_CATEGORIE[p.categoria] : 'Quiz')}
         icona={
           p.categoria ? (
             <IconaScheda colore="var(--quiz-1)">

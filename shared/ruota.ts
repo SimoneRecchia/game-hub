@@ -493,9 +493,11 @@ export const DOMANDE_PER_CATEGORIA = 30
 /**
  * Il formato delle domande della ruota: le righe di un formato vecchio si
  * rifanno. Il 2 era di trenta domande per materia, il 3 per le sei categorie
- * del giorno, il 4 per tutte le quattordici, ogni giorno.
+ * del giorno, il 4 per tutte le quattordici, ogni giorno; il 5 e' quello delle
+ * domande piu' facili, con il campo dei Nobel al posto dell'anno e il gruppo
+ * degli animali al posto del nome scientifico.
  */
-export const FORMATO_DOMANDE_RUOTA = 4
+export const FORMATO_DOMANDE_RUOTA = 5
 
 /** Una domanda della ruota, come la scrive lo script della notte: con la sua categoria, per l'emblema della carta. */
 export interface DomandaRuota {

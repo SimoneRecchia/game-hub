@@ -7,8 +7,8 @@ import { Button } from '@/components/Button'
 import { Vuoto } from '@/components/Elementi'
 import { IconLink } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
+import { nomePartita } from '@/games/quiz/testi'
 import { ApiFetchError, api } from '@/lib/api'
-import { NOMI_CATEGORIE } from '@shared/quiz'
 import type { InvitoConLink } from '@shared/types'
 import './Battaglia.css'
 
@@ -77,7 +77,7 @@ export default function QuizInvito() {
             {invito ? (
               <>
                 <strong>{invito.da.displayName}</strong> ti aspetta per una sfida a quiz
-                {invito.sfida ? `: ${NOMI_CATEGORIE[invito.sfida.categoria]}` : ''}…
+                {invito.sfida ? `: ${nomePartita(invito.sfida)}` : ''}…
               </>
             ) : (
               'Apro l’invito…'

@@ -143,13 +143,40 @@ export const IconCinema = (p: Props) => (
   </Svg>
 )
 
-/** Due note di musica: la lirica. */
-export const IconLirica = (p: Props) => (
+/** Due note di musica: la musica. */
+export const IconMusica = (p: Props) => (
   <Svg {...p}>
     <path d="M9 17.5V6l10-2v11" />
     <circle cx="6.8" cy="17.5" r="2.3" />
     <circle cx="16.8" cy="15" r="2.3" />
     <path d="m9 9.5 10-2" />
+  </Svg>
+)
+
+/** Il microfono: le canzoni. */
+export const IconCanzoni = (p: Props) => (
+  <Svg {...p}>
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
+    <path d="M12 17.5V21M8.5 21h7" />
+  </Svg>
+)
+
+/** La tastiera del pianoforte: la musica classica. */
+export const IconClassica = (p: Props) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="1.5" />
+    <path d="M7.5 19v-5M12 19v-5M16.5 19v-5" />
+    <path d="M6.3 5v9h2.4V5M10.8 5v9h2.4V5M15.3 5v9h2.4V5" />
+  </Svg>
+)
+
+/** La maschera del teatro: la lirica. */
+export const IconLirica = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4.5 5.5c4.6-1.8 10.4-1.8 15 0 .3 6.7-2.5 13-7.5 14-5-1-7.8-7.3-7.5-14Z" />
+    <path d="M8 10c.8-.7 1.9-.7 2.7 0M13.3 10c.8-.7 1.9-.7 2.7 0" />
+    <path d="M9 14.5c1.7 1.5 4.3 1.5 6 0" />
   </Svg>
 )
 
@@ -253,6 +280,8 @@ export const ICONE_CATEGORIE: Record<CategoriaQuiz, (p: Props) => ReactElement> 
   arte: IconArte,
   libri: IconLibri,
   cinema: IconCinema,
+  canzoni: IconCanzoni,
+  classica: IconClassica,
   lirica: IconLirica,
   nobel: IconNobel,
   storia: IconStoria,
@@ -279,5 +308,6 @@ export const ICONE_MATERIE: Record<MateriaQuiz, (p: Props) => ReactElement> = {
   geografia: IconMappamondo,
   storia: IconStoria,
   cultura: IconArte,
+  musica: IconMusica,
   scienza: IconScienza,
 }

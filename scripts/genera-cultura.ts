@@ -1,6 +1,7 @@
 /**
  * Prepara i dati delle materie di cultura del quiz — arte, libri, cinema,
- * lirica, premi Nobel, storia, scienza — da Wikidata, Wikimedia Commons e
+ * canzoni, musica classica, lirica, premi Nobel, storia, scienza — da
+ * Wikidata, Wikimedia Commons e
  * Wikipedia in italiano, in public/dati/quiz/<materia>.json.
  *
  * Sono file statici versionati, come le parole del Wordle: il build non dipende
@@ -21,11 +22,13 @@
  */
 
 import { createHash } from 'node:crypto'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { arte } from './cultura/arte'
+import { canzoni } from './cultura/canzoni'
 import { cinema } from './cultura/cinema'
+import { classica } from './cultura/classica'
 import { controllaCultura, type DatiDaControllare } from './cultura/controlli'
 import { libri } from './cultura/libri'
 import { lirica } from './cultura/lirica'
@@ -39,7 +42,7 @@ const CARTELLA = join(ROOT, 'public', 'dati', 'quiz')
 
 /** Il peso massimo di un file e di tutti insieme: si scaricano su un telefono. */
 const MASSIMO_FILE = 450 * 1024
-const MASSIMO_TOTALE = 1.6 * 1024 * 1024
+const MASSIMO_TOTALE = 2.2 * 1024 * 1024
 
 type Materia = keyof DatiDaControllare
 
@@ -47,10 +50,19 @@ const MATERIE: { [M in Materia]-?: () => Promise<NonNullable<DatiDaControllare[M
   arte: () => arte(),
   libri: () => libri(),
   cinema: () => cinema(),
+  canzoni: () => canzoni(),
+  // Le opere liriche stanno nella lirica: la musica classica le lascia fuori.
+  classica: async () => classica(new Set(((dati.lirica ?? liricaSalvata())?.opere ?? []).map((o) => o.id))),
   lirica: () => lirica(),
   nobel: () => nobel(),
   storia: () => storia(),
   scienza: () => scienza(),
+}
+
+/** La lirica scritta l'ultima volta, se oggi non la si rifà. */
+function liricaSalvata(): DatiDaControllare['lirica'] | undefined {
+  const file = join(CARTELLA, 'lirica.json')
+  return existsSync(file) ? (JSON.parse(readFileSync(file, 'utf8')) as DatiDaControllare['lirica']) : undefined
 }
 
 const argomenti = process.argv.slice(2)

@@ -36,6 +36,8 @@ export type CategoriaQuiz =
   | 'arte'
   | 'libri'
   | 'cinema'
+  | 'canzoni'
+  | 'classica'
   | 'lirica'
   | 'nobel'
   | 'storia'
@@ -46,7 +48,7 @@ export type CategoriaQuiz =
  * Le materie, cioe' come si mostrano le categorie: la geografia e le altre.
  * Le categorie dentro una materia sono in ordine di come si scelgono.
  */
-export type MateriaQuiz = 'geografia' | 'storia' | 'cultura' | 'scienza'
+export type MateriaQuiz = 'geografia' | 'storia' | 'cultura' | 'musica' | 'scienza'
 
 export const MATERIE: ReadonlyArray<{ id: MateriaQuiz; nome: string; categorie: readonly CategoriaQuiz[] }> = [
   {
@@ -55,7 +57,8 @@ export const MATERIE: ReadonlyArray<{ id: MateriaQuiz; nome: string; categorie: 
     categorie: ['capitali', 'citta', 'bandiere', 'stati', 'mari', 'oceani', 'fiumi', 'laghi'],
   },
   { id: 'storia', nome: 'Storia', categorie: ['storia', 'oggi'] },
-  { id: 'cultura', nome: 'Arte e cultura', categorie: ['arte', 'libri', 'cinema', 'lirica'] },
+  { id: 'cultura', nome: 'Arte e cultura', categorie: ['arte', 'libri', 'cinema'] },
+  { id: 'musica', nome: 'Musica', categorie: ['canzoni', 'classica', 'lirica'] },
   { id: 'scienza', nome: 'Scienza', categorie: ['scienza', 'nobel'] },
 ]
 
@@ -72,11 +75,19 @@ export function diGeografia(categoria: CategoriaQuiz): boolean {
 }
 
 /**
- * Le categorie della classificata: tutte tranne le città, troppo difficili per
- * una partita uguale per tutti — le città principali di un paese lontano non le
- * sa nessuno.
+ * Le categorie della classificata: tutte. Le città erano rimaste fuori, perché
+ * le principali di un paese lontano non le sa nessuno; ora la classificata ha
+ * le domande del livello normale, che vengono quasi tutte dalle piu' note, e le
+ * città si giocano a scelta, mai sulla cartina (`CARTINA_DEL_GIORNO`).
  */
-export const CATEGORIE_CLASSIFICATA: readonly CategoriaQuiz[] = CATEGORIE.filter((c) => c !== 'citta')
+export const CATEGORIE_CLASSIFICATA: readonly CategoriaQuiz[] = CATEGORIE
+
+/**
+ * Le categorie che la classificata gioca sulla cartina muta. Gli oceani no:
+ * sono cinque, e sulla cartina si chiede solo dove sono. Le città nemmeno:
+ * seicento pallini sul mondo intero non sono una partita.
+ */
+export const CARTINA_DEL_GIORNO: readonly CategoriaQuiz[] = ['capitali', 'bandiere', 'stati', 'mari', 'fiumi', 'laghi']
 
 export const NOMI_CATEGORIE: Record<CategoriaQuiz, string> = {
   capitali: 'Capitali',
@@ -91,6 +102,8 @@ export const NOMI_CATEGORIE: Record<CategoriaQuiz, string> = {
   arte: 'Arte',
   libri: 'Libri',
   cinema: 'Cinema',
+  canzoni: 'Canzoni',
+  classica: 'Musica classica',
   lirica: 'Lirica',
   nobel: 'Premi Nobel',
   storia: 'Storia',
@@ -126,6 +139,23 @@ export const AMBITI: Partial<Record<CategoriaQuiz, ReadonlyArray<{ id: string; n
     { id: 'classici', nome: 'Prima del 1980' },
     { id: 'recenti', nome: 'Dal 1980' },
   ],
+  canzoni: [
+    { id: 'tutti', nome: 'Tutti gli anni' },
+    { id: 'anni60', nome: 'Fino agli anni Sessanta' },
+    { id: 'anni70', nome: 'Anni Settanta' },
+    { id: 'anni80', nome: 'Anni Ottanta' },
+    { id: 'anni90', nome: 'Anni Novanta' },
+    { id: 'anni2000', nome: 'Anni Duemila' },
+    { id: 'anni2010', nome: 'Dal 2010' },
+  ],
+  classica: [
+    { id: 'tutti', nome: 'Tutti' },
+    { id: 'barocco', nome: 'Barocco' },
+    { id: 'classicismo', nome: 'Classicismo' },
+    { id: 'romanticismo', nome: 'Romanticismo' },
+    { id: 'novecento', nome: 'Novecento' },
+    { id: 'italiani', nome: 'Compositori italiani' },
+  ],
   lirica: [
     { id: 'tutti', nome: 'Tutte' },
     { id: 'italiani', nome: 'Opere italiane' },
@@ -155,7 +185,7 @@ export const AMBITI: Partial<Record<CategoriaQuiz, ReadonlyArray<{ id: string; n
     { id: 'fisica', nome: 'Fisica' },
     { id: 'astronomia', nome: 'Astronomia' },
     { id: 'scoperte', nome: 'Scoperte e invenzioni' },
-    { id: 'natura', nome: 'Animali e piante' },
+    { id: 'natura', nome: 'Animali' },
   ],
 }
 
@@ -164,6 +194,8 @@ export const TITOLI_AMBITI: Partial<Record<CategoriaQuiz, string>> = {
   arte: 'Quali quadri',
   libri: 'Quali libri',
   cinema: 'Quali film',
+  canzoni: 'Anni',
+  classica: 'Quale periodo',
   lirica: 'Quali opere',
   nobel: 'Quale premio',
   storia: 'Quale periodo',
@@ -180,6 +212,34 @@ export function ambitoValido(categoria: CategoriaQuiz, ambito: unknown): string 
 export function nomeAmbito(categoria: CategoriaQuiz, ambito: string | null | undefined): string | null {
   if (!ambito || ambito === 'tutti') return null
   return AMBITI[categoria]?.find((a) => a.id === ambito)?.nome ?? null
+}
+
+/**
+ * Il secondo filtro delle canzoni, oltre agli anni: il genere. "Italiana" non
+ * e' un genere, ma e' come le app di musica dividono quel che si ascolta qui:
+ * le canzoni di chi e' italiano, di qualunque genere.
+ */
+export const GENERI: Partial<Record<CategoriaQuiz, ReadonlyArray<{ id: string; nome: string }>>> = {
+  canzoni: [
+    { id: 'tutti', nome: 'Tutti i generi' },
+    { id: 'italiana', nome: 'Italiana' },
+    { id: 'pop', nome: 'Pop' },
+    { id: 'rock', nome: 'Rock' },
+    { id: 'rap', nome: 'Rap e hip hop' },
+    { id: 'dance', nome: 'Dance ed elettronica' },
+    { id: 'soul', nome: 'R&B e soul' },
+  ],
+}
+
+/** Il genere, se la categoria lo ha e se c'e': "tutti" altrimenti. */
+export function genereValido(categoria: CategoriaQuiz, genere: unknown): string {
+  return GENERI[categoria]?.some((g) => g.id === genere) ? (genere as string) : 'tutti'
+}
+
+/** Il nome del genere: "Rock"; null per "tutti". */
+export function nomeGenere(categoria: CategoriaQuiz, genere: string | null | undefined): string | null {
+  if (!genere || genere === 'tutti') return null
+  return GENERI[categoria]?.find((g) => g.id === genere)?.nome ?? null
 }
 
 /** Come si risponde: scegliendo fra le risposte, o toccando la cartina muta. */
@@ -393,10 +453,13 @@ function giro(indice: number): CategoriaQuiz[] {
   return inFila(grezzo)
 }
 
-/** I giorni di un giro che vanno sulla cartina: due giorni di geografia, che non sono mai di fila. */
+/**
+ * I giorni di un giro che vanno sulla cartina: due giorni di geografia, che non
+ * sono mai di fila, fra le categorie che sulla cartina fanno una partita.
+ */
 function giorniSullaCartina(indice: number, ordine: readonly CategoriaQuiz[]): Set<number> {
   const caso = mulberry32((SEME_CARTINA ^ Math.imul(indice + 1, 0x27d4_eb2f)) >>> 0)
-  const geografia = ordine.flatMap((c, i) => (diGeografia(c) ? [i] : []))
+  const geografia = ordine.flatMap((c, i) => (CARTINA_DEL_GIORNO.includes(c) ? [i] : []))
   return new Set(mescola(geografia, caso).slice(0, GIORNI_CARTINA_PER_GIRO))
 }
 
@@ -413,7 +476,7 @@ export const GIORNI_PER_GIRO = CATEGORIE_CLASSIFICATA.length
  *
  * Ogni giro passa da tutte le categorie di tutte le materie, in un ordine
  * diverso ogni volta: nessuna torna prima di averle viste tutte, e non si puo'
- * indovinare quella di domani. La geografia ha sette categorie su quindici, e
+ * indovinare quella di domani. La geografia ha otto categorie su diciotto, e
  * per questo due suoi giorni non sono mai di fila; due giorni per giro sono
  * sulla cartina muta.
  */

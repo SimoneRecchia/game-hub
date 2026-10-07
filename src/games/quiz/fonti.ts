@@ -60,21 +60,34 @@ export function caricaOggi(giorno: string): Promise<DatiOggi> {
 }
 
 /**
- * Tutto quel che serve alle domande di una categoria, e le città se la
- * categoria e' quella. `data` e' il giorno di "Accadde oggi".
+ * Tutto quel che serve alle domande di una o piu' categorie, e le città se fra
+ * le categorie ci sono. `data` e' il giorno di "Accadde oggi".
  */
 export async function fontiDelQuiz(
-  categoria: CategoriaQuiz,
+  categorie: CategoriaQuiz | readonly CategoriaQuiz[],
   area: AreaQuiz,
   data = gameDate(),
 ): Promise<{ fonti: FontiQuiz; citta: CittaQuiz[] | null }> {
-  if (eCultura(categoria)) {
-    if (categoria === 'oggi') return { fonti: { oggi: await caricaOggi(giornoDellAnno(data)) }, citta: null }
-    return { fonti: { cultura: { [categoria]: await caricaCultura(categoria) } }, citta: null }
-  }
-  const ix = await caricaDatiQuiz()
-  const citta = categoria === 'citta' ? await caricaCitta(ix, area) : null
-  return { fonti: { geo: ix }, citta }
+  const elenco = [...new Set(typeof categorie === 'string' ? [categorie] : categorie)]
+  const fonti: FontiQuiz = {}
+  let citta: CittaQuiz[] | null = null
+  await Promise.all(
+    elenco.map(async (categoria) => {
+      if (categoria === 'oggi') {
+        fonti.oggi = await caricaOggi(giornoDellAnno(data))
+      } else if (eCultura(categoria)) {
+        // Prima il file e poi l'elenco: `{ ...fonti.cultura, [c]: await ... }` copierebbe l'elenco prima di
+        // aspettare, e con due materie insieme l'ultima ad arrivare cancellerebbe l'altra.
+        const dati = await caricaCultura(categoria)
+        fonti.cultura = { ...fonti.cultura, [categoria]: dati }
+      } else {
+        const ix = await caricaDatiQuiz()
+        fonti.geo = ix
+        if (categoria === 'citta') citta = await caricaCitta(ix, area)
+      }
+    }),
+  )
+  return { fonti, citta }
 }
 
 /** Un giorno dell'anno a caso, ma non quello di `oggi`: "2026-03-12". Il 29 febbraio c'e', come negli altri anni. */

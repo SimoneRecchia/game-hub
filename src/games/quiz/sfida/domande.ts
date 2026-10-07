@@ -35,6 +35,7 @@ export function sfidaDalleScelte(s: ImpostazioniLibera): ImpostazioniSfida {
       : SECONDI_SFIDA.reduce((a, b) => (Math.abs(b - s.secondi!) < Math.abs(a - s.secondi!) ? b : a))
   return impostazioniSfida({
     categoria: s.categoria,
+    sezioni: s.sezioni,
     modo: s.modo ?? 'scelta',
     area: s.area,
     quante,
@@ -48,6 +49,7 @@ export function sfidaDalleScelte(s: ImpostazioniLibera): ImpostazioniSfida {
     notorieta: s.notorieta,
     bandieraCapitali: s.bandieraCapitali,
     ambito: s.ambito,
+    genere: s.genere,
   })!
 }
 
@@ -59,17 +61,19 @@ export async function conIlGiorno(
   imp: ImpostazioniSfida,
   scelta: ImpostazioniLibera['giorno'],
 ): Promise<ImpostazioniSfida> {
-  if (imp.categoria !== 'oggi' || imp.giorno) return imp
+  const categorie = imp.sezioni?.map((x) => x.categoria) ?? [imp.categoria]
+  if (!categorie.includes('oggi') || imp.giorno) return imp
   return { ...imp, giorno: giornoDellAnno(await giornoDellaPartita(scelta, true)) }
 }
 
 export async function domandePerSfida(imp: ImpostazioniSfida): Promise<DomandaCompleta[]> {
   const data = imp.giorno ? `${gameDate().slice(0, 4)}-${imp.giorno}` : gameDate()
-  const { fonti, citta } = await fontiDelQuiz(imp.categoria, imp.area, data)
+  const { fonti, citta } = await fontiDelQuiz(imp.sezioni?.map((x) => x.categoria) ?? imp.categoria, imp.area, data)
   const domande = generaPartita(
     fonti,
     {
       categoria: imp.categoria,
+      sezioni: imp.sezioni,
       modo: imp.modo,
       area: imp.area,
       quante: imp.quante,
@@ -80,6 +84,7 @@ export async function domandePerSfida(imp: ImpostazioniSfida): Promise<DomandaCo
       ordine: 'sale',
       citta: citta ?? undefined,
       ambito: imp.ambito,
+      genere: imp.genere,
       data,
     },
     mulberry32((Math.random() * 2 ** 32) >>> 0),

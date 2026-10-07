@@ -1,6 +1,6 @@
 /**
  * La scienza: gli elementi, i composti, le unità di misura, i corpi del sistema
- * solare, le scoperte e le invenzioni, le specie di animali e di piante.
+ * solare, le scoperte e le invenzioni, gli animali con il loro gruppo.
  *
  * Dove Wikidata e' disordinato si scrive a mano quel che si studia a scuola, e
  * lo si dice: la famiglia di un elemento viene dal suo numero atomico, perché
@@ -15,6 +15,7 @@ import type {
   CompostoQuiz,
   DatiScienza,
   ElementoQuiz,
+  GruppoAnimale,
   ScopertaQuiz,
   SpecieQuiz,
   UnitaQuiz,
@@ -43,11 +44,73 @@ import {
 const COMPOSTI = 120
 /**
  * Le scoperte sono state rilette una per una (vedi `SCOPERTE_SBAGLIATE`), e
- * l'elenco e' quello: tolte quelle che non vanno, delle prime 150 ne restano
- * 110. Per allungarlo si rilegge quel che entra.
+ * l'elenco e' quello: tolte quelle che non vanno, e quelle che non sono ne'
+ * scoperte ne' invenzioni ne' teorie (`SCOPERTI`, `INVENTATI`, `FORMULATI`).
+ * Per allungarlo si rilegge quel che entra.
  */
-const SCOPERTE = 110
-const SPECIE = 300
+const SCOPERTE = 130
+const SPECIE = 200
+
+/**
+ * Quante specie per gruppo, al piu': per notorietà i mammiferi e gli uccelli
+ * erano tre su quattro, e "a quale gruppo appartiene?" si indovinava dicendo
+ * "mammiferi". Quel che un gruppo non riempie va agli altri.
+ */
+const SPECIE_PER_GRUPPO: Record<GruppoAnimale, number> = {
+  mammiferi: 50,
+  uccelli: 40,
+  pesci: 30,
+  rettili: 20,
+  insetti: 25,
+  anfibi: 10,
+  aracnidi: 8,
+  crostacei: 10,
+  molluschi: 12,
+}
+
+/**
+ * Le specie con un nome italiano sbagliato o che non e' un nome: per Wikidata
+ * il moscerino della frutta e' "acciughina", e l'iguana "lacerta igvana". E la
+ * megalania, che e' estinta da quarantamila anni.
+ */
+const SPECIE_SBAGLIATE = new Set([
+  'Q26842', // acciughina
+  'Q756200', // alza
+  'Q215376', // lacerta igvana
+  'Q27765', // granat
+  'Q157609', // vaness dell'ortica
+  'Q500869', // acari della scabbia
+  'Q1059580', // locuste
+  'Q733150', // megalania
+  // Le specie umane: "a quale gruppo di animali appartiene l'uomo?" e' una domanda strana, non facile.
+  'Q15978631', // uomo
+  'Q40171', // neanderthal
+  'Q151055', // denisovano
+])
+
+/**
+ * I nomi che Wikidata sbaglia: un nome di un dialetto ("bisata" per
+ * l'anguilla, "capoverde" per il germano reale), uno da manuale
+ * ("carcarodonte" per lo squalo bianco), un plurale ("ghiri"), uno straniero
+ * ("wisent"). Il nome piu' breve fra quelli di Wikidata e' di solito quello
+ * comune, e questi sono i casi in cui non lo e'.
+ */
+const NOMI_SPECIE: Record<string, string> = {
+  Q26387: 'anguilla',
+  Q129026: 'squalo bianco',
+  Q190469: 'squalo leuca',
+  Q25348: 'germano reale',
+  Q466194: 'blatta germanica',
+  Q147128: 'ghiro',
+  Q209067: 'talpa europea',
+  Q76280: 'tinca',
+  Q82738: 'volpe artica',
+  Q81091: 'bisonte europeo',
+  Q168903: 'uro',
+  Q134747: 'baco da seta',
+  Q187036: 'testuggine palustre europea',
+  Q131564: 'fennec',
+}
 const SATELLITI = 30
 
 /* ─────────────────────────────  Gli elementi  ──────────────────────────── */
@@ -198,7 +261,147 @@ const NON_SCOPERTE = [
   'Q11514315', // periodo storico
   'Q15401633', // periodo archeologico
   'Q130583773', // tipo di reato
+  // Le cose da mangiare e da bere, i giochi e gli sport, le marche: invenzioni, ma non della scienza.
+  'Q2095', // alimento
+  'Q40050', // bevanda
+  'Q746549', // piatto
+  'Q134768', // cocktail
+  'Q349', // sport
+  'Q11410', // gioco
+  'Q11417', // arte marziale
+  'Q11422', // giocattolo
+  'Q33215', // lingua artificiale
+  'Q431289', // marca
+  'Q196600', // media franchise
+  'Q188504', // medicina alternativa
+  // Le voci che sono classi di classi: lo sport e' "tipo di sport", e da lì "sport" non si raggiunge.
+  'Q31629', // tipo di sport
+  'Q2312410', // disciplina sportiva
+  'Q31338769', // medicina alternativa, come classe
+  'Q269829', // placebo
+  'Q10855061', // reperto archeologico
+  'Q841154', // espediente narrativo
+  'Q15169167', // metodo di esecuzione
+  'Q124078422', // tipo di arma
+  'Q1437361', // forma artistica
+  'Q3516833', // tecnica di animazione
+  'Q11862829', // disciplina accademica
+  'Q100912473', // tipo di pregiudizio
+  'Q10354783', // pratica
+  'Q24238543', // paradigma di sviluppo personale
+  'Q121144069', // tipo di metodo statistico
 ]
+
+/**
+ * Le stesse esclusioni per le voci che sono sottoclassi e non istanze: la
+ * margarina non e' "un alimento", e' un tipo di alimento, e il napalm un tipo
+ * di arma.
+ */
+const NON_SCOPERTE_SOTTOCLASSI = [
+  'Q2095', // alimento
+  'Q40050', // bevanda
+  'Q746549', // piatto
+  'Q349', // sport
+  'Q11410', // gioco
+  'Q728', // arma
+  'Q11460', // indumento
+  'Q188504', // medicina alternativa
+]
+
+/**
+ * Che cosa e' una scoperta, e come si dice che l'ha fatta: una sostanza, una
+ * particella, un fenomeno si scoprono; un oggetto, una macchina, un programma,
+ * uno strumento, una tecnica si inventano; una teoria e una legge si
+ * formulano. Una voce che non e' nessuna delle tre resta fuori: Wikidata da'
+ * uno "scopritore" anche al judo, al camembert e al deus ex machina, e
+ * scartare quel che non e' una scoperta non bastava, perché molte voci sono
+ * classi di classi — "tipo di sport", "tipo di entità chimica" — e da lì le
+ * esclusioni non si raggiungevano. Le radici si cercano risalendo l'istanza o
+ * la sottoclasse: la dinamite non e' istanza di niente, ma e' un esplosivo.
+ * Una teoria vince su tutto, un'invenzione su una scoperta (la bachelite e'
+ * una sostanza, ma qualcuno l'ha fatta).
+ */
+const SCOPERTI = [
+  'Q113145171', // tipo di entità chimica
+  'Q47154513', // classe di composti chimici
+  'Q119896085', // tipo di polimero
+  'Q79529', // sostanza chimica
+  'Q11173', // composto chimico
+  'Q22675015', // tipo di particella subatomica
+  'Q1293220', // fenomeno fisico
+  'Q751989', // fenomeno astronomico
+  'Q11386', // onda elettromagnetica
+  'Q12969754', // radiazione elettromagnetica
+  'Q104934', // interazione fondamentale
+  'Q17444909', // tipo di oggetto astronomico
+  'Q5058355', // componente cellulare
+  'Q84467700', // gruppo o classe di proteine
+  'Q13582682', // classificazione: i gruppi sanguigni
+]
+const INVENTATI = [
+  'Q12579633', // invenzione
+  'Q11016', // tecnologia
+  'Q110295396', // tipo di strumento musicale
+  'Q34379', // strumento musicale
+  'Q7397', // software
+  'Q17155032', // tipo di software
+  'Q1183543', // apparecchiatura
+  'Q11019', // macchina
+  'Q123035442', // tipo di oggetto fisico in base all'uso
+  'Q140424281', // tipo di dispositivo
+  'Q123588392', // tipo di attrezzo
+  'Q12492106', // componente elettronico attivo
+  'Q6867168', // dispositivo passivo
+  'Q57583712', // elettrodomestico da cucina
+  'Q12870', // esplosivo
+  'Q11474', // materie plastiche
+  'Q15836568', // protocollo di rete
+  'Q132364', // protocollo di comunicazione
+  'Q317623', // norma tecnica
+  'Q1668024', // servizio di internet
+  'Q1439691', // tecnica fotografica
+  'Q214753', // datazione radiometrica
+  'Q1595418', // rimedio: il vaccino
+  'Q1936384', // branca della matematica: il calcolo infinitesimale
+  'Q47279819', // tipo di funzione matematica: il logaritmo
+  'Q732744', // classificazione chimica: la tavola periodica
+]
+const FORMULATI = [
+  'Q17737', // teoria
+  'Q3239681', // teoria scientifica
+  'Q408891', // legge scientifica
+  'Q214070', // legge fisica
+  'Q36382', // leggi fondamentali ponderali
+  'Q33104303', // concetto della fisica: l'equivalenza fra massa ed energia
+]
+
+/**
+ * Le radici che si cercano anche risalendo le sottoclassi, perché molte
+ * invenzioni sono classi: il barometro e' un tipo di strumento di misura, non
+ * un'istanza di qualcosa. Per le altre radici la strada delle sottoclassi porta
+ * troppo in alto: dal "fenomeno fisico" ci si arriva dalla pallavolo, dalla
+ * "sostanza chimica" dalla margarina.
+ */
+const PER_SOTTOCLASSE = new Set([
+  'Q12969754', // radiazione elettromagnetica
+  'Q104934', // interazione fondamentale
+  'Q12579633', // invenzione
+  'Q34379', // strumento musicale
+  'Q7397', // software
+  'Q1183543', // apparecchiatura
+  'Q11019', // macchina
+  'Q12492106', // componente elettronico attivo
+  'Q6867168', // dispositivo passivo
+  'Q12870', // esplosivo
+  'Q11474', // materie plastiche
+])
+
+/** Le voci che Wikidata mette nella famiglia sbagliata: la radiazione infrarossa per lei e' una teoria. */
+const VERBI_A_MANO: Record<string, 'i' | 'f' | 's'> = {
+  Q11388: 's', // la radiazione infrarossa, che Herschel ha scoperto
+  Q190009: 's', // la nutazione, che Bradley ha osservato
+  Q73: 'i', // l'Internet Relay Chat, che e' un protocollo
+}
 
 /**
  * Le grandezze fisiche come idea: Wikidata da' a Varignon la velocità e
@@ -262,6 +465,21 @@ const SCOPERTE_SBAGLIATE = new Set([
   'Q2545446', // il grafema
   'Q188566', // la difesa siciliana
   'Q69488', // l'MDMA
+  'Q507', // il googol
+  'Q304726', // la stanza cinese: un esperimento mentale
+  'Q188215', // lo gnomo: a Paracelso, come nome
+  'Q131303', // "Hello, world!": un esempio, non un'invenzione
+  'Q178263', // la generazione spontanea: ad Anassimandro, per una teoria antica
+  'Q221513', // la teoria kurganica: un'ipotesi dell'archeologia
+  'Q525642', // la sindrome da delezione 22q11
+  'Q190557', // la regola di de l'Hôpital: a Johann Bernoulli, ed e' la sua storia, non la domanda
+  'Q182667', // il principio di Pareto: a Juran, che gli diede il nome di Pareto
+  // I farmaci di sintesi: chi li ha fatti non lo sa nessuno, e "scoperto" non e' il verbo.
+  'Q407541', // il fentanyl
+  'Q407535', // l'ossicodone
+  'Q203174', // la talidomide
+  'Q186969', // l'ibuprofene
+  'Q422244', // la fluoxetina
 ])
 
 /** Nomi che Wikidata scrive con la maiuscola, e che nelle domande vanno minuscoli: "a chi si deve l'aikido?". */
@@ -278,14 +496,31 @@ LIMIT 3000`
 /* ───────────────────────────────  Le specie  ─────────────────────────────── */
 
 const ANIMALI = 'Q729'
-const PIANTE = 'Q756'
 
 const Q_SPECIE = `SELECT DISTINCT ?q ?voci WHERE {
-  ?q wdt:P105 wd:Q7432 ; wdt:P225 ?nome .
+  ?q wdt:P105 wd:Q7432 ; wdt:P225 ?nome ; wdt:P171+ wd:${ANIMALI} .
   ?q wikibase:sitelinks ?voci .
 }
 ORDER BY DESC(?voci)
 LIMIT 2500`
+
+/**
+ * I gruppi degli animali, con le voci di Wikidata da cui discendono, in ordine:
+ * per Wikidata gli uccelli sono rettili (discendono dai dinosauri) e gli
+ * insetti crostacei, e vince il primo gruppo che torna. I pesci non sono una
+ * voce sola: le ossa e le cartilagini.
+ */
+const GRUPPI: ReadonlyArray<readonly [GruppoAnimale, readonly string[]]> = [
+  ['mammiferi', ['Q7377']],
+  ['uccelli', ['Q5113']],
+  ['rettili', ['Q10811']],
+  ['anfibi', ['Q10908']],
+  ['pesci', ['Q127282', 'Q25371']],
+  ['insetti', ['Q1390']],
+  ['aracnidi', ['Q1358']],
+  ['crostacei', ['Q25364']],
+  ['molluschi', ['Q25326']],
+]
 
 /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -297,6 +532,20 @@ function nomiDi(ids: readonly string[], gente: Map<string, Persona>): string[] {
 /** Un nome comune va minuscolo, come nello schema: "Leone" → "leone", ma "tigre del Bengala" resta com'e'. */
 function minuscolo(n: string): string {
   return n.charAt(0).toLocaleLowerCase('it') + n.slice(1)
+}
+
+/**
+ * Il nome di una specie, minuscolo come si scrive: "rana pescatrice", "diavolo
+ * tasmaniano". Wikidata scrive spesso la maiuscola anche agli aggettivi; resta
+ * solo ai nomi propri, che vengono dopo una preposizione: "drago di Komodo".
+ */
+function nomeDiSpecie(n: string): string {
+  const parole = minuscolo(n).split(' ')
+  return parole
+    .map((p, i) =>
+      i > 0 && !/^(?:di|del|della|dello|dei|degli|delle|d’)$/.test(parole[i - 1]) ? p.toLocaleLowerCase('it') : p,
+    )
+    .join(' ')
 }
 
 /** Le lettere di una formula che sono simboli: "H₂SO₄" → H, S, O. */
@@ -373,9 +622,55 @@ LIMIT 1500`,
   UNION { ?q wdt:P279+ wd:${GRANDEZZA_FISICA} . }
 }`,
   )
-  const nonScoperte = new Set(righeNon.map((r) => r.q))
+  const righeNonSottoclassi = await aPezzi(
+    'scienza-scoperte-sottoclassi',
+    conNomeScoperte,
+    `SELECT DISTINCT ?q WHERE {
+  VALUES ?q { #VOCI# }
+  VALUES ?radice { ${valoriSparql(NON_SCOPERTE_SOTTOCLASSI)} }
+  ?q wdt:P279+ ?radice .
+}`,
+  )
+  const nonScoperte = new Set([...righeNon, ...righeNonSottoclassi].map((r) => r.q))
   const scopritori = await valoriCerti('scienza-scoperte-chi', conNomeScoperte, 'P61')
-  const dateScoperte = await anni('scienza-scoperte-anni', conNomeScoperte, ['P575'])
+  // L'anno della scoperta (P575), quello in cui la cosa e' nata (P571), che per un'invenzione e' lo stesso, o la
+  // pubblicazione (P577), che per una teoria e' quando l'ha detta.
+  const dateScoperte = await anni('scienza-scoperte-anni-3', conNomeScoperte, ['P575', 'P571', 'P577'])
+  // Una query per famiglia e per strada: tutte insieme, con le unioni, non le regge nessuno dei due motori.
+  const verbi = new Map<string, Set<string>>()
+  const famiglie = [
+    ['s', SCOPERTI],
+    ['i', INVENTATI],
+    ['f', FORMULATI],
+  ] as const
+  for (const [v, tutte] of famiglie) {
+    for (const [via, strada, radici] of [
+      ['istanza', 'wdt:P31/wdt:P279*', tutte],
+      ['classe', 'wdt:P279+', tutte.filter((q) => PER_SOTTOCLASSE.has(q))],
+    ] as const) {
+      if (radici.length === 0) continue
+      const righe = await aPezzi(
+        `scienza-scoperte-${v}-${via}`,
+        conNomeScoperte,
+        `SELECT DISTINCT ?q WHERE {
+  VALUES ?q { #VOCI# }
+  VALUES ?radice { ${valoriSparql(radici)} }
+  ?q ${strada} ?radice .
+}`,
+      )
+      for (const r of righe) if (r.q) verbi.set(r.q, (verbi.get(r.q) ?? new Set()).add(v))
+    }
+  }
+  /** Come si dice che l'ha fatta: null se non e' una scoperta, ne' un'invenzione, ne' una teoria. */
+  const verbo = (id: string): 'i' | 'f' | 's' | null => {
+    if (VERBI_A_MANO[id]) return VERBI_A_MANO[id]
+    const v = verbi.get(id)
+    return v?.has('f') ? 'f' : v?.has('i') ? 'i' : v?.has('s') ? 's' : null
+  }
+  const annoScoperta = (id: string) =>
+    annoSicuro(dateScoperte.get(id)?.get('P575')) ??
+    annoSicuro(dateScoperte.get(id)?.get('P571')) ??
+    annoSicuro(dateScoperte.get(id)?.get('P577'))
 
   /* ── Le specie ── */
   const candidatiSpecie = await interroga('scienza-specie', Q_SPECIE)
@@ -383,16 +678,18 @@ LIMIT 1500`,
   const idSpecie = [...vociSpecie.keys()]
   const sSpecie = await schede('scienza-specie-schede', idSpecie)
   const vSpecie = await valori('scienza-specie-valori', idSpecie, ['P225'])
-  const righeRegni = await aPezzi(
-    'scienza-specie-regni',
+  const righeGruppi = await aPezzi(
+    'scienza-specie-gruppi',
     idSpecie,
-    `SELECT DISTINCT ?q ?regno WHERE {
+    `SELECT DISTINCT ?q ?radice WHERE {
   VALUES ?q { #VOCI# }
-  VALUES ?regno { wd:${ANIMALI} wd:${PIANTE} }
-  ?q wdt:P171+ ?regno .
+  VALUES ?radice { ${valoriSparql(GRUPPI.flatMap(([, radici]) => radici))} }
+  ?q wdt:P171+ ?radice .
 }`,
   )
-  const regnoDi = new Map(righeRegni.map((r) => [r.q!, r.regno!]))
+  const radiciDi = new Map<string, Set<string>>()
+  for (const r of righeGruppi) if (r.q && r.radice) radiciDi.set(r.q, (radiciDi.get(r.q) ?? new Set()).add(r.radice))
+  const gruppoDi = (id: string) => GRUPPI.find(([, radici]) => radici.some((x) => radiciDi.get(id)?.has(x)))?.[0]
   /*
    * I nomi comuni. Per molte specie l'etichetta italiana e' il nome
    * scientifico — il lupo e' "Canis lupus", con "lupo" fra gli alias — e allora
@@ -550,7 +847,7 @@ SELECT ?q ?alias ?comune WHERE {
 
   /* ── Le scoperte, finite ── */
   const buone = conNomeScoperte.filter((id) => {
-    if (nonScoperte.has(id) || SCOPERTE_SBAGLIATE.has(id)) return false
+    if (nonScoperte.has(id) || SCOPERTE_SBAGLIATE.has(id) || verbo(id) === null) return false
     const chi = (scopritori.get(id) ?? []).filter((p) => gente.get(p)?.umano)
     if (chi.length < 1 || chi.length > 2 || chi.length !== (scopritori.get(id) ?? []).length) return false
     // Il nome non deve dire la risposta: chi ha scoperto l'effetto Doppler lo dice il nome.
@@ -567,7 +864,7 @@ SELECT ?q ?alias ?comune WHERE {
      * sbagliati: il computer di Babbage nel 1945, l'automobile di Verbiest nel
      * 1884. Meglio lasciarla fuori.
      */
-    const anno = annoSicuro(dateScoperte.get(id)?.get('P575'))
+    const anno = annoScoperta(id)
     if (anno === undefined) return true
     return (
       anno <= new Date().getFullYear() &&
@@ -587,16 +884,26 @@ SELECT ?q ?alias ?comune WHERE {
     sceltaScoperte.map((id) => ({ id })),
     (x) => pesoScoperta(x.id),
   )
+  // Quanto e' noto chi l'ha fatta: le Wikipedia che ne parlano, fra gli scopritori delle scoperte tenute.
+  const umani = (id: string) => (scopritori.get(id) ?? []).filter((p) => gente.get(p)?.umano)
+  const famaScopritori = perNotorieta(
+    [...new Set(sceltaScoperte.flatMap(umani))].map((id) => ({ id })),
+    (x) => gente.get(x.id)?.voci ?? 0,
+  )
   const scoperte: ScopertaQuiz[] = sceltaScoperte.map((id) => {
-    const anno = annoSicuro(dateScoperte.get(id)?.get('P575'))
+    const anno = annoScoperta(id)
     const nome = nomeItaliano(sScoperte.get(id))!
+    const v = verbo(id)
     return {
       id,
       n: CON_LA_MINUSCOLA.has(id) ? nome.charAt(0).toLowerCase() + nome.slice(1) : nome,
       chi: nomiDi(scopritori.get(id) ?? [], gente),
       ...(anno !== undefined ? { anno } : {}),
+      ...(v === 'i' || v === 'f' ? { v } : {}),
       ...voce(sScoperte.get(id)),
       f: famaScoperte.get(id) ?? 0,
+      // Nello stesso ordine di `chi`: nomiDi tiene le persone, e le scoperte buone hanno solo quelle.
+      cf: umani(id).map((p) => famaScopritori.get(p) ?? 0),
     }
   })
 
@@ -615,38 +922,64 @@ SELECT ?q ?alias ?comune WHERE {
   const nomeComune = (id: string): string | undefined => {
     const sci = scientificoDi(id)
     if (!sci) return undefined
+    if (NOMI_SPECIE[id]) return NOMI_SPECIE[id]
+    // Niente abbreviazioni ("p. uncia", "t.graeca") ne' famiglie ("ailuridi"), che non sono il nome di un animale;
+    // e niente nomi latini scritti male ("macroclemys", "helix pomata"): le lettere che l'italiano non ha, e le
+    // desinenze del latino, prima di una preposizione (dopo viene un nome proprio: "drago di Komodo").
+    // Il koala e il kiwi si chiamano così anche in italiano: le lettere straniere contano solo in un nome lungo, o di
+    // due parole, come i binomi.
+    const latino = (n: string) => {
+      const prima = n.toLowerCase().split(/ (?:di|del|della|dello|dei|degli|delle|d’) /)[0]
+      const straniero = /[ykwxj]/.test(prima) && (prima.includes(' ') || prima.length > 7)
+      return straniero || /(?:ensis|us|um|ae|ii|ida|idae)\b/.test(prima)
+    }
     const buono = (n: string) =>
       titoloNormale(n) !== titoloNormale(sci) &&
       !/^[A-Z][a-z]+ [a-z]/.test(n) &&
-      !/[()0-9]/.test(n) &&
+      !/[().0-9]/.test(n) &&
+      !/(?:idae|idi)$/.test(n) &&
+      !latino(n) &&
       n.split(' ').length <= 4
     const parole = (n: string) => n.split(' ').length
+    // Fra due nomi lunghi uguali, il singolare: "struzzo" prima di "struzzi".
+    const plurale = (n: string) => (/i$/.test(n) ? 1 : 0)
     const etichetta = nomeItaliano(sSpecie.get(id))
     const altri = [...(altriNomi.get(id) ?? [])]
       .map((n) => n.replace(/'/g, '’'))
       .filter(buono)
-      .sort((a, b) => parole(a) - parole(b) || a.length - b.length || a.localeCompare(b))
+      .sort((a, b) => parole(a) - parole(b) || plurale(a) - plurale(b) || a.length - b.length || a.localeCompare(b))
     if (etichetta && buono(etichetta) && (!altri[0] || parole(etichetta) <= parole(altri[0]))) return etichetta
     return altri[0]
   }
-  const specieBuone = idSpecie.filter((id) => nomeComune(id))
-  const sceltaSpecie = titoliUnici(
+  const specieBuone = idSpecie.filter((id) => !SPECIE_SBAGLIATE.has(id) && nomeComune(id) && gruppoDi(id))
+  const perNota = titoliUnici(
     specieBuone,
     (id) => nomeComune(id)!,
     (id) => vociSpecie.get(id) ?? 0,
     () => '',
-  )
-    .sort((a, b) => nota(sSpecie.get(b)) - nota(sSpecie.get(a)) || a.localeCompare(b))
-    .slice(0, SPECIE)
+  ).sort((a, b) => nota(sSpecie.get(b)) - nota(sSpecie.get(a)) || a.localeCompare(b))
+  // Le piu' note di ogni gruppo fino alla sua quota; poi, se ne mancano, le piu' note che restano.
+  const quante = new Map<GruppoAnimale, number>()
+  const sceltaSpecie: string[] = []
+  for (const id of perNota) {
+    const g = gruppoDi(id)!
+    if ((quante.get(g) ?? 0) >= SPECIE_PER_GRUPPO[g]) continue
+    quante.set(g, (quante.get(g) ?? 0) + 1)
+    sceltaSpecie.push(id)
+  }
+  for (const id of perNota) {
+    if (sceltaSpecie.length >= SPECIE) break
+    if (!sceltaSpecie.includes(id)) sceltaSpecie.push(id)
+  }
+  sceltaSpecie.splice(SPECIE)
   const famaSpecie = perNotorieta(
     sceltaSpecie.map((id) => ({ id })),
     (x) => nota(sSpecie.get(x.id)),
   )
   const specie: SpecieQuiz[] = sceltaSpecie.map((id) => ({
     id,
-    n: minuscolo(nomeComune(id)!),
-    sci: scientificoDi(id)!,
-    regno: regnoDi.get(id) === ANIMALI ? 'animale' : regnoDi.get(id) === PIANTE ? 'pianta' : 'altro',
+    n: nomeDiSpecie(nomeComune(id)!),
+    gr: gruppoDi(id)!,
     ...voce(sSpecie.get(id)),
     f: famaSpecie.get(id) ?? 0,
   }))
