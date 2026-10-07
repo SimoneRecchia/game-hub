@@ -287,6 +287,8 @@ export interface DomandaQuiz {
   categoria?: CategoriaQuiz
   /** L'argomento della sezione, se e' uno della scienza: "chimica". */
   ambito?: string
+  /** Il genere della sezione, se e' uno delle canzoni: "rock". */
+  genere?: string
   testo: string
   /** La bandiera da mostrare con la domanda. */
   bandiera?: string
@@ -350,11 +352,13 @@ export interface DomandaCompleta extends DomandaQuiz {
 
 /**
  * Una sezione di una partita di piu' sezioni: una categoria, e per la scienza
- * l'argomento — la chimica e la fisica sono due sezioni della stessa categoria.
+ * l'argomento — la chimica e la fisica sono due sezioni della stessa categoria
+ * —, per le canzoni il genere: il rock e il pop sono due sezioni anche loro.
  */
 export interface SezioneQuiz {
   categoria: CategoriaQuiz
   ambito?: string
+  genere?: string
 }
 
 /** Tutto il mondo, un continente, o un paese solo (per città, fiumi e laghi). */
@@ -387,8 +391,13 @@ export interface RichiestaQuiz {
   citta?: readonly CittaQuiz[]
   /** Per le altre materie, quel che per la geografia e' la zona: un periodo, un premio, un argomento. */
   ambito?: string
-  /** Il genere, per le canzoni: "rock", "italiana". */
+  /** Il genere, per le canzoni: "rock". */
   genere?: string
+  /**
+   * Per la musica, il paese di chi canta o compone: "Stati Uniti". Vale per
+   * tutte le sezioni, come il periodo (`ambito`).
+   */
+  nazione?: string
   /**
    * Il giorno della partita, "AAAA-MM-GG": gli anni sbagliati non lo passano.
    * La classificata lo passa sempre, perché le domande dipendano solo dal giorno.
@@ -1724,6 +1733,7 @@ export function senzaRisposta(d: DomandaCompleta): DomandaQuiz {
     tipo: d.tipo,
     ...(d.categoria ? { categoria: d.categoria } : {}),
     ...(d.ambito ? { ambito: d.ambito } : {}),
+    ...(d.genere ? { genere: d.genere } : {}),
     testo: d.testo,
     ...(d.bandiera ? { bandiera: d.bandiera } : {}),
     ...(d.immagine ? { immagine: d.immagine } : {}),

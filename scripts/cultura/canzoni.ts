@@ -22,23 +22,35 @@
  * Madonna del 1989"): quando ne nomina qualcuno, la risposta e' lui, e gli
  * altri non sono mai fra le risposte sbagliate (`x`). Quando ne nomina un
  * altro ("canzone dei Tears for Fears", per una voce che ha Lorde e Patti
- * Smith) la canzone resta fuori. Fuori anche quel che non e' di nessuno: i canti
- * tradizionali e natalizi, gli inni, le filastrocche ("La cucaracha" non e' di
- * Bill Haley), e quel che e' uscito prima del 1950, quando le canzoni erano
- * degli autori e le cantavano tutti — e che sono anche i canti di guerra e del
- * ventennio.
+ * Smith) la canzone resta fuori. Quando Wikidata ha solo la prima versione,
+ * che non conosce nessuno ("Hound Dog" di Big Mama Thornton, "Twist and Shout"
+ * dei Top Notes), o l'anno di quella, lo corregge a mano
+ * scripts/data/canzoni-a-mano.tsv: chi la canta, l'anno, o fuori. Fuori anche
+ * quel che non e' di nessuno: i canti tradizionali e natalizi, gli inni, le
+ * filastrocche ("La cucaracha" non e' di Bill Haley), e quel che e' uscito
+ * prima del 1950, quando le canzoni erano degli autori e le cantavano tutti — e
+ * che sono anche i canti di guerra e del ventennio.
  *
  * L'anno e' quello della descrizione, o la prima uscita di Wikidata: una
  * ristampa e' sempre dopo. Le canzoni italiane hanno meno Wikipedia delle
  * straniere, e chi gioca le conosce meglio: pesano `PESO_ITALIANE` volte tanto,
  * nella scelta e nella difficolta'.
  *
- * I generi di Wikidata sono centinaia, e ognuno porta ai generi larghi
- * (`GENERI_CANZONI`) risalendo le sottoclassi: il pop rock e' pop e rock, il
- * dance pop pop e dance. Una canzone senza generi prende quelli di chi la
- * canta.
+ * I generi vengono da chi canta, e li dice a mano scripts/data/generi-artisti.tsv:
+ * uno di solito, due quando un artista ha due anime, come lo metterebbe
+ * un'app di musica. Una canzone ha i generi dei suoi interpreti, tranne quelle
+ * di scripts/data/generi-canzoni.tsv, che ne hanno uno loro ("Beat It" e'
+ * rock). Prima venivano da Wikidata, risalendo le sottoclassi fino ai generi
+ * larghi, ed erano spesso sbagliati: una canzone senza genere prendeva tutti
+ * quelli di chi la cantava, cinque per "Perfect" di Ed Sheeran; Lucio Dalla era
+ * rock, e il tango, "musica da ballo", finiva nella dance con "4'33" di John
+ * Cage. Wikidata resta per chi l'elenco non ha ancora — lo script lo dice —,
+ * senza la musica da ballo e con un genere solo, il primo.
  */
 
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   GENERI_CANZONI,
   type ArtistaQuiz,
@@ -79,14 +91,66 @@ const CLASSI = ['Q7366', 'Q134556', 'Q105543609']
 /** Un insieme musicale: il gruppo, il duo, la band, l'orchestra (le sue sottoclassi). */
 const INSIEME_MUSICALE = 'Q2088357'
 
-/** I generi larghi, con le radici di Wikidata da cui discendono. */
-const RADICI: Record<GenereCanzone, readonly string[]> = {
+/**
+ * Per chi l'elenco non ha: i generi larghi, con le radici di Wikidata da cui
+ * discendono. La musica da ballo (Q316930) non c'e': ci stanno il tango e il
+ * valzer. I cantautori non si riconoscono dai generi di Wikidata.
+ */
+const RADICI: Partial<Record<GenereCanzone, readonly string[]>> = {
   pop: ['Q37073'],
   // Il metal e il punk sono rock anche per Wikidata; il rock and roll e' il padre, e si conta.
   rock: ['Q11399', 'Q7749'],
   rap: ['Q11401', 'Q6010'],
-  dance: ['Q9778', 'Q58339', 'Q20502', 'Q316930'],
+  dance: ['Q9778', 'Q58339', 'Q20502'],
   soul: ['Q45981', 'Q131272', 'Q164444'],
+  jazz: ['Q8341', 'Q203775'],
+  latina: ['Q18345375', 'Q547137', 'Q202930'],
+}
+
+const DATI = join(dirname(fileURLToPath(import.meta.url)), '..', 'data')
+
+/** Le righe di un elenco a mano di scripts/data: i campi separati da tabulazioni, senza i commenti ("#"). */
+function righeAMano(file: string): string[][] {
+  const righe = readFileSync(join(DATI, file), 'utf8').split('\n')
+  const fuori = righe.filter((r) => r.trim() && !r.startsWith('#')).map((r) => r.split('\t'))
+  const sbagliata = fuori.find(([id]) => !/^Q\d+$/.test(id))
+  if (sbagliata) throw new Error(`${file}: riga senza QID, ${sbagliata.join(' ')}`)
+  return fuori
+}
+
+/** Un elenco di generi a mano: il QID, il nome, e i generi separati da una virgola. */
+function generiAMano(file: string): Map<string, GenereCanzone[]> {
+  const fuori = new Map<string, GenereCanzone[]>()
+  for (const [id, nome, generi] of righeAMano(file)) {
+    const tutti = (generi ?? '').split(',')
+    if (!tutti.every((g): g is GenereCanzone => GENERI_CANZONI.includes(g as GenereCanzone))) {
+      throw new Error(`${file}: genere sbagliato per ${nome ?? id}`)
+    }
+    fuori.set(id, tutti)
+  }
+  return fuori
+}
+
+/** Una correzione di scripts/data/canzoni-a-mano.tsv: la canzone resta fuori, o cambia chi la canta, o l'anno. */
+interface Correzione {
+  fuori?: true
+  a?: string[]
+  anno?: number
+}
+
+function correzioniAMano(file: string): Map<string, Correzione> {
+  const fuori = new Map<string, Correzione>()
+  for (const [id, titolo, cosa] of righeAMano(file)) {
+    const c: Correzione = {}
+    for (const parte of (cosa ?? '').split(' ')) {
+      if (parte === 'fuori') c.fuori = true
+      else if (/^a=Q\d+(,Q\d+)*$/.test(parte)) c.a = parte.slice(2).split(',')
+      else if (/^anno=\d{4}$/.test(parte)) c.anno = Number(parte.slice(5))
+      else throw new Error(`${file}: correzione sbagliata per ${titolo ?? id}`)
+    }
+    fuori.set(id, c)
+  }
+  return fuori
 }
 
 const candidate = (limite: number, italiane: boolean) => `SELECT DISTINCT ?q ?voci WHERE {
@@ -213,11 +277,13 @@ function titoloCanzone(t: string | undefined): string | undefined {
   return pulito.length > 0 ? pulito : undefined
 }
 
-/** I generi larghi di un elenco di generi di Wikidata. */
+/** Il genere largo del primo genere di Wikidata che ne ha uno: per chi l'elenco non ha. */
 function largo(generi: readonly string[], radiciDi: Map<string, Set<GenereCanzone>>): GenereCanzone[] {
-  const fuori = new Set<GenereCanzone>()
-  for (const g of generi) for (const x of radiciDi.get(g) ?? []) fuori.add(x)
-  return GENERI_CANZONI.filter((g) => fuori.has(g))
+  for (const g of generi) {
+    const radici = radiciDi.get(g)
+    if (radici?.size) return GENERI_CANZONI.filter((x) => radici.has(x)).slice(0, 1)
+  }
+  return []
 }
 
 export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
@@ -231,6 +297,9 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
   const v = await valori('canzoni-valori', conTitolo, ['P136', 'P31'])
   const date = await anni('canzoni-anni-2', conTitolo, ['P577', 'P571'])
   const certi = await valoriCerti('canzoni-interpreti', conTitolo, 'P175')
+  const corrette = correzioniAMano('canzoni-a-mano.tsv')
+  const vecchie = [...corrette.keys()].filter((id) => !conTitolo.includes(id))
+  if (vecchie.length > 0) console.log(`  correzioni a mano per canzoni che non ci sono piu': ${vecchie.join(', ')}`)
   const righeNon = await aPezzi(
     'canzoni-non-3',
     conTitolo,
@@ -245,7 +314,8 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
   const nonCanzoni = new Set(righeNon.map((r) => r.q))
 
   /* ── Chi canta ── */
-  const idInterpreti = [...new Set(conTitolo.flatMap((id) => certi.get(id) ?? []))]
+  const aMano = [...corrette.values()].flatMap((c) => c.a ?? [])
+  const idInterpreti = [...new Set([...conTitolo.flatMap((id) => certi.get(id) ?? []), ...aMano])]
   const gente = await persone('canzoni-artisti', idInterpreti)
   const righeGruppi = await aPezzi(
     'canzoni-gruppi',
@@ -303,11 +373,14 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
   }
   const descrizione = (id: string) => s.get(id)?.descrizione ?? ''
   /**
-   * Chi la canta: quelli di Wikidata che la descrizione nomina, se nomina
-   * qualcuno; tutti, se non nomina nessuno. Nessuno se la descrizione dice un
-   * altro, o se uno degli interpreti non e' ne' una persona ne' un gruppo.
+   * Chi la canta: quelli dell'elenco a mano, se c'e'; se no quelli di Wikidata
+   * che la descrizione nomina, se nomina qualcuno, o tutti, se non nomina
+   * nessuno. Nessuno se la descrizione dice un altro, o se uno degli interpreti
+   * non e' ne' una persona ne' un gruppo.
    */
   const interpretiDi = (id: string): string[] => {
+    const scritti = corrette.get(id)?.a
+    if (scritti) return scritti.every((x) => interprete(x)) ? scritti : []
     const tutti = certi.get(id) ?? []
     const d = descrizione(id)
     if (!DICE_CHI.test(d)) return tutti.length <= 2 && tutti.every((x) => interprete(x)) ? tutti : []
@@ -316,12 +389,15 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
     return detti.length <= 2 ? detti : []
   }
   const annoDi = (id: string) =>
-    annoDescritto(descrizione(id)) ?? primoAnno(date.get(id)?.get('P577')) ?? primoAnno(date.get(id)?.get('P571'))
+    corrette.get(id)?.anno ??
+    annoDescritto(descrizione(id)) ??
+    primoAnno(date.get(id)?.get('P577')) ??
+    primoAnno(date.get(id)?.get('P571'))
   const italiana = (id: string) => interpretiDi(id).some((x) => interprete(x)?.it)
 
   /* ── Le canzoni che restano ── */
   const buone = conTitolo.filter((id) => {
-    if (nonCanzoni.has(id) || DI_NESSUNO.test(descrizione(id))) return false
+    if (nonCanzoni.has(id) || corrette.get(id)?.fuori || DI_NESSUNO.test(descrizione(id))) return false
     const anno = annoDi(id)
     return anno !== undefined && anno >= ANNO_MINIMO && interpretiDi(id).length > 0
   })
@@ -359,9 +435,23 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
   )
   const radiciDi = new Map<string, Set<GenereCanzone>>()
   for (const r of righeRadici) {
-    const g = GENERI_CANZONI.find((x) => RADICI[x].includes(r.radice ?? ''))
+    const g = GENERI_CANZONI.find((x) => RADICI[x]?.includes(r.radice ?? ''))
     if (!r.q || !g) continue
     radiciDi.set(r.q, (radiciDi.get(r.q) ?? new Set()).add(g))
+  }
+  const perArtista = generiAMano('generi-artisti.tsv')
+  const perCanzone = generiAMano('generi-canzoni.tsv')
+  const senza = [...new Set(scelte.flatMap(interpretiDi))].filter((id) => !perArtista.has(id))
+  if (senza.length > 0) {
+    const nomi = senza.map((id) => gente.get(id)?.n ?? id).join(', ')
+    console.log(`  ${senza.length} artisti senza genere a mano, da Wikidata: ${nomi}`)
+  }
+  /** I generi di una canzone: i suoi a mano, o quelli dei suoi interpreti, il primo per primo. */
+  const generiDi = (id: string, a: readonly string[]): GenereCanzone[] => {
+    const propri = perCanzone.get(id)
+    if (propri) return propri
+    const daiNomi = a.flatMap((x) => perArtista.get(x) ?? largo([...generiCanzone(id), ...generiArtista(x)], radiciDi))
+    return [...new Set(daiNomi)]
   }
 
   /* ── L'ordine di chi canta, nei duetti ── */
@@ -379,8 +469,7 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
     (certi.get(id) ?? []).filter((x) => !a.includes(x) && artistiUsati.has(x))
   const elenco: CanzoneQuiz[] = scelte.map((id) => {
     const a = inOrdine(interpretiDi(id), ordine.get(id)?.get('P175'), (x) => gente.get(x)?.voci ?? 0)
-    const propri = largo(generiCanzone(id), radiciDi)
-    const g = propri.length > 0 ? propri : largo(a.flatMap(generiArtista), radiciDi)
+    const g = generiDi(id, a)
     const anno = annoDi(id)
     return {
       id,

@@ -1891,14 +1891,43 @@ Wikipedia di chi ha fatto la scoperta). E sulla cartina gli oceani si cercano
 per nome: "quale oceano bagna il Cile" con la cartina davanti si risponde
 guardando, non sapendo; a scelta resta.
 
-**Le canzoni si scelgono per anni e per genere, e la lirica sta nella
-musica.** La Musica ha le canzoni, la musica classica e la lirica, che prima
-stava con l'arte. Le canzoni hanno gli anni come ambito (fino ai Sessanta, un
-decennio, dal 2010) e il genere in un foglio suo (`GENERI`: pop, rock, rap,
-dance, R&B e soul, e le italiane); la classica il periodo del compositore
-(barocco, classicismo, romanticismo, Novecento) o i compositori italiani. Si
-chiede chi la canta, quale canzone e' di un artista, in che decennio e' uscita
-(mai a cavallo di due), e da dove viene chi la canta, se non e' italiano.
+**Nella musica si scelgono i generi, e gli anni e il paese valgono per tutti.**
+La Musica della libera ha una voce per genere — pop, rock, cantautori, rap e hip
+hop, dance ed elettronica, R&B e soul, jazz e swing, latina, colonne sonore, gli
+altri generi, la musica classica e la lirica — e se ne scelgono quanti se ne
+vuole, come gli argomenti della scienza: i generi delle canzoni sono sezioni
+(`SezioneQuiz.genere`), e ogni domanda porta il suo, anche senza la risposta
+(`senzaRisposta`) e nella sfida, se e' uno dei suoi (`leggiDomande`). Gli anni
+(`PERIODI_MUSICA`, dal Settecento agli anni 2020) e il paese di chi canta o
+compone (`nazione`) sono di tutte le sezioni insieme, e la pagina offre solo
+quelli che i generi scelti hanno per una partita (`soggettiDellaMusica`, almeno
+dieci soggetti), con gli stessi conti delle domande; una scelta che non ne ha
+piu' abbastanza torna a "tutti", e una riga senza niente da scegliere non c'e'.
+Un brano senza anno prende quello in cui il compositore aveva trentacinque anni.
+Prima la musica erano tre sezioni — canzoni, classica e lirica — con gli anni e
+il genere solo per le canzoni, e "Italiana" era un genere: chi giocava non
+capiva perché la classica e la lirica stessero a parte. Con un periodo scelto
+non si chiede il decennio ne' il secolo, con un paese da dove viene chi canta:
+li direbbe la partita. Si chiede chi la canta, quale canzone e' di un artista,
+in che decennio e' uscita (mai a cavallo di due), e da dove viene chi la canta,
+se non e' italiano.
+
+**I generi delle canzoni li dice un elenco a mano.**
+`scripts/data/generi-artisti.tsv` da' a ogni artista il suo genere, due quando
+ha due anime (Battisti cantautori e pop), e `scripts/data/generi-canzoni.tsv` le
+canzoni che fanno eccezione: "Beat It" e' anche rock, e una canzone scritta per
+un film o un musical e' anche una colonna sonora. Gli altri generi sono quelli
+che da soli non farebbero una partita: il reggae, il country, il folk, il blues,
+le canzoni comiche e per bambini. Venivano da Wikidata risalendo le sottoclassi,
+e sbagliavano: una canzone senza un genere suo prendeva tutti quelli di chi la
+cantava, cinque per "Perfect"; Lucio Dalla era rock; e il tango, "musica da
+ballo", portava "Libertango" nella dance, con "4'33" di John Cage. L'elenco e'
+fatto con i generi votati su MusicBrainz e quel che si sa di ogni artista;
+Wikidata resta solo per chi l'elenco non ha ancora, con un genere solo, e lo
+script li nomina. Anche chi canta e l'anno si correggono a mano
+(`scripts/data/canzoni-a-mano.tsv`), perché Wikidata a volte ha solo la prima
+versione di una canzone ("Hound Dog" era di Big Mama Thornton, "Twist and Shout"
+dei Top Notes) o un anno sbagliato ("What's Going On" era del 2001).
 
 **Nel quiz il tempo lo tiene il server, e la risposta resta li'.** Il telefono
 riceve una domanda alla volta senza la risposta (`senzaRisposta`), e l'orologio

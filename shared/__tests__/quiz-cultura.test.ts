@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../daily'
-import { AMBITI, GENERI, type CategoriaQuiz } from '../quiz'
+import { AMBITI, GENERI, nelPeriodo, type CategoriaQuiz } from '../quiz'
 import {
   CATEGORIE_CULTURA,
   PERCORSO_IMMAGINE,
@@ -25,6 +25,7 @@ import {
   domandaSulTempo,
   generaPartita,
   nomeDecennio,
+  soggettiDellaMusica,
   type FontiQuiz,
 } from '../quiz-domande-cultura'
 import { diElemento, diNome, genereNome, nomeConArticolo } from '../quiz-lingua'
@@ -393,37 +394,98 @@ describe('le regole di ogni materia', () => {
     expect(viste).toBeGreaterThan(0)
   })
 
-  it('nelle canzoni restano negli anni e nel genere scelti', () => {
+  it('nelle canzoni restano negli anni, nel genere e nel paese scelti, e non si chiede quel che dicono', () => {
     const canzoni = new Map(CANZONI.canzoni.map((x) => [x.id, x]))
     const artisti = new Map(CANZONI.artisti.map((a) => [a.id, a]))
     const di = (d: DomandaCompleta) => canzoni.get(d.soggetto) ?? null
     for (const d of tante('canzoni', 10, { ambito: 'anni80' })) {
       const x = di(d)
       if (x) expect(Math.floor(x.anno! / 10) * 10).toBe(1980)
+      // Negli anni scelti il decennio lo dice gia' la partita.
+      expect(d.tipo).not.toBe('decennio-canzone')
     }
     for (const d of tante('canzoni', 10, { ambito: 'anni60' })) {
       const x = di(d)
-      if (x) expect(x.anno!).toBeLessThan(1970)
+      if (x) expect(Math.floor(x.anno! / 10) * 10).toBe(1960)
     }
     for (const d of tante('canzoni', 10, { genere: 'rock' })) {
       const x = di(d)
       if (x) expect(x.g).toContain('rock')
     }
-    for (const d of tante('canzoni', 10, { genere: 'italiana' })) {
+    for (const d of tante('canzoni', 10, { nazione: 'Stati Uniti' })) {
       const x = di(d)
-      if (x) expect(x.a.some((id) => artisti.get(id)?.it)).toBe(true)
+      if (x) expect(x.a.some((id) => artisti.get(id)?.p === 'Stati Uniti')).toBe(true)
+      // Con un paese scelto, da dove viene chi canta lo dice lui.
+      expect(d.tipo).not.toBe('paese-interprete')
     }
   })
 
-  it('nella musica classica restano nel periodo del compositore', () => {
+  it('nella musica classica restano negli anni e nel paese scelti, anche senza l’anno del brano', () => {
     const brani = new Map(CLASSICA.brani.map((b) => [b.id, b]))
     const compositori = new Map(CLASSICA.compositori.map((p) => [p.id, p]))
-    for (const d of tante('classica', 10, { ambito: 'barocco' })) {
-      expect(compositori.get(brani.get(d.soggetto)!.c[0])!.na!).toBeLessThan(1710)
+    const annoDi = (id: string) => {
+      const b = brani.get(id)!
+      const primo = compositori.get(b.c[0])!
+      return b.anno ?? Math.min(primo.na! + 35, primo.mo!)
     }
-    for (const d of tante('classica', 10, { ambito: 'romanticismo' })) {
-      const na = compositori.get(brani.get(d.soggetto)!.c[0])!.na!
-      expect(na >= 1775 && na < 1860).toBe(true)
+    let senzaAnno = 0
+    for (const d of tante('classica', 10, { ambito: 'settecento' })) {
+      if (!brani.has(d.soggetto)) continue
+      if (brani.get(d.soggetto)!.anno === undefined) senzaAnno += 1
+      expect(annoDi(d.soggetto)).toBeLessThanOrEqual(1799)
+      expect(d.tipo).not.toBe('secolo-brano')
+    }
+    expect(senzaAnno).toBeGreaterThan(0)
+    for (const d of tante('classica', 10, { nazione: 'Italia' })) {
+      if (!brani.has(d.soggetto)) continue
+      expect(brani.get(d.soggetto)!.c.some((id) => compositori.get(id)?.p === 'Italia')).toBe(true)
+    }
+  })
+
+  it('nella musica i generi si giocano insieme, con gli stessi anni e lo stesso paese per tutti', () => {
+    const canzoni = new Map(CANZONI.canzoni.map((x) => [x.id, x]))
+    const artisti = new Map(CANZONI.artisti.map((a) => [a.id, a]))
+    const sezioni = [
+      { categoria: 'canzoni' as const, genere: 'pop' },
+      { categoria: 'canzoni' as const, genere: 'rap' },
+      { categoria: 'lirica' as const },
+    ]
+    const generi = new Set<string>()
+    for (let seme = 1; seme <= 20; seme += 1) {
+      const richiesta = { categoria: 'canzoni' as const, sezioni, area: 'mondo' as const, quante: 10, data: DATA }
+      for (const d of generaPartita(FONTI, { ...richiesta, nazione: 'Italia' }, mulberry32(seme))) {
+        if (d.genere) generi.add(d.genere)
+        const x = canzoni.get(d.soggetto)
+        if (!x) continue
+        expect(x.g).toContain(d.genere)
+        expect(x.a.some((id) => artisti.get(id)?.p === 'Italia')).toBe(true)
+      }
+      for (const d of generaPartita(FONTI, { ...richiesta, ambito: 'anni90' }, mulberry32(seme))) {
+        const x = canzoni.get(d.soggetto)
+        if (x) expect(Math.floor(x.anno! / 10) * 10).toBe(1990)
+      }
+    }
+    // Ogni domanda di una canzone porta il suo genere, fra quelli scelti.
+    expect(generi.has('pop')).toBe(true)
+    for (const g of generi) expect(['pop', 'rap']).toContain(g)
+  })
+
+  it('la pagina della musica conta i soggetti come le domande, una volta sola', () => {
+    const due = [
+      { categoria: 'canzoni' as const, genere: 'pop' },
+      { categoria: 'canzoni' as const, genere: 'rock' },
+    ]
+    const conti = soggettiDellaMusica({ canzoni: CANZONI, classica: CLASSICA }, [...due, { categoria: 'classica' }])
+    const popRock = CANZONI.canzoni.filter((x) => x.g?.includes('pop') || x.g?.includes('rock'))
+    expect(conti).toHaveLength(popRock.length + CLASSICA.brani.length)
+    // Ogni domanda di una partita con anni e paese e' fra i soggetti contati con quegli anni e quel paese.
+    const contati = new Set(
+      conti.filter((x) => nelPeriodo(x.anno, 'anni70') && x.nazioni.includes('Regno Unito')).map((x) => x.id),
+    )
+    for (let seme = 1; seme <= 10; seme += 1) {
+      const richiesta = { categoria: 'canzoni' as const, sezioni: due, area: 'mondo' as const, quante: 10 }
+      const domande = generaPartita(FONTI, { ...richiesta, ambito: 'anni70', nazione: 'Regno Unito' }, mulberry32(seme))
+      for (const d of domande) if (!d.soggetto.startsWith('ar:')) expect(contati.has(d.soggetto)).toBe(true)
     }
   })
 

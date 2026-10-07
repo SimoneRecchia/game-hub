@@ -237,13 +237,52 @@ export interface DatiLirica {
 /* ───────────────────────────────  La musica  ─────────────────────────────── */
 
 /**
- * I generi delle canzoni, larghi come quelli di un'app di musica: Wikidata ne
- * ha centinaia (pop rock, dance pop, trap), e ognuno porta a uno o piu' di
- * questi risalendo le sottoclassi. Una canzone pop rock e' pop e rock.
+ * I generi delle canzoni, larghi come quelli di un'app di musica. Vengono da
+ * chi canta, uno di solito e due quando un artista ha due anime (Battisti
+ * cantautore e pop): li dice a mano `scripts/data/generi-artisti.tsv`, perché
+ * quelli di Wikidata erano centinaia e spesso sbagliati — Lucio Dalla era
+ * rock, il tango "musica da ballo" e quindi dance, e una canzone senza un
+ * genere suo prendeva tutti quelli di chi la cantava (scripts/cultura/canzoni.ts).
+ * Gli altri generi sono quelli che da soli non farebbero una partita: il
+ * reggae, il country, il folk, il blues, le canzoni comiche e per bambini.
  */
-export type GenereCanzone = 'pop' | 'rock' | 'rap' | 'dance' | 'soul'
+export type GenereCanzone =
+  | 'pop'
+  | 'rock'
+  | 'cantautori'
+  | 'rap'
+  | 'dance'
+  | 'soul'
+  | 'jazz'
+  | 'latina'
+  | 'colonne'
+  | 'altri'
 
-export const GENERI_CANZONI: readonly GenereCanzone[] = ['pop', 'rock', 'rap', 'dance', 'soul']
+export const GENERI_CANZONI: readonly GenereCanzone[] = [
+  'pop',
+  'rock',
+  'cantautori',
+  'rap',
+  'dance',
+  'soul',
+  'jazz',
+  'latina',
+  'colonne',
+  'altri',
+]
+
+export const NOMI_GENERI: Record<GenereCanzone, string> = {
+  pop: 'Pop',
+  rock: 'Rock',
+  cantautori: 'Cantautori',
+  rap: 'Rap e hip hop',
+  dance: 'Dance ed elettronica',
+  soul: 'R&B e soul',
+  jazz: 'Jazz e swing',
+  latina: 'Latina',
+  colonne: 'Colonne sonore',
+  altri: 'Altri generi',
+}
 
 /** Chi canta: una persona o un gruppo. Per un gruppo gli anni sono quelli della fondazione e dello scioglimento. */
 export interface ArtistaQuiz extends PersonaQuiz {

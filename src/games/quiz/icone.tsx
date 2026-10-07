@@ -1,5 +1,6 @@
 import type { ReactElement, SVGProps } from 'react'
 import type { CategoriaQuiz, MateriaQuiz } from '@shared/quiz'
+import type { GenereCanzone } from '@shared/quiz-cultura'
 
 /**
  * Le icone del quiz, una per categoria, nello stile delle altre dell'app:
@@ -180,6 +181,96 @@ export const IconLirica = (p: Props) => (
   </Svg>
 )
 
+/** La chitarra elettrica: il rock. */
+export const IconRock = (p: Props) => (
+  <Svg {...p}>
+    <path d="m13.6 10.4 5.9-5.9" />
+    <path d="m18.2 3.2 2.6 2.6" />
+    <path d="M12.8 9.7c-1.5-1-3.6-.7-4.6.8-1.2-.4-2.6 0-3.5.9-1.7 1.8-1.4 4.6.5 6.5s4.7 2.2 6.5.5c.9-.9 1.3-2.3.9-3.5 1.5-1 1.8-3.1.8-4.6" />
+    <path d="m8.4 13.4 2.2 2.2" />
+  </Svg>
+)
+
+/** La matita che scrive, e una nota: i cantautori, che le canzoni se le scrivono. */
+export const IconCantautori = (p: Props) => (
+  <Svg {...p}>
+    <path d="M13.5 5.5 17 9l-8.5 8.5H5V14z" />
+    <path d="m11.5 7.5 3.5 3.5" />
+    <circle cx="16.2" cy="19" r="1.7" />
+    <path d="M17.9 19v-5.5l2.6-.9" />
+  </Svg>
+)
+
+/** Lo stereo portatile: il rap e l'hip hop. */
+export const IconRap = (p: Props) => (
+  <Svg {...p}>
+    <rect x="2.5" y="8.5" width="19" height="11" rx="2" />
+    <circle cx="7.5" cy="14.5" r="2.6" />
+    <circle cx="16.5" cy="14.5" r="2.6" />
+    <path d="M7 8.5V5.5h10v3" />
+    <path d="M11 11.5h2" />
+  </Svg>
+)
+
+/** Le barre dell'equalizzatore: la dance e l'elettronica. La palla da discoteca sembrava un mappamondo. */
+export const IconDance = (p: Props) => (
+  <Svg {...p}>
+    <path d="M4 10v4M8 6.5v11M12 3.5v17M16 8v8M20 10.5v3" />
+  </Svg>
+)
+
+/** Il disco in vinile: l'R&B e il soul. */
+export const IconSoul = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="2.6" />
+    <path d="M12 6.2a5.8 5.8 0 0 1 5.8 5.8M6.2 12a5.8 5.8 0 0 0 5.8 5.8" />
+  </Svg>
+)
+
+/** La tromba: il jazz e lo swing. */
+export const IconJazz = (p: Props) => (
+  <Svg {...p}>
+    <path d="M2.5 10.5v4" />
+    <path d="M2.8 12.5H14" />
+    <path d="M14 11c2.9 0 5-1.5 7-3.3v9.6c-2-1.8-4.1-3.3-7-3.3z" />
+    <path d="M6.5 12.5v-3M9 12.5v-3M11.5 12.5v-3" />
+    <path d="M5 12.5c0 2.2 1 3.3 3 3.3h4" />
+  </Svg>
+)
+
+/** I bonghi: la musica latina. Le maracas incrociate sembravano un paio di forbici. */
+export const IconLatina = (p: Props) => (
+  <Svg {...p}>
+    <ellipse cx="7.5" cy="8.5" rx="4.5" ry="1.8" />
+    <path d="M3 8.5v8.2c0 1.1 2 2 4.5 2s4.5-.9 4.5-2V8.5" />
+    <ellipse cx="17" cy="10.5" rx="3.6" ry="1.5" />
+    <path d="M13.4 10.5v6.6c0 .9 1.6 1.6 3.6 1.6s3.6-.7 3.6-1.6v-6.6" />
+    <path d="M12 13h1.4" />
+  </Svg>
+)
+
+/** La bobina della pellicola: le colonne sonore. */
+export const IconColonne = (p: Props) => (
+  <Svg {...p}>
+    <circle cx="10" cy="11" r="7.5" />
+    <circle cx="10" cy="7.2" r="1.5" />
+    <circle cx="10" cy="14.8" r="1.5" />
+    <circle cx="6.2" cy="11" r="1.5" />
+    <circle cx="13.8" cy="11" r="1.5" />
+    <path d="M10 18.5h10.5" />
+  </Svg>
+)
+
+/** Una nota e i puntini: gli altri generi, dal reggae al country alle canzoni per bambini. */
+export const IconAltriGeneri = (p: Props) => (
+  <Svg {...p}>
+    <path d="M9.5 16.5V5l7-1.5v3" />
+    <circle cx="7.2" cy="16.7" r="2.3" />
+    <path d="M13.5 19.5h.01M17 19.5h.01M20.5 19.5h.01" />
+  </Svg>
+)
+
 /** La medaglia con il nastro: il Nobel. */
 export const IconNobel = (p: Props) => (
   <Svg {...p}>
@@ -267,6 +358,20 @@ export const ICONE_AMBITI: Record<string, (p: Props) => ReactElement> = {
   natura: IconNatura,
 }
 
+/** I generi delle canzoni: il pop e' il microfono, come le canzoni. */
+export const ICONE_GENERI: Record<GenereCanzone, (p: Props) => ReactElement> = {
+  pop: IconCanzoni,
+  rock: IconRock,
+  cantautori: IconCantautori,
+  rap: IconRap,
+  dance: IconDance,
+  soul: IconSoul,
+  jazz: IconJazz,
+  latina: IconLatina,
+  colonne: IconColonne,
+  altri: IconAltriGeneri,
+}
+
 export const ICONE_CATEGORIE: Record<CategoriaQuiz, (p: Props) => ReactElement> = {
   capitali: IconCapitale,
   citta: IconCitta,
@@ -292,14 +397,18 @@ export const ICONE_CATEGORIE: Record<CategoriaQuiz, (p: Props) => ReactElement> 
 export function IconaCategoria({
   categoria,
   ambito,
+  genere,
   size = 24,
 }: {
   categoria: CategoriaQuiz
   /** Per gli argomenti della scienza, la loro icona. */
   ambito?: string
+  /** Per i generi delle canzoni, la loro. */
+  genere?: string
   size?: number
 }) {
-  const Icona = (ambito && ICONE_AMBITI[ambito]) || ICONE_CATEGORIE[categoria]
+  const Icona =
+    (genere && ICONE_GENERI[genere as GenereCanzone]) || (ambito && ICONE_AMBITI[ambito]) || ICONE_CATEGORIE[categoria]
   return <Icona size={size} />
 }
 
