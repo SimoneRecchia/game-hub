@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../../shared/daily'
-import { NOTE_VUOTE, VUOTA, generaSchema } from '../../shared/sudoku'
+import { NOTE_VUOTE, PUNTI_COMPLETO, VUOTA, costiSudoku, generaSchema } from '../../shared/sudoku'
 import type { GeneraleLeaderboard, OggiRisposta, SudokuEsito, SudokuLeaderboard, SudokuState } from '../../shared/types'
 import { ordinaSudoku, type TotaliSudoku } from '../lib/sudokuStore'
 import { today } from '../lib/wordleStore'
@@ -92,17 +92,22 @@ describe('il sudoku del giorno, dalle API', () => {
     expect((await chiama('PUT', '/sudoku/cifre', io, { cifre: scrivi(6), versione: stato.versione })).status).toBe(409)
   })
 
-  it('il controllo fa pagare gli errori nuovi, lo svelare cinque punti, e la griglia giusta chiude', async () => {
+  it('il controllo fa pagare gli errori nuovi, lo svelare la sua parte, e la griglia giusta chiude', async () => {
+    // Uno schema medio: una cinquantina di cifre da trovare, tre punti l'una e uno un errore.
+    const costi = costiSudoku(SCHEMA.dati)
+    expect(costi).toMatchObject({ svelata: 3, errore: 1 })
+    const dopoIlControllo = PUNTI_COMPLETO - costi.errore
+    const finale = dopoIlControllo - costi.svelata
     const { chiama, giocatore } = preparaBanco()
     const io = await giocatore('dario')
     await chiama('GET', '/sudoku/state', io)
 
     const controllo = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, { cifre: scrivi(4, true), versione: 0 })
     expect(controllo.dati.errate).toHaveLength(1)
-    expect(controllo.dati.punti).toBe(148)
+    expect(controllo.dati.punti).toBe(dopoIlControllo)
     // Lo stesso errore ricontrollato non costa.
     const di_nuovo = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, { cifre: scrivi(4, true), versione: 1 })
-    expect(di_nuovo.dati.punti).toBe(148)
+    expect(di_nuovo.dati.punti).toBe(dopoIlControllo)
 
     const vuota = [...SCHEMA.dati].findIndex((d, k) => d === VUOTA && k > 40)
     const svelata = await chiama<SudokuEsito>('POST', '/sudoku/svela', io, {
@@ -111,20 +116,21 @@ describe('il sudoku del giorno, dalle API', () => {
       caselle: [vuota],
     })
     expect(svelata.dati.rivelate).toEqual({ [vuota]: SCHEMA.soluzione[vuota] })
-    expect(svelata.dati.punti).toBe(143)
+    expect(svelata.dati.punti).toBe(finale)
     // Una data non si svela.
     const data = [...SCHEMA.dati].findIndex((d) => d !== VUOTA)
     expect((await chiama('POST', '/sudoku/svela', io, { cifre: scrivi(4), versione: 3, caselle: [data] })).status).toBe(400)
 
     const finita = await chiama<SudokuEsito>('PUT', '/sudoku/cifre', io, { cifre: SCHEMA.soluzione, versione: 3 })
-    expect(finita.dati).toMatchObject({ status: 'done', punti: 143 })
+    expect(finita.dati).toMatchObject({ status: 'done', punti: finale })
     expect(finita.dati.stato?.soluzione).toBe(SCHEMA.soluzione)
 
     const classifica = (await chiama<SudokuLeaderboard>('GET', '/leaderboard/sudoku?scope=today', io)).dati
-    expect(classifica.me).toMatchObject({ rank: 1, punti: 143, giornate: 1 })
+    expect(classifica.me).toMatchObject({ rank: 1, punti: finale, giornate: 1 })
     const generale = (await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', io)).dati
-    expect(generale.me?.perGioco.sudoku).toBe(143)
-    expect((await chiama<OggiRisposta>('GET', '/oggi', io)).dati.sudoku).toMatchObject({ status: 'done', punti: 143 })
+    expect(generale.me?.perGioco.sudoku).toBe(finale)
+    const oggi = (await chiama<OggiRisposta>('GET', '/oggi', io)).dati
+    expect(oggi.sudoku).toMatchObject({ status: 'done', punti: finale })
   })
 
   it('una griglia piena ma sbagliata non chiude, e lo dice', async () => {

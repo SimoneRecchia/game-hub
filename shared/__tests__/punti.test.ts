@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { COSTO_ERRORE, COSTO_SVELATA, PUNTI_COMPLETO, punteggio as puntiCruciverba } from '../cruciverba'
+import { costiAiuti } from '../aiuti'
+import { PUNTI_COMPLETO, punteggio as puntiCruciverba } from '../cruciverba'
 import {
   MASSIMI,
   RIFERIMENTO_SCARABEO,
@@ -12,8 +13,11 @@ import {
 import { PARTITE_TRIS } from '../tris'
 import { BASE_NOMI, CATEGORIE_PER_PARTITA, TEMPO_NOMI_MS, puntiNomi } from '../nomi-cose'
 import { PUNTI_BASE_QUIZ } from '../quiz'
-import { COSTO_ERRORE as ERRORE_SUDOKU, COSTO_SVELATA as SVELATA_SUDOKU } from '../sudoku'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
+
+/** Uno schema del cruciverba e uno del sudoku della misura di tutti i giorni: ottanta lettere, cinquanta cifre. */
+const CRUCIVERBA = costiAiuti(PUNTI_COMPLETO, 80)
+const SUDOKU = costiAiuti(TETTI.sudoku, 50)
 
 /**
  * I tetti decidono quanto pesa ogni gioco nella generale: se uno si sposta da
@@ -58,13 +62,12 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
 
   it('nel cruciverba il completo senza aiuti vale il tetto', () => {
     expect(PUNTI_COMPLETO).toBe(TETTI.cruciverba)
-    expect(puntiCruciverba(0, 0)).toBe(TETTI.cruciverba)
+    expect(puntiCruciverba(0, 0, CRUCIVERBA)).toBe(TETTI.cruciverba)
   })
 
-  it('nel sudoku il risolto senza aiuti vale il tetto, e gli aiuti costano come nel cruciverba', () => {
-    expect(puntiSudoku(0, 0)).toBe(TETTI.sudoku)
-    expect(SVELATA_SUDOKU).toBe(COSTO_SVELATA)
-    expect(ERRORE_SUDOKU).toBe(COSTO_ERRORE)
+  it('nel sudoku il risolto senza aiuti vale il tetto, e gli aiuti seguono la stessa regola del cruciverba', () => {
+    expect(puntiSudoku(0, 0, SUDOKU)).toBe(TETTI.sudoku)
+    expect(SUDOKU).toEqual(costiAiuti(TETTI.sudoku, 50))
   })
 
   it('nel quiz dieci risposte giuste su dieci valgono il tetto', () => {
@@ -98,17 +101,20 @@ describe('una giornata storta si recupera', () => {
     expect(puntiScarabeo(150, 300)).toBe(TETTI.scarabeo / 2)
   })
 
-  it('nel cruciverba ogni aiuto costa poco, non tutto', () => {
-    expect(puntiCruciverba(1, 0)).toBe(TETTI.cruciverba - COSTO_SVELATA)
-    expect(puntiCruciverba(0, 5)).toBeGreaterThan(0.9 * TETTI.cruciverba)
+  it('nel cruciverba ogni aiuto costa poco, non tutto, e la metà dello schema svelata vale la metà', () => {
+    expect(puntiCruciverba(1, 0, CRUCIVERBA)).toBe(TETTI.cruciverba - CRUCIVERBA.svelata)
+    expect(puntiCruciverba(0, 5, CRUCIVERBA)).toBeGreaterThan(0.9 * TETTI.cruciverba)
+    expect(puntiCruciverba(40, 0, CRUCIVERBA)).toBe(TETTI.cruciverba / 2)
+    expect(puntiCruciverba(80, 0, CRUCIVERBA)).toBe(0)
   })
 
   it('nel sudoku ogni aiuto costa poco, non tutto, e svelarlo tutto vale zero', () => {
-    expect(puntiSudoku(1, 0)).toBe(TETTI.sudoku - SVELATA_SUDOKU)
-    expect(puntiSudoku(0, 1)).toBe(TETTI.sudoku - ERRORE_SUDOKU)
+    expect(puntiSudoku(1, 0, SUDOKU)).toBe(TETTI.sudoku - SUDOKU.svelata)
+    expect(puntiSudoku(0, 1, SUDOKU)).toBe(TETTI.sudoku - SUDOKU.errore)
     // Due cifre svelate e due errori: una giornata con qualche aiuto resta sopra il novanta per cento.
-    expect(puntiSudoku(2, 2)).toBeGreaterThanOrEqual(0.9 * TETTI.sudoku)
-    expect(puntiSudoku(60, 0)).toBe(0)
+    expect(puntiSudoku(2, 2, SUDOKU)).toBeGreaterThanOrEqual(0.9 * TETTI.sudoku)
+    expect(puntiSudoku(25, 0, SUDOKU)).toBe(TETTI.sudoku / 2)
+    expect(puntiSudoku(50, 0, SUDOKU)).toBe(0)
   })
 
   it('nel tris una serie storta vale piu’ della meta’ di una perfetta, e finirla vale sempre qualcosa', () => {

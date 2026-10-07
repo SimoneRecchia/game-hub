@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { PUNTI_COMPLETO, costiCruciverba } from '../../shared/cruciverba'
 import type { CruciverbaEsito, CruciverbaLiberaRisposta, CruciverbaState } from '../../shared/types'
 import { banco } from './banco'
 
@@ -71,8 +72,10 @@ describe('il cruciverba libero, dalle API', () => {
       lettere: sbagliata.replace('x', 'b'),
       versione: p.versione,
     })
+    // Lo schema di prova ha dodici lettere: ognuna vale un dodicesimo dei punti.
+    const costi = costiCruciverba(SOLUZIONE)
     expect(controllo.dati.errate).toEqual([0])
-    expect(controllo.dati.punti).toBe(158)
+    expect(controllo.dati.punti).toBe(PUNTI_COMPLETO - costi.errore)
 
     const vecchia = await chiama('POST', `/cruciverba/libera/${p.partitaId}/svela`, io, {
       lettere: p.lettere,
@@ -87,7 +90,7 @@ describe('il cruciverba libero, dalle API', () => {
       caselle: [1, 2],
     })
     expect(svelata.dati.rivelate).toEqual({ 1: 'a', 2: 'n' })
-    expect(svelata.dati.punti).toBe(158 - 10)
+    expect(svelata.dati.punti).toBe(PUNTI_COMPLETO - costi.errore - 2 * costi.svelata)
   })
 
   it('quando gli schemi sono finiti lo dice, e le partite di altri non si vedono', async () => {

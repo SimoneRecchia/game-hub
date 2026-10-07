@@ -2,6 +2,7 @@ import { Hono, type Context } from 'hono'
 import {
   NERA,
   caselleSbagliate,
+  costiCruciverba,
   grigliaPiena,
   grigliaValida,
   punteggio,
@@ -193,7 +194,7 @@ async function scrivi(
 
   const piena = grigliaPiena(lettere)
   const completa = piena && caselleSbagliate(lettere, soluzione).length === 0
-  const punti = punteggio(svelate.length, errori)
+  const punti = punteggio(svelate.length, errori, costiCruciverba(soluzione))
   const dopo = await salvaPartita(c.env.DB, tabella, row, {
     lettere,
     svelate,

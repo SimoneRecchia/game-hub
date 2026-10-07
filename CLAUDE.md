@@ -301,10 +301,10 @@ finito.** `statoDa` manda lo schema con i punti al posto delle lettere, e la
 dell'Italia settentrionale" sarebbe la risposta.
 
 **Nel cruciverba il tempo non da' punti.** Centosessanta a chi lo completa
-senza aiuti, cinque in meno per ogni lettera svelata, due per ogni errore
-segnalato da un controllo — e ricontrollare lo stesso errore non costa
-(`registraControllo`). La partita conta gli errori (`errori`), non quel che
-costano: il costo lo applica `punteggio`, una volta sola.
+senza aiuti, e ogni aiuto costa la parte di schema che da' (vedi sotto) — e
+ricontrollare lo stesso errore non costa (`registraControllo`). La partita
+conta gli errori (`errori`), non quel che costano: il costo lo applica
+`punteggio`, una volta sola.
 Il tempo e' lo spareggio in classifica: lo conta il browser a pagina visibile,
 perché un cruciverba si fa a pezzi, e il server lo limita a quanto e' passato
 davvero fra due scritture (`tempoDichiarato`).
@@ -332,15 +332,30 @@ chiede di tirare a indovinare non esce mai: `valuta` non ci arriva, e il
 generatore lo scarta.
 
 **Nel sudoku la soluzione resta sul server, e gli aiuti costano come nel
-cruciverba.** Centocinquanta a chi lo risolve senza aiuti, cinque in meno per
-ogni cifra svelata, due per ogni cifra sbagliata trovata da un controllo — e
-ricontrollare
-la stessa cifra sbagliata non costa (`segnalate` tiene la cifra, con lo stesso
-`registraControllo`). Due cifre uguali che si vedono si segnano subito nel
-browser, perché si vedono a occhio; se una cifra e' sbagliata lo sa solo il
-server. Le scritture passano dalla stessa coda con la `versione` del
-cruciverba, e le note a matita viaggiano con la griglia (243 cifre in base
-otto, `noteInTesto`): riaprendo da un altro telefono ci sono.
+cruciverba.** Centocinquanta a chi lo risolve senza aiuti, e gli aiuti con la
+regola del cruciverba (vedi sotto) — e ricontrollare la stessa cifra sbagliata
+non costa (`segnalate` tiene la cifra, con lo stesso `registraControllo`).
+Due cifre uguali che si vedono si segnano subito nel browser, perché si vedono
+a occhio; se una cifra e' sbagliata lo sa solo il server. Le scritture passano
+dalla stessa coda con la `versione` del cruciverba, e le note a matita
+viaggiano con la griglia (243 cifre in base otto, `noteInTesto`): riaprendo da
+un altro telefono ci sono.
+
+**Un aiuto costa la parte di schema che da'.** Nel cruciverba e nel sudoku ogni
+casella da trovare vale il tetto diviso le caselle (`costiAiuti` in
+`shared/aiuti.ts`, arrotondato al punto), e svelarla costa quella parte: due
+punti una lettera del cruciverba, che ne ha una ottantina, tre una cifra del
+sudoku, che ne ha da trovare fra quarantacinque e cinquantanove. Un errore
+trovato da un controllo costa la metà, per difetto: un punto. Svelare un
+quarto dello schema lascia tre quarti dei punti, e svelarlo tutto zero, anche
+dove l'arrotondamento lascerebbe qualcosa (`puntiConAiuti`). Prima ogni aiuto
+costava cinque punti e un errore due, in tutti e due i giochi: trentadue
+lettere, due quinti del cruciverba, lo portavano a zero, e una parola di otto
+lettere toglieva un quarto della giornata. I costi che dicono il foglio degli
+aiuti e le regole li conta il telefono dallo schema, con le stesse funzioni
+del server (`costiCruciverba`, `costiSudoku`): nel sudoku erano scritti nel
+telefono, tre punti e uno, e quando il server era passato a cinque e due il
+foglio diceva ancora quelli di prima. Un test lo controlla.
 
 **Il sudoku libero sta tutto nel telefono.** Lo schema lo genera un Web Worker
 (`generatore.worker.ts`) con lo stesso generatore della classificata e un seme
