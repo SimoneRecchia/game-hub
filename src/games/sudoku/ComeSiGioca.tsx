@@ -43,15 +43,16 @@ export function ComeSiGiocaSudoku({
             <li>
               <strong>Controlla</strong>:{' '}
               {costi
-                ? `${inPunti(costi.errore)} per ogni cifra sbagliata.`
-                : 'ogni cifra sbagliata costa metà di una cifra svelata.'}
+                ? `${inPunti(costi.controllo)} la casella, ${costi.controlloSchema} tutto lo schema, ` +
+                  `più ${costi.errore} per ogni cifra sbagliata.`
+                : 'ogni controllo costa, anche senza errori, e tutto lo schema costa più di una casella.'}
             </li>
             <li>
               <strong>Svela</strong>:{' '}
               {costi
                 ? `${inPunti(costi.svelata)} per cifra.`
-                : 'ogni cifra svelata toglie la sua parte dei punti.'}{' '}
-              Svelarlo tutto vale zero.
+                : 'ogni cifra svelata costa tre volte la sua parte dei punti.'}{' '}
+              Svelato un terzo dello schema, vale zero.
             </li>
             <li>Il tempo conta solo a pari punti.</li>
           </ul>

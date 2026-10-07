@@ -42,15 +42,16 @@ export function ComeSiGiocaCruciverba({
             <li>
               <strong>Controlla</strong>:{' '}
               {costi
-                ? `${inPunti(costi.errore)} per ogni lettera sbagliata.`
-                : 'ogni lettera sbagliata costa metà di una lettera svelata.'}
+                ? `${inPunti(costi.controllo)} la parola, ${costi.controlloSchema} tutto lo schema, ` +
+                  `più ${costi.errore} per ogni lettera sbagliata.`
+                : 'ogni controllo costa, anche senza errori, e tutto lo schema costa più di una parola.'}
             </li>
             <li>
               <strong>Svela</strong>:{' '}
               {costi
                 ? `${inPunti(costi.svelata)} per ogni lettera mancante o sbagliata.`
-                : 'ogni lettera mancante o sbagliata toglie la sua parte dei punti.'}{' '}
-              Svelarlo tutto vale zero.
+                : 'ogni lettera mancante o sbagliata costa tre volte la sua parte dei punti.'}{' '}
+              Svelato un terzo dello schema, vale zero.
             </li>
             <li>Il tempo conta solo a pari punti.</li>
           </ul>

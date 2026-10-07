@@ -72,10 +72,10 @@ describe('il cruciverba libero, dalle API', () => {
       lettere: sbagliata.replace('x', 'b'),
       versione: p.versione,
     })
-    // Lo schema di prova ha dodici lettere: ognuna vale un dodicesimo dei punti.
+    // Lo schema di prova ha dodici lettere: una parte vale un dodicesimo dei punti. Il controllo e' di tutto lo schema.
     const costi = costiCruciverba(SOLUZIONE)
     expect(controllo.dati.errate).toEqual([0])
-    expect(controllo.dati.punti).toBe(PUNTI_COMPLETO - costi.errore)
+    expect(controllo.dati.punti).toBe(PUNTI_COMPLETO - costi.controlloSchema - costi.errore)
 
     const vecchia = await chiama('POST', `/cruciverba/libera/${p.partitaId}/svela`, io, {
       lettere: p.lettere,
@@ -90,7 +90,7 @@ describe('il cruciverba libero, dalle API', () => {
       caselle: [1, 2],
     })
     expect(svelata.dati.rivelate).toEqual({ 1: 'a', 2: 'n' })
-    expect(svelata.dati.punti).toBe(PUNTI_COMPLETO - costi.errore - 2 * costi.svelata)
+    expect(svelata.dati.punti).toBe(PUNTI_COMPLETO - costi.controlloSchema - costi.errore - 2 * costi.svelata)
   })
 
   it('quando gli schemi sono finiti lo dice, e le partite di altri non si vedono', async () => {

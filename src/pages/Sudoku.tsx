@@ -56,8 +56,10 @@ export default function Sudoku() {
 function Fine({ stato }: { stato: SudokuState }) {
   const restano = useCountdown(stato.msToNextPuzzle)
   const svelate = stato.svelate.length
+  const controlli = stato.controlli + stato.controlliSchema
   const aiuti = [
     svelate > 0 && `${svelate} ${pluralize(svelate, 'cifra svelata', 'cifre svelate')}`,
+    controlli > 0 && `${controlli} ${pluralize(controlli, 'controllo', 'controlli')}`,
     stato.errori > 0 && `${stato.errori} ${pluralize(stato.errori, 'errore segnalato', 'errori segnalati')}`,
   ].filter(Boolean)
 

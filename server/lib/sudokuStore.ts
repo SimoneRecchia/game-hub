@@ -20,6 +20,8 @@ import type {
 } from '../../shared/types'
 import { fail, newId, nowIso } from './http'
 
+import { aiutiDi } from './cruciverbaStore'
+
 export { registraControllo, tempoDichiarato } from './cruciverbaStore'
 
 export interface SchemaRow {
@@ -41,6 +43,8 @@ export interface PartitaRow {
   svelate: string
   segnalate: string
   errori: number
+  controlli: number
+  controlli_schema: number
   tempo_ms: number
   score: number
   versione: number
@@ -137,10 +141,12 @@ export function statoDa(row: PartitaRow, schema: SchemaRow, msToNextPuzzle: numb
       .map(([k]) => Number(k))
       .sort((a, b) => a - b),
     errori: row.errori,
+    controlli: row.controlli,
+    controlliSchema: row.controlli_schema,
     tempoMs: row.tempo_ms,
     versione: row.versione,
     status: row.status,
-    punti: finita ? row.score : puntiSudoku(svelate.length, row.errori, costiSudoku(schema.dati)),
+    punti: finita ? row.score : puntiSudoku(aiutiDi(row), costiSudoku(schema.dati)),
     soluzione: finita ? schema.soluzione : null,
     msToNextPuzzle,
   }
@@ -152,6 +158,8 @@ export interface Cambi {
   svelate: number[]
   segnalate: Record<string, string>
   errori: number
+  controlli: number
+  controlliSchema: number
   tempoMs: number
   status: SudokuStatus
   score: number
@@ -168,8 +176,8 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, cambi: Cambi
   const esito = await db
     .prepare(
       `UPDATE sudoku_games
-          SET cifre = ?, note = ?, svelate = ?, segnalate = ?, errori = ?, tempo_ms = ?,
-              status = ?, score = ?, versione = versione + 1, updated_at = ?,
+          SET cifre = ?, note = ?, svelate = ?, segnalate = ?, errori = ?, controlli = ?, controlli_schema = ?,
+              tempo_ms = ?, status = ?, score = ?, versione = versione + 1, updated_at = ?,
               finished_at = COALESCE(finished_at, ?)
         WHERE id = ? AND versione = ?`,
     )
@@ -179,6 +187,8 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, cambi: Cambi
       JSON.stringify(cambi.svelate),
       JSON.stringify(cambi.segnalate),
       cambi.errori,
+      cambi.controlli,
+      cambi.controlliSchema,
       cambi.tempoMs,
       cambi.status,
       cambi.score,
@@ -196,6 +206,8 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, cambi: Cambi
     svelate: JSON.stringify(cambi.svelate),
     segnalate: JSON.stringify(cambi.segnalate),
     errori: cambi.errori,
+    controlli: cambi.controlli,
+    controlli_schema: cambi.controlliSchema,
     tempo_ms: cambi.tempoMs,
     status: cambi.status,
     score: cambi.score,
