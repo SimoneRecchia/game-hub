@@ -26,9 +26,11 @@ const FAMIGLIE = CATEGORIE_LIBERE.map((c, k) => ({
   prima: CATEGORIE_LIBERE.slice(0, k).reduce((n, x) => n + x.giochi.length, 0),
   giochi: c.giochi.map((id) => {
     const classificato = GIOCHI.find((g) => g.id === id)
-    if (classificato) return { id, nome: classificato.nome, a: ROTTE.libera(classificato.id) }
+    if (classificato) {
+      return { id, nome: classificato.nome, motto: classificato.motto, a: ROTTE.libera(classificato.id) }
+    }
     const tavolo = giocoTavoloDi(id as GiocoDaTavolo)
-    return { id, nome: tavolo.nome, a: `/${tavolo.slug}` }
+    return { id, nome: tavolo.nome, motto: tavolo.motto, a: `/${tavolo.slug}` }
   }),
 }))
 
@@ -73,23 +75,29 @@ export default function Libere() {
         </Sezione>
       )}
 
-      {FAMIGLIE.map((f) => (
-        <Sezione key={f.nome} titolo={f.nome}>
-          <ul className="libere__tessere">
-            {f.giochi.map((l, i) => (
-              <li key={l.id} className="entra" style={{ '--n': f.prima + i + 2 } as CSSProperties}>
-                <Tessera id={l.id} nome={l.nome} a={l.a} />
-              </li>
-            ))}
-          </ul>
-        </Sezione>
-      ))}
+      <div className="libere__famiglie">
+        {FAMIGLIE.map((f) => (
+          <Sezione key={f.nome} titolo={f.nome}>
+            <ul className="libere__tessere">
+              {f.giochi.map((l, i) => (
+                <li key={l.id} className="entra" style={{ '--n': f.prima + i + 2 } as CSSProperties}>
+                  <Tessera id={l.id} nome={l.nome} motto={l.motto} a={l.a} />
+                </li>
+              ))}
+            </ul>
+          </Sezione>
+        ))}
+      </div>
     </Vetrina>
   )
 }
 
-/** Una tessera: la copertina e il nome, come le icone di un telefono, che galleggiano un poco. */
-function Tessera({ id, nome, a }: { id: Gioco['id'] | GiocoDaTavolo; nome: string; a: string }) {
+/**
+ * Una tessera: la copertina e il nome, come le icone di un telefono, che
+ * galleggiano un poco. Sul computer diventa una riga, con il motto del gioco:
+ * i giochi stanno gia' nel menu a sinistra, e qui si dice che cosa sono.
+ */
+function Tessera({ id, nome, motto, a }: { id: Gioco['id'] | GiocoDaTavolo; nome: string; motto: string; a: string }) {
   return (
     <Collegamento
       to={a}
@@ -97,7 +105,11 @@ function Tessera({ id, nome, a }: { id: Gioco['id'] | GiocoDaTavolo; nome: strin
       style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
     >
       <Copertina gioco={id} formato="icona" />
-      <span className="libere-tessera__nome">{nome}</span>
+      <span className="libere-tessera__testo">
+        <span className="libere-tessera__nome">{nome}</span>
+        <span className="libere-tessera__motto">{motto}</span>
+      </span>
+      <IconChevronRight size={16} className="libere-tessera__freccia" />
     </Collegamento>
   )
 }

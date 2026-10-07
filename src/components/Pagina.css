@@ -177,9 +177,10 @@
     max(var(--sp-4), var(--safe-right));
 }
 
+/* Sul computer in fondo c'e' la dock delle sezioni (Shell.css): il contenuto le resta sopra. */
 @media (min-width: 900px) {
   .pagina__corpo {
-    padding-bottom: var(--sp-12);
+    padding-bottom: calc(56px + var(--sp-5) + var(--sp-8));
   }
 }
 

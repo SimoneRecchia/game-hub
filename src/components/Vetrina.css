@@ -41,7 +41,8 @@ body:has(.vetrina--fortuna) {
   background: #0d0716;
 }
 
-body:has(.vetrina--fortuna) .tabbar {
+body:has(.vetrina--fortuna) .tabbar,
+body:has(.vetrina--fortuna) .laterale {
   color-scheme: dark;
 }
 
