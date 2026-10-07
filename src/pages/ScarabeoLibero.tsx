@@ -17,13 +17,14 @@ import {
   adesivoFineScarabeo,
   adesivoMossa,
 } from '@/games/scarabeo/adesivi'
+import { nelSacchetto } from '@/games/scarabeo/turni'
 import { useScarabeoLibero, type ScarabeoLiberoController } from '@/games/scarabeo/useScarabeoLibero'
 import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { etichettaScarabeo } from '@/games/compagnia/etichette'
 import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { usePlayer } from '@/lib/auth'
-import { LIVELLI, MOSSE_A_TESTA, type Livello } from '@shared/scarabeo-computer'
+import { LIVELLI, type Livello, type StatoLibera } from '@shared/scarabeo-computer'
 import './Scarabeo.css'
 
 const NOMI: Record<Livello, string> = { facile: 'Facile', normale: 'Normale', difficile: 'Difficile' }
@@ -163,12 +164,7 @@ export default function ScarabeoLibero() {
                 nomeAltro="Computer"
                 notaAltro={NOMI[livello].toLowerCase()}
                 turno={turno}
-                sotto={
-                  finita
-                    ? 'Partita finita'
-                    : `Mossa ${Math.min(stato.mieMosse + (stato.turno === 'io' ? 1 : 0), MOSSE_A_TESTA)} di ` +
-                      `${MOSSE_A_TESTA} · ${stato.restanti} nel sacchetto`
-                }
+                sotto={finita ? 'Partita finita' : nelSacchetto(stato.restanti)}
                 onApri={() => setStoria(true)}
               />
               {/* Le pose suggerite da chi guarda: toccarne una la mette sul tabellone, e giocarla resta a te. */}
@@ -262,6 +258,7 @@ export default function ScarabeoLibero() {
               <span className="scr-esito__valore u-tabnum">{stato.puntiComputer}</span>
             </span>
           </div>
+          {notaDellaFine(stato) && <p className="scr-esito__nota">{notaDellaFine(stato)}</p>}
           {g.statistiche && (
             <p className="scr-esito__statistiche">
               Al livello {NOMI[livello].toLowerCase()} ne hai vinte{' '}
@@ -298,6 +295,20 @@ export default function ScarabeoLibero() {
       {festa && <Coriandoli />}
     </Pagina>
   )
+}
+
+/** Come e' finita, con il conto delle tessere rimaste: chi chiude le prende, chi resta con le sue le perde. */
+function notaDellaFine(stato: StatoLibera): string | null {
+  const { mio, computer } = stato.aggiustamento
+  if (stato.fine === 'chiusa') {
+    return mio > 0
+      ? `Hai posato l’ultima tessera: +${mio} dalle tessere del computer.`
+      : `Il computer ha posato l’ultima tessera: −${computer} per le tue tessere.`
+  }
+  if (stato.fine === 'ferma') {
+    return `Sei turni senza parole: ognuno perde le sue tessere (tu ${mio}, il computer ${computer}).`
+  }
+  return null
 }
 
 function titoloEsito(esito: 'vinta' | 'persa' | 'pari' | null): string {

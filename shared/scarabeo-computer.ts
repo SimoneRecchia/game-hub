@@ -1,15 +1,21 @@
 /**
  * Il computer dello Scarabeo: le sue mosse, e le partite che lo vedono giocare.
  *
- * Due usi, con le stesse regole:
+ * Tre usi, con le stesse regole:
  *
- *  - la **partita libera**, a turni contro di lui, con un sacchetto a caso;
- *  - il **riferimento della classificata**: il computer normale gioca da solo
- *    le dieci mosse del giorno, sulle stesse tessere di tutti, e il suo
- *    punteggio e' la misura dei punti in classifica. Lo calcola uno script la
- *    notte (scripts/genera-par-scarabeo.ts), perché il Worker non ha la CPU per
- *    farlo e il browser non e' un posto di cui fidarsi per un numero che
- *    decide la classifica.
+ *  - la **partita libera**, a turni contro di lui, con un sacchetto a caso,
+ *    fino in fondo come al tavolo;
+ *  - la **classificata**, a turni contro il computer del giorno: dieci mosse a
+ *    testa sul sacchetto di tutti, e il computer normale con un caso fisso dal
+ *    numero del giorno (`semeDellAvversario`), quindi a mosse uguali risponde
+ *    uguale. Gira nel telefono, perché cercare una mossa costa decine di
+ *    millisecondi e il Worker ne ha dieci; il server controlla che le sue
+ *    mosse siano legali;
+ *  - il **traguardo della classificata**: la stessa partita, con il computer
+ *    normale al posto di chi gioca (`giornataATurni`), e il suo punteggio e' la
+ *    misura dei punti in classifica. Lo calcola uno script la notte
+ *    (scripts/genera-computer-scarabeo.ts), perché il browser non e' un posto
+ *    di cui fidarsi per un numero che decide la classifica.
  *
  * Tutto e' deterministico dal seme: la stessa partita, rigiocata, fa le stesse
  * mosse. E' quel che permette di salvare solo le mosse, come nella classificata.
@@ -22,22 +28,45 @@ import {
   MOSSE_PER_GIORNATA,
   leggiiDa,
   rigioca,
+  sacchettoDelGiorno,
   tabelloneDa,
   type Mossa,
   type MossaGiocata,
 } from './scarabeo'
+import { statoADue, type FineADue, type RegoleADue } from './scarabeo-due'
 import { mosseLegali, sceltaDelComputer, type Livello } from './scarabeo-motore'
 
 export type { Livello } from './scarabeo-motore'
 
-/** Mosse a testa in una partita libera: le stesse dieci della giornata, per non cambiare misura. */
+/** Mosse a testa nella classificata: le dieci della giornata. La libera si gioca fino in fondo. */
 export const MOSSE_A_TESTA = MOSSE_PER_GIORNATA
+
+/** La partita libera: fino in fondo al sacchetto, come al tavolo. */
+export const PARTITA_INTERA: RegoleADue = { mosseATesta: null }
+
+/** La classificata: dieci mosse a testa. */
+export const PARTITA_DEL_GIORNO: RegoleADue = { mosseATesta: MOSSE_A_TESTA }
+
+/** Il livello del computer della classificata: quello del traguardo. */
+export const LIVELLO_DEL_GIORNO: Livello = 'normale'
+
+/**
+ * Come e' giocato il traguardo di una giornata: 1 da solo, le dieci mosse
+ * senza avversario, come le giornate di prima; 2 a turni contro il computer del
+ * giorno. La giornata si gioca come il suo traguardo (`contro_computer`).
+ */
+export const FORMATO_TRAGUARDO = 2
 
 export const LIVELLI: readonly Livello[] = ['facile', 'normale', 'difficile']
 
 /** Il generatore del computer per la mossa numero `indice`: dipende solo dal seme e dal turno. */
 function casoDelTurno(seme: number, indice: number): () => number {
   return mulberry32((seme ^ Math.imul(indice + 1, 0x9e37_79b1)) >>> 0)
+}
+
+/** Il caso del computer del giorno, l'avversario della classificata: dal numero del giorno, diverso dal sacchetto. */
+export function semeDellAvversario(puzzleNumber: number): number {
+  return (0x6c0d_1e57 ^ Math.imul(puzzleNumber, 0x85eb_ca6b)) >>> 0
 }
 
 /**
@@ -84,11 +113,13 @@ export function giornataDelComputer(
 /* ────────────────────────  La partita libera  ─────────────────────── */
 
 /**
- * Una partita libera contro il computer.
+ * Una partita a turni contro il computer.
  *
  * Si salvano il seme del sacchetto, il livello e le mosse di tutti e due,
  * alternate: le pari sono di chi gioca, le dispari del computer. Il resto —
- * tabellone, leggii, punti, di chi e' il turno — si ricava da qui.
+ * tabellone, leggii, punti, di chi e' il turno — si ricava da qui
+ * (`statoADue` in scarabeo-due.ts). E' la libera, fino in fondo al sacchetto,
+ * e con le regole della giornata anche la classificata.
  */
 export interface PartitaLibera {
   seme: number
@@ -103,60 +134,41 @@ export interface StatoLibera {
   restanti: number
   /** Ogni mossa con il suo autore. */
   giocate: (MossaGiocata & { mia: boolean })[]
+  /** I punti, a partita finita con il conto delle tessere rimaste. */
   mieiPunti: number
   puntiComputer: number
+  /** Il conto delle tessere rimaste, a partita finita. */
+  aggiustamento: { mio: number; computer: number }
   mieMosse: number
   mosseComputer: number
   /** Di chi e' il turno; null a partita finita. */
   turno: 'io' | 'computer' | null
   finita: boolean
+  fine: FineADue | null
   esito: 'vinta' | 'persa' | 'pari' | null
 }
 
-export function statoLibera(partita: PartitaLibera, sacchetto: readonly string[]): StatoLibera {
-  const { leggii, restanti } = leggiiDa(sacchetto, partita.mosse, 2)
-  const { tabellone, giocate } = rigioca(partita.mosse)
-
-  let mieiPunti = 0
-  let puntiComputer = 0
-  const conAutore = giocate.map((g, i) => {
-    const mia = i % 2 === 0
-    if (mia) mieiPunti += g.punti
-    else puntiComputer += g.punti
-    return { ...g, mia }
-  })
-
-  const mieMosse = Math.ceil(partita.mosse.length / 2)
-  const mosseComputer = Math.floor(partita.mosse.length / 2)
-  const tocca: 'io' | 'computer' = partita.mosse.length % 2 === 0 ? 'io' : 'computer'
-  const leggioDiTurno = leggii[tocca === 'io' ? 0 : 1]
-
-  /*
-   * Finisce dopo dieci mosse a testa, oppure prima se chi deve muovere non ha
-   * piu' tessere e il sacchetto e' vuoto: non avrebbe niente da giocare.
-   */
-  const finita =
-    mosseComputer >= MOSSE_A_TESTA || (leggioDiTurno.length === 0 && restanti === 0)
-
+export function statoLibera(
+  partita: PartitaLibera,
+  sacchetto: readonly string[],
+  regole: RegoleADue = PARTITA_INTERA,
+): StatoLibera {
+  const s = statoADue(sacchetto, partita.mosse, regole)
   return {
-    tabellone,
-    mioLeggio: leggii[0],
-    leggioComputer: leggii[1],
-    restanti,
-    giocate: conAutore,
-    mieiPunti,
-    puntiComputer,
-    mieMosse,
-    mosseComputer,
-    turno: finita ? null : tocca,
-    finita,
-    esito: !finita
-      ? null
-      : mieiPunti > puntiComputer
-        ? 'vinta'
-        : mieiPunti < puntiComputer
-          ? 'persa'
-          : 'pari',
+    tabellone: s.tabellone,
+    mioLeggio: s.leggii[0],
+    leggioComputer: s.leggii[1],
+    restanti: s.restanti,
+    giocate: s.giocate.map(({ di, ...g }) => ({ ...g, mia: di === 0 })),
+    mieiPunti: s.punti[0],
+    puntiComputer: s.punti[1],
+    aggiustamento: { mio: s.aggiustamento[0], computer: s.aggiustamento[1] },
+    mieMosse: s.mosse[0],
+    mosseComputer: s.mosse[1],
+    turno: s.turno === null ? null : s.turno === 0 ? 'io' : 'computer',
+    finita: s.finita,
+    fine: s.fine,
+    esito: !s.finita ? null : s.vincitore === null ? 'pari' : s.vincitore === 0 ? 'vinta' : 'persa',
   }
 }
 
@@ -176,6 +188,49 @@ export function turnoDelComputer(
     partita.livello,
     casoDelTurno(partita.seme, partita.mosse.length),
   )
+}
+
+/**
+ * La risposta del computer del giorno, nella classificata: dopo le mosse
+ * `mosse`, che finiscono con una mia. Il server non la rifa' — costerebbe
+ * troppo — ma lo stesso computer, sulle stesse mosse, risponde sempre uguale.
+ */
+export function rispostaDelGiorno(dawg: Dawg, puzzleNumber: number, mosse: readonly Mossa[]): Mossa | null {
+  const partita: PartitaLibera = { seme: 0, livello: LIVELLO_DEL_GIORNO, mosse: [...mosse] }
+  const stato = statoLibera(partita, sacchettoDelGiorno(puzzleNumber), PARTITA_DEL_GIORNO)
+  if (stato.turno !== 'computer') return null
+  return mossaDelComputer(
+    dawg,
+    mosse,
+    stato.leggioComputer,
+    stato.restanti,
+    LIVELLO_DEL_GIORNO,
+    casoDelTurno(semeDellAvversario(puzzleNumber), mosse.length),
+  )
+}
+
+/**
+ * La partita del traguardo: il computer normale al posto di chi gioca, con il
+ * suo caso (`seme`), contro il computer del giorno, dieci mosse a testa. E' la
+ * stessa partita che trova chi gioca — lo stesso sacchetto, lo stesso
+ * avversario — e i suoi punti (`punti`) sono la misura della classificata.
+ */
+export function giornataATurni(
+  dawg: Dawg,
+  puzzleNumber: number,
+  seme: number,
+): { mosse: Mossa[]; punti: number; avversario: number } {
+  const sacchetto = sacchettoDelGiorno(puzzleNumber)
+  const mosse: Mossa[] = []
+  for (;;) {
+    const s = statoADue(sacchetto, mosse, PARTITA_DEL_GIORNO)
+    if (s.turno === null) return { mosse, punti: s.punti[0], avversario: s.punti[1] }
+    mosse.push(
+      s.turno === 0
+        ? mossaDelComputer(dawg, mosse, s.leggii[0], s.restanti, LIVELLO_DEL_GIORNO, casoDelTurno(seme, mosse.length))
+        : rispostaDelGiorno(dawg, puzzleNumber, mosse)!,
+    )
+  }
 }
 
 /** Le caselle occupate da una mossa: per evidenziare l'ultima del computer. */

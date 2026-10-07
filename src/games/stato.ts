@@ -128,7 +128,8 @@ export function statoScarabeo(s: ScarabeoSummary): StatoOggi {
       ...base,
       fase: 'da-giocare',
       titolo: 'Da giocare',
-      dettaglio: `Il computer ha fatto ${s.computer} punti`,
+      // A turni il computer e' l'avversario: quel che ha fatto lui, giocando al tuo posto, e' il traguardo.
+      dettaglio: s.avversario !== null ? `Traguardo ${s.computer} punti` : `Il computer ha fatto ${s.computer} punti`,
       punti: null,
       azione: 'Gioca',
     }
@@ -147,7 +148,7 @@ export function statoScarabeo(s: ScarabeoSummary): StatoOggi {
   return {
     ...base,
     fase: 'in-corso',
-    titolo: `${s.punti} contro ${s.computer}`,
+    titolo: `${s.punti} contro ${s.avversario ?? s.computer}`,
     dettaglio: restano === 1 ? 'Resta 1 mossa' : `Restano ${restano} mosse`,
     punti: s.puntiClassifica,
     azione: 'Continua',

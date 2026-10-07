@@ -144,8 +144,15 @@ export interface ScarabeoState {
   leggio: string[]
   /** Quante tessere restano nel sacchetto. */
   restanti: number
-  /** La cronologia, con i punti di ogni mossa. */
-  mosse: MossaGiocata[]
+  /** La cronologia, con i punti di ogni mossa e di chi e': mia, o del computer del giorno. */
+  mosse: (MossaGiocata & { mia: boolean })[]
+  /** Le mosse come si giocano, per il computer del giorno che pensa nel telefono. */
+  partita: Mossa[]
+  /** La giornata si gioca a turni contro il computer del giorno: le giornate di prima erano da soli. */
+  controComputer: boolean
+  /** Il punteggio del computer nella stessa partita, se si gioca contro di lui. */
+  avversario: number | null
+  /** Le mie mosse. */
   mosseUsate: number
   mosseTotali: number
   /** Il punteggio del tabellone. */
@@ -170,8 +177,10 @@ export interface ScarabeoSummary {
   status: 'new' | ScarabeoStatus
   punti: number
   puntiClassifica: number
-  /** Il punteggio del computer sulle tessere di oggi. */
+  /** Il traguardo: il punteggio del computer sulle tessere di oggi. */
   computer: number
+  /** Il punteggio del computer del giorno contro cui si gioca, se la giornata e' a turni. */
+  avversario: number | null
   mosseUsate: number
   mosseTotali: number
   msToNextPuzzle: number
