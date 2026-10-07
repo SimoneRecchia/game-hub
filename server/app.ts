@@ -22,6 +22,7 @@ import { slotRoutes } from './routes/slot'
 import { fortunaRoutes } from './routes/fortuna'
 import { blackjackRoutes } from './routes/blackjack'
 import { amiciRoutes } from './routes/amici'
+import { lupusRoutes } from './routes/lupus'
 import { gameDate, msToNextPuzzle, puzzleNumberFor } from '../shared/daily'
 
 /**
@@ -73,6 +74,7 @@ export function createApp() {
   app.route('/fortuna', fortunaRoutes)
   app.route('/blackjack', blackjackRoutes)
   app.route('/amici', amiciRoutes)
+  app.route('/lupus', lupusRoutes)
 
   app.notFound((c) => c.json({ error: 'Endpoint non trovato.', code: 'NOT_FOUND' }, 404))
 
