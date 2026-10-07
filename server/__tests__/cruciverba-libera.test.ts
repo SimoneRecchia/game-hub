@@ -93,6 +93,28 @@ describe('il cruciverba libero, dalle API', () => {
     expect(svelata.dati.punti).toBe(PUNTI_COMPLETO - costi.controlloSchema - costi.errore - 2 * costi.svelata)
   })
 
+  it('svelare costa ogni lettera, anche quelle gia’ giuste, e non due volte la stessa', async () => {
+    const { chiama, giocatore } = conSchemi(1)
+    const io = await giocatore('fabio')
+    const p = (await chiama<CruciverbaState>('POST', '/cruciverba/libera', io)).dati
+    const costi = costiCruciverba(SOLUZIONE)
+    const svela = (lettere: string, versione: number, caselle: number[]) =>
+      chiama<CruciverbaEsito>('POST', `/cruciverba/libera/${p.partitaId}/svela`, io, { lettere, versione, caselle })
+
+    // CANE con la C e la A gia' scritte, e giuste: si pagano tutte e quattro.
+    const cane = await svela('ca' + p.lettere.slice(2), p.versione, [0, 1, 2, 3])
+    expect(cane.dati.svelate).toEqual([0, 1, 2, 3])
+    expect(cane.dati.punti).toBe(PUNTI_COMPLETO - 4 * costi.svelata)
+    // CASA, in verticale, incrocia CANE sulla C gia' svelata: si pagano le altre tre. Lo schema e' di dodici
+    // lettere, e sette svelate lo portano a zero: il conto lo dicono le svelate.
+    const casa = await svela('cane' + p.lettere.slice(4), cane.dati.versione, [0, 4, 8, 12])
+    expect(casa.dati.svelate).toEqual([0, 1, 2, 3, 4, 8, 12])
+    // Una lettera gia' svelata non si ripaga.
+    const scritte = [...p.lettere].map((l, k) => ([0, 1, 2, 3, 4, 8, 12].includes(k) ? SOLUZIONE[k] : l)).join('')
+    const di_nuovo = await svela(scritte, casa.dati.versione, [8])
+    expect(di_nuovo.dati.svelate).toHaveLength(7)
+  })
+
   it('quando gli schemi sono finiti lo dice, e le partite di altri non si vedono', async () => {
     const { chiama, giocatore } = conSchemi(1)
     const io = await giocatore('dario')

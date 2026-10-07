@@ -10,6 +10,12 @@
  * Una casella svelata costa tre parti, perché ne apre altre: le parole che la
  * incrociano nel cruciverba, la riga, la colonna e il riquadro nel sudoku.
  * Svelato un terzo dello schema il resto viene da se', e la giornata vale zero.
+ * Si paga anche una casella che era gia' giusta: sapere che lo era e' un aiuto,
+ * e gratis svelare farebbe da controllo senza costo — su una griglia piena,
+ * svelare tutto costava solo le caselle sbagliate, meno di un controllo dello
+ * schema. Una parola svelata costa le sue lettere non ancora svelate, e il
+ * foglio degli aiuti dice il conto intero: scritto per lettera, il prezzo della
+ * parola sembrava quello di una lettera sola.
  *
  * Un controllo costa una parte anche quando non trova niente — "e' tutto
  * giusto" e' una risposta — e cinque se e' di tutto lo schema, che dice in un
@@ -26,7 +32,7 @@
  */
 
 export interface CostiAiuti {
-  /** Una casella svelata, se non era gia' giusta. */
+  /** Una casella svelata, giusta o no: solo una gia' svelata non si ripaga (`caselleDaPagare`). */
   svelata: number
   /** Una casella sbagliata trovata da un controllo: ricontrollare la stessa non costa. */
   errore: number
@@ -61,6 +67,16 @@ export function costiAiuti(tetto: number, daTrovare: number): CostiAiuti {
     controlloSchema: PARTI_AIUTI.controlloSchema * parte,
     daTrovare,
   }
+}
+
+/**
+ * Le caselle che uno svelamento fa pagare: quelle chieste, una volta sola, tranne
+ * le gia' svelate. La usano il server, che le segna, e il foglio degli aiuti,
+ * che ne dice il prezzo.
+ */
+export function caselleDaPagare(caselle: readonly number[], svelate: Iterable<number>): number[] {
+  const gia = new Set(svelate)
+  return [...new Set(caselle)].filter((k) => !gia.has(k))
 }
 
 /** Quanto vale la giornata, con questi aiuti. Mai sotto zero, e zero se si e' svelato tutto. */
