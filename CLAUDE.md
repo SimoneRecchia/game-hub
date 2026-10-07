@@ -422,34 +422,36 @@ occupati i due giocatori, altrimenti chi chiude l'app a meta' non potrebbe piu'
 essere sfidato. Chi resta ad aspettare puo' chiedere la vittoria a tavolino
 dopo tre minuti senza colpi, o cinque senza flotta.
 
-**Ogni classificata ha il suo tetto, e la generale e' la somma.**
-Prima una giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche
-centinaio, e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni
-gioco misura quel che gli e' proprio dentro un tetto deciso (`TETTI` in
-`shared/punti.ts`, che ha la tabella di tutti), che segue il tempo che una
-giornata chiede a chi la gioca bene: il cruciverba 160, lo Scarabeo e il sudoku
-150, il quiz 75, il Wordle 70, Nomi, cose e città 60, il tris 50. Sono sette, e
-fanno settecentoquindici, un po' piu' di cento a gioco, e un test lo tiene.
+**Ogni classificata ha il suo tetto, e la generale e' la somma.** Prima una
+giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche centinaio,
+e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni gioco misura
+quel che gli e' proprio dentro un tetto deciso (`TETTI` in `shared/punti.ts`,
+che ha la tabella di tutti), che segue il tempo che una giornata chiede a chi la
+gioca bene: il cruciverba 160, lo Scarabeo e il sudoku 150, il quiz 75, il
+Wordle 70, Nomi, cose e città e gli Anagrammi 60, il tris 50. Sono otto, e fanno
+settecentosettantacinque, un po' meno di cento a gioco, e un test lo tiene.
 Erano otto e facevano ottocento con la battaglia navale (85), che il 6 ottobre
-2026 e' uscita dalle classificate (vedi sotto): gli altri tetti sono rimasti
-quelli, perché i giorni nuovi valgano come i vecchi. Non in proporzione
-diretta: un cruciverba chiede dieci volte il tempo del tris e vale tre volte
-tanto, cosi' nessun gioco da solo decide la generale. Per un periodo tutte
-valevano cento: una partita perfetta a tris valeva una perfetta a sudoku. Le
-giornate di allora restano come sono, perché i punti si salvano a fine partita
-e non si ricalcolano. Il Wordle misura i tentativi, lo Scarabeo il punteggio in
-rapporto al computer, il cruciverba e il sudoku gli aiuti, il quiz le risposte
-giuste (quindici per aver giocato, sei per ogni giusta), il
-tris le vittorie e le patte, Nomi, cose e città le risposte valide, di piu'
-quelle date da pochi. Tutti tengono il principio del Wordle —
-**giocarla bene vale circa il doppio di giocarla male**, non dieci volte tanto
-— e `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del
-compromesso per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
+2026 e' uscita dalle classificate (vedi sotto), e due giorni dopo sono arrivati
+gli Anagrammi, che valgono quanto Nomi, cose e città perché chiedono lo stesso
+tempo: gli altri tetti sono rimasti quelli, perché i giorni nuovi valgano come i
+vecchi. Non in proporzione diretta: un cruciverba chiede dieci volte il tempo
+del tris e vale tre volte tanto, cosi' nessun gioco da solo decide la generale.
+Per un periodo tutte valevano cento: una partita perfetta a tris valeva una
+perfetta a sudoku. Le giornate di allora restano come sono, perché i punti si
+salvano a fine partita e non si ricalcolano. Il Wordle misura i tentativi, lo
+Scarabeo il punteggio in rapporto al computer, il cruciverba e il sudoku gli
+aiuti, il quiz le risposte giuste (quindici per aver giocato, sei per ogni
+giusta), il tris le vittorie e le patte, Nomi, cose e città le risposte valide,
+di piu' quelle date da pochi, gli Anagrammi le parole trovate, di piu' quelle
+trovate presto. Tutti tengono il principio del Wordle — **giocarla bene vale
+circa il doppio di giocarla male**, non dieci volte tanto — e
+`shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
+per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
-`/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna
-e dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
-ognuna si apre per intero (`/classifica/generale`, `/classifica/wordle`). Non
-si normalizza per giornata ("il migliore prende tutto il tetto"): cambierebbe le
+`/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna e
+dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
+ognuna si apre per intero (`/classifica/generale`, `/classifica/wordle`). Non si
+normalizza per giornata ("il migliore prende tutto il tetto"): cambierebbe le
 classifiche di ieri ogni volta che qualcuno gioca. Alla generale si aggiungono
 solo i giochi della Fortuna, che non sono classificate (vedi sotto), con un
 tratto loro nella barra di ogni giocatore; e la Fortuna ha una classifica sua
@@ -1564,6 +1566,43 @@ lessico e conta i punti come al tavolo. Il foglio dell'altro esce solo a
 partita chiusa, prima si sa solo quante risposte ha scritto. La rivincita
 porta avanti la serie, come nella battaglia.
 
+**Gli Anagrammi sono cinque parole al giorno, da cinque a nove lettere.** Le
+stesse per tutti, una per lunghezza, e si scelgono come la parola del Wordle:
+una permutazione per lunghezza, percorsa un giorno alla volta
+(`paroleDelGiorno`), che la notte scrive in `anagrammi_giornate` con `INSERT OR
+IGNORE` (`scripts/genera-anagrammi.ts`, il passo "Gli anagrammi" di
+`cruciverba.yml`, e il deploy per le prossime due settimane): un elenco rifatto
+non cambia una giornata scritta. Se la giornata manca il gioco risponde
+`ANAGRAMMI_ASSENTI` (503): in locale, `npm run anagrammi:locale`. Le lettere si
+mescolano con un seme del giorno e della parola (`semeMescolata`), e non formano
+mai un'altra parola valida. Vale ogni parola con le stesse lettere che il
+dizionario conosce ("teatro" per "attore"): a parola chiusa si vede quella
+dell'elenco, con la sua definizione, e quella scritta.
+
+**Le parole degli Anagrammi sono le comuni che il Wikizionario definisce.**
+`scripts/build-anagrammi.mjs` tiene le parole dei sottotitoli (OpenSubtitles,
+almeno trecento volte) che hanno una definizione fra quelle del cruciverba, con
+i filtri della grafia del Wordle; le risposte valide sono tutte le forme di
+napolux con le stesse lettere. Le lettere di una parola stanno in un elenco solo
+(`PARTI`, dall'impronta delle lettere in ordine): due terzi alle classificate e
+un terzo alle libere, quindi giocare a caso non mostra mai l'anagramma di una
+parola del giorno. Il file delle libere sta sotto `/dati/` con l'impronta
+nell'indirizzo, come i file del quiz, e porta le definizioni del Wikizionario:
+e' CC BY-SA come loro.
+
+**Negli Anagrammi il tempo lo tiene il server, e una parola vale di piu'
+presto.** Novanta secondi a parola (`TEMPO_PAROLA_MS`): l'orologio parte quando
+la si apre (`/apri`), fra una parola e l'altra ci si ferma quanto si vuole, e
+una risposta vale entro il tempo piu' `MARGINE_ANAGRAMMI_MS`; una parola rimasta
+aperta la chiude, persa, la prima richiesta che arriva dopo. Una risposta
+sbagliata non si scrive, e si riprova finché c'e' tempo. Dieci punti per aver
+finito, quattro per ogni parola trovata e fino a sei di bonus, pieno per tre
+secondi a lettera e poi a scendere fino allo scadere (`puntiParola`): sessanta
+tutte subito, trenta tutte all'ultimo. La definizione costa tre punti, e una
+parola trovata ne vale almeno uno. Guardare non apre niente: la partita nasce
+con la prima parola aperta. La libera sta tutta nel telefono, con gli stessi
+tempi e gli stessi punti, come il sudoku libero.
+
 **Le righe dei giocatori sono larghe quanto il tavoliere.** In `Tavola` il
 gruppo — l'altro, il tavoliere, io — e' una griglia larga quanto il tavoliere:
 le righe hanno `width: 0` e `min-width: 100%`, quindi la riempiono senza
@@ -1605,17 +1644,17 @@ punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
 Wordle con una parola a caso, Scarabeo fino in fondo al sacchetto contro il
 computer o un amico, cruciverba da una scorta di schemi, quiz sulla materia, la
 categoria, il modo, la zona o l'ambito e le opzioni che si scelgono, Nomi, cose
-e città con una lettera a caso contro il computer. Gli indirizzi dicono sempre
-dove si e': `/<gioco>/classificata`, `/<gioco>/libera` (`src/app/rotte.ts`, che
-ha l'elenco completo, e i vecchi indirizzi portano ai nuovi in `App.tsx`);
-`/<gioco>` da solo porta alla classificata. I giochi da tavolo non hanno ne'
-l'una ne' l'altra: la loro sala e' `/<gioco>`, e da li' `/computer`,
-`/partita/:id`, `/invito/:codice` (`/scacchi`, `/dama`, `/forza-4`, `/go`); la
-battaglia ha la sala a `/battaglia-navale` e le partite a
-`/battaglia-navale/partita/:id`, anche contro il computer, che sta sul server.
-Il tris ha le due cose: la sua libera e' una sala da tavoliere, a
-`/tris/libera`. Lo Scarabeo con un amico sta sotto la sua libera:
-`/scarabeo/libera/partita/:id` e `/scarabeo/libera/invito/:codice`.
+e città con una lettera a caso contro il computer, Anagrammi con cinque parole a
+caso della lunghezza che si sceglie. Gli indirizzi dicono sempre dove si e':
+`/<gioco>/classificata`, `/<gioco>/libera` (`src/app/rotte.ts`, che ha l'elenco
+completo, e i vecchi indirizzi portano ai nuovi in `App.tsx`); `/<gioco>` da
+solo porta alla classificata. I giochi da tavolo non hanno ne' l'una ne'
+l'altra: la loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`,
+`/invito/:codice` (`/scacchi`, `/dama`, `/forza-4`, `/go`); la battaglia ha la
+sala a `/battaglia-navale` e le partite a `/battaglia-navale/partita/:id`, anche
+contro il computer, che sta sul server. Il tris ha le due cose: la sua libera e'
+una sala da tavoliere, a `/tris/libera`. Lo Scarabeo con un amico sta sotto la
+sua libera: `/scarabeo/libera/partita/:id` e `/scarabeo/libera/invito/:codice`.
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
 esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso

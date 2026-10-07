@@ -51,6 +51,10 @@ import { GIOCHI_TAVOLIERE } from '@shared/tavolo'
  */
 const caricaTris = () => import('./pages/Tris')
 const Tris = lazy(caricaTris)
+const caricaAnagrammi = () => import('./pages/Anagrammi')
+const caricaAnagrammiLibera = () => import('./pages/AnagrammiLibera')
+const Anagrammi = lazy(caricaAnagrammi)
+const AnagrammiLibera = lazy(caricaAnagrammiLibera)
 const caricaNomi = () => import('./pages/NomiCose')
 const caricaNomiLibera = () => import('./pages/NomiCoseLibera')
 const caricaNomiSfida = () => import('./pages/NomiCoseSfida')
@@ -121,6 +125,8 @@ function usePrecarica() {
         caricaQuiz,
         caricaQuizLibero,
         caricaTris,
+        caricaAnagrammi,
+        caricaAnagrammiLibera,
         caricaNomi,
         caricaNomiLibera,
         caricaNomiSfida,
@@ -223,6 +229,9 @@ export default function App() {
             <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
 
             <Route path="/tris/classificata" element={<Tris />} />
+
+            <Route path="/anagrammi/classificata" element={<Anagrammi />} />
+            <Route path="/anagrammi/libera" element={<AnagrammiLibera />} />
 
             <Route path="/nomi-cose-citta/classificata" element={<NomiCose />} />
             <Route path="/nomi-cose-citta/libera" element={<NomiCoseLibera />} />

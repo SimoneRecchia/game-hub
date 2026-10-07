@@ -75,6 +75,44 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
     </g>
   ),
 
+  // Le lettere di ROMA in fila, e le frecce che le rimescolano in AMOR.
+  anagrammi: (
+    <g fontFamily={TONDO} fontWeight={800}>
+      <path
+        d="M24 38c8-16 52-16 60 0"
+        fill="none"
+        stroke="#fff"
+        strokeOpacity={0.85}
+        strokeWidth={4}
+        strokeLinecap="round"
+      />
+      <path d="M77 29.5l8.5 9-12 1.5z" fill="#fff" fillOpacity={0.85} />
+      <path
+        d="M96 82c-8 16-52 16-60 0"
+        fill="none"
+        stroke="#fff"
+        strokeOpacity={0.5}
+        strokeWidth={4}
+        strokeLinecap="round"
+      />
+      <path d="M43 90.5l-8.5-9 12-1.5z" fill="#fff" fillOpacity={0.5} />
+      {[
+        { x: 12, y: 50, r: -8, l: 'R' },
+        { x: 36, y: 45, r: 5, l: 'O' },
+        { x: 60, y: 50, r: -4, l: 'M' },
+        { x: 84, y: 45, r: 9, l: 'A' },
+      ].map((t) => (
+        <g key={t.l} transform={`rotate(${t.r} ${t.x + 12} ${t.y + 12})`}>
+          <rect x={t.x} y={t.y + 2} width={24} height={24} rx={5.5} fill="#000" fillOpacity={0.12} />
+          <rect x={t.x} y={t.y} width={24} height={24} rx={5.5} fill="#fff" />
+          <text x={t.x + 12} y={t.y + 17.5} textAnchor="middle" fontSize={15} fill="var(--c2)">
+            {t.l}
+          </text>
+        </g>
+      ))}
+    </g>
+  ),
+
   // Tre tessere di legno, una sopra l'altra, con il valore nell'angolo.
   scarabeo: (
     <g fontFamily={TONDO} fontWeight={800}>

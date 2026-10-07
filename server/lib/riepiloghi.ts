@@ -20,6 +20,7 @@ import { FORMATO_TRAGUARDO } from '../../shared/scarabeo-computer'
 import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
 import { PUNTI_COMPLETO as PUNTI_SUDOKU, VUOTA, costiSudoku, puntiSudoku } from '../../shared/sudoku'
 import type {
+  AnagrammiSummary,
   CruciverbaSummary,
   NomiSummary,
   QuizSummary,
@@ -44,6 +45,13 @@ import {
 } from './sudokuStore'
 import { giornata as giornataTris, partiteDi as partiteTris, serieDi as serieTris } from './trisStore'
 import { giornata as giornataNomi, partitaDi as partitaNomi, risposteDi as risposteNomi, scaduta } from './nomiStore'
+import {
+  giornata as giornataAnagrammi,
+  paroleDelGiorno as paroleAnagrammi,
+  paroleDi as paroleGiocate,
+  partitaDi as partitaAnagrammi,
+} from './anagrammiStore'
+import { PAROLE_ANAGRAMMI } from '../../shared/anagrammi'
 
 export async function riepilogoWordle(db: D1Database, playerId: string): Promise<WordleSummary> {
   const when = today()
@@ -284,6 +292,30 @@ export async function riepilogoNomi(db: D1Database, playerId: string): Promise<N
     valide: row?.status === 'done' ? row.valide : null,
     totale: CATEGORIE_PER_PARTITA,
     ieri: ieri?.score ?? null,
+    msToNextPuzzle: msToNextPuzzle(),
+  }
+}
+
+/**
+ * Gli Anagrammi: a che punto e' la giornata, e se le parole di oggi ci sono.
+ * Non chiude una parola scaduta: la chiudera' la pagina, quando la si riapre.
+ */
+export async function riepilogoAnagrammi(db: D1Database, playerId: string): Promise<AnagrammiSummary> {
+  const quando = giornataAnagrammi()
+  const [row, giorno] = await Promise.all([
+    partitaAnagrammi(db, playerId, quando.puzzleNumber),
+    paroleAnagrammi(db, quando.puzzleNumber),
+  ])
+  const parole = row ? paroleGiocate(row) : []
+  return {
+    puzzleNumber: quando.puzzleNumber,
+    date: quando.date,
+    status: row ? row.status : 'new',
+    pronta: giorno !== null,
+    trovate: parole.filter((p) => p.e === 'trovata').length,
+    giocate: parole.filter((p) => p.e !== null).length,
+    totale: PAROLE_ANAGRAMMI,
+    punti: row?.status === 'done' ? row.score : 0,
     msToNextPuzzle: msToNextPuzzle(),
   }
 }

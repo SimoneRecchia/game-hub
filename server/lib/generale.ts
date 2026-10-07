@@ -76,6 +76,7 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.quiz +
       g.perGioco.tris +
       g.perGioco.nomi +
+      g.perGioco.anagrammi +
       g.battaglia +
       g.ruota +
       g.slot +
@@ -105,120 +106,131 @@ export async function classificaGenerale(
 ): Promise<GeneraleLeaderboard> {
   const { da, a } = periodo
 
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, nomi, ruota, fortuna] = await Promise.all([
-    /*
-     * Il Wordle come nella sua classifica: i punti delle proprie parole piu'
-     * quelli delle giornate giocate in compagnia. Una giornata conta come una
-     * partita, qualunque sia il numero di parole chiuse.
-     */
-    db
-      .prepare(
-        `SELECT player_id,
-                COALESCE(SUM(CASE WHEN spectated = 1 THEN COALESCE(assist_score, 0)
-                                  ELSE COALESCE(score, 0) END), 0)                 AS punti,
-                COALESCE(SUM(CASE WHEN spectated = 1 THEN COALESCE(assist_score, 0) END), 0) AS assist,
-                COUNT(DISTINCT CASE WHEN slot = 1 AND (
-                        (spectated != 1 AND status != 'playing')
-                     OR (spectated = 1 AND assist_status IS NOT NULL))
-                      THEN puzzle_number END)                                    AS partite
-           FROM wordle_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
-      )
-      .bind(da, a)
-      .all<Parziale>(),
-    /*
-     * Lo Scarabeo e il cruciverba come nelle loro classifiche: la giornata
-     * giocata in compagnia vale i punti dell'host, e sono punti assist.
-     */
-    db
-      .prepare(
-        `SELECT player_id,
-                COALESCE(SUM(${PUNTI_SCARABEO}), 0)                                         AS punti,
-                COALESCE(SUM(CASE WHEN in_compagnia IS NOT NULL THEN COALESCE(assist_score, 0) END), 0) AS assist,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)                         AS partite
-           FROM scarabeo_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
-      )
-      .bind(da, a)
-      .all<Parziale>(),
-    db
-      .prepare(
-        `SELECT player_id,
-                COALESCE(SUM(${PUNTI_CRUCIVERBA}), 0)                                       AS punti,
-                COALESCE(SUM(CASE WHEN status = 'done' AND in_compagnia IS NOT NULL
-                                  THEN COALESCE(assist_score, 0) END), 0)                AS assist,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)                         AS partite
-           FROM cruciverba_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
-      )
-      .bind(da, a)
-      .all<Parziale>(),
-    db
-      .prepare(
-        `SELECT player_id,
-                COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
-           FROM sudoku_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
-      )
-      .bind(da, a)
-      .all<Parziale>(),
-    // La battaglia, nei giorni in cui aveva una classificata.
-    db
-      .prepare(
-        `SELECT giocatore_a AS player_id,
-                COALESCE(SUM(CASE WHEN stato = 'finita' THEN punti ELSE 0 END), 0) AS punti,
-                SUM(CASE WHEN stato = 'finita' THEN 1 ELSE 0 END)                 AS partite
-           FROM battaglia_partite
-          WHERE modalita = 'classificata' AND puzzle_number BETWEEN ? AND ?
-          GROUP BY giocatore_a`,
-      )
-      .bind(da, a)
-      .all<Parziale>(),
-    db
-      .prepare(
-        `SELECT player_id,
-                COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
-           FROM quiz_partite WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
-      )
-      .bind(da, a)
-      .all<Parziale>(),
-    // Il tris: la serie del giorno conta una partita, come la giornata del Wordle.
-    db
-      .prepare(
-        `SELECT player_id,
-                COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
-                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
-           FROM tris_partite WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
-      )
-      .bind(da, a)
-      .all<Parziale>(),
-    /*
-     * Nomi, cose e città: le partite si contano la notte e valgono il giorno
-     * dopo, quindi un periodo prende quelle del giorno prima di ogni suo
-     * giorno. Una partita contata e' una partita, anche a zero punti.
-     */
-    db
-      .prepare(
-        `SELECT player_id, COALESCE(SUM(score), 0) AS punti, COUNT(*) AS partite
-           FROM nomi_partite WHERE puzzle_number BETWEEN ? AND ? AND score IS NOT NULL GROUP BY player_id`,
-      )
-      .bind(da - 1, a - 1)
-      .all<Parziale>(),
-    // Crazy Time: il conto di ogni giornata, non i giri uno per uno. Non e' una partita.
-    db
-      .prepare(
-        `SELECT player_id, COALESCE(SUM(netto), 0) AS punti, 0 AS partite
-           FROM ruota_giornate WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
-      )
-      .bind(da, a)
-      .all<Parziale>(),
-    // La slot e il blackjack: lo stesso conto per giornata, un gioco per riga.
-    db
-      .prepare(
-        `SELECT player_id, gioco, COALESCE(SUM(netto), 0) AS punti
-           FROM fortuna_giornate WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id, gioco`,
-      )
-      .bind(da, a)
-      .all<{ player_id: string; gioco: 'slot' | 'blackjack'; punti: number }>(),
-  ])
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, nomi, anagrammi, ruota, fortuna] =
+    await Promise.all([
+      /*
+       * Il Wordle come nella sua classifica: i punti delle proprie parole piu'
+       * quelli delle giornate giocate in compagnia. Una giornata conta come una
+       * partita, qualunque sia il numero di parole chiuse.
+       */
+      db
+        .prepare(
+          `SELECT player_id,
+                  COALESCE(SUM(CASE WHEN spectated = 1 THEN COALESCE(assist_score, 0)
+                                    ELSE COALESCE(score, 0) END), 0)                 AS punti,
+                  COALESCE(SUM(CASE WHEN spectated = 1 THEN COALESCE(assist_score, 0) END), 0) AS assist,
+                  COUNT(DISTINCT CASE WHEN slot = 1 AND (
+                          (spectated != 1 AND status != 'playing')
+                       OR (spectated = 1 AND assist_status IS NOT NULL))
+                        THEN puzzle_number END)                                    AS partite
+             FROM wordle_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      /*
+       * Lo Scarabeo e il cruciverba come nelle loro classifiche: la giornata
+       * giocata in compagnia vale i punti dell'host, e sono punti assist.
+       */
+      db
+        .prepare(
+          `SELECT player_id,
+                  COALESCE(SUM(${PUNTI_SCARABEO}), 0)                                         AS punti,
+                  COALESCE(SUM(CASE WHEN in_compagnia IS NOT NULL THEN COALESCE(assist_score, 0) END), 0) AS assist,
+                  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)                         AS partite
+             FROM scarabeo_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      db
+        .prepare(
+          `SELECT player_id,
+                  COALESCE(SUM(${PUNTI_CRUCIVERBA}), 0)                                       AS punti,
+                  COALESCE(SUM(CASE WHEN status = 'done' AND in_compagnia IS NOT NULL
+                                    THEN COALESCE(assist_score, 0) END), 0)                AS assist,
+                  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)                         AS partite
+             FROM cruciverba_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      db
+        .prepare(
+          `SELECT player_id,
+                  COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
+                  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
+             FROM sudoku_games WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      // La battaglia, nei giorni in cui aveva una classificata.
+      db
+        .prepare(
+          `SELECT giocatore_a AS player_id,
+                  COALESCE(SUM(CASE WHEN stato = 'finita' THEN punti ELSE 0 END), 0) AS punti,
+                  SUM(CASE WHEN stato = 'finita' THEN 1 ELSE 0 END)                 AS partite
+             FROM battaglia_partite
+            WHERE modalita = 'classificata' AND puzzle_number BETWEEN ? AND ?
+            GROUP BY giocatore_a`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      db
+        .prepare(
+          `SELECT player_id,
+                  COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
+                  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
+             FROM quiz_partite WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      // Il tris: la serie del giorno conta una partita, come la giornata del Wordle.
+      db
+        .prepare(
+          `SELECT player_id,
+                  COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
+                  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
+             FROM tris_partite WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      /*
+       * Nomi, cose e città: le partite si contano la notte e valgono il giorno
+       * dopo, quindi un periodo prende quelle del giorno prima di ogni suo
+       * giorno. Una partita contata e' una partita, anche a zero punti.
+       */
+      db
+        .prepare(
+          `SELECT player_id, COALESCE(SUM(score), 0) AS punti, COUNT(*) AS partite
+             FROM nomi_partite WHERE puzzle_number BETWEEN ? AND ? AND score IS NOT NULL GROUP BY player_id`,
+        )
+        .bind(da - 1, a - 1)
+        .all<Parziale>(),
+      // Gli Anagrammi: la giornata conta una partita, come il quiz.
+      db
+        .prepare(
+          `SELECT player_id,
+                  COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
+                  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
+             FROM anagrammi_partite WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      // Crazy Time: il conto di ogni giornata, non i giri uno per uno. Non e' una partita.
+      db
+        .prepare(
+          `SELECT player_id, COALESCE(SUM(netto), 0) AS punti, 0 AS partite
+             FROM ruota_giornate WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
+      // La slot e il blackjack: lo stesso conto per giornata, un gioco per riga.
+      db
+        .prepare(
+          `SELECT player_id, gioco, COALESCE(SUM(netto), 0) AS punti
+             FROM fortuna_giornate WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id, gioco`,
+        )
+        .bind(da, a)
+        .all<{ player_id: string; gioco: 'slot' | 'blackjack'; punti: number }>(),
+    ])
 
   const totali = new Map<string, TotaliGenerale>()
   const di = (id: string): TotaliGenerale => {
@@ -229,7 +241,7 @@ export async function classificaGenerale(
         nickname: '',
         displayName: '',
         avatarColor: '',
-        perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, quiz: 0, tris: 0, nomi: 0 },
+        perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, quiz: 0, tris: 0, nomi: 0, anagrammi: 0 },
         battaglia: 0,
         ruota: 0,
         slot: 0,
@@ -258,6 +270,7 @@ export async function classificaGenerale(
   somma('quiz', quiz.results)
   somma('tris', tris.results)
   somma('nomi', nomi.results)
+  somma('anagrammi', anagrammi.results)
   for (const r of ruota.results) di(r.player_id).ruota += r.punti
   for (const r of fortuna.results) di(r.player_id)[r.gioco] += r.punti
 
@@ -391,7 +404,9 @@ export async function puntiClassificateDi(db: D1Database, playerId: string, nume
        + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
             FROM tris_partite WHERE player_id = ?1 AND puzzle_number = ?2)
        + (SELECT COALESCE(SUM(score), 0)
-            FROM nomi_partite WHERE player_id = ?1 AND puzzle_number = ?2 - 1) AS punti`,
+            FROM nomi_partite WHERE player_id = ?1 AND puzzle_number = ?2 - 1)
+       + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
+            FROM anagrammi_partite WHERE player_id = ?1 AND puzzle_number = ?2) AS punti`,
     )
     .bind(playerId, numero)
     .first<{ punti: number }>()
