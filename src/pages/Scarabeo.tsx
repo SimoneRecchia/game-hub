@@ -11,7 +11,7 @@ import { IconaScheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { Campo, ElencoMosse, Tabellino } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
-import { adesivoFineScarabeo, adesivoMossa } from '@/games/scarabeo/adesivi'
+import { MOSSA_DEL_COMPUTER_DA_ADESIVO, adesivoFineScarabeo, adesivoMossa } from '@/games/scarabeo/adesivi'
 import { useScarabeo } from '@/games/scarabeo/useScarabeo'
 import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
 import { etichettaScarabeo } from '@/games/compagnia/etichette'
@@ -25,12 +25,14 @@ import type { ScarabeoState } from '@shared/types'
 import './Scarabeo.css'
 
 /**
- * Lo Scarabeo classificato: le dieci mosse di oggi.
+ * Lo Scarabeo classificato: le dieci mosse di oggi, a turni contro il computer
+ * del giorno.
  *
- * Le tessere sono le stesse per tutti, e il computer le ha già giocate: il suo
- * punteggio sta sempre in vista a destra, come il traguardo da raggiungere —
- * pareggiarlo vale il tetto dello Scarabeo in classifica. Le sue mosse si vedono
- * solo a giornata chiusa: sarebbero la soluzione.
+ * Il sacchetto e l'avversario sono gli stessi per tutti, e il computer normale
+ * ha gia' giocato la stessa partita al posto di chi gioca: il suo punteggio e' il
+ * traguardo, e pareggiarlo vale il tetto dello Scarabeo in classifica. Le sue
+ * mosse si vedono solo a giornata chiusa: sarebbero la soluzione. Le giornate
+ * di prima dei turni si giocavano da sole, e il traguardo stava a destra.
  */
 export default function Scarabeo() {
   const g = useScarabeo()
@@ -42,6 +44,10 @@ export default function Scarabeo() {
 
   const stato = g.stato
   const finita = stato?.status === 'done'
+  // A turni a destra c'e' l'avversario; nelle giornate di prima, il traguardo.
+  const aTurni = stato?.controComputer ?? false
+  const altro = stato ? (aTurni ? (stato.avversario ?? 0) : stato.computer.punti) : 0
+  const vinta = !!stato && stato.punti > 0 && (aTurni ? stato.punti > altro : stato.punti >= altro)
   // In compagnia si gioca la classificata finché non e' chiusa, e solo se e' la propria.
   const inCompagnia = stato?.inCompagnia ?? null
   const ospitante = !!stato && !finita && !inCompagnia
@@ -52,26 +58,25 @@ export default function Scarabeo() {
     if (inCompagnia) vai(ROTTE.insiemeA('scarabeo', inCompagnia.id), { replace: true, direzione: 'nessuna' })
   }, [inCompagnia, vai])
   // Battere il computer e' la vittoria della classificata: la festa e' per quella.
-  const festa = useFesta(
-    stato ? !finita : null,
-    finita && stato.punti >= stato.computer.punti && stato.punti > 0,
-  )
+  const festa = useFesta(stato ? !finita : null, finita && vinta)
   const io = usePlayer()
 
-  // La mossa appena giocata al centro dello schermo, e poi, se era l'ultima, come e' finita.
+  // La mossa appena giocata al centro dello schermo — le mie, e quelle del computer che fanno male — e
+  // poi, se era l'ultima, come e' finita.
   const { adesivo, accoda } = useCodaAdesivi()
   const mossa = g.ultimaMossa
   useEffect(() => {
-    if (mossa) accoda(adesivoMossa(mossa))
+    if (!mossa) return
+    if (mossa.mia || mossa.scarabeo || mossa.punti >= MOSSA_DEL_COMPUTER_DA_ADESIVO) accoda(adesivoMossa(mossa))
   }, [accoda, mossa])
   const eraInCorso = useRef<boolean | null>(null)
   useEffect(() => {
     if (!stato) return
     if (eraInCorso.current === true && finita && stato.punti > 0) {
-      accoda(adesivoFineScarabeo(0, stato.punti >= stato.computer.punti, stato.punti, stato.computer.punti))
+      accoda(adesivoFineScarabeo(0, vinta, stato.punti, altro))
     }
     eraInCorso.current = !finita
-  }, [accoda, finita, stato])
+  }, [accoda, altro, finita, stato, vinta])
 
   return (
     <Pagina
@@ -111,7 +116,9 @@ export default function Scarabeo() {
           c={g}
           sconosciute={g.sconosciute}
           bloccato={finita || g.inviando}
+          attesa={g.pensa ? 'Il computer pensa…' : null}
           restanti={stato.restanti}
+          evidenziate={g.ultimaDelComputer}
           testa={
             <>
               <Tabellino
@@ -125,14 +132,15 @@ export default function Scarabeo() {
                 posa={g.anteprima}
                 sconosciute={g.sconosciute}
                 io={stato.punti}
-                altro={stato.computer.punti}
+                altro={altro}
                 nomeAltro="Computer"
-                notaAltro="stesse tessere"
+                notaAltro={aTurni ? undefined : 'stesse tessere'}
+                turno={aTurni && !finita ? (g.pensa ? 'altro' : 'io') : undefined}
                 sotto={
                   finita
                     ? 'Giornata chiusa'
                     : `Mossa ${Math.min(stato.mosseUsate + 1, stato.mosseTotali)} di ${stato.mosseTotali} · ` +
-                      `${stato.restanti} nel sacchetto`
+                      (aTurni ? `traguardo ${stato.computer.punti}` : `${stato.restanti} nel sacchetto`)
                 }
                 avanzamento={stato.computer.punti > 0 ? stato.punti / stato.computer.punti : 0}
                 onApri={() => setStoria(true)}
@@ -176,11 +184,11 @@ export default function Scarabeo() {
         onCaricaGiocatori={compagnia.caricaGiocatori}
       />
 
-      <Sheet open={storia} onClose={() => setStoria(false)} title="Le tue mosse">
+      <Sheet open={storia} onClose={() => setStoria(false)} title={aTurni ? 'Le mosse' : 'Le tue mosse'}>
         {stato && (
           <ElencoMosse
-            mosse={stato.mosse}
-            totale={stato.mosse.length > 0 ? stato.punti : undefined}
+            mosse={aTurni ? stato.mosse.map((m) => ({ ...m, autore: m.mia ? 'Tu' : 'Computer' })) : stato.mosse}
+            totale={stato.mosse.length > 0 && !aTurni ? stato.punti : undefined}
             vuoto="Nessuna mossa, per ora."
           />
         )}
@@ -212,8 +220,14 @@ export default function Scarabeo() {
         )}
       </Sheet>
 
-      <Sheet open={delComputer} onClose={() => setDelComputer(false)} title="Le mosse del computer">
-        <p className="scr-storia__lede">Con le tue stesse tessere.</p>
+      <Sheet
+        open={delComputer}
+        onClose={() => setDelComputer(false)}
+        title={aTurni ? 'Il traguardo' : 'Le mosse del computer'}
+      >
+        <p className="scr-storia__lede">
+          {aTurni ? 'Il computer al tuo posto, contro lo stesso avversario.' : 'Con le tue stesse tessere.'}
+        </p>
         {stato?.computer.mosse && (
           <ElencoMosse mosse={stato.computer.mosse} totale={stato.computer.punti} vuoto="Il computer non ha mosso." />
         )}
@@ -229,7 +243,9 @@ export default function Scarabeo() {
 function Chiusa({ stato, onMosseComputer }: { stato: ScarabeoState; onMosseComputer: () => void }) {
   const { vai } = useNavigazione()
   const restano = useCountdown(stato.msToNextPuzzle)
-  const scarto = stato.punti - stato.computer.punti
+  const aTurni = stato.controComputer
+  const altro = aTurni ? (stato.avversario ?? 0) : stato.computer.punti
+  const scarto = stato.punti - altro
   const titolo =
     scarto > 0 ? 'Hai battuto il computer' : scarto === 0 ? 'Pari con il computer' : 'Il computer ha fatto di più'
 
@@ -241,11 +257,12 @@ function Chiusa({ stato, onMosseComputer }: { stato: ScarabeoState; onMosseCompu
         <span className="scr-fine__su"> / {TETTI.scarabeo}</span>
       </p>
       <p className="scr-fine__nota">
-        punti in classifica · {stato.punti} contro {stato.computer.punti}
+        punti in classifica · {stato.punti} contro {altro}
+        {aTurni && ` · traguardo ${stato.computer.punti}`}
       </p>
       <div className="scr-fine__azioni">
         <Button variant="tinted" onClick={onMosseComputer}>
-          <IconComputer size={18} /> Le sue mosse
+          <IconComputer size={18} /> {aTurni ? 'Il traguardo' : 'Le sue mosse'}
         </Button>
         <Button variant="tinted" onClick={() => vai(ROTTE.classifica('scarabeo'))}>
           <IconTrophy size={18} /> Classifica

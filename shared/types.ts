@@ -9,7 +9,7 @@ import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
 import type { InvitoLupus, StanzaLupusBreve } from './lupus-stanza'
 import type { Lato, Personaggi, Risposta } from './indovina'
-import type { GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
+import type { GiocoAlTavolo, GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
 import type { CategoriaNomi, PiuDate, RispostaContata } from './nomi-cose'
 import type { LatoMoneta } from './ruota'
@@ -145,8 +145,15 @@ export interface ScarabeoState {
   leggio: string[]
   /** Quante tessere restano nel sacchetto. */
   restanti: number
-  /** La cronologia, con i punti di ogni mossa. */
-  mosse: MossaGiocata[]
+  /** La cronologia, con i punti di ogni mossa e di chi e': mia, o del computer del giorno. */
+  mosse: (MossaGiocata & { mia: boolean })[]
+  /** Le mosse come si giocano, per il computer del giorno che pensa nel telefono. */
+  partita: Mossa[]
+  /** La giornata si gioca a turni contro il computer del giorno: le giornate di prima erano da soli. */
+  controComputer: boolean
+  /** Il punteggio del computer nella stessa partita, se si gioca contro di lui. */
+  avversario: number | null
+  /** Le mie mosse. */
   mosseUsate: number
   mosseTotali: number
   /** Il punteggio del tabellone. */
@@ -171,8 +178,10 @@ export interface ScarabeoSummary {
   status: 'new' | ScarabeoStatus
   punti: number
   puntiClassifica: number
-  /** Il punteggio del computer sulle tessere di oggi. */
+  /** Il traguardo: il punteggio del computer sulle tessere di oggi. */
   computer: number
+  /** Il punteggio del computer del giorno contro cui si gioca, se la giornata e' a turni. */
+  avversario: number | null
   mosseUsate: number
   mosseTotali: number
   msToNextPuzzle: number
@@ -782,7 +791,7 @@ export interface InvitoConLink {
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
   /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere, Nomi o Lupus. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'lupus' | GiocoTavoliere
+  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'lupus' | GiocoAlTavolo
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -911,14 +920,14 @@ export interface VistaIndovina {
   versione: number
 }
 
-/* ────────────────────  Scacchi, dama, Forza 4, go e tris, fra amici  ──────────────────── */
+/* ─────────────  Scacchi, dama, Forza 4, go, tris e Scarabeo, fra amici  ───────────── */
 
 export type StatoTavolo = 'invito' | 'in_corso' | 'finita' | 'rifiutata' | 'annullata'
 
 /** Un invito arrivato: da chi, a che gioco. */
 export interface InvitoTavolo {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   /** Per il go, il lato del goban: "13". */
   variante: string | null
   da: GiocatoreBreve
@@ -929,7 +938,7 @@ export interface InvitoTavolo {
 /** L'ultimo invito mandato dalla sala di un gioco, com'e' andato: a un amico o con un link. */
 export interface InvitoTavoloMandato {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   variante: string | null
   a: GiocatoreBreve | null
   codice: string | null
@@ -941,7 +950,7 @@ export interface InvitoTavoloMandato {
 /** Una partita aperta, in breve: per la sala, l'hub e il giro di controllo. */
 export interface PartitaTavoloBreve {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   variante: string | null
   avversario: GiocatoreBreve
   tuoTurno: boolean
@@ -960,7 +969,7 @@ export interface SalaTavolo {
 /** Una partita come la vede uno dei due. */
 export interface VistaTavolo {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   stato: StatoTavolo
   io: Lato
   /** Con che parte gioco: 0 muove per primo (il Bianco). Null finché non si e' accettato. */

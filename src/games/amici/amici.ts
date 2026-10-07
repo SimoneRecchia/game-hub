@@ -60,6 +60,7 @@ export type GiocoInsieme =
   | 'battaglia'
   | 'quiz'
   | 'nomi'
+  | 'scarabeo'
   | 'tris'
   | 'indovina'
   | 'scacchi'
@@ -72,6 +73,7 @@ export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
   'quiz',
   'nomi',
+  'scarabeo',
   'tris',
   'indovina',
   'scacchi',
@@ -148,22 +150,25 @@ export function salaDi(gioco: GiocoInsieme): string {
   if (gioco === 'battaglia') return ROTTE.battaglia
   if (gioco === 'nomi') {
     // La libera si apre dalla parte dell'amico, dove si vede l'invito in attesa (la chiave di NomiCoseLibera).
-    try {
-      localStorage.setItem('giochi.nomi.contro', 'amico')
-    } catch {
-      /* senza localStorage si apre com'era: l'invito resta nella parte dell'amico */
-    }
+    ricorda('giochi.nomi.contro', 'amico')
     return ROTTE.libera('nomi')
   }
   if (gioco === 'indovina') return ROTTE.indovina
+  // La libera dello Scarabeo si apre dalla parte dell'amico, dove si invita con il link (la chiave di ScarabeoLibero).
+  if (gioco === 'scarabeo') ricorda('giochi.scarabeo.contro', 'amico')
   if (gioco === 'lupus') {
     // La sala si apre dalla parte delle stanze, da cui lo si invita con il link (la chiave di pages/Lupus.tsx).
-    try {
-      localStorage.setItem('giochi.lupus.modo', 'online')
-    } catch {
-      /* senza localStorage si apre com'era */
-    }
+    ricorda('giochi.lupus.modo', 'online')
     return ROTTE.lupus
   }
   return ROTTE.tavolo(gioco)
+}
+
+/** Da che parte si apre la sala, scritto con la chiave della sala: quella degli amici, o delle stanze. */
+function ricorda(chiave: string, valore: string) {
+  try {
+    localStorage.setItem(chiave, valore)
+  } catch {
+    /* senza localStorage si apre com'era: l'invito resta dalla parte dell'amico */
+  }
 }

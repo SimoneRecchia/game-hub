@@ -33,9 +33,9 @@ export const GIOCHI: readonly Gioco[] = [
     id: 'scarabeo',
     nome: 'Scarabeo',
     motto: 'Le tessere di oggi contro il computer',
-    classificata: 'Dieci mosse, le stesse tessere per tutti.',
-    libera: 'A turni, con tre livelli di difficoltà.',
-    liberaBreve: 'Contro il computer',
+    classificata: 'Dieci mosse a testa, lo stesso sacchetto per tutti.',
+    libera: 'Fino in fondo al sacchetto, contro il computer o un amico.',
+    liberaBreve: 'Amici o computer',
   },
   {
     id: 'cruciverba',

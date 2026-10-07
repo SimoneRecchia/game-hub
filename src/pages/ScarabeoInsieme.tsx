@@ -14,6 +14,7 @@ import { etichettaScarabeo } from '@/games/compagnia/etichette'
 import { Campo, ElencoMosse, Tabellino, type VoceMossa } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
 import { preparaComputer } from '@/games/scarabeo/computer'
+import { nelSacchetto } from '@/games/scarabeo/turni'
 import { useComposizione } from '@/games/scarabeo/useComposizione'
 import { nonNelDizionario, useParoleSconosciute } from '@/games/scarabeo/useScarabeo'
 import { ApiFetchError, api } from '@/lib/api'
@@ -21,7 +22,7 @@ import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { COOP_POLL_VIEW_MS } from '@shared/config'
 import { LATO, sacchettoDaSeme } from '@shared/scarabeo'
-import { MOSSE_A_TESTA, statoLibera } from '@shared/scarabeo-computer'
+import { statoLibera } from '@shared/scarabeo-computer'
 import type { CellaPiena, VistaCompagnia } from '@shared/types'
 import './Scarabeo.css'
 import './WordleInsieme.css'
@@ -35,10 +36,16 @@ interface Tavola {
   leggio: string[]
   restanti: number
   punti: number
-  computer: number
+  /** A destra: il computer contro cui gioca l'host, o il traguardo nelle giornate di prima dei turni. */
+  altro: number
+  /** Il traguardo della classificata a turni. */
+  traguardo: number | null
+  /** L'host gioca contro il computer, a turni: nella libera sempre, nella classificata dalle giornate a turni. */
+  aTurni: boolean
   mosse: VoceMossa[]
   mosseUsate: number
-  mosseTotali: number
+  /** Le mosse della classificata; null nella libera, che va fino in fondo al sacchetto. */
+  mosseTotali: number | null
   finita: boolean
   /** Tocca all'host: nella libera puo' toccare al computer, e allora non si suggerisce. */
   tocca: boolean
@@ -56,11 +63,14 @@ function tavolaDi(vista: VistaCompagnia | null): Tavola | null {
       leggio: s.leggio,
       restanti: s.restanti,
       punti: s.punti,
-      computer: s.computer.punti,
-      mosse: s.mosse,
+      altro: s.controComputer ? (s.avversario ?? 0) : s.computer.punti,
+      traguardo: s.controComputer ? s.computer.punti : null,
+      aTurni: s.controComputer,
+      mosse: s.mosse.map((g) => ({ ...g, autore: g.mia ? undefined : 'Computer' })),
       mosseUsate: s.mosseUsate,
       mosseTotali: s.mosseTotali,
       finita,
+      // Il computer del giorno risponde nella stessa richiesta dell'host: a partita aperta tocca sempre a lui.
       tocca: !finita,
       esito: null,
     }
@@ -77,14 +87,21 @@ function tavolaDi(vista: VistaCompagnia | null): Tavola | null {
     leggio: s.mioLeggio,
     restanti: s.restanti,
     punti: s.mieiPunti,
-    computer: s.puntiComputer,
+    altro: s.puntiComputer,
+    traguardo: null,
+    aTurni: true,
     mosse: s.giocate.map((g, i) => ({ ...g, numero: i + 1, autore: g.mia ? undefined : 'Computer' })),
     mosseUsate: s.mieMosse,
-    mosseTotali: MOSSE_A_TESTA,
+    mosseTotali: null,
     finita: s.finita,
     tocca: s.turno === 'io',
     esito: s.esito,
   }
+}
+
+/** Quel che misura i punti in classifica: il traguardo, che nelle giornate di prima stava a destra. */
+function traguardoDi(t: Tavola): number {
+  return t.traguardo ?? t.altro
 }
 
 /**
@@ -182,7 +199,8 @@ export default function ScarabeoInsieme() {
   }, [c, id, inviando, sconosciute, tavola])
 
   // Chi gioca con l'host finisce con lui: la stessa festa, se ha battuto il computer.
-  const vinta = !!tavola && tavola.punti >= tavola.computer && tavola.punti > 0
+  const vinta =
+    !!tavola && tavola.punti > 0 && (tavola.aTurni ? tavola.punti > tavola.altro : tavola.punti >= tavola.altro)
   const vale = libera ? tavola?.esito === 'vinta' : !!vista?.conta && vinta
   const festa = useFesta(tavola ? !finita : null, finita && vale)
   useEffect(() => {
@@ -278,10 +296,10 @@ export default function ScarabeoInsieme() {
                 posa={c.anteprima}
                 sconosciute={sconosciute}
                 io={tavola.punti}
-                altro={tavola.computer}
+                altro={tavola.altro}
                 nomeAltro="Computer"
-                notaAltro={libera ? undefined : 'stesse tessere'}
-                turno={libera && !finita ? (tavola.tocca ? 'io' : 'altro') : null}
+                notaAltro={tavola.aTurni ? undefined : 'stesse tessere'}
+                turno={tavola.aTurni && !finita ? (tavola.tocca ? 'io' : 'altro') : null}
                 sotto={
                   finita
                     ? libera
@@ -289,9 +307,14 @@ export default function ScarabeoInsieme() {
                       : 'Giornata chiusa'
                     : !tavola.tocca
                       ? 'Tocca al computer'
-                      : `Mossa ${Math.min(tavola.mosseUsate + 1, tavola.mosseTotali)} di ${tavola.mosseTotali}`
+                      : tavola.mosseTotali === null
+                        ? nelSacchetto(tavola.restanti)
+                        : `Mossa ${Math.min(tavola.mosseUsate + 1, tavola.mosseTotali)} di ${tavola.mosseTotali}` +
+                          (tavola.traguardo !== null ? ` · traguardo ${tavola.traguardo}` : '')
                 }
-                avanzamento={libera ? undefined : tavola.computer > 0 ? tavola.punti / tavola.computer : 0}
+                avanzamento={
+                  libera ? undefined : traguardoDi(tavola) > 0 ? tavola.punti / traguardoDi(tavola) : 0
+                }
                 onApri={() => setStoria(true)}
               />
               {!finita && (
@@ -313,7 +336,8 @@ export default function ScarabeoInsieme() {
               <div className="scr-fine">
                 <p className="scr-fine__titolo">{fineTitolo}</p>
                 <p className="scr-fine__nota">
-                  {tavola.punti} contro {tavola.computer} del computer
+                  {tavola.punti} contro {tavola.altro} del computer
+                  {tavola.traguardo !== null && ` · traguardo ${tavola.traguardo}`}
                 </p>
                 {!libera && (
                   <div className="scr-fine__azioni">
@@ -340,7 +364,7 @@ export default function ScarabeoInsieme() {
         {tavola && (
           <ElencoMosse
             mosse={tavola.mosse}
-            totale={tavola.mosse.length > 0 && !libera ? tavola.punti : undefined}
+            totale={tavola.mosse.length > 0 && !tavola.aTurni ? tavola.punti : undefined}
             vuoto="Nessuna mossa, per ora."
           />
         )}

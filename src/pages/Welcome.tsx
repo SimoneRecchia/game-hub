@@ -200,7 +200,8 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
                           sfida.gioco === 'dama' ||
                           sfida.gioco === 'forza4' ||
                           sfida.gioco === 'go' ||
-                          sfida.gioco === 'tris'
+                          sfida.gioco === 'tris' ||
+                          sfida.gioco === 'scarabeo'
                         ? `ti invita a giocare ${A_GIOCO[sfida.gioco]}.`
                         : 'ti sfida a battaglia navale.'}{' '}
                   {isRegister ? 'Registrati e gioca subito.' : 'Entra e gioca subito.'}

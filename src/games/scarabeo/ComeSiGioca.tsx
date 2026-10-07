@@ -2,6 +2,7 @@ import { Sheet } from '@/components/Sheet'
 import { MAX_COOP_GUESTS } from '@shared/config'
 import { TETTI } from '@shared/punti'
 import { BONUS_SCARABEO, DISTRIBUZIONE, JOLLY, MOSSE_PER_GIORNATA, TESSERE_LEGGIO, VALORI } from '@shared/scarabeo'
+import { TURNI_SENZA_PAROLE } from '@shared/scarabeo-due'
 import './ComeSiGioca.css'
 
 /** I valori raggruppati: sono sette gradini, non ventuno numeri da leggere. */
@@ -28,7 +29,7 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="scr-aiuto">
         <p className="scr-aiuto__lede">
-          Fai più punti che puoi in <strong>{MOSSE_PER_GIORNATA} mosse</strong>.
+          Una mossa a testa: posa le tue parole e fai <strong>più punti dell’altro</strong>.
         </p>
 
         <section className="scr-aiuto__sezione">
@@ -107,18 +108,21 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
               Contano i punti di <strong>tutte</strong> le parole che si formano.
             </li>
             <li>
-              <strong>Passare e cambiare</strong> costano una mossa.
+              <strong>Passare e cambiare</strong> costano un turno.
             </li>
             <li>
               Valgono anche i verbi coniugati e con i pronomi attaccati: DIMMELO, PORTARLO. Niente accenti, sigle né
               nomi propri: &ldquo;città&rdquo; si scrive CITTA.
             </li>
             <li>
-              <strong>Classificata</strong>: tessere uguali per tutti. Pareggiare il computer vale{' '}
+              <strong>Classificata</strong>: {MOSSE_PER_GIORNATA} mosse a testa contro il computer, con lo stesso
+              sacchetto per tutti. Fare quanto il <strong>traguardo</strong>, il computer al tuo posto, vale{' '}
               {TETTI.scarabeo} punti in classifica, farne la metà {TETTI.scarabeo / 2}.
             </li>
             <li>
-              <strong>Libera</strong>: a turni contro il computer. Non conta per la classifica.
+              <strong>Libera</strong>: contro il computer o un amico, fino in fondo al sacchetto. Chi posa
+              l’ultima tessera prende il valore di quelle rimaste all’altro; dopo {TURNI_SENZA_PAROLE} turni senza
+              parole si chiude, e ognuno perde le sue. Non conta per la classifica.
             </li>
             <li>
               <strong>In compagnia</strong>: inviti fino a {MAX_COOP_GUESTS} persone a suggerirti mosse. Chi gioca

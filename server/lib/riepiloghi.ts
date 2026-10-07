@@ -16,6 +16,7 @@
 import { PUNTI_COMPLETO, caselleBianche, caselleScritte, costiCruciverba, punteggio } from '../../shared/cruciverba'
 import { msToNextPuzzle } from '../../shared/daily'
 import { MOSSE_PER_GIORNATA } from '../../shared/scarabeo'
+import { FORMATO_TRAGUARDO } from '../../shared/scarabeo-computer'
 import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
 import { PUNTI_COMPLETO as PUNTI_SUDOKU, VUOTA, costiSudoku, puntiSudoku } from '../../shared/sudoku'
 import type {
@@ -85,7 +86,8 @@ export async function riepilogoScarabeo(db: D1Database, playerId: string): Promi
   const [row, computer] = await Promise.all([
     db
       .prepare(
-        `SELECT status, turns, score, punti, in_compagnia, assist_score FROM scarabeo_games
+        `SELECT status, turns, score, punti, in_compagnia, assist_score, contro_computer, punti_computer
+           FROM scarabeo_games
           WHERE player_id = ? AND puzzle_number = ?`,
       )
       .bind(playerId, quando.puzzleNumber)
@@ -96,13 +98,17 @@ export async function riepilogoScarabeo(db: D1Database, playerId: string): Promi
         punti: number
         in_compagnia: string | null
         assist_score: number | null
+        contro_computer: number
+        punti_computer: number
       }>(),
     // Sola lettura anche qui: il riferimento di ripiego lo scrive la partita, non l'hub.
     db
-      .prepare('SELECT punti FROM scarabeo_computer WHERE puzzle_number = ?')
+      .prepare('SELECT punti, formato FROM scarabeo_computer WHERE puzzle_number = ?')
       .bind(quando.puzzleNumber)
-      .first<{ punti: number }>(),
+      .first<{ punti: number; formato: number }>(),
   ])
+  // La giornata si gioca come il suo traguardo: a turni, se non e' uno di prima (come in `apriPartita`).
+  const aTurni = row ? row.contro_computer === 1 : (computer?.formato ?? FORMATO_TRAGUARDO) >= FORMATO_TRAGUARDO
 
   // In compagnia la giornata e' quella dell'host: i suoi punti, man mano che li fa.
   const insieme = row?.in_compagnia ? await compagniaBreve(db, row.in_compagnia, row.assist_score) : null
@@ -113,6 +119,7 @@ export async function riepilogoScarabeo(db: D1Database, playerId: string): Promi
     punti: insieme ? 0 : (row?.score ?? 0),
     puntiClassifica: insieme ? (row?.assist_score ?? 0) : (row?.punti ?? 0),
     computer: computer?.punti ?? RIFERIMENTO_SCARABEO,
+    avversario: aTurni && !insieme ? (row?.punti_computer ?? 0) : null,
     mosseUsate: insieme ? 0 : (row?.turns ?? 0),
     mosseTotali: MOSSE_PER_GIORNATA,
     msToNextPuzzle: msToNextPuzzle(),
