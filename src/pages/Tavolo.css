@@ -21,6 +21,14 @@
   background: linear-gradient(150deg, var(--go-1), var(--go-2));
 }
 
+.tavolo-aperta--tris {
+  background: linear-gradient(150deg, var(--tris-1), var(--tris-2));
+}
+
+.tavolo-aperta--scarabeo {
+  background: linear-gradient(150deg, var(--scarabeo-1), var(--scarabeo-2));
+}
+
 /* "Riprendi la partita": un punto che pulsa, come quello della battaglia. */
 .tavolo-riga__segno {
   position: relative;

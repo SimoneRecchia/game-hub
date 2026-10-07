@@ -178,23 +178,27 @@ elenco di parole che potrebbe essere rigenerato, questo da una tabella di
 costanti nel codice. Cambiare `DISTRIBUZIONE` o il seme cambierebbe le mani di
 tutte le giornate passate.
 
-**La verita' di una partita sono le mosse.** `scarabeo_games.mosse` salva solo le
-decisioni del giocatore; tabellone, leggio e punti di ogni mossa si ricalcolano
-con `rigioca` e `leggioDa`. Cosi' non esiste il caso in cui la riga dice una mano
-e le mosse ne implicano un'altra — la stessa ragione per cui le partite di Wordle
-salvano le parole e non i colori. `score` in colonna e' l'eccezione, e sta lì
-perché la classifica lo somma in SQL senza rigiocare le partite di tutti.
+**La verita' di una partita sono le mosse.** `scarabeo_games.mosse` salva solo
+le decisioni — di chi gioca e, nelle giornate a turni, del computer del giorno,
+a turno —; tabellone, leggii e punti di ogni mossa si ricalcolano con `rigioca`
+e `leggiiDa` (`statoADue` in `shared/scarabeo-due.ts`, per le partite a due).
+Cosi' non esiste il caso in cui la riga dice una mano e le mosse ne implicano
+un'altra — la stessa ragione per cui le partite di Wordle salvano le parole e
+non i colori. `score` in colonna e' l'eccezione, e sta lì perché la classifica
+lo somma in SQL senza rigiocare le partite di tutti; `punti_computer`, il
+punteggio dell'avversario, gli sta accanto per l'hub.
 
 **Un premio vale solo la prima volta.** In `validaPosa` i moltiplicatori si
 applicano alle sole caselle **appena coperte**: una parola che passa su una
 tripla già usata non la riusa. Senza quel controllo la stessa casella pagherebbe
 per tutta la partita, e il tabellone diventerebbe una macchina da punti.
 
-**Passare e cambiare costano una mossa.** Altrimenti il limite di dieci mosse non
-vorrebbe dire niente e il cambio diventerebbe un modo gratuito di scegliersi il
-leggio. Le tessere cambiate tornano **in fondo alla coda** e non rimescolate: il
-leggio deve restare una funzione delle sole mosse, e rimescolare richiederebbe di
-salvare lo stato del generatore.
+**Passare e cambiare costano una mossa.** Altrimenti il limite di dieci mosse
+della classificata non vorrebbe dire niente e il cambio diventerebbe un modo
+gratuito di scegliersi il leggio; nella partita intera contano fra i turni senza
+parole che la chiudono. Le tessere cambiate tornano **in fondo alla coda** e non
+rimescolate: il leggio deve restare una funzione delle sole mosse, e rimescolare
+richiederebbe di salvare lo stato del generatore.
 
 **Il dizionario dello Scarabeo e' un file statico, lo stesso per il browser e
 per il server.** `public/scarabeo/dizionario.dawg` ha due milioni di parole in
@@ -374,19 +378,20 @@ non fa record.
 (`src/lib/presenza.tsx`) chiama `POST /api/presenza` ogni otto secondi a pagina
 visibile: dice al server dove si trova il giocatore e riporta gli inviti a
 giocare in compagnia il Wordle, il cruciverba e lo Scarabeo, le sfide a
-battaglia navale, a quiz, a Indovina chi, ai tavolieri e a Nomi, cose e città
-(rivincite comprese), le partite e il duello aperti. Gli avvisi fuori dalle
-rotte (`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`, `TavoloGate`,
-`NomiGate`, `CompagniaGate`) si danno la precedenza in quest'ordine: due insieme
-non si leggerebbero, e gli inviti del cruciverba e dello Scarabeo, che valgono
-tutto il giorno, aspettano le sfide, che scadono in pochi minuti. Prima gli
-inviti del Wordle avevano il loro polling: due giri separati avrebbero
-raddoppiato le richieste, e le Pages Functions gratuite ne contano centomila al
-giorno per tutto il sito. La scrittura in `presenza` passa solo ogni venti
-secondi o al cambio di attivita' (`segnaPresenza`), e a pagina nascosta il giro
-si ferma: un telefono in tasca non e' "online" per chi vuole sfidarlo. Gli amici
-online invece non stanno nel giro: `GET /api/amici` lo chiedono solo il profilo,
-le Libere e il profilo di un amico, ogni `AMICI_POLL_MS` e mentre li si guarda.
+battaglia navale, a quiz, a Indovina chi, ai tavolieri, allo Scarabeo e a Nomi,
+cose e città (rivincite comprese), le partite e il duello aperti. Gli avvisi
+fuori dalle rotte (`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`,
+`TavoloGate`, `NomiGate`, `CompagniaGate`) si danno la precedenza in
+quest'ordine: due insieme non si leggerebbero, e gli inviti del cruciverba e
+dello Scarabeo, che valgono tutto il giorno, aspettano le sfide, che scadono in
+pochi minuti. Prima gli inviti del Wordle avevano il loro polling: due giri
+separati avrebbero raddoppiato le richieste, e le Pages Functions gratuite ne
+contano centomila al giorno per tutto il sito. La scrittura in `presenza` passa
+solo ogni venti secondi o al cambio di attivita' (`segnaPresenza`), e a pagina
+nascosta il giro si ferma: un telefono in tasca non e' "online" per chi vuole
+sfidarlo. Gli amici online invece non stanno nel giro: `GET /api/amici` lo
+chiedono solo il profilo, le Libere e il profilo di un amico, ogni
+`AMICI_POLL_MS` e mentre li si guarda.
 
 **Nella battaglia navale la flotta dell'avversario non esce dal server.**
 `vistaPer` manda la propria flotta, i colpi con il loro esito e le navi gia'
@@ -1210,19 +1215,20 @@ come un documento qualunque e si apre da "Nuovo set".
 
 **Scacchi, dama, Forza 4, go e tris passano da una faccia sola.**
 `RegoleTavoliere` (`shared/tavolo-regole.ts`) mette i cinque giochi dietro le
-stesse funzioni, in testo: la posizione come la scrive ogni gioco (il FEN, le
-32 caselle della dama, le 42 del Forza 4, il goban, le 9 del tris) e la mossa
-nella notazione piu' semplice da controllare ("e2e4", "22x13x6", la colonna,
-"D4" o "passo", la casella). Il server la usa per ogni mossa
-delle partite fra amici e il telefono per quelle contro il computer, quindi le
-regole sono le stesse per costruzione. Il server non rigioca la partita:
-`tavolo_partite.posizione` sta accanto alle mosse e la mossa si controlla su
-quella, perché rigiocarne cento a ogni richiesta non starebbe nei dieci
-millisecondi. Le ripetizioni si contano con `chiavi`, le posizioni dall'ultima
-mossa irreversibile (una presa, un pedone, una pedina): prima di quella nessuna
-posizione puo' tornare, e la lista resta corta. Si salva la mossa come la
-scrive il gioco (`giocaMossa` la restituisce), non come la manda il telefono:
-la dama accetta anche "22x6" per "22x13x6".
+stesse funzioni, in testo: la posizione come la scrive ogni gioco (il FEN, le 32
+caselle della dama, le 42 del Forza 4, il goban, le 9 del tris) e la mossa nella
+notazione piu' semplice da controllare ("e2e4", "22x13x6", la colonna, "D4" o
+"passo", la casella). Il server la usa per ogni mossa delle partite fra amici e
+il telefono per quelle contro il computer, quindi le regole sono le stesse per
+costruzione. Il server non rigioca la partita: `tavolo_partite.posizione` sta
+accanto alle mosse e la mossa si controlla su quella, perché rigiocarne cento a
+ogni richiesta non starebbe nei dieci millisecondi. Le ripetizioni si contano
+con `chiavi`, le posizioni dall'ultima mossa irreversibile (una presa, un
+pedone, una pedina): prima di quella nessuna posizione puo' tornare, e la lista
+resta corta. Si salva la mossa come la scrive il gioco (`giocaMossa` la
+restituisce), non come la manda il telefono: la dama accetta anche "22x6" per
+"22x13x6". Lo Scarabeo fra amici ci passa anche lui, con le tessere nascoste:
+vedi la sua nota.
 
 **Le partite fra amici sono quelle di Indovina chi, su un tavoliere.** La riga
 di `tavolo_partite` nasce invito e diventa la partita con un `UPDATE`
@@ -1511,13 +1517,15 @@ giochi con una soluzione — il Wordle, il cruciverba, lo Scarabeo — si giocan
 classificata con il suo stesso punteggio e nella libera senza punti. I giochi a
 turni o a tempo fra due — la battaglia, il quiz, il tris, Nomi cose e città, i
 tavolieri — si giocano **in sfida**, e solo nelle libere: la classificata e' una
-partita uguale per tutti, e un amico la cambierebbe. Contro il computer dove ha
-senso: non in Indovina chi, che si gioca parlandosi, ne' nel quiz, dove il
-computer saprebbe tutte le risposte, e li' si gioca da soli. Il sudoku resta da
-solo: guardarlo fare non insegna niente, e suggerire una cifra vorrebbe dire
-darla. Contro chi si gioca lo dice l'interruttore Computer | Amico, ricordato
-per gioco. Un gioco nuovo prende le regole della sua famiglia invece di
-inventarne di nuove.
+partita uguale per tutti, e un amico la cambierebbe. Lo Scarabeo ha tutte e due:
+in compagnia contro il computer, nella classificata e nella libera, e in sfida
+con un amico nella libera, perché e' un gioco a turni fra due anche al tavolo.
+Contro il computer dove ha senso: non in Indovina chi, che si gioca parlandosi,
+ne' nel quiz, dove il computer saprebbe tutte le risposte, e li' si gioca da
+soli. Il sudoku resta da solo: guardarlo fare non insegna niente, e suggerire
+una cifra vorrebbe dire darla. Contro chi si gioca lo dice l'interruttore
+Computer | Amico, ricordato per gioco. Un gioco nuovo prende le regole della sua
+famiglia invece di inventarne di nuove.
 
 **Le libere del Wordle, del cruciverba e dello Scarabeo si guardano in
 compagnia.** Una compagnia per host e gioco (`modalita = 'libera'`) segue la
@@ -1533,19 +1541,20 @@ porta via inviti e suggerimenti. Un invito a una libera vale due ore
 **Ogni gioco ha una classificata e una libera.** La **classificata** e' una al
 giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
 punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
-Wordle con una parola a caso, Scarabeo a turni contro il computer, cruciverba
-da una scorta di schemi, quiz sulla materia, la categoria, il modo, la zona o
-l'ambito e le opzioni che si scelgono, Nomi, cose e città con una lettera a
-caso contro il computer. Gli
-indirizzi dicono sempre dove si e': `/<gioco>/classificata`, `/<gioco>/libera`
-(`src/app/rotte.ts`, che ha l'elenco completo, e i vecchi indirizzi portano ai
-nuovi in `App.tsx`); `/<gioco>` da solo porta alla classificata.
-I giochi da tavolo non hanno ne' l'una ne' l'altra: la
-loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`, `/invito/:codice`
-(`/scacchi`, `/dama`, `/forza-4`, `/go`); la battaglia ha la sala a
-`/battaglia-navale` e le partite a `/battaglia-navale/partita/:id`, anche
-contro il computer, che sta sul server. Il tris ha le due cose: la sua libera
-e' una sala da tavoliere, a `/tris/libera`.
+Wordle con una parola a caso, Scarabeo fino in fondo al sacchetto contro il
+computer o un amico, cruciverba da una scorta di schemi, quiz sulla materia, la
+categoria, il modo, la zona o l'ambito e le opzioni che si scelgono, Nomi, cose
+e città con una lettera a caso contro il computer. Gli indirizzi dicono sempre
+dove si e': `/<gioco>/classificata`, `/<gioco>/libera` (`src/app/rotte.ts`, che
+ha l'elenco completo, e i vecchi indirizzi portano ai nuovi in `App.tsx`);
+`/<gioco>` da solo porta alla classificata. I giochi da tavolo non hanno ne'
+l'una ne' l'altra: la loro sala e' `/<gioco>`, e da li' `/computer`,
+`/partita/:id`, `/invito/:codice` (`/scacchi`, `/dama`, `/forza-4`, `/go`); la
+battaglia ha la sala a `/battaglia-navale` e le partite a
+`/battaglia-navale/partita/:id`, anche contro il computer, che sta sul server.
+Il tris ha le due cose: la sua libera e' una sala da tavoliere, a
+`/tris/libera`. Lo Scarabeo con un amico sta sotto la sua libera:
+`/scarabeo/libera/partita/:id` e `/scarabeo/libera/invito/:codice`.
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
 esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso
@@ -1553,24 +1562,79 @@ diventerebbe un modo di vedere in anticipo la classificata di un giorno che
 arriva, e chi gioca tanto partirebbe avvantaggiato.
 
 **Il traguardo dello Scarabeo lo gioca il computer, la notte prima.**
-`scripts/genera-computer-scarabeo.ts` fa giocare al computer normale le dieci
-mosse di ogni giornata con le tessere del giorno, e scrive il punteggio in
-`scarabeo_computer` con `INSERT OR IGNORE`: il riferimento di una giornata non
-cambia, altrimenti due giocatori dello stesso giorno avrebbero punti su scale
-diverse. I punti sono `150 × punteggio / riferimento`, fino al tetto
-(`puntiScarabeo`): il rapporto invece di una scala fissa tiene conto della
-fortuna del sacchetto. Non si fa nel Worker — una mossa del computer costa
-decine di millisecondi — e se la riga manca si usa `RIFERIMENTO_SCARABEO`. Le
-mosse del computer si mostrano solo a giornata chiusa: prima sarebbero la
-soluzione.
+`scripts/genera-computer-scarabeo.ts` fa giocare al computer normale ogni
+giornata come la trova chi gioca — dieci mosse a testa contro il computer del
+giorno, con le tessere del giorno (`giornataATurni`) — e scrive il suo punteggio
+in `scarabeo_computer`: il traguardo di una giornata non cambia, altrimenti due
+giocatori dello stesso giorno avrebbero punti su scale diverse. I punti sono
+`150 × punteggio / traguardo`, fino al tetto (`puntiScarabeo`): il rapporto
+invece di una scala fissa tiene conto della fortuna del sacchetto. Il traguardo
+e' il computer al posto di chi gioca, e non il punteggio dell'avversario nella
+stessa partita, perché quello cresce con la partita: in rapporto a lui una buona
+prima mossa, e poi basta, varrebbe il tetto, e chiudere la giornata quando si e'
+avanti converrebbe sempre. Non si fa nel Worker — una mossa del computer costa
+decine di millisecondi — e se la riga manca si usa `RIFERIMENTO_SCARABEO`, che a
+turni e' rimasto giusto (su quaranta giornate 247 di media, contro i 243 da
+solo). Le mosse del traguardo si mostrano solo a giornata chiusa: prima
+sarebbero la soluzione.
 
-**Lo Scarabeo libero gira tutto nel browser.** Il computer e' un Web Worker con
-il dizionario intero, lo stesso file che legge il server (vedi sopra). La
-partita si salva come mosse nel `localStorage` a ogni
-turno, e a fine partita va al server, che la rigioca con le stesse regole per le
-statistiche. Il computer usa lo stesso motore (`shared/scarabeo-motore.ts`) del
-traguardo della classificata, con tre fasce di scelta: facile, normale,
-difficile.
+**La giornata si gioca come il suo traguardo.** `scarabeo_computer.formato` dice
+com'e' stato giocato: 1 da solo, le dieci mosse senza avversario delle giornate
+di prima dei turni, 2 a turni. `apriPartita` ne ricava `contro_computer` (un
+traguardo che manca si scrive di ripiego a turni), cosi' chi gioca lo stesso
+giorno gioca la stessa partita. Lo script della notte rifà i traguardi da solo
+dei giorni che devono venire e che nessuno ha aperto (`giornateFerme` e
+`scriviTraguardo` in `scripts/scarabeo/traguardo.ts`, con la stessa condizione
+nell'aggiornamento, per una giornata aperta nel frattempo): oggi e i giorni
+passati restano come sono, e il giorno del deploy si gioca da soli fino a
+mezzanotte.
+
+**La classificata dello Scarabeo e' a turni contro il computer del giorno.** Una
+mossa a testa, come al tavolo: il computer normale risponde a ogni mia mossa,
+anche alla decima, e il suo caso viene dal numero del giorno
+(`semeDellAvversario`), quindi a mosse uguali risponde uguale. Pensa nel
+telefono, nel Web Worker del dizionario (`rispostaDelGiorno`), e la sua mossa va
+al server con la mia: un turno, una richiesta, e la pagina le racconta in ordine
+— la mia, «Il computer pensa…», la sua (`primaDellaRisposta`). Il server non la
+puo' rifare, ma la controlla come una mia: le tessere del suo leggio, la posa in
+piedi, le parole nel dizionario, il cambio con il sacchetto che ne ha
+(`rispostaControllata`). Che sia proprio quella del computer non lo sa: chi
+volesse barare allo Scarabeo ha gia' il motore nel telefono, e scegliere anche
+le mosse dell'avversario non gli darebbe molto di piu'. I punti in classifica
+restano i miei, in rapporto al traguardo; il punteggio dell'avversario e' per il
+tabellino, l'hub e la festa, che e' per chi lo batte.
+
+**Lo Scarabeo libero e' la partita intera, fino in fondo al sacchetto.** Finisce
+come dice il regolamento: quando il sacchetto e' vuoto e uno dei due posa la sua
+ultima tessera, che prende il valore di quelle rimaste all'altro mentre l'altro
+lo perde; o dopo sei turni di fila senza una parola (`TURNI_SENZA_PAROLE`, tre a
+testa, come nei tornei), e ognuno perde il valore delle sue. Contro il computer
+gira tutto nel browser: il computer e' un Web Worker con il dizionario intero,
+lo stesso file che legge il server (vedi sopra), la partita si salva come mosse
+nel `localStorage` a ogni turno, e a fine partita va al server, che la rigioca
+con le stesse regole per le statistiche. Il computer usa lo stesso motore
+(`shared/scarabeo-motore.ts`) del traguardo della classificata, con tre fasce di
+scelta: facile, normale, difficile. Con un amico si gioca sul tavolo del server
+(vedi sotto).
+
+**Lo Scarabeo fra amici sta sul tavolo dei tavolieri, con le tessere nascoste.**
+Le partite sono righe di `tavolo_partite` con `gioco = 'scarabeo'` — l'invito,
+l'accettazione, i turni condizionati alla versione, la resa, la vittoria a
+tavolino, la rivincita con la serie — e le regole stanno dietro
+`RegoleTavoliere` come quelle degli altri (`shared/scarabeo-amici.ts`). Due cose
+in piu', che i tavolieri non hanno. La posizione salvata e' il seme del
+sacchetto con le mosse, e non esce dal server, perché il seme direbbe le tessere
+di tutti: a ognuno arriva la sua vista (`vistaDi`), con il suo leggio, quante
+tessere ha l'altro e i cambi dell'altro senza le tessere. E una posa passa anche
+dal dizionario (`parole`), dopo le regole, che costano meno. Ogni partita, e
+ogni rivincita, ha un sacchetto nuovo (`nuova`). `GiocoAlTavolo` e' i tavolieri
+piu' lo Scarabeo: gli inviti, gli avvisi e le partite aperte lo usano, le pagine
+dei tavolieri restano su `GiocoTavoliere`. La pagina della partita ha un suo
+hook (`useScarabeoAmico`) e non `useTavolo`, che si porta dietro le regole di
+scacchi, dama e go per mostrare la mossa prima della risposta: qui le tessere da
+pescare le sa solo il server. La sala e' la libera (`/scarabeo/libera`, con
+l'interruttore Computer | Amico), e il pannello degli inviti e' quello dei
+tavolieri (`SalaAmico.tsx`).
 
 **La battaglia navale non ha piu' la classificata.** Fino al 6 ottobre 2026
 c'era: una al giorno contro il computer facile, con la flotta uguale per

@@ -7,31 +7,30 @@ import { Button } from '@/components/Button'
 import { Vuoto } from '@/components/Elementi'
 import { IconLink } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
-import { giocoTavoloDi } from '@/games/catalog'
-import { A_GIOCO } from '@/games/tavolo/nomi'
+import { A_GIOCO, NOMI_AL_TAVOLO } from '@/games/tavolo/nomi'
 import { ApiFetchError, api } from '@/lib/api'
-import type { GiocoTavoliere } from '@shared/tavolo'
+import type { GiocoAlTavolo } from '@shared/tavolo'
 import type { InvitoConLink } from '@shared/types'
 import './Battaglia.css'
 
 /**
- * Un invito a un gioco da tavoliere arrivato con un link. Come per la
- * battaglia: aprirlo e' gia' accettarlo, e chi non ha un account passa prima
- * dalla registrazione, che gli dice chi lo invita.
+ * Un invito a un gioco da tavoliere, o a Scarabeo, arrivato con un link. Come
+ * per la battaglia: aprirlo e' gia' accettarlo, e chi non ha un account passa
+ * prima dalla registrazione, che gli dice chi lo invita.
  */
-export default function TavoloInvito({ gioco }: { gioco: GiocoTavoliere }) {
+export default function TavoloInvito({ gioco }: { gioco: GiocoAlTavolo }) {
   const { codice = '' } = useParams()
   const { vai } = useNavigazione()
   const [invito, setInvito] = useState<InvitoConLink | null>(null)
   const [errore, setErrore] = useState<{ codice: string; testo: string } | null>(null)
-  const nome = giocoTavoloDi(gioco).nome
+  const nome = NOMI_AL_TAVOLO[gioco]
 
   useEffect(() => {
     let annullato = false
     void api<InvitoConLink>(`/inviti/${codice}`)
       .then((i) => !annullato && setInvito(i))
       .catch(() => {})
-    api<{ partitaId: string; gioco: GiocoTavoliere }>(`/tavolo/link/${codice}/accetta`, { method: 'POST' })
+    api<{ partitaId: string; gioco: GiocoAlTavolo }>(`/tavolo/link/${codice}/accetta`, { method: 'POST' })
       .then(({ partitaId, gioco: suo }) => {
         if (!annullato) vai(ROTTE.partitaTavolo(suo, partitaId), { replace: true, direzione: 'nessuna' })
       })

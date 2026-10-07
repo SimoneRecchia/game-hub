@@ -54,12 +54,23 @@ export const DOVE_BREVE: Record<Attivita, string> = {
 }
 
 /** I giochi a cui si invita un amico: quelli che si giocano in due, nella libera. */
-export type GiocoInsieme = 'battaglia' | 'quiz' | 'nomi' | 'tris' | 'indovina' | 'scacchi' | 'dama' | 'forza4' | 'go'
+export type GiocoInsieme =
+  | 'battaglia'
+  | 'quiz'
+  | 'nomi'
+  | 'scarabeo'
+  | 'tris'
+  | 'indovina'
+  | 'scacchi'
+  | 'dama'
+  | 'forza4'
+  | 'go'
 
 export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
   'quiz',
   'nomi',
+  'scarabeo',
   'tris',
   'indovina',
   'scacchi',
@@ -121,13 +132,19 @@ export function salaDi(gioco: GiocoInsieme): string {
   if (gioco === 'battaglia') return ROTTE.battaglia
   if (gioco === 'nomi') {
     // La libera si apre dalla parte dell'amico, dove si vede l'invito in attesa (la chiave di NomiCoseLibera).
-    try {
-      localStorage.setItem('giochi.nomi.contro', 'amico')
-    } catch {
-      /* senza localStorage si apre com'era: l'invito resta nella parte dell'amico */
-    }
+    ricordaAmico('giochi.nomi.contro')
     return ROTTE.libera('nomi')
   }
   if (gioco === 'indovina') return ROTTE.indovina
+  // La libera dello Scarabeo si apre dalla parte dell'amico, dove si invita con il link (la chiave di ScarabeoLibero).
+  if (gioco === 'scarabeo') ricordaAmico('giochi.scarabeo.contro')
   return ROTTE.tavolo(gioco)
+}
+
+function ricordaAmico(chiave: string) {
+  try {
+    localStorage.setItem(chiave, 'amico')
+  } catch {
+    /* senza localStorage si apre com'era: l'invito resta nella parte dell'amico */
+  }
 }

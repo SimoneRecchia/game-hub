@@ -14,6 +14,8 @@ export interface MossaAppena {
   parola: string
   punti: number
   scarabeo: boolean
+  /** Chi l'ha fatta, se non e' mia: il computer, se non si dice altro, o il nome dell'amico. */
+  chi?: string
 }
 
 export const ADESIVO_MOSSA_MS = 1_250
@@ -32,7 +34,7 @@ export function adesivoMossa(m: MossaAppena): DatiAdesivo {
       id: m.id,
       tono: m.mia ? 'vivace' : 'bordato',
       titolo: 'Scarabeo!',
-      sotto: `${m.mia ? '' : 'Il computer · '}+${m.punti} punti`,
+      sotto: `${m.mia ? '' : `${m.chi ?? 'Il computer'} · `}+${m.punti} punti`,
       colore: m.mia ? LEGNO : 'var(--scarabeo-2)',
       durata: ADESIVO_SCARABEO_MS,
       disegno: <Scarabeo />,
@@ -44,7 +46,7 @@ export function adesivoMossa(m: MossaAppena): DatiAdesivo {
     id: m.id,
     tono: m.mia ? 'vivace' : 'bordato',
     titolo: `+${m.punti}`,
-    sotto: m.mia ? (m.punti >= 30 ? 'Gran mossa!' : m.punti >= 18 ? 'Bella mossa' : 'punti') : 'Il computer',
+    sotto: m.mia ? (m.punti >= 30 ? 'Gran mossa!' : m.punti >= 18 ? 'Bella mossa' : 'punti') : (m.chi ?? 'Il computer'),
     colore: m.mia ? LEGNO : 'var(--scarabeo-2)',
     durata: ADESIVO_MOSSA_MS,
     piede,
@@ -52,13 +54,20 @@ export function adesivoMossa(m: MossaAppena): DatiAdesivo {
   }
 }
 
-export function adesivoFineScarabeo(id: number, vinta: boolean, punti: number, altro: number): DatiAdesivo {
+/** La fine della partita, contro il computer o contro un amico (`contro`, il nome come si dice: "Anna"). */
+export function adesivoFineScarabeo(
+  id: number,
+  vinta: boolean,
+  punti: number,
+  altro: number,
+  contro = 'il computer',
+): DatiAdesivo {
   return vinta
     ? {
         id,
         tono: 'vivace',
         titolo: 'Hai vinto!',
-        sotto: `${punti} a ${altro} contro il computer`,
+        sotto: `${punti} a ${altro} contro ${contro}`,
         colore: LEGNO,
         durata: ADESIVO_FINE_SCARABEO_MS,
         disegno: <Scarabeo />,
@@ -67,7 +76,7 @@ export function adesivoFineScarabeo(id: number, vinta: boolean, punti: number, a
     : {
         id,
         tono: 'bordato',
-        titolo: punti === altro ? 'Pari!' : 'Ha vinto il computer',
+        titolo: punti === altro ? 'Pari!' : `Ha vinto ${contro}`,
         sotto: `${punti} a ${altro}`,
         colore: 'var(--scarabeo-2)',
         durata: ADESIVO_FINE_SCARABEO_MS,
