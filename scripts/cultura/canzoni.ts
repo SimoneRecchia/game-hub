@@ -131,11 +131,15 @@ function generiAMano(file: string): Map<string, GenereCanzone[]> {
   return fuori
 }
 
-/** Una correzione di scripts/data/canzoni-a-mano.tsv: la canzone resta fuori, o cambia chi la canta, o l'anno. */
+/**
+ * Una correzione di scripts/data/canzoni-a-mano.tsv: la canzone resta fuori,
+ * cambia chi la canta o l'anno, o chi la firma non la canta (`di-chi`).
+ */
 interface Correzione {
   fuori?: true
   a?: string[]
   anno?: number
+  diChi?: true
 }
 
 function correzioniAMano(file: string): Map<string, Correzione> {
@@ -144,6 +148,7 @@ function correzioniAMano(file: string): Map<string, Correzione> {
     const c: Correzione = {}
     for (const parte of (cosa ?? '').split(' ')) {
       if (parte === 'fuori') c.fuori = true
+      else if (parte === 'di-chi') c.diChi = true
       else if (/^a=Q\d+(,Q\d+)*$/.test(parte)) c.a = parte.slice(2).split(',')
       else if (/^anno=\d{4}$/.test(parte)) c.anno = Number(parte.slice(5))
       else throw new Error(`${file}: correzione sbagliata per ${titolo ?? id}`)
@@ -478,6 +483,7 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
       ...(altriDi(id, a).length > 0 ? { x: altriDi(id, a) } : {}),
       ...(anno !== undefined ? { anno } : {}),
       ...(g.length > 0 ? { g } : {}),
+      ...(corrette.get(id)?.diChi ? { dc: 1 as const } : {}),
       w: s.get(id)!.voce!,
       f: fama.get(id) ?? 0,
     }
