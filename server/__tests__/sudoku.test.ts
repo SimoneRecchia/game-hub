@@ -92,36 +92,45 @@ describe('il sudoku del giorno, dalle API', () => {
     expect((await chiama('PUT', '/sudoku/cifre', io, { cifre: scrivi(6), versione: stato.versione })).status).toBe(409)
   })
 
-  it('il controllo fa pagare gli errori nuovi, lo svelare la sua parte, e la griglia giusta chiude', async () => {
-    // Uno schema medio: una cinquantina di cifre da trovare, tre punti l'una e uno un errore.
+  it('il controllo si paga, con gli errori nuovi; lo svelare tre parti, e la griglia giusta chiude', async () => {
+    // Uno schema medio: una cinquantina di cifre da trovare, una parte vale tre punti.
     const costi = costiSudoku(SCHEMA.dati)
-    expect(costi).toMatchObject({ svelata: 3, errore: 1 })
-    const dopoIlControllo = PUNTI_COMPLETO - costi.errore
-    const finale = dopoIlControllo - costi.svelata
+    expect(costi).toMatchObject({ svelata: 9, errore: 3, controllo: 3, controlloSchema: 15 })
+    const dopoIlControllo = PUNTI_COMPLETO - costi.controlloSchema - costi.errore
+    const dopoIlSecondo = dopoIlControllo - costi.controlloSchema
+    const finale = dopoIlSecondo - costi.svelata
     const { chiama, giocatore } = preparaBanco()
     const io = await giocatore('dario')
     await chiama('GET', '/sudoku/state', io)
 
-    const controllo = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, { cifre: scrivi(4, true), versione: 0 })
+    // Un controllo su una griglia ancora vuota non guarda niente, e non costa.
+    const aVuoto = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, { cifre: SCHEMA.dati, versione: 0 })
+    expect(aVuoto.dati.punti).toBe(PUNTI_COMPLETO)
+
+    const controllo = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, {
+      cifre: scrivi(4, true),
+      versione: 1,
+    })
     expect(controllo.dati.errate).toHaveLength(1)
     expect(controllo.dati.punti).toBe(dopoIlControllo)
-    // Lo stesso errore ricontrollato non costa.
-    const di_nuovo = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, { cifre: scrivi(4, true), versione: 1 })
-    expect(di_nuovo.dati.punti).toBe(dopoIlControllo)
+    // Ricontrollare costa il controllo, ma non di nuovo lo stesso errore.
+    const di_nuovo = await chiama<SudokuEsito>('POST', '/sudoku/controlla', io, { cifre: scrivi(4, true), versione: 2 })
+    expect(di_nuovo.dati.punti).toBe(dopoIlSecondo)
 
     const vuota = [...SCHEMA.dati].findIndex((d, k) => d === VUOTA && k > 40)
     const svelata = await chiama<SudokuEsito>('POST', '/sudoku/svela', io, {
       cifre: scrivi(4, true),
-      versione: 2,
+      versione: 3,
       caselle: [vuota],
     })
     expect(svelata.dati.rivelate).toEqual({ [vuota]: SCHEMA.soluzione[vuota] })
     expect(svelata.dati.punti).toBe(finale)
     // Una data non si svela.
     const data = [...SCHEMA.dati].findIndex((d) => d !== VUOTA)
-    expect((await chiama('POST', '/sudoku/svela', io, { cifre: scrivi(4), versione: 3, caselle: [data] })).status).toBe(400)
+    const suUnaData = await chiama('POST', '/sudoku/svela', io, { cifre: scrivi(4), versione: 4, caselle: [data] })
+    expect(suUnaData.status).toBe(400)
 
-    const finita = await chiama<SudokuEsito>('PUT', '/sudoku/cifre', io, { cifre: SCHEMA.soluzione, versione: 3 })
+    const finita = await chiama<SudokuEsito>('PUT', '/sudoku/cifre', io, { cifre: SCHEMA.soluzione, versione: 4 })
     expect(finita.dati).toMatchObject({ status: 'done', punti: finale })
     expect(finita.dati.stato?.soluzione).toBe(SCHEMA.soluzione)
 

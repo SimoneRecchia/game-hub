@@ -1,6 +1,7 @@
 import { Hono, type Context } from 'hono'
 import {
   NERA,
+  VUOTA,
   caselleSbagliate,
   costiCruciverba,
   grigliaPiena,
@@ -57,6 +58,20 @@ interface Corpo {
   tempoMs?: unknown
   versione?: unknown
   caselle?: unknown
+}
+
+/**
+ * Quante caselle guarda davvero un controllo: quelle scritte da chi gioca, fra
+ * le indicate o in tutto lo schema. Un controllo che non guarda niente non si
+ * paga; le svelate non contano, perché sono giuste per forza.
+ */
+function guardate(lettere: string, soluzione: string, svelate: readonly number[], dove: ReadonlySet<number> | null) {
+  let n = 0
+  for (let k = 0; k < soluzione.length; k += 1) {
+    if (soluzione[k] === NERA || lettere[k] === VUOTA || svelate.includes(k)) continue
+    if (!dove || dove.has(k)) n += 1
+  }
+  return n
 }
 
 /** La partita su cui scrivere, con il suo schema: del giorno o libera. */
@@ -166,6 +181,8 @@ async function scrivi(
 
   let segnalate = segnalateDi(row)
   let errori = row.errori
+  let controlli = row.controlli ?? 0
+  let controlliSchema = row.controlli_schema ?? 0
   let errate: number[] | undefined
   let rivelate: Record<number, string> | undefined
 
@@ -174,8 +191,14 @@ async function scrivi(
     errate = caselleSbagliate(lettere, soluzione).filter((k) => !dove || dove.has(k))
     const controllo = registraControllo(segnalate, lettere, errate)
     segnalate = controllo.segnalate
-    // `errori` conta gli errori; quanto costano lo decide `punteggio`.
+    // Le partite contano gli aiuti; quanto costano lo decide `punteggio`. Un
+    // controllo si paga anche quando trova tutto giusto, e di piu' se e' di
+    // tutto lo schema; ogni errore nuovo a parte.
     errori += controllo.nuovi
+    if (guardate(lettere, soluzione, svelate, dove) > 0) {
+      if (dove) controlli += 1
+      else controlliSchema += 1
+    }
   }
 
   if (azione.tipo === 'svela') {
@@ -194,12 +217,14 @@ async function scrivi(
 
   const piena = grigliaPiena(lettere)
   const completa = piena && caselleSbagliate(lettere, soluzione).length === 0
-  const punti = punteggio(svelate.length, errori, costiCruciverba(soluzione))
+  const punti = punteggio({ svelate: svelate.length, errori, controlli, controlliSchema }, costiCruciverba(soluzione))
   const dopo = await salvaPartita(c.env.DB, tabella, row, {
     lettere,
     svelate,
     segnalate,
     errori,
+    controlli,
+    controlliSchema,
     tempoMs: tempoDichiarato(row, corpo.tempoMs, Date.now()),
     status: completa ? 'done' : 'playing',
     score: completa ? punti : 0,
@@ -259,7 +284,8 @@ export const cruciverbaRoutes = new Hono<AppEnv>()
 
   /**
    * Controlla la griglia, o solo le caselle indicate (una parola). Dice dove
-   * sono gli errori e ne fa pagare uno per lettera sbagliata nuova.
+   * sono gli errori; si paga il controllo, piu' caro per tutta la griglia, e
+   * ogni lettera sbagliata nuova.
    */
   .post('/controlla', (c) => scrivi(c, delGiorno, controlla))
 

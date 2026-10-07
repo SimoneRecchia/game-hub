@@ -15,6 +15,7 @@ import {
   schemaVuoto,
   sequenzeDelloSchema,
 } from '../../shared/cruciverba'
+import type { AiutiChiesti } from '../../shared/aiuti'
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
 import type {
   CruciverbaLeaderboard,
@@ -53,6 +54,8 @@ export interface Partita {
   svelate: string
   segnalate: string
   errori: number
+  controlli: number
+  controlli_schema: number
   tempo_ms: number
   score: number
   versione: number
@@ -169,6 +172,18 @@ export function svelateDi(row: Pick<Partita, 'svelate'>): number[] {
   return Array.isArray(valore) ? valore.filter((k): k is number => Number.isInteger(k)) : []
 }
 
+/** Gli aiuti chiesti in una partita, del cruciverba o del sudoku: le colonne hanno gli stessi nomi. */
+export function aiutiDi(
+  row: Pick<Partita, 'svelate' | 'errori' | 'controlli' | 'controlli_schema'>,
+): AiutiChiesti {
+  return {
+    svelate: svelateDi(row).length,
+    errori: row.errori,
+    controlli: row.controlli ?? 0,
+    controlliSchema: row.controlli_schema ?? 0,
+  }
+}
+
 /**
  * Le lettere segnalate come sbagliate, casella per casella.
  *
@@ -266,10 +281,12 @@ export function statoDa(
       .map(([k]) => Number(k))
       .sort((a, b) => a - b),
     errori: row.errori,
+    controlli: row.controlli,
+    controlliSchema: row.controlli_schema,
     tempoMs: row.tempo_ms,
     versione: row.versione,
     status: row.status,
-    punti: finita ? row.score : punteggio(svelate.length, row.errori, costiCruciverba(schema.soluzione)),
+    punti: finita ? row.score : punteggio(aiutiDi(row), costiCruciverba(schema.soluzione)),
     soluzione: finita ? schema.soluzione : null,
     msToNextPuzzle,
   }
@@ -288,6 +305,8 @@ export interface Cambi {
   svelate: number[]
   segnalate: Record<string, string>
   errori: number
+  controlli: number
+  controlliSchema: number
   tempoMs: number
   status: CruciverbaStatus
   score: number
@@ -313,8 +332,8 @@ export async function salvaPartita<T extends Partita>(
     .prepare(
       // La tabella viene da un tipo chiuso, non dal client: interpolarla e' sicuro.
       `UPDATE ${tabella}
-          SET lettere = ?, svelate = ?, segnalate = ?, errori = ?, tempo_ms = ?,
-              status = ?, score = ?, versione = versione + 1, updated_at = ?,
+          SET lettere = ?, svelate = ?, segnalate = ?, errori = ?, controlli = ?, controlli_schema = ?,
+              tempo_ms = ?, status = ?, score = ?, versione = versione + 1, updated_at = ?,
               finished_at = COALESCE(finished_at, ?)
         WHERE id = ? AND versione = ?`,
     )
@@ -323,6 +342,8 @@ export async function salvaPartita<T extends Partita>(
       JSON.stringify(cambi.svelate),
       JSON.stringify(cambi.segnalate),
       cambi.errori,
+      cambi.controlli,
+      cambi.controlliSchema,
       cambi.tempoMs,
       cambi.status,
       cambi.score,
@@ -343,6 +364,8 @@ export async function salvaPartita<T extends Partita>(
     svelate: JSON.stringify(cambi.svelate),
     segnalate: JSON.stringify(cambi.segnalate),
     errori: cambi.errori,
+    controlli: cambi.controlli,
+    controlli_schema: cambi.controlliSchema,
     tempo_ms: cambi.tempoMs,
     status: cambi.status,
     score: cambi.score,
@@ -420,6 +443,8 @@ export async function nuovaLibera(
     svelate: '[]',
     segnalate: '{}',
     errori: 0,
+    controlli: 0,
+    controlli_schema: 0,
     tempo_ms: 0,
     score: 0,
     versione: 0,
@@ -452,7 +477,8 @@ export async function statisticheLibere(
       .prepare(
         `SELECT COUNT(*) AS giocate,
                 SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS completate,
-                SUM(CASE WHEN status = 'done' AND svelate = '[]' AND errori = 0 THEN 1 ELSE 0 END) AS perfetti
+                SUM(CASE WHEN status = 'done' AND svelate = '[]' AND errori = 0 AND controlli = 0
+                          AND controlli_schema = 0 THEN 1 ELSE 0 END) AS perfetti
            FROM cruciverba_partite_libere WHERE player_id = ?`,
       )
       .bind(playerId)

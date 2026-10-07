@@ -63,6 +63,20 @@ function leggiCaselle(valore: unknown, dati: string, obbligatorie: boolean): num
   return caselle
 }
 
+/**
+ * Quante caselle guarda davvero un controllo: le cifre scritte da chi gioca,
+ * fra le indicate o in tutto lo schema. Un controllo che non guarda niente non
+ * si paga; le date e le svelate non contano, perché sono giuste per forza.
+ */
+function guardate(cifre: string, dati: string, svelate: readonly number[], dove: ReadonlySet<number> | null) {
+  let n = 0
+  for (let k = 0; k < CASELLE; k += 1) {
+    if (dati[k] !== VUOTA || cifre[k] === VUOTA || svelate.includes(k)) continue
+    if (!dove || dove.has(k)) n += 1
+  }
+  return n
+}
+
 function conCifre(cifre: string, cambi: Iterable<[number, string]>): string {
   const celle = [...cifre]
   for (const [k, d] of cambi) celle[k] = d
@@ -116,6 +130,8 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
 
   let segnalate = segnalateDi(row)
   let errori = row.errori
+  let controlli = row.controlli ?? 0
+  let controlliSchema = row.controlli_schema ?? 0
   let errate: number[] | undefined
   let rivelate: Record<number, string> | undefined
 
@@ -124,7 +140,12 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
     errate = caselleSbagliate(cifre, soluzione).filter((k) => !dove || dove.has(k))
     const controllo = registraControllo(segnalate, cifre, errate)
     segnalate = controllo.segnalate
+    // Come nel cruciverba: il controllo si paga anche senza errori, di piu' se e' di tutto lo schema.
     errori += controllo.nuovi
+    if (guardate(cifre, schema.dati, svelate, dove) > 0) {
+      if (dove) controlli += 1
+      else controlliSchema += 1
+    }
   }
 
   if (azione.tipo === 'svela') {
@@ -142,13 +163,15 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
 
   const piena = grigliaPiena(cifre)
   const completa = piena && caselleSbagliate(cifre, soluzione).length === 0
-  const punti = puntiSudoku(svelate.length, errori, costiSudoku(schema.dati))
+  const punti = puntiSudoku({ svelate: svelate.length, errori, controlli, controlliSchema }, costiSudoku(schema.dati))
   const dopo = await salvaPartita(c.env.DB, row, {
     cifre,
     note,
     svelate,
     segnalate,
     errori,
+    controlli,
+    controlliSchema,
     tempoMs: tempoDichiarato(row, corpo.tempoMs, Date.now()),
     status: completa ? 'done' : 'playing',
     score: completa ? punti : 0,
@@ -182,12 +205,15 @@ export const sudokuRoutes = new Hono<AppEnv>()
   /** Salva la griglia e le note. Se e' completa e giusta, la partita si chiude. */
   .put('/cifre', (c) => scrivi(c, () => ({ tipo: 'salva' })))
 
-  /** Controlla la griglia, o le caselle indicate: dice dove sono gli errori e ne fa pagare uno per cifra nuova. */
+  /**
+   * Controlla la griglia, o le caselle indicate: dice dove sono gli errori, e
+   * si paga il controllo e ogni errore nuovo.
+   */
   .post('/controlla', (c) =>
     scrivi(c, (corpo, dati) => ({ tipo: 'controlla', caselle: leggiCaselle(corpo.caselle, dati, false) })),
   )
 
-  /** Svela le caselle indicate: tre punti ciascuna. */
+  /** Svela le caselle indicate: tre parti ciascuna (vedi shared/aiuti.ts). */
   .post('/svela', (c) =>
     scrivi(c, (corpo, dati) => ({ tipo: 'svela', caselle: leggiCaselle(corpo.caselle, dati, true) ?? [] })),
   )

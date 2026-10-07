@@ -260,8 +260,11 @@ export interface CruciverbaState {
   svelate: number[]
   /** Le caselle segnalate come sbagliate da un controllo, finché non cambiano. */
   segnalate: number[]
-  /** Errori segnalati finora: ognuno e' costato un punto. */
+  /** Errori segnalati finora: ognuno e' costato una parte (vedi shared/aiuti.ts). */
   errori: number
+  /** I controlli di una parola o di una casella, e quelli di tutto lo schema: ognuno ha il suo prezzo. */
+  controlli: number
+  controlliSchema: number
   /** Tempo di gioco, a pagina visibile. */
   tempoMs: number
   /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni scrittura. */
@@ -299,7 +302,7 @@ export interface CruciverbaLiberaRisposta {
   partita: CruciverbaState | null
   giocate: number
   completate: number
-  /** Completati senza svelare niente e senza errori. */
+  /** Completati senza nessun aiuto: niente svelato, niente controllato. */
   senzaAiuti: number
   /** Quanti schemi liberi restano da aprire. */
   disponibili: number
@@ -364,8 +367,11 @@ export interface SudokuState {
   svelate: number[]
   /** Le caselle segnalate come sbagliate da un controllo, finché non cambiano. */
   segnalate: number[]
-  /** Errori segnalati finora: ognuno e' costato un punto. */
+  /** Errori segnalati finora: ognuno e' costato una parte (vedi shared/aiuti.ts). */
   errori: number
+  /** I controlli di una parola o di una casella, e quelli di tutto lo schema: ognuno ha il suo prezzo. */
+  controlli: number
+  controlliSchema: number
   /** Tempo di gioco, a pagina visibile. */
   tempoMs: number
   /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni scrittura. */

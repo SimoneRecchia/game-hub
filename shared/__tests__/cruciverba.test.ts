@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { NESSUN_AIUTO } from '../aiuti'
 import {
   PUNTI_COMPLETO,
   caselleBianche,
@@ -84,15 +85,19 @@ describe('il punteggio', () => {
   const costi = costiCruciverba(SOLUZIONE)
 
   it('vale il tetto senza aiuti', () => {
-    expect(punteggio(0, 0, costi)).toBe(PUNTI_COMPLETO)
+    expect(punteggio(NESSUN_AIUTO, costi)).toBe(PUNTI_COMPLETO)
   })
 
   it('svelare costa piu\' che controllare: la risposta vale piu\' della conferma', () => {
-    expect(costi.svelata).toBeGreaterThan(costi.errore)
-    expect(punteggio(2, 3, costi)).toBe(PUNTI_COMPLETO - 2 * costi.svelata - 3 * costi.errore)
+    expect(costi.svelata).toBeGreaterThan(costi.controllo + costi.errore)
+    expect(costi.controlloSchema).toBeGreaterThan(costi.controllo)
+    // Lo schema di prova ha poche lettere, e ognuna vale tanto: bastano tre aiuti.
+    expect(punteggio({ svelate: 1, errori: 1, controlli: 1, controlliSchema: 0 }, costi)).toBe(
+      PUNTI_COMPLETO - costi.svelata - costi.errore - costi.controllo,
+    )
   })
 
   it('non scende sotto zero', () => {
-    expect(punteggio(80, 50, costi)).toBe(0)
+    expect(punteggio({ ...NESSUN_AIUTO, svelate: 80, errori: 50 }, costi)).toBe(0)
   })
 })

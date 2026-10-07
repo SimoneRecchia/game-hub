@@ -164,13 +164,17 @@ export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso;
       >
         <VoceAiuto
           nome="Controlla la casella"
-          costo={p.aiuti ? `${inPunti(p.aiuti.errore)} se è sbagliata` : undefined}
+          costo={
+            p.aiuti ? `${inPunti(p.aiuti.controllo)}, ${p.aiuti.controllo + p.aiuti.errore} se è sbagliata` : undefined
+          }
           onClick={() => aiuto(() => p.controlla('casella'))}
           disabled={!conCifra || p.inviando}
         />
         <VoceAiuto
           nome="Controlla tutto lo schema"
-          costo={p.aiuti ? `${inPunti(p.aiuti.errore)} per cifra sbagliata` : undefined}
+          costo={
+            p.aiuti ? `${inPunti(p.aiuti.controlloSchema)}, più ${p.aiuti.errore} per cifra sbagliata` : undefined
+          }
           onClick={() => aiuto(() => p.controlla('tutto'))}
           disabled={p.inviando}
         />
