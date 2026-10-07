@@ -373,6 +373,19 @@ describe('le regole di ogni materia', () => {
     expect(decenni).toBeGreaterThan(0)
   })
 
+  it('di un brano strumentale, o di un dj, si chiede di chi e’, non chi lo canta', () => {
+    const canzoni = new Map(CANZONI.canzoni.map((x) => [x.id, x]))
+    const viste = { dc: 0, altre: 0 }
+    for (const d of tante('canzoni', 40)) {
+      if (d.tipo !== 'interprete-canzone') continue
+      const x = canzoni.get(d.soggetto)!
+      expect(d.testo.startsWith(x.dc ? 'Di chi è «' : 'Chi canta «')).toBe(true)
+      viste[x.dc ? 'dc' : 'altre'] += 1
+    }
+    expect(viste.dc).toBeGreaterThan(0)
+    expect(viste.altre).toBeGreaterThan(0)
+  })
+
   it('chi canta nel ritornello o ha fatto una cover non e’ mai fra le risposte sbagliate', () => {
     const canzoni = new Map(CANZONI.canzoni.map((x) => [x.id, x]))
     let viste = 0
