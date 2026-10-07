@@ -351,6 +351,8 @@ export const CANZONI: DatiCanzoni = {
     // Gli anni dal 1955 al 2024, anche quelli a cavallo di due decenni.
     ...(i % 11 === 10 ? {} : { anno: 1955 + ((i * 7) % 70) }),
     g: GENERI_PROVA[i % GENERI_PROVA.length],
+    // E ogni tanto un brano strumentale, o di un dj con la voce di un altro.
+    ...(i % 17 === 8 ? { dc: 1 as const } : {}),
     w: `Canzone ${i}`,
     f: fama(i, 300),
   })),

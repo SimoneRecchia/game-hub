@@ -1,9 +1,12 @@
 # Le correzioni a mano alle canzoni del quiz di musica (scripts/cultura/canzoni.ts),
-# per quelle che Wikidata da' alla versione sbagliata. Una riga per canzone: il
-# QID, il titolo, la correzione e il perché. La correzione e' "fuori", quando la
-# versione che conoscono tutti non c'e' e la domanda non avrebbe una risposta
-# giusta; "a=" con chi la canta, QID separati da una virgola; "anno=" con l'anno
-# della versione nota. Due correzioni si separano con uno spazio.
+# per quelle che Wikidata da' alla versione sbagliata e per quelle che chi le
+# firma non canta. Una riga per canzone: il QID, il titolo, la correzione e il
+# perché. La correzione e' "fuori", quando la versione che conoscono tutti non
+# c'e' e la domanda non avrebbe una risposta giusta; "a=" con chi la canta, QID
+# separati da una virgola; "anno=" con l'anno della versione nota; "di-chi"
+# quando e' strumentale, o la canta un altro (un dj, un produttore, un
+# compositore la firmano), e la domanda chiede di chi e', non chi la canta. Due
+# correzioni si separano con uno spazio.
 Q949416	Unchained Melody	fuori	e' dei Righteous Brothers, del 1965; Wikidata ha la prima versione, del film Unchained
 Q786778	Twist and Shout	fuori	e' dei Beatles, del 1963; Wikidata ha solo la prima, dei Top Notes
 Q1473718	Ring of Fire	fuori	e' di Johnny Cash, del 1963; Wikidata ha solo la prima, di Anita Carter
@@ -27,3 +30,63 @@ Q130564884	Niente di male	a=Q260947	Wikidata la da' a un'omonima di Giorgia, nat
 Q2517476	What’s Going On	anno=1971	la descrizione di Wikidata dice 2001, l'anno di una cover
 Q432461	Girls Just Want to Have Fun	anno=1983	Wikidata ha l'anno della prima versione, di Robert Hazard
 Q832297	Bette Davis Eyes	anno=1981	Wikidata ha l'anno della prima versione, di Jackie DeShannon
+Q2606509	Children	di-chi	strumentale
+Q63522018	Il silenzio	di-chi	strumentale, la tromba di Nini Rosso
+Q957629	The Great Gig in the Sky	di-chi	un vocalizzo senza parole
+Q2468061	L’estasi dell’oro	di-chi	strumentale, con un vocalizzo senza parole
+Q12030	4’33	di-chi	silenzio
+Q1073405	Libertango	di-chi	strumentale
+Q3753979	Gabriel’s Oboe	di-chi	strumentale
+Q844299	Take Five	di-chi	strumentale
+Q957641	One of These Days	di-chi	strumentale
+Q1497786	Misirlou	di-chi	strumentale
+Q2789951	Conquest of Paradise	di-chi	un coro senza testo
+Q924220	Popcorn	di-chi	strumentale
+Q771445	Another Way	di-chi	strumentale
+Q1337227	Soleado	di-chi	strumentale
+Q833706	La passion	di-chi	strumentale
+Q792094	Axel F	di-chi	strumentale
+Q740577	More	di-chi	il tema di Ortolani e' strumentale
+Q747684	Ballade pour Adeline	di-chi	strumentale
+Q3737906	Fable	di-chi	strumentale, nella versione nota
+Q1346881	Revolution 9	di-chi	un collage sonoro
+Q2961324	Chase (Giorgio Moroder)	di-chi	strumentale
+Q552385	Atom Heart Mother	di-chi	strumentale, con un coro senza parole
+Q705575	Mambo No. 5	di-chi	strumentale
+Q1939352	Misty	di-chi	strumentale
+Q904154	Interstellar Overdrive	di-chi	strumentale
+Q616563	Apache	di-chi	strumentale
+Q5051058	Cat People (Putting Out Fire)	di-chi	la canta David Bowie
+Q18601898	The Hanging Tree	di-chi	la canta Jennifer Lawrence
+Q5582004	Gonna Fly Now	di-chi	la canta un coro
+Q63361565	Calipso	di-chi	la cantano Sfera Ebbasta, Mahmood e Fabri Fibra
+Q54803563	Amore e capoeira	di-chi	la cantano Giusy Ferreri e Sean Kingston
+Q30899089	L’esercito del selfie	di-chi	la cantano Lorenzo Fragola e Arisa
+Q11510350	Get Lucky	di-chi	la canta Pharrell Williams
+Q535566	Titanium	di-chi	la canta Sia
+Q18559542	Uptown Funk	di-chi	la canta Bruno Mars
+Q13557314	Wake Me Up	di-chi	la canta Aloe Blacc
+Q2709654	Satisfaction	di-chi	la voce e' un campione
+Q2303049	Groovejet	di-chi	la canta Sophie Ellis-Bextor
+Q2006235	Moonlight Shadow	di-chi	la canta Maggie Reilly
+Q22041338	Faded	di-chi	la canta Iselin Solheim
+Q2315784	Levels	di-chi	la voce e' un campione di Etta James
+Q15063163	Hey Brother	di-chi	la canta Dan Tyminski
+Q19960561	Waiting for Love	di-chi	la canta Simon Aldred
+Q19627479	Lean On	di-chi	la canta MØ
+Q15950553	Rather Be	di-chi	la canta Jess Glynne
+Q540744	When Love Takes Over	di-chi	la canta Kelly Rowland
+Q105551860	La canzone nostra	di-chi	la cantano Blanco e Salmo
+Q63704584	Piece of Your Heart	di-chi	la cantano i Goodboys
+Q7332528	Ride on Time	di-chi	la voce e' un campione di Loleatta Holloway
+Q475057	Rhythm Is a Dancer	di-chi	la canta Thea Austin
+Q718459	Bla Bla Bla	di-chi	la voce e' un campione
+Q28097723	Che ne sanno i 2000	di-chi	la canta Danti
+Q7642088	Super (1, 2, 3)	di-chi	due dj
+Q1981082	Sadeness	di-chi	la voce e' di Sandra, con un coro gregoriano
+Q15279409	Instant Crush	di-chi	la canta Julian Casablancas
+Q2617236	One More Time	di-chi	la canta Romanthony
+Q2022787	The Windmills of Your Mind	di-chi	la canta Noel Harrison, Legrand l'ha scritta
+Q132254361	Tutta l’Italia	di-chi	un dj
+Q3133968	Here’s to You	di-chi	la canta Joan Baez, Morricone l'ha scritta
+Q832948	Moon River	di-chi	la canta Audrey Hepburn, con l'orchestra di Mancini

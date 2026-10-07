@@ -1038,7 +1038,8 @@ function canzoni(dati: DatiCultura['canzoni'], c: Contesto): DomandaCompleta[] {
     {
       persone: dati.artisti,
       opere,
-      chi: (x) => `Chi canta ${titolo(x.n)}?`,
+      // Chi la firma non sempre la canta: un brano strumentale, o di un dj con la voce di un altro.
+      chi: (x) => (x.dc ? `Di chi è ${titolo(x.n)}?` : `Chi canta ${titolo(x.n)}?`),
       quale: (p) => `Quale di queste canzoni è ${artistaInFrase(p as ArtistaQuiz, true)}?`,
       scheda: schedaCanzone,
       tipoChi: 'interprete-canzone',

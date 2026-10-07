@@ -306,6 +306,12 @@ export interface CanzoneQuiz {
   anno?: number
   /** I generi larghi, dai generi della canzone o, se non li ha, da quelli di chi la canta. */
   g?: GenereCanzone[]
+  /**
+   * Chi la firma non la canta: e' strumentale ("Gabriel's Oboe"), o di un dj o
+   * di un produttore con la voce di un altro ("Titanium" di David Guetta). La
+   * domanda chiede di chi e', non chi la canta.
+   */
+  dc?: 1
   w?: string
   f: number
 }
