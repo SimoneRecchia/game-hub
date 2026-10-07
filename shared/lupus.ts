@@ -40,7 +40,10 @@ import { PERSONAGGI, type CompitoNotturno, type Fazione, type IdPersonaggio } fr
 export interface ImpostazioniLupus {
   /** La prima notte i lupi si riconoscono soltanto: il regolamento suggerisce di "sbranare il moderatore". */
   primaNotteSenzaVittime: boolean
-  /** I fantasmi votano per scegliere gli indiziati, come dice il regolamento. */
+  /**
+   * I fantasmi votano per scegliere gli indiziati. Il regolamento li fa votare,
+   * qui di partenza no: e' una regola della partita, e si accende.
+   */
   fantasmiVotano: boolean
   /** Il Gufo letale: 'auto' lo accende da venti giocatori, come consiglia il regolamento. */
   gufoLetale: 'auto' | 'si' | 'no'
@@ -54,7 +57,7 @@ export interface ImpostazioniLupus {
 
 export const IMPOSTAZIONI_LUPUS: ImpostazioniLupus = {
   primaNotteSenzaVittime: true,
-  fantasmiVotano: true,
+  fantasmiVotano: false,
   gufoLetale: 'auto',
   rivelaRuoloAllaMorte: false,
   secondiDiscussione: 180,

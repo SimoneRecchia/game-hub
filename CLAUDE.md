@@ -1230,7 +1230,9 @@ conta subito come lupo, il Criceto che muore se lo guarda il Veggente ma non
 Darius, il "Benvenuto!" allo sbranato e non al linciato, la fase della decisione
 solo con Amleto o Dorian Wolf —, e sono elencate in testa al motore: vanno lette
 prima di correggerne una. Il gioco viene dal repository `lupus`, che aveva un
-Durable Object per stanza; qui le stanze stanno su D1.
+Durable Object per stanza; qui le stanze stanno su D1. Di partenza i fantasmi
+non votano, anche se il regolamento li fa votare alle nomine: e' una regola
+della partita (`fantasmiVotano`), e chi la vuole la accende.
 
 **Lo stato di Lupus ha i segreti, e a ognuno arriva la sua vista.** Il server
 non manda mai la partita: manda `vistaPer` (`shared/lupus-vista.ts`), con il

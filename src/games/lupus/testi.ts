@@ -170,7 +170,7 @@ export function cheCosaFaUnFantasma(r: ImpostazioniLupus): string {
   return `${carta} ${r.fantasmiVotano ? 'Di giorno voti ancora gli indiziati.' : 'Non voti più.'}`
 }
 
-/** Le regole cambiate rispetto a quelle del regolamento, per la riga che le apre. */
+/** Le regole cambiate rispetto a quelle di partenza, per la riga che le apre. */
 export function regoleCambiate(r: ImpostazioniLupus, base: ImpostazioniLupus): number {
   return (Object.keys(base) as (keyof ImpostazioniLupus)[]).filter((k) => r[k] !== base[k]).length
 }

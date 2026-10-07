@@ -45,12 +45,12 @@ describe('quel che arriva da un telefono', () => {
   it('le regole tengono quel che c’era dove il valore non va, e i tempi stanno nei limiti', () => {
     expect(regoleValide({})).toEqual(IMPOSTAZIONI_LUPUS)
     const r = regoleValide({
-      fantasmiVotano: false,
+      fantasmiVotano: true,
       gufoLetale: 'forse',
       secondiDiscussione: 99_999,
       secondiArringhe: -4,
     })
-    expect(r.fantasmiVotano).toBe(false)
+    expect(r.fantasmiVotano).toBe(true)
     expect(r.gufoLetale).toBe(IMPOSTAZIONI_LUPUS.gufoLetale)
     expect(r.secondiDiscussione).toBe(30 * 60)
     expect(r.secondiArringhe).toBe(0)
@@ -68,8 +68,8 @@ describe('quel che arriva da un telefono', () => {
 
   it('le impostazioni cambiano solo dove arriva qualcosa', () => {
     const prima = { ...IMPOSTAZIONI_STANZA_LUPUS, composizione: { lupo: 1, villico: 3 } }
-    expect(impostazioniStanzaValide({ regole: { fantasmiVotano: false } }, prima)).toEqual({
-      regole: { ...IMPOSTAZIONI_LUPUS, fantasmiVotano: false },
+    expect(impostazioniStanzaValide({ regole: { fantasmiVotano: true } }, prima)).toEqual({
+      regole: { ...IMPOSTAZIONI_LUPUS, fantasmiVotano: true },
       composizione: { lupo: 1, villico: 3 },
     })
     // null torna al mazzo del regolamento.

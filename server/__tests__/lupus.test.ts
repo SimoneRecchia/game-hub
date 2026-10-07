@@ -188,10 +188,10 @@ describe('la stanza di Lupus', () => {
   it('le impostazioni le cambia chi conduce, e un mazzo sbagliato non parte', async () => {
     const b = banco()
     const { host, altri, codice } = await stanzaCon(b, 4)
-    const corpo = { impostazioni: { regole: { fantasmiVotano: false }, composizione: { lupo: 2, villico: 1 } } }
+    const corpo = { impostazioni: { regole: { fantasmiVotano: true }, composizione: { lupo: 2, villico: 1 } } }
     expect((await b.chiama('POST', `/lupus/stanze/${codice}/impostazioni`, altri[0], corpo)).status).toBe(403)
     const v = await ok(b.chiama<VistaStanzaLupus>('POST', `/lupus/stanze/${codice}/impostazioni`, host, corpo))
-    expect(v.impostazioni.regole.fantasmiVotano).toBe(false)
+    expect(v.impostazioni.regole.fantasmiVotano).toBe(true)
     expect(v.impostazioni.composizione).toEqual({ lupo: 2, villico: 1 })
     const via = await b.chiama<{ code: string }>('POST', `/lupus/stanze/${codice}/via`, host)
     expect(via.status).toBe(409)
