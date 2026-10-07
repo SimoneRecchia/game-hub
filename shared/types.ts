@@ -781,8 +781,8 @@ export interface InvitoConLink {
   codice: string
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
-  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere o Nomi, cose. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | GiocoTavoliere
+  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere, Nomi o Lupus. */
+  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'lupus' | GiocoTavoliere
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -1309,7 +1309,7 @@ export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' 
  * fino al 6 ottobre 2026: e' piu' fortuna che bravura, e una partita del
  * giorno non misurava niente.
  */
-export type GiocoDaTavolo = 'battaglia' | 'indovina' | GiocoTavoliere
+export type GiocoDaTavolo = 'battaglia' | 'indovina' | 'lupus' | GiocoTavoliere
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
 export type ChiaveClassifica = GiocoClassificato | 'generale' | 'fortuna'

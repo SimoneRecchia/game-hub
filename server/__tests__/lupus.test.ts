@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { InvitoLupus, VistaStanzaLupus } from '../../shared/lupus-stanza'
-import type { PresenzaRisposta } from '../../shared/types'
+import type { InvitoConLink, PresenzaRisposta } from '../../shared/types'
 import { banco, type Giocatore } from './banco'
 
 type Banco = ReturnType<typeof banco>
@@ -62,6 +62,16 @@ describe('la stanza di Lupus', () => {
     const info = await ok(b.chiama<Info>('GET', `/lupus/stanze/${codice}/info`, fuori))
     expect(info).toMatchObject({ iscritti: 4, conduttore: { nickname: 'lupo0' } })
     expect((await guarda(b, host, 'ZZZZ')).status).toBe(404)
+  })
+
+  it('il link di una stanza dice chi la conduce a chi non ha ancora un account', async () => {
+    const b = banco()
+    const { host, codice } = await stanzaCon(b, 4)
+    const link = await ok(b.chiama<InvitoConLink>('GET', `/inviti/${codice}`, null))
+    expect(link).toMatchObject({ codice, gioco: 'lupus', stato: 'attesa', da: { nickname: 'lupo0' } })
+    await ok(b.chiama('POST', `/lupus/stanze/${codice}/via`, host))
+    expect((await ok(b.chiama<InvitoConLink>('GET', `/inviti/${codice}`, null))).stato).toBe('usato')
+    expect((await b.chiama('GET', '/inviti/ZZZZ', null)).status).toBe(404)
   })
 
   it('il via vuole almeno quattro giocatori, e ognuno vede solo il suo ruolo', async () => {
