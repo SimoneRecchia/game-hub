@@ -356,16 +356,22 @@ dello schema la giornata vale zero; un sesto ne lascia la meta'. Un controllo
 costa una parte anche quando trova tutto giusto, perché "e' tutto giusto" e' una
 risposta, e cinque parti se e' di tutto lo schema; ogni errore trovato un'altra
 parte. Un controllo che non guarda niente — nessuna casella scritta fra quelle
-controllate — non costa. Prima, dopo un primo riordino, una casella costava la
-sua parte e basta e un controllo solo gli errori, mezza parte l'uno: due punti
-una lettera, uno un errore, e controllare tutto lo schema costava quanto
-controllare una parola. Gli aiuti non si sentivano, e il controllo dello schema
-era l'aiuto piu' conveniente di tutti. Ancora prima ogni aiuto costava cinque
-punti e un errore due, in tutti e due i giochi. I costi che dicono il foglio
-degli aiuti e le regole li conta il telefono dallo schema, con le stesse
-funzioni del server (`costiCruciverba`, `costiSudoku`): nel sudoku erano scritti
-nel telefono, tre punti e uno, e quando il server era passato a cinque e due il
-foglio diceva ancora quelli di prima. Un test lo controlla.
+controllate — non costa. Svelare si paga per ogni casella svelata, anche se era
+gia' giusta (`caselleDaPagare`), e una gia' svelata non si ripaga: sapere che
+era giusta e' un aiuto, e quando era gratis svelare faceva da controllo senza
+costo — su una griglia piena, svelare tutto costava le sole caselle sbagliate,
+meno di un controllo dello schema. Il foglio degli aiuti dice il conto della
+parola intera, con quanto fa a lettera: scritto solo per lettera, il prezzo
+della parola sembrava quello di una lettera sola. Prima, dopo un primo riordino,
+una casella costava la sua parte e basta e un controllo solo gli errori, mezza
+parte l'uno: due punti una lettera, uno un errore, e controllare tutto lo schema
+costava quanto controllare una parola. Gli aiuti non si sentivano, e il
+controllo dello schema era l'aiuto piu' conveniente di tutti. Ancora prima ogni
+aiuto costava cinque punti e un errore due, in tutti e due i giochi. I costi che
+dicono il foglio degli aiuti e le regole li conta il telefono dallo schema, con
+le stesse funzioni del server (`costiCruciverba`, `costiSudoku`): nel sudoku
+erano scritti nel telefono, tre punti e uno, e quando il server era passato a
+cinque e due il foglio diceva ancora quelli di prima. Un test lo controlla.
 
 **Il sudoku libero sta tutto nel telefono.** Lo schema lo genera un Web Worker
 (`generatore.worker.ts`) con lo stesso generatore della classificata e un seme

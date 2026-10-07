@@ -142,6 +142,28 @@ describe('il sudoku del giorno, dalle API', () => {
     expect(oggi.sudoku).toMatchObject({ status: 'done', punti: finale })
   })
 
+  it('svelare una cifra gia’ giusta costa come le altre, e una svelata non si ripaga', async () => {
+    const costi = costiSudoku(SCHEMA.dati)
+    const { chiama, giocatore } = preparaBanco()
+    const io = await giocatore('fabio')
+    await chiama('GET', '/sudoku/state', io)
+    const prima = [...SCHEMA.dati].findIndex((d) => d === VUOTA)
+    // La prima casella vuota scritta giusta: svelarla dice che lo era, e si paga.
+    const giusta = await chiama<SudokuEsito>('POST', '/sudoku/svela', io, {
+      cifre: scrivi(1),
+      versione: 0,
+      caselle: [prima],
+    })
+    expect(giusta.dati.svelate).toEqual([prima])
+    expect(giusta.dati.punti).toBe(PUNTI_COMPLETO - costi.svelata)
+    const ancora = await chiama<SudokuEsito>('POST', '/sudoku/svela', io, {
+      cifre: scrivi(1),
+      versione: giusta.dati.versione,
+      caselle: [prima],
+    })
+    expect(ancora.dati.punti).toBe(giusta.dati.punti)
+  })
+
   it('una griglia piena ma sbagliata non chiude, e lo dice', async () => {
     const { chiama, giocatore } = preparaBanco()
     const io = await giocatore('elena')

@@ -22,4 +22,10 @@ describe('i costi degli aiuti che si leggono sono quelli che si pagano', () => {
     expect(codice).toContain('costiCruciverba(stato.schema)')
     expect(codice).not.toMatch(/COSTO_\w+/)
   })
+
+  it('il prezzo della parola da svelare lo conta la stessa funzione che la fa pagare', () => {
+    expect(leggi('pages/Cruciverba.tsx')).toContain('caselleDaPagare(g.corrente.caselle, g.svelate)')
+    expect(leggi('../server/routes/cruciverba.ts')).toContain('caselleDaPagare(azione.caselle, svelate)')
+    expect(leggi('../server/routes/sudoku.ts')).toContain('caselleDaPagare(azione.caselle, svelate)')
+  })
 })

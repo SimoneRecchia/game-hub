@@ -31,12 +31,18 @@ import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown, formatCronometro, inPunti, pluralize } from '@/lib/format'
+import { caselleDaPagare } from '@shared/aiuti'
 import { VUOTA, caselleBianche, costiCruciverba, numeriDelleCaselle } from '@shared/cruciverba'
 import { isGameLetter } from '@shared/wordle'
 import type { CruciverbaState, DefinizioneCruciverba } from '@shared/types'
 import './Cruciverba.css'
 
 const NOMI_DIREZIONE = { o: 'orizzontale', v: 'verticale' } as const
+
+/** Il conto intero, e quanto fa a lettera: scritto solo per lettera, sembrava il prezzo di una lettera sola. */
+function prezzoDellaParola(svelata: number, lettere: number): string {
+  return lettere === 1 ? inPunti(svelata) : `${inPunti(svelata * lettere)}, ${svelata} per lettera`
+}
 
 /** A cruciverba finito non si evidenzia niente: un insieme vuoto, sempre lo stesso. */
 const NESSUNA: ReadonlySet<number> = new Set()
@@ -88,6 +94,9 @@ export default function Cruciverba() {
   const parola = useMemo(() => new Set(g.corrente?.caselle ?? []), [g.corrente])
   const bianche = stato ? caselleBianche(stato.schema) : 0
   const costi = useMemo(() => (stato ? costiCruciverba(stato.schema) : null), [stato?.schema])
+  // Quel che svelerebbe la parola, come lo conta il server: le sue lettere non ancora svelate.
+  const daSvelare = g.corrente ? caselleDaPagare(g.corrente.caselle, g.svelate).length : 0
+  const letteraSvelata = g.selezione !== null && g.svelate.has(g.selezione.casella)
   const scritte = useMemo(
     () => [...g.lettere].filter((l) => l !== VUOTA && l !== '#').length,
     [g.lettere],
@@ -380,15 +389,15 @@ export default function Cruciverba() {
         />
         <VoceAiuto
           nome="Svela la lettera"
-          costo={costi ? `${inPunti(costi.svelata)} se manca o è sbagliata` : undefined}
+          costo={costi && !letteraSvelata ? inPunti(costi.svelata) : undefined}
           onClick={() => aiutoScelto(() => g.svela('lettera'))}
-          disabled={!g.selezione}
+          disabled={!g.selezione || letteraSvelata}
         />
         <VoceAiuto
           nome="Svela la parola"
-          costo={costi ? `${inPunti(costi.svelata)} per lettera mancante o sbagliata` : undefined}
+          costo={costi && daSvelare > 0 ? prezzoDellaParola(costi.svelata, daSvelare) : undefined}
           onClick={() => aiutoScelto(() => g.svela('parola'))}
-          disabled={!g.corrente}
+          disabled={!g.corrente || daSvelare === 0}
         />
       </FoglioAiuti>
       <Adesivo adesivo={adesivo} />

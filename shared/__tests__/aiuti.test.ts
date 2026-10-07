@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { NESSUN_AIUTO, PARTI_AIUTI, costiAiuti, puntiConAiuti, senzaAiuti, type AiutiChiesti } from '../aiuti'
+import {
+  NESSUN_AIUTO,
+  PARTI_AIUTI,
+  caselleDaPagare,
+  costiAiuti,
+  puntiConAiuti,
+  senzaAiuti,
+  type AiutiChiesti,
+} from '../aiuti'
 import { PUNTI_COMPLETO as TETTO_CRUCIVERBA, costiCruciverba, punteggio } from '../cruciverba'
 import { CASELLE, MINIMO_DATE, PUNTI_COMPLETO as TETTO_SUDOKU, costiSudoku, puntiSudoku } from '../sudoku'
 
@@ -99,5 +107,26 @@ describe('i costi vengono dallo schema', () => {
     const dati = '5'.repeat(30) + '.'.repeat(51)
     expect(costiSudoku(dati)).toEqual(costiAiuti(TETTO_SUDOKU, 51))
     expect(puntiSudoku(NESSUN_AIUTO, costiSudoku(dati))).toBe(TETTO_SUDOKU)
+  })
+})
+
+describe('svelare si paga per ogni casella svelata', () => {
+  it('anche se era già giusta, una volta sola, e mai quelle già svelate', () => {
+    // Una parola di cinque lettere, di cui due gia' svelate da una parola che la incrocia.
+    expect(caselleDaPagare([10, 11, 12, 13, 14], [12, 40, 14])).toEqual([10, 11, 13])
+    expect(caselleDaPagare([3, 3, 4], new Set<number>())).toEqual([3, 4])
+    expect(caselleDaPagare([7], new Set([7]))).toEqual([])
+  })
+
+  it('svelare una parola costa sempre più che controllarla, anche se è tutta sbagliata', () => {
+    const schemi = [
+      ...LETTERE_CRUCIVERBA.map((n) => costiAiuti(TETTO_CRUCIVERBA, n)),
+      ...CIFRE_SUDOKU.map((n) => costiAiuti(TETTO_SUDOKU, n)),
+    ]
+    for (const c of schemi) {
+      for (let lettere = 1; lettere <= 9; lettere += 1) {
+        expect(c.controllo + lettere * c.errore).toBeLessThan(lettere * c.svelata)
+      }
+    }
   })
 })
