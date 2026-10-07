@@ -1,6 +1,8 @@
 /**
- * Accesso ai dati delle partite fra amici a scacchi, dama, Forza 4 e go: gli
- * inviti, che sono gia' la partita, e la partita vista da ciascuno dei due.
+ * Accesso ai dati delle partite fra amici a scacchi, dama, Forza 4, go, tris e
+ * Scarabeo: gli inviti, che sono gia' la partita, e la partita vista da
+ * ciascuno dei due. Lo Scarabeo ha le tessere nascoste: la posizione salvata ha
+ * il sacchetto, e ognuno ne vede solo la sua parte (`vistaDi` delle regole).
  *
  * E' lo stesso disegno di Indovina chi (server/lib/indovinaStore.ts): una riga
  * nasce invito e diventa partita quando l'altro accetta, con un `UPDATE`
@@ -25,8 +27,8 @@ import {
   TAVOLO_LINK_MS,
   TAVOLO_MARGINE_TEMPO_MS,
 } from '../../shared/config'
-import { regoleDi } from '../../shared/tavolo-regole'
-import type { GiocoTavoliere, MotivoTavoliere, Parte } from '../../shared/tavolo'
+import { inizialeDi, regoleDi } from '../../shared/tavolo-regole'
+import type { GiocoAlTavolo, MotivoTavoliere, Parte } from '../../shared/tavolo'
 import type {
   Attivita,
   GiocatoreBreve,
@@ -46,7 +48,7 @@ export type Lato = 'a' | 'b'
 
 export interface PartitaRow {
   id: string
-  gioco: GiocoTavoliere
+  gioco: GiocoAlTavolo
   giocatore_a: string
   giocatore_b: string | null
   invitato: string | null
@@ -269,7 +271,7 @@ export async function partitaBreve(db: D1Database, row: PartitaRow, io: Lato): P
 export async function partiteInCorso(
   db: D1Database,
   playerId: string,
-  gioco: GiocoTavoliere,
+  gioco: GiocoAlTavolo,
 ): Promise<PartitaTavoloBreve[]> {
   const { results } = await db
     .prepare(
@@ -286,7 +288,7 @@ export async function partiteInCorso(
 export async function recordTavolo(
   db: D1Database,
   playerId: string,
-  gioco: GiocoTavoliere,
+  gioco: GiocoAlTavolo,
 ): Promise<SalaTavolo['record']> {
   const riga = await db
     .prepare(
@@ -321,12 +323,12 @@ export async function mandaInvito(
     rivincitaDi = null,
     serie = null,
     primo = null,
-    posizione = regoleDi(gioco).iniziale,
+    posizione = inizialeDi(regoleDi(gioco), null),
   }: {
     da: string
     /** null per un invito con il link. */
     a: string | null
-    gioco: GiocoTavoliere
+    gioco: GiocoAlTavolo
     rivincitaDi?: string | null
     serie?: { a: number; b: number; partite: number } | null
     /** Nella rivincita chi muove per primo e' gia' deciso: l'altro di prima. */
@@ -388,7 +390,7 @@ export async function invitiRicevuti(db: D1Database, io: string, adesso: number)
     .all<
       GiocatoreRow & {
         invito_id: string
-        gioco: GiocoTavoliere
+        gioco: GiocoAlTavolo
         posizione: string
         created_at: string
         rivincita_di: string | null
@@ -415,7 +417,7 @@ function statoInvito(row: PartitaRow, adesso: number): InvitoTavoloMandato['stat
 export async function ultimoInvito(
   db: D1Database,
   io: string,
-  gioco: GiocoTavoliere,
+  gioco: GiocoAlTavolo,
   adesso: number,
 ): Promise<InvitoTavoloMandato | null> {
   const row = await db
@@ -625,6 +627,8 @@ export async function vistaTavolo(db: D1Database, row: PartitaRow, io: Lato, ade
   const { attesaMs, puoi } = attesa(row, io, online, adesso)
   const idMio = io === 'a' ? row.giocatore_a : row.giocatore_b
   const inCorso = row.stato === 'in_corso'
+  // Nello Scarabeo la posizione ha il sacchetto, e le mosse i cambi dell'altro: si manda solo la mia vista.
+  const vistaDi = regoleDi(row.gioco).vistaDi
 
   return {
     id: row.id,
@@ -633,8 +637,8 @@ export async function vistaTavolo(db: D1Database, row: PartitaRow, io: Lato, ade
     io,
     parte: parteDi(row, io),
     avversario: avversario ? { ...avversario, online } : null,
-    posizione: row.posizione,
-    mosse,
+    posizione: vistaDi ? vistaDi(row.posizione, parteDi(row, io)) : row.posizione,
+    mosse: vistaDi ? [] : mosse,
     tuoTurno: diTurno(row) === io,
     vincitore: row.vincitore ? (row.vincitore === io ? 'io' : 'avversario') : null,
     motivo: row.motivo,

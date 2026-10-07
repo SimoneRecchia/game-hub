@@ -57,12 +57,12 @@ export default function TavoloPartita({ gioco }: { gioco: GiocoTavoliere }) {
       </Pagina>
     )
   }
-  return <Partita g={g} v={v} />
+  return <Partita g={g} v={v} gioco={gioco} />
 }
 
-function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
+function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: GiocoTavoliere }) {
   const { player } = useAuth()
-  const descrizione = giocoDelTavoliere(v.gioco)
+  const descrizione = giocoDelTavoliere(gioco)
   const [regole, setRegole] = useState(false)
   const [elenco, setElenco] = useState(false)
   const [resa, setResa] = useState(false)
@@ -87,8 +87,8 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
     const ora = vRef.current
     if (ora.stato !== 'finita' || !ora.motivo) return
     const motivo = ora.motivo
-    const adesivo = adesivoFine(ora.gioco, motivo, ora.vincitore, ora.avversario?.displayName ?? 'l’altro', ora.punti)
-    const attesa = giocoDelTavoliere(ora.gioco).attesaFine?.(motivo) ?? ATTESA_FINE_MS
+    const adesivo = adesivoFine(gioco, motivo, ora.vincitore, ora.avversario?.displayName ?? 'l’altro', ora.punti)
+    const attesa = giocoDelTavoliere(gioco).attesaFine?.(motivo) ?? ATTESA_FINE_MS
     const t = setTimeout(() => accoda(adesivo), attesa)
     return () => clearTimeout(t)
   }, [accoda, inCorso])
@@ -228,7 +228,7 @@ function Partita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
         />
       )}
 
-      <ComeSiGiocaTavoliere gioco={v.gioco} open={regole} onClose={() => setRegole(false)} />
+      <ComeSiGiocaTavoliere gioco={gioco} open={regole} onClose={() => setRegole(false)} />
 
       <Sheet open={elenco} onClose={() => setElenco(false)} title="Le mosse">
         {storia && <ElencoMosse mosse={storia} />}

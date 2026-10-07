@@ -1,9 +1,10 @@
 import { Hono, type Context } from 'hono'
 import * as go from '../../shared/go'
-import { GIOCHI_TAVOLIERE, type GiocoTavoliere } from '../../shared/tavolo'
+import { GIOCHI_AL_TAVOLO, type GiocoAlTavolo } from '../../shared/tavolo'
 import { giocaMossa, inizialeDi, regoleDi } from '../../shared/tavolo-regole'
 import type { SalaTavolo, VistaTavolo } from '../../shared/types'
 import type { AppEnv } from '../types'
+import { controllaNelDizionario } from '../lib/dizionario'
 import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
 import { eOnline } from '../lib/battagliaStore'
@@ -38,16 +39,19 @@ import {
   type PartitaRow,
 } from '../lib/tavoloStore'
 
-/** La notazione piu' lunga che si accetta: una presa di dama con tutte le sue caselle ci sta largamente. */
+/**
+ * La notazione piu' lunga che si accetta, se il gioco non ne dice un'altra: una
+ * presa di dama con tutte le sue caselle ci sta largamente.
+ */
 const MOSSA_MASSIMA = 40
 
-function leggiGioco(valore: unknown): GiocoTavoliere {
-  if (!GIOCHI_TAVOLIERE.includes(valore as GiocoTavoliere)) fail(400, 'GIOCO', 'Gioco sconosciuto.')
-  return valore as GiocoTavoliere
+function leggiGioco(valore: unknown): GiocoAlTavolo {
+  if (!GIOCHI_AL_TAVOLO.includes(valore as GiocoAlTavolo)) fail(400, 'GIOCO', 'Gioco sconosciuto.')
+  return valore as GiocoAlTavolo
 }
 
 /** La variante chiesta per una partita nuova (il lato del goban), se il gioco ne ha e questa c'e'. */
-function leggiVariante(gioco: GiocoTavoliere, valore: unknown): string | null {
+function leggiVariante(gioco: GiocoAlTavolo, valore: unknown): string | null {
   const varianti = regoleDi(gioco).varianti
   if (!varianti || valore === undefined || valore === null) return null
   if (!varianti.includes(String(valore))) fail(400, 'VARIANTE', 'Questa variante non c’è.')
@@ -185,9 +189,12 @@ export const tavoloRoutes = new Hono<AppEnv>()
     inCorso(row)
     if (Number(corpo.versione) !== row.versione) fail(409, 'CONFLITTO', 'La partita è cambiata: la ricarico.')
     if (diTurno(row) !== io) fail(409, 'NON_TOCCA', 'Non è il tuo turno.')
-    const mossa = typeof corpo.mossa === 'string' ? corpo.mossa.slice(0, MOSSA_MASSIMA) : ''
-    const giocata = giocaMossa(regoleDi(row.gioco), row.posizione, chiaviDi(row), mossa, parteDi(row, io)!)
+    const regole = regoleDi(row.gioco)
+    const mossa = typeof corpo.mossa === 'string' ? corpo.mossa.slice(0, regole.mossaMassima ?? MOSSA_MASSIMA) : ''
+    const giocata = giocaMossa(regole, row.posizione, chiaviDi(row), mossa, parteDi(row, io)!)
     if (!giocata) fail(422, 'MOSSA', 'Questa mossa non si può fare.')
+    // Nello Scarabeo le parole della posa devono esserci tutte: si guarda dopo le regole, che costano meno.
+    await controllaNelDizionario(c.env, c.req.url, regole.parole?.(row.posizione, giocata.mossa) ?? [])
     const fine = giocata.esito
     const dopo = await salvaPartita(
       c.env.DB,

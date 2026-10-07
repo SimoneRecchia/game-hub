@@ -1,17 +1,9 @@
 import { Hono } from 'hono'
 import { msToNextPuzzle } from '../../shared/daily'
-import {
-  MOSSE_PER_GIORNATA,
-  TESSERE_LEGGIO,
-  leggioDa,
-  rigioca,
-  sacchettoDelGiorno,
-  tabelloneDa,
-  validaPosa,
-  type Mossa,
-} from '../../shared/scarabeo'
+import { MOSSE_PER_GIORNATA, TESSERE_LEGGIO, leggiiDa, sacchettoDelGiorno, type Mossa } from '../../shared/scarabeo'
 import type { ScarabeoState, ScarabeoSummary, StatisticheScarabeoLibero } from '../../shared/types'
-import { MOSSE_A_TESTA, LIVELLI, statoLibera, type Livello } from '../../shared/scarabeo-computer'
+import { LIVELLI, statoLibera, type Livello } from '../../shared/scarabeo-computer'
+import { MOSSE_MASSIME_LIBERA } from '../../shared/scarabeo-due'
 import { sacchettoDaSeme } from '../../shared/scarabeo'
 import { puntiScarabeo } from '../../shared/punti'
 import type { AppEnv } from '../types'
@@ -21,17 +13,18 @@ import {
   aggiungiMossa,
   apriPartita,
   computerDelGiorno,
+  controllaPosa,
   giornata,
   leggiPosa,
   mosseDi,
+  partitaDi,
   statisticheLibere,
   statoDa,
-  verificaLeggio,
   type ComputerRow,
   type PartitaRow,
 } from '../lib/scarabeoStore'
 import { compagniaBreve, pagaOspiti } from '../lib/compagniaStore'
-import { paroleSconosciute } from '../lib/dizionario'
+import { controllaNelDizionario } from '../lib/dizionario'
 import { riepilogoScarabeo } from '../lib/riepiloghi'
 
 /**
@@ -55,6 +48,69 @@ async function perMuovere(db: D1Database, playerId: string): Promise<{ row: Part
 /** Dopo ogni mossa dell'host, chi gioca con lui ha i suoi punti; alla fine la giornata si chiude per tutti. */
 function aggiornaOspiti(db: D1Database, row: PartitaRow) {
   return pagaOspiti(db, 'scarabeo', row.player_id, row.puzzle_number, row.punti, row.status === 'done')
+}
+
+/** Quanti giocano: chi gioca e, nelle giornate a turni, il computer del giorno. */
+function giocatoriDi(row: PartitaRow): 1 | 2 {
+  return row.contro_computer === 1 ? 2 : 1
+}
+
+/**
+ * La risposta del computer del giorno, arrivata con la mia mossa: controllata
+ * come una mia. Il computer pensa nel telefono — cercare una mossa costa
+ * decine di millisecondi, e qui se ne hanno dieci — e il server non puo'
+ * rifarla, ma puo' controllare che sia una mossa vera: le tessere del suo
+ * leggio, una posa che sta in piedi, parole che esistono, un cambio con il
+ * sacchetto che ne ha. Che sia proprio quella del computer non lo sa: chi
+ * volesse barare allo Scarabeo ha gia' il motore nel telefono, e non serve
+ * che scelga anche le mosse dell'avversario.
+ *
+ * Le giornate di prima, da soli, non hanno risposta.
+ */
+async function rispostaControllata(
+  env: AppEnv['Bindings'],
+  url: string,
+  row: PartitaRow,
+  sacchetto: readonly string[],
+  mosse: readonly Mossa[],
+  body: unknown,
+): Promise<{ mossa: Mossa; punti: number } | null> {
+  if (row.contro_computer !== 1) return null
+  // Risponde anche alla mia decima mossa, ma non a una partita finita prima, con un leggio vuoto a sacchetto vuoto.
+  if (partitaDi(row, mosse).tocca !== 1) return null
+  const r = (body as { risposta?: unknown } | null)?.risposta as
+    | { tipo?: unknown; posa?: unknown; tessere?: unknown }
+    | undefined
+  if (!r) fail(422, 'RISPOSTA_MANCANTE', 'Manca la mossa del computer: riprova.')
+  if (r.tipo === 'passo') return { mossa: { tipo: 'passo' }, punti: 0 }
+  if (r.tipo === 'cambio') {
+    const { leggii, restanti } = leggiiDa(sacchetto, mosse, 2)
+    const tessere = Array.isArray(r.tessere) ? r.tessere.map((t) => String(t)) : []
+    const mano = [...leggii[1]]
+    const sue = tessere.every((t) => {
+      const i = mano.indexOf(t)
+      if (i >= 0) mano.splice(i, 1)
+      return i >= 0
+    })
+    if (tessere.length === 0 || restanti === 0 || !sue) fail(422, 'RISPOSTA', 'La mossa del computer non è valida.')
+    return { mossa: { tipo: 'cambio', tessere }, punti: 0 }
+  }
+  // Una posa che non sta in piedi: i messaggi di `leggiPosa` e `controllaPosa` parlerebbero a chi gioca.
+  const controllata = (() => {
+    try {
+      const posa = leggiPosa({ posa: r.posa })
+      return { posa, esito: controllaPosa(sacchetto, mosse, 2, posa) }
+    } catch {
+      return null
+    }
+  })()
+  if (r.tipo !== 'posa' || !controllata) fail(422, 'RISPOSTA', 'La mossa del computer non è valida.')
+  const { posa, esito } = controllata
+  await controllaNelDizionario(env, url, esito.parole.map((p) => p.parola), {
+    chi: 'La mossa del computer non va: ',
+    codice: 'RISPOSTA',
+  })
+  return { mossa: { tipo: 'posa', posa }, punti: esito.punti }
 }
 
 export const scarabeoRoutes = new Hono<AppEnv>()
@@ -85,47 +141,28 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     c.json<ScarabeoSummary>(await riepilogoScarabeo(c.env.DB, c.get('player').id)),
   )
 
-  /** Gioca una posa. */
+  /** Gioca una posa: nelle giornate a turni, con la risposta del computer del giorno. */
   .post('/mossa', async (c) => {
-    const posa = leggiPosa(await c.req.json().catch(() => ({})))
+    const body = await c.req.json().catch(() => ({}))
+    const posa = leggiPosa(body)
     const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
-
     if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
       fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
     }
 
     const mosse = mosseDi(row)
-    const { leggio } = leggioDa(sacchettoDelGiorno(row.puzzle_number), mosse)
-    verificaLeggio(leggio, posa)
-
-    const tabellone = tabelloneDa(mosse)
-    const primaMossa = !mosse.some((m) => m.tipo === 'posa')
-    const esito = validaPosa(tabellone, posa, primaMossa)
-    if (!esito.ok) fail(422, esito.codice, esito.errore)
-
+    const sacchetto = sacchettoDelGiorno(row.puzzle_number)
+    const esito = controllaPosa(sacchetto, mosse, giocatoriDi(row), posa)
     /*
      * Il dizionario si interroga **dopo** la validazione geometrica: se la posa
      * non sta in piedi non c'e' motivo di leggerlo, e la risposta piu' utile e'
      * quella sulla forma della mossa.
      */
-    const sconosciute = await paroleSconosciute(
-      c.env,
-      c.req.url,
-      esito.parole.map((p) => p.parola),
-    ).catch(() => fail(503, 'DIZIONARIO_ASSENTE', 'Il dizionario non risponde: riprova tra poco.'))
-    if (sconosciute.length > 0) {
-      const elenco = sconosciute.map((p) => `"${p.toUpperCase()}"`).join(', ')
-      fail(
-        422,
-        'PAROLA_SCONOSCIUTA',
-        sconosciute.length === 1
-          ? `${elenco} non è nel dizionario.`
-          : `${elenco} non sono nel dizionario.`,
-      )
-    }
+    await controllaNelDizionario(c.env, c.req.url, esito.parole.map((p) => p.parola))
 
     const mossa: Mossa = { tipo: 'posa', posa }
-    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, esito.punti)
+    const risposta = await rispostaControllata(c.env, c.req.url, row, sacchetto, [...mosse, mossa], body)
+    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, esito.punti, risposta)
     await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
@@ -137,12 +174,16 @@ export const scarabeoRoutes = new Hono<AppEnv>()
    * il limite di dieci mosse non vorrebbe dire niente.
    */
   .post('/passo', async (c) => {
+    const body = await c.req.json().catch(() => ({}))
     const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
     if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
       fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
     }
 
-    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, { tipo: 'passo' }, 0)
+    const mossa: Mossa = { tipo: 'passo' }
+    const sacchetto = sacchettoDelGiorno(row.puzzle_number)
+    const risposta = await rispostaControllata(c.env, c.req.url, row, sacchetto, [...mosseDi(row), mossa], body)
+    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, 0, risposta)
     await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
@@ -165,7 +206,8 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     }
 
     const mosse = mosseDi(row)
-    const { leggio, restanti } = leggioDa(sacchettoDelGiorno(row.puzzle_number), mosse)
+    const sacchetto = sacchettoDelGiorno(row.puzzle_number)
+    const { leggio, restanti } = partitaDi(row, mosse)
     if (restanti === 0) fail(409, 'SACCHETTO_VUOTO', 'Il sacchetto è vuoto: non puoi cambiare.')
 
     const mano = [...leggio]
@@ -175,7 +217,9 @@ export const scarabeoRoutes = new Hono<AppEnv>()
       mano.splice(i, 1)
     }
 
-    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, { tipo: 'cambio', tessere: chieste }, 0)
+    const mossa: Mossa = { tipo: 'cambio', tessere: chieste }
+    const risposta = await rispostaControllata(c.env, c.req.url, row, sacchetto, [...mosse, mossa], body)
+    const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, 0, risposta)
     await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
   })
@@ -204,7 +248,8 @@ export const scarabeoRoutes = new Hono<AppEnv>()
       fail(409, 'CONFLITTO', 'La partita è cambiata nel frattempo: ricarico.')
     }
 
-    const { punti } = rigioca(mosseDi(row))
+    // I punti sono solo i miei: nelle giornate a turni le mosse del computer sono nella stessa lista.
+    const { punti } = partitaDi(row, mosseDi(row))
     const chiusa: PartitaRow = { ...row, status: 'done', score: punti, punti: puntiScarabeo(punti, computer.punti) }
     await aggiornaOspiti(c.env.DB, chiusa)
     return c.json<ScarabeoState>(statoDa(chiusa, computer, msToNextPuzzle()))
@@ -264,10 +309,13 @@ export const scarabeoRoutes = new Hono<AppEnv>()
 
 /**
  * Le mosse di una partita libera, ripulite come quelle della classificata: solo
- * i campi che servono, con i tipi giusti. Venti al massimo, dieci a testa.
+ * i campi che servono, con i tipi giusti. La libera va fino in fondo al
+ * sacchetto: ogni parola posa almeno una delle centoventi tessere, e fra due
+ * parole ci stanno al piu' cinque turni senza, quindi `MOSSE_MASSIME_LIBERA`
+ * basta e avanza.
  */
 function leggiMosse(valore: unknown): Mossa[] {
-  if (!Array.isArray(valore) || valore.length > 2 * MOSSE_A_TESTA) fail(400, 'MOSSE', 'La partita non è valida.')
+  if (!Array.isArray(valore) || valore.length > MOSSE_MASSIME_LIBERA) fail(400, 'MOSSE', 'La partita non è valida.')
   return valore.map((m) => {
     const x = (m ?? {}) as { tipo?: unknown; posa?: unknown; tessere?: unknown }
     if (x.tipo === 'passo') return { tipo: 'passo' }

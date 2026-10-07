@@ -4,6 +4,7 @@ import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, Elenco, Riga, Sezione, Tacche, Vuoto, useFesta } from '@/components/Elementi'
+import { SegmentedControl } from '@/components/SegmentedControl'
 import { IconComputer, IconInfo, IconList, IconPeople, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { IconaScheda } from '@/components/Scheda'
@@ -17,24 +18,40 @@ import {
   adesivoFineScarabeo,
   adesivoMossa,
 } from '@/games/scarabeo/adesivi'
+import { nelSacchetto } from '@/games/scarabeo/turni'
+import { InvitaAmico, PartitaAperta, useSalaTavolo } from '@/games/tavolo/SalaAmico'
 import { useScarabeoLibero, type ScarabeoLiberoController } from '@/games/scarabeo/useScarabeoLibero'
 import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { etichettaScarabeo } from '@/games/compagnia/etichette'
 import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { usePlayer } from '@/lib/auth'
-import { LIVELLI, MOSSE_A_TESTA, type Livello } from '@shared/scarabeo-computer'
+import { LIVELLI, type Livello, type StatoLibera } from '@shared/scarabeo-computer'
 import './Scarabeo.css'
 
 const NOMI: Record<Livello, string> = { facile: 'Facile', normale: 'Normale', difficile: 'Difficile' }
 
+type Contro = 'computer' | 'amico'
+/** Contro chi, ricordato come nelle sale dei tavolieri; il profilo di un amico lo scrive per aprire dalla sua parte. */
+const CHIAVE_CONTRO = 'giochi.scarabeo.contro'
+
+function leggiContro(): Contro {
+  try {
+    return localStorage.getItem(CHIAVE_CONTRO) === 'amico' ? 'amico' : 'computer'
+  } catch {
+    return 'computer'
+  }
+}
+
 /**
- * Lo Scarabeo libero: una partita a turni contro il computer.
+ * Lo Scarabeo libero: una partita intera a turni, contro il computer o contro
+ * un amico, come le sale dei tavolieri — un interruttore in cima, ricordato.
  *
- * Tutto nel browser — il computer gira in un Web Worker con il dizionario
- * intero, la partita si salva come mosse a ogni turno — e al server va solo il
- * risultato, per le statistiche. Non conta per la classifica: il sacchetto e'
- * nuovo ogni volta, e due partite non si possono confrontare.
+ * Contro il computer tutto sta nel browser — il computer gira in un Web Worker
+ * con il dizionario intero, la partita si salva come mosse a ogni turno — e al
+ * server va solo il risultato, per le statistiche. Con un amico si gioca sul
+ * tavolo del server (ScarabeoAmico). Non conta per la classifica: il sacchetto
+ * e' nuovo ogni volta, e due partite non si possono confrontare.
  */
 export default function ScarabeoLibero() {
   const g = useScarabeoLibero()
@@ -98,7 +115,7 @@ export default function ScarabeoLibero() {
           </BottoneBarra>
         }
       >
-        <SceltaLivello g={g} />
+        <SceltaPartita g={g} />
         <ComeSiGiocaScarabeo open={aiuto} onClose={() => setAiuto(false)} />
       </Pagina>
     )
@@ -163,12 +180,7 @@ export default function ScarabeoLibero() {
                 nomeAltro="Computer"
                 notaAltro={NOMI[livello].toLowerCase()}
                 turno={turno}
-                sotto={
-                  finita
-                    ? 'Partita finita'
-                    : `Mossa ${Math.min(stato.mieMosse + (stato.turno === 'io' ? 1 : 0), MOSSE_A_TESTA)} di ` +
-                      `${MOSSE_A_TESTA} · ${stato.restanti} nel sacchetto`
-                }
+                sotto={finita ? 'Partita finita' : nelSacchetto(stato.restanti)}
                 onApri={() => setStoria(true)}
               />
               {/* Le pose suggerite da chi guarda: toccarne una la mette sul tabellone, e giocarla resta a te. */}
@@ -262,6 +274,7 @@ export default function ScarabeoLibero() {
               <span className="scr-esito__valore u-tabnum">{stato.puntiComputer}</span>
             </span>
           </div>
+          {notaDellaFine(stato) && <p className="scr-esito__nota">{notaDellaFine(stato)}</p>}
           {g.statistiche && (
             <p className="scr-esito__statistiche">
               Al livello {NOMI[livello].toLowerCase()} ne hai vinte{' '}
@@ -300,6 +313,20 @@ export default function ScarabeoLibero() {
   )
 }
 
+/** Come e' finita, con il conto delle tessere rimaste: chi chiude le prende, chi resta con le sue le perde. */
+function notaDellaFine(stato: StatoLibera): string | null {
+  const { mio, computer } = stato.aggiustamento
+  if (stato.fine === 'chiusa') {
+    return mio > 0
+      ? `Hai posato l’ultima tessera: +${mio} dalle tessere del computer.`
+      : `Il computer ha posato l’ultima tessera: −${computer} per le tue tessere.`
+  }
+  if (stato.fine === 'ferma') {
+    return `Sei turni senza parole: ognuno perde le sue tessere (tu ${mio}, il computer ${computer}).`
+  }
+  return null
+}
+
 function titoloEsito(esito: 'vinta' | 'persa' | 'pari' | null): string {
   if (esito === 'vinta') return 'Hai vinto!'
   if (esito === 'persa') return 'Ha vinto il computer'
@@ -307,7 +334,44 @@ function titoloEsito(esito: 'vinta' | 'persa' | 'pari' | null): string {
 }
 
 /**
- * Prima di cominciare: tre livelli, con quel che uno ne ha già fatto. E' lo
+ * Prima di cominciare: contro il computer o un amico. Le partite aperte con un
+ * amico stanno in cima, e un invito che aspetta risposta si vede anche se
+ * l'ultima volta si era scelto il computer.
+ */
+function SceltaPartita({ g }: { g: ScarabeoLiberoController }) {
+  const [contro, setContro] = useState<Contro>(leggiContro)
+  const sala = useSalaTavolo('scarabeo')
+  const scegli = (c: Contro) => {
+    setContro(c)
+    try {
+      localStorage.setItem(CHIAVE_CONTRO, c)
+    } catch {
+      /* senza localStorage la scelta non si ricorda */
+    }
+  }
+  const vista: Contro = sala.inAttesa ? 'amico' : contro
+  return (
+    <>
+      {sala.dati?.partite.map((p) => <PartitaAperta key={p.id} partita={p} />)}
+      {sala.altrove && <PartitaAperta partita={sala.altrove} />}
+      <div className="tav-sala__scelte">
+        <SegmentedControl
+          ariaLabel="Contro chi"
+          value={vista}
+          onChange={scegli}
+          options={[
+            { value: 'computer', label: 'Computer' },
+            { value: 'amico', label: 'Amico' },
+          ]}
+        />
+      </div>
+      {vista === 'computer' ? <SceltaLivello g={g} /> : <InvitaAmico sala={sala} />}
+    </>
+  )
+}
+
+/**
+ * Contro il computer: tre livelli, con quel che uno ne ha già fatto. E' lo
  * stesso elenco della battaglia navale libera: stesse tacche, stesso conto.
  */
 function SceltaLivello({ g }: { g: ScarabeoLiberoController }) {

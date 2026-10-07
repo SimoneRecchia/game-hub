@@ -14,11 +14,9 @@ import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { mossaDelComputer, preparaComputer } from './computer'
 import { leggiPartitaLibera, salvaPartitaLibera } from './libera'
+import { ILLUMINATA_MS, PENSA_ALMENO_MS, annuncioDi, parolaDi } from './turni'
 import { nonNelDizionario, tessereCambiate, useParoleSconosciute } from './useScarabeo'
 import { useComposizione, type Composizione } from './useComposizione'
-
-/** Quanto "pensa" il computer, almeno: una risposta istantanea sembra un trucco. */
-const PENSA_ALMENO_MS = 900
 
 export interface ScarabeoLiberoController extends Composizione {
   partita: PartitaLibera | null
@@ -46,14 +44,6 @@ function celleDa(stato: StatoLibera | null): CellaPiena[] {
     if (casella) celle.push({ r: Math.floor(i / LATO), c: i % LATO, lettera: casella.lettera, jolly: casella.jolly })
   })
   return celle
-}
-
-/** Quel che si annuncia dopo la mossa del computer. */
-function annuncio(partita: PartitaLibera, mossa: Mossa, sacchetto: readonly string[]): string {
-  const ultima = statoLibera({ ...partita, mosse: [...partita.mosse, mossa] }, sacchetto).giocate.at(-1)
-  if (!ultima || ultima.tipo === 'passo') return 'Il computer passa'
-  if (ultima.tipo === 'cambio') return 'Il computer cambia le tessere'
-  return `Il computer gioca ${ultima.parole[0]?.toUpperCase() ?? ''} · +${ultima.punti}`
 }
 
 /**
@@ -119,11 +109,10 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
         const resto = PENSA_ALMENO_MS - (performance.now() - inizio)
         if (resto > 0) await new Promise((r) => setTimeout(r, resto))
         if (annullato || !mossa) return
-        avvisa(annuncio(partita, mossa, sacchetto))
         const giocata = statoLibera({ ...partita, mosse: [...partita.mosse, mossa] }, sacchetto).giocate.at(-1)
+        avvisa(annuncioDi(giocata, 'Il computer'))
         if (giocata?.tipo === 'posa') {
-          const parola = [...giocata.parole].sort((a, b) => b.length - a.length)[0] ?? ''
-          racconta({ mia: false, parola, punti: giocata.punti, scarabeo: giocata.scarabeo })
+          racconta({ mia: false, parola: parolaDi(giocata.parole), punti: giocata.punti, scarabeo: giocata.scarabeo })
         }
         aggiungi(mossa)
         const caselle = caselleDi(mossa)
@@ -132,7 +121,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
           haptic('tap')
           suona('posa', { volume: 0.6 })
         }
-        window.setTimeout(() => setUltima(new Set()), 2400)
+        window.setTimeout(() => setUltima(new Set()), ILLUMINATA_MS)
       })
       .catch(() => {
         if (!annullato) setGuasto('Il computer non risponde. Riprova fra poco.')

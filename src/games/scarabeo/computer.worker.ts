@@ -6,20 +6,22 @@
  * animazioni proprio mentre la schermata dice "il computer pensa". Qui gira a
  * parte, e il dizionario si scarica una volta sola, alla prima richiesta.
  *
- * Due domande: quali di queste parole non sono nel dizionario (per dire subito
- * a chi gioca che una parola non esiste, senza aspettare il server), e qual e'
- * la mossa del computer in questa partita libera.
+ * Tre domande: quali di queste parole non sono nel dizionario (per dire subito
+ * a chi gioca che una parola non esiste, senza aspettare il server), qual e' la
+ * mossa del computer in questa partita libera, e quale la risposta del computer
+ * del giorno nella classificata, che va al server con la mossa di chi gioca.
  */
 
 import { Dawg } from '@shared/dawg'
-import { sacchettoDaSeme } from '@shared/scarabeo'
-import { turnoDelComputer, type PartitaLibera } from '@shared/scarabeo-computer'
+import { sacchettoDaSeme, type Mossa } from '@shared/scarabeo'
+import { rispostaDelGiorno, turnoDelComputer, type PartitaLibera } from '@shared/scarabeo-computer'
 import { BYTE_DIZIONARIO, URL_DIZIONARIO, URL_DIZIONARIO_COMPRESSO } from '@shared/scarabeo-dizionario'
 
 type Richiesta =
   | { id: number; tipo: 'prepara' }
   | { id: number; tipo: 'parole'; parole: string[] }
   | { id: number; tipo: 'mossa'; partita: PartitaLibera }
+  | { id: number; tipo: 'risposta'; numero: number; mosse: Mossa[] }
 
 let dizionario: Promise<Dawg> | null = null
 
@@ -68,6 +70,9 @@ self.onmessage = async (evento: MessageEvent<Richiesta>) => {
       self.postMessage({ id: richiesta.id, ok: true })
     } else if (richiesta.tipo === 'parole') {
       self.postMessage({ id: richiesta.id, ok: true, sconosciute: richiesta.parole.filter((p) => !dawg.contiene(p)) })
+    } else if (richiesta.tipo === 'risposta') {
+      const mossa = rispostaDelGiorno(dawg, richiesta.numero, richiesta.mosse)
+      self.postMessage({ id: richiesta.id, ok: true, mossa })
     } else {
       const mossa = turnoDelComputer(dawg, richiesta.partita, sacchettoDaSeme(richiesta.partita.seme))
       self.postMessage({ id: richiesta.id, ok: true, mossa })
