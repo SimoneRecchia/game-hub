@@ -12,7 +12,7 @@ import {
   type MateriaQuiz,
   type ModoQuiz,
 } from '@shared/quiz'
-import { giornoInLettere } from '@shared/quiz-cultura'
+import { GENERI_CANZONI, NOMI_GENERI, giornoInLettere } from '@shared/quiz-cultura'
 import type { AreaQuiz, IndiceQuiz, SezioneQuiz } from '@shared/quiz-domande'
 
 /** Che cosa c'e' in una materia, in una riga: sotto il suo nome, nel menu della libera. */
@@ -20,19 +20,22 @@ export const DESCRIZIONI_MATERIE: Record<MateriaQuiz, string> = {
   geografia: 'Capitali, bandiere, mari, fiumi, città',
   storia: 'Date famose, Accadde oggi',
   cultura: 'Quadri, libri, film',
-  musica: 'Canzoni, musica classica, lirica',
+  musica: 'Pop, rock, cantautori, classica, lirica',
   scienza: 'Chimica, astronomia, animali, Nobel',
 }
 
 /**
  * Una sottocategoria nella pagina di una materia: di solito una categoria, e
  * nella scienza anche un argomento, perché la chimica e l'astronomia chiedono
- * cose diverse e non sono un filtro, come i periodi dell'arte.
+ * cose diverse e non sono un filtro, come i periodi dell'arte. Nella musica le
+ * voci sono i generi: quelli delle canzoni, la classica e la lirica.
  */
 export interface VoceMateria {
   categoria: CategoriaQuiz
   /** L'argomento, se la voce e' uno solo: allora non si sceglie piu' sotto. */
   ambito?: string
+  /** Il genere delle canzoni, per una voce della musica. */
+  genere?: string
   nome: string
   /** Che cosa si chiede, se non e' la descrizione della categoria. */
   descrizione?: string
@@ -45,7 +48,13 @@ export const VOCI_MATERIE: Record<MateriaQuiz, readonly VoceMateria[]> = {
   geografia: perCategoria('geografia'),
   storia: perCategoria('storia'),
   cultura: perCategoria('cultura'),
-  musica: perCategoria('musica'),
+  // I generi si scelgono insieme, come gli argomenti della scienza: le canzoni hanno i loro, poi la classica e
+  // la lirica.
+  musica: [
+    ...GENERI_CANZONI.map((genere) => ({ categoria: 'canzoni' as const, genere, nome: NOMI_GENERI[genere] })),
+    { categoria: 'classica', nome: 'Musica classica' },
+    { categoria: 'lirica', nome: 'Lirica' },
+  ],
   // Gli argomenti si scelgono insieme, quanti se ne vuole: "tutta la scienza" e' sceglierli tutti.
   scienza: [
     {
@@ -82,10 +91,20 @@ export const VOCI_MATERIE: Record<MateriaQuiz, readonly VoceMateria[]> = {
   ],
 }
 
-/** La voce di una scelta: quella con il suo argomento, se c'e', o quella della categoria. */
-export function voceDi(materia: MateriaQuiz, categoria: CategoriaQuiz, ambito: string | undefined): VoceMateria | null {
+/** La voce di una scelta: quella con il suo argomento o il suo genere, se c'e', o quella della categoria. */
+export function voceDi(
+  materia: MateriaQuiz,
+  categoria: CategoriaQuiz,
+  ambito: string | undefined,
+  genere?: string,
+): VoceMateria | null {
   const voci = VOCI_MATERIE[materia].filter((v) => v.categoria === categoria)
-  return voci.find((v) => v.ambito === (ambito ?? 'tutti')) ?? voci.find((v) => v.ambito === undefined) ?? null
+  if (genere && genere !== 'tutti') return voci.find((v) => v.genere === genere) ?? null
+  return (
+    voci.find((v) => v.ambito === (ambito ?? 'tutti')) ??
+    voci.find((v) => v.ambito === undefined && v.genere === undefined) ??
+    null
+  )
 }
 
 /** Cosa si chiede in una categoria, in una riga: l'introduzione della partita. */
@@ -150,6 +169,7 @@ export function dettagliPartita(
     area?: AreaQuiz
     ambito?: string | null
     genere?: string | null
+    nazione?: string | null
     giorno?: string | null
   },
   ix: IndiceQuiz | null,
@@ -157,7 +177,7 @@ export function dettagliPartita(
   if (diGeografia(s.categoria)) return [NOMI_MODI[s.modo ?? 'scelta'], nomeArea(s.area ?? 'mondo', ix)]
   // Il giorno e' "03-12" per una partita, "caso" per le scelte di chi vuole un giorno a caso.
   const giorno = s.giorno === 'caso' ? 'Un giorno a caso' : s.giorno ? giornoInLettere(s.giorno) : null
-  return [nomeAmbito(s.categoria, s.ambito) ?? giorno, nomeGenere(s.categoria, s.genere)].filter(
+  return [nomeAmbito(s.categoria, s.ambito) ?? giorno, nomeGenere(s.categoria, s.genere), s.nazione].filter(
     (x): x is string => !!x,
   )
 }
@@ -168,7 +188,7 @@ export function dettagliPartita(
  * scienza si chiamano per nome: "Chimica e Fisica".
  */
 export function nomeSezioni(materia: MateriaQuiz, sezioni: readonly SezioneQuiz[]): string {
-  const nomi = sezioni.map((x) => voceDi(materia, x.categoria, x.ambito)?.nome ?? NOMI_CATEGORIE[x.categoria])
+  const nomi = sezioni.map((x) => voceDi(materia, x.categoria, x.ambito, x.genere)?.nome ?? NOMI_CATEGORIE[x.categoria])
   return nomi.length <= 1 ? (nomi[0] ?? '') : `${nomi.slice(0, -1).join(', ')} e ${nomi[nomi.length - 1]}`
 }
 

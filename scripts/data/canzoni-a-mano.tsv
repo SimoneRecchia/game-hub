@@ -1,0 +1,29 @@
+# Le correzioni a mano alle canzoni del quiz di musica (scripts/cultura/canzoni.ts),
+# per quelle che Wikidata da' alla versione sbagliata. Una riga per canzone: il
+# QID, il titolo, la correzione e il perché. La correzione e' "fuori", quando la
+# versione che conoscono tutti non c'e' e la domanda non avrebbe una risposta
+# giusta; "a=" con chi la canta, QID separati da una virgola; "anno=" con l'anno
+# della versione nota. Due correzioni si separano con uno spazio.
+Q949416	Unchained Melody	fuori	e' dei Righteous Brothers, del 1965; Wikidata ha la prima versione, del film Unchained
+Q786778	Twist and Shout	fuori	e' dei Beatles, del 1963; Wikidata ha solo la prima, dei Top Notes
+Q1473718	Ring of Fire	fuori	e' di Johnny Cash, del 1963; Wikidata ha solo la prima, di Anita Carter
+Q2449842	Suspicious Minds	fuori	e' di Elvis Presley, del 1969; Wikidata ha solo la prima, di Mark James
+Q919452	Fever	fuori	e' di Peggy Lee, del 1958; Wikidata ha solo la prima, di Little Willie John
+Q449736	Always on My Mind	fuori	le versioni note sono di Elvis, di Willie Nelson e dei Pet Shop Boys
+Q865095	Hound Dog	fuori	e' di Elvis Presley, del 1956; Wikidata ha solo la prima, di Big Mama Thornton
+Q595899	Barbara Ann	fuori	e' dei Beach Boys, del 1965; Wikidata ha solo la prima, dei Regents
+Q1779443	Piece of My Heart	fuori	e' di Janis Joplin con i Big Brother, del 1968; Wikidata ha solo la prima
+Q636563	Dazed and Confused	fuori	e' dei Led Zeppelin, del 1969; Wikidata ha solo la prima, di Jake Holmes
+Q928282	(They Long to Be) Close to You	fuori	e' dei Carpenters, del 1970; Wikidata ha solo la prima, di Richard Chamberlain
+Q985995	Nothing’s Gonna Stop Us Now	fuori	e' degli Starship, non dei Jefferson Starship
+Q1777527	L’immensità	fuori	e' di Don Backy, del 1967; Wikidata ha solo Gianna Nannini
+Q1971300	That’s What Friends Are For	a=Q234695 anno=1985	e' di Dionne Warwick con gli amici; Rod Stewart ne ha fatto la prima versione
+Q257915	Que sera, sera	a=Q104372	Kikki Danielsson ne ha fatto una cover
+Q2530599	Si tú no vuelves	a=Q356762	gli Ha*Ash ne hanno fatto una cover
+Q2264239	Can’t Take My Eyes Off You	a=Q465632	i Boys Town Gang ne hanno fatto una cover disco, nel 1982
+Q1621982	This Is It	a=Q2831	i Jackson 5 sono nei cori
+Q1031911	Can You Feel the Love Tonight	a=Q2808	Joseph Williams la canta nel film, quella nota e' di Elton John
+Q130564884	Niente di male	a=Q260947	Wikidata la da' a un'omonima di Giorgia, nata nel 1941
+Q2517476	What’s Going On	anno=1971	la descrizione di Wikidata dice 2001, l'anno di una cover
+Q432461	Girls Just Want to Have Fun	anno=1983	Wikidata ha l'anno della prima versione, di Robert Hazard
+Q832297	Bette Davis Eyes	anno=1981	Wikidata ha l'anno della prima versione, di Jackie DeShannon

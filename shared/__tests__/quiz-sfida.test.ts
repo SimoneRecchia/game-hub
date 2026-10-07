@@ -132,6 +132,30 @@ describe('le impostazioni di una sfida', () => {
     ])
   })
 
+  it('nella musica i generi sono sezioni, e gli anni e il paese valgono per tutti', () => {
+    const imp = impostazioniSfida({
+      categoria: 'canzoni',
+      modo: 'scelta',
+      sezioni: [
+        { categoria: 'canzoni', genere: 'rock' },
+        { categoria: 'canzoni', genere: 'nessuno' },
+        { categoria: 'lirica', genere: 'rock' },
+        { categoria: 'canzoni', genere: 'rock' },
+      ],
+      ambito: 'anni80',
+      nazione: 'Italia',
+    })
+    expect(imp?.sezioni).toEqual([
+      { categoria: 'canzoni', genere: 'rock' },
+      { categoria: 'canzoni' },
+      { categoria: 'lirica' },
+    ])
+    expect(imp).toMatchObject({ ambito: 'anni80', nazione: 'Italia' })
+    // Un paese che non e' un nome non passa, e fuori dalla musica il paese non c'e'.
+    expect(impostazioniSfida({ categoria: 'canzoni', modo: 'scelta', nazione: '<b>' })?.nazione).toBeUndefined()
+    expect(impostazioniSfida({ categoria: 'arte', modo: 'scelta', nazione: 'Italia' })?.nazione).toBeUndefined()
+  })
+
   it('sulla cartina il tempo e’ il doppio', () => {
     expect(limiteMs({ secondi: 15 }, false)).toBe(15_000)
     expect(limiteMs({ secondi: 15 }, true)).toBe(30_000)

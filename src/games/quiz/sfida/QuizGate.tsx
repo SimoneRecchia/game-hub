@@ -141,7 +141,7 @@ function AvvisoSfida({
   const come = diGeografia(r.categoria)
     ? NOMI_MODI[r.modo]
     : (nomeAmbito(r.categoria, r.ambito) ?? (r.giorno ? giornoInLettere(r.giorno) : null))
-  const cosa = [nomePartita(r), come, nomeGenere(r.categoria, r.genere), `${r.quante} domande`]
+  const cosa = [nomePartita(r), come, nomeGenere(r.categoria, r.genere), r.nazione, `${r.quante} domande`]
     .filter(Boolean)
     .join(' · ')
   return (

@@ -1,0 +1,754 @@
+# I generi di chi canta, per il quiz di musica (scripts/cultura/canzoni.ts).
+# Una riga per artista: il QID di Wikidata, il nome, uno o due generi separati
+# da una virgola, il principale per primo, come lo metterebbe un'app di musica.
+# Gli id sono quelli di GENERI_CANZONI (shared/quiz-cultura.ts). Cantautore e'
+# chi scrive e canta nella tradizione della canzone d'autore, dove conta il
+# testo: chi canta le canzoni degli altri, o un cantautore pop di adesso, e' pop.
+# "altri" e' quel che non ha una voce sua: il reggae, il country, il folk, il
+# blues, i comici, le canzoni per bambini.
+Q19848	Lady Gaga	pop
+Q2831	Michael Jackson	pop,soul
+Q15869	Freddie Mercury	pop
+Q392	Bob Dylan	cantautori
+Q1299	The Beatles	rock,pop
+Q199943	Adriano Celentano	pop
+Q21208625	Achille Lauro	pop,rock
+Q303	Elvis Presley	rock,pop
+Q4616	Marilyn Monroe	altri
+Q15897	Amy Winehouse	soul
+Q205707	Bradley Cooper	pop
+Q1744	Madonna	pop,dance
+Q2306	Pink Floyd	rock
+Q1203	John Lennon	rock,pop
+Q26876	Taylor Swift	pop
+Q5383	David Bowie	rock
+Q34389	Whitney Houston	pop,soul
+Q151892	Ariana Grande	pop
+Q409	Bob Marley	altri
+Q5608	Eminem	rap
+Q5105	Céline Dion	pop
+Q231156	Mina	pop
+Q40715	Jennifer Lopez	pop,latina
+Q15862	Queen	rock
+Q21914464	Dua Lipa	pop
+Q36844	Rihanna	pop
+Q2291	Totò	pop
+Q6107	Tupac Shakur	rap
+Q34424	Shakira	latina,pop
+Q35109	Noemi	pop
+Q40912	Frank Sinatra	jazz
+Q42786	Audrey Hepburn	colonne
+Q505455	Jovanotti	pop
+Q2283974	Sal Da Vinci	pop
+Q26978747	Elodie	pop
+Q239002	Ornella Vanoni	pop
+Q2850715	Annalisa	pop
+Q80938	John Travolta	pop
+Q25106	Fabrizio De André	cantautori
+Q4235	Miley Cyrus	pop
+Q237446	Mia Martini	pop
+Q34086	Justin Bieber	pop
+Q2331	Led Zeppelin	rock
+Q261	Linkin Park	rock
+Q11975	Britney Spears	pop
+Q11036	Rolling Stones	rock
+Q56884561	Måneskin	rock
+Q36153	Beyoncé	pop,soul
+Q49004	Patrick Swayze	pop
+Q469154	Lucio Battisti	cantautori,pop
+Q17171	Vasco Rossi	rock
+Q167546	Lucio Dalla	cantautori
+Q18233	ABBA	pop
+Q125948	Zucchero Fornaciari	pop,rock
+Q144622	Phil Collins	pop
+Q260947	Giorgia	pop
+Q130311	George Michael	pop
+Q505476	Avicii	dance
+Q133151	Ozzy Osbourne	rock
+Q42493	Katy Perry	pop
+Q2599	Paul McCartney	pop
+Q1225	Bruce Springsteen	rock
+Q266640	Raffaella Carrà	pop,dance
+Q319537	Gianni Morandi	pop
+Q29564107	Billie Eilish	pop
+Q15935	Kanye West	rap
+Q47875	Robbie Williams	pop
+Q170697	Laura Pausini	pop
+Q27593	AC/DC	rock
+Q153708	Eros Ramazzotti	pop
+Q25147	Franco Battiato	cantautori,pop
+Q48187	Eric Clapton	rock
+Q7396400	Sabrina Carpenter	pop
+Q23848	Ennio Morricone	colonne
+Q57415344	Damiano David	pop
+Q22695683	Francesco Gabbani	pop
+Q469078	Rino Gaetano	cantautori
+Q2808	Elton John	pop,rock
+Q737866	Marco Mengoni	pop
+Q47447	Ed Sheeran	pop
+Q442697	Emma	pop
+Q37150	Lana Del Rey	pop
+Q470554	Gino Paoli	cantautori
+Q15920	Metallica	rock
+Q12003	Cher	pop
+Q234771	Iva Zanicchi	pop
+Q1390708	Fabri Fibra	rap
+Q467069	Massimo Ranieri	pop
+Q72226149	Lucio Corsi	cantautori
+Q736851	Pino Daniele	cantautori
+Q471344	Riccardo Cocciante	cantautori,pop
+Q467997	Alessandra Amoroso	pop
+Q87830418	Anna	rap
+Q2643	George Harrison	rock
+Q434907	Loredana Bertè	rock,pop
+Q3666978	Checco Zalone	altri
+Q42402	Andrea Bocelli	pop
+Q42482	Iron Maiden	rock
+Q125933527	Sarah Toscano	pop
+Q201392	Domenico Modugno	pop
+Q11649	Nirvana	rock
+Q23215	Adele	pop,soul
+Q45354	The Doors	rock
+Q487473	Toto Cutugno	pop
+Q125121	Aretha Franklin	soul
+Q43432	Justin Timberlake	pop,soul
+Q2253606	Marracash	rap
+Q193982	Sinéad O’Connor	pop
+Q10708	Red Hot Chili Peppers	rock
+Q4636	Barbra Streisand	pop
+Q466422	Patty Pravo	pop
+Q30449	Avril Lavigne	rock,pop
+Q44190	Radiohead	rock
+Q483203	Sting	pop
+Q60036307	Mahmood	pop
+Q47670	Black Sabbath	rock
+Q28561969	XXXTentacion	rap
+Q11895	Guns N’ Roses	rock
+Q3626966	Harry Styles	pop
+Q25056945	Blackpink	pop
+Q541385	Ricchi e Poveri	pop
+Q1631	Édith Piaf	pop
+Q714	Stevie Wonder	soul
+Q166164	Elisa	pop
+Q396	U2	rock
+Q312674	Giorgio Moroder	dance,colonne
+Q482964	Depeche Mode	pop
+Q6060	50 Cent	rap
+Q382890	Oasis	rock
+Q50040	Dire Straits	rock
+Q116152073	Olly	pop
+Q124179	Kiss	rock
+Q133405	Bee Gees	pop,dance
+Q125080611	Serena Brancale	pop
+Q161819	Julie Andrews	colonne
+Q1054564	Mango	pop
+Q101505	Deep Purple	rock
+Q1056805	Cesare Cremonini	pop
+Q215359	Dean Martin	jazz
+Q8298	David Guetta	dance
+Q468692	Gabry Ponte	dance
+Q559529	Francesco Guccini	cantautori
+Q1450	Bruno Mars	pop,soul
+Q1242174	Pooh	pop
+Q232468	Gianna Nannini	rock,pop
+Q238061	Anna Oxa	pop
+Q185828	Daft Punk	dance
+Q45188	Coldplay	rock,pop
+Q232479	Sabrina Salerno	dance
+Q469068	Luigi Tenco	cantautori
+Q41076	Mariah Carey	pop,soul
+Q19365890	Ermal Meta	pop
+Q131725	Joan Baez	cantautori
+Q42315001	Lewis Capaldi	pop
+Q45036	Nek	pop
+Q1130939	Giorgio Faletti	cantautori
+Q55641	Spice Girls	pop
+Q93346	The Who	rock
+Q118390992	Angelina Mango	pop
+Q27655344	Rosé	pop
+Q2121062	The Weeknd	pop,soul
+Q47871	Green Day	rock
+Q106648	Fleetwood Mac	rock
+Q5950	James Brown	soul
+Q274191	883	pop
+Q259254	Bon Jovi	rock
+Q14441	Liza Minnelli	pop,jazz
+Q58381	Duran Duran	pop
+Q62766	Jay-Z	rap
+Q182665	Iggy Pop	rock
+Q89375508	Gaia	pop,latina
+Q3741984	Fedez	rap,pop
+Q560126	Claudio Baglioni	cantautori,pop
+Q25159	Caparezza	rap
+Q240403	Eiffel 65	dance
+Q1779	Louis Armstrong	jazz
+Q391348	Imagine Dragons	rock,pop
+Q982377	Peppino di Capri	pop
+Q978509	Renato Zero	pop
+Q121507	Alicia Keys	soul
+Q1276	Leonard Cohen	cantautori
+Q130798	Kendrick Lamar	rap
+Q123920992	Clara	pop
+Q483810	The Cranberries	rock
+Q25177	Rammstein	rock
+Q146027	One Direction	pop
+Q492029	Tiziano Ferro	pop
+Q365060	Umberto Tozzi	pop
+Q180453	Dolly Parton	altri
+Q34584	Anastacia	pop
+Q45165	System of a Down	rock
+Q633	Neil Young	rock,cantautori
+Q114285	Francesco De Gregori	cantautori
+Q38257	Enya	pop
+Q41594	Christina Aguilera	pop
+Q439571	Francesca Michielin	pop
+Q484427	The Cure	rock
+Q99662591	Rose Villain	rap,pop
+Q585972	Gigi D’Alessio	pop
+Q446767	Marcella Bella	pop
+Q13580495	BTS	pop
+Q181484	Sia	pop
+Q2704206	Fiorella Mannoia	pop
+Q189080	Lou Reed	rock
+Q11998	Kylie Minogue	pop,dance
+Q447407	Bobby Solo	pop
+Q182655	Rod Stewart	rock,pop
+Q521541	Lorella Cuccarini	pop
+Q2755051	Ivan Graziani	cantautori,rock
+Q1046038	Enzo Jannacci	cantautori
+Q110008128	Benson Boone	pop
+Q212873	Jane Birkin	pop
+Q82545	Sex Pistols	rock
+Q158462	Lynyrd Skynyrd	rock
+Q17140	Backstreet Boys	pop
+Q20645822	The Kolors	pop
+Q27683931	Sfera Ebbasta	rap
+Q733379	Raf	pop
+Q1231930	Matia Bazar	pop
+Q229295	Gigliola Cinquetti	pop
+Q310985	Robert Miles	dance
+Q126826	Aerosmith	rock
+Q130742	Alanis Morissette	rock
+Q47122	Enrique Iglesias	latina,pop
+Q110162378	Tananai	pop
+Q189991	Gorillaz	rock,rap
+Q55774626	Pinguini Tattici Nucleari	pop
+Q7256860	The Prodigy	dance
+Q186329	Mika	pop
+Q311748	Gigi D’Agostino	dance
+Q175195	Peter Gabriel	rock
+Q104372	Doris Day	pop
+Q636	Kate Bush	pop
+Q1236257	Riccardo Fogli	pop
+Q134969	R.E.M.	rock
+Q5921	Chuck Berry	rock
+Q110281146	Chappell Roan	pop
+Q178095	The Police	rock
+Q128799	Ricky Martin	latina,pop
+Q332032	Alice Cooper	rock
+Q96621463	Alfa	pop
+Q152066	Take That	pop
+Q189758	Marvin Gaye	soul
+Q274547	Loretta Goggi	pop
+Q869804	Cristina D’Avena	altri
+Q194333	Billy Joel	pop,rock
+Q202041	Jamiroquai	soul,pop
+Q48187976	Ultimo	pop
+Q207472	Toto	rock
+Q28037234	Irama	pop
+Q1545	Cyndi Lauper	pop
+Q1247752	Paola & Chiara	pop,dance
+Q482907	Bryan Adams	rock
+Q125603	The Clash	rock
+Q36290	Diana Ross	soul,pop
+Q161723	t.A.T.u.	pop
+Q1725191	Pippo Franco	altri
+Q190076	Joe Cocker	rock,pop
+Q445698	Arisa	pop
+Q238978	Nina Zilli	soul,pop
+Q925481	Planet Funk	dance
+Q6078	Dr. Dre	rap
+Q774617	Edoardo Bennato	cantautori,rock
+Q142701	Pearl Jam	rock
+Q988867	Elio e le Storie Tese	rock
+Q105076439	Blanco	pop
+Q192463	Creedence Clearwater Revival	rock
+Q124147	Scorpions	rock
+Q179516	Paolo Conte	jazz,cantautori
+Q83561443	Joan Thiele	pop
+Q172763	Joy Division	rock
+Q189635	Eagles	rock
+Q89477488	Geolier	rap
+Q482477	Blink-182	rock
+Q63435294	Coma_Cose	pop
+Q1044154	Nino D’Angelo	pop
+Q313453	Stromae	dance,pop
+Q156298	Boney M.	dance
+Q51023	Vanessa Paradis	pop
+Q115940522	Tony Effe	rap,pop
+Q356762	Miguel Bosé	latina,pop
+Q180850	Tom Jones	pop
+Q483379	Gwen Stefani	pop
+Q669464	Giuni Russo	pop
+Q1777698	Evanescence	rock
+Q2086805	CCCP - Fedeli alla linea	rock
+Q154216	Cat Stevens	cantautori
+Q72092	Rage Against the Machine	rock
+Q28498299	Tommy Cash	rap
+Q908933	Donna Summer	dance
+Q241111	Alexia	dance,pop
+Q286547	Alice	pop,cantautori
+Q287932	Giusy Ferreri	pop
+Q220050	Righeira	dance
+Q539713	Marco Masini	pop
+Q151231	Annie Lennox	pop
+Q100268282	Rosa Chemical	rap,pop
+Q14313	Pharrell Williams	pop,soul
+Q187844	Pitbull	rap,dance
+Q136591	ZZ Top	rock
+Q173790	Roxette	pop
+Q119422	Luca Carboni	pop
+Q183048	The Beach Boys	pop,rock
+Q929235	Fabrizio Moro	pop
+Q485820	Blur	rock
+Q184217	The Smashing Pumpkins	rock
+Q6456303	LP	pop
+Q468789	Sergio Endrigo	cantautori
+Q304229	Gianluca Grignani	pop
+Q25153	Angelo Branduardi	cantautori,altri
+Q17389092	Diodato	cantautori,pop
+Q134541	Black Eyed Peas	rap,pop
+Q1058124	Elio	altri
+Q484918	Simon & Garfunkel	cantautori
+Q218091	Seal	pop,soul
+Q29033668	Cardi B	rap
+Q310357	Coolio	rap
+Q62019509	Lazza	rap,pop
+Q1698	Serge Gainsbourg	cantautori,pop
+Q153172	Vangelis	colonne
+Q185144	Europe	rock
+Q18810940	Camila Cabello	pop,latina
+Q357418	Massive Attack	dance
+Q24895536	Fabio Rovazzi	pop,dance
+Q168012	Alizée	pop
+Q187814	Tracy Chapman	cantautori
+Q202741	Blondie	rock,pop
+Q269091	Tears for Fears	pop
+Q273055	R. Kelly	soul
+Q1370043	Alan Sorrenti	pop,dance
+Q216563	Paul Anka	pop
+Q234695	Dionne Warwick	pop,soul
+Q131231	Slayer	rock
+Q26695	Lionel Richie	pop,soul
+Q184386	Yes	rock
+Q1749089	J-Ax	rap,pop
+Q1111535	Dargen D’Amico	rap,pop
+Q176457	Supertramp	rock
+Q80424	Nelly Furtado	pop
+Q15778609	Rocco Hunt	rap,pop
+Q7857806	Twenty One Pilots	rock,pop
+Q174817	Soundgarden	rock
+Q403587	Donatella Rettore	pop,rock
+Q295847	Richard Chamberlain	pop
+Q2891989	Adriano Pappalardo	pop
+Q357158	Raphael Gualazzi	jazz,pop
+Q157041	The Offspring	rock
+Q116764174	BigMama	rap
+Q16011	Spandau Ballet	pop
+Q13476175	Lorde	pop
+Q993477	Bruno Lauzi	cantautori
+Q202550	Dido	pop
+Q485625	Pet Shop Boys	pop,dance
+Q464749	Journey	rock
+Q27417	Modern Talking	dance,pop
+Q33605	Kesha	pop
+Q172505	Astor Piazzolla	latina
+Q39961651	Rkomi	rap,pop
+Q182223	Maroon 5	pop
+Q153141	Scatman John	dance
+Q748836	Simple Minds	rock
+Q265508	Ivana Spagna	dance,pop
+Q219874	Village People	dance
+Q115869427	Lola Young	pop
+Q621480	Alex Britti	pop
+Q48280	Marianne Faithfull	pop,rock
+Q3719691	Edoardo Vianello	pop
+Q2748386	Ron	cantautori,pop
+Q5474649	Baby K	pop,rap
+Q156305	a-ha	pop
+Q255593	Nilla Pizzi	pop
+Q460631	Amedeo Minghi	pop,cantautori
+Q1844447	Samuele Bersani	cantautori,pop
+Q707439	Luca Barbarossa	cantautori,pop
+Q105460	John Denver	altri
+Q3008	Mike Oldfield	rock,pop
+Q211277	The Mamas & the Papas	pop,rock
+Q564878	Gianni Bella	pop
+Q153926	Alphaville	pop
+Q43267	The Jackson 5	soul,pop
+Q257339	Simone Cristicchi	cantautori
+Q180727	John Cage	altri
+Q20150	Psy	pop,dance
+Q130799	James Blunt	pop
+Q214990	New Order	dance,pop
+Q312610	Salvatore Adamo	pop,cantautori
+Q697383	Renato Rascel	pop
+Q188426	Roy Orbison	rock,pop
+Q28933211	Ana Mena	latina,pop
+Q736099	Renato Carosone	jazz
+Q2755019	Jimmy Fontana	pop
+Q1666	Jacques Brel	cantautori
+Q483285	My Chemical Romance	rock
+Q99535403	Madame	rap,pop
+Q1091441	Negramaro	rock,pop
+Q217839	Otis Redding	soul
+Q214486	Procol Harum	rock
+Q44857	John Legend	soul,pop
+Q295919	Sam Cooke	soul
+Q1361747	Pino D’Angiò	dance
+Q488916	The Verve	rock
+Q47513645	Ernia	rap
+Q44398	Falco	pop
+Q156491	Bonnie Tyler	rock,pop
+Q220730	The Killers	rock
+Q3853042	Max Gazzè	cantautori,pop
+Q102385	Pussycat Dolls	pop
+Q50529029	Tedua	rap
+Q1679765	Jalisse	pop
+Q1431526	Gemelli DiVersi	rap,pop
+Q440105	Marisa Sannia	pop
+Q207706	Eurythmics	pop
+Q146256	Miriam Makeba	altri
+Q488260	Jefferson Airplane	rock
+Q16210722	SZA	soul
+Q234169	Irene Cara	pop,dance
+Q461673	Valerio Scanu	pop
+Q984697	Modà	pop
+Q107066810	Sangiovanni	pop
+Q105542333	Teddy Swims	soul,pop
+Q282784	Corona	dance
+Q533478	The Alan Parsons Project	rock
+Q361329	Gazebo	dance
+Q73597	Frankie Goes to Hollywood	pop,dance
+Q111200133	Bresh	rap,pop
+Q744087	Wham!	pop
+Q188464	Pixies	rock
+Q228918	Gloria Gaynor	dance
+Q268160	The White Stripes	rock
+Q1528604	Povia	pop
+Q213388	Aqua	dance,pop
+Q1001487	Finley	rock
+Q2326007	Stadio	pop,rock
+Q483802	Nickelback	rock
+Q3608180	Alberto Camerini	pop,rock
+Q313009	Chris Isaak	rock
+Q56755505	Ava Max	pop
+Q311842	Benny Benassi	dance
+Q217787	Carole King	cantautori,pop
+Q165911	Usher	soul
+Q151634	Ace of Base	pop,dance
+Q185610	will.i.am	rap,dance
+Q1360782	Tony Esposito	pop,dance
+Q81637	Calvin Harris	dance
+Q730046	Goo Goo Dolls	rock
+Q1438730	OneRepublic	pop
+Q121842162	Alex Warren	pop
+Q484311	Keane	rock,pop
+Q43259	No Doubt	rock,pop
+Q489643	Gotye	pop
+Q193744	Tori Amos	rock,cantautori
+Q219237	Rick Astley	pop
+Q679798	Davide Van De Sfroos	cantautori,altri
+Q425821	Mark Ronson	pop,soul
+Q191912	Zero Assoluto	pop
+Q970271	Nunzio Gallo	pop
+Q188713	The Kinks	rock
+Q76901	Sandra	dance,pop
+Q31164	Ellie Goulding	pop
+Q485512	Enigma	dance
+Q236237	Gala	dance
+Q772282	Frankie hi-nrg mc	rap
+Q927927	Bronski Beat	pop,dance
+Q154454	NSYNC	pop
+Q842415	Buena Vista Social Club	latina
+Q181683	Carly Simon	cantautori,pop
+Q233959	Belinda Carlisle	pop
+Q4070	Kim Carnes	pop
+Q294531	Neil Diamond	pop
+Q483376	Loreen	pop,dance
+Q161245	Las Ketchup	latina,pop
+Q850290	Kool & the Gang	soul,dance
+Q3702593	Dardust	dance
+Q347528	Liberace	pop
+Q313578	Vanilla Ice	rap
+Q472595	OutKast	rap
+Q16233232	Hozier	rock,soul
+Q200131	Antônio Carlos Jobim	jazz,latina
+Q21808729	Alan Walker	dance
+Q131675443	Settembre	pop
+Q1054165	Dario Baldan Bembo	pop
+Q275059	Foreigner	rock
+Q210734	Youssou N’Dour	altri,pop
+Q57775533	Il Pagante	dance,pop
+Q2521449	Wilma De Angelis	pop
+Q516712	Chic	dance
+Q3719785	Eduardo De Crescenzo	pop
+Q204019	M.I.A.	rap
+Q331016	Blue Öyster Cult	rock
+Q229498	Chaka Khan	soul
+Q831111	Men at Work	rock,pop
+Q873384	Santana	rock,latina
+Q737455	Gianni Togni	pop
+Q467423	Robin Thicke	soul,pop
+Q62591281	Lil Nas X	rap,pop
+Q1165609	USA for Africa	pop
+Q4562	O-Zone	dance,pop
+Q6024866	Indila	pop
+Q3998677	Tricarico	pop,cantautori
+Q218837	The Supremes	soul,pop
+Q839773	Le Vibrazioni	rock
+Q23471	Lordi	rock
+Q288217	Riz Ortolani	colonne
+Q465632	Frankie Valli	pop
+Q254371	Papa Roach	rock
+Q106379	The Cardigans	pop,rock
+Q204289	Boston	rock
+Q48978	LMFAO	dance,rap
+Q211965	The Moody Blues	rock
+Q3608096	Albertino	dance
+Q368961	Dead or Alive	dance,pop
+Q558379	Al Bano & Romina Power	pop
+Q218992	Nelly	rap
+Q742804	TLC	soul,pop
+Q216899	Sophie Ellis-Bextor	pop,dance
+Q30880810	La Rappresentante di Lista	pop
+Q230499	Violeta Parra	cantautori,latina
+Q236112	Suzanne Vega	cantautori,pop
+Q530886	The Ronettes	pop,soul
+Q346565	Bill Withers	soul
+Q229341	Christina Perri	pop
+Q445438	Christopher Cross	pop
+Q236212	Petula Clark	pop
+Q204328	Kansas	rock
+Q24934620	Thegiornalisti	pop
+Q52583	Carly Rae Jepsen	pop
+Q485679	The Rasmus	rock
+Q271346	Betty Curtis	pop
+Q44833	J.J. Cale	rock
+Q302635	Sonohra	pop
+Q28113670	Nemo	pop
+Q2266493	Pitura Freska	altri
+Q1135315	Survivor	rock
+Q367084	Bill Conti	colonne
+Q730158	The Human League	pop
+Q572077	La Bouche	dance
+Q838984	Fun.	pop,rock
+Q682710	Extreme	rock
+Q213869	James Newton Howard	colonne
+Q1089523	Chumbawamba	rock,pop
+Q236318	Faith Evans	soul
+Q64877768	Meduza	dance
+Q768621	Hanson	pop
+Q3730921	Equipe 84	rock,pop
+Q43189	Juanes	latina
+Q1387726	Luis Fonsi	latina
+Q1532854	The Stranglers	rock
+Q753905	The Platters	pop,soul
+Q208258	France Gall	pop
+Q213538	Flo Rida	rap,pop
+Q48992	Buffalo Springfield	rock
+Q89411984	Mr. Rain	rap,pop
+Q437551	Eric Carmen	pop
+Q353025	Baltimora	dance
+Q201568	The Buggles	pop
+Q4007811	Valeria Rossi	pop
+Q921176	Limahl	pop
+Q753066	Baccara	dance
+Q157497	Bloodhound Gang	rock
+Q705689	Snap!	dance
+Q321762	Napalm Death	rock
+Q1453	Alexandra Stan	dance,pop
+Q57339	Don McLean	cantautori
+Q740434	Smash Mouth	rock,pop
+Q78138804	Barbara Pravi	cantautori,pop
+Q50065448	Charlie Charles	rap
+Q3313730	Miki Matsubara	pop
+Q156783	Haddaway	dance
+Q356140	Ben E. King	soul
+Q233342	Neneh Cherry	pop
+Q863197	Billy More	dance
+Q957024	Joseph Williams	pop
+Q465862	Steppenwolf	rock
+Q120533	LeAnn Rimes	altri,pop
+Q464036	The Monkees	pop,rock
+Q310894	Bobby McFerrin	jazz,pop
+Q240802	Richard Clayderman	altri
+Q3617712	Anna Identici	pop
+Q62887629	Tones and I	pop
+Q212168	The Shadows	rock
+Q1304905	Marco Ferradini	cantautori,pop
+Q1407424	The Jimi Hendrix Experience	rock
+Q131540322	Shkodra Elektronike	pop,altri
+Q956500	Orchestral Manoeuvres in the Dark	pop
+Q689	Bastille	pop,rock
+Q858388	The Cars	rock,pop
+Q311256	Richard Marx	pop
+Q3837924	Lu Colombo	pop
+Q907445	Sonny & Cher	pop
+Q110919	Gerry Rafferty	rock,pop
+Q541187	Silvia Salemi	pop
+Q3749411	Francesca Guadagno	pop
+Q11838808	Clean Bandit	dance,pop
+Q169145	10cc	rock,pop
+Q131259	Alexander Rybak	pop
+Q2256271	Bruno Martino	jazz
+Q295923	MC Hammer	rap
+Q3642287	Boomdabash	altri,pop
+Q237527	Big Mama Thornton	altri,soul
+Q3707883	Dino	pop
+Q116450762	Alessandra Mele	pop
+Q2604214	Major Lazer	dance
+Q1051182	Nick Cave and the Bad Seeds	rock,cantautori
+Q858880	Cascada	dance
+Q3991985	Tiziana Rivale	pop
+Q3682505	Colapesce	cantautori,pop
+Q61113	Foster the People	pop,rock
+Q808703	Icona Pop	pop,dance
+Q233081	Vanessa Carlton	pop
+Q614439	Opus	pop,rock
+Q574375	Mecano	pop,latina
+Q610228	The Righteous Brothers	soul,pop
+Q313281	Michel Legrand	colonne,jazz
+Q272942	Lesley Gore	pop
+Q33697864	Takagi & Ketra	pop
+Q734326	Ryan Paris	dance
+Q310339	Carl Perkins	rock
+Q16728588	DJ Snake	dance
+Q743353	Iron Butterfly	rock
+Q270724	Lykke Li	pop
+Q170252	Los del Río	latina
+Q3026143	Diana Est	dance
+Q1353046	Nini Rosso	altri
+Q500613	Kaoma	latina
+Q3842047	Mace	rap,pop
+Q453812	Nik Kershaw	pop
+Q254576	Judy Collins	cantautori
+Q277715	Crash Test Dummies	rock
+Q317254	Chubby Checker	rock
+Q798993	Badfinger	rock,pop
+Q229445	Robyn	pop,dance
+Q212906	Natasha Bedingfield	pop
+Q653086	Passenger	pop
+Q662758	Fool’s Garden	pop
+Q472663	F.R. David	pop
+Q289622	The Proclaimers	rock
+Q654716	Peter, Paul and Mary	cantautori
+Q21648421	DNCE	pop
+Q3767080	Giovanni D’Anzi	pop
+Q464305	Desireless	pop
+Q977526	Cutting Crew	pop,rock
+Q215721	Theodore Bikel	colonne
+Q1543955	Alice DeeJay	dance
+Q637865	Bomfunk MC’s	rap,dance
+Q821198	Berlin	pop
+Q329459	Rednex	dance
+Q288076	Franca Raimondi	pop
+Q1425262	Modjo	dance
+Q862315	Bill Medley	pop
+Q2265203	Jefferson Starship	rock,pop
+Q240907	Senhit	pop
+Q447101	Kiki Dee	pop
+Q1299664	Rockwell	pop,soul
+Q155141	Eric Prydz	dance
+Q786734	Mario Tessuto	pop
+Q346785	Dick Dale	rock
+Q313698	Daniel Powter	pop
+Q706518	B. J. Thomas	pop,altri
+Q968819	Rumatera	rock
+Q880116	Black Box	dance
+Q60758679	Duncan Laurence	pop
+Q326281	Scott McKenzie	pop
+Q1413494	The Sugarhill Gang	rap
+Q455754	Screamin’ Jay Hawkins	soul
+Q101868019	Drillionaire	rap
+Q111193171	Rosa Linn	pop
+Q3707709	Dimartino	cantautori,pop
+Q119015	Jorge Ben Jor	latina
+Q317169	Edward Maya	dance
+Q443064	Moony	dance,pop
+Q1049145	The Spencer Davis Group	rock,soul
+Q428406	Alex Gaudino	dance
+Q6679405	Lord Huron	rock
+Q627470	The Turtles	pop,rock
+Q1140368	Spiller	dance
+Q154809	Pérez Prado	latina
+Q3701731	Daniel Sentacruz Ensemble	pop
+Q298794	A Touch of Class	dance
+Q573471	The Boomtown Rats	rock
+Q863090	Lipps Inc.	dance
+Q161122	In-Grid	dance,pop
+Q297693	K’naan	rap,pop
+Q433912	Erroll Garner	jazz
+Q264163	The Dave Brubeck Quartet	jazz
+Q263582	Vika Jigulina	dance
+Q372489	Harold Faltermeyer	colonne,dance
+Q285483	Mary Martin	colonne
+Q160772	Vicky Léandros	pop
+Q1358865	Lucenzo	latina
+Q2525354	Bob Marley & The Wailers	altri
+Q809077	Barry McGuire	rock
+Q445862	Percy Sledge	soul
+Q28231	The Tokens	pop
+Q1054233	DB Boulevard	dance
+Q187576	Secret Garden	pop
+Q16853301	Macklemore & Ryan Lewis	rap
+Q519725	Prince and the Revolution	rock,soul
+Q16995320	Jax Jones	dance
+Q5494459	Ha*Ash	latina
+Q87368609	Master KG	dance
+Q707161	The Weather Girls	dance
+Q105044427	Nathan Evans	altri,pop
+Q2143703	The Crickets	rock
+Q739570	Nena	pop
+Q61977	Gershon Kingsley	dance
+Q2914477	Bill Haley & His Comets	rock
+Q559269	José Afonso	cantautori
+Q513991	Bobby Hebb	soul
+Q232884	Anne-Marie David	pop
+Q3838706	Luciano Rossi	pop
+Q236026	Libertad Lamarque	latina
+Q1753111	The 5th Dimension	pop,soul
+Q130895894	Fex	pop
+Q1058926	Yolanda Be Cool	dance
+Q210532	Sergio Ortega	latina
+Q446179	Erma Franklin	soul
+Q3424139	Morgana Giovannetti	altri
+Q679797	Yōko Takahashi	pop
+Q28113685	Ghali	rap,pop
+Q1529105	Gladys Knight & the Pips	soul
+Q1388443	Little Willie John	soul
+Q519755	Gwen McCrae	soul
+Q235820	Kikki Danielsson	pop,altri
+Q328665	Jake Holmes	rock
+Q2183513	Boys Town Gang	dance
+Q177732	Il Volo	pop
+Q509886	Reel 2 Real	dance
+Q936480	Hot Butter	dance
+Q542956	Anita Carter	altri
+Q1588109	Todd Duncan	pop
+Q728600	The Sandpipers	pop
+Q80808767	Kalush Orchestra	rap,altri
+Q259192	Mark James	pop
+Q131540309	Betsy	pop
+Q286265	Nomadi	pop,rock
+Q2413801	The Regents	pop
+Q3765197	Giorgia	pop
+Q28403451	The Top Notes	soul
+Q129293791	Juli	pop
+Q12043957	Patti Smith Group	rock
+Q10308262	Jorge Veiga	latina
+Q58879447	Henry Mancini Orchestra	colonne
+Q60588325	Little Richard and His Band	rock
+Q64539033	Fred Buscaglione e i suoi Asternovas	jazz
+Q152929	Meat Loaf	rock
+Q938630	Dropkick Murphys	rock,altri
