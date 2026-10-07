@@ -263,6 +263,10 @@ function Fonti() {
         di Microsoft (licenza MIT).
       </p>
       <p>
+        <strong>Lupus.</strong> Le regole sono quelle di Lupus in Tabula, di Domenico Di Giorgio (dV Giochi), e
+        dell’espansione La vendetta della Lupa Mannara, riassunte. Un gioco fra amici, non affiliato all’editore.
+      </p>
+      <p>
         <strong>Scacchi.</strong> I pezzi sono quelli di Colin M. L. Burnett, da{' '}
         <a href="https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces" target="_blank" rel="noreferrer">
           Wikimedia Commons

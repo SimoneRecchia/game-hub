@@ -14,7 +14,7 @@ import { ApiFetchError } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
-import { DOVE } from '@/lib/presenza'
+import { DOVE, usePresenza } from '@/lib/presenza'
 import { AMICI_POLL_MS } from '@shared/config'
 import type { ProfiloAmico } from '@shared/types'
 import './Amico.css'
@@ -30,6 +30,7 @@ const NOMI: Record<GiocoInsieme, string> = {
   dama: 'Dama',
   forza4: 'Forza 4',
   go: 'Go',
+  lupus: 'Lupus',
 }
 
 /**
@@ -46,6 +47,7 @@ export default function Amico() {
   const { state } = useLocation()
   const da = (state as { da?: string } | null)?.da ?? 'Profilo'
   const { dati: amico, errore, ricarica } = useDati<ProfiloAmico>(`/amici/${encodeURIComponent(nickname)}`)
+  const { dati: presenza } = usePresenza()
   const [invio, setInvio] = useState<GiocoInsieme | null>(null)
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export default function Amico() {
     }
     setInvio(gioco)
     try {
-      vai(await invitaA(gioco, amico))
+      vai(await invitaA(gioco, amico, presenza?.stanzaLupus ?? null))
     } catch (e) {
       toast.show(e instanceof ApiFetchError ? e.message : 'Invito non mandato.', 'error')
       void ricarica()

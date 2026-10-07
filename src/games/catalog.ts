@@ -96,9 +96,9 @@ export interface GiocoTavolo {
 /**
  * I giochi da tavolo: niente partita del giorno e niente classifica, solo
  * partite quando si vuole, con gli amici — e contro il computer dove ha senso.
- * Indovina chi non ce l'ha: si gioca parlandosi. Il tris non sta qui: ha la
- * sua classificata, e le partite da tavolo sono la sua libera. La battaglia
- * navale si': la sua classificata misurava piu' la fortuna che il gioco.
+ * Indovina chi e Lupus non ce l'hanno: si giocano parlandosi. Il tris non sta
+ * qui: ha la sua classificata, e le partite da tavolo sono la sua libera. La
+ * battaglia navale si': la sua classificata misurava piu' la fortuna che il gioco.
  */
 export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
   {
@@ -142,6 +142,13 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
     motto: 'Sì o no, finché resta una faccia',
     conChi: 'Con un amico',
     slug: 'indovina-chi',
+  },
+  {
+    id: 'lupus',
+    nome: 'Lupus',
+    motto: 'Di notte i lupi, di giorno il villaggio',
+    conChi: 'Con gli amici',
+    slug: 'lupus',
   },
 ]
 

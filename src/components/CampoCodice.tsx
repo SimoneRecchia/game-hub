@@ -11,17 +11,24 @@ interface Props {
   onCompleto: (cifre: string) => void
   disabled?: boolean
   errore?: boolean
+  /** Quanti caratteri: le sei cifre del codice per entrare, se non si dice altro. */
+  lunghezza?: number
+  /** Lettere al posto delle cifre: il codice di una stanza di Lupus. */
+  lettere?: boolean
 }
 
 /**
  * Il campo del codice a sei cifre, grande e spaziato. Tiene solo le cifre, e
  * un codice incollato con lo spazio in mezzo va bene lo stesso; il browser, e
- * iOS, suggerisce quello arrivato per posta (`one-time-code`).
+ * iOS, suggerisce quello arrivato per posta (`one-time-code`). Con `lettere`
+ * tiene solo le lettere, in maiuscolo: il codice di una stanza che si detta.
  */
 export const CampoCodice = forwardRef<HTMLInputElement, Props>(function CampoCodice(
-  { id, etichetta, valore, onCambia, onCompleto, disabled, errore },
+  { id, etichetta, valore, onCambia, onCompleto, disabled, errore, lunghezza = CODE_LENGTH, lettere = false },
   ref,
 ) {
+  const pulisci = (testo: string) =>
+    (lettere ? testo.toUpperCase().replace(/[^A-Z]/g, '') : testo.replace(/\D/g, '')).slice(0, lunghezza)
   return (
     <div className="campo-codice">
       <label className="u-visually-hidden" htmlFor={id}>
@@ -33,14 +40,17 @@ export const CampoCodice = forwardRef<HTMLInputElement, Props>(function CampoCod
         className="campo-codice__input u-tabnum"
         value={valore}
         onChange={(e) => {
-          const cifre = e.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH)
+          const cifre = pulisci(e.target.value)
           onCambia(cifre)
-          if (cifre.length === CODE_LENGTH) onCompleto(cifre)
+          if (cifre.length === lunghezza) onCompleto(cifre)
         }}
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="\d*"
-        placeholder={'0'.repeat(CODE_LENGTH)}
+        inputMode={lettere ? 'text' : 'numeric'}
+        autoComplete={lettere ? 'off' : 'one-time-code'}
+        autoCapitalize={lettere ? 'characters' : undefined}
+        autoCorrect={lettere ? 'off' : undefined}
+        spellCheck={lettere ? false : undefined}
+        pattern={lettere ? undefined : '\\d*'}
+        placeholder={lettere ? 'ABCDEFGH'.slice(0, lunghezza) : '0'.repeat(lunghezza)}
         disabled={disabled}
         aria-invalid={errore}
       />

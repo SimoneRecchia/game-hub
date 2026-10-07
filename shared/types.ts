@@ -7,6 +7,7 @@ import type { CategoriaQuiz, ModoQuiz } from './quiz'
 import type { AreaQuiz, DomandaQuiz, LuogoQuiz, SezioneQuiz, SpiegazioneQuiz } from './quiz-domande'
 import type { DatiQuiz } from './quiz-dati'
 import type { ImpostazioniSfida } from './quiz-sfida'
+import type { InvitoLupus, StanzaLupusBreve } from './lupus-stanza'
 import type { Lato, Personaggi, Risposta } from './indovina'
 import type { GiocoAlTavolo, GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
@@ -694,6 +695,7 @@ export type Attivita =
   | 'fortuna'
   | 'slot'
   | 'blackjack'
+  | 'lupus'
   | 'classifica'
   | 'profilo'
   | 'altro'
@@ -788,8 +790,8 @@ export interface InvitoConLink {
   codice: string
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
-  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere o Nomi, cose. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | GiocoAlTavolo
+  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere, Nomi o Lupus. */
+  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'lupus' | GiocoAlTavolo
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -825,6 +827,10 @@ export interface PresenzaRisposta {
   partitaNomi: SfidaNomiBreve | null
   /** Gli inviti a giocare in compagnia il cruciverba o lo Scarabeo di qualcuno. */
   compagnia: InvitoCompagnia[]
+  /** Gli inviti a una stanza di Lupus in fabula. */
+  lupus: InvitoLupus[]
+  /** La stanza di Lupus in cui sono, per tornarci. */
+  stanzaLupus: StanzaLupusBreve | null
 }
 
 /* ─────────────────────────────  Indovina chi  ──────────────────────── */
@@ -1312,7 +1318,7 @@ export type GiocoClassificato = 'wordle' | 'scarabeo' | 'cruciverba' | 'sudoku' 
  * fino al 6 ottobre 2026: e' piu' fortuna che bravura, e una partita del
  * giorno non misurava niente.
  */
-export type GiocoDaTavolo = 'battaglia' | 'indovina' | GiocoTavoliere
+export type GiocoDaTavolo = 'battaglia' | 'indovina' | 'lupus' | GiocoTavoliere
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
 export type ChiaveClassifica = GiocoClassificato | 'generale' | 'fortuna'

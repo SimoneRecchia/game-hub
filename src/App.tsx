@@ -11,6 +11,7 @@ import { QuizGate } from './games/quiz/sfida/QuizGate'
 import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
 import { NomiGate } from './games/nomi/sfida/NomiGate'
+import { LupusGate } from './games/lupus/LupusGate'
 import { CompagniaGate } from './games/compagnia/CompagniaGate'
 import Giornaliere from './pages/Giornaliere'
 import Libere from './pages/Libere'
@@ -84,6 +85,14 @@ const QuizLibero = lazy(caricaQuizLibero)
 const QuizDuello = lazy(caricaQuizDuello)
 const QuizInvito = lazy(caricaQuizInvito)
 
+/* Lupus anche: le schermate della notte e del giorno, i personaggi e le loro icone. */
+const caricaLupus = () => import('./pages/Lupus')
+const caricaLupusTelefono = () => import('./pages/LupusTelefono')
+const caricaLupusStanza = () => import('./pages/LupusStanza')
+const Lupus = lazy(caricaLupus)
+const LupusTelefono = lazy(caricaLupusTelefono)
+const LupusStanza = lazy(caricaLupusStanza)
+
 /* E i giochi della Fortuna: Crazy Time, la slot e il blackjack, che puntano i punti di oggi. */
 const caricaRuota = () => import('./pages/Ruota')
 const Ruota = lazy(caricaRuota)
@@ -112,7 +121,9 @@ function usePrecarica() {
         caricaNomiInvito,
       ]
       const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ]
-      void Promise.all([...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna].map((c) => c())).catch(() => {})
+      const lupus = [caricaLupus, caricaLupusTelefono, caricaLupusStanza]
+      const tutti = [...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna, ...lupus]
+      void Promise.all(tutti.map((c) => c())).catch(() => {})
     }, 2_500)
     return () => window.clearTimeout(t)
   }, [])
@@ -120,8 +131,8 @@ function usePrecarica() {
 
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
 const INVITO = new RegExp(
-  '^/(?:battaglia-navale/invito|quiz/sfida|' +
-    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|scarabeo/libera|nomi-cose-citta)/invito)/([a-z0-9]+)/?$',
+  '^/(?:battaglia-navale/invito|quiz/sfida|lupus/stanza|' +
+    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|scarabeo/libera|nomi-cose-citta)/invito)/([A-Za-z0-9]+)/?$',
 )
 
 export default function App() {
@@ -160,6 +171,7 @@ export default function App() {
       <IndovinaGate />
       <TavoloGate />
       <NomiGate />
+      <LupusGate />
       <CompagniaGate />
       <Shell>
         <Suspense fallback={null}>
@@ -222,6 +234,11 @@ export default function App() {
             <Route path="/indovina-chi/partita/:id" element={<IndovinaPartita />} />
             <Route path="/indovina-chi/invito/:codice" element={<IndovinaInvito />} />
             <Route path="/indovina-chi/set/:id" element={<IndovinaSet />} />
+
+            {/* Lupus: la sala, la partita a un telefono, una stanza online. */}
+            <Route path={ROTTE.lupus} element={<Lupus />} />
+            <Route path={ROTTE.telefonoLupus} element={<LupusTelefono />} />
+            <Route path="/lupus/stanza/:codice" element={<LupusStanza />} />
 
             {/* Scacchi, dama, Forza 4, go e tris: la sala, contro il computer, la partita con un amico, l'invito.
                 La sala del tris e' la sua libera, a /tris/libera. */}
