@@ -67,6 +67,9 @@ const TavoloSala = lazy(caricaSala)
 const TavoloComputer = lazy(caricaComputer)
 const TavoloPartita = lazy(caricaPartita)
 const TavoloInvito = lazy(caricaInvito)
+/* La partita a Scarabeo con un amico: un tavolo del server come quelli dei tavolieri. */
+const caricaScarabeoAmico = () => import('./pages/ScarabeoAmico')
+const ScarabeoAmico = lazy(caricaScarabeoAmico)
 
 /*
  * Anche il quiz arriva a parte, per la stessa ragione: i generatori delle
@@ -99,6 +102,7 @@ function usePrecarica() {
         caricaComputer,
         caricaPartita,
         caricaInvito,
+        caricaScarabeoAmico,
         caricaQuiz,
         caricaQuizLibero,
         caricaTris,
@@ -117,7 +121,7 @@ function usePrecarica() {
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
 const INVITO = new RegExp(
   '^/(?:battaglia-navale/invito|quiz/sfida|' +
-    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|nomi-cose-citta)/invito)/([a-z0-9]+)/?$',
+    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|scarabeo/libera|nomi-cose-citta)/invito)/([a-z0-9]+)/?$',
 )
 
 export default function App() {
@@ -176,6 +180,9 @@ export default function App() {
             <Route path="/scarabeo/libera" element={<ScarabeoLibero />} />
             <Route path="/scarabeo/insieme/:id" element={<ScarabeoInsieme />} />
             <Route path="/scarabeo/libera/insieme/:id" element={<ScarabeoInsieme />} />
+            {/* Lo Scarabeo con un amico sta sul tavolo del server, con l'invito con il link dei tavolieri. */}
+            <Route path="/scarabeo/libera/partita/:id" element={<ScarabeoAmico />} />
+            <Route path="/scarabeo/libera/invito/:codice" element={<TavoloInvito gioco="scarabeo" />} />
 
             <Route path="/cruciverba/classificata" element={<Cruciverba />} />
             <Route path="/cruciverba/libera" element={<CruciverbaLibero />} />
