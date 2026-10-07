@@ -63,8 +63,8 @@ export function ComeSiGiocaLupus({ open, onClose }: { open: boolean; onClose: ()
                   <strong>La discussione</strong>: si accusa, ci si difende, si mente.
                 </li>
                 <li>
-                  <strong>Le nomine</strong>: tutti, anche i fantasmi, votano a turno chi accusare. I due più votati
-                  vanno sotto accusa, e il gufato con loro.
+                  <strong>Le nomine</strong>: i vivi votano a turno chi accusare. I due più votati vanno sotto
+                  accusa, e il gufato con loro.
                 </li>
                 <li>
                   <strong>Le arringhe</strong>: gli accusati si difendono.

@@ -120,10 +120,15 @@ describe('la notte e l’alba', () => {
 })
 
 describe('le votazioni del giorno', () => {
-  it('i fantasmi votano le nomine ma non il ballottaggio', () => {
+  it('di partenza i fantasmi non votano', () => {
+    expect(IMPOSTAZIONI_LUPUS.fantasmiVotano).toBe(false)
+  })
+
+  it('i fantasmi, se votano, votano le nomine ma non il ballottaggio', () => {
     let p = ruoliVisti(
       partitaCon(['lupo', 'lupo', 'veggente', 'villico', 'villico', 'villico', 'villico'], {
         primaNotteSenzaVittime: false,
+        fantasmiVotano: true,
       }),
     )
     p = notte(p, { p0: 'p3', p1: 'p3', p2: 'p4' })
@@ -164,7 +169,8 @@ describe('le votazioni del giorno', () => {
     )
     p = notte(p, { p0: 'p7', p1: 'p7', p2: 'p4' })
     p = avanti(p, 2)
-    p = voti(p, { p0: 'p2', p1: 'p2', p2: 'p0', p3: 'p0', p4: 'p2', p5: 'p0', p6: 'p1', p7: 'p1' })
+    // p7, sbranato, e' un fantasma e non vota.
+    p = voti(p, { p0: 'p2', p1: 'p2', p2: 'p0', p3: 'p0', p4: 'p2', p5: 'p0', p6: 'p1' })
     expect([...p.indiziati].sort()).toEqual(['p0', 'p2'])
     p = avanti(p)
     // Votano p1, p3, p4, p5 e p6: due voti a testa e un astenuto. Al pareggio passa il piu' vicino a p7 in
@@ -328,7 +334,7 @@ describe('i personaggi speciali', () => {
     p = notte(p, { p0: 'p2', p1: 'p3', p2: 'p1' })
     expect(p.fase).toBe('alba')
     p = avanti(p, 2)
-    p = voti(p, { p0: 'p3', p1: 'p3', p3: 'p0', p2: 'p0' })
+    p = voti(p, { p0: 'p3', p1: 'p3', p3: 'p0' })
     p = avanti(p)
     p = voti(p, { p1: 'p3' })
     expect(p.fase).toBe('finita')
