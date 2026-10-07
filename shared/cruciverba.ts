@@ -14,7 +14,7 @@
  * chiavi delle definizioni salvate ritrovino le loro caselle.
  */
 
-import { costiAiuti, puntiConAiuti, type CostiAiuti } from './aiuti'
+import { costiAiuti, puntiConAiuti, type AiutiChiesti, type CostiAiuti } from './aiuti'
 import { ALFABETO } from './wordle'
 
 /** La casella nera, nello schema e nella soluzione. */
@@ -172,8 +172,8 @@ export function costiCruciverba(schema: string): CostiAiuti {
 }
 
 /** Quanto vale la giornata, con questi aiuti. Mai sotto zero. */
-export function punteggio(svelate: number, errori: number, costi: CostiAiuti): number {
-  return puntiConAiuti(PUNTI_COMPLETO, costi, svelate, errori)
+export function punteggio(aiuti: AiutiChiesti, costi: CostiAiuti): number {
+  return puntiConAiuti(PUNTI_COMPLETO, costi, aiuti)
 }
 
 /**

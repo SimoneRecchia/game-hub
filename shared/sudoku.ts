@@ -18,7 +18,7 @@
  * (servirebbe tirare a indovinare) non si propone mai.
  */
 
-import { costiAiuti, puntiConAiuti, type CostiAiuti } from './aiuti'
+import { costiAiuti, puntiConAiuti, type AiutiChiesti, type CostiAiuti } from './aiuti'
 import { mulberry32 } from './daily'
 
 export const LATO = 9
@@ -575,19 +575,15 @@ export function schemaDelGiorno(numero: number, data: string): SchemaSudoku | nu
 /** Centocinquanta a chi lo completa senza aiuti (vedi shared/punti.ts). */
 export const PUNTI_COMPLETO = 150
 
-/**
- * Quanto costano gli aiuti in questo schema (vedi shared/aiuti.ts): una cifra
- * svelata la sua parte dei centocinquanta, una cifra sbagliata segnalata da un
- * controllo la metà. Le caselle da trovare sono le vuote.
- */
+/** Quanto costano gli aiuti in questo schema (vedi shared/aiuti.ts): le caselle da trovare sono le vuote. */
 export function costiSudoku(dati: string): CostiAiuti {
   let vuote = 0
   for (const d of dati) if (d === VUOTA) vuote += 1
   return costiAiuti(PUNTI_COMPLETO, vuote)
 }
 
-export function puntiSudoku(svelate: number, errori: number, costi: CostiAiuti): number {
-  return puntiConAiuti(PUNTI_COMPLETO, costi, svelate, errori)
+export function puntiSudoku(aiuti: AiutiChiesti, costi: CostiAiuti): number {
+  return puntiConAiuti(PUNTI_COMPLETO, costi, aiuti)
 }
 
 /* ─────────────────────────────  Le note  ───────────────────────────── */

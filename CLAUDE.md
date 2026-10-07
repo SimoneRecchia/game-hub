@@ -301,10 +301,11 @@ finito.** `statoDa` manda lo schema con i punti al posto delle lettere, e la
 dell'Italia settentrionale" sarebbe la risposta.
 
 **Nel cruciverba il tempo non da' punti.** Centosessanta a chi lo completa
-senza aiuti, e ogni aiuto costa la parte di schema che da' (vedi sotto) — e
-ricontrollare lo stesso errore non costa (`registraControllo`). La partita
-conta gli errori (`errori`), non quel che costano: il costo lo applica
-`punteggio`, una volta sola.
+senza aiuti, e ogni aiuto costa quel che da' (vedi sotto) — e ricontrollare lo
+stesso errore non costa (`registraControllo`). La partita conta gli aiuti — le
+svelate, gli errori (`errori`), i controlli (`controlli`, `controlli_schema`,
+migrazione `0033`) — e non quel che costano: il costo lo applica `punteggio`,
+una volta sola.
 Il tempo e' lo spareggio in classifica: lo conta il browser a pagina visibile,
 perché un cruciverba si fa a pezzi, e il server lo limita a quanto e' passato
 davvero fra due scritture (`tempoDichiarato`).
@@ -341,20 +342,25 @@ dalla stessa coda con la `versione` del cruciverba, e le note a matita
 viaggiano con la griglia (243 cifre in base otto, `noteInTesto`): riaprendo da
 un altro telefono ci sono.
 
-**Un aiuto costa la parte di schema che da'.** Nel cruciverba e nel sudoku ogni
-casella da trovare vale il tetto diviso le caselle (`costiAiuti` in
-`shared/aiuti.ts`, arrotondato al punto), e svelarla costa quella parte: due
-punti una lettera del cruciverba, che ne ha una ottantina, tre una cifra del
-sudoku, che ne ha da trovare fra quarantacinque e cinquantanove. Un errore
-trovato da un controllo costa la metà, per difetto: un punto. Svelare un
-quarto dello schema lascia tre quarti dei punti, e svelarlo tutto zero, anche
-dove l'arrotondamento lascerebbe qualcosa (`puntiConAiuti`). Prima ogni aiuto
-costava cinque punti e un errore due, in tutti e due i giochi: trentadue
-lettere, due quinti del cruciverba, lo portavano a zero, e una parola di otto
-lettere toglieva un quarto della giornata. I costi che dicono il foglio degli
-aiuti e le regole li conta il telefono dallo schema, con le stesse funzioni
-del server (`costiCruciverba`, `costiSudoku`): nel sudoku erano scritti nel
-telefono, tre punti e uno, e quando il server era passato a cinque e due il
+**Un aiuto costa quel che da'.** Nel cruciverba e nel sudoku tutto si misura
+sulla parte di una casella, il tetto diviso le caselle da trovare (`costiAiuti`
+in `shared/aiuti.ts`, arrotondata al punto): due punti nel cruciverba, che ha
+una ottantina di lettere, tre nel sudoku, che ha da trovare fra quarantacinque e
+cinquantanove cifre. Svelare una casella costa tre parti, perché ne apre altre —
+le parole incrociate, la riga, la colonna e il riquadro — e svelato un terzo
+dello schema la giornata vale zero; un sesto ne lascia la meta'. Un controllo
+costa una parte anche quando trova tutto giusto, perché "e' tutto giusto" e' una
+risposta, e cinque parti se e' di tutto lo schema; ogni errore trovato un'altra
+parte. Un controllo che non guarda niente — nessuna casella scritta fra quelle
+controllate — non costa. Prima, dopo un primo riordino, una casella costava la
+sua parte e basta e un controllo solo gli errori, mezza parte l'uno: due punti
+una lettera, uno un errore, e controllare tutto lo schema costava quanto
+controllare una parola. Gli aiuti non si sentivano, e il controllo dello schema
+era l'aiuto piu' conveniente di tutti. Ancora prima ogni aiuto costava cinque
+punti e un errore due, in tutti e due i giochi. I costi che dicono il foglio
+degli aiuti e le regole li conta il telefono dallo schema, con le stesse
+funzioni del server (`costiCruciverba`, `costiSudoku`): nel sudoku erano scritti
+nel telefono, tre punti e uno, e quando il server era passato a cinque e due il
 foglio diceva ancora quelli di prima. Un test lo controlla.
 
 **Il sudoku libero sta tutto nel telefono.** Lo schema lo genera un Web Worker

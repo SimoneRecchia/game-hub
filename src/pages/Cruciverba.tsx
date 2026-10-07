@@ -369,13 +369,13 @@ export default function Cruciverba() {
       >
         <VoceAiuto
           nome="Controlla la parola"
-          costo={costi ? `${inPunti(costi.errore)} per lettera sbagliata` : undefined}
+          costo={costi ? `${inPunti(costi.controllo)}, più ${costi.errore} per lettera sbagliata` : undefined}
           onClick={() => aiutoScelto(() => g.controlla('parola'))}
           disabled={!g.corrente}
         />
         <VoceAiuto
           nome="Controlla tutto lo schema"
-          costo={costi ? `${inPunti(costi.errore)} per lettera sbagliata` : undefined}
+          costo={costi ? `${inPunti(costi.controlloSchema)}, più ${costi.errore} per lettera sbagliata` : undefined}
           onClick={() => aiutoScelto(() => g.controlla('tutto'))}
         />
         <VoceAiuto
@@ -404,8 +404,10 @@ function Fine({ stato, libera, onElenco }: { stato: CruciverbaState; libera: boo
   const toast = useToast()
   const [cercando, setCercando] = useState(false)
   const svelate = stato.svelate.length
+  const controlli = stato.controlli + stato.controlliSchema
   const aiuti = [
     svelate > 0 && `${svelate} ${pluralize(svelate, 'lettera svelata', 'lettere svelate')}`,
+    controlli > 0 && `${controlli} ${pluralize(controlli, 'controllo', 'controlli')}`,
     stato.errori > 0 &&
       `${stato.errori} ${pluralize(stato.errori, 'errore segnalato', 'errori segnalati')}`,
   ].filter(Boolean)

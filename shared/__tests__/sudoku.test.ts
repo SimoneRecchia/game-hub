@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { NESSUN_AIUTO } from '../aiuti'
 import { mulberry32 } from '../daily'
 import {
   CASELLE,
@@ -106,11 +107,12 @@ describe('la difficoltà e il generatore', () => {
 })
 
 describe('i punti e le note', () => {
-  it('centocinquanta senza aiuti, tre per cifra svelata, uno per errore, mai sotto zero', () => {
+  it('centocinquanta senza aiuti, nove per cifra svelata, tre per controllo e per errore, mai sotto zero', () => {
     const costi = costiSudoku(schemaDelGiorno(31, '2026-09-28')!.dati)
-    expect(puntiSudoku(0, 0, costi)).toBe(150)
-    expect(puntiSudoku(2, 5, costi)).toBe(139)
-    expect(puntiSudoku(60, 0, costi)).toBe(0)
+    expect(puntiSudoku(NESSUN_AIUTO, costi)).toBe(150)
+    expect(puntiSudoku({ svelate: 2, errori: 5, controlli: 1, controlliSchema: 0 }, costi)).toBe(150 - 18 - 15 - 3)
+    expect(puntiSudoku({ ...NESSUN_AIUTO, controlliSchema: 1 }, costi)).toBe(135)
+    expect(puntiSudoku({ ...NESSUN_AIUTO, svelate: 60 }, costi)).toBe(0)
   })
 
   it('le note stanno in 243 caratteri e tornano uguali', () => {

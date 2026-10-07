@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { costiAiuti } from '../aiuti'
+import { NESSUN_AIUTO, costiAiuti, type AiutiChiesti } from '../aiuti'
 import { PUNTI_COMPLETO, punteggio as puntiCruciverba } from '../cruciverba'
 import {
   MASSIMI,
@@ -18,6 +18,8 @@ import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../sc
 /** Uno schema del cruciverba e uno del sudoku della misura di tutti i giorni: ottanta lettere, cinquanta cifre. */
 const CRUCIVERBA = costiAiuti(PUNTI_COMPLETO, 80)
 const SUDOKU = costiAiuti(TETTI.sudoku, 50)
+
+const con = (aiuti: Partial<AiutiChiesti>): AiutiChiesti => ({ ...NESSUN_AIUTO, ...aiuti })
 
 /**
  * I tetti decidono quanto pesa ogni gioco nella generale: se uno si sposta da
@@ -62,11 +64,11 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
 
   it('nel cruciverba il completo senza aiuti vale il tetto', () => {
     expect(PUNTI_COMPLETO).toBe(TETTI.cruciverba)
-    expect(puntiCruciverba(0, 0, CRUCIVERBA)).toBe(TETTI.cruciverba)
+    expect(puntiCruciverba(NESSUN_AIUTO, CRUCIVERBA)).toBe(TETTI.cruciverba)
   })
 
   it('nel sudoku il risolto senza aiuti vale il tetto, e gli aiuti seguono la stessa regola del cruciverba', () => {
-    expect(puntiSudoku(0, 0, SUDOKU)).toBe(TETTI.sudoku)
+    expect(puntiSudoku(NESSUN_AIUTO, SUDOKU)).toBe(TETTI.sudoku)
     expect(SUDOKU).toEqual(costiAiuti(TETTI.sudoku, 50))
   })
 
@@ -101,20 +103,26 @@ describe('una giornata storta si recupera', () => {
     expect(puntiScarabeo(150, 300)).toBe(TETTI.scarabeo / 2)
   })
 
-  it('nel cruciverba ogni aiuto costa poco, non tutto, e la metà dello schema svelata vale la metà', () => {
-    expect(puntiCruciverba(1, 0, CRUCIVERBA)).toBe(TETTI.cruciverba - CRUCIVERBA.svelata)
-    expect(puntiCruciverba(0, 5, CRUCIVERBA)).toBeGreaterThan(0.9 * TETTI.cruciverba)
-    expect(puntiCruciverba(40, 0, CRUCIVERBA)).toBe(TETTI.cruciverba / 2)
-    expect(puntiCruciverba(80, 0, CRUCIVERBA)).toBe(0)
+  it('nel cruciverba un aiuto si sente ma non decide la giornata, e un sesto svelato ne vale la metà', () => {
+    expect(puntiCruciverba(con({ svelate: 1 }), CRUCIVERBA)).toBe(TETTI.cruciverba - CRUCIVERBA.svelata)
+    // Una lettera svelata e una parola controllata: meno del novanta per cento, piu' dell'ottanta.
+    const qualcuno = puntiCruciverba(con({ svelate: 1, controlli: 1, errori: 1 }), CRUCIVERBA)
+    expect(qualcuno).toBeLessThan(0.95 * TETTI.cruciverba)
+    expect(qualcuno).toBeGreaterThan(0.9 * TETTI.cruciverba)
+    expect(puntiCruciverba(con({ svelate: 13 }), CRUCIVERBA)).toBeGreaterThan(TETTI.cruciverba / 2)
+    expect(puntiCruciverba(con({ svelate: 14 }), CRUCIVERBA)).toBeLessThan(TETTI.cruciverba / 2)
+    expect(puntiCruciverba(con({ svelate: 80 }), CRUCIVERBA)).toBe(0)
   })
 
-  it('nel sudoku ogni aiuto costa poco, non tutto, e svelarlo tutto vale zero', () => {
-    expect(puntiSudoku(1, 0, SUDOKU)).toBe(TETTI.sudoku - SUDOKU.svelata)
-    expect(puntiSudoku(0, 1, SUDOKU)).toBe(TETTI.sudoku - SUDOKU.errore)
-    // Due cifre svelate e due errori: una giornata con qualche aiuto resta sopra il novanta per cento.
-    expect(puntiSudoku(2, 2, SUDOKU)).toBeGreaterThanOrEqual(0.9 * TETTI.sudoku)
-    expect(puntiSudoku(25, 0, SUDOKU)).toBe(TETTI.sudoku / 2)
-    expect(puntiSudoku(50, 0, SUDOKU)).toBe(0)
+  it('nel sudoku lo stesso: un aiuto si sente, e svelarlo tutto vale zero', () => {
+    expect(puntiSudoku(con({ svelate: 1 }), SUDOKU)).toBe(TETTI.sudoku - SUDOKU.svelata)
+    expect(puntiSudoku(con({ controlli: 1, errori: 1 }), SUDOKU)).toBe(TETTI.sudoku - SUDOKU.controllo - SUDOKU.errore)
+    // Due cifre svelate e due controlli con un errore: sotto il novanta per cento, sopra il settantacinque.
+    const qualcuno = puntiSudoku(con({ svelate: 2, controlli: 2, errori: 1 }), SUDOKU)
+    expect(qualcuno).toBeLessThan(0.9 * TETTI.sudoku)
+    expect(qualcuno).toBeGreaterThan(0.75 * TETTI.sudoku)
+    expect(puntiSudoku(con({ svelate: 8 }), SUDOKU)).toBeGreaterThan(TETTI.sudoku / 2)
+    expect(puntiSudoku(con({ svelate: 50 }), SUDOKU)).toBe(0)
   })
 
   it('nel tris una serie storta vale piu’ della meta’ di una perfetta, e finirla vale sempre qualcosa', () => {
