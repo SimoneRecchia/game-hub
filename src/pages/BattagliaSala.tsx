@@ -4,7 +4,8 @@ import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Copertina } from '@/components/Copertina'
-import { Elenco, Riga, Sezione, Tacche, Vuoto } from '@/components/Elementi'
+import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
+import { Riga, Sezione, Vuoto } from '@/components/Elementi'
 import { IconCopy, IconInfo, IconShare } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
@@ -70,6 +71,7 @@ export default function BattagliaSala() {
   const [dati, setDati] = useState<LobbyBattaglia | null>(null)
   const [errore, setErrore] = useState<string | null>(null)
   const [invio, setInvio] = useState<string | null>(null)
+  const [livello, setLivello] = useLivelloScelto('battaglia', LIVELLI_BATTAGLIA)
   const [aiuto, setAiuto] = useState(false)
   const [avviso, setAvviso] = useState<string | null>(null)
   const [conferma, setConferma] = useState<LivelloBattaglia | null>(null)
@@ -222,31 +224,28 @@ export default function BattagliaSala() {
           />
 
           {mostrata === 'computer' ? (
-            <Sezione titolo="Difficoltà">
-              <Elenco>
-                {dati.computer && (
+            <Difficolta
+              livelli={LIVELLI_BATTAGLIA.map((id) => {
+                const conti = dati.controComputer[id]
+                const giocate = conti.vinte + conti.perse
+                return { id, nome: NOMI[id], valore: giocate > 0 ? `${conti.vinte}/${giocate}` : undefined }
+              })}
+              scelto={livello}
+              onScegli={setLivello}
+              onComincia={() => scegliLivello(livello)}
+              colore="var(--battaglia-1)"
+              occupato={invio !== null}
+              sopra={
+                dati.computer && (
                   <Riga
                     icona={<span className="bat-riga__onda" aria-hidden="true" />}
                     titolo="Riprendi la partita"
                     sotto={dati.computer.stato === 'disposizione' ? 'Flotta da disporre' : 'Tocca a te'}
                     a={ROTTE.partitaBattaglia(dati.computer.id)}
                   />
-                )}
-                {LIVELLI_BATTAGLIA.map((livello, i) => {
-                  const conti = dati.controComputer[livello]
-                  const giocate = conti.vinte + conti.perse
-                  return (
-                    <Riga
-                      key={livello}
-                      icona={<Tacche piene={i + 1} colore="var(--battaglia-1)" />}
-                      titolo={invio === livello ? `${NOMI[livello]}…` : NOMI[livello]}
-                      valore={giocate > 0 ? `${conti.vinte}/${giocate}` : undefined}
-                      onClick={invio ? undefined : () => scegliLivello(livello)}
-                    />
-                  )
-                })}
-              </Elenco>
-            </Sezione>
+                )
+              }
+            />
           ) : (
             <Sezione titolo="Invita">
               {dati.link ? (
