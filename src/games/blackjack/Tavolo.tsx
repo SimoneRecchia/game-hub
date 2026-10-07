@@ -20,6 +20,44 @@ export interface CarteInGioco {
   onAtterra: (chiave: string) => void
 }
 
+/*
+ * Le scritte e i fili sono archi dello stesso cerchio, con il centro sopra il
+ * panno: cosi' restano alla stessa distanza da un capo all'altro. Erano curve
+ * ognuna con la sua, piu' strette quanto piu' in basso, e la scritta piccola
+ * toccava il filo. I percorsi delle scritte sono piu' lunghi delle scritte, e
+ * nessun carattere le taglia ai capi; la fascia dell'assicurazione e' larga
+ * quanto la sua scritta in Georgia, che e' il piu' largo dei caratteri del
+ * panno (gli altri sono Times e, su Android, Noto Serif).
+ */
+const CENTRO_X = 200
+const CENTRO_Y = -226
+
+function punto(r: number, gradi: number): string {
+  const a = (gradi * Math.PI) / 180
+  return `${(CENTRO_X + r * Math.sin(a)).toFixed(1)} ${(CENTRO_Y + r * Math.cos(a)).toFixed(1)}`
+}
+
+/** Un arco di raggio `r`, da sinistra a destra, largo `gradi` per parte. */
+function arco(r: number, gradi: number): string {
+  return `M ${punto(r, -gradi)} A ${r} ${r} 0 0 0 ${punto(r, gradi)}`
+}
+
+/** La fascia fra due archi, con i capi tondi. */
+function fascia(dentro: number, fuori: number, gradi: number): string {
+  const capo = (fuori - dentro) / 2
+  return (
+    `M ${punto(dentro, -gradi)} A ${dentro} ${dentro} 0 0 0 ${punto(dentro, gradi)} ` +
+    `A ${capo} ${capo} 0 0 1 ${punto(fuori, gradi)} A ${fuori} ${fuori} 0 0 1 ${punto(fuori, -gradi)} ` +
+    `A ${capo} ${capo} 0 0 1 ${punto(dentro, -gradi)} Z`
+  )
+}
+
+const ARCO_GRANDE = arco(288, 60)
+const FILO = arco(297, 30)
+const ARCO_PICCOLO = arco(313, 60)
+const FASCIA_ASSICURAZIONE = fascia(321, 345, 23.6)
+const ARCO_ASSICURAZIONE = arco(337.6, 60)
+
 /**
  * Le scritte sul panno, lungo l'arco, come sui tavoli veri: quanto paga il
  * blackjack, come gioca il banco, e la linea dell'assicurazione, che si
@@ -29,16 +67,16 @@ export function Scritte({ offerta = false }: { offerta?: boolean }) {
   return (
     <svg
       className={`bj-scritte${offerta ? ' is-offerta' : ''}`}
-      viewBox="0 0 400 136"
+      viewBox="0 0 400 122"
       preserveAspectRatio="xMidYMid meet"
       aria-hidden="true"
     >
       <defs>
-        <path id="bj-arco-grande" d="M 26 22 Q 200 104 374 22" />
-        <path id="bj-arco-piccolo" d="M 70 60 Q 200 122 330 60" />
-        <path id="bj-arco-assicurazione" d="M 88 92 Q 200 153 312 92" />
+        <path id="bj-arco-grande" d={ARCO_GRANDE} />
+        <path id="bj-arco-piccolo" d={ARCO_PICCOLO} />
+        <path id="bj-arco-assicurazione" d={ARCO_ASSICURAZIONE} />
       </defs>
-      <path d="M 44 44 Q 200 122 356 44" className="bj-scritte__filo" />
+      <path d={FILO} className="bj-scritte__filo" />
       <text className="bj-scritte__grande">
         <textPath href="#bj-arco-grande" startOffset="50%" textAnchor="middle">
           IL BLACKJACK PAGA 1 A 1
@@ -50,8 +88,7 @@ export function Scritte({ offerta = false }: { offerta?: boolean }) {
         </textPath>
       </text>
       <g className="bj-scritte__linea">
-        <path d="M 80 76 Q 200 136 320 76" className="bj-scritte__bordo" />
-        <path d="M 98 100 Q 200 160 302 100" className="bj-scritte__bordo" />
+        <path d={FASCIA_ASSICURAZIONE} className="bj-scritte__bordo" />
         <text className="bj-scritte__assicurazione">
           <textPath href="#bj-arco-assicurazione" startOffset="50%" textAnchor="middle">
             L’ASSICURAZIONE PAGA 2 A 1
