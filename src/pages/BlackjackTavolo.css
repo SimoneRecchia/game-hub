@@ -930,11 +930,17 @@
   height: 11px;
 }
 
-/* L'anello del tempo: si consuma attorno a chi deve decidere, rosso negli ultimi secondi. */
+/*
+ * L'anello del tempo: si consuma attorno a chi deve decidere, rosso negli
+ * ultimi secondi. E' piu' largo di quel che circonda, e il `max-width: 100%`
+ * che base.css da' alle svg lo stringeva solo in larghezza: l'anello veniva
+ * ovale, e girato di un quarto anche spostato di lato.
+ */
 .bj-anello {
   position: absolute;
   inset: -5px;
   width: calc(100% + 10px);
+  max-width: none;
   height: calc(100% + 10px);
   pointer-events: none;
   transform: rotate(-90deg);
