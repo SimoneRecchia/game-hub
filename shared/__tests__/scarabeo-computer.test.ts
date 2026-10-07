@@ -14,11 +14,14 @@ import {
 } from '../scarabeo'
 import {
   MOSSE_A_TESTA,
+  PARTITA_DEL_GIORNO,
   giornataDelComputer,
+  rispostaDelGiorno,
   statoLibera,
   turnoDelComputer,
   type PartitaLibera,
 } from '../scarabeo-computer'
+import { valoreLeggio } from '../scarabeo-due'
 
 const dawg = Dawg.da(
   readFileSync(join(__dirname, '..', '..', 'public', 'scarabeo', 'dizionario.dawg')),
@@ -61,7 +64,7 @@ describe('i leggii di due giocatori sullo stesso sacchetto', () => {
 describe('la partita libera contro il computer', () => {
   function giocaFinoInFondo(partita: PartitaLibera) {
     const sacchetto = sacchettoDaSeme(partita.seme)
-    for (let giro = 0; giro < 2 * MOSSE_A_TESTA + 2; giro += 1) {
+    for (let giro = 0; giro < 400; giro += 1) {
       const stato = statoLibera(partita, sacchetto)
       if (stato.finita) return stato
       if (stato.turno === 'io') {
@@ -76,7 +79,7 @@ describe('la partita libera contro il computer', () => {
     return statoLibera(partita, sacchetto)
   }
 
-  it('si alterna, finisce dopo dieci mosse a testa e dice chi ha vinto', () => {
+  it('si alterna e va fino in fondo: chi resta con le tessere ne perde il valore, e dice chi ha vinto', () => {
     const partita: PartitaLibera = { seme: 77, livello: 'facile', mosse: [] }
     const iniziale = statoLibera(partita, sacchettoDaSeme(77))
     expect(iniziale.turno).toBe('io')
@@ -85,12 +88,40 @@ describe('la partita libera contro il computer', () => {
     const fine = giocaFinoInFondo(partita)
     expect(fine.finita).toBe(true)
     expect(fine.turno).toBeNull()
-    expect(fine.mieMosse).toBe(MOSSE_A_TESTA)
-    expect(fine.mosseComputer).toBe(MOSSE_A_TESTA)
-    expect(fine.mieiPunti).toBe(0)
+    // Ben oltre le dieci mosse della giornata: la libera finisce quando finiscono le tessere.
+    expect(fine.mosseComputer).toBeGreaterThan(MOSSE_A_TESTA)
+    expect(fine.fine === 'chiusa' || fine.fine === 'ferma').toBe(true)
+    // Chi passa sempre tiene le sue otto tessere, e alla fine ne perde il valore.
+    expect(fine.aggiustamento.mio).toBe(-valoreLeggio(fine.mioLeggio))
+    expect(fine.mieiPunti).toBe(fine.aggiustamento.mio)
     expect(fine.puntiComputer).toBeGreaterThan(0)
     expect(fine.esito).toBe('persa')
-    expect(fine.giocate.filter((g) => g.mia)).toHaveLength(MOSSE_A_TESTA)
+    if (fine.fine === 'chiusa') {
+      // Chi chiude prende il valore delle tessere dell'altro.
+      expect(fine.restanti).toBe(0)
+      expect(fine.leggioComputer).toEqual([])
+      expect(fine.aggiustamento.computer).toBe(valoreLeggio(fine.mioLeggio))
+    }
+  })
+
+  it('con le regole della giornata finisce dopo dieci mosse a testa, senza il conto delle tessere', () => {
+    const partita: PartitaLibera = { seme: 3, livello: 'normale', mosse: [] }
+    const sacchetto = sacchettoDelGiorno(31)
+    while (!statoLibera(partita, sacchetto, PARTITA_DEL_GIORNO).finita) {
+      const stato = statoLibera(partita, sacchetto, PARTITA_DEL_GIORNO)
+      if (stato.turno === 'io') partita.mosse.push({ tipo: 'passo' })
+      else partita.mosse.push(rispostaDelGiorno(dawg, 31, partita.mosse)!)
+    }
+    const fine = statoLibera(partita, sacchetto, PARTITA_DEL_GIORNO)
+    expect(fine.fine).toBe('mosse')
+    expect(fine.mieMosse).toBe(MOSSE_A_TESTA)
+    expect(fine.mosseComputer).toBe(MOSSE_A_TESTA)
+    expect(fine.aggiustamento).toEqual({ mio: 0, computer: 0 })
+    // Il computer del giorno non cambia mai le tessere: se non puo' posare, passa.
+    expect(partita.mosse.filter((m, i) => i % 2 === 1 && m.tipo === 'cambio')).toEqual([])
+    // A mosse uguali risponde uguale.
+    expect(rispostaDelGiorno(dawg, 31, partita.mosse.slice(0, 1))).toEqual(partita.mosse[1])
+    expect(rispostaDelGiorno(dawg, 31, partita.mosse.slice(0, 2))).toBeNull()
   })
 
   it('rigiocata dalle mosse, e’ la stessa partita', () => {

@@ -92,7 +92,7 @@ describe('le partite libere contro il computer', () => {
     const { chiama, giocatore } = banco()
     const io = await giocatore('dario')
     const partita = partitaFinita(99)
-    expect(partita.mosse).toHaveLength(2 * MOSSE_A_TESTA)
+    expect(partita.mosse.length).toBeGreaterThan(2 * MOSSE_A_TESTA)
     const meta = { ...partita, mosse: partita.mosse.slice(0, 5) }
     expect((await chiama('POST', '/scarabeo/libera', io, meta)).status).toBe(422)
     expect((await chiama('POST', '/scarabeo/libera', io, { ...partita, livello: 'impossibile' })).status).toBe(400)
