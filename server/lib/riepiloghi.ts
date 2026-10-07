@@ -31,7 +31,7 @@ import type {
 import { today } from './wordleStore'
 import { giornata as giornataScarabeo } from './scarabeoStore'
 import { compagniaBreve } from './compagniaStore'
-import { giornata as giornataCruciverba, schemaDelGiorno, svelateDi, type PartitaRow } from './cruciverbaStore'
+import { aiutiDi, giornata as giornataCruciverba, schemaDelGiorno, type PartitaRow } from './cruciverbaStore'
 import { giornata as giornataQuiz, giornataQuiz as domandeDelGiorno, partitaDi as partitaQuiz, risposteDi } from './quizStore'
 import { puntiQuiz } from '../../shared/quiz'
 import { PARTITE_TRIS, puntiTris } from '../../shared/tris'
@@ -40,7 +40,6 @@ import {
   giornata as giornataSudoku,
   partitaDi as partitaSudoku,
   schemaDelGiorno as schemaSudoku,
-  svelateDi as svelateSudoku,
 } from './sudokuStore'
 import { giornata as giornataTris, partiteDi as partiteTris, serieDi as serieTris } from './trisStore'
 import { giornata as giornataNomi, partitaDi as partitaNomi, risposteDi as risposteNomi, scaduta } from './nomiStore'
@@ -127,14 +126,25 @@ export async function riepilogoCruciverba(db: D1Database, playerId: string): Pro
   const row = schema
     ? await db
         .prepare(
-          `SELECT status, lettere, score, svelate, errori, tempo_ms, in_compagnia, assist_score FROM cruciverba_games
+          `SELECT status, lettere, score, svelate, errori, controlli, controlli_schema, tempo_ms, in_compagnia,
+                  assist_score
+             FROM cruciverba_games
             WHERE player_id = ? AND puzzle_number = ?`,
         )
         .bind(playerId, quando.puzzleNumber)
         .first<
           Pick<
             PartitaRow,
-            'status' | 'lettere' | 'score' | 'svelate' | 'errori' | 'tempo_ms' | 'in_compagnia' | 'assist_score'
+            | 'status'
+            | 'lettere'
+            | 'score'
+            | 'svelate'
+            | 'errori'
+            | 'controlli'
+            | 'controlli_schema'
+            | 'tempo_ms'
+            | 'in_compagnia'
+            | 'assist_score'
           >
         >()
     : null
@@ -164,7 +174,7 @@ export async function riepilogoCruciverba(db: D1Database, playerId: string): Pro
       schema && row
         ? row.status === 'done'
           ? row.score
-          : punteggio(svelateDi(row).length, row.errori, costiCruciverba(schema.soluzione))
+          : punteggio(aiutiDi(row), costiCruciverba(schema.soluzione))
         : PUNTI_COMPLETO,
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
@@ -189,7 +199,7 @@ export async function riepilogoSudoku(db: D1Database, playerId: string): Promise
       ? PUNTI_SUDOKU
       : row.status === 'done'
         ? row.score
-        : puntiSudoku(svelateSudoku(row).length, row.errori, costiSudoku(schema.dati)),
+        : puntiSudoku(aiutiDi(row), costiSudoku(schema.dati)),
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
   }
