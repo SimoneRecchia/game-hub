@@ -194,6 +194,8 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
                       ? 'ti sfida a Nomi, cose e città.'
                       : sfida.gioco === 'indovina'
                       ? 'ti invita a Indovina chi.'
+                      : sfida.gioco === 'lupus'
+                      ? 'ti invita a Lupus.'
                       : sfida.gioco === 'scacchi' ||
                           sfida.gioco === 'dama' ||
                           sfida.gioco === 'forza4' ||

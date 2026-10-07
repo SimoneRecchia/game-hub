@@ -1,0 +1,1645 @@
+/*
+ * Lupus in fabula: la sala, il telefono che passa di mano, la stanza online.
+ *
+ * Le schermate di gioco stanno nello schermo: `.lupus` prende l'altezza che
+ * la pagina lascia, e ogni schermata (`.lupus-schermo`) ha un corpo che scorre
+ * dentro — gli elenchi arrivano a quaranta giocatori — e i bottoni fermi in
+ * fondo, sotto il pollice. Di notte la pagina si fa scura in tutti e due i
+ * temi, come la Fortuna: `color-scheme: dark` e i token si girano da soli.
+ */
+
+/* ───────────────────────────  La notte  ─────────────────────────── */
+
+.pagina:has(.lupus--notte) {
+  color-scheme: dark;
+  --bg: var(--lupus-notte);
+  --surface: var(--lupus-notte-superficie);
+  --surface-2: var(--lupus-notte-superficie-2);
+  --vetro-barra: var(--lupus-notte-velo);
+  background:
+    radial-gradient(2px 2px at 12% 18%, rgba(255, 255, 255, 0.55), transparent 70%),
+    radial-gradient(1.5px 1.5px at 78% 9%, rgba(255, 255, 255, 0.5), transparent 70%),
+    radial-gradient(1.5px 1.5px at 88% 34%, rgba(255, 255, 255, 0.35), transparent 70%),
+    radial-gradient(2px 2px at 30% 6%, rgba(255, 255, 255, 0.4), transparent 70%),
+    radial-gradient(90% 380px at 50% 0, rgba(76, 88, 190, 0.42), transparent),
+    var(--lupus-notte);
+  background-repeat: no-repeat;
+  color: var(--label);
+}
+
+.pagina:has(.lupus--notte) .pagina__barra {
+  background: transparent;
+}
+
+body:has(.lupus--notte) {
+  background: var(--lupus-notte);
+}
+
+/* ───────────────────────────  La schermata di gioco  ─────────────────────────── */
+
+.lupus {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(100%, 560px);
+  align-self: center;
+}
+
+.lupus-schermo {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Il corpo scorre dentro: le ombre e gli anelli delle tessere hanno il loro margine. */
+.lupus-schermo__corpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0 -6px;
+  padding: 4px 6px 8px;
+}
+
+.lupus-schermo__piede {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.lupus-conduce {
+  flex: none;
+}
+
+.lupus-centro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--sp-4);
+}
+
+.lupus-etichetta {
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.lupus-occhiello {
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.lupus-attesa {
+  margin: 0;
+  padding: var(--sp-3) 0;
+  text-align: center;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+  animation: lupus-respira 1.6s var(--ease-in-out) infinite;
+}
+
+@keyframes lupus-respira {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.lupus-vuoto {
+  margin: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+/* ───────────────────────────  La testa di una fase  ─────────────────────────── */
+
+.lupus-testa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding-top: var(--sp-2);
+  text-align: center;
+}
+
+.lupus-testa__icona {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--label-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.lupus-testa__icona.is-notte {
+  background: radial-gradient(circle at 40% 35%, #2f3780, #141833);
+  color: var(--lupus-luna-chiara);
+  box-shadow: 0 0 40px rgba(245, 196, 81, 0.28);
+}
+
+.lupus-testa__icona.is-giorno {
+  background: radial-gradient(circle at 40% 35%, #ffe9a6, #f0b73a);
+  color: #6b4400;
+  box-shadow: 0 0 40px rgba(245, 196, 81, 0.35);
+}
+
+.lupus-testa__icona.is-sangue {
+  background: radial-gradient(circle at 40% 35%, #ff8a8e, #b8303a);
+  color: #3a0a0c;
+  box-shadow: 0 0 36px rgba(196, 50, 58, 0.3);
+}
+
+.lupus-testa__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 2.125rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: var(--tracking-tight);
+}
+
+.lupus-testa__sotto {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--text-body);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+/* La testa delle schermate della notte: il proprio personaggio, la notte, che cosa fare. */
+.lupus-testa-notte {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.lupus-testa-notte__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lupus-testa-notte__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.lupus-testa-notte__sotto {
+  margin: 0;
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+.lupus-testa-notte__icona {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  flex: none;
+  border-radius: 30%;
+  background: radial-gradient(circle at 40% 35%, #ffe9a6, #f0b73a);
+  color: #6b4400;
+}
+
+/* Sui telefoni bassi la testa si stringe: deve restare posto per l'elenco e i bottoni. */
+@media (max-height: 680px) {
+  .lupus-testa__icona {
+    width: 60px;
+    height: 60px;
+  }
+
+  .lupus-testa__titolo {
+    font-size: 1.625rem;
+  }
+
+  .lupus-testa__sotto {
+    font-size: var(--text-subhead);
+  }
+}
+
+/* ───────────────────────────  I personaggi  ─────────────────────────── */
+
+/* Il tondo di un personaggio: il suo colore, e l'icona d'inchiostro con gli occhi scavati. */
+.lupus-badge {
+  --icona-alt: var(--ruolo);
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 30%;
+  background: var(--ruolo);
+  color: var(--lupus-inchiostro);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.lupus-badge svg {
+  width: 62%;
+  height: 62%;
+}
+
+.lupus-fazione {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lupus-fazione.is-villaggio {
+  background: color-mix(in srgb, var(--lupus-villaggio) 14%, transparent);
+  color: var(--lupus-villaggio);
+}
+
+.lupus-fazione.is-lupi {
+  background: color-mix(in srgb, var(--lupus-lupi) 14%, transparent);
+  color: var(--lupus-lupi);
+}
+
+.lupus-fazione.is-solo {
+  background: color-mix(in srgb, var(--lupus-solo) 14%, transparent);
+  color: var(--lupus-solo);
+}
+
+.lupus-segno {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+  font-size: var(--text-caption-2);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* La carta del personaggio, come la si gira al tavolo. */
+.lupus-carta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  /* Al centro dello schermo, se c'e' posto; se non c'e', il corpo scorre da sopra. */
+  margin: auto 0;
+  padding: 22px 16px 16px;
+  border-radius: 28px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--ruolo) 40%, transparent), transparent 62%),
+    var(--surface);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ruolo) 45%, transparent),
+    var(--shadow-md);
+  animation: lupus-carta 520ms var(--ease-push) both;
+}
+
+@keyframes lupus-carta {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96) rotateY(40deg);
+  }
+}
+
+.lupus-carta .lupus-badge {
+  border-radius: 34%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 14px 34px color-mix(in srgb, var(--ruolo) 45%, transparent);
+}
+
+.lupus-carta__nome {
+  font-family: var(--font-rounded);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: var(--tracking-tight);
+}
+
+.lupus-carta__motto {
+  font-weight: 600;
+  font-style: italic;
+  color: var(--label-secondary);
+}
+
+.lupus-carta__regola {
+  width: 100%;
+  margin: var(--sp-1) 0 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+  text-align: left;
+}
+
+.lupus-carta__compagni {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  text-align: left;
+}
+
+.lupus-nota {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--fill-tertiary);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.lupus-riga-ruolo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+}
+
+.lupus-riga-ruolo.is-tocca:active {
+  background: var(--fill-quaternary);
+}
+
+.lupus-riga-ruolo__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lupus-riga-ruolo__nome {
+  font-weight: 700;
+}
+
+.lupus-riga-ruolo__motto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* ───────────────────────────  I giocatori  ─────────────────────────── */
+
+.lupus-elenco {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lupus-tessera {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 52px;
+  padding: 7px var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-sm);
+  color: var(--label);
+  text-align: left;
+  transition:
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.lupus-tessera.is-tocca:active {
+  transform: scale(0.985);
+}
+
+.lupus-tessera.is-scelto {
+  background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+  box-shadow:
+    0 0 0 2px var(--brand),
+    0 6px 20px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+
+.lupus-tessera.is-morto {
+  opacity: 0.55;
+}
+
+.lupus-tessera.is-morto .lupus-tessera__nome {
+  text-decoration: line-through;
+}
+
+.lupus-tessera__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lupus-tessera__nome,
+.lupus-tessera__sotto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lupus-tessera__nome {
+  font-weight: 600;
+}
+
+.lupus-tessera__sotto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.lupus-tessera__altro {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--label-secondary);
+}
+
+.lupus-tessera__conto {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.lupus-tessera__conto.is-caldo {
+  background: var(--lupus-sangue);
+  color: #fff;
+}
+
+.lupus-tessera__spunta {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 2px var(--separator-opaque);
+  color: #fff;
+}
+
+.lupus-tessera.is-scelto .lupus-tessera__spunta {
+  background: var(--brand);
+  box-shadow: none;
+}
+
+/* Un giocatore in piccolo, in una fila. */
+.lupus-gettoni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lupus-gettone {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 10px 3px 3px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lupus-gettone.is-morto {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.lupus-gettone.is-acceso {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  box-shadow: 0 0 0 2px var(--brand);
+  opacity: 1;
+}
+
+.lupus-gettoni--grandi .lupus-gettone {
+  padding: 5px 14px 5px 5px;
+  font-size: var(--text-body);
+}
+
+.lupus-striscia {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.lupus-striscia__testa {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.lupus-segnalini {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.lupus-segnalino {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 8px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--lupus-luna) 18%, transparent);
+  color: var(--lupus-luna-ink);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+/* L'ordine di voto delle nomine: chi ha votato si spegne, chi vota adesso si accende. */
+.lupus-ordine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lupus-ordine .lupus-gettone.is-morto {
+  text-decoration: none;
+}
+
+/* ───────────────────────────  Le righe e i riquadri  ─────────────────────────── */
+
+.lupus-riquadro {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+}
+
+.lupus-avviso {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+}
+
+.lupus-avviso svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--label-secondary);
+}
+
+.lupus-avviso.is-male {
+  background: color-mix(in srgb, var(--lupus-sangue) 12%, transparent);
+}
+
+.lupus-avviso.is-male svg {
+  color: var(--lupus-sangue);
+}
+
+.lupus-segreto {
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+  font-weight: 600;
+  line-height: 1.35;
+  animation: lupus-compare 360ms var(--ease-push) both;
+}
+
+.lupus-segreto.is-male {
+  background: color-mix(in srgb, var(--lupus-sangue) 16%, var(--surface));
+}
+
+.lupus-segreto__quando {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+@keyframes lupus-compare {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.lupus-diario {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lupus-diario .lupus-segreto {
+  animation: none;
+}
+
+.lupus-branco {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--lupus-sangue) 10%, var(--surface));
+}
+
+.lupus-branco__riga {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: var(--text-subhead);
+}
+
+.lupus-branco__riga span {
+  color: var(--label-secondary);
+}
+
+.lupus-chi-eri {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.lupus-chi-eri > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.lupus-carta-piccola {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.lupus-svelato {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin: 0;
+}
+
+.lupus-svelato span {
+  color: var(--label-secondary);
+}
+
+/* ───────────────────────────  L'orologio  ─────────────────────────── */
+
+.lupus-orologio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  padding: var(--sp-3);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.lupus-orologio__anello {
+  width: 56px;
+  height: 56px;
+  max-width: none;
+  transform: rotate(-90deg);
+}
+
+.lupus-orologio__anello circle {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.lupus-orologio__fondo {
+  stroke: var(--fill-tertiary);
+}
+
+.lupus-orologio__pieno {
+  stroke: var(--brand);
+  transition: stroke-dashoffset 250ms linear;
+}
+
+.lupus-orologio__tempo {
+  min-width: 4.2ch;
+  font-family: var(--font-rounded);
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+}
+
+.lupus-orologio__nota {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.lupus-orologio.is-urgente .lupus-orologio__pieno {
+  stroke: var(--orange);
+}
+
+.lupus-orologio.is-urgente .lupus-orologio__tempo {
+  color: var(--orange);
+}
+
+.lupus-orologio.is-finito .lupus-orologio__tempo {
+  color: var(--lupus-sangue);
+}
+
+/* ───────────────────────────  Il conteggio, la fine  ─────────────────────────── */
+
+.lupus-conteggio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.lupus-conteggio__voce {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lupus-conteggio__riga {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-size: var(--text-subhead);
+}
+
+.lupus-conteggio__barra {
+  display: block;
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  overflow: hidden;
+}
+
+.lupus-conteggio__barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--lupus-sangue);
+  animation: lupus-barra 600ms var(--ease-push) both;
+  transform-origin: left;
+}
+
+@keyframes lupus-barra {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.lupus-esito {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: 28px;
+  text-align: center;
+  color: #fff;
+  background:
+    radial-gradient(90% 70% at 50% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
+    linear-gradient(160deg, var(--esito), color-mix(in srgb, var(--esito) 42%, #000));
+  box-shadow: var(--shadow-md);
+}
+
+.lupus-esito.is-villaggio {
+  --esito: var(--lupus-villaggio-pieno);
+}
+
+.lupus-esito.is-lupi {
+  --esito: var(--lupus-lupi-pieno);
+}
+
+.lupus-esito.is-solo {
+  --esito: var(--lupus-solo-pieno);
+}
+
+.lupus-esito__icona {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  --icona-alt: color-mix(in srgb, var(--esito) 70%, #000);
+}
+
+.lupus-esito__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.05;
+}
+
+.lupus-esito__sotto {
+  margin: 0;
+  font-size: var(--text-subhead);
+  opacity: 0.92;
+}
+
+.lupus-chi {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 6px 0;
+}
+
+.lupus-chi + .lupus-chi {
+  border-top: 0.5px solid var(--separator);
+}
+
+.lupus-chi__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lupus-chi__nome {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lupus-chi.is-morto .lupus-chi__nome {
+  color: var(--label-secondary);
+  text-decoration: line-through;
+}
+
+.lupus-chi__ruolo {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.lupus-chi__esito {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+}
+
+.lupus-chi__esito.is-vince {
+  background: color-mix(in srgb, var(--lupus-luna) 26%, transparent);
+  color: var(--lupus-luna-ink);
+}
+
+/* ───────────────────────────  La cronaca  ─────────────────────────── */
+
+.lupus-cronaca {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lupus-cronaca__quando {
+  margin-top: var(--sp-2);
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.lupus-cronaca__quando:first-child {
+  margin-top: 0;
+}
+
+.lupus-cronaca__fatto {
+  display: flex;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+  line-height: 1.35;
+}
+
+.lupus-cronaca__fatto svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--label-secondary);
+}
+
+/* ───────────────────────────  Il telefono che passa di mano  ─────────────────────────── */
+
+.lupus-passa {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4) 0;
+  text-align: center;
+  animation: lupus-compare 360ms var(--ease-push) both;
+}
+
+.lupus-passa__volto {
+  display: inline-grid;
+  margin: var(--sp-2) 0;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 3px var(--lupus-luna),
+    0 0 44px rgba(245, 196, 81, 0.3);
+}
+
+.lupus-passa__sopra {
+  margin: 0;
+  color: var(--label-secondary);
+}
+
+.lupus-passa__nome {
+  margin: 0;
+  max-width: 100%;
+  font-family: var(--font-rounded);
+  font-size: 2.625rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: var(--tracking-tight);
+  overflow-wrap: anywhere;
+}
+
+.lupus-passa__sotto {
+  margin: 0;
+  max-width: 30ch;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+/* ───────────────────────────  I fogli  ─────────────────────────── */
+
+.lupus-foglio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.lupus-foglio__testo {
+  margin: 0;
+  font-size: var(--text-subhead);
+  line-height: 1.45;
+  color: var(--label-secondary);
+}
+
+.lupus-foglio__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.lupus-personaggio {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.lupus-personaggio__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.lupus-personaggio__nome {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+}
+
+.lupus-personaggio__motto {
+  font-style: italic;
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.lupus-personaggio__pillole {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Il mazzo del regolamento: le carte con le loro copie, da toccare per leggerle. */
+.lupus-mazzo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.lupus-mazzo__carta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.lupus-totale {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+  font-weight: 700;
+}
+
+.lupus-totale.is-male {
+  background: color-mix(in srgb, var(--lupus-sangue) 12%, transparent);
+  color: var(--lupus-sangue);
+}
+
+.lupus-serie {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.lupus-serie__righe {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.lupus-serie__riga {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px var(--sp-3);
+}
+
+.lupus-serie__riga + .lupus-serie__riga::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 58px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.lupus-serie__riga:not(.is-dentro) .lupus-badge {
+  opacity: 0.55;
+}
+
+.lupus-serie__chi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  text-align: left;
+}
+
+.lupus-serie__testo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lupus-serie__nome {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lupus-serie__sotto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.lupus-serie__quante {
+  min-width: 28px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.lupus-passi {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.lupus-passi__tasto {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--fill-tertiary);
+  color: var(--brand);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.lupus-passi__tasto:active:not(:disabled) {
+  background: var(--fill-secondary);
+}
+
+.lupus-passi__tasto:disabled {
+  opacity: 0.35;
+}
+
+.lupus-passi__numero {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+}
+
+/* Le regole, in gruppi come nelle Impostazioni. */
+.lupus-impostazioni {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-sm);
+}
+
+.lupus-impostazione {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 12px 14px;
+}
+
+.lupus-impostazione + .lupus-impostazione::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 14px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.lupus-impostazione--riga {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+}
+
+.lupus-impostazione__testa {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.lupus-impostazione__titolo {
+  font-weight: 500;
+}
+
+.lupus-impostazione__valore {
+  color: var(--label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.lupus-interruttore {
+  position: relative;
+  flex: none;
+  width: 51px;
+  height: 31px;
+  border-radius: var(--r-pill);
+  background: var(--fill-secondary);
+  transition: background-color var(--dur-base) var(--ease-out);
+}
+
+.lupus-interruttore::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.22);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.lupus-interruttore[aria-checked='true'] {
+  background: var(--brand);
+}
+
+.lupus-interruttore[aria-checked='true']::after {
+  transform: translateX(20px);
+}
+
+.lupus-personaggi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.lupus-personaggi__fazione {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.lupus-personaggi__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+}
+
+.lupus-personaggi__scopo {
+  margin: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.lupus-personaggi__elenco {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lupus-ordine-notte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: notte;
+}
+
+.lupus-ordine-notte li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 3px;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+/* ───────────────────────────  La sala  ─────────────────────────── */
+
+.lupus-aperta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-4);
+  border-radius: var(--r-xl);
+  background: linear-gradient(150deg, var(--lupus-1), var(--lupus-2));
+  color: #fff;
+  text-align: left;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.lupus-aperta:active {
+  transform: scale(0.98);
+}
+
+.lupus-aperta__icona {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--lupus-luna-chiara);
+}
+
+.lupus-aperta__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lupus-aperta__titolo {
+  font-weight: 700;
+}
+
+.lupus-aperta__stato {
+  font-size: var(--text-footnote);
+  opacity: 0.85;
+}
+
+.lupus-aperta__vai {
+  padding: var(--sp-1) var(--sp-3);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.22);
+  font-size: var(--text-footnote);
+  font-weight: 700;
+}
+
+/* La partita a un telefono in corso: un tondo che pulsa, come la riga della battaglia. */
+.lupus-segno-vivo {
+  position: relative;
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 0 5px;
+  border-radius: 50%;
+  background: var(--lupus-1);
+}
+
+.lupus-segno-vivo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 var(--lupus-1);
+  animation: bat-onde 1.6s var(--ease-out) infinite;
+}
+
+.riga__icona:has(.lupus-segno-vivo) {
+  background: none;
+}
+
+.lupus-via {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.lupus-via__perche {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* I nomi dei giocatori, uno per riga, con il numero del posto. */
+.lupus-nomi {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.lupus-nomi__riga {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 50px;
+  padding: 0 6px 0 var(--sp-4);
+}
+
+.lupus-nomi__riga + .lupus-nomi__riga::before,
+.lupus-nomi__aggiungi::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 52px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.lupus-nomi__posto {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+}
+
+/* Sotto i 16 punti Safari ingrandisce la pagina quando il campo prende il fuoco. */
+.lupus-nomi__campo {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  font-size: 17px;
+  outline: none;
+}
+
+.lupus-nomi__campo::placeholder {
+  color: var(--label-tertiary);
+}
+
+.lupus-nomi__togli {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 50%;
+  color: var(--label-secondary);
+}
+
+.lupus-nomi__togli:disabled {
+  opacity: 0.25;
+}
+
+.lupus-nomi__aggiungi {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 50px;
+  padding: 0 var(--sp-4);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+/* ───────────────────────────  La stanza  ─────────────────────────── */
+
+.lupus-ingresso {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-6) var(--sp-2);
+  text-align: center;
+}
+
+.lupus-ingresso__testo {
+  margin: 0;
+  max-width: 30ch;
+  font-size: var(--text-body);
+  line-height: 1.4;
+}
+
+.lupus-ingresso__sotto {
+  margin: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.lupus-codice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--lupus-1) 22%, transparent), transparent 70%),
+    var(--surface);
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-sm);
+}
+
+.lupus-codice__lettere {
+  margin: 0;
+  padding-left: 0.3em;
+  font-family: var(--font-rounded);
+  font-size: 3.5rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.3em;
+  color: var(--label);
+}
+
+/* Due bottoni affiancati finché "Condividi" ci sta con la sua icona; su un telefono stretto vanno a capo. */
+.lupus-codice__azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.lupus-codice__azioni .btn {
+  flex: 1 1 9.25rem;
+}
+
+.lupus-codice__azioni .btn svg {
+  flex: none;
+}
+
+.lupus-iscritto__volto {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+}
+
+.lupus-iscritto__online {
+  position: absolute;
+  right: -1px;
+  bottom: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.lupus-manda-via {
+  min-height: 36px;
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+}
+
+.lupus-attesa-breve {
+  min-height: 64px;
+  flex: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lupus-carta,
+  .lupus-passa,
+  .lupus-segreto,
+  .lupus-conteggio__barra span,
+  .lupus-attesa,
+  .lupus-segno-vivo::after {
+    animation: none;
+  }
+}

@@ -75,6 +75,11 @@
   --c2: var(--nomi-2);
 }
 
+.copertina--lupus {
+  --c1: var(--lupus-1);
+  --c2: var(--lupus-2);
+}
+
 .copertina--go {
   --c1: var(--go-1);
   --c2: var(--go-2);

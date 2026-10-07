@@ -375,18 +375,19 @@ non fa record.
 visibile: dice al server dove si trova il giocatore e riporta gli inviti a
 giocare in compagnia il Wordle, il cruciverba e lo Scarabeo, le sfide a
 battaglia navale, a quiz, a Indovina chi, ai tavolieri e a Nomi, cose e città
-(rivincite comprese), le partite e il duello aperti. Gli avvisi fuori dalle
-rotte (`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`, `TavoloGate`,
-`NomiGate`, `CompagniaGate`) si danno la precedenza in quest'ordine: due insieme
-non si leggerebbero, e gli inviti del cruciverba e dello Scarabeo, che valgono
-tutto il giorno, aspettano le sfide, che scadono in pochi minuti. Prima gli
-inviti del Wordle avevano il loro polling: due giri separati avrebbero
-raddoppiato le richieste, e le Pages Functions gratuite ne contano centomila al
-giorno per tutto il sito. La scrittura in `presenza` passa solo ogni venti
-secondi o al cambio di attivita' (`segnaPresenza`), e a pagina nascosta il giro
-si ferma: un telefono in tasca non e' "online" per chi vuole sfidarlo. Gli amici
-online invece non stanno nel giro: `GET /api/amici` lo chiedono solo il profilo,
-le Libere e il profilo di un amico, ogni `AMICI_POLL_MS` e mentre li si guarda.
+(rivincite comprese), gli inviti a una stanza di Lupus, le partite e il duello
+aperti. Gli avvisi fuori dalle rotte (`CoopGate`, `BattagliaGate`, `QuizGate`,
+`IndovinaGate`, `TavoloGate`, `NomiGate`, `LupusGate`, `CompagniaGate`) si danno
+la precedenza in quest'ordine: due insieme non si leggerebbero, e gli inviti del
+cruciverba e dello Scarabeo, che valgono tutto il giorno, aspettano le sfide,
+che scadono in pochi minuti. Prima gli inviti del Wordle avevano il loro
+polling: due giri separati avrebbero raddoppiato le richieste, e le Pages
+Functions gratuite ne contano centomila al giorno per tutto il sito. La
+scrittura in `presenza` passa solo ogni venti secondi o al cambio di attivita'
+(`segnaPresenza`), e a pagina nascosta il giro si ferma: un telefono in tasca
+non e' "online" per chi vuole sfidarlo. Gli amici online invece non stanno nel
+giro: `GET /api/amici` lo chiedono solo il profilo, le Libere e il profilo di un
+amico, ogni `AMICI_POLL_MS` e mentre li si guarda.
 
 **Nella battaglia navale la flotta dell'avversario non esce dal server.**
 `vistaPer` manda la propria flotta, i colpi con il loro esito e le navi gia'
@@ -1158,15 +1159,15 @@ due totali uguali vince chi li ha fatti con le proprie partite. `rankPlayers`,
 `ordinaCruciverba`, `ordinaScarabeo` e `ordinaGenerale` devono restare
 d'accordo; poi, nella generale, conta chi ci e' arrivato con meno partite.
 
-**I giochi da tavolo non hanno classificata.** Sono partite quando si vuole,
-con gli amici — e contro il computer dove ha senso — senza punti ne'
-classifica: nelle Libere stanno con le libere dei giochi classificati, e nella
-barra laterale sotto le Libere (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`),
-non in `GiocoClassificato`, che porta con se' classifiche, anelli e
-statistiche. Sono Indovina chi, che il computer non ce l'ha — si gioca
-parlandosi — e la battaglia navale, scacchi, dama, Forza 4 e go, con un amico
-o contro il computer. Il tris e' un tavoliere ma non sta qui: ha la sua
-classificata (vedi sotto).
+**I giochi da tavolo non hanno classificata.** Sono partite quando si vuole, con
+gli amici — e contro il computer dove ha senso — senza punti ne' classifica:
+nelle Libere stanno con le libere dei giochi classificati, e nella barra
+laterale sotto le Libere (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in
+`GiocoClassificato`, che porta con se' classifiche, anelli e statistiche. Sono
+Indovina chi e Lupus, che il computer non ce l'hanno — si giocano parlandosi — e
+la battaglia navale, scacchi, dama, Forza 4 e go, con un amico o contro il
+computer. Il tris e' un tavoliere ma non sta qui: ha la sua classificata (vedi
+sotto).
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -1207,6 +1208,59 @@ vanno dirette, e ognuna si controlla con la sua impronta. Solo STUN, niente
 TURN: fra due reti che non si lasciano attraversare il canale non si apre, e
 la pagina lo dice. Il ripiego e' il file del set (`setFile.ts`), che si manda
 come un documento qualunque e si apre da "Nuovo set".
+
+**Lupus si gioca su un telefono o in una stanza, con lo stesso motore.**
+`shared/lupus.ts` e' una funzione che fa avanzare la partita (`applica`),
+deterministica dal seme e dall'ora che le si da', e la eseguono il telefono che
+passa di mano (`src/games/lupus/telefono.ts`, nel `localStorage`) e il server
+della stanza online (`server/lib/lupusStore.ts`): la partita e' la stessa per
+costruzione, e ogni regola sta li' e solo li'. Alcune regole sembrano sbagliate
+e non lo sono — la Guardia dalla seconda notte, il Mitomane che copia un lupo e
+conta subito come lupo, il Criceto che muore se lo guarda il Veggente ma non
+Darius, il "Benvenuto!" allo sbranato e non al linciato, la fase della decisione
+solo con Amleto o Dorian Wolf —, e sono elencate in testa al motore: vanno lette
+prima di correggerne una. Il gioco viene dal repository `lupus`, che aveva un
+Durable Object per stanza; qui le stanze stanno su D1.
+
+**Lo stato di Lupus ha i segreti, e a ognuno arriva la sua vista.** Il server
+non manda mai la partita: manda `vistaPer` (`shared/lupus-vista.ts`), con il
+proprio ruolo, quel che si e' saputo di notte e quel che si deve fare. Di notte
+nessuno aspetta nessuno (`aspetta` e' vuoto), e chi non ha poteri riceve
+comunque una richiesta, `dormi`: sapere chi deve ancora scegliere direbbe chi ha
+un potere. E prima della fine non si dice perché e' morto qualcuno, come non lo
+dice il moderatore: "guardato dal Veggente" direbbe che c'e' un Veggente e che
+il morto era il Criceto. Restano le morti che tutti hanno visto, il linciaggio,
+e quelle dei segnalini sul tavolo, il teschio di Amleto e il ritratto di Dorian
+Wolf (`CAUSE_PUBBLICHE`).
+
+**Il telefono che passa di mano decide a chi va, non come si gioca.** Ogni
+momento in cui passa — i ruoli, la notte, il "Benvenuto!" ai nuovi fantasmi, il
+ballottaggio segreto — e' un giro con l'elenco di chi lo riceve, fissato quando
+comincia (`Giro`): il motore chiude la notte appena l'ultimo con un potere ha
+scelto, e il telefono passa comunque a tutti gli altri, che fingono di scegliere
+fra i vivi di quando la notte e' cominciata; l'alba si vede solo dopo l'ultimo,
+altrimenti direbbe che chi viene dopo non ha poteri. Di notte il telefono va a
+tutti i vivi, e con il Baron Samedi anche ai fantasmi, perché lui agisce da
+morto e chiamare solo lui lo smaschererebbe; chi ha appena saputo qualcosa lo
+legge prima di passarlo (`fatto`). Riaperta, la partita chiede di nuovo chi
+tiene il telefono: una schermata privata non si riapre da sola.
+
+**La stanza online di Lupus sta su D1, a polling.** `lupus_stanze` ha la partita
+intera in JSON con una `versione`: ogni azione legge, applica e scrive
+condizionata alla versione, e a un conflitto riprova (`suStanza`). Il telefono
+rilegge ogni `LUPUS_POLL_MS` in partita e ogni `LUPUS_POLL_ATTESA_MS` prima e
+dopo, con l'ora del server nella risposta. La discussione e le arringhe
+finiscono da sole: la prima richiesta dopo la scadenza manda avanti dalla
+scadenza, non da adesso (`scadute`), come il tempo del quiz. Si sta in una
+stanza alla volta (la chiave di `lupus_iscritti` e' il giocatore), gli inviti
+arrivano con la presenza (`lupus_inviti`, per `LUPUS_INVITO_MS`) e il link e' il
+codice di quattro lettere, che si detta anche a voce; le stanze ferme da
+`LUPUS_STANZA_FERMA_MS` se ne vanno quando se ne apre un'altra. Chi l'ha aperta
+conduce, cioe' manda avanti le fasi del giorno; se la presenza non lo vede da
+`LUPUS_CONDUTTORE_ASSENTE_MS` lo puo' fare chiunque, e se esce conduce il primo
+entrato dopo di lui. Ogni azione nuova va aggiunta ad `azioneDelGiocatore`
+(`shared/lupus-stanza.ts`), che mette sempre come autore chi l'ha mandata: se
+no, online risponde "azione sconosciuta".
 
 **Scacchi, dama, Forza 4, go e tris passano da una faccia sola.**
 `RegoleTavoliere` (`shared/tavolo-regole.ts`) mette i cinque giochi dietro le
