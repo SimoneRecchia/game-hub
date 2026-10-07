@@ -3,7 +3,7 @@ import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { FoglioAiuti, VoceAiuto } from '@/components/Aiuti'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconClock } from '@/components/Icons'
-import { formatCronometro } from '@/lib/format'
+import { formatCronometro, inPunti } from '@/lib/format'
 import { suona } from '@/lib/suoni'
 import { NOMI_LIVELLI, VUOTA } from '@shared/sudoku'
 import { adesivoControllo, adesivoRisolto } from './adesivi'
@@ -164,19 +164,19 @@ export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso;
       >
         <VoceAiuto
           nome="Controlla la casella"
-          costo={p.aiuti ? `${p.aiuti.costoErrore} punto se è sbagliata` : undefined}
+          costo={p.aiuti ? `${inPunti(p.aiuti.errore)} se è sbagliata` : undefined}
           onClick={() => aiuto(() => p.controlla('casella'))}
           disabled={!conCifra || p.inviando}
         />
         <VoceAiuto
           nome="Controlla tutto lo schema"
-          costo={p.aiuti ? `${p.aiuti.costoErrore} punto per cifra sbagliata` : undefined}
+          costo={p.aiuti ? `${inPunti(p.aiuti.errore)} per cifra sbagliata` : undefined}
           onClick={() => aiuto(() => p.controlla('tutto'))}
           disabled={p.inviando}
         />
         <VoceAiuto
           nome="Svela la casella"
-          costo={p.aiuti ? `${p.aiuti.costoSvelata} punti` : undefined}
+          costo={p.aiuti ? inPunti(p.aiuti.svelata) : undefined}
           onClick={() => aiuto(p.svela)}
           disabled={!daScrivere || p.inviando}
         />

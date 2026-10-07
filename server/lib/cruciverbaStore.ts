@@ -9,6 +9,7 @@
  */
 
 import {
+  costiCruciverba,
   grigliaIniziale,
   punteggio,
   schemaVuoto,
@@ -268,7 +269,7 @@ export function statoDa(
     tempoMs: row.tempo_ms,
     versione: row.versione,
     status: row.status,
-    punti: finita ? row.score : punteggio(svelate.length, row.errori),
+    punti: finita ? row.score : punteggio(svelate.length, row.errori, costiCruciverba(schema.soluzione)),
     soluzione: finita ? schema.soluzione : null,
     msToNextPuzzle,
   }

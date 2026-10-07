@@ -13,11 +13,11 @@
  * per gioco, e il piano gratuito le conta.
  */
 
-import { PUNTI_COMPLETO, caselleBianche, caselleScritte, punteggio } from '../../shared/cruciverba'
+import { PUNTI_COMPLETO, caselleBianche, caselleScritte, costiCruciverba, punteggio } from '../../shared/cruciverba'
 import { msToNextPuzzle } from '../../shared/daily'
 import { MOSSE_PER_GIORNATA } from '../../shared/scarabeo'
 import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
-import { VUOTA, puntiSudoku } from '../../shared/sudoku'
+import { PUNTI_COMPLETO as PUNTI_SUDOKU, VUOTA, costiSudoku, puntiSudoku } from '../../shared/sudoku'
 import type {
   CruciverbaSummary,
   NomiSummary,
@@ -160,7 +160,12 @@ export async function riepilogoCruciverba(db: D1Database, playerId: string): Pro
     status: !schema ? 'assente' : row ? row.status : 'new',
     scritte: row ? caselleScritte(row.lettere) : 0,
     bianche: schema ? caselleBianche(schema.soluzione) : 0,
-    punti: row ? (row.status === 'done' ? row.score : punteggio(svelateDi(row).length, row.errori)) : PUNTI_COMPLETO,
+    punti:
+      schema && row
+        ? row.status === 'done'
+          ? row.score
+          : punteggio(svelateDi(row).length, row.errori, costiCruciverba(schema.soluzione))
+        : PUNTI_COMPLETO,
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
   }
@@ -180,11 +185,11 @@ export async function riepilogoSudoku(db: D1Database, playerId: string): Promise
     livello: schema?.livello ?? null,
     vuote,
     scritte,
-    punti: !row
-      ? puntiSudoku(0, 0)
+    punti: !schema || !row
+      ? PUNTI_SUDOKU
       : row.status === 'done'
         ? row.score
-        : puntiSudoku(svelateSudoku(row).length, row.errori),
+        : puntiSudoku(svelateSudoku(row).length, row.errori, costiSudoku(schema.dati)),
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
   }

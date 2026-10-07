@@ -30,14 +30,8 @@ import { etichettaCruciverba } from '@/games/compagnia/etichette'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { useCountdown } from '@/games/wordle/useCountdown'
-import { formatCountdown, formatCronometro, pluralize } from '@/lib/format'
-import {
-  COSTO_ERRORE,
-  COSTO_SVELATA,
-  VUOTA,
-  caselleBianche,
-  numeriDelleCaselle,
-} from '@shared/cruciverba'
+import { formatCountdown, formatCronometro, inPunti, pluralize } from '@/lib/format'
+import { VUOTA, caselleBianche, costiCruciverba, numeriDelleCaselle } from '@shared/cruciverba'
 import { isGameLetter } from '@shared/wordle'
 import type { CruciverbaState, DefinizioneCruciverba } from '@shared/types'
 import './Cruciverba.css'
@@ -93,6 +87,7 @@ export default function Cruciverba() {
   )
   const parola = useMemo(() => new Set(g.corrente?.caselle ?? []), [g.corrente])
   const bianche = stato ? caselleBianche(stato.schema) : 0
+  const costi = useMemo(() => (stato ? costiCruciverba(stato.schema) : null), [stato?.schema])
   const scritte = useMemo(
     () => [...g.lettere].filter((l) => l !== VUOTA && l !== '#').length,
     [g.lettere],
@@ -334,7 +329,7 @@ export default function Cruciverba() {
         )}
       </div>
 
-      <ComeSiGiocaCruciverba open={aiuto} onClose={() => setAiuto(false)} />
+      <ComeSiGiocaCruciverba open={aiuto} onClose={() => setAiuto(false)} costi={costi} />
 
       <PannelloCompagnia
         gioco="cruciverba"
@@ -374,24 +369,24 @@ export default function Cruciverba() {
       >
         <VoceAiuto
           nome="Controlla la parola"
-          costo={`${COSTO_ERRORE} punto per lettera sbagliata`}
+          costo={costi ? `${inPunti(costi.errore)} per lettera sbagliata` : undefined}
           onClick={() => aiutoScelto(() => g.controlla('parola'))}
           disabled={!g.corrente}
         />
         <VoceAiuto
           nome="Controlla tutto lo schema"
-          costo={`${COSTO_ERRORE} punto per lettera sbagliata`}
+          costo={costi ? `${inPunti(costi.errore)} per lettera sbagliata` : undefined}
           onClick={() => aiutoScelto(() => g.controlla('tutto'))}
         />
         <VoceAiuto
           nome="Svela la lettera"
-          costo={`${COSTO_SVELATA} punti se manca o è sbagliata`}
+          costo={costi ? `${inPunti(costi.svelata)} se manca o è sbagliata` : undefined}
           onClick={() => aiutoScelto(() => g.svela('lettera'))}
           disabled={!g.selezione}
         />
         <VoceAiuto
           nome="Svela la parola"
-          costo={`${COSTO_SVELATA} punti per lettera mancante o sbagliata`}
+          costo={costi ? `${inPunti(costi.svelata)} per lettera mancante o sbagliata` : undefined}
           onClick={() => aiutoScelto(() => g.svela('parola'))}
           disabled={!g.corrente}
         />
