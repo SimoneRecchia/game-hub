@@ -1927,7 +1927,11 @@ Wikidata resta solo per chi l'elenco non ha ancora, con un genere solo, e lo
 script li nomina. Anche chi canta e l'anno si correggono a mano
 (`scripts/data/canzoni-a-mano.tsv`), perché Wikidata a volte ha solo la prima
 versione di una canzone ("Hound Dog" era di Big Mama Thornton, "Twist and Shout"
-dei Top Notes) o un anno sbagliato ("What's Going On" era del 2001).
+dei Top Notes) o un anno sbagliato ("What's Going On" era del 2001). Lo stesso
+elenco segna le canzoni di cui si chiede di chi sono e non chi le canta
+(`di-chi`, `dc`): i brani strumentali, che "Chi canta «Gabriel's Oboe»?" non si
+puo' chiedere, e quelli che chi li firma non canta, un dj o un produttore con la
+voce di un altro ("Titanium" di David Guetta, "Uptown Funk" di Mark Ronson).
 
 **Nel quiz il tempo lo tiene il server, e la risposta resta li'.** Il telefono
 riceve una domanda alla volta senza la risposta (`senzaRisposta`), e l'orologio

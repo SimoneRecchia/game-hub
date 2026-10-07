@@ -84,6 +84,19 @@ describe('i file delle materie del quiz', () => {
     for (const b of cultura.classica.brani) for (const c of b.c) expect(compositori.has(c)).toBe(true)
   })
 
+  it('le canzoni corrette a mano lo sono: generi, chi la canta, e i brani di cui si chiede di chi sono', () => {
+    const per = (n: string) => cultura.canzoni.canzoni.find((c) => c.n === n)
+    const nome = (id: string) => cultura.canzoni.artisti.find((a) => a.id === id)?.n
+    expect(per('Caruso')?.g).toEqual(['cantautori'])
+    expect(per('Beat It')?.g).toContain('rock')
+    expect(per('Que sera, sera')?.a.map(nome)).toEqual(['Doris Day'])
+    expect(per('What’s Going On')?.anno).toBe(1971)
+    // Uno strumentale e una canzone di un dj: di chi e'. Una canzone qualunque: chi la canta.
+    expect(per('Gabriel’s Oboe')?.dc).toBe(1)
+    expect(per('Titanium')?.dc).toBe(1)
+    expect(per('Nel blu dipinto di blu')?.dc).toBeUndefined()
+  })
+
   for (const { id: genere } of GENERI.canzoni ?? []) {
     it(`canzoni, genere ${genere}: dieci domande buone, per ogni seme`, () => {
       for (let seme = 1; seme <= 12; seme += 1) {
