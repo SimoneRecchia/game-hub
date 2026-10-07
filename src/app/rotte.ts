@@ -35,6 +35,8 @@
  *   /tris/libera/computer               la partita contro il computer, nel telefono
  *   /tris/libera/partita/:id            una partita con un amico
  *   /tris/libera/invito/:codice         un invito arrivato con un link
+ *   /anagrammi/classificata             le cinque parole di oggi, a tempo
+ *   /anagrammi/libera                   parole a caso, della lunghezza che vuoi
  *   /fortuna                            i giochi d'azzardo: si puntano i punti delle classificate
  *   /crazy-time                         Crazy Time (/ruota ci porta)
  *   /slot                               la slot
@@ -81,6 +83,7 @@ export const SLUG: Record<GiocoClassificato, string> = {
   quiz: 'quiz',
   tris: 'tris',
   nomi: 'nomi-cose-citta',
+  anagrammi: 'anagrammi',
 }
 
 export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null {

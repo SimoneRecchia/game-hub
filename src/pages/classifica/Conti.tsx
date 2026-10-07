@@ -3,11 +3,13 @@ import { StatsPanel } from '@/games/wordle/StatsPanel'
 import { leggiStatistiche } from '@/games/quiz/statistiche'
 import { leggiContiSudoku } from '@/games/sudoku/libera'
 import { leggiContiNomi } from '@/games/nomi/conti'
+import { leggiContiAnagrammi } from '@/games/anagrammi/conti'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatNumber } from '@/lib/format'
 import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
 import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
 import type {
+  AnagrammiLeaderboard,
   CruciverbaLeaderboard,
   CruciverbaLiberaRisposta,
   GiocoClassificato,
@@ -45,6 +47,8 @@ export function ContiDi({ gioco }: { gioco: GiocoClassificato }) {
       return <ContiTris />
     case 'nomi':
       return <ContiNomi />
+    case 'anagrammi':
+      return <ContiAnagrammi />
   }
 }
 
@@ -312,6 +316,40 @@ function ContiTris() {
           voci={[
             { etichetta: 'Contro il computer', valore: vintePattePerse(computer) },
             ...(amici ? [{ etichetta: 'Contro gli amici', valore: vintePattePerse(amici) }] : []),
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
+function ContiAnagrammi() {
+  const { dati } = useDati<AnagrammiLeaderboard>('/leaderboard/anagrammi?scope=all')
+  // Le libere stanno nel telefono: si leggono una volta, all'apertura del foglio.
+  const [libere] = useState(leggiContiAnagrammi)
+  const me = dati?.me
+  return (
+    <div className="conti">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Giornate', valore: formatNumber(me?.giornate ?? 0) },
+            { etichetta: 'Parole trovate', valore: formatNumber(me?.trovate ?? 0) },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {libere.partite > 0 && (
+        <Conti
+          titolo="Parole a caso"
+          voci={[
+            { etichetta: 'Partite', valore: formatNumber(libere.partite) },
+            { etichetta: 'Parole trovate', valore: formatNumber(libere.trovate) },
+            { etichetta: 'Partita migliore', valore: `${formatNumber(libere.migliore)} punti` },
           ]}
         />
       )}
