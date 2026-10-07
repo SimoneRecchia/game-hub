@@ -50,6 +50,7 @@ export function sfidaDalleScelte(s: ImpostazioniLibera): ImpostazioniSfida {
     bandieraCapitali: s.bandieraCapitali,
     ambito: s.ambito,
     genere: s.genere,
+    nazione: s.nazione,
   })!
 }
 
@@ -85,6 +86,7 @@ export async function domandePerSfida(imp: ImpostazioniSfida): Promise<DomandaCo
       citta: citta ?? undefined,
       ambito: imp.ambito,
       genere: imp.genere,
+      nazione: imp.nazione,
       data,
     },
     mulberry32((Math.random() * 2 ** 32) >>> 0),

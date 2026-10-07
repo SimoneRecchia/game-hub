@@ -10,6 +10,7 @@ import { suona } from '@/lib/suoni'
 import {
   NOMI_CATEGORIE,
   nomeAmbito,
+  nomeGenere,
   NOMI_MODI,
   PUNTI_BASE_QUIZ,
   SECONDI_CARTINA,
@@ -293,7 +294,7 @@ function Gioco({ p, categoria }: { p: VistaPartita; categoria: CategoriaQuiz }) 
         titolo={titolo}
         icona={
           <IconaScheda colore="var(--quiz-1)">
-            <IconaCategoria categoria={d.categoria ?? categoria} ambito={d.ambito} size={15} />
+            <IconaCategoria categoria={d.categoria ?? categoria} ambito={d.ambito} genere={d.genere} size={15} />
           </IconaScheda>
         }
         destra={<Tempo p={p} />}
@@ -451,7 +452,7 @@ export function CartaDomanda({
     <section className={`quiz-carta${aspetto}${esito}`} aria-live="polite">
       {!insegna && !d.bandiera && !d.immagine && (
         <span className="quiz-carta__emblema" aria-hidden="true">
-          <IconaCategoria categoria={d.categoria ?? categoria} ambito={d.ambito} size={40} />
+          <IconaCategoria categoria={d.categoria ?? categoria} ambito={d.ambito} genere={d.genere} size={40} />
         </span>
       )}
       <Sezione d={d} />
@@ -486,10 +487,11 @@ export function CartaDomanda({
   )
 }
 
-/** Di quale sezione e' la domanda, nelle partite di piu' sezioni: "Bandiere", "Chimica". */
+/** Di quale sezione e' la domanda, nelle partite di piu' sezioni: "Bandiere", "Chimica", "Rock". */
 function Sezione({ d }: { d: DomandaQuiz }) {
   if (!d.categoria) return null
-  return <span className="quiz-carta__sezione">{nomeAmbito(d.categoria, d.ambito) ?? NOMI_CATEGORIE[d.categoria]}</span>
+  const nome = nomeGenere(d.categoria, d.genere) ?? nomeAmbito(d.categoria, d.ambito) ?? NOMI_CATEGORIE[d.categoria]
+  return <span className="quiz-carta__sezione">{nome}</span>
 }
 
 /** Quanto e' largo sullo schermo il quadro di una domanda, e quello di una risposta: per scegliere la misura. */

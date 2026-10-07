@@ -1023,9 +1023,13 @@ export interface RiassuntoSfida {
   area: AreaQuiz
   quante: number
   secondi: number
-  /** Le altre materie: l'ambito, se non sono tutte, il genere delle canzoni e il giorno di "Accadde oggi". */
+  /**
+   * Le altre materie: l'ambito, se non sono tutte, il genere delle canzoni, il
+   * paese della musica e il giorno di "Accadde oggi".
+   */
   ambito?: string
   genere?: string
+  nazione?: string
   giorno?: string
 }
 

@@ -17,6 +17,7 @@
  */
 
 import { mulberry32 } from './daily'
+import { GENERI_CANZONI, NOMI_GENERI } from './quiz-cultura'
 
 /**
  * `cartina` e' la categoria di una volta, quando la cartina muta era una
@@ -116,6 +117,60 @@ export function eCategoria(valore: unknown): valore is CategoriaQuiz {
 }
 
 /**
+ * I periodi della musica: gli stessi per le canzoni, la classica e la lirica,
+ * perché i generi si scelgono insieme e gli anni valgono per tutti. Le canzoni
+ * cominciano dal 1950 (scripts/cultura/canzoni.ts), la classica e la lirica
+ * stanno quasi tutte prima: un periodo si offre se i generi scelti ne hanno.
+ */
+export const PERIODI_MUSICA: ReadonlyArray<{ id: string; nome: string; da?: number; a?: number }> = [
+  { id: 'tutti', nome: 'Tutti gli anni' },
+  { id: 'settecento', nome: 'Fino al Settecento', a: 1799 },
+  { id: 'ottocento', nome: 'Ottocento', da: 1800, a: 1899 },
+  { id: 'novecento', nome: 'Primo Novecento', da: 1900, a: 1949 },
+  { id: 'anni50', nome: 'Anni Cinquanta', da: 1950, a: 1959 },
+  { id: 'anni60', nome: 'Anni Sessanta', da: 1960, a: 1969 },
+  { id: 'anni70', nome: 'Anni Settanta', da: 1970, a: 1979 },
+  { id: 'anni80', nome: 'Anni Ottanta', da: 1980, a: 1989 },
+  { id: 'anni90', nome: 'Anni Novanta', da: 1990, a: 1999 },
+  { id: 'anni2000', nome: 'Anni Duemila', da: 2000, a: 2009 },
+  { id: 'anni2010', nome: 'Anni 2010', da: 2010, a: 2019 },
+  { id: 'anni2020', nome: 'Anni 2020', da: 2020 },
+]
+
+function periodiMusica(ids: readonly string[]): ReadonlyArray<{ id: string; nome: string }> {
+  return PERIODI_MUSICA.filter((p) => ids.includes(p.id)).map(({ id, nome }) => ({ id, nome }))
+}
+
+/** Il periodo della musica, se c'e': "tutti" altrimenti. Vale per ogni genere, anche dove da solo non basta. */
+export function periodoMusicaValido(periodo: unknown): string {
+  return PERIODI_MUSICA.some((p) => p.id === periodo) ? (periodo as string) : 'tutti'
+}
+
+/** Se un anno sta nel periodo: senza un anno, solo "tutti". */
+export function nelPeriodo(anno: number | undefined, periodo: string): boolean {
+  if (periodo === 'tutti') return true
+  const p = PERIODI_MUSICA.find((x) => x.id === periodo)
+  if (!p || anno === undefined) return false
+  return (p.da === undefined || anno >= p.da) && (p.a === undefined || anno <= p.a)
+}
+
+/** Le categorie della musica: i generi si scelgono insieme, con gli stessi anni e lo stesso paese. */
+export function diMusica(categoria: CategoriaQuiz): boolean {
+  return materiaDi(categoria) === 'musica'
+}
+
+/**
+ * Il paese di chi canta o compone, per la musica: il nome come lo scrivono i
+ * file ("Stati Uniti"), o null per tutti. Quali paesi si offrono lo dicono i
+ * dati, nella pagina: qui si guarda solo che sia un nome.
+ */
+export function nazioneValida(valore: unknown): string | null {
+  if (typeof valore !== 'string') return null
+  const v = valore.trim()
+  return v.length > 0 && v.length <= 40 && /^[\p{L}' .-]+$/u.test(v) && v !== 'tutti' ? v : null
+}
+
+/**
  * Gli ambiti delle altre materie: quel che per la geografia sono le zone. Il
  * primo e' "tutti", e vale se non si sceglie altro.
  */
@@ -139,28 +194,20 @@ export const AMBITI: Partial<Record<CategoriaQuiz, ReadonlyArray<{ id: string; n
     { id: 'classici', nome: 'Prima del 1980' },
     { id: 'recenti', nome: 'Dal 1980' },
   ],
-  canzoni: [
-    { id: 'tutti', nome: 'Tutti gli anni' },
-    { id: 'anni60', nome: 'Fino agli anni Sessanta' },
-    { id: 'anni70', nome: 'Anni Settanta' },
-    { id: 'anni80', nome: 'Anni Ottanta' },
-    { id: 'anni90', nome: 'Anni Novanta' },
-    { id: 'anni2000', nome: 'Anni Duemila' },
-    { id: 'anni2010', nome: 'Dal 2010' },
-  ],
-  classica: [
-    { id: 'tutti', nome: 'Tutti' },
-    { id: 'barocco', nome: 'Barocco' },
-    { id: 'classicismo', nome: 'Classicismo' },
-    { id: 'romanticismo', nome: 'Romanticismo' },
-    { id: 'novecento', nome: 'Novecento' },
-    { id: 'italiani', nome: 'Compositori italiani' },
-  ],
-  lirica: [
-    { id: 'tutti', nome: 'Tutte' },
-    { id: 'italiani', nome: 'Opere italiane' },
-    { id: 'stranieri', nome: 'Opere straniere' },
-  ],
+  // La musica ha i periodi di PERIODI_MUSICA, gli stessi per tutti i generi: qui quelli che bastano da soli.
+  canzoni: periodiMusica([
+    'tutti',
+    'anni50',
+    'anni60',
+    'anni70',
+    'anni80',
+    'anni90',
+    'anni2000',
+    'anni2010',
+    'anni2020',
+  ]),
+  classica: periodiMusica(['tutti', 'settecento', 'ottocento', 'novecento']),
+  lirica: periodiMusica(['tutti', 'settecento', 'ottocento', 'novecento']),
   nobel: [
     { id: 'tutti', nome: 'Tutti' },
     { id: 'letteratura', nome: 'Letteratura' },
@@ -195,15 +242,16 @@ export const TITOLI_AMBITI: Partial<Record<CategoriaQuiz, string>> = {
   libri: 'Quali libri',
   cinema: 'Quali film',
   canzoni: 'Anni',
-  classica: 'Quale periodo',
-  lirica: 'Quali opere',
+  classica: 'Anni',
+  lirica: 'Anni',
   nobel: 'Quale premio',
   storia: 'Quale periodo',
   scienza: 'Quale argomento',
 }
 
-/** L'ambito, se la categoria lo ha e se c'e': "tutti" altrimenti. */
+/** L'ambito, se la categoria lo ha e se c'e': "tutti" altrimenti. Nella musica, uno dei periodi. */
 export function ambitoValido(categoria: CategoriaQuiz, ambito: unknown): string {
+  if (diMusica(categoria)) return periodoMusicaValido(ambito)
   const ambiti = AMBITI[categoria]
   return ambiti?.some((a) => a.id === ambito) ? (ambito as string) : 'tutti'
 }
@@ -211,24 +259,18 @@ export function ambitoValido(categoria: CategoriaQuiz, ambito: unknown): string 
 /** Il nome dell'ambito: "Ottocento", "Fisica"; null per "tutti", che non si dice. */
 export function nomeAmbito(categoria: CategoriaQuiz, ambito: string | null | undefined): string | null {
   if (!ambito || ambito === 'tutti') return null
-  return AMBITI[categoria]?.find((a) => a.id === ambito)?.nome ?? null
+  const ambiti = diMusica(categoria) ? PERIODI_MUSICA : AMBITI[categoria]
+  return ambiti?.find((a) => a.id === ambito)?.nome ?? null
 }
 
 /**
- * Il secondo filtro delle canzoni, oltre agli anni: il genere. "Italiana" non
- * e' un genere, ma e' come le app di musica dividono quel che si ascolta qui:
- * le canzoni di chi e' italiano, di qualunque genere.
+ * I generi delle canzoni, come li dividono le app di musica: nella libera sono
+ * sezioni, una per genere, accanto alla classica e alla lirica. Da dove viene
+ * chi canta e' un filtro a parte, il paese (`nazioneValida`): "Italiana" era un
+ * genere, e non lo e'.
  */
 export const GENERI: Partial<Record<CategoriaQuiz, ReadonlyArray<{ id: string; nome: string }>>> = {
-  canzoni: [
-    { id: 'tutti', nome: 'Tutti i generi' },
-    { id: 'italiana', nome: 'Italiana' },
-    { id: 'pop', nome: 'Pop' },
-    { id: 'rock', nome: 'Rock' },
-    { id: 'rap', nome: 'Rap e hip hop' },
-    { id: 'dance', nome: 'Dance ed elettronica' },
-    { id: 'soul', nome: 'R&B e soul' },
-  ],
+  canzoni: [{ id: 'tutti', nome: 'Tutti i generi' }, ...GENERI_CANZONI.map((id) => ({ id, nome: NOMI_GENERI[id] }))],
 }
 
 /** Il genere, se la categoria lo ha e se c'e': "tutti" altrimenti. */

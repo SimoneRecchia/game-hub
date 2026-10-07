@@ -1,0 +1,107 @@
+# I generi delle canzoni che non sono quelli di chi le canta, per il quiz di
+# musica (scripts/cultura/canzoni.ts): "Beat It" e' anche rock, se Michael
+# Jackson e' pop e soul, e una canzone scritta per un film e' anche una colonna
+# sonora. Una riga per canzone: il QID di Wikidata, il titolo, e i generi
+# separati da una virgola, il principale per primo.
+Q210218	Beat It	pop,rock
+Q214113	Black or White	pop,rock
+Q214430	Like a Rolling Stone	cantautori,rock
+Q940753	Jenny from the Block	pop,rap
+Q1123081	Gimme! Gimme! Gimme! (A Man After Midnight)	pop,dance
+Q546425	In the Air Tonight	pop,rock
+Q16551029	E la luna bussò	altri,pop
+Q64607177	Margarita	pop,latina
+Q1141059	Personal Jesus	pop,rock
+Q1382261	I Was Made for Lovin’ You	rock,dance
+Q1573223	How Deep Is Your Love	pop
+Q76566134	Blinding Lights	pop
+Q96405034	Save Your Tears	pop
+Q105724928	Chiamami per nome	pop
+Q132201647	Battito	pop
+Q1986072	Candyman	pop,jazz
+Q118397529	Fragole	pop
+Q124445691	Click boom!	pop
+Q2526096	Do Ya Think I’m Sexy?	rock,dance
+Q3823409	La notte vola	pop,dance
+Q1550581	Self Control	dance,pop
+Q1511102	Upside Down	soul,dance
+Q2301611	Un’estate italiana	pop,rock
+Q126154097	Sesso e samba	pop,latina
+Q2302570	Sex Bomb	pop,dance
+Q132308704	Espresso macchiato	pop,dance
+Q3899519	Per dire di no	pop
+Q3707784	Dimmi come	pop
+Q116695029	Made in Italy	pop
+Q15054054	Timber	pop,dance
+Q778849	I Gotta Feeling	pop,dance
+Q635756	Heart of Glass	rock,dance
+Q110659107	Dove si balla	pop,dance
+Q96938085	A un passo dalla Luna	pop,latina
+Q19851006	Stressed Out	pop,rap
+Q2006235	Moonlight Shadow	pop
+Q63361565	Calipso	rap,pop
+Q281085	Hey Ya!	pop,rap
+Q62587323	Old Town Road	rap,altri
+Q2251382	More Than Words	pop,rock
+Q2706084	I’ll Be Missing You	rap,soul
+Q2302236	The Bad Touch	dance,rock
+Q3845261	Maracaibo	pop,latina
+# Le canzoni scritte per un film o un musical sono anche colonne sonore.
+Q1493554	Gangsta’s Paradise	rap,colonne
+Q1932351	Iris	rock,colonne
+Q56770393	Shallow	pop,colonne
+Q743986	Knockin’ on Heaven’s Door	cantautori,colonne
+Q155577	My Heart Will Go On	pop,colonne
+Q2298481	Take My Breath Away	pop,colonne
+Q1165305	Eye of the Tiger	rock,colonne
+Q257915	Que sera, sera	pop,colonne
+Q3772703	Gocce di memoria	pop,colonne
+Q1352181	Stayin’ Alive	pop,dance,colonne
+Q957616	Lose Yourself	rap,colonne
+Q1281320	Mrs. Robinson	cantautori,colonne
+Q1415045	Flashdance... What a Feeling	pop,dance,colonne
+Q707034	I Don’t Want to Miss a Thing	rock,colonne
+Q158549	(Everything I Do) I Do It for You	rock,colonne
+Q857507	Call Me	rock,pop,colonne
+Q15275920	Happy	pop,soul,colonne
+Q113994089	Proiettili	pop,colonne
+Q1242376	Don’t You (Forget About Me)	rock,colonne
+Q2413048	The NeverEnding Story	pop,colonne
+Q390134	Against All Odds (Take a Look at Me Now)	pop,colonne
+Q2039364	Theme from New York, New York	pop,jazz,colonne
+Q101095767	Io sì (Seen)	pop,colonne
+Q120638205	What Was I Made For?	pop,colonne
+Q24506	(I’ve Had) The Time of My Life	pop,colonne
+Q84761142	No Time to Die	pop,colonne
+Q82123	A Thousand Years	pop,colonne
+Q1939374	Streets of Philadelphia	rock,colonne
+Q509722	I Believe I Can Fly	soul,colonne
+Q18758167	Love Me Like You Do	pop,colonne
+Q1343745	You’ll Be in My Heart	pop,colonne
+Q931644	Holding Out for a Hero	rock,pop,colonne
+Q1353423	Jailhouse Rock	rock,colonne
+Q1655199	I Just Called to Say I Love You	soul,colonne
+Q57461813	Always Remember Us This Way	pop,colonne
+Q3615253	Ancora qui	pop,colonne
+Q12252332	Young and Beautiful	pop,colonne
+Q1031911	Can You Feel the Love Tonight	pop,colonne
+Q712308	Arthur’s Theme (Best That You Can Do)	pop,colonne
+Q2064725	Up Where We Belong	pop,colonne
+Q623177	Aquarius	pop,soul,colonne
+Q1281313	You’re the One That I Want	pop,colonne
+Q676098	When You Believe	pop,soul,colonne
+Q2460910	I Have Nothing	pop,soul,colonne
+Q989611	Endless Love	soul,pop,colonne
+Q19985	New Divide	rock,colonne
+Q378523	Zankoku na tenshi no These	pop,colonne
+Q47460492	All the Stars	rap,soul,colonne
+Q84628287	Che vita meravigliosa	cantautori,pop,colonne
+Q3752445	Fratello sole sorella luna	cantautori,pop,colonne
+Q717891	Can’t Fight the Moonlight	pop,colonne
+Q527711	Into the West	pop,colonne
+Q57246187	I’ll Never Love Again	pop,colonne
+Q1426427	Love Me Tender	pop,colonne
+Q3632544	Baciami ancora	pop,colonne
+Q770349	May It Be	pop,colonne
+Q2093639	Say You, Say Me	pop,soul,colonne
+Q19898031	Til It Happens to You	pop,colonne
