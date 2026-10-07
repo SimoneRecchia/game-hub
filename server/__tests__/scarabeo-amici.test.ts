@@ -1,12 +1,21 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Dawg } from '../../shared/dawg'
 import { tabelloneDa, tabelloneVuoto } from '../../shared/scarabeo'
 import { mossaInTesto, type VistaScarabeo } from '../../shared/scarabeo-amici'
 import { mosseLegali } from '../../shared/scarabeo-motore'
 import type { InvitoConLink, PresenzaRisposta, SalaTavolo, VistaTavolo } from '../../shared/types'
 import { banco, type Giocatore } from './banco'
+
+// Un leggio a caso, una volta su trecento, non ha nessuna parola da posare sulla stella, e il test cadeva:
+// le partite hanno semi fissi, e ognuno ha una parola per cominciare.
+vi.mock('../../shared/scarabeo-amici', async (originale) => {
+  const vero = await originale<typeof import('../../shared/scarabeo-amici')>()
+  const semi = [3_141_592_653, 2_718_281_828, 1_618_033_988, 1_414_213_562, 1_732_050_807, 2_236_067_977]
+  let n = 0
+  return { ...vero, semeACaso: () => semi[n++ % semi.length] }
+})
 
 const dawg = Dawg.da(readFileSync(join(__dirname, '..', '..', 'public', 'scarabeo', 'dizionario.dawg')))
 
