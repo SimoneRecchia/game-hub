@@ -67,7 +67,7 @@ export function RigheDellaPartita({
       <Riga
         icona={<IconaLupus nome="luna" size={18} />}
         titolo="Regole"
-        valore={cambiate === 0 ? 'Del regolamento' : cambiate === 1 ? '1 cambiata' : `${cambiate} cambiate`}
+        valore={cambiate === 0 ? 'Nessuna cambiata' : cambiate === 1 ? '1 cambiata' : `${cambiate} cambiate`}
         onClick={onRegole}
       />
     </Elenco>
