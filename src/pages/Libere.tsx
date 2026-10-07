@@ -7,7 +7,7 @@ import { Sezione } from '@/components/Elementi'
 import { IconChevronRight } from '@/components/Icons'
 import { Vetrina } from '@/components/Vetrina'
 import { DOVE_BREVE, useAmiciOnline } from '@/games/amici/amici'
-import { GIOCHI, GIOCHI_DA_TAVOLO, type Gioco, type GiocoTavolo } from '@/games/catalog'
+import { CATEGORIE_LIBERE, GIOCHI, giocoTavoloDi, type Gioco } from '@/games/catalog'
 import { NOMI_AL_TAVOLO } from '@/games/tavolo/nomi'
 import { formatGameDate } from '@/lib/format'
 import { usePresenza } from '@/lib/presenza'
@@ -15,18 +15,21 @@ import { gameDate } from '@shared/daily'
 import type { AmicoOnline, GiocatoreBreve, GiocoDaTavolo } from '@shared/types'
 import './Libere.css'
 
-/** Le libere dei giochi classificati: portano alla scelta della partita. */
-const LIBERE: ReadonlyArray<{ id: Gioco['id']; nome: string; a: string }> = GIOCHI.map((g) => ({
-  id: g.id,
-  nome: g.nome,
-  a: ROTTE.libera(g.id),
-}))
-
-/** I giochi da tavolo: portano alla loro sala. */
-const DA_TAVOLO: ReadonlyArray<{ id: GiocoTavolo['id']; nome: string; a: string }> = GIOCHI_DA_TAVOLO.map((g) => ({
-  id: g.id,
-  nome: g.nome,
-  a: `/${g.slug}`,
+/**
+ * Le famiglie dei giochi, con le tessere: un gioco classificato porta alla sua
+ * libera, uno da tavolo alla sua sala. Il tris e' tutti e due, e porta alla
+ * libera, che e' la sua sala.
+ */
+const FAMIGLIE = CATEGORIE_LIBERE.map((c, k) => ({
+  nome: c.nome,
+  // Le tessere entrano una dopo l'altra, anche da una famiglia alla seguente.
+  prima: CATEGORIE_LIBERE.slice(0, k).reduce((n, x) => n + x.giochi.length, 0),
+  giochi: c.giochi.map((id) => {
+    const classificato = GIOCHI.find((g) => g.id === id)
+    if (classificato) return { id, nome: classificato.nome, a: ROTTE.libera(classificato.id) }
+    const tavolo = giocoTavoloDi(id as GiocoDaTavolo)
+    return { id, nome: tavolo.nome, a: `/${tavolo.slug}` }
+  }),
 }))
 
 /** Quanti amici si vedono nell'eroe: gli altri stanno in un tondo con il numero, che porta al profilo. */
@@ -35,8 +38,8 @@ const IN_VISTA = 4
 /**
  * Le Libere: le partite che non contano, quando si vuole e con chi c'e'. In
  * cima chi e' online, che si tocca per aprirne il profilo e invitarlo a
- * giocare; sotto le partite in corso con gli amici, le libere dei giochi classificati e
- * i giochi da tavolo.
+ * giocare; sotto le partite in corso con gli amici, e i giochi divisi per
+ * famiglia (`CATEGORIE_LIBERE`), le libere dei classificati con i giochi da tavolo.
  */
 export default function Libere() {
   const amici = useAmiciOnline()
@@ -70,25 +73,17 @@ export default function Libere() {
         </Sezione>
       )}
 
-      <Sezione titolo="I giochi">
-        <ul className="libere__tessere">
-          {LIBERE.map((l, i) => (
-            <li key={l.id} className="entra" style={{ '--n': i + 2 } as CSSProperties}>
-              <Tessera id={l.id} nome={l.nome} a={l.a} />
-            </li>
-          ))}
-        </ul>
-      </Sezione>
-
-      <Sezione titolo="Da tavolo">
-        <ul className="libere__tessere">
-          {DA_TAVOLO.map((l, i) => (
-            <li key={l.id} className="entra" style={{ '--n': i + LIBERE.length + 2 } as CSSProperties}>
-              <Tessera id={l.id} nome={l.nome} a={l.a} />
-            </li>
-          ))}
-        </ul>
-      </Sezione>
+      {FAMIGLIE.map((f) => (
+        <Sezione key={f.nome} titolo={f.nome}>
+          <ul className="libere__tessere">
+            {f.giochi.map((l, i) => (
+              <li key={l.id} className="entra" style={{ '--n': f.prima + i + 2 } as CSSProperties}>
+                <Tessera id={l.id} nome={l.nome} a={l.a} />
+              </li>
+            ))}
+          </ul>
+        </Sezione>
+      ))}
     </Vetrina>
   )
 }
