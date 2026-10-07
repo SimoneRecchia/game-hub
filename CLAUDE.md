@@ -1171,13 +1171,13 @@ d'accordo; poi, nella generale, conta chi ci e' arrivato con meno partite.
 
 **I giochi da tavolo non hanno classificata.** Sono partite quando si vuole, con
 gli amici — e contro il computer dove ha senso — senza punti ne' classifica:
-nelle Libere stanno con le libere dei giochi classificati, e nella barra
-laterale sotto le Libere (`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in
-`GiocoClassificato`, che porta con se' classifiche, anelli e statistiche. Sono
-Indovina chi e Lupus, che il computer non ce l'hanno — si giocano parlandosi — e
-la battaglia navale, scacchi, dama, Forza 4 e go, con un amico o contro il
-computer. Il tris e' un tavoliere ma non sta qui: ha la sua classificata (vedi
-sotto).
+nelle Libere stanno con le libere dei giochi classificati, ognuno nella sua
+famiglia (vedi sotto), e nella barra laterale sotto le Libere
+(`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in `GiocoClassificato`, che
+porta con se' classifiche, anelli e statistiche. Sono Indovina chi e Lupus, che
+il computer non ce l'hanno — si giocano parlandosi — e la battaglia navale,
+scacchi, dama, Forza 4 e go, con un amico o contro il computer. Il tris e' un
+tavoliere ma non sta qui: ha la sua classificata (vedi sotto).
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -2199,6 +2199,15 @@ dalla tessera delle Libere all'eroe della sala: le sei tessere restavano a
 galla mentre la pagina scorreva via, e l'icona quadrata si stirava nel
 rettangolo dell'eroe. Ora i nomi di transizione sono solo della tab bar e
 della barra laterale, e un test lo controlla.
+
+**Le Libere mettono i giochi in famiglie, come li cerca chi vuole giocare.**
+Enigmistica (Wordle, cruciverba, sudoku), Parole (Scarabeo, Nomi, cose e città),
+Cultura (il quiz), Strategia (scacchi, dama, go, Forza 4, tris), Da tavolo
+(battaglia navale, Indovina chi) e In gruppo, cioe' Lupus, che e' l'unico che si
+gioca in tanti (`CATEGORIE_LIBERE` in `src/games/catalog.ts`). Erano due, "I
+giochi" e "Da tavolo": quelli con la classificata e gli altri, che e' come sono
+fatti e non a che cosa si gioca. Un gioco classificato porta alla sua libera,
+uno da tavolo alla sua sala, e un test tiene ogni gioco in una famiglia sola.
 
 **Le schede sono tre: le Libere, le Giornaliere e la Fortuna, in quest'ordine.**
 Le Giornaliere (`/`, il calendario) hanno le classificate di oggi, che sono la
