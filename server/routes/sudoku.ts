@@ -1,4 +1,5 @@
 import { Hono, type Context } from 'hono'
+import { caselleDaPagare } from '../../shared/aiuti'
 import { msToNextPuzzle } from '../../shared/daily'
 import {
   CASELLE,
@@ -150,11 +151,9 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
 
   if (azione.tipo === 'svela') {
     rivelate = {}
-    for (const k of azione.caselle) {
-      rivelate[k] = soluzione[k]
-      // Si paga solo quel che non era gia' giusto.
-      if (cifre[k] !== soluzione[k] && !svelate.includes(k)) svelate.push(k)
-    }
+    for (const k of azione.caselle) rivelate[k] = soluzione[k]
+    // Si paga anche una cifra che era gia' giusta, come nel cruciverba: una gia' svelata no.
+    svelate.push(...caselleDaPagare(azione.caselle, svelate))
     cifre = conCifre(
       cifre,
       Object.entries(rivelate).map(([k, d]) => [Number(k), d] as [number, string]),

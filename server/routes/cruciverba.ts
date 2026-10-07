@@ -1,4 +1,5 @@
 import { Hono, type Context } from 'hono'
+import { caselleDaPagare } from '../../shared/aiuti'
 import {
   NERA,
   VUOTA,
@@ -203,12 +204,10 @@ async function scrivi(
 
   if (azione.tipo === 'svela') {
     rivelate = {}
-    for (const k of azione.caselle) {
-      rivelate[k] = soluzione[k]
-      // Si paga solo quel che non era gia' giusto: svelare una parola scritta a
-      // meta' costa le lettere mancanti, non quelle che si sapevano.
-      if (lettere[k] !== soluzione[k] && !svelate.includes(k)) svelate.push(k)
-    }
+    for (const k of azione.caselle) rivelate[k] = soluzione[k]
+    // Si paga ogni lettera svelata, anche se era gia' giusta: dire che lo era e'
+    // un aiuto, e gratis farebbe da controllo senza costo (vedi shared/aiuti.ts).
+    svelate.push(...caselleDaPagare(azione.caselle, svelate))
     lettere = conLettere(
       lettere,
       Object.entries(rivelate).map(([k, l]) => [Number(k), l] as [number, string]),
