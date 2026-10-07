@@ -52,7 +52,7 @@ import { dateForPuzzleNumber, gameDate, mulberry32, puzzleNumberFor } from '../s
 import { DOMANDE_PER_PARTITA, NOMI_CATEGORIE, NOMI_MODI, giornataDelQuiz, type CategoriaQuiz } from '../shared/quiz'
 import { CATEGORIE_CULTURA, giornoDellAnno, type DatiCultura, type DatiOggi } from '../shared/quiz-cultura'
 import { PARTE_REGIONI, PREFISSO_CITTA, PREFISSO_GEOMETRIE, SEZIONI_DATI, cittaInBreve, type DatiQuiz } from '../shared/quiz-dati'
-import { indicizza, type DomandaCompleta } from '../shared/quiz-domande'
+import { cittaDellArea, indicizza, type DomandaCompleta } from '../shared/quiz-domande'
 import { domandeDelGiornoQuiz, eCultura, generaPartita, type FontiQuiz } from '../shared/quiz-domande-cultura'
 import { CATEGORIE_RUOTA, DOMANDE_PER_CATEGORIA, FORMATO_DOMANDE_RUOTA, type DomandaRuota } from '../shared/ruota'
 import type { Topologia } from '../shared/topojson'
@@ -90,16 +90,18 @@ const MEMORIA_GIORNI = 35
  * quello delle categorie con il modo — a scelta o sulla cartina — e del
  * `luogo` di ogni domanda, che la cartina mostra a risposta data; il 3 quello
  * delle altre materie, con il calendario che passa da tutte e la scheda che
- * insegna; il 4 quello di "Accadde oggi" che chiede sempre l'anno. Il 4 rifà
- * solo le giornate di "Accadde oggi" (`formatoMinimo`): quelle delle altre
- * categorie scritte col 3 sono già come le farebbe adesso.
+ * insegna; il 4 quello di "Accadde oggi" che chiede sempre l'anno. Il 5 e'
+ * quello della musica, delle città e delle difficoltà nuove: il calendario ha
+ * diciotto categorie invece di quindici, quindi tutte le giornate future che
+ * nessuno ha aperto si rifanno con quello nuovo (`formatoMinimo`), e con loro
+ * spariscono gli anni dei Nobel e i nomi scientifici.
  */
-const FORMATO = 4
+const FORMATO = 5
 
-/** Il formato sotto il quale una giornata di una categoria va rifatta. */
-const formatoMinimo = (categoria: CategoriaQuiz) => (categoria === 'oggi' ? 4 : 3)
+/** Il formato sotto il quale una giornata di una categoria va rifatta: col calendario nuovo, tutte. */
+const formatoMinimo = (_categoria: CategoriaQuiz) => 5
 /** Lo stesso, in SQL, sulla colonna `categoria` di `quiz_giornate`. */
-const FORMATO_MINIMO = `CASE WHEN categoria = 'oggi' THEN 4 ELSE 3 END`
+const FORMATO_MINIMO = '5'
 
 /** Un pezzo di geometrie per riga, sotto i cento kB di una istruzione di D1. */
 const PEZZO_MASSIMO = 90_000
@@ -345,6 +347,8 @@ if (SCRIVE) {
 /* ─────────────────────────────  Le giornate  ───────────────────────────── */
 
 const ix = indicizza(dati as DatiQuiz)
+/** Le città della classificata: le piu' note del mondo, le stesse che la pagina carica per la cartina. */
+const cittaDelMondo = cittaDellArea(ix, riassunto.citta, 'mondo')
 
 /** I file delle altre materie, dal repository: sono gli stessi che il browser scarica per le libere. */
 const CARTELLA_CULTURA = join(ROOT, 'public', 'dati', 'quiz')
@@ -404,6 +408,7 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
     data,
     mulberry32(semeDelGiorno(numero)),
     evitare,
+    giornata.categoria === 'citta' ? cittaDelMondo : undefined,
   )
   if (domande.length !== DOMANDE_PER_PARTITA) {
     console.error(`  #${numero} (${giornata.categoria}, ${giornata.modo}): solo ${domande.length} domande su ${DOMANDE_PER_PARTITA}`)

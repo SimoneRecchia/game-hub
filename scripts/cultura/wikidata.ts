@@ -7,7 +7,7 @@
  * migliaio: una query per pezzo, e i pezzi uno dopo l'altro.
  */
 
-import { interroga, type Riga } from './rete'
+import { ANNO_LETTURE, interroga, type Riga } from './rete'
 
 const PEZZO = 2_500
 
@@ -327,6 +327,19 @@ const LETTURE_MINIME = 1_000
  * loro.
  */
 export const notorietaItaliana = (voci: number, lette: number) => (lette + LETTURE_MINIME) * Math.sqrt(voci)
+
+/**
+ * Le letture di un'opera uscita nell'anno delle letture, o in quello prima,
+ * sono quelle dell'uscita, e non quelle di sempre: Thunderbolts* e Captain
+ * America stavano fra i primi cinquanta film, davanti al Padrino, e fra le
+ * canzoni le ultime di Sanremo davanti ad Azzurro. Contano un terzo l'anno
+ * dell'uscita e due terzi quello dopo; i libri e i quadri di quegli anni fra
+ * i primi non ci sono.
+ */
+export function lettureDiSempre(lette: number, anno: number | undefined): number {
+  const eta = anno === undefined ? Infinity : ANNO_LETTURE - anno
+  return eta >= 2 ? lette : (lette * (Math.max(0, eta) + 1)) / 3
+}
 
 /** I valori nell'ordine di Wikidata, dove si sa; quelli che l'ordine non ha vanno in fondo, dal piu' noto. */
 export function inOrdine(

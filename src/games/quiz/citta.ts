@@ -9,8 +9,7 @@
 
 import { api } from '@/lib/api'
 import { cittaDaBreve, type CittaInBreve, type CittaQuiz } from '@shared/quiz-dati'
-import type { AreaQuiz, IndiceQuiz } from '@shared/quiz-domande'
-import type { Continente } from '@shared/quiz'
+import { cittaDellArea, type AreaQuiz, type IndiceQuiz } from '@shared/quiz-domande'
 
 let inCorso: { versione: string; promessa: Promise<CittaQuiz[]> } | null = null
 
@@ -28,21 +27,10 @@ function tutte(versione: string): Promise<CittaQuiz[]> {
   return promessa
 }
 
-/** Quante città per il mondo intero, e per un continente: le piu' note. Le altre non le sa nessuno. */
-const NOTE_NEL_MONDO = 600
-const NOTE_NEL_CONTINENTE = 300
-
-/**
- * Le città di una partita: di un paese, tutte quelle che ci sono; del mondo o
- * di un continente, le piu' note, perché "dov'e' Ludhiana?" non e' una domanda.
- */
+/** Le città di una partita (vedi `cittaDellArea`): di un paese tutte, del mondo o di un continente le piu' note. */
 export async function caricaCitta(ix: IndiceQuiz, area: AreaQuiz): Promise<CittaQuiz[]> {
   if (!ix.dati.citta) throw new Error('Le città del quiz non sono ancora pronte. Riprova più tardi.')
-  const elenco = await tutte(ix.dati.citta)
-  if (area.startsWith('paese:')) return elenco.filter((c) => c.p === area.slice(6))
-  const nellArea =
-    area === 'mondo' ? elenco : elenco.filter((c) => ix.paesi.get(c.p)?.k.includes(area as Continente))
-  return [...nellArea].sort((a, b) => b.f - a.f).slice(0, area === 'mondo' ? NOTE_NEL_MONDO : NOTE_NEL_CONTINENTE)
+  return cittaDellArea(ix, await tutte(ix.dati.citta), area)
 }
 
 /** Quante città ha ogni paese: per l'elenco dei paesi su cui si puo' giocare. */

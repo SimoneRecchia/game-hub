@@ -12,10 +12,11 @@ vi.mock('@shared/daily', async (originale) => ({
   gameDate: () => '2026-03-15',
 }))
 
-import { giornoACaso, giornoDellaPartita } from '../fonti'
+import { fontiDelQuiz, giornoACaso, giornoDellaPartita } from '../fonti'
 
 afterEach(() => {
   risposta.valore = null
+  vi.unstubAllGlobals()
 })
 
 describe('il giorno di "Accadde oggi" fuori dalla classificata', () => {
@@ -56,5 +57,22 @@ describe('il giorno di "Accadde oggi" fuori dalla classificata', () => {
     expect(await giornoDellaPartita(undefined, false)).toBe('2026-03-15')
     risposta.valore = { categoria: 'capitali', status: 'nuova' }
     expect((await giornoDellaPartita('caso', false)).slice(5)).not.toBe('03-15')
+  })
+})
+
+describe('i file delle materie di una partita', () => {
+  it('con due materie insieme arrivano tutti e due, anche se il primo arriva per ultimo', async () => {
+    // Era il caso che perdeva una materia: "Mancano i dati di classica" con la classica e la lirica.
+    const attese: Record<string, number> = { classica: 30, lirica: 0 }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const materia = Object.keys(attese).find((m) => url.includes(`/${m}.json`))!
+        await new Promise((r) => setTimeout(r, attese[materia]))
+        return new Response(JSON.stringify({ versione: materia }), { headers: { 'content-type': 'application/json' } })
+      }),
+    )
+    const { fonti } = await fontiDelQuiz(['classica', 'lirica'], 'mondo')
+    expect(Object.keys(fonti.cultura ?? {}).sort()).toEqual(['classica', 'lirica'])
   })
 })

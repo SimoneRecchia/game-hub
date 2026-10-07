@@ -11,10 +11,10 @@ import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
 import { DOVE } from '@/lib/presenza'
 import { SFIDA_POLL_ATTESA_MS } from '@shared/config'
-import { NOMI_CATEGORIE, diGeografia } from '@shared/quiz'
+import { diGeografia } from '@shared/quiz'
 import type { GiocatoreOnline, SalaQuiz, SfidaQuizInviata } from '@shared/types'
 import { useIndiceQuiz } from '../dati'
-import { dettagliPartita } from '../testi'
+import { dettagliPartita, nomePartita } from '../testi'
 import type { ImpostazioniLibera } from '../usePartita'
 import { conIlGiorno, domandePerSfida, sfidaDalleScelte } from './domande'
 import '@/pages/Battaglia.css'
@@ -92,7 +92,7 @@ export function SfidaQuiz({
   }
 
   const riassunto = [
-    NOMI_CATEGORIE[imp.categoria],
+    nomePartita(imp),
     ...dettagliPartita(imp, ix),
     imp.categoria === 'oggi' && scelte.giorno === 'caso' ? 'un giorno a caso' : null,
     // Il numero resta con la sua unita': "15" a fine riga e "s a domanda" sotto non si leggono.

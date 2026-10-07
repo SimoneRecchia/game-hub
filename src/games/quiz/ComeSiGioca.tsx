@@ -15,7 +15,7 @@ export function ComeSiGiocaQuiz({ open, onClose }: { open: boolean; onClose: () 
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="cru-aiuto">
         <p className="cru-aiuto__lede">
-          Domande di geografia, storia, arte, libri, cinema, lirica e scienza: scegli la risposta giusta. In geografia
+          Domande di geografia, storia, arte, libri, cinema, musica e scienza: scegli la risposta giusta. In geografia
           puoi anche trovare il posto sulla <strong>cartina muta</strong>.
         </p>
 
@@ -28,8 +28,9 @@ export function ComeSiGiocaQuiz({ open, onClose }: { open: boolean; onClose: () 
               sono lunghe, {SECONDI_CARTINA} sulla cartina).
             </li>
             <li>
-              <strong>Libera.</strong> Scegli materia, categoria, zona o periodo, domande, tempo e difficoltà. Non conta
-              per la classifica.
+              <strong>Libera.</strong> Scegli la materia e una o più sezioni, la zona o il periodo, le domande, il
+              tempo e la difficoltà: facile chiede le cose più famose, difficile quelle per esperti. Non conta per la
+              classifica.
             </li>
             <li>
               <strong>Sfida un amico.</strong> Stesse domande, nello stesso momento: il primo che risponde giusto

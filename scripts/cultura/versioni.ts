@@ -3,7 +3,17 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
 /** Le materie con un file solo; "Accadde oggi" ha una cartella, un file per giorno. */
-export const FILE_MATERIE = ['arte', 'libri', 'cinema', 'lirica', 'nobel', 'storia', 'scienza'] as const
+export const FILE_MATERIE = [
+  'arte',
+  'libri',
+  'cinema',
+  'canzoni',
+  'classica',
+  'lirica',
+  'nobel',
+  'storia',
+  'scienza',
+] as const
 
 function versioneDi(file: string): string {
   const v = (JSON.parse(readFileSync(file, 'utf8')) as { versione?: unknown }).versione

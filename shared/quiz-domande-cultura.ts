@@ -1,6 +1,7 @@
 /**
  * Le domande delle materie che non sono geografia: arte, libri, cinema,
- * lirica, premi Nobel, storia, scienza e "Accadde oggi".
+ * canzoni, musica classica, lirica, premi Nobel, storia, scienza e "Accadde
+ * oggi".
  *
  * Le regole sono quelle della geografia (shared/quiz-domande.ts): una
  * risposta giusta e qualche sbagliata, **plausibili e sicuramente
@@ -21,15 +22,28 @@
  * delle libere.
  */
 
-import { DOMANDE_PER_PARTITA, QUANTE_MASSIME, RISPOSTE_PREDEFINITE, ambitoValido, type CategoriaQuiz } from './quiz'
+import {
+  DOMANDE_PER_PARTITA,
+  GENERI,
+  QUANTE_MASSIME,
+  RISPOSTE_PREDEFINITE,
+  ambitoValido,
+  genereValido,
+  type CategoriaQuiz,
+} from './quiz'
 import {
   CATEGORIE_CULTURA,
+  GRUPPI_ANIMALI,
   PREMI_NOBEL,
+  VERTEBRATI,
   annoInLettere,
   giornoInLettere,
   numeroSecolo,
   romano,
+  type ArtistaQuiz,
   type AstroQuiz,
+  type BranoQuiz,
+  type CanzoneQuiz,
   type CategoriaCultura,
   type CompostoQuiz,
   type DatiCultura,
@@ -38,6 +52,8 @@ import {
   type EventoQuiz,
   type FattoQuiz,
   type FilmQuiz,
+  type GenereCanzone,
+  type GruppoAnimale,
   type LibroQuiz,
   type NatoQuiz,
   type NobelQuiz,
@@ -49,7 +65,7 @@ import {
   type SpecieQuiz,
   type UnitaQuiz,
 } from './quiz-cultura'
-import type { DatiQuiz } from './quiz-dati'
+import type { CittaQuiz, DatiQuiz } from './quiz-dati'
 import {
   TIPI_SCIENZA,
   assegna,
@@ -68,6 +84,7 @@ import {
   type Notorieta,
   type OpzioneQuiz,
   type RichiestaQuiz,
+  type SezioneQuiz,
   type SpiegazioneQuiz,
   type TipoDomanda,
 } from './quiz-domande'
@@ -87,6 +104,8 @@ interface Contesto {
   tipi: ReadonlySet<TipoDomanda> | null
   notorieta: Notorieta
   ambito: string
+  /** Il genere, per le canzoni: "tutti" se non si e' scelto. */
+  genere: string
   evitare: ReadonlySet<string>
   /** Quante volte ogni voce ha gia' fatto da risposta sbagliata in questa partita. */
   usati: Map<string, number>
@@ -107,6 +126,37 @@ function segnaGiusta(c: Contesto, id: string): void {
   c.giuste.set(id, (c.giuste.get(id) ?? 0) + 1)
 }
 
+/**
+ * I tipi di domanda piu' difficili di ogni categoria: il secolo e la corrente
+ * di un quadro, l'anno di un film o di un fatto, la città di una prima. Il
+ * livello facile ne fa pochi e il difficile di piu': i livelli si distinguono
+ * anche per quel che chiedono, oltre che per i soggetti.
+ */
+const DIFFICILI: ReadonlySet<TipoDomanda> = new Set<TipoDomanda>([
+  'corrente-quadro',
+  'secolo-quadro',
+  'secolo-libro',
+  'anno-film',
+  'citta-opera',
+  'secolo-brano',
+  'paese-interprete',
+  'anno-evento',
+  'prima-evento',
+  'formula-composto',
+  'nome-unita',
+])
+
+/** Quanto pesano i tipi difficili, per difficoltà. */
+const PESO_DIFFICILI: Record<Notorieta, number> = { noti: 0.3, misti: 1, rari: 1.6 }
+
+/** Le quote dei tipi di domanda per la difficoltà della partita. */
+function perDifficolta(
+  quote: ReadonlyArray<readonly [TipoDomanda, number]>,
+  notorieta: Notorieta,
+): Array<readonly [TipoDomanda, number]> {
+  return quote.map(([t, q]) => [t, DIFFICILI.has(t) ? q * PESO_DIFFICILI[notorieta] : q] as const)
+}
+
 type Fai<T> = (tipo: TipoDomanda, soggetto: T) => DomandaCompleta | null
 
 /**
@@ -122,10 +172,10 @@ function componi<T extends { f: number }>(
 ): DomandaCompleta[] {
   const scelti = soggetti(candidati, c.quante, c.caso, c.notorieta)
   const presi = new Set(scelti)
-  const riserva = mescola(
-    candidati.filter((t) => !presi.has(t)),
-    c.caso,
-  ).sort((a, b) => b.f - a.f)
+  const pesate = perDifficolta(quote, c.notorieta)
+  // Le riserve dagli stessi gruppi della difficoltà: dalle piu' note, una partita difficile tornerebbe facile.
+  const resto = candidati.filter((t) => !presi.has(t))
+  const riserva = soggetti(resto, Math.min(resto.length, c.quante * 3), c.caso, c.notorieta)
   const ammessi = quote.map(([t]) => t).filter((t) => !c.tipi || c.tipi.has(t))
   const tipi = ammessi.length > 0 ? ammessi : quote.map(([t]) => t)
   const prova = (tipo: TipoDomanda, s: T): DomandaCompleta | null => {
@@ -139,7 +189,7 @@ function componi<T extends { f: number }>(
     return null
   }
   const domande: DomandaCompleta[] = []
-  for (const { s, tipo } of assegna(scelti, quote, c)) {
+  for (const { s, tipo } of assegna(scelti, pesate, c)) {
     const d = prova(tipo, s)
     if (d) domande.push(d)
   }
@@ -214,7 +264,7 @@ function finestra(posto: number, quanti: number, caso: Caso, buono: (p: number) 
 function anniVicini(
   anno: number,
   quanti: number,
-  c: Pick<Contesto, 'caso' | 'annoMassimo'>,
+  c: Pick<Contesto, 'caso' | 'annoMassimo'> & Partial<Pick<Contesto, 'notorieta'>>,
   escludi: ReadonlySet<number> = new Set(),
   minimo = -5000,
 ): number[] {
@@ -227,7 +277,8 @@ function anniVicini(
     [80, 5],
     [25, 3],
   ]
-  const passo = passi.find(([oltre]) => distanza > oltre)?.[1] ?? 1
+  // Al livello facile gli anni sono il doppio piu' lontani: si sceglie sapendo l'epoca, non l'anno.
+  const passo = (passi.find(([oltre]) => distanza > oltre)?.[1] ?? 1) * (c.notorieta === 'noti' ? 2 : 1)
   const valore = (k: number) => anno + k * passo
   return finestra(0, quanti, c.caso, (k) => {
     const a = valore(k)
@@ -569,6 +620,8 @@ interface Opera {
   id: string
   n: string
   autori: string[]
+  /** Chi c'entra senza essere la risposta (chi canta nel ritornello): mai fra le risposte sbagliate. */
+  anche?: readonly string[]
   anno?: number
   it?: 1
   w?: string
@@ -587,11 +640,23 @@ interface Descrizione<T extends Opera> {
   tipoQuale: TipoDomanda
   /** La terza domanda, sul tempo o sul posto: null se per quest'opera non si fa. */
   terza?: { tipo: TipoDomanda; fai: (o: T, autori: PersonaQuiz[]) => DomandaCompleta | null }
+  /** Altre domande ancora, come la terza: il paese di chi canta. */
+  altre?: ReadonlyArray<{ tipo: TipoDomanda; fai: (o: T, autori: PersonaQuiz[]) => DomandaCompleta | null }>
+  /** Quanto due autori si somigliano come risposte: il tempo e il paese, e per le canzoni il genere. */
+  vicinanza?: (a: PersonaQuiz, b: PersonaQuiz) => number
   quote: ReadonlyArray<readonly [TipoDomanda, number]>
   nellAmbito: (o: T, persone: Map<string, PersonaQuiz>) => boolean
   /** Le opere di cui chi le ha fatte non lo sa nessuno: di loro si chiede solo la terza domanda. */
   senzaAutore?: (o: T) => boolean
 }
+
+/**
+ * Quanto dev'essere noto chi si nomina in "quale di queste ha fatto lui", per
+ * difficoltà: la fascia della persona fra quelle del file. "Quale di queste
+ * canzoni è di Sergio Ortega?" non la sa nemmeno chi conosce «El pueblo
+ * unido»: la canzone e' nota, chi l'ha scritta no.
+ */
+const NOTA_PER_NOME: Record<Notorieta, number> = { noti: 0.5, misti: 0.3, rari: 0.1 }
 
 function opereConAutore<T extends Opera>(d: Descrizione<T>, c: Contesto): DomandaCompleta[] {
   const persone = new Map(d.persone.map((p) => [p.id, p]))
@@ -604,8 +669,9 @@ function opereConAutore<T extends Opera>(d: Descrizione<T>, c: Contesto): Domand
     if ((tipo === d.tipoChi || tipo === d.tipoQuale) && (ilTitoloDice(o.n, autori) || d.senzaAutore?.(o))) return null
     if (tipo === d.tipoChi) {
       if (!ancoraGiusta(c, autore.id)) return null
-      const altri = d.persone.filter((p) => !o.autori.includes(p.id))
-      const sbagliati = distrattori(c, altri, c.sbagliate, (p) => vicinanzaPersone(autore, p))
+      const altri = d.persone.filter((p) => !o.autori.includes(p.id) && !o.anche?.includes(p.id))
+      const vicini = d.vicinanza ?? vicinanzaPersone
+      const sbagliati = distrattori(c, altri, c.sbagliate, (p) => vicini(autore, p))
       const opzioni = conGiusta(
         c,
         opzione(autore.id, autore.n),
@@ -625,8 +691,12 @@ function opereConAutore<T extends Opera>(d: Descrizione<T>, c: Contesto): Domand
     }
     if (tipo === d.tipoQuale) {
       if (!ancoraGiusta(c, autore.id) || doppi.has(senzaAccenti(o.n))) return null
+      if (autore.f < NOTA_PER_NOME[c.notorieta]) return null
       const altre = opere.filter(
-        (x) => !x.autori.some((id) => o.autori.includes(id)) && !doppi.has(senzaAccenti(x.n)) && !stessoTesto(x.n, o.n),
+        (x) =>
+          ![...x.autori, ...(x.anche ?? [])].some((id) => o.autori.includes(id)) &&
+          !doppi.has(senzaAccenti(x.n)) &&
+          !stessoTesto(x.n, o.n),
       )
       const sbagliate = distrattori(c, altre, c.sbagliate, (x) => {
         const tempo = x.anno !== undefined && o.anno !== undefined ? Math.min(2, Math.abs(x.anno - o.anno) / 40) : 1
@@ -650,7 +720,8 @@ function opereConAutore<T extends Opera>(d: Descrizione<T>, c: Contesto): Domand
       }
     }
     if (d.terza && tipo === d.terza.tipo) return d.terza.fai(o, autori)
-    return null
+    const altra = d.altre?.find((x) => x.tipo === tipo)
+    return altra ? altra.fai(o, autori) : null
   }
 
   const candidati = preferendo(
@@ -777,6 +848,287 @@ function cinema(dati: DatiCultura['cinema'], c: Contesto): DomandaCompleta[] {
   )
 }
 
+/* ───────────────────────────────  Canzoni  ─────────────────────────────── */
+
+/** Gli articoli con cui comincia il nome di un gruppo italiano, e la preposizione articolata che fanno con "di". */
+const ARTICOLI_DI: ReadonlyArray<readonly [RegExp, string]> = [
+  [/^Il /, 'del '],
+  [/^Lo /, 'dello '],
+  [/^La /, 'della '],
+  [/^L[’'](?=\S)/, 'dell’'],
+  [/^I /, 'dei '],
+  [/^Gli /, 'degli '],
+  [/^Le /, 'delle '],
+]
+
+/**
+ * Un gruppo come lo si dice in una frase: "i Queen", "gli U2", "i Beatles"
+ * (senza il "The" del nome), "le Spice Girls", "il Volo". `di` da' la
+ * preposizione: "dei Queen", "degli ABBA", "del Volo". Una persona resta il
+ * suo nome: "di Vasco Rossi".
+ */
+export function artistaInFrase(a: Pick<ArtistaQuiz, 'n' | 'gr'>, di = false): string {
+  if (!a.gr) return di ? `di ${a.n}` : a.n
+  for (const [articolo, preposizione] of ARTICOLI_DI) {
+    if (articolo.test(a.n)) return di ? a.n.replace(articolo, preposizione) : a.n
+  }
+  const nome = a.n.replace(/^The /, '')
+  const femminile = /\b(?:Girls|Sisters)$/.test(nome)
+  const gli = /^(?:[AEIOUaeiouÀ-ÖØ-öø-ÿ]|[Ss][^aeiou]|[Zz]|[Xx]|[Yy]|[Gg]n|[Pp]s|W)/.test(nome)
+  const articolo = femminile ? 'le' : gli ? 'gli' : 'i'
+  return di ? `${{ le: 'delle', gli: 'degli', i: 'dei' }[articolo]} ${nome}` : `${articolo} ${nome}`
+}
+
+/** Il nome di un decennio: "anni Settanta", "anni Duemila", "anni 2010". */
+export function nomeDecennio(decennio: number): string {
+  const nomi: Record<number, string> = {
+    1920: 'Anni Venti',
+    1930: 'Anni Trenta',
+    1940: 'Anni Quaranta',
+    1950: 'Anni Cinquanta',
+    1960: 'Anni Sessanta',
+    1970: 'Anni Settanta',
+    1980: 'Anni Ottanta',
+    1990: 'Anni Novanta',
+    2000: 'Anni Duemila',
+  }
+  return nomi[decennio] ?? `Anni ${decennio}`
+}
+
+const decennioDi = (anno: number) => Math.floor(anno / 10) * 10
+
+function nellAmbitoCanzoni(x: CanzoneQuiz, ambito: string, genere: string, artisti: Map<string, ArtistaQuiz>): boolean {
+  const anno = x.anno
+  const negliAnni = (() => {
+    if (ambito === 'tutti') return true
+    if (anno === undefined) return false
+    if (ambito === 'anni60') return anno < 1970
+    if (ambito === 'anni2010') return anno >= 2010
+    const da = Number(ambito.slice(4))
+    const inizio = da < 100 ? 1900 + da : da
+    return anno >= inizio && anno < inizio + 10
+  })()
+  if (!negliAnni || genere === 'tutti') return negliAnni
+  if (genere === 'italiana') return x.a.some((id) => artisti.get(id)?.it === 1)
+  return (x.g ?? []).includes(genere as GenereCanzone)
+}
+
+const NOMI_GENERI_CANZONI: Record<GenereCanzone, string> = Object.fromEntries(
+  (GENERI.canzoni ?? []).map((g) => [g.id, g.nome]),
+) as Record<GenereCanzone, string>
+
+function canzoni(dati: DatiCultura['canzoni'], c: Contesto): DomandaCompleta[] {
+  const artisti = new Map(dati.artisti.map((a) => [a.id, a]))
+  const italiana = (x: CanzoneQuiz) => x.a.some((id) => artisti.get(id)?.it === 1)
+  const opere = dati.canzoni.map((x) => ({
+    ...x,
+    autori: x.a,
+    ...(x.x ? { anche: x.x } : {}),
+    ...(italiana(x) ? { it: 1 as const } : {}),
+  }))
+  // Il tempo e i generi di chi canta, dalle sue canzoni: un gruppo non ha un anno di nascita da confrontare.
+  const anniDi = new Map<string, number[]>()
+  const generiDi = new Map<string, Set<GenereCanzone>>()
+  for (const x of dati.canzoni) {
+    for (const id of x.a) {
+      if (x.anno !== undefined) anniDi.set(id, [...(anniDi.get(id) ?? []), x.anno])
+      const g = generiDi.get(id) ?? new Set<GenereCanzone>()
+      for (const y of x.g ?? []) g.add(y)
+      generiDi.set(id, g)
+    }
+  }
+  const epocaDi = (id: string) => {
+    const anni = anniDi.get(id)
+    return anni?.length ? anni.reduce((a, b) => a + b, 0) / anni.length : null
+  }
+  const vicinanza = (a: PersonaQuiz, b: PersonaQuiz) => {
+    const ea = epocaDi(a.id)
+    const eb = epocaDi(b.id)
+    const tempo = ea === null || eb === null ? 1 : Math.min(2, Math.abs(ea - eb) / 15)
+    const ga = generiDi.get(a.id) ?? new Set()
+    const genere = [...(generiDi.get(b.id) ?? [])].some((g) => ga.has(g)) ? 0 : 0.6
+    return tempo + genere + scarto(a, b) + (a.it === b.it ? 0 : 0.8)
+  }
+  const inRigaArtista = (a: ArtistaQuiz) => (a.gr ? `${a.n}${a.p ? `, ${a.p}` : ''}` : inRiga(a))
+  const schedaCanzone = (x: CanzoneQuiz, chi: PersonaQuiz[]): SpiegazioneQuiz =>
+    scheda({
+      titolo: x.n,
+      sotto: conAnno(elenco(chi.map((p) => p.n)), x.anno),
+      righe: righe(
+        [chi.length > 1 ? 'Interpreti' : 'Interprete', chi.map((p) => inRigaArtista(p as ArtistaQuiz)).join('; ')],
+        ['Anno', x.anno !== undefined ? annoInLettere(x.anno) : null],
+        ['Genere', x.g?.length ? x.g.map((g) => NOMI_GENERI_CANZONI[g]).join(', ') : null],
+      ),
+      testo: chi.length === 1 && chi[0].d ? maiuscola(`${chi[0].n}: ${chi[0].d}.`) : undefined,
+      voce: x.w,
+    })
+  // I paesi di chi canta, dai piu' frequenti: sono le risposte sbagliate credibili.
+  const quantiPerPaese = new Map<string, number>()
+  for (const a of dati.artisti) if (a.p) quantiPerPaese.set(a.p, (quantiPerPaese.get(a.p) ?? 0) + 1)
+  const chiestiPaese = new Set<string>()
+  return opereConAutore<CanzoneQuiz & Opera>(
+    {
+      persone: dati.artisti,
+      opere,
+      chi: (x) => `Chi canta ${titolo(x.n)}?`,
+      quale: (p) => `Quale di queste canzoni è ${artistaInFrase(p as ArtistaQuiz, true)}?`,
+      scheda: schedaCanzone,
+      tipoChi: 'interprete-canzone',
+      tipoQuale: 'canzone-di',
+      vicinanza,
+      terza: {
+        tipo: 'decennio-canzone',
+        fai: (x, chi) => {
+          if (x.anno === undefined) return null
+          // A cavallo di due decenni l'uscita e il successo possono cadere in due: "1979" non e' una risposta sicura.
+          const resto = x.anno % 10
+          if (resto === 0 || resto === 9) return null
+          const giusto = decennioDi(x.anno)
+          const passo = c.notorieta === 'noti' ? 20 : 10
+          const ultimo = decennioDi(c.annoMassimo)
+          const altri = finestra(0, c.sbagliate, c.caso, (k) => {
+            const d = giusto + k * passo
+            return d >= 1950 && d <= ultimo
+          }).map((k) => giusto + k * passo)
+          const opzioni = conGiusta(
+            c,
+            opzione(`dec:${giusto}`, nomeDecennio(giusto)),
+            altri.map((d) => opzione(`dec:${d}`, nomeDecennio(d))),
+          )
+          if (!opzioni) return null
+          const autore = piuNota(chi) as ArtistaQuiz
+          return {
+            tipo: 'decennio-canzone',
+            testo: `In che decennio è uscita ${titolo(x.n)} ${artistaInFrase(autore, true)}?`,
+            opzioni,
+            giusta: `dec:${giusto}`,
+            risposta: nomeDecennio(giusto),
+            soggetto: x.id,
+            spiegazione: schedaCanzone(x, chi),
+          }
+        },
+      },
+      altre: [
+        {
+          tipo: 'paese-interprete',
+          fai: (x, chi) => {
+            // Di chi e' italiano lo sa chi gioca: si chiede di chi viene da fuori.
+            const a = chi[0] as ArtistaQuiz
+            if (chi.length > 1 || !a.p || a.it || chiestiPaese.has(a.id) || !ancoraGiusta(c, a.id)) return null
+            const paesi = [...quantiPerPaese.keys()].filter((p) => p !== a.p)
+            const sbagliati = distrattori(
+              c,
+              paesi.map((p) => ({ id: p })),
+              c.sbagliate,
+              (p) => 1 / (quantiPerPaese.get(p.id) ?? 1),
+            )
+            const opzioni = conGiusta(
+              c,
+              opzione(`paese:${a.p}`, a.p),
+              sbagliati.map((p) => opzione(`paese:${p.id}`, p.id)),
+            )
+            if (!opzioni) return null
+            chiestiPaese.add(a.id)
+            segnaGiusta(c, a.id)
+            return {
+              tipo: 'paese-interprete',
+              testo: a.gr ? `Da quale paese vengono ${artistaInFrase(a)}?` : `Da quale paese viene ${a.n}?`,
+              opzioni,
+              giusta: `paese:${a.p}`,
+              risposta: a.p,
+              soggetto: `ar:${a.id}`,
+              spiegazione: schedaCanzone(x, chi),
+            }
+          },
+        },
+      ],
+      quote: [
+        ['interprete-canzone', 45],
+        ['canzone-di', 25],
+        ['decennio-canzone', 20],
+        ['paese-interprete', 10],
+      ],
+      nellAmbito: (x) => nellAmbitoCanzoni(x, c.ambito, c.genere, artisti),
+    },
+    c,
+  )
+}
+
+/* ────────────────────────────  Musica classica  ──────────────────────────── */
+
+/** Il periodo di un compositore, dall'anno di nascita: Vivaldi e Bach barocchi, Mozart classico, Chopin romantico. */
+function periodoDi(p: PersonaQuiz | undefined): string | null {
+  if (p?.na === undefined) return null
+  if (p.na < 1710) return 'barocco'
+  if (p.na < 1775) return 'classicismo'
+  if (p.na < 1860) return 'romanticismo'
+  return 'novecento'
+}
+
+function classica(dati: DatiCultura['classica'], c: Contesto): DomandaCompleta[] {
+  const compositori = new Map(dati.compositori.map((p) => [p.id, p]))
+  const italiano = (b: BranoQuiz) => b.c.some((id) => compositori.get(id)?.it === 1)
+  const opere = dati.brani.map((b) => ({
+    ...b,
+    n: maiuscola(b.n),
+    autori: b.c,
+    ...(italiano(b) ? { it: 1 as const } : {}),
+  }))
+  const schedaBrano = (b: BranoQuiz, compositori: PersonaQuiz[]): SpiegazioneQuiz =>
+    scheda({
+      titolo: maiuscola(b.n),
+      sotto: conAnno(elenco(compositori.map((p) => p.n)), b.anno),
+      righe: righe(
+        [compositori.length > 1 ? 'Compositori' : 'Compositore', compositori.map(inRiga).join('; ')],
+        ['Anno', b.anno !== undefined ? annoInLettere(b.anno) : null],
+      ),
+      testo:
+        compositori.length === 1 && compositori[0].d
+          ? maiuscola(`${compositori[0].n}: ${compositori[0].d}.`)
+          : undefined,
+      voce: b.w,
+    })
+  return opereConAutore<BranoQuiz & Opera>(
+    {
+      persone: dati.compositori,
+      opere,
+      chi: (b) => `Chi ha composto ${titolo(b.n)}?`,
+      quale: (p) => `Quale di questi brani ha composto ${p.n}?`,
+      scheda: schedaBrano,
+      tipoChi: 'compositore-brano',
+      tipoQuale: 'brano-di',
+      terza: {
+        tipo: 'secolo-brano',
+        fai: (b, compositori) => {
+          if (b.anno === undefined || aCavalloDelSecolo(b.anno)) return null
+          const opzioni = opzioniSecoli(c, b.anno)
+          if (!opzioni) return null
+          return {
+            tipo: 'secolo-brano',
+            testo: `In che secolo è stato composto ${titolo(b.n)}?`,
+            opzioni,
+            giusta: `sec:${numeroSecolo(b.anno)}`,
+            risposta: nomeSecolo(numeroSecolo(b.anno)),
+            soggetto: b.id,
+            spiegazione: schedaBrano(b, compositori),
+          }
+        },
+      },
+      quote: [
+        ['compositore-brano', 50],
+        ['brano-di', 30],
+        ['secolo-brano', 20],
+      ],
+      nellAmbito: (b, persone) => {
+        if (c.ambito === 'tutti') return true
+        if (c.ambito === 'italiani') return b.c.some((id) => persone.get(id)?.it === 1)
+        return periodoDi(persone.get(b.c[0])) === c.ambito
+      },
+    },
+    c,
+  )
+}
+
 function lirica(dati: DatiCultura['lirica'], c: Contesto): DomandaCompleta[] {
   const opere = dati.opere.map((o) => ({ ...o, n: maiuscola(o.n), autori: o.c }))
   const citta = [...new Set(dati.opere.map((o) => o.citta).filter((x): x is string => !!x))]
@@ -858,22 +1210,9 @@ const PER_PREMIO: Record<PremioNobel, string> = {
   economia: 'per l’economia',
 }
 
-/** Il premio per l'economia c'e' dal 1969: prima un anno sbagliato sarebbe una domanda senza risposta. */
-const PRIMO_ANNO: Record<PremioNobel, number> = {
-  letteratura: 1901,
-  fisica: 1901,
-  chimica: 1901,
-  medicina: 1901,
-  pace: 1901,
-  economia: 1969,
-}
-
-function nobel(dati: DatiCultura['nobel'], contesto: Contesto): DomandaCompleta[] {
+function nobel(dati: DatiCultura['nobel'], c: Contesto): DomandaCompleta[] {
   const premiati = new Map(dati.premiati.map((p) => [p.id, p]))
   const premi = dati.premi.filter((x) => premiati.has(x.chi))
-  // Gli anni arrivano all'ultimo premio dato: quelli di quest'anno, prima di ottobre, non ci sono ancora.
-  const ultimo = premi.reduce((n, x) => Math.max(n, x.anno), 0)
-  const c: Contesto = { ...contesto, annoMassimo: Math.min(contesto.annoMassimo, ultimo || contesto.annoMassimo) }
   const chiDelPremio = (premio: PremioNobel, anno: number) =>
     premi.filter((x) => x.premio === premio && x.anno === anno).map((x) => x.chi)
   const premiDi = (chi: string) => premi.filter((x) => x.chi === chi)
@@ -905,94 +1244,43 @@ function nobel(dati: DatiCultura['nobel'], contesto: Contesto): DomandaCompleta[
     })
     .map((x) => ({ ...x, id: `${x.chi}:${x.premio}:${x.anno}`, f: premiati.get(x.chi)!.f }))
 
+  /*
+   * Si chiede il campo a chi l'ha vinto: "In quale campo ha vinto il premio
+   * Nobel Albert Einstein?". Prima si chiedeva anche chi l'aveva vinto in un
+   * anno, e in che anno: un anno di un Nobel non lo sa nessuno, e si tirava a
+   * indovinare. Chi ne ha vinti due in due campi (Marie Curie) ha l'altro fuori
+   * dalle risposte sbagliate.
+   */
   const fai: Fai<Premio> = (tipo, x) => {
+    if (tipo !== 'premio-nobel') return null
     const p = premiati.get(x.chi)!
-    switch (tipo) {
-      case 'nobel-anno': {
-        if (!ancoraGiusta(c, p.id)) return null
-        // Chi l'ha vinto quell'anno, anche insieme, non puo' essere una risposta sbagliata.
-        const stessoAnno = new Set(chiDelPremio(x.premio, x.anno))
-        const altri = [
-          ...new Map(
-            premi
-              .filter((y) => y.premio === x.premio && !stessoAnno.has(y.chi))
-              .map((y) => [y.chi, { ...premiati.get(y.chi)!, anno: y.anno }]),
-          ).values(),
-        ]
-        const sbagliati = distrattori(c, altri, c.sbagliate, (y) => Math.abs(y.anno - x.anno) / 25 + scarto(y, p))
-        const opzioni = conGiusta(
-          c,
-          opzione(p.id, p.n),
-          sbagliati.map((y) => opzione(y.id, y.n)),
-        )
-        if (!opzioni) return null
-        segnaGiusta(c, p.id)
-        return {
-          tipo,
-          testo: `Chi ha vinto il premio Nobel ${PER_PREMIO[x.premio]} nel ${x.anno}?`,
-          opzioni,
-          giusta: p.id,
-          risposta: p.n,
-          soggetto: x.id,
-          spiegazione: schedaPremio(x),
-        }
-      }
-      case 'premio-nobel': {
-        const vinti = new Set(premiDi(p.id).map((y) => y.premio))
-        const altri = mescola(
-          PREMI_NOBEL.filter((q) => !vinti.has(q)),
-          c.caso,
-        )
-        const opzioni = conGiusta(
-          c,
-          opzione(`premio:${x.premio}`, NOMI_PREMI[x.premio]),
-          altri.map((q) => opzione(`premio:${q}`, NOMI_PREMI[q])),
-        )
-        if (!opzioni) return null
-        return {
-          tipo,
-          testo: `In quale campo ha vinto il premio Nobel ${p.n}?`,
-          opzioni,
-          giusta: `premio:${x.premio}`,
-          risposta: NOMI_PREMI[x.premio],
-          soggetto: x.id,
-          spiegazione: schedaPremio(x),
-        }
-      }
-      case 'anno-nobel': {
-        // Chi l'ha vinto due volte (Bardeen, Sanger): l'altro anno non e' un anno sbagliato.
-        const altriAnni = new Set(
-          premiDi(p.id)
-            .filter((y) => y.premio === x.premio)
-            .map((y) => y.anno),
-        )
-        const opzioni = opzioniAnni(c, x.anno, altriAnni, PRIMO_ANNO[x.premio])
-        if (!opzioni) return null
-        return {
-          tipo,
-          testo: `In che anno ${p.n} ha vinto il premio Nobel ${PER_PREMIO[x.premio]}?`,
-          opzioni,
-          giusta: `anno:${x.anno}`,
-          risposta: String(x.anno),
-          soggetto: x.id,
-          spiegazione: schedaPremio(x),
-        }
-      }
-      default:
-        return null
+    if (!ancoraGiusta(c, p.id)) return null
+    const vinti = new Set(premiDi(p.id).map((y) => y.premio))
+    const altri = mescola(
+      PREMI_NOBEL.filter((q) => !vinti.has(q)),
+      c.caso,
+    )
+    const opzioni = conGiusta(
+      c,
+      opzione(`premio:${x.premio}`, NOMI_PREMI[x.premio]),
+      altri.map((q) => opzione(`premio:${q}`, NOMI_PREMI[q])),
+    )
+    if (!opzioni) return null
+    segnaGiusta(c, p.id)
+    return {
+      tipo,
+      testo: `In quale campo ha vinto il premio Nobel ${p.n}?`,
+      opzioni,
+      giusta: `premio:${x.premio}`,
+      risposta: NOMI_PREMI[x.premio],
+      soggetto: x.id,
+      spiegazione: schedaPremio(x),
     }
   }
 
-  return componi(
-    preferendo(candidati, (x) => x.id, c.evitare, c.quante),
-    [
-      ['nobel-anno', 45],
-      ['premio-nobel', 25],
-      ['anno-nobel', 30],
-    ],
-    c,
-    fai,
-  )
+  // Chi ha vinto due volte non fa due domande: i premi sono i soggetti, e la persona e' la stessa.
+  const unoAPersona = [...new Map(candidati.map((x) => [x.chi, x])).values()]
+  return componi(preferendo(unoAPersona, (x) => x.id, c.evitare, c.quante), [['premio-nobel', 100]], c, fai)
 }
 
 /* ──────────────────────────────────  Storia  ──────────────────────────── */
@@ -1203,7 +1491,11 @@ function elementiDellaFormula(formula: string): Set<string> {
   return new Set(formula.match(/[A-Z][a-z]?/g) ?? [])
 }
 
-/** Quanti tipi di domanda per argomento, se si gioca su tutto: la chimica e le scoperte piu' delle altre. */
+/**
+ * Quanti tipi di domanda per argomento, se si gioca su tutto: la chimica e le
+ * scoperte piu' delle altre. Nelle scoperte l'anno viene prima di chi: e' la
+ * domanda che si fa di solito, e di chi l'ha fatta lo dice anche la domanda.
+ */
 const QUOTE_SCIENZA: ReadonlyArray<readonly [TipoDomanda, number]> = [
   ['simbolo-elemento', 12],
   ['elemento-simbolo', 10],
@@ -1213,9 +1505,53 @@ const QUOTE_SCIENZA: ReadonlyArray<readonly [TipoDomanda, number]> = [
   ['nome-unita', 6],
   ['satellite-di', 8],
   ['ordine-pianeta', 4],
-  ['autore-scoperta', 18],
-  ['nome-scientifico', 14],
+  ['anno-scoperta', 12],
+  ['autore-scoperta', 8],
+  ['gruppo-animale', 8],
+  ['animale-del-gruppo', 6],
 ]
+
+/** I nomi dei gruppi di animali, come risposte. */
+const NOMI_GRUPPI: Record<GruppoAnimale, string> = {
+  mammiferi: 'Mammiferi',
+  uccelli: 'Uccelli',
+  rettili: 'Rettili',
+  anfibi: 'Anfibi',
+  pesci: 'Pesci',
+  insetti: 'Insetti',
+  aracnidi: 'Aracnidi',
+  crostacei: 'Crostacei',
+  molluschi: 'Molluschi',
+}
+
+/** Un animale del gruppo, nella domanda: "Quale di questi animali è un mammifero?". */
+const UNO_DEL_GRUPPO: Record<GruppoAnimale, string> = {
+  mammiferi: 'un mammifero',
+  uccelli: 'un uccello',
+  rettili: 'un rettile',
+  anfibi: 'un anfibio',
+  pesci: 'un pesce',
+  insetti: 'un insetto',
+  aracnidi: 'un aracnide',
+  crostacei: 'un crostaceo',
+  molluschi: 'un mollusco',
+}
+
+/**
+ * Quanto e' noto l'`i`-esimo di chi ha fatto una scoperta. Senza la misura,
+ * come nei file di prima, vale come noto: la domanda si fa come si faceva.
+ */
+function famaDi(s: ScopertaQuiz, i: number): number {
+  return s.cf?.[i] ?? 1
+}
+
+const famaMassima = (s: ScopertaQuiz) => Math.max(...s.chi.map((_, i) => famaDi(s, i)))
+
+/** Come si dice che qualcuno l'ha fatta: "ha scoperto la penicillina", "ha inventato il telefono". */
+function fatto(s: ScopertaQuiz): string {
+  const verbo = s.v === 'i' ? 'inventato' : s.v === 'f' ? 'formulato' : 'scoperto'
+  return `${s.chi.length > 1 ? 'hanno' : 'ha'} ${verbo}`
+}
 
 function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
   const pianeti = dati.astri.filter((a) => a.tipo === 'pianeta' && a.ordine)
@@ -1261,15 +1597,7 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
       voce: s.w,
     })
   const schedaSpecie = (s: SpecieQuiz): SpiegazioneQuiz =>
-    scheda({
-      titolo: maiuscola(s.n),
-      sotto: s.sci,
-      righe: righe(
-        ['Nome scientifico', s.sci],
-        ['Regno', s.regno === 'animale' ? 'Animali' : s.regno === 'pianta' ? 'Piante' : null],
-      ),
-      voce: s.w,
-    })
+    scheda({ titolo: maiuscola(s.n), sotto: NOMI_GRUPPI[s.gr], righe: righe(['Gruppo', NOMI_GRUPPI[s.gr]]), voce: s.w })
 
   /** Una domanda di un tipo sulla voce di una lista: null se non si fa. */
   type Lista = { voci: readonly { id: string; f: number }[]; fai: (x: never) => DomandaCompleta | null }
@@ -1459,17 +1787,26 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
         },
       },
       'autore-scoperta': {
-        voci: dati.scoperte.filter((s) => s.chi.length > 0),
+        // Chi l'ha fatta dev'essere noto quanto vuole la difficoltà, come in "quale di queste ha fatto lui".
+        voci: dati.scoperte.filter((s) => s.chi.length > 0 && famaMassima(s) >= NOTA_PER_NOME[c.notorieta]),
         fai: (s: ScopertaQuiz) => {
-          const chi = s.chi[0]
+          // Di due, il piu' noto: l'altro non sta fra le risposte sbagliate.
+          const chi = s.chi[s.chi.reduce((a, _, i) => (famaDi(s, i) > famaDi(s, a) ? i : a), 0)]
           const persone = new Map<string, { id: string; n: string; anno?: number; f: number }>()
           for (const x of dati.scoperte) {
-            for (const n of x.chi) {
-              if (!s.chi.includes(n) && !persone.has(n)) persone.set(n, { id: n, n, anno: x.anno, f: x.f })
-            }
+            x.chi.forEach((n, i) => {
+              if (!s.chi.includes(n) && !persone.has(n)) persone.set(n, { id: n, n, anno: x.anno, f: famaDi(x, i) })
+            })
           }
-          const sbagliati = distrattori(c, [...persone.values()], c.sbagliate, (p) =>
-            p.anno !== undefined && s.anno !== undefined ? Math.min(2, Math.abs(p.anno - s.anno) / 80) : 1,
+          // Le sbagliate dello stesso tempo, e nel facile nomi noti anche loro: fra quattro sconosciuti si tira a caso.
+          const lontano = (p: { f: number }) => (p.f < NOTA_PER_NOME[c.notorieta] ? 1 : 0)
+          const sbagliati = distrattori(
+            c,
+            [...persone.values()],
+            c.sbagliate,
+            (p) =>
+              (p.anno !== undefined && s.anno !== undefined ? Math.min(2, Math.abs(p.anno - s.anno) / 80) : 1) +
+              lontano(p),
           )
           const opzioni = conGiusta(
             c,
@@ -1489,30 +1826,72 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
           }
         },
       },
-      'nome-scientifico': {
+      'anno-scoperta': {
+        voci: dati.scoperte.filter((s) => s.chi.length > 0 && s.anno !== undefined),
+        fai: (s: ScopertaQuiz) => {
+          const opzioni = opzioniAnni(c, s.anno!)
+          if (!opzioni) return null
+          const genere = genereNome(s.n, null, true)
+          const cosa = nomeConArticolo(s.n, genere) ?? titolo(s.n)
+          return {
+            tipo: 'anno-scoperta',
+            testo: `In che anno ${elenco(s.chi)} ${fatto(s)} ${cosa}?`,
+            opzioni,
+            giusta: `anno:${s.anno}`,
+            risposta: annoInLettere(s.anno!),
+            soggetto: `sc:${s.id}`,
+            spiegazione: schedaScoperta(s),
+          }
+        },
+      },
+      'gruppo-animale': {
         voci: dati.specie,
         fai: (s: SpecieQuiz) => {
-          const genere = s.sci.split(' ')[0]
-          const altre = dati.specie.filter((x) => x.id !== s.id && x.sci !== s.sci && !stessoTesto(x.n, s.n))
-          const sbagliate = distrattori(
-            c,
-            altre,
-            c.sbagliate,
-            (x) => (x.sci.split(' ')[0] === genere ? 0 : 1) + (x.regno === s.regno ? 0 : 1) + scarto(x, s),
-          )
+          // Gli errori dalla stessa parte: un delfino si scambia con un pesce, un ragno con un insetto.
+          const vicino = (g: GruppoAnimale) => (VERTEBRATI.has(g) === VERTEBRATI.has(s.gr) ? 0 : 1) + c.caso() * 0.9
+          const altri = GRUPPI_ANIMALI.filter((g) => g !== s.gr).sort((a, b) => vicino(a) - vicino(b))
           const opzioni = conGiusta(
             c,
-            opzione(s.id, s.sci),
-            sbagliate.map((x) => opzione(x.id, x.sci)),
+            opzione(`gr:${s.gr}`, NOMI_GRUPPI[s.gr]),
+            altri.map((g) => opzione(`gr:${g}`, NOMI_GRUPPI[g])),
           )
-          // Il genere dalla tabella o dalla desinenza ("del lupo", "della tigre"); se non si sa, le virgolette.
-          const nome = diNome(s.n, genereNome(s.n, null, true)) ?? `di ${titolo(s.n)}`
+          const animale = nomeConArticolo(s.n, genereNome(s.n, null, true)) ?? titolo(s.n)
           return opzioni && {
-            tipo: 'nome-scientifico',
-            testo: `Qual è il nome scientifico ${nome}?`,
+            tipo: 'gruppo-animale',
+            testo: `A quale gruppo di animali appartiene ${animale}?`,
             opzioni,
-            giusta: s.id,
-            risposta: s.sci,
+            giusta: `gr:${s.gr}`,
+            risposta: NOMI_GRUPPI[s.gr],
+            soggetto: `sp:${s.id}`,
+            spiegazione: schedaSpecie(s),
+          }
+        },
+      },
+      'animale-del-gruppo': {
+        voci: dati.specie,
+        fai: (s: SpecieQuiz) => {
+          // Le sbagliate di altri gruppi, e se si puo' vicine: per i mammiferi un pesce o un uccello, non un ragno.
+          const altri = dati.specie.filter((x) => x.gr !== s.gr)
+          const sbagliati = distrattori(
+            c,
+            altri,
+            c.sbagliate,
+            (x) => (VERTEBRATI.has(x.gr) === VERTEBRATI.has(s.gr) ? 0 : 1) + (1 - x.f),
+          )
+          // Non tutte dello stesso gruppo: tre uccelli e un leone direbbero il mammifero a chi non sa che cos'e'.
+          if (new Set(sbagliati.map((x) => x.gr)).size < Math.min(2, sbagliati.length)) return null
+          // Le risposte come le altre, con la maiuscola: "Delfino", non "delfino".
+          const opzioni = conGiusta(
+            c,
+            opzione(`sp:${s.id}`, maiuscola(s.n)),
+            sbagliati.map((x) => opzione(`sp:${x.id}`, maiuscola(x.n))),
+          )
+          return opzioni && {
+            tipo: 'animale-del-gruppo',
+            testo: `Quale di questi animali è ${UNO_DEL_GRUPPO[s.gr]}?`,
+            opzioni,
+            giusta: `sp:${s.id}`,
+            risposta: maiuscola(s.n),
             soggetto: `sp:${s.id}`,
             spiegazione: schedaSpecie(s),
           }
@@ -1521,8 +1900,9 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
     }
 
   const ammessi = TIPI_SCIENZA[c.ambito] ?? QUOTE_SCIENZA.map(([t]) => t)
-  const quote = QUOTE_SCIENZA.filter(([t]) => ammessi.includes(t) && (!c.tipi || c.tipi.has(t)) && perTipo[t])
-  const valide = quote.length > 0 ? quote : QUOTE_SCIENZA.filter(([t]) => ammessi.includes(t))
+  const pesate = perDifficolta(QUOTE_SCIENZA, c.notorieta)
+  const quote = pesate.filter(([t]) => ammessi.includes(t) && (!c.tipi || c.tipi.has(t)) && perTipo[t])
+  const valide = quote.length > 0 ? quote : pesate.filter(([t]) => ammessi.includes(t))
   const perQuota = ripartisci(c.quante, valide, c.caso)
   // Quante domande per tipo, in proporzione, e le voci di ognuno dalla piu' nota. Lo stesso
   // elemento non fa due domande (il simbolo e l'elemento del simbolo): chi e' gia' uscito si salta.
@@ -1544,7 +1924,7 @@ function scienza(dati: DatiCultura['scienza'], c: Contesto): DomandaCompleta[] {
     const lista = perTipo[tipo]
     if (!lista || quanti <= 0) return
     const voci = preferendo([...lista.voci], (x) => x.id, c.evitare, quanti)
-    prova(tipo, quanti, soggetti(voci, quanti * 3, c.caso, c.notorieta))
+    prova(tipo, quanti, soggetti(voci, quanti * 3, c.caso, c.notorieta, quanti))
   })
   // Un tipo con poche voci (i pianeti sono otto) lascia posto agli altri.
   for (const [tipo] of mescola(valide, c.caso)) {
@@ -1663,12 +2043,27 @@ export interface FontiQuiz {
  * Le domande di una partita di qualunque materia. `richiesta.data` e' il
  * giorno della partita, "AAAA-MM-GG": gli anni sbagliati non lo passano, e per
  * la classificata deve esserci, perché le domande dipendano solo dal giorno.
+ * Con piu' sezioni (`richiesta.sezioni`) la partita le mescola.
  */
 export function generaPartita(
   fonti: FontiQuiz,
   richiesta: RichiestaQuiz,
   caso: Caso,
   evitare: ReadonlySet<string> = new Set(),
+): DomandaCompleta[] {
+  const chiave = (x: SezioneQuiz) => `${x.categoria}:${x.ambito ?? 'tutti'}`
+  const sezioni = [...new Map((richiesta.sezioni ?? []).map((x) => [chiave(x), x])).values()]
+  if (sezioni.length > 1) return partitaMista(fonti, richiesta, sezioni, caso, evitare)
+  const sola = sezioni[0]
+  const una = sola ? { ...richiesta, categoria: sola.categoria, ambito: sola.ambito ?? richiesta.ambito } : richiesta
+  return partitaDi(fonti, { ...una, sezioni: undefined }, caso, evitare)
+}
+
+function partitaDi(
+  fonti: FontiQuiz,
+  richiesta: RichiestaQuiz,
+  caso: Caso,
+  evitare: ReadonlySet<string>,
 ): DomandaCompleta[] {
   const categoria = richiesta.categoria
   if (!eCultura(categoria)) {
@@ -1688,6 +2083,7 @@ export function generaPartita(
     tipi: tipi && tipi.size > 0 ? tipi : null,
     notorieta: richiesta.notorieta ?? 'misti',
     ambito,
+    genere: genereValido(categoria, richiesta.genere),
     evitare,
     usati: new Map(),
     giuste: new Map(),
@@ -1707,6 +2103,10 @@ export function generaPartita(
         return libri(dati as DatiCultura['libri'], c)
       case 'cinema':
         return cinema(dati as DatiCultura['cinema'], c)
+      case 'canzoni':
+        return canzoni(dati as DatiCultura['canzoni'], c)
+      case 'classica':
+        return classica(dati as DatiCultura['classica'], c)
       case 'lirica':
         return lirica(dati as DatiCultura['lirica'], c)
       case 'nobel':
@@ -1720,17 +2120,103 @@ export function generaPartita(
   return rifinisci(domande, quante, risposte, richiesta.ordine, caso)
 }
 
-/** Le domande della classificata di un giorno: la categoria e il modo del giorno, in tutto il mondo. */
+/**
+ * Una partita di piu' sezioni insieme, nella libera: le città, le bandiere e
+ * gli stati, o la chimica e l'astronomia. Le domande si dividono in parti
+ * uguali, con i resti a caso, e ognuna porta la sua sezione; poi si mettono in
+ * fila mescolando le sezioni e tenendo la salita, perché ogni domanda va al
+ * posto che ha nella fila della sua. Una sezione che non ne ha abbastanza —
+ * gli oceani sulla cartina sono cinque — lascia il posto alle altre. Lo stesso
+ * soggetto non torna in due sezioni: la Francia delle capitali tiene fuori
+ * quella delle bandiere.
+ */
+function partitaMista(
+  fonti: FontiQuiz,
+  richiesta: RichiestaQuiz,
+  sezioni: readonly SezioneQuiz[],
+  caso: Caso,
+  evitare: ReadonlySet<string>,
+): DomandaCompleta[] {
+  const quante = Math.max(1, Math.min(richiesta.quante, QUANTE_MASSIME))
+  const visti = new Set(evitare)
+  const fatte = new Map<SezioneQuiz, DomandaCompleta[]>(sezioni.map((x) => [x, []]))
+  const chiedi = (x: SezioneQuiz, quanteQui: number) => {
+    if (quanteQui <= 0) return 0
+    const nuove = partitaDi(
+      fonti,
+      {
+        ...richiesta,
+        categoria: x.categoria,
+        // Gli altri filtri (gli anni, il genere) sono di una sezione sola: con piu' sezioni, tutto.
+        ambito: x.ambito,
+        genere: undefined,
+        sezioni: undefined,
+        quante: quanteQui,
+        ordine: 'sale',
+      },
+      caso,
+      visti,
+    ).filter((d) => !visti.has(d.soggetto))
+    for (const d of nuove) visti.add(d.soggetto)
+    const tag = { categoria: x.categoria, ...(x.ambito && x.ambito !== 'tutti' ? { ambito: x.ambito } : {}) }
+    fatte.get(x)!.push(...nuove.map((d) => ({ ...d, ...tag })))
+    return nuove.length
+  }
+  // Le parti: uguali, e i resti a caso, perché la prima sezione non abbia sempre una domanda in piu'.
+  const base = Math.floor(quante / sezioni.length)
+  const conUnaInPiu = new Set(mescola(sezioni, caso).slice(0, quante - base * sezioni.length))
+  const piene: SezioneQuiz[] = []
+  let mancano = 0
+  for (const x of sezioni) {
+    const parte = base + (conUnaInPiu.has(x) ? 1 : 0)
+    const date = chiedi(x, parte)
+    if (date >= parte) piene.push(x)
+    else mancano += parte - date
+  }
+  // Quel che manca lo fanno le sezioni che ne hanno ancora, un giro alla volta.
+  for (let giro = 0; mancano > 0 && piene.length > 0 && giro < 3; giro += 1) {
+    for (const x of mescola(piene, caso)) {
+      if (mancano <= 0) break
+      mancano -= chiedi(x, 1)
+    }
+  }
+  const fila = [...fatte.values()].flatMap((elenco) =>
+    elenco.map((d, i) => ({ d, posto: (i + 0.5) / elenco.length, prima: caso() })),
+  )
+  fila.sort((a, b) => a.posto - b.posto || a.prima - b.prima)
+  const risposte = Math.max(2, Math.min(6, richiesta.risposte ?? RISPOSTE_PREDEFINITE))
+  return rifinisci(
+    fila.map((x) => x.d),
+    quante,
+    risposte,
+    richiesta.ordine,
+    caso,
+  )
+}
+
+/**
+ * Le domande della classificata di un giorno: la categoria e il modo del
+ * giorno, in tutto il mondo. Per le città servono le piu' note del mondo
+ * (`cittaDellArea`), le stesse che la pagina carica per la cartina.
+ */
 export function domandeDelGiornoQuiz(
   fonti: FontiQuiz,
   giornata: { categoria: CategoriaQuiz; modo: 'scelta' | 'cartina' },
   data: string,
   caso: Caso,
   evitare: ReadonlySet<string> = new Set(),
+  citta?: readonly CittaQuiz[],
 ): DomandaCompleta[] {
   return generaPartita(
     fonti,
-    { categoria: giornata.categoria, modo: giornata.modo, area: 'mondo', quante: DOMANDE_PER_PARTITA, data },
+    {
+      categoria: giornata.categoria,
+      modo: giornata.modo,
+      area: 'mondo',
+      quante: DOMANDE_PER_PARTITA,
+      data,
+      ...(citta ? { citta } : {}),
+    },
     caso,
     evitare,
   )

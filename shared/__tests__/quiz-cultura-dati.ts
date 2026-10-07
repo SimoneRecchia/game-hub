@@ -5,18 +5,23 @@
  * l'anno dentro.
  */
 
-import type {
-  DatiArte,
-  DatiCinema,
-  DatiLibri,
-  DatiLirica,
-  DatiNobel,
-  DatiOggi,
-  DatiScienza,
-  DatiStoria,
-  EventoQuiz,
-  PersonaQuiz,
-  PremioNobel,
+import {
+  GRUPPI_ANIMALI,
+  type ArtistaQuiz,
+  type DatiArte,
+  type DatiCanzoni,
+  type DatiCinema,
+  type DatiClassica,
+  type DatiLibri,
+  type DatiLirica,
+  type DatiNobel,
+  type DatiOggi,
+  type DatiScienza,
+  type DatiStoria,
+  type EventoQuiz,
+  type GenereCanzone,
+  type PersonaQuiz,
+  type PremioNobel,
 } from '../quiz-cultura'
 
 const fama = (i: number, n: number) => Math.round((1 - i / Math.max(1, n - 1)) * 1000) / 1000
@@ -303,15 +308,66 @@ export const SCIENZA: DatiScienza = {
     id: `SC${i}`,
     n: i % 3 === 0 ? `teoria numero ${i}` : i % 3 === 1 ? `telefono numero ${i}` : `macchina numero ${i}`,
     chi: i === 4 ? [`Scienziato ${i}`, `Scienziata ${i + 100}`] : [`Scienziato ${i}`],
-    anno: 1600 + i * 12,
+    ...(i % 5 === 3 ? {} : { anno: 1600 + i * 12 }),
+    ...(i % 3 === 0 ? { v: 'f' as const } : i % 3 === 1 ? { v: 'i' as const } : {}),
     f: fama(i, 30),
+    // Uno scopritore su tre e' poco noto, e dei due della quarta il piu' noto e' il secondo.
+    cf: i === 4 ? [0.2, 0.8] : [i % 3 === 2 ? 0.1 : 0.9],
   })),
   specie: Array.from({ length: 40 }, (_, i) => ({
     id: `SP${i}`,
-    n: i % 2 === 0 ? `animalo ${i}` : `pianta ${i}`,
-    sci: `${['Canis', 'Felis', 'Panthera', 'Quercus', 'Rosa'][i % 5]} specie${i}`,
-    regno: i % 5 < 3 ? ('animale' as const) : ('pianta' as const),
+    n: `animalo ${i}`,
+    gr: GRUPPI_ANIMALI[i % GRUPPI_ANIMALI.length],
     f: fama(i, 40),
+  })),
+}
+
+/* ── La musica: le canzoni e chi le canta, i brani di musica classica ── */
+
+const GENERI_PROVA: GenereCanzone[][] = [['pop'], ['rock'], ['pop', 'rock'], ['rap'], ['dance', 'pop'], ['soul']]
+
+const artisti: ArtistaQuiz[] = Array.from({ length: 60 }, (_, i) => ({
+  id: `ar${i}`,
+  // Qualche gruppo, con i nomi che chiedono un articolo diverso: "i", "gli", "il".
+  n: i === 1 ? 'The Prova' : i === 2 ? 'Ultravox di Prova' : i === 3 ? 'Il Gruppo di Prova' : `Cantante ${i}`,
+  ...(i < 5 ? { gr: 1 as const } : {}),
+  ...(i < 5 ? {} : { na: 1930 + i }),
+  p: i % 4 === 0 ? 'Italia' : i % 4 === 1 ? 'Regno Unito' : i % 4 === 2 ? 'Stati Uniti' : 'Svezia',
+  ...(i % 4 === 0 ? { it: 1 as const } : {}),
+  w: `Artista ${i}`,
+  f: fama(i, 60),
+}))
+
+export const CANZONI: DatiCanzoni = {
+  versione: 'prova',
+  artisti,
+  canzoni: Array.from({ length: 300 }, (_, i) => ({
+    id: `CZ${i}`,
+    n: `Canzone ${i}`,
+    // Un duetto ogni tanto: canta anche il secondo.
+    a: i % 37 === 5 ? [`ar${i % 60}`, `ar${(i + 7) % 60}`] : [`ar${i % 60}`],
+    // E ogni tanto qualcuno nel ritornello, che non e' la risposta.
+    ...(i % 13 === 3 ? { x: [`ar${(i + 11) % 60}`] } : {}),
+    // Gli anni dal 1955 al 2024, anche quelli a cavallo di due decenni.
+    ...(i % 11 === 10 ? {} : { anno: 1955 + ((i * 7) % 70) }),
+    g: GENERI_PROVA[i % GENERI_PROVA.length],
+    w: `Canzone ${i}`,
+    f: fama(i, 300),
+  })),
+}
+
+const compositoriClassici = persone('k', 30, 1650, 9)
+
+export const CLASSICA: DatiClassica = {
+  versione: 'prova',
+  compositori: compositoriClassici,
+  brani: Array.from({ length: 120 }, (_, i) => ({
+    id: `BR${i}`,
+    n: `brano di prova ${i}`,
+    c: i % 23 === 4 ? [`k${i % 30}`, `k${(i + 1) % 30}`] : [`k${i % 30}`],
+    ...(i % 7 === 6 ? {} : { anno: 1650 + (i % 30) * 9 + 30 }),
+    w: `Brano ${i}`,
+    f: fama(i, 120),
   })),
 }
 

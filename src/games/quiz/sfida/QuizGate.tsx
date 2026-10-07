@@ -5,13 +5,14 @@ import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
+import { nomePartita } from '@/games/quiz/testi'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { usePresenza } from '@/lib/presenza'
-import { NOMI_CATEGORIE, NOMI_MODI, diGeografia, nomeAmbito } from '@shared/quiz'
+import { NOMI_MODI, diGeografia, nomeAmbito, nomeGenere } from '@shared/quiz'
 import { giornoInLettere } from '@shared/quiz-cultura'
 import type { DuelloBreve, InvitoQuiz } from '@shared/types'
 import '@/games/wordle/coop/InviteAlert.css'
@@ -140,7 +141,9 @@ function AvvisoSfida({
   const come = diGeografia(r.categoria)
     ? NOMI_MODI[r.modo]
     : (nomeAmbito(r.categoria, r.ambito) ?? (r.giorno ? giornoInLettere(r.giorno) : null))
-  const cosa = [NOMI_CATEGORIE[r.categoria], come, `${r.quante} domande`].filter(Boolean).join(' · ')
+  const cosa = [nomePartita(r), come, nomeGenere(r.categoria, r.genere), `${r.quante} domande`]
+    .filter(Boolean)
+    .join(' · ')
   return (
     <Sheet open onClose={() => {}} dismissible={false} title={sfida.rivincita ? 'Rivincita' : 'Sfida a quiz'}>
       <div className="avviso">

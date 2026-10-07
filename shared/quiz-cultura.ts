@@ -1,6 +1,7 @@
 /**
  * I dati delle materie del quiz che non sono geografia: arte, libri, cinema,
- * lirica, premi Nobel, storia, scienza e "Accadde oggi".
+ * canzoni, musica classica, lirica, premi Nobel, storia, scienza e "Accadde
+ * oggi".
  *
  * Vengono da Wikidata (CC0) e, per "Accadde oggi" e le correnti artistiche,
  * da Wikipedia in italiano (CC BY-SA: la scheda della risposta cita la voce).
@@ -21,12 +22,24 @@
 import { VERSIONI_CULTURA } from './quiz-cultura-versioni'
 
 /** Le materie con i loro dati: una categoria del quiz ciascuna. */
-export type CategoriaCultura = 'arte' | 'libri' | 'cinema' | 'lirica' | 'nobel' | 'storia' | 'scienza' | 'oggi'
+export type CategoriaCultura =
+  | 'arte'
+  | 'libri'
+  | 'cinema'
+  | 'canzoni'
+  | 'classica'
+  | 'lirica'
+  | 'nobel'
+  | 'storia'
+  | 'scienza'
+  | 'oggi'
 
 export const CATEGORIE_CULTURA: readonly CategoriaCultura[] = [
   'arte',
   'libri',
   'cinema',
+  'canzoni',
+  'classica',
   'lirica',
   'nobel',
   'storia',
@@ -221,6 +234,68 @@ export interface DatiLirica {
   compositori: PersonaQuiz[]
 }
 
+/* ───────────────────────────────  La musica  ─────────────────────────────── */
+
+/**
+ * I generi delle canzoni, larghi come quelli di un'app di musica: Wikidata ne
+ * ha centinaia (pop rock, dance pop, trap), e ognuno porta a uno o piu' di
+ * questi risalendo le sottoclassi. Una canzone pop rock e' pop e rock.
+ */
+export type GenereCanzone = 'pop' | 'rock' | 'rap' | 'dance' | 'soul'
+
+export const GENERI_CANZONI: readonly GenereCanzone[] = ['pop', 'rock', 'rap', 'dance', 'soul']
+
+/** Chi canta: una persona o un gruppo. Per un gruppo gli anni sono quelli della fondazione e dello scioglimento. */
+export interface ArtistaQuiz extends PersonaQuiz {
+  /** 1 se e' un gruppo: "i Queen", "dei Pooh". */
+  gr?: 1
+}
+
+export interface CanzoneQuiz {
+  id: string
+  /** Il titolo: "Bohemian Rhapsody", "Nel blu dipinto di blu". */
+  n: string
+  /** Chi la canta (identificativi di `artisti`): di solito uno, due nei duetti. */
+  a: string[]
+  /**
+   * Chi la canta anche, per Wikidata, e non e' la risposta: chi sta nel
+   * ritornello ("Uptown Funk" e' di Mark Ronson, con Bruno Mars) o ne ha fatto
+   * una cover. Non e' mai una risposta sbagliata.
+   */
+  x?: string[]
+  /** L'anno d'uscita. */
+  anno?: number
+  /** I generi larghi, dai generi della canzone o, se non li ha, da quelli di chi la canta. */
+  g?: GenereCanzone[]
+  w?: string
+  f: number
+}
+
+export interface DatiCanzoni {
+  versione: string
+  canzoni: CanzoneQuiz[]
+  artisti: ArtistaQuiz[]
+}
+
+/** Un brano di musica classica: una sinfonia, un balletto, un concerto. Le opere liriche stanno nella lirica. */
+export interface BranoQuiz {
+  id: string
+  /** Il titolo: "Le quattro stagioni", "Il lago dei cigni". */
+  n: string
+  /** I compositori (identificativi di `compositori`). */
+  c: string[]
+  /** L'anno della composizione, o della prima esecuzione. */
+  anno?: number
+  w?: string
+  f: number
+}
+
+export interface DatiClassica {
+  versione: string
+  brani: BranoQuiz[]
+  compositori: PersonaQuiz[]
+}
+
 export type PremioNobel = 'letteratura' | 'fisica' | 'chimica' | 'medicina' | 'pace' | 'economia'
 
 export const PREMI_NOBEL: readonly PremioNobel[] = ['letteratura', 'fisica', 'chimica', 'medicina', 'pace', 'economia']
@@ -344,19 +419,60 @@ export interface ScopertaQuiz {
   /** Chi, per nome: di solito uno, a volte due. */
   chi: string[]
   anno?: number
+  /**
+   * Come si dice che l'ha fatta: "i" se l'ha inventata (un oggetto, una
+   * macchina, un gioco), "f" se l'ha formulata (una teoria, una legge); se
+   * manca, l'ha scoperta.
+   */
+  v?: 'i' | 'f'
   w?: string
   f: number
+  /**
+   * Quanto e' noto ognuno di `chi`, nello stesso ordine: da 1, il piu' noto
+   * degli scopritori del file, a 0. "A chi si deve…" nel facile vuole uno
+   * noto: la chitarra elettrica la conoscono tutti, George Beauchamp no.
+   */
+  cf?: number[]
 }
 
-/** Una specie con il nome italiano e quello scientifico. */
+/**
+ * I gruppi di animali come si studiano a scuola: le classi dei vertebrati, e
+ * i piu' noti degli invertebrati. I pesci non sono una classe, ma lo sono per
+ * tutti: le ossa e le cartilagini vanno insieme.
+ */
+export type GruppoAnimale =
+  | 'mammiferi'
+  | 'uccelli'
+  | 'rettili'
+  | 'anfibi'
+  | 'pesci'
+  | 'insetti'
+  | 'aracnidi'
+  | 'crostacei'
+  | 'molluschi'
+
+export const GRUPPI_ANIMALI: readonly GruppoAnimale[] = [
+  'mammiferi',
+  'uccelli',
+  'rettili',
+  'anfibi',
+  'pesci',
+  'insetti',
+  'aracnidi',
+  'crostacei',
+  'molluschi',
+]
+
+/** I vertebrati: un delfino si scambia con un pesce, non con un insetto. */
+export const VERTEBRATI: ReadonlySet<GruppoAnimale> = new Set(['mammiferi', 'uccelli', 'rettili', 'anfibi', 'pesci'])
+
+/** Un animale con il nome italiano e il suo gruppo. */
 export interface SpecieQuiz {
   id: string
-  /** Il nome comune: "lupo", "pomodoro". */
+  /** Il nome comune: "lupo", "pinguino imperatore". */
   n: string
-  /** Il nome scientifico: "Canis lupus". */
-  sci: string
-  /** Il regno, in breve: animale o pianta. */
-  regno: 'animale' | 'pianta' | 'altro'
+  /** Il gruppo: il delfino e' dei mammiferi, il pinguino degli uccelli. */
+  gr: GruppoAnimale
   w?: string
   f: number
 }
@@ -412,6 +528,8 @@ export interface DatiCultura {
   arte: DatiArte
   libri: DatiLibri
   cinema: DatiCinema
+  canzoni: DatiCanzoni
+  classica: DatiClassica
   lirica: DatiLirica
   nobel: DatiNobel
   storia: DatiStoria
