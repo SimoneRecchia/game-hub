@@ -71,7 +71,8 @@ self.onmessage = async (evento: MessageEvent<Richiesta>) => {
     } else if (richiesta.tipo === 'parole') {
       self.postMessage({ id: richiesta.id, ok: true, sconosciute: richiesta.parole.filter((p) => !dawg.contiene(p)) })
     } else if (richiesta.tipo === 'risposta') {
-      self.postMessage({ id: richiesta.id, ok: true, mossa: rispostaDelGiorno(dawg, richiesta.numero, richiesta.mosse) })
+      const mossa = rispostaDelGiorno(dawg, richiesta.numero, richiesta.mosse)
+      self.postMessage({ id: richiesta.id, ok: true, mossa })
     } else {
       const mossa = turnoDelComputer(dawg, richiesta.partita, sacchettoDaSeme(richiesta.partita.seme))
       self.postMessage({ id: richiesta.id, ok: true, mossa })

@@ -164,8 +164,7 @@ describe('lo Scarabeo fra amici, sul tavolo del server', () => {
       bruno,
     )
     expect(aperta.dati.gioco).toBe('scarabeo')
-    expect((await chiama<PresenzaRisposta>('POST', '/presenza', anna, { attivita: 'hub' })).dati.partitaTavolo).toMatchObject(
-      { id: aperta.dati.partitaId, gioco: 'scarabeo' },
-    )
+    const presenza = (await chiama<PresenzaRisposta>('POST', '/presenza', anna, { attivita: 'hub' })).dati
+    expect(presenza.partitaTavolo).toMatchObject({ id: aperta.dati.partitaId, gioco: 'scarabeo' })
   })
 })

@@ -1308,14 +1308,14 @@ avanza durante il calcolo: non si chiamano mai dal server.
 **Le pagine dei tavolieri si scaricano a parte, e quelle del quiz anche.**
 Regole, pezzi e tavolieri sono un quinto dell'app, e i generatori delle domande
 di tutte le materie del quiz un altro bel pezzo: `App.tsx` le carica con `lazy`,
-in un `Suspense` attorno alle rotte, e le precarica dopo un paio di secondi.
-Le statistiche delle libere del quiz stanno in `quiz/statistiche.ts` perché le
-legge anche il profilo, che altrimenti si porterebbe dietro i generatori.
-React Router naviga
-dentro una transizione di React, quindi la schermata di prima resta finché la
-nuova e' pronta, e la View Transition la fotografa montata. Per questo gli
-avvisi degli inviti e la registrazione prendono i nomi da `tavolo/nomi.ts` e
-non da `tavolo/giochi.ts`, che porta con se' i tavolieri.
+in un `Suspense` attorno alle rotte, e le precarica dopo un paio di secondi. Le
+statistiche delle libere del quiz stanno in `quiz/statistiche.ts` perché le
+legge anche il profilo, che altrimenti si porterebbe dietro i generatori. Lo
+Scarabeo libero arriva a parte anche lui: ha la sala degli amici dei tavolieri.
+React Router naviga dentro una transizione di React, quindi la schermata di
+prima resta finché la nuova e' pronta, e la View Transition la fotografa
+montata. Per questo gli avvisi degli inviti e la registrazione prendono i nomi
+da `tavolo/nomi.ts` e non da `tavolo/giochi.ts`, che porta con se' i tavolieri.
 
 **La dama e' quella italiana.** Le regole sono quelle della Federazione
 (`shared/dama.ts` cita gli articoli): la pedina non mangia la dama, la dama va

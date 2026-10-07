@@ -52,7 +52,11 @@ export function useScarabeoAmico(id: string): PartitaScarabeoAmico {
 
   const stato = vista?.stato
   const ritmo =
-    stato === 'finita' ? POLL_FINE_MS : stato === 'in_corso' && vista?.tuoTurno ? TAVOLO_POLL_TURNO_MS : TAVOLO_POLL_ATTESA_MS
+    stato === 'finita'
+      ? POLL_FINE_MS
+      : stato === 'in_corso' && vista?.tuoTurno
+        ? TAVOLO_POLL_TURNO_MS
+        : TAVOLO_POLL_ATTESA_MS
   const aperta = stato === 'in_corso' || stato === 'finita' || stato === 'invito'
   useEffect(() => {
     if (!aperta) return

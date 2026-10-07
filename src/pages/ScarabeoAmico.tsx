@@ -106,7 +106,8 @@ function Partita({ g, v, s }: { g: PartitaScarabeoAmico; v: VistaTavolo; s: Vist
   const racconta = useCallback(
     (m: Omit<MossaAppena, 'id'>) => {
       idMossa.current += 1
-      if (m.mia || m.scarabeo || m.punti >= MOSSA_DEL_COMPUTER_DA_ADESIVO) accoda(adesivoMossa({ ...m, id: idMossa.current }))
+      if (!m.mia && !m.scarabeo && m.punti < MOSSA_DEL_COMPUTER_DA_ADESIVO) return
+      accoda(adesivoMossa({ ...m, id: idMossa.current }))
     },
     [accoda],
   )
@@ -125,7 +126,8 @@ function Partita({ g, v, s }: { g: PartitaScarabeoAmico; v: VistaTavolo; s: Vist
     const giocata = giocate[i]
     avvisa(annuncioDi(giocata, nome))
     if (giocata?.tipo === 'posa') {
-      racconta({ mia: false, chi: nome, parola: parolaDi(giocata.parole), punti: giocata.punti, scarabeo: giocata.scarabeo })
+      const { punti, scarabeo } = giocata
+      racconta({ mia: false, chi: nome, parola: parolaDi(giocata.parole), punti, scarabeo })
       haptic('tap')
       suona('posa', { volume: 0.6 })
     }
@@ -233,7 +235,9 @@ function Partita({ g, v, s }: { g: PartitaScarabeoAmico; v: VistaTavolo; s: Vist
             <>
               <Tabellino
                 iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
-                iconaAltro={<Avatar nickname={v.avversario?.nickname ?? '?'} color={v.avversario?.avatarColor} size={20} />}
+                iconaAltro={
+                  <Avatar nickname={v.avversario?.nickname ?? '?'} color={v.avversario?.avatarColor} size={20} />
+                }
                 avviso={composizione.messaggio}
                 posa={anteprima}
                 sconosciute={sconosciute}

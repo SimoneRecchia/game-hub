@@ -59,7 +59,8 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     expect(dopo.dati.avversario).toBe(dopo.dati.mosse[1].punti)
     expect(dopo.dati.puntiClassifica).toBe(puntiScarabeo(dopo.dati.punti, 240))
     expect(dopo.dati.leggio).toEqual(leggiiDa(sacchettoDelGiorno(numero), [mossa, risposta], 2).leggii[0])
-    expect(b.db.sqlite.prepare('SELECT turns, score, punti_computer, contro_computer FROM scarabeo_games').get()).toEqual({
+    const riga = b.db.sqlite.prepare('SELECT turns, score, punti_computer, contro_computer FROM scarabeo_games').get()
+    expect(riga).toEqual({
       turns: 1,
       score: dopo.dati.punti,
       punti_computer: dopo.dati.avversario,
@@ -88,7 +89,8 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
 
     // Un cambio di tessere che non ha, e uno di niente.
     for (const tessere of [[mancante], []]) {
-      const r = await b.chiama<{ code: string }>('POST', '/scarabeo/passo', io, { risposta: { tipo: 'cambio', tessere } })
+      const risposta = { tipo: 'cambio', tessere }
+      const r = await b.chiama<{ code: string }>('POST', '/scarabeo/passo', io, { risposta })
       expect(r.status).toBe(422)
       expect(r.dati.code).toBe('RISPOSTA')
     }
@@ -114,7 +116,9 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     const io = await b.giocatore('carla')
     const { leggii } = leggiiDa(sacchettoDelGiorno(numero), [{ tipo: 'passo' }], 2)
     // Le prime tessere del suo leggio in fila sulla stella: quasi mai una parola, e il test lo controlla.
-    const posa = leggii[1].slice(0, 4).map((l, i) => ({ r: 7, c: 5 + i, lettera: l === '?' ? 'a' : l, jolly: l === '?' }))
+    const posa = leggii[1]
+      .slice(0, 4)
+      .map((l, i) => ({ r: 7, c: 5 + i, lettera: l === '?' ? 'a' : l, jolly: l === '?' }))
     expect(dawg.contiene(posa.map((p) => p.lettera).join(''))).toBe(false)
     const r = await b.chiama<{ code: string; error: string }>('POST', '/scarabeo/passo', io, {
       risposta: { tipo: 'posa', posa },
