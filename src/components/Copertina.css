@@ -84,6 +84,11 @@
   --c2: var(--lupus-2);
 }
 
+.copertina--scarabocchi {
+  --c1: var(--scarabocchi-1);
+  --c2: var(--scarabocchi-2);
+}
+
 .copertina--go {
   --c1: var(--go-1);
   --c2: var(--go-2);
