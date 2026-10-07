@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
-import { Coriandoli, Elenco, Riga, Sezione, Tacche, useFesta } from '@/components/Elementi'
+import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
+import { Coriandoli, Tacche, useFesta } from '@/components/Elementi'
 import { IconComputer, IconInfo, IconRefresh, IconTimbro } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Pillola } from '@/components/Scheda'
@@ -187,28 +188,25 @@ export default function NomiCoseLibera() {
   )
 }
 
-/** Prima di cominciare: tre livelli, e toccarne uno comincia. */
+/** Prima di cominciare: tre livelli, e la partita parte da Comincia. */
 function SceltaLivello({ guasto, onGioca }: { guasto: string | null; onGioca: (livello: LivelloNomi) => void }) {
   const [conti] = useState(leggiContiNomi)
+  const [livello, scegli] = useLivelloScelto('nomi', LIVELLI_NOMI)
   return (
-    <Sezione titolo="Difficoltà">
-      <Elenco>
-        {LIVELLI_NOMI.map((livello, i) => (
-          <Riga
-            key={livello}
-            icona={<Tacche piene={i + 1} colore="var(--nomi-1)" />}
-            titolo={NOMI_LIVELLI_NOMI[livello]}
-            onClick={() => onGioca(livello)}
-          />
-        ))}
-      </Elenco>
+    <Difficolta
+      livelli={LIVELLI_NOMI.map((id) => ({ id, nome: NOMI_LIVELLI_NOMI[id] }))}
+      scelto={livello}
+      onScegli={scegli}
+      onComincia={() => onGioca(livello)}
+      colore="var(--nomi-1)"
+    >
       {conti.partite > 0 && (
         <p className="nomi-conti u-tabnum">
           {conti.vinte} {conti.vinte === 1 ? 'vinta' : 'vinte'} su {conti.partite}
         </p>
       )}
       {guasto && <p className="nomi-guasto">{guasto}</p>}
-    </Sezione>
+    </Difficolta>
   )
 }
 

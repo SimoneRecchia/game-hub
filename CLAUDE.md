@@ -2276,12 +2276,16 @@ com'erano, faceva leggere la pagina a pezzi. Le opzioni che non cambia nessuno
 non ci sono: nel quiz libero erano un pannello di avanzate, e la schermata non
 si capiva più.
 
-**La difficoltà si sceglie con le tacche, e fa partire la partita.** In tutte
-le libere e nelle sale — sudoku, scarabeo, battaglia, quiz, scacchi, dama,
-Forza 4, go — la difficoltà e' un elenco di righe con le tacche nel colore del
-gioco (`Tacche`), e toccarne una comincia: niente "Comincia" da cercare dopo.
-Contro chi si gioca, dove si puo' scegliere, e' un interruttore sopra
-(Computer | Amico), ricordato per gioco, e si vede solo quel che serve a quella
+**La difficoltà si sceglie con le tacche, e la partita parte da Comincia.** In
+tutte le libere e nelle sale — sudoku, scarabeo, battaglia, quiz, Nomi, cose e
+città, scacchi, dama, Forza 4, go, tris — la difficoltà e' un elenco di righe
+con le tacche nel colore del gioco, con la spunta su quella scelta, e sotto il
+bottone Comincia (`Difficolta` in `src/components/`). Il livello resta per la
+partita dopo (`useLivelloScelto`, nel `localStorage`; il quiz lo tiene con le
+altre scelte), e la prima volta e' il Normale. Per un periodo toccare un livello
+faceva partire la partita, e chi guardava le righe non capiva che lo facevano.
+Contro chi si gioca, dove si puo' scegliere, lo dice l'interruttore sopra,
+Computer | Amico, ricordato per gioco, e si vede solo quel che serve a quella
 scelta: la difficoltà contro il computer, gli inviti con un amico. Il colore
 contro il computer non si sceglie: cambia a ogni partita (`prossimaParte` in
 `tavolo/locale.ts`), come nelle rivincite fra amici.

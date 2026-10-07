@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
-import { Elenco, Riga, Sezione, Tacche } from '@/components/Elementi'
+import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
 import { IconFlag, IconInfo, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
@@ -96,24 +96,22 @@ export default function SudokuLibero() {
 
 /** Prima di cominciare: quattro livelli, con il record di ognuno. */
 function SceltaLivello({ g }: { g: SudokuLiberoController }) {
+  const [livello, scegli] = useLivelloScelto('sudoku', LIVELLI)
   return (
-    <Sezione titolo="Difficoltà">
-      <Elenco>
-        {LIVELLI.map((livello, i) => {
-          const c = g.conti[livello]
-          return (
-            <Riga
-              key={livello}
-              icona={<Tacche piene={i + 1} di={4} colore="var(--sudoku-1)" />}
-              titolo={NOMI_LIVELLI[livello]}
-              valore={c.record !== null ? `Record ${formatCronometro(c.record)}` : undefined}
-              onClick={() => g.nuova(livello)}
-            />
-          )
-        })}
-      </Elenco>
+    <Difficolta
+      livelli={LIVELLI.map((id) => {
+        const record = g.conti[id].record
+        const valore = record !== null ? `Record ${formatCronometro(record)}` : undefined
+        return { id, nome: NOMI_LIVELLI[id], valore }
+      })}
+      scelto={livello}
+      onScegli={scegli}
+      onComincia={() => g.nuova(livello)}
+      colore="var(--sudoku-1)"
+      di={4}
+    >
       {g.guasto && <p className="sud-guasto">{g.guasto}</p>}
-    </Sezione>
+    </Difficolta>
   )
 }
 

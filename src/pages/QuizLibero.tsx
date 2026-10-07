@@ -4,7 +4,8 @@ import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Cursore } from '@/components/Cursore'
-import { Elenco, Riga, Sezione, Tacche } from '@/components/Elementi'
+import { Difficolta } from '@/components/Difficolta'
+import { Elenco, Riga, Sezione } from '@/components/Elementi'
 import { IconCheck, IconChevronRight, IconInfo, IconPlay } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
@@ -703,7 +704,7 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
   const quante = massime ?? (conAmico ? vicino(QUANTE_SFIDA, scelte.quante, 10) : scelte.quante)
   const secondi = conAmico ? vicino(SECONDI_SFIDA, scelte.secondi, SECONDI_SFIDA_PREDEFINITI) : scelte.secondi
 
-  // La difficoltà scelta fa partire la partita, o la sfida; e resta per la prossima volta.
+  // Comincia fa partire la partita, o la sfida, con la difficoltà scelta; e le scelte restano per la prossima volta.
   const comincia = (notorieta: Notorieta) => {
     const pronte = { ...scelte, notorieta, quante, secondi }
     // Le cinque domande degli oceani sulla cartina sono di quella partita: dopo si torna a quante se ne erano scelte.
@@ -883,18 +884,14 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
         </Opzioni>
       </Sezione>
 
-      <Sezione titolo="Difficoltà">
-        <Elenco>
-          {LIVELLI.map((l, i) => (
-            <Riga
-              key={l.notorieta}
-              icona={<Tacche piene={i + 1} colore={colore} />}
-              titolo={l.nome}
-              onClick={() => comincia(l.notorieta)}
-            />
-          ))}
-        </Elenco>
-      </Sezione>
+      <Difficolta
+        livelli={LIVELLI.map((l) => ({ id: l.notorieta, nome: l.nome }))}
+        scelto={scelte.notorieta ?? 'misti'}
+        onScegli={(notorieta) => cambia({ notorieta })}
+        onComincia={() => comincia(scelte.notorieta ?? 'misti')}
+        colore={colore}
+        etichetta={conAmico ? 'Sfida un amico' : 'Comincia'}
+      />
 
       <SfidaQuiz open={sfida} onClose={() => setSfida(false)} scelte={{ ...scelte, quante, secondi }} />
 
