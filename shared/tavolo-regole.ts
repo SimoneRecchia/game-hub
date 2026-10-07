@@ -235,7 +235,8 @@ const REGOLE_SCARABEO: RegoleTavoliere = {
     const m = scarabeo.mossaDaTesto(mossa)
     const dopo = p && m ? scarabeo.giocaScarabeo(p, m) : null
     // Una posizione non torna mai: le tessere posate restano, e il sacchetto si svuota.
-    return dopo ? { posizione: scarabeo.scriviPosizione(dopo), irreversibile: true, mossa: scarabeo.mossaInTesto(m!) } : null
+    if (!dopo) return null
+    return { posizione: scarabeo.scriviPosizione(dopo), irreversibile: true, mossa: scarabeo.mossaInTesto(m!) }
   },
   chiave: () => '',
   esito(posizione) {

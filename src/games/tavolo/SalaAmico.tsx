@@ -140,7 +140,9 @@ export function InvitaAmico({ sala }: { sala: SalaDelTavolo }) {
         </Button>
       )}
 
-      {inAttesa && !inAttesa.codice && <InvitoInAttesa invito={inAttesa} onAnnulla={() => void sala.annulla(inAttesa)} />}
+      {inAttesa && !inAttesa.codice && (
+        <InvitoInAttesa invito={inAttesa} onAnnulla={() => void sala.annulla(inAttesa)} />
+      )}
 
       {esito && (
         <p className="bat-sala__esito">

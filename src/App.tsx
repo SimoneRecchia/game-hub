@@ -26,7 +26,6 @@ import Wordle from './pages/Wordle'
 import WordleLibero from './pages/WordleLibero'
 import WordleInsieme from './pages/WordleInsieme'
 import Scarabeo from './pages/Scarabeo'
-import ScarabeoLibero from './pages/ScarabeoLibero'
 import ScarabeoInsieme from './pages/ScarabeoInsieme'
 import Cruciverba from './pages/Cruciverba'
 import CruciverbaLibero from './pages/CruciverbaLibero'
@@ -68,9 +67,15 @@ const TavoloSala = lazy(caricaSala)
 const TavoloComputer = lazy(caricaComputer)
 const TavoloPartita = lazy(caricaPartita)
 const TavoloInvito = lazy(caricaInvito)
-/* La partita a Scarabeo con un amico: un tavolo del server come quelli dei tavolieri. */
+/*
+ * La partita a Scarabeo con un amico: un tavolo del server come quelli dei
+ * tavolieri. Anche la libera arriva a parte, perché porta con se' la sala degli
+ * amici dei tavolieri.
+ */
 const caricaScarabeoAmico = () => import('./pages/ScarabeoAmico')
 const ScarabeoAmico = lazy(caricaScarabeoAmico)
+const caricaScarabeoLibero = () => import('./pages/ScarabeoLibero')
+const ScarabeoLibero = lazy(caricaScarabeoLibero)
 
 /*
  * Anche il quiz arriva a parte, per la stessa ragione: i generatori delle
@@ -112,6 +117,7 @@ function usePrecarica() {
         caricaPartita,
         caricaInvito,
         caricaScarabeoAmico,
+        caricaScarabeoLibero,
         caricaQuiz,
         caricaQuizLibero,
         caricaTris,
