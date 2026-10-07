@@ -132,6 +132,35 @@ html[data-transizione] .tabbar {
   letter-spacing: 0;
 }
 
+/* ──────────────────────────  Il computer: la dock  ────────────────────────── */
+
+/*
+ * Su un computer le sezioni restano la stessa capsula, in basso al centro del
+ * contenuto, come la dock del Mac: piu' larga, con l'icona e il nome sulla
+ * stessa riga. A sinistra resta il menu della sezione aperta.
+ */
+@media (min-width: 900px) {
+  .tabbar {
+    left: calc(50% + var(--sidebar-w) / 2);
+    bottom: var(--sp-5);
+    width: 420px;
+    height: 56px;
+  }
+
+  .tabbar__voce {
+    flex-direction: row;
+    gap: var(--sp-2);
+  }
+
+  .tabbar__voce:not(.is-attiva):hover {
+    color: var(--label);
+  }
+
+  .tabbar__nome {
+    font-size: var(--text-subhead);
+  }
+}
+
 /* ───────────────────────────  La barra laterale  ─────────────────────────── */
 
 .laterale {
@@ -139,10 +168,6 @@ html[data-transizione] .tabbar {
 }
 
 @media (min-width: 900px) {
-  .tabbar {
-    display: none;
-  }
-
   .shell__contenuto {
     margin-left: var(--sidebar-w);
   }
@@ -153,7 +178,7 @@ html[data-transizione] .tabbar {
     inset: 0 auto 0 0;
     display: flex;
     flex-direction: column;
-    gap: var(--sp-2);
+    gap: var(--sp-1);
     width: var(--sidebar-w);
     padding: calc(var(--safe-top) + var(--sp-5)) var(--sp-3) var(--sp-4);
     overflow-y: auto;
@@ -169,7 +194,7 @@ html[data-transizione] .tabbar {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-1) var(--sp-3) var(--sp-4);
+  padding: var(--sp-1) var(--sp-3) var(--sp-3);
   color: var(--label);
   font-family: var(--font-rounded);
   font-size: var(--text-title-2);
@@ -182,17 +207,90 @@ html[data-transizione] .tabbar {
   box-shadow: var(--shadow-sm);
 }
 
+/* Il nome della sezione aperta, nel suo colore: dice di che cosa e' il menu. */
+.laterale__sezione {
+  margin: var(--sp-2) var(--sp-3) var(--sp-1);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--colore, var(--label-secondary));
+}
+
+.laterale__gruppo {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Il nome della famiglia, che apre e chiude: come le sezioni della barra laterale del Finder. */
+.laterale__famiglia {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-height: 32px;
+  margin-top: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--label-secondary);
+  font: inherit;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.laterale__famiglia:hover {
+  background: var(--fill-quaternary);
+  color: var(--label);
+}
+
+.laterale__famiglia:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.laterale__chevron {
+  flex: none;
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.laterale__gruppo.is-aperto .laterale__chevron {
+  transform: rotate(90deg);
+}
+
+/* Il cassetto si apre e si chiude con l'altezza: una griglia da 0fr a 1fr, senza misurare niente. */
+.laterale__cassetto {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-base) var(--ease-out);
+}
+
+.laterale__gruppo.is-aperto .laterale__cassetto {
+  grid-template-rows: 1fr;
+}
+
 .laterale__voci {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
 }
 
 .laterale__voce {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  min-height: 40px;
+  min-height: 36px;
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-sm);
   color: var(--label);
@@ -215,17 +313,12 @@ html[data-transizione] .tabbar {
   font-weight: 600;
 }
 
-.laterale__voce--gioco .copertina {
-  --lato: 26px;
+.laterale__voce--gioco {
+  padding-block: 5px;
 }
 
-.laterale__titolo {
-  margin: var(--sp-4) var(--sp-3) var(--sp-1);
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--label-secondary);
+.laterale__voce--gioco .copertina {
+  --lato: 26px;
 }
 
 .laterale__io {
@@ -252,6 +345,13 @@ html[data-transizione] .tabbar {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .laterale__cassetto,
+  .laterale__chevron {
+    transition: none;
+  }
 }
 
 /* ─────────────────────  Le schermate di gioco: schermo intero  ───────────────────── */

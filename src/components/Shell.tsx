@@ -1,21 +1,21 @@
-import { useRef, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
+import { useId, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
+import { MENU_LATERALE, PERCORSI_FORTUNA, delGiorno, sotto, type Famiglia } from '@/app/menu'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
 import { usePlayer } from '@/lib/auth'
-import { NOME_CRAZY_TIME } from '@shared/ruota'
-import { NOME_SLOT } from '@shared/slot'
-import { NOME_BLACKJACK } from '@shared/blackjack'
 import { Avatar } from './Avatar'
 import { Copertina } from './Copertina'
 import {
+  IconChevronRight,
   IconFortuna,
   IconFortunaFill,
   IconGiornaliere,
   IconGiornaliereFill,
   IconLibere,
   IconLibereFill,
+  IconTrophy,
 } from './Icons'
 import './Shell.css'
 
@@ -30,27 +30,6 @@ interface Scheda {
   sotto: (percorso: string) => boolean
 }
 
-/** Il percorso e' questo, o una schermata sotto questo. */
-const sotto = (percorso: string, radice: string) => percorso === radice || percorso.startsWith(`${radice}/`)
-
-/** I giochi della Fortuna: si puntano i punti fatti oggi nelle classificate. */
-const GIOCHI_FORTUNA = [
-  { id: 'ruota', nome: NOME_CRAZY_TIME, a: ROTTE.ruota },
-  { id: 'slot', nome: NOME_SLOT, a: ROTTE.slot },
-  { id: 'blackjack', nome: NOME_BLACKJACK, a: ROTTE.blackjack },
-] as const
-const PERCORSI_FORTUNA = [ROTTE.fortuna, ...GIOCHI_FORTUNA.map((g) => g.a)]
-
-/**
- * Le classificate di oggi e quel che ci gira intorno: le partite, quelle in
- * compagnia, la classifica (tranne quella della Fortuna). Viene prima delle
- * Libere, perché `/quiz/classificata` sta anche sotto `/quiz`.
- */
-const delGiorno = (p: string) =>
-  p === '/' ||
-  GIOCHI.some((g) => sotto(p, ROTTE.classificata(g.id))) ||
-  p.startsWith('/wordle/insieme/') ||
-  (sotto(p, ROTTE.classifica()) && !sotto(p, ROTTE.classifica('fortuna')))
 
 /**
  * Le tre schede: le Libere, con le partite che non contano, le Giornaliere al
@@ -107,14 +86,47 @@ function inCimaSeAperta(pathname: string, a: string) {
   }
 }
 
+/** Le famiglie chiuse, per scheda e nome: restano chiuse anche riaprendo l'app. */
+const CHIAVE_CHIUSE = 'laterale-chiuse'
+
+function leggiChiuse(): Set<string> {
+  try {
+    const salvate: unknown = JSON.parse(localStorage.getItem(CHIAVE_CHIUSE) ?? '[]')
+    return new Set(Array.isArray(salvate) ? salvate.filter((x): x is string => typeof x === 'string') : [])
+  } catch {
+    return new Set()
+  }
+}
+
+function useFamiglieChiuse(): [Set<string>, (chiave: string) => void] {
+  const [chiuse, setChiuse] = useState(leggiChiuse)
+  const cambia = (chiave: string) => {
+    setChiuse((prima) => {
+      const dopo = new Set(prima)
+      if (!dopo.delete(chiave)) dopo.add(chiave)
+      try {
+        localStorage.setItem(CHIAVE_CHIUSE, JSON.stringify([...dopo]))
+      } catch {
+        // Senza il localStorage le famiglie si richiudono a ogni avvio: niente di grave.
+      }
+      return dopo
+    })
+  }
+  return [chiuse, cambia]
+}
+
 /**
  * Il guscio dell'app: le sezioni e il contenuto.
  *
  * Sul telefono le sezioni sono una tab bar che **galleggia** sopra il
  * contenuto, una capsula di vetro staccata dal bordo, e la lente sotto la
  * sezione aperta scivola da una all'altra, nel colore della sezione. Su un
- * computer diventano una barra laterale, come nelle app del Mac, con i giochi
- * di ogni sezione a portata di clic.
+ * computer la stessa capsula fa da dock, in basso al centro del contenuto, e a
+ * sinistra c'e' il menu della sezione aperta: i suoi giochi nelle famiglie
+ * delle Libere, che si chiudono con la chevron, e toccandone uno si apre al
+ * centro la sua configurazione. Prima il menu aveva insieme le sezioni e i
+ * giochi di tutte e tre, con le libere dei giochi classificati che mancavano,
+ * e non si capiva che cosa fosse che cosa.
  *
  * Nelle schermate di gioco le sezioni spariscono del tutto: si gioca a schermo
  * intero, e si esce col tasto indietro della schermata. Lo decide il CSS con
@@ -131,7 +143,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <div className="shell">
-      <BarraLaterale pathname={pathname} attiva={attiva} />
+      <BarraLaterale pathname={pathname} scheda={SCHEDE[ultima.current]} />
       <div className="shell__contenuto">{children}</div>
       <nav className="tabbar" aria-label="Sezioni">
         <span
@@ -161,100 +173,111 @@ export function Shell({ children }: { children: ReactNode }) {
   )
 }
 
-function BarraLaterale({ pathname, attiva }: { pathname: string; attiva: number }) {
+/**
+ * Il menu laterale del computer: la sezione aperta (o l'ultima, sul profilo),
+ * con le sue famiglie e i loro giochi, e in fondo chi sono.
+ */
+function BarraLaterale({ pathname, scheda }: { pathname: string; scheda: Scheda }) {
   const player = usePlayer()
+  const [chiuse, cambia] = useFamiglieChiuse()
+  const menu = MENU_LATERALE[scheda.a]
+  // La classifica della Fortuna sta anche sotto /classifica: nelle Giornaliere non accende quella generale.
+  const classificaAccesa =
+    menu.classifica !== undefined &&
+    sotto(pathname, menu.classifica) &&
+    (scheda.a === ROTTE.fortuna || !sotto(pathname, ROTTE.classifica('fortuna')))
   return (
-    <aside className="laterale" aria-label="Sezioni">
+    <aside
+      className="laterale"
+      aria-label={`Giochi: ${scheda.nome}`}
+      style={{ '--colore': scheda.colore } as CSSProperties}
+    >
       <Collegamento to={ROTTE.home} direzione="scheda" className="laterale__marchio">
         {/* L'impronta nell'indirizzo la scrive npm run icone. */}
         <img src="/icon.svg?v=cdd019ff" alt="" width={30} height={30} />
         <span>Giochi</span>
       </Collegamento>
 
-      <nav className="laterale__voci">
-        {SCHEDE.map((s, i) => {
-          const Icona = i === attiva ? s.IconaPiena : s.Icona
-          return (
-            <Collegamento
-              key={s.a}
-              to={s.a}
-              direzione="scheda"
-              onClick={inCimaSeAperta(pathname, s.a)}
-              className={`laterale__voce${i === attiva ? ' is-attiva' : ''}`}
-              style={{ '--colore': s.colore } as CSSProperties}
-              aria-current={i === attiva ? 'page' : undefined}
-            >
-              <Icona size={20} />
-              <span>{s.nome}</span>
-            </Collegamento>
-          )
-        })}
-      </nav>
+      <p className="laterale__sezione">{scheda.nome}</p>
 
-      <p className="laterale__titolo">Libere</p>
-      <nav className="laterale__voci">
-        {GIOCHI_DA_TAVOLO.map((g) => {
-          const a = `/${g.slug}`
-          const dentro = sotto(pathname, a)
-          return (
-            <Collegamento
-              key={g.id}
-              to={a}
-              direzione="scheda"
-              className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
-            >
-              <Copertina gioco={g.id} formato="icona" />
-              <span>{g.nome}</span>
-            </Collegamento>
-          )
-        })}
-      </nav>
+      {menu.classifica && (
+        <Collegamento
+          to={menu.classifica}
+          stato={{ da: scheda.nome }}
+          className={`laterale__voce${classificaAccesa ? ' is-attiva' : ''}`}
+          aria-current={classificaAccesa ? 'page' : undefined}
+        >
+          <IconTrophy size={20} />
+          <span>Classifica</span>
+        </Collegamento>
+      )}
 
-      <p className="laterale__titolo">Giornaliere</p>
-      <nav className="laterale__voci">
-        {GIOCHI.map((g) => {
-          // Il gioco porta alla partita di oggi, e resta acceso in tutte le sue schermate.
-          const dentro = sotto(pathname, ROTTE.classificata(g.id))
-          return (
-            <Collegamento
-              key={g.id}
-              to={ROTTE.classificata(g.id)}
-              direzione="scheda"
-              className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
-            >
-              <Copertina gioco={g.id} formato="icona" />
-              <span>{g.nome}</span>
-            </Collegamento>
-          )
-        })}
-      </nav>
-
-      <p className="laterale__titolo">Fortuna</p>
-      <nav className="laterale__voci">
-        {GIOCHI_FORTUNA.map((g) => {
-          const dentro = pathname === g.a || pathname.startsWith(`${g.a}/`)
-          return (
-            <Collegamento
-              key={g.id}
-              to={g.a}
-              direzione="scheda"
-              className={`laterale__voce laterale__voce--gioco${dentro ? ' is-attiva' : ''}`}
-            >
-              <Copertina gioco={g.id} formato="icona" />
-              <span>{g.nome}</span>
-            </Collegamento>
-          )
-        })}
-      </nav>
+      {menu.famiglie.map((f) => {
+        const chiave = `${scheda.a}:${f.nome}`
+        // La famiglia del gioco aperto resta aperta: altrimenti non si vedrebbe dove si e'.
+        const dentro = f.voci.some((v) => v.acceso(pathname))
+        return (
+          <GruppoLaterale
+            key={chiave}
+            famiglia={f}
+            aperta={dentro || !chiuse.has(chiave)}
+            onCambia={() => cambia(chiave)}
+            pathname={pathname}
+          />
+        )
+      })}
 
       <Collegamento
         to={ROTTE.profilo}
-        stato={{ da: SCHEDE[attiva]?.nome }}
+        stato={{ da: scheda.nome }}
         className={`laterale__io${sotto(pathname, ROTTE.profilo) ? ' is-attiva' : ''}`}
       >
         <Avatar nickname={player.nickname} color={player.avatarColor} size={32} />
         <span className="laterale__io-nome">{player.displayName}</span>
       </Collegamento>
     </aside>
+  )
+}
+
+/** Una famiglia del menu: il nome con la chevron, che apre e chiude, e i giochi. */
+function GruppoLaterale({
+  famiglia,
+  aperta,
+  onCambia,
+  pathname,
+}: {
+  famiglia: Famiglia
+  aperta: boolean
+  onCambia: () => void
+  pathname: string
+}) {
+  const id = useId()
+  return (
+    <section className={`laterale__gruppo${aperta ? ' is-aperto' : ''}`}>
+      <button type="button" className="laterale__famiglia" aria-expanded={aperta} aria-controls={id} onClick={onCambia}>
+        <span>{famiglia.nome}</span>
+        <IconChevronRight size={14} className="laterale__chevron" />
+      </button>
+      <div className="laterale__cassetto" id={id} inert={!aperta}>
+        <ul className="laterale__voci">
+          {famiglia.voci.map((v) => {
+            const acceso = v.acceso(pathname)
+            return (
+              <li key={v.id}>
+                <Collegamento
+                  to={v.a}
+                  direzione="scheda"
+                  className={`laterale__voce laterale__voce--gioco${acceso ? ' is-attiva' : ''}`}
+                  aria-current={acceso ? 'page' : undefined}
+                >
+                  <Copertina gioco={v.gioco} formato="icona" />
+                  <span>{v.nome}</span>
+                </Collegamento>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
+    </section>
   )
 }
