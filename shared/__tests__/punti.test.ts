@@ -13,6 +13,7 @@ import {
 import { PARTITE_TRIS } from '../tris'
 import { BASE_NOMI, CATEGORIE_PER_PARTITA, TEMPO_NOMI_MS, puntiNomi } from '../nomi-cose'
 import { PUNTI_BASE_QUIZ } from '../quiz'
+import { LUNGHEZZE_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, TEMPO_PAROLA_MS, puntiAnagrammi } from '../anagrammi'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
 /** Uno schema del cruciverba e uno del sudoku della misura di tutti i giorni: ottanta lettere, cinquanta cifre. */
@@ -36,13 +37,13 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(Object.keys(MASSIMI).sort()).toEqual(Object.keys(TETTI).sort())
   })
 
-  it("sono sette classificate, e valgono settecentoquindici: un po' piu' di cento a gioco", () => {
-    expect(Object.keys(TETTI)).toHaveLength(7)
-    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(715)
+  it("sono otto classificate, e valgono settecentosettantacinque: un po' meno di cento a gioco", () => {
+    expect(Object.keys(TETTI)).toHaveLength(8)
+    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(775)
   })
 
   it('i tetti seguono il tempo che chiede ogni gioco, ma nessuno vale piu’ di tre volte un altro', () => {
-    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'quiz', 'wordle', 'nomi', 'tris'] as const
+    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'quiz', 'wordle', 'nomi', 'anagrammi', 'tris'] as const
     for (let i = 1; i < ordine.length; i += 1) expect(TETTI[ordine[i]]).toBeLessThanOrEqual(TETTI[ordine[i - 1]])
     const valori = Object.values(TETTI)
     expect(Math.max(...valori) / Math.min(...valori)).toBeLessThanOrEqual(3.2)
@@ -77,6 +78,11 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(puntiQuiz(12, 10)).toBe(TETTI.quiz)
     // Le partite libere possono avere un altro numero di domande: il tetto e' lo stesso.
     expect(puntiQuiz(15, 15)).toBe(TETTI.quiz)
+  })
+
+  it('negli Anagrammi le cinque parole trovate subito valgono il tetto', () => {
+    const subito = LUNGHEZZE_ANAGRAMMI.map((lettere) => ({ lettere, trovata: true, ms: 1_000, aiuto: false }))
+    expect(puntiAnagrammi(subito)).toBe(TETTI.anagrammi)
   })
 
   it('nel tris la serie perfetta vale il tetto', () => {
@@ -141,6 +147,16 @@ describe('una giornata storta si recupera', () => {
     // Una sola risposta, sbagliata: si e' giocato, e vale la base.
     expect(puntiNomi([{ scritta: true, uguali: null }], 1000, TEMPO_NOMI_MS)).toBe(BASE_NOMI)
     expect(puntiNomi([{ scritta: false, uguali: null }], 1000, 0)).toBe(0)
+  })
+
+  it('negli Anagrammi trovarle tutte allo scadere vale la metà, e giocare vale qualcosa', () => {
+    const tardi = LUNGHEZZE_ANAGRAMMI.map((lettere) => ({ lettere, trovata: true, ms: TEMPO_PAROLA_MS, aiuto: false }))
+    expect(puntiAnagrammi(tardi) / TETTI.anagrammi).toBe(0.5)
+    // Tre su cinque, a meta' del tempo: una giornata normale, fra la meta' e i tre quarti.
+    const normale = puntiAnagrammi(tardi.slice(0, 3).map((p) => ({ ...p, ms: TEMPO_PAROLA_MS / 2 })))
+    expect(normale / TETTI.anagrammi).toBeGreaterThan(0.4)
+    expect(normale / TETTI.anagrammi).toBeLessThan(0.75)
+    expect(puntiAnagrammi([])).toBe(PUNTI_FINITA_ANAGRAMMI)
   })
 
   it('nel quiz una partita storta vale circa la metà di una perfetta, e finirla vale sempre qualcosa', () => {

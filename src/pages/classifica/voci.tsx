@@ -9,6 +9,7 @@ import { NOME_BLACKJACK } from '@shared/blackjack'
 import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
 import type {
+  AnagrammiLeaderboard,
   CruciverbaLeaderboard,
   FortunaLeaderboard,
   GeneraleLeaderboard,
@@ -37,6 +38,7 @@ export type Risposta =
   | QuizLeaderboard
   | TrisLeaderboard
   | NomiLeaderboard
+  | AnagrammiLeaderboard
   | FortunaLeaderboard
 
 export interface Voce {
@@ -71,6 +73,7 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   quiz: 'Quiz',
   tris: 'Tris',
   nomi: 'Nomi, cose e città',
+  anagrammi: 'Anagrammi',
   fortuna: 'Fortuna',
 }
 
@@ -82,7 +85,16 @@ export const GIOCHI_FORTUNA: ReadonlyArray<[GiocoFortuna, string]> = [
 ]
 
 /** I giochi, nell'ordine in cui si mostrano. */
-export const ORDINE_GIOCHI: GiocoClassificato[] = ['wordle', 'scarabeo', 'cruciverba', 'sudoku', 'quiz', 'nomi', 'tris']
+export const ORDINE_GIOCHI: GiocoClassificato[] = [
+  'wordle',
+  'scarabeo',
+  'cruciverba',
+  'sudoku',
+  'quiz',
+  'nomi',
+  'anagrammi',
+  'tris',
+]
 
 /**
  * Quel che compone un totale della generale: le classificate di adesso, e la
@@ -348,6 +360,29 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             { etichetta: 'Risposte valide', valore: formatNumber(r.valide) },
           ],
           nota: 'I punti arrivano la notte e valgono il giorno dopo. A pari punti contano le risposte valide.',
+        }
+      })
+
+    case 'anagrammi':
+      return (risposta as AnagrammiLeaderboard).rows.map((r) => {
+        const trovate = `${formatNumber(r.trovate)} ${r.trovate === 1 ? 'parola trovata' : 'parole trovate'}`
+        return {
+          ...r,
+          sotto:
+            r.giornate === 0
+              ? 'In corso'
+              : giorno
+                ? `${trovate} · ${formatDuration(r.tempoMs)}`
+                : `${giornate(r.giornate)} · ${trovate}`,
+          breve: r.giornate > 0 ? `${r.trovate} trovate` : 'in corso',
+          segni: r.inCorso ? inCorso : undefined,
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            { etichetta: 'Giornate finite', valore: formatNumber(r.giornate) },
+            { etichetta: 'Parole trovate', valore: formatNumber(r.trovate) },
+            { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
+          ],
+          nota: 'A pari punti contano le parole trovate, poi il tempo.',
         }
       })
   }

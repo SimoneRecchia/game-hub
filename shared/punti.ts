@@ -16,9 +16,12 @@
  *   Quiz         3-4 minuti                  75
  *   Wordle       3-5 minuti                  70
  *   Nomi, cose   2-3 minuti                  60
+ *   Anagrammi    2-4 minuti                  60
  *   Tris         2-3 minuti                  50
  *
- * Sono sette, e la somma e' settecentoquindici: un po' piu' di cento a gioco.
+ * Sono otto, e la somma e' settecentosettantacinque: un po' meno di cento a
+ * gioco. Gli Anagrammi sono arrivati per ultimi, e valgono quanto Nomi, cose e
+ * città, che chiede lo stesso tempo.
  * Erano otto, e facevano ottocento, finché la battaglia navale ha avuto la sua
  * classificata (85, i colpi per affondare la flotta del giorno): era piu'
  * fortuna che bravura, e il 6 ottobre 2026 e' diventata solo una libera. Gli
@@ -36,6 +39,7 @@
  *   Quiz         risposte giuste su dieci              45-69     15        75
  *   Nomi, cose   risposte valide, rare e veloci        35-45     15        60
  *   Tris         vinte e patte su cinque partite       30-40     10        50
+ *   Anagrammi    parole trovate, e quanto presto       40-50     10        60
  *
  *   * la parola non indovinata vale quattordici, la peggiore indovinata
  *     trentacinque; un cruciverba o un sudoku svelato per intero non e' stato
@@ -55,12 +59,14 @@ import { DOMANDE_PER_PARTITA, puntiQuiz } from './quiz'
 import { PUNTI_COMPLETO as PUNTI_SUDOKU } from './sudoku'
 import { PARTITE_TRIS, puntiTris } from './tris'
 import { MASSIMO_NOMI } from './nomi-cose'
+import { MASSIMO_ANAGRAMMI } from './anagrammi'
 import type { GiocoClassificato } from './types'
 
 export { punteggio as puntiCruciverba } from './cruciverba'
 export { puntiQuiz } from './quiz'
 export { puntiSudoku } from './sudoku'
 export { puntiTris } from './tris'
+export { puntiAnagrammi } from './anagrammi'
 
 /** Il tetto di ogni classificata: quanto vale una giornata perfetta. Un test lo confronta con le formule. */
 export const TETTI: Record<GiocoClassificato, number> = {
@@ -71,6 +77,7 @@ export const TETTI: Record<GiocoClassificato, number> = {
   wordle: 70,
   tris: 50,
   nomi: 60,
+  anagrammi: 60,
 }
 
 /* ─────────────────────────────  Scarabeo  ─────────────────────────── */
@@ -108,4 +115,5 @@ export const MASSIMI: Record<GiocoClassificato, number> = {
   quiz: puntiQuiz(DOMANDE_PER_PARTITA, DOMANDE_PER_PARTITA),
   tris: puntiTris(PARTITE_TRIS, 0),
   nomi: MASSIMO_NOMI,
+  anagrammi: MASSIMO_ANAGRAMMI,
 }

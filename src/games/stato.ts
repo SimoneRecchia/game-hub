@@ -13,6 +13,7 @@ import { PUNTATA_MASSIMA_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import { PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
+  AnagrammiSummary,
   CompagniaBreve,
   CruciverbaSummary,
   FortunaRisposta,
@@ -396,6 +397,47 @@ export function statoNomi(s: NomiSummary): StatoOggi {
   }
 }
 
+/** Gli Anagrammi: quante parole trovate, o che le parole di oggi non ci sono ancora. */
+export function statoAnagrammi(s: AnagrammiSummary): StatoOggi {
+  const base = {
+    gioco: 'anagrammi' as const,
+    avanzamento: s.status === 'done' ? 1 : s.totale > 0 ? s.giocate / s.totale : 0,
+    a: ROTTE.classificata('anagrammi'),
+  }
+  const trovate = `${s.trovate} ${s.trovate === 1 ? 'trovata' : 'trovate'} su ${s.totale}`
+  if (s.status === 'done') {
+    return { ...base, fase: 'fatta', titolo: trovate, dettaglio: `${s.punti} punti`, punti: s.punti, azione: 'Rivedi' }
+  }
+  if (!s.pronta) {
+    return {
+      ...base,
+      fase: 'non-pronta',
+      titolo: 'Non ancora pronti',
+      dettaglio: 'Riprova più tardi',
+      punti: null,
+      azione: 'Aspetta',
+    }
+  }
+  if (s.status === 'new' || s.giocate === 0) {
+    return {
+      ...base,
+      fase: s.status === 'new' ? 'da-giocare' : 'in-corso',
+      titolo: s.status === 'new' ? 'Da giocare' : `Parola 1 di ${s.totale}`,
+      dettaglio: `${s.totale} parole, da 5 a 9 lettere`,
+      punti: null,
+      azione: s.status === 'new' ? 'Gioca' : 'Continua',
+    }
+  }
+  return {
+    ...base,
+    fase: 'in-corso',
+    titolo: `Parola ${Math.min(s.giocate + 1, s.totale)} di ${s.totale}`,
+    dettaglio: trovate,
+    punti: null,
+    azione: 'Continua',
+  }
+}
+
 export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, StatoOggi> {
   return {
     wordle: statoWordle(oggi.wordle),
@@ -405,6 +447,7 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     quiz: statoQuiz(oggi.quiz),
     tris: statoTris(oggi.tris),
     nomi: statoNomi(oggi.nomi),
+    anagrammi: statoAnagrammi(oggi.anagrammi),
   }
 }
 

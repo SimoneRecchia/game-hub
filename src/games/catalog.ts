@@ -70,6 +70,14 @@ export const GIOCHI: readonly Gioco[] = [
     liberaBreve: 'Contro chi vuoi',
   },
   {
+    id: 'anagrammi',
+    nome: 'Anagrammi',
+    motto: 'Le lettere mescolate, e la parola giusta',
+    classificata: 'Cinque parole al giorno, le stesse per tutti: più presto le trovi, più valgono.',
+    libera: 'Cinque parole a caso, della lunghezza che vuoi.',
+    liberaBreve: 'Parole a caso',
+  },
+  {
     id: 'tris',
     nome: 'Tris',
     motto: 'Tre in fila, dieci secondi a mossa',
@@ -169,7 +177,7 @@ const TRIS_DA_TAVOLO: GiocoTavolo = {
  * e' l'unico che si gioca in tanti.
  */
 export const CATEGORIE_LIBERE: readonly CategoriaLibere[] = [
-  { nome: 'Enigmistica', giochi: ['wordle', 'cruciverba', 'sudoku'] },
+  { nome: 'Enigmistica', giochi: ['wordle', 'cruciverba', 'sudoku', 'anagrammi'] },
   { nome: 'Parole', giochi: ['scarabeo', 'nomi'] },
   { nome: 'Cultura', giochi: ['quiz'] },
   { nome: 'Strategia', giochi: ['scacchi', 'dama', 'go', 'forza4', 'tris'] },

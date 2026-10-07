@@ -225,6 +225,22 @@ function Fonti() {
         .
       </p>
       <p>
+        <strong>Anagrammi.</strong> Parole da napolux/paroleitaliane e da hermitdave/FrequencyWords (MIT), con le
+        definizioni del{' '}
+        <a href="https://it.wiktionary.org" target="_blank" rel="noreferrer">
+          Wikizionario
+        </a>
+        , estratte da{' '}
+        <a href="https://kaikki.org/itwiktionary/" target="_blank" rel="noreferrer">
+          kaikki.org
+        </a>{' '}
+        (
+        <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.it" target="_blank" rel="noreferrer">
+          CC BY-SA 4.0
+        </a>
+        ).
+      </p>
+      <p>
         <strong>Quiz.</strong> Dati da{' '}
         <a href="https://www.wikidata.org" target="_blank" rel="noreferrer">
           Wikidata

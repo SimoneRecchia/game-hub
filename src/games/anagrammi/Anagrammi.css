@@ -1,0 +1,671 @@
+/*
+ * Gli Anagrammi: in cima la fila delle cinque parole, poi la parola aperta —
+ * il tempo, la parola che si compone sugli alloggi della tavoletta, le lettere
+ * da usare sotto — o, fra una parola e l'altra, il bottone che apre la
+ * prossima. Le misure sono in unita' del contenitore: nove lettere ci stanno
+ * su un telefono stretto, cinque non diventano enormi su un computer.
+ */
+.ana {
+  container: ana / inline-size;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-5);
+  width: 100%;
+  max-width: 560px;
+  min-height: 0;
+  margin: 0 auto;
+  padding-top: var(--sp-2);
+}
+
+/* ---------- La fila delle parole ---------- */
+
+.ana-fila {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 var(--sp-3);
+  list-style: none;
+}
+
+.ana-fila__parola {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 1.5px var(--separator);
+  color: var(--label-secondary);
+  font-family: var(--font-rounded);
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  transition:
+    background-color var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-spring);
+}
+
+.ana-fila__parola.is-aperta {
+  box-shadow: inset 0 0 0 2px var(--anagrammi-1);
+  color: var(--anagrammi-2);
+}
+
+.ana-fila__parola.is-trovata {
+  background: var(--tile-correct);
+  box-shadow: var(--edge-light), 0 2px 0 var(--shadow-tint);
+  color: var(--tile-text-on-correct);
+  animation: ana-salta 520ms var(--ease-bounce);
+}
+
+.ana-fila__parola.is-persa,
+.ana-fila__parola.is-passata {
+  background: var(--fill-tertiary);
+  box-shadow: none;
+  color: var(--label-secondary);
+  text-decoration: line-through;
+}
+
+.ana-fila__punti {
+  position: absolute;
+  bottom: -17px;
+  color: var(--label-secondary);
+  font-size: var(--text-caption-2);
+  font-weight: 700;
+}
+
+/* ---------- Il tempo ---------- */
+
+.ana-tempo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  height: 36px;
+  padding: 0 var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  font-weight: 700;
+}
+
+.ana-tempo__barra {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--anagrammi-1) 26%, transparent);
+  transform: scaleX(var(--quota, 1));
+  transform-origin: left center;
+  transition: transform 250ms linear;
+}
+
+.ana-tempo.is-urgente .ana-tempo__barra {
+  background: color-mix(in srgb, var(--red) 24%, transparent);
+}
+
+.ana-tempo.is-urgente .ana-tempo__testo {
+  color: var(--red);
+}
+
+.ana-tempo__testo,
+.ana-tempo__vale {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ana-tempo__vale {
+  color: var(--anagrammi-2);
+}
+
+/* ---------- Le lettere ---------- */
+
+.ana-lettere {
+  --gap: 7px;
+  --lato: min(56px, calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n)));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-5);
+}
+
+.ana-lettere__parola,
+.ana-lettere__vassoio {
+  display: flex;
+  gap: var(--gap);
+}
+
+.ana-casella,
+.ana-posto {
+  display: grid;
+  place-items: center;
+  width: var(--lato);
+  height: var(--lato);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: min(14px, 24%);
+  background: none;
+  color: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Gli alloggi della parola: incavati nella tavoletta, come le caselle vuote del Wordle. */
+.ana-casella {
+  background: var(--slot);
+  box-shadow: inset 0 2px 4px var(--slot-ombra);
+}
+
+.ana-posto.is-vuoto {
+  box-shadow: inset 0 0 0 1.5px var(--tile-empty-border);
+}
+
+.ana-tessera {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--surface);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 60%);
+  box-shadow:
+    var(--edge-light),
+    0 2px 0 var(--shadow-tint),
+    0 4px 10px var(--shadow-tint-soft);
+  color: var(--label);
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.5);
+  font-weight: 800;
+  line-height: 1;
+  user-select: none;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-base) var(--ease-out);
+}
+
+/* Premuta scende, come un tasto, invece di rimpicciolirsi. */
+.ana-posto:not(:disabled):active .ana-tessera,
+.ana-casella:not(:disabled):active .ana-tessera {
+  transform: translateY(2px);
+  box-shadow: var(--edge-light), 0 0 0 var(--shadow-tint);
+}
+
+@media (hover: hover) {
+  .ana-posto:not(:disabled):hover .ana-tessera {
+    transform: translateY(-2px);
+  }
+}
+
+.ana-tessera--posta {
+  animation: ana-posa 200ms var(--ease-bounce);
+}
+
+.ana-lettere.is-sbagliata .ana-lettere__parola {
+  animation: ana-trema 480ms var(--ease-out);
+}
+
+.ana-lettere.is-sbagliata .ana-tessera--posta {
+  background-color: color-mix(in srgb, var(--red) 16%, var(--surface));
+  color: var(--red);
+}
+
+.ana-lettere.is-giusta .ana-tessera--posta,
+.ana-lettere.is-trovata .ana-tessera--posta {
+  background-color: var(--tile-correct);
+  color: var(--tile-text-on-correct);
+  animation: ana-salta 520ms calc(var(--i, 0) * 55ms) var(--ease-bounce) both;
+}
+
+.ana-lettere.is-persa .ana-tessera--posta {
+  background-color: var(--tile-absent);
+  color: var(--tile-text-on-absent);
+}
+
+.ana-lettere__vassoio {
+  animation: ana-arriva 380ms var(--ease-spring) both;
+}
+
+/* Rimescolare fa saltare le tessere: due classi che si alternano, perché l'animazione riparta. */
+.ana-lettere__vassoio.is-mescolato .ana-tessera {
+  animation: ana-mescola 360ms var(--ease-out);
+}
+
+.ana-lettere__vassoio.is-rimescolato .ana-tessera {
+  animation: ana-rimescola 360ms var(--ease-out);
+}
+
+.ana-lettere__comandi {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.ana-comando {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label);
+  font: inherit;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ana-comando:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* ---------- La parola aperta ---------- */
+
+.ana-aperta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+/* Il tempo e le lettere a meta' dello schermo, l'aiuto e "Passo" in fondo, sotto il pollice. */
+.ana-aperta__centro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  margin-block: auto;
+}
+
+/* Con il mouse il pollice non c'entra: tutto insieme, a meta'. */
+@media (hover: hover) and (pointer: fine) {
+  .ana-aperta {
+    justify-content: center;
+    padding-bottom: var(--sp-8);
+  }
+
+  .ana-aperta__centro {
+    margin-block: 0;
+  }
+}
+
+.ana-aperta__piede {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.ana-aiuto,
+.ana-passo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ana-aiuto {
+  background: color-mix(in srgb, var(--anagrammi-1) 14%, transparent);
+  color: var(--anagrammi-2);
+}
+
+.ana-aiuto__costo {
+  padding: 1px 7px;
+  border-radius: var(--r-pill);
+  background: var(--anagrammi-2);
+  color: #fff;
+  font-size: var(--text-caption-1);
+}
+
+.ana-passo {
+  margin-left: auto;
+  background: none;
+  color: var(--label-secondary);
+}
+
+.ana-aiuto:disabled,
+.ana-passo:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.ana-definizione {
+  display: flex;
+  flex: 1;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  font-size: var(--text-subhead);
+  line-height: 1.4;
+  animation: ana-posa 260ms var(--ease-out);
+}
+
+.ana-definizione svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--anagrammi-2);
+}
+
+/* ---------- Fra una parola e l'altra ---------- */
+
+.ana-pausa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-block: auto;
+  padding-bottom: var(--sp-8);
+  text-align: center;
+}
+
+/* La parola che viene, a tessere coperte: un'onda le fa respirare finché non la si apre. */
+.ana-coperte {
+  --gap: 7px;
+  --lato: min(48px, calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n)));
+  display: flex;
+  gap: var(--gap);
+  margin-bottom: var(--sp-4);
+}
+
+.ana-coperta {
+  display: grid;
+  place-items: center;
+  width: var(--lato);
+  height: var(--lato);
+  border-radius: min(12px, 24%);
+  background-color: var(--anagrammi-1);
+  background-image:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.3), transparent 55%),
+    linear-gradient(180deg, var(--anagrammi-1), var(--anagrammi-2));
+  box-shadow:
+    var(--edge-light),
+    0 2px 0 var(--shadow-tint),
+    0 4px 10px var(--shadow-tint-soft);
+  animation: ana-respira 2.6s var(--ease-in-out) calc(var(--i, 0) * 140ms) infinite;
+}
+
+.ana-coperta::after {
+  content: '?';
+  color: rgba(255, 255, 255, 0.86);
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.46);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ana-pausa__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+}
+
+.ana-pausa__riga {
+  margin: 0 0 var(--sp-4);
+  color: var(--label-secondary);
+}
+
+.ana-esito {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.ana-esito__riga {
+  margin: 0;
+  color: var(--label-secondary);
+  font-weight: 600;
+}
+
+.ana-esito.is-trovata .ana-esito__riga {
+  color: var(--tile-correct);
+}
+
+/* ---------- La fine ---------- */
+
+/*
+ * La fine scorre da sola sotto la fila: su un telefono basso cinque parole con
+ * le definizioni non ci stanno. Si allarga di qualche punto e rientra dello
+ * stesso tanto, perché il ritaglio non tagli l'ombra delle carte.
+ */
+.ana-fine {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: 0;
+  margin-inline: -12px;
+  padding: 4px 12px var(--sp-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Dentro una colonna che scorre nessuno si stringe: la carta del riepilogo ritaglia, e si taglierebbe. */
+.ana-fine > * {
+  flex: none;
+}
+
+.ana-totale {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+  text-align: center;
+}
+
+.ana-totale__valore {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+
+.ana-totale__dettaglio,
+.ana-piede {
+  margin: 0;
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  text-align: center;
+}
+
+.ana-azioni {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.ana-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 40px;
+  padding: 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--fill-quaternary);
+  color: var(--brand);
+  font: inherit;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.ana-riepilogo {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  list-style: none;
+}
+
+.ana-riepilogo__riga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: var(--sp-3);
+  row-gap: 3px;
+  padding: var(--sp-3) var(--sp-4);
+}
+
+/* Le lettere com'erano, e la parola: su un telefono stretto la parola va sotto. */
+.ana-riepilogo__cosa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--sp-2);
+  min-width: 0;
+}
+
+.ana-riepilogo__freccia {
+  color: var(--label-tertiary);
+  font-size: var(--text-footnote);
+}
+
+.ana-riepilogo__riga + .ana-riepilogo__riga {
+  border-top: 0.5px solid var(--separator);
+}
+
+.ana-riepilogo__lettere {
+  color: var(--label-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption-1);
+  letter-spacing: 0.12em;
+}
+
+.ana-riepilogo__parola {
+  font-family: var(--font-rounded);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.ana-riepilogo__riga.is-persa .ana-riepilogo__parola,
+.ana-riepilogo__riga.is-passata .ana-riepilogo__parola {
+  color: var(--label-secondary);
+}
+
+.ana-riepilogo__conto {
+  color: var(--tile-correct);
+  font-weight: 700;
+}
+
+.ana-riepilogo__riga.is-persa .ana-riepilogo__conto,
+.ana-riepilogo__riga.is-passata .ana-riepilogo__conto {
+  color: var(--label-secondary);
+  font-weight: 600;
+}
+
+.ana-riepilogo__definizione {
+  grid-column: 1 / -1;
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  line-height: 1.35;
+}
+
+.ana-attesa {
+  flex: 1;
+  min-height: 240px;
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  animation: ana-pulsa 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes ana-arriva {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+}
+
+@keyframes ana-mescola {
+  35% {
+    transform: translateY(-8px) rotate(-8deg);
+  }
+  70% {
+    transform: translateY(1px) rotate(5deg);
+  }
+}
+
+@keyframes ana-rimescola {
+  35% {
+    transform: translateY(-8px) rotate(8deg);
+  }
+  70% {
+    transform: translateY(1px) rotate(-5deg);
+  }
+}
+
+@keyframes ana-respira {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  25% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes ana-posa {
+  from {
+    opacity: 0.4;
+    transform: scale(0.72);
+  }
+}
+
+@keyframes ana-salta {
+  40% {
+    transform: translateY(-9px) scale(1.06);
+  }
+}
+
+@keyframes ana-trema {
+  15%,
+  55% {
+    transform: translateX(-7px);
+  }
+  35%,
+  75% {
+    transform: translateX(7px);
+  }
+}
+
+@keyframes ana-pulsa {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ana-tessera--posta,
+  .ana-lettere.is-sbagliata .ana-lettere__parola,
+  .ana-lettere.is-giusta .ana-tessera--posta,
+  .ana-lettere.is-trovata .ana-tessera--posta,
+  .ana-fila__parola.is-trovata,
+  .ana-definizione,
+  .ana-lettere__vassoio,
+  .ana-lettere__vassoio .ana-tessera,
+  .ana-coperta {
+    animation: none;
+  }
+}
