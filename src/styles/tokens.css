@@ -273,6 +273,8 @@
   --fortuna-2: #0d7a55;
   --blackjack-1: #1fa463;
   --blackjack-2: #0b4f30;
+  --lupus-1: #4553b0;
+  --lupus-2: #141a4d;
 
   /* ---- Le tre schede ----
      Ognuna ha il suo colore, per l'icona accesa nella barra, la lente sotto e
@@ -696,6 +698,37 @@
   /* Il mirino di chi ti sta per sparare: l'arancione di "prende la mira". */
   --mirino: #f2770d;
   --mirino: light-dark(#f2770d, #ff9f40);
+
+  /* ---- Lupus in fabula ----
+     La notte e' un cielo blu, lo stesso nei due temi come il palco di Crazy
+     Time: di notte la schermata si fa scura, e le superfici sono del cielo e
+     non del grigio di sistema. La luna e' l'oro delle cose della notte. Le tre
+     fazioni hanno un colore loro, che non e' il verde di "giusto" ne' il rosso
+     di "sbagliato": il verde del villaggio, il rosso del branco, il viola di
+     chi gioca da solo — scritti a mano per tema, e pieni per la fine, dove
+     sopra c'e' il bianco. Il sangue e' quel che uccide: i voti, il linciaggio.
+     I colori dei personaggi stanno nel loro `colore`, e la loro icona e'
+     sempre dell'inchiostro della notte. */
+  --lupus-notte: #0d0f1f;
+  --lupus-notte-superficie: #1b2040;
+  --lupus-notte-superficie-2: #252c55;
+  --lupus-notte-velo: rgba(13, 15, 31, 0.86);
+  --lupus-inchiostro: #14172e;
+  --lupus-luna: #f5c451;
+  --lupus-luna-chiara: #ffd97a;
+  --lupus-luna-ink: #8a5a00;
+  --lupus-luna-ink: light-dark(#8a5a00, #ffd97a);
+  --lupus-villaggio: #1d8754;
+  --lupus-villaggio: light-dark(#1d8754, #6fd3a0);
+  --lupus-lupi: #c4323a;
+  --lupus-lupi: light-dark(#c4323a, #ff8a8d);
+  --lupus-solo: #7a4fd0;
+  --lupus-solo: light-dark(#7a4fd0, #c7a8ff);
+  --lupus-villaggio-pieno: #22845a;
+  --lupus-lupi-pieno: #b02f38;
+  --lupus-solo-pieno: #6745c0;
+  --lupus-sangue: #c4323a;
+  --lupus-sangue: light-dark(#c4323a, #ff7378);
 }
 
 /*

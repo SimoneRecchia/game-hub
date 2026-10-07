@@ -3,6 +3,7 @@ import { ROTTE } from '@/app/rotte'
 import { api } from '@/lib/api'
 import { useDati } from '@/lib/dati'
 import { AMICI_POLL_MS } from '@shared/config'
+import type { StanzaLupusBreve, VistaStanzaLupus } from '@shared/lupus-stanza'
 import type { AmiciRisposta, AmicoOnline, Attivita, GiocatoreBreve } from '@shared/types'
 
 /**
@@ -54,8 +55,18 @@ export const DOVE_BREVE: Record<Attivita, string> = {
   altro: 'Online',
 }
 
-/** I giochi a cui si invita un amico: quelli che si giocano in due, nella libera. */
-export type GiocoInsieme = 'battaglia' | 'quiz' | 'nomi' | 'tris' | 'indovina' | 'scacchi' | 'dama' | 'forza4' | 'go'
+/** I giochi a cui si invita un amico: quelli che si giocano in due nella libera, e Lupus, che si gioca in tanti. */
+export type GiocoInsieme =
+  | 'battaglia'
+  | 'quiz'
+  | 'nomi'
+  | 'tris'
+  | 'indovina'
+  | 'scacchi'
+  | 'dama'
+  | 'forza4'
+  | 'go'
+  | 'lupus'
 
 export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
@@ -67,6 +78,7 @@ export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'dama',
   'forza4',
   'go',
+  'lupus',
 ]
 
 /**
@@ -88,11 +100,25 @@ function scelta(chiave: string, json: boolean): string | null {
 /**
  * Invita un amico online a un gioco, e dice dove andare: nella sala del gioco,
  * che trova l'invito in attesa. Il quiz no: la sfida la prepara il telefono di
- * chi sfida, con le scelte della pagina, che si apre con l'amico in vista.
+ * chi sfida, con le scelte della pagina, che si apre con l'amico in vista. A
+ * Lupus si invita nella stanza in cui si e', se aspetta ancora; se no in una
+ * nuova, e si va li'.
  */
-export async function invitaA(gioco: GiocoInsieme, amico: GiocatoreBreve): Promise<string> {
+export async function invitaA(
+  gioco: GiocoInsieme,
+  amico: GiocatoreBreve,
+  stanzaLupus: StanzaLupusBreve | null = null,
+): Promise<string> {
   const playerId = amico.playerId
   if (gioco === 'quiz') return `${ROTTE.libera('quiz')}?sfida=1`
+  if (gioco === 'lupus') {
+    const codice =
+      stanzaLupus?.stato === 'attesa'
+        ? stanzaLupus.codice
+        : (await api<VistaStanzaLupus>('/lupus/stanze', { method: 'POST' })).codice
+    await api(`/lupus/stanze/${codice}/invita`, { method: 'POST', body: { playerId } })
+    return ROTTE.stanzaLupus(codice)
+  }
   if (gioco === 'battaglia') {
     await api('/battaglia/sfida', { method: 'POST', body: { playerId } })
     return ROTTE.battaglia
@@ -130,5 +156,14 @@ export function salaDi(gioco: GiocoInsieme): string {
     return ROTTE.libera('nomi')
   }
   if (gioco === 'indovina') return ROTTE.indovina
+  if (gioco === 'lupus') {
+    // La sala si apre dalla parte delle stanze, da cui lo si invita con il link (la chiave di pages/Lupus.tsx).
+    try {
+      localStorage.setItem('giochi.lupus.modo', 'online')
+    } catch {
+      /* senza localStorage si apre com'era */
+    }
+    return ROTTE.lupus
+  }
   return ROTTE.tavolo(gioco)
 }

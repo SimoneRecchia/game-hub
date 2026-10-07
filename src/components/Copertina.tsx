@@ -445,6 +445,31 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
     </g>
   ),
 
+  // La luna piena, e davanti la testa del lupo: la stessa del personaggio, con gli occhi che lasciano la luna.
+  lupus: (
+    <g>
+      <circle cx={60} cy={56} r={41} fill="#fff" fillOpacity={0.12} />
+      <circle cx={60} cy={56} r={31} fill="#fff" fillOpacity={0.92} />
+      {[
+        [20, 22, 2.2],
+        [31, 13, 1.4],
+        [97, 20, 1.8],
+        [104, 36, 1.2],
+        [16, 44, 1.2],
+      ].map(([x, y, r]) => (
+        <circle key={`${x}${y}`} cx={x} cy={y} r={r} fill="#fff" fillOpacity={0.8} />
+      ))}
+      <g transform="translate(33.5 33) scale(0.83)">
+        <path
+          d="M32 62C19 53 11 42 11 29L6 4l17 15c3-2 6-3 9-3s6 1 9 3L58 4l-5 25c0 13-8 24-21 33z"
+          fill="var(--c2)"
+        />
+        <path d="M18 31l9 3-1 6-8-3z M46 31l-9 3 1 6 8-3z" fill="#fff" />
+        <path d="M32 62l-6-11h12z" fill="#fff" fillOpacity={0.9} />
+      </g>
+    </g>
+  ),
+
   // Un angolo di goban: le linee, un punto di riferimento, e le pietre di una partita appena cominciata.
   // Il cancelletto tracciato a mano, i segni di una partita e la fila fatta.
   tris: (

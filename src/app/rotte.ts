@@ -47,6 +47,9 @@
  *   /indovina-chi/partita/:id           una partita
  *   /indovina-chi/invito/:codice        un invito arrivato con un link
  *   /indovina-chi/set/:id               un set di personaggi proprio ('nuovo' per crearne uno)
+ *   /lupus                              Lupus: un telefono che passa di mano, o una stanza online
+ *   /lupus/telefono                     la partita a un telefono, tutta nel telefono
+ *   /lupus/stanza/:codice               una stanza online, con il suo codice: l'attesa, la partita, la fine
  *   /scacchi, /dama, /forza-4, /go      la sala: contro il computer, o con un amico
  *   /scacchi/computer                   la partita contro il computer, nel telefono
  *   /scacchi/partita/:id                una partita con un amico
@@ -140,6 +143,10 @@ export const ROTTE = {
   partitaIndovina: (id: string) => `/indovina-chi/partita/${id}`,
   invitoIndovina: (codice: string) => `/indovina-chi/invito/${codice}`,
   setIndovina: (id: string) => `/indovina-chi/set/${id}`,
+
+  lupus: '/lupus',
+  telefonoLupus: '/lupus/telefono',
+  stanzaLupus: (codice: string) => `/lupus/stanza/${codice}`,
 
   tavolo: (gioco: GiocoTavoliere) => `/${SLUG_TAVOLIERE[gioco]}`,
   computerTavolo: (gioco: GiocoTavoliere) => `/${SLUG_TAVOLIERE[gioco]}/computer`,

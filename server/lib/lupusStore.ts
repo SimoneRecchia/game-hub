@@ -35,6 +35,7 @@ import {
   LUPUS_INVITO_MS,
   LUPUS_STANZA_FERMA_MS,
   azioneDelGiocatore,
+  codiceLupusValido,
   impostazioniStanzaValide,
   type ImpostazioniStanzaLupus,
   type InvitoLupus,
@@ -44,7 +45,7 @@ import {
   type VistaStanzaLupus,
 } from '../../shared/lupus-stanza'
 import { vistaPer } from '../../shared/lupus-vista'
-import type { GiocatoreBreve } from '../../shared/types'
+import type { GiocatoreBreve, InvitoConLink } from '../../shared/types'
 import { fail, newId } from './http'
 
 interface StanzaRow {
@@ -366,6 +367,19 @@ export async function infoStanza(
   const l = await leggiOFallisci(db, codice)
   const c = l.iscritti.find((i) => i.player_id === l.row.conduttore) ?? l.iscritti[0]
   return { codice: l.row.codice, stato: l.row.stato, iscritti: l.iscritti.length, conduttore: breve(c) }
+}
+
+/**
+ * Una stanza vista da chi apre il suo link senza un account: chi la conduce, e
+ * se si entra ancora. La registrazione lo dice, come per gli inviti con il link
+ * degli altri giochi; dopo, la stanza si apre e chi arriva entra da solo.
+ */
+export async function invitoLupusConLink(db: D1Database, codice: string): Promise<InvitoConLink | null> {
+  if (!codiceLupusValido(codice)) return null
+  const l = await leggi(db, codice)
+  if (!l || l.iscritti.length === 0) return null
+  const c = l.iscritti.find((i) => i.player_id === l.row.conduttore) ?? l.iscritti[0]
+  return { codice, da: breve(c), stato: l.row.stato === 'attesa' ? 'attesa' : 'usato', gioco: 'lupus' }
 }
 
 /** Entrare: solo prima della partita, e finché c'e' posto. Chi c'e' gia' rientra e basta. */
