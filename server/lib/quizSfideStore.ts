@@ -200,10 +200,21 @@ export function leggiDomande(valore: unknown, imp: ImpostazioniSfida): DomandaCo
     const spiegazione = spiegazioneDi(x.spiegazione)
     const accettate = testi(x.accettate, 600, 80)
     // La sezione di una domanda, in una sfida di piu' sezioni: solo una di quelle della sfida.
-    const sezione = imp.sezioni?.find((y) => y.categoria === x.categoria && (y.ambito ?? null) === (x.ambito ?? null))
+    const sezione = imp.sezioni?.find(
+      (y) =>
+        y.categoria === x.categoria &&
+        (y.ambito ?? null) === (x.ambito ?? null) &&
+        (y.genere ?? null) === (x.genere ?? null),
+    )
     const d = {
       tipo: (testo(x.tipo, 40) ?? '') as DomandaCompleta['tipo'],
-      ...(sezione ? { categoria: sezione.categoria, ...(sezione.ambito ? { ambito: sezione.ambito } : {}) } : {}),
+      ...(sezione
+        ? {
+            categoria: sezione.categoria,
+            ...(sezione.ambito ? { ambito: sezione.ambito } : {}),
+            ...(sezione.genere ? { genere: sezione.genere } : {}),
+          }
+        : {}),
       testo: testo(x.testo, 400) ?? '',
       ...(bandiera ? { bandiera } : {}),
       ...(immagine ? { immagine } : {}),
@@ -235,6 +246,7 @@ function riassunto(imp: ImpostazioniSfida): RiassuntoSfida {
     secondi: imp.secondi,
     ...(imp.ambito && imp.ambito !== 'tutti' ? { ambito: imp.ambito } : {}),
     ...(imp.genere ? { genere: imp.genere } : {}),
+    ...(imp.nazione ? { nazione: imp.nazione } : {}),
     ...(imp.giorno ? { giorno: imp.giorno } : {}),
   }
 }

@@ -244,6 +244,41 @@ describe('la sfida a quiz fra due', () => {
     expect(terza.domanda?.domanda.categoria).toBeUndefined()
   })
 
+  it('nella musica la sezione di una domanda e’ il suo genere', async () => {
+    const { chiama, giocatore } = banco()
+    const a = await giocatore('anna')
+    const b = await giocatore('bruno')
+    await online(chiama, b)
+    const sezioni = [
+      { categoria: 'canzoni' as const, genere: 'rock' },
+      { categoria: 'canzoni' as const, genere: 'jazz' },
+    ]
+    const elenco = [
+      ...domande(3).slice(0, 2).map((d) => ({ ...d, categoria: 'canzoni' as const, genere: 'jazz' })),
+      // Un genere che la sfida non ha: la domanda resta, la sezione no.
+      ...domande(4).slice(0, 2).map((d) => ({ ...d, categoria: 'canzoni' as const, genere: 'latina' })),
+    ]
+    const sfida = await chiama<SfidaQuizInviata>('POST', '/quiz/sfide', a, {
+      playerId: b.id,
+      impostazioni: { ...IMPOSTAZIONI, categoria: 'canzoni', sezioni },
+      domande: elenco,
+    })
+    expect(sfida.status, JSON.stringify(sfida.dati)).toBe(201)
+    const { duelloId } = (await chiama<{ duelloId: string }>('POST', `/quiz/sfide/${sfida.dati.id}/accetta`, b)).dati
+    await chiama('POST', `/quiz/duelli/${duelloId}/pronto`, a)
+    await chiama('POST', `/quiz/duelli/${duelloId}/pronto`, b)
+    avanza(VIA_SFIDA_MS + 1_000)
+    const prima = (await chiama<VistaDuello>('GET', `/quiz/duelli/${duelloId}`, a)).dati
+    expect(prima.domanda?.domanda).toMatchObject({ categoria: 'canzoni', genere: 'jazz' })
+    for (let i = 0; i < 2; i += 1) {
+      await rispondi(chiama, a, duelloId, i, elenco[i].giusta)
+      avanza(PAUSA_SFIDA_MS + 1_000)
+    }
+    const terza = (await chiama<VistaDuello>('GET', `/quiz/duelli/${duelloId}`, a)).dati
+    expect(terza.domanda?.indice).toBe(2)
+    expect(terza.domanda?.domanda.genere).toBeUndefined()
+  })
+
   it('le domande devono essere domande, e l’altro deve arrivare', async () => {
     const { chiama, giocatore } = banco()
     const a = await giocatore('anna')

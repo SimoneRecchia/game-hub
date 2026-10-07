@@ -25,8 +25,10 @@ import {
   RISPOSTE_LIBERE,
   ambitoValido,
   diGeografia,
+  diMusica,
   genereValido,
   materiaDi,
+  nazioneValida,
   type CategoriaQuiz,
   type ModoQuiz,
 } from './quiz'
@@ -100,8 +102,10 @@ export interface ImpostazioniSfida {
   bandieraCapitali?: boolean
   /** Per le altre materie, l'ambito: un periodo, un premio, un argomento. */
   ambito?: string
-  /** Il genere delle canzoni: "rock", "italiana". */
+  /** Il genere delle canzoni: "rock". */
   genere?: string
+  /** Per la musica, il paese di chi canta o compone: "Stati Uniti". */
+  nazione?: string
   /** Il giorno di "Accadde oggi", "03-12": lo sceglie chi sfida, e la rivincita resta lì. */
   giorno?: string
 }
@@ -137,16 +141,26 @@ export function impostazioniSfida(valore: unknown): ImpostazioniSfida | null {
   }
   const tipi = Array.isArray(x.tipi) ? x.tipi.filter((t): t is TipoDomanda => typeof t === 'string' && t in NOMI_TIPI) : []
   const notorieta = x.notorieta === 'noti' || x.notorieta === 'rari' ? x.notorieta : 'misti'
-  // Le sezioni: della materia della categoria, ognuna una volta, al piu' una per voce della pagina.
+  // Le sezioni: della materia della categoria, ognuna una volta, al piu' una per voce della pagina — un argomento
+  // della scienza, un genere delle canzoni.
   const viste = new Map<string, SezioneQuiz>()
   for (const y of Array.isArray(x.sezioni) ? (x.sezioni as unknown[]).slice(0, 20) : []) {
     const c = (y as { categoria?: unknown })?.categoria as CategoriaQuiz
     if (!CATEGORIE.includes(c) || materiaDi(c) !== materiaDi(categoria)) continue
     const ambito = c === 'scienza' ? ambitoValido(c, (y as { ambito?: unknown }).ambito) : 'tutti'
-    viste.set(`${c}:${ambito}`, ambito === 'tutti' ? { categoria: c } : { categoria: c, ambito })
+    const genere = c === 'canzoni' ? genereValido(c, (y as { genere?: unknown }).genere) : 'tutti'
+    viste.set(`${c}:${ambito}:${genere}`, {
+      categoria: c,
+      ...(ambito !== 'tutti' ? { ambito } : {}),
+      ...(genere !== 'tutti' ? { genere } : {}),
+    })
   }
   const sezioni = viste.size > 1 ? [...viste.values()] : null
-  const genere = sezioni ? 'tutti' : genereValido(categoria, x.genere)
+  const sola = viste.size === 1 ? [...viste.values()][0] : null
+  const genere = sezioni ? 'tutti' : genereValido(categoria, sola?.genere ?? x.genere)
+  // Nella musica gli anni e il paese valgono per tutti i generi, anche con piu' sezioni.
+  const musica = diMusica(categoria)
+  const nazione = musica ? nazioneValida(x.nazione) : null
   return {
     categoria,
     ...(sezioni ? { sezioni } : {}),
@@ -162,8 +176,9 @@ export function impostazioniSfida(valore: unknown): ImpostazioniSfida | null {
     ...(tipi.length > 0 ? { tipi } : {}),
     notorieta,
     bandieraCapitali: si(x.bandieraCapitali, true),
-    ...(geografia || sezioni ? {} : { ambito: ambitoValido(categoria, x.ambito) }),
+    ...(geografia || (sezioni && !musica) ? {} : { ambito: ambitoValido(categoria, x.ambito) }),
     ...(genere !== 'tutti' ? { genere } : {}),
+    ...(nazione ? { nazione } : {}),
     ...(categoria === 'oggi' && typeof x.giorno === 'string' && GIORNO.test(x.giorno) ? { giorno: x.giorno } : {}),
   }
 }

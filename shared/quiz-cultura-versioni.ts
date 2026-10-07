@@ -4,7 +4,7 @@ export const VERSIONI_CULTURA: Record<string, string> = {
   arte: 'ef2ebb03e8',
   libri: '69e7e7a051',
   cinema: '6e56be2f6f',
-  canzoni: 'bd0c936a38',
+  canzoni: '2327211039',
   classica: 'beaba7dbf6',
   lirica: 'f3463fc793',
   nobel: 'b2109c9e56',

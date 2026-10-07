@@ -24,16 +24,19 @@
 
 import {
   DOMANDE_PER_PARTITA,
-  GENERI,
   QUANTE_MASSIME,
   RISPOSTE_PREDEFINITE,
   ambitoValido,
+  diMusica,
   genereValido,
+  nazioneValida,
+  nelPeriodo,
   type CategoriaQuiz,
 } from './quiz'
 import {
   CATEGORIE_CULTURA,
   GRUPPI_ANIMALI,
+  NOMI_GENERI,
   PREMI_NOBEL,
   VERTEBRATI,
   annoInLettere,
@@ -70,6 +73,7 @@ import {
   TIPI_SCIENZA,
   assegna,
   distrattori,
+  domandaValida,
   generaDomande,
   mescola,
   preferendo,
@@ -106,6 +110,8 @@ interface Contesto {
   ambito: string
   /** Il genere, per le canzoni: "tutti" se non si e' scelto. */
   genere: string
+  /** Per la musica, il paese di chi canta o compone: null per tutti. */
+  nazione: string | null
   evitare: ReadonlySet<string>
   /** Quante volte ogni voce ha gia' fatto da risposta sbagliata in questa partita. */
   usati: Map<string, number>
@@ -178,12 +184,15 @@ function componi<T extends { f: number }>(
   const riserva = soggetti(resto, Math.min(resto.length, c.quante * 3), c.caso, c.notorieta)
   const ammessi = quote.map(([t]) => t).filter((t) => !c.tipi || c.tipi.has(t))
   const tipi = ammessi.length > 0 ? ammessi : quote.map(([t]) => t)
+  // Una domanda che la pulizia finale scarterebbe (due risposte con lo stesso testo) non conta: se no la partita
+  // resterebbe con una domanda in meno.
+  const buona = (d: DomandaCompleta | null) => (d && domandaValida(d, c.sbagliate + 1) ? d : null)
   const prova = (tipo: TipoDomanda, s: T): DomandaCompleta | null => {
-    const prima = fai(tipo, s)
+    const prima = buona(fai(tipo, s))
     if (prima) return prima
     for (const altro of tipi) {
       if (altro === tipo) continue
-      const d = fai(altro, s)
+      const d = buona(fai(altro, s))
       if (d) return d
     }
     return null
@@ -197,6 +206,16 @@ function componi<T extends { f: number }>(
     if (domande.length >= c.quante) break
     const d = prova(tipi[Math.floor(c.caso() * tipi.length)], s)
     if (d) domande.push(d)
+  }
+  // Un filtro stretto — l'Ottocento della classica, con pochi compositori che possono essere la risposta due volte
+  // sole — puo' finire le riserve: allora tutti gli altri, dai piu' noti.
+  if (domande.length < c.quante) {
+    const provati = new Set([...presi, ...riserva])
+    for (const s of [...candidati].filter((t) => !provati.has(t)).sort((a, b) => b.f - a.f)) {
+      if (domande.length >= c.quante) break
+      const d = prova(tipi[Math.floor(c.caso() * tipi.length)], s)
+      if (d) domande.push(d)
+    }
   }
   return domande
 }
@@ -897,25 +916,74 @@ export function nomeDecennio(decennio: number): string {
 
 const decennioDi = (anno: number) => Math.floor(anno / 10) * 10
 
-function nellAmbitoCanzoni(x: CanzoneQuiz, ambito: string, genere: string, artisti: Map<string, ArtistaQuiz>): boolean {
-  const anno = x.anno
-  const negliAnni = (() => {
-    if (ambito === 'tutti') return true
-    if (anno === undefined) return false
-    if (ambito === 'anni60') return anno < 1970
-    if (ambito === 'anni2010') return anno >= 2010
-    const da = Number(ambito.slice(4))
-    const inizio = da < 100 ? 1900 + da : da
-    return anno >= inizio && anno < inizio + 10
-  })()
-  if (!negliAnni || genere === 'tutti') return negliAnni
-  if (genere === 'italiana') return x.a.some((id) => artisti.get(id)?.it === 1)
-  return (x.g ?? []).includes(genere as GenereCanzone)
+/** Se una canzone sta negli anni, nel genere e nel paese scelti: il paese di uno di chi la canta. */
+function nellAmbitoCanzoni(x: CanzoneQuiz, c: Contesto, artisti: Map<string, ArtistaQuiz>): boolean {
+  if (!nelPeriodo(x.anno, c.ambito)) return false
+  if (c.genere !== 'tutti' && !(x.g ?? []).includes(c.genere as GenereCanzone)) return false
+  return c.nazione === null || x.a.some((id) => artisti.get(id)?.p === c.nazione)
 }
 
-const NOMI_GENERI_CANZONI: Record<GenereCanzone, string> = Object.fromEntries(
-  (GENERI.canzoni ?? []).map((g) => [g.id, g.nome]),
-) as Record<GenereCanzone, string>
+/**
+ * L'anno di un brano o di un'opera, per i periodi: il suo, o quello in cui il
+ * compositore aveva trentacinque anni, se era ancora vivo. Una stima, ma
+ * Vivaldi resta nel Settecento e Puccini nel Novecento.
+ */
+function annoComposto(x: { anno?: number; c: readonly string[] }, compositori: ReadonlyMap<string, PersonaQuiz>) {
+  if (x.anno !== undefined) return x.anno
+  const primo = compositori.get(x.c[0])
+  return primo?.na !== undefined ? Math.min(primo.na + 35, primo.mo ?? Infinity) : undefined
+}
+
+/** Se un brano o un'opera sta negli anni e nel paese scelti: il paese di uno dei compositori. */
+function nellAmbitoComposto(
+  x: { anno?: number; c: readonly string[] },
+  c: Contesto,
+  compositori: ReadonlyMap<string, PersonaQuiz>,
+): boolean {
+  if (!nelPeriodo(annoComposto(x, compositori), c.ambito)) return false
+  return c.nazione === null || x.c.some((id) => compositori.get(id)?.p === c.nazione)
+}
+
+/** Un soggetto della musica come lo contano i filtri: l'anno, e i paesi di chi canta o compone. */
+export interface SoggettoMusica {
+  id: string
+  anno?: number
+  nazioni: readonly string[]
+}
+
+/**
+ * I soggetti delle sezioni della musica scelte, una volta sola anche se una
+ * canzone sta in due generi: la pagina della libera ci conta quanti ne restano
+ * per ogni periodo e ogni paese, con gli stessi conti delle domande, e offre
+ * solo quel che basta a una partita.
+ */
+export function soggettiDellaMusica(
+  cultura: Partial<Pick<DatiCultura, 'canzoni' | 'classica' | 'lirica'>>,
+  sezioni: readonly SezioneQuiz[],
+): SoggettoMusica[] {
+  const fuori = new Map<string, SoggettoMusica>()
+  for (const s of sezioni) {
+    if (s.categoria === 'canzoni' && cultura.canzoni) {
+      const artisti = new Map(cultura.canzoni.artisti.map((a) => [a.id, a]))
+      for (const x of cultura.canzoni.canzoni) {
+        if (s.genere && s.genere !== 'tutti' && !(x.g ?? []).includes(s.genere as GenereCanzone)) continue
+        const nazioni = x.a.map((id) => artisti.get(id)?.p).filter((p): p is string => !!p)
+        fuori.set(x.id, { id: x.id, ...(x.anno !== undefined ? { anno: x.anno } : {}), nazioni })
+      }
+    }
+    const composti = s.categoria === 'classica' ? cultura.classica : s.categoria === 'lirica' ? cultura.lirica : null
+    if (!composti) continue
+    const compositori = new Map(composti.compositori.map((p) => [p.id, p]))
+    const elenco: ReadonlyArray<{ id: string; anno?: number; c: readonly string[] }> =
+      'brani' in composti ? composti.brani : composti.opere
+    for (const x of elenco) {
+      const anno = annoComposto(x, compositori)
+      const nazioni = x.c.map((id) => compositori.get(id)?.p).filter((p): p is string => !!p)
+      fuori.set(x.id, { id: x.id, ...(anno !== undefined ? { anno } : {}), nazioni })
+    }
+  }
+  return [...fuori.values()]
+}
 
 function canzoni(dati: DatiCultura['canzoni'], c: Contesto): DomandaCompleta[] {
   const artisti = new Map(dati.artisti.map((a) => [a.id, a]))
@@ -957,7 +1025,7 @@ function canzoni(dati: DatiCultura['canzoni'], c: Contesto): DomandaCompleta[] {
       righe: righe(
         [chi.length > 1 ? 'Interpreti' : 'Interprete', chi.map((p) => inRigaArtista(p as ArtistaQuiz)).join('; ')],
         ['Anno', x.anno !== undefined ? annoInLettere(x.anno) : null],
-        ['Genere', x.g?.length ? x.g.map((g) => NOMI_GENERI_CANZONI[g]).join(', ') : null],
+        ['Genere', x.g?.length ? x.g.map((g) => NOMI_GENERI[g]).join(', ') : null],
       ),
       testo: chi.length === 1 && chi[0].d ? maiuscola(`${chi[0].n}: ${chi[0].d}.`) : undefined,
       voce: x.w,
@@ -979,7 +1047,8 @@ function canzoni(dati: DatiCultura['canzoni'], c: Contesto): DomandaCompleta[] {
       terza: {
         tipo: 'decennio-canzone',
         fai: (x, chi) => {
-          if (x.anno === undefined) return null
+          // Negli anni scelti il decennio lo dice gia' la partita.
+          if (x.anno === undefined || c.ambito !== 'tutti') return null
           // A cavallo di due decenni l'uscita e il successo possono cadere in due: "1979" non e' una risposta sicura.
           const resto = x.anno % 10
           if (resto === 0 || resto === 9) return null
@@ -1012,9 +1081,10 @@ function canzoni(dati: DatiCultura['canzoni'], c: Contesto): DomandaCompleta[] {
         {
           tipo: 'paese-interprete',
           fai: (x, chi) => {
-            // Di chi e' italiano lo sa chi gioca: si chiede di chi viene da fuori.
+            // Di chi e' italiano lo sa chi gioca: si chiede di chi viene da fuori. Con un paese scelto, lo dice lui.
             const a = chi[0] as ArtistaQuiz
-            if (chi.length > 1 || !a.p || a.it || chiestiPaese.has(a.id) || !ancoraGiusta(c, a.id)) return null
+            if (c.nazione !== null || chi.length > 1 || !a.p || a.it) return null
+            if (chiestiPaese.has(a.id) || !ancoraGiusta(c, a.id)) return null
             const paesi = [...quantiPerPaese.keys()].filter((p) => p !== a.p)
             const sbagliati = distrattori(
               c,
@@ -1048,22 +1118,13 @@ function canzoni(dati: DatiCultura['canzoni'], c: Contesto): DomandaCompleta[] {
         ['decennio-canzone', 20],
         ['paese-interprete', 10],
       ],
-      nellAmbito: (x) => nellAmbitoCanzoni(x, c.ambito, c.genere, artisti),
+      nellAmbito: (x) => nellAmbitoCanzoni(x, c, artisti),
     },
     c,
   )
 }
 
 /* ────────────────────────────  Musica classica  ──────────────────────────── */
-
-/** Il periodo di un compositore, dall'anno di nascita: Vivaldi e Bach barocchi, Mozart classico, Chopin romantico. */
-function periodoDi(p: PersonaQuiz | undefined): string | null {
-  if (p?.na === undefined) return null
-  if (p.na < 1710) return 'barocco'
-  if (p.na < 1775) return 'classicismo'
-  if (p.na < 1860) return 'romanticismo'
-  return 'novecento'
-}
 
 function classica(dati: DatiCultura['classica'], c: Contesto): DomandaCompleta[] {
   const compositori = new Map(dati.compositori.map((p) => [p.id, p]))
@@ -1100,7 +1161,8 @@ function classica(dati: DatiCultura['classica'], c: Contesto): DomandaCompleta[]
       terza: {
         tipo: 'secolo-brano',
         fai: (b, compositori) => {
-          if (b.anno === undefined || aCavalloDelSecolo(b.anno)) return null
+          // Negli anni scelti il secolo lo dice gia' la partita.
+          if (b.anno === undefined || aCavalloDelSecolo(b.anno) || c.ambito !== 'tutti') return null
           const opzioni = opzioniSecoli(c, b.anno)
           if (!opzioni) return null
           return {
@@ -1119,11 +1181,7 @@ function classica(dati: DatiCultura['classica'], c: Contesto): DomandaCompleta[]
         ['brano-di', 30],
         ['secolo-brano', 20],
       ],
-      nellAmbito: (b, persone) => {
-        if (c.ambito === 'tutti') return true
-        if (c.ambito === 'italiani') return b.c.some((id) => persone.get(id)?.it === 1)
-        return periodoDi(persone.get(b.c[0])) === c.ambito
-      },
+      nellAmbito: (b, persone) => nellAmbitoComposto(b, c, persone),
     },
     c,
   )
@@ -1183,7 +1241,7 @@ function lirica(dati: DatiCultura['lirica'], c: Contesto): DomandaCompleta[] {
         ['opera-di', 35],
         ['citta-opera', 15],
       ],
-      nellAmbito: (o) => nellAmbitoItaliano(o, c.ambito),
+      nellAmbito: (o, persone) => nellAmbitoComposto(o, c, persone),
     },
     c,
   )
@@ -2051,11 +2109,18 @@ export function generaPartita(
   caso: Caso,
   evitare: ReadonlySet<string> = new Set(),
 ): DomandaCompleta[] {
-  const chiave = (x: SezioneQuiz) => `${x.categoria}:${x.ambito ?? 'tutti'}`
+  const chiave = (x: SezioneQuiz) => `${x.categoria}:${x.ambito ?? 'tutti'}:${x.genere ?? 'tutti'}`
   const sezioni = [...new Map((richiesta.sezioni ?? []).map((x) => [chiave(x), x])).values()]
   if (sezioni.length > 1) return partitaMista(fonti, richiesta, sezioni, caso, evitare)
   const sola = sezioni[0]
-  const una = sola ? { ...richiesta, categoria: sola.categoria, ambito: sola.ambito ?? richiesta.ambito } : richiesta
+  const una = sola
+    ? {
+        ...richiesta,
+        categoria: sola.categoria,
+        ambito: sola.ambito ?? richiesta.ambito,
+        genere: sola.genere ?? richiesta.genere,
+      }
+    : richiesta
   return partitaDi(fonti, { ...una, sezioni: undefined }, caso, evitare)
 }
 
@@ -2084,6 +2149,7 @@ function partitaDi(
     notorieta: richiesta.notorieta ?? 'misti',
     ambito,
     genere: genereValido(categoria, richiesta.genere),
+    nazione: diMusica(categoria) ? nazioneValida(richiesta.nazione) : null,
     evitare,
     usati: new Map(),
     giuste: new Map(),
@@ -2147,9 +2213,11 @@ function partitaMista(
       {
         ...richiesta,
         categoria: x.categoria,
-        // Gli altri filtri (gli anni, il genere) sono di una sezione sola: con piu' sezioni, tutto.
-        ambito: x.ambito,
-        genere: undefined,
+        // I filtri di una sezione sola (il periodo dei quadri) con piu' sezioni non valgono; nella musica gli
+        // anni e il paese sono di tutti i generi, e il genere e' della sezione.
+        ambito: x.ambito ?? (diMusica(x.categoria) ? richiesta.ambito : undefined),
+        genere: x.genere,
+        nazione: diMusica(x.categoria) ? richiesta.nazione : undefined,
         sezioni: undefined,
         quante: quanteQui,
         ordine: 'sale',
@@ -2158,7 +2226,11 @@ function partitaMista(
       visti,
     ).filter((d) => !visti.has(d.soggetto))
     for (const d of nuove) visti.add(d.soggetto)
-    const tag = { categoria: x.categoria, ...(x.ambito && x.ambito !== 'tutti' ? { ambito: x.ambito } : {}) }
+    const tag = {
+      categoria: x.categoria,
+      ...(x.ambito && x.ambito !== 'tutti' ? { ambito: x.ambito } : {}),
+      ...(x.genere && x.genere !== 'tutti' ? { genere: x.genere } : {}),
+    }
     fatte.get(x)!.push(...nuove.map((d) => ({ ...d, ...tag })))
     return nuove.length
   }
