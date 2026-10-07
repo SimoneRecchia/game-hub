@@ -385,19 +385,20 @@ non fa record.
 visibile: dice al server dove si trova il giocatore e riporta gli inviti a
 giocare in compagnia il Wordle, il cruciverba e lo Scarabeo, le sfide a
 battaglia navale, a quiz, a Indovina chi, ai tavolieri, allo Scarabeo e a Nomi,
-cose e città (rivincite comprese), gli inviti a una stanza di Lupus, le partite
-e il duello aperti. Gli avvisi fuori dalle rotte (`CoopGate`, `BattagliaGate`,
-`QuizGate`, `IndovinaGate`, `TavoloGate`, `NomiGate`, `LupusGate`,
-`CompagniaGate`) si danno la precedenza in quest'ordine: due insieme non si
-leggerebbero, e gli inviti del cruciverba e dello Scarabeo, che valgono tutto il
-giorno, aspettano le sfide, che scadono in pochi minuti. Prima gli inviti del
-Wordle avevano il loro polling: due giri separati avrebbero raddoppiato le
-richieste, e le Pages Functions gratuite ne contano centomila al giorno per
-tutto il sito. La scrittura in `presenza` passa solo ogni venti secondi o al
-cambio di attivita' (`segnaPresenza`), e a pagina nascosta il giro si ferma: un
-telefono in tasca non e' "online" per chi vuole sfidarlo. Gli amici online
-invece non stanno nel giro: `GET /api/amici` lo chiedono solo il profilo, le
-Libere e il profilo di un amico, ogni `AMICI_POLL_MS` e mentre li si guarda.
+cose e città (rivincite comprese), gli inviti a una stanza di Lupus o di
+Scarabocchi, le partite e il duello aperti. Gli avvisi fuori dalle rotte
+(`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`, `TavoloGate`,
+`NomiGate`, `LupusGate`, `ScarabocchiGate`, `CompagniaGate`) si danno la
+precedenza in quest'ordine: due insieme non si leggerebbero, e gli inviti del
+cruciverba e dello Scarabeo, che valgono tutto il giorno, aspettano le sfide,
+che scadono in pochi minuti. Prima gli inviti del Wordle avevano il loro
+polling: due giri separati avrebbero raddoppiato le richieste, e le Pages
+Functions gratuite ne contano centomila al giorno per tutto il sito. La
+scrittura in `presenza` passa solo ogni venti secondi o al cambio di attivita'
+(`segnaPresenza`), e a pagina nascosta il giro si ferma: un telefono in tasca
+non e' "online" per chi vuole sfidarlo. Gli amici online invece non stanno nel
+giro: `GET /api/amici` lo chiedono solo il profilo, le Libere e il profilo di un
+amico, ogni `AMICI_POLL_MS` e mentre li si guarda.
 
 **Nella battaglia navale la flotta dell'avversario non esce dal server.**
 `vistaPer` manda la propria flotta, i colpi con il loro esito e le navi gia'
@@ -1174,12 +1175,13 @@ d'accordo; poi, nella generale, conta chi ci e' arrivato con meno partite.
 **I giochi da tavolo non hanno classificata.** Sono partite quando si vuole, con
 gli amici — e contro il computer dove ha senso — senza punti ne' classifica:
 nelle Libere stanno con le libere dei giochi classificati, ognuno nella sua
-famiglia (vedi sotto), anche nel menu laterale del computer
-(`GIOCHI_DA_TAVOLO` in `src/games/catalog.ts`), non in `GiocoClassificato`, che
-porta con se' classifiche, anelli e statistiche. Sono Indovina chi e Lupus, che
-il computer non ce l'hanno — si giocano parlandosi — e la battaglia navale,
-scacchi, dama, Forza 4 e go, con un amico o contro il computer. Il tris e' un
-tavoliere ma non sta qui: ha la sua classificata (vedi sotto).
+famiglia (vedi sotto), anche nel menu laterale del computer (`GIOCHI_DA_TAVOLO`
+in `src/games/catalog.ts`), non in `GiocoClassificato`, che porta con se'
+classifiche, anelli e statistiche. Sono Indovina chi, Lupus e Scarabocchi, che
+il computer non ce l'hanno — si giocano parlandosi, o disegnando — e la
+battaglia navale, scacchi, dama, Forza 4 e go, con un amico o contro il
+computer. Il tris e' un tavoliere ma non sta qui: ha la sua classificata (vedi
+sotto).
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -1275,6 +1277,60 @@ conduce, cioe' manda avanti le fasi del giorno; se la presenza non lo vede da
 entrato dopo di lui. Ogni azione nuova va aggiunta ad `azioneDelGiocatore`
 (`shared/lupus-stanza.ts`), che mette sempre come autore chi l'ha mandata: se
 no, online risponde "azione sconosciuta".
+
+**Scarabocchi e' una stanza come quelle di Lupus, con due modi.** Il codice e'
+di cinque lettere (quelli di Lupus sono quattro, e il link pubblico degli inviti
+li cerca tutti e due), chi apre la stanza sceglie il modo e da' il via, e la
+partita sta in JSON in `scarabocchi_stanze` con le parole segrete, riscritta
+condizionata alla `versione` (`suStanza` in `server/lib/scarabocchiStore.ts`).
+Le scadenze le applica la prima richiesta che arriva dopo, ognuna dalla sua ora
+(`avanzaIndovina`, `avanzaTelefono` in `shared/scarabocchi.ts`). Chi conta sono
+gli iscritti che la presenza vede (`presenti`): il turno di chi ha chiuso l'app
+salta, e non lo si aspetta per chiudere un turno o un passo.
+
+**Le cose che arrivano spesso non toccano la riga della stanza.** I tratti si
+aggiungono a pezzi in `scarabocchi_tratti`, uno ogni `INVIO_TRATTI_MS` mentre si
+disegna, ognuno con il suo numero nel foglio: riscriverlo non fa niente, quindi
+il telefono che non ha avuto risposta lo rimanda uguale, e chi guarda li legge
+in fila, fermandosi al primo che manca. Le risposte stanno in
+`scarabocchi_messaggi`, con l'ora e i punti del server, e si scrivono solo se la
+stanza e' ancora quella letta: una risposta arrivata mentre il turno si chiudeva
+non vale per quello dopo. Una giusta per giocatore e per turno la tiene un
+indice unico. I fogli del telefono senza fili stanno in `scarabocchi_fogli`.
+Cosi' sette persone che scrivono insieme non si contendono la stanza, e il giro
+di controllo e' una richiesta sola, che porta i pezzi nuovi del disegno e le
+risposte nuove. Le mosse sulla lavagna sono testo (`codificaOps`): due caratteri
+per coordinata, su una lavagna di 1600 per 1200 che ogni schermo scala sulla sua
+larghezza.
+
+**In Indovina il disegno la parola non esce prima del tempo.** Le tre parole le
+vede solo chi disegna, la parola chi disegna e chi l'ha gia' indovinata; agli
+altri arriva l'indizio, con qualche lettera in chiaro col passare del tempo
+(`indizio`, sempre le stesse per lo stesso turno). Una risposta giusta degli
+altri arriva senza testo finché il turno e' aperto, e "ci sei quasi" lo sa solo
+chi l'ha scritto. Chi indovina prende da trecento a cinquanta punti, per decine,
+secondo il tempo (`puntiIndovino`); chi disegna la media di quel che hanno preso
+quelli che dovevano indovinare, anche chi non ce l'ha fatta
+(`puntiDisegnatore`). Il turno finisce quando hanno indovinato tutti. I punti
+non vanno in classifica.
+
+**Nel telefono senza fili nessuno lavora due volte sulla stessa catena.** Chi
+lavora a ogni foglio lo decide un quadrato latino (`assegnazione`): in ogni
+passo ognuno ha una catena, in ogni catena ognuno lavora una volta. E' quello
+ciclico con i posti e i passi mescolati, quindi da un passo all'altro i fogli
+girano di un numero di posti diverso, e chi passa a chi non si indovina. Per
+questo servono almeno tre giocatori. Le frasi si salvano mentre si scrivono, e a
+tempo finito vale la bozza; un disegno vale con i pezzi arrivati entro il
+margine. L'album si chiede una catena alla volta, perché i disegni di tutte
+insieme sarebbero troppi.
+
+**Le parole da disegnare sono quelle di Nomi, cose e città.**
+`scripts/build-scarabocchi.mjs` prende le parole note del lessico nelle
+categorie che si disegnano, toglie quelle che un disegno non dice e le parti
+intime del corpo, e le divide in tre livelli per frequenza nei sottotitoli: a
+ogni turno se ne propone una per livello. Stanno in
+`shared/scarabocchi-parole.ts` perché le pesca il server, al via, tre per turno
+e senza ripetersi nella partita.
 
 **Scacchi, dama, Forza 4, go e tris passano da una faccia sola.**
 `RegoleTavoliere` (`shared/tavolo-regole.ts`) mette i cinque giochi dietro le

@@ -212,6 +212,20 @@ profilo, in «Fonti e licenze».
 Rigenerare: `npm run anagrammi:build` (scarica gli elenchi di napolux e di
 hermitdave in `scripts/.cache/`).
 
+## Scarabocchi
+
+Le parole da disegnare di Scarabocchi (`shared/scarabocchi-parole.ts`) sono le
+parole note del lessico di Nomi, cose e città, nelle categorie che si
+disegnano: le cose, gli animali, le piante, la frutta, i cibi, i mestieri, gli
+sport, gli strumenti, i vestiti e il corpo. Si dividono in tre livelli per
+quanto sono comuni nei sottotitoli (hermitdave/FrequencyWords, MIT), e restano
+fuori le parole che un disegno non dice e le parti intime del corpo. Le fonti e
+le licenze sono quelle del lessico (vedi sopra): il file eredita la CC BY-SA
+4.0 del Wikizionario e del Wiktionary.
+
+Rigenerare: `npm run scarabocchi:build` (vuole `it_50k.txt` in
+`scripts/.cache/`, che scarica `npm run anagrammi:build`).
+
 ## I pezzi degli scacchi
 
 I pezzi della scacchiera (`src/games/scacchi/pezzi.ts`) sono i disegni di Colin

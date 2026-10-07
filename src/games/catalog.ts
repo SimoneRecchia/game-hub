@@ -104,7 +104,8 @@ export interface GiocoTavolo {
 /**
  * I giochi da tavolo: niente partita del giorno e niente classifica, solo
  * partite quando si vuole, con gli amici — e contro il computer dove ha senso.
- * Indovina chi e Lupus non ce l'hanno: si giocano parlandosi. Il tris non sta
+ * Indovina chi, Lupus e Scarabocchi non ce l'hanno: si giocano parlandosi, o
+ * disegnando. Il tris non sta
  * qui: ha la sua classificata, e le partite da tavolo sono la sua libera. La
  * battaglia navale si': la sua classificata misurava piu' la fortuna che il gioco.
  */
@@ -158,6 +159,13 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
     conChi: 'Con gli amici',
     slug: 'lupus',
   },
+  {
+    id: 'scarabocchi',
+    nome: 'Scarabocchi',
+    motto: 'Uno disegna, gli altri indovinano',
+    conChi: 'Con gli amici',
+    slug: 'scarabocchi',
+  },
 ]
 
 /** Il tris fra i tavolieri: la sua sala e' la libera della classificata, e non sta fra i giochi da tavolo. */
@@ -174,7 +182,8 @@ const TRIS_DA_TAVOLO: GiocoTavolo = {
  * gioco con la classificata e uno senza stanno insieme se si somigliano. Prima
  * erano due, "I giochi" e "Da tavolo", cioe' quelli con la classificata e gli
  * altri, che e' come sono fatti e non a che cosa si gioca. Lupus sta da solo:
- * e' l'unico che si gioca in tanti.
+ * e' l'unico che si gioca in tanti con i ruoli segreti. Scarabocchi anche: si
+ * disegna.
  */
 export const CATEGORIE_LIBERE: readonly CategoriaLibere[] = [
   { nome: 'Enigmistica', giochi: ['wordle', 'cruciverba', 'sudoku', 'anagrammi'] },
@@ -183,6 +192,7 @@ export const CATEGORIE_LIBERE: readonly CategoriaLibere[] = [
   { nome: 'Strategia', giochi: ['scacchi', 'dama', 'go', 'forza4', 'tris'] },
   { nome: 'Da tavolo', giochi: ['battaglia', 'indovina'] },
   { nome: 'In gruppo', giochi: ['lupus'] },
+  { nome: 'Disegno', giochi: ['scarabocchi'] },
 ]
 
 /** Una famiglia di giochi nelle Libere: il nome e i giochi, nell'ordine in cui si mostrano. */

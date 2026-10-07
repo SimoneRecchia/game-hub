@@ -4,6 +4,7 @@ import { api } from '@/lib/api'
 import { useDati } from '@/lib/dati'
 import { AMICI_POLL_MS } from '@shared/config'
 import type { StanzaLupusBreve, VistaStanzaLupus } from '@shared/lupus-stanza'
+import type { StanzaScarabocchiBreve, VistaStanzaScarabocchi } from '@shared/scarabocchi'
 import type { AmiciRisposta, AmicoOnline, Attivita, GiocatoreBreve } from '@shared/types'
 
 /**
@@ -51,6 +52,7 @@ export const DOVE_BREVE: Record<Attivita, string> = {
   slot: 'Slot',
   blackjack: 'Blackjack',
   lupus: 'Lupus',
+  scarabocchi: 'Scarabocchi',
   classifica: 'Classifica',
   profilo: 'Profilo',
   altro: 'Online',
@@ -69,6 +71,7 @@ export type GiocoInsieme =
   | 'forza4'
   | 'go'
   | 'lupus'
+  | 'scarabocchi'
 
 export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
@@ -82,6 +85,7 @@ export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'forza4',
   'go',
   'lupus',
+  'scarabocchi',
 ]
 
 /**
@@ -104,13 +108,14 @@ function scelta(chiave: string, json: boolean): string | null {
  * Invita un amico online a un gioco, e dice dove andare: nella sala del gioco,
  * che trova l'invito in attesa. Il quiz no: la sfida la prepara il telefono di
  * chi sfida, con le scelte della pagina, che si apre con l'amico in vista. A
- * Lupus si invita nella stanza in cui si e', se aspetta ancora; se no in una
- * nuova, e si va li'.
+ * Lupus e a Scarabocchi si invita nella stanza in cui si e', se aspetta ancora;
+ * se no in una nuova, e si va li'.
  */
 export async function invitaA(
   gioco: GiocoInsieme,
   amico: GiocatoreBreve,
   stanzaLupus: StanzaLupusBreve | null = null,
+  stanzaScarabocchi: StanzaScarabocchiBreve | null = null,
 ): Promise<string> {
   const playerId = amico.playerId
   if (gioco === 'quiz') return `${ROTTE.libera('quiz')}?sfida=1`
@@ -121,6 +126,14 @@ export async function invitaA(
         : (await api<VistaStanzaLupus>('/lupus/stanze', { method: 'POST' })).codice
     await api(`/lupus/stanze/${codice}/invita`, { method: 'POST', body: { playerId } })
     return ROTTE.stanzaLupus(codice)
+  }
+  if (gioco === 'scarabocchi') {
+    const codice =
+      stanzaScarabocchi?.stato === 'attesa'
+        ? stanzaScarabocchi.codice
+        : (await api<VistaStanzaScarabocchi>('/scarabocchi/stanze', { method: 'POST' })).codice
+    await api(`/scarabocchi/stanze/${codice}/invita`, { method: 'POST', body: { playerId } })
+    return ROTTE.stanzaScarabocchi(codice)
   }
   if (gioco === 'battaglia') {
     await api('/battaglia/sfida', { method: 'POST', body: { playerId } })
@@ -162,6 +175,7 @@ export function salaDi(gioco: GiocoInsieme): string {
     ricorda('giochi.lupus.modo', 'online')
     return ROTTE.lupus
   }
+  if (gioco === 'scarabocchi') return ROTTE.scarabocchi
   return ROTTE.tavolo(gioco)
 }
 
