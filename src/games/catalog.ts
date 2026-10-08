@@ -78,6 +78,14 @@ export const GIOCHI: readonly Gioco[] = [
     liberaBreve: 'Parole a caso',
   },
   {
+    id: 'sequenze',
+    nome: 'Sequenze',
+    motto: 'I cubetti si accendono: tocca nello stesso ordine',
+    classificata: 'Cinque turni al giorno, gli stessi per tutti, da tre a nove cubetti.',
+    libera: 'Finché non sbagli, da solo o contro un amico.',
+    liberaBreve: 'Solo o con un amico',
+  },
+  {
     id: 'tris',
     nome: 'Tris',
     motto: 'Tre in fila, dieci secondi a mossa',
@@ -183,12 +191,14 @@ const TRIS_DA_TAVOLO: GiocoTavolo = {
  * erano due, "I giochi" e "Da tavolo", cioe' quelli con la classificata e gli
  * altri, che e' come sono fatti e non a che cosa si gioca. Lupus sta da solo:
  * e' l'unico che si gioca in tanti con i ruoli segreti. Scarabocchi anche: si
- * disegna.
+ * disegna. Le Sequenze sono la memoria, e la famiglia aspetta i giochi che
+ * verranno.
  */
 export const CATEGORIE_LIBERE: readonly CategoriaLibere[] = [
   { nome: 'Enigmistica', giochi: ['wordle', 'cruciverba', 'sudoku', 'anagrammi'] },
   { nome: 'Parole', giochi: ['scarabeo', 'nomi'] },
   { nome: 'Cultura', giochi: ['quiz'] },
+  { nome: 'Memoria', giochi: ['sequenze'] },
   { nome: 'Strategia', giochi: ['scacchi', 'dama', 'go', 'forza4', 'tris'] },
   { nome: 'Da tavolo', giochi: ['battaglia', 'indovina'] },
   { nome: 'In gruppo', giochi: ['lupus'] },

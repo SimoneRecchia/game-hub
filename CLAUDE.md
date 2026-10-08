@@ -384,12 +384,12 @@ non fa record.
 (`src/lib/presenza.tsx`) chiama `POST /api/presenza` ogni otto secondi a pagina
 visibile: dice al server dove si trova il giocatore e riporta gli inviti a
 giocare in compagnia il Wordle, il cruciverba e lo Scarabeo, le sfide a
-battaglia navale, a quiz, a Indovina chi, ai tavolieri, allo Scarabeo e a Nomi,
-cose e città (rivincite comprese), gli inviti a una stanza di Lupus o di
-Scarabocchi, le partite e il duello aperti. Gli avvisi fuori dalle rotte
+battaglia navale, a quiz, a Indovina chi, ai tavolieri, allo Scarabeo, a Nomi,
+cose e città e a Sequenze (rivincite comprese), gli inviti a una stanza di Lupus
+o di Scarabocchi, le partite e il duello aperti. Gli avvisi fuori dalle rotte
 (`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`, `TavoloGate`,
-`NomiGate`, `LupusGate`, `ScarabocchiGate`, `CompagniaGate`) si danno la
-precedenza in quest'ordine: due insieme non si leggerebbero, e gli inviti del
+`NomiGate`, `SequenzeGate`, `LupusGate`, `ScarabocchiGate`, `CompagniaGate`) si
+danno la precedenza in quest'ordine: due insieme non si leggerebbero, e gli inviti del
 cruciverba e dello Scarabeo, che valgono tutto il giorno, aspettano le sfide,
 che scadono in pochi minuti. Prima gli inviti del Wordle avevano il loro
 polling: due giri separati avrebbero raddoppiato le richieste, e le Pages
@@ -429,13 +429,13 @@ e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni gioco misura
 quel che gli e' proprio dentro un tetto deciso (`TETTI` in `shared/punti.ts`,
 che ha la tabella di tutti), che segue il tempo che una giornata chiede a chi la
 gioca bene: il cruciverba 160, lo Scarabeo e il sudoku 150, il quiz 75, il
-Wordle 70, Nomi, cose e città e gli Anagrammi 60, il tris 50. Sono otto, e fanno
-settecentosettantacinque, un po' meno di cento a gioco, e un test lo tiene.
-Erano otto e facevano ottocento con la battaglia navale (85), che il 6 ottobre
-2026 e' uscita dalle classificate (vedi sotto), e due giorni dopo sono arrivati
-gli Anagrammi, che valgono quanto Nomi, cose e città perché chiedono lo stesso
-tempo: gli altri tetti sono rimasti quelli, perché i giorni nuovi valgano come i
-vecchi. Non in proporzione diretta: un cruciverba chiede dieci volte il tempo
+Wordle 70, Nomi, cose e città e gli Anagrammi 60, il tris e le Sequenze 50. Sono
+nove, e fanno ottocentoventicinque, un po' meno di cento a gioco, e un test lo
+tiene. Erano otto e facevano ottocento con la battaglia navale (85), che il 6
+ottobre 2026 e' uscita dalle classificate (vedi sotto); due giorni dopo sono
+arrivati gli Anagrammi, che valgono quanto Nomi, cose e città perché chiedono lo
+stesso tempo, e le Sequenze, che valgono quanto il tris: gli altri tetti sono
+rimasti quelli, perché i giorni nuovi valgano come i vecchi. Non in proporzione diretta: un cruciverba chiede dieci volte il tempo
 del tris e vale tre volte tanto, cosi' nessun gioco da solo decide la generale.
 Per un periodo tutte valevano cento: una partita perfetta a tris valeva una
 perfetta a sudoku. Le giornate di allora restano come sono, perché i punti si
@@ -444,7 +444,7 @@ Scarabeo il punteggio in rapporto al computer, il cruciverba e il sudoku gli
 aiuti, il quiz le risposte giuste (quindici per aver giocato, sei per ogni
 giusta), il tris le vittorie e le patte, Nomi, cose e città le risposte valide,
 di piu' quelle date da pochi, gli Anagrammi le parole trovate, di piu' quelle
-trovate presto. Tutti tengono il principio del Wordle — **giocarla bene vale
+trovate presto, le Sequenze le sequenze ripetute giuste. Tutti tengono il principio del Wordle — **giocarla bene vale
 circa il doppio di giocarla male**, non dieci volte tanto — e
 `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
 per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
@@ -1659,6 +1659,53 @@ parola trovata ne vale almeno uno. Guardare non apre niente: la partita nasce
 con la prima parola aperta. La libera sta tutta nel telefono, con gli stessi
 tempi e gli stessi punti, come il sudoku libero.
 
+**Le Sequenze sono il test dei cubetti di Corsi, con un nome che si capisce.**
+Nove cubetti sparsi su una tavola (`CUBETTI` in `shared/sequenze.ts`), alcuni si
+accendono uno dopo l'altro e si toccano nello stesso ordine; a ogni sequenza
+giusta la prossima ha un cubetto in piu'. E' il test con cui gli psicologi
+misurano la memoria visuospaziale (Philip Corsi, 1972), ma "Corsi" a chi gioca
+non dice niente, e il gioco si chiama per quel che si fa. I cubetti sono sparsi
+e non in una griglia, come sulla tavola vera: in una griglia una sequenza si
+ricorderebbe come un disegno di righe e colonne, e un test tiene che tre non
+stiano mai in fila. La classificata e' di cinque turni uguali per tutti, ognuno
+da tre a nove cubetti, e il primo errore chiude il turno: quindici punti per
+averli giocati tutti e uno per sequenza giusta, fino a cinquanta (`puntiSequenze`).
+Chi arriva a cinque o sei, la media degli adulti, fa trenta o trentacinque; a
+pari punti conta la sequenza piu' lunga, poi il tempo. Fra un turno e l'altro ci
+si ferma quanto si vuole. Ogni cubetto ha la sua nota della scala pentatonica
+(`NOTE_CUBETTI`), perché una sequenza si ricorda anche a orecchio, come al Simon.
+
+**Una sequenza si vede una volta, e non esce mai prima.** Le sequenze del giorno
+non vengono da un seme che il telefono potrebbe rifare: le pesca a caso il primo
+che apre un turno e le salva `sequenze_giornate`, con `INSERT OR IGNORE` e poi
+la rilettura, come la parola del Wordle. Ne esce una alla volta: la prima con il
+turno (`/sequenze/turno`), ognuna delle altre con la risposta giusta alla
+precedente (`/sequenze/risposta`), e lo stato non le porta. Una pagina riaperta
+con una sequenza aperta la trova chiusa come sbagliata (`chiudiAperta`, alla
+prima `GET /state`): rivederla sarebbe un aiuto, e il turno lo dice
+(`riaperto`). Le risposte sono condizionate alla `versione`, come le altre
+partite del giorno. Il tempo per ripetere le giuste e' lo spareggio, e lo conta
+il server dall'uscita della sequenza alla risposta.
+
+**La libera delle Sequenze va avanti finché non si sbaglia, e la sfida anche.**
+La libera sta tutta nel telefono, dal seme della partita (`sequenzaDelLivello`):
+oltre i nove cubetti uno torna, mai due volte di fila. I livelli sono il facile,
+piu' lento e da due cubetti, il normale della classificata, e "al contrario",
+che chiede di toccarli dall'ultimo al primo come la seconda meta' del test di
+Corsi; il record di ogni livello sta nel `localStorage` (`games/sequenze/conti.ts`).
+Con un amico l'invito e' gia' la partita, come in Nomi, cose e città, e la sala
+e l'avviso sono gli stessi (`SalaSfida`, `AvvisoSfida` in `src/games/amici/`).
+Quando l'altro accetta il server pesca il seme, che non esce da li': anche qui
+la prima sequenza la chiede il telefono al via (`/apri`), le altre arrivano con
+la risposta alla precedente, e ognuno scrive nelle sue colonne (`livello_a`,
+`aperta_a`, `fine_a`), quindi due risposte insieme non si pestano. Vince chi
+arriva piu' lontano, a pari livello e' pari, e la sfida si chiude appena chi
+gioca ancora ha superato chi ha finito (`vincitoreDi`). Chi resta fermo con una
+sequenza da ripetere per `SEQUENZE_SFIDA_FERMA_MS` ha finito li': ha chiuso
+l'app. Ogni risposta fa salire la `versione`, e la chiusura e' condizionata a
+quella letta: una risposta arrivata nel frattempo non si perde in un conto
+vecchio.
+
 **Le righe dei giocatori sono larghe quanto il tavoliere.** In `Tavola` il
 gruppo — l'altro, il tavoliere, io — e' una griglia larga quanto il tavoliere:
 le righe hanno `width: 0` e `min-width: 100%`, quindi la riempiono senza
@@ -1671,8 +1718,8 @@ non ci starebbero.
 giochi con una soluzione — il Wordle, il cruciverba, lo Scarabeo — si giocano
 **in compagnia**: uno gioca, gli altri guardano e suggeriscono, nella
 classificata con il suo stesso punteggio e nella libera senza punti. I giochi a
-turni o a tempo fra due — la battaglia, il quiz, il tris, Nomi cose e città, i
-tavolieri — si giocano **in sfida**, e solo nelle libere: la classificata e' una
+turni o a tempo fra due — la battaglia, il quiz, il tris, Nomi cose e città, le
+Sequenze, i tavolieri — si giocano **in sfida**, e solo nelle libere: la classificata e' una
 partita uguale per tutti, e un amico la cambierebbe. Lo Scarabeo ha tutte e due:
 in compagnia contro il computer, nella classificata e nella libera, e in sfida
 con un amico nella libera, perché e' un gioco a turni fra due anche al tavolo.
@@ -1701,7 +1748,7 @@ Wordle con una parola a caso, Scarabeo fino in fondo al sacchetto contro il
 computer o un amico, cruciverba da una scorta di schemi, quiz sulla materia, la
 categoria, il modo, la zona o l'ambito e le opzioni che si scelgono, Nomi, cose
 e città con una lettera a caso contro il computer, Anagrammi con cinque parole a
-caso della lunghezza che si sceglie. Gli indirizzi dicono sempre dove si e':
+caso della lunghezza che si sceglie, Sequenze finché non si sbaglia. Gli indirizzi dicono sempre dove si e':
 `/<gioco>/classificata`, `/<gioco>/libera` (`src/app/rotte.ts`, che ha l'elenco
 completo, e i vecchi indirizzi portano ai nuovi in `App.tsx`); `/<gioco>` da
 solo porta alla classificata. I giochi da tavolo non hanno ne' l'una ne'
@@ -2335,9 +2382,9 @@ della barra laterale, e un test lo controlla.
 
 **Le Libere mettono i giochi in famiglie, come li cerca chi vuole giocare.**
 Enigmistica (Wordle, cruciverba, sudoku), Parole (Scarabeo, Nomi, cose e città),
-Cultura (il quiz), Strategia (scacchi, dama, go, Forza 4, tris), Da tavolo
-(battaglia navale, Indovina chi) e In gruppo, cioe' Lupus, che e' l'unico che si
-gioca in tanti (`CATEGORIE_LIBERE` in `src/games/catalog.ts`). Erano due, "I
+Cultura (il quiz), Memoria (Sequenze), Strategia (scacchi, dama, go, Forza 4,
+tris), Da tavolo (battaglia navale, Indovina chi) e In gruppo, cioe' Lupus, che
+e' l'unico che si gioca in tanti (`CATEGORIE_LIBERE` in `src/games/catalog.ts`). Erano due, "I
 giochi" e "Da tavolo": quelli con la classificata e gli altri, che e' come sono
 fatti e non a che cosa si gioca. Un gioco classificato porta alla sua libera,
 uno da tavolo alla sua sala, e un test tiene ogni gioco in una famiglia sola.

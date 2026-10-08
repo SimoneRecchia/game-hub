@@ -113,6 +113,59 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
     </g>
   ),
 
+  // I nove cubetti sparsi della tavola: tre accesi, e il filo che li unisce nell'ordine in cui si sono accesi.
+  sequenze: (
+    <g>
+      <path
+        d="M28.8 61.6L50.2 42L73.1 57.5"
+        fill="none"
+        stroke="#fff"
+        strokeOpacity={0.7}
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="0.1 6"
+      />
+      {[
+        { x: 31.3, y: 22.3, r: -6 },
+        { x: 65.7, y: 20.6, r: 4 },
+        { x: 90.3, y: 37.9, r: -3 },
+        { x: 50.2, y: 42, r: 7, n: 2 },
+        { x: 28.8, y: 61.6, r: 3, n: 1 },
+        { x: 73.1, y: 57.5, r: -5, n: 3 },
+        { x: 89.5, y: 79.7, r: 6 },
+        { x: 47.7, y: 83, r: -4 },
+        { x: 66.6, y: 99.4, r: 2 },
+      ].map((c, i) => (
+        <g key={i} transform={`rotate(${c.r} ${c.x} ${c.y})`}>
+          <rect x={c.x - 7.8} y={c.y - 6.3} width={15.6} height={15.6} rx={3.6} fill="#000" fillOpacity={0.14} />
+          <rect
+            x={c.x - 7.8}
+            y={c.y - 7.8}
+            width={15.6}
+            height={15.6}
+            rx={3.6}
+            fill="#fff"
+            fillOpacity={c.n ? 1 : 0.24}
+          />
+          {c.n && (
+            <text
+              x={c.x}
+              y={c.y + 3.6}
+              textAnchor="middle"
+              fontFamily={TONDO}
+              fontWeight={800}
+              fontSize={10}
+              fill="var(--c2)"
+            >
+              {c.n}
+            </text>
+          )}
+        </g>
+      ))}
+    </g>
+  ),
+
   // Tre tessere di legno, una sopra l'altra, con il valore nell'angolo.
   scarabeo: (
     <g fontFamily={TONDO} fontWeight={800}>

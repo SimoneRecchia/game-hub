@@ -42,6 +42,7 @@ export const DOVE_BREVE: Record<Attivita, string> = {
   tris: 'Tris',
   nomi: 'Nomi, cose',
   anagrammi: 'Anagrammi',
+  sequenze: 'Sequenze',
   indovina: 'Indovina chi',
   scacchi: 'Scacchi',
   dama: 'Dama',
@@ -63,6 +64,7 @@ export type GiocoInsieme =
   | 'battaglia'
   | 'quiz'
   | 'nomi'
+  | 'sequenze'
   | 'scarabeo'
   | 'tris'
   | 'indovina'
@@ -77,6 +79,7 @@ export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
   'quiz',
   'nomi',
+  'sequenze',
   'scarabeo',
   'tris',
   'indovina',
@@ -139,9 +142,9 @@ export async function invitaA(
     await api('/battaglia/sfida', { method: 'POST', body: { playerId } })
     return ROTTE.battaglia
   }
-  if (gioco === 'nomi') {
-    await api('/nomi/sfide', { method: 'POST', body: { playerId } })
-    return salaDi('nomi')
+  if (gioco === 'nomi' || gioco === 'sequenze') {
+    await api(`/${gioco}/sfide`, { method: 'POST', body: { playerId } })
+    return salaDi(gioco)
   }
   if (gioco === 'indovina') {
     const set = scelta('giochi.indovina.set', false)
@@ -166,6 +169,11 @@ export function salaDi(gioco: GiocoInsieme): string {
     // La libera si apre dalla parte dell'amico, dove si vede l'invito in attesa (la chiave di NomiCoseLibera).
     ricorda('giochi.nomi.contro', 'amico')
     return ROTTE.libera('nomi')
+  }
+  if (gioco === 'sequenze') {
+    // Lo stesso per le Sequenze (la chiave di SequenzeLibera).
+    ricorda('giochi.sequenze.contro', 'amico')
+    return ROTTE.libera('sequenze')
   }
   if (gioco === 'indovina') return ROTTE.indovina
   // La libera dello Scarabeo si apre dalla parte dell'amico, dove si invita con il link (la chiave di ScarabeoLibero).

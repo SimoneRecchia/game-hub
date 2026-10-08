@@ -4,12 +4,14 @@ import { leggiStatistiche } from '@/games/quiz/statistiche'
 import { leggiContiSudoku } from '@/games/sudoku/libera'
 import { leggiContiNomi } from '@/games/nomi/conti'
 import { leggiContiAnagrammi } from '@/games/anagrammi/conti'
+import { leggiContiSequenze } from '@/games/sequenze/conti'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatNumber } from '@/lib/format'
 import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
 import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   AnagrammiLeaderboard,
+  SequenzeLeaderboard,
   CruciverbaLeaderboard,
   CruciverbaLiberaRisposta,
   GiocoClassificato,
@@ -49,6 +51,8 @@ export function ContiDi({ gioco }: { gioco: GiocoClassificato }) {
       return <ContiNomi />
     case 'anagrammi':
       return <ContiAnagrammi />
+    case 'sequenze':
+      return <ContiSequenze />
   }
 }
 
@@ -350,6 +354,42 @@ function ContiAnagrammi() {
             { etichetta: 'Partite', valore: formatNumber(libere.partite) },
             { etichetta: 'Parole trovate', valore: formatNumber(libere.trovate) },
             { etichetta: 'Partita migliore', valore: `${formatNumber(libere.migliore)} punti` },
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
+function ContiSequenze() {
+  const { dati } = useDati<SequenzeLeaderboard>('/leaderboard/sequenze?scope=all')
+  // Le libere stanno nel telefono: si leggono una volta, all'apertura del foglio.
+  const [libere] = useState(leggiContiSequenze)
+  const me = dati?.me
+  const record = (n: number) => (n > 0 ? `${formatNumber(n)} cubetti` : '—')
+  return (
+    <div className="conti">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Giornate', valore: formatNumber(me?.giornate ?? 0) },
+            { etichetta: 'La sequenza più lunga', valore: record(me?.migliore ?? 0) },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {libere.partite > 0 && (
+        <Conti
+          titolo="Libere"
+          voci={[
+            { etichetta: 'Partite', valore: formatNumber(libere.partite) },
+            { etichetta: 'Record, facile', valore: record(libere.record.facile) },
+            { etichetta: 'Record, normale', valore: record(libere.record.normale) },
+            { etichetta: 'Record, al contrario', valore: record(libere.record.difficile) },
           ]}
         />
       )}
