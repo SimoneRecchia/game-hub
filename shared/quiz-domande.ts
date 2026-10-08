@@ -512,7 +512,7 @@ export function distrattori<T extends { id: string }>(
 /**
  * I tre gruppi di notorietà di una fila di `n` voci, dalla piu' nota: fin dove
  * arrivano i famosi e fin dove i noti; gli altri sono il resto. A posti, non a
- * percentuali: con le percentuali i "facili" dei quadri, che sono settecento,
+ * percentuali: con le percentuali i "facili" dei quadri, che erano settecento,
  * erano duecento, e il livello facile pescava il Martirio di san Matteo accanto
  * alla Gioconda. I famosi sono una sessantina al piu' — la Gioconda e la Notte
  * stellata, Bohemian Rhapsody, la capitale della Francia — e mai meno di

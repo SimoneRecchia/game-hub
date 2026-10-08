@@ -37,7 +37,7 @@ import {
   valoriSparql,
 } from './wikidata'
 
-const EVENTI = 900
+const EVENTI = 1400
 const CANDIDATI = 5000
 
 /**
