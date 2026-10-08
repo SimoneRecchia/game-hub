@@ -65,6 +65,10 @@ const caricaParoliere = () => import('./pages/Paroliere')
 const caricaParoliereLibera = () => import('./pages/ParoliereLibera')
 const Paroliere = lazy(caricaParoliere)
 const ParoliereLibera = lazy(caricaParoliereLibera)
+const caricaCatena = () => import('./pages/Catena')
+const caricaCatenaLibera = () => import('./pages/CatenaLibera')
+const Catena = lazy(caricaCatena)
+const CatenaLibera = lazy(caricaCatenaLibera)
 const caricaNomi = () => import('./pages/NomiCose')
 const caricaNomiLibera = () => import('./pages/NomiCoseLibera')
 const caricaNomiSfida = () => import('./pages/NomiCoseSfida')
@@ -154,6 +158,8 @@ function usePrecarica() {
         caricaGhigliottinaLibera,
         caricaParoliere,
         caricaParoliereLibera,
+        caricaCatena,
+        caricaCatenaLibera,
         caricaNomi,
         caricaNomiLibera,
         caricaNomiSfida,
@@ -271,6 +277,8 @@ export default function App() {
             <Route path="/ghigliottina/libera" element={<GhigliottinaLibera />} />
             <Route path="/paroliere/classificata" element={<Paroliere />} />
             <Route path="/paroliere/libera" element={<ParoliereLibera />} />
+            <Route path="/catena/classificata" element={<Catena />} />
+            <Route path="/catena/libera" element={<CatenaLibera />} />
 
             <Route path="/nomi-cose-citta/classificata" element={<NomiCose />} />
             <Route path="/nomi-cose-citta/libera" element={<NomiCoseLibera />} />

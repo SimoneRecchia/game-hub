@@ -22,6 +22,7 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
       sequenze: 0,
       ghigliottina: 0,
       paroliere: 0,
+      catena: 0,
       ...perGioco,
     },
     battaglia: 0,
@@ -69,7 +70,7 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     const sql = (q: string, ...p: unknown[]) => db.sqlite.prepare(q).run(...p)
 
     // Anna: Wordle 45 + 20, Scarabeo 70, cruciverba 97 (finito), quiz 76, tris 38, anagrammi 47, sequenze 33,
-    // Ghigliottina 16, Paroliere 52, i 44 di Nomi, cose e città di ieri, contati stanotte, che valgono oggi, e una
+    // Ghigliottina 16, Paroliere 52, Catena 8, i 44 di Nomi, cose e città di ieri, contati stanotte, che valgono oggi, e una
     // battaglia classificata da 84, di quando c'era.
     sql(`INSERT INTO wordle_games (id, player_id, puzzle_number, slot, date, answer, status, attempts, guesses, started_at, score)
          VALUES ('w1', ?, ?, 1, 'x', 'carta', 'won', 2, '[]', ?, 45)`, anna.id, n, adesso)
@@ -98,6 +99,9 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     sql(`INSERT INTO paroliere_partite
            (id, player_id, puzzle_number, date, status, iniziata_at, punteggio, trovate, score, updated_at)
          VALUES ('p1', ?, ?, 'x', 'done', ?, 33, 25, 52, ?)`, anna.id, n, adesso, adesso)
+    sql(`INSERT INTO catena_partite
+           (id, player_id, puzzle_number, date, status, mosse, indovinata, score, started_at, updated_at)
+         VALUES ('k1', ?, ?, 'x', 'done', '[]', 1, 8, ?, ?)`, anna.id, n, adesso, adesso)
     sql(`INSERT INTO nomi_partite (id, player_id, puzzle_number, date, status, iniziata_at, tempo_ms, score, valide,
            updated_at)
          VALUES ('n1', ?, ?, 'x', 'done', ?, 60000, 44, 4, ?)`, anna.id, n - 1, adesso, adesso)
@@ -110,7 +114,7 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
 
     const g = (await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', anna)).dati
     expect(g.rows.map((r) => [r.nickname, r.punti])).toEqual([
-      ['anna', 45 + 20 + 70 + 97 + 84 + 76 + 38 + 47 + 33 + 16 + 52 + 44],
+      ['anna', 45 + 20 + 70 + 97 + 84 + 76 + 38 + 47 + 33 + 16 + 52 + 8 + 44],
       ['bruno', 0],
     ])
     expect(g.me?.perGioco).toEqual({
@@ -125,9 +129,10 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
       sequenze: 33,
       ghigliottina: 16,
       paroliere: 52,
+      catena: 8,
     })
     expect(g.me?.battaglia).toBe(84)
-    expect(g.me?.partite).toBe(11)
+    expect(g.me?.partite).toBe(12)
     // La Fortuna legge i punti di oggi di un giocatore solo: devono essere quelli della generale.
     expect(await puntiClassificateDi(db as unknown as D1Database, anna.id, n)).toBe(
       g.me!.punti - g.me!.ruota - g.me!.slot - g.me!.blackjack,
@@ -146,7 +151,7 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
           nickname: 'anna',
           displayName: 'anna',
           avatarColor: expect.any(String),
-          punti: 45 + 20 + 70 + 97 + 84 + 76 + 38 + 47 + 33 + 16 + 52 + 44,
+          punti: 45 + 20 + 70 + 97 + 84 + 76 + 38 + 47 + 33 + 16 + 52 + 8 + 44,
         },
       ],
     })

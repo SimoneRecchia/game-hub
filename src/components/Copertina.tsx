@@ -192,6 +192,41 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
     </g>
   ),
 
+  // Tre parole una sotto l'altra, legate da due maglie: di quella in mezzo si vede solo la prima lettera.
+  catena: (
+    <g fontFamily={TONDO} fontWeight={800}>
+      {[14, 86].map((y) => (
+        <g key={y}>
+          <rect x={20} y={y + 2} width={80} height={20} rx={10} fill="#000" fillOpacity={0.14} />
+          <rect x={20} y={y} width={80} height={20} rx={10} fill="#fff" fillOpacity={0.92} />
+          <rect x={34} y={y + 8} width={52} height={4} rx={2} fill="var(--c2)" fillOpacity={0.35} />
+        </g>
+      ))}
+      {[38, 70].map((y) => (
+        <g key={y} fill="none" strokeWidth={3.4}>
+          <rect x={53} y={y - 9} width={14} height={18} rx={7} stroke="#ffc83d" />
+          <rect x={56.5} y={y - 4} width={7} height={8} rx={3.5} stroke="#ffc83d" strokeOpacity={0.55} />
+        </g>
+      ))}
+      <rect x={20} y={52} width={80} height={16} rx={8} fill="#000" fillOpacity={0.14} transform="translate(0 2)" />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <rect
+          key={i}
+          x={22 + i * 15.6}
+          y={50}
+          width={13}
+          height={18}
+          rx={3.5}
+          fill={i === 0 ? '#ffc83d' : '#fff'}
+          fillOpacity={i === 0 ? 1 : 0.32}
+        />
+      ))}
+      <text x={28.5} y={63.5} textAnchor="middle" fontSize={12} fill="var(--c2)">
+        L
+      </text>
+    </g>
+  ),
+
   // Nove dadi della griglia, e la strada che passa da uno vicino all'altro: R, O, S, A.
   paroliere: (
     <g fontFamily={TONDO} fontWeight={800}>

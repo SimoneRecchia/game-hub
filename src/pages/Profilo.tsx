@@ -248,6 +248,10 @@ function Fonti() {
         su Rai 1.
       </p>
       <p>
+        <strong>Catena.</strong> Le catene vengono dalle espressioni della Ghigliottina e da quelle del Wikizionario,
+        con la sua licenza; il gioco è quello dell’ultima catena di Reazione a catena, su Rai 1.
+      </p>
+      <p>
         <strong>Scarabocchi.</strong> Le parole da disegnare sono quelle di Nomi, cose e città, con le stesse fonti.
       </p>
       <p>

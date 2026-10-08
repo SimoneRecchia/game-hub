@@ -125,7 +125,7 @@ jobs:
 
       # Il codice nuovo potrebbe servire il cruciverba di oggi, uno schema
       # libero, il computer dello Scarabeo, il sudoku, il quiz, gli anagrammi,
-      # la Ghigliottina o il Paroliere di oggi: devono esserci prima. Qui
+      # la Ghigliottina, il Paroliere o la Catena di oggi: devono esserci prima. Qui
       # bastano due settimane e sessanta schemi liberi, la scorta lunga la tiene
       # il workflow notturno (cruciverba.yml). Gli script fanno solo quel che
       # manca, quindi di solito non fanno niente.
@@ -172,6 +172,14 @@ jobs:
       - name: Il Paroliere
         if: steps.segreti.outputs.pronto == 'si'
         run: npx vite-node scripts/genera-paroliere.ts -- --remote --giorni 14
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Anche la Catena viene da un elenco versionato, e va dopo la Ghigliottina, di cui evita la parola vincente.
+      - name: La Catena
+        if: steps.segreti.outputs.pronto == 'si'
+        run: npx vite-node scripts/genera-catena.ts -- --remote --giorni 14
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

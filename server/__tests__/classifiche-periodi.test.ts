@@ -112,6 +112,7 @@ describe('la panoramica delle classifiche', () => {
     expect(status).toBe(200)
     expect(Object.keys(dati.classifiche).sort()).toEqual([
       'anagrammi',
+      'catena',
       'cruciverba',
       'fortuna',
       'generale',

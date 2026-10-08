@@ -17,6 +17,7 @@ import { LUNGHEZZE_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, TEMPO_PAROLA_MS, puntiAnag
 import { PUNTI_FINITA_SEQUENZE, SEQUENZE_PER_TURNO, TURNI_SEQUENZE, puntiSequenze } from '../sequenze'
 import { COPPIE_GHIGLIOTTINA, montepremi, puntiGhigliottina } from '../ghigliottina'
 import { PUNTI_GIOCATA_PAROLIERE, puntiParoliere } from '../paroliere'
+import { inizio as inizioCatena, montepremiCatena, puntiCatena } from '../catena'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
 /** Uno schema del cruciverba e uno del sudoku della misura di tutti i giorni: ottanta lettere, cinquanta cifre. */
@@ -40,9 +41,9 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(Object.keys(MASSIMI).sort()).toEqual(Object.keys(TETTI).sort())
   })
 
-  it("sono undici classificate, e valgono novecentoquarantanove: un po' meno di novanta a gioco", () => {
-    expect(Object.keys(TETTI)).toHaveLength(11)
-    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(949)
+  it("sono dodici classificate, e valgono milletredici: un po' meno di novanta a gioco", () => {
+    expect(Object.keys(TETTI)).toHaveLength(12)
+    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(1013)
   })
 
   it('i tetti seguono il tempo che chiede ogni gioco, ma nessuno vale piu’ di tre volte un altro', () => {
@@ -53,6 +54,7 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
       'quiz',
       'wordle',
       'ghigliottina',
+      'catena',
       'nomi',
       'paroliere',
       'anagrammi',
@@ -108,6 +110,10 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
 
   it('nella Ghigliottina cinque scelte giuste e la parola vincente valgono il tetto', () => {
     expect(puntiGhigliottina(0, true)).toBe(TETTI.ghigliottina)
+  })
+
+  it('nella Catena le cinque parole senza errori, e la finale, valgono il tetto', () => {
+    expect(puntiCatena(inizioCatena(), true)).toBe(TETTI.catena)
   })
 
   it('nel Paroliere arrivare al traguardo vale il tetto, e oltre non si va', () => {
@@ -231,5 +237,16 @@ describe('la Ghigliottina si gioca come in televisione', () => {
   it('una parola vincente sbagliata non vale niente, ma chi ha sbagliato tutte le scelte può ancora vincere', () => {
     for (let k = 0; k <= COPPIE_GHIGLIOTTINA; k += 1) expect(puntiGhigliottina(k, false)).toBe(0)
     expect(puntiGhigliottina(COPPIE_GHIGLIOTTINA, true)).toBe(2)
+  })
+})
+
+/** La Catena si gioca come la Ghigliottina: ogni errore dimezza, e la parola finale sbagliata azzera. */
+describe('la Catena si gioca come in televisione', () => {
+  it('ogni errore o acquisto dimezza il montepremi, che non scende sotto un punto', () => {
+    expect(Array.from({ length: 10 }, (_, k) => montepremiCatena(k))).toEqual([64, 32, 16, 8, 4, 2, 1, 1, 1, 1])
+  })
+
+  it('una parola finale sbagliata non vale niente', () => {
+    expect(puntiCatena(inizioCatena(), false)).toBe(0)
   })
 })

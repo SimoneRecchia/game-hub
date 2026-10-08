@@ -11,6 +11,7 @@ import { anagrammiRoutes } from './routes/anagrammi'
 import { sequenzeRoutes } from './routes/sequenze'
 import { ghigliottinaRoutes } from './routes/ghigliottina'
 import { paroliereRoutes } from './routes/paroliere'
+import { catenaRoutes } from './routes/catena'
 import { nomiRoutes } from './routes/nomi'
 import { battagliaRoutes, invitiPubblici } from './routes/battaglia'
 import { quizRoutes } from './routes/quiz'
@@ -66,6 +67,7 @@ export function createApp() {
   app.route('/sequenze', sequenzeRoutes)
   app.route('/ghigliottina', ghigliottinaRoutes)
   app.route('/paroliere', paroliereRoutes)
+  app.route('/catena', catenaRoutes)
   app.route('/nomi', nomiRoutes)
   app.route('/battaglia', battagliaRoutes)
   app.route('/quiz', quizRoutes)

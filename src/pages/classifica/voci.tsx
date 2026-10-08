@@ -10,6 +10,7 @@ import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
 import type {
   AnagrammiLeaderboard,
+  CatenaLeaderboard,
   CruciverbaLeaderboard,
   FortunaLeaderboard,
   GeneraleLeaderboard,
@@ -45,6 +46,7 @@ export type Risposta =
   | SequenzeLeaderboard
   | GhigliottinaLeaderboard
   | ParoliereLeaderboard
+  | CatenaLeaderboard
   | FortunaLeaderboard
 
 export interface Voce {
@@ -83,6 +85,7 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   sequenze: 'Sequenze',
   ghigliottina: 'Ghigliottina',
   paroliere: 'Paroliere',
+  catena: 'Catena',
   fortuna: 'Fortuna',
 }
 
@@ -101,6 +104,7 @@ export const ORDINE_GIOCHI: GiocoClassificato[] = [
   'sudoku',
   'quiz',
   'ghigliottina',
+  'catena',
   'nomi',
   'anagrammi',
   'paroliere',
@@ -443,6 +447,31 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             { etichetta: 'Tempo per la parola vincente', valore: formatDuration(r.tempoMs) },
           ],
           nota: 'A pari punti contano le parole vincenti indovinate, poi il tempo.',
+        }
+      })
+
+    case 'catena':
+      return (risposta as CatenaLeaderboard).rows.map((r) => {
+        const indovinate = `${formatNumber(r.indovinate)} ${r.indovinate === 1 ? 'finale' : 'finali'}`
+        return {
+          ...r,
+          sotto:
+            r.giornate === 0
+              ? 'In corso'
+              : giorno
+                ? r.indovinate > 0
+                  ? `Finale in ${formatDuration(r.tempoMs)}`
+                  : 'Finale non indovinata'
+                : `${giornate(r.giornate)} · ${indovinate}`,
+          breve: r.giornate === 0 ? 'in corso' : giorno ? (r.indovinate > 0 ? 'indovinata' : 'non indovinata') : indovinate,
+          segni: r.inCorso ? inCorso : undefined,
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            { etichetta: 'Giornate finite', valore: formatNumber(r.giornate) },
+            { etichetta: 'Parole finali indovinate', valore: formatNumber(r.indovinate) },
+            { etichetta: 'Tempo per la parola finale', valore: formatDuration(r.tempoMs) },
+          ],
+          nota: 'A pari punti contano le parole finali indovinate, poi il tempo.',
         }
       })
 

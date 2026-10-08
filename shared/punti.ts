@@ -16,19 +16,20 @@
  *   Quiz         3-4 minuti                  75
  *   Wordle       3-5 minuti                  70
  *   Ghigliottina 2-3 minuti                  64
+ *   Catena       3-4 minuti                  64
  *   Nomi, cose   2-3 minuti                  60
  *   Paroliere    3 minuti                    60
  *   Anagrammi    2-4 minuti                  60
  *   Sequenze     3-5 minuti                  50
  *   Tris         2-3 minuti                  50
  *
- * Sono undici, e la somma e' novecentoquarantanove: un po' meno di novanta a
- * gioco. Gli Anagrammi valgono quanto Nomi, cose e città, che chiede lo stesso
+ * Sono dodici, e la somma e' milletredici: un po' meno di novanta a gioco. Gli Anagrammi valgono quanto Nomi, cose e città, che chiede lo stesso
  * tempo; le Sequenze quanto il tris: cinque turni brevi, e il tempo se ne va a
  * guardare i lampi. Il Paroliere, arrivato per ultimo con la Ghigliottina,
  * vale quanto Nomi, cose e città, che dura come lui tre minuti; la
  * Ghigliottina sessantaquattro, fra il Wordle e loro, perché il montepremi si
- * dimezzi cinque volte senza virgole.
+ * dimezzi cinque volte senza virgole. La Catena, che si gioca allo stesso
+ * modo, vale quanto lei.
  * Erano otto, e facevano ottocento, finché la battaglia navale ha avuto la sua
  * classificata (85, i colpi per affondare la flotta del giorno): era piu'
  * fortuna che bravura, e il 6 ottobre 2026 e' diventata solo una libera. Gli
@@ -50,16 +51,18 @@
  *   Sequenze     sequenze ripetute giuste in 5 turni   30-35     15        50
  *   Paroliere    i punti delle parole, al traguardo    35-50     15        60
  *   Ghigliottina il montepremi, se si indovina         16-32      0**      64
+ *   Catena       il montepremi, se si indovina         16-32      0**      64
  *
  *   * la parola non indovinata vale quattordici, la peggiore indovinata
  *     trentacinque; un cruciverba o un sudoku svelato per intero non e' stato
  *     risolto: vale zero. Ogni casella svelata toglie la sua parte, e svelarne
  *     un quarto lascia tre quarti dei punti (vedi shared/aiuti.ts).
  *
- *   ** la Ghigliottina e' l'eccezione, di proposito: si gioca come alla
- *     televisione, dove ogni scelta sbagliata dimezza il montepremi e una
- *     parola vincente sbagliata lo azzera. Le cinque parole si vedono sempre,
- *     quindi anche chi ha sbagliato ogni scelta puo' indovinare: due punti.
+ *   ** la Ghigliottina e la Catena sono l'eccezione, di proposito: si giocano
+ *     come alla televisione, dove ogni errore dimezza il montepremi e una
+ *     parola finale sbagliata lo azzera. Le cinque parole della Ghigliottina si
+ *     vedono sempre, quindi anche chi ha sbagliato ogni scelta puo' indovinare:
+ *     due punti; la Catena non scende sotto uno.
  *
  * I pochi punti oltre il tetto del Wordle sono i bonus di velocità e costanza,
  * che servono da spareggio e restano sotto il gradino di un tentativo.
@@ -78,6 +81,7 @@ import { MASSIMO_ANAGRAMMI } from './anagrammi'
 import { MASSIMO_SEQUENZE } from './sequenze'
 import { MASSIMO_GHIGLIOTTINA } from './ghigliottina'
 import { MASSIMO_PAROLIERE } from './paroliere'
+import { MASSIMO_CATENA } from './catena'
 import type { GiocoClassificato } from './types'
 
 export { punteggio as puntiCruciverba } from './cruciverba'
@@ -88,6 +92,7 @@ export { puntiAnagrammi } from './anagrammi'
 export { puntiSequenze } from './sequenze'
 export { puntiGhigliottina } from './ghigliottina'
 export { puntiParoliere } from './paroliere'
+export { puntiCatena } from './catena'
 
 /** Il tetto di ogni classificata: quanto vale una giornata perfetta. Un test lo confronta con le formule. */
 export const TETTI: Record<GiocoClassificato, number> = {
@@ -102,6 +107,7 @@ export const TETTI: Record<GiocoClassificato, number> = {
   sequenze: 50,
   ghigliottina: 64,
   paroliere: 60,
+  catena: 64,
 }
 
 /* ─────────────────────────────  Scarabeo  ─────────────────────────── */
@@ -143,4 +149,5 @@ export const MASSIMI: Record<GiocoClassificato, number> = {
   sequenze: MASSIMO_SEQUENZE,
   ghigliottina: MASSIMO_GHIGLIOTTINA,
   paroliere: MASSIMO_PAROLIERE,
+  catena: MASSIMO_CATENA,
 }
