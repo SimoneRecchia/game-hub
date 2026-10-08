@@ -24,6 +24,8 @@
     "ghigliottina:locale": "vite-node scripts/genera-ghigliottina.ts -- --local",
     "ghigliottina:build": "node scripts/build-ghigliottina.mjs",
     "paroliere:locale": "vite-node scripts/genera-paroliere.ts -- --local",
+    "catena:locale": "vite-node scripts/genera-catena.ts -- --local",
+    "catena:build": "node scripts/build-catena.mjs",
     "scarabocchi:build": "node scripts/build-scarabocchi.mjs",
     "nomi:lessico": "vite-node scripts/genera-lessico-nomi.ts",
     "dawg:build": "node scripts/build-dawg.mjs",

@@ -21,6 +21,7 @@ import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
 import { PUNTI_COMPLETO as PUNTI_SUDOKU, VUOTA, costiSudoku, puntiSudoku } from '../../shared/sudoku'
 import type {
   AnagrammiSummary,
+  CatenaSummary,
   GhigliottinaSummary,
   ParoliereSummary,
   CruciverbaSummary,
@@ -72,6 +73,14 @@ import {
   scaduta as tempoFinito,
 } from './paroliereStore'
 import { puntiParoliere } from '../../shared/paroliere'
+import {
+  catenaDelGiornoDa,
+  giornata as giornataCatena,
+  mosseDi as mosseCatena,
+  partitaDi as partitaCatena,
+  scaduta as minutoFinito,
+} from './catenaStore'
+import { DA_INDOVINARE_CATENA, MONTEPREMI_CATENA, svolgiCatena } from '../../shared/catena'
 
 export async function riepilogoWordle(db: D1Database, playerId: string): Promise<WordleSummary> {
   const when = today()
@@ -408,6 +417,33 @@ export async function riepilogoParoliere(db: D1Database, playerId: string): Prom
     punteggio: row?.punteggio ?? 0,
     traguardo,
     punti: row?.status === 'done' ? row.score : finita && row ? puntiParoliere(row.punteggio, traguardo) : 0,
+    msToNextPuzzle: msToNextPuzzle(),
+  }
+}
+
+/**
+ * La Catena: a che parola si e', il montepremi e com'e' finita. Come la
+ * Ghigliottina, non chiude un minuto finito: lo dice finito, senza punti.
+ */
+export async function riepilogoCatena(db: D1Database, playerId: string): Promise<CatenaSummary> {
+  const quando = giornataCatena()
+  const [row, catena] = await Promise.all([
+    partitaCatena(db, playerId, quando.puzzleNumber),
+    catenaDelGiornoDa(db, quando.puzzleNumber),
+  ])
+  const scaduto = row ? minutoFinito(row, Date.now()) : false
+  const finita = row?.status === 'done' || scaduto
+  const svolta = row && catena ? svolgiCatena(catena, mosseCatena(row)) : null
+  return {
+    puzzleNumber: quando.puzzleNumber,
+    date: quando.date,
+    status: row ? (finita ? 'done' : 'playing') : 'new',
+    pronta: catena !== null,
+    passo: row?.status === 'done' ? DA_INDOVINARE_CATENA : (svolta?.passo ?? 0),
+    totale: DA_INDOVINARE_CATENA,
+    montepremi: svolta?.montepremi ?? MONTEPREMI_CATENA,
+    indovinata: finita ? row?.indovinata === 1 : null,
+    punti: row?.status === 'done' ? row.score : 0,
     msToNextPuzzle: msToNextPuzzle(),
   }
 }

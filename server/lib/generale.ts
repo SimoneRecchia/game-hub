@@ -80,6 +80,7 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.sequenze +
       g.perGioco.ghigliottina +
       g.perGioco.paroliere +
+      g.perGioco.catena +
       g.battaglia +
       g.ruota +
       g.slot +
@@ -122,6 +123,7 @@ export async function classificaGenerale(
     sequenze,
     ghigliottina,
     paroliere,
+    catena,
     ruota,
     fortuna,
   ] = await Promise.all([
@@ -260,6 +262,16 @@ export async function classificaGenerale(
       )
       .bind(da, a)
       .all<Parziale>(),
+    // La Catena: una partita al giorno, come la Ghigliottina.
+    db
+      .prepare(
+        `SELECT player_id,
+                COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
+                SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
+           FROM catena_partite WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+      )
+      .bind(da, a)
+      .all<Parziale>(),
     // Crazy Time: il conto di ogni giornata, non i giri uno per uno. Non e' una partita.
     db
       .prepare(
@@ -299,6 +311,7 @@ export async function classificaGenerale(
           sequenze: 0,
           ghigliottina: 0,
           paroliere: 0,
+          catena: 0,
         },
         battaglia: 0,
         ruota: 0,
@@ -332,6 +345,7 @@ export async function classificaGenerale(
   somma('sequenze', sequenze.results)
   somma('ghigliottina', ghigliottina.results)
   somma('paroliere', paroliere.results)
+  somma('catena', catena.results)
   for (const r of ruota.results) di(r.player_id).ruota += r.punti
   for (const r of fortuna.results) di(r.player_id)[r.gioco] += r.punti
 
@@ -473,7 +487,9 @@ export async function puntiClassificateDi(db: D1Database, playerId: string, nume
        + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
             FROM ghigliottina_partite WHERE player_id = ?1 AND puzzle_number = ?2)
        + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
-            FROM paroliere_partite WHERE player_id = ?1 AND puzzle_number = ?2) AS punti`,
+            FROM paroliere_partite WHERE player_id = ?1 AND puzzle_number = ?2)
+       + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
+            FROM catena_partite WHERE player_id = ?1 AND puzzle_number = ?2) AS punti`,
     )
     .bind(playerId, numero)
     .first<{ punti: number }>()
