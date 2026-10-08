@@ -28,6 +28,8 @@ export type GameId =
   | 'nomi'
   | 'anagrammi'
   | 'sequenze'
+  | 'ghigliottina'
+  | 'paroliere'
 
 export interface Player {
   id: string
@@ -698,6 +700,162 @@ export interface SequenzeLeaderboard {
   me: SequenzeRow | null
 }
 
+/* ──────────────────────────────  Ghigliottina  ────────────────────────────── */
+
+export type GhigliottinaStatus = 'playing' | 'done'
+
+/** Una coppia come la vede chi gioca: le due parole e la scelta, e quale era giusta una volta scelta. */
+export interface CoppiaGhigliottinaVista {
+  parole: [string, string]
+  scelta: 0 | 1 | null
+  /** Quale delle due era giusta: si sa solo dopo averla scelta. */
+  giusta: 0 | 1 | null
+  /** L'espressione che lega la parola giusta alla vincente: solo a partita finita. */
+  spiegazione: string | null
+}
+
+export interface GhigliottinaStato {
+  puzzleNumber: number
+  date: string
+  status: GhigliottinaStatus
+  /** Le coppie viste: quelle scelte e quella da scegliere, mai quelle dopo. */
+  coppie: CoppiaGhigliottinaVista[]
+  totaleCoppie: number
+  /** La coppia da scegliere, o null se sono scelte tutte. */
+  corrente: number | null
+  montepremiIniziale: number
+  montepremi: number
+  /** Il minuto della parola vincente: se e' partito, e quanto ne resta. */
+  finale: { aperto: boolean; restanteMs: number | null; tempoMs: number }
+  /** La parola vincente, solo a partita finita. */
+  soluzione: string | null
+  /** Quel che si e' scritto, o null se il minuto e' finito senza risposta. */
+  risposta: string | null
+  indovinata: boolean | null
+  /** In quanto si e' scritta la parola vincente: lo spareggio. */
+  tempoMs: number | null
+  /** A partita finita, i punti della classifica: il montepremi rimasto, o zero. */
+  punti: number
+  /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni scrittura. */
+  versione: number
+  msToNextPuzzle: number
+}
+
+export interface GhigliottinaSummary {
+  puzzleNumber: number
+  date: string
+  status: 'new' | GhigliottinaStatus
+  /** La partita di oggi c'e': la scrive la notte. */
+  pronta: boolean
+  /** Le coppie scelte. */
+  scelte: number
+  totale: number
+  montepremi: number
+  indovinata: boolean | null
+  punti: number
+  msToNextPuzzle: number
+}
+
+export interface GhigliottinaRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: solo le partite finite. */
+  punti: number
+  giornate: number
+  indovinate: number
+  /** Quanto ci ha messo a scrivere le parole vincenti, in tutto: lo spareggio. */
+  tempoMs: number
+  /** true se oggi ha una partita cominciata e non finita. */
+  inCorso: boolean
+}
+
+export interface GhigliottinaLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: GhigliottinaRow[]
+  me: GhigliottinaRow | null
+}
+
+/* ───────────────────────────────  Paroliere  ─────────────────────────────── */
+
+/** 'new' prima di girare la clessidra: la griglia si vede solo da li'. */
+export type ParoliereStatus = 'playing' | 'done'
+
+export interface ParoliereStato {
+  puzzleNumber: number
+  date: string
+  status: 'new' | ParoliereStatus
+  /** Le facce dei dadi, riga per riga ("qu" e' una faccia): solo da quando si e' cominciato. */
+  griglia: string[] | null
+  lato: number
+  /** Il tempo che resta, finché si gioca. */
+  restanteMs: number | null
+  tempoMs: number
+  /** Le parole trovate, nell'ordine in cui sono arrivate. */
+  trovate: string[]
+  /** I punti delle parole, come nel Boggle: 1, 1, 2, 3, 5, 11. */
+  punteggio: number
+  /** Il punteggio di chi gioca bene questa griglia: vale il tetto. */
+  traguardo: number
+  /** I punti della classifica: quelli di adesso, e a partita finita quelli scritti. */
+  punti: number
+  /** Le parole comuni della griglia, dalla piu' lunga: solo a partita finita. */
+  comuni: string[] | null
+  versione: number
+  msToNextPuzzle: number
+}
+
+/** Com'e' andata una parola: valida e nuova, gia' trovata, corta, fuori dalla griglia, sconosciuta, o fuori tempo. */
+export type EsitoParolaParoliere = 'nuova' | 'gia' | 'corta' | 'griglia' | 'sconosciuta' | 'tempo'
+
+export interface ParoliereParola extends ParoliereStato {
+  esito: EsitoParolaParoliere
+  parola: string
+  /** I punti della parola, se e' nuova. */
+  valore: number
+}
+
+export interface ParoliereSummary {
+  puzzleNumber: number
+  date: string
+  status: 'new' | ParoliereStatus
+  /** La griglia di oggi c'e': la scrive la notte. */
+  pronta: boolean
+  trovate: number
+  punteggio: number
+  traguardo: number
+  punti: number
+  msToNextPuzzle: number
+}
+
+export interface ParoliereRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: solo le partite finite. */
+  punti: number
+  giornate: number
+  /** Il punteggio delle griglie, che oltre il traguardo continua a contare: lo spareggio. */
+  punteggio: number
+  trovate: number
+  /** true se oggi ha una partita cominciata e non finita. */
+  inCorso: boolean
+}
+
+export interface ParoliereLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: ParoliereRow[]
+  me: ParoliereRow | null
+}
+
 /* ──────────────────────────────  Sequenze fra amici  ────────────────────────────── */
 
 /** Gli inviti e la sala sono quelli di Nomi, cose e città: cambia solo la partita. */
@@ -907,6 +1065,8 @@ export type Attivita =
   | 'nomi'
   | 'anagrammi'
   | 'sequenze'
+  | 'ghigliottina'
+  | 'paroliere'
   | 'ruota'
   | 'fortuna'
   | 'slot'
@@ -1549,6 +1709,8 @@ export type GiocoClassificato =
   | 'nomi'
   | 'anagrammi'
   | 'sequenze'
+  | 'ghigliottina'
+  | 'paroliere'
 
 /**
  * I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha
@@ -1662,6 +1824,8 @@ export interface OggiRisposta {
   nomi: NomiSummary
   anagrammi: AnagrammiSummary
   sequenze: SequenzeSummary
+  ghigliottina: GhigliottinaSummary
+  paroliere: ParoliereSummary
   /** Come si sta oggi nella classifica generale, con quel che hanno dato o tolto i giochi della Fortuna. */
   generale: {
     posizione: number | null

@@ -269,6 +269,10 @@
   --anagrammi-2: #d8401c;
   --sequenze-1: #2ed3e6;
   --sequenze-2: #5a46e0;
+  --ghigliottina-1: #c45be8;
+  --ghigliottina-2: #4b1580;
+  --paroliere-1: #6cc644;
+  --paroliere-2: #2e8a2a;
   --ruota-1: #ffb020;
   --ruota-2: #e5383b;
   --slot-1: #ff4fa3;
@@ -658,6 +662,46 @@
   --seq-acceso: #6ff3ff;
   --seq-giusto: #3ddc6e;
   --seq-sbagliato: #ff5a4e;
+
+  /* ---- La Ghigliottina ----
+     Lo studio e' scuro in tutti e due i temi, come in televisione: il viola e
+     il blu delle luci, l'oro del montepremi, l'acciaio della lama e il legno
+     dei montanti. Il verde e il rosso dicono giusta e sbagliata, come nel resto
+     dell'app. */
+  --ghi-palco-1: #2c1456;
+  --ghi-palco-2: #0b0820;
+  --ghi-luce: #b98cff;
+  --ghi-schermo: #1a1f4d;
+  --ghi-schermo-2: #10133a;
+  --ghi-oro: #ffd25a;
+  --ghi-oro-2: #c9881c;
+  --ghi-acciaio: #e4ebf5;
+  --ghi-acciaio-2: #8f9bb3;
+  --ghi-legno-1: #8a5427;
+  --ghi-legno-2: #3f230e;
+  --ghi-giusta: #3ddc84;
+  --ghi-sbagliata: #ff5a5f;
+
+  /* ---- Il Paroliere ----
+     Un oggetto sul tavolo, uguale in tutti e due i temi: il panno verde scuro,
+     il vassoio con gli alloggi, i dadi di plastica avorio con le lettere nere,
+     la clessidra con la sabbia. Il dito che scrive e' l'indaco delle scelte; il
+     verde e il rosso dicono valida e no, e l'ambra "c'era gia'". */
+  --par-panno-1: #10391f;
+  --par-panno-2: #061a0e;
+  --par-vassoio-1: #2f7a3a;
+  --par-vassoio-2: #15421d;
+  --par-dado: #fbf7ec;
+  --par-dado-2: #e2d8bf;
+  --par-dado-ink: #1f1b14;
+  --par-scelto: #bdb8ff;
+  --par-scelto-2: #8f88ff;
+  --par-scelto-ink: #1d1650;
+  --par-giusta: #3ddc84;
+  --par-sbagliata: #ff5a5f;
+  --par-gia: #ffb020;
+  --par-sabbia: #f2c46d;
+  --par-legno: #8a5a2b;
 
   /* ---- Il cruciverba ----
      Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:

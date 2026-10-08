@@ -15,6 +15,8 @@ import { BASE_NOMI, CATEGORIE_PER_PARTITA, TEMPO_NOMI_MS, puntiNomi } from '../n
 import { PUNTI_BASE_QUIZ } from '../quiz'
 import { LUNGHEZZE_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, TEMPO_PAROLA_MS, puntiAnagrammi } from '../anagrammi'
 import { PUNTI_FINITA_SEQUENZE, SEQUENZE_PER_TURNO, TURNI_SEQUENZE, puntiSequenze } from '../sequenze'
+import { COPPIE_GHIGLIOTTINA, montepremi, puntiGhigliottina } from '../ghigliottina'
+import { PUNTI_GIOCATA_PAROLIERE, puntiParoliere } from '../paroliere'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
 /** Uno schema del cruciverba e uno del sudoku della misura di tutti i giorni: ottanta lettere, cinquanta cifre. */
@@ -38,13 +40,25 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(Object.keys(MASSIMI).sort()).toEqual(Object.keys(TETTI).sort())
   })
 
-  it("sono nove classificate, e valgono ottocentoventicinque: un po' meno di cento a gioco", () => {
-    expect(Object.keys(TETTI)).toHaveLength(9)
-    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(825)
+  it("sono undici classificate, e valgono novecentoquarantanove: un po' meno di novanta a gioco", () => {
+    expect(Object.keys(TETTI)).toHaveLength(11)
+    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(949)
   })
 
   it('i tetti seguono il tempo che chiede ogni gioco, ma nessuno vale piu’ di tre volte un altro', () => {
-    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'quiz', 'wordle', 'nomi', 'anagrammi', 'sequenze', 'tris'] as const
+    const ordine = [
+      'cruciverba',
+      'scarabeo',
+      'sudoku',
+      'quiz',
+      'wordle',
+      'ghigliottina',
+      'nomi',
+      'paroliere',
+      'anagrammi',
+      'sequenze',
+      'tris',
+    ] as const
     for (let i = 1; i < ordine.length; i += 1) expect(TETTI[ordine[i]]).toBeLessThanOrEqual(TETTI[ordine[i - 1]])
     const valori = Object.values(TETTI)
     expect(Math.max(...valori) / Math.min(...valori)).toBeLessThanOrEqual(3.2)
@@ -90,6 +104,15 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(puntiSequenze(Array(TURNI_SEQUENZE).fill(SEQUENZE_PER_TURNO))).toBe(TETTI.sequenze)
     // Oltre i nove cubetti un turno non va: il tetto resta quello.
     expect(puntiSequenze(Array(TURNI_SEQUENZE).fill(SEQUENZE_PER_TURNO + 3))).toBe(TETTI.sequenze)
+  })
+
+  it('nella Ghigliottina cinque scelte giuste e la parola vincente valgono il tetto', () => {
+    expect(puntiGhigliottina(0, true)).toBe(TETTI.ghigliottina)
+  })
+
+  it('nel Paroliere arrivare al traguardo vale il tetto, e oltre non si va', () => {
+    expect(puntiParoliere(40, 40)).toBe(TETTI.paroliere)
+    expect(puntiParoliere(120, 40)).toBe(TETTI.paroliere)
   })
 
   it('nel tris la serie perfetta vale il tetto', () => {
@@ -186,5 +209,27 @@ describe('una giornata storta si recupera', () => {
     expect(puntiQuiz(0, 10)).toBe(PUNTI_BASE_QUIZ)
     // Ogni risposta giusta conta, e conta uguale.
     for (let g = 0; g < 10; g += 1) expect(puntiQuiz(g + 1, 10) - puntiQuiz(g, 10)).toBe(6)
+  })
+
+  it('nel Paroliere metà del traguardo vale quasi i due terzi, e aver giocato vale sempre qualcosa', () => {
+    expect(puntiParoliere(20, 40) / TETTI.paroliere).toBeGreaterThan(0.6)
+    expect(puntiParoliere(20, 40) / TETTI.paroliere).toBeLessThan(0.65)
+    expect(puntiParoliere(0, 40)).toBe(PUNTI_GIOCATA_PAROLIERE)
+  })
+})
+
+/**
+ * La Ghigliottina e' l'eccezione, di proposito: si gioca come alla
+ * televisione. Ogni scelta sbagliata dimezza il montepremi, e una parola
+ * vincente sbagliata non vale niente.
+ */
+describe('la Ghigliottina si gioca come in televisione', () => {
+  it('ogni scelta sbagliata dimezza il montepremi, senza virgole', () => {
+    expect(Array.from({ length: COPPIE_GHIGLIOTTINA + 1 }, (_, k) => montepremi(k))).toEqual([64, 32, 16, 8, 4, 2])
+  })
+
+  it('una parola vincente sbagliata non vale niente, ma chi ha sbagliato tutte le scelte può ancora vincere', () => {
+    for (let k = 0; k <= COPPIE_GHIGLIOTTINA; k += 1) expect(puntiGhigliottina(k, false)).toBe(0)
+    expect(puntiGhigliottina(COPPIE_GHIGLIOTTINA, true)).toBe(2)
   })
 })

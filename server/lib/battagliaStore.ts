@@ -48,6 +48,8 @@ const TUTTE_LE_ATTIVITA: Record<Attivita, true> = {
   quiz: true,
   tris: true,
   nomi: true,
+  ghigliottina: true,
+  paroliere: true,
   indovina: true,
   scacchi: true,
   dama: true,

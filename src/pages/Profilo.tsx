@@ -241,6 +241,13 @@ function Fonti() {
         ).
       </p>
       <p>
+        <strong>Paroliere.</strong> Le parole valide sono quelle dello Scarabeo, con le stesse fonti.
+      </p>
+      <p>
+        <strong>Ghigliottina.</strong> Le ghigliottine sono scritte a mano; il gioco è quello del finale dell’Eredità,
+        su Rai 1.
+      </p>
+      <p>
         <strong>Scarabocchi.</strong> Le parole da disegnare sono quelle di Nomi, cose e città, con le stesse fonti.
       </p>
       <p>

@@ -5,12 +5,16 @@ import { leggiContiSudoku } from '@/games/sudoku/libera'
 import { leggiContiNomi } from '@/games/nomi/conti'
 import { leggiContiAnagrammi } from '@/games/anagrammi/conti'
 import { leggiContiSequenze } from '@/games/sequenze/conti'
+import { leggiContiGhigliottina } from '@/games/ghigliottina/conti'
+import { leggiContiParoliere } from '@/games/paroliere/conti'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatNumber } from '@/lib/format'
 import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
 import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   AnagrammiLeaderboard,
+  GhigliottinaLeaderboard,
+  ParoliereLeaderboard,
   SequenzeLeaderboard,
   CruciverbaLeaderboard,
   CruciverbaLiberaRisposta,
@@ -53,6 +57,10 @@ export function ContiDi({ gioco }: { gioco: GiocoClassificato }) {
       return <ContiAnagrammi />
     case 'sequenze':
       return <ContiSequenze />
+    case 'ghigliottina':
+      return <ContiGhigliottinaDi />
+    case 'paroliere':
+      return <ContiParoliereDi />
   }
 }
 
@@ -424,6 +432,76 @@ function ContiNomi() {
             { etichetta: 'Partite', valore: formatNumber(libere.partite) },
             { etichetta: 'Vinte', valore: formatNumber(libere.vinte) },
             { etichetta: 'Risposte valide', valore: formatNumber(libere.valide) },
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
+function ContiGhigliottinaDi() {
+  const { dati } = useDati<GhigliottinaLeaderboard>('/leaderboard/ghigliottina?scope=all')
+  // Le libere stanno nel telefono: si leggono una volta, all'apertura del foglio.
+  const [libere] = useState(leggiContiGhigliottina)
+  const me = dati?.me
+  return (
+    <div className="conti">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Giornate', valore: formatNumber(me?.giornate ?? 0) },
+            { etichetta: 'Parole vincenti', valore: formatNumber(me?.indovinate ?? 0) },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {libere.partite > 0 && (
+        <Conti
+          titolo="Libere"
+          voci={[
+            { etichetta: 'Partite', valore: formatNumber(libere.partite) },
+            { etichetta: 'Parole vincenti', valore: formatNumber(libere.indovinate) },
+            { etichetta: 'Montepremi migliore', valore: `${formatNumber(libere.migliore)} punti` },
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
+function ContiParoliereDi() {
+  const { dati } = useDati<ParoliereLeaderboard>('/leaderboard/paroliere?scope=all')
+  // Le libere stanno nel telefono: si leggono una volta, all'apertura del foglio.
+  const [libere] = useState(leggiContiParoliere)
+  const me = dati?.me
+  const record = (n: number) => (n > 0 ? formatNumber(n) : '—')
+  return (
+    <div className="conti">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Giornate', valore: formatNumber(me?.giornate ?? 0) },
+            { etichetta: 'Parole trovate', valore: formatNumber(me?.trovate ?? 0) },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {libere.partite > 0 && (
+        <Conti
+          titolo="Libere"
+          voci={[
+            { etichetta: 'Partite', valore: formatNumber(libere.partite) },
+            { etichetta: 'Parole trovate', valore: formatNumber(libere.parole) },
+            { etichetta: 'Record, 4×4', valore: record(libere.migliore[4]) },
+            { etichetta: 'Record, 5×5', valore: record(libere.migliore[5]) },
           ]}
         />
       )}

@@ -429,13 +429,16 @@ e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni gioco misura
 quel che gli e' proprio dentro un tetto deciso (`TETTI` in `shared/punti.ts`,
 che ha la tabella di tutti), che segue il tempo che una giornata chiede a chi la
 gioca bene: il cruciverba 160, lo Scarabeo e il sudoku 150, il quiz 75, il
-Wordle 70, Nomi, cose e città e gli Anagrammi 60, il tris e le Sequenze 50. Sono
-nove, e fanno ottocentoventicinque, un po' meno di cento a gioco, e un test lo
-tiene. Erano otto e facevano ottocento con la battaglia navale (85), che il 6
-ottobre 2026 e' uscita dalle classificate (vedi sotto); due giorni dopo sono
-arrivati gli Anagrammi, che valgono quanto Nomi, cose e città perché chiedono lo
-stesso tempo, e le Sequenze, che valgono quanto il tris: gli altri tetti sono
-rimasti quelli, perché i giorni nuovi valgano come i vecchi. Non in proporzione diretta: un cruciverba chiede dieci volte il tempo
+Wordle 70, la Ghigliottina 64, Nomi, cose e città, gli Anagrammi e il Paroliere
+60, il tris e le Sequenze 50. Sono undici, e fanno novecentoquarantanove, un po'
+meno di novanta a gioco, e un test lo tiene. Erano otto e facevano ottocento con
+la battaglia navale (85), che il 6 ottobre 2026 e' uscita dalle classificate
+(vedi sotto); due giorni dopo sono arrivati gli Anagrammi, che valgono quanto
+Nomi, cose e città perché chiedono lo stesso tempo, le Sequenze, che valgono
+quanto il tris, il Paroliere, tre minuti come Nomi, cose e città, e la
+Ghigliottina, fra il Wordle e loro, con sessantaquattro perché il montepremi si
+dimezzi cinque volte senza virgole: gli altri tetti sono rimasti quelli, perché
+i giorni nuovi valgano come i vecchi. Non in proporzione diretta: un cruciverba chiede dieci volte il tempo
 del tris e vale tre volte tanto, cosi' nessun gioco da solo decide la generale.
 Per un periodo tutte valevano cento: una partita perfetta a tris valeva una
 perfetta a sudoku. Le giornate di allora restano come sono, perché i punti si
@@ -444,8 +447,11 @@ Scarabeo il punteggio in rapporto al computer, il cruciverba e il sudoku gli
 aiuti, il quiz le risposte giuste (quindici per aver giocato, sei per ogni
 giusta), il tris le vittorie e le patte, Nomi, cose e città le risposte valide,
 di piu' quelle date da pochi, gli Anagrammi le parole trovate, di piu' quelle
-trovate presto, le Sequenze le sequenze ripetute giuste. Tutti tengono il principio del Wordle — **giocarla bene vale
-circa il doppio di giocarla male**, non dieci volte tanto — e
+trovate presto, le Sequenze le sequenze ripetute giuste, il Paroliere i punti
+delle parole rispetto al traguardo della griglia, la Ghigliottina il montepremi
+che resta. Tutti tengono il principio del Wordle — **giocarla bene vale
+circa il doppio di giocarla male**, non dieci volte tanto — tranne la
+Ghigliottina, di proposito (vedi sotto), e
 `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
 per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
@@ -1713,6 +1719,102 @@ l'app. Ogni risposta fa salire la `versione`, e la chiusura e' condizionata a
 quella letta: una risposta arrivata nel frattempo non si perde in un conto
 vecchio.
 
+**La Ghigliottina e' quella dell'Eredità, e le parole sono scritte a mano.**
+Cinque coppie di parole, in ognuna una sola porta alla parola vincente; poi un
+minuto per scriverla (`shared/ghigliottina.ts`). Le ghigliottine stanno in
+`scripts/data/ghigliottina.tsv`, la vincente e le cinque parole con
+l'espressione che le lega ("colpo di fulmine"): nessun elenco libero le ha.
+`npm run ghigliottina:build` (`scripts/build-ghigliottina.mjs`) le controlla — la
+parola sta nella sua espressione, nessuna ha la radice della vincente, nessuna
+indica un'altra vincente meglio di questa — e sceglie le esche: le cinque
+parole giuste di un'altra ghigliottina, tutte della stessa, cosi' chi sbaglia
+strada segue un'idea che sta in piedi, accoppiate per somiglianza (parte del
+discorso, genere e numero, lunghezza, frequenza) perché la forma non dica qual
+e' la giusta. Un'esca non deve legarsi alla vincente, e lo script lo sa dalle
+espressioni del Wikizionario e del Wiktionary (le estrazioni del dizionario
+dello Scarabeo), dalle parole composte di napolux e da quelle dell'elenco; le
+righe con il punto esclamativo ("!colpo duro") dicono quelle che le fonti non
+conoscono: senza, "duro" faceva da esca a COLPO. Le vincenti si dividono fra
+classificate (due terzi, `scripts/data/ghigliottina-classificate.json`, che legge
+solo la notte) e libere (`public/dati/ghigliottina/libere.json`, con l'impronta
+in `shared/ghigliottina-libere.ts`), e ognuna prende le esche dalla sua parte:
+il file del telefono non ha nessuna parola delle classificate. La notte
+(`scripts/genera-ghigliottina.ts`, il passo "La Ghigliottina" di
+`cruciverba.yml`, e il deploy per due settimane) scrive la giornata in
+`ghigliottina_giornate` con `INSERT OR IGNORE`: l'ordine delle coppie e da che
+parte sta la giusta vengono dal numero del giorno, e una giornata scritta non
+cambia. Se manca, `GHIGLIOTTINA_ASSENTE` (503): in locale
+`npm run ghigliottina:locale`.
+
+**Nella Ghigliottina il server dice la giusta solo dopo la scelta, e la vincente
+solo alla fine.** `/state` manda le coppie scelte e quella da scegliere, mai
+quelle dopo; di una coppia si sa qual era la giusta solo scelta (`/scegli`, che
+a un doppio tocco risponde come la prima volta), e la vincente e le
+espressioni solo a partita chiusa. Il minuto lo tiene il server (`finale_at`,
+scritto da `/finale`), con il margine della rete del quiz, e la risposta e' una
+sola. I punti sono l'eccezione al principio del Wordle, perché il gioco e'
+quello della televisione: ogni scelta sbagliata dimezza il montepremi (64, 32,
+16...), e una vincente sbagliata o non data vale zero. Le cinque parole si
+vedono sempre, quindi anche con cinque errori la vincente si puo' trovare.
+Nella classifica a pari punti contano le vincenti indovinate, poi il tempo
+per scriverle. La scena (`src/games/ghigliottina/Partita.tsx`) e' una
+macchina a fasi con i suoi tempi (`tempi()`): la coppia arriva, la scelta
+aspetta un respiro ("Vediamo…"), e una sbagliata fa cadere la lama sul
+montepremi, che si spezza a meta'; la vincente arriva in una busta e si
+gira lettera per lettera. La festa aspetta il verdetto, e la libera sta tutta
+nel telefono, con gli stessi tempi.
+
+**Il Paroliere e' il Boggle, con il dizionario dello Scarabeo.** Sedici dadi in
+una griglia di quattro (`DADI` in `shared/paroliere.ts`, con le lettere del
+gioco e la "Qu" su una faccia sola), tre minuti, e una parola vale se si
+scrive passando da un dado a uno vicino, anche di sbieco, senza ripassare;
+da tre lettere in su, con i punti del Boggle (1, 1, 2, 3, 5, 11). Vale ogni
+parola del dizionario intero, plurali e voci dei verbi comprese, come al
+tavolo. La griglia del giorno la sceglie la notte (`scripts/genera-paroliere.ts`,
+il passo "Il Paroliere" di `cruciverba.yml`, e il deploy per due settimane):
+tira i dadi con il seme del giorno finché non esce una griglia con almeno
+ottanta parole comuni (`grigliaDelGiorno`), e la scrive con le comuni e il
+traguardo in `paroliere_giornate` (`INSERT OR IGNORE`). Il traguardo e' un
+quinto del punteggio di tutte le comuni, fra 25 e 60 (`traguardoDi`): le
+griglie non sono uguali, e chi trova meta' delle parole in una griglia povera
+ha giocato quanto chi ne trova meta' in una ricca. I punti sono quindici per
+aver giocato e quarantacinque in proporzione al traguardo, che oltre non
+crescono (`puntiParoliere`); in classifica a pari punti conta il punteggio
+sulla griglia, che oltre il traguardo continua a salire. Se la giornata manca,
+`PAROLIERE_ASSENTE` (503): in locale `npm run paroliere:locale`.
+
+**Nel Paroliere la griglia esce con la clessidra, e ogni parola va al server.**
+`/state` non apre niente e non manda i dadi; `/inizia` fa partire i tre minuti
+e li manda. Ogni parola passa da `/parola`, che guarda la strada sulla
+griglia (`stradaDi`) e il dizionario (`paroleSconosciute`, lo stesso DAWG dello
+Scarabeo letto dagli asset), e la scrive condizionata alla `versione`; dopo il
+tempo piu' il margine non vale, e la prima richiesta chiude la partita. Il
+telefono le manda una alla volta, in fila (`useParoliereDelGiorno`): chi
+traccia veloce non aspetta la risposta per la prossima, e le parole arrivano
+nell'ordine in cui sono state trovate. Le comuni della griglia escono solo a
+partita finita. La libera sta tutta nel telefono: i dadi li tira il
+lavoratore dello Scarabeo (`grigliaLibera`, con quattro o cinque dadi per
+lato), che ha gia' il dizionario e manda con la griglia tutte le sue parole,
+cosi' ogni parola si controlla subito; il tempo parte quando i dadi sono
+fermi. Il traguardo e' misurato sulla griglia di sedici, e su quella grande
+non c'e'.
+
+**I dadi del Paroliere si tracciano col dito, e il dito lo sente la griglia.**
+`Griglia` (`src/games/paroliere/`) cattura il puntatore sul contenitore e
+calcola il dado sotto il dito dalla posizione: un dado che catturasse il
+puntatore non saprebbe degli altri. Scorrendo vale solo il centro di ogni dado
+(`DENTRO`), perché passando fra due dadi di lato il dito sfiora gli angoli di
+quelli in diagonale; tornando sul dado di prima si toglie una lettera. Si gioca
+anche a tocchi — le lettere una alla volta, e di nuovo l'ultima per mandare —
+e con la tastiera del computer, che scrive la parola e ne cerca la strada.
+I dadi sono bottoni, e il clic che il browser manda dopo un tocco non va
+contato (`CLIC_DOPO_TOCCO_MS`): contato, ogni tocco mandava la sua lettera da
+sola, ed e' venuto fuori provando con Playwright. Com'e' andata una parola lo
+dicono i suoi dadi, verdi, gialli se c'era gia', rossi se non esiste, e la
+riga sopra la griglia; la scena ha la cupola che si alza, i dadi che si
+scuotono con le facce che passano e cadono a onde, la clessidra che si gira e
+il timbro "Tempo!".
+
 **Le righe dei giocatori sono larghe quanto il tavoliere.** In `Tavola` il
 gruppo — l'altro, il tavoliere, io — e' una griglia larga quanto il tavoliere:
 le righe hanno `width: 0` e `min-width: 100%`, quindi la riempiono senza
@@ -1755,7 +1857,8 @@ Wordle con una parola a caso, Scarabeo fino in fondo al sacchetto contro il
 computer o un amico, cruciverba da una scorta di schemi, quiz sulla materia, la
 categoria, il modo, la zona o l'ambito e le opzioni che si scelgono, Nomi, cose
 e città con una lettera a caso contro il computer, Anagrammi con cinque parole a
-caso della lunghezza che si sceglie, Sequenze finché non si sbaglia. Gli indirizzi dicono sempre dove si e':
+caso della lunghezza che si sceglie, Sequenze finché non si sbaglia, Ghigliottina
+con una a caso, Paroliere con una griglia a caso di sedici o venticinque dadi. Gli indirizzi dicono sempre dove si e':
 `/<gioco>/classificata`, `/<gioco>/libera` (`src/app/rotte.ts`, che ha l'elenco
 completo, e i vecchi indirizzi portano ai nuovi in `App.tsx`); `/<gioco>` da
 solo porta alla classificata. I giochi da tavolo non hanno ne' l'una ne'
@@ -2388,7 +2491,8 @@ rettangolo dell'eroe. Ora i nomi di transizione sono solo della tab bar e
 della barra laterale, e un test lo controlla.
 
 **Le Libere mettono i giochi in famiglie, come li cerca chi vuole giocare.**
-Enigmistica (Wordle, cruciverba, sudoku), Parole (Scarabeo, Nomi, cose e città),
+Enigmistica (Wordle, cruciverba, sudoku, Anagrammi), Parole (Scarabeo, Paroliere,
+Ghigliottina, Nomi, cose e città),
 Cultura (il quiz), Memoria (Sequenze), Strategia (scacchi, dama, go, Forza 4,
 tris), Da tavolo (battaglia navale, Indovina chi) e In gruppo, cioe' Lupus, che
 e' l'unico che si gioca in tanti (`CATEGORIE_LIBERE` in `src/games/catalog.ts`). Erano due, "I
@@ -2721,6 +2825,15 @@ quel che resta. Quando la fascia di gioco e' piu' bassa di 560 punti
 dignita' e diventa una riga — avatar, navi a galla, freccia — che lo apre in un
 foglio. Verificato con Playwright da 320×460 a 1280×800, con le aree sicure di
 un'app installata.
+
+**Un figlio piu' largo di chi ritaglia lo fa scorrere.** `overflow: hidden`
+taglia quel che esce, ma il contenitore resta scorrevole: quando qualcosa
+dentro prende il fuoco, o una prova automatica ci clicca, il browser lo fa
+scorrere fin li'. Nella Ghigliottina i fasci di luce dello studio erano piu'
+larghi della scena, e dopo la prima scelta tutta la scena restava spostata a
+sinistra di trenta punti. Una decorazione che esce dai bordi sta in una
+cornice sua con `overflow: hidden` (`.ghi-palco__luci`, i fasci nel `::before`):
+quel che esce da una cornice cosi' non allarga piu' chi la contiene.
 
 **Chi ritaglia deve lasciare posto agli anelli.** `.bat` e `.quiz` hanno
 `overflow: hidden` per restare nello schermo, e tagliavano ai lati e in cima
