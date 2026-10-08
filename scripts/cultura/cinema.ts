@@ -44,7 +44,7 @@ import {
   valoriSparql,
 } from './wikidata'
 
-const FILM = 1200
+const FILM = 2000
 const CANDIDATI = 3200
 /** I candidati italiani, cercati a parte come per i libri: fra i primi del mondo non ci arrivano. */
 const CANDIDATI_ITALIANI = 800

@@ -25,6 +25,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { gzipSync } from 'node:zlib'
 import { arte } from './cultura/arte'
 import { canzoni } from './cultura/canzoni'
 import { cinema } from './cultura/cinema'
@@ -40,9 +41,13 @@ import { storia } from './cultura/storia'
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 const CARTELLA = join(ROOT, 'public', 'dati', 'quiz')
 
-/** Il peso massimo di un file e di tutti insieme: si scaricano su un telefono. */
-const MASSIMO_FILE = 450 * 1024
-const MASSIMO_TOTALE = 2.2 * 1024 * 1024
+/**
+ * Il peso massimo di un file e di tutti insieme, compressi come li manda la
+ * CDN: si scaricano su un telefono, e quel che viaggia e' il file compresso,
+ * un quarto di quello scritto.
+ */
+const MASSIMO_FILE = 300 * 1024
+const MASSIMO_TOTALE = 900 * 1024
 
 type Materia = keyof DatiDaControllare
 
@@ -83,12 +88,14 @@ for (const materia of daFare) {
   file.set(materia, { testo: JSON.stringify({ versione, ...corpo }), versione })
 }
 const peso = (testo: string) => Buffer.byteLength(testo, 'utf8')
+const compresso = (testo: string) => gzipSync(testo, { level: 9 }).length
+const kB = (byte: number) => Math.round(byte / 1024)
 for (const [materia, { testo }] of file) {
-  if (peso(testo) > MASSIMO_FILE) problemi.push(`${materia}.json pesa ${Math.round(peso(testo) / 1024)} kB`)
+  if (compresso(testo) > MASSIMO_FILE) problemi.push(`${materia}.json pesa ${kB(compresso(testo))} kB compresso`)
 }
-const totale = [...file.values()].reduce((n, f) => n + peso(f.testo), 0)
+const totale = [...file.values()].reduce((n, f) => n + compresso(f.testo), 0)
 if (daFare.length === Object.keys(MATERIE).length && totale > MASSIMO_TOTALE) {
-  problemi.push(`i file pesano ${Math.round(totale / 1024)} kB in tutto`)
+  problemi.push(`i file pesano ${kB(totale)} kB compressi in tutto`)
 }
 
 if (problemi.length > 0) {
@@ -104,7 +111,7 @@ for (const [materia, { testo, versione }] of file) {
     .filter(([, v]) => Array.isArray(v))
     .map(([k, v]) => `${(v as unknown[]).length} ${k}`)
     .join(', ')
-  console.log(`  ${materia}.json ${Math.round(peso(testo) / 1024)} kB (${versione}): ${elenchi}`)
+  console.log(`  ${materia}.json ${kB(peso(testo))} kB, ${kB(compresso(testo))} compresso (${versione}): ${elenchi}`)
 }
-console.log(`  in tutto ${Math.round(totale / 1024)} kB`)
+console.log(`  in tutto ${kB(totale)} kB compressi`)
 console.log(`  versioni: ${JSON.stringify(Object.fromEntries([...file].map(([m, f]) => [m, f.versione])))}`)

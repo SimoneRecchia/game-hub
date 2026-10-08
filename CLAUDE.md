@@ -2028,6 +2028,39 @@ elenco segna le canzoni di cui si chiede di chi sono e non chi le canta
 puo' chiedere, e quelli che chi li firma non canta, un dj o un produttore con la
 voce di un altro ("Titanium" di David Guetta, "Uptown Funk" di Mark Ronson).
 
+**Le canzoni vengono anche dalle classifiche di Wikipedia.** Le candidate di
+Wikidata con la voce in italiano, ordinate per numero di Wikipedia, lasciavano
+fuori proprio quel che si ascolta di piu': il rap italiano degli ultimi dieci
+anni riempie le classifiche e ha poche voci tradotte, e su 1.500 canzoni il rap
+italiano ne aveva 35. `scripts/cultura/classifiche.ts` legge con la stessa API
+(`wikitesti`) la classifica annuale della FIMI dal 2002, i numeri uno italiani
+dal 1960 (sulla Wikipedia inglese), la classifica di fine anno di Billboard dal
+1959, i numeri uno inglesi dal 1952 e quelli latini dal 1990, e le pagine di un
+anno nuovo le trova da sola (`pagineConPrefisso`). Le tabelle si leggono per
+intestazione, con le celle che coprono piu' righe ripetute dove valgono, e chi
+canta e' quel che dice la classifica prima del "feat.": gli ospiti non sono la
+risposta, e non sono mai una sbagliata. Wikipedia collega un nome solo la prima
+volta: un nome senza collegamento prende la pagina che ha altrove sullo stesso
+sito. Il collegamento del titolo porta spesso all'album, e vale solo se Wikidata
+dice che e' una canzone; una canzone senza una voce sua resta, con il titolo
+della classifica e un identificativo dal titolo e da chi la canta (`cl…`).
+La notorietà somma alle letture il successo, un anno al primo posto in Italia
+quanto `SUCCESSO` (Billboard e i numeri uno inglesi un terzo, i latini un
+quarto), e le canzoni restano `CANZONI`, dalla piu' nota.
+
+**Una versione in classifica non e' sempre la canzone.** La pagina di una
+cover porta spesso alla voce dell'originale: "Volare" di Bobby Rydell e' la
+voce di "Nel blu dipinto di blu". Se Wikidata dice gia' chi la canta, vale la
+versione di uno di loro, e quella di un altro solo se chi la canta e' piu'
+noto — "Speedy Gonzales" e' di Pat Boone, non di David Hess che l'aveva
+incisa per primo (`perLaClassifica`); chi ha le altre versioni non e' mai una
+risposta sbagliata. Di una canzone con un ospite o di un dj si chiede di chi
+e', non chi la canta: "Wake Me Up" e' di Avicii, ma la canta un altro. Con le
+classifiche le canzoni sono quattro volte quelle di prima, e i file del quiz
+hanno un tetto sul peso compresso, che e' quel che si scarica
+(`MASSIMO_FILE`): scritto, quello delle canzoni passa i 900 kB, compresso ne
+pesa 250.
+
 **Nel quiz il tempo lo tiene il server, e la risposta resta li'.** Il telefono
 riceve una domanda alla volta senza la risposta (`senzaRisposta`), e l'orologio
 parte quando la chiede (`POST /quiz/domanda` scrive `aperta_at`). Una risposta
