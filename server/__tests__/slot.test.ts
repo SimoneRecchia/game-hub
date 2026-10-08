@@ -4,7 +4,6 @@ import type { DomandaCompleta } from '../../shared/quiz-domande'
 import { SPICCHI_RUOTA, categorieDelGiorno, improntaDomanda, type DomandaRuota } from '../../shared/ruota'
 import {
   DISPOSIZIONE_SLOT,
-  PUNTATA_MASSIMA_SLOT,
   VINCITA_DOMANDA,
   apreDomanda,
   lineaDi,
@@ -155,12 +154,12 @@ describe('la slot', () => {
     expect(riga).toEqual({ netto: 2985, giocate: 3 })
   })
 
-  it('si punta da uno a dieci, e mai piu’ del saldo', async () => {
+  it('si punta da uno a tutto il saldo, e mai di piu’', async () => {
     const b = banco()
     const io = await b.giocatore('anna')
     puntiDiOggi(b, io, 3, 3)
     domandeDiOggi(b)
-    for (const puntata of [0, 7, PUNTATA_MASSIMA_SLOT + 1, 2.5, '2', null]) {
+    for (const puntata of [0, 7, 2.5, '2', null]) {
       const r = await b.chiama('POST', '/slot/gira', io, { puntata })
       expect(r.status, String(puntata)).toBe(400)
       expect(r.dati.code).toBe('PUNTATA')

@@ -135,6 +135,10 @@
   animation-delay: 2.4s;
 }
 
+.fortuna-carta--roulette .fortuna-carta__luce {
+  animation-delay: 3.6s;
+}
+
 @keyframes fortuna-riflesso {
   0%,
   60% {

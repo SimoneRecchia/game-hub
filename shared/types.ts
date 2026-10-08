@@ -17,6 +17,8 @@ import type { CategoriaNomi, PiuDate, RispostaContata } from './nomi-cose'
 import type { LatoMoneta } from './ruota'
 import type { Carta, ManoBJ } from './blackjack'
 import type { FaseBJ } from './blackjack-tavolo'
+import type { PuntateRL } from './roulette'
+import type { FaseRL } from './roulette-tavolo'
 import type { EsitoMossaCatena, TerzoElemento, VoceCatena } from './catena'
 import type { GiocoSfidaLibera, ImpostazioniSfidaLibera } from './sfide-libere'
 
@@ -1155,6 +1157,7 @@ export type Attivita =
   | 'fortuna'
   | 'slot'
   | 'blackjack'
+  | 'roulette'
   | 'lupus'
   | 'scarabocchi'
   | 'classifica'
@@ -1870,9 +1873,10 @@ export interface GeneraleRow {
   tris: number
   /** Quel che ha dato o tolto Crazy Time nel periodo: e' gia' dentro `punti`. */
   ruota: number
-  /** Quel che hanno dato o tolto la slot e il blackjack: anche questo e' gia' dentro `punti`. */
+  /** Quel che hanno dato o tolto la slot, il blackjack e la roulette: anche questo e' gia' dentro `punti`. */
   slot: number
   blackjack: number
+  roulette: number
   /** La parte del Wordle fatta nella stanza di qualcun altro: e' lo spareggio. */
   assist: number
   /** Classificate chiuse nel periodo: una giornata di Wordle conta una. */
@@ -1894,10 +1898,10 @@ export interface FortunaRow {
   nickname: string
   displayName: string
   avatarColor: string
-  /** Quel che Crazy Time, la slot e il blackjack hanno dato o tolto, insieme: puo' essere sotto zero. */
+  /** Quel che i giochi della Fortuna hanno dato o tolto, insieme: puo' essere sotto zero. */
   punti: number
   netti: Record<GiocoFortuna, number>
-  /** I giri della ruota e della slot, e le mani del blackjack. */
+  /** I giri della ruota, della slot e della roulette, e le mani del blackjack. */
   giocate: number
 }
 
@@ -2062,7 +2066,7 @@ export interface RuotaSummary {
 /* ────────────────────────────────  La Fortuna  ──────────────────────────────── */
 
 /** I giochi d'azzardo della scheda Fortuna: puntano tutti lo stesso saldo, i punti fatti oggi. */
-export type GiocoFortuna = 'ruota' | 'slot' | 'blackjack'
+export type GiocoFortuna = 'ruota' | 'slot' | 'blackjack' | 'roulette'
 
 /** La scheda della Fortuna in una richiesta: il saldo di oggi, e com'e' andata a ogni gioco. */
 export interface FortunaRisposta {
@@ -2080,6 +2084,7 @@ export interface FortunaRisposta {
   slot: { stato: 'gioca' | 'sfida' }
   /** Il tavolo a cui si e' seduti, e quelli degli amici online. */
   blackjack: { mioTavolo: string | null; tavoli: TavoloInSala[] }
+  roulette: { mioTavolo: string | null; tavoli: TavoloInSala[] }
 }
 
 /** Un giro della slot, come lo vede chi gioca: la domanda senza la risposta finché non si risponde. */
@@ -2171,6 +2176,53 @@ export interface VistaTavoloBJ {
   /** Il posto di chi guarda, o null se non e' seduto. */
   mio: number | null
   classificate: number
+  saldo: number
+  netto: number
+  giri: number
+  msToNextPuzzle: number
+}
+
+/** La sala della roulette: il saldo, il conto di oggi, il tavolo a cui si e' seduti e quelli degli amici. */
+export interface SalaRoulette {
+  puzzleNumber: number
+  date: string
+  msToNextPuzzle: number
+  classificate: number
+  saldo: number
+  /** Quel che la roulette ha dato o tolto oggi, e in quanti giri. */
+  netto: number
+  giri: number
+  mioTavolo: string | null
+  tavoli: TavoloInSala[]
+}
+
+/** Un posto della roulette come lo vedono tutti: le fiches sul panno sono di chiunque guardi. */
+export interface PostoVistaRL {
+  giocatore: GiocatoreBreve
+  puntate: PuntateRL
+  /** A biglia lanciata: quel che il giro gli ha dato o tolto. */
+  delta: number | null
+  /** Ha la pagina aperta, o ha fatto qualcosa da poco. */
+  presente: boolean
+}
+
+/** Il tavolo della roulette per chi lo guarda, con il suo saldo. */
+export interface VistaTavoloRL {
+  id: string
+  versione: number
+  giro: number
+  fase: FaseRL
+  /** Quanto manca alla fine delle puntate o del giro, dall'ora del server; null se non c'e'. */
+  scadenzaMs: number | null
+  /** Il lancio del giro: da quanto e' partita la biglia, dall'ora del server, e dove si ferma. */
+  lancio: { faMs: number; numero: number } | null
+  /** Gli ultimi numeri usciti, dal piu' recente. */
+  storia: number[]
+  posti: (PostoVistaRL | null)[]
+  /** Il posto di chi guarda, o null se non e' seduto. */
+  mio: number | null
+  classificate: number
+  /** Quel che si puo' ancora mettere sul panno: le puntate gia' mandate sono tolte. */
   saldo: number
   netto: number
   giri: number

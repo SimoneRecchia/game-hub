@@ -3,7 +3,6 @@ import { resa } from '../ruota'
 import {
   CILIEGIE,
   PREMI,
-  PUNTATA_MASSIMA_SLOT,
   PUNTATA_MINIMA_SLOT,
   RULLI,
   VINCITA_DOMANDA,
@@ -110,13 +109,13 @@ describe('quel che paga', () => {
     expect(deltaSlot(3, VINCITA_DOMANDA)).toBe(42)
   })
 
-  it('si punta da uno a dieci, e mai piu’ del saldo', () => {
+  it('si punta da uno a tutto il saldo, senza un massimo', () => {
     expect(PUNTATA_MINIMA_SLOT).toBe(1)
-    expect(PUNTATA_MASSIMA_SLOT).toBe(10)
     expect(puntataSlotValida(1, 1)).toBe(true)
     expect(puntataSlotValida(7, 100)).toBe(true)
+    expect(puntataSlotValida(850, 850)).toBe(true)
     expect(puntataSlotValida(10, 9)).toBe(false)
-    expect(puntataSlotValida(11, 100)).toBe(false)
+    expect(puntataSlotValida(101, 100)).toBe(false)
     expect(puntataSlotValida(0, 100)).toBe(false)
     expect(puntataSlotValida(2.5, 100)).toBe(false)
   })

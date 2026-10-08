@@ -1,10 +1,10 @@
 /**
  * Il saldo della Fortuna: i punti delle classificate di oggi, piu' quel che
- * Crazy Time, la slot e il blackjack hanno dato o tolto oggi. E' uno solo per
- * tutti e tre: quel che si vince alla slot si puo' puntare al blackjack.
+ * Crazy Time, la slot, il blackjack e la roulette hanno dato o tolto oggi. E'
+ * uno solo per tutti: quel che si vince alla slot si puo' puntare al blackjack.
  *
  * Ogni gioco lo controlla dentro la sua scrittura — l'`INSERT` del giro o della
- * puntata, con `nettoFortunaSql` — sulle righe gia' scritte di tutti e tre, così
+ * puntata, con `nettoFortunaSql` — sulle righe gia' scritte di tutti, così
  * due puntate partite insieme, anche a due giochi diversi, non vanno oltre quel
  * che c'e'. Ogni gioco riscrive il suo conto della giornata nello stesso batch
  * della giocata (`ruota_giornate` per Crazy Time, `fortuna_giornate` per gli
@@ -28,7 +28,7 @@ export interface SaldoFortuna {
   classificate: number
   /** Quel che ogni gioco ha dato o tolto oggi. */
   netti: Record<GiocoFortuna, number>
-  /** Quante giocate oggi: i giri della ruota e della slot, le mani del blackjack. */
+  /** Quante giocate oggi: i giri della ruota, della slot e della roulette, le mani del blackjack. */
   giocate: Record<GiocoFortuna, number>
   /** Le classificate piu' i netti: quel che si puo' puntare. Mai sotto zero. */
   saldo: number
@@ -61,13 +61,13 @@ export async function saldoDi(db: D1Database, playerId: string, numero: number):
       .bind(playerId, numero)
       .all<{ gioco: GiocoFortuna; netto: number; giocate: number }>(),
   ])
-  const netti: Record<GiocoFortuna, number> = { ruota: 0, slot: 0, blackjack: 0 }
-  const giocate: Record<GiocoFortuna, number> = { ruota: 0, slot: 0, blackjack: 0 }
+  const netti: Record<GiocoFortuna, number> = { ruota: 0, slot: 0, blackjack: 0, roulette: 0 }
+  const giocate: Record<GiocoFortuna, number> = { ruota: 0, slot: 0, blackjack: 0, roulette: 0 }
   for (const r of results) {
     netti[r.gioco] += r.netto
     giocate[r.gioco] += r.giocate
   }
-  const totale = netti.ruota + netti.slot + netti.blackjack
+  const totale = netti.ruota + netti.slot + netti.blackjack + netti.roulette
   return { classificate, netti, giocate, saldo: Math.max(0, classificate + totale) }
 }
 

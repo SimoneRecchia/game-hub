@@ -129,6 +129,11 @@
   --c2: var(--blackjack-2);
 }
 
+.copertina--roulette {
+  --c1: var(--roulette-1);
+  --c2: var(--roulette-2);
+}
+
 .copertina--fortuna {
   --c1: var(--fortuna-1);
   --c2: var(--fortuna-2);

@@ -37,6 +37,7 @@ export function attivitaDa(pathname: string): Attivita {
   if (pathname.startsWith('/crazy-time') || pathname.startsWith('/ruota')) return 'ruota'
   if (pathname.startsWith('/slot')) return 'slot'
   if (pathname.startsWith('/blackjack')) return 'blackjack'
+  if (pathname.startsWith('/roulette')) return 'roulette'
   if (pathname.startsWith('/lupus')) return 'lupus'
   if (pathname.startsWith('/scarabocchi')) return 'scarabocchi'
   if (pathname.startsWith('/fortuna')) return 'fortuna'
@@ -70,6 +71,7 @@ export const DOVE: Record<Attivita, string> = {
   fortuna: 'tenta la fortuna',
   slot: 'gioca alla slot',
   blackjack: 'gioca a blackjack',
+  roulette: 'gioca alla roulette',
   lupus: 'gioca a Lupus',
   scarabocchi: 'disegna a Scarabocchi',
   classifica: 'guarda la classifica',
