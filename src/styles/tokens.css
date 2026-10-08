@@ -267,6 +267,8 @@
   --nomi-2: #b97300;
   --anagrammi-1: #ff8243;
   --anagrammi-2: #d8401c;
+  --sequenze-1: #2ed3e6;
+  --sequenze-2: #5a46e0;
   --ruota-1: #ffb020;
   --ruota-2: #e5383b;
   --slot-1: #ff4fa3;
@@ -642,6 +644,20 @@
   --nomi-postit-ink: light-dark(#4a3b00, #fbe7a1);
   --nomi-nastro: rgba(255, 255, 255, 0.55);
   --nomi-nastro: light-dark(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.14));
+
+  /* ---- Le Sequenze ----
+     La tavola e' scura in tutti e due i temi, come quella del test di Corsi:
+     un cubetto acceso si deve vedere con la coda dell'occhio, e su una tavola
+     chiara la luce non si vede. I cubetti spenti sono di vetro scuro, quello
+     acceso e' l'acqua del gioco; il verde e il rosso dicono giusta e
+     sbagliata, come nel resto dell'app. */
+  --seq-tavola-1: #262e52;
+  --seq-tavola-2: #12162e;
+  --seq-cubetto: #3a4473;
+  --seq-cubetto-2: #2b335c;
+  --seq-acceso: #6ff3ff;
+  --seq-giusto: #3ddc6e;
+  --seq-sbagliato: #ff5a4e;
 
   /* ---- Il cruciverba ----
      Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:

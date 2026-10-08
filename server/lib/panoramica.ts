@@ -24,6 +24,7 @@ import { classificaSudoku } from './sudokuStore'
 import { classificaTris } from './trisStore'
 import { classificaNomi } from './nomiStore'
 import { classificaAnagrammi } from './anagrammiStore'
+import { classificaSequenze } from './sequenzeStore'
 
 interface RigaQualunque {
   rank: number
@@ -57,18 +58,20 @@ export async function panoramica(
   numeroDiOggi: number,
   viewerId: string,
 ): Promise<PanoramicaClassifiche> {
-  const [wordle, scarabeo, cruciverba, sudoku, quiz, tris, nomi, anagrammi, generale, fortuna] = await Promise.all([
-    leaderboard(db, periodo, numeroDiOggi, viewerId),
-    classificaScarabeo(db, periodo, numeroDiOggi, viewerId),
-    classificaCruciverba(db, periodo, numeroDiOggi, viewerId),
-    classificaSudoku(db, periodo, numeroDiOggi, viewerId),
-    classificaQuiz(db, periodo, numeroDiOggi, viewerId),
-    classificaTris(db, periodo, numeroDiOggi, viewerId),
-    classificaNomi(db, periodo, numeroDiOggi, viewerId),
-    classificaAnagrammi(db, periodo, numeroDiOggi, viewerId),
-    classificaGenerale(db, periodo, viewerId),
-    classificaFortuna(db, periodo, viewerId),
-  ])
+  const [wordle, scarabeo, cruciverba, sudoku, quiz, tris, nomi, anagrammi, sequenze, generale, fortuna] =
+    await Promise.all([
+      leaderboard(db, periodo, numeroDiOggi, viewerId),
+      classificaScarabeo(db, periodo, numeroDiOggi, viewerId),
+      classificaCruciverba(db, periodo, numeroDiOggi, viewerId),
+      classificaSudoku(db, periodo, numeroDiOggi, viewerId),
+      classificaQuiz(db, periodo, numeroDiOggi, viewerId),
+      classificaTris(db, periodo, numeroDiOggi, viewerId),
+      classificaNomi(db, periodo, numeroDiOggi, viewerId),
+      classificaAnagrammi(db, periodo, numeroDiOggi, viewerId),
+      classificaSequenze(db, periodo, numeroDiOggi, viewerId),
+      classificaGenerale(db, periodo, viewerId),
+      classificaFortuna(db, periodo, viewerId),
+    ])
 
   // "In corso" vuol dire una classificata di oggi ancora aperta: in un periodo passato non ce ne sono.
   const oggi = comprendeOggi(periodo, numeroDiOggi)
@@ -81,6 +84,7 @@ export async function panoramica(
       ...quiz.rows.filter((r) => r.inCorso),
       ...tris.rows.filter((r) => r.inCorso),
       ...anagrammi.rows.filter((r) => r.inCorso),
+      ...sequenze.rows.filter((r) => r.inCorso),
     ].map((r) => r.playerId),
   )
   const colPunti = (r: { punti: number }) => r.punti
@@ -104,6 +108,7 @@ export async function panoramica(
       quiz: anteprima(quiz.rows, quiz.me, colPunti, aperta),
       tris: anteprima(tris.rows, tris.me, colPunti, aperta),
       anagrammi: anteprima(anagrammi.rows, anagrammi.me, colPunti, aperta),
+      sequenze: anteprima(sequenze.rows, sequenze.me, colPunti, aperta),
       // I punti di Nomi, cose e città arrivano la notte: chi li aspetta e' "in corso".
       nomi: anteprima(nomi.rows, nomi.me, colPunti, (r) => oggi && r.inAttesa),
       fortuna: anteprima(fortuna.rows, fortuna.me, colPunti, () => false),

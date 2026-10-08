@@ -79,6 +79,11 @@
   --c2: var(--anagrammi-2);
 }
 
+.copertina--sequenze {
+  --c1: var(--sequenze-1);
+  --c2: var(--sequenze-2);
+}
+
 .copertina--lupus {
   --c1: var(--lupus-1);
   --c2: var(--lupus-2);

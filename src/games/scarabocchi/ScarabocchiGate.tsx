@@ -31,6 +31,7 @@ export function ScarabocchiGate() {
     (!pathname.startsWith('/indovina-chi/partita/') && (dati?.indovina.length ?? 0) > 0) ||
     (dati?.tavolo.length ?? 0) > 0 ||
     (dati?.nomi.length ?? 0) > 0 ||
+    (dati?.sequenze.length ?? 0) > 0 ||
     (dati?.lupus.length ?? 0) > 0
   const invito = altroAvviso
     ? null

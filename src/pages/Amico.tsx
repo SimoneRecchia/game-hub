@@ -23,6 +23,7 @@ const NOMI: Record<GiocoInsieme, string> = {
   battaglia: 'Battaglia navale',
   quiz: 'Sfida a quiz',
   nomi: 'Nomi, cose e città',
+  sequenze: 'Sequenze',
   scarabeo: 'Scarabeo',
   tris: 'Tris',
   indovina: 'Indovina chi',

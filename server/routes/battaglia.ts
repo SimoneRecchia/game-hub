@@ -54,6 +54,7 @@ import {
 import { invitoQuizConLink } from '../lib/quizSfideStore'
 import { invitoIndovinaConLink } from '../lib/indovinaStore'
 import { invitoNomiConLink } from '../lib/nomiSfideStore'
+import { invitoSequenzeConLink } from '../lib/sequenzeSfideStore'
 import { invitoTavoloConLink } from '../lib/tavoloStore'
 import { invitoLupusConLink } from '../lib/lupusStore'
 import { invitoScarabocchiConLink } from '../lib/scarabocchiStore'
@@ -370,15 +371,16 @@ export const battagliaRoutes = new Hono<AppEnv>()
 export const invitiPubblici = new Hono<AppEnv>().get('/:codice', async (c) => {
   const codice = c.req.param('codice')
   const adesso = Date.now()
-  // I codici sono della battaglia, delle sfide a quiz, di Indovina chi o dei giochi da tavoliere: lunghi e a
-  // caso, non si incontrano. Quelli delle stanze di Lupus sono quattro lettere maiuscole, e si dettano; quelli
-  // di Scarabocchi cinque.
+  // I codici sono della battaglia, delle sfide a quiz, di Indovina chi, dei giochi da tavoliere, di Nomi e di
+  // Sequenze: lunghi e a caso, non si incontrano. Quelli delle stanze di Lupus sono quattro lettere maiuscole, e
+  // si dettano; quelli di Scarabocchi cinque.
   const invito =
     (await invitoConLink(c.env.DB, codice, adesso)) ??
     (await invitoQuizConLink(c.env.DB, codice, adesso)) ??
     (await invitoIndovinaConLink(c.env.DB, codice, adesso)) ??
     (await invitoTavoloConLink(c.env.DB, codice, adesso)) ??
     (await invitoNomiConLink(c.env.DB, codice, adesso)) ??
+    (await invitoSequenzeConLink(c.env.DB, codice, adesso)) ??
     (await invitoLupusConLink(c.env.DB, codice)) ??
     (await invitoScarabocchiConLink(c.env.DB, codice))
   if (!invito) fail(404, 'LINK_NON_TROVATO', 'Questo invito non esiste.')

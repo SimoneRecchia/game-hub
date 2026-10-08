@@ -77,6 +77,7 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.tris +
       g.perGioco.nomi +
       g.perGioco.anagrammi +
+      g.perGioco.sequenze +
       g.battaglia +
       g.ruota +
       g.slot +
@@ -106,7 +107,7 @@ export async function classificaGenerale(
 ): Promise<GeneraleLeaderboard> {
   const { da, a } = periodo
 
-  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, nomi, anagrammi, ruota, fortuna] =
+  const [wordle, scarabeo, cruciverba, sudoku, battaglia, quiz, tris, nomi, anagrammi, sequenze, ruota, fortuna] =
     await Promise.all([
       /*
        * Il Wordle come nella sua classifica: i punti delle proprie parole piu'
@@ -214,6 +215,16 @@ export async function classificaGenerale(
         )
         .bind(da, a)
         .all<Parziale>(),
+      // Le Sequenze: come gli Anagrammi, la giornata conta una partita.
+      db
+        .prepare(
+          `SELECT player_id,
+                  COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0) AS punti,
+                  SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END)               AS partite
+             FROM sequenze_partite WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id`,
+        )
+        .bind(da, a)
+        .all<Parziale>(),
       // Crazy Time: il conto di ogni giornata, non i giri uno per uno. Non e' una partita.
       db
         .prepare(
@@ -241,7 +252,17 @@ export async function classificaGenerale(
         nickname: '',
         displayName: '',
         avatarColor: '',
-        perGioco: { wordle: 0, scarabeo: 0, cruciverba: 0, sudoku: 0, quiz: 0, tris: 0, nomi: 0, anagrammi: 0 },
+        perGioco: {
+          wordle: 0,
+          scarabeo: 0,
+          cruciverba: 0,
+          sudoku: 0,
+          quiz: 0,
+          tris: 0,
+          nomi: 0,
+          anagrammi: 0,
+          sequenze: 0,
+        },
         battaglia: 0,
         ruota: 0,
         slot: 0,
@@ -271,6 +292,7 @@ export async function classificaGenerale(
   somma('tris', tris.results)
   somma('nomi', nomi.results)
   somma('anagrammi', anagrammi.results)
+  somma('sequenze', sequenze.results)
   for (const r of ruota.results) di(r.player_id).ruota += r.punti
   for (const r of fortuna.results) di(r.player_id)[r.gioco] += r.punti
 
@@ -406,7 +428,9 @@ export async function puntiClassificateDi(db: D1Database, playerId: string, nume
        + (SELECT COALESCE(SUM(score), 0)
             FROM nomi_partite WHERE player_id = ?1 AND puzzle_number = ?2 - 1)
        + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
-            FROM anagrammi_partite WHERE player_id = ?1 AND puzzle_number = ?2) AS punti`,
+            FROM anagrammi_partite WHERE player_id = ?1 AND puzzle_number = ?2)
+       + (SELECT COALESCE(SUM(CASE WHEN status = 'done' THEN score ELSE 0 END), 0)
+            FROM sequenze_partite WHERE player_id = ?1 AND puzzle_number = ?2) AS punti`,
     )
     .bind(playerId, numero)
     .first<{ punti: number }>()

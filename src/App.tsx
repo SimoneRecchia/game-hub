@@ -11,6 +11,7 @@ import { QuizGate } from './games/quiz/sfida/QuizGate'
 import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
 import { NomiGate } from './games/nomi/sfida/NomiGate'
+import { SequenzeGate } from './games/sequenze/SequenzeGate'
 import { LupusGate } from './games/lupus/LupusGate'
 import { ScarabocchiGate } from './games/scarabocchi/ScarabocchiGate'
 import { CompagniaGate } from './games/compagnia/CompagniaGate'
@@ -64,6 +65,14 @@ const NomiCose = lazy(caricaNomi)
 const NomiCoseLibera = lazy(caricaNomiLibera)
 const NomiCoseSfida = lazy(caricaNomiSfida)
 const NomiCoseInvito = lazy(caricaNomiInvito)
+const caricaSequenze = () => import('./pages/Sequenze')
+const caricaSequenzeLibera = () => import('./pages/SequenzeLibera')
+const caricaSequenzeSfida = () => import('./pages/SequenzeSfida')
+const caricaSequenzeInvito = () => import('./pages/SequenzeInvito')
+const Sequenze = lazy(caricaSequenze)
+const SequenzeLibera = lazy(caricaSequenzeLibera)
+const SequenzeSfida = lazy(caricaSequenzeSfida)
+const SequenzeInvito = lazy(caricaSequenzeInvito)
 const caricaSala = () => import('./pages/TavoloSala')
 const caricaComputer = () => import('./pages/TavoloComputer')
 const caricaPartita = () => import('./pages/TavoloPartita')
@@ -137,6 +146,10 @@ function usePrecarica() {
         caricaNomiLibera,
         caricaNomiSfida,
         caricaNomiInvito,
+        caricaSequenze,
+        caricaSequenzeLibera,
+        caricaSequenzeSfida,
+        caricaSequenzeInvito,
       ]
       const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ]
       const lupus = [caricaLupus, caricaLupusTelefono, caricaLupusStanza]
@@ -151,7 +164,8 @@ function usePrecarica() {
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
 const INVITO = new RegExp(
   '^/(?:battaglia-navale/invito|quiz/sfida|lupus/stanza|scarabocchi/stanza|' +
-    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|scarabeo/libera|nomi-cose-citta)/invito)/([A-Za-z0-9]+)/?$',
+    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|scarabeo/libera|nomi-cose-citta|sequenze)/invito)' +
+    '/([A-Za-z0-9]+)/?$',
 )
 
 export default function App() {
@@ -190,6 +204,7 @@ export default function App() {
       <IndovinaGate />
       <TavoloGate />
       <NomiGate />
+      <SequenzeGate />
       <LupusGate />
       <ScarabocchiGate />
       <CompagniaGate />
@@ -245,6 +260,10 @@ export default function App() {
             <Route path="/nomi-cose-citta/libera" element={<NomiCoseLibera />} />
             <Route path="/nomi-cose-citta/sfida/:id" element={<NomiCoseSfida />} />
             <Route path="/nomi-cose-citta/invito/:codice" element={<NomiCoseInvito />} />
+            <Route path="/sequenze/classificata" element={<Sequenze />} />
+            <Route path="/sequenze/libera" element={<SequenzeLibera />} />
+            <Route path="/sequenze/sfida/:id" element={<SequenzeSfida />} />
+            <Route path="/sequenze/invito/:codice" element={<SequenzeInvito />} />
 
             <Route path={ROTTE.fortuna} element={<Fortuna />} />
             <Route path={ROTTE.ruota} element={<Ruota />} />

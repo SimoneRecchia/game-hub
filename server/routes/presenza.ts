@@ -30,6 +30,12 @@ import {
   sfidaBreve as sfidaNomiBreve,
 } from '../lib/nomiSfideStore'
 import {
+  invitiRicevuti as invitiSequenze,
+  latoDi as latoSequenze,
+  sfidaAperta as sfidaSequenzeAperta,
+  sfidaBreve as sfidaSequenzeBreve,
+} from '../lib/sequenzeSfideStore'
+import {
   ATTIVITA,
   latoDi,
   partitaAperta,
@@ -44,7 +50,7 @@ import {
  * Una richiesta sola per tutto: dice al server che il giocatore c'e' (e
  * dove), e gli riporta gli inviti a giocare in compagnia — il Wordle, il
  * cruciverba, lo Scarabeo — le sfide a battaglia navale, a quiz, a Indovina
- * chi, ai giochi da tavoliere e a Nomi, cose e città, gli inviti alle stanze
+ * chi, ai giochi da tavoliere, a Nomi, cose e città e a Sequenze, gli inviti alle stanze
  * di Lupus e di Scarabocchi, le partite e il duello aperti. Tenerle separate
  * moltiplicherebbe le richieste, e il piano gratuito delle Pages Functions ne
  * concede centomila al giorno per tutto il sito.
@@ -77,6 +83,8 @@ export const presenzaRoutes = new Hono<AppEnv>()
       apertaTavolo,
       nomi,
       apertaNomi,
+      sequenze,
+      apertaSequenze,
       compagnia,
       lupus,
       stanzaLupus,
@@ -94,6 +102,8 @@ export const presenzaRoutes = new Hono<AppEnv>()
       partitaTavoloAperta(db, io, adesso),
       invitiNomi(db, io, adesso),
       sfidaNomiAperta(db, io, adesso),
+      invitiSequenze(db, io, adesso),
+      sfidaSequenzeAperta(db, io, adesso),
       invitiCompagnia(db, io, when.puzzleNumber),
       invitiLupus(db, io, adesso),
       stanzaLupusBreve(db, io, adesso),
@@ -106,6 +116,7 @@ export const presenzaRoutes = new Hono<AppEnv>()
     const latoInIndovina = apertaIndovina ? latoIndovina(apertaIndovina, io) : null
     const latoInTavolo = apertaTavolo ? latoTavolo(apertaTavolo, io) : null
     const latoInNomi = apertaNomi ? latoNomi(apertaNomi, io) : null
+    const latoInSequenze = apertaSequenze ? latoSequenze(apertaSequenze, io) : null
     return c.json<PresenzaRisposta>({
       coop,
       // Chi e' gia' in battaglia non riceve altre sfide: le vedrebbe e non
@@ -125,6 +136,9 @@ export const presenzaRoutes = new Hono<AppEnv>()
       // Come per gli altri: chi e' gia' in una sfida a Nomi, cose e città non ne riceve altre.
       nomi: apertaNomi ? [] : nomi,
       partitaNomi: apertaNomi && latoInNomi ? await sfidaNomiBreve(db, apertaNomi, latoInNomi) : null,
+      sequenze: apertaSequenze ? [] : sequenze,
+      partitaSequenze:
+        apertaSequenze && latoInSequenze ? await sfidaSequenzeBreve(db, apertaSequenze, latoInSequenze) : null,
       compagnia,
       lupus,
       stanzaLupus,

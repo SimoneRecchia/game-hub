@@ -37,6 +37,10 @@
  *   /tris/libera/invito/:codice         un invito arrivato con un link
  *   /anagrammi/classificata             le cinque parole di oggi, a tempo
  *   /anagrammi/libera                   parole a caso, della lunghezza che vuoi
+ *   /sequenze/classificata              i cinque turni di oggi, gli stessi per tutti
+ *   /sequenze/libera                    finché non sbagli, da solo o con un amico
+ *   /sequenze/sfida/:id                 una sfida con un amico
+ *   /sequenze/invito/:codice            una sfida arrivata con un link
  *   /fortuna                            i giochi d'azzardo: si puntano i punti delle classificate
  *   /crazy-time                         Crazy Time (/ruota ci porta)
  *   /slot                               la slot
@@ -86,6 +90,7 @@ export const SLUG: Record<GiocoClassificato, string> = {
   tris: 'tris',
   nomi: 'nomi-cose-citta',
   anagrammi: 'anagrammi',
+  sequenze: 'sequenze',
 }
 
 export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null {
@@ -146,6 +151,8 @@ export const ROTTE = {
   invitoQuiz: (codice: string) => `/quiz/sfida/${codice}`,
   sfidaNomi: (id: string) => `/nomi-cose-citta/sfida/${id}`,
   invitoNomi: (codice: string) => `/nomi-cose-citta/invito/${codice}`,
+  sfidaSequenze: (id: string) => `/sequenze/sfida/${id}`,
+  invitoSequenze: (codice: string) => `/sequenze/invito/${codice}`,
 
   indovina: '/indovina-chi',
   partitaIndovina: (id: string) => `/indovina-chi/partita/${id}`,

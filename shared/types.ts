@@ -27,6 +27,7 @@ export type GameId =
   | 'tris'
   | 'nomi'
   | 'anagrammi'
+  | 'sequenze'
 
 export interface Player {
   id: string
@@ -618,6 +619,123 @@ export interface AnagrammiLeaderboard {
   me: AnagrammiRow | null
 }
 
+/* ───────────────────────────────  Sequenze  ─────────────────────────────── */
+
+export type SequenzeStatus = 'playing' | 'done'
+
+/** Un turno della giornata, come lo vede chi gioca. */
+export interface TurnoSequenze {
+  /** Le sequenze ripetute giuste: da zero a sette. */
+  giuste: number
+  /** La sequenza piu' lunga ripetuta giusta; due, se e' sbagliata la prima. */
+  raggiunta: number
+  chiuso: boolean
+  /** Chiuso perché la pagina si e' riaperta con una sequenza aperta: una sequenza si vede una volta. */
+  riaperto: boolean
+}
+
+export interface SequenzeStato {
+  puzzleNumber: number
+  date: string
+  status: SequenzeStatus
+  /** I turni cominciati, nell'ordine. */
+  turni: TurnoSequenze[]
+  totaleTurni: number
+  /** Il turno con una sequenza aperta, se c'e'. */
+  corrente: number | null
+  /** I punti fatti finora; a giornata finita, quelli della classifica. */
+  punti: number
+  /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni scrittura. */
+  versione: number
+  msToNextPuzzle: number
+}
+
+/**
+ * La risposta a un turno cominciato o a una risposta: lo stato, se la risposta
+ * era giusta, e la sequenza da guardare, se ce n'e' una. La sequenza esce solo
+ * qui: lo stato non la porta, perché si vede una volta.
+ */
+export interface SequenzeMossa extends SequenzeStato {
+  giusta: boolean | null
+  sequenza: number[] | null
+}
+
+export interface SequenzeSummary {
+  puzzleNumber: number
+  date: string
+  status: 'new' | SequenzeStatus
+  /** I turni chiusi. */
+  giocati: number
+  totale: number
+  /** La sequenza piu' lunga ripetuta oggi. */
+  migliore: number
+  punti: number
+  msToNextPuzzle: number
+}
+
+export interface SequenzeRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: solo le giornate finite. */
+  punti: number
+  giornate: number
+  /** La sequenza piu' lunga ripetuta nel periodo. */
+  migliore: number
+  /** Quanto ci ha messo a ripetere le sequenze giuste, in tutto: lo spareggio. */
+  tempoMs: number
+  /** true se oggi ha una giornata cominciata e non finita. */
+  inCorso: boolean
+}
+
+export interface SequenzeLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: SequenzeRow[]
+  me: SequenzeRow | null
+}
+
+/* ──────────────────────────────  Sequenze fra amici  ────────────────────────────── */
+
+/** Gli inviti e la sala sono quelli di Nomi, cose e città: cambia solo la partita. */
+export type StatoSfidaSequenze = StatoSfidaNomi
+export type InvitoSequenze = InvitoNomi
+export type InvitoSequenzeMandato = InvitoNomiMandato
+export type SfidaSequenzeBreve = SfidaNomiBreve
+export type SalaSequenze = SalaNomi
+
+/** Fin dove e' arrivato uno dei due: le sequenze ripetute giuste, e se ha finito. */
+export interface LatoSfidaSequenze {
+  giuste: number
+  finito: boolean
+}
+
+export interface VistaSfidaSequenze {
+  id: string
+  stato: StatoSfidaSequenze
+  avversario: GiocatoreBreve | null
+  /** L'avversario ha il telefono acceso sull'app. */
+  online: boolean
+  /** Quanto manca al via, durante il tre-due-uno. */
+  inizioTraMs: number | null
+  /** I miei, con in piu' se ho una sequenza da ripetere: si vede una volta, e riaprendo la pagina conta sbagliata. */
+  mie: LatoSfidaSequenze & { aperta: boolean }
+  sue: LatoSfidaSequenze
+  vincitore: 'io' | 'avversario' | 'pari' | null
+  serie: { mie: number; sue: number; partite: number }
+  /** La rivincita chiesta: da chi, e se e' gia' diventata una partita. */
+  rivincita: { id: string; mia: boolean; stato: StatoSfidaSequenze } | null
+}
+
+/** La risposta a una mossa: la sfida, se la risposta era giusta, e la sequenza dopo. */
+export interface MossaSfidaSequenze extends VistaSfidaSequenze {
+  giusta: boolean | null
+  sequenza: number[] | null
+}
+
 /* ─────────────────────────────  Nomi, cose e città  ───────────────────────────── */
 
 export type NomiStatus = 'playing' | 'done'
@@ -788,6 +906,7 @@ export type Attivita =
   | 'tris'
   | 'nomi'
   | 'anagrammi'
+  | 'sequenze'
   | 'ruota'
   | 'fortuna'
   | 'slot'
@@ -888,8 +1007,8 @@ export interface InvitoConLink {
   codice: string
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
-  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere, Nomi o Lupus. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'lupus' | 'scarabocchi' | GiocoAlTavolo
+  /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere, Nomi, Sequenze o Lupus. */
+  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'sequenze' | 'lupus' | 'scarabocchi' | GiocoAlTavolo
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -923,6 +1042,10 @@ export interface PresenzaRisposta {
   nomi: InvitoNomi[]
   /** La sfida a Nomi, cose e città aperta. */
   partitaNomi: SfidaNomiBreve | null
+  /** Le sfide a Sequenze arrivate, rivincite comprese. */
+  sequenze: InvitoSequenze[]
+  /** La sfida a Sequenze aperta. */
+  partitaSequenze: SfidaSequenzeBreve | null
   /** Gli inviti a giocare in compagnia il cruciverba o lo Scarabeo di qualcuno. */
   compagnia: InvitoCompagnia[]
   /** Gli inviti a una stanza di Lupus in fabula. */
@@ -1425,6 +1548,7 @@ export type GiocoClassificato =
   | 'tris'
   | 'nomi'
   | 'anagrammi'
+  | 'sequenze'
 
 /**
  * I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha
@@ -1537,6 +1661,7 @@ export interface OggiRisposta {
   tris: TrisSummary
   nomi: NomiSummary
   anagrammi: AnagrammiSummary
+  sequenze: SequenzeSummary
   /** Come si sta oggi nella classifica generale, con quel che hanno dato o tolto i giochi della Fortuna. */
   generale: {
     posizione: number | null
