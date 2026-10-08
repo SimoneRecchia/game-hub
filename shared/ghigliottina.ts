@@ -22,11 +22,11 @@ export const NOME_GHIGLIOTTINA = 'Ghigliottina'
 export const COPPIE_GHIGLIOTTINA = 5
 
 /**
- * Il montepremi di partenza. Sessantaquattro si dimezza cinque volte senza
- * virgole — 32, 16, 8, 4, 2 — e sta fra il Wordle e Nomi, cose e città, che
- * chiedono lo stesso tempo.
+ * Il montepremi di partenza: cento, come ogni classificata (vedi
+ * shared/punti.ts). Si dimezza per difetto — 50, 25, 12, 6, 3 — e chi sbaglia
+ * tutte le scelte puo' ancora vincerne tre.
  */
-export const MONTEPREMI_GHIGLIOTTINA = 64
+export const MONTEPREMI_GHIGLIOTTINA = 100
 
 /** Il minuto per scrivere la parola vincente, come in studio. */
 export const TEMPO_FINALE_MS = 60_000

@@ -2,6 +2,7 @@ import { Sheet } from '@/components/Sheet'
 import {
   PRIMA_LUNGHEZZA,
   PUNTI_FINITA_SEQUENZE,
+  PUNTI_SEQUENZA,
   SEQUENZE_PER_TURNO,
   TURNI_SEQUENZE,
   ULTIMA_LUNGHEZZA,
@@ -32,8 +33,8 @@ export function ComeSiGiocaSequenze({ open, onClose }: { open: boolean; onClose:
           <h3 className="cru-aiuto__titolo">I punti</h3>
           <ul className="cru-aiuto__elenco">
             <li>
-              {PUNTI_FINITA_SEQUENZE} per aver giocato i {TURNI_SEQUENZE} turni, e uno per ogni sequenza giusta:
-              fino a {SEQUENZE_PER_TURNO} per turno.
+              {PUNTI_FINITA_SEQUENZE} per aver giocato i {TURNI_SEQUENZE} turni, e {PUNTI_SEQUENZA} per ogni sequenza
+              giusta: fino a {SEQUENZE_PER_TURNO} per turno.
             </li>
             <li>Con un amico vince chi arriva più lontano. La libera non conta per la classifica.</li>
           </ul>

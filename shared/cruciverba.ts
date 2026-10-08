@@ -25,21 +25,17 @@ export const BIANCA = '.'
 export const VUOTA = ' '
 
 /**
- * Il punteggio: centosessanta punti a chi lo completa senza aiuti, il tetto
- * piu' alto di tutte le classificate, perché e' quella che chiede piu' tempo
- * (vedi shared/punti.ts).
- *
- * Una lettera svelata costa la sua parte dei centosessanta, e un errore
- * segnalato da un controllo la metà (vedi shared/aiuti.ts): in uno schema di
- * ottanta lettere, due punti e uno. Il controllo dice **dove** si e' sbagliato,
- * lo svelamento anche **cosa** va scritto. Controllare una griglia giusta non
- * costa niente, e ricontrollare lo stesso errore non lo si paga due volte.
+ * Il punteggio: cento punti a chi lo completa senza aiuti, come ogni
+ * classificata (vedi shared/punti.ts), e ogni aiuto costa la sua parte (vedi
+ * shared/aiuti.ts). Il controllo dice **dove** si e' sbagliato, lo svelamento
+ * anche **cosa** va scritto, e ricontrollare lo stesso errore non lo si paga
+ * due volte.
  *
  * Il tempo non entra nei punti: sta in classifica come spareggio. Un
  * cruciverba si fa a pezzi, in pausa caffe', e un bonus di velocità
  * premierebbe chi ha mezz'ora di fila invece di chi lo risolve meglio.
  */
-export const PUNTI_COMPLETO = 160
+export const PUNTI_COMPLETO = 100
 
 export type Direzione = 'o' | 'v'
 

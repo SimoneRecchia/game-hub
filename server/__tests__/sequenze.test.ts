@@ -4,6 +4,7 @@ import {
   MASSIMO_SEQUENZE,
   PRIMA_LUNGHEZZA,
   PUNTI_FINITA_SEQUENZE,
+  PUNTI_SEQUENZA,
   SEQUENZE_PER_TURNO,
   TURNI_SEQUENZE,
   giornataDaTesto,
@@ -164,7 +165,7 @@ describe('la giornata delle Sequenze, dalle API', () => {
     let s: SequenzeStato = await stato(chiama, io)
     for (const g of giuste) s = await giocaTurno(chiama, io, s, g)
     expect(s.status).toBe('done')
-    const attesi = PUNTI_FINITA_SEQUENZE + giuste.reduce((a, b) => a + b, 0)
+    const attesi = PUNTI_FINITA_SEQUENZE + PUNTI_SEQUENZA * giuste.reduce((a, b) => a + b, 0)
     expect(s.punti).toBe(attesi)
     const altro = await chiama<{ code: string }>('POST', '/sequenze/turno', io, { versione: s.versione })
     expect(altro.dati.code).toBe('GIORNATA_FINITA')

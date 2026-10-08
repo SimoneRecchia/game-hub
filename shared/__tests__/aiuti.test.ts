@@ -58,30 +58,37 @@ describe('gli aiuti costano quel che danno', () => {
     }
   })
 
-  it('nel cruciverba una lettera sei punti, un controllo due, lo schema dieci; nel sudoku nove, tre, quindici', () => {
+  it('nel cruciverba una lettera quattro punti, un controllo uno, lo schema sei; nel sudoku secondo le cifre', () => {
     for (const n of LETTERE_CRUCIVERBA) {
       expect(costiAiuti(TETTO_CRUCIVERBA, n)).toMatchObject({
-        svelata: 6,
-        errore: 2,
-        controllo: 2,
-        controlloSchema: 10,
+        svelata: 4,
+        errore: 1,
+        controllo: 1,
+        controlloSchema: 6,
       })
     }
+    // Una cifra vale circa due punti: da cinque a sette quella svelata, due un controllo, da otto a undici lo schema.
     for (const n of CIFRE_SUDOKU) {
-      expect(costiAiuti(TETTO_SUDOKU, n)).toMatchObject({ svelata: 9, errore: 3, controllo: 3, controlloSchema: 15 })
+      const c = costiAiuti(TETTO_SUDOKU, n)
+      expect(c.svelata).toBeGreaterThanOrEqual(5)
+      expect(c.svelata).toBeLessThanOrEqual(7)
+      expect(c).toMatchObject({ errore: 2, controllo: 2 })
+      expect(c.controlloSchema).toBeGreaterThanOrEqual(8)
+      expect(c.controlloSchema).toBeLessThanOrEqual(11)
     }
+    expect(costiAiuti(TETTO_SUDOKU, 50)).toMatchObject({ svelata: 6, errore: 2, controllo: 2, controlloSchema: 10 })
     expect(PARTI_AIUTI).toEqual({ svelata: 3, errore: 1, controllo: 1, controlloSchema: 5 })
   })
 
-  it('una parola di otto lettere svelata toglie trenta per cento del cruciverba', () => {
+  it('una parola di otto lettere svelata toglie un terzo del cruciverba', () => {
     const costi = costiAiuti(TETTO_CRUCIVERBA, 80)
-    expect(TETTO_CRUCIVERBA - puntiConAiuti(TETTO_CRUCIVERBA, costi, con({ svelate: 8 }))).toBe(48)
+    expect(TETTO_CRUCIVERBA - puntiConAiuti(TETTO_CRUCIVERBA, costi, con({ svelate: 8 }))).toBe(32)
   })
 
   it('i costi si sommano, e non si va mai sotto zero', () => {
     const c = costiAiuti(TETTO_CRUCIVERBA, 80)
     const aiuti = { svelate: 3, errori: 4, controlli: 2, controlliSchema: 1 }
-    expect(puntiConAiuti(TETTO_CRUCIVERBA, c, aiuti)).toBe(160 - 18 - 8 - 4 - 10)
+    expect(puntiConAiuti(TETTO_CRUCIVERBA, c, aiuti)).toBe(100 - 12 - 4 - 2 - 6)
     expect(puntiConAiuti(TETTO_CRUCIVERBA, c, con({ controlliSchema: 40 }))).toBe(0)
   })
 

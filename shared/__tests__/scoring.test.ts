@@ -121,7 +121,7 @@ describe('punteggio della partita', () => {
       durationMs: 30_000,
       streak: 4,
     })
-    expect(breakdown).toEqual({ attempts: 63, speed: 1, streak: 3, total: 67 })
+    expect(breakdown).toEqual({ attempts: 90, speed: 1, streak: 3, total: 94 })
   })
 
   it('da i punti di consolazione a chi ha perso', () => {
@@ -138,7 +138,7 @@ describe('punteggio della partita', () => {
 
   it('il massimo teorico corrisponde alla costante esposta', () => {
     expect(scoreFor({ status: 'won', attempts: 1, durationMs: 1_000, streak: 20 })).toBe(MAX_SCORE)
-    expect(MAX_SCORE).toBe(74)
+    expect(MAX_SCORE).toBe(104)
   })
 
   it('regge tentativi fuori scala senza esplodere', () => {
@@ -154,7 +154,7 @@ describe('punteggio della partita', () => {
 
 describe('scala dei punti: giusta ma recuperabile', () => {
   it('e la base di partecipazione piu un gradino per tentativo risparmiato', () => {
-    expect([...ATTEMPT_POINTS]).toEqual([70, 63, 56, 49, 42, 35])
+    expect([...ATTEMPT_POINTS]).toEqual([100, 90, 80, 70, 60, 50])
     // La scala e' derivata, non scritta a mano: se si ritocca uno dei due
     // numeri, questo test dice subito cosa ne viene fuori.
     const peggiore = ATTEMPT_POINTS[ATTEMPT_POINTS.length - 1]
@@ -197,8 +197,8 @@ describe('una parola al giorno, come ogni classificata', () => {
     expect(MAX_TIEBREAK).toBeLessThan(ATTEMPT_STEP)
   })
 
-  it('la parola non indovinata vale quattordici, un quinto del tetto', () => {
-    expect(LOSS_POINTS).toBe(14)
+  it('la parola non indovinata vale venti, un quinto del tetto', () => {
+    expect(LOSS_POINTS).toBe(20)
     expect(LOSS_POINTS / TETTI.wordle).toBe(0.2)
   })
 })

@@ -25,16 +25,16 @@ export const TEMPO_PAROLA_MS = 90_000
 export const MARGINE_ANAGRAMMI_MS = 3_000
 
 /** I punti di una giornata finita, anche senza nessuna parola: si e' giocato. */
-export const PUNTI_FINITA_ANAGRAMMI = 10
+export const PUNTI_FINITA_ANAGRAMMI = 20
 
 /** I punti di una parola trovata, comunque. */
-export const PUNTI_PAROLA_ANAGRAMMI = 4
+export const PUNTI_PAROLA_ANAGRAMMI = 6
 
 /** I punti in piu' di una parola trovata subito, che scendono con il tempo fino a zero. */
-export const BONUS_ANAGRAMMI = 6
+export const BONUS_ANAGRAMMI = 10
 
 /** Quanto costa l'aiuto, la definizione della parola: meta' di quel che vale una parola trovata subito. */
-export const COSTO_AIUTO_ANAGRAMMI = 3
+export const COSTO_AIUTO_ANAGRAMMI = 5
 
 /** Entro quanto una parola si trova "subito": tre secondi per lettera, perché nove lettere chiedono di piu'. */
 export function subitoMs(lettere: number): number {
@@ -42,9 +42,9 @@ export function subitoMs(lettere: number): number {
 }
 
 /**
- * I punti di una parola trovata in `ms`: quattro, piu' un bonus che vale sei
+ * I punti di una parola trovata in `ms`: sei, piu' un bonus che vale dieci
  * fino a `subitoMs` e scende dritto fino a zero allo scadere del tempo. Con
- * l'aiuto ne costa tre, e una parola trovata vale almeno uno.
+ * l'aiuto ne costa cinque, e una parola trovata vale almeno uno.
  */
 export function puntiParola(lettere: number, ms: number, aiuto: boolean): number {
   const subito = subitoMs(lettere)
@@ -61,7 +61,7 @@ export interface ParolaGiocata {
   aiuto: boolean
 }
 
-/** I punti di una giornata finita: i dieci per averla giocata e quelli delle parole trovate. */
+/** I punti di una giornata finita: i venti per averla giocata e quelli delle parole trovate. */
 export function puntiAnagrammi(parole: readonly ParolaGiocata[]): number {
   return parole.reduce(
     (s, p) => s + (p.trovata ? puntiParola(p.lettere, p.ms, p.aiuto) : 0),

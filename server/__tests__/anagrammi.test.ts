@@ -135,7 +135,7 @@ describe('la giornata degli Anagrammi, dalle API', () => {
     expect(giusta.corrente).toBeNull()
     expect(giusta.parole[0]).toMatchObject({ esito: 'trovata', parola: 'gatto', definizione: 'Felino domestico' })
     expect(giusta.parole[0].punti).toBe(puntiParola(5, giusta.parole[0].ms!, false))
-    expect(giusta.parole[0].punti).toBe(10)
+    expect(giusta.parole[0].punti).toBe(16)
   })
 
   it('vale un’altra parola con le stesse lettere, e la si ricorda', async () => {
@@ -159,7 +159,7 @@ describe('la giornata degli Anagrammi, dalle API', () => {
     expect(s.parole[0]).toMatchObject({ aiuto: true, definizione: 'Felino domestico', parola: null })
     const trovata = await prova(chiama, io, s, 'gatto')
     expect(trovata.parole[0].punti).toBe(puntiParola(5, trovata.parole[0].ms!, true))
-    expect(trovata.parole[0].punti).toBe(7)
+    expect(trovata.parole[0].punti).toBe(11)
 
     s = await apri(chiama, io, trovata)
     s = (await chiama<AnagrammiStato>('POST', '/anagrammi/passo', io, { versione: s.versione })).dati
@@ -194,7 +194,7 @@ describe('la giornata degli Anagrammi, dalle API', () => {
     expect(s.status).toBe('done')
     const attesi = PUNTI_FINITA_ANAGRAMMI + s.parole.reduce((t, p) => t + p.punti, 0)
     expect(s.punti).toBe(attesi)
-    expect(s.punti).toBe(PUNTI_FINITA_ANAGRAMMI + 4 * 10)
+    expect(s.punti).toBe(PUNTI_FINITA_ANAGRAMMI + 4 * 16)
     const r = await chiama<{ code: string }>('POST', '/anagrammi/apri', io, { versione: s.versione })
     expect(r.status).toBe(409)
 

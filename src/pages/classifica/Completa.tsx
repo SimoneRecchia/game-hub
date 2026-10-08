@@ -14,8 +14,8 @@ import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
-import { PUNTI_FINITA_ANAGRAMMI } from '@shared/anagrammi'
-import { PUNTI_FINITA_SEQUENZE } from '@shared/sequenze'
+import { BONUS_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, PUNTI_PAROLA_ANAGRAMMI } from '@shared/anagrammi'
+import { PUNTI_FINITA_SEQUENZE, PUNTI_SEQUENZA } from '@shared/sequenze'
 import { PUNTI_GIOCATA_PAROLIERE } from '@shared/paroliere'
 import { TETTI } from '@shared/punti'
 import { DOMANDE_PER_PARTITA, PUNTI_BASE_QUIZ, PUNTI_QUIZ } from '@shared/quiz'
@@ -46,10 +46,9 @@ const LEDE: Record<ChiaveClassifica, string> = {
   cruciverba: `${TETTI.cruciverba} punti se lo completi senza aiuti.`,
   sudoku: `${TETTI.sudoku} punti se lo risolvi senza aiuti.`,
   quiz: `${PUNTI_BASE_QUIZ} punti per aver giocato, ${PUNTI_PER_GIUSTA} per ogni risposta giusta.`,
-  tris: '10 punti per la serie, 8 per ogni vittoria, 4 per ogni patta.',
   nomi: `Fino a ${TETTI.nomi} punti, che valgono il giorno dopo: di più per le risposte date da pochi.`,
-  anagrammi: `${PUNTI_FINITA_ANAGRAMMI} punti per aver giocato, fino a 10 per ogni parola: di più se la trovi subito.`,
-  sequenze: `${PUNTI_FINITA_SEQUENZE} punti per aver giocato, uno per ogni sequenza giusta: fino a ${TETTI.sequenze}.`,
+  anagrammi: `${PUNTI_FINITA_ANAGRAMMI} punti per aver giocato, fino a ${PUNTI_PAROLA_ANAGRAMMI + BONUS_ANAGRAMMI} per ogni parola: di più se la trovi subito.`,
+  sequenze: `${PUNTI_FINITA_SEQUENZE} punti per aver giocato, ${PUNTI_SEQUENZA} per ogni sequenza giusta: fino a ${TETTI.sequenze}.`,
   ghigliottina: `Si parte da ${TETTI.ghigliottina} punti, ogni scelta sbagliata li dimezza; zero se sbagli la parola vincente.`,
   paroliere: `${PUNTI_GIOCATA_PAROLIERE} punti per aver giocato, fino a ${TETTI.paroliere} con le parole della griglia.`,
   catena: `Si parte da ${TETTI.catena} punti, ogni errore li dimezza; zero se sbagli la parola finale.`,

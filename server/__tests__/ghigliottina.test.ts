@@ -124,11 +124,11 @@ describe('la Ghigliottina del giorno, dalle API', () => {
     const io = await giocatore('anna')
     const giusta = await scegli(chiama, io, await stato(chiama, io), 0)
     expect(giusta.coppie[0]).toMatchObject({ scelta: 0, giusta: 0 })
-    expect(giusta.montepremi).toBe(64)
+    expect(giusta.montepremi).toBe(100)
     expect(giusta.coppie[1]).toMatchObject({ parole: ['sedia', 'scena'], giusta: null })
     const sbagliata = await scegli(chiama, io, giusta, 0)
     expect(sbagliata.coppie[1]).toMatchObject({ scelta: 0, giusta: 1 })
-    expect(sbagliata.montepremi).toBe(32)
+    expect(sbagliata.montepremi).toBe(50)
     // Un doppio tocco sulla stessa coppia non sceglie di nuovo.
     const r = await chiama<GhigliottinaStato>('POST', '/ghigliottina/scegli', io, {
       versione: giusta.versione,
@@ -136,7 +136,7 @@ describe('la Ghigliottina del giorno, dalle API', () => {
       scelta: 1,
     })
     expect(r.status).toBe(200)
-    expect(r.dati.montepremi).toBe(32)
+    expect(r.dati.montepremi).toBe(50)
     // Una coppia che non e' ancora uscita non si sceglie.
     const avanti = await chiama('POST', '/ghigliottina/scegli', io, { versione: sbagliata.versione, coppia: 4, scelta: 0 })
     expect(avanti.status).toBe(409)
@@ -148,25 +148,25 @@ describe('la Ghigliottina del giorno, dalle API', () => {
     const io = await giocatore('anna')
     let s = await scegliTutte(chiama, io, [true, false, true, false, true])
     expect(s.corrente).toBeNull()
-    expect(s.montepremi).toBe(16)
+    expect(s.montepremi).toBe(25)
     expect(s.finale.aperto).toBe(false)
     s = await finale(chiama, io, s)
     expect(s.finale.aperto).toBe(true)
     expect(s.finale.restanteMs).toBeGreaterThan(TEMPO_FINALE_MS - 2_000)
     s = await rispondi(chiama, io, s, ' Colpo ')
-    expect(s).toMatchObject({ status: 'done', indovinata: true, soluzione: 'colpo', punti: 16 })
+    expect(s).toMatchObject({ status: 'done', indovinata: true, soluzione: 'colpo', punti: 25 })
     expect(s.coppie.map((c) => c.spiegazione)).toEqual(GIORNO.coppie.map((c) => c.spiegazione))
 
     const classifica = (await chiama<GhigliottinaLeaderboard>('GET', '/leaderboard/ghigliottina?scope=today', io)).dati
-    expect(classifica.me).toMatchObject({ punti: 16, giornate: 1, indovinate: 1 })
+    expect(classifica.me).toMatchObject({ punti: 25, giornate: 1, indovinate: 1 })
     const generale = (await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', io)).dati
-    expect(generale.me?.perGioco.ghigliottina).toBe(16)
-    expect(await puntiClassificateDi(db as unknown as D1Database, io.id, today().puzzleNumber)).toBe(16)
+    expect(generale.me?.perGioco.ghigliottina).toBe(25)
+    expect(await puntiClassificateDi(db as unknown as D1Database, io.id, today().puzzleNumber)).toBe(25)
     expect((await chiama<OggiRisposta>('GET', '/oggi', io)).dati.ghigliottina).toMatchObject({
       status: 'done',
       scelte: 5,
       indovinata: true,
-      punti: 16,
+      punti: 25,
     })
   })
 
