@@ -51,7 +51,7 @@ import {
 } from './wikidata'
 
 /** Quanti quadri tenere, e fra quanti candidati sceglierli. */
-const QUADRI = 700
+const QUADRI = 1000
 const CANDIDATI = 3000
 
 /** Le classi dei quadri: dipinto, affresco (due voci), dipinto murale, murale, soffitto, ciclo, gruppo di dipinti... */

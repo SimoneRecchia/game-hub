@@ -264,8 +264,9 @@ delle misure; nell'app il credito sta nel profilo, in «Fonti e licenze».
 
 ## Le altre materie del quiz
 
-I file di `public/dati/quiz/` (arte, libri, cinema, lirica, Nobel, storia,
-scienza, e un file per ogni giorno di «Accadde oggi») vengono da tre fonti:
+I file di `public/dati/quiz/` (arte, libri, cinema, canzoni, musica classica,
+lirica, Nobel, storia, scienza, e un file per ogni giorno di «Accadde oggi»)
+vengono da quattro fonti:
 
 - **[Wikidata](https://www.wikidata.org)**, sotto **CC0**: i quadri, i libri, i
   film, le opere, i premi, i fatti della storia, gli elementi, le unità, i
@@ -276,6 +277,11 @@ scienza, e un file per ogni giorno di «Accadde oggi») vengono da tre fonti:
   fatto) e i fatti di «Accadde oggi», dalla rubrica «Accadde oggi» della
   pagina principale. I testi sono accorciati; ogni spiegazione porta alla sua
   voce, e il credito sta nelle regole del quiz e nel profilo;
+- **le classifiche di Wikipedia**, in italiano (la classifica annuale dei
+  singoli della FIMI) e in inglese (i numeri uno italiani, la classifica di fine
+  anno di Billboard, i numeri uno inglesi e quelli latini): ne vengono solo i
+  fatti — il titolo, chi canta, l'anno e il posto —, che fanno le canzoni del
+  quiz di musica insieme a Wikidata;
 - **[Wikimedia Commons](https://commons.wikimedia.org)**: le immagini dei
   quadri, solo quelle di **pubblico dominio** o **CC0**. Non sono nei file: i
   file ne hanno il nome, e il browser le scarica da Commons.
