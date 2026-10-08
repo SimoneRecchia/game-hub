@@ -5,6 +5,7 @@ import type { ChiaveClassifica } from '@/games/classifiche'
 import { formatDuration, formatNumber, formatPercent } from '@/lib/format'
 import { DOMANDE_PER_PARTITA } from '@shared/quiz'
 import { NOME_BLACKJACK } from '@shared/blackjack'
+import { NOME_ROULETTE } from '@shared/roulette'
 import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
 import type {
@@ -90,6 +91,7 @@ export const GIOCHI_FORTUNA: ReadonlyArray<[GiocoFortuna, string]> = [
   ['ruota', NOME_CRAZY_TIME],
   ['slot', NOME_SLOT],
   ['blackjack', NOME_BLACKJACK],
+  ['roulette', NOME_ROULETTE],
 ]
 
 /** I giochi, nell'ordine in cui si mostrano. */
@@ -172,7 +174,7 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
               : `${partite(r.partite)} · ${giochi} ${giochi === 1 ? 'gioco' : 'giochi'}`,
           breve: partite(r.partite),
           composizione,
-          fortuna: { ruota: r.ruota, slot: r.slot, blackjack: r.blackjack },
+          fortuna: { ruota: r.ruota, slot: r.slot, blackjack: r.blackjack, roulette: r.roulette },
           segni:
             r.assist > 0 ? (
               <span className="cl-segno" title={`${r.assist} punti in compagnia`}>

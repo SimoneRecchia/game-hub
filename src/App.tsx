@@ -135,7 +135,7 @@ const caricaScarabocchiStanza = () => import('./pages/ScarabocchiStanza')
 const Scarabocchi = lazy(caricaScarabocchi)
 const ScarabocchiStanza = lazy(caricaScarabocchiStanza)
 
-/* E i giochi della Fortuna: Crazy Time, la slot e il blackjack, che puntano i punti di oggi. */
+/* E i giochi della Fortuna: Crazy Time, la slot, il blackjack e la roulette, che puntano i punti di oggi. */
 const caricaRuota = () => import('./pages/Ruota')
 const Ruota = lazy(caricaRuota)
 const caricaSlot = () => import('./pages/Slot')
@@ -144,6 +144,10 @@ const caricaBlackjack = () => import('./pages/Blackjack')
 const Blackjack = lazy(caricaBlackjack)
 const caricaTavoloBJ = () => import('./pages/BlackjackTavolo')
 const BlackjackTavolo = lazy(caricaTavoloBJ)
+const caricaRoulette = () => import('./pages/Roulette')
+const Roulette = lazy(caricaRoulette)
+const caricaTavoloRL = () => import('./pages/RouletteTavolo')
+const RouletteTavolo = lazy(caricaTavoloRL)
 
 function usePrecarica() {
   useEffect(() => {
@@ -174,7 +178,7 @@ function usePrecarica() {
         caricaSequenzeSfida,
         caricaSequenzeInvito,
       ]
-      const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ]
+      const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ, caricaRoulette, caricaTavoloRL]
       const lupus = [caricaLupus, caricaLupusTelefono, caricaLupusStanza]
       const scarabocchi = [caricaScarabocchi, caricaScarabocchiStanza]
       const tutti = [...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna, ...lupus, ...scarabocchi]
@@ -310,6 +314,8 @@ export default function App() {
             <Route path={ROTTE.slot} element={<Slot />} />
             <Route path={ROTTE.blackjack} element={<Blackjack />} />
             <Route path="/blackjack/tavolo/:id" element={<BlackjackTavolo />} />
+            <Route path={ROTTE.roulette} element={<Roulette />} />
+            <Route path="/roulette/tavolo/:id" element={<RouletteTavolo />} />
             <Route path="/ruota" element={<Navigate to={ROTTE.ruota} replace />} />
 
             <Route path="/indovina-chi" element={<IndovinaChi />} />

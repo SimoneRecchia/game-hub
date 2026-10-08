@@ -5,11 +5,22 @@ import { Avatar } from '@/components/Avatar'
 import { useToast } from '@/components/Toast'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
-import type { TavoloInSala, VistaTavoloBJ } from '@shared/types'
+import type { TavoloInSala } from '@shared/types'
 import './Amici.css'
 
-/** I tavoli del blackjack degli amici online: chi c'e', e "Siediti", che ti porta al loro tavolo. */
-export function TavoliDegliAmici({ tavoli, onCambio }: { tavoli: readonly TavoloInSala[]; onCambio?: () => void }) {
+/**
+ * I tavoli degli amici online, al blackjack o alla roulette: chi c'e', e
+ * "Siediti", che ti porta al loro tavolo.
+ */
+export function TavoliDegliAmici({
+  tavoli,
+  onCambio,
+  gioco = 'blackjack',
+}: {
+  tavoli: readonly TavoloInSala[]
+  onCambio?: () => void
+  gioco?: 'blackjack' | 'roulette'
+}) {
   const { vai } = useNavigazione()
   const toast = useToast()
   const [inCorso, setInCorso] = useState<string | null>(null)
@@ -17,9 +28,9 @@ export function TavoliDegliAmici({ tavoli, onCambio }: { tavoli: readonly Tavolo
     if (inCorso) return
     setInCorso(id)
     try {
-      await api<VistaTavoloBJ>(`/blackjack/tavolo/${id}/siedi`, { method: 'POST', body: {} })
+      await api<unknown>(`/${gioco}/tavolo/${id}/siedi`, { method: 'POST', body: {} })
       dimentica('/fortuna')
-      vai(ROTTE.tavoloBJ(id))
+      vai(gioco === 'roulette' ? ROTTE.tavoloRL(id) : ROTTE.tavoloBJ(id))
     } catch (e) {
       toast.show(e instanceof ApiFetchError ? e.message : 'Non riesco a sederti: riprova.', 'error')
       onCambio?.()
