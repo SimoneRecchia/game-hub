@@ -83,9 +83,9 @@ export function puntiSequenze(giusteDeiTurni: readonly number[]): number {
 
 export const MASSIMO_SEQUENZE = PUNTI_FINITA_SEQUENZE + TURNI_SEQUENZE * SEQUENZE_PER_TURNO
 
-/** La lunghezza raggiunta in un turno: l'ultima sequenza ripetuta giusta, o due se e' sbagliata la prima. */
-export function lunghezzaRaggiunta(giuste: number): number {
-  return PRIMA_LUNGHEZZA - 1 + giuste
+/** La lunghezza raggiunta in un turno: l'ultima sequenza ripetuta giusta, o zero se e' sbagliata la prima. */
+export function lunghezzaRaggiunta(giuste: number, prima = PRIMA_LUNGHEZZA): number {
+  return giuste <= 0 ? 0 : prima - 1 + giuste
 }
 
 /* ─────────────────────────────  I tempi  ───────────────────────────── */

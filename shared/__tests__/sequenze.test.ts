@@ -23,7 +23,10 @@ import {
 } from '../sequenze'
 
 /** Mezzo ingombro di un cubetto girato: il quadrato che lo contiene. */
-const mezzo = (r: number) => (LATO_CUBETTO / 2) * (Math.abs(Math.cos((r * Math.PI) / 180)) + Math.abs(Math.sin((r * Math.PI) / 180)))
+const mezzo = (r: number) => {
+  const rad = (r * Math.PI) / 180
+  return (LATO_CUBETTO / 2) * (Math.abs(Math.cos(rad)) + Math.abs(Math.sin(rad)))
+}
 
 describe('la tavola', () => {
   it('ha nove cubetti, tutti dentro la tavola anche girati', () => {
@@ -127,9 +130,11 @@ describe('le risposte', () => {
     expect(leggiTocchi('012', 3)).toBeNull()
   })
 
-  it('la lunghezza raggiunta è l’ultima ripetuta: due se e’ sbagliata la prima', () => {
-    expect(lunghezzaRaggiunta(0)).toBe(2)
+  it('la lunghezza raggiunta è l’ultima ripetuta: zero se e’ sbagliata la prima', () => {
+    expect(lunghezzaRaggiunta(0)).toBe(0)
+    expect(lunghezzaRaggiunta(1)).toBe(PRIMA_LUNGHEZZA)
     expect(lunghezzaRaggiunta(SEQUENZE_PER_TURNO)).toBe(NUMERO_CUBETTI)
+    expect(lunghezzaRaggiunta(1, LIVELLI_SEQUENZE.facile.prima)).toBe(2)
   })
 
   it('una sequenza di sei dura poco piu’ di cinque secondi', () => {

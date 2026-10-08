@@ -150,6 +150,10 @@ export type NomeSuono =
   /** Il mio quattro in fila che si accende, un disco alla volta; e quello dell'altro, che scende. */
   | 'quattro'
   | 'quattroAltro'
+  /** Un cubetto delle Sequenze che si accende, o che si tocca: ognuno ha la sua nota (`altezza`). */
+  | 'cubetto'
+  /** Una sequenza ripetuta giusta: due note che salgono, piu' in alto quanto piu' e' lunga (`altezza`). */
+  | 'sequenza'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -1157,5 +1161,18 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
   // Il quattro dell'altro: le stesse quattro note, ma a scendere e piu' piano.
   quattroAltro: (u, t, v) => {
     ;[N.A4, N.E4, N.C4, N.A3].forEach((f, i) => marimba(u, t + i * 0.11, f, 0.18 * v, { eco: 0.2 }))
+  },
+
+  // Un cubetto: una nota di marimba con un filo di campanello, che si sente anche corta, come un tasto del Simon.
+  cubetto: (u, t, v, altezza = 1) => {
+    marimba(u, t, N.C5 * altezza, 0.26 * v, { eco: 0.22, durata: 0.8 })
+    campanello(u, t, N.C6 * altezza, 0.035 * v, { durata: 0.4 })
+  },
+
+  // Una sequenza giusta: la quinta che si apre, e il luccichio; sale con la lunghezza della sequenza.
+  sequenza: (u, t, v, altezza = 1) => {
+    marimba(u, t, N.G5 * altezza, 0.22 * v, { eco: 0.25 })
+    marimba(u, t + 0.07, N.D6 * altezza, 0.24 * v, { eco: 0.25 })
+    campanello(u, t + 0.07, N.G6 * altezza, 0.06 * v, { eco: 0.4, durata: 0.7 })
   },
 }

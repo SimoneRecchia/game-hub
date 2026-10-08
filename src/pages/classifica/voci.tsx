@@ -19,6 +19,7 @@ import type {
   NomiLeaderboard,
   QuizLeaderboard,
   ScarabeoLeaderboard,
+  SequenzeLeaderboard,
   SudokuLeaderboard,
   TrisLeaderboard,
 } from '@shared/types'
@@ -39,6 +40,7 @@ export type Risposta =
   | TrisLeaderboard
   | NomiLeaderboard
   | AnagrammiLeaderboard
+  | SequenzeLeaderboard
   | FortunaLeaderboard
 
 export interface Voce {
@@ -74,6 +76,7 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   tris: 'Tris',
   nomi: 'Nomi, cose e città',
   anagrammi: 'Anagrammi',
+  sequenze: 'Sequenze',
   fortuna: 'Fortuna',
 }
 
@@ -93,6 +96,7 @@ export const ORDINE_GIOCHI: GiocoClassificato[] = [
   'quiz',
   'nomi',
   'anagrammi',
+  'sequenze',
   'tris',
 ]
 
@@ -383,6 +387,29 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
           ],
           nota: 'A pari punti contano le parole trovate, poi il tempo.',
+        }
+      })
+
+    case 'sequenze':
+      return (risposta as SequenzeLeaderboard).rows.map((r) => {
+        const fino = r.migliore > 0 ? `fino a ${formatNumber(r.migliore)} cubetti` : 'nessuna sequenza'
+        return {
+          ...r,
+          sotto:
+            r.giornate === 0
+              ? 'In corso'
+              : giorno
+                ? fino.charAt(0).toUpperCase() + fino.slice(1)
+                : `${giornate(r.giornate)} · ${fino}`,
+          breve: r.giornate > 0 ? `${r.migliore} cubetti` : 'in corso',
+          segni: r.inCorso ? inCorso : undefined,
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            { etichetta: 'Giornate finite', valore: formatNumber(r.giornate) },
+            { etichetta: 'La sequenza più lunga', valore: `${formatNumber(r.migliore)} cubetti` },
+            { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
+          ],
+          nota: 'A pari punti conta la sequenza più lunga, poi il tempo.',
         }
       })
   }
