@@ -25,7 +25,6 @@ import { categorieDelGiorno } from '../../shared/ruota'
 import {
   DISPOSIZIONE_SLOT,
   INTERVALLO_SLOT_MS,
-  PUNTATA_MASSIMA_SLOT,
   PUNTATA_MINIMA_SLOT,
   RULLI,
   VINCITA_DOMANDA,
@@ -207,7 +206,7 @@ export async function giraSlot(db: D1Database, playerId: string, puntata: unknow
     fail(409, 'POCHI_PUNTI', `Per giocare serve almeno ${PUNTATA_MINIMA_SLOT} punto di oggi.`)
   }
   if (!puntataSlotValida(puntata, saldo)) {
-    fail(400, 'PUNTATA', `Si puntano da ${PUNTATA_MINIMA_SLOT} a ${Math.min(PUNTATA_MASSIMA_SLOT, saldo)} punti.`)
+    fail(400, 'PUNTATA', `Si puntano da ${PUNTATA_MINIMA_SLOT} a ${saldo} punti.`)
   }
   if (ultimo && Date.now() - Date.parse(ultimo.created_at) < INTERVALLO_SLOT_MS) {
     fail(429, 'TROPPO_PRESTO', 'I rulli stanno ancora girando.')

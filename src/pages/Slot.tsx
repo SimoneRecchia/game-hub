@@ -25,7 +25,6 @@ import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
 import {
   INTERVALLO_SLOT_MS,
   PREMI,
-  PUNTATA_MASSIMA_SLOT,
   PUNTATA_MINIMA_SLOT,
   PUNTATE_SLOT,
   VINCITA_DOMANDA,
@@ -217,8 +216,8 @@ export default function SlotPagina() {
   const giro = stato?.giro ?? null
   const saldo = stato?.saldo ?? 0
   const categorie = useMemo(() => stato?.categorie ?? [], [stato?.categorie])
-  /** Si punta fino a dieci, e mai piu' del saldo: il ×300 dei sette su un saldo intero sfascerebbe la generale. */
-  const tetto = Math.min(PUNTATA_MASSIMA_SLOT, saldo)
+  /** Si punta fino a tutto il saldo, come a Crazy Time e al blackjack. */
+  const tetto = saldo
   const ferma = fase === 'pronta' && !inMoto
   // La puntata resta quella di prima finché non la si cambia, come al tavolo. A slot ferma mai oltre il tetto;
   // mentre i rulli girano e' quella del giro, anche se il saldo, che il server ha gia' contato, e' sceso sotto.

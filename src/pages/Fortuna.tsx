@@ -96,7 +96,7 @@ export default function Fortuna() {
                 <strong>{NOME_CRAZY_TIME}</strong>: da {PUNTATA_MINIMA} punti a tutto il saldo.
               </li>
               <li>
-                <strong>{NOME_SLOT}</strong>: da {PUNTATA_MINIMA_SLOT} a 10 punti a giro.
+                <strong>{NOME_SLOT}</strong>: da {PUNTATA_MINIMA_SLOT} punto a tutto il saldo.
               </li>
               <li>
                 <strong>{NOME_BLACKJACK}</strong>: da {PUNTATA_MINIMA_BJ} punti a tutto il saldo, al tavolo con gli
