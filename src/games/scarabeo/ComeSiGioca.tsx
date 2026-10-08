@@ -122,7 +122,8 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
             <li>
               <strong>Libera</strong>: contro il computer o un amico, fino in fondo al sacchetto. Chi posa
               l’ultima tessera prende il valore di quelle rimaste all’altro; dopo {TURNI_SENZA_PAROLE} turni senza
-              parole si chiude, e ognuno perde le sue. Non conta per la classifica.
+              parole si chiude, e ognuno perde le sue. Con un amico scegli il tempo per mossa, o nessuno. Non conta
+              per la classifica.
             </li>
             <li>
               <strong>In compagnia</strong>: inviti fino a {MAX_COOP_GUESTS} persone a suggerirti mosse. Chi gioca

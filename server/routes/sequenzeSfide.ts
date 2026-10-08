@@ -1,4 +1,5 @@
 import { Hono, type Context } from 'hono'
+import { livelloSequenzeValido } from '../../shared/sequenze'
 import type { MossaSfidaSequenze, SalaSequenze, VistaSfidaSequenze } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { eOnline } from '../lib/battagliaStore'
@@ -12,6 +13,7 @@ import {
   inSfida,
   invitoConCodice,
   latoDi,
+  livelloDi as difficoltaDi,
   mandaInvito,
   rispondi,
   rivincitaDi,
@@ -101,7 +103,8 @@ export const sfideSequenze = new Hono<AppEnv>()
       if (!(await eOnline(db, a, adesso))) fail(409, 'NON_ONLINE', 'Non è più online.')
       if (await inSfida(db, a, adesso)) fail(409, 'OCCUPATO', 'Sta già giocando un’altra sfida.')
     }
-    const row = await mandaInvito(db, { da: io, a }, adesso)
+    const impostazioni = (corpo.impostazioni ?? {}) as Record<string, unknown>
+    const row = await mandaInvito(db, { da: io, a, livello: livelloSequenzeValido(impostazioni.livello) }, adesso)
     return c.json({ id: row.id, codice: row.codice }, 201)
   })
 
@@ -183,7 +186,7 @@ export const sfideSequenze = new Hono<AppEnv>()
     if (await inSfida(db, altroId, adesso)) fail(409, 'OCCUPATO', 'Sta già giocando un’altra sfida.')
     const nuova = await mandaInvito(
       db,
-      { da: mioId, a: altroId, rivincitaDi: row.id, serie: serieDopo(row, mioId, altroId) },
+      { da: mioId, a: altroId, livello: difficoltaDi(row), rivincitaDi: row.id, serie: serieDopo(row, mioId, altroId) },
       adesso,
     )
     return c.json({ invitoId: nuova.id }, 201)

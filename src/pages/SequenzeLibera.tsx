@@ -7,14 +7,16 @@ import { Coriandoli, Tacche, useFesta } from '@/components/Elementi'
 import { IconInfo, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
+import { Sheet } from '@/components/Sheet'
 import { SalaSfida, type GiocoSfida } from '@/games/amici/SalaSfida'
 import { ComeSiGiocaSequenze } from '@/games/sequenze/ComeSiGioca'
 import { leggiContiSequenze } from '@/games/sequenze/conti'
 import { Pallini, Tavola } from '@/games/sequenze/Tavola'
 import { useProva, type Prova } from '@/games/sequenze/useProva'
 import { NOMI_LIVELLI_SEQUENZE, useSequenzeLibere } from '@/games/sequenze/useSequenzeLibere'
-import { LIVELLI_ORDINATI, LIVELLI_SEQUENZE, type LivelloSequenze } from '@shared/sequenze'
+import { LIVELLI_ORDINATI, LIVELLI_SEQUENZE, livelloSequenzeValido, type LivelloSequenze } from '@shared/sequenze'
 import '@/games/sequenze/Sequenze.css'
+import '@/games/sfide/Sfide.css'
 
 type Con = 'solo' | 'amico'
 const CHIAVE_CON = 'giochi.sequenze.contro'
@@ -44,6 +46,16 @@ export default function SequenzeLibera() {
   const g = useSequenzeLibere()
   const [regole, setRegole] = useState(false)
   const [con, setCon] = useState<Con>(leggiCon)
+  // Il foglio della sfida, aperto da subito se si arriva dal profilo di un amico (`?sfida=1`).
+  const [sfida, setSfida] = useState(() => new URLSearchParams(window.location.search).get('sfida') === '1')
+  // Il livello dell'invito: quello scelto l'ultima volta, con cui lo manda anche il profilo di un amico.
+  const [livelloSfida, setLivelloSfida] = useState<LivelloSequenze>(() => {
+    try {
+      return livelloSequenzeValido(localStorage.getItem('difficolta:sequenze'))
+    } catch {
+      return 'normale'
+    }
+  })
   const { adesivo, accoda } = useCodaAdesivi()
   const l = g.livello
   const prova = useProva({
@@ -96,15 +108,21 @@ export default function SequenzeLibera() {
             ]}
           />
         </div>
-        {con === 'solo' ? (
-          <SceltaLivello
-            onGioca={(livello) => {
+        <SceltaLivello
+          amico={con === 'amico'}
+          onGioca={(livello) => {
+            if (con === 'solo') {
               g.comincia(livello)
-            }}
-          />
-        ) : (
-          <SalaSfida gioco={SFIDA_SEQUENZE} />
-        )}
+              return
+            }
+            setLivelloSfida(livello)
+            setSfida(true)
+          }}
+        />
+        <Sheet open={sfida && con === 'amico'} onClose={() => setSfida(false)} title="Sfida un amico">
+          <p className="sfl-foglio__opzioni">{NOMI_LIVELLI_SEQUENZE[livelloSfida]}</p>
+          {sfida && <SalaSfida gioco={SFIDA_SEQUENZE} impostazioni={{ livello: livelloSfida }} />}
+        </Sheet>
         <ComeSiGiocaSequenze open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )
@@ -159,8 +177,12 @@ function record(l: LivelloSequenze): number {
   return leggiContiSequenze().record[l]
 }
 
-/** Prima di cominciare: tre livelli, il record di ognuno, e Comincia. */
-function SceltaLivello({ onGioca }: { onGioca: (livello: LivelloSequenze) => void }) {
+/**
+ * Prima di cominciare: tre livelli, il record di ognuno, e Comincia. Con un
+ * amico la stessa scelta apre il foglio della sfida, e l'altro gioca allo
+ * stesso livello.
+ */
+function SceltaLivello({ amico, onGioca }: { amico: boolean; onGioca: (livello: LivelloSequenze) => void }) {
   const [conti] = useState(leggiContiSequenze)
   const [livello, scegli] = useLivelloScelto('sequenze', LIVELLI_ORDINATI)
   return (
@@ -174,6 +196,7 @@ function SceltaLivello({ onGioca }: { onGioca: (livello: LivelloSequenze) => voi
       onScegli={scegli}
       onComincia={() => onGioca(livello)}
       colore="var(--sequenze-1)"
+      etichetta={amico ? 'Sfida un amico' : 'Comincia'}
     />
   )
 }

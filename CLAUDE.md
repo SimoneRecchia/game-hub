@@ -1528,15 +1528,42 @@ volerla rifare un'altra volta. Prima delle migrazioni il deploy scrive nel log
 il segnalibro di Time Travel di D1, da cui si torna a com'era se una tabella
 rifatta andasse storta.
 
-**Nel tris ogni mossa ha dieci secondi.** Senza tempo chi ci pensa abbastanza
-non sbaglia mai, e il tris finisce sempre patta. Fra amici il tempo lo tiene il
-server (`tempoMossaMs` in `RegoleTavoliere`, `scadenzaMossa` e
+**Nel tris ogni mossa ha dieci secondi, se non se ne sceglie un altro.** Senza
+tempo chi ci pensa abbastanza non sbaglia mai, e il tris finisce sempre patta:
+per questo nella sua sala il tempo si sceglie fra cinque e trenta secondi, e
+non c'e' "senza". Fra amici il tempo lo tiene il
+server (`tempoMossaDi`, `scadenzaMossa` e
 `chiudiSeScaduta` in `tavoloStore.ts`), tranne la prima mossa di ciascuno, che
 e' senza tempo: chi ha mandato l'invito arriva al tavoliere un momento dopo chi
 l'ha accettato, quando la sala se ne accorge. Nelle partite a tempo il giro di
 controllo e' di un secondo (`TAVOLO_POLL_A_TEMPO_MS`): la mossa dell'altro
 arriva con il ritardo del giro, e intanto il mio tempo corre. Contro il
 computer il tempo sta nel telefono, e riparte a ogni turno.
+
+**Il tempo per mossa si sceglie nella sala, e viaggia con l'invito.** Ogni
+gioco al tavolo ha i suoi tempi (`TEMPI_MOSSA` in `shared/tavolo-tempi.ts`):
+il tris da cinque a trenta secondi, il Forza 4 fino a un minuto, scacchi, dama
+e go fino a cinque, lo Scarabeo da uno a cinque minuti, e tutti tranne il tris
+anche senza tempo, che e' quello di sempre (`TEMPO_DI_SEMPRE`). L'invito porta
+la scelta (`tempoMossa`, in secondi; il server la rimette fra quelle del gioco
+con `tempoMossaValido`) e la partita la salva in
+`tavolo_partite.tempo_mossa_ms`, con zero per senza tempo; le partite di prima
+della migrazione `0043` l'hanno NULL e valgono con il tempo di allora, dieci
+secondi il tris e nessuno gli altri. La rivincita tiene il tempo della partita.
+Contro il computer il tempo sta nella partita del telefono
+(`PartitaLocale.tempo`), che lo ritrova ricaricando la pagina. La scelta si
+ricorda per gioco (`giochi.<gioco>.tempo`), e la legge anche l'invito dal
+profilo di un amico.
+
+**Le libere fra amici si giocano come da soli.** Quel che una libera fa
+scegliere da soli lo fa scegliere anche la sfida, e l'altro gioca con la stessa
+scelta: in Nomi, cose e città il tempo (`SECONDI_NOMI_LIBERI`, da uno a cinque
+minuti, `nomi_sfide.secondi`), nelle Sequenze la difficolta'
+(`sequenze_sfide.livello`, con il facile che parte da due cubetti e il
+difficile al contrario, e lo stesso ritmo). Contro il computer di Nomi il tempo
+sposta lo stop in proporzione (`nuovaPartita`): a un minuto il computer facile
+non puo' aspettarne due e mezzo. Le righe di prima della migrazione `0043`
+valgono com'erano, tre minuti e il normale.
 
 **Il computer del tris sbaglia come una persona.** Il tris e' risolto: il
 valore di ogni posizione sta in una tabella (`shared/tris-valori.ts`, che

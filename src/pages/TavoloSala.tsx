@@ -13,6 +13,7 @@ import { giocoTavoloDi } from '@/games/catalog'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
 import { nomeVariante } from '@/games/tavolo/nomi'
 import { InvitaAmico, PartitaAperta, useSalaTavolo } from '@/games/tavolo/SalaAmico'
+import { SceltaTempo, useTempoMossa } from '@/games/tavolo/Tempo'
 import {
   abbandona,
   cominciata,
@@ -56,7 +57,8 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
   const [conti, setConti] = useState(() => leggiConti(gioco))
   const [conferma, setConferma] = useState<LivelloTavoliere | null>(null)
   const [livello, setLivello] = useLivelloScelto(gioco, LIVELLI_TAVOLIERE)
-  const sala = useSalaTavolo(gioco, variante)
+  const [tempo, setTempo] = useTempoMossa(gioco)
+  const sala = useSalaTavolo(gioco, variante, tempo)
 
   // La partita contro il computer puo' essere cambiata altrove: si rilegge tornando qui.
   useEffect(() => {
@@ -81,7 +83,7 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
 
   const comincia = (livello: LivelloTavoliere) => {
     if (locale && cominciata(locale)) abbandona(locale)
-    nuovaPartita(gioco, livello, variante)
+    nuovaPartita(gioco, livello, variante, tempo)
     setConferma(null)
     vai(ROTTE.computerTavolo(gioco))
   }
@@ -129,6 +131,8 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
           />
         )}
       </div>
+
+      <SceltaTempo gioco={gioco} valore={tempo} onChange={setTempo} />
 
       {vista === 'computer' ? (
         <Difficolta

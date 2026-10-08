@@ -325,6 +325,65 @@ describe('i giochi da tavoliere fra amici, dalle API', () => {
     expect((await vista(chiama, id, primo)).vincitore).toBe('io')
   })
 
+  it('il tempo per mossa si sceglie con l’invito, vale nella partita e passa alla rivincita', async () => {
+    const { chiama, giocatore } = banco()
+    const anna = await giocatore('anna')
+    const bruno = await giocatore('bruno')
+    await online(chiama, bruno)
+    const invito = await chiama<{ id: string }>('POST', '/tavolo/inviti', anna, {
+      gioco: 'forza4',
+      playerId: bruno.id,
+      tempoMossa: 20,
+    })
+    await chiama('POST', `/tavolo/inviti/${invito.dati.id}/accetta`, bruno)
+    const id = invito.dati.id
+    const { primo, secondo } = await colori(chiama, id, anna, bruno)
+    expect((await muovi(chiama, id, primo, '3')).status).toBe(200)
+    expect((await muovi(chiama, id, secondo, '3')).status).toBe(200)
+    expect((await vista(chiama, id, primo)).tempo?.mossaMs).toBe(20_000)
+    await chiama('POST', `/tavolo/partite/${id}/resa`, primo, { versione: (await vista(chiama, id, primo)).versione })
+    await online(chiama, anna)
+    await online(chiama, bruno)
+    const rivincita = await chiama<{ invitoId: string }>('POST', `/tavolo/partite/${id}/rivincita`, anna)
+    const nuova = await chiama<{ partitaId: string }>('POST', `/tavolo/partite/${id}/rivincita`, bruno)
+    expect(nuova.dati.partitaId).toBe(rivincita.dati.invitoId)
+    const c = await colori(chiama, nuova.dati.partitaId, anna, bruno)
+    expect((await muovi(chiama, nuova.dati.partitaId, c.primo, '0')).status).toBe(200)
+    expect((await muovi(chiama, nuova.dati.partitaId, c.secondo, '1')).status).toBe(200)
+    expect((await vista(chiama, nuova.dati.partitaId, c.primo)).tempo?.mossaMs).toBe(20_000)
+  })
+
+  it('un tempo che non e’ fra le scelte prende quello di sempre: senza, o dieci secondi nel tris', async () => {
+    const { chiama, giocatore } = banco()
+    const anna = await giocatore('anna')
+    const bruno = await giocatore('bruno')
+    await online(chiama, bruno)
+    const invito = await chiama<{ id: string }>('POST', '/tavolo/inviti', anna, {
+      gioco: 'forza4',
+      playerId: bruno.id,
+      tempoMossa: 7,
+    })
+    await chiama('POST', `/tavolo/inviti/${invito.dati.id}/accetta`, bruno)
+    const { primo, secondo } = await colori(chiama, invito.dati.id, anna, bruno)
+    await muovi(chiama, invito.dati.id, primo, '3')
+    await muovi(chiama, invito.dati.id, secondo, '3')
+    expect((await vista(chiama, invito.dati.id, primo)).tempo).toBeNull()
+
+    const carla = await giocatore('carla')
+    const dario = await giocatore('dario')
+    await online(chiama, dario)
+    const tris = await chiama<{ id: string }>('POST', '/tavolo/inviti', carla, {
+      gioco: 'tris',
+      playerId: dario.id,
+      tempoMossa: null,
+    })
+    await chiama('POST', `/tavolo/inviti/${tris.dati.id}/accetta`, dario)
+    const t = await colori(chiama, tris.dati.id, carla, dario)
+    await muovi(chiama, tris.dati.id, t.primo, '4')
+    await muovi(chiama, tris.dati.id, t.secondo, '0')
+    expect((await vista(chiama, tris.dati.id, t.primo)).tempo?.mossaMs).toBe(TEMPO_MOSSA_TRIS_MS)
+  })
+
   it('nel tris chi vede finire il suo tempo lo dice, e la partita e’ persa subito', async () => {
     const { chiama, giocatore } = banco()
     const anna = await giocatore('anna')

@@ -77,6 +77,8 @@ export interface PartitaRow {
   morte_ok: Lato | null
   /** Nel go, a partita finita ai punti: `{"a": 45, "b": 38.5}`. */
   punti: string | null
+  /** Il tempo per mossa scelto nella sala, 0 per senza; NULL nelle partite di prima, con il tempo di allora. */
+  tempo_mossa_ms: number | null
 }
 
 interface GiocatoreRow {
@@ -324,6 +326,7 @@ export async function mandaInvito(
     serie = null,
     primo = null,
     posizione = inizialeDi(regoleDi(gioco), null),
+    tempoMossaMs = null,
   }: {
     da: string
     /** null per un invito con il link. */
@@ -335,6 +338,8 @@ export async function mandaInvito(
     primo?: Lato | null
     /** La posizione di partenza, se il gioco ha varianti: il goban da 13. */
     posizione?: string
+    /** Il tempo per mossa, 0 per senza; null tiene quello che il gioco aveva prima che si scegliesse. */
+    tempoMossaMs?: number | null
   },
   adesso: number,
 ): Promise<PartitaRow> {
@@ -352,8 +357,8 @@ export async function mandaInvito(
       .prepare(
         `INSERT INTO tavolo_partite
            (id, gioco, giocatore_a, invitato, codice, stato, primo, posizione, rivincita_di, serie_a, serie_b,
-            partite_serie, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'invito', ?, ?, ?, ?, ?, ?, ?, ?)`,
+            partite_serie, tempo_mossa_ms, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 'invito', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .bind(
         id,
@@ -367,6 +372,7 @@ export async function mandaInvito(
         serie?.a ?? 0,
         serie?.b ?? 0,
         serie?.partite ?? 0,
+        tempoMossaMs,
         quando,
         quando,
       ),
@@ -567,13 +573,21 @@ export function primoDellaRivincita(row: PartitaRow, nuovoA: string): Lato {
 /* ─────────────────────────────  La partita  ───────────────────────────── */
 
 /**
- * Fino a quando ha tempo chi ha la mossa, nei giochi con il tempo per mossa;
- * null negli altri, e finché ognuno dei due non ha mosso una volta: la prima
+ * Il tempo per mossa di una partita, in millisecondi, 0 per senza: quello
+ * scelto nella sala, o per le partite di prima quello che il gioco aveva allora.
+ */
+export function tempoMossaDi(row: Pick<PartitaRow, 'gioco' | 'tempo_mossa_ms'>): number {
+  return row.tempo_mossa_ms ?? regoleDi(row.gioco).tempoMossaMs ?? 0
+}
+
+/**
+ * Fino a quando ha tempo chi ha la mossa, nelle partite con il tempo per mossa;
+ * null nelle altre, e finché ognuno dei due non ha mosso una volta: la prima
  * mossa di ciascuno e' senza tempo, perché chi ha mandato l'invito arriva al
  * tavoliere un momento dopo chi l'ha accettato.
  */
 export function scadenzaMossa(row: PartitaRow): number | null {
-  const ms = regoleDi(row.gioco).tempoMossaMs
+  const ms = tempoMossaDi(row)
   if (!ms || row.stato !== 'in_corso' || !row.mossa_at || mosseDi(row).length < 2) return null
   return Date.parse(row.mossa_at) + ms
 }
@@ -672,7 +686,7 @@ export async function vistaTavolo(db: D1Database, row: PartitaRow, io: Lato, ade
 /** Il tempo della mossa per la vista: quanto dura, e quanto ne resta a chi ha il tratto. */
 function tempoDellaMossa(row: PartitaRow, adesso: number): VistaTavolo['tempo'] {
   const scade = scadenzaMossa(row)
-  const ms = regoleDi(row.gioco).tempoMossaMs
+  const ms = tempoMossaDi(row)
   if (scade === null || !ms) return null
   return { mossaMs: ms, restanteMs: Math.max(0, scade - adesso) }
 }

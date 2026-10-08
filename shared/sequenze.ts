@@ -132,6 +132,11 @@ export const LIVELLI_SEQUENZE: Record<LivelloSequenze, RegoleLivello> = {
 
 export const LIVELLI_ORDINATI: readonly LivelloSequenze[] = ['facile', 'normale', 'difficile']
 
+/** Il livello di una sfida, da quel che arriva con l'invito: il normale se non e' uno dei tre. */
+export function livelloSequenzeValido(valore: unknown): LivelloSequenze {
+  return (LIVELLI_ORDINATI as readonly unknown[]).includes(valore) ? (valore as LivelloSequenze) : 'normale'
+}
+
 /* ─────────────────────────────  Le sequenze  ───────────────────────────── */
 
 /**

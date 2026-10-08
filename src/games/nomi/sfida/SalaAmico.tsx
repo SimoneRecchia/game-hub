@@ -9,7 +9,10 @@ const NOMI: GiocoSfida = {
   domanda: 'Una sfida a Nomi, cose e città?',
 }
 
-/** La sfida con un amico a Nomi, cose e città: la sala delle sfide fra due, con le rotte di questo gioco. */
-export function SalaAmico() {
-  return <SalaSfida gioco={NOMI} />
+/**
+ * La sfida con un amico a Nomi, cose e città: la sala delle sfide fra due, con
+ * le rotte di questo gioco e il tempo scelto nella libera.
+ */
+export function SalaAmico({ secondi }: { secondi: number }) {
+  return <SalaSfida gioco={NOMI} impostazioni={{ secondi }} />
 }
