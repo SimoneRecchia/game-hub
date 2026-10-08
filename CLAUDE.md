@@ -2011,7 +2011,9 @@ se non e' italiano.
 `scripts/data/generi-artisti.tsv` da' a ogni artista il suo genere, due quando
 ha due anime (Battisti cantautori e pop), e `scripts/data/generi-canzoni.tsv` le
 canzoni che fanno eccezione: "Beat It" e' anche rock, e una canzone scritta per
-un film o un musical e' anche una colonna sonora. Gli altri generi sono quelli
+un film, un musical o una serie e' anche una colonna sonora — le si trova fra
+le categorie di Wikipedia, ma ci stanno anche quelle che un film ha solo usato
+("Born to Be Wild"), e la scelta e' a mano. Gli altri generi sono quelli
 che da soli non farebbero una partita: il reggae, il country, il folk, il blues,
 le canzoni comiche e per bambini. Venivano da Wikidata risalendo le sottoclassi,
 e sbagliavano: una canzone senza un genere suo prendeva tutti quelli di chi la
@@ -2054,7 +2056,10 @@ voce di "Nel blu dipinto di blu". Se Wikidata dice gia' chi la canta, vale la
 versione di uno di loro, e quella di un altro solo se chi la canta e' piu'
 noto — "Speedy Gonzales" e' di Pat Boone, non di David Hess che l'aveva
 incisa per primo (`perLaClassifica`); chi ha le altre versioni non e' mai una
-risposta sbagliata. Di una canzone con un ospite o di un dj si chiede di chi
+risposta sbagliata. La regola si fida di Wikidata, e quando Wikidata sbaglia
+la correzione va in `canzoni-a-mano.tsv`: per "No Other Love" diceva i
+Beatles, e la versione in classifica, di Ronnie Hilton, perdeva perché meno
+nota. Di una canzone con un ospite o di un dj si chiede di chi
 e', non chi la canta: "Wake Me Up" e' di Avicii, ma la canta un altro. Con le
 classifiche le canzoni sono quattro volte quelle di prima, e i file del quiz
 hanno un tetto sul peso compresso, che e' quel che si scarica
