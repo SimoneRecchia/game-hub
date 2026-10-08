@@ -41,6 +41,8 @@
  *   /ghigliottina/libera                una ghigliottina a caso
  *   /paroliere/classificata             la griglia di oggi, tre minuti
  *   /paroliere/libera                   una griglia a caso, quattro per quattro o cinque per cinque
+ *   /catena/classificata                la catena di oggi: cinque parole da indovinare, l'ultima decide
+ *   /catena/libera                      una catena a caso
  *   /sequenze/classificata              i cinque turni di oggi, gli stessi per tutti
  *   /sequenze/libera                    finché non sbagli, da solo o con un amico
  *   /sequenze/sfida/:id                 una sfida con un amico
@@ -97,6 +99,7 @@ export const SLUG: Record<GiocoClassificato, string> = {
   sequenze: 'sequenze',
   ghigliottina: 'ghigliottina',
   paroliere: 'paroliere',
+  catena: 'catena',
 }
 
 export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null {

@@ -18,6 +18,7 @@ import type {
   CruciverbaSummary,
   FortunaRisposta,
   GhigliottinaSummary,
+  CatenaSummary,
   GiocoClassificato,
   NomiSummary,
   OggiRisposta,
@@ -526,6 +527,53 @@ export function statoGhigliottina(s: GhigliottinaSummary): StatoOggi {
   }
 }
 
+/** La Catena: a che parola si e', il montepremi che resta, e com'e' finita. */
+export function statoCatena(s: CatenaSummary): StatoOggi {
+  const base = {
+    gioco: 'catena' as const,
+    avanzamento: s.status === 'done' ? 1 : s.passo / s.totale,
+    a: ROTTE.classificata('catena'),
+  }
+  if (s.status === 'done') {
+    return {
+      ...base,
+      fase: 'fatta',
+      titolo: s.indovinata ? 'Indovinata' : 'Non indovinata',
+      dettaglio: `${s.punti} punti`,
+      punti: s.punti,
+      azione: 'Rivedi',
+    }
+  }
+  if (!s.pronta) {
+    return {
+      ...base,
+      fase: 'non-pronta',
+      titolo: 'Non ancora pronta',
+      dettaglio: 'Riprova più tardi',
+      punti: null,
+      azione: 'Aspetta',
+    }
+  }
+  if (s.status === 'new') {
+    return {
+      ...base,
+      fase: 'da-giocare',
+      titolo: 'Da giocare',
+      dettaglio: `${s.totale} parole da indovinare, l’ultima decide`,
+      punti: null,
+      azione: 'Gioca',
+    }
+  }
+  return {
+    ...base,
+    fase: 'in-corso',
+    titolo: s.passo < s.totale - 1 ? `Parola ${s.passo + 1} di ${s.totale}` : 'Manca la parola finale',
+    dettaglio: `In palio ${s.montepremi} punti`,
+    punti: null,
+    azione: 'Continua',
+  }
+}
+
 /** Il Paroliere: quante parole trovate, e quanti punti dalla griglia. */
 export function statoParoliere(s: ParoliereSummary): StatoOggi {
   const base = {
@@ -580,6 +628,7 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     sequenze: statoSequenze(oggi.sequenze),
     ghigliottina: statoGhigliottina(oggi.ghigliottina),
     paroliere: statoParoliere(oggi.paroliere),
+    catena: statoCatena(oggi.catena),
   }
 }
 
