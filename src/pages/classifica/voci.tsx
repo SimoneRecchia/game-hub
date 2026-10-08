@@ -13,10 +13,12 @@ import type {
   CruciverbaLeaderboard,
   FortunaLeaderboard,
   GeneraleLeaderboard,
+  GhigliottinaLeaderboard,
   GiocoClassificato,
   GiocoFortuna,
   LeaderboardResponse,
   NomiLeaderboard,
+  ParoliereLeaderboard,
   QuizLeaderboard,
   ScarabeoLeaderboard,
   SequenzeLeaderboard,
@@ -41,6 +43,8 @@ export type Risposta =
   | NomiLeaderboard
   | AnagrammiLeaderboard
   | SequenzeLeaderboard
+  | GhigliottinaLeaderboard
+  | ParoliereLeaderboard
   | FortunaLeaderboard
 
 export interface Voce {
@@ -77,6 +81,8 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   nomi: 'Nomi, cose e città',
   anagrammi: 'Anagrammi',
   sequenze: 'Sequenze',
+  ghigliottina: 'Ghigliottina',
+  paroliere: 'Paroliere',
   fortuna: 'Fortuna',
 }
 
@@ -94,8 +100,10 @@ export const ORDINE_GIOCHI: GiocoClassificato[] = [
   'cruciverba',
   'sudoku',
   'quiz',
+  'ghigliottina',
   'nomi',
   'anagrammi',
+  'paroliere',
   'sequenze',
   'tris',
 ]
@@ -410,6 +418,54 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
           ],
           nota: 'A pari punti conta la sequenza più lunga, poi il tempo.',
+        }
+      })
+
+    case 'ghigliottina':
+      return (risposta as GhigliottinaLeaderboard).rows.map((r) => {
+        const indovinate = `${formatNumber(r.indovinate)} ${r.indovinate === 1 ? 'indovinata' : 'indovinate'}`
+        return {
+          ...r,
+          sotto:
+            r.giornate === 0
+              ? 'In corso'
+              : giorno
+                ? r.indovinate > 0
+                  ? `Indovinata in ${formatDuration(r.tempoMs)}`
+                  : 'Non indovinata'
+                : `${giornate(r.giornate)} · ${indovinate}`,
+          breve: r.giornate === 0 ? 'in corso' : giorno ? (r.indovinate > 0 ? 'indovinata' : 'non indovinata') : indovinate,
+          segni: r.inCorso ? inCorso : undefined,
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            { etichetta: 'Giornate finite', valore: formatNumber(r.giornate) },
+            { etichetta: 'Parole vincenti indovinate', valore: formatNumber(r.indovinate) },
+            { etichetta: 'Tempo per la parola vincente', valore: formatDuration(r.tempoMs) },
+          ],
+          nota: 'A pari punti contano le parole vincenti indovinate, poi il tempo.',
+        }
+      })
+
+    case 'paroliere':
+      return (risposta as ParoliereLeaderboard).rows.map((r) => {
+        const trovate = `${formatNumber(r.trovate)} ${r.trovate === 1 ? 'parola' : 'parole'}`
+        return {
+          ...r,
+          sotto:
+            r.giornate === 0
+              ? 'In corso'
+              : giorno
+                ? `${trovate} · ${formatNumber(r.punteggio)} sulla griglia`
+                : `${giornate(r.giornate)} · ${trovate}`,
+          breve: r.giornate > 0 ? trovate : 'in corso',
+          segni: r.inCorso ? inCorso : undefined,
+          dettaglio: [
+            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
+            { etichetta: 'Giornate finite', valore: formatNumber(r.giornate) },
+            { etichetta: 'Parole trovate', valore: formatNumber(r.trovate) },
+            { etichetta: 'Punteggio sulla griglia', valore: formatNumber(r.punteggio) },
+          ],
+          nota: 'A pari punti conta il punteggio sulla griglia, poi le parole trovate.',
         }
       })
   }

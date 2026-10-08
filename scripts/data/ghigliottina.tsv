@@ -1,0 +1,451 @@
+# Le Ghigliottine: la parola vincente e le cinque parole che la nascondono, con
+# l'espressione che le lega. Scritte a mano, sulle espressioni del Wiktionary
+# (scripts/build-ghigliottina.mjs le confronta e dice quelle che non trova), sui
+# titoli dei file del quiz e su quel che si dice.
+#
+# soluzione<TAB>parola=espressione<TAB>... (cinque)
+#
+# Le righe con il punto esclamativo dicono parole che con la soluzione stanno
+# insieme anche se le fonti non lo sanno ("duro colpo", "vin santo"): non
+# faranno mai da esca a quella soluzione.
+#
+# !soluzione<TAB>parola<TAB>...
+!colpo	duro
+!cuore	fondo
+!fortuna	cattiva
+!ghiaccio	sciolto
+!vino	santo
+!camicia	bianca
+!mare	blu
+!nota	prima
+!parte	buona
+casa	madre=casa madre	bianca=Casa Bianca	riposo=casa di riposo	padrone=padrone di casa	dolce=casa dolce casa
+colpo	fulmine=colpo di fulmine	scena=colpo di scena	genio=colpo di genio	stato=colpo di stato	grazia=colpo di grazia
+vita	dolce=La dolce vita	stile=stile di vita	cani=Vita da cani	bella=La vita è bella	costo=costo della vita
+mano	freno=freno a mano	seconda=di seconda mano	bomba=bomba a mano	stretta=stretta di mano	chiavi=chiavi in mano
+acqua	bocca=acqua in bocca	gola=acqua alla gola	passata=acqua passata	alta=acqua alta	santa=acqua santa
+oro	medaglia=medaglia d'oro	nozze=nozze d'oro	febbre=febbre dell'oro	silenzio=il silenzio è d'oro	sogni=sogni d'oro
+testa	calda=testa calda	croce=testa o croce	serie=testa di serie	ponte=testa di ponte	uovo=testa d'uovo
+fuoco	artificio=fuoco d'artificio	paglia=fuoco di paglia	amico=fuoco amico	vigili=vigili del fuoco	lento=a fuoco lento
+notte	bianca=notte bianca	camicia=camicia da notte	vaso=vaso da notte	fonda=notte fonda	giorno=giorno e notte
+piede	porco=piede di porco	palla=palla al piede	guerra=sul piede di guerra	libero=a piede libero	sbagliato=partire col piede sbagliato
+linea	arrivo=linea d'arrivo	guida=linea guida	retta=linea retta	prima=prima linea	massima=in linea di massima
+carta	identità=carta d'identità	credito=carta di credito	igienica=carta igienica	bianca=carta bianca	vincente=carta vincente
+tempo	macchina=macchina del tempo	perso=a tempo perso	pieno=a tempo pieno	previsioni=previsioni del tempo	debito=a tempo debito
+stato	interessante=stato interessante	assedio=stato d'assedio	famiglia=stato di famiglia	terzo=terzo stato	polizia=stato di polizia
+ora	legale=ora legale	punta=ora di punta	quarto=quarto d'ora	ultima=ultima ora	solare=ora solare
+prima	donna=prima donna	colazione=prima colazione	vista=a prima vista	materia=materia prima	pagina=prima pagina
+fatto	detto=detto fatto	compiuto=fatto compiuto	cronaca=fatto di cronaca	casa=fatto in casa	coppia=coppia di fatto
+bene	comune=bene comune	nota=nota bene	male=bene o male	meglio=di bene in meglio	immobile=bene immobile
+niente	finta=fare finta di niente	male=niente male	meglio=meglio di niente	bel=un bel niente	dolce=il dolce far niente
+due	passi=fare due passi	punti=due punti	piedi=su due piedi	ruote=due ruote	fuochi=tra due fuochi
+andare	genio=andare a genio	fondo=andare a fondo	liscio=andare liscio	lusso=andare di lusso	nozze=andare a nozze
+uomo	affari=uomo d'affari	onore=uomo d'onore	paglia=uomo di paglia	ragno=Uomo Ragno	misura=a misura d'uomo
+amico	cuore=amico del cuore	penna=amico di penna	pelle=amico per la pelle	falso=falso amico	fuoco=fuoco amico
+posto	blocco=posto di blocco	letto=posto letto	fisso=posto fisso	guida=posto di guida	onore=posto d'onore
+via	uscita=via d'uscita	lattea=Via Lattea	aerea=via aerea	mezzo=via di mezzo	vento=Via col vento
+giorno	ordine=ordine del giorno	giudizio=giorno del giudizio	zona=zona giorno	buon=buongiorno	oggi=oggigiorno
+vedere	rosso=vedere rosso	doppio=vedere doppio	stelle=vedere le stelle	luce=vedere la luce	ora=non vedere l'ora
+parlare	chiaro=parlare chiaro	muro=parlare al muro	arabo=parlare arabo	vento=parlare al vento	male=parlare male
+madre	scheda=scheda madre	pasta=pasta madre	lingua=madrelingua	terra=Madre Terra	nave=nave madre
+momento	verità=il momento della verità	opportuno=al momento opportuno	bisogno=nel momento del bisogno	grazia=momento di grazia	brutto=un brutto momento
+idea	pazza=Pazza idea	cambiare=cambiare idea	rendere=rendere l'idea	fissa=idea fissa	brillante=idea brillante
+figlio	unico=figlio unico	arte=figlio d'arte	papà=figlio di papà	nessuno=figlio di nessuno	padre=di padre in figlio
+caso	limite=caso limite	guarda=guarda caso	scuola=caso di scuola	isolato=caso isolato	contrario=in caso contrario
+forza	volontà=forza di volontà	maggiore=forza maggiore	gravità=forza di gravità	camicia=camicia di forza	lavoro=forza lavoro
+nome	arte=nome d'arte	battaglia=nome di battaglia	codice=nome in codice	proprio=nome proprio	rosa=Il nome della rosa
+donna	affari=donna d'affari	pulizie=donna delle pulizie	cannone=La donna cannone	cuori=donna di cuori	prima=primadonna
+faccia	tosta=faccia tosta	schiaffi=faccia da schiaffi	salvare=salvare la faccia	brutta=brutta faccia	medaglia=l'altra faccia della medaglia
+famiglia	medico=medico di famiglia	padre=padre di famiglia	stato=stato di famiglia	buona=di buona famiglia	addams=La famiglia Addams
+ragione	sociale=ragione sociale	sentimento=Ragione e sentimento	santa=di santa ragione	maggior=a maggior ragione	dare=dare ragione
+porta	aperta=porta aperta	finestra=portafinestra	girevole=porta girevole	sbattere=sbattere la porta	bussare=bussare alla porta
+storia	arte=storia dell'arte	naturale=storia naturale	antica=storia antica	infinita=La storia infinita	amore=storia d'amore
+morto	fame=morto di fame	stanco=stanco morto	punto=punto morto	peso=peso morto	binario=binario morto
+persona	terza=terza persona	grata=persona non grata	fidata=persona fidata	sequestro=sequestro di persona	vista=persona in vista
+avanti	passo=passo avanti	tutta=avanti tutta	fuga=fuga in avanti	indietro=avanti e indietro	tirare=tirare avanti
+polizia	stradale=polizia stradale	postale=polizia postale	segreta=polizia segreta	scientifica=polizia scientifica	stazione=stazione di polizia
+letto	camera=camera da letto	vagone=vagone letto	castello=letto a castello	matrimoniale=letto matrimoniale	divano=divano letto
+fine	settimana=fine settimana	lieto=lieto fine	buon=a buon fine	fiera=alla fine della fiera	conti=alla fine dei conti
+capo	lavata=lavata di capo	accusa=capo d'accusa	anno=capodanno	collo=tra capo e collo	governo=capo del governo
+amore	lettera=lettera d'amore	pene=pene d'amore	frutto=frutto dell'amore	tunnel=tunnel dell'amore	maniglie=maniglie dell'amore
+piano	primo=primo piano	terra=pianoterra	nobile=piano nobile	regolatore=piano regolatore	forte=pianoforte
+macchina	fotografica=macchina fotografica	tempo=macchina del tempo	presa=macchina da presa	scrivere=macchina da scrivere	fango=macchina del fango
+primo	ministro=primo ministro	soccorso=primo soccorso	piatto=primo piatto	cittadino=primo cittadino	amore=primo amore
+giro	vite=giro di vite	affari=giro d'affari	parole=giro di parole	boa=giro di boa	prendere=prendere in giro
+morte	pena=pena di morte	bacio=bacio della morte	condanna=condanna a morte	bianca=morte bianca	venezia=Morte a Venezia
+anno	luce=anno luce	zero=anno zero	santo=anno santo	capo=capodanno	bisestile=anno bisestile
+diavolo	avvocato=avvocato del diavolo	povero=povero diavolo	patto=patto col diavolo	prada=Il diavolo veste Prada	coda=La coda del diavolo
+punto	vendita=punto vendita	cieco=punto cieco	vista=punto di vista	domanda=punto di domanda	croce=punto croce
+terra	promessa=terra promessa	bruciata=terra bruciata	nessuno=terra di nessuno	cotta=terracotta	ferma=terraferma
+strada	pirata=pirata della strada	codice=codice della strada	facendo=strada facendo	ragazzi=ragazzi di strada	compagno=compagno di strada
+mani	pulite=Mani pulite	nude=a mani nude	quattro=a quattro mani	alto=mani in alto	basse=vincere a mani basse
+scuola	guida=scuola guida	media=scuola media	obbligo=scuola dell'obbligo	nave=nave scuola	vecchia=vecchia scuola
+sangue	freddo=a sangue freddo	blu=sangue blu	bagno=bagno di sangue	esame=esame del sangue	amaro=farsi il sangue amaro
+cuore	tuffo=tuffo al cuore	leone=Cuor di Leone	colpo=colpo al cuore	oro=cuore d'oro	pietra=cuore di pietra
+auto	epoca=auto d'epoca	blu=auto blu	elettrica=auto elettrica	scuola=autoscuola	stop=autostop
+numero	verde=numero verde	primo=numero primo	chiuso=numero chiuso	fortunato=numero fortunato	uno=numero uno
+forte	piatto=piatto forte	pezzo=pezzo forte	chiaro=forte e chiaro	cassa=cassaforte	piano=pianoforte
+agente	segreto=agente segreto	immobiliare=agente immobiliare	borsa=agente di borsa	polizia=agente di polizia	speciale=agente speciale
+corpo	guardia=guardia del corpo	celeste=corpo celeste	reato=corpo del reato	anima=anima e corpo	spirito=spirito di corpo
+senso	colpa=senso di colpa	buon=buonsenso	sesto=sesto senso	unico=senso unico	orario=senso orario
+quattro	soldi=da quattro soldi	gatti=quattro gatti	zampe=a quattro zampe	passi=fare quattro passi	fantastici=I Fantastici Quattro
+guerra	fredda=guerra fredda	civile=guerra civile	mondiale=guerra mondiale	grido=grido di guerra	pace=Guerra e pace
+vista	occhiali=occhiali da vista	perdere=perdere di vista	cucina=cucina a vista	terra=terra in vista	amore=amore a prima vista
+prova	nove=prova del nove	banco=banco di prova	bomba=a prova di bomba	fuoco=prova del fuoco	costume=prova costume
+conto	corrente=conto corrente	rovescia=conto alla rovescia	estratto=estratto conto	salato=conto salato	tenere=tenere conto
+mezzo	sette=sette e mezzo	fratello=mezzo fratello	bel=nel bel mezzo	trasporto=mezzo di trasporto	termine=a mezzo termine
+parola	ordine=parola d'ordine	chiave=parola chiave	ultima=l'ultima parola	libertà=libertà di parola	passa=passaparola
+gioco	azzardo=gioco d'azzardo	prestigio=gioco di prestigio	parole=gioco di parole	tavolo=gioco da tavolo	doppio=doppio gioco
+sicurezza	cintura=cintura di sicurezza	uscita=uscita di sicurezza	cassetta=cassetta di sicurezza	distanza=distanza di sicurezza	spilla=spilla di sicurezza
+pace	giudice=giudice di pace	guerra=Guerra e pace	sensi=pace dei sensi	missione=missione di pace	nobel=Nobel per la pace
+musica	camera=musica da camera	classica=musica classica	leggera=musica leggera	cambiare=cambiare musica	ballo=musica da ballo
+libro	testo=libro di testo	mastro=libro mastro	giungla=Il libro della giungla	sogni=libro dei sogni	bordo=libro di bordo
+buono	pasto=buono pasto	nulla=buono a nulla	pane=buono come il pane	poco=poco di buono	sconto=buono sconto
+cielo	settimo=settimo cielo	grazie=grazie al cielo	aperto=a cielo aperto	stanza=Il cielo in una stanza	santo=santo cielo
+bagno	turco=bagno turco	schiuma=bagnoschiuma	folla=bagno di folla	costume=costume da bagno	maria=bagnomaria
+aria	condizionata=aria condizionata	camera=camera d'aria	castelli=castelli in aria	boccata=boccata d'aria	colpo=colpo d'aria
+voce	bianca=voce bianca	capitolo=voce in capitolo	grossa=fare la voce grossa	alta=a voce alta	piena=a piena voce
+cane	sciolto=cane sciolto	lupo=cane lupo	caccia=cane da caccia	pesce=pescecane	mondo=Mondo cane
+campo	battaglia=campo di battaglia	santo=camposanto	magnetico=campo magnetico	giochi=campo giochi	minato=campo minato
+luce	anno=anno luce	dare=dare alla luce	velocità=velocità della luce	punto=punto luce	sole=alla luce del sole
+passo	falso=passo falso	pari=di pari passo	carica=a passo di carica	carrabile=passo carrabile	elefante=a passo d'elefante
+onore	damigella=damigella d'onore	delitto=delitto d'onore	giro=giro d'onore	parola=parola d'onore	legion=Legion d'onore
+alto	tradimento=alto tradimento	mare=in alto mare	profilo=alto profilo	bordo=d'alto bordo	mani=mani in alto
+camera	oscura=camera oscura	commercio=camera di commercio	letto=camera da letto	gas=camera a gas	deputati=Camera dei deputati
+viaggio	nozze=viaggio di nozze	speranza=viaggio della speranza	buon=buon viaggio	compagno=compagno di viaggio	tempo=viaggio nel tempo
+chiaro	tondo=chiaro e tondo	luna=chiaro di luna	sole=chiaro come il sole	parlare=parlare chiaro	mettere=mettere in chiaro
+bocca	lupo=in bocca al lupo	acqua=acqua in bocca	amaro=amaro in bocca	aperta=a bocca aperta	buona=di bocca buona
+ordine	forze=forze dell'ordine	parola=parola d'ordine	giorno=ordine del giorno	primo=di prim'ordine	pubblico=ordine pubblico
+occhio	perdita=a perdita d'occhio	pugno=pugno nell'occhio	colpo=colpo d'occhio	falco=occhio di falco	riguardo=occhio di riguardo
+fondo	sci=sci di fondo	perduto=a fondo perduto	cima=da cima a fondo	doppio=doppiofondo	pensione=fondo pensione
+potere	quarto=quarto potere	abuso=abuso di potere	vuoto=vuoto di potere	volere=volere è potere	temporale=potere temporale
+pezzo	grosso=pezzo grosso	novanta=pezzo da novanta	forte=pezzo forte	ricambio=pezzo di ricambio	carta=pezzo di carta
+porto	armi=porto d'armi	sicuro=porto sicuro	mare=porto di mare	franco=porto franco	andare=andare in porto
+lista	attesa=lista d'attesa	nozze=lista di nozze	nera=lista nera	spesa=lista della spesa	desideri=lista dei desideri
+tenere	duro=tenere duro	banco=tenere banco	bada=tenere a bada	broncio=tenere il broncio	fede=tenere fede
+centro	storico=centro storico	commerciale=centro commerciale	gravità=centro di gravità	benessere=centro benessere	sociale=centro sociale
+sole	occhiali=occhiali da sole	colpo=colpo di sole	gira=girasole	autostrada=Autostrada del Sole	scandalo=Scandalo al sole
+legge	marziale=legge marziale	disegno=disegno di legge	decreto=decreto legge	fuori=fuorilegge	forte=la legge del più forte
+scena	messa=messa in scena	muta=scena muta	rubare=rubare la scena	retro=retroscena	colpo=colpo di scena
+presa	macchina=macchina da presa	corrente=presa di corrente	posizione=presa di posizione	coscienza=presa di coscienza	diretta=in presa diretta
+servizio	area=area di servizio	leva=servizio di leva	camera=servizio in camera	civile=servizio civile	stazione=stazione di servizio
+pieno	regime=a pieno regime	titolo=a pieno titolo	uovo=pieno come un uovo	giorno=in pieno giorno	tempo=a tempo pieno
+fame	lupo=fame da lupo	sciopero=sciopero della fame	morto=morto di fame	nervosa=fame nervosa	mondo=la fame nel mondo
+compagnia	animale=animale da compagnia	bandiera=compagnia di bandiera	bella=e compagnia bella	anello=La Compagnia dell'Anello	assicurazioni=compagnia di assicurazioni
+arma	bianca=arma bianca	fuoco=arma da fuoco	carabinieri=Arma dei Carabinieri	taglio=arma a doppio taglio	segreta=arma segreta
+uscita	sicurezza=uscita di sicurezza	emergenza=uscita di emergenza	buon=buonuscita	strategia=strategia d'uscita	libera=libera uscita
+grosso	pezzo=pezzo grosso	modo=grosso modo	sale=sale grosso	calibro=grosso calibro	pesce=pesce grosso
+dolce	acqua=acqua dolce	attesa=in dolce attesa	vita=La dolce vita	patata=patata dolce	niente=il dolce far niente
+chiave	inglese=chiave inglese	volta=chiave di volta	parola=parola chiave	lettura=chiave di lettura	punto=punto chiave
+sala	attesa=sala d'attesa	operatoria=sala operatoria	stampa=sala stampa	giochi=sala giochi	ballo=sala da ballo
+base	casa=casa base	medico=medico di base	terza=terza base	aerea=base aerea	prezzo=prezzo base
+sette	mari=i sette mari	nani=i sette nani	bello=settebello	mezzo=sette e mezzo	samurai=I sette samurai
+diritto	autore=diritto d'autore	civile=diritto civile	voto=diritto di voto	asilo=diritto d'asilo	penale=diritto penale
+nero	buco=buco nero	cigno=Il cigno nero	lavoro=lavoro nero	libro=libro nero	mercato=mercato nero
+zona	franca=zona franca	grigia=zona grigia	euro=zona euro	disco=zona disco	ombra=zona d'ombra
+partita	doppia=partita doppia	iva=partita IVA	giro=partita di giro	pallone=La partita di pallone	caccia=partita di caccia
+spazio	vitale=spazio vitale	vuoto=spazio vuoto	dare=dare spazio	odissea=2001: Odissea nello spazio	tempo=spazio-tempo
+santo	padre=Santo Padre	spirito=Spirito Santo	venerdì=Venerdì Santo	protettore=santo protettore	cielo=santo cielo
+pena	valere=valere la pena	morte=pena di morte	capitale=pena capitale	casa=casa di pena	anima=anima in pena
+luogo	comune=luogo comune	primo=in primo luogo	culto=luogo di culto	dare=dare luogo	tempo=a tempo e luogo
+pubblico	ministero=pubblico ministero	debito=debito pubblico	ufficiale=pubblico ufficiale	dominio=pubblico dominio	trasporto=trasporto pubblico
+corso	laurea=corso di laurea	acqua=corso d'acqua	opera=in corso d'opera	recupero=corso di recupero	lingua=corso di lingua
+pericolo	segnale=segnale di pericolo	vita=pericolo di vita	correre=correre pericolo	scampato=scampato pericolo	pubblico=pericolo pubblico
+freddo	sudare=sudare freddo	sangue=a sangue freddo	caffè=caffè freddo	ondata=ondata di freddo	cane=freddo cane
+guardia	corpo=guardia del corpo	cambio=cambio della guardia	medica=guardia medica	vecchia=vecchia guardia	svizzera=guardia svizzera
+caccia	streghe=caccia alle streghe	tesoro=caccia al tesoro	uomo=caccia all'uomo	aereo=aereo da caccia	cane=cane da caccia
+ballo	maschera=Un ballo in maschera	sala=sala da ballo	tirare=tirare in ballo	pista=pista da ballo	mattone=Il ballo del mattone
+duro	osso=osso duro	tenere=tenere duro	grano=grano duro	disco=disco duro	pugno=pugno duro
+cucina	robot=robot da cucina	vista=cucina a vista	carta=carta da cucina	coltello=coltello da cucina	libro=libro di cucina
+anima	gemella=anima gemella	corpo=anima e corpo	viva=anima viva	pena=anima in pena	dannata=anima dannata
+borsa	studio=borsa di studio	nera=borsa nera	ghiaccio=borsa del ghiaccio	spesa=borsa della spesa	valori=borsa valori
+reale	pappa=pappa reale	aquila=aquila reale	scala=scala reale	tavola=tavola reale	famiglia=famiglia reale
+aperto	cielo=a cielo aperto	cuore=a cuore aperto	viso=a viso aperto	mare=mare aperto	libro=libro aperto
+brutta	figura=brutta figura	copia=brutta copia	bestia=brutta bestia	cera=brutta cera	fine=fare una brutta fine
+mare	frutti=frutti di mare	lupo=lupo di mare	porto=porto di mare	alto=in alto mare	goccia=una goccia nel mare
+caffè	corretto=caffè corretto	macchiato=caffè macchiato	ristretto=caffè ristretto	americano=caffè americano	latte=caffellatte
+barca	vela=barca a vela	stessa=sulla stessa barca	remi=barca a remi	posto=posto barca	motore=barca a motore
+comune	luogo=luogo comune	fossa=fossa comune	senso=senso comune	causa=fare causa comune	fronte=fare fronte comune
+bomba	atomica=bomba atomica	mano=bomba a mano	acqua=bomba d'acqua	prova=a prova di bomba	pacco=pacco bomba
+segno	tiro=tiro a segno	lasciare=lasciare il segno	passare=passare il segno	zodiacale=segno zodiacale	croce=segno della croce
+rosso	cartellino=cartellino rosso	tappeto=tappeto rosso	vedere=vedere rosso	pianeta=pianeta rosso	cappuccetto=Cappuccetto Rosso
+pressione	alta=alta pressione	pentola=pentola a pressione	gruppo=gruppo di pressione	fiscale=pressione fiscale	bassa=bassa pressione
+maestro	ascia=maestro d'ascia	albero=albero maestro	cappella=maestro di cappella	gran=gran maestro	margherita=Il Maestro e Margherita
+banca	dati=banca dati	centrale=banca centrale	conto=conto in banca	rapina=rapina in banca	mondiale=Banca Mondiale
+messa	piega=messa in piega	onda=messa in onda	punto=messa a punto	terra=messa a terra	scena=messa in scena
+guida	patente=patente di guida	cane=cane guida	linea=linea guida	scuola=scuola guida	turistica=guida turistica
+prezzo	pieno=prezzo pieno	caro=a caro prezzo	fisso=prezzo fisso	stracciato=prezzo stracciato	costo=prezzo di costo
+collo	rotta=a rotta di collo	bottiglia=collo di bottiglia	fiato=fiato sul collo	capo=tra capo e collo	alto=collo alto
+arte	figlio=figlio d'arte	regola=a regola d'arte	nome=nome d'arte	povera=arte povera	galleria=galleria d'arte
+muro	pianto=Muro del Pianto	berlino=muro di Berlino	suono=muro del suono	gomma=muro di gomma	parlare=parlare al muro
+stazione	servizio=stazione di servizio	spaziale=stazione spaziale	centrale=stazione centrale	capo=capostazione	polizia=stazione di polizia
+spirito	santo=Spirito Santo	presenza=presenza di spirito	patata=spirito di patata	corpo=spirito di corpo	libero=spirito libero
+bianca	settimana=settimana bianca	mosca=mosca bianca	bandiera=bandiera bianca	arma=arma bianca	neve=Biancaneve
+lingua	madre=madrelingua	segni=lingua dei segni	punta=sulla punta della lingua	gatto=lingua di gatto	franca=lingua franca
+torta	nuziale=torta nuziale	nonna=torta della nonna	compleanno=torta di compleanno	mele=torta di mele	ciliegina=la ciliegina sulla torta
+memoria	scheda=scheda di memoria	elefante=memoria da elefante	mandare=mandare a memoria	uomo=a memoria d'uomo	gocce=Gocce di memoria
+palla	canestro=pallacanestro	volo=pallavolo	mano=pallamano	piede=palla al piede	cristallo=palla di cristallo
+albero	maestro=albero maestro	natale=albero di Natale	genealogico=albero genealogico	frutto=albero da frutto	tronco=tronco d'albero
+natura	morta=natura morta	madre=madre natura	umana=natura umana	richiamo=il richiamo della natura	pagare=pagare in natura
+corte	marziale=corte marziale	conti=Corte dei conti	buffone=buffone di corte	dama=dama di corte	maniche=maniche corte
+pesce	aprile=pesce d'aprile	spada=pesce spada	palla=pesce palla	rosso=pesce rosso	pagliaccio=pesce pagliaccio
+opera	buffa=opera buffa	mano=manodopera	arte=opera d'arte	fantasma=Il fantasma dell'Opera	lirica=opera lirica
+verde	pollice=pollice verde	numero=numero verde	benzina=benzina verde	semaforo=semaforo verde	speranza=verde speranza
+peso	morto=peso morto	mosca=peso mosca	netto=peso netto	specifico=peso specifico	lancio=lancio del peso
+dente	giudizio=dente del giudizio	latte=dente da latte	leone=dente di leone	avvelenato=avere il dente avvelenato	occhio=occhio per occhio, dente per dente
+effetto	serra=effetto serra	collaterale=effetto collaterale	speciale=effetto speciale	farfalla=effetto farfalla	domino=effetto domino
+stampa	conferenza=conferenza stampa	comunicato=comunicato stampa	libertà=libertà di stampa	ufficio=ufficio stampa	errore=errore di stampa
+angolo	retto=angolo retto	calcio=calcio d'angolo	dietro=dietro l'angolo	giro=angolo giro	cottura=angolo cottura
+latte	fratello=fratello di latte	polvere=latte in polvere	intero=latte intero	cocco=latte di cocco	versato=piangere sul latte versato
+gatto	stivali=Il gatto con gli stivali	pesce=pesce gatto	occhio=occhio di gatto	lingua=lingua di gatto	volpe=il gatto e la volpe
+vento	mulino=mulino a vento	galleria=galleria del vento	colpo=colpo di vento	manica=manica a vento	via=Via col vento
+mercato	pulci=mercato delle pulci	buon=a buon mercato	nero=mercato nero	ricerca=ricerca di mercato	super=supermercato
+buco	nero=buco nero	osso=ossobuco	acqua=un buco nell'acqua	serratura=il buco della serratura	ozono=buco dell'ozono
+ponte	sospiri=Ponte dei Sospiri	testa=testa di ponte	comando=ponte di comando	levatoio=ponte levatoio	tibetano=ponte tibetano
+ghiaccio	secco=ghiaccio secco	hockey=hockey su ghiaccio	rompere=rompere il ghiaccio	cubetto=cubetto di ghiaccio	danza=danza sul ghiaccio
+tiro	segno=tiro a segno	arco=tiro con l'arco	cavallo=cavallo da tiro	mancino=tiro mancino	libero=tiro libero
+pista	atterraggio=pista d'atterraggio	sci=pista da sci	ballo=pista da ballo	ciclabile=pista ciclabile	circo=pista del circo
+angelo	custode=angelo custode	capelli=capelli d'angelo	caduto=angelo caduto	azzurro=L'angelo azzurro	lunedì=lunedì dell'Angelo
+età	tenera=tenera età	pietra=età della pietra	oro=età dell'oro	maggiore=maggiore età	innocenza=L'età dell'innocenza
+genio	lampo=lampo di genio	colpo=colpo di genio	civile=genio civile	lampada=il genio della lampada	andare=andare a genio
+società	alta=alta società	civile=società civile	azioni=società per azioni	anonima=società anonima	benessere=società del benessere
+vuoto	girare=girare a vuoto	assegno=assegno a vuoto	rendere=vuoto a rendere	cadere=cadere nel vuoto	potere=vuoto di potere
+orologio	polso=orologio da polso	svizzero=orologio svizzero	cucù=orologio a cucù	puntuale=puntuale come un orologio	biologico=orologio biologico
+erba	medica=erba medica	filo=filo d'erba	voglio=l'erba voglio	gatta=erba gatta	cattiva=l'erba cattiva non muore mai
+fuga	notizie=fuga di notizie	cervelli=fuga di cervelli	via=via di fuga	mezzanotte=Fuga di mezzanotte	gas=fuga di gas
+corrente	conto=conto corrente	acqua=acqua corrente	presa=presa di corrente	golfo=Corrente del Golfo	contro=controcorrente
+libertà	stampa=libertà di stampa	vigilata=libertà vigilata	parola=libertà di parola	statua=Statua della Libertà	ali=Le ali della libertà
+doppio	mento=doppio mento	gioco=doppio gioco	senso=doppio senso	taglio=a doppio taglio	fondo=doppiofondo
+zero	anno=anno zero	assoluto=zero assoluto	paziente=paziente zero	chilometro=chilometro zero	sparare=sparare a zero
+atto	fede=atto di fede	prendere=prendere atto	mettere=mettere in atto	dolore=atto di dolore	unico=atto unico
+rossa	carne=carne rossa	bandiera=bandiera rossa	linea=linea rossa	croce=Croce Rossa	luna=Luna Rossa
+lupo	mannaro=lupo mannaro	bocca=in bocca al lupo	mare=lupo di mare	fame=fame da lupo	solitario=lupo solitario
+gas	serra=gas serra	esilarante=gas esilarante	camera=camera a gas	dare=dare gas	naturale=gas naturale
+moto	perpetuo=moto perpetuo	acqua=moto d'acqua	ondoso=moto ondoso	mettere=mettere in moto	cross=motocross
+santa	settimana=Settimana Santa	terra=Terra Santa	sede=Santa Sede	pazienza=santa pazienza	ragione=di santa ragione
+rete	sociale=rete sociale	pesca=rete da pesca	salvataggio=rete di salvataggio	televisiva=rete televisiva	ferroviaria=rete ferroviaria
+credito	carta=carta di credito	istituto=istituto di credito	dare=dare credito	consumo=credito al consumo	telefonico=credito telefonico
+motore	ricerca=motore di ricerca	barca=barca a motore	reazione=motore a reazione	vapore=motore a vapore	olio=olio motore
+piatto	forte=piatto forte	unico=piatto unico	primo=primo piatto	doccia=piatto doccia	vendetta=la vendetta è un piatto che va servito freddo
+calcio	angolo=calcio d'angolo	punizione=calcio di punizione	rigore=calcio di rigore	balilla=calcio balilla	mercato=calciomercato
+debito	pubblico=debito pubblico	tempo=a tempo debito	promessa=ogni promessa è debito	carta=carta di debito	estero=debito estero
+pietra	preziosa=pietra preziosa	età=età della pietra	filosofale=pietra filosofale	scandalo=pietra dello scandalo	miliare=pietra miliare
+camicia	notte=camicia da notte	forza=camicia di forza	uovo=uovo in camicia	maniche=in maniche di camicia	nascere=nascere con la camicia
+formaggio	pane=pane e formaggio	fuso=formaggio fuso	capra=formaggio di capra	grattugiato=formaggio grattugiato	fossa=formaggio di fossa
+salto	buio=salto nel buio	qualità=salto di qualità	asta=salto con l'asta	mortale=salto mortale	triplo=salto triplo
+ombra	zona=zona d'ombra	dubbio=senz'ombra di dubbio	vento=L'ombra del vento	cono=cono d'ombra	governo=governo ombra
+tavola	calda=tavola calda	rotonda=tavola rotonda	surf=tavola da surf	apparecchiare=apparecchiare la tavola	vela=tavola a vela
+carica	elettrica=carica elettrica	tornare=tornare alla carica	passo=a passo di carica	dare=dare la carica	entrare=entrare in carica
+moda	alta=alta moda	casa=casa di moda	ultima=all'ultima moda	sfilata=sfilata di moda	passare=passare di moda
+neve	pupazzo=pupazzo di neve	fiocco=fiocco di neve	palle=palle di neve	bianca=Biancaneve	catene=catene da neve
+pari	merito=a pari merito	opportunità=pari opportunità	passo=di pari passo	armi=ad armi pari	patta=pari e patta
+punta	ora=ora di punta	diamante=punta di diamante	piedi=in punta di piedi	uomo=uomo di punta	iceberg=la punta dell'iceberg
+sale	zucca=sale in zucca	pepe=sale e pepe	grosso=sale grosso	sapore=Sapore di sale	inglese=sale inglese
+onda	lunghezza=lunghezza d'onda	messa=messa in onda	cresta=sulla cresta dell'onda	anomala=onda anomala	verde=onda verde
+stretto	parente=parente stretto	caffè=caffè stretto	messina=Stretto di Messina	contatto=a stretto contatto	giro=a stretto giro
+orso	polare=orso polare	bruno=orso bruno	marsicano=orso marsicano	pelle=vendere la pelle dell'orso	bianco=orso bianco
+olio	gomito=olio di gomito	pittura=pittura a olio	liscio=liscio come l'olio	ricino=olio di ricino	santo=olio santo
+disco	volante=disco volante	orario=disco orario	rigido=disco rigido	freno=freno a disco	lancio=lancio del disco
+coda	paglia=coda di paglia	cavallo=coda di cavallo	titoli=titoli di coda	pianoforte=pianoforte a coda	rospo=coda di rospo
+velocità	luce=velocità della luce	suono=velocità del suono	crociera=velocità di crociera	limite=limite di velocità	tutta=a tutta velocità
+marcia	indietro=marcia indietro	nuziale=marcia nuziale	tabella=tabella di marcia	mela=mela marcia	senso=senso di marcia
+bassa	lega=di bassa lega	macelleria=bassa macelleria	fiamma=a fiamma bassa	marea=bassa marea	padana=Bassa padana
+cassa	risonanza=cassa di risonanza	morto=cassa da morto	risparmio=cassa di risparmio	battere=battere cassa	integrazione=cassa integrazione
+massa	cultura=cultura di massa	produzione=produzione di massa	estinzione=estinzione di massa	turismo=turismo di massa	grassa=massa grassa
+mosca	bianca=mosca bianca	cieca=mosca cieca	peso=peso mosca	naso=avere la mosca al naso	volare=non si sente volare una mosca
+fiato	sospeso=col fiato sospeso	corto=fiato corto	collo=fiato sul collo	strumento=strumento a fiato	riprendere=riprendere fiato
+osso	duro=osso duro	buco=ossobuco	sacro=osso sacro	fino=fino all'osso	ridurre=ridurre all'osso
+nozze	viaggio=viaggio di nozze	lista=lista di nozze	oro=nozze d'oro	andare=andare a nozze	testimone=testimone di nozze
+canto	cigno=canto del cigno	bel=belcanto	sirene=il canto delle sirene	gregoriano=canto gregoriano	natale=Canto di Natale
+calore	colpo=colpo di calore	pompa=pompa di calore	ondata=ondata di calore	specifico=calore specifico	umano=calore umano
+volante	otto=ottovolante	disco=disco volante	tappeto=tappeto volante	cervo=cervo volante	squadra=Squadra Volante
+topo	biblioteca=topo di biblioteca	appartamento=topo d'appartamento	grigio=grigio topo	gigio=Topo Gigio	campagna=topo di campagna
+catena	montaggio=catena di montaggio	alimentare=catena alimentare	reazione=reazione a catena	antonio=catena di Sant'Antonio	montuosa=catena montuosa
+ruota	scorta=ruota di scorta	fortuna=La ruota della fortuna	panoramica=ruota panoramica	quinta=la quinta ruota del carro	criceto=la ruota del criceto
+cabina	telefonica=cabina telefonica	armadio=cabina armadio	regia=cabina di regia	elettorale=cabina elettorale	pilotaggio=cabina di pilotaggio
+carro	attrezzi=carro attrezzi	armato=carro armato	funebre=carro funebre	merci=carro merci	gran=Gran Carro
+uovo	colombo=uovo di Colombo	sodo=uovo sodo	pasqua=uovo di Pasqua	testa=testa d'uovo	camicia=uovo in camicia
+banco	prova=banco di prova	tenere=tenere banco	nebbia=banco di nebbia	pegni=banco dei pegni	lotto=banco lotto
+giallo	cartellino=cartellino giallo	limone=giallo limone	romanzo=romanzo giallo	sottomarino=Il sottomarino giallo	fiume=Fiume Giallo
+piazza	pulita=fare piazza pulita	letto=letto a una piazza	scendere=scendere in piazza	mettere=mettere in piazza	grande=Piazza Grande
+secco	ghiaccio=ghiaccio secco	fico=fico secco	restare=restare a secco	lavaggio=lavaggio a secco	ramo=ramo secco
+bandiera	bianca=bandiera bianca	compagnia=compagnia di bandiera	cambiare=cambiare bandiera	rossa=bandiera rossa	alza=alzabandiera
+spina	dorsale=spina dorsale	fianco=spina nel fianco	staccare=staccare la spina	birra=birra alla spina	pesce=a spina di pesce
+capitale	vizio=vizio capitale	peccato=peccato capitale	pena=pena capitale	rischio=capitale di rischio	sociale=capitale sociale
+pasta	madre=pasta madre	fresca=pasta fresca	uovo=pasta all'uovo	frolla=pasta frolla	dentifricia=pasta dentifricia
+tigre	carta=tigre di carta	occhio=l'occhio della tigre	cavalcare=cavalcare la tigre	squalo=squalo tigre	zanzara=zanzara tigre
+materia	prima=materia prima	grigia=materia grigia	oscura=materia oscura	plastica=materia plastica	esperto=esperto in materia
+frutto	proibito=frutto proibito	passione=frutto della passione	amore=frutto dell'amore	albero=albero da frutto	dare=dare frutto
+botta	risposta=botta e risposta	tenere=tenere botta	via=una botta e via	calda=a botta calda	sicura=a botta sicura
+fisso	posto=posto fisso	chiodo=chiodo fisso	prezzo=prezzo fisso	reddito=reddito fisso	telefono=telefono fisso
+grano	duro=grano duro	turco=granturco	cerchi=cerchi nel grano	campo=campo di grano	saraceno=grano saraceno
+freno	mano=freno a mano	tenere=tenere a freno	emergenza=freno d'emergenza	disco=freno a disco	mordere=mordere il freno
+cavallo	battaglia=cavallo di battaglia	coda=coda di cavallo	febbre=febbre da cavallo	troia=cavallo di Troia	dondolo=cavallo a dondolo
+inglese	chiave=chiave inglese	zuppa=zuppa inglese	colazione=colazione all'inglese	corno=corno inglese	giardino=giardino all'inglese
+volo	assistente=assistente di volo	prendere=prendere il volo	pindarico=volo pindarico	tiro=tiro a volo	uccello=a volo d'uccello
+codice	barre=codice a barre	fiscale=codice fiscale	strada=codice della strada	morse=codice Morse	vinci=Il codice da Vinci
+carne	macello=carne da macello	cannone=carne da cannone	scatola=carne in scatola	pesce=né carne né pesce	fuoco=troppa carne al fuoco
+caldo	ondata=ondata di caldo	punto=punto caldo	autunno=autunno caldo	tenere=tenere in caldo	sangue=a sangue caldo
+pelle	oca=pelle d'oca	amico=amico per la pelle	ossa=pelle e ossa	finta=finta pelle	orso=la pelle dell'orso
+luna	miele=luna di miele	park=luna park	piena=luna piena	chiaro=chiaro di luna	mezza=mezzaluna
+vino	rosso=vino rosso	bianco=vino bianco	casa=vino della casa	tavola=vino da tavola	cotto=vino cotto
+chiodo	fisso=chiodo fisso	scarpe=appendere le scarpe al chiodo	magro=magro come un chiodo	garofano=chiodo di garofano	battere=battere sempre sullo stesso chiodo
+stella	cadente=stella cadente	polare=stella polare	marina=stella marina	cometa=stella cometa	alpina=stella alpina
+rosa	venti=rosa dei venti	spine=non c'è rosa senza spine	nome=Il nome della rosa	maglia=maglia rosa	cronaca=cronaca rosa
+ferro	braccio=braccio di ferro	cavallo=ferro di cavallo	stiro=ferro da stiro	pugno=pugno di ferro	età=età del ferro
+lettera	morta=lettera morta	amore=lettera d'amore	raccomandata=lettera raccomandata	scarlatta=La lettera scarlatta	maiuscola=lettera maiuscola
+fortuna	ruota=La ruota della fortuna	colpo=colpo di fortuna	biscotto=biscotto della fortuna	tentare=tentare la fortuna	buona=buona fortuna
+treno	vita=treno di vita	merci=treno merci	perdere=perdere il treno	fantasma=treno fantasma	gomme=treno di gomme
+pane	burro=pane e burro	buono=buono come il pane	vino=dire pane al pane e vino al vino	amore=Pane, amore e fantasia	guadagnarsi=guadagnarsi il pane
+sogno	americano=sogno americano	cassetto=sogno nel cassetto	estate=Sogno di una notte di mezza estate	realizzare=realizzare un sogno	proibito=sogno proibito
+bottiglia	collo=collo di bottiglia	messaggio=messaggio in bottiglia	verde=verde bottiglia	fondo=fondo di bottiglia	gioco=gioco della bottiglia
+vetro	soffiato=vetro soffiato	lana=lana di vetro	fibra=fibra di vetro	murano=vetro di Murano	sicurezza=vetro di sicurezza
+oca	pelle=pelle d'oca	gioco=gioco dell'oca	giuliva=oca giuliva	passo=passo dell'oca	collo=collo d'oca
+asino	ponte=ponte dell'asino	orecchie=orecchie d'asino	calcio=calcio dell'asino	schiena=a schiena d'asino	berretto=berretto d'asino
+leone	cuor=Cuor di Leone	marino=leone marino	parte=la parte del leone	dente=dente di leone	re=Il re leone
+volpe	uva=la volpe e l'uva	furbo=furbo come una volpe	gatto=il gatto e la volpe	vecchia=vecchia volpe	deserto=volpe del deserto
+gallina	vecchia=gallina vecchia fa buon brodo	uova=la gallina dalle uova d'oro	zampe=zampe di gallina	brodo=brodo di gallina	cervello=cervello di gallina
+elefante	memoria=memoria da elefante	cristalleria=un elefante in una cristalleria	passo=a passo d'elefante	marino=elefante marino	bianco=elefante bianco
+farfalla	effetto=effetto farfalla	stile=stile farfalla	cravatta=cravatta a farfalla	notturna=farfalla notturna	ali=ali di farfalla
+cioccolato	fondente=cioccolato fondente	latte=cioccolato al latte	fabbrica=La fabbrica di cioccolato	tavoletta=tavoletta di cioccolato	uovo=uovo di cioccolato
+tè	freddo=tè freddo	verde=tè verde	tazza=tazza di tè	cinque=il tè delle cinque	deserto=Il tè nel deserto
+zucchero	velo=zucchero a velo	canna=zucchero di canna	filato=zucchero filato	zolletta=zolletta di zucchero	bustina=bustina di zucchero
+uva	passa=uva passa	spina=uva spina	volpe=la volpe e l'uva	grappolo=grappolo d'uva	chicco=chicco d'uva
+mela	marcia=mela marcia	grande=la Grande Mela	cotogna=mela cotogna	medico=una mela al giorno toglie il medico di torno	verde=mela verde
+patata	bollente=patata bollente	dolce=patata dolce	spirito=spirito di patata	naso=naso a patata	lessa=patata lessa
+limone	giallo=giallo limone	spremuto=spremuto come un limone	succo=succo di limone	scorza=scorza di limone	sorbetto=sorbetto al limone
+arancia	meccanica=Arancia meccanica	spremuta=spremuta d'arancia	succo=succo d'arancia	rossa=arancia rossa	buccia=buccia d'arancia
+sedia	elettrica=sedia elettrica	rotelle=sedia a rotelle	sdraio=sedia a sdraio	dondolo=sedia a dondolo	gestatoria=sedia gestatoria
+tavolo	gioco=gioco da tavolo	trattative=tavolo delle trattative	verde=tavolo verde	biliardo=tavolo da biliardo	cucina=tavolo da cucina
+sacco	pelo=sacco a pelo	patate=sacco di patate	vuoto=sacco vuoto non sta in piedi	mettere=mettere nel sacco	farina=farina del suo sacco
+scatola	nera=scatola nera	cambio=scatola del cambio	cranica=scatola cranica	carne=carne in scatola	scarpe=scatola delle scarpe
+pallone	gonfiato=pallone gonfiato	testa=fare la testa come un pallone	sonda=pallone sonda	oro=Pallone d'oro	partita=La partita di pallone
+tetto	gatta=La gatta sul tetto che scotta	mondo=il tetto del mondo	violinista=Il violinista sul tetto	spesa=tetto di spesa	sotto=sottotetto
+scala	mobile=scala mobile	reale=scala reale	quaranta=scala quaranta	chiocciola=scala a chiocciola	antincendio=scala antincendio
+cassetta	sicurezza=cassetta di sicurezza	attrezzi=cassetta degli attrezzi	postale=cassetta postale	pane=pane in cassetta	lettere=cassetta delle lettere
+coltello	manico=il coltello dalla parte del manico	burro=come un coltello nel burro	serramanico=coltello a serramanico	caccia=coltello da caccia	tagliare=un'aria da tagliare col coltello
+naso	patata=naso a patata	mosca=avere la mosca al naso	ficcare=ficcare il naso	menare=menare per il naso	chiuso=naso chiuso
+braccio	ferro=braccio di ferro	destro=braccio destro	mare=braccio di mare	secolare=braccio secolare	armato=braccio armato
+cervello	fuga=fuga di cervelli	gallina=cervello di gallina	elettronico=cervello elettronico	lavaggio=lavaggio del cervello	fino=cervello fino
+stomaco	pugno=pugno nello stomaco	bocca=bocca dello stomaco	pelo=avere pelo sullo stomaco	vuoto=a stomaco vuoto	mal=mal di stomaco
+lacrime	coccodrillo=lacrime di coccodrillo	sangue=sangue, sudore e lacrime	valle=valle di lacrime	ridere=ridere fino alle lacrime	pioggia=come lacrime nella pioggia
+bacio	perugina=Bacio Perugina	francese=bacio alla francese	giuda=bacio di Giuda	morte=bacio della morte	mano=baciamano
+lampo	genio=lampo di genio	chiusura=chiusura lampo	guerra=guerra lampo	visita=visita lampo	cerniera=cerniera lampo
+mondo	terzo=terzo mondo	giro=il giro del mondo	capo=in capo al mondo	tetto=il tetto del mondo	cane=Mondo cane
+città	eterna=Città Eterna	vecchia=città vecchia	giardino=città giardino	vaticano=Città del Vaticano	invisibili=Le città invisibili
+giardino	zoologico=giardino zoologico	segreto=Il giardino segreto	inglese=giardino all'inglese	infanzia=giardino d'infanzia	nano=nano da giardino
+fiume	piena=fiume in piena	letto=letto del fiume	giallo=Fiume Giallo	parole=un fiume di parole	ponte=Il ponte sul fiume Kwai
+isola	tesoro=L'isola del tesoro	famosi=L'isola dei famosi	pedonale=isola pedonale	deserta=isola deserta	ecologica=isola ecologica
+deserto	rosso=Il deserto rosso	tè=Il tè nel deserto	volpe=volpe del deserto	tartari=Il deserto dei Tartari	traversata=traversata del deserto
+nave	madre=nave madre	scuola=nave scuola	pirata=nave pirata	crociera=nave da crociera	fantasma=nave fantasma
+torre	controllo=torre di controllo	pisa=Torre di Pisa	avorio=torre d'avorio	babele=Torre di Babele	eiffel=Torre Eiffel
+castello	sabbia=castello di sabbia	carte=castello di carte	letto=letto a castello	aria=castelli in aria	incantato=castello incantato
+palazzo	giustizia=palazzo di giustizia	vecchio=Palazzo Vecchio	ducale=Palazzo Ducale	congiura=congiura di palazzo	reale=palazzo reale
+chiesa	casa=casa e chiesa	cane=come un cane in chiesa	madre=chiesa madre	romana=Santa Romana Chiesa	sposarsi=sposarsi in chiesa
+ufficio	postale=ufficio postale	stampa=ufficio stampa	avvocato=avvocato d'ufficio	abuso=abuso d'ufficio	oggetti=ufficio oggetti smarriti
+teatro	colpo=colpo di teatro	burattini=teatro dei burattini	posa=teatro di posa	guerra=teatro di guerra	stabile=teatro stabile
+festa	mamma=festa della mamma	papà=festa del papà	donna=festa della donna	guasta=guastafeste	repubblica=festa della Repubblica
+natale	babbo=Babbo Natale	albero=albero di Natale	canto=Canto di Natale	vacanze=Vacanze di Natale	notte=notte di Natale
+pasqua	uovo=uovo di Pasqua	contento=contento come una Pasqua	isola=Isola di Pasqua	natale=Natale con i tuoi, Pasqua con chi vuoi	domenica=domenica di Pasqua
+regalo	carta=carta regalo	buono=buono regalo	idea=idea regalo	pacco=pacco regalo	natale=regalo di Natale
+sorpresa	uovo=uovo con la sorpresa	effetto=effetto sorpresa	festa=festa a sorpresa	attacco=attacco a sorpresa	bella=una bella sorpresa
+segreto	agente=agente segreto	giardino=Il giardino segreto	pulcinella=il segreto di Pulcinella	professionale=segreto professionale	stato=segreto di Stato
+principe	azzurro=principe azzurro	piccolo=Il piccolo principe	ereditario=principe ereditario	consorte=principe consorte	ranocchio=il principe ranocchio
+re	sole=il Re Sole	leone=Il re leone	magi=i Re Magi	nudo=il re è nudo	scacco=scacco al re
+regina	madre=regina madre	ape=ape regina	nevi=La regina delle nevi	cuori=regina di cuori	notte=la Regina della notte
+corona	spine=corona di spine	alloro=corona d'alloro	virus=coronavirus	solare=corona solare	rosario=corona del rosario
+trono	spade=Il trono di spade	erede=erede al trono	salire=salire al trono	sala=sala del trono	pretendente=pretendente al trono
+tesoro	caccia=caccia al tesoro	isola=L'isola del tesoro	ministero=ministero del Tesoro	buoni=buoni del Tesoro	mappa=mappa del tesoro
+spada	pesce=pesce spada	damocle=spada di Damocle	tratta=difendere a spada tratta	cappa=cappa e spada	laser=spada laser
+scudo	crociato=scudo crociato	spaziale=scudo spaziale	fiscale=scudo fiscale	umano=scudo umano	termico=scudo termico
+vittoria	pirro=vittoria di Pirro	tavolino=vittoria a tavolino	cantare=cantare vittoria	schiacciante=vittoria schiacciante	alata=Vittoria alata
+battaglia	campo=campo di battaglia	cavallo=cavallo di battaglia	nome=nome di battaglia	navale=battaglia navale	algeri=La battaglia di Algeri
+soldato	semplice=soldato semplice	ignoto=il soldato ignoto	ryan=Salvate il soldato Ryan	ventura=soldato di ventura	blu=Soldato blu
+generale	quartiere=quartiere generale	sciopero=sciopero generale	prova=prova generale	anestesia=anestesia generale	segretario=segretario generale
+capitano	ventura=capitano di ventura	industria=capitano d'industria	fregata=capitano di fregata	corso=capitano di lungo corso	uncino=Capitan Uncino
+penna	sfera=penna a sfera	amico=amico di penna	stilografica=penna stilografica	nome=nome di penna	tratto=un tratto di penna
+inchiostro	china=inchiostro di china	simpatico=inchiostro simpatico	fiumi=fiumi d'inchiostro	macchia=macchia d'inchiostro	cartuccia=cartuccia d'inchiostro
+pagina	bianca=pagina bianca	voltare=voltare pagina	prima=prima pagina	ultima=ultima pagina	piè=a piè di pagina
+telefono	colpo=colpo di telefono	elenco=elenco del telefono	fisso=telefono fisso	rosa=Telefono Rosa	azzurro=Telefono Azzurro
+radio	libera=radio libera	pirata=radio pirata	onde=onde radio	sveglia=radiosveglia	cronaca=radiocronaca
+cronaca	nera=cronaca nera	rosa=cronaca rosa	bianca=cronaca bianca	fatto=fatto di cronaca	radio=radiocronaca
+foto	ricordo=foto ricordo	gruppo=foto di gruppo	tessera=fototessera	copia=fotocopia	finish=fotofinish
+nota	bene=nota bene	stonata=nota stonata	spese=nota spese	dolente=nota dolente	prendere=prendere nota
+danza	ventre=danza del ventre	classica=danza classica	ghiaccio=danza sul ghiaccio	pioggia=danza della pioggia	scuola=scuola di danza
+corsa	ostacoli=corsa a ostacoli	sacchi=corsa nei sacchi	armamenti=corsa agli armamenti	oro=corsa all'oro	cavalli=corsa dei cavalli
+squadra	mobile=squadra mobile	gioco=gioco di squadra	lavoro=lavoro di squadra	compagno=compagno di squadra	volante=Squadra Volante
+cartellino	rosso=cartellino rosso	giallo=cartellino giallo	timbrare=timbrare il cartellino	prezzo=cartellino del prezzo	furbetti=i furbetti del cartellino
+medaglia	oro=medaglia d'oro	rovescio=il rovescio della medaglia	faccia=l'altra faccia della medaglia	valore=medaglia al valore	legno=medaglia di legno
+coppa	campioni=Coppa dei Campioni	mondo=Coppa del Mondo	olio=coppa dell'olio	champagne=coppa di champagne	gelato=coppa di gelato
+secondo	tempo=secondo tempo	fine=secondo fine	piatto=secondo piatto	nessuno=secondo a nessuno	grado=di secondo grado
+settimana	fine=fine settimana	bianca=settimana bianca	santa=Settimana Santa	corta=settimana corta	enigmistica=La Settimana Enigmistica
+mezzanotte	fuga=Fuga di mezzanotte	bagno=bagno di mezzanotte	messa=messa di mezzanotte	sole=il sole di mezzanotte	scoccare=allo scoccare della mezzanotte
+tacco	dodici=tacco dodici	battere=battere i tacchi	girare=girare sui tacchi	stivale=il tacco dello stivale	spillo=tacco a spillo
+velo	zucchero=zucchero a velo	sposa=velo da sposa	pietoso=stendere un velo pietoso	maya=il velo di Maya	squarciare=squarciare il velo
+anello	compagnia=La Compagnia dell'Anello	fidanzamento=anello di fidanzamento	debole=l'anello debole	mancante=l'anello mancante	oro=anello d'oro
+perla	rara=una perla rara	collana=collana di perle	bianco=bianco perla	porci=gettare le perle ai porci	orecchino=La ragazza con l'orecchino di perla
+argento	nozze=nozze d'argento	vassoio=su un vassoio d'argento	cucchiaio=nato con il cucchiaio d'argento	vivo=argento vivo	medaglia=medaglia d'argento
+piombo	anni=anni di piombo	filo=filo a piombo	soldatino=soldatino di piombo	cappa=cappa di piombo	piedi=andarci con i piedi di piombo
+verità	momento=il momento della verità	macchina=macchina della verità	bocca=Bocca della Verità	siero=siero della verità	nuda=la nuda verità
+sonno	colpo=colpo di sonno	profondo=sonno profondo	grande=Il grande sonno	perdere=perdere il sonno	eterno=il sonno eterno
+fiducia	voto=voto di fiducia	questione=questione di fiducia	uomo=uomo di fiducia	abuso=abuso di fiducia	cieca=fiducia cieca
+voto	scambio=voto di scambio	fiducia=voto di fiducia	diritto=diritto di voto	segreto=voto segreto	castità=voto di castità
+domanda	punto=punto di domanda	offerta=domanda e offerta	matrimonio=domanda di matrimonio	trabocchetto=domanda trabocchetto	milione=la domanda da un milione di dollari
+esame	maturità=esame di maturità	coscienza=esame di coscienza	sangue=esame del sangue	riparazione=esame di riparazione	guida=esame di guida
+classe	prima=prima classe	operaia=classe operaia	dirigente=classe dirigente	capo=capoclasse	fuori=fuoriclasse
+soldi	quattro=da quattro soldi	buttare=buttare i soldi	sacco=un sacco di soldi	spicci=soldi spicci	odore=i soldi non hanno odore
+moneta	falsa=moneta falsa	ripagare=ripagare con la stessa moneta	lancio=lancio della moneta	unica=moneta unica	corrente=moneta corrente
+prendere	piede=prendere piede	giro=prendere in giro	fuoco=prendere fuoco	corpo=prendere corpo	cappello=prendere cappello
+perdere	testa=perdere la testa	tempo=perdere tempo	colpi=perdere colpi	vista=perdere di vista	bussola=perdere la bussola
+mettere	fuoco=mettere a fuoco	mondo=mettere al mondo	piazza=mettere in piazza	mani=mettere le mani avanti	casa=mettere su casa
+dare	spettacolo=dare spettacolo	retta=dare retta	buca=dare buca	numeri=dare i numeri	forfait=dare forfait
+tirare	somme=tirare le somme	campare=tirare a campare	pacco=tirare il pacco	cuoia=tirare le cuoia	sasso=tirare il sasso e nascondere la mano
+rompere	ghiaccio=rompere il ghiaccio	scatole=rompere le scatole	righe=rompere le righe	uova=rompere le uova nel paniere	silenzio=rompere il silenzio
+cadere	piedi=cadere in piedi	nuvole=cadere dalle nuvole	braccia=far cadere le braccia	trappola=cadere in trappola	vuoto=cadere nel vuoto
+giocare	casa=giocare in casa	fuoco=giocare col fuoco	anticipo=giocare d'anticipo	sporco=giocare sporco	borsa=giocare in borsa
+parte	gran=gran parte	farsi=farsi da parte	prendere=prendere parte	civile=parte civile	leone=la parte del leone
+lavoro	nero=lavoro nero	straordinario=lavoro straordinario	forza=forza lavoro	buon=buon lavoro	squadra=lavoro di squadra
+volta	chiave=chiave di volta	celeste=volta celeste	buona=una buona volta	tanto=una volta tanto	botte=volta a botte
+meglio	gioventù=La meglio gioventù	niente=meglio di niente	tanto=tanto meglio	dare=dare il meglio	tardi=meglio tardi che mai
+tanto	meglio=tanto meglio	cambiare=tanto per cambiare	grazie=grazie tanto	quanto=tanto quanto	volta=una volta tanto
+sistema	operativo=sistema operativo	solare=sistema solare	nervoso=sistema nervoso	allarme=sistema d'allarme	elettorale=sistema elettorale
+controllo	qualità=controllo di qualità	torre=torre di controllo	pannello=pannello di controllo	posto=posto di controllo	remoto=controllo remoto
+fronte	comune=fare fronte comune	freddo=fronte freddo	occidentale=Niente di nuovo sul fronte occidentale	porto=Fronte del porto	alta=a fronte alta
+direttore	orchestra=direttore d'orchestra	sportivo=direttore sportivo	scena=direttore di scena	generale=direttore generale	tecnico=direttore tecnico
+cambio	guardia=cambio della guardia	automatico=cambio automatico	leva=leva del cambio	dare=dare il cambio	scatola=scatola del cambio
+bianco	punto=di punto in bianco	vino=vino bianco	notte=notte in bianco	matrimonio=matrimonio in bianco	nero=bianco e nero
+blu	auto=auto blu	sangue=sangue blu	pillola=pillola blu	dipinto=Nel blu dipinto di blu	notte=blu notte
+legale	ora=ora legale	medicina=medicina legale	studio=studio legale	azione=azione legale	rappresentante=rappresentante legale
+centrale	banca=banca centrale	stazione=stazione centrale	nucleare=centrale nucleare	elettrica=centrale elettrica	riscaldamento=riscaldamento centrale
+azione	film=film d'azione	uomo=uomo d'azione	raggio=raggio d'azione	buona=buona azione	passare=passare all'azione
+militare	servizio=servizio militare	accademia=accademia militare	verde=verde militare	tribunale=tribunale militare	polizia=polizia militare
+medicina	legale=medicina legale	interna=medicina interna	sport=medicina dello sport	alternativa=medicina alternativa	amara=medicina amara
+analisi	logica=analisi logica	grammaticale=analisi grammaticale	sangue=analisi del sangue	ultima=in ultima analisi	mercato=analisi di mercato
+unità	misura=unità di misura	italia=Unità d'Italia	cinofila=unità cinofila	crisi=unità di crisi	nazionale=unità nazionale
+filo	piombo=filo a piombo	rasoio=sul filo del rasoio	erba=filo d'erba	voce=un filo di voce	interdentale=filo interdentale
+titolo	studio=titolo di studio	pieno=a pieno titolo	stato=titolo di Stato	gratuito=a titolo gratuito	personale=a titolo personale
+reazione	catena=reazione a catena	motore=motore a reazione	aereo=aereo a reazione	chimica=reazione chimica	nucleare=reazione nucleare
+giudizio	universale=Giudizio Universale	dente=dente del giudizio	giorno=giorno del giudizio	errore=errore di giudizio	mettere=mettere giudizio
+sociale	ragione=ragione sociale	assistente=assistente sociale	rete=rete sociale	classe=classe sociale	centro=centro sociale
+civile	guerra=guerra civile	stato=stato civile	codice=codice civile	protezione=protezione civile	unione=unione civile
+grasso	giovedì=giovedì grasso	martedì=martedì grasso	cola=grasso che cola	balena=grasso di balena	mangiare=mangiare di grasso
+botte	piena=la botte piena e la moglie ubriaca	piccola=nella botte piccola c'è il vino buono	volta=volta a botte	ferro=in una botte di ferro	spina=spina della botte
+misura	unità=unità di misura	uomo=a misura d'uomo	stretta=di stretta misura	colma=la misura è colma	passare=passare la misura
+medica	guardia=guardia medica	ricetta=ricetta medica	erba=erba medica	visita=visita medica	assistenza=assistenza medica
+educazione	fisica=educazione fisica	stradale=educazione stradale	sentimentale=L'educazione sentimentale	civica=educazione civica	artistica=educazione artistica
+solare	ora=ora solare	sistema=sistema solare	crema=crema solare	pannello=pannello solare	plesso=plesso solare
+medio	dito=dito medio	oriente=Medio Oriente	evo=Medioevo	ceto=ceto medio	termine=a medio termine
+penale	codice=codice penale	diritto=diritto penale	fedina=fedina penale	processo=processo penale	bagno=bagno penale
+animo	forza=forza d'animo	stato=stato d'animo	buon=di buon animo	farsi=farsi animo	grandezza=grandezza d'animo
+postale	ufficio=ufficio postale	codice=codice postale	casella=casella postale	vaglia=vaglia postale	cartolina=cartolina postale
+sciopero	fame=sciopero della fame	generale=sciopero generale	selvaggio=sciopero selvaggio	bianco=sciopero bianco	diritto=diritto di sciopero
+tasso	interesse=tasso di interesse	sconto=tasso di sconto	dormire=dormire come un tasso	miele=tasso del miele	alcolemico=tasso alcolemico
+ragno	tela=tela di ragno	uomo=Uomo Ragno	pesce=pesce ragno	zampe=zampe di ragno	buco=non cavare un ragno dal buco
+elettrico	treno=treno elettrico	campo=campo elettrico	cavo=cavo elettrico	impianto=impianto elettrico	blu=blu elettrico
+stradale	polizia=polizia stradale	incidente=incidente stradale	segnale=segnale stradale	cartello=cartello stradale	educazione=educazione stradale
+libretto	circolazione=libretto di circolazione	universitario=libretto universitario	assegni=libretto degli assegni	risparmio=libretto di risparmio	rosso=Libretto rosso
+elettorale	campagna=campagna elettorale	scheda=scheda elettorale	cabina=cabina elettorale	legge=legge elettorale	collegio=collegio elettorale
+digitale	impronta=impronta digitale	terrestre=digitale terrestre	fotocamera=fotocamera digitale	firma=firma digitale	orologio=orologio digitale
+celeste	volta=volta celeste	corpo=corpo celeste	impero=Celeste Impero	aida=Celeste Aida	sfera=sfera celeste
+automatico	pilota=pilota automatico	cambio=cambio automatico	distributore=distributore automatico	sportello=sportello automatico	risponditore=risponditore automatico
+artificiale	intelligenza=intelligenza artificiale	respirazione=respirazione artificiale	lago=lago artificiale	latte=latte artificiale	inseminazione=inseminazione artificiale

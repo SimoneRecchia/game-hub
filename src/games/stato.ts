@@ -17,9 +17,11 @@ import type {
   CompagniaBreve,
   CruciverbaSummary,
   FortunaRisposta,
+  GhigliottinaSummary,
   GiocoClassificato,
   NomiSummary,
   OggiRisposta,
+  ParoliereSummary,
   QuizSummary,
   RuotaSummary,
   ScarabeoSummary,
@@ -476,6 +478,95 @@ export function statoSequenze(s: SequenzeSummary): StatoOggi {
   }
 }
 
+/** La Ghigliottina: quante coppie scelte, il montepremi che resta, e com'e' finita. */
+export function statoGhigliottina(s: GhigliottinaSummary): StatoOggi {
+  const base = {
+    gioco: 'ghigliottina' as const,
+    // La parola vincente e' l'ultimo passo: vale quanto una coppia.
+    avanzamento: s.status === 'done' ? 1 : s.scelte / (s.totale + 1),
+    a: ROTTE.classificata('ghigliottina'),
+  }
+  if (s.status === 'done') {
+    return {
+      ...base,
+      fase: 'fatta',
+      titolo: s.indovinata ? 'Indovinata' : 'Non indovinata',
+      dettaglio: `${s.punti} punti`,
+      punti: s.punti,
+      azione: 'Rivedi',
+    }
+  }
+  if (!s.pronta) {
+    return {
+      ...base,
+      fase: 'non-pronta',
+      titolo: 'Non ancora pronta',
+      dettaglio: 'Riprova più tardi',
+      punti: null,
+      azione: 'Aspetta',
+    }
+  }
+  if (s.status === 'new') {
+    return {
+      ...base,
+      fase: 'da-giocare',
+      titolo: 'Da giocare',
+      dettaglio: `${s.totale} coppie, poi la parola che le lega`,
+      punti: null,
+      azione: 'Gioca',
+    }
+  }
+  return {
+    ...base,
+    fase: 'in-corso',
+    titolo: s.scelte < s.totale ? `Coppia ${s.scelte + 1} di ${s.totale}` : 'Manca la parola vincente',
+    dettaglio: `In palio ${s.montepremi} punti`,
+    punti: null,
+    azione: 'Continua',
+  }
+}
+
+/** Il Paroliere: quante parole trovate, e quanti punti dalla griglia. */
+export function statoParoliere(s: ParoliereSummary): StatoOggi {
+  const base = {
+    gioco: 'paroliere' as const,
+    avanzamento: s.status === 'done' ? 1 : s.traguardo > 0 ? Math.min(1, s.punteggio / s.traguardo) : 0,
+    a: ROTTE.classificata('paroliere'),
+  }
+  const parole = `${s.trovate} ${s.trovate === 1 ? 'parola' : 'parole'}`
+  if (s.status === 'done') {
+    return { ...base, fase: 'fatta', titolo: parole, dettaglio: `${s.punti} punti`, punti: s.punti, azione: 'Rivedi' }
+  }
+  if (!s.pronta) {
+    return {
+      ...base,
+      fase: 'non-pronta',
+      titolo: 'Non ancora pronta',
+      dettaglio: 'Riprova più tardi',
+      punti: null,
+      azione: 'Aspetta',
+    }
+  }
+  if (s.status === 'new') {
+    return {
+      ...base,
+      fase: 'da-giocare',
+      titolo: 'Da giocare',
+      dettaglio: 'Sedici dadi, tre minuti',
+      punti: null,
+      azione: 'Gioca',
+    }
+  }
+  return {
+    ...base,
+    fase: 'in-corso',
+    titolo: parole,
+    dettaglio: 'Il tempo corre',
+    punti: null,
+    azione: 'Continua',
+  }
+}
+
 export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, StatoOggi> {
   return {
     wordle: statoWordle(oggi.wordle),
@@ -487,6 +578,8 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     nomi: statoNomi(oggi.nomi),
     anagrammi: statoAnagrammi(oggi.anagrammi),
     sequenze: statoSequenze(oggi.sequenze),
+    ghigliottina: statoGhigliottina(oggi.ghigliottina),
+    paroliere: statoParoliere(oggi.paroliere),
   }
 }
 

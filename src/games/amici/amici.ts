@@ -43,6 +43,8 @@ export const DOVE_BREVE: Record<Attivita, string> = {
   nomi: 'Nomi, cose',
   anagrammi: 'Anagrammi',
   sequenze: 'Sequenze',
+  ghigliottina: 'Ghigliottina',
+  paroliere: 'Paroliere',
   indovina: 'Indovina chi',
   scacchi: 'Scacchi',
   dama: 'Dama',

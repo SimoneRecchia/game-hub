@@ -84,6 +84,16 @@
   --c2: var(--sequenze-2);
 }
 
+.copertina--ghigliottina {
+  --c1: var(--ghigliottina-1);
+  --c2: var(--ghigliottina-2);
+}
+
+.copertina--paroliere {
+  --c1: var(--paroliere-1);
+  --c2: var(--paroliere-2);
+}
+
 .copertina--lupus {
   --c1: var(--lupus-1);
   --c2: var(--lupus-2);

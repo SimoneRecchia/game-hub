@@ -10,18 +10,22 @@
  * a chi gioca che una parola non esiste, senza aspettare il server), qual e' la
  * mossa del computer in questa partita libera, e quale la risposta del computer
  * del giorno nella classificata, che va al server con la mossa di chi gioca.
+ * E una del Paroliere libero, che usa lo stesso dizionario: una griglia, con
+ * tutte le sue parole.
  */
 
 import { Dawg } from '@shared/dawg'
 import { sacchettoDaSeme, type Mossa } from '@shared/scarabeo'
 import { rispostaDelGiorno, turnoDelComputer, type PartitaLibera } from '@shared/scarabeo-computer'
 import { BYTE_DIZIONARIO, URL_DIZIONARIO, URL_DIZIONARIO_COMPRESSO } from '@shared/scarabeo-dizionario'
+import { grigliaLibera } from '@shared/paroliere'
 
 type Richiesta =
   | { id: number; tipo: 'prepara' }
   | { id: number; tipo: 'parole'; parole: string[] }
   | { id: number; tipo: 'mossa'; partita: PartitaLibera }
   | { id: number; tipo: 'risposta'; numero: number; mosse: Mossa[] }
+  | { id: number; tipo: 'paroliere'; lato: number }
 
 let dizionario: Promise<Dawg> | null = null
 
@@ -70,6 +74,8 @@ self.onmessage = async (evento: MessageEvent<Richiesta>) => {
       self.postMessage({ id: richiesta.id, ok: true })
     } else if (richiesta.tipo === 'parole') {
       self.postMessage({ id: richiesta.id, ok: true, sconosciute: richiesta.parole.filter((p) => !dawg.contiene(p)) })
+    } else if (richiesta.tipo === 'paroliere') {
+      self.postMessage({ id: richiesta.id, ok: true, ...grigliaLibera(dawg, richiesta.lato, Math.random) })
     } else if (richiesta.tipo === 'risposta') {
       const mossa = rispostaDelGiorno(dawg, richiesta.numero, richiesta.mosse)
       self.postMessage({ id: richiesta.id, ok: true, mossa })

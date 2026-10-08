@@ -21,6 +21,8 @@ import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
 import { PUNTI_COMPLETO as PUNTI_SUDOKU, VUOTA, costiSudoku, puntiSudoku } from '../../shared/sudoku'
 import type {
   AnagrammiSummary,
+  GhigliottinaSummary,
+  ParoliereSummary,
   CruciverbaSummary,
   SequenzeSummary,
   NomiSummary,
@@ -55,6 +57,21 @@ import {
 import { PAROLE_ANAGRAMMI } from '../../shared/anagrammi'
 import { giornata as giornataSequenze, partitaDi as partitaSequenze, turniDi } from './sequenzeStore'
 import { TURNI_SEQUENZE } from '../../shared/sequenze'
+import {
+  ghigliottinaDelGiorno,
+  giornata as giornataGhigliottina,
+  partitaDi as partitaGhigliottina,
+  scaduta as finaleScaduto,
+  scelteDi,
+} from './ghigliottinaStore'
+import { COPPIE_GHIGLIOTTINA, montepremi } from '../../shared/ghigliottina'
+import {
+  giornata as giornataParoliere,
+  paroliereDelGiorno,
+  partitaDi as partitaParoliere,
+  scaduta as tempoFinito,
+} from './paroliereStore'
+import { puntiParoliere } from '../../shared/paroliere'
 
 export async function riepilogoWordle(db: D1Database, playerId: string): Promise<WordleSummary> {
   const when = today()
@@ -339,6 +356,58 @@ export async function riepilogoSequenze(db: D1Database, playerId: string): Promi
     totale: TURNI_SEQUENZE,
     migliore: row?.migliore ?? 0,
     punti: row?.status === 'done' ? row.score : 0,
+    msToNextPuzzle: msToNextPuzzle(),
+  }
+}
+
+/**
+ * La Ghigliottina: quante coppie sono scelte, il montepremi e com'e' finita.
+ * Non chiude un minuto finito: lo dice finito, senza punti, come lo chiudera'
+ * la pagina.
+ */
+export async function riepilogoGhigliottina(db: D1Database, playerId: string): Promise<GhigliottinaSummary> {
+  const quando = giornataGhigliottina()
+  const [row, giorno] = await Promise.all([
+    partitaGhigliottina(db, playerId, quando.puzzleNumber),
+    ghigliottinaDelGiorno(db, quando.puzzleNumber),
+  ])
+  const scaduto = row ? finaleScaduto(row, Date.now()) : false
+  const finita = row?.status === 'done' || scaduto
+  return {
+    puzzleNumber: quando.puzzleNumber,
+    date: quando.date,
+    status: row ? (finita ? 'done' : 'playing') : 'new',
+    pronta: giorno !== null,
+    scelte: row ? scelteDi(row).length : 0,
+    totale: COPPIE_GHIGLIOTTINA,
+    montepremi: montepremi(row?.sbagliate ?? 0),
+    indovinata: finita ? row?.indovinata === 1 : null,
+    punti: row?.status === 'done' ? row.score : 0,
+    msToNextPuzzle: msToNextPuzzle(),
+  }
+}
+
+/**
+ * Il Paroliere: le parole trovate e i punti. Una partita il cui tempo e'
+ * finito si dice finita, con i punti che avra': li scrivera' la pagina.
+ */
+export async function riepilogoParoliere(db: D1Database, playerId: string): Promise<ParoliereSummary> {
+  const quando = giornataParoliere()
+  const [row, giorno] = await Promise.all([
+    partitaParoliere(db, playerId, quando.puzzleNumber),
+    paroliereDelGiorno(db, quando.puzzleNumber),
+  ])
+  const finita = row?.status === 'done' || (row ? tempoFinito(row, Date.now()) : false)
+  const traguardo = giorno?.traguardo ?? 0
+  return {
+    puzzleNumber: quando.puzzleNumber,
+    date: quando.date,
+    status: row ? (finita ? 'done' : 'playing') : 'new',
+    pronta: giorno !== null,
+    trovate: row?.trovate ?? 0,
+    punteggio: row?.punteggio ?? 0,
+    traguardo,
+    punti: row?.status === 'done' ? row.score : finita && row ? puntiParoliere(row.punteggio, traguardo) : 0,
     msToNextPuzzle: msToNextPuzzle(),
   }
 }

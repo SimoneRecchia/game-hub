@@ -9,6 +9,8 @@ import { sudokuRoutes } from './routes/sudoku'
 import { trisRoutes } from './routes/tris'
 import { anagrammiRoutes } from './routes/anagrammi'
 import { sequenzeRoutes } from './routes/sequenze'
+import { ghigliottinaRoutes } from './routes/ghigliottina'
+import { paroliereRoutes } from './routes/paroliere'
 import { nomiRoutes } from './routes/nomi'
 import { battagliaRoutes, invitiPubblici } from './routes/battaglia'
 import { quizRoutes } from './routes/quiz'
@@ -62,6 +64,8 @@ export function createApp() {
   app.route('/tris', trisRoutes)
   app.route('/anagrammi', anagrammiRoutes)
   app.route('/sequenze', sequenzeRoutes)
+  app.route('/ghigliottina', ghigliottinaRoutes)
+  app.route('/paroliere', paroliereRoutes)
   app.route('/nomi', nomiRoutes)
   app.route('/battaglia', battagliaRoutes)
   app.route('/quiz', quizRoutes)

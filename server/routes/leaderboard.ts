@@ -4,10 +4,12 @@ import type {
   AnagrammiLeaderboard,
   FortunaLeaderboard,
   GeneraleLeaderboard,
+  GhigliottinaLeaderboard,
   CruciverbaLeaderboard,
   LeaderboardResponse,
   NomiLeaderboard,
   PanoramicaClassifiche,
+  ParoliereLeaderboard,
   PeriodoClassifica,
   QuizLeaderboard,
   ScarabeoLeaderboard,
@@ -27,6 +29,8 @@ import { classificaTris } from '../lib/trisStore'
 import { classificaNomi } from '../lib/nomiStore'
 import { classificaAnagrammi } from '../lib/anagrammiStore'
 import { classificaSequenze } from '../lib/sequenzeStore'
+import { classificaGhigliottina } from '../lib/ghigliottinaStore'
+import { classificaParoliere } from '../lib/paroliereStore'
 import { classificaFortuna, classificaGenerale } from '../lib/generale'
 import { panoramica } from '../lib/panoramica'
 import { today } from '../lib/wordleStore'
@@ -119,4 +123,16 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/sequenze', async (c) => {
     const result = await classificaSequenze(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<SequenzeLeaderboard>(result)
+  })
+
+  /** La Ghigliottina: i punti delle partite finite, poi le parole vincenti indovinate e il tempo. */
+  .get('/ghigliottina', async (c) => {
+    const result = await classificaGhigliottina(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
+    return c.json<GhigliottinaLeaderboard>(result)
+  })
+
+  /** Il Paroliere: i punti delle partite finite, poi il punteggio delle griglie e le parole. */
+  .get('/paroliere', async (c) => {
+    const result = await classificaParoliere(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
+    return c.json<ParoliereLeaderboard>(result)
   })
