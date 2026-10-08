@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { MONTEPREMI_GHIGLIOTTINA, TEMPO_FINALE_MS, type GhigliottinaDelGiorno } from '../../shared/ghigliottina'
+import {
+  MARGINE_GHIGLIOTTINA_MS,
+  MONTEPREMI_GHIGLIOTTINA,
+  PREAMBOLO_PRIMA_COPPIA_MS,
+  TEMPO_FINALE_MS,
+  TEMPO_SCELTA_MS,
+  preamboloCoppia,
+  type GhigliottinaDelGiorno,
+} from '../../shared/ghigliottina'
 import type {
   GeneraleLeaderboard,
   GhigliottinaLeaderboard,
@@ -107,15 +115,78 @@ describe('la Ghigliottina del giorno, dalle API', () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
-    const s = await stato(chiama, io)
+    const prima = await stato(chiama, io)
+    // Prima di Comincia non si vede nessuna coppia: vista prima del tempo, sarebbe tempo regalato.
+    expect(prima).toMatchObject({ iniziata: false, coppie: [], coppia: null })
+    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM ghigliottina_partite').get()?.n).toBe(0)
+    const r = await chiama<GhigliottinaStato>('POST', '/ghigliottina/inizia', io, {})
+    expect(r.status).toBe(200)
+    const s = r.dati
     expect(s.coppie).toHaveLength(1)
-    expect(s.coppie[0]).toEqual({ parole: ['fulmine', 'tuono'], scelta: null, giusta: null, spiegazione: null })
+    expect(s.coppie[0]).toEqual({
+      parole: ['fulmine', 'tuono'],
+      scelta: null,
+      scaduta: false,
+      giusta: null,
+      spiegazione: null,
+    })
+    expect(s.coppia?.inizioMs).toBeGreaterThan(PREAMBOLO_PRIMA_COPPIA_MS - 1_000)
+    expect(s.coppia?.restanteMs).toBe(TEMPO_SCELTA_MS)
     expect(s.montepremi).toBe(MONTEPREMI_GHIGLIOTTINA)
     expect(s.soluzione).toBeNull()
     // Niente della soluzione e delle coppie dopo nel JSON.
     expect(JSON.stringify(s)).not.toContain('colpo')
     expect(JSON.stringify(s)).not.toContain('scena')
-    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM ghigliottina_partite').get()?.n).toBe(0)
+    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM ghigliottina_partite').get()?.n).toBe(1)
+  })
+
+  it('il tempo di una coppia finito conta sbagliata e mostra la giusta, dalla scadenza e non da adesso', async () => {
+    const { chiama, giocatore, db } = banco()
+    conLaGiornata(db)
+    const io = await giocatore('anna')
+    let s = (await chiama<GhigliottinaStato>('POST', '/ghigliottina/inizia', io, {})).dati
+    // Passati il tempo della prima coppia e quello della seconda: tutte e due contano sbagliate.
+    const fa = Date.now() - 2 * TEMPO_SCELTA_MS - preamboloCoppia(false) - MARGINE_GHIGLIOTTINA_MS - 1_000
+    db.sqlite
+      .prepare('UPDATE ghigliottina_partite SET coppia_at = ? WHERE player_id = ?')
+      .run(new Date(fa).toISOString(), io.id)
+    // Una scelta arrivata dopo il tempo non vale: la coppia era gia' passata, e la risposta e' lo stato com'e'.
+    const tardi = await chiama<GhigliottinaStato>('POST', '/ghigliottina/scegli', io, {
+      versione: s.versione,
+      coppia: 0,
+      scelta: 0,
+    })
+    expect(tardi.status).toBe(200)
+    s = tardi.dati
+    expect(s).toMatchObject({ corrente: 2, montepremi: MONTEPREMI_GHIGLIOTTINA / 4 })
+    expect(s.coppie[0]).toMatchObject({ scelta: null, scaduta: true, giusta: 0 })
+    expect(s.coppie[1]).toMatchObject({ scelta: null, scaduta: true, giusta: 1 })
+    // La terza coppia e' partita dalla scadenza della seconda: il suo tempo corre gia'.
+    expect(s.coppia?.inizioMs).toBe(0)
+    expect(s.coppia?.restanteMs).toBeLessThan(TEMPO_SCELTA_MS)
+
+    // Allo scadere il telefono lo dice da solo.
+    const tempo = await chiama<GhigliottinaStato>('POST', '/ghigliottina/tempo', io, {
+      versione: s.versione,
+      coppia: 2,
+    })
+    expect(tempo.status).toBe(200)
+    expect(tempo.dati).toMatchObject({ corrente: 3, montepremi: Math.floor(MONTEPREMI_GHIGLIOTTINA / 8) })
+    expect(tempo.dati.coppie[2]).toMatchObject({ scaduta: true, giusta: 0 })
+  })
+
+  it('chi lascia la pagina perde le coppie, e poi la finale: la partita si chiude da sola', async () => {
+    const { chiama, giocatore, db } = banco()
+    conLaGiornata(db)
+    const io = await giocatore('anna')
+    await chiama('POST', '/ghigliottina/inizia', io, {})
+    const fa = Date.now() - 5 * (TEMPO_SCELTA_MS + preamboloCoppia(false)) - TEMPO_FINALE_MS - 60_000
+    db.sqlite
+      .prepare('UPDATE ghigliottina_partite SET coppia_at = ? WHERE player_id = ?')
+      .run(new Date(fa).toISOString(), io.id)
+    const s = await stato(chiama, io)
+    expect(s).toMatchObject({ status: 'done', indovinata: false, risposta: null, punti: 0 })
+    expect(s.coppie.every((c) => c.scaduta)).toBe(true)
   })
 
   it('una scelta sbagliata dimezza il montepremi, e la giusta si vede lo stesso', async () => {

@@ -1730,8 +1730,8 @@ quella letta: una risposta arrivata nel frattempo non si perde in un conto
 vecchio.
 
 **La Ghigliottina e' quella dell'Eredità, e le parole sono scritte a mano.**
-Cinque coppie di parole, in ognuna una sola porta alla parola vincente; poi un
-minuto per scriverla (`shared/ghigliottina.ts`). Le ghigliottine stanno in
+Cinque coppie di parole, in ognuna una sola porta alla parola vincente, venti
+secondi a coppia; poi un minuto e mezzo per scriverla (`shared/ghigliottina.ts`). Le ghigliottine stanno in
 `scripts/data/ghigliottina.tsv`, la vincente e le cinque parole con
 l'espressione che le lega ("colpo di fulmine"): nessun elenco libero le ha.
 `npm run ghigliottina:build` (`scripts/build-ghigliottina.mjs`) le controlla — la
@@ -1760,19 +1760,34 @@ cambia. Se manca, `GHIGLIOTTINA_ASSENTE` (503): in locale
 solo alla fine.** `/state` manda le coppie scelte e quella da scegliere, mai
 quelle dopo; di una coppia si sa qual era la giusta solo scelta (`/scegli`, che
 a un doppio tocco risponde come la prima volta), e la vincente e le
-espressioni solo a partita chiusa. Il minuto lo tiene il server (`finale_at`,
-scritto da `/finale`), con il margine della rete del quiz, e la risposta e' una
-sola. I punti sono l'eccezione al principio del Wordle, perché il gioco e'
-quello della televisione: ogni scelta sbagliata dimezza il montepremi (100, 50,
-25...), e una vincente sbagliata o non data vale zero. Le cinque parole si
-vedono sempre, quindi anche con cinque errori la vincente si puo' trovare.
-Nella classifica a pari punti contano le vincenti indovinate, poi il tempo
-per scriverle. La scena (`src/games/ghigliottina/Partita.tsx`) e' una
-macchina a fasi con i suoi tempi (`tempi()`): la coppia arriva, la scelta
-aspetta un respiro ("Vediamo…"), e una sbagliata fa cadere la lama sul
-montepremi, che si spezza a meta'; la vincente arriva in una busta e si
-gira lettera per lettera. La festa aspetta il verdetto, e la libera sta tutta
-nel telefono, con le stesse regole e il minuto che si sceglie.
+espressioni solo a partita chiusa. Prima di Comincia (`/inizia`, che fa nascere
+la partita) non esce nessuna coppia: vista prima del tempo sarebbe tempo
+regalato. I tempi li tiene il server, con il margine della rete del quiz: ogni
+coppia ha venti secondi (`TEMPO_SCELTA_MS`, da `coppia_at`, scritto dopo la
+scena che la porta: `preamboloCoppia`), e finiti conta sbagliata (una scelta
+`null`, `scaduta` nella vista); la parola vincente un minuto e mezzo
+(`finale_at`, scritto da `/finale`), e la risposta e' una sola. Allo scadere di
+una coppia il telefono lo dice subito (`/tempo`); un tempo passato lo applica la
+prima richiesta dopo, dalla scadenza (`chiudiScadute`), e se finiscono cosi'
+tutte le coppie parte anche la finale, e si chiude: chi ha chiuso la pagina non
+resta "in corso" per sempre. I punti sono l'eccezione al principio del Wordle,
+perché il gioco e' quello della televisione: ogni scelta sbagliata dimezza il
+montepremi (100, 50, 25...), e una vincente sbagliata o non data vale zero. Le
+cinque parole si vedono sempre, quindi anche con cinque errori la vincente si
+puo' trovare. Nella classifica a pari punti contano le vincenti indovinate, poi
+il tempo per scriverle. La scena (`src/games/ghigliottina/Partita.tsx`) e' una
+macchina a fasi con i suoi tempi (`tempi()`): la coppia arriva con il suo
+anello che si svuota, la scelta aspetta un respiro ("Vediamo…"), e una
+sbagliata, o il tempo finito, fa cadere la lama sul montepremi, che si spezza:
+i pezzi hanno il numero di prima, e sotto c'e' gia' quello dimezzato (`Taglio`
+porta tutti e due). Era il contrario, e per due secondi sotto la targa spaccata
+restava il montepremi intero. La vincente si scrive con la tastiera del gioco
+(`TastieraGioco`, la stessa della Catena), e intanto la ghigliottina si fa
+piccola e le cinque parole salgono sopra di lei in due file, scivolando dal loro
+posto (`useScivola`, un FLIP con le Web Animations): si leggono mentre si
+scrive. La vincente arriva in una busta e si gira lettera per lettera. La festa
+aspetta il verdetto, e la libera sta tutta nel telefono, con le stesse regole e
+i tempi che si scelgono.
 
 **La Catena e' l'ultima catena di Reazione a catena, e le catene vengono dalle
 espressioni.** Undici parole, ognuna legata alla successiva da un'espressione
@@ -1795,24 +1810,32 @@ parole la vincente della Ghigliottina dello stesso giorno: le espressioni sono
 le stesse, e la direbbe. Se manca, `CATENA_ASSENTE` (503): in locale
 `npm run catena:locale`.
 
-**Nella Catena la verita' sono le mosse, e il minuto parte da solo.**
-`catena_partite.mosse` ha le parole provate, i jolly e il terzo elemento
-comprato; montepremi, lettere viste e terzo elemento si ricavano rigiocandole
-(`svolgiCatena`), con le stesse regole nel server e nel telefono della libera.
-Un errore dimezza e mostra un'altra lettera, il secondo dimezza e mostra la
-parola; i jolly sono due, e ne' un jolly ne' un errore mostrano l'ultima
+**Nella Catena la verita' sono le mosse, e i tempi partono da soli.**
+`catena_partite.mosse` ha le parole provate, i jolly, il terzo elemento comprato
+e i tempi finiti (`t`); montepremi, lettere viste e terzo elemento si ricavano
+rigiocandole (`svolgiCatena`), con le stesse regole nel server e nel telefono
+della libera. Un errore dimezza e mostra un'altra lettera, il secondo dimezza e
+mostra la parola, e cosi' il minuto di una parola finito (`TEMPO_PAROLA_CATENA_MS`):
+senza un tempo chi ci pensa abbastanza troverebbe ogni parola. I jolly sono due,
+non si usano nella finale, e ne' un jolly ne' un errore mostrano l'ultima
 lettera. Della finale si vedono le prime due lettere e l'ultima; il terzo
 elemento si compra dimezzando, e chi arriva con tutti e due i jolly lo ha in
 regalo. Il montepremi parte da cento come quello della Ghigliottina e non scende
 sotto uno, perché la finale valga sempre qualcosa; sbagliata vale zero.
 `vistaCatena` manda solo le parole fino alla coppia di adesso, e di quella da
-indovinare le lettere e la lunghezza, come le caselle in studio. Il minuto della
-finale lo scrive il server con la mossa che ci arriva, dopo il tempo della
-scena (`PREAMBOLO_FINALE_CATENA_MS`): la finale si vede appena ci si arriva, e un
-minuto da far partire col telefono non partirebbe mai per chi vuole pensarci.
-Si scrive con la tastiera del gioco, come il Wordle: con quella del telefono
-aperta la catena non si vedrebbe. Le caselle della finale sono solo quelle in
-mezzo, e la parola si compone con le lettere che si vedono.
+indovinare le lettere, non la lunghezza: con le caselle tutte in vista sbagliare
+era quasi impossibile, e la parola ora cresce a ogni tasto. Prima di Comincia
+(`/inizia`, che fa nascere la partita) non si vede nessuna parola. I tempi li
+scrive il server con la mossa che ci porta, dopo il tempo della scena: il minuto
+della parola (`parola_at`, `PREAMBOLO_PAROLA_CATENA_MS`) e il minuto e mezzo
+della finale (`finale_at`, `PREAMBOLO_FINALE_CATENA_MS`); un tempo da far
+partire col telefono non partirebbe mai per chi vuole pensarci. Allo scadere di
+una parola il telefono lo dice (`/tempo`, la miccia della scena); un tempo
+passato lo applica la prima richiesta dopo, dalla scadenza (`chiudiScadute`), e
+una parola arrivata dopo trova la versione cambiata. Si scrive con la tastiera
+del gioco (`TastieraGioco`), come il Wordle: con quella del telefono aperta la
+catena non si vedrebbe. Nella finale le lettere scritte stanno fra quelle che si
+vedono e l'ultima, staccata dai tre puntini.
 
 **Il Paroliere e' il Boggle, con il dizionario dello Scarabeo.** Sedici dadi in
 una griglia di quattro (`DADI` in `shared/paroliere.ts`, con le lettere del
@@ -1912,7 +1935,8 @@ React monta due volte, e `partenze` tiene la richiesta per un attimo). E la
 sfida si chiude comunque a `scade_at`, il via piu' la durata massima del gioco
 (`durataMassimaMs`): chi chiude l'app non fa aspettare l'altro per sempre. Il
 sudoku in sfida non ha aiuti, ha un tempo, e si chiude da solo quando l'altro
-l'ha gia' risolto. Una sfida alla volta, a tutti e cinque i giochi insieme; gli
+l'ha gia' risolto; la Ghigliottina e la Catena hanno due tempi, quello di ogni
+passo — una coppia, una parola — e quello della finale (`passo`, `secondi`). Una sfida alla volta, a tutti e cinque i giochi insieme; gli
 inviti, il link, la rivincita con la serie e la sala sono quelli delle
 Sequenze, e l'avviso (`SfideGate`) dice anche le opzioni, perché si accetta
 una partita precisa. Le opzioni stanno nella carta "Partita" come nel quiz

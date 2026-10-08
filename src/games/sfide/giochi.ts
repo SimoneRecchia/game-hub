@@ -88,8 +88,14 @@ export function descriviOpzioni(gioco: GiocoSfidaLibera, imp: ImpostazioniSfidaL
       const i = imp as ImpostazioniParoliere
       return `${i.lato}×${i.lato} · ${minuti(i.minuti)}`
     }
-    default:
-      return `Finale di ${(imp as ImpostazioniFinale).secondi} secondi`
+    case 'ghigliottina': {
+      const i = imp as ImpostazioniFinale
+      return `${i.passo} secondi a coppia · finale di ${i.secondi}`
+    }
+    case 'catena': {
+      const i = imp as ImpostazioniFinale
+      return `${i.passo} secondi a parola · finale di ${i.secondi}`
+    }
   }
 }
 

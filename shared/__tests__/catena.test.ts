@@ -14,6 +14,7 @@ import {
   catenaDelGiorno,
   giornataValida,
   inizio,
+  jollyUsabile,
   mosseValide,
   normalizzaCatena,
   stessaParola,
@@ -146,8 +147,19 @@ describe('la catena', () => {
   it('nella finale non si provano parole: la risposta e’ una sola, a parte', () => {
     const s = gioca(...giuste)
     expect(applicaCatena(CATENA, s, prova('navale'))).toBeNull()
-    // I jolly invece valgono anche li'.
-    expect(applicaCatena(CATENA, s, { k: 'j' })?.dopo.parole[PASSO_FINALE].lettere).toBe(3)
+    // Ne' i jolly, anche se ne restano, ne' il tempo di una parola: quello della finale e' a parte.
+    expect(applicaCatena(CATENA, s, { k: 'j' })).toBeNull()
+    expect(jollyUsabile(CATENA, s)).toBe(false)
+    expect(applicaCatena(CATENA, s, { k: 't' })).toBeNull()
+  })
+
+  it('il tempo finito mostra la parola e dimezza, come il secondo errore, quanti errori ci fossero', () => {
+    const subito = applicaCatena(CATENA, inizio(), { k: 't' })!
+    expect(subito.esito).toBe('scaduta')
+    expect(subito.dopo).toMatchObject({ passo: 1, montepremi: MONTEPREMI_CATENA / 2 })
+    expect(subito.dopo.parole[0]).toMatchObject({ esito: 'rivelata', errori: 1 })
+    const dopoUnErrore = applicaCatena(CATENA, gioca(prova('lancio')), { k: 't' })!
+    expect(dopoUnErrore.dopo).toMatchObject({ passo: 1, montepremi: MONTEPREMI_CATENA / 4 })
   })
 
   it('il terzo elemento non si compra prima della finale', () => {

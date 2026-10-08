@@ -1,8 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  MARGINE_CATENA_MS,
   MONTEPREMI_CATENA,
   PREAMBOLO_FINALE_CATENA_MS,
+  PREAMBOLO_PAROLA_CATENA_MS,
   TEMPO_FINALE_CATENA_MS,
+  TEMPO_PAROLA_CATENA_MS,
   type CatenaDelGiorno,
 } from '../../shared/catena'
 import type { CatenaLeaderboard, CatenaStato, GeneraleLeaderboard, OggiRisposta } from '../../shared/types'
@@ -95,16 +98,56 @@ describe('la Catena del giorno, dalle API', () => {
     expect((await chiama<OggiRisposta>('GET', '/oggi', io)).dati.catena).toMatchObject({ pronta: false })
   })
 
-  it('guardare non apre niente, e della parola da indovinare si vede solo la prima lettera', async () => {
+  it('guardare non apre niente; Comincia mostra la prima coppia, e della parola solo la prima lettera', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
-    const s = await stato(chiama, io)
-    expect(s.voci.map((v) => v.parola)).toEqual(['spirito', null, 'tiro'])
-    expect(s.voci[1]).toMatchObject({ lettere: 'L', tipo: 'nascosta' })
-    expect(s).toMatchObject({ passo: 0, montepremi: MONTEPREMI_CATENA, jollyRestanti: 2, finale: null })
-    for (const parola of ['libero', 'cavallo', 'navale', 'base', 'dondolo']) expect(JSON.stringify(s)).not.toContain(parola)
+    const prima = await stato(chiama, io)
+    // Prima di Comincia non si vede niente: la coppia, vista prima del minuto, sarebbe tempo regalato.
+    expect(prima).toMatchObject({ iniziata: false, voci: [], parola: null })
     expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM catena_partite').get()?.n).toBe(0)
+
+    const s = await manda(chiama, io, 'inizia', prima)
+    expect(s.iniziata).toBe(true)
+    expect(s.voci.map((v) => v.parola)).toEqual(['spirito', null, 'tiro'])
+    // Quanto e' lunga la parola non si dice.
+    expect(s.voci[1]).toMatchObject({ lettere: 'L', tipo: 'nascosta', lunghezza: 0 })
+    expect(s).toMatchObject({ passo: 0, montepremi: MONTEPREMI_CATENA, jollyRestanti: 2, finale: null })
+    expect(s.parola?.inizioMs).toBeGreaterThan(PREAMBOLO_PAROLA_CATENA_MS - 2_000)
+    expect(s.parola?.restanteMs).toBe(TEMPO_PAROLA_CATENA_MS)
+    for (const parola of ['libero', 'cavallo', 'navale', 'base', 'dondolo']) expect(JSON.stringify(s)).not.toContain(parola)
+    expect(JSON.stringify(s.voci)).not.toContain('"lunghezza":6')
+    // Comincia due volte non fa ripartire il minuto.
+    const di_nuovo = await manda(chiama, io, 'inizia', s)
+    expect(di_nuovo.versione).toBe(s.versione)
+    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM catena_partite').get()?.n).toBe(1)
+  })
+
+  it('il minuto di una parola: finito, la parola si mostra e si dimezza, dalla scadenza e non da adesso', async () => {
+    const { chiama, giocatore, db } = banco()
+    conLaGiornata(db)
+    const io = await giocatore('anna')
+    let s = await manda(chiama, io, 'inizia', await stato(chiama, io))
+    // Il minuto e' passato da un pezzo, e anche quello della seconda parola: si mostrano tutte e due.
+    const fa = Date.now() - 2 * (TEMPO_PAROLA_CATENA_MS + PREAMBOLO_PAROLA_CATENA_MS) - MARGINE_CATENA_MS - 1_000
+    db.sqlite
+      .prepare('UPDATE catena_partite SET parola_at = ? WHERE player_id = ?')
+      .run(new Date(fa).toISOString(), io.id)
+    const vecchia = await chiama('POST', '/catena/prova', io, { versione: s.versione, parola: 'libero' })
+    // La parola arrivata dopo il tempo non vale: la partita e' andata avanti, e il telefono rilegge.
+    expect(vecchia.status).toBe(409)
+    s = await stato(chiama, io)
+    expect(s).toMatchObject({ passo: 2, montepremi: MONTEPREMI_CATENA / 4 })
+    expect(s.voci[1]).toMatchObject({ parola: 'libero', tipo: 'rivelata' })
+    expect(s.voci[3]).toMatchObject({ parola: 'cavallo', tipo: 'rivelata' })
+    // Il minuto della terza parola parte dalla scadenza della seconda, con la scena: ne resta meno di uno intero.
+    expect(s.parola?.inizioMs).toBe(0)
+    expect(s.parola?.restanteMs).toBeLessThan(TEMPO_PAROLA_CATENA_MS)
+
+    // Allo scadere il telefono lo dice da solo, senza aspettare il margine.
+    s = await manda(chiama, io, 'tempo', s)
+    expect(s).toMatchObject({ esito: 'scaduta', passo: 3, montepremi: Math.floor(MONTEPREMI_CATENA / 8) })
+    expect(s.parola?.inizioMs).toBeGreaterThan(PREAMBOLO_PAROLA_CATENA_MS - 2_000)
   })
 
   it('un errore dimezza e mostra una lettera; il secondo mostra la parola e si scende', async () => {
@@ -178,9 +221,10 @@ describe('la Catena del giorno, dalle API', () => {
     s = await manda(chiama, io, 'compra', s)
     expect(s).toMatchObject({ esito: 'comprato', terzo: 'comprato', montepremi: 50 })
     expect(s.voci[10].parola).toBe('base')
-    // Il jolly rimasto vale anche nella finale.
-    s = await manda(chiama, io, 'jolly', s)
-    expect(s.voci[9].lettere).toBe('NAV')
+    // Il jolly rimasto nella finale non si usa.
+    expect(s.jollyUsabile).toBe(false)
+    expect((await chiama('POST', '/catena/jolly', io, { versione: s.versione })).status).toBe(409)
+    expect((await chiama('POST', '/catena/tempo', io, { versione: s.versione })).status).toBe(409)
   })
 
   it('una parola finale sbagliata non vale niente, e la risposta e’ una sola', async () => {

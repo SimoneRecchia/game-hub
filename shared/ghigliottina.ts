@@ -3,11 +3,11 @@
  * alla parola che le lega tutte.
  *
  * Si gioca come il finale dell'Eredità, il gioco di Rai 1 da cui viene il
- * nome: si parte da un montepremi, e a ogni coppia si sceglie una parola. Una
- * scelta sbagliata dimezza il montepremi — e la parola giusta si vede lo
- * stesso, quindi alla fine le cinque parole ci sono sempre. Poi c'e' un
- * minuto per scrivere la parola che le lega: se e' giusta si vince quel che
- * resta del montepremi, se no niente.
+ * nome: si parte da un montepremi, e a ogni coppia si sceglie una parola, in
+ * venti secondi. Una scelta sbagliata, o il tempo finito, dimezza il
+ * montepremi — e la parola giusta si vede lo stesso, quindi alla fine le cinque
+ * parole ci sono sempre. Poi c'e' un minuto e mezzo per scrivere la parola che
+ * le lega: se e' giusta si vince quel che resta del montepremi, se no niente.
  *
  * La parola vincente e le cinque parole sono scritte a mano
  * (scripts/data/ghigliottina.tsv); l'esca di ogni coppia viene da un'altra
@@ -28,8 +28,34 @@ export const COPPIE_GHIGLIOTTINA = 5
  */
 export const MONTEPREMI_GHIGLIOTTINA = 100
 
-/** Il minuto per scrivere la parola vincente, come in studio. */
-export const TEMPO_FINALE_MS = 60_000
+/** Il tempo per scrivere la parola vincente: un minuto e mezzo, come quello della Catena. */
+export const TEMPO_FINALE_MS = 90_000
+
+/**
+ * Il tempo di ogni coppia. Finito, conta come una scelta sbagliata: senza, la
+ * scelta fra due parole si potrebbe pensare all'infinito, e il gioco e' quello
+ * della televisione, dove il conduttore incalza.
+ */
+export const TEMPO_SCELTA_MS = 20_000
+
+/**
+ * Quanto aspetta il tempo di una coppia: la scena che la porta in vista. La
+ * prima arriva dopo Comincia; le altre dopo il rullo di tamburo e l'esito della
+ * coppia prima, che con la lama e' piu' lungo.
+ */
+export const PREAMBOLO_PRIMA_COPPIA_MS = 1_000
+export function preamboloCoppia(giusta: boolean): number {
+  return giusta ? 2_800 : 4_000
+}
+
+/** Quanto aspetta il tempo della finale quando ci si arriva per un tempo finito: le cinque parole che si accendono. */
+export const PREAMBOLO_FINALE_MS = 3_500
+
+/**
+ * Una scelta come la salva la partita: la parola toccata, 0 o 1, o null se il
+ * tempo e' finito prima.
+ */
+export type SceltaGhigliottina = 0 | 1 | null
 
 /** Quanto arriva in ritardo una risposta per la rete e vale lo stesso, come nel quiz. */
 export const MARGINE_GHIGLIOTTINA_MS = 3_000

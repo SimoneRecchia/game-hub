@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
-import { MARGINE_CATENA_MS } from '@shared/catena'
+import { MARGINE_CATENA_MS, TEMPO_FINALE_CATENA_MS, TEMPO_PAROLA_CATENA_MS } from '@shared/catena'
 import type { CatenaStato } from '@shared/types'
 import type { ComandiCatena, RispostaCatena, VistaCatena } from './Partita'
 
@@ -15,12 +15,18 @@ export interface CatenaDelGiorno {
   ricarica: () => void
 }
 
-/** Lo stato del server come lo vede la scena, con il minuto sull'orologio del telefono. */
+/** Un tempo del server sull'orologio del telefono: quando parte, e quando finisce. */
+function orologio(t: { inizioMs: number; restanteMs: number; tempoMs: number } | null, adesso: number) {
+  if (!t) return null
+  return { inizio: adesso + t.inizioMs, scadenza: adesso + (t.inizioMs > 0 ? t.inizioMs + t.tempoMs : t.restanteMs) }
+}
+
+/** Lo stato del server come lo vede la scena, con i tempi sull'orologio del telefono. */
 function vistaDa(s: CatenaStato): VistaCatena {
   const adesso = Date.now()
   return {
-    chiave: s.versione * 2 + (s.status === 'done' ? 1 : 0),
-    nuova: s.versione === 0,
+    chiave: (s.versione + (s.iniziata ? 1 : 0)) * 2 + (s.status === 'done' ? 1 : 0),
+    nuova: !s.iniziata,
     voci: s.voci,
     passo: s.passo,
     jollyRestanti: s.jollyRestanti,
@@ -29,13 +35,10 @@ function vistaDa(s: CatenaStato): VistaCatena {
     compraUsabile: s.compraUsabile,
     montepremiIniziale: s.montepremiIniziale,
     montepremi: s.montepremi,
-    finale: s.finale
-      ? {
-          inizio: adesso + s.finale.inizioMs,
-          scadenza: adesso + (s.finale.inizioMs > 0 ? s.finale.inizioMs + s.finale.tempoMs : s.finale.restanteMs),
-        }
-      : null,
-    tempoFinaleMs: s.finale?.tempoMs ?? 60_000,
+    parola: orologio(s.parola, adesso),
+    tempoParolaMs: s.parola?.tempoMs ?? TEMPO_PAROLA_CATENA_MS,
+    finale: orologio(s.finale, adesso),
+    tempoFinaleMs: s.finale?.tempoMs ?? TEMPO_FINALE_CATENA_MS,
     risposta: s.risposta,
     indovinata: s.indovinata,
     finita: s.status === 'done',
@@ -45,8 +48,9 @@ function vistaDa(s: CatenaStato): VistaCatena {
 
 /**
  * La Catena del giorno. Ogni mossa va al server, che dice com'e' andata e
- * manda solo le parole viste; il minuto della finale lo tiene lui. Allo
- * scadere il telefono aspetta il margine della rete e rilegge: il server ha
+ * manda solo le parole viste; i tempi li tiene lui. Finito il minuto di una
+ * parola il telefono lo dice subito (`/tempo`), e la parola si mostra; finito
+ * quello della finale aspetta il margine della rete e rilegge: il server ha
  * chiuso la partita.
  */
 export function useCatenaDelGiorno(): CatenaDelGiorno {
@@ -112,6 +116,8 @@ export function useCatenaDelGiorno(): CatenaDelGiorno {
       return scrivi(percorso, { versione: s.versione, ...altro })
     }
     return {
+      inizia: () => scrivi('/catena/inizia', {}),
+      scadeParola: () => con('/catena/tempo'),
       prova: (parola) => con('/catena/prova', { parola }),
       jolly: () => con('/catena/jolly'),
       compra: () => con('/catena/compra'),
