@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { TEMPO_NOMI_MS, type CategoriaNomi, type FileLessicoNomi, type LessicoNomi } from '@shared/nomi-cose'
+import { SECONDI_NOMI, type CategoriaNomi, type FileLessicoNomi, type LessicoNomi } from '@shared/nomi-cose'
 import { registraPartitaNomi } from './conti'
 import {
   caricaLessico,
@@ -36,7 +36,9 @@ export interface NomiLibera {
   stop: ChiStop | null
   risultato: RisultatoLibero | null
   guasto: string | null
-  nuova: (livello: LivelloNomi) => void
+  /** Quanto dura la partita, in millisecondi. */
+  tempoMs: number
+  nuova: (livello: LivelloNomi, secondi?: number) => void
   /** La lettera si vede: da qui corre il tempo, e il computer comincia a scrivere. */
   parti: () => void
   scrivi: (categoria: CategoriaNomi, testo: string) => void
@@ -71,7 +73,7 @@ export function useNomiLibera(): NomiLibera {
     (chi: ChiStop) => {
       if (finita.current || !partita || !lessico.current) return
       finita.current = true
-      const ms = chi === 'computer' ? partita.stopMs : Math.min(TEMPO_NOMI_MS, Date.now() - inizio.current)
+      const ms = chi === 'computer' ? partita.stopMs : Math.min(partita.tempoMs, Date.now() - inizio.current)
       const r = risultatoDi(partita, lessico.current, risposteRef.current, ms)
       registraPartitaNomi(r.esito, r.mie.filter(Boolean).length)
       setStop(chi)
@@ -94,7 +96,7 @@ export function useNomiLibera(): NomiLibera {
     }
   }, [chiudi, fase, partita])
 
-  const nuova = useCallback((livello: LivelloNomi) => {
+  const nuova = useCallback((livello: LivelloNomi, secondi: number = SECONDI_NOMI) => {
     const mia = ++richiesta.current
     const { lettera, categorie } = letteraACaso()
     setGuasto(null)
@@ -105,7 +107,7 @@ export function useNomiLibera(): NomiLibera {
     caricaLessico(lettera)
       .then((letto) => {
         if (mia !== richiesta.current) return
-        const p = nuovaPartita(letto, lettera, categorie, livello)
+        const p = nuovaPartita(letto, lettera, categorie, livello, Math.random, secondi * 1_000)
         lessico.current = lessicoDellaPartita(letto, categorie)
         finita.current = false
         setFile(letto)
@@ -120,12 +122,12 @@ export function useNomiLibera(): NomiLibera {
   }, [])
 
   const parti = useCallback(() => {
-    if (fase !== 'pronta') return
+    if (fase !== 'pronta' || !partita) return
     inizio.current = Date.now()
     setAdesso(inizio.current)
-    setScadenza(inizio.current + TEMPO_NOMI_MS)
+    setScadenza(inizio.current + partita.tempoMs)
     setFase('gioco')
-  }, [fase])
+  }, [fase, partita])
 
   const scrivi = useCallback(
     (categoria: CategoriaNomi, testo: string) => {
@@ -153,6 +155,7 @@ export function useNomiLibera(): NomiLibera {
     stop,
     risultato,
     guasto,
+    tempoMs: partita?.tempoMs ?? SECONDI_NOMI * 1_000,
     nuova,
     parti,
     scrivi,

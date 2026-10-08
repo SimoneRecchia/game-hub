@@ -218,6 +218,34 @@ export const SEQUENZE_SFIDA_CONSERVA_MS = 2 * 24 * 60 * 60_000
 export const SEQUENZE_SFIDA_POLL_MS = 1_500
 export const SEQUENZE_SFIDA_POLL_FINE_MS = 3_000
 
+/* ──────────────────  Le sfide delle libere da soli  ────────────────── */
+
+/** Un invito con il link vale un'ora, come quelli delle altre sfide: si gioca in due nello stesso momento. */
+export const SFIDE_LIBERE_LINK_MS = 60 * 60_000
+
+/** Il tre-due-uno, dall'accettazione al via: la partita la vedono tutti e due insieme. */
+export const SFIDE_LIBERE_VIA_MS = 4_000
+
+/** Le sfide ferme da due giorni si cancellano: non hanno classifica, e non serve tenerle. */
+export const SFIDE_LIBERE_CONSERVA_MS = 2 * 24 * 60 * 60_000
+
+/**
+ * Il giro di controllo: prima del via fitto, per partire insieme; mentre si
+ * gioca ogni tre secondi, che bastano a vedere dove e' l'altro (e chi scrive
+ * il suo avanzamento lo riceve gia' nella risposta); a sfida finita piu'
+ * largo, per la rivincita. Venti minuti di sudoku sono quattrocento richieste
+ * a testa, sulle centomila del giorno.
+ */
+export const SFIDE_LIBERE_POLL_VIA_MS = 1_000
+export const SFIDE_LIBERE_POLL_MS = 3_000
+export const SFIDE_LIBERE_POLL_FINE_MS = 4_000
+
+/**
+ * Quanto aspetta il telefono fra due avanzamenti: le parole trovate di fila
+ * vanno in una scrittura sola. La fine non aspetta.
+ */
+export const SFIDE_LIBERE_AVANZA_MS = 2_000
+
 /* ─────────────────────────  Email e verifica  ───────────────────────── */
 
 export const EMAIL_MAX = 254

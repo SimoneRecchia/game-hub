@@ -115,9 +115,14 @@ export function contaRisolta(partita: PartitaSudokuLibera): { conti: ContiSudoku
   return { conti, record }
 }
 
-/** Uno schema nuovo, generato in un Web Worker; se il Worker non parte, sul filo principale. */
-export async function generaSchemaLibero(livello: LivelloSudoku): Promise<SchemaSudoku> {
-  const seme = crypto.getRandomValues(new Uint32Array(1))[0]
+/**
+ * Uno schema nuovo, generato in un Web Worker; se il Worker non parte, sul filo
+ * principale. Con il seme di una sfida e' lo stesso sui due telefoni.
+ */
+export async function generaSchemaLibero(
+  livello: LivelloSudoku,
+  seme = crypto.getRandomValues(new Uint32Array(1))[0],
+): Promise<SchemaSudoku> {
   let lavoratore: Worker
   try {
     lavoratore = new Worker(new URL('./generatore.worker.ts', import.meta.url), { type: 'module' })

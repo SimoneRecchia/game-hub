@@ -1,15 +1,20 @@
 import { useState } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
-import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
+import { Cursore } from '@/components/Cursore'
+import { Difficolta } from '@/components/Difficolta'
+import { Sezione } from '@/components/Elementi'
 import { IconFlag, IconInfo, IconRefresh } from '@/components/Icons'
+import { Opzioni, Scelte } from '@/components/Opzioni'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
 import { ComeSiGiocaSudoku } from '@/games/sudoku/ComeSiGioca'
 import { FineSudoku } from '@/games/sudoku/Fine'
 import { PartitaSudoku } from '@/games/sudoku/PartitaSudoku'
 import { useSudokuLibero, type SudokuLiberoController } from '@/games/sudoku/useSudokuLibero'
+import { FoglioSfida, InterruttoreContro, useContro, useFoglioSfida, useOpzioniLibera } from '@/games/sfide/Scelta'
 import { formatCronometro } from '@/lib/format'
+import { MINUTI_SUDOKU } from '@shared/sfide-libere'
 import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
 
 /**
@@ -94,24 +99,53 @@ export default function SudokuLibero() {
   )
 }
 
-/** Prima di cominciare: quattro livelli, con il record di ognuno. */
+const minuti = (n: number) => `${n} minuti`
+
+/**
+ * Prima di cominciare: da solo o con un amico, quattro livelli con il record di
+ * ognuno, e con un amico il tempo della sfida, che da soli non c'e'.
+ */
 function SceltaLivello({ g }: { g: SudokuLiberoController }) {
-  const [livello, scegli] = useLivelloScelto('sudoku', LIVELLI)
+  const [contro, setContro] = useContro('sudoku')
+  const [opzioni, cambia] = useOpzioniLibera('sudoku')
+  const [sfida, setSfida] = useFoglioSfida()
+  const amico = contro === 'amico'
   return (
-    <Difficolta
-      livelli={LIVELLI.map((id) => {
-        const record = g.conti[id].record
-        const valore = record !== null ? `Record ${formatCronometro(record)}` : undefined
-        return { id, nome: NOMI_LIVELLI[id], valore }
-      })}
-      scelto={livello}
-      onScegli={scegli}
-      onComincia={() => g.nuova(livello)}
-      colore="var(--sudoku-1)"
-      di={4}
-    >
-      {g.guasto && <p className="sud-guasto">{g.guasto}</p>}
-    </Difficolta>
+    <>
+      <InterruttoreContro value={contro} onChange={setContro} />
+      {amico && (
+        <Sezione titolo="Partita">
+          <Opzioni>
+            <Scelte titolo="Tempo" valore={minuti(opzioni.minuti)}>
+              <Cursore
+                ariaLabel="Tempo"
+                valori={MINUTI_SUDOKU}
+                valore={opzioni.minuti}
+                etichetta={(n) => `${n} min`}
+                voce={minuti}
+                onChange={(n) => cambia({ minuti: n })}
+              />
+            </Scelte>
+          </Opzioni>
+        </Sezione>
+      )}
+      <Difficolta
+        livelli={LIVELLI.map((id) => {
+          const record = g.conti[id].record
+          const valore = record !== null ? `Record ${formatCronometro(record)}` : undefined
+          return { id, nome: NOMI_LIVELLI[id], valore }
+        })}
+        scelto={opzioni.livello}
+        onScegli={(livello) => cambia({ livello })}
+        onComincia={() => (amico ? setSfida(true) : g.nuova(opzioni.livello))}
+        colore="var(--sudoku-1)"
+        di={4}
+        etichetta={amico ? 'Sfida un amico' : 'Comincia'}
+      >
+        {g.guasto && <p className="sud-guasto">{g.guasto}</p>}
+      </Difficolta>
+      <FoglioSfida open={sfida} onClose={() => setSfida(false)} gioco="sudoku" impostazioni={opzioni} />
+    </>
   )
 }
 

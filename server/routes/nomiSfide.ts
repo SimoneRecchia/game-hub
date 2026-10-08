@@ -1,4 +1,5 @@
 import { Hono, type Context } from 'hono'
+import { secondiNomiValidi } from '../../shared/nomi-cose'
 import type { SalaNomi, VistaSfidaNomi } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { eOnline } from '../lib/battagliaStore'
@@ -84,7 +85,9 @@ export const sfideNomi = new Hono<AppEnv>()
       if (!(await eOnline(db, a, adesso))) fail(409, 'NON_ONLINE', 'Non è più online.')
       if (await inSfida(db, a, adesso)) fail(409, 'OCCUPATO', 'Sta già giocando un’altra sfida.')
     }
-    const row = await mandaInvito(db, { da: io, a }, adesso)
+    // Il tempo scelto nella libera viaggia con l'invito, fra le scelte della libera.
+    const impostazioni = (corpo.impostazioni ?? {}) as Record<string, unknown>
+    const row = await mandaInvito(db, { da: io, a, secondi: secondiNomiValidi(impostazioni.secondi) }, adesso)
     return c.json({ id: row.id, codice: row.codice }, 201)
   })
 
@@ -166,7 +169,13 @@ export const sfideNomi = new Hono<AppEnv>()
     if (await inSfida(db, altroId, adesso)) fail(409, 'OCCUPATO', 'Sta già giocando un’altra sfida.')
     const nuova = await mandaInvito(
       db,
-      { da: mioId, a: altroId, rivincitaDi: row.id, serie: serieDopo(row, mioId, altroId) },
+      {
+        da: mioId,
+        a: altroId,
+        rivincitaDi: row.id,
+        serie: serieDopo(row, mioId, altroId),
+        secondi: row.secondi ?? undefined,
+      },
       adesso,
     )
     return c.json({ invitoId: nuova.id }, 201)

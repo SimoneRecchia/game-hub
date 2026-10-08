@@ -44,11 +44,13 @@ export function subitoMs(lettere: number): number {
 /**
  * I punti di una parola trovata in `ms`: sei, piu' un bonus che vale dieci
  * fino a `subitoMs` e scende dritto fino a zero allo scadere del tempo. Con
- * l'aiuto ne costa cinque, e una parola trovata vale almeno uno.
+ * l'aiuto ne costa cinque, e una parola trovata vale almeno uno. Nella libera
+ * il tempo si sceglie (`tempoMs`): con uno corto il bonus pieno dura al piu'
+ * meta' del tempo, perché ne resti una meta' in cui scendere.
  */
-export function puntiParola(lettere: number, ms: number, aiuto: boolean): number {
-  const subito = subitoMs(lettere)
-  const quota = Math.min(1, Math.max(0, (TEMPO_PAROLA_MS - ms) / (TEMPO_PAROLA_MS - subito)))
+export function puntiParola(lettere: number, ms: number, aiuto: boolean, tempoMs = TEMPO_PAROLA_MS): number {
+  const subito = Math.min(subitoMs(lettere), tempoMs / 2)
+  const quota = Math.min(1, Math.max(0, (tempoMs - ms) / (tempoMs - subito)))
   const punti = PUNTI_PAROLA_ANAGRAMMI + Math.round(BONUS_ANAGRAMMI * quota)
   return Math.max(1, punti - (aiuto ? COSTO_AIUTO_ANAGRAMMI : 0))
 }
@@ -62,9 +64,9 @@ export interface ParolaGiocata {
 }
 
 /** I punti di una giornata finita: i venti per averla giocata e quelli delle parole trovate. */
-export function puntiAnagrammi(parole: readonly ParolaGiocata[]): number {
+export function puntiAnagrammi(parole: readonly ParolaGiocata[], tempoMs = TEMPO_PAROLA_MS): number {
   return parole.reduce(
-    (s, p) => s + (p.trovata ? puntiParola(p.lettere, p.ms, p.aiuto) : 0),
+    (s, p) => s + (p.trovata ? puntiParola(p.lettere, p.ms, p.aiuto, tempoMs) : 0),
     PUNTI_FINITA_ANAGRAMMI,
   )
 }

@@ -38,7 +38,11 @@ export function ComeSiGiocaCatena({ open, onClose }: { open: boolean; onClose: (
             <li>
               Il montepremi parte da {MONTEPREMI_CATENA} punti. Se indovini la parola finale lo vinci; se no, niente.
             </li>
-            <li>Una al giorno, la stessa per tutti. La libera non conta per la classifica.</li>
+            <li>Una al giorno, la stessa per tutti.</li>
+            <li>
+              Nella libera scegli il tempo della parola finale, e puoi sfidare un amico sulla stessa catena: vince chi
+              vince di più, e a pari punti chi la scrive prima. Non conta per la classifica.
+            </li>
           </ul>
         </section>
         <p className="cru-aiuto__nota">

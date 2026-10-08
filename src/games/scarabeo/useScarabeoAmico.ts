@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
-import { TAVOLO_POLL_ATTESA_MS, TAVOLO_POLL_TURNO_MS } from '@shared/config'
+import { TAVOLO_POLL_ATTESA_MS, TAVOLO_POLL_A_TEMPO_MS, TAVOLO_POLL_TURNO_MS } from '@shared/config'
 import type { VistaScarabeo } from '@shared/scarabeo-amici'
 import type { VistaTavolo } from '@shared/types'
 
@@ -19,6 +19,10 @@ export interface PartitaScarabeoAmico {
   reclama: () => void
   /** La rivincita: la partita nuova se l'altro l'aveva gia' chiesta, l'invito se no, o perché non si puo'. */
   rivincita: () => Promise<{ partitaId?: string; invitoId?: string; errore?: string }>
+  /** Con il tempo per mossa: quando finisce quello di chi ha il tratto, sull'orologio del telefono. */
+  scadenza: number | null
+  /** Il mio tempo e' finito: lo dico io, senza aspettare il margine. */
+  scaduto: () => void
 }
 
 /**
@@ -35,6 +39,11 @@ export function useScarabeoAmico(id: string): PartitaScarabeoAmico {
   const [inviando, setInviando] = useState(false)
   const vistaRef = useRef(vista)
   vistaRef.current = vista
+  // Il tempo che resta e' contato quando arriva la risposta: da adesso, sull'orologio del telefono (come in useTavolo).
+  const [scadenza, setScadenza] = useState<number | null>(null)
+  useEffect(() => {
+    setScadenza(vista?.tempo ? Date.now() + vista.tempo.restanteMs : null)
+  }, [vista])
 
   const carica = useCallback(async () => {
     try {
@@ -54,9 +63,11 @@ export function useScarabeoAmico(id: string): PartitaScarabeoAmico {
   const ritmo =
     stato === 'finita'
       ? POLL_FINE_MS
-      : stato === 'in_corso' && vista?.tuoTurno
-        ? TAVOLO_POLL_TURNO_MS
-        : TAVOLO_POLL_ATTESA_MS
+      : stato === 'in_corso' && vista?.tempo
+        ? TAVOLO_POLL_A_TEMPO_MS
+        : stato === 'in_corso' && vista?.tuoTurno
+          ? TAVOLO_POLL_TURNO_MS
+          : TAVOLO_POLL_ATTESA_MS
   const aperta = stato === 'in_corso' || stato === 'finita' || stato === 'invito'
   useEffect(() => {
     if (!aperta) return
@@ -126,5 +137,7 @@ export function useScarabeoAmico(id: string): PartitaScarabeoAmico {
     arrenditi: () => void azione('resa'),
     reclama: () => void azione('reclama'),
     rivincita,
+    scadenza,
+    scaduto: () => void azione('tempo'),
   }
 }

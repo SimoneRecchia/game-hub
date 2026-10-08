@@ -12,6 +12,7 @@ import { IndovinaGate } from './games/indovina/IndovinaGate'
 import { TavoloGate } from './games/tavolo/TavoloGate'
 import { NomiGate } from './games/nomi/sfida/NomiGate'
 import { SequenzeGate } from './games/sequenze/SequenzeGate'
+import { SfideGate } from './games/sfide/SfideGate'
 import { LupusGate } from './games/lupus/LupusGate'
 import { ScarabocchiGate } from './games/scarabocchi/ScarabocchiGate'
 import { CompagniaGate } from './games/compagnia/CompagniaGate'
@@ -67,6 +68,13 @@ const caricaCatena = () => import('./pages/Catena')
 const caricaCatenaLibera = () => import('./pages/CatenaLibera')
 const Catena = lazy(caricaCatena)
 const CatenaLibera = lazy(caricaCatenaLibera)
+// Le sfide fra amici delle libere da soli: una pagina per gioco, e una per gli inviti con il link.
+const SudokuSfida = lazy(() => import('./pages/SudokuSfida'))
+const AnagrammiSfida = lazy(() => import('./pages/AnagrammiSfida'))
+const ParoliereSfida = lazy(() => import('./pages/ParoliereSfida'))
+const GhigliottinaSfida = lazy(() => import('./pages/GhigliottinaSfida'))
+const CatenaSfida = lazy(() => import('./pages/CatenaSfida'))
+const SfidaLiberaInvito = lazy(() => import('./pages/SfidaLiberaInvito'))
 const caricaNomi = () => import('./pages/NomiCose')
 const caricaNomiLibera = () => import('./pages/NomiCoseLibera')
 const caricaNomiSfida = () => import('./pages/NomiCoseSfida')
@@ -179,7 +187,8 @@ function usePrecarica() {
 /** Un invito col link aperto da chi non ha ancora un account: la registrazione lo sa. */
 const INVITO = new RegExp(
   '^/(?:battaglia-navale/invito|quiz/sfida|lupus/stanza|scarabocchi/stanza|' +
-    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|scarabeo/libera|nomi-cose-citta|sequenze)/invito)' +
+    '(?:indovina-chi|scacchi|dama|forza-4|go|tris/libera|scarabeo/libera|nomi-cose-citta|sequenze|' +
+    '(?:sudoku|anagrammi|paroliere|ghigliottina|catena)/libera)/invito)' +
     '/([A-Za-z0-9]+)/?$',
 )
 
@@ -220,6 +229,7 @@ export default function App() {
       <TavoloGate />
       <NomiGate />
       <SequenzeGate />
+      <SfideGate />
       <LupusGate />
       <ScarabocchiGate />
       <CompagniaGate />
@@ -254,6 +264,8 @@ export default function App() {
 
             <Route path="/sudoku/classificata" element={<Sudoku />} />
             <Route path="/sudoku/libera" element={<SudokuLibero />} />
+            <Route path="/sudoku/libera/sfida/:id" element={<SudokuSfida />} />
+            <Route path="/sudoku/libera/invito/:codice" element={<SfidaLiberaInvito gioco="sudoku" />} />
 
             {/* La battaglia e' un gioco da tavolo: la sala sta all'indirizzo del gioco. */}
             <Route path={ROTTE.battaglia} element={<BattagliaSala />} />
@@ -269,12 +281,20 @@ export default function App() {
 
             <Route path="/anagrammi/classificata" element={<Anagrammi />} />
             <Route path="/anagrammi/libera" element={<AnagrammiLibera />} />
+            <Route path="/anagrammi/libera/sfida/:id" element={<AnagrammiSfida />} />
+            <Route path="/anagrammi/libera/invito/:codice" element={<SfidaLiberaInvito gioco="anagrammi" />} />
             <Route path="/ghigliottina/classificata" element={<Ghigliottina />} />
             <Route path="/ghigliottina/libera" element={<GhigliottinaLibera />} />
+            <Route path="/ghigliottina/libera/sfida/:id" element={<GhigliottinaSfida />} />
+            <Route path="/ghigliottina/libera/invito/:codice" element={<SfidaLiberaInvito gioco="ghigliottina" />} />
             <Route path="/paroliere/classificata" element={<Paroliere />} />
             <Route path="/paroliere/libera" element={<ParoliereLibera />} />
+            <Route path="/paroliere/libera/sfida/:id" element={<ParoliereSfida />} />
+            <Route path="/paroliere/libera/invito/:codice" element={<SfidaLiberaInvito gioco="paroliere" />} />
             <Route path="/catena/classificata" element={<Catena />} />
             <Route path="/catena/libera" element={<CatenaLibera />} />
+            <Route path="/catena/libera/sfida/:id" element={<CatenaSfida />} />
+            <Route path="/catena/libera/invito/:codice" element={<SfidaLiberaInvito gioco="catena" />} />
 
             <Route path="/nomi-cose-citta/classificata" element={<NomiCose />} />
             <Route path="/nomi-cose-citta/libera" element={<NomiCoseLibera />} />

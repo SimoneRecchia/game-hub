@@ -167,7 +167,7 @@ function ParolaAperta({
   comandi: ComandiAnagrammi
 }) {
   const passati = restante === null ? 0 : tempoParolaMs - restante
-  const vale = puntiParola(parola.lunghezza, passati, parola.aiuto)
+  const vale = puntiParola(parola.lunghezza, passati, parola.aiuto, tempoParolaMs)
   const quota = restante === null ? 1 : restante / tempoParolaMs
   const secondi = restante === null ? null : Math.ceil(restante / 1000)
   return (

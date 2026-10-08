@@ -3,6 +3,7 @@ import { ROTTE } from '@/app/rotte'
 import { api } from '@/lib/api'
 import { useDati } from '@/lib/dati'
 import { AMICI_POLL_MS } from '@shared/config'
+import { eGiocoSfidaLibera, type GiocoSfidaLibera } from '@shared/sfide-libere'
 import type { StanzaLupusBreve, VistaStanzaLupus } from '@shared/lupus-stanza'
 import type { StanzaScarabocchiBreve, VistaStanzaScarabocchi } from '@shared/scarabocchi'
 import type { AmiciRisposta, AmicoOnline, Attivita, GiocatoreBreve } from '@shared/types'
@@ -77,6 +78,7 @@ export type GiocoInsieme =
   | 'go'
   | 'lupus'
   | 'scarabocchi'
+  | GiocoSfidaLibera
 
 export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
@@ -90,6 +92,11 @@ export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'dama',
   'forza4',
   'go',
+  'sudoku',
+  'anagrammi',
+  'paroliere',
+  'ghigliottina',
+  'catena',
   'lupus',
   'scarabocchi',
 ]
@@ -146,7 +153,29 @@ export async function invitaA(
     return ROTTE.battaglia
   }
   if (gioco === 'nomi' || gioco === 'sequenze') {
-    await api(`/${gioco}/sfide`, { method: 'POST', body: { playerId } })
+    // Con il tempo di Nomi, cose e città o il livello delle Sequenze scelti l'ultima volta nella libera
+    // (le chiavi di NomiCoseLibera e di useLivelloScelto); il server rimette fra le scelte quel che non c'e'.
+    let impostazioni: unknown = null
+    try {
+      impostazioni =
+        gioco === 'nomi'
+          ? { secondi: JSON.parse(localStorage.getItem('giochi.nomi.tempo') ?? 'null') }
+          : { livello: localStorage.getItem('difficolta:sequenze') }
+    } catch {
+      /* le opzioni di sempre */
+    }
+    await api(`/${gioco}/sfide`, { method: 'POST', body: { playerId, impostazioni } })
+    return salaDi(gioco)
+  }
+  if (eGiocoSfidaLibera(gioco)) {
+    // Con le opzioni scelte l'ultima volta nella libera (la chiave di useOpzioniLibera).
+    let impostazioni: unknown = null
+    try {
+      impostazioni = JSON.parse(localStorage.getItem(`giochi.${gioco}.opzioni`) ?? 'null')
+    } catch {
+      /* le opzioni di sempre */
+    }
+    await api(`/sfide/${gioco}`, { method: 'POST', body: { playerId, impostazioni } })
     return salaDi(gioco)
   }
   if (gioco === 'indovina') {
@@ -157,9 +186,17 @@ export async function invitaA(
     })
     return ROTTE.indovina
   }
+  // Il tempo per mossa scelto nella sala (la chiave di tavolo/Tempo.tsx); il server lo rimette fra le scelte.
+  let tempoMossa: unknown
+  try {
+    const testo = localStorage.getItem(`giochi.${gioco}.tempo`)
+    tempoMossa = testo === null ? undefined : JSON.parse(testo)
+  } catch {
+    tempoMossa = undefined
+  }
   await api('/tavolo/inviti', {
     method: 'POST',
-    body: { gioco, playerId, variante: scelta(`giochi.${gioco}.variante`, true) },
+    body: { gioco, playerId, variante: scelta(`giochi.${gioco}.variante`, true), tempoMossa },
   })
   return ROTTE.tavolo(gioco)
 }
@@ -174,9 +211,14 @@ export function salaDi(gioco: GiocoInsieme): string {
     return ROTTE.libera('nomi')
   }
   if (gioco === 'sequenze') {
-    // Lo stesso per le Sequenze (la chiave di SequenzeLibera).
+    // Lo stesso per le Sequenze (la chiave di SequenzeLibera), con il foglio della sfida aperto.
     ricorda('giochi.sequenze.contro', 'amico')
-    return ROTTE.libera('sequenze')
+    return `${ROTTE.libera('sequenze')}?sfida=1`
+  }
+  if (eGiocoSfidaLibera(gioco)) {
+    // La libera si apre dalla parte dell'amico, con il foglio della sfida, che aspetta la risposta.
+    ricorda(`giochi.${gioco}.contro`, 'amico')
+    return `${ROTTE.libera(gioco)}?sfida=1`
   }
   if (gioco === 'indovina') return ROTTE.indovina
   // La libera dello Scarabeo si apre dalla parte dell'amico, dove si invita con il link (la chiave di ScarabeoLibero).

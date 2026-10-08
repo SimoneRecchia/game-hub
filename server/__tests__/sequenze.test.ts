@@ -339,6 +339,49 @@ describe('la sfida a Sequenze fra amici', () => {
     expect(vista).toMatchObject({ stato: 'finita', vincitore: 'avversario', sue: { giuste: 1 } })
   })
 
+  it('il livello lo sceglie chi sfida: il facile parte da due, il difficile si tocca al contrario', async () => {
+    const b = banco()
+    const [anna, bruno, carla] = [await b.giocatore('anna'), await b.giocatore('bruno'), await b.giocatore('carla')]
+    await online(b.chiama, anna, bruno)
+    const invito = await b.chiama<{ id: string }>('POST', '/sequenze/sfide', anna, {
+      playerId: bruno.id,
+      impostazioni: { livello: 'difficile' },
+    })
+    await b.chiama('POST', `/sequenze/sfide/${invito.dati.id}/accetta`, bruno)
+    const id = invito.dati.id
+    passano(b.db, id, SEQUENZE_SFIDA_VIA_MS)
+    expect((await b.chiama<VistaSfidaSequenze>('GET', `/sequenze/sfide/${id}`, bruno)).dati.livello).toBe('difficile')
+    const m = await apri(b.chiama, anna, id, 0)
+    expect(m.sequenza).toHaveLength(PRIMA_LUNGHEZZA)
+    // Nell'ordine dei lampi e' sbagliata; al contrario e' giusta.
+    const giusta = await rispondi(b.chiama, anna, id, 0, [...m.sequenza!].reverse())
+    expect(giusta.giusta).toBe(true)
+    const n = await apri(b.chiama, bruno, id, 0)
+    expect((await rispondi(b.chiama, bruno, id, 0, n.sequenza!)).giusta).toBe(false)
+
+    // Anna e' gia' piu' avanti di Bruno, che ha finito: la sfida e' chiusa. La rivincita resta al contrario.
+    expect((await b.chiama<VistaSfidaSequenze>('GET', `/sequenze/sfide/${id}`, anna)).dati.vincitore).toBe('io')
+    await online(b.chiama, anna, bruno)
+    const chiesta = await b.chiama<{ invitoId: string }>('POST', `/sequenze/sfide/${id}/rivincita`, bruno)
+    await b.chiama('POST', `/sequenze/sfide/${id}/rivincita`, anna)
+    const nuova = (await b.chiama<VistaSfidaSequenze>('GET', `/sequenze/sfide/${chiesta.dati.invitoId}`, anna)).dati
+    expect(nuova.livello).toBe('difficile')
+
+    // Il facile parte da due; un livello che non c'e' e' il normale.
+    const facile = await b.chiama<{ codice: string; id: string }>('POST', '/sequenze/sfide', carla, {
+      impostazioni: { livello: 'facile' },
+    })
+    const dario = await b.giocatore('dario')
+    await b.chiama('POST', `/sequenze/sfide/link/${facile.dati.codice}/accetta`, dario)
+    passano(b.db, facile.dati.id, SEQUENZE_SFIDA_VIA_MS)
+    expect((await apri(b.chiama, dario, facile.dati.id, 0)).sequenza).toHaveLength(2)
+    const elio = await b.giocatore('elio')
+    const strano = await b.chiama<{ id: string }>('POST', '/sequenze/sfide', elio, { impostazioni: { livello: 'x' } })
+    expect(b.db.sqlite.prepare('SELECT livello FROM sequenze_sfide WHERE id = ?').get(strano.dati.id)?.livello).toBe(
+      'normale',
+    )
+  })
+
   it('la rivincita porta avanti la serie, e il link apre la sfida a chi lo riceve', async () => {
     const b = banco()
     const [anna, bruno] = [await b.giocatore('anna'), await b.giocatore('bruno')]

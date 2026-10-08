@@ -114,10 +114,13 @@ export function PartitaCatena({
   vista,
   comandi,
   fine,
+  subito = false,
 }: {
   vista: VistaCatena
   comandi: ComandiCatena
   fine: ReactNode
+  /** Senza il Comincia: in una sfida il tre-due-uno l'ha gia' fatto. */
+  subito?: boolean
 }) {
   const [mostrata, setMostrata] = useState(vista)
   const [fase, setFase] = useState<Fase>(() => faseDi(vista))
@@ -185,6 +188,14 @@ export function PartitaCatena({
     window.setTimeout(() => montata.current && setEntra(false), tempi().entrata)
     for (let i = 0; i < 3; i += 1) suona('maglia', { ritardo: 0.15 + i * 0.28, altezza: 1 + i * 0.08 })
   }, [])
+
+  // In una sfida si comincia da soli, con la stessa entrata del Comincia.
+  const partita = useRef(false)
+  useEffect(() => {
+    if (!subito || partita.current || fase !== 'intro') return
+    partita.current = true
+    comincia()
+  }, [comincia, fase, subito])
 
   // La parola finale annunciata: il nastro, il terzo elemento in regalo, e il minuto quando parte.
   useEffect(() => {
