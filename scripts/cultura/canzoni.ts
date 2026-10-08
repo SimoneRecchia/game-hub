@@ -7,9 +7,13 @@
  * non sarebbe una canzone che si conosce qui. Le piu' famose sono composizioni:
  * per Wikidata Bohemian Rhapsody e Imagine non sono "canzoni", e con le sole
  * canzoni e i singoli restavano fuori, con tutte le canzoni di prima dei
- * singoli. Le candidate sono due elenchi, come per i film:
- * le piu' tradotte del mondo, e quelle di interpreti italiani, che fra le
- * prime del mondo non ci arrivano — "Albachiara" ha quattro Wikipedia.
+ * singoli. Le candidate sono tre elenchi: come per i film le piu' tradotte
+ * del mondo, e quelle di interpreti italiani, che fra le prime del mondo non
+ * ci arrivano — "Albachiara" ha quattro Wikipedia —; e le canzoni delle
+ * classifiche di Wikipedia (scripts/cultura/classifiche.ts), che hanno avuto
+ * successo anche senza una voce tradotta, come il rap italiano di adesso. Di
+ * quelle chi canta e' quello della classifica, e l'anno la prima volta che ci
+ * e' entrata, se Wikidata non ne dice uno di prima.
  *
  * Chi canta e' una persona o un gruppo, e al piu' due: "We Are the World" e'
  * degli USA for Africa, ma una canzone di tre interpreti e' una raccolta di
@@ -58,6 +62,7 @@ import {
   type DatiCanzoni,
   type GenereCanzone,
 } from '../../shared/quiz-cultura'
+import { canzoniDelleClassifiche, nomeNormale } from './classifiche'
 import { moderno, nomePaese, persone, statiDi, type Persona } from './persone'
 import { ANNO_LETTURE, interroga, letture, ordineDichiarazioni } from './rete'
 import {
@@ -80,7 +85,14 @@ import {
   valoriSparql,
 } from './wikidata'
 
-const CANZONI = 1500
+/** Quante canzoni restano, dalla piu' nota: con le classifiche ce ne sono molte di piu' di prima. */
+const CANZONI = Number(process.env.CANZONI ?? 6000)
+/**
+ * Quanto vale nella notorietà un anno al primo posto in Italia (`successo` 1,
+ * scripts/cultura/classifiche.ts): quanto una canzone italiana con tre
+ * Wikipedia che si legge una dozzina di migliaia di volte l'anno.
+ */
+const SUCCESSO = Number(process.env.SUCCESSO ?? 60_000)
 const CANDIDATI = 5000
 /** Le candidate di interpreti italiani, cercate a parte: fra le prime del mondo non ci arrivano. */
 const CANDIDATI_ITALIANI = 4000
@@ -90,6 +102,9 @@ const CLASSI = ['Q7366', 'Q134556', 'Q105543609']
 
 /** Un insieme musicale: il gruppo, il duo, la band, l'orchestra (le sue sottoclassi). */
 const INSIEME_MUSICALE = 'Q2088357'
+
+/** Il disc jockey, fra i mestieri di Wikidata: le sue canzoni le canta spesso qualcun altro. */
+const DISC_JOCKEY = 'Q130857'
 
 /**
  * Per chi l'elenco non ha: i generi larghi, con le radici di Wikidata da cui
@@ -282,6 +297,18 @@ function titoloCanzone(t: string | undefined): string | undefined {
   return pulito.length > 0 ? pulito : undefined
 }
 
+/**
+ * Il titolo senza chi la canta fra parentesi: qualche etichetta di Wikidata
+ * distingue cosi' le versioni ("Mississippi (Pussycat)", "Celebration
+ * (Madonna)"), e nella domanda sarebbe la risposta.
+ */
+function senzaInterprete(t: string, nomi: readonly string[]): string {
+  const m = t.match(/^(.*\S)\s*\(([^()]+)\)$/)
+  if (!m) return t
+  const dentro = nomeNormale(m[2])
+  return nomi.some((n) => nomeNormale(n) === dentro) ? m[1] : t
+}
+
 /** Il genere largo del primo genere di Wikidata che ne ha uno: per chi l'elenco non ha. */
 function largo(generi: readonly string[], radiciDi: Map<string, Set<GenereCanzone>>): GenereCanzone[] {
   for (const g of generi) {
@@ -291,14 +318,33 @@ function largo(generi: readonly string[], radiciDi: Map<string, Set<GenereCanzon
   return []
 }
 
+/** Le voci che Wikidata dice canzoni, singoli o composizioni, anche per una loro sottoclasse. */
+async function soloCanzoni(ids: readonly string[]): Promise<Set<string>> {
+  const righe = await aPezzi(
+    'canzoni-classifiche-classi',
+    ids,
+    `SELECT DISTINCT ?q WHERE {
+  VALUES ?q { #VOCI# }
+  VALUES ?classe { ${valoriSparql(CLASSI)} }
+  ?q wdt:P31/wdt:P279* ?classe .
+}`,
+  )
+  return new Set(righe.map((r) => r.q!).filter(Boolean))
+}
+
 export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
   console.log('Canzoni')
   const mondo = await interroga('canzoni-candidate', candidate(CANDIDATI, false))
   const italiane = await interroga('canzoni-candidate-italiane', candidate(CANDIDATI_ITALIANI, true))
   const voci = new Map([...mondo, ...italiane].map((r) => [r.q!, numero(r.voci)]))
-  const ids = [...voci.keys()]
-  const s = await schede('canzoni-schede', ids)
-  const conTitolo = ids.filter((id) => s.get(id)?.voce && titoloCanzone(titoloItaliano(s.get(id))))
+  const classificate = await canzoniDelleClassifiche(soloCanzoni)
+  const classifica = new Map(classificate.map((c) => [c.id, c]))
+  const conVoce = [...new Set([...voci.keys(), ...classificate.filter((c) => c.voce).map((c) => c.id)])]
+  const s = await schede('canzoni-schede', conVoce)
+  /** Il titolo: quello italiano, per le canzoni con la voce in italiano; se no quello della classifica. */
+  const titoloDi = (id: string): string | undefined =>
+    s.get(id)?.voce ? titoloCanzone(titoloItaliano(s.get(id))) : titoloCanzone(classifica.get(id)?.titolo)
+  const conTitolo = conVoce.filter((id) => titoloDi(id))
   const v = await valori('canzoni-valori', conTitolo, ['P136', 'P31'])
   const date = await anni('canzoni-anni-2', conTitolo, ['P577', 'P571'])
   const certi = await valoriCerti('canzoni-interpreti', conTitolo, 'P175')
@@ -317,10 +363,18 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
 }`,
   )
   const nonCanzoni = new Set(righeNon.map((r) => r.q))
+  // Le canzoni delle classifiche senza una voce loro: si sanno il titolo, chi la canta e l'anno.
+  const senzaVoce = classificate.filter((c) => !c.voce && titoloCanzone(c.titolo))
 
   /* ── Chi canta ── */
   const aMano = [...corrette.values()].flatMap((c) => c.a ?? [])
-  const idInterpreti = [...new Set([...conTitolo.flatMap((id) => certi.get(id) ?? []), ...aMano])]
+  const idInterpreti = [
+    ...new Set([
+      ...conTitolo.flatMap((id) => certi.get(id) ?? []),
+      ...aMano,
+      ...classificate.flatMap((c) => [...c.artisti, ...c.ospiti]),
+    ]),
+  ]
   const gente = await persone('canzoni-artisti', idInterpreti)
   const righeGruppi = await aPezzi(
     'canzoni-gruppi',
@@ -354,6 +408,11 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
     idInterpreti.filter((id) => !gruppi.has(id)),
     ['P136'],
   )
+  const mestieri = await valori(
+    'canzoni-artisti-mestieri',
+    idInterpreti.filter((id) => !gruppi.has(id)),
+    ['P106'],
+  )
   /** Un interprete come lo vogliono le domande: una persona, o un gruppo con il suo paese e i suoi anni. */
   const interprete = (id: string): Persona | undefined => {
     const p = gente.get(id)
@@ -378,14 +437,35 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
   }
   const descrizione = (id: string) => s.get(id)?.descrizione ?? ''
   /**
-   * Chi la canta: quelli dell'elenco a mano, se c'e'; se no quelli di Wikidata
-   * che la descrizione nomina, se nomina qualcuno, o tutti, se non nomina
-   * nessuno. Nessuno se la descrizione dice un altro, o se uno degli interpreti
-   * non e' ne' una persona ne' un gruppo.
+   * Chi la canta per la classifica: la versione che ha avuto successo. Se la
+   * voce di Wikidata dice gia' chi la canta, vale la versione di uno di loro;
+   * una versione di altri e' una cover, e vale solo se chi la canta e' piu'
+   * noto, per numero di Wikipedia: "Nel blu dipinto di blu" resta di Modugno
+   * anche se in classifica c'e' entrato Bobby Rydell, e "Speedy Gonzales" e'
+   * di Pat Boone, non di David Hess, che l'aveva incisa per primo.
+   */
+  const perLaClassifica = (id: string): string[] | undefined => {
+    const diWikidata = (certi.get(id) ?? []).filter((x) => interprete(x))
+    const noto = (a: readonly string[]) => Math.max(0, ...a.map((x) => interprete(x)?.voci ?? 0))
+    const valide = (classifica.get(id)?.versioni ?? []).filter((a) => a.length <= 2 && a.every((x) => interprete(x)))
+    if (diWikidata.length === 0) return valide[0]
+    return (
+      valide.find((a) => a.some((x) => diWikidata.includes(x))) ??
+      valide.find((a) => noto(a) > noto(diWikidata))
+    )
+  }
+  /**
+   * Chi la canta: quelli dell'elenco a mano, se c'e'; quelli della classifica,
+   * se c'e' entrata; se no quelli di Wikidata che la descrizione nomina, se
+   * nomina qualcuno, o tutti, se non nomina nessuno. Nessuno se la descrizione
+   * dice un altro, o se uno degli interpreti non e' ne' una persona ne' un gruppo.
    */
   const interpretiDi = (id: string): string[] => {
     const scritti = corrette.get(id)?.a
     if (scritti) return scritti.every((x) => interprete(x)) ? scritti : []
+    const dallaClassifica = perLaClassifica(id)
+    if (dallaClassifica) return dallaClassifica
+    if (!s.has(id)) return []
     const tutti = certi.get(id) ?? []
     const d = descrizione(id)
     if (!DICE_CHI.test(d)) return tutti.length <= 2 && tutti.every((x) => interprete(x)) ? tutti : []
@@ -393,34 +473,55 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
     const detti = tutti.filter((x) => interprete(x) && nominato(d, interprete(x)!.n))
     return detti.length <= 2 ? detti : []
   }
-  const annoDi = (id: string) =>
-    corrette.get(id)?.anno ??
-    annoDescritto(descrizione(id)) ??
-    primoAnno(date.get(id)?.get('P577')) ??
-    primoAnno(date.get(id)?.get('P571'))
+  /**
+   * L'anno: quello scritto a mano, della descrizione o della prima uscita, se
+   * non e' dopo la prima volta in classifica — una ristampa e' sempre dopo;
+   * se no quello della classifica.
+   */
+  const annoDi = (id: string): number | undefined => {
+    const scritto = corrette.get(id)?.anno
+    if (scritto !== undefined) return scritto
+    const daWikidata =
+      annoDescritto(descrizione(id)) ?? primoAnno(date.get(id)?.get('P577')) ?? primoAnno(date.get(id)?.get('P571'))
+    const inClassifica = classifica.get(id)?.anno
+    if (inClassifica === undefined) return daWikidata
+    return daWikidata !== undefined && daWikidata <= inClassifica ? daWikidata : inClassifica
+  }
   const italiana = (id: string) => interpretiDi(id).some((x) => interprete(x)?.it)
 
   /* ── Le canzoni che restano ── */
-  const buone = conTitolo.filter((id) => {
-    if (nonCanzoni.has(id) || corrette.get(id)?.fuori || DI_NESSUNO.test(descrizione(id))) return false
+  const buone = [
+    ...conTitolo.filter((id) => !nonCanzoni.has(id) && !corrette.get(id)?.fuori && !DI_NESSUNO.test(descrizione(id))),
+    ...senzaVoce.map((c) => c.id),
+  ].filter((id) => {
     const anno = annoDi(id)
     return anno !== undefined && anno >= ANNO_MINIMO && interpretiDi(id).length > 0
   })
-  const lette = await letture(buone.map((id) => s.get(id)!.voce!))
-  const peso = (id: string) =>
-    notorietaItaliana(voci.get(id) ?? 0, lettureDiSempre(lette.get(s.get(id)!.voce!) ?? 0, annoDi(id))) *
-    (italiana(id) ? PESO_ITALIANE : 1)
-  const titolo = (id: string) => titoloCanzone(titoloItaliano(s.get(id)))!
-  const unici = titoliUnici(
-    buone,
-    titolo,
-    (id) => voci.get(id) ?? 0,
-    (id) => interpretiDi(id).join(' '),
-  )
+  const voceItaliana = (id: string) => s.get(id)?.voce
+  const lette = await letture(buone.map(voceItaliana).filter((t): t is string => !!t))
+  const vociDi = (id: string) => voci.get(id) ?? s.get(id)?.voci ?? 0
+  /**
+   * Quanto e' nota: le Wikipedia e le letture della voce italiana, come per le
+   * altre materie, piu' il successo in classifica. Un primo posto dell'anno in
+   * Italia vale `SUCCESSO`: quanto una canzone italiana famosa, e cosi' una hit
+   * senza voce tradotta sta con le altre.
+   */
+  const peso = (id: string) => {
+    const t = voceItaliana(id)
+    const wiki = notorietaItaliana(vociDi(id), t ? lettureDiSempre(lette.get(t) ?? 0, annoDi(id)) : 0)
+    return wiki * (italiana(id) ? PESO_ITALIANE : 1) + SUCCESSO * (classifica.get(id)?.successo ?? 0)
+  }
+  const titolo = (id: string) =>
+    senzaInterprete(
+      titoloDi(id) ?? titoloCanzone(classifica.get(id)?.titolo)!,
+      [...interpretiDi(id), ...(certi.get(id) ?? [])].map((x) => gente.get(x)?.n ?? ''),
+    )
+  const unici = titoliUnici(buone, titolo, peso, (id) => interpretiDi(id).join(' '))
   const scelte = unici.sort((a, b) => peso(b) - peso(a) || a.localeCompare(b)).slice(0, CANZONI)
   console.log(
-    `  ${ids.length} candidate, ${conTitolo.length} con la voce in italiano, ` +
-      `${buone.length} con uno o due interpreti, ${unici.length} con un titolo solo, ${scelte.length} tenute`,
+    `  ${conVoce.length} candidate con una voce, ${conTitolo.length} con un titolo, ${senzaVoce.length} ` +
+      `dalle classifiche senza voce; ${buone.length} con uno o due interpreti, ${unici.length} con un titolo ` +
+      `solo, ${scelte.length} tenute, ${scelte.filter((id) => classifica.has(id)).length} in classifica`,
   )
 
   /* ── I generi ── */
@@ -459,23 +560,41 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
     return [...new Set(daiNomi)]
   }
 
-  /* ── L'ordine di chi canta, nei duetti ── */
+  /* ── L'ordine di chi canta, nei duetti: quello della classifica, o quello di Wikidata ── */
   const ordine = await ordineDichiarazioni(
-    scelte.filter((id) => interpretiDi(id).length > 1),
+    scelte.filter((id) => s.has(id) && !perLaClassifica(id) && interpretiDi(id).length > 1),
     ['P175'],
   )
   const fama = perNotorieta(
     scelte.map((id) => ({ id })),
     (x) => peso(x.id),
   )
-  // Gli altri interpreti di Wikidata contano solo se sono fra gli artisti: e' fra loro che si pescano le sbagliate.
+  // Gli altri interpreti contano solo se sono fra gli artisti: e' fra loro che si pescano le sbagliate.
+  // Sono quelli di Wikidata, gli ospiti della classifica e chi ci e' entrato con un'altra versione.
   const artistiUsati = new Set(scelte.flatMap(interpretiDi))
-  const altriDi = (id: string, a: readonly string[]) =>
-    (certi.get(id) ?? []).filter((x) => !a.includes(x) && artistiUsati.has(x))
+  const altriDi = (id: string, a: readonly string[]) => {
+    const c = classifica.get(id)
+    return [...new Set([...(certi.get(id) ?? []), ...(c?.ospiti ?? []), ...(c?.versioni.flat() ?? [])])].filter(
+      (x) => !a.includes(x) && artistiUsati.has(x),
+    )
+  }
+  /**
+   * Si chiede di chi e', e non chi la canta, quando chi la firma non e' detto
+   * che la canti: le canzoni dell'elenco a mano, quelle con un ospite ("Lean
+   * On" dei Major Lazer, con MØ) e quelle di un dj. "Di chi è" non e' mai
+   * sbagliato; "chi canta «Wake Me Up»?" con Avicii per risposta si'.
+   */
+  const diChi = (id: string, a: readonly string[]) =>
+    corrette.get(id)?.diChi ||
+    (classifica.get(id)?.ospiti.length ?? 0) > 0 ||
+    a.some((x) => primi(mestieri, x, 'P106').includes(DISC_JOCKEY))
   const elenco: CanzoneQuiz[] = scelte.map((id) => {
-    const a = inOrdine(interpretiDi(id), ordine.get(id)?.get('P175'), (x) => gente.get(x)?.voci ?? 0)
+    const a = perLaClassifica(id)
+      ? interpretiDi(id)
+      : inOrdine(interpretiDi(id), ordine.get(id)?.get('P175'), (x) => gente.get(x)?.voci ?? 0)
     const g = generiDi(id, a)
     const anno = annoDi(id)
+    const voce = voceItaliana(id)
     return {
       id,
       n: titolo(id),
@@ -483,16 +602,23 @@ export async function canzoni(): Promise<Omit<DatiCanzoni, 'versione'>> {
       ...(altriDi(id, a).length > 0 ? { x: altriDi(id, a) } : {}),
       ...(anno !== undefined ? { anno } : {}),
       ...(g.length > 0 ? { g } : {}),
-      ...(corrette.get(id)?.diChi ? { dc: 1 as const } : {}),
-      w: s.get(id)!.voce!,
+      ...(diChi(id, a) ? { dc: 1 as const } : {}),
+      ...(voce ? { w: voce } : {}),
       f: fama.get(id) ?? 0,
     }
   })
 
-  /* ── Gli artisti, con la loro notorietà ── */
+  /* ── Gli artisti, con la loro notorietà: le Wikipedia, le letture e il successo delle loro canzoni ── */
   const usati = [...new Set(elenco.flatMap((c) => c.a))].map((id) => interprete(id)!).filter(Boolean)
   const letteArtisti = await letture(usati.map((p) => p.w).filter((t): t is string => !!t))
-  const famaArtisti = perNotorieta(usati, (p) => notorietaItaliana(p.voci, letteArtisti.get(p.w ?? '') ?? 0))
+  const successoDi = new Map<string, number>()
+  for (const c of elenco) {
+    for (const x of c.a) successoDi.set(x, (successoDi.get(x) ?? 0) + (classifica.get(c.id)?.successo ?? 0))
+  }
+  const famaArtisti = perNotorieta(
+    usati,
+    (p) => notorietaItaliana(p.voci, letteArtisti.get(p.w ?? '') ?? 0) + SUCCESSO * (successoDi.get(p.id) ?? 0),
+  )
   const artisti: ArtistaQuiz[] = usati.map((p) => ({
     id: p.id,
     n: p.n,

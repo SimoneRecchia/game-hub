@@ -35,7 +35,7 @@ import {
   valoriSparql,
 } from './wikidata'
 
-const LIBRI = 1000
+const LIBRI = 1600
 const CANDIDATI = 3000
 /** I candidati italiani, cercati a parte: vedi `Q_ITALIANI`. */
 const CANDIDATI_ITALIANI = 1000

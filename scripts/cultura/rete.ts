@@ -68,6 +68,7 @@ const INTERVALLI: Record<string, number> = {
   Wikidata: 2_000,
   commons: 1_600,
   wikipedia: 1_600,
+  'wikipedia-en': 1_600,
   wikidata: 1_600,
   // Le letture vanno in parallelo (`IN_VIAGGIO`), e il limite e' quello.
   letture: 0,
@@ -257,6 +258,7 @@ function scriviArchivio<T>(nome: string, archivio: Archivio<T>): void {
 const BASI_API = {
   commons: 'https://commons.wikimedia.org/w/api.php',
   wikipedia: 'https://it.wikipedia.org/w/api.php',
+  'wikipedia-en': 'https://en.wikipedia.org/w/api.php',
   wikidata: 'https://www.wikidata.org/w/api.php',
 }
 
@@ -384,6 +386,113 @@ export async function introduzioni(titoli: readonly string[]): Promise<Map<strin
     const pagine = perTitolo(risposta, gruppo)
     for (const t of gruppo) archivio[t] = pagine.get(t)?.extract ?? null
     scriviArchivio('wikipedia', archivio)
+  }
+  return new Map(titoli.map((t) => [t, archivio[t] ?? null]))
+}
+
+/** Le Wikipedia da cui si leggono le pagine: l'italiana, e l'inglese per le classifiche di fuori. */
+export type SitoWikipedia = 'it' | 'en'
+
+const SERVIZIO: Record<SitoWikipedia, keyof typeof BASI_API> = { it: 'wikipedia', en: 'wikipedia-en' }
+
+/** Quanto vale un elenco di pagine: una settimana, perché le pagine dei nuovi anni si trovino. */
+const VALIDITA_ELENCHI = 7 * 24 * 3_600_000
+
+/**
+ * I titoli delle pagine che cominciano con `prefisso`: "Billboard Year-End Hot
+ * 100 singles of" da' gli anni che ci sono, senza scriverli a mano, e quando
+ * arriva quello nuovo lo trova da solo.
+ */
+export async function pagineConPrefisso(sito: SitoWikipedia, prefisso: string): Promise<string[]> {
+  const file = join(CACHE, 'elenchi', `${sito}-${createHash('sha1').update(prefisso).digest('hex').slice(0, 12)}.json`)
+  const salvato = leggiCache(file, VALIDITA_ELENCHI)
+  if (salvato) return JSON.parse(salvato) as string[]
+  const titoli: string[] = []
+  let seguito: Record<string, string> = {}
+  for (let giro = 0; giro < 20; giro += 1) {
+    const risposta = (await api(SERVIZIO[sito], {
+      action: 'query',
+      list: 'allpages',
+      apprefix: prefisso,
+      apnamespace: '0',
+      apfilterredir: 'nonredirects',
+      aplimit: '500',
+      ...seguito,
+    })) as { query?: { allpages?: Array<{ title: string }> }; continue?: Record<string, string> }
+    titoli.push(...(risposta.query?.allpages ?? []).map((p) => p.title))
+    if (!risposta.continue) break
+    seguito = risposta.continue
+  }
+  scriviCache(file, JSON.stringify(titoli))
+  return titoli
+}
+
+interface PaginaTesto extends Pagina {
+  revisions?: Array<{ slots?: { main?: { content?: string } } }>
+}
+
+/**
+ * Il wikitesto delle pagine di Wikipedia, per titolo, seguendo i rinvii; `null`
+ * se la pagina non c'e'. Dieci per volta, perché le pagine delle classifiche
+ * sono lunghe. Come le prime frasi non scade: la classifica di un anno chiuso
+ * non cambia. Una pagina che non c'e' non si salva, e si richiede: puo' essere
+ * quella dell'anno che sta per chiudersi.
+ */
+export async function wikitesti(sito: SitoWikipedia, titoli: readonly string[]): Promise<Map<string, string | null>> {
+  const nome = `wikitesti-${sito}`
+  const archivio = leggiArchivio<string>(nome)
+  const mancano = [...new Set(titoli)].filter((t) => !(t in archivio))
+  if (mancano.length > 0) console.log(`  Wikipedia (${sito}): ${mancano.length} pagine da leggere`)
+  for (let i = 0; i < mancano.length; i += 10) {
+    const gruppo = mancano.slice(i, i + 10)
+    const risposta = (await api(SERVIZIO[sito], {
+      action: 'query',
+      prop: 'revisions',
+      rvprop: 'content',
+      rvslots: 'main',
+      redirects: '1',
+      titles: gruppo.join('|'),
+    })) as Risposta<PaginaTesto>
+    const pagine = perTitolo(risposta, gruppo)
+    for (const t of gruppo) {
+      const testo = pagine.get(t)?.revisions?.[0]?.slots?.main?.content
+      if (testo !== undefined) archivio[t] = testo
+    }
+    scriviArchivio(nome, archivio)
+  }
+  return new Map(titoli.map((t) => [t, archivio[t] ?? null]))
+}
+
+interface PaginaVoceWikidata extends Pagina {
+  pageprops?: { wikibase_item?: string }
+}
+
+/**
+ * La voce di Wikidata delle pagine di Wikipedia, per titolo, seguendo i rinvii:
+ * e' cosi' che un collegamento in una tabella ("[[Cenere (Lazza)|Cenere]]")
+ * diventa una voce di cui si sanno l'anno, chi la canta e da dove viene.
+ * Cinquanta per volta; `null` per una pagina che non c'e' o non ha una voce.
+ */
+export async function vociDiWikidata(
+  sito: SitoWikipedia,
+  titoli: readonly string[],
+): Promise<Map<string, string | null>> {
+  const nome = `wikidata-di-${sito}`
+  const archivio = leggiArchivio<string>(nome)
+  const mancano = [...new Set(titoli)].filter((t) => !(t in archivio))
+  if (mancano.length > 0) console.log(`  Wikipedia (${sito}): le voci di Wikidata di ${mancano.length} pagine`)
+  for (let i = 0; i < mancano.length; i += 50) {
+    const gruppo = mancano.slice(i, i + 50)
+    const risposta = (await api(SERVIZIO[sito], {
+      action: 'query',
+      prop: 'pageprops',
+      ppprop: 'wikibase_item',
+      redirects: '1',
+      titles: gruppo.join('|'),
+    })) as Risposta<PaginaVoceWikidata>
+    const pagine = perTitolo(risposta, gruppo)
+    for (const t of gruppo) archivio[t] = pagine.get(t)?.pageprops?.wikibase_item ?? null
+    if ((i / 50) % 10 === 9 || i + 50 >= mancano.length) scriviArchivio(nome, archivio)
   }
   return new Map(titoli.map((t) => [t, archivio[t] ?? null]))
 }
