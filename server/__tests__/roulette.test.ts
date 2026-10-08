@@ -115,7 +115,8 @@ describe('la roulette da soli', () => {
     puntiDiOggi(b, io, 30)
     const t = await apri(b, io)
     expect((await punta(b, io, t.id, 1, { rosso: 20, nero: 11 })).dati).toMatchObject({ code: 'POCHI_PUNTI' })
-    for (const sbagliata of [{ '1-5': 1 }, { '37': 1 }, { rosso: 0 }, { rosso: 1.5 }, { rosso: -1 }]) {
+    const sbagliate: Record<string, number>[] = [{ '1-5': 1 }, { '37': 1 }, { rosso: 0 }, { rosso: 1.5 }, { rosso: -1 }]
+    for (const sbagliata of sbagliate) {
       const r = await punta(b, io, t.id, 1, sbagliata)
       expect(r.status, JSON.stringify(sbagliata)).toBe(400)
       expect(r.dati).toMatchObject({ code: 'PUNTATA' })

@@ -11,6 +11,7 @@ import { NOMI_CATEGORIE } from '@shared/quiz'
 import { PUNTATA_MINIMA, SPICCHI_FORTUNATI, SPICCHI_RUOTA, nomeDi } from '@shared/ruota'
 import { PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import { PUNTATA_MINIMA_BJ } from '@shared/blackjack'
+import { PUNTATA_MINIMA_RL } from '@shared/roulette'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   AnagrammiSummary,
@@ -652,7 +653,21 @@ export function statoSlot(s: FortunaRisposta): StatoRuota {
  * quelli degli amici, o un tavolo nuovo.
  */
 export function statoBlackjack(s: FortunaRisposta): StatoRuota {
-  const { mioTavolo, tavoli } = s.blackjack
+  return statoDelTavolo(s, s.blackjack, PUNTATA_MINIMA_BJ, ROTTE.blackjack, ROTTE.tavoloBJ)
+}
+
+/** La roulette nella scheda della Fortuna: come il blackjack, il tavolo a cui si e' seduti o quelli degli amici. */
+export function statoRoulette(s: FortunaRisposta): StatoRuota {
+  return statoDelTavolo(s, s.roulette, PUNTATA_MINIMA_RL, ROTTE.roulette, ROTTE.tavoloRL)
+}
+
+function statoDelTavolo(
+  s: FortunaRisposta,
+  { mioTavolo, tavoli }: FortunaRisposta['blackjack'],
+  minima: number,
+  sala: string,
+  tavolo: (id: string) => string,
+): StatoRuota {
   if (mioTavolo) {
     return {
       fase: 'in-corso',
@@ -660,7 +675,7 @@ export function statoBlackjack(s: FortunaRisposta): StatoRuota {
       dettaglio: '',
       avanzamento: null,
       azione: 'Torna al tavolo',
-      a: ROTTE.tavoloBJ(mioTavolo),
+      a: tavolo(mioTavolo),
     }
   }
   const amici = tavoli.flatMap((t) => t.giocatori.map((g) => g.displayName))
@@ -670,22 +685,22 @@ export function statoBlackjack(s: FortunaRisposta): StatoRuota {
       : amici.length === 1
         ? `${amici[0]} è al tavolo`
         : `${amici.slice(0, 2).join(' e ')} al tavolo`
-  if (s.saldo < PUNTATA_MINIMA_BJ) {
+  if (s.saldo < minima) {
     return {
       fase: 'non-pronta',
       titolo: chi || 'Prima le classificate',
-      dettaglio: `Servono ${PUNTATA_MINIMA_BJ} punti di oggi`,
+      dettaglio: minima === 1 ? 'Serve 1 punto di oggi' : `Servono ${minima} punti di oggi`,
       avanzamento: null,
       azione: '',
-      a: ROTTE.blackjack,
+      a: sala,
     }
   }
   return {
     fase: 'da-giocare',
     titolo: chi || 'Da giocare',
-    dettaglio: `Puntate da ${PUNTATA_MINIMA_BJ} punti`,
+    dettaglio: minima === 1 ? `Puntate da 1 a ${s.saldo} punti` : `Puntate da ${minima} punti`,
     avanzamento: null,
     azione: tavoli.length > 0 ? 'Siediti' : 'Gioca',
-    a: ROTTE.blackjack,
+    a: sala,
   }
 }

@@ -6,6 +6,7 @@
 import { ROTTE } from '@/app/rotte'
 import { CATEGORIE_LIBERE, GIOCHI, giocoTavoloDi } from '@/games/catalog'
 import { NOME_BLACKJACK } from '@shared/blackjack'
+import { NOME_ROULETTE } from '@shared/roulette'
 import { NOME_CRAZY_TIME } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
 import type { GiocoClassificato, GiocoDaTavolo } from '@shared/types'
@@ -18,6 +19,7 @@ export const GIOCHI_FORTUNA = [
   { id: 'ruota', nome: NOME_CRAZY_TIME, a: ROTTE.ruota },
   { id: 'slot', nome: NOME_SLOT, a: ROTTE.slot },
   { id: 'blackjack', nome: NOME_BLACKJACK, a: ROTTE.blackjack },
+  { id: 'roulette', nome: NOME_ROULETTE, a: ROTTE.roulette },
 ] as const
 export const PERCORSI_FORTUNA = [ROTTE.fortuna, ...GIOCHI_FORTUNA.map((g) => g.a)]
 

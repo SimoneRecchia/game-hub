@@ -5,7 +5,15 @@ import './Copertina.css'
 type Formato = 'icona' | 'carta' | 'eroe'
 
 /** Un gioco, la classifica generale, i giochi della Fortuna o la Fortuna stessa. */
-type Soggetto = GiocoClassificato | GiocoDaTavolo | 'generale' | 'ruota' | 'slot' | 'blackjack' | 'fortuna'
+type Soggetto =
+  | GiocoClassificato
+  | GiocoDaTavolo
+  | 'generale'
+  | 'ruota'
+  | 'slot'
+  | 'blackjack'
+  | 'roulette'
+  | 'fortuna'
 
 interface Props {
   gioco: Soggetto
@@ -809,6 +817,28 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
       <circle cx={84} cy={90} r={15} fill="#fff" />
       <circle cx={84} cy={90} r={10} fill="var(--c2)" fillOpacity={0.85} />
       <circle cx={84} cy={90} r={6.5} fill="none" stroke="#fff" strokeWidth={1.6} strokeDasharray="2.6 2" />
+    </g>
+  ),
+
+  // La roulette: la ruota vista dall'alto, le caselle a spicchi alterni, la croce nel mezzo e la biglia.
+  roulette: (
+    <g>
+      <circle cx={60} cy={60} r={46} fill="#fff" fillOpacity={0.22} />
+      <circle cx={60} cy={60} r={40} fill="#fff" fillOpacity={0.95} />
+      {Array.from({ length: 18 }, (_, i) => (
+        <path
+          key={i}
+          d={spicchio(60, 60, 40, i * 20, i * 20 + 10)}
+          fill="var(--c2)"
+          fillOpacity={i === 0 ? 0.35 : 0.85}
+        />
+      ))}
+      <circle cx={60} cy={60} r={25} fill="#fff" />
+      <circle cx={60} cy={60} r={19} fill="var(--c2)" fillOpacity={0.3} />
+      <path d="M60 44v32M44 60h32" stroke="var(--c2)" strokeWidth={4} strokeLinecap="round" />
+      <circle cx={60} cy={60} r={5.5} fill="var(--c2)" />
+      <circle cx={84} cy={30} r={6.5} fill="#fff" />
+      <circle cx={82.4} cy={28.4} r={2.2} fill="var(--c2)" fillOpacity={0.15} />
     </g>
   ),
 

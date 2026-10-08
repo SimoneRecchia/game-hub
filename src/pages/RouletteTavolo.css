@@ -1,0 +1,630 @@
+/*
+ * Il tavolo della roulette. In cima il tabellone, poi il palco — la ruota e il
+ * tabellone dei numeri usciti —, chi altro c'e', il panno e i comandi. Il
+ * tavolo e' un contenitore (`rl`): tutto si misura sulla sua altezza, cosi'
+ * sta nello schermo senza scorrere.
+ *
+ * La ruota e' disegnata grande (`--grande-w`) e rimpicciolita sul palco
+ * (`--piccola`): quando la biglia parte si fa grande sopra il panno, che si
+ * vela, e torna al suo posto quando il numero e' annunciato. Le misure le
+ * scrive RouletteTavolo.tsx, dallo spazio che c'e'.
+ */
+
+.rl {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  container: rl / size;
+  isolation: isolate;
+  animation: rl-entra 460ms var(--ease-out) both;
+}
+
+/* Il contenitore non si interroga da solo: la disposizione la prende questo, che sta dentro. */
+.rl__dentro {
+  --rl-palco-h: clamp(92px, 17cqh, 160px);
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+@keyframes rl-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.rl__dentro > .ct-tabellone {
+  position: relative;
+  z-index: 6;
+  flex: none;
+}
+
+.rl-errore {
+  display: grid;
+  justify-items: center;
+  gap: var(--sp-4);
+  margin: auto;
+  text-align: center;
+}
+
+/* ---- Il palco ---- */
+
+.rl-palco {
+  position: relative;
+  z-index: 6;
+  flex: none;
+  height: var(--rl-palco-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.rl-palco__ruota {
+  position: relative;
+  height: 100%;
+  aspect-ratio: 1 / 0.7;
+}
+
+.rl-palco__grande {
+  position: absolute;
+  pointer-events: none;
+  left: 0;
+  top: 0;
+  width: var(--grande-w, 100%);
+  transform-origin: 0 0;
+  transform: scale(var(--piccola, 1));
+  transition: transform 0.8s cubic-bezier(0.6, 0, 0.25, 1);
+}
+
+.rl.is-grande .rl-palco__grande {
+  transform: translate(var(--zoom-x, 0), var(--zoom-y, 0)) scale(1);
+}
+
+/* Il velo sul panno mentre la biglia gira: la sala si fa buia attorno alla ruota. */
+.rl-velo {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: radial-gradient(70% 45% at 50% 48%, rgb(255 214 140 / 0.1), transparent 70%), rgb(6 10 8 / 0.82);
+  /* Il buio va oltre il tavolo, fino ai bordi della pagina: senza, sul computer si vedrebbe il riquadro. */
+  box-shadow: 0 0 0 100vmax rgb(6 10 8 / 0.82);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s ease;
+}
+
+.rl.is-grande .rl-velo {
+  opacity: 1;
+}
+
+/* "Rien ne va plus": la voce del croupier, scritta, sopra la ruota che parte. */
+.rl-nvp {
+  position: absolute;
+  left: 50%;
+  top: 2%;
+  z-index: 3;
+  translate: -50% 0;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: rgb(10 6 4 / 0.78);
+  box-shadow:
+    inset 0 0 0 1px rgb(242 210 122 / 0.6),
+    0 8px 22px rgb(0 0 0 / 0.4);
+  color: #ffe3a0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 19px;
+  font-style: italic;
+  white-space: nowrap;
+  animation: rl-nvp 1.5s ease both;
+}
+
+@keyframes rl-nvp {
+  0% {
+    opacity: 0;
+    translate: -50% -10px;
+    letter-spacing: 0.3em;
+  }
+  18%,
+  78% {
+    opacity: 1;
+    translate: -50% 0;
+    letter-spacing: 0.04em;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ---- L'annuncio del numero ---- */
+
+.rl-annuncio {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  z-index: 4;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  translate: -50% -50%;
+  animation: rl-annuncio 0.55s cubic-bezier(0.3, 1.5, 0.45, 1) both;
+  pointer-events: none;
+}
+
+.rl-annuncio__disco {
+  display: grid;
+  place-items: center;
+  width: 108px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--tinta);
+  box-shadow:
+    0 0 0 4px #f2d27a,
+    0 0 0 7px rgb(60 30 4 / 0.9),
+    0 0 0 8px rgb(242 210 122 / 0.5),
+    0 16px 34px rgb(0 0 0 / 0.55),
+    0 0 46px rgb(255 214 120 / 0.55),
+    inset 0 -8px 16px rgb(0 0 0 / 0.35),
+    inset 0 6px 10px rgb(255 255 255 / 0.25);
+}
+
+.rl-annuncio.is-rosso {
+  --tinta: radial-gradient(circle at 40% 32%, #ff5a5f, #c8102e 55%, #7c0a1a);
+}
+
+.rl-annuncio.is-nero {
+  --tinta: radial-gradient(circle at 40% 32%, #4a4d55, #16171b 60%, #050506);
+}
+
+.rl-annuncio.is-verde {
+  --tinta: radial-gradient(circle at 40% 32%, #3ad07b, #0b8a42 58%, #05502a);
+}
+
+.rl-annuncio__cifra {
+  color: #fff;
+  font-family: var(--font-rounded);
+  font-size: 54px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 3px 6px rgb(0 0 0 / 0.5);
+}
+
+.rl-annuncio__targa {
+  display: grid;
+  justify-items: center;
+  margin-top: 12px;
+  padding: 6px 18px 7px;
+  border-radius: 16px;
+  background: rgb(12 8 5 / 0.82);
+  box-shadow:
+    inset 0 0 0 1px rgb(242 210 122 / 0.55),
+    0 10px 24px rgb(0 0 0 / 0.45);
+  animation: rl-targa 0.5s cubic-bezier(0.3, 1.4, 0.45, 1) 0.18s both;
+}
+
+.rl-annuncio__nome {
+  color: #ffe3a0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 23px;
+  font-style: italic;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.rl-annuncio__sotto {
+  color: rgb(255 255 255 / 0.85);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* I raggi dietro il numero, che girano piano: il momento in cui tutti guardano la ruota. */
+.rl-annuncio__raggi {
+  position: absolute;
+  left: 50%;
+  top: 54px;
+  z-index: -1;
+  width: 300px;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: repeating-conic-gradient(rgb(255 226 150 / 0.32) 0 9deg, transparent 9deg 22deg);
+  mask: radial-gradient(closest-side, #000 25%, transparent);
+  animation: rl-raggi 6s linear infinite;
+}
+
+@keyframes rl-raggi {
+  to {
+    rotate: 1turn;
+  }
+}
+
+@keyframes rl-targa {
+  from {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
+
+@keyframes rl-annuncio {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+/* ---- Il tabellone dei numeri usciti ---- */
+
+.rl-storia {
+  flex: none;
+  align-self: center;
+  display: grid;
+  grid-template-columns: repeat(3, 15px);
+  grid-auto-rows: min-content;
+  align-content: start;
+  justify-content: center;
+  gap: 2px 1px;
+  width: 58px;
+  max-height: 92%;
+  margin: 0;
+  padding: 7px 4px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #17120e, #0b0807);
+  box-shadow:
+    inset 0 0 0 1px rgb(242 210 122 / 0.35),
+    inset 0 0 12px rgb(0 0 0 / 0.8),
+    0 6px 14px rgb(0 0 0 / 0.3);
+  list-style: none;
+  font-family: var(--font-rounded);
+  font-size: 12px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.rl-storia__numero {
+  grid-column: 3;
+  line-height: 1.25;
+}
+
+.rl-storia__numero.is-rosso {
+  grid-column: 1;
+  color: #ff5b5b;
+  text-shadow: 0 0 6px rgb(255 70 70 / 0.6);
+}
+
+.rl-storia__numero.is-nero {
+  color: #e9e9ee;
+  text-shadow: 0 0 6px rgb(255 255 255 / 0.35);
+}
+
+.rl-storia__numero.is-verde {
+  grid-column: 2;
+  color: #3ee08a;
+  text-shadow: 0 0 6px rgb(60 220 130 / 0.6);
+}
+
+.rl-storia__numero.is-ultimo {
+  grid-column: 1 / -1;
+  margin-bottom: 3px;
+  font-size: 20px;
+  animation: rl-storia 0.6s cubic-bezier(0.3, 1.5, 0.45, 1) both;
+}
+
+.rl-storia__vuota {
+  grid-column: 1 / -1;
+  color: rgb(255 255 255 / 0.4);
+}
+
+@keyframes rl-storia {
+  from {
+    scale: 1.6;
+    opacity: 0;
+  }
+}
+
+/* ---- Chi altro c'e' ---- */
+
+.rl-giocatori {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.rl-giocatore {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 2px 8px 2px 2px;
+  border-radius: 999px;
+  background: var(--fill-tertiary);
+  box-shadow: inset 0 0 0 1.5px var(--posto);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.rl-giocatore.is-assente {
+  opacity: 0.5;
+}
+
+.rl-giocatore__nome {
+  overflow: hidden;
+  max-width: 8ch;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rl-giocatore__conto {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--posto);
+  color: #111;
+  font-family: var(--font-rounded);
+  font-weight: 900;
+}
+
+.rl-giocatore__conto.is-vinto {
+  background: #ffd66b;
+}
+
+.rl-giocatore__conto.is-perso {
+  background: var(--fill-secondary);
+  color: var(--label-secondary);
+}
+
+/* ---- Il panno ---- */
+
+.rl-panno-posto {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  container-type: size;
+}
+
+.rl-panno-posto > .rl-panno {
+  width: min(100cqw, 80cqh);
+  height: 100cqh;
+}
+
+/* ---- I comandi ---- */
+
+.rl-comandi {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  gap: 6px;
+}
+
+.rl-comandi__riga {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.rl-stato {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  min-height: 28px;
+  color: var(--label);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rl-stato__paga {
+  color: #c9962a;
+  font-family: var(--font-rounded);
+  font-weight: 900;
+}
+
+.rl-stato__barra {
+  overflow: hidden;
+  width: min(72%, 280px);
+  height: 5px;
+  border-radius: 3px;
+  background: var(--fill-tertiary);
+}
+
+.rl-stato__pieno {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #17964a;
+  transform-origin: left center;
+  transition: transform 0.25s linear;
+}
+
+.rl-stato__pieno.is-poco {
+  background: #e5484d;
+}
+
+.rl-gettoni {
+  display: flex;
+  justify-content: center;
+  gap: clamp(6px, 2.6vw, 14px);
+  padding-top: 6px;
+}
+
+.rl-gettone {
+  --bj-fiche-lato: clamp(40px, 11.5vw, 52px);
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  transition:
+    transform 0.18s var(--ease-out),
+    filter 0.2s,
+    opacity 0.2s;
+}
+
+.rl-gettone.is-scelto {
+  transform: translateY(-6px) scale(1.08);
+  filter: drop-shadow(0 0 8px rgb(255 214 107 / 0.95));
+}
+
+.rl-gettone:active:not(:disabled) {
+  transform: translateY(1px) scale(0.95);
+}
+
+.rl-gettone:disabled {
+  opacity: 0.3;
+  filter: grayscale(0.6);
+  cursor: default;
+}
+
+.rl-gettone:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.rl-tasto {
+  min-width: 56px;
+  min-height: 46px;
+  padding: 0 var(--sp-3);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--fill-secondary);
+  color: var(--label);
+  font: inherit;
+  font-weight: 800;
+}
+
+.rl-tasto:disabled {
+  opacity: 0.4;
+}
+
+.rl-lancia {
+  flex: 1;
+  max-width: 260px;
+  min-height: 48px;
+  padding: 0 var(--sp-5);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, #ffe58a, #f2d27a 55%, #c9962a);
+  color: #3d2300;
+  font-family: var(--font-rounded);
+  font-size: 17px;
+  font-weight: 900;
+  box-shadow:
+    0 4px 0 #8a6416,
+    0 8px 18px rgb(0 0 0 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+  transition:
+    transform 0.12s var(--ease-out),
+    box-shadow 0.12s var(--ease-out);
+}
+
+.rl-lancia:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #8a6416,
+    0 3px 8px rgb(0 0 0 / 0.22),
+    inset 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.rl-lancia:disabled {
+  opacity: 0.5;
+}
+
+/* ---- Le misure ---- */
+
+@container rl (max-height: 600px) {
+  .rl__dentro {
+    --rl-palco-h: clamp(78px, 15cqh, 120px);
+  }
+
+  .rl-gettone {
+    --bj-fiche-lato: clamp(36px, 10vw, 44px);
+  }
+
+  .rl-tasto,
+  .rl-lancia {
+    min-height: 40px;
+  }
+
+  .rl-stato {
+    min-height: 22px;
+    font-size: 14px;
+  }
+}
+
+/*
+ * Largo — il computer, o il telefono di traverso —: la ruota a sinistra,
+ * grande, e il panno con i comandi a destra.
+ */
+@container rl (min-aspect-ratio: 23 / 20) {
+  .rl__dentro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    column-gap: var(--sp-5);
+  }
+
+  .rl__dentro > .ct-tabellone {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .rl-palco {
+    --rl-palco-h: min(52cqh, 27cqw);
+    grid-column: 1;
+    grid-row: 2 / span 2;
+    align-self: center;
+  }
+
+  .rl-giocatori {
+    grid-column: 1;
+    grid-row: 4;
+  }
+
+  .rl-panno-posto {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+  }
+
+  .rl-comandi {
+    grid-column: 2;
+    grid-row: 4;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .pagina--intera:has(.rl) {
+    height: 100dvh;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rl,
+  .rl-nvp,
+  .rl-annuncio,
+  .rl-annuncio__targa,
+  .rl-annuncio__raggi,
+  .rl-storia__numero.is-ultimo {
+    animation: none;
+  }
+
+  .rl-palco__grande,
+  .rl-velo {
+    transition: none;
+  }
+}

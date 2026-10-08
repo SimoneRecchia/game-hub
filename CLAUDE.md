@@ -467,18 +467,20 @@ giochi hanno dato o tolto nel periodo: si va sotto zero, e a pari conto passa
 avanti chi ha giocato meno.
 
 **La Fortuna e' una scheda, e i suoi giochi puntano un saldo solo.**
-Crazy Time, la slot e il blackjack stanno nella scheda Fortuna (`/fortuna`, il
+Crazy Time, la slot, il blackjack e la roulette stanno nella scheda Fortuna (`/fortuna`, il
 quadrifoglio), con il saldo di oggi in cima: i punti delle classificate piu'
 quel che i giochi della Fortuna hanno dato o tolto oggi (`saldoDi` in
 `server/lib/fortuna.ts`). Quel che si vince a un gioco si punta all'altro. Ogni
 gioco controlla il saldo dentro la sua scrittura con lo stesso pezzo di SQL
 (`nettoFortunaSql`), sui conti di tutti: Crazy Time ha il suo `ruota_giornate`,
 gli altri `fortuna_giornate`, una riga per giocatore, giorno e gioco, riscritta
-nel batch di ogni giocata. Il blackjack e' gia' nel `CHECK` di quella tabella.
+nel batch di ogni giocata. Quella tabella non ha un `CHECK` sul gioco: aveva
+la slot e il blackjack, e la `0045` l'ha rifatta senza per la roulette, cosi'
+il prossimo gioco della Fortuna ci scrive e basta.
 Crazy Time e' rimasto nelle sue tabelle perché spostarne i conti avrebbe voluto
 copiare i giorni passati, e nei minuti del deploy il codice di prima avrebbe
 scritto dove il nuovo non leggeva. La generale li somma tutti e li tiene ognuno
-nella sua colonna (`GeneraleRow.ruota`, `slot`, `blackjack`); la scheda ha la
+nella sua colonna (`GeneraleRow.ruota`, `slot`, `blackjack`, `roulette`); la scheda ha la
 sua richiesta (`/api/fortuna`), e le Giornaliere non mostrano Crazy Time.
 
 **Nei giochi della Fortuna si vedono il saldo e la puntata, e basta.** Il
@@ -1165,6 +1167,62 @@ non lo riconosceva come lo split: il nome e' quello che si sente al tavolo, il
 segno sono due carte che si separano, e le regole dicono "Split (dividere)".
 L'assicurazione non ha un tondo fra le mosse perché non e' una mossa della
 mano: e' una puntata a parte, che si offre una volta e poi sparisce.
+
+**La roulette e' quella europea, senza la partage, e rende come gli altri.**
+Trentasette numeri con uno zero solo (`shared/roulette.ts`), e le puntate del
+panno vero: pieno, cavallo, terzina, carré, sestina, con lo zero nei cavalli
+0-1, 0-2 e 0-3, nelle terzine 0-1-2 e 0-2-3 e nel carré dei primi quattro;
+dozzine, colonne e chances semplici. `PUNTATE` le elenca tutte, 157, e il
+server accetta solo quelle. Una puntata vinta torna 36 volte diviso i numeri
+che copre, quindi rende 36 su 37, il 97,3%, qualunque sia. Lo zero fa perdere
+anche le chances semplici: la "partage" dei tavoli francesi ne ridarebbe
+meta', e le farebbe rendere il 98,6%, piu' di tutti gli altri giochi della
+Fortuna. Si punta da uno a tutto il saldo, senza un massimo, come alla slot
+(vedi sopra), e un test tiene la resa di ogni puntata.
+
+**Il tavolo della roulette e' quello del blackjack, con una biglia per tutti.**
+`shared/roulette-tavolo.ts` e' una bozza pura come `BozzaBJ`, e
+`server/lib/rouletteStore.ts` la scrive allo stesso modo: lo stato in
+`rl_tavoli` condizionato alla versione, le righe di `rl_giocate` e `rl_seduti`
+solo se il tavolo ha preso la scrittura, il saldo guardato nell'`UPDATE` e
+`fortuna_giornate` ricontata nello stesso batch. Le puntate si compongono nel
+telefono e partono tutte insieme: una richiesta per giro, non una per fiche, e
+mandarle di nuovo le cambia (vale l'ultima; il saldo copre solo la
+differenza). Da soli la biglia parte subito; con altri la prima puntata apre
+`PUNTATE_RL_MS`, e si lancia quando hanno puntato tutti quelli che ci sono. Il
+numero lo pesca il server al lancio, e il giro si paga li': dopo il "rien ne va
+plus" non c'e' piu' niente da decidere. La biglia corre `LANCIO_MS`, il numero
+resta in vista `FINE_RL_MS`, e chi punta quando la biglia e' gia' ferma comincia
+il giro dopo per tutti: chi guarda l'ha gia' vista cadere. Chi si alza prima
+del lancio si riprende le fiches.
+
+**La ruota della roulette e' inclinata, e la biglia no.** `RuotaRoulette`
+(`src/games/roulette/Ruota.tsx`) e' un piatto in prospettiva (`TILT`, con lo
+spessore del legno sotto): la conca e la pista ferme, il cilindro che gira, la
+luce sopra che non gira, cosi' il legno e l'oro luccicano. La biglia inclinata
+diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua posizione
+la calcola `proietta` con la stessa prospettiva del CSS. Il suo angolo si conta
+sul cilindro e finisce nella casella del numero qualunque sia la velocita' del
+cilindro; corre sulla pista, scende verso i rombi, rimbalza fra i separatori, e
+i suoni seguono gli stessi momenti. La ruota e' disegnata grande e rimpicciolita
+sul palco (`--piccola`): quando la biglia parte si fa grande sopra il panno, che
+si vela, e torna al suo posto dopo l'annuncio del numero. Disegnata piccola e
+ingrandita, a pieno schermo sarebbe sfocata. Il tabellone dei numeri usciti non
+dice il numero mentre la biglia gira: il server lo mette nella storia al
+lancio, e sarebbe la soluzione.
+
+**Il panno si tocca dove si posa la fiche.** Sul telefono il panno sta in
+piedi, lo zero in cima, e le puntate interne si scelgono dal punto toccato
+(`puntataDa` in `src/games/roulette/panno.ts`): il centro di un numero e' il
+pieno, il bordo fra due il cavallo, l'incrocio il carré, il bordo di fuori la
+terzina o la sestina. Mentre il dito preme si accendono i numeri coperti, e la
+riga sopra le fiches dice la puntata e quanto paga; lasciando, la fiche vola
+dal vassoio. Con la tastiera ogni numero e' un bottone che mette un pieno.
+Dopo il lancio il croupier annuncia il numero ("Otto, nero, pari e manque"),
+poi sul panno il dolly cala sul numero, le fiches perse vanno via, accanto alle
+vinte arriva la vincita e le monete volano al saldo, che resta fermo fino ad
+allora; un pieno, un cavallo, una terzina, un carré o una sestina vinti hanno
+la festa di Crazy Time, con il numero e il nome della puntata.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —

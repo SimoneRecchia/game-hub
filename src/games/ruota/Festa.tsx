@@ -67,6 +67,9 @@ export interface DatiFestaRuota {
   sotto?: string
   /** Dalla ruota fortunata: il verde e l'oro, e i quadrifogli. */
   fortunata: boolean
+  /** Al posto del moltiplicatore e del suo nome: il numero e la puntata della roulette ("17", "PIENO"). */
+  testo?: string
+  nome?: string
 }
 
 type Fase = 'conta' | 'finita'
@@ -399,7 +402,7 @@ export function FestaRuota({ dati, onFine }: { dati: DatiFestaRuota; onFine: () 
     else salta.current = true
   }
 
-  const testo = scriviMoltiplicatore(dati.moltiplicatore)
+  const testo = dati.testo ?? scriviMoltiplicatore(dati.moltiplicatore)
   const classi = [
     'ct-festa',
     `is-${livello}`,
@@ -454,7 +457,7 @@ export function FestaRuota({ dati, onFine }: { dati: DatiFestaRuota; onFine: () 
                 {testo}
               </text>
             </svg>
-            <span className="ct-festa__nome">{nomeDellaFesta(dati.moltiplicatore)}</span>
+            <span className="ct-festa__nome">{dati.nome ?? nomeDellaFesta(dati.moltiplicatore)}</span>
           </div>
           <div className="ct-festa__vincita u-tabnum">+{numero.toLocaleString('it-IT')}</div>
           {dati.sotto && <div className="ct-festa__sotto">{dati.sotto}</div>}
