@@ -46,7 +46,7 @@ Q2251382	More Than Words	pop,rock
 Q2706084	I’ll Be Missing You	rap,soul
 Q2302236	The Bad Touch	dance,rock
 Q3845261	Maracaibo	pop,latina
-# Le canzoni scritte per un film o un musical sono anche colonne sonore.
+# Le canzoni scritte per un film, un musical o una serie sono anche colonne sonore.
 Q1493554	Gangsta’s Paradise	rap,colonne
 Q1932351	Iris	rock,colonne
 Q56770393	Shallow	pop,colonne
@@ -105,3 +105,96 @@ Q3632544	Baciami ancora	pop,colonne
 Q770349	May It Be	pop,colonne
 Q2093639	Say You, Say Me	pop,soul,colonne
 Q19898031	Til It Happens to You	pop,colonne
+# Quelle che Wikipedia mette fra le canzoni dei film, dei musical e delle serie
+# (le categorie, lette con PetScan), scelte a mano: solo quelle scritte per loro
+# e che si ricordano cosi', non quelle che ci sono finite dopo ("Born to Be Wild").
+Q19756862	See You Again	rap,colonne
+Q1509118	Who’s That Girl	pop,dance,colonne
+Q248185	Can’t Help Falling in Love	rock,pop,colonne
+Q3931121	Reality	pop,colonne
+Q3887493	Out Here on My Own	pop,colonne
+Q107122269	Paradise	pop,colonne
+Q300610	A View to a Kill	pop,colonne
+Q326790	Skyfall	pop,soul,colonne
+Q954934	Don’t Cry for Me Argentina	pop,colonne
+Q15256297	Ordinary Love	rock,colonne
+Q2529083	All for Love	rock,colonne
+Q3981820	Teach Me Again	pop,colonne
+Q3899514	Per dimenticare	pop,colonne
+Q73395528	Ritmo (Bad Boys for Life)	rap,latina,colonne
+Q2000445	Purple Rain	rock,soul,colonne
+Q2659767	Night Fever	pop,dance,colonne
+Q550510	Fame	pop,dance,colonne
+Q7637383	Summer Nights	pop,colonne
+Q7444056	Secret Love	pop,colonne
+Q118697941	Dance the Night	pop,colonne
+Q1392942	Ghostbusters	soul,colonne
+Q2006198	I’ll Be There for You	pop,colonne
+Q2287284	Raindrops Keep Fallin’ on My Head	pop,colonne
+Q3854600	Men in Black	rap,colonne
+Q24032253	Can’t Stop the Feeling	pop,soul,colonne
+Q20962306	Writing’s on the Wall	pop,soul,colonne
+Q126149	The Way We Were	pop,colonne
+Q2323620	No Matter What	pop,colonne
+Q2735985	Jai Ho	pop,colonne
+Q2915804	Stranger in Paradise	jazz,colonne
+Q2387242	Show Me Heaven	pop,colonne
+Q4660749	A Woman in Love	pop,colonne
+Q2915793	I’ll Never Fall in Love Again	pop,soul,colonne
+Q7797393	Three Coins in the Fountain	jazz,colonne
+Q2888534	This Is My Song	pop,colonne
+Q728982	Xanadu	pop,rock,colonne
+Q140024236	I Knew It, I Knew You	pop,colonne
+Q24664844	Heathens	rock,pop,colonne
+Q57939337	Sunflower	rap,pop,colonne
+Q4778138	Any Dream Will Do	pop,colonne
+Q7765230	The Song from Moulin Rouge	pop,colonne
+Q27988136	I Don’t Wanna Live Forever	pop,colonne
+Q2916924	To Sir With Love	pop,colonne
+Q1842371	On the Street Where You Live	pop,colonne
+Q2732222	Because You Loved Me	pop,colonne
+Q1326000	A Whole New World	pop,colonne
+Q18786541	Earned It	pop,soul,colonne
+Q2454384	Beauty and the Beast	pop,colonne
+Q653189	Footloose	pop,rock,colonne
+Q1636004	You Know My Name	rock,colonne
+Q1267483	Hello, Dolly!	jazz,colonne
+Q728791	Grease	pop,colonne
+Q1669968	She’s Like the Wind	pop,colonne
+Q3854761	Mentre dormi	cantautori,pop,colonne
+Q5417167	Evergreen	pop,colonne
+Q4646459	9 to 5	altri,colonne
+Q49522	Ben	pop,soul,colonne
+Q1630356	Hungry Eyes	pop,colonne
+Q3572753	You Light Up My Life	pop,colonne
+Q1016791	Burning Heart	rock,colonne
+Q1850734	We Don’t Need Another Hero	soul,rock,colonne
+Q3087960	Hopelessly Devoted to You	pop,colonne
+Q3302117	If I Can’t Have You	pop,colonne
+Q2028257	Colors of the Wind	pop,colonne
+Q1858558	You Must Love Me	pop,colonne
+Q47486876	Mystery of Love	cantautori,colonne
+Q593415	Blaze of Glory	rock,colonne
+Q1140586	Listen	pop,soul,colonne
+Q906950	Theme from Mahogany (Do You Know Where You’re Going To)	soul,pop,colonne
+Q7721186	The Candy Man	jazz,pop,colonne
+Q85606639	Gli anni più belli	cantautori,pop,colonne
+Q1145539	Living in America	soul,colonne
+Q3899333	People	pop,colonne
+Q1815337	One Night in Bangkok	pop,colonne
+Q2215554	Exhale	pop,soul,colonne
+Q14716	Goldfinger	pop,colonne
+Q2050811	Car Wash	soul,colonne
+Q1001928	Flash	rock,colonne
+Q1532156	Glory of Love	pop,colonne
+Q5955370	There You’ll Be	pop,colonne
+Q1551964	Hold Me, Thrill Me, Kiss Me, Kill Me	rock,colonne
+Q1821312	Let’s Hear It for the Boy	pop,soul,colonne
+Q15272117	I See Fire	pop,colonne
+Q942405	Two Hearts	pop,colonne
+Q1895177	Alfie	pop,soul,colonne
+Q23017971	Try Everything	pop,colonne
+Q119900776	Barbie World	rap,pop,colonne
+Q3522673	The Shadow of Your Smile	jazz,colonne
+Q632027	Till There Was You	jazz,colonne
+Q47555246	Pray for Me	pop,rap,colonne
