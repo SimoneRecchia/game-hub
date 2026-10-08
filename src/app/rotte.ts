@@ -37,6 +37,10 @@
  *   /tris/libera/invito/:codice         un invito arrivato con un link
  *   /anagrammi/classificata             le cinque parole di oggi, a tempo
  *   /anagrammi/libera                   parole a caso, della lunghezza che vuoi
+ *   /ghigliottina/classificata          la ghigliottina di oggi: cinque coppie, poi la parola che le lega
+ *   /ghigliottina/libera                una ghigliottina a caso
+ *   /paroliere/classificata             la griglia di oggi, tre minuti
+ *   /paroliere/libera                   una griglia a caso, quattro per quattro o cinque per cinque
  *   /sequenze/classificata              i cinque turni di oggi, gli stessi per tutti
  *   /sequenze/libera                    finché non sbagli, da solo o con un amico
  *   /sequenze/sfida/:id                 una sfida con un amico
@@ -91,6 +95,8 @@ export const SLUG: Record<GiocoClassificato, string> = {
   nomi: 'nomi-cose-citta',
   anagrammi: 'anagrammi',
   sequenze: 'sequenze',
+  ghigliottina: 'ghigliottina',
+  paroliere: 'paroliere',
 }
 
 export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null {

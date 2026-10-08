@@ -70,6 +70,10 @@ describe('le migrazioni', () => {
       'sequenze_giornate',
       'sequenze_partite',
       'sequenze_sfide',
+      'ghigliottina_giornate',
+      'ghigliottina_partite',
+      'paroliere_giornate',
+      'paroliere_partite',
     ]) {
       expect(tabelle).toContain(t)
     }

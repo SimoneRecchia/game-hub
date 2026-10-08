@@ -166,6 +166,73 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
     </g>
   ),
 
+  // La ghigliottina: i due montanti, la traversa e la lama di sbieco, sospesa sopra la parola che manca.
+  ghigliottina: (
+    <g>
+      <rect x={24} y={16} width={9} height={78} rx={2} fill="#fff" fillOpacity={0.9} />
+      <rect x={87} y={16} width={9} height={78} rx={2} fill="#fff" fillOpacity={0.9} />
+      <rect x={18} y={10} width={84} height={10} rx={3} fill="#fff" />
+      <line x1={60} y1={20} x2={60} y2={30} stroke="#fff" strokeOpacity={0.6} strokeWidth={2} />
+      <path d="M33 30H87V44L33 56Z" fill="#fff" fillOpacity={0.7} />
+      <path d="M33 56L87 44" stroke="#fff" strokeWidth={2.4} strokeLinecap="round" />
+      <rect x={36} y={74} width={48} height={22} rx={6} fill="#000" fillOpacity={0.14} />
+      <rect x={36} y={72} width={48} height={22} rx={6} fill="#fff" />
+      <text
+        x={60}
+        y={88.5}
+        textAnchor="middle"
+        fontFamily={TONDO}
+        fontWeight={800}
+        fontSize={16}
+        fill="var(--c2)"
+      >
+        ?
+      </text>
+      <rect x={14} y={94} width={92} height={8} rx={3} fill="#fff" fillOpacity={0.9} />
+    </g>
+  ),
+
+  // Nove dadi della griglia, e la strada che passa da uno vicino all'altro: R, O, S, A.
+  paroliere: (
+    <g fontFamily={TONDO} fontWeight={800}>
+      {[
+        { l: 'C', x: 20, y: 20 },
+        { l: 'R', x: 48, y: 20, n: 1 },
+        { l: 'E', x: 76, y: 20 },
+        { l: 'T', x: 20, y: 48 },
+        { l: 'O', x: 48, y: 48, n: 2 },
+        { l: 'L', x: 76, y: 48 },
+        { l: 'A', x: 20, y: 76, n: 4 },
+        { l: 'S', x: 48, y: 76, n: 3 },
+        { l: 'I', x: 76, y: 76 },
+      ].map((d) => (
+        <g key={d.l}>
+          <rect x={d.x} y={d.y + 2} width={24} height={24} rx={6} fill="#000" fillOpacity={0.14} />
+          <rect x={d.x} y={d.y} width={24} height={24} rx={6} fill="#fff" fillOpacity={d.n ? 1 : 0.32} />
+          <text
+            x={d.x + 12}
+            y={d.y + 17.5}
+            textAnchor="middle"
+            fontSize={14}
+            fill={d.n ? 'var(--c2)' : '#fff'}
+          >
+            {d.l}
+          </text>
+        </g>
+      ))}
+      <path
+        d="M60 32V60V88L32 88"
+        fill="none"
+        stroke="var(--c2)"
+        strokeOpacity={0.45}
+        strokeWidth={3}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeDasharray="0.1 6"
+      />
+    </g>
+  ),
+
   // Tre tessere di legno, una sopra l'altra, con il valore nell'angolo.
   scarabeo: (
     <g fontFamily={TONDO} fontWeight={800}>

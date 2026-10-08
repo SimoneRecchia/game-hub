@@ -154,6 +154,20 @@ export type NomeSuono =
   | 'cubetto'
   /** Una sequenza ripetuta giusta: due note che salgono, piu' in alto quanto piu' e' lunga (`altezza`). */
   | 'sequenza'
+  /** Il rullo di tamburo dell'attesa, prima di dire com'e' andata; `altezza` e' quanto dura, un secondo per uno. */
+  | 'tamburo'
+  /** La lama della Ghigliottina che cala: il fischio della discesa, e il colpo sul ceppo. */
+  | 'lama'
+  /** La busta della parola vincente che si apre. */
+  | 'busta'
+  /** I dadi del Paroliere scossi nella scatola, e la scatola che si posa. */
+  | 'dadi'
+  /** La clessidra girata: il legno, il vetro, e la sabbia che comincia a scendere. */
+  | 'clessidra'
+  /** Una parola trovata al Paroliere: due note, piu' in alto quanto piu' e' lunga (`altezza`). */
+  | 'parola'
+  /** Una parola lunga: l'arpeggio, e il luccichio. */
+  | 'parolona'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -1174,5 +1188,62 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     marimba(u, t, N.G5 * altezza, 0.22 * v, { eco: 0.25 })
     marimba(u, t + 0.07, N.D6 * altezza, 0.24 * v, { eco: 0.25 })
     campanello(u, t + 0.07, N.G6 * altezza, 0.06 * v, { eco: 0.4, durata: 0.7 })
+  },
+
+  // L'attesa: i colpi del rullante sempre piu' fitti e piu' forti, e la pelle che vibra sotto.
+  tamburo: (u, t, v, lunghezza = 1) => {
+    const durata = Math.max(0.3, lunghezza)
+    let x = 0
+    let passo = 0.07
+    while (x < durata) {
+      const forza = 0.05 + 0.1 * (x / durata)
+      colpo(u, t + x, voce(u, forza * v, 0.08), vario(1900, 0.1), 0.05, 0.9)
+      x += passo
+      passo = Math.max(0.028, passo * 0.94)
+    }
+    soffio(u, t, durata, 0.05 * v, { tipo: 'bandpass', da: 1500, a: 2400, q: 0.6 }, { attacco: durata * 0.8, eco: 0.1 })
+  },
+
+  // La lama: il fischio che scende, e quando arriva il colpo sul ceppo, il ferro che vibra.
+  lama: (u, t, v) => {
+    soffio(u, t, 0.22, 0.2 * v, { tipo: 'bandpass', da: 5200, a: 900, q: 0.9 }, { attacco: 0.15, eco: 0.05 })
+    tonfo(u, t + 0.2, 0.5 * v, { da: 160, a: 36, durata: 0.5 })
+    campanello(u, t + 0.2, 410, 0.09 * v, { eco: 0.3, durata: 0.5 })
+    campanello(u, t + 0.2, 613, 0.06 * v, { eco: 0.3, durata: 0.4 })
+    soffio(u, t + 0.2, 0.25, 0.18 * v, { tipo: 'lowpass', da: 3000, a: 300, q: 0.7 }, { attacco: 0.002, eco: 0.2 })
+  },
+
+  // La busta: lo strappo della carta, e il foglio che esce.
+  busta: (u, t, v) => {
+    soffio(u, t, 0.12, 0.14 * v, { tipo: 'highpass', da: 3000, a: 6000, q: 0.7 }, { attacco: 0.004, eco: 0.05 })
+    soffio(u, t + 0.1, 0.18, 0.12 * v, { tipo: 'bandpass', da: 2400, a: 1200, q: 1.1 }, { attacco: 0.01, eco: 0.05 })
+  },
+
+  // I dadi nella scatola: tanti colpi di legno a caso, e la scatola posata.
+  dadi: (u, t, v) => {
+    for (let i = 0; i < 18; i += 1) {
+      legno(u, t + Math.random() * 0.75, vario(900 + (i % 5) * 180, 0.1), 0.05 * v, 0.03)
+    }
+    tonfo(u, t + 0.8, 0.12 * v, { da: 140, a: 70, durata: 0.2 })
+  },
+
+  // La clessidra: il legno che batte, il vetro, e il fruscio della sabbia.
+  clessidra: (u, t, v) => {
+    legno(u, t, 700, 0.14 * v)
+    campanello(u, t + 0.02, N.E6, 0.04 * v, { durata: 0.5 })
+    soffio(u, t + 0.15, 0.9, 0.05 * v, { tipo: 'highpass', da: 4000, a: 6500, q: 0.5 }, { attacco: 0.2, eco: 0.05 })
+  },
+
+  // Una parola trovata: la quinta che sale, piu' in alto quanto piu' e' lunga.
+  parola: (u, t, v, altezza = 1) => {
+    marimba(u, t, N.C5 * altezza, 0.24 * v, { eco: 0.2 })
+    marimba(u, t + 0.06, N.G5 * altezza, 0.26 * v, { eco: 0.22 })
+  },
+
+  // Una parola lunga: l'arpeggio che sale fino in cima, e due campanelli.
+  parolona: (u, t, v) => {
+    ;[N.C5, N.E5, N.G5, N.C6, N.E6].forEach((f, i) => marimba(u, t + i * 0.05, f, 0.22 * v, { eco: 0.3 }))
+    campanello(u, t + 0.25, N.G6, 0.1 * v, { eco: 0.5, durata: 1 })
+    campanello(u, t + 0.32, N.C7, 0.08 * v, { eco: 0.55, durata: 0.9 })
   },
 }

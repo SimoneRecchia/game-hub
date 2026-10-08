@@ -62,6 +62,14 @@ export const GIOCHI: readonly Gioco[] = [
     liberaBreve: 'Quiz libero',
   },
   {
+    id: 'ghigliottina',
+    nome: 'Ghigliottina',
+    motto: 'Cinque parole, una che le lega tutte',
+    classificata: 'Una ghigliottina al giorno, la stessa per tutti: ogni scelta sbagliata dimezza il montepremi.',
+    libera: 'Una ghigliottina a caso, quante ne vuoi.',
+    liberaBreve: 'Ghigliottina libera',
+  },
+  {
     id: 'nomi',
     nome: 'Nomi, cose e città',
     motto: 'Una lettera, cinque categorie',
@@ -76,6 +84,14 @@ export const GIOCHI: readonly Gioco[] = [
     classificata: 'Cinque parole al giorno, le stesse per tutti: più presto le trovi, più valgono.',
     libera: 'Cinque parole a caso, della lunghezza che vuoi.',
     liberaBreve: 'Parole a caso',
+  },
+  {
+    id: 'paroliere',
+    nome: 'Paroliere',
+    motto: 'Sedici dadi, tre minuti, tutte le parole che vedi',
+    classificata: 'Una griglia al giorno, la stessa per tutti.',
+    libera: 'Una griglia a caso, quattro per quattro o cinque per cinque.',
+    liberaBreve: 'Griglia libera',
   },
   {
     id: 'sequenze',
@@ -196,7 +212,7 @@ const TRIS_DA_TAVOLO: GiocoTavolo = {
  */
 export const CATEGORIE_LIBERE: readonly CategoriaLibere[] = [
   { nome: 'Enigmistica', giochi: ['wordle', 'cruciverba', 'sudoku', 'anagrammi'] },
-  { nome: 'Parole', giochi: ['scarabeo', 'nomi'] },
+  { nome: 'Parole', giochi: ['scarabeo', 'paroliere', 'ghigliottina', 'nomi'] },
   { nome: 'Cultura', giochi: ['quiz'] },
   { nome: 'Memoria', giochi: ['sequenze'] },
   { nome: 'Strategia', giochi: ['scacchi', 'dama', 'go', 'forza4', 'tris'] },

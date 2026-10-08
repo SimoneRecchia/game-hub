@@ -212,6 +212,33 @@ profilo, in «Fonti e licenze».
 Rigenerare: `npm run anagrammi:build` (scarica gli elenchi di napolux e di
 hermitdave in `scripts/.cache/`).
 
+## La Ghigliottina
+
+Le ghigliottine — la parola vincente, le cinque parole e l'espressione che le
+lega — sono scritte a mano in `scripts/data/ghigliottina.tsv`, e stanno sotto la
+licenza del codice. Le fonti servono solo a controllarle e a scegliere le esche:
+le espressioni del Wiktionary e del Wikizionario (le estrazioni di kaikki.org
+del dizionario dello Scarabeo, vedi sopra) e le parole composte di napolux
+dicono quali parole stanno accanto a una vincente, e quindi non le fanno da
+esca. Nei file che ne escono (`scripts/data/ghigliottina-classificate.json`,
+`public/dati/ghigliottina/libere.json`) non c'e' testo delle fonti, solo le
+parole dell'elenco.
+
+Il nome e il gioco sono quelli del finale dell'Eredità, su Rai 1: per un gioco
+fra amici va bene, ma se l'app diventasse pubblica il nome andrebbe cambiato.
+
+Rigenerare: `npm run ghigliottina:build` (le fonti in `scripts/.cache/`, come
+per lo Scarabeo).
+
+## Il Paroliere
+
+Le parole sono quelle del dizionario dello Scarabeo (vedi sopra): tutte valgono
+quando le scrive chi gioca, e le comuni di napolux decidono le griglie del
+giorno, il traguardo e le parole che si mostrano alla fine. I dadi sono nostri,
+calcolati sulle frequenze delle lettere italiane (`DADI` in `shared/paroliere.ts`).
+Le regole sono quelle del Boggle di Alan Turoff, che in Italia si chiama il
+Paroliere: anche qui, se l'app diventasse pubblica il nome andrebbe cambiato.
+
 ## Scarabocchi
 
 Le parole da disegnare di Scarabocchi (`shared/scarabocchi-parole.ts`) sono le
