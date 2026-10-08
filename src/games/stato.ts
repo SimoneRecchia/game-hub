@@ -28,7 +28,6 @@ import type {
   ScarabeoSummary,
   SequenzeSummary,
   SudokuSummary,
-  TrisSummary,
   WordleSummary,
 } from '@shared/types'
 import { ROTTE } from '@/app/rotte'
@@ -310,57 +309,6 @@ export function statoQuiz(s: QuizSummary): StatoOggi {
   }
 }
 
-/** Com'e' andata la serie, partita per partita: "2 vinte, 1 patta". */
-function contoTris(esiti: readonly string[]): string {
-  const vinte = esiti.filter((e) => e === 'vinta').length
-  const patte = esiti.filter((e) => e === 'patta').length
-  const perse = esiti.length - vinte - patte
-  const pezzi = [
-    vinte > 0 ? `${vinte} ${vinte === 1 ? 'vinta' : 'vinte'}` : '',
-    patte > 0 ? `${patte} ${patte === 1 ? 'patta' : 'patte'}` : '',
-    perse > 0 ? `${perse} ${perse === 1 ? 'persa' : 'perse'}` : '',
-  ].filter(Boolean)
-  return pezzi.join(', ')
-}
-
-export function statoTris(s: TrisSummary): StatoOggi {
-  const fatte = s.esiti.length
-  const base = {
-    gioco: 'tris' as const,
-    avanzamento: s.totale > 0 ? fatte / s.totale : 0,
-    a: ROTTE.classificata('tris'),
-  }
-  if (s.status === 'done') {
-    return {
-      ...base,
-      avanzamento: 1,
-      fase: 'fatta',
-      titolo: contoTris(s.esiti),
-      dettaglio: `${s.punti} punti`,
-      punti: s.punti,
-      azione: 'Rivedi',
-    }
-  }
-  if (s.status === 'new' || fatte === 0) {
-    return {
-      ...base,
-      fase: s.status === 'new' ? 'da-giocare' : 'in-corso',
-      titolo: s.status === 'new' ? 'Da giocare' : `Partita 1 di ${s.totale}`,
-      dettaglio: s.status === 'new' ? `${s.totale} partite contro il computer` : 'In corso',
-      punti: null,
-      azione: s.status === 'new' ? 'Gioca' : 'Continua',
-    }
-  }
-  return {
-    ...base,
-    fase: 'in-corso',
-    titolo: `${fatte} ${fatte === 1 ? 'partita' : 'partite'} su ${s.totale}`,
-    dettaglio: contoTris(s.esiti),
-    punti: null,
-    azione: 'Continua',
-  }
-}
-
 /**
  * Nomi, cose e città: la partita di oggi, e nel dettaglio i punti di ieri, che
  * la notte ha contato e valgono oggi. Quelli di oggi arriveranno stanotte.
@@ -622,7 +570,6 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     cruciverba: statoCruciverba(oggi.cruciverba),
     sudoku: statoSudoku(oggi.sudoku),
     quiz: statoQuiz(oggi.quiz),
-    tris: statoTris(oggi.tris),
     nomi: statoNomi(oggi.nomi),
     anagrammi: statoAnagrammi(oggi.anagrammi),
     sequenze: statoSequenze(oggi.sequenze),

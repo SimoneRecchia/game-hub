@@ -259,10 +259,10 @@ export function grigliaLibera(dawg: Dawg, lato: number, caso: () => number): Gri
 export const PAROLE_MINIME_DEL_GIORNO = 80
 
 /** I punti di chi ha giocato, anche senza una parola: come in Nomi, cose e città. */
-export const PUNTI_GIOCATA_PAROLIERE = 15
+export const PUNTI_GIOCATA_PAROLIERE = 25
 
-/** I punti delle parole, al traguardo: il tetto e' sessanta. */
-export const PUNTI_PAROLE_PAROLIERE = 45
+/** I punti delle parole, al traguardo: il tetto e' cento. */
+export const PUNTI_PAROLE_PAROLIERE = 75
 
 export const MASSIMO_PAROLIERE = PUNTI_GIOCATA_PAROLIERE + PUNTI_PAROLE_PAROLIERE
 
@@ -283,9 +283,9 @@ export function traguardoDi(comuni: readonly string[]): number {
 }
 
 /**
- * I punti di una partita finita: quindici per averla giocata, e quarantacinque
+ * I punti di una partita finita: venticinque per averla giocata, e settantacinque
  * in proporzione al traguardo, che oltre il traguardo non crescono piu'.
- * Arrivare a meta' strada vale trentasette: circa due terzi di chi ci arriva.
+ * Arrivare a meta' strada vale sessantatre: circa due terzi di chi ci arriva.
  */
 export function puntiParoliere(punteggio: number, traguardo: number): number {
   const quota = traguardo > 0 ? Math.min(1, Math.max(0, punteggio) / traguardo) : 0

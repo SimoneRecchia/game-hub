@@ -65,23 +65,26 @@ export const ULTIMA_LUNGHEZZA = NUMERO_CUBETTI
 export const SEQUENZE_PER_TURNO = ULTIMA_LUNGHEZZA - PRIMA_LUNGHEZZA + 1
 
 /** I punti di una giornata finita, anche con tutti i turni sbagliati alla prima: si e' giocato. */
-export const PUNTI_FINITA_SEQUENZE = 15
+export const PUNTI_FINITA_SEQUENZE = 30
+
+/** I punti di ogni sequenza ripetuta giusta. */
+export const PUNTI_SEQUENZA = 2
 
 /**
- * I punti di una giornata: quindici per averla finita, e uno per ogni sequenza
+ * I punti di una giornata: trenta per averla finita, e due per ogni sequenza
  * ripetuta giusta, sette al piu' per turno. Chi arriva a cinque o sei, la
- * media, ne fa trenta o trentacinque; chi si ferma a quattro venticinque; chi
- * arriva a nove in tutti e cinque i turni il tetto, cinquanta. Giocarla bene
- * vale il doppio di giocarla male, come in tutte le classificate.
+ * media, ne fa sessanta o settanta; chi si ferma a quattro cinquanta; chi
+ * arriva a nove in tutti e cinque i turni il tetto, cento. Giocarla bene vale
+ * il doppio di giocarla male, come in tutte le classificate.
  */
 export function puntiSequenze(giusteDeiTurni: readonly number[]): number {
   return giusteDeiTurni.reduce(
-    (s, giuste) => s + Math.max(0, Math.min(SEQUENZE_PER_TURNO, Math.floor(giuste))),
+    (s, giuste) => s + PUNTI_SEQUENZA * Math.max(0, Math.min(SEQUENZE_PER_TURNO, Math.floor(giuste))),
     PUNTI_FINITA_SEQUENZE,
   )
 }
 
-export const MASSIMO_SEQUENZE = PUNTI_FINITA_SEQUENZE + TURNI_SEQUENZE * SEQUENZE_PER_TURNO
+export const MASSIMO_SEQUENZE = PUNTI_FINITA_SEQUENZE + PUNTI_SEQUENZA * TURNI_SEQUENZE * SEQUENZE_PER_TURNO
 
 /** La lunghezza raggiunta in un turno: l'ultima sequenza ripetuta giusta, o zero se e' sbagliata la prima. */
 export function lunghezzaRaggiunta(giuste: number, prima = PRIMA_LUNGHEZZA): number {

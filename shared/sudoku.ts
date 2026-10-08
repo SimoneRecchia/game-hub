@@ -572,8 +572,8 @@ export function schemaDelGiorno(numero: number, data: string): SchemaSudoku | nu
 
 /* ─────────────────────────────  I punti  ───────────────────────────── */
 
-/** Centocinquanta a chi lo completa senza aiuti (vedi shared/punti.ts). */
-export const PUNTI_COMPLETO = 150
+/** Cento a chi lo completa senza aiuti (vedi shared/punti.ts). */
+export const PUNTI_COMPLETO = 100
 
 /** Quanto costano gli aiuti in questo schema (vedi shared/aiuti.ts): le caselle da trovare sono le vuote. */
 export function costiSudoku(dati: string): CostiAiuti {

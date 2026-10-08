@@ -34,8 +34,8 @@ export const DA_INDOVINARE_CATENA = NASCOSTE_CATENA.length
 export const PASSO_FINALE = 4
 export const POSTO_TERZO = 10
 
-/** Il montepremi di partenza, quanto quello della Ghigliottina: si gioca allo stesso modo. */
-export const MONTEPREMI_CATENA = 64
+/** Il montepremi di partenza: cento, come ogni classificata e come la Ghigliottina, che si gioca allo stesso modo. */
+export const MONTEPREMI_CATENA = 100
 export const MASSIMO_CATENA = MONTEPREMI_CATENA
 
 /** I jolly: una lettera in piu', senza dimezzare. */

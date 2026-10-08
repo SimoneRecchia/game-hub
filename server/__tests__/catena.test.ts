@@ -112,16 +112,16 @@ describe('la Catena del giorno, dalle API', () => {
     conLaGiornata(db)
     const io = await giocatore('anna')
     let s = await manda(chiama, io, 'prova', await stato(chiama, io), 'lancio')
-    expect(s).toMatchObject({ esito: 'sbagliata', passo: 0, montepremi: 32 })
+    expect(s).toMatchObject({ esito: 'sbagliata', passo: 0, montepremi: 50 })
     expect(s.voci[1].lettere).toBe('LI')
     s = await manda(chiama, io, 'prova', s, 'lavoro')
-    expect(s).toMatchObject({ esito: 'rivelata', passo: 1, montepremi: 16 })
+    expect(s).toMatchObject({ esito: 'rivelata', passo: 1, montepremi: 25 })
     expect(s.voci[1]).toMatchObject({ parola: 'libero', tipo: 'rivelata' })
     expect(s.voci.map((v) => v.parola)).toEqual(['spirito', 'libero', 'tiro', null, 'dondolo'])
     // Un doppio tocco con la versione di prima non prova due volte.
     const vecchia = await chiama('POST', '/catena/prova', io, { versione: s.versione - 1, parola: 'cane' })
     expect(vecchia.status).toBe(409)
-    expect((await stato(chiama, io)).montepremi).toBe(16)
+    expect((await stato(chiama, io)).montepremi).toBe(25)
   })
 
   it('i jolly sono due, e non dimezzano', async () => {
@@ -176,7 +176,7 @@ describe('la Catena del giorno, dalle API', () => {
     expect(s.voci[10].parola).toBeNull()
     expect(JSON.stringify(s)).not.toContain('base')
     s = await manda(chiama, io, 'compra', s)
-    expect(s).toMatchObject({ esito: 'comprato', terzo: 'comprato', montepremi: 32 })
+    expect(s).toMatchObject({ esito: 'comprato', terzo: 'comprato', montepremi: 50 })
     expect(s.voci[10].parola).toBe('base')
     // Il jolly rimasto vale anche nella finale.
     s = await manda(chiama, io, 'jolly', s)
@@ -188,7 +188,7 @@ describe('la Catena del giorno, dalle API', () => {
     conLaGiornata(db)
     const io = await giocatore('anna')
     let s = await catena(chiama, io, [false, true, true, true])
-    expect(s.montepremi).toBe(16)
+    expect(s.montepremi).toBe(25)
     s = await manda(chiama, io, 'rispondi', s, 'nave')
     expect(s).toMatchObject({ status: 'done', indovinata: false, risposta: 'nave', punti: 0 })
     const ancora = await manda(chiama, io, 'rispondi', s, 'navale')

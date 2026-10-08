@@ -57,9 +57,9 @@ describe('lo Scarabeo classificato, contro il riferimento del computer', () => {
 
   it('i punti arrivano al tetto e non oltre', () => {
     expect(puntiScarabeo(0, 245)).toBe(0)
-    expect(puntiScarabeo(122, 245)).toBe(75)
-    expect(puntiScarabeo(245, 245)).toBe(150)
-    expect(puntiScarabeo(600, 245)).toBe(150)
+    expect(puntiScarabeo(122, 245)).toBe(50)
+    expect(puntiScarabeo(245, 245)).toBe(100)
+    expect(puntiScarabeo(600, 245)).toBe(100)
   })
 })
 

@@ -44,7 +44,7 @@ describe('il cruciverba libero, dalle API', () => {
     expect(riletta.dati.partita?.partitaId).toBe(nuova.dati.partitaId)
   })
 
-  it('una griglia giusta chiude la partita a centosessanta punti e svela le fonti', async () => {
+  it('una griglia giusta chiude la partita a cento punti e svela le fonti', async () => {
     const { chiama, giocatore } = conSchemi(1)
     const io = await giocatore('bruno')
     const p = (await chiama<CruciverbaState>('POST', '/cruciverba/libera', io)).dati
@@ -55,7 +55,7 @@ describe('il cruciverba libero, dalle API', () => {
     })
     expect(esito.status).toBe(200)
     expect(esito.dati.status).toBe('done')
-    expect(esito.dati.punti).toBe(160)
+    expect(esito.dati.punti).toBe(100)
     expect(esito.dati.stato?.soluzione).toBe(SOLUZIONE)
     expect(esito.dati.stato?.definizioni.find((d) => d.chiave === 'o0')?.voce).toBe('cane')
 
@@ -146,6 +146,6 @@ describe('il cruciverba del giorno, dopo il riordino', () => {
     })
     expect(esito.dati.status).toBe('done')
     const riepilogo = await chiama<{ status: string; punti: number }>('GET', '/cruciverba/summary', io)
-    expect(riepilogo.dati).toMatchObject({ status: 'done', punti: 160 })
+    expect(riepilogo.dati).toMatchObject({ status: 'done', punti: 100 })
   })
 })

@@ -2,10 +2,13 @@
  * Quanto costano gli aiuti dei giochi a griglia, il cruciverba e il sudoku.
  *
  * Tutto si misura sulla parte di una casella: il tetto del gioco diviso le
- * caselle da trovare, arrotondato al punto. Il cruciverba ha una ottantina di
- * lettere su centosessanta punti, e una parte vale due punti; il sudoku ha fra
- * quarantacinque e una cinquantina di cifre da trovare su centocinquanta, e una
- * parte ne vale tre.
+ * caselle da trovare. Il cruciverba ha una ottantina di lettere su cento punti,
+ * e una parte vale un punto e un quarto; il sudoku ha fra quarantacinque e una
+ * cinquantina di cifre da trovare, e una parte ne vale circa due. Ogni aiuto
+ * costa le sue parti arrotondate al punto, e non la parte arrotondata per le
+ * sue parti: con una parte di un punto e un quarto, una casella svelata costa
+ * quattro punti e non tre, e svelato un terzo dello schema la giornata vale
+ * davvero zero.
  *
  * Una casella svelata costa tre parti, perché ne apre altre: le parole che la
  * incrociano nel cruciverba, la riga, la colonna e il riquadro nel sudoku.
@@ -59,12 +62,13 @@ export const PARTI_AIUTI = { svelata: 3, errore: 1, controllo: 1, controlloSchem
 
 /** I costi in uno schema con queste caselle da trovare, per un gioco che vale `tetto` senza aiuti. */
 export function costiAiuti(tetto: number, daTrovare: number): CostiAiuti {
-  const parte = Math.max(1, Math.round(tetto / Math.max(1, daTrovare)))
+  const parte = tetto / Math.max(1, daTrovare)
+  const costo = (parti: number) => Math.max(1, Math.round(parti * parte))
   return {
-    svelata: PARTI_AIUTI.svelata * parte,
-    errore: PARTI_AIUTI.errore * parte,
-    controllo: PARTI_AIUTI.controllo * parte,
-    controlloSchema: PARTI_AIUTI.controlloSchema * parte,
+    svelata: costo(PARTI_AIUTI.svelata),
+    errore: costo(PARTI_AIUTI.errore),
+    controllo: costo(PARTI_AIUTI.controllo),
+    controlloSchema: costo(PARTI_AIUTI.controlloSchema),
     daTrovare,
   }
 }
