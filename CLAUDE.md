@@ -429,15 +429,16 @@ e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni gioco misura
 quel che gli e' proprio dentro un tetto deciso (`TETTI` in `shared/punti.ts`,
 che ha la tabella di tutti), che segue il tempo che una giornata chiede a chi la
 gioca bene: il cruciverba 160, lo Scarabeo e il sudoku 150, il quiz 75, il
-Wordle 70, la Ghigliottina 64, Nomi, cose e città, gli Anagrammi e il Paroliere
-60, il tris e le Sequenze 50. Sono undici, e fanno novecentoquarantanove, un po'
-meno di novanta a gioco, e un test lo tiene. Erano otto e facevano ottocento con
+Wordle 70, la Ghigliottina e la Catena 64, Nomi, cose e città, gli Anagrammi e
+il Paroliere 60, il tris e le Sequenze 50. Sono dodici, e fanno milletredici, un
+po' meno di novanta a gioco, e un test lo tiene. Erano otto e facevano ottocento con
 la battaglia navale (85), che il 6 ottobre 2026 e' uscita dalle classificate
 (vedi sotto); due giorni dopo sono arrivati gli Anagrammi, che valgono quanto
 Nomi, cose e città perché chiedono lo stesso tempo, le Sequenze, che valgono
 quanto il tris, il Paroliere, tre minuti come Nomi, cose e città, e la
 Ghigliottina, fra il Wordle e loro, con sessantaquattro perché il montepremi si
-dimezzi cinque volte senza virgole: gli altri tetti sono rimasti quelli, perché
+dimezzi cinque volte senza virgole, e poi la Catena, che si gioca allo stesso
+modo e vale quanto lei: gli altri tetti sono rimasti quelli, perché
 i giorni nuovi valgano come i vecchi. Non in proporzione diretta: un cruciverba chiede dieci volte il tempo
 del tris e vale tre volte tanto, cosi' nessun gioco da solo decide la generale.
 Per un periodo tutte valevano cento: una partita perfetta a tris valeva una
@@ -448,10 +449,10 @@ aiuti, il quiz le risposte giuste (quindici per aver giocato, sei per ogni
 giusta), il tris le vittorie e le patte, Nomi, cose e città le risposte valide,
 di piu' quelle date da pochi, gli Anagrammi le parole trovate, di piu' quelle
 trovate presto, le Sequenze le sequenze ripetute giuste, il Paroliere i punti
-delle parole rispetto al traguardo della griglia, la Ghigliottina il montepremi
-che resta. Tutti tengono il principio del Wordle — **giocarla bene vale
-circa il doppio di giocarla male**, non dieci volte tanto — tranne la
-Ghigliottina, di proposito (vedi sotto), e
+delle parole rispetto al traguardo della griglia, la Ghigliottina e la Catena il
+montepremi che resta. Tutti tengono il principio del Wordle — **giocarla bene
+vale circa il doppio di giocarla male**, non dieci volte tanto — tranne la
+Ghigliottina e la Catena, di proposito (vedi sotto), e
 `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
 per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
@@ -1764,6 +1765,46 @@ montepremi, che si spezza a meta'; la vincente arriva in una busta e si
 gira lettera per lettera. La festa aspetta il verdetto, e la libera sta tutta
 nel telefono, con gli stessi tempi.
 
+**La Catena e' l'ultima catena di Reazione a catena, e le catene vengono dalle
+espressioni.** Undici parole, ognuna legata alla successiva da un'espressione
+(spirito LIBERO, tiro libero): si vede una coppia e della parola in mezzo la
+prima lettera, trovata quella si scende alla coppia dopo, e le parole da
+indovinare sono cinque, l'ultima la finale (`shared/catena.ts`). Le catene le
+scrive `npm run catena:build` (`scripts/build-catena.mjs`) da una rete di
+parole: le espressioni scritte a mano della Ghigliottina e quelle di due parole
+del Wikizionario fra parole comuni. Ogni parola da indovinare ha almeno un
+legame scritto a mano — la finale proprio quello con la parola sopra, perché il
+terzo elemento si puo' non vedere —, e con le lettere che se ne vedono e' l'unica
+della rete che sta con le due accanto. Le classificate
+(`scripts/data/catena-classificate.json`, che legge solo la notte) e le libere
+(`public/dati/catena/libere.json`, con l'impronta in `shared/catena-libere.ts`)
+si scelgono insieme, e un'espressione di una parte non sta nell'altra. La notte
+(`scripts/genera-catena.ts`, il passo "La Catena" di `cruciverba.yml`, e il
+deploy per due settimane, sempre dopo la Ghigliottina) scrive la giornata in
+`catena_giornate` con `INSERT OR IGNORE`, e salta la catena che ha fra le sue
+parole la vincente della Ghigliottina dello stesso giorno: le espressioni sono
+le stesse, e la direbbe. Se manca, `CATENA_ASSENTE` (503): in locale
+`npm run catena:locale`.
+
+**Nella Catena la verita' sono le mosse, e il minuto parte da solo.**
+`catena_partite.mosse` ha le parole provate, i jolly e il terzo elemento
+comprato; montepremi, lettere viste e terzo elemento si ricavano rigiocandole
+(`svolgiCatena`), con le stesse regole nel server e nel telefono della libera.
+Un errore dimezza e mostra un'altra lettera, il secondo dimezza e mostra la
+parola; i jolly sono due, e ne' un jolly ne' un errore mostrano l'ultima
+lettera. Della finale si vedono le prime due lettere e l'ultima; il terzo
+elemento si compra dimezzando, e chi arriva con tutti e due i jolly lo ha in
+regalo. Il montepremi parte da 64 come quello della Ghigliottina e non scende
+sotto uno, perché la finale valga sempre qualcosa; sbagliata vale zero.
+`vistaCatena` manda solo le parole fino alla coppia di adesso, e di quella da
+indovinare le lettere e la lunghezza, come le caselle in studio. Il minuto della
+finale lo scrive il server con la mossa che ci arriva, dopo il tempo della
+scena (`PREAMBOLO_FINALE_CATENA_MS`): la finale si vede appena ci si arriva, e un
+minuto da far partire col telefono non partirebbe mai per chi vuole pensarci.
+Si scrive con la tastiera del gioco, come il Wordle: con quella del telefono
+aperta la catena non si vedrebbe. Le caselle della finale sono solo quelle in
+mezzo, e la parola si compone con le lettere che si vedono.
+
 **Il Paroliere e' il Boggle, con il dizionario dello Scarabeo.** Sedici dadi in
 una griglia di quattro (`DADI` in `shared/paroliere.ts`, con le lettere del
 gioco e la "Qu" su una faccia sola), tre minuti, e una parola vale se si
@@ -1858,7 +1899,7 @@ computer o un amico, cruciverba da una scorta di schemi, quiz sulla materia, la
 categoria, il modo, la zona o l'ambito e le opzioni che si scelgono, Nomi, cose
 e città con una lettera a caso contro il computer, Anagrammi con cinque parole a
 caso della lunghezza che si sceglie, Sequenze finché non si sbaglia, Ghigliottina
-con una a caso, Paroliere con una griglia a caso di sedici o venticinque dadi. Gli indirizzi dicono sempre dove si e':
+e Catena con una a caso, Paroliere con una griglia a caso di sedici o venticinque dadi. Gli indirizzi dicono sempre dove si e':
 `/<gioco>/classificata`, `/<gioco>/libera` (`src/app/rotte.ts`, che ha l'elenco
 completo, e i vecchi indirizzi portano ai nuovi in `App.tsx`); `/<gioco>` da
 solo porta alla classificata. I giochi da tavolo non hanno ne' l'una ne'
@@ -2492,7 +2533,7 @@ della barra laterale, e un test lo controlla.
 
 **Le Libere mettono i giochi in famiglie, come li cerca chi vuole giocare.**
 Enigmistica (Wordle, cruciverba, sudoku, Anagrammi), Parole (Scarabeo, Paroliere,
-Ghigliottina, Nomi, cose e città),
+Ghigliottina, Catena, Nomi, cose e città),
 Cultura (il quiz), Memoria (Sequenze), Strategia (scacchi, dama, go, Forza 4,
 tris), Da tavolo (battaglia navale, Indovina chi) e In gruppo, cioe' Lupus, che
 e' l'unico che si gioca in tanti (`CATEGORIE_LIBERE` in `src/games/catalog.ts`). Erano due, "I

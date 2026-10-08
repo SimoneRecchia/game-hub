@@ -231,6 +231,8 @@ export interface VoceCatena {
   parola: string | null
   /** Di una parola da indovinare, le lettere che si vedono dall'inizio. */
   lettere: string
+  /** Quante lettere ha la parola: le caselle si vedono tutte, come in studio. */
+  lunghezza: number
   /** L'ultima lettera, per la parola finale. */
   ultima: string | null
   tipo: 'data' | 'nascosta' | 'giusta' | 'rivelata' | 'terzo'
@@ -259,11 +261,29 @@ export function vistaCatena(
     const passo = NASCOSTE_CATENA.indexOf(posto as (typeof NASCOSTE_CATENA)[number])
     if (posto === POSTO_TERZO) {
       const vista = fine.finita || s.terzo !== 'no'
-      voci.push({ posto, parola: vista ? parola : null, lettere: '', ultima: null, tipo: 'terzo', errori: 0, espressione })
+      voci.push({
+        posto,
+        parola: vista ? parola : null,
+        lettere: '',
+        lunghezza: vista ? normalizzaCatena(parola).length : 0,
+        ultima: null,
+        tipo: 'terzo',
+        errori: 0,
+        espressione,
+      })
       continue
     }
     if (passo < 0) {
-      voci.push({ posto, parola, lettere: '', ultima: null, tipo: 'data', errori: 0, espressione })
+      voci.push({
+        posto,
+        parola,
+        lettere: '',
+        lunghezza: normalizzaCatena(parola).length,
+        ultima: null,
+        tipo: 'data',
+        errori: 0,
+        espressione,
+      })
       continue
     }
     const svolta = s.parole[passo]
@@ -274,6 +294,7 @@ export function vistaCatena(
       posto,
       parola: esito ? parola : null,
       lettere: esito ? '' : lettere,
+      lunghezza: normalizzaCatena(parola).length,
       ultima: finale && !esito ? normalizzaCatena(parola).slice(-1).toUpperCase() : null,
       tipo: esito ?? 'nascosta',
       errori: svolta.errori,

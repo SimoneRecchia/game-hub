@@ -26,12 +26,12 @@
  *   l'ultima, anche senza il terzo elemento;
  * - nessuna parola ha la radice di un'altra della catena, e nessuna
  *   espressione contiene una terza parola della catena, che la direbbe;
- * - un'espressione sta in due catene al piu', e una parola da indovinare in
- *   tre: due catene che si somigliano non si riconoscono.
+ * - un'espressione sta in tre catene al piu', e una parola da indovinare in
+ *   quattro: due catene che si somigliano non si riconoscono.
  *
- * Prima si scelgono le classificate, sulla rete intera; poi le libere, con le
- * sole espressioni che le classificate non usano: giocare a caso non mostra
- * mai un legame della catena di un giorno.
+ * Le classificate e le libere si scelgono insieme, a turno, e un'espressione
+ * presa da una parte non la usa l'altra: giocare a caso non mostra mai un
+ * legame della catena di un giorno.
  *
  * Uso:  node scripts/build-catena.mjs   (vuole in scripts/.cache/ le fonti della Ghigliottina:
  *                                         node scripts/build-ghigliottina.mjs le scarica)

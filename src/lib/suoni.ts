@@ -168,6 +168,10 @@ export type NomeSuono =
   | 'parola'
   /** Una parola lunga: l'arpeggio, e il luccichio. */
   | 'parolona'
+  /** Una maglia della Catena che si chiude: due anelli di metallo che si toccano. */
+  | 'maglia'
+  /** Il montepremi dimezzato: la nota che cade, e il soffio. */
+  | 'dimezza'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -1245,5 +1249,20 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     ;[N.C5, N.E5, N.G5, N.C6, N.E6].forEach((f, i) => marimba(u, t + i * 0.05, f, 0.22 * v, { eco: 0.3 }))
     campanello(u, t + 0.25, N.G6, 0.1 * v, { eco: 0.5, durata: 1 })
     campanello(u, t + 0.32, N.C7, 0.08 * v, { eco: 0.55, durata: 0.9 })
+  },
+
+  // La maglia: due anelli che si toccano, uno e poi l'altro, e il metallo che vibra appena.
+  maglia: (u, t, v, altezza = 1) => {
+    campanello(u, t, vario(1760 * altezza, 0.02), 0.07 * v, { eco: 0.25, durata: 0.35 })
+    campanello(u, t + 0.045, vario(2350 * altezza, 0.02), 0.05 * v, { eco: 0.3, durata: 0.3 })
+    soffio(u, t, 0.05, 0.05 * v, { tipo: 'highpass', da: 5000, a: 7000, q: 0.6 }, { attacco: 0.002, eco: 0.05 })
+  },
+
+  // Il montepremi a meta': il soffio che scende, e due note che cadono di una quinta.
+  dimezza: (u, t, v) => {
+    soffio(u, t, 0.3, 0.12 * v, { tipo: 'bandpass', da: 2600, a: 500, q: 0.8 }, { attacco: 0.02, eco: 0.08 })
+    marimba(u, t + 0.06, N.G4, 0.22 * v, { eco: 0.2 })
+    marimba(u, t + 0.2, N.C4, 0.24 * v, { eco: 0.25 })
+    tonfo(u, t + 0.2, 0.18 * v, { da: 110, a: 50, durata: 0.3 })
   },
 }

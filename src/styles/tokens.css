@@ -273,6 +273,8 @@
   --ghigliottina-2: #4b1580;
   --paroliere-1: #6cc644;
   --paroliere-2: #2e8a2a;
+  --catena-1: #2b6cff;
+  --catena-2: #1b2a9c;
   --ruota-1: #ffb020;
   --ruota-2: #e5383b;
   --slot-1: #ff4fa3;
@@ -702,6 +704,22 @@
   --par-gia: #ffb020;
   --par-sabbia: #f2c46d;
   --par-legno: #8a5a2b;
+
+  /* ---- La Catena ----
+     Lo studio di Reazione a catena, scuro in tutti e due i temi: il blu delle
+     luci e dei pannelli, l'oro delle lettere e delle maglie. Il verde e' la
+     parola trovata, l'arancio quella mostrata dopo due errori, il rosso
+     l'errore. */
+  --cat-palco-1: #13277a;
+  --cat-palco-2: #050a2e;
+  --cat-luce: #5aa2ff;
+  --cat-pannello: #1d3aa6;
+  --cat-pannello-2: #0f1f66;
+  --cat-oro: #ffc83d;
+  --cat-oro-2: #e08a00;
+  --cat-giusta: #3ddc84;
+  --cat-rivelata: #ff9a3c;
+  --cat-sbagliata: #ff5a5f;
 
   /* ---- Il cruciverba ----
      Nere e bianche come sulla carta, ma in scuro le bianche non sono bianche:
