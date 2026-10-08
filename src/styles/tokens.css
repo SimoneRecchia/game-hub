@@ -515,6 +515,9 @@
   --slot: light-dark(#e6e9f1, #12141b);
   --slot-ombra: rgba(24, 32, 64, 0.14);
   --slot-ombra: light-dark(rgba(24, 32, 64, 0.14), rgba(0, 0, 0, 0.55));
+  /* L'orlo in basso dell'alloggio, che prende la luce: al buio e' quel che fa vedere la griglia vuota. */
+  --slot-orlo: rgba(255, 255, 255, 0.85);
+  --slot-orlo: light-dark(rgba(255, 255, 255, 0.85), rgba(190, 200, 235, 0.16));
   --tile-empty-border: rgba(60, 64, 82, 0.26);
   --tile-empty-border: light-dark(rgba(60, 64, 82, 0.26), rgba(160, 168, 200, 0.26));
   --tile-active-border: rgba(60, 64, 82, 0.4);
