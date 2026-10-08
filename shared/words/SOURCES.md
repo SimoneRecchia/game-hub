@@ -230,6 +230,22 @@ fra amici va bene, ma se l'app diventasse pubblica il nome andrebbe cambiato.
 Rigenerare: `npm run ghigliottina:build` (le fonti in `scripts/.cache/`, come
 per lo Scarabeo).
 
+## La Catena
+
+Le catene sono strade su una rete di espressioni: quelle scritte a mano della
+Ghigliottina (vedi sopra), e le voci di due parole del Wikizionario italiano,
+dall'estrazione di kaikki.org del dizionario dello Scarabeo, fra parole comuni
+nei sottotitoli (hermitdave/FrequencyWords, MIT). I file che ne escono
+(`scripts/data/catena-classificate.json`, `public/dati/catena/libere.json`)
+hanno le parole e le espressioni, e quelle del Wikizionario sono sotto **CC
+BY-SA 4.0**: la fonte è citata nelle regole del gioco e nel profilo.
+
+Il gioco è l'ultima catena di Reazione a catena, su Rai 1: anche qui, se l'app
+diventasse pubblica il nome andrebbe cambiato.
+
+Rigenerare: `npm run catena:build` (le fonti in `scripts/.cache/`, come per la
+Ghigliottina).
+
 ## Il Paroliere
 
 Le parole sono quelle del dizionario dello Scarabeo (vedi sopra): tutte valgono

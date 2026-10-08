@@ -16,6 +16,7 @@ import type { CategoriaNomi, PiuDate, RispostaContata } from './nomi-cose'
 import type { LatoMoneta } from './ruota'
 import type { Carta, ManoBJ } from './blackjack'
 import type { FaseBJ } from './blackjack-tavolo'
+import type { EsitoMossaCatena, TerzoElemento, VoceCatena } from './catena'
 
 export type GameId =
   | 'wordle'
@@ -30,6 +31,7 @@ export type GameId =
   | 'sequenze'
   | 'ghigliottina'
   | 'paroliere'
+  | 'catena'
 
 export interface Player {
   id: string
@@ -780,6 +782,82 @@ export interface GhigliottinaLeaderboard {
   me: GhigliottinaRow | null
 }
 
+/* ────────────────────────────────  Catena  ──────────────────────────────── */
+
+export type CatenaStatus = 'playing' | 'done'
+
+export interface CatenaStato {
+  puzzleNumber: number
+  date: string
+  status: CatenaStatus
+  /** Le parole viste: fino alla coppia di adesso, e di quella da indovinare solo le lettere. */
+  voci: VoceCatena[]
+  /** La parola da indovinare: da 0 a 3 nella catena, 4 la finale. */
+  passo: number
+  totaleParole: number
+  jollyRestanti: number
+  jollyUsabile: boolean
+  terzo: TerzoElemento
+  compraUsabile: boolean
+  montepremiIniziale: number
+  montepremi: number
+  /**
+   * Il minuto della parola finale: quanto manca perché parta (lo scrive il
+   * server arrivati alla finale, dopo il tempo della scena) e quanto ne resta.
+   * null prima della finale.
+   */
+  finale: { inizioMs: number; restanteMs: number; tempoMs: number } | null
+  /** Quel che si e' scritto per la finale, o null se il minuto e' finito senza risposta. */
+  risposta: string | null
+  indovinata: boolean | null
+  /** In quanto si e' scritta la parola finale: lo spareggio. */
+  tempoMs: number | null
+  punti: number
+  /** Com'e' andata la mossa appena mandata: solo nella risposta a una mossa. */
+  esito: EsitoMossaCatena | null
+  versione: number
+  msToNextPuzzle: number
+}
+
+export interface CatenaSummary {
+  puzzleNumber: number
+  date: string
+  status: 'new' | CatenaStatus
+  /** La catena di oggi c'e': la scrive la notte. */
+  pronta: boolean
+  /** Le parole della catena gia' passate, indovinate o mostrate, da zero a cinque. */
+  passo: number
+  totale: number
+  montepremi: number
+  indovinata: boolean | null
+  punti: number
+  msToNextPuzzle: number
+}
+
+export interface CatenaRow {
+  rank: number
+  playerId: string
+  nickname: string
+  displayName: string
+  avatarColor: string
+  /** Punti nel periodo: solo le partite finite. */
+  punti: number
+  giornate: number
+  /** Le parole finali indovinate. */
+  indovinate: number
+  /** Quanto ci ha messo a scrivere le parole finali, in tutto: lo spareggio. */
+  tempoMs: number
+  inCorso: boolean
+}
+
+export interface CatenaLeaderboard {
+  scope: LeaderboardScope
+  periodo: PeriodoClassifica
+  updatedAt: string
+  rows: CatenaRow[]
+  me: CatenaRow | null
+}
+
 /* ───────────────────────────────  Paroliere  ─────────────────────────────── */
 
 /** 'new' prima di girare la clessidra: la griglia si vede solo da li'. */
@@ -1067,6 +1145,7 @@ export type Attivita =
   | 'sequenze'
   | 'ghigliottina'
   | 'paroliere'
+  | 'catena'
   | 'ruota'
   | 'fortuna'
   | 'slot'
@@ -1711,6 +1790,7 @@ export type GiocoClassificato =
   | 'sequenze'
   | 'ghigliottina'
   | 'paroliere'
+  | 'catena'
 
 /**
  * I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha
@@ -1826,6 +1906,7 @@ export interface OggiRisposta {
   sequenze: SequenzeSummary
   ghigliottina: GhigliottinaSummary
   paroliere: ParoliereSummary
+  catena: CatenaSummary
   /** Come si sta oggi nella classifica generale, con quel che hanno dato o tolto i giochi della Fortuna. */
   generale: {
     posizione: number | null

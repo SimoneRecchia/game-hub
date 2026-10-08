@@ -94,6 +94,11 @@
   --c2: var(--paroliere-2);
 }
 
+.copertina--catena {
+  --c1: var(--catena-1);
+  --c2: var(--catena-2);
+}
+
 .copertina--lupus {
   --c1: var(--lupus-1);
   --c2: var(--lupus-2);

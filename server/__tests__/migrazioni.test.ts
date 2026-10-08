@@ -74,6 +74,8 @@ describe('le migrazioni', () => {
       'ghigliottina_partite',
       'paroliere_giornate',
       'paroliere_partite',
+      'catena_giornate',
+      'catena_partite',
     ]) {
       expect(tabelle).toContain(t)
     }

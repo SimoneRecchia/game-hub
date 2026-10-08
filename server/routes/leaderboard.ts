@@ -10,6 +10,7 @@ import type {
   NomiLeaderboard,
   PanoramicaClassifiche,
   ParoliereLeaderboard,
+  CatenaLeaderboard,
   PeriodoClassifica,
   QuizLeaderboard,
   ScarabeoLeaderboard,
@@ -31,6 +32,7 @@ import { classificaAnagrammi } from '../lib/anagrammiStore'
 import { classificaSequenze } from '../lib/sequenzeStore'
 import { classificaGhigliottina } from '../lib/ghigliottinaStore'
 import { classificaParoliere } from '../lib/paroliereStore'
+import { classificaCatena } from '../lib/catenaStore'
 import { classificaFortuna, classificaGenerale } from '../lib/generale'
 import { panoramica } from '../lib/panoramica'
 import { today } from '../lib/wordleStore'
@@ -135,4 +137,10 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/paroliere', async (c) => {
     const result = await classificaParoliere(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<ParoliereLeaderboard>(result)
+  })
+
+  /** La Catena: i punti delle partite finite, poi le parole finali indovinate e il tempo. */
+  .get('/catena', async (c) => {
+    const result = await classificaCatena(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
+    return c.json<CatenaLeaderboard>(result)
   })

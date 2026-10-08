@@ -27,6 +27,7 @@ import { classificaAnagrammi } from './anagrammiStore'
 import { classificaSequenze } from './sequenzeStore'
 import { classificaGhigliottina } from './ghigliottinaStore'
 import { classificaParoliere } from './paroliereStore'
+import { classificaCatena } from './catenaStore'
 
 interface RigaQualunque {
   rank: number
@@ -72,6 +73,7 @@ export async function panoramica(
     sequenze,
     ghigliottina,
     paroliere,
+    catena,
     generale,
     fortuna,
   ] = await Promise.all([
@@ -86,6 +88,7 @@ export async function panoramica(
     classificaSequenze(db, periodo, numeroDiOggi, viewerId),
     classificaGhigliottina(db, periodo, numeroDiOggi, viewerId),
     classificaParoliere(db, periodo, numeroDiOggi, viewerId),
+    classificaCatena(db, periodo, numeroDiOggi, viewerId),
     classificaGenerale(db, periodo, viewerId),
     classificaFortuna(db, periodo, viewerId),
   ])
@@ -104,6 +107,7 @@ export async function panoramica(
       ...sequenze.rows.filter((r) => r.inCorso),
       ...ghigliottina.rows.filter((r) => r.inCorso),
       ...paroliere.rows.filter((r) => r.inCorso),
+      ...catena.rows.filter((r) => r.inCorso),
     ].map((r) => r.playerId),
   )
   const colPunti = (r: { punti: number }) => r.punti
@@ -130,6 +134,7 @@ export async function panoramica(
       sequenze: anteprima(sequenze.rows, sequenze.me, colPunti, aperta),
       ghigliottina: anteprima(ghigliottina.rows, ghigliottina.me, colPunti, aperta),
       paroliere: anteprima(paroliere.rows, paroliere.me, colPunti, aperta),
+      catena: anteprima(catena.rows, catena.me, colPunti, aperta),
       // I punti di Nomi, cose e città arrivano la notte: chi li aspetta e' "in corso".
       nomi: anteprima(nomi.rows, nomi.me, colPunti, (r) => oggi && r.inAttesa),
       fortuna: anteprima(fortuna.rows, fortuna.me, colPunti, () => false),

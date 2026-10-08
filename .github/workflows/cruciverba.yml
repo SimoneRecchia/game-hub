@@ -102,6 +102,13 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
+      # Dopo la Ghigliottina: la catena di un giorno non deve avere la sua parola vincente.
+      - name: La Catena
+        run: npx vite-node scripts/genera-catena.ts -- --remote --giorni 60
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
       - name: I punti di Nomi, cose e città
         run: npx vite-node scripts/punteggi-nomi.ts -- --remote
         env:

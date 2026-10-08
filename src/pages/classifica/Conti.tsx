@@ -7,6 +7,7 @@ import { leggiContiAnagrammi } from '@/games/anagrammi/conti'
 import { leggiContiSequenze } from '@/games/sequenze/conti'
 import { leggiContiGhigliottina } from '@/games/ghigliottina/conti'
 import { leggiContiParoliere } from '@/games/paroliere/conti'
+import { leggiContiCatena } from '@/games/catena/conti'
 import { useDati } from '@/lib/dati'
 import { formatDuration, formatNumber } from '@/lib/format'
 import { CATEGORIE, DOMANDE_PER_PARTITA, NOMI_CATEGORIE } from '@shared/quiz'
@@ -14,6 +15,7 @@ import { LIVELLI, NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   AnagrammiLeaderboard,
   GhigliottinaLeaderboard,
+  CatenaLeaderboard,
   ParoliereLeaderboard,
   SequenzeLeaderboard,
   CruciverbaLeaderboard,
@@ -61,6 +63,8 @@ export function ContiDi({ gioco }: { gioco: GiocoClassificato }) {
       return <ContiGhigliottinaDi />
     case 'paroliere':
       return <ContiParoliereDi />
+    case 'catena':
+      return <ContiCatenaDi />
   }
 }
 
@@ -465,6 +469,40 @@ function ContiGhigliottinaDi() {
           voci={[
             { etichetta: 'Partite', valore: formatNumber(libere.partite) },
             { etichetta: 'Parole vincenti', valore: formatNumber(libere.indovinate) },
+            { etichetta: 'Montepremi migliore', valore: `${formatNumber(libere.migliore)} punti` },
+          ]}
+        />
+      )}
+    </div>
+  )
+}
+
+function ContiCatenaDi() {
+  const { dati } = useDati<CatenaLeaderboard>('/leaderboard/catena?scope=all')
+  // Le libere stanno nel telefono: si leggono una volta, all'apertura del foglio.
+  const [libere] = useState(leggiContiCatena)
+  const me = dati?.me
+  return (
+    <div className="conti">
+      {!dati ? (
+        <Attesa />
+      ) : (
+        <Conti
+          titolo="Classificate"
+          voci={[
+            { etichetta: 'Punti in classifica', valore: formatNumber(me?.punti ?? 0) },
+            { etichetta: 'Giornate', valore: formatNumber(me?.giornate ?? 0) },
+            { etichetta: 'Parole finali', valore: formatNumber(me?.indovinate ?? 0) },
+            { etichetta: 'Posizione', valore: me ? `${me.rank}º` : '—' },
+          ]}
+        />
+      )}
+      {libere.partite > 0 && (
+        <Conti
+          titolo="Libere"
+          voci={[
+            { etichetta: 'Partite', valore: formatNumber(libere.partite) },
+            { etichetta: 'Parole finali', valore: formatNumber(libere.indovinate) },
             { etichetta: 'Montepremi migliore', valore: `${formatNumber(libere.migliore)} punti` },
           ]}
         />
