@@ -215,7 +215,7 @@
 }
 
 .ct-pachinko.is-aumento .ct-conto {
-  animation: ct-conto-passo var(--dura) steps(1, end) var(--da) forwards;
+  animation: ct-conto-passo var(--dura) linear var(--da) forwards;
 }
 
 .ct-pachinko.is-aumento .ct-conto.is-ultimo {
