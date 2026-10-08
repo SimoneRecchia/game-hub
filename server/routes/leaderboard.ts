@@ -11,6 +11,7 @@ import type {
   PeriodoClassifica,
   QuizLeaderboard,
   ScarabeoLeaderboard,
+  SequenzeLeaderboard,
   SudokuLeaderboard,
   TrisLeaderboard,
 } from '../../shared/types'
@@ -25,6 +26,7 @@ import { classificaQuiz } from '../lib/quizStore'
 import { classificaTris } from '../lib/trisStore'
 import { classificaNomi } from '../lib/nomiStore'
 import { classificaAnagrammi } from '../lib/anagrammiStore'
+import { classificaSequenze } from '../lib/sequenzeStore'
 import { classificaFortuna, classificaGenerale } from '../lib/generale'
 import { panoramica } from '../lib/panoramica'
 import { today } from '../lib/wordleStore'
@@ -111,4 +113,10 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/anagrammi', async (c) => {
     const result = await classificaAnagrammi(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<AnagrammiLeaderboard>(result)
+  })
+
+  /** Le Sequenze: i punti delle giornate finite, poi la sequenza piu' lunga e il tempo. */
+  .get('/sequenze', async (c) => {
+    const result = await classificaSequenze(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
+    return c.json<SequenzeLeaderboard>(result)
   })

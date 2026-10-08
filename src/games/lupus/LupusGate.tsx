@@ -31,7 +31,8 @@ export function LupusGate() {
     (!pathname.startsWith('/quiz/duello/') && (dati?.quiz.length ?? 0) > 0) ||
     (!pathname.startsWith('/indovina-chi/partita/') && (dati?.indovina.length ?? 0) > 0) ||
     (dati?.tavolo.length ?? 0) > 0 ||
-    (dati?.nomi.length ?? 0) > 0
+    (dati?.nomi.length ?? 0) > 0 ||
+    (dati?.sequenze.length ?? 0) > 0
   const invito = altroAvviso
     ? null
     : (dati?.lupus.find((i) => !risposte.has(i.id) && pathname !== ROTTE.stanzaLupus(i.codice)) ?? null)

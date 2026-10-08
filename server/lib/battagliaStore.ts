@@ -54,6 +54,7 @@ const TUTTE_LE_ATTIVITA: Record<Attivita, true> = {
   forza4: true,
   go: true,
   anagrammi: true,
+  sequenze: true,
   ruota: true,
   fortuna: true,
   slot: true,

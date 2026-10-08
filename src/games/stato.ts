@@ -23,6 +23,7 @@ import type {
   QuizSummary,
   RuotaSummary,
   ScarabeoSummary,
+  SequenzeSummary,
   SudokuSummary,
   TrisSummary,
   WordleSummary,
@@ -438,6 +439,43 @@ export function statoAnagrammi(s: AnagrammiSummary): StatoOggi {
   }
 }
 
+/** Le Sequenze: quanti turni giocati su cinque, e fin dove si e' arrivati. */
+export function statoSequenze(s: SequenzeSummary): StatoOggi {
+  const base = {
+    gioco: 'sequenze' as const,
+    avanzamento: s.status === 'done' ? 1 : s.totale > 0 ? s.giocati / s.totale : 0,
+    a: ROTTE.classificata('sequenze'),
+  }
+  if (s.status === 'done') {
+    return {
+      ...base,
+      fase: 'fatta',
+      titolo: s.migliore > 0 ? `Fino a ${s.migliore} cubetti` : 'Nessuna sequenza',
+      dettaglio: `${s.punti} punti`,
+      punti: s.punti,
+      azione: 'Rivedi',
+    }
+  }
+  if (s.status === 'new' || s.giocati === 0) {
+    return {
+      ...base,
+      fase: s.status === 'new' ? 'da-giocare' : 'in-corso',
+      titolo: s.status === 'new' ? 'Da giocare' : `Turno 1 di ${s.totale}`,
+      dettaglio: `${s.totale} turni, da 3 a 9 cubetti`,
+      punti: null,
+      azione: s.status === 'new' ? 'Gioca' : 'Continua',
+    }
+  }
+  return {
+    ...base,
+    fase: 'in-corso',
+    titolo: `Turno ${Math.min(s.giocati + 1, s.totale)} di ${s.totale}`,
+    dettaglio: s.migliore > 0 ? `Fino a ${s.migliore} cubetti` : 'Nessuna sequenza, per ora',
+    punti: null,
+    azione: 'Continua',
+  }
+}
+
 export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, StatoOggi> {
   return {
     wordle: statoWordle(oggi.wordle),
@@ -448,6 +486,7 @@ export function statiDiOggi(oggi: OggiRisposta): Record<GiocoClassificato, Stato
     tris: statoTris(oggi.tris),
     nomi: statoNomi(oggi.nomi),
     anagrammi: statoAnagrammi(oggi.anagrammi),
+    sequenze: statoSequenze(oggi.sequenze),
   }
 }
 

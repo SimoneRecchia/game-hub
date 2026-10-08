@@ -8,6 +8,7 @@ import { cruciverbaRoutes } from './routes/cruciverba'
 import { sudokuRoutes } from './routes/sudoku'
 import { trisRoutes } from './routes/tris'
 import { anagrammiRoutes } from './routes/anagrammi'
+import { sequenzeRoutes } from './routes/sequenze'
 import { nomiRoutes } from './routes/nomi'
 import { battagliaRoutes, invitiPubblici } from './routes/battaglia'
 import { quizRoutes } from './routes/quiz'
@@ -60,6 +61,7 @@ export function createApp() {
   app.route('/sudoku', sudokuRoutes)
   app.route('/tris', trisRoutes)
   app.route('/anagrammi', anagrammiRoutes)
+  app.route('/sequenze', sequenzeRoutes)
   app.route('/nomi', nomiRoutes)
   app.route('/battaglia', battagliaRoutes)
   app.route('/quiz', quizRoutes)
