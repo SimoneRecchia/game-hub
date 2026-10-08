@@ -444,7 +444,7 @@
     0 0 14px rgba(255, 220, 120, 0.75);
   opacity: 0;
   animation:
-    ct-conto-passo var(--dura) steps(1, end) var(--da) forwards,
+    ct-conto-passo var(--dura) linear var(--da) forwards,
     ct-premio-numero 260ms cubic-bezier(0.2, 0.9, 0.3, 1.5) var(--da) both;
 }
 
