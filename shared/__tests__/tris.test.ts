@@ -1,26 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
-  PARTITE_TRIS,
   caselleLibere,
   esito,
   gioca,
   leggi,
   posizioneIniziale,
-  puntiTris,
   rigioca,
   scrivi,
-  segnoDelGiocatore,
   vincentiSubito,
   type PosizioneTris,
 } from '../tris'
 import {
   DISTRAZIONI,
-  computerDellaPartita,
   mossaDelComputer,
-  mossaDelGiorno,
   valore,
   valoriDelleMosse,
-  vittoriaPossibile,
 } from '../tris-computer'
 import { POSIZIONI_TRIS, caselleDaIndice, minimaxTris } from '../tris-minimax'
 import { VALORI_TRIS } from '../tris-valori'
@@ -130,61 +124,5 @@ describe('il computer delle libere', () => {
       return vinte
     }
     expect(conta('facile')).toBeGreaterThan(conta('normale'))
-  })
-})
-
-describe('il computer della classificata', () => {
-  it('e’ lo stesso per tutti: la stessa posizione ha la stessa risposta', () => {
-    const c = computerDellaPartita(36, 1)
-    const d = computerDellaPartita(36, 1)
-    expect(d).toEqual(c)
-    expect(computerDellaPartita(36, 2)).not.toEqual(c)
-    const p = rigioca([mossaDelGiorno(posizioneIniziale(), c), 4])!
-    for (let volta = 0; volta < 5; volta += 1) expect(mossaDelGiorno(p, c)).toBe(mossaDelGiorno(p, c))
-  })
-
-  it('il giocatore comincia la prima, la terza e la quinta', () => {
-    expect([0, 1, 2, 3, 4].map(segnoDelGiocatore)).toEqual([0, 1, 0, 1, 0])
-  })
-
-  it('ogni partita di ogni giorno si puo’ vincere, e il punto debole non e’ la prima risposta', () => {
-    for (let giorno = 1; giorno <= 400; giorno += 1) {
-      for (let k = 0; k < PARTITE_TRIS; k += 1) {
-        const c = computerDellaPartita(giorno, k)
-        expect(c.debolezza, `${giorno}:${k}`).toBeGreaterThanOrEqual(0)
-        expect(caselleDaIndice(c.debolezza).filter((x) => x !== 0).length).toBeGreaterThanOrEqual(3)
-        expect(vittoriaPossibile(posizioneIniziale(), c), `${giorno}:${k}`).toBe(true)
-      }
-    }
-  })
-
-  it('non regala niente: chi gioca a caso perde spesso', () => {
-    let perse = 0
-    let partite = 0
-    for (let giorno = 1; giorno <= 100; giorno += 1) {
-      for (let k = 0; k < PARTITE_TRIS; k += 1) {
-        const c = computerDellaPartita(giorno, k)
-        const rng = mulberry32(giorno * 10 + k)
-        let p = posizioneIniziale()
-        for (let fine = esito(p); !fine; fine = esito(p)) {
-          const libere = caselleLibere(p)
-          const m = p.tratto === c.umano ? libere[Math.floor(rng() * libere.length)] : mossaDelGiorno(p, c)
-          p = gioca(p, m)!
-        }
-        partite += 1
-        if (esito(p)!.vincitore === 1 - c.umano) perse += 1
-      }
-    }
-    expect(perse / partite).toBeGreaterThan(0.4)
-  })
-})
-
-describe('i punti', () => {
-  it('dieci per finire, otto a vittoria, quattro a patta: al massimo cinquanta', () => {
-    expect(puntiTris(0, 0)).toBe(10)
-    expect(puntiTris(0, PARTITE_TRIS)).toBe(30)
-    expect(puntiTris(PARTITE_TRIS, 0)).toBe(50)
-    // Una giornata storta, con una vittoria e due patte, vale piu' della meta' della perfetta.
-    expect(puntiTris(1, 2) / puntiTris(PARTITE_TRIS, 0)).toBeGreaterThan(0.5)
   })
 })

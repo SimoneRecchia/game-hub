@@ -6,7 +6,6 @@ import { wordleRoutes } from './routes/wordle'
 import { scarabeoRoutes } from './routes/scarabeo'
 import { cruciverbaRoutes } from './routes/cruciverba'
 import { sudokuRoutes } from './routes/sudoku'
-import { trisRoutes } from './routes/tris'
 import { anagrammiRoutes } from './routes/anagrammi'
 import { sequenzeRoutes } from './routes/sequenze'
 import { ghigliottinaRoutes } from './routes/ghigliottina'
@@ -62,7 +61,6 @@ export function createApp() {
   app.route('/scarabeo', scarabeoRoutes)
   app.route('/cruciverba', cruciverbaRoutes)
   app.route('/sudoku', sudokuRoutes)
-  app.route('/tris', trisRoutes)
   app.route('/anagrammi', anagrammiRoutes)
   app.route('/sequenze', sequenzeRoutes)
   app.route('/ghigliottina', ghigliottinaRoutes)

@@ -72,7 +72,7 @@ describe('il sudoku del giorno, dalle API', () => {
       cifre: SCHEMA.dati,
       note: NOTE_VUOTE,
       status: 'playing',
-      punti: 150,
+      punti: 100,
     })
     expect(stato.soluzione).toBeNull()
   })
@@ -93,9 +93,9 @@ describe('il sudoku del giorno, dalle API', () => {
   })
 
   it('il controllo si paga, con gli errori nuovi; lo svelare tre parti, e la griglia giusta chiude', async () => {
-    // Uno schema medio: una cinquantina di cifre da trovare, una parte vale tre punti.
+    // Uno schema medio: una cinquantina di cifre da trovare, una parte vale due punti.
     const costi = costiSudoku(SCHEMA.dati)
-    expect(costi).toMatchObject({ svelata: 9, errore: 3, controllo: 3, controlloSchema: 15 })
+    expect(costi).toMatchObject({ svelata: 6, errore: 2, controllo: 2, controlloSchema: 9 })
     const dopoIlControllo = PUNTI_COMPLETO - costi.controlloSchema - costi.errore
     const dopoIlSecondo = dopoIlControllo - costi.controlloSchema
     const finale = dopoIlSecondo - costi.svelata

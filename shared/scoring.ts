@@ -1,9 +1,9 @@
 /**
  * Punteggio della parola del giorno.
  *
- * Una parola sola al giorno, la stessa per tutti, e vale al massimo settanta
- * punti: il suo tetto fra le classificate (vedi shared/punti.ts), che la
- * classifica generale somma.
+ * Una parola sola al giorno, la stessa per tutti, e vale al massimo cento
+ * punti, come ogni classificata (vedi shared/punti.ts), che la classifica
+ * generale somma.
  *
  * Due principi, e sono in tensione fra loro:
  *
@@ -22,17 +22,17 @@
  * mezza giornata, non cinque.
  *
  *     tentativi     1    2    3    4    5    6    non indovinata
- *     punti        70   63   56   49   42   35    14
+ *     punti       100   90   80   70   60   50    20
  */
 
 import { MAX_ATTEMPTS } from './config'
 import type { WordleStatus } from './types'
 
 /** Punti per aver giocato e indovinato, indipendentemente dai tentativi. */
-export const PARTICIPATION_POINTS = 28
+export const PARTICIPATION_POINTS = 40
 
 /** Quanto vale ogni tentativo risparmiato. E' anche il gradino della scala. */
-export const ATTEMPT_STEP = 7
+export const ATTEMPT_STEP = 10
 
 /**
  * Punti base per tentativo usato: indice 0 = indovinata al primo colpo.
@@ -52,7 +52,7 @@ export const ATTEMPT_POINTS = Array.from(
  * indovinare; sopra lo zero, perché aver giocato conta e chi non gioca affatto
  * non deve stare alla pari di chi ci ha provato.
  */
-export const LOSS_POINTS = 14
+export const LOSS_POINTS = 20
 
 /**
  * Bonus velocità. Piccolo di proposito: il tempo non e' una cosa che il gioco

@@ -28,43 +28,6 @@ export interface PosizioneTris {
 /** I secondi per ogni mossa: allo scadere la partita e' persa. */
 export const SECONDI_MOSSA_TRIS = 10
 export const TEMPO_MOSSA_TRIS_MS = SECONDI_MOSSA_TRIS * 1_000
-/**
- * Quanto il server aspetta oltre il tempo, per la rete, come nel quiz: la
- * mossa partita al decimo secondo arriva un po' dopo. Il telefono chiude la
- * mossa allo scadere del suo orologio, quindi il margine non e' tempo in piu'
- * per pensare.
- */
-export const MARGINE_MOSSA_TRIS_MS = 3_000
-
-/* ──────────────────────────  La classificata  ───────────────────────────── */
-
-/** Le partite della serie del giorno, contro il computer del giorno. */
-export const PARTITE_TRIS = 5
-/** Per aver finito la serie: chi la gioca tutta non esce a mani vuote. */
-export const BASE_TRIS = 10
-export const PUNTI_VINTA_TRIS = 8
-export const PUNTI_PATTA_TRIS = 4
-
-/**
- * I punti della serie del giorno: dieci per averla finita, otto per ogni
- * partita vinta e quattro per ogni patta, fino a cinquanta. La patta e' quel
- * che fa chi gioca bene contro chi gioca bene, quindi vale la meta' della
- * vittoria e non zero: cinque patte sono una giornata giocata bene senza
- * fortuna, e fanno trenta.
- */
-export function puntiTris(vinte: number, patte: number): number {
-  return BASE_TRIS + PUNTI_VINTA_TRIS * vinte + PUNTI_PATTA_TRIS * patte
-}
-
-/** Chi comincia la partita `k` della serie (da 0): il giocatore nella prima, nella terza e nella quinta. */
-export function cominciaIlGiocatore(k: number): boolean {
-  return k % 2 === 0
-}
-
-/** Il segno del giocatore nella partita `k`: 0 se comincia lui. */
-export function segnoDelGiocatore(k: number): Segno {
-  return cominciaIlGiocatore(k) ? 0 : 1
-}
 
 /** Le otto file: tre righe, tre colonne e le due diagonali. */
 export const FILE: readonly (readonly [number, number, number])[] = [

@@ -153,11 +153,7 @@ export function ComeSiGiocaTavoliere({
               Con un amico online, o con un link. A partita finita, «Gioca ancora» scambia{' '}
               {gioco === 'tris' ? 'i segni' : 'i colori'}.
             </li>
-            <li>
-              {gioco === 'tris'
-                ? 'Qui non si fanno punti: quelli si fanno con la serie del giorno, la classificata.'
-                : 'Non c’è classifica.'}
-            </li>
+            <li>Non c’è classifica.</li>
           </ul>
         </section>
       </div>

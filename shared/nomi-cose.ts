@@ -246,11 +246,11 @@ export function riconosci(
 /* ─────────────────────────────  I punti  ─────────────────────────────── */
 
 /** Quel che vale aver giocato: almeno una risposta scritta. */
-export const BASE_NOMI = 15
+export const BASE_NOMI = 25
 /** Una risposta valida che non ha scritto nessun altro. */
-export const PUNTI_RARA = 9
+export const PUNTI_RARA = 15
 /** Una risposta valida che hanno scritto tutti. */
-export const PUNTI_COMUNE = 4
+export const PUNTI_COMUNE = 7
 /** Quanto toglie il tempo, al massimo: consegnare all'ultimo secondo vale tre quarti. */
 export const PESO_TEMPO = 0.25
 

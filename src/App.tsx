@@ -51,8 +51,6 @@ import { GIOCHI_TAVOLIERE } from '@shared/tavolo'
  * schermata di prima resta finché la nuova non e' pronta; e il pezzo si
  * scarica quando il telefono e' libero, cosi' di solito c'e' gia'.
  */
-const caricaTris = () => import('./pages/Tris')
-const Tris = lazy(caricaTris)
 const caricaAnagrammi = () => import('./pages/Anagrammi')
 const caricaAnagrammiLibera = () => import('./pages/AnagrammiLibera')
 const Anagrammi = lazy(caricaAnagrammi)
@@ -151,7 +149,6 @@ function usePrecarica() {
         caricaScarabeoLibero,
         caricaQuiz,
         caricaQuizLibero,
-        caricaTris,
         caricaAnagrammi,
         caricaAnagrammiLibera,
         caricaGhigliottina,
@@ -269,7 +266,6 @@ export default function App() {
             <Route path="/quiz/duello/:id" element={<QuizDuello />} />
             <Route path="/quiz/sfida/:codice" element={<QuizInvito />} />
 
-            <Route path="/tris/classificata" element={<Tris />} />
 
             <Route path="/anagrammi/classificata" element={<Anagrammi />} />
             <Route path="/anagrammi/libera" element={<AnagrammiLibera />} />
@@ -310,7 +306,7 @@ export default function App() {
             <Route path="/scarabocchi/stanza/:codice" element={<ScarabocchiStanza />} />
 
             {/* Scacchi, dama, Forza 4, go e tris: la sala, contro il computer, la partita con un amico, l'invito.
-                La sala del tris e' la sua libera, a /tris/libera. */}
+                La sala del tris e' rimasta a /tris/libera, dove stava quando il tris aveva una classificata. */}
             {GIOCHI_TAVOLIERE.flatMap((g) => {
               const a = ROTTE.tavolo(g)
               return [
@@ -330,6 +326,9 @@ export default function App() {
             {/* La classificata della battaglia non c'e' piu', e la libera e' diventata la sala. */}
             <Route path="/battaglia-navale/classificata" element={<Navigate to={ROTTE.battaglia} replace />} />
             <Route path="/battaglia-navale/libera" element={<Navigate to={ROTTE.battaglia} replace />} />
+            {/* La classificata del tris non c'e' piu': il suo indirizzo, e quello del gioco, portano alla sala. */}
+            <Route path="/tris" element={<Navigate to={ROTTE.tavolo('tris')} replace />} />
+            <Route path="/tris/classificata" element={<Navigate to={ROTTE.tavolo('tris')} replace />} />
             <Route path="/battaglia/:id" element={<Vecchio verso={(p) => ROTTE.partitaBattaglia(p.id ?? '')} />} />
             <Route path="/salotto" element={<Navigate to={ROTTE.libere} replace />} />
             {/* Le cinque parole di prima: ora la classificata e' una parola sola. */}

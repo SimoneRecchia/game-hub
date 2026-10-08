@@ -394,15 +394,15 @@ export const MARGINE_RETE_MS = 3_000
 /* ───────────────────────────────  I punti  ─────────────────────────────── */
 
 /** Quel che vale una partita finita, anche senza risposte giuste. */
-export const PUNTI_BASE_QUIZ = 15
+export const PUNTI_BASE_QUIZ = 20
 /** Tutte giuste: il tetto del quiz (vedi shared/punti.ts). */
-export const PUNTI_QUIZ = 75
+export const PUNTI_QUIZ = 100
 
 /**
- * I punti in classifica di una partita: quindici per averla finita, e il resto
- * in proporzione alle risposte giuste. Dieci giuste su dieci fanno settantacinque;
- * tre su dieci, una partita storta, 33: circa la metà, come vuole il principio
- * comune a tutti i giochi (vedi shared/punti.ts). Il tempo non da' punti: e' lo
+ * I punti in classifica di una partita: venti per averla finita, e il resto
+ * in proporzione alle risposte giuste, otto ciascuna. Dieci giuste su dieci
+ * fanno cento; quattro su dieci, una partita storta, 52: circa la metà, come
+ * vuole il principio comune a tutti i giochi (vedi shared/punti.ts). Il tempo non da' punti: e' lo
  * spareggio in classifica.
  */
 export function puntiQuiz(giuste: number, domande: number): number {

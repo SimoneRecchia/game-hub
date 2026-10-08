@@ -13,7 +13,9 @@
  * La battaglia navale ha avuto una classificata fino al 6 ottobre 2026: le sue
  * partite di allora restano nella generale dei periodi che le comprendono, in
  * una colonna a parte (`battaglia`), perché una giornata vale quel che valeva.
- * Dopo non ce ne sono, e la colonna resta a zero.
+ * Dopo non ce ne sono, e la colonna resta a zero. Lo stesso per il tris, che
+ * ha avuto la sua fino all'8 ottobre 2026 (`tris`): contro il computer del
+ * giorno la serie non era una partita uguale per tutti come le altre.
  *
  * Un aggregato per gioco, uniti qui. Non una query sola: le tabelle non hanno
  * niente in comune se non il giocatore, e una UNION con
@@ -48,6 +50,8 @@ export interface TotaliGenerale {
   perGioco: Record<GiocoClassificato, number>
   /** La battaglia classificata, nei giorni in cui c'era. */
   battaglia: number
+  /** Il tris classificato, nei giorni in cui c'era. */
+  tris: number
   /** Quel che hanno dato o tolto i giochi della Fortuna: si sommano ai punti, e non sono partite. */
   ruota: number
   slot: number
@@ -74,7 +78,6 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.cruciverba +
       g.perGioco.sudoku +
       g.perGioco.quiz +
-      g.perGioco.tris +
       g.perGioco.nomi +
       g.perGioco.anagrammi +
       g.perGioco.sequenze +
@@ -82,6 +85,7 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.paroliere +
       g.perGioco.catena +
       g.battaglia +
+      g.tris +
       g.ruota +
       g.slot +
       g.blackjack,
@@ -201,7 +205,7 @@ export async function classificaGenerale(
       )
       .bind(da, a)
       .all<Parziale>(),
-    // Il tris: la serie del giorno conta una partita, come la giornata del Wordle.
+    // Il tris, nei giorni in cui aveva una classificata: la serie del giorno conta una partita.
     db
       .prepare(
         `SELECT player_id,
@@ -305,7 +309,6 @@ export async function classificaGenerale(
           cruciverba: 0,
           sudoku: 0,
           quiz: 0,
-          tris: 0,
           nomi: 0,
           anagrammi: 0,
           sequenze: 0,
@@ -314,6 +317,7 @@ export async function classificaGenerale(
           catena: 0,
         },
         battaglia: 0,
+        tris: 0,
         ruota: 0,
         slot: 0,
         blackjack: 0,
@@ -324,10 +328,11 @@ export async function classificaGenerale(
     }
     return t
   }
-  const somma = (gioco: GiocoClassificato | 'battaglia', righe: Parziale[]) => {
+  const somma = (gioco: GiocoClassificato | 'battaglia' | 'tris', righe: Parziale[]) => {
     for (const r of righe) {
       const t = di(r.player_id)
       if (gioco === 'battaglia') t.battaglia += r.punti
+      else if (gioco === 'tris') t.tris += r.punti
       else t.perGioco[gioco] += r.punti
       t.partite += r.partite
       t.assist += r.assist ?? 0

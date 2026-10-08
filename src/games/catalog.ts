@@ -109,14 +109,7 @@ export const GIOCHI: readonly Gioco[] = [
     libera: 'Finché non sbagli, da solo o contro un amico.',
     liberaBreve: 'Solo o con un amico',
   },
-  {
-    id: 'tris',
-    nome: 'Tris',
-    motto: 'Tre in fila, dieci secondi a mossa',
-    classificata: 'Cinque partite contro il computer del giorno, lo stesso per tutti.',
-    libera: 'Contro il computer o contro un amico.',
-    liberaBreve: 'Contro chi vuoi',
-  },
+
 ]
 
 export function giocoDi(id: GiocoClassificato): Gioco {
@@ -137,9 +130,10 @@ export interface GiocoTavolo {
  * I giochi da tavolo: niente partita del giorno e niente classifica, solo
  * partite quando si vuole, con gli amici — e contro il computer dove ha senso.
  * Indovina chi, Lupus e Scarabocchi non ce l'hanno: si giocano parlandosi, o
- * disegnando. Il tris non sta
- * qui: ha la sua classificata, e le partite da tavolo sono la sua libera. La
- * battaglia navale si': la sua classificata misurava piu' la fortuna che il gioco.
+ * disegnando. La battaglia navale e il tris hanno avuto una classificata, e non
+ * l'hanno piu': quella della battaglia misurava piu' la fortuna che il gioco, e
+ * contro il computer del giorno il tris non era una partita uguale per tutti.
+ * La sala del tris e' rimasta all'indirizzo della sua libera.
  */
 export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
   {
@@ -178,6 +172,13 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
     slug: 'go',
   },
   {
+    id: 'tris',
+    nome: 'Tris',
+    motto: 'Tre in fila, dieci secondi a mossa',
+    conChi: 'Amici o computer',
+    slug: 'tris/libera',
+  },
+  {
     id: 'indovina',
     nome: 'Indovina chi',
     motto: 'Sì o no, finché resta una faccia',
@@ -199,15 +200,6 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
     slug: 'scarabocchi',
   },
 ]
-
-/** Il tris fra i tavolieri: la sua sala e' la libera della classificata, e non sta fra i giochi da tavolo. */
-const TRIS_DA_TAVOLO: GiocoTavolo = {
-  id: 'tris',
-  nome: 'Tris',
-  motto: 'Tre in fila, dieci secondi a mossa',
-  conChi: 'Amici o computer',
-  slug: 'tris/libera',
-}
 
 /**
  * Le famiglie dei giochi nelle Libere, come li cerca chi vuole giocare: un
@@ -236,5 +228,5 @@ export interface CategoriaLibere {
 }
 
 export function giocoTavoloDi(id: GiocoDaTavolo): GiocoTavolo {
-  return [...GIOCHI_DA_TAVOLO, TRIS_DA_TAVOLO].find((g) => g.id === id)!
+  return GIOCHI_DA_TAVOLO.find((g) => g.id === id)!
 }
