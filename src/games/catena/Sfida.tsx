@@ -5,8 +5,8 @@ import { useCatenaLibera } from './useCatenaLibera'
 import './Catena.css'
 
 /**
- * La Catena di una sfida: la stessa per tutti e due, dal seme, con il tempo
- * della finale scelto da chi ha sfidato. Mentre si gioca va al server a che
+ * La Catena di una sfida: la stessa per tutti e due, dal seme, con i tempi
+ * scelti da chi ha sfidato. Mentre si gioca va al server a che
  * parola si e' arrivati — i punti arrivano solo con la parola finale —, e alla
  * fine il montepremi vinto e quanto ci si e' messo a scriverla.
  */
@@ -17,7 +17,12 @@ export function PartitaSfidaCatena({ seme, impostazioni, fine, onAvanza, onFine 
   useEffect(() => {
     if (cominciata.current) return
     cominciata.current = true
-    void comincia({ seme, tempoFinaleMs: impostazioni.secondi * 1_000, conta: false })
+    void comincia({
+      seme,
+      tempoParolaMs: impostazioni.passo * 1_000,
+      tempoFinaleMs: impostazioni.secondi * 1_000,
+      conta: false,
+    })
   }, [comincia, impostazioni, seme])
 
   const v = g.vista

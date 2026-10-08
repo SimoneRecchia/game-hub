@@ -317,6 +317,105 @@
   transform: rotateY(360deg) scale(0.85);
 }
 
+/*
+ * Il minuto di una parola: una miccia lungo tutta la testata, sotto il
+ * montepremi e le maglie. La corda si consuma da destra (--resta, da 1 a 0) e
+ * la scintilla sta sulla punta che brucia; prima che parta e' intera e spenta.
+ */
+.cat-miccia {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+  height: 18px;
+}
+
+.cat-miccia__corda {
+  position: relative;
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.cat-miccia__brucia {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--resta) * 100%);
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+      -55deg,
+      rgba(0, 0, 0, 0.16) 0 4px,
+      transparent 4px 8px
+    ),
+    linear-gradient(90deg, var(--cat-oro-2), var(--cat-oro));
+  box-shadow: 0 0 10px -2px rgba(255, 200, 61, 0.7);
+  transition:
+    width 120ms linear,
+    filter 300ms ease;
+}
+
+.cat-miccia:not(.is-accesa) .cat-miccia__brucia {
+  filter: saturate(0.4) brightness(0.8);
+  box-shadow: none;
+}
+
+/* La scintilla: un punto di luce che sfrigola sulla punta della corda. */
+.cat-miccia__scintilla {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--resta) * 100%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0 18%, #ffe08a 30%, rgba(255, 150, 40, 0.75) 52%, transparent 72%);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  transition: left 120ms linear;
+  pointer-events: none;
+}
+
+.cat-miccia.is-accesa .cat-miccia__scintilla {
+  opacity: 1;
+  animation: cat-sfrigola 180ms steps(2) infinite;
+}
+
+.cat-miccia.is-ferma .cat-miccia__scintilla {
+  animation: none;
+}
+
+@keyframes cat-sfrigola {
+  50% {
+    transform: translate(-50%, -50%) scale(1.35) rotate(40deg);
+    filter: brightness(1.4);
+  }
+}
+
+.cat-miccia__secondi {
+  min-width: 2ch;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: var(--font-rounded);
+  font-size: var(--text-footnote);
+  font-weight: 900;
+  text-align: right;
+}
+
+/* Gli ultimi dieci secondi: la corda si fa rossa, la scintilla corre, i secondi battono. */
+.cat-miccia.is-urgente .cat-miccia__brucia {
+  background: linear-gradient(90deg, #c2262c, var(--cat-sbagliata));
+  box-shadow: 0 0 12px -1px rgba(255, 90, 95, 0.85);
+}
+
+.cat-miccia.is-urgente .cat-miccia__scintilla {
+  animation-duration: 90ms;
+}
+
+.cat-miccia.is-urgente .cat-miccia__secondi {
+  color: #ff8a8d;
+  animation: cat-batte 1s ease-in-out infinite;
+}
+
 /* Il minuto della parola finale: l'anello che si svuota. */
 .cat-minuto {
   position: relative;
@@ -570,6 +669,19 @@
   }
 }
 
+/*
+ * Il salto prima dell'ultima lettera della finale: in mezzo ci sono le lettere
+ * da scrivere, quante non si sa. Non e' una casella, sono tre puntini.
+ */
+.cat-casella.is-salto {
+  width: calc(var(--lato) * 0.5);
+  background: none;
+  box-shadow: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: calc(var(--lato) * 0.45);
+  letter-spacing: -0.1em;
+}
+
 /* La casella da scrivere: quella dopo l'ultima lettera, con il bordo che respira. */
 .cat-caselle.is-attiva .cat-casella.is-data + .cat-casella.is-vuota,
 .cat-caselle.is-attiva .cat-casella.is-scritta + .cat-casella.is-vuota {
@@ -615,12 +727,14 @@
 
 /* L'errore: le lettere scritte si fanno rosse, e la parola trema. */
 .cat-caselle.esito-sbagliata,
-.cat-caselle.esito-rivelata {
+.cat-caselle.esito-rivelata,
+.cat-caselle.esito-scaduta {
   animation: cat-trema 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 .cat-caselle.esito-sbagliata .cat-casella.is-scritta,
-.cat-caselle.esito-rivelata .cat-casella.is-scritta {
+.cat-caselle.esito-rivelata .cat-casella.is-scritta,
+.cat-caselle.esito-scaduta .cat-casella.is-scritta {
   background: linear-gradient(180deg, #ff7b7f, var(--cat-sbagliata));
   box-shadow: 0 0 16px -2px rgba(255, 90, 95, 0.8);
   animation: cat-cade-lettera 700ms 260ms cubic-bezier(0.5, 0, 0.8, 0.4) both;
@@ -877,7 +991,8 @@
 }
 
 .cat-stato.is-sbagliata,
-.cat-stato.is-rivelata {
+.cat-stato.is-rivelata,
+.cat-stato.is-scaduta {
   color: #ff8a8d;
 }
 
@@ -962,11 +1077,11 @@
   color: #fff;
 }
 
-.cat-tastiera__invio {
+.cat-tastiera .tastiera-gioco__invio {
   font-weight: 800;
 }
 
-.cat-tastiera__invio.is-pronta {
+.cat-tastiera .tastiera-gioco__invio.is-pronta {
   background-color: var(--cat-oro);
   color: #241200;
 }

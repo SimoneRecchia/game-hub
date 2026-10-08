@@ -3,17 +3,18 @@
  * (spirito LIBERO, tiro libero, TIRO da cavallo...), e una su due da indovinare.
  *
  * Si gioca come l'ultima catena di Reazione a catena, su Rai 1. Si vedono due
- * parole e in mezzo la prima lettera di quella che le lega; trovata quella, si
- * scende: la terza parola e una nuova, e in mezzo la prossima da indovinare.
- * Una risposta sbagliata dimezza il montepremi e mostra un'altra lettera; una
- * seconda lo dimezza ancora e mostra la parola, e si va avanti. Due jolly
- * mostrano una lettera senza costare niente.
+ * parole e in mezzo la prima lettera di quella che le lega, senza sapere quanto
+ * e' lunga; trovata quella, si scende: la terza parola e una nuova, e in mezzo
+ * la prossima da indovinare. Ogni parola ha un minuto. Una risposta sbagliata
+ * dimezza il montepremi e mostra un'altra lettera; una seconda, o il minuto
+ * finito, lo dimezza ancora e mostra la parola, e si va avanti. Due jolly
+ * mostrano una lettera senza costare niente, ma non nella finale.
  *
  * L'ultima parola e' quella decisiva: si vede la parola prima — l'ultima della
  * catena — e della finale le prime due lettere e l'ultima, ma non il terzo
  * elemento, la parola dopo. Comprarlo dimezza il montepremi; chi arriva con
- * tutti e due i jolly lo ha in regalo. C'e' un minuto per una risposta sola:
- * giusta vale il montepremi, sbagliata niente.
+ * tutti e due i jolly lo ha in regalo. C'e' un minuto e mezzo per una risposta
+ * sola: giusta vale il montepremi, sbagliata niente.
  *
  * Le catene vengono dalle espressioni scritte a mano per la Ghigliottina e
  * dal Wikizionario (scripts/build-catena.mjs).
@@ -44,8 +45,23 @@ export const JOLLY_CATENA = 2
 /** Gli errori che una parola della catena regge: al secondo si vede, e si va avanti. */
 export const ERRORI_PER_PAROLA = 2
 
-/** Il minuto della parola finale, come quello della Ghigliottina. */
-export const TEMPO_FINALE_CATENA_MS = 60_000
+/** Il tempo della parola finale: un minuto e mezzo, come quello della Ghigliottina. */
+export const TEMPO_FINALE_CATENA_MS = 90_000
+
+/**
+ * Il minuto di ogni parola della catena. Finito, la parola si mostra e il
+ * montepremi si dimezza, come al secondo errore: senza un tempo chi ci pensa
+ * abbastanza troverebbe ogni parola, e gli errori non costerebbero niente a chi
+ * non prova finché non e' sicuro.
+ */
+export const TEMPO_PAROLA_CATENA_MS = 60_000
+
+/**
+ * Quanto aspetta il minuto di una parola: il tempo che la scena mette a
+ * portarla al centro, dopo Comincia o dopo la parola di prima. Come quello
+ * della finale, parte da solo, scritto con la mossa che ci porta.
+ */
+export const PREAMBOLO_PAROLA_CATENA_MS = 2_500
 
 /**
  * Quanto aspetta il minuto, arrivati alla finale: il tempo che la scena mette a
@@ -106,8 +122,11 @@ export interface CatenaDellElenco {
   e: string[]
 }
 
-/** Una mossa: una parola provata, un jolly, il terzo elemento comprato. La risposta finale sta a parte. */
-export type MossaCatena = { k: 'p'; w: string } | { k: 'j' } | { k: 'c' }
+/**
+ * Una mossa: una parola provata, un jolly, il terzo elemento comprato, il tempo
+ * di una parola finito (`t`). La risposta finale sta a parte.
+ */
+export type MossaCatena = { k: 'p'; w: string } | { k: 'j' } | { k: 'c' } | { k: 't' }
 
 export interface ParolaSvolta {
   /** Quante lettere si vedono, dall'inizio. */
@@ -150,14 +169,15 @@ export function inizio(): Svolgimento {
   }
 }
 
-export type EsitoMossaCatena = 'giusta' | 'sbagliata' | 'rivelata' | 'jolly' | 'comprato'
+export type EsitoMossaCatena = 'giusta' | 'sbagliata' | 'rivelata' | 'scaduta' | 'jolly' | 'comprato'
 
 /**
- * Una mossa sulla partita, o null se non si puo' fare: una parola quando c'e'
- * una parola della catena da indovinare, un jolly quando ne resta uno e la
- * parola ha almeno due lettere nascoste (l'ultima resta da trovare), il terzo
- * elemento nella finale, se non c'e' gia'. Una funzione pura: il server e il
- * telefono della libera ci fanno passare le stesse mosse.
+ * Una mossa sulla partita, o null se non si puo' fare: una parola, o il suo
+ * tempo finito, quando c'e' una parola della catena da indovinare; un jolly
+ * quando ne resta uno, si e' ancora nella catena e la parola ha almeno due
+ * lettere nascoste (l'ultima resta da trovare); il terzo elemento nella finale,
+ * se non c'e' gia'. Una funzione pura: il server e il telefono della libera ci
+ * fanno passare le stesse mosse.
  */
 export function applicaCatena(
   catena: CatenaDelGiorno,
@@ -171,6 +191,17 @@ export function applicaCatena(
     // Si arriva alla finale con tutti e due i jolly: il terzo elemento e' un regalo.
     terzo: passo === PASSO_FINALE && s.jollyUsati === 0 ? ('regalato' as const) : s.terzo,
   })
+  if (mossa.k === 't') {
+    // Il tempo finito vale un errore che mostra la parola, quanti che fossero quelli di prima.
+    if (s.passo >= PASSO_FINALE || !corrente) return null
+    corrente.errori += 1
+    corrente.esito = 'rivelata'
+    const dimezzamenti = s.dimezzamenti + 1
+    return {
+      dopo: { ...s, parole, dimezzamenti, montepremi: montepremiCatena(dimezzamenti), ...avanti(s.passo + 1) },
+      esito: 'scaduta',
+    }
+  }
   if (mossa.k === 'p') {
     if (s.passo >= PASSO_FINALE || !corrente) return null
     if (stessaParola(catena.parole[NASCOSTE_CATENA[s.passo]], mossa.w)) {
@@ -207,10 +238,19 @@ export function svolgiCatena(catena: CatenaDelGiorno, mosse: readonly MossaCaten
   return s
 }
 
-/** Il jolly si puo' usare adesso: ne resta uno, e la parola ha almeno due lettere nascoste. */
+/**
+ * Il jolly si puo' usare adesso: ne resta uno, si e' ancora nella catena — nella
+ * finale no, anche se avanza: li' i jolly rimasti valgono il terzo elemento — e
+ * la parola ha almeno due lettere nascoste.
+ */
 export function jollyUsabile(catena: CatenaDelGiorno, s: Svolgimento): boolean {
   const corrente = s.parole[s.passo]
-  return !!corrente && s.jollyUsati < JOLLY_CATENA && nascosteDi(catena, s.passo, corrente.lettere) >= 2
+  return (
+    !!corrente &&
+    s.passo < PASSO_FINALE &&
+    s.jollyUsati < JOLLY_CATENA &&
+    nascosteDi(catena, s.passo, corrente.lettere) >= 2
+  )
 }
 
 /** Il terzo elemento si puo' comprare: si e' alla finale, e non c'e' ancora. */
@@ -231,7 +271,11 @@ export interface VoceCatena {
   parola: string | null
   /** Di una parola da indovinare, le lettere che si vedono dall'inizio. */
   lettere: string
-  /** Quante lettere ha la parola: le caselle si vedono tutte, come in studio. */
+  /**
+   * Quante lettere ha la parola, se si vede; zero per quella da indovinare: chi
+   * gioca non sa quanto e' lunga, e la scrive finché non gli sembra finita.
+   * Con le caselle tutte in vista sbagliare sarebbe quasi impossibile.
+   */
   lunghezza: number
   /** L'ultima lettera, per la parola finale. */
   ultima: string | null
@@ -294,7 +338,7 @@ export function vistaCatena(
       posto,
       parola: esito ? parola : null,
       lettere: esito ? '' : lettere,
-      lunghezza: normalizzaCatena(parola).length,
+      lunghezza: esito ? normalizzaCatena(parola).length : 0,
       ultima: finale && !esito ? normalizzaCatena(parola).slice(-1).toUpperCase() : null,
       tipo: esito ?? 'nascosta',
       errori: svolta.errori,
@@ -358,6 +402,6 @@ export function mosseValide(valore: unknown): MossaCatena[] {
     (m): m is MossaCatena =>
       !!m &&
       typeof m === 'object' &&
-      ((m.k === 'p' && typeof m.w === 'string') || m.k === 'j' || m.k === 'c'),
+      ((m.k === 'p' && typeof m.w === 'string') || m.k === 'j' || m.k === 'c' || m.k === 't'),
   )
 }

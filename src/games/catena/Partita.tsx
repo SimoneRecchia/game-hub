@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button } from '@/components/Button'
-import { IconBackspace } from '@/components/Icons'
+import { TastieraGioco, useTastieraFisica } from '@/components/TastieraGioco'
 import { suona } from '@/lib/suoni'
 import {
   DA_INDOVINARE_CATENA,
@@ -11,8 +11,6 @@ import {
   type TerzoElemento,
   type VoceCatena,
 } from '@shared/catena'
-import { KEYBOARD_ROWS, isGameLetter } from '@shared/wordle'
-import '@/games/wordle/Keyboard.css'
 import './Catena.css'
 
 /** Quel che serve alla scena, dalla classificata (il server) o dalla libera (il telefono). */
@@ -29,7 +27,10 @@ export interface VistaCatena {
   compraUsabile: boolean
   montepremiIniziale: number
   montepremi: number
-  /** Il minuto della parola finale, sull'orologio del telefono: quando parte e quando finisce. */
+  /** Il minuto della parola di adesso, prima della finale, sull'orologio del telefono: quando parte e finisce. */
+  parola: { inizio: number; scadenza: number } | null
+  tempoParolaMs: number
+  /** Il tempo della parola finale. */
   finale: { inizio: number; scadenza: number } | null
   tempoFinaleMs: number
   risposta: string | null
@@ -44,13 +45,17 @@ export interface RispostaCatena {
 }
 
 export interface ComandiCatena {
+  /** Comincia: la prima coppia arriva, e il suo minuto parte dopo la scena. */
+  inizia: () => Promise<RispostaCatena | null>
+  /** Il minuto della parola e' finito: si mostra, e il montepremi si dimezza. */
+  scadeParola: () => Promise<RispostaCatena | null>
   /** Una parola della catena: torna la vista dopo, con l'esito, o null se non e' andata. */
   prova: (parola: string) => Promise<RispostaCatena | null>
   jolly: () => Promise<RispostaCatena | null>
   /** Il terzo elemento della finale, che dimezza il montepremi. */
   compra: () => Promise<RispostaCatena | null>
   rispondi: (parola: string) => Promise<RispostaCatena | null>
-  /** Il minuto e' finito sul telefono senza una risposta. */
+  /** Il tempo della finale e' finito sul telefono senza una risposta. */
   scade: () => void
 }
 
@@ -98,9 +103,15 @@ function faseDi(v: VistaCatena): Fase {
 /** La parola da indovinare adesso: l'unica nascosta. */
 const correnteDi = (v: VistaCatena) => v.voci.find((x) => x.tipo === 'nascosta') ?? null
 
-/** Le caselle da scrivere: quelle dopo le lettere che si vedono, e prima dell'ultima nella finale. */
-const vuoteDi = (voce: VoceCatena | null) =>
-  voce ? Math.max(0, voce.lunghezza - voce.lettere.length - (voce.ultima ? 1 : 0)) : 0
+/**
+ * Quante lettere si scrivono al piu': la lunghezza non si sa, e la parola cresce
+ * a ogni tasto finché non sembra finita; il tetto e' solo quello dello schermo.
+ */
+const MASSIMO_LETTERE = 16
+
+/** Le lettere che si possono ancora scrivere: dopo quelle che si vedono, e prima dell'ultima nella finale. */
+const spazioDi = (voce: VoceCatena | null) =>
+  voce ? Math.max(0, MASSIMO_LETTERE - voce.lettere.length - (voce.ultima ? 1 : 0)) : 0
 
 /**
  * La Catena in scena: in cima il montepremi, le cinque maglie e i jolly; in
@@ -148,7 +159,7 @@ export function PartitaCatena({
   )
 
   const corrente = correnteDi(mostrata)
-  const vuote = vuoteDi(corrente)
+  const spazio = spazioDi(corrente)
   const finale = mostrata.passo >= PASSO_FINALE
 
   /** La vista nuova, e con lei il montepremi che si dimezza se e' sceso. */
@@ -181,20 +192,30 @@ export function PartitaCatena({
     }
   }, [vista, mostrata.chiave, fase])
 
-  // L'entrata: le parole cadono al loro posto, una maglia dopo l'altra.
-  const comincia = useCallback(() => {
-    setFase('gioco')
-    setEntra(true)
-    window.setTimeout(() => montata.current && setEntra(false), tempi().entrata)
-    for (let i = 0; i < 3; i += 1) suona('maglia', { ritardo: 0.15 + i * 0.28, altezza: 1 + i * 0.08 })
-  }, [])
+  // Comincia: la prima coppia arriva dal server, e cade al suo posto, una maglia dopo l'altra.
+  const comincia = useCallback(async () => {
+    if (inVolo.current) return
+    inVolo.current = true
+    try {
+      const r = await comandi.inizia()
+      if (!montata.current || !r) return
+      setMostrata(r.vista)
+      setPassoVisto(r.vista.passo)
+      setFase(faseDi(r.vista) === 'intro' ? 'gioco' : faseDi(r.vista))
+      setEntra(true)
+      window.setTimeout(() => montata.current && setEntra(false), tempi().entrata)
+      for (let i = 0; i < 3; i += 1) suona('maglia', { ritardo: 0.15 + i * 0.28, altezza: 1 + i * 0.08 })
+    } finally {
+      inVolo.current = false
+    }
+  }, [comandi])
 
   // In una sfida si comincia da soli, con la stessa entrata del Comincia.
   const partita = useRef(false)
   useEffect(() => {
     if (!subito || partita.current || fase !== 'intro') return
     partita.current = true
-    comincia()
+    void comincia()
   }, [comincia, fase, subito])
 
   // La parola finale annunciata: il nastro, il terzo elemento in regalo, e il minuto quando parte.
@@ -253,7 +274,7 @@ export function PartitaCatena({
   }, [])
 
   const prova = useCallback(async () => {
-    if (fase !== 'gioco' || !corrente || scritte.length < vuote) return
+    if (fase !== 'gioco' || !corrente || scritte.length === 0) return
     const t = tempi()
     const prima = mostrata
     const parola = corrente.lettere.toLowerCase() + scritte
@@ -299,7 +320,42 @@ export function PartitaCatena({
     } finally {
       inVolo.current = false
     }
-  }, [fase, corrente, scritte, vuote, mostrata, comandi, mostra, scendi])
+  }, [fase, corrente, scritte, mostrata, comandi, mostra, scendi])
+
+  /** Il minuto della parola e' finito: la miccia si spegne, la parola si mostra, e la catena scende. */
+  const scadeParola = useCallback(async () => {
+    if (fase !== 'gioco' || inVolo.current) return
+    const t = tempi()
+    const prima = mostrata
+    inVolo.current = true
+    setFase('attesa')
+    setStato('Tempo scaduto!')
+    suona('scaduto')
+    try {
+      const r = await comandi.scadeParola()
+      if (!montata.current) return
+      if (!r) {
+        setFase('gioco')
+        setStato('')
+        return
+      }
+      const dopo = r.vista
+      setEsito('scaduta')
+      setFase('esito')
+      setStato('Tempo scaduto! Ecco la parola')
+      setScritte('')
+      mostra(dopo, prima)
+      suona('svela', { ritardo: 0.2 })
+      await aspetta(t.rivelata)
+      if (!montata.current) return
+      setEsito(null)
+      setStato('')
+      if (dopo.passo !== prima.passo) await scendi(dopo)
+      else setFase(dopo.finita ? 'fine' : 'gioco')
+    } finally {
+      inVolo.current = false
+    }
+  }, [fase, mostrata, comandi, mostra, scendi])
 
   const jolly = useCallback(async () => {
     if ((fase !== 'gioco' && fase !== 'finale') || !mostrata.jollyUsabile) return
@@ -382,11 +438,11 @@ export function PartitaCatena({
 
   const scrivi = useCallback(
     (lettera: string) => {
-      if ((fase !== 'gioco' && fase !== 'finale') || scritte.length >= vuote) return
+      if ((fase !== 'gioco' && fase !== 'finale') || scritte.length >= spazio) return
       setScritte((s) => s + lettera)
       suona('tocco', { volume: 0.6 })
     },
-    [fase, scritte.length, vuote],
+    [fase, scritte.length, spazio],
   )
   const cancella = useCallback(() => {
     if (fase !== 'gioco' && fase !== 'finale') return
@@ -394,32 +450,11 @@ export function PartitaCatena({
   }, [fase])
   const invia = useCallback(() => {
     if (fase === 'gioco') void prova()
-    else if (fase === 'finale' && scritte.length >= vuote) void rispondi(scritte)
-  }, [fase, prova, rispondi, scritte, vuote])
+    else if (fase === 'finale' && scritte.length > 0) void rispondi(scritte)
+  }, [fase, prova, rispondi, scritte])
 
   // La tastiera del computer: le lettere del gioco, la cancellazione e l'invio.
-  useEffect(() => {
-    const tasto = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey) return
-      const bersaglio = e.target as HTMLElement | null
-      if (bersaglio && /^(INPUT|TEXTAREA)$/.test(bersaglio.tagName)) return
-      const k = e.key.toLowerCase()
-      if (k === 'enter') {
-        // Un bottone col fuoco si preme da solo: l'invio lo fa lui.
-        if (bersaglio?.tagName === 'BUTTON') return
-        e.preventDefault()
-        invia()
-      } else if (k === 'backspace') {
-        e.preventDefault()
-        cancella()
-      } else if (isGameLetter(k)) {
-        e.preventDefault()
-        scrivi(k)
-      }
-    }
-    window.addEventListener('keydown', tasto)
-    return () => window.removeEventListener('keydown', tasto)
-  }, [invia, cancella, scrivi])
+  useTastieraFisica(true, { onLettera: scrivi, onCancella: cancella, onInvio: invia })
 
   const libera = fase === 'gioco' || fase === 'finale'
   const indovinata = mostrata.finita && mostrata.indovinata === true
@@ -441,6 +476,17 @@ export function PartitaCatena({
           <Maglie voci={mostrata.voci} passo={fase === 'fine' || fase === 'verdetto' ? DA_INDOVINARE_CATENA : passoVisto} />
         )}
         <Jolly restanti={mostrata.jollyRestanti} />
+        {!finale && mostrata.parola && fase !== 'intro' && fase !== 'fine' && (
+          <Miccia
+            // Una parola nuova ha la sua miccia, intera.
+            key={`${mostrata.passo}-${mostrata.parola.inizio}`}
+            orologio={mostrata.parola}
+            tempoMs={mostrata.tempoParolaMs}
+            attiva={fase === 'gioco'}
+            ferma={fase === 'scorre' || fase === 'esito'}
+            onScade={() => void scadeParola()}
+          />
+        )}
       </header>
 
       {fase === 'fine' ? (
@@ -462,9 +508,10 @@ export function PartitaCatena({
             <div className="cat-intro">
               <p className="cat-intro__titolo">La Catena</p>
               <p className="cat-intro__testo">
-                Ogni parola si lega a quella dopo. Trovane cinque: ogni errore dimezza il montepremi.
+                Ogni parola si lega a quella dopo. Trovane cinque, un minuto ciascuna: ogni errore dimezza il
+                montepremi.
               </p>
-              <Button size="lg" onClick={comincia}>
+              <Button size="lg" onClick={() => void comincia()}>
                 Comincia
               </Button>
             </div>
@@ -499,20 +546,24 @@ export function PartitaCatena({
                   <span className="cat-azione__costo">÷2</span>
                 </button>
               )}
-              <button
-                type="button"
-                className="cat-azione is-jolly"
-                disabled={!libera || !mostrata.jollyUsabile}
-                onClick={() => void jolly()}
-              >
-                Jolly <span className="cat-azione__costo u-tabnum">{mostrata.jollyRestanti}</span>
-              </button>
+              {/* Nella finale i jolly non si usano: quel che resta e' gia' nel terzo elemento in regalo. */}
+              {!finale && (
+                <button
+                  type="button"
+                  className="cat-azione is-jolly"
+                  disabled={!libera || !mostrata.jollyUsabile}
+                  onClick={() => void jolly()}
+                >
+                  Jolly <span className="cat-azione__costo u-tabnum">{mostrata.jollyRestanti}</span>
+                </button>
+              )}
             </div>
           </div>
 
-          <Tastiera
+          <TastieraGioco
+            className="cat-tastiera"
             disabled={!libera}
-            pronta={scritte.length >= vuote && vuote > 0}
+            pronta={scritte.length > 0}
             invio={finale ? 'Invia' : 'Prova'}
             onLettera={scrivi}
             onCancella={cancella}
@@ -612,45 +663,61 @@ function Riga({
       </div>
     )
   }
-  const lettere = voce.parola
-    ? [...normalizzaCatena(voce.parola).toUpperCase()]
-    : Array.from({ length: voce.lunghezza }, (_, i) => {
-        if (i < voce.lettere.length) return voce.lettere[i]
-        if (voce.ultima && i === voce.lunghezza - 1) return voce.ultima
-        return scritte[i - voce.lettere.length]?.toUpperCase() ?? ''
-      })
   const tipo = voce.tipo
+  // Una parola che si vede ha tutte le sue caselle. Quella da indovinare no: le lettere che si vedono, quelle
+  // scritte, e la casella dove va la prossima; nella finale, staccata, l'ultima. Quanto e' lunga non si sa.
+  const caselle: Casella[] = voce.parola
+    ? [...normalizzaCatena(voce.parola).toUpperCase()].map((l) => ({ l, tipo: 'parola' }))
+    : [
+        ...[...voce.lettere].map((l): Casella => ({ l, tipo: 'data' })),
+        ...[...scritte.toUpperCase()].map((l): Casella => ({ l, tipo: 'scritta' })),
+        ...(attiva && voce.lettere.length + scritte.length + (voce.ultima ? 1 : 0) < MASSIMO_LETTERE
+          ? [{ l: '', tipo: 'cursore' } as Casella]
+          : []),
+        ...(voce.ultima ? [{ l: '', tipo: 'salto' } as Casella, { l: voce.ultima, tipo: 'ultima' } as Casella] : []),
+      ]
+  // Le caselle restano della stessa misura finché la parola ci sta: crescendo non si stringe a ogni tasto.
+  const misura = Math.max(caselle.length, 9)
   return (
     <div
       className={
         `cat-caselle is-${tipo}${attiva ? ' is-attiva' : ''}${esito && attiva ? ` esito-${esito}` : ''}` +
         `${fase === 'attesa' && attiva ? ' is-attesa' : ''}${fase === 'busta' && attiva ? ' is-busta' : ''}`
       }
-      style={{ '--n': voce.lunghezza } as CSSProperties}
+      style={{ '--n': misura } as CSSProperties}
       role="img"
       aria-label={
         voce.parola
           ? voce.parola
-          : `${voce.lunghezza} lettere, comincia con ${voce.lettere}${voce.ultima ? `, finisce con ${voce.ultima}` : ''}`
+          : `Comincia con ${voce.lettere}${voce.ultima ? `, finisce con ${voce.ultima}` : ''}` +
+            `${scritte ? `; hai scritto ${voce.lettere}${scritte.toUpperCase()}` : ''}`
       }
     >
-      {lettere.map((l, i) => {
-        const data = !voce.parola && (i < voce.lettere.length || (!!voce.ultima && i === voce.lunghezza - 1))
-        const scritta = !voce.parola && !data && l !== ''
+      {caselle.map((c, i) => {
+        const data = c.tipo === 'data' || c.tipo === 'ultima'
         return (
           <span
             // Una lettera che si scopre e' una casella nuova: rimontata, si gira.
-            key={`${i}-${data ? 'd' : voce.parola ? 'p' : 'v'}`}
-            className={`cat-casella${data ? ' is-data' : ''}${scritta ? ' is-scritta' : ''}${l === '' ? ' is-vuota' : ''}`}
+            key={`${i}-${c.tipo}`}
+            className={
+              `cat-casella${data ? ' is-data' : ''}${c.tipo === 'scritta' ? ' is-scritta' : ''}` +
+              `${c.tipo === 'cursore' ? ' is-vuota is-cursore' : ''}${c.tipo === 'salto' ? ' is-salto' : ''}`
+            }
             style={{ '--k': i } as CSSProperties}
             aria-hidden="true"
           >
-            {l}
+            {c.tipo === 'salto' ? '…' : c.l}
           </span>
         )
       })}
     </div>
   )
+}
+
+/** Una casella di una parola: una lettera vista, scritta, la prossima, o il salto prima dell'ultima della finale. */
+interface Casella {
+  l: string
+  tipo: 'parola' | 'data' | 'scritta' | 'cursore' | 'salto' | 'ultima'
 }
 
 /**
@@ -803,71 +870,67 @@ function Minuto({
   )
 }
 
-/* ─────────────────────────────  La tastiera  ───────────────────────────── */
-
-/** Le 21 lettere del gioco, come nel Wordle: l'invio prova la parola, o la conferma nella finale. */
-function Tastiera({
-  disabled,
-  pronta,
-  invio,
-  onLettera,
-  onCancella,
-  onInvio,
+/**
+ * Il minuto di una parola della catena: una miccia accesa lungo la testata, che
+ * si consuma da destra verso sinistra con la scintilla in punta, e i secondi in
+ * fondo. Prima che parta — la scena sta portando la parola — e' intera e spenta;
+ * negli ultimi dieci secondi si fa rossa, la scintilla corre e si sentono.
+ * Finisce una volta sola, e solo mentre si gioca: se in quel momento una parola
+ * sta andando al server, decide lui.
+ */
+function Miccia({
+  orologio,
+  tempoMs,
+  attiva,
+  ferma,
+  onScade,
 }: {
-  disabled: boolean
-  pronta: boolean
-  invio: string
-  onLettera: (l: string) => void
-  onCancella: () => void
-  onInvio: () => void
+  orologio: { inizio: number; scadenza: number }
+  tempoMs: number
+  attiva: boolean
+  ferma: boolean
+  onScade: () => void
 }) {
+  const [adesso, setAdesso] = useState(() => Date.now())
+  const scaduta = useRef(false)
+  const accesa = adesso >= orologio.inizio
+  const resta = Math.max(0, Math.min(tempoMs, orologio.scadenza - adesso))
+  const secondi = Math.ceil(resta / 1000)
+  const urgente = accesa && secondi <= 10
+
+  useEffect(() => {
+    if (ferma) return
+    const t = window.setInterval(() => setAdesso(Date.now()), 100)
+    return () => window.clearInterval(t)
+  }, [ferma])
+
+  const ultimoTic = useRef<number | null>(null)
+  useEffect(() => {
+    if (!accesa || ferma) return
+    if (secondi <= 5 && secondi > 0 && ultimoTic.current !== secondi) {
+      ultimoTic.current = secondi
+      suona('tic')
+    }
+    if (resta <= 0 && attiva && !scaduta.current) {
+      scaduta.current = true
+      onScade()
+    }
+  }, [accesa, attiva, ferma, onScade, resta, secondi])
+
   return (
-    <div className="keyboard cat-tastiera" role="group" aria-label="Tastiera">
-      {KEYBOARD_ROWS.map((riga, i) => (
-        <div className="keyboard__row" key={i}>
-          {riga.map((tasto) => {
-            if (tasto === 'ENTER') {
-              return (
-                <button
-                  key={tasto}
-                  type="button"
-                  className={`key key--wide cat-tastiera__invio${pronta ? ' is-pronta' : ''}`}
-                  onClick={onInvio}
-                  disabled={disabled || !pronta}
-                >
-                  {invio}
-                </button>
-              )
-            }
-            if (tasto === 'BACK') {
-              return (
-                <button
-                  key={tasto}
-                  type="button"
-                  className="key key--wide"
-                  onClick={onCancella}
-                  disabled={disabled}
-                  aria-label="Cancella"
-                >
-                  <IconBackspace size={22} />
-                </button>
-              )
-            }
-            return (
-              <button
-                key={tasto}
-                type="button"
-                className="key"
-                onClick={() => onLettera(tasto)}
-                disabled={disabled}
-                aria-label={tasto.toUpperCase()}
-              >
-                {tasto.toUpperCase()}
-              </button>
-            )
-          })}
-        </div>
-      ))}
+    <div
+      className={`cat-miccia${accesa ? ' is-accesa' : ''}${urgente ? ' is-urgente' : ''}${ferma ? ' is-ferma' : ''}`}
+      role="timer"
+      aria-label={`${secondi} secondi per questa parola`}
+      style={{ '--resta': resta / tempoMs } as CSSProperties}
+    >
+      <span className="cat-miccia__corda" aria-hidden="true">
+        <span className="cat-miccia__brucia" />
+        <span className="cat-miccia__scintilla" />
+      </span>
+      <span className="cat-miccia__secondi u-tabnum" aria-hidden="true">
+        {secondi}
+      </span>
     </div>
   )
 }

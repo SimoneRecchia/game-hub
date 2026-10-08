@@ -1,5 +1,5 @@
 import { Sheet } from '@/components/Sheet'
-import { COPPIE_GHIGLIOTTINA, MONTEPREMI_GHIGLIOTTINA, TEMPO_FINALE_MS } from '@shared/ghigliottina'
+import { COPPIE_GHIGLIOTTINA, MONTEPREMI_GHIGLIOTTINA, TEMPO_FINALE_MS, TEMPO_SCELTA_MS } from '@shared/ghigliottina'
 import '@/games/cruciverba/ComeSiGioca.css'
 
 /** Le regole della Ghigliottina, il minimo per giocare. */
@@ -13,12 +13,14 @@ export function ComeSiGiocaGhigliottina({ open, onClose }: { open: boolean; onCl
           <ul className="cru-aiuto__elenco">
             <li>
               Arrivano {COPPIE_GHIGLIOTTINA} coppie di parole: in ogni coppia scegli quella legata alla parola
-              vincente.
+              vincente. Hai {Math.round(TEMPO_SCELTA_MS / 1000)} secondi per coppia.
             </li>
-            <li>Se sbagli, la lama dimezza il montepremi. La parola giusta si vede comunque.</li>
             <li>
-              Con le cinque parole hai {Math.round(TEMPO_FINALE_MS / 1000)} secondi per scrivere la parola che le
-              lega tutte: una sola risposta.
+              Se sbagli, o se il tempo finisce, la lama dimezza il montepremi. La parola giusta si vede comunque.
+            </li>
+            <li>
+              Con le cinque parole hai un minuto e mezzo ({Math.round(TEMPO_FINALE_MS / 1000)} secondi) per scrivere
+              la parola che le lega tutte: una sola risposta.
             </li>
           </ul>
         </section>
@@ -31,8 +33,9 @@ export function ComeSiGiocaGhigliottina({ open, onClose }: { open: boolean; onCl
             </li>
             <li>Una al giorno, la stessa per tutti.</li>
             <li>
-              Nella libera scegli il tempo della parola vincente, e puoi sfidare un amico sulla stessa ghigliottina:
-              vince chi vince di più, e a pari punti chi la scrive prima. Non conta per la classifica.
+              Nella libera scegli il tempo per coppia e quello della parola vincente, e puoi sfidare un amico sulla
+              stessa ghigliottina: vince chi vince di più, e a pari punti chi la scrive prima. Non conta per la
+              classifica.
             </li>
           </ul>
         </section>

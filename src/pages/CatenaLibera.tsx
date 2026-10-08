@@ -10,8 +10,8 @@ import { SceltaFinale } from '@/games/sfide/Scelta'
 import type { ImpostazioniFinale } from '@shared/sfide-libere'
 
 /**
- * La Catena libera: una a caso, quante se ne vuole, con il tempo della finale
- * che si sceglie. Tutto nel telefono, e non conta per la classifica. Con un
+ * La Catena libera: una a caso, quante se ne vuole, con il tempo di ogni
+ * parola e quello della finale che si scelgono. Tutto nel telefono, e non conta per la classifica. Con un
  * amico la stessa per tutti e due, nella sfida.
  */
 export default function CatenaLibera() {
@@ -23,7 +23,7 @@ export default function CatenaLibera() {
   const festa = useFesta(v ? !v.finita : null, v?.indovinata === true, 2_600)
   const comincia = (o: ImpostazioniFinale) => {
     setUltime(o)
-    void g.comincia({ tempoFinaleMs: o.secondi * 1_000 })
+    void g.comincia({ tempoFinaleMs: o.secondi * 1_000, tempoParolaMs: o.passo * 1_000 })
   }
 
   const info = (
@@ -35,7 +35,12 @@ export default function CatenaLibera() {
   if (!v) {
     return (
       <Pagina titolo="Catena" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
-        <SceltaFinale gioco="catena" titoloTempo="Tempo per la parola finale" onComincia={comincia}>
+        <SceltaFinale
+          gioco="catena"
+          titoloPasso="Tempo per parola"
+          titoloTempo="Tempo per la parola finale"
+          onComincia={comincia}
+        >
           {g.errore && <p className="sfl-errore">{g.errore}</p>}
         </SceltaFinale>
         <ComeSiGiocaCatena open={regole} onClose={() => setRegole(false)} />
