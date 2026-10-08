@@ -4,10 +4,11 @@
  * La partita del giorno la scrive la notte in `ghigliottina_giornate`, con la
  * parola vincente e quale parola di ogni coppia e' giusta; da qui esce una
  * coppia alla volta, e quale fosse quella giusta si dice solo dopo la scelta.
- * Il minuto della parola vincente lo tiene il server: `finale_at` e' quando e'
- * partito, e una risposta vale entro TEMPO_FINALE_MS piu' il margine della
- * rete. Il minuto finito non si scrive da solo: lo applica la prima richiesta
- * che arriva dopo (`chiudiScaduta`), come negli Anagrammi.
+ * I tempi li tiene il server: `coppia_at` e' quando parte quello della coppia
+ * di adesso, `finale_at` quello della parola vincente, e una scelta o una
+ * risposta valgono entro il tempo piu' il margine della rete. Un tempo finito
+ * non si scrive da solo: lo applica la prima richiesta che arriva dopo
+ * (`chiudiScadute`), dalla scadenza e non da adesso.
  */
 
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
@@ -15,11 +16,15 @@ import {
   COPPIE_GHIGLIOTTINA,
   MARGINE_GHIGLIOTTINA_MS,
   MONTEPREMI_GHIGLIOTTINA,
+  PREAMBOLO_FINALE_MS,
   TEMPO_FINALE_MS,
+  TEMPO_SCELTA_MS,
   giornataValida,
   montepremi,
   normalizzaGhigliottina,
+  preamboloCoppia,
   type GhigliottinaDelGiorno,
+  type SceltaGhigliottina,
 } from '../../shared/ghigliottina'
 import type {
   CoppiaGhigliottinaVista,
@@ -39,6 +44,8 @@ export interface PartitaRow {
   status: GhigliottinaStatus
   scelte: string
   sbagliate: number
+  /** Quando parte il tempo della coppia di adesso; NULL dopo le cinque, e nelle partite di prima dei tempi. */
+  coppia_at: string | null
   finale_at: string | null
   risposta: string | null
   indovinata: number | null
@@ -82,23 +89,32 @@ export async function partitaDi(db: D1Database, playerId: string, numero: number
     .first<PartitaRow>()
 }
 
-/** La partita di oggi, creata vuota se non c'e': nasce con la prima scelta. */
-export async function apriPartita(db: D1Database, playerId: string, quando: Giornata): Promise<PartitaRow> {
+/**
+ * La partita di oggi, creata se non c'e': nasce con Comincia, e il tempo della
+ * prima coppia parte da `coppiaAt`. Se c'e' gia' resta com'era.
+ */
+export async function apriPartita(
+  db: D1Database,
+  playerId: string,
+  quando: Giornata,
+  coppiaAt: string,
+): Promise<PartitaRow> {
   const adesso = nowIso()
   await db
     .prepare(
-      `INSERT OR IGNORE INTO ghigliottina_partite (id, player_id, puzzle_number, date, status, started_at, updated_at)
-       VALUES (?, ?, ?, ?, 'playing', ?, ?)`,
+      `INSERT OR IGNORE INTO ghigliottina_partite
+         (id, player_id, puzzle_number, date, status, coppia_at, started_at, updated_at)
+       VALUES (?, ?, ?, ?, 'playing', ?, ?, ?)`,
     )
-    .bind(newId('ghi'), playerId, quando.puzzleNumber, quando.date, adesso, adesso)
+    .bind(newId('ghi'), playerId, quando.puzzleNumber, quando.date, coppiaAt, adesso, adesso)
     .run()
   const row = await partitaDi(db, playerId, quando.puzzleNumber)
   if (!row) throw new Error('Partita della Ghigliottina non trovata subito dopo la creazione')
   return row
 }
 
-/** Le scelte fatte, una per coppia: 0 o 1. */
-export function scelteDi(row: Pick<PartitaRow, 'scelte'>): Array<0 | 1> {
+/** Le scelte fatte, una per coppia: 0 o 1, o null dove il tempo e' finito. */
+export function scelteDi(row: Pick<PartitaRow, 'scelte'>): SceltaGhigliottina[] {
   let valore: unknown
   try {
     valore = JSON.parse(row.scelte)
@@ -106,7 +122,9 @@ export function scelteDi(row: Pick<PartitaRow, 'scelte'>): Array<0 | 1> {
     return []
   }
   if (!Array.isArray(valore)) return []
-  return valore.filter((s): s is 0 | 1 => s === 0 || s === 1).slice(0, COPPIE_GHIGLIOTTINA)
+  return valore
+    .filter((s): s is SceltaGhigliottina => s === 0 || s === 1 || s === null)
+    .slice(0, COPPIE_GHIGLIOTTINA)
 }
 
 /** Il minuto della parola vincente e' finito, margine della rete compreso. */
@@ -133,26 +151,38 @@ export function statoDa(
   const scelte = row ? scelteDi(row) : []
   const finita = row?.status === 'done'
   const corrente = !finita && scelte.length < COPPIE_GHIGLIOTTINA ? scelte.length : null
-  const viste = finita ? COPPIE_GHIGLIOTTINA : Math.min(COPPIE_GHIGLIOTTINA, scelte.length + 1)
+  // Prima di Comincia non si vede niente: la prima coppia, vista prima del tempo, sarebbe tempo regalato.
+  const viste = !row ? 0 : finita ? COPPIE_GHIGLIOTTINA : Math.min(COPPIE_GHIGLIOTTINA, scelte.length + 1)
   const coppie = giorno.coppie.slice(0, viste).map(
     (c, i): CoppiaGhigliottinaVista => ({
       parole: c.parole,
       scelta: scelte[i] ?? null,
+      scaduta: scelte[i] === null,
       giusta: scelte[i] !== undefined || finita ? c.giusta : null,
       spiegazione: finita ? c.spiegazione : null,
     }),
   )
   const sbagliate = row?.sbagliate ?? 0
   const aperto = !finita && row?.finale_at != null
+  const coppiaAt = corrente !== null && row?.coppia_at ? Date.parse(row.coppia_at) : null
   return {
     puzzleNumber: quando.puzzleNumber,
     date: quando.date,
     status: row?.status ?? 'playing',
+    iniziata: row !== null,
     coppie,
     totaleCoppie: COPPIE_GHIGLIOTTINA,
     corrente,
     montepremiIniziale: MONTEPREMI_GHIGLIOTTINA,
     montepremi: montepremi(sbagliate),
+    coppia:
+      coppiaAt !== null
+        ? {
+            inizioMs: Math.max(0, coppiaAt - adesso),
+            restanteMs: Math.max(0, Math.min(TEMPO_SCELTA_MS, coppiaAt + TEMPO_SCELTA_MS - adesso)),
+            tempoMs: TEMPO_SCELTA_MS,
+          }
+        : null,
     finale: {
       aperto,
       restanteMs:
@@ -170,8 +200,9 @@ export function statoDa(
 }
 
 export interface Modifica {
-  scelte?: Array<0 | 1>
+  scelte?: SceltaGhigliottina[]
   sbagliate?: number
+  coppia_at?: string | null
   finale_at?: string | null
   fine?: { risposta: string | null; indovinata: boolean; tempoMs: number; score: number }
 }
@@ -184,12 +215,14 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, modifica: Mo
   const scelte = JSON.stringify(modifica.scelte ?? scelteDi(row))
   const sbagliate = modifica.sbagliate ?? row.sbagliate
   const finale = modifica.finale_at !== undefined ? modifica.finale_at : row.finale_at
+  const coppiaAt = modifica.coppia_at !== undefined ? modifica.coppia_at : row.coppia_at
   const fine = modifica.fine
   const quando = nowIso()
   const dopo: PartitaRow = {
     ...row,
     scelte,
     sbagliate,
+    coppia_at: coppiaAt,
     finale_at: finale,
     status: fine ? 'done' : row.status,
     risposta: fine ? fine.risposta : row.risposta,
@@ -203,13 +236,14 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, modifica: Mo
   const scritta = await db
     .prepare(
       `UPDATE ghigliottina_partite
-          SET scelte = ?, sbagliate = ?, finale_at = ?, status = ?, risposta = ?, indovinata = ?, tempo_ms = ?,
-              score = ?, versione = versione + 1, updated_at = ?, finished_at = ?
+          SET scelte = ?, sbagliate = ?, coppia_at = ?, finale_at = ?, status = ?, risposta = ?, indovinata = ?,
+              tempo_ms = ?, score = ?, versione = versione + 1, updated_at = ?, finished_at = ?
         WHERE id = ? AND versione = ?`,
     )
     .bind(
       dopo.scelte,
       dopo.sbagliate,
+      dopo.coppia_at,
       dopo.finale_at,
       dopo.status,
       dopo.risposta,
@@ -227,15 +261,64 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, modifica: Mo
 }
 
 /**
- * Chiude senza risposta la partita il cui minuto e' finito: niente punti. Una
- * richiesta che arriva insieme a un'altra puo' trovarla gia' chiusa: la
- * scrittura e' condizionata, e chi perde rilegge.
+ * La scelta di una coppia, o il suo tempo finito (`null`): la partita dopo,
+ * con il montepremi e i tempi che ne vengono. La prossima coppia parte dopo la
+ * scena che la porta in vista, da `da`; dopo la quinta il tempo delle coppie
+ * finisce, e quello della finale lo fa partire chi gioca (`/finale`).
  */
-export async function chiudiScaduta(db: D1Database, row: PartitaRow, adesso: number): Promise<PartitaRow> {
-  if (!scaduta(row, adesso)) return row
+export function dopoLaScelta(
+  row: Pick<PartitaRow, 'sbagliate'>,
+  scelte: SceltaGhigliottina[],
+  giorno: GhigliottinaDelGiorno,
+  scelta: SceltaGhigliottina,
+  da: number,
+): Required<Pick<Modifica, 'scelte' | 'sbagliate' | 'coppia_at'>> {
+  const giusta = scelta !== null && giorno.coppie[scelte.length].giusta === scelta
+  const dopo = [...scelte, scelta]
+  return {
+    scelte: dopo,
+    sbagliate: row.sbagliate + (giusta ? 0 : 1),
+    coppia_at: dopo.length < COPPIE_GHIGLIOTTINA ? new Date(da + preamboloCoppia(giusta)).toISOString() : null,
+  }
+}
+
+/**
+ * I tempi finiti, applicati dalla loro scadenza: ogni coppia il cui tempo e'
+ * passato, margine compreso, conta come sbagliata, e la dopo parte da quella
+ * scadenza, non da adesso. Se le coppie finiscono cosi' — chi gioca ha chiuso
+ * la pagina — parte anche il tempo della finale, dopo le cinque parole; e se e'
+ * finito anche quello la partita si chiude senza risposta e senza punti. Una
+ * scrittura sola, condizionata: chi perde rilegge.
+ */
+export async function chiudiScadute(
+  db: D1Database,
+  row: PartitaRow,
+  giorno: GhigliottinaDelGiorno,
+  adesso: number,
+): Promise<PartitaRow> {
+  if (row.status !== 'playing') return row
+  let modifica: Modifica = {}
+  let scelte = scelteDi(row)
+  let sbagliate = row.sbagliate
+  let coppiaAt = row.coppia_at
+  let finaleAt = row.finale_at
+  while (scelte.length < COPPIE_GHIGLIOTTINA && coppiaAt !== null) {
+    const scadenza = Date.parse(coppiaAt) + TEMPO_SCELTA_MS
+    if (adesso <= scadenza + MARGINE_GHIGLIOTTINA_MS) break
+    const dopo = dopoLaScelta({ sbagliate }, scelte, giorno, null, scadenza)
+    ;({ scelte, sbagliate } = dopo)
+    coppiaAt = dopo.coppia_at
+    if (scelte.length === COPPIE_GHIGLIOTTINA && finaleAt === null) {
+      finaleAt = new Date(scadenza + PREAMBOLO_FINALE_MS).toISOString()
+    }
+    modifica = { scelte, sbagliate, coppia_at: coppiaAt, finale_at: finaleAt }
+  }
+  const finita = scaduta({ status: row.status, finale_at: finaleAt }, adesso)
+  if (modifica.scelte === undefined && !finita) return row
   try {
     return await salvaPartita(db, row, {
-      fine: { risposta: null, indovinata: false, tempoMs: TEMPO_FINALE_MS, score: 0 },
+      ...modifica,
+      fine: finita ? { risposta: null, indovinata: false, tempoMs: TEMPO_FINALE_MS, score: 0 } : undefined,
     })
   } catch {
     return (await partitaDi(db, row.player_id, row.puzzle_number)) ?? row

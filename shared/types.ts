@@ -639,8 +639,11 @@ export type GhigliottinaStatus = 'playing' | 'done'
 /** Una coppia come la vede chi gioca: le due parole e la scelta, e quale era giusta una volta scelta. */
 export interface CoppiaGhigliottinaVista {
   parole: [string, string]
+  /** La parola toccata; null se non la si e' ancora scelta, o se il tempo e' finito prima (`scaduta`). */
   scelta: 0 | 1 | null
-  /** Quale delle due era giusta: si sa solo dopo averla scelta. */
+  /** Il tempo della coppia e' finito senza una scelta: conta come sbagliata. */
+  scaduta: boolean
+  /** Quale delle due era giusta: si sa solo dopo averla scelta, o dopo il tempo finito. */
   giusta: 0 | 1 | null
   /** L'espressione che lega la parola giusta alla vincente: solo a partita finita. */
   spiegazione: string | null
@@ -650,6 +653,8 @@ export interface GhigliottinaStato {
   puzzleNumber: number
   date: string
   status: GhigliottinaStatus
+  /** Si e' premuto Comincia: prima non si vede nessuna coppia. */
+  iniziata: boolean
   /** Le coppie viste: quelle scelte e quella da scegliere, mai quelle dopo. */
   coppie: CoppiaGhigliottinaVista[]
   totaleCoppie: number
@@ -657,7 +662,13 @@ export interface GhigliottinaStato {
   corrente: number | null
   montepremiIniziale: number
   montepremi: number
-  /** Il minuto della parola vincente: se e' partito, e quanto ne resta. */
+  /**
+   * Il tempo della coppia di adesso: quanto manca perché parta (la scena la sta
+   * portando) e quanto ne resta. null dopo le cinque scelte, e nelle partite
+   * cominciate prima dei tempi.
+   */
+  coppia: { inizioMs: number; restanteMs: number; tempoMs: number } | null
+  /** Il tempo della parola vincente: se e' partito, e quanto ne resta. */
   finale: { aperto: boolean; restanteMs: number | null; tempoMs: number }
   /** La parola vincente, solo a partita finita. */
   soluzione: string | null
@@ -720,6 +731,8 @@ export interface CatenaStato {
   puzzleNumber: number
   date: string
   status: CatenaStatus
+  /** Si e' premuto Comincia: prima non si vede nessuna parola. */
+  iniziata: boolean
   /** Le parole viste: fino alla coppia di adesso, e di quella da indovinare solo le lettere. */
   voci: VoceCatena[]
   /** La parola da indovinare: da 0 a 3 nella catena, 4 la finale. */
@@ -732,7 +745,13 @@ export interface CatenaStato {
   montepremiIniziale: number
   montepremi: number
   /**
-   * Il minuto della parola finale: quanto manca perché parta (lo scrive il
+   * Il minuto della parola di adesso, prima della finale: quanto manca perché
+   * parta (dopo il tempo della scena) e quanto ne resta. null nella finale e
+   * nelle partite cominciate prima dei tempi.
+   */
+  parola: { inizioMs: number; restanteMs: number; tempoMs: number } | null
+  /**
+   * Il tempo della parola finale: quanto manca perché parta (lo scrive il
    * server arrivati alla finale, dopo il tempo della scena) e quanto ne resta.
    * null prima della finale.
    */

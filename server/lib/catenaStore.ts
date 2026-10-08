@@ -5,10 +5,11 @@
  * parole; da qui escono solo quelle viste e le lettere di quella da indovinare
  * (`vistaCatena`). La partita salva le mosse, e il resto si ricava rigiocandole
  * (`svolgiCatena`): come nello Scarabeo, la riga non puo' dire una cosa e le
- * mosse un'altra. Il minuto della parola finale lo tiene il server: `finale_at`
- * e' quando parte, scritto con la mossa che ci arriva, e una risposta vale entro
- * il minuto piu' il margine della rete. Il minuto finito non si scrive da solo:
- * lo applica la prima richiesta che arriva dopo (`chiudiScaduta`).
+ * mosse un'altra. I tempi li tiene il server: `parola_at` e' quando parte il
+ * minuto della parola di adesso, `finale_at` quello della finale, scritti con la
+ * mossa che ci arriva, e una risposta vale entro il tempo piu' il margine della
+ * rete. Un tempo finito non si scrive da solo: lo applica la prima richiesta che
+ * arriva dopo (`chiudiScadute`), dalla scadenza e non da adesso.
  */
 
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
@@ -17,7 +18,12 @@ import {
   JOLLY_CATENA,
   MARGINE_CATENA_MS,
   MONTEPREMI_CATENA,
+  PASSO_FINALE,
+  PREAMBOLO_FINALE_CATENA_MS,
+  PREAMBOLO_PAROLA_CATENA_MS,
   TEMPO_FINALE_CATENA_MS,
+  TEMPO_PAROLA_CATENA_MS,
+  applicaCatena,
   compraUsabile,
   giornataValida,
   jollyUsabile,
@@ -45,6 +51,8 @@ export interface PartitaRow {
   date: string
   status: CatenaStatus
   mosse: string
+  /** Quando parte il minuto della parola di adesso; NULL nella finale, e nelle partite di prima dei tempi. */
+  parola_at: string | null
   finale_at: string | null
   risposta: string | null
   indovinata: number | null
@@ -88,15 +96,25 @@ export async function partitaDi(db: D1Database, playerId: string, numero: number
     .first<PartitaRow>()
 }
 
-/** La partita di oggi, creata vuota se non c'e': nasce con la prima mossa. */
-export async function apriPartita(db: D1Database, playerId: string, quando: Giornata): Promise<PartitaRow> {
+/**
+ * La partita di oggi, creata se non c'e': nasce con Comincia, e il minuto della
+ * prima parola parte da `parolaAt`. Se c'e' gia' resta com'era: chiederla due
+ * volte non fa ripartire il minuto.
+ */
+export async function apriPartita(
+  db: D1Database,
+  playerId: string,
+  quando: Giornata,
+  parolaAt: string,
+): Promise<PartitaRow> {
   const adesso = nowIso()
   await db
     .prepare(
-      `INSERT OR IGNORE INTO catena_partite (id, player_id, puzzle_number, date, status, started_at, updated_at)
-       VALUES (?, ?, ?, ?, 'playing', ?, ?)`,
+      `INSERT OR IGNORE INTO catena_partite
+         (id, player_id, puzzle_number, date, status, parola_at, started_at, updated_at)
+       VALUES (?, ?, ?, ?, 'playing', ?, ?, ?)`,
     )
-    .bind(newId('cat'), playerId, quando.puzzleNumber, quando.date, adesso, adesso)
+    .bind(newId('cat'), playerId, quando.puzzleNumber, quando.date, parolaAt, adesso, adesso)
     .run()
   const row = await partitaDi(db, playerId, quando.puzzleNumber)
   if (!row) throw new Error('Partita della Catena non trovata subito dopo la creazione')
@@ -111,13 +129,31 @@ export function mosseDi(row: Pick<PartitaRow, 'mosse'>): MossaCatena[] {
   }
 }
 
-/** Il minuto della parola finale e' finito, margine della rete compreso. */
+/** Il tempo della parola finale e' finito, margine della rete compreso. */
 export function scaduta(row: Pick<PartitaRow, 'finale_at' | 'status'>, adesso: number): boolean {
   return (
     row.status === 'playing' &&
     row.finale_at !== null &&
     adesso > Date.parse(row.finale_at) + TEMPO_FINALE_CATENA_MS + MARGINE_CATENA_MS
   )
+}
+
+/**
+ * Quando partono i tempi dopo una mossa: il minuto della parola dopo, o quello
+ * della finale, dal momento `da` piu' il tempo della scena; se la mossa non
+ * cambia parola, restano quelli di prima.
+ */
+export function tempiDopo(
+  row: Pick<PartitaRow, 'parola_at' | 'finale_at'>,
+  passoPrima: number,
+  passoDopo: number,
+  da: number,
+): Pick<PartitaRow, 'parola_at' | 'finale_at'> {
+  if (passoDopo === passoPrima) return { parola_at: row.parola_at, finale_at: row.finale_at }
+  if (passoDopo >= PASSO_FINALE) {
+    return { parola_at: null, finale_at: new Date(da + PREAMBOLO_FINALE_CATENA_MS).toISOString() }
+  }
+  return { parola_at: new Date(da + PREAMBOLO_PAROLA_CATENA_MS).toISOString(), finale_at: row.finale_at }
 }
 
 /**
@@ -137,11 +173,14 @@ export function statoDa(
   const finita = row?.status === 'done'
   const indovinata = finita ? row.indovinata === 1 : null
   const inizio = row?.finale_at ? Date.parse(row.finale_at) : null
+  const parolaAt = !finita && s.passo < PASSO_FINALE && row?.parola_at ? Date.parse(row.parola_at) : null
   return {
     puzzleNumber: quando.puzzleNumber,
     date: quando.date,
     status: row?.status ?? 'playing',
-    voci: vistaCatena(catena, s, { finita, indovinata }),
+    iniziata: row !== null,
+    // Prima di Comincia non si vede niente: la prima coppia, vista prima del minuto, sarebbe tempo regalato.
+    voci: row ? vistaCatena(catena, s, { finita, indovinata }) : [],
     passo: s.passo,
     totaleParole: DA_INDOVINARE_CATENA,
     jollyRestanti: JOLLY_CATENA - s.jollyUsati,
@@ -150,6 +189,14 @@ export function statoDa(
     compraUsabile: !finita && compraUsabile(s),
     montepremiIniziale: MONTEPREMI_CATENA,
     montepremi: s.montepremi,
+    parola:
+      parolaAt !== null
+        ? {
+            inizioMs: Math.max(0, parolaAt - adesso),
+            restanteMs: Math.max(0, Math.min(TEMPO_PAROLA_CATENA_MS, parolaAt + TEMPO_PAROLA_CATENA_MS - adesso)),
+            tempoMs: TEMPO_PAROLA_CATENA_MS,
+          }
+        : null,
     finale:
       !finita && inizio !== null
         ? {
@@ -170,6 +217,7 @@ export function statoDa(
 
 export interface Modifica {
   mosse?: MossaCatena[]
+  parola_at?: string | null
   finale_at?: string | null
   fine?: { risposta: string | null; indovinata: boolean; tempoMs: number; score: number }
 }
@@ -181,6 +229,7 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, modifica: Mo
   const dopo: PartitaRow = {
     ...row,
     mosse: modifica.mosse ? JSON.stringify(modifica.mosse) : row.mosse,
+    parola_at: modifica.parola_at !== undefined ? modifica.parola_at : row.parola_at,
     finale_at: modifica.finale_at !== undefined ? modifica.finale_at : row.finale_at,
     status: fine ? 'done' : row.status,
     risposta: fine ? fine.risposta : row.risposta,
@@ -194,12 +243,13 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, modifica: Mo
   const scritta = await db
     .prepare(
       `UPDATE catena_partite
-          SET mosse = ?, finale_at = ?, status = ?, risposta = ?, indovinata = ?, tempo_ms = ?, score = ?,
-              versione = versione + 1, updated_at = ?, finished_at = ?
+          SET mosse = ?, parola_at = ?, finale_at = ?, status = ?, risposta = ?, indovinata = ?, tempo_ms = ?,
+              score = ?, versione = versione + 1, updated_at = ?, finished_at = ?
         WHERE id = ? AND versione = ?`,
     )
     .bind(
       dopo.mosse,
+      dopo.parola_at,
       dopo.finale_at,
       dopo.status,
       dopo.risposta,
@@ -217,15 +267,42 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, modifica: Mo
 }
 
 /**
- * Chiude senza risposta la partita il cui minuto e' finito: niente punti. Una
- * richiesta che arriva insieme a un'altra puo' trovarla gia' chiusa: la
- * scrittura e' condizionata, e chi perde rilegge.
+ * I tempi finiti, applicati dalla loro scadenza: ogni parola della catena il cui
+ * minuto e' passato, margine compreso, prende una mossa `t` — si mostra, e il
+ * montepremi si dimezza — e il minuto della dopo parte da quella scadenza, non
+ * da adesso: una partita lasciata a meta' e riaperta un'ora dopo e' quella che
+ * sarebbe stata guardandola. Poi, se e' finito anche il tempo della finale, la
+ * chiude senza risposta e senza punti. Una scrittura sola, condizionata: una
+ * richiesta arrivata insieme puo' averla gia' fatta, e chi perde rilegge.
  */
-export async function chiudiScaduta(db: D1Database, row: PartitaRow, adesso: number): Promise<PartitaRow> {
-  if (!scaduta(row, adesso)) return row
+export async function chiudiScadute(
+  db: D1Database,
+  row: PartitaRow,
+  catena: CatenaDelGiorno,
+  adesso: number,
+): Promise<PartitaRow> {
+  if (row.status !== 'playing') return row
+  const mosse = mosseDi(row)
+  let s = svolgiCatena(catena, mosse)
+  let tempi: Pick<PartitaRow, 'parola_at' | 'finale_at'> = { parola_at: row.parola_at, finale_at: row.finale_at }
+  let scadute = 0
+  while (s.passo < PASSO_FINALE && tempi.parola_at !== null) {
+    const scadenza = Date.parse(tempi.parola_at) + TEMPO_PAROLA_CATENA_MS
+    if (adesso <= scadenza + MARGINE_CATENA_MS) break
+    const fatta = applicaCatena(catena, s, { k: 't' })
+    if (!fatta) break
+    mosse.push({ k: 't' })
+    tempi = tempiDopo(tempi, s.passo, fatta.dopo.passo, scadenza)
+    s = fatta.dopo
+    scadute += 1
+  }
+  const finita = scaduta({ status: row.status, finale_at: tempi.finale_at }, adesso)
+  if (scadute === 0 && !finita) return row
   try {
     return await salvaPartita(db, row, {
-      fine: { risposta: null, indovinata: false, tempoMs: TEMPO_FINALE_CATENA_MS, score: 0 },
+      mosse: scadute > 0 ? mosse : undefined,
+      ...tempi,
+      fine: finita ? { risposta: null, indovinata: false, tempoMs: TEMPO_FINALE_CATENA_MS, score: 0 } : undefined,
     })
   } catch {
     return (await partitaDi(db, row.player_id, row.puzzle_number)) ?? row

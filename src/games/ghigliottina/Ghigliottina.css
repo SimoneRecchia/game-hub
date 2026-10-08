@@ -6,6 +6,8 @@
  * su un telefono basso la ghigliottina si fa piccola, e il resto ci sta.
  */
 .ghi {
+  --key-bg: #3b2378;
+  --key-bg-active: #4c2f96;
   container-type: inline-size;
   position: relative;
   display: flex;
@@ -244,6 +246,30 @@
   font-size: 19cqw;
   font-weight: 900;
   line-height: 1;
+}
+
+/*
+ * Il montepremi dimezzato c'e' gia' sotto i pezzi che cadono: salta fuori
+ * mentre la targa si spacca, cosi' si legge subito quanto vale adesso.
+ */
+.ghi-montepremi__valore.is-nuovo {
+  animation: ghi-valore-nuovo 640ms 120ms cubic-bezier(0.3, 1.5, 0.45, 1) both;
+}
+
+@keyframes ghi-valore-nuovo {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+    text-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+  55% {
+    opacity: 1;
+    text-shadow: 0 0 14px rgba(255, 255, 255, 0.9);
+  }
+  100% {
+    transform: none;
+    text-shadow: none;
+  }
 }
 
 /* La targa spaccata: due copie con il numero di prima, la meta' destra cade e la sinistra si inclina. */
@@ -581,6 +607,84 @@
   gap: var(--sp-3);
 }
 
+/* Il titolo della coppia e, accanto, il suo tempo. */
+.ghi-coppia__testa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.ghi-clessidra {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+}
+
+.ghi-clessidra svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ghi-clessidra__fondo {
+  fill: rgba(0, 0, 0, 0.25);
+  stroke: rgba(255, 255, 255, 0.12);
+  stroke-width: 3.5;
+}
+
+.ghi-clessidra__anello {
+  fill: none;
+  stroke: rgba(255, 210, 90, 0.45);
+  stroke-linecap: round;
+  stroke-width: 3.5;
+  transition:
+    stroke-dashoffset 120ms linear,
+    stroke 300ms ease;
+}
+
+.ghi-clessidra.is-accesa .ghi-clessidra__anello {
+  stroke: var(--ghi-oro);
+}
+
+.ghi-clessidra__secondi {
+  position: relative;
+  font-family: var(--font-rounded);
+  font-size: var(--text-footnote);
+  font-weight: 900;
+}
+
+.ghi-clessidra.is-urgente .ghi-clessidra__anello {
+  stroke: var(--ghi-sbagliata);
+}
+
+.ghi-clessidra.is-urgente {
+  animation: ghi-batte 1s ease-in-out infinite;
+}
+
+/*
+ * Il tempo finito: tutte e due le parole si spengono, poi la giusta si accende
+ * come dopo una scelta sbagliata, quando la lama ha gia' colpito; l'altra resta
+ * spenta.
+ */
+.ghi-coppia.is-scaduta.is-attesa .ghi-parola {
+  filter: grayscale(0.6) brightness(0.75);
+}
+
+.ghi-coppia.is-scaduta.is-esito .ghi-parola:not(.is-giusta) {
+  opacity: 0.4;
+  transform: scale(0.97);
+}
+
+.ghi-coppia.is-esito.is-scaduta .ghi-parola.is-giusta {
+  animation: ghi-giusta-dopo 2.3s ease-in-out forwards;
+}
+
 .ghi-coppia__titolo,
 .ghi-coppia__stato {
   min-height: 1.3em;
@@ -796,7 +900,6 @@
 
 .ghi-finale {
   display: grid;
-  justify-items: center;
   gap: var(--sp-3);
   animation: ghi-spiega 500ms ease-out both;
 }
@@ -856,51 +959,193 @@
   }
 }
 
-.ghi-finale__campo {
+/*
+ * La parola vincente si scrive con la tastiera del gioco: il tempo a sinistra,
+ * la parola che si compone a ogni tasto, "Non lo so" a destra. La parola non
+ * ha caselle vuote: chi gioca non sa quanto e' lunga, e la vede crescere.
+ */
+.ghi-finale {
+  justify-items: stretch;
   width: 100%;
 }
 
-.ghi-finale__campo input {
-  width: 100%;
-  height: 58px;
-  padding: 0 var(--sp-4);
-  border: 0;
+.ghi-finale__riga {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.ghi-finale__parola {
+  --lato: min(34px, calc((100cqw - 124px) / var(--n) - 4px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: calc(var(--lato) * 1.15 + 16px);
+  margin: 0;
+  padding: 8px 6px;
   border-radius: 16px;
   background: linear-gradient(180deg, var(--ghi-schermo), var(--ghi-schermo-2));
   box-shadow:
     inset 0 0 0 2px rgba(255, 210, 90, 0.7),
     0 0 26px -8px rgba(255, 210, 90, 0.6);
-  caret-color: var(--ghi-oro);
-  color: #fff;
-  font-family: var(--font-rounded);
-  /* Sotto i sedici punti Safari ingrandisce la pagina quando il campo prende il fuoco. */
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-align: center;
-  text-transform: uppercase;
 }
 
-.ghi-finale__campo input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
-  font-size: 17px;
+.ghi-finale__invito {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: var(--text-footnote);
   font-weight: 700;
-  letter-spacing: 0.02em;
-  text-transform: none;
 }
 
-.ghi-finale__campo input:focus {
-  outline: none;
-  box-shadow:
-    inset 0 0 0 3px var(--ghi-oro),
-    0 0 34px -6px rgba(255, 210, 90, 0.8);
+.ghi-finale__lettera {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--lato);
+  height: calc(var(--lato) * 1.15);
+  border-radius: calc(var(--lato) * 0.2);
+  background: linear-gradient(180deg, #fff3c4, var(--ghi-oro) 55%, var(--ghi-oro-2));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  color: #2a1500;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.6);
+  font-weight: 900;
+  line-height: 1;
+  animation: ghi-tasto 180ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
 }
 
-.ghi-finale__azioni {
+@keyframes ghi-tasto {
+  from {
+    transform: translateY(-6px) scale(1.25);
+    filter: brightness(1.4);
+  }
+}
+
+/* Il cursore: dove va la lettera dopo, che respira. */
+.ghi-finale__cursore {
+  flex: none;
+  width: 3px;
+  height: calc(var(--lato) * 0.9);
+  border-radius: 2px;
+  background: var(--ghi-oro);
+  animation: ghi-cursore 1s steps(2, jump-none) infinite;
+}
+
+@keyframes ghi-cursore {
+  50% {
+    opacity: 0;
+  }
+}
+
+.ghi-finale__nonso {
+  justify-self: end;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--text-footnote);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ghi-finale__nonso:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.ghi-finale.is-inviata .ghi-finale__parola {
+  animation: ghi-busta-parola 900ms ease-in-out infinite alternate;
+}
+
+@keyframes ghi-busta-parola {
+  to {
+    box-shadow:
+      inset 0 0 0 3px var(--ghi-oro),
+      0 0 34px -4px rgba(255, 210, 90, 0.85);
+  }
+}
+
+.ghi-finale .ghi-finale__tempo {
+  width: 52px;
+}
+
+.ghi-finale .ghi-finale__secondi {
+  font-size: var(--text-headline);
+}
+
+/* La tastiera sta sul palco scuro: tasti di vetro, l'invio d'oro quando c'e' una parola. */
+.ghi-tastiera {
+  margin-top: var(--sp-1);
+}
+
+.ghi .key {
+  height: clamp(40px, 6.2dvh, 52px);
+  color: #fff;
+}
+
+.ghi-tastiera .tastiera-gioco__invio {
+  font-weight: 800;
+}
+
+.ghi-tastiera .tastiera-gioco__invio.is-pronta {
+  background-color: var(--ghi-oro);
+  color: #241200;
+}
+
+/*
+ * Mentre si scrive la parola vincente la scena si stringe: la ghigliottina si
+ * fa piccola, le cinque parole salgono sotto di lei in due file, e la tastiera
+ * prende il fondo. Le parole scivolano dal loro posto al nuovo (useScivola).
+ */
+.ghi.is-compatta {
+  gap: var(--sp-2);
+}
+
+.ghi.is-compatta .ghi-palco {
+  height: clamp(84px, 19dvh, 168px);
+}
+
+.ghi-palco__macchina {
+  transform-origin: top center;
+}
+
+.ghi.is-compatta .ghi-colonna {
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: var(--sp-3);
+  gap: 6px;
+}
+
+.ghi.is-compatta .ghi-slot {
+  grid-template-columns: auto auto;
+  gap: 6px;
+  min-height: clamp(30px, 4.4dvh, 38px);
+  padding: 0 14px;
+  border-radius: 999px;
+}
+
+.ghi.is-compatta .ghi-slot__n {
+  display: none;
+}
+
+.ghi.is-compatta .ghi-slot__parola {
+  font-size: clamp(13px, 2.1dvh, 17px);
+  letter-spacing: 0.08em;
+}
+
+.ghi.is-compatta .ghi-slot__taglio {
+  width: 12px;
+  height: 12px;
+}
+
+.ghi.is-finale .ghi-centro,
+.ghi.is-busta .ghi-centro {
+  justify-content: flex-end;
 }
 
 /* ---------- La busta ---------- */

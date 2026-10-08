@@ -1,5 +1,11 @@
 import { Sheet } from '@/components/Sheet'
-import { DA_INDOVINARE_CATENA, JOLLY_CATENA, MONTEPREMI_CATENA, TEMPO_FINALE_CATENA_MS } from '@shared/catena'
+import {
+  DA_INDOVINARE_CATENA,
+  JOLLY_CATENA,
+  MONTEPREMI_CATENA,
+  TEMPO_FINALE_CATENA_MS,
+  TEMPO_PAROLA_CATENA_MS,
+} from '@shared/catena'
 import '@/games/cruciverba/ComeSiGioca.css'
 
 /** Le regole della Catena, il minimo per giocare. */
@@ -13,13 +19,14 @@ export function ComeSiGiocaCatena({ open, onClose }: { open: boolean; onClose: (
           <ul className="cru-aiuto__elenco">
             <li>
               Fra due parole ce n’è una che sta con tutte e due, come in «spirito <strong>libero</strong>» e «tiro{' '}
-              <strong>libero</strong>»: ne vedi la prima lettera. Trovata quella, si scende alla coppia dopo.
+              <strong>libero</strong>»: ne vedi la prima lettera, ma non quanto è lunga. Scrivila e prova; trovata
+              quella, si scende alla coppia dopo.
             </li>
             <li>
-              Se sbagli il montepremi si dimezza e vedi un’altra lettera; al secondo errore si dimezza ancora, e
-              vedi la parola.
+              Hai {Math.round(TEMPO_PAROLA_CATENA_MS / 1000)} secondi per parola. Se sbagli il montepremi si dimezza e
+              vedi un’altra lettera; al secondo errore, o a tempo finito, si dimezza ancora e vedi la parola.
             </li>
-            <li>Hai {JOLLY_CATENA} jolly: ognuno mostra la lettera dopo, senza costare niente.</li>
+            <li>Hai {JOLLY_CATENA} jolly: ognuno mostra la lettera dopo, senza costare niente. Nella finale no.</li>
           </ul>
         </section>
         <section className="cru-aiuto__sezione">
@@ -29,7 +36,7 @@ export function ComeSiGiocaCatena({ open, onClose }: { open: boolean; onClose: (
               È la {DA_INDOVINARE_CATENA}ª: ne vedi le prime due lettere e l’ultima, e la parola sopra. Quella sotto,
               il terzo elemento, si compra dimezzando il montepremi; se hai ancora tutti e due i jolly è in regalo.
             </li>
-            <li>Hai {Math.round(TEMPO_FINALE_CATENA_MS / 1000)} secondi e una sola risposta.</li>
+            <li>Hai un minuto e mezzo ({Math.round(TEMPO_FINALE_CATENA_MS / 1000)} secondi) e una sola risposta.</li>
           </ul>
         </section>
         <section className="cru-aiuto__sezione">
@@ -40,8 +47,8 @@ export function ComeSiGiocaCatena({ open, onClose }: { open: boolean; onClose: (
             </li>
             <li>Una al giorno, la stessa per tutti.</li>
             <li>
-              Nella libera scegli il tempo della parola finale, e puoi sfidare un amico sulla stessa catena: vince chi
-              vince di più, e a pari punti chi la scrive prima. Non conta per la classifica.
+              Nella libera scegli il tempo per parola e quello della finale, e puoi sfidare un amico sulla stessa
+              catena: vince chi vince di più, e a pari punti chi la scrive prima. Non conta per la classifica.
             </li>
           </ul>
         </section>

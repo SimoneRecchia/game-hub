@@ -49,7 +49,10 @@ export const LATI_LIBERI: readonly LatoLibero[] = [4, 5]
 export const MINUTI_SUDOKU = [10, 15, 20, 30, 45] as const
 export const SECONDI_ANAGRAMMI = [30, 45, 60, 90, 120] as const
 export const MINUTI_PAROLIERE = [1, 2, 3, 4, 5] as const
-export const SECONDI_FINALE = [30, 45, 60, 90] as const
+export const SECONDI_FINALE = [45, 60, 90, 120] as const
+/** Il tempo di ogni coppia della Ghigliottina, e di ogni parola della Catena prima della finale. */
+export const SECONDI_SCELTA = [10, 15, 20, 30] as const
+export const SECONDI_PAROLA = [30, 45, 60, 90] as const
 
 export interface ImpostazioniSudoku {
   livello: LivelloSudoku
@@ -68,9 +71,14 @@ export interface ImpostazioniParoliere {
   minuti: (typeof MINUTI_PAROLIERE)[number]
 }
 
-/** La Ghigliottina e la Catena: il tempo della parola finale. */
+/**
+ * La Ghigliottina e la Catena: il tempo della parola finale (`secondi`) e quello
+ * di ogni passo prima (`passo`): una coppia della Ghigliottina, una parola della
+ * Catena, fra le scelte del suo gioco.
+ */
 export interface ImpostazioniFinale {
   secondi: (typeof SECONDI_FINALE)[number]
+  passo: number
 }
 
 export interface ImpostazioniDi {
@@ -87,8 +95,8 @@ export const PREDEFINITE: { [G in GiocoSfidaLibera]: ImpostazioniDi[G] } = {
   sudoku: { livello: 'media', minuti: 20 },
   anagrammi: { livello: 'normale', secondi: 90 },
   paroliere: { lato: 4, minuti: 3 },
-  ghigliottina: { secondi: 60 },
-  catena: { secondi: 60 },
+  ghigliottina: { secondi: 90, passo: 20 },
+  catena: { secondi: 90, passo: 60 },
 }
 
 function tra<T>(valori: readonly T[], x: unknown): x is T {
@@ -127,7 +135,11 @@ export function impostazioniValide<G extends GiocoSfidaLibera>(gioco: G, valore:
     }
     default: {
       const b = base as ImpostazioniFinale
-      return { secondi: tra(SECONDI_FINALE, v.secondi) ? v.secondi : b.secondi } as ImpostazioniDi[G]
+      const passi = gioco === 'ghigliottina' ? SECONDI_SCELTA : SECONDI_PAROLA
+      return {
+        secondi: tra(SECONDI_FINALE, v.secondi) ? v.secondi : b.secondi,
+        passo: tra(passi, v.passo) ? v.passo : b.passo,
+      } as ImpostazioniDi[G]
     }
   }
 }
@@ -141,9 +153,9 @@ export const PAROLE_ANAGRAMMI_SFIDA = 5
  * Quanto puo' durare al massimo la partita di uno dei due, dal via. Oltre, il
  * server chiude la sfida con quel che ognuno ha detto: chi ha chiuso l'app a
  * meta' non fa aspettare l'altro per sempre. Il sudoku e il Paroliere hanno un
- * tempo solo; negli Anagrammi fra una parola e l'altra ci si ferma, e la
- * Ghigliottina e la Catena prima della finale non hanno un orologio: lì il
- * tetto e' largo, e serve solo a chiudere.
+ * tempo solo; negli Anagrammi fra una parola e l'altra ci si ferma; nella
+ * Ghigliottina e nella Catena ogni passo ha il suo tempo, e ci sono le scene fra
+ * l'uno e l'altro.
  */
 export function durataMassimaMs(gioco: GiocoSfidaLibera, imp: ImpostazioniSfidaLibera): number {
   switch (gioco) {
@@ -153,10 +165,14 @@ export function durataMassimaMs(gioco: GiocoSfidaLibera, imp: ImpostazioniSfidaL
       return (imp as ImpostazioniParoliere).minuti * 60_000
     case 'anagrammi':
       return PAROLE_ANAGRAMMI_SFIDA * ((imp as ImpostazioniAnagrammi).secondi * 1_000 + 30_000)
-    case 'ghigliottina':
-      return 5 * 60_000 + (imp as ImpostazioniFinale).secondi * 1_000
-    case 'catena':
-      return 10 * 60_000 + (imp as ImpostazioniFinale).secondi * 1_000
+    case 'ghigliottina': {
+      const i = imp as ImpostazioniFinale
+      return 5 * (i.passo * 1_000 + 10_000) + i.secondi * 1_000 + 20_000
+    }
+    case 'catena': {
+      const i = imp as ImpostazioniFinale
+      return 4 * (i.passo * 1_000 + 10_000) + i.secondi * 1_000 + 20_000
+    }
   }
 }
 

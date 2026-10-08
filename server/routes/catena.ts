@@ -3,7 +3,7 @@ import { msToNextPuzzle } from '../../shared/daily'
 import {
   NASCOSTE_CATENA,
   PASSO_FINALE,
-  PREAMBOLO_FINALE_CATENA_MS,
+  PREAMBOLO_PAROLA_CATENA_MS,
   TEMPO_FINALE_CATENA_MS,
   applicaCatena,
   puntiCatena,
@@ -21,13 +21,14 @@ import { riepilogoCatena } from '../lib/riepiloghi'
 import {
   apriPartita,
   catenaDelGiornoDa,
-  chiudiScaduta,
+  chiudiScadute,
   giornata,
   mosseDi,
   parolaDaSalvare,
   partitaDi,
   salvaPartita,
   statoDa,
+  tempiDopo,
   type PartitaRow,
 } from '../lib/catenaStore'
 
@@ -72,27 +73,36 @@ function parolaDi(corpo: Corpo, vuotaVale: boolean): string {
   return parola
 }
 
+/** La partita di oggi con i tempi finiti gia' applicati, o null se non e' cominciata. */
+async function partitaLetta(c: Context<AppEnv>, catena: CatenaDelGiorno, adesso: number): Promise<PartitaRow | null> {
+  const letta = await partitaDi(c.env.DB, c.get('player').id, giornata().puzzleNumber)
+  return letta ? chiudiScadute(c.env.DB, letta, catena, adesso) : null
+}
+
 /**
  * Una mossa della catena: la rigioca sulle mosse salvate e la scrive dopo di
- * loro. Arrivati alla finale, nella stessa scrittura parte il minuto, dopo il
- * tempo della scena. Una mossa che non si puo' fare (un jolly finito, il terzo
- * elemento gia' in vista) e' un 409: il telefono rilegge.
+ * loro. Se porta a un'altra parola, nella stessa scrittura parte il suo minuto,
+ * o quello della finale, dopo il tempo della scena. Una mossa arrivata dopo un
+ * tempo finito trova la versione cambiata, e il telefono rilegge: la parola era
+ * gia' stata mostrata. Una mossa che non si puo' fare (un jolly finito, il terzo
+ * elemento gia' in vista) e' un 409.
  */
 async function giocaMossa(c: Context<AppEnv>, corpo: Corpo, mossa: MossaCatena): Promise<CatenaStato> {
   const adesso = Date.now()
   const catena = await catenaDiOggi(c)
-  const letta = await apriPartita(c.env.DB, c.get('player').id, giornata())
-  const row = await chiudiScaduta(c.env.DB, letta, adesso)
+  // Senza Comincia — un telefono con la pagina di prima — la partita nasce qui, con il minuto da adesso.
+  const row =
+    (await partitaLetta(c, catena, adesso)) ??
+    (await apriPartita(c.env.DB, c.get('player').id, giornata(), new Date(adesso).toISOString()))
   if (row.status === 'done') return stato(row, catena, adesso)
   controllaVersione(corpo, row)
   const mosse = mosseDi(row)
   const prima = svolgiCatena(catena, mosse)
   const fatta = applicaCatena(catena, prima, mossa)
   if (!fatta) fail(409, 'MOSSA', 'Questa mossa adesso non si può fare.')
-  const arriva = prima.passo < PASSO_FINALE && fatta.dopo.passo === PASSO_FINALE
   const dopo = await salvaPartita(c.env.DB, row, {
     mosse: [...mosse, mossa],
-    finale_at: arriva ? new Date(adesso + PREAMBOLO_FINALE_CATENA_MS).toISOString() : undefined,
+    ...tempiDopo(row, prima.passo, fatta.dopo.passo, adesso),
   })
   return stato(dopo, catena, adesso, fatta.esito)
 }
@@ -102,16 +112,28 @@ export const catenaRoutes = new Hono<AppEnv>()
   .use('*', requireVerified)
 
   /**
-   * La partita di oggi. Non apre niente: la riga nasce con la prima mossa, e
-   * guardare la pagina non fa comparire nessuno "in corso" in classifica. Un
-   * minuto finito senza risposta chiude la partita, senza punti.
+   * La partita di oggi. Non apre niente: la riga nasce con Comincia, e guardare
+   * la pagina non fa comparire nessuno "in corso" in classifica. I tempi finiti
+   * si applicano qui: le parole si mostrano, e la finale senza risposta chiude
+   * la partita, senza punti.
    */
   .get('/state', async (c) => {
     const adesso = Date.now()
     const catena = await catenaDiOggi(c)
-    const letta = await partitaDi(c.env.DB, c.get('player').id, giornata().puzzleNumber)
-    const row = letta ? await chiudiScaduta(c.env.DB, letta, adesso) : null
-    return c.json<CatenaStato>(stato(row, catena, adesso))
+    return c.json<CatenaStato>(stato(await partitaLetta(c, catena, adesso), catena, adesso))
+  })
+
+  /**
+   * Comincia: la partita nasce, e il minuto della prima parola parte dopo il
+   * tempo della scena che la porta in vista. Chiederlo di nuovo ridà la partita
+   * com'e', con il minuto che corre gia'.
+   */
+  .post('/inizia', async (c) => {
+    const adesso = Date.now()
+    const catena = await catenaDiOggi(c)
+    const parolaAt = new Date(adesso + PREAMBOLO_PAROLA_CATENA_MS).toISOString()
+    const aperta = await apriPartita(c.env.DB, c.get('player').id, giornata(), parolaAt)
+    return c.json<CatenaStato>(stato(await chiudiScadute(c.env.DB, aperta, catena, adesso), catena, adesso))
   })
 
   /** Riepilogo per la card dell'hub: di sola lettura. */
@@ -127,7 +149,17 @@ export const catenaRoutes = new Hono<AppEnv>()
     return c.json<CatenaStato>(await giocaMossa(c, corpo, { k: 'p', w: parolaDi(corpo, false) }))
   })
 
-  /** Un jolly: la lettera dopo, senza dimezzare. L'ultima lettera resta da trovare. */
+  /**
+   * Il minuto della parola e' finito sul telefono: la parola si mostra e il
+   * montepremi si dimezza, senza aspettare il margine della rete. E' una resa,
+   * e il server la prende quando arriva.
+   */
+  .post('/tempo', async (c) => {
+    const corpo = await corpoDi(c)
+    return c.json<CatenaStato>(await giocaMossa(c, corpo, { k: 't' }))
+  })
+
+  /** Un jolly: la lettera dopo, senza dimezzare. L'ultima lettera resta da trovare, e nella finale non si usa. */
   .post('/jolly', async (c) => {
     const corpo = await corpoDi(c)
     return c.json<CatenaStato>(await giocaMossa(c, corpo, { k: 'j' }))
@@ -141,7 +173,7 @@ export const catenaRoutes = new Hono<AppEnv>()
 
   /**
    * La parola finale. Una sola risposta: giusta vale il montepremi rimasto,
-   * sbagliata niente. Arrivata dopo il minuto (e il margine della rete) non
+   * sbagliata niente. Arrivata dopo il tempo (e il margine della rete) non
    * vale, e la partita si chiude senza risposta. Una risposta vuota e' un "non
    * lo so".
    */
@@ -149,9 +181,8 @@ export const catenaRoutes = new Hono<AppEnv>()
     const corpo = await corpoDi(c)
     const adesso = Date.now()
     const catena = await catenaDiOggi(c)
-    const letta = await partitaDi(c.env.DB, c.get('player').id, giornata().puzzleNumber)
-    if (!letta) fail(409, 'FINALE', 'La parola finale non è ancora arrivata.')
-    const row = await chiudiScaduta(c.env.DB, letta, adesso)
+    const row = await partitaLetta(c, catena, adesso)
+    if (!row) fail(409, 'FINALE', 'La parola finale non è ancora arrivata.')
     if (row.status === 'done') return c.json<CatenaStato>(stato(row, catena, adesso))
     const s = svolgiCatena(catena, mosseDi(row))
     if (s.passo !== PASSO_FINALE || !row.finale_at) fail(409, 'FINALE', 'La parola finale non è ancora arrivata.')

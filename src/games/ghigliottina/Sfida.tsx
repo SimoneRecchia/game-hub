@@ -5,8 +5,8 @@ import { useGhigliottinaLibera } from './useGhigliottinaLibera'
 import './Ghigliottina.css'
 
 /**
- * La Ghigliottina di una sfida: la stessa per tutti e due, dal seme, con il
- * tempo della finale scelto da chi ha sfidato. Mentre si sceglie va al server
+ * La Ghigliottina di una sfida: la stessa per tutti e due, dal seme, con i
+ * tempi scelti da chi ha sfidato. Mentre si sceglie va al server
  * quante coppie si sono fatte — i punti arrivano solo con la parola vincente —,
  * e alla fine il montepremi vinto e quanto ci si e' messo a scriverla, che a
  * pari punti decide.
@@ -24,11 +24,16 @@ export function PartitaSfidaGhigliottina({
   useEffect(() => {
     if (cominciata.current) return
     cominciata.current = true
-    void comincia({ seme, tempoFinaleMs: impostazioni.secondi * 1_000, conta: false })
+    void comincia({
+      seme,
+      tempoSceltaMs: impostazioni.passo * 1_000,
+      tempoFinaleMs: impostazioni.secondi * 1_000,
+      conta: false,
+    })
   }, [comincia, impostazioni, seme])
 
   const v = g.vista
-  const scelte = v ? v.coppie.filter((c) => c.scelta !== null).length : 0
+  const scelte = v ? v.coppie.filter((c) => c.giusta !== null).length : 0
   useEffect(() => {
     if (!v || v.finita || scelte === 0) return
     onAvanza({ punti: 0, passo: scelte, tempoMs: 0 })

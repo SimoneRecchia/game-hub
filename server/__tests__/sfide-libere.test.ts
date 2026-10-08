@@ -70,7 +70,10 @@ describe('le regole delle sfide delle libere', () => {
     expect(impostazioniValide('paroliere', { lato: 5, minuti: 2 })).toEqual({ lato: 5, minuti: 2 })
     expect(impostazioniValide('paroliere', { lato: 7, minuti: 99, altro: 1 })).toEqual(PREDEFINITE.paroliere)
     expect(impostazioniValide('sudoku', null)).toEqual(PREDEFINITE.sudoku)
-    expect(impostazioniValide('catena', { secondi: 30 })).toEqual({ secondi: 30 })
+    expect(impostazioniValide('catena', { secondi: 45, passo: 30 })).toEqual({ secondi: 45, passo: 30 })
+    // Il passo e' fra le scelte del suo gioco: venti secondi a coppia, non a parola.
+    expect(impostazioniValide('catena', { secondi: 45, passo: 20 })).toEqual({ secondi: 45, passo: 60 })
+    expect(impostazioniValide('ghigliottina', { passo: 20 })).toEqual(PREDEFINITE.ghigliottina)
   })
 
   it('vince chi fa piu’ punti, e a pari punti chi ci ha messo meno', () => {
