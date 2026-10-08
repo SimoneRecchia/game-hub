@@ -1,0 +1,97 @@
+/*
+ * La ruota della roulette. Il riquadro (`__scatola`) e' quadrato e largo
+ * quanto la ruota; il piatto inclinato se ne vede dal 24% all'88% dell'altezza,
+ * quindi `.rl-ruota` taglia sopra e sotto quel che resta vuoto: e' alto il 70%
+ * del lato, e la scatola sale del 21%. La trasformazione del piatto la scrive
+ * Ruota.tsx, con la prospettiva in proporzione al lato: la stessa che usa per
+ * la biglia.
+ */
+
+.rl-ruota {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.7;
+}
+
+.rl-ruota__scatola {
+  position: absolute;
+  inset: -21% 0 auto;
+  aspect-ratio: 1;
+}
+
+.rl-ruota__piatto,
+.rl-ruota__spessore {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform-origin: 50% 50%;
+}
+
+/* Lo spessore del legno: lo stesso piatto, piu' scuro e un po' piu' giu', che sporge sotto. */
+.rl-ruota__spessore {
+  translate: 0 5.5%;
+  background:
+    linear-gradient(180deg, transparent 55%, rgb(0 0 0 / 0.35)),
+    radial-gradient(circle at 50% 50%, #5a2a0e 0 70%, #2a1104 100%);
+  box-shadow: 0 0 0 1px rgb(255 214 150 / 0.08) inset;
+}
+
+/* L'ombra della ruota sul panno, morbida e larga. */
+.rl-ruota__base {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 72%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.55), transparent);
+  filter: blur(6px);
+}
+
+.rl-ruota__conca,
+.rl-ruota__luce,
+.rl-ruota__rotore,
+.rl-ruota__cilindro {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.rl-ruota__rotore {
+  will-change: transform;
+}
+
+.rl-ruota__luce {
+  pointer-events: none;
+}
+
+.rl-ruota__numero {
+  fill: #fff;
+  font-family: var(--font-rounded);
+  font-size: 6.4px;
+  font-weight: 800;
+}
+
+.rl-ruota__biglia,
+.rl-ruota__ombra {
+  position: absolute;
+  left: 0;
+  top: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
+.rl-ruota__biglia {
+  background: radial-gradient(circle at 34% 30%, #fff 0 18%, #ececf0 38%, #a7a7b0 74%, #6c6c76 100%);
+  box-shadow:
+    0 0.5px 1px rgb(0 0 0 / 0.5),
+    0 0 4px rgb(255 255 255 / 0.25);
+}
+
+.rl-ruota__ombra {
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.7), transparent);
+  filter: blur(1px);
+}

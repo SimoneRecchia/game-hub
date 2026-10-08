@@ -8,11 +8,12 @@ import { BottoneBarra } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
 import { Vetrina } from '@/components/Vetrina'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
-import { statoBlackjack, statoRuota, statoSlot, type StatoRuota } from '@/games/stato'
+import { statoBlackjack, statoRoulette, statoRuota, statoSlot, type StatoRuota } from '@/games/stato'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
 import { NOME_BLACKJACK, PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { gameDate } from '@shared/daily'
+import { NOME_ROULETTE, PUNTATA_MINIMA_RL } from '@shared/roulette'
 import { NOME_CRAZY_TIME, PUNTATA_MINIMA, resa } from '@shared/ruota'
 import { NOME_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import type { FortunaRisposta, GiocoFortuna } from '@shared/types'
@@ -24,6 +25,7 @@ const GIOCHI: ReadonlyArray<{ id: GiocoFortuna; nome: string; a: string }> = [
   { id: 'ruota', nome: NOME_CRAZY_TIME, a: ROTTE.ruota },
   { id: 'slot', nome: NOME_SLOT, a: ROTTE.slot },
   { id: 'blackjack', nome: NOME_BLACKJACK, a: ROTTE.blackjack },
+  { id: 'roulette', nome: NOME_ROULETTE, a: ROTTE.roulette },
 ]
 
 const RESA = Math.round(resa(1) * 100)
@@ -34,8 +36,8 @@ const RESA = Math.round(resa(1) * 100)
  * gia' dato o tolto. E' una sala da gioco, scura in tutti e due i temi
  * (Vetrina.css). In cima il saldo, e basta: quanto si e' vinto o perso non si
  * dice, e toccandolo si apre la classifica della Fortuna. Sotto una carta per
- * gioco, e i tavoli del blackjack degli amici online, a cui ci si siede con un
- * tocco.
+ * gioco, e i tavoli del blackjack e della roulette degli amici online, a cui
+ * ci si siede con un tocco.
  *
  * I dati arrivano con una richiesta sola (`/api/fortuna`) e restano in memoria,
  * come quelli della schermata iniziale.
@@ -44,7 +46,12 @@ export default function Fortuna() {
   const { dati, ricarica } = useDati<FortunaRisposta>('/fortuna')
   const [regole, setRegole] = useState(false)
   const stati: Record<GiocoFortuna, StatoRuota> | null = dati
-    ? { ruota: statoRuota(dati.ruota), slot: statoSlot(dati), blackjack: statoBlackjack(dati) }
+    ? {
+        ruota: statoRuota(dati.ruota),
+        slot: statoSlot(dati),
+        blackjack: statoBlackjack(dati),
+        roulette: statoRoulette(dati),
+      }
     : null
 
   return (
@@ -78,8 +85,13 @@ export default function Fortuna() {
       </Sezione>
 
       {dati && dati.blackjack.tavoli.length > 0 && !dati.blackjack.mioTavolo && (
-        <Sezione titolo="Al tavolo">
+        <Sezione titolo="Al tavolo del blackjack">
           <TavoliDegliAmici tavoli={dati.blackjack.tavoli} onCambio={() => void ricarica()} />
+        </Sezione>
+      )}
+      {dati && dati.roulette.tavoli.length > 0 && !dati.roulette.mioTavolo && (
+        <Sezione titolo="Al tavolo della roulette">
+          <TavoliDegliAmici tavoli={dati.roulette.tavoli} gioco="roulette" onCambio={() => void ricarica()} />
         </Sezione>
       )}
 
@@ -96,10 +108,14 @@ export default function Fortuna() {
                 <strong>{NOME_CRAZY_TIME}</strong>: da {PUNTATA_MINIMA} punti a tutto il saldo.
               </li>
               <li>
-                <strong>{NOME_SLOT}</strong>: da {PUNTATA_MINIMA_SLOT} a 10 punti a giro.
+                <strong>{NOME_SLOT}</strong>: da {PUNTATA_MINIMA_SLOT} punto a tutto il saldo.
               </li>
               <li>
                 <strong>{NOME_BLACKJACK}</strong>: da {PUNTATA_MINIMA_BJ} punti a tutto il saldo, al tavolo con gli
+                amici o da solo.
+              </li>
+              <li>
+                <strong>{NOME_ROULETTE}</strong>: da {PUNTATA_MINIMA_RL} punto a tutto il saldo, al tavolo con gli
                 amici o da solo.
               </li>
             </ul>

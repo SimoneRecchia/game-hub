@@ -1,6 +1,6 @@
 import { Sheet } from '@/components/Sheet'
 import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
-import { CILIEGIE, PREMI, PUNTATA_MASSIMA_SLOT, PUNTATA_MINIMA_SLOT, VINCITA_DOMANDA } from '@shared/slot'
+import { CILIEGIE, PREMI, PUNTATA_MINIMA_SLOT, VINCITA_DOMANDA } from '@shared/slot'
 import { Simbolo } from './simboli'
 import '@/games/cruciverba/ComeSiGioca.css'
 
@@ -28,7 +28,7 @@ export function ComeSiGiocaSlot({
     <Sheet open={open} onClose={onClose} title="Come si gioca">
       <div className="cru-aiuto slot-regole">
         <p className="cru-aiuto__lede">
-          Tocca le fiches per puntare: si sommano, da {PUNTATA_MINIMA_SLOT} a {PUNTATA_MASSIMA_SLOT} punti, e Azzera
+          Tocca le fiches per puntare: si sommano, da {PUNTATA_MINIMA_SLOT} punto a tutto il saldo, e Azzera
           riparte da zero. Poi tira la leva: la puntata la paghi subito, paga la linea di mezzo, e la vincita è la
           puntata per il premio.
         </p>

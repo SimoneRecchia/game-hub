@@ -1,7 +1,7 @@
 /**
  * La slot: tre rulli, tre righe in vista e una linea, quella di mezzo, come le
- * slot classiche con la leva. Si punta da `PUNTATA_MINIMA_SLOT` punto, e la
- * puntata si paga al giro, come a Crazy Time: il giro nasce con la puntata
+ * slot classiche con la leva. Si punta da `PUNTATA_MINIMA_SLOT` punto a tutto
+ * il saldo, e la puntata si paga al giro, come a Crazy Time: il giro nasce con la puntata
  * persa, e una vincita la restituisce moltiplicata.
  *
  * Sulla linea pagano le ciliegie, dovunque stiano (`CILIEGIE`): una ridà la
@@ -70,9 +70,12 @@ export const CILIEGIE: readonly number[] = [0, 1, 5, 20]
 export const VINCITA_DOMANDA = 15
 
 export const PUNTATA_MINIMA_SLOT = 1
-/** Le fiches della slot: ogni tocco aggiunge il suo valore alla puntata, fino al massimo, che e' la piu' grande. */
-export const PUNTATE_SLOT: readonly number[] = [1, 2, 5, 10]
-export const PUNTATA_MASSIMA_SLOT = PUNTATE_SLOT[PUNTATE_SLOT.length - 1]
+/**
+ * Le fiches della slot: ogni tocco aggiunge il suo valore alla puntata, fino al
+ * saldo. Non c'e' un massimo, come a Crazy Time e al blackjack: le fiches
+ * grandi servono ad arrivare a una puntata alta in pochi tocchi.
+ */
+export const PUNTATE_SLOT: readonly number[] = [1, 5, 25, 100]
 
 /**
  * Fra due giri: i rulli si fermano uno dopo l'altro, e un programma che tira la
@@ -89,7 +92,7 @@ export function puntataSlotValida(puntata: unknown, saldo: number): puntata is n
   return (
     Number.isInteger(puntata) &&
     (puntata as number) >= PUNTATA_MINIMA_SLOT &&
-    (puntata as number) <= Math.min(PUNTATA_MASSIMA_SLOT, saldo)
+    (puntata as number) <= saldo
   )
 }
 

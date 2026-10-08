@@ -172,6 +172,14 @@ export type NomeSuono =
   | 'maglia'
   /** Il montepremi dimezzato: la nota che cade, e il soffio. */
   | 'dimezza'
+  /** La biglia della roulette che corre sulla pista: il fruscio che rallenta, per `altezza` secondi. */
+  | 'biglia'
+  /** La biglia che batte su un rombo o su un separatore: un colpo di ceramica, piu' alto o piu' basso (`altezza`). */
+  | 'rimbalzo'
+  /** La biglia che si ferma nella casella: gli ultimi saltelli, e il tonfo sul fondo. */
+  | 'casella'
+  /** Il croupier che chiude le puntate: il campanello di "rien ne va plus". */
+  | 'nienteVaPiu'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -1256,6 +1264,38 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     campanello(u, t, vario(1760 * altezza, 0.02), 0.07 * v, { eco: 0.25, durata: 0.35 })
     campanello(u, t + 0.045, vario(2350 * altezza, 0.02), 0.05 * v, { eco: 0.3, durata: 0.3 })
     soffio(u, t, 0.05, 0.05 * v, { tipo: 'highpass', da: 5000, a: 7000, q: 0.6 }, { attacco: 0.002, eco: 0.05 })
+  },
+
+  // La biglia sulla pista: grani di rumore sempre piu' radi, e il fruscio che scende di tono mentre rallenta.
+  biglia: (u, t, v, lunghezza = 4) => {
+    const durata = Math.max(0.5, lunghezza)
+    let x = 0
+    while (x < durata) {
+      const k = x / durata
+      colpo(u, t + x, voce(u, (0.035 + 0.02 * (1 - k)) * v, 0.06), vario(3400 - 1600 * k, 0.12), 0.03, 0.8)
+      x += 0.045 + 0.09 * k * k
+    }
+    soffio(u, t, durata, 0.05 * v, { tipo: 'bandpass', da: 2600, a: 700, q: 1.1 }, { attacco: 0.08, eco: 0.08 })
+  },
+
+  // Un rombo o un separatore: la ceramica contro il metallo, corta e chiara.
+  rimbalzo: (u, t, v, altezza = 1) => {
+    campanello(u, t, vario(2900 * altezza, 0.04), 0.05 * v, { eco: 0.12, durata: 0.1 })
+    legno(u, t, vario(1900 * altezza, 0.05), 0.09 * v, 0.02)
+  },
+
+  // La biglia nella casella: tre saltelli sempre piu' vicini, e il tonfo che dice che e' finita.
+  casella: (u, t, v) => {
+    legno(u, t, vario(1500), 0.08 * v, 0.02)
+    legno(u, t + 0.09, vario(1350), 0.06 * v, 0.02)
+    legno(u, t + 0.15, vario(1250), 0.045 * v, 0.02)
+    tonfo(u, t + 0.19, 0.16 * v, { da: 260, a: 110, durata: 0.18 })
+  },
+
+  // "Rien ne va plus": il campanello del croupier, due note che scendono.
+  nienteVaPiu: (u, t, v) => {
+    campanello(u, t, N.G6, 0.07 * v, { eco: 0.4, durata: 0.8 })
+    campanello(u, t + 0.16, N.C6, 0.08 * v, { eco: 0.45, durata: 1 })
   },
 
   // Il montepremi a meta': il soffio che scende, e due note che cadono di una quinta.

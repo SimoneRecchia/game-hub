@@ -52,7 +52,7 @@ const LEDE: Record<ChiaveClassifica, string> = {
   ghigliottina: `Si parte da ${TETTI.ghigliottina} punti, ogni scelta sbagliata li dimezza; zero se sbagli la parola vincente.`,
   paroliere: `${PUNTI_GIOCATA_PAROLIERE} punti per aver giocato, fino a ${TETTI.paroliere} con le parole della griglia.`,
   catena: `Si parte da ${TETTI.catena} punti, ogni errore li dimezza; zero se sbagli la parola finale.`,
-  fortuna: 'Quel che Crazy Time, la slot e il blackjack hanno dato o tolto.',
+  fortuna: 'Quel che Crazy Time, la slot, il blackjack e la roulette hanno dato o tolto.',
 }
 
 /**
