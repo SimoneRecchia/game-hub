@@ -21,6 +21,7 @@ import {
 } from '@/games/scarabeo/adesivi'
 import { nelSacchetto } from '@/games/scarabeo/turni'
 import { InvitaAmico, PartitaAperta, useSalaTavolo } from '@/games/tavolo/SalaAmico'
+import { SceltaTempo, useTempoMossa } from '@/games/tavolo/Tempo'
 import { useScarabeoLibero, type ScarabeoLiberoController } from '@/games/scarabeo/useScarabeoLibero'
 import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
@@ -341,7 +342,9 @@ function titoloEsito(esito: 'vinta' | 'persa' | 'pari' | null): string {
  */
 function SceltaPartita({ g }: { g: ScarabeoLiberoController }) {
   const [contro, setContro] = useState<Contro>(leggiContro)
-  const sala = useSalaTavolo('scarabeo')
+  // Il tempo per mossa vale con un amico: contro il computer lo Scarabeo si pensa quanto si vuole.
+  const [tempo, setTempo] = useTempoMossa('scarabeo')
+  const sala = useSalaTavolo('scarabeo', null, tempo)
   const scegli = (c: Contro) => {
     setContro(c)
     try {
@@ -366,7 +369,14 @@ function SceltaPartita({ g }: { g: ScarabeoLiberoController }) {
           ]}
         />
       </div>
-      {vista === 'computer' ? <SceltaLivello g={g} /> : <InvitaAmico sala={sala} />}
+      {vista === 'computer' ? (
+        <SceltaLivello g={g} />
+      ) : (
+        <>
+          <SceltaTempo gioco="scarabeo" valore={tempo} onChange={setTempo} />
+          <InvitaAmico sala={sala} />
+        </>
+      )}
     </>
   )
 }

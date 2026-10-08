@@ -57,6 +57,14 @@ describe('il computer della libera', () => {
     expect(COMPUTER_NOMI.difficile.stop[1]).toBeLessThan(COMPUTER_NOMI.facile.stop[0])
   })
 
+  it('con un tempo piu’ corto il computer dice stop prima, in proporzione', () => {
+    const tre = nuovaPartita(FILE, 'a', CATEGORIE, 'facile', mulberry32(5))
+    const uno = nuovaPartita(FILE, 'a', CATEGORIE, 'facile', mulberry32(5), 60_000)
+    expect(uno.tempoMs).toBe(60_000)
+    expect(Math.abs(uno.stopMs - tre.stopMs / 3)).toBeLessThanOrEqual(1)
+    expect(uno.stopMs).toBeLessThan(60_000)
+  })
+
   it('senza parole note in una categoria, li’ non scrive', () => {
     const senza = { ...FILE, note: { nomi: ['Anna'] } }
     const p = nuovaPartita(senza, 'a', CATEGORIE, 'difficile', mulberry32(3))
@@ -72,6 +80,7 @@ describe('com’e’ finita', () => {
     computer: ['Anna', 'Ancona', null, 'azzurro', 'arancia'],
     tempi: [10_000, 20_000, Number.POSITIVE_INFINITY, 30_000, 90_000],
     stopMs: 90_000,
+    tempoMs: 180_000,
   }
 
   it('si contano i punti come al tavolo', () => {

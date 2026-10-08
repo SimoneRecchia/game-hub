@@ -12,8 +12,7 @@ const REGOLE: Record<GiocoTavoliere, { lede: string; sezioni: { titolo: string; 
         titolo: 'Il turno',
         righe: [
           'Tocca una casella libera. Comincia la croce.',
-          'Hai dieci secondi per ogni mossa: allo scadere perdi.',
-          'Con un amico la prima mossa di ciascuno è senza tempo.',
+          'Ogni mossa ha il suo tempo, dieci secondi se non lo cambi: allo scadere perdi.',
         ],
       },
       {
@@ -152,6 +151,10 @@ export function ComeSiGiocaTavoliere({
             <li>
               Con un amico online, o con un link. A partita finita, «Gioca ancora» scambia{' '}
               {gioco === 'tris' ? 'i segni' : 'i colori'}.
+            </li>
+            <li>
+              Nella sala scegli il tempo per mossa{gioco === 'tris' ? '' : ', o nessuno'}: allo scadere perde chi ha la
+              mossa. Con un amico la prima mossa di ciascuno è senza tempo.
             </li>
             <li>Non c’è classifica.</li>
           </ul>

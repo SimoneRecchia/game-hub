@@ -4,6 +4,7 @@ import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Cursore } from '@/components/Cursore'
+import { Opzioni, Scelte } from '@/components/Opzioni'
 import { Difficolta } from '@/components/Difficolta'
 import { Elenco, Riga, Sezione } from '@/components/Elementi'
 import { IconCheck, IconChevronRight, IconInfo, IconPlay } from '@/components/Icons'
@@ -820,7 +821,7 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
               valore={nomeArea(scelte.area, ix)}
               icona={
                 paese ? (
-                  <img className="quiz-impostazione__bandiera" src={urlBandiera(paese.toLowerCase(), 40)} alt="" />
+                  <img className="opzione__bandiera" src={urlBandiera(paese.toLowerCase(), 40)} alt="" />
                 ) : (
                   <Sagoma
                     zona={scelte.area === 'mondo' ? 'mondo' : (scelte.area as Continente)}
@@ -1013,13 +1014,13 @@ function RigaFoglio({
   onClick: () => void
 }) {
   return (
-    <button type="button" className="quiz-impostazione quiz-impostazione--riga" onClick={onClick}>
-      <span className="quiz-impostazione__titolo">{titolo}</span>
-      <span className="quiz-impostazione__valore">
+    <button type="button" className="opzione opzione--riga" onClick={onClick}>
+      <span className="opzione__titolo">{titolo}</span>
+      <span className="opzione__valore">
         {icona}
-        <span className="quiz-impostazione__scelta">{valore}</span>
+        <span className="opzione__scelta">{valore}</span>
       </span>
-      <IconChevronRight size={18} className="quiz-impostazione__freccia" />
+      <IconChevronRight size={18} className="opzione__freccia" />
     </button>
   )
 }
@@ -1037,45 +1038,6 @@ function Sagoma({ zona, piccola = false, colore }: { zona: 'mondo' | Continente;
       <path className="sagoma__resto" d={s.resto} />
       <path className="sagoma__zona" d={s.zona} />
     </svg>
-  )
-}
-
-/** Un gruppo di opzioni in una carta, una riga per opzione, come nelle Impostazioni. */
-function Opzioni({ children }: { children: ReactNode }) {
-  return <div className="quiz-impostazioni">{children}</div>
-}
-
-/**
- * Una riga con il suo nome, se serve una riga che spiega, e sotto il
- * controllo. `valore` e' quel che dice un cursore, scritto a destra del nome:
- * sotto la pista lo coprirebbe il dito che lo trascina.
- */
-function Scelte({
-  titolo,
-  sotto,
-  valore,
-  children,
-}: {
-  titolo: string
-  sotto?: string
-  valore?: string
-  children?: ReactNode
-}) {
-  return (
-    <div className="quiz-impostazione">
-      <span className="quiz-impostazione__testa">
-        <span className="quiz-impostazione__testi">
-          <span className="quiz-impostazione__titolo">{titolo}</span>
-          {sotto && <span className="quiz-impostazione__sotto">{sotto}</span>}
-        </span>
-        {valore && (
-          <span className="quiz-impostazione__numero" aria-hidden="true">
-            {valore}
-          </span>
-        )}
-      </span>
-      {children}
-    </div>
   )
 }
 

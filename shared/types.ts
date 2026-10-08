@@ -12,11 +12,13 @@ import type { InvitoScarabocchi, StanzaScarabocchiBreve } from './scarabocchi'
 import type { Lato, Personaggi, Risposta } from './indovina'
 import type { GiocoAlTavolo, GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
+import type { LivelloSequenze } from './sequenze'
 import type { CategoriaNomi, PiuDate, RispostaContata } from './nomi-cose'
 import type { LatoMoneta } from './ruota'
 import type { Carta, ManoBJ } from './blackjack'
 import type { FaseBJ } from './blackjack-tavolo'
 import type { EsitoMossaCatena, TerzoElemento, VoceCatena } from './catena'
+import type { GiocoSfidaLibera, ImpostazioniSfidaLibera } from './sfide-libere'
 
 export type GameId =
   | 'wordle'
@@ -880,6 +882,8 @@ export interface LatoSfidaSequenze {
 export interface VistaSfidaSequenze {
   id: string
   stato: StatoSfidaSequenze
+  /** La difficolta' scelta da chi ha sfidato: da quanti cubetti si parte, il ritmo, e se si tocca al contrario. */
+  livello: LivelloSequenze
   avversario: GiocatoreBreve | null
   /** L'avversario ha il telefono acceso sull'app. */
   online: boolean
@@ -898,6 +902,60 @@ export interface VistaSfidaSequenze {
 export interface MossaSfidaSequenze extends VistaSfidaSequenze {
   giusta: boolean | null
   sequenza: number[] | null
+}
+
+/* ───────────────────────  Le sfide delle libere da soli  ─────────────────────── */
+
+/** Gli inviti e la sala sono quelli di Nomi, cose e città, con il gioco e le opzioni. */
+export type StatoSfidaLibera = StatoSfidaNomi
+export type InvitoSfidaLiberaMandato = InvitoNomiMandato
+
+export interface InvitoSfidaLibera extends InvitoNomi {
+  gioco: GiocoSfidaLibera
+  impostazioni: ImpostazioniSfidaLibera
+}
+
+export interface SfidaLiberaBreve extends SfidaNomiBreve {
+  gioco: GiocoSfidaLibera
+}
+
+export interface SalaSfidaLibera {
+  giocatori: GiocatoreOnline[]
+  invito: InvitoSfidaLiberaMandato | null
+  partita: SfidaLiberaBreve | null
+}
+
+/** Fin dove e' arrivato uno dei due, come l'ha detto il suo telefono: e se e' partito, e se ha finito. */
+export interface LatoSfidaLibera {
+  punti: number
+  passo: number
+  tempoMs: number
+  partito: boolean
+  finito: boolean
+}
+
+export interface VistaSfidaLibera {
+  id: string
+  gioco: GiocoSfidaLibera
+  impostazioni: ImpostazioniSfidaLibera
+  stato: StatoSfidaLibera
+  avversario: GiocatoreBreve | null
+  /** L'avversario ha il telefono acceso sull'app. */
+  online: boolean
+  /** Quanto manca al via, durante il tre-due-uno. */
+  inizioTraMs: number | null
+  /** Il seme della partita, dal via: prima non esce. */
+  seme: number | null
+  /** Fra quanto il server chiude la sfida con quel che c'e'. */
+  chiudeTraMs: number | null
+  mie: LatoSfidaLibera
+  sue: LatoSfidaLibera
+  /** La mia partita si e' chiusa adesso, perché la pagina e' stata riaperta dopo il via. */
+  riaperta: boolean
+  vincitore: 'io' | 'avversario' | 'pari' | null
+  serie: { mie: number; sue: number; partite: number }
+  /** La rivincita chiesta: da chi, e se e' gia' diventata una partita. */
+  rivincita: { id: string; mia: boolean; stato: StatoSfidaLibera } | null
 }
 
 /* ─────────────────────────────  Nomi, cose e città  ───────────────────────────── */
@@ -1175,7 +1233,16 @@ export interface InvitoConLink {
   da: GiocatoreBreve
   stato: 'attesa' | 'usato' | 'scaduto' | 'annullato'
   /** A cosa: la battaglia navale, se non si dice altro, una sfida a quiz, Indovina chi, un tavoliere, Nomi, Sequenze o Lupus. */
-  gioco?: 'battaglia' | 'quiz' | 'indovina' | 'nomi' | 'sequenze' | 'lupus' | 'scarabocchi' | GiocoAlTavolo
+  gioco?:
+    | 'battaglia'
+    | 'quiz'
+    | 'indovina'
+    | 'nomi'
+    | 'sequenze'
+    | 'lupus'
+    | 'scarabocchi'
+    | GiocoAlTavolo
+    | GiocoSfidaLibera
   /** Per il quiz, la partita che si gioca. */
   sfida?: RiassuntoSfida
   /** Per Indovina chi, con quali personaggi. */
@@ -1213,6 +1280,10 @@ export interface PresenzaRisposta {
   sequenze: InvitoSequenze[]
   /** La sfida a Sequenze aperta. */
   partitaSequenze: SfidaSequenzeBreve | null
+  /** Le sfide al sudoku, agli Anagrammi, al Paroliere, alla Ghigliottina e alla Catena arrivate. */
+  sfide: InvitoSfidaLibera[]
+  /** La sfida a uno di quei giochi aperta. */
+  partitaSfida: SfidaLiberaBreve | null
   /** Gli inviti a giocare in compagnia il cruciverba o lo Scarabeo di qualcuno. */
   compagnia: InvitoCompagnia[]
   /** Gli inviti a una stanza di Lupus in fabula. */

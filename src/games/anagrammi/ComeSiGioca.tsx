@@ -34,7 +34,10 @@ export function ComeSiGiocaAnagrammi({ open, onClose }: { open: boolean; onClose
               {BONUS_ANAGRAMMI} in più se la trovi subito.
             </li>
             <li>La definizione aiuta e costa {COSTO_AIUTO_ANAGRAMMI} punti.</li>
-            <li>La libera non conta per la classifica.</li>
+            <li>
+              Nella libera scegli il tempo per parola, e puoi sfidare un amico sulle stesse parole: vince chi fa più
+              punti. Non conta per la classifica.
+            </li>
           </ul>
         </section>
         <p className="cru-aiuto__nota">

@@ -18,8 +18,26 @@ import './Sudoku.css'
  * gli strumenti e le cifre. A partita finita il tastierino lascia il posto a
  * `fine`, che dice com'e' andata.
  */
-export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso; fine: ReactNode; dettaglioRisolto: string }) {
+export function PartitaSudoku({
+  p,
+  fine,
+  dettaglioRisolto,
+  orologio,
+  senzaAiuti = false,
+  chiusa = false,
+}: {
+  p: SudokuInCorso
+  fine: ReactNode
+  dettaglioRisolto: string
+  /** Al posto del tempo di gioco: il tempo che resta di una sfida. */
+  orologio?: { ms: number; etichetta: string }
+  /** Nelle sfide fra amici gli aiuti non ci sono. */
+  senzaAiuti?: boolean
+  /** La partita e' chiusa senza essere risolta: il tempo di una sfida e' finito. Sotto la griglia va `fine`. */
+  chiusa?: boolean
+}) {
   const e = p.editor
+  const finita = p.finita || chiusa
   const [aiuti, setAiuti] = useState(false)
   const dati = p.dati ?? VUOTA.repeat(81)
   const vuote = useMemo(() => [...dati].filter((d) => d === VUOTA).length, [dati])
@@ -35,7 +53,7 @@ export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso;
   const scriviRef = useRef(scrivi)
   scriviRef.current = scrivi
   useEffect(() => {
-    if (!p.dati || p.finita || aiuti) return
+    if (!p.dati || finita || aiuti) return
     const onKey = (ev: KeyboardEvent) => {
       if ((ev.metaKey || ev.ctrlKey) && ev.key.toLowerCase() === 'z') {
         ev.preventDefault()
@@ -58,7 +76,7 @@ export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso;
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [p.dati, p.finita, aiuti, sposta, cancella, annulla, cambiaModo])
+  }, [p.dati, finita, aiuti, sposta, cancella, annulla, cambiaModo])
 
   // Una riga, una colonna o un riquadro completati suonano come un punto fatto.
   useEffect(() => {
@@ -95,7 +113,7 @@ export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso;
             dati={p.dati}
             cifre={e.cifre}
             note={e.note}
-            scelta={p.finita ? null : e.selezione}
+            scelta={finita ? null : e.selezione}
             svelate={p.svelate}
             segnalate={p.segnalate}
             doppioni={e.doppioni}
@@ -109,9 +127,9 @@ export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso;
       {/* Sul telefono stato sopra la griglia e tastierino sotto; di lato, tutti e due accanto. */}
       <div className="sud__lato">
         <div className="sud__stato">
-          <span className="sud__tempo u-tabnum" aria-label="Tempo di gioco">
+          <span className="sud__tempo u-tabnum" aria-label={orologio?.etichetta ?? 'Tempo di gioco'}>
             <IconClock size={14} />
-            {formatCronometro(p.tempoMs)}
+            {formatCronometro(orologio?.ms ?? p.tempoMs)}
           </span>
           {p.messaggio ? (
             <span key={p.messaggio} className="sud__avviso" aria-live="polite">
@@ -135,7 +153,7 @@ export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso;
           )}
         </div>
 
-        {p.finita ? (
+        {finita ? (
           fine
         ) : (
           <Tastierino
@@ -146,7 +164,7 @@ export function PartitaSudoku({ p, fine, dettaglioRisolto }: { p: SudokuInCorso;
             onCancella={e.cancella}
             onAnnulla={e.annulla}
             onNote={e.cambiaModo}
-            onAiuti={() => setAiuti(true)}
+            onAiuti={senzaAiuti ? undefined : () => setAiuti(true)}
           />
         )}
       </div>

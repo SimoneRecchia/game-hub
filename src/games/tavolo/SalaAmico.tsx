@@ -26,7 +26,7 @@ const RITMO_TRANQUILLO_MS = 12_000
  * e per lo Scarabeo (ScarabeoLibero), perché gli inviti stanno tutti sul tavolo
  * del server. Quando l'amico accetta, la sala porta alla partita.
  */
-export function useSalaTavolo(gioco: GiocoAlTavolo, variante: string | null = null) {
+export function useSalaTavolo(gioco: GiocoAlTavolo, variante: string | null = null, tempo: number | null = null) {
   const { vai } = useNavigazione()
   const toast = useToast()
   const presenza = usePresenza()
@@ -69,7 +69,7 @@ export function useSalaTavolo(gioco: GiocoAlTavolo, variante: string | null = nu
     try {
       const creato = await api<{ id: string; codice: string | null }>('/tavolo/inviti', {
         method: 'POST',
-        body: { gioco, playerId, variante },
+        body: { gioco, playerId, variante, tempoMossa: tempo },
       })
       if (creato.codice) await condividi(gioco, creato.codice, toast.show)
       await carica()

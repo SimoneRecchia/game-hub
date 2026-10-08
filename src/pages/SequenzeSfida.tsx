@@ -14,13 +14,17 @@ import { useSfidaSequenze, type SfidaSequenze } from '@/games/sequenze/useSfidaS
 import { useRestante } from '@/games/tavolo/TempoMossa'
 import { usePlayer } from '@/lib/auth'
 import { suona } from '@/lib/suoni'
-import { RITMO_NORMALE, lunghezzaRaggiunta } from '@shared/sequenze'
+import { Tacche } from '@/components/Elementi'
+import { NOMI_LIVELLI_SEQUENZE } from '@/games/sequenze/useSequenzeLibere'
+import { LIVELLI_ORDINATI, LIVELLI_SEQUENZE, lunghezzaRaggiunta, type LivelloSequenze } from '@shared/sequenze'
 import type { VistaSfidaSequenze } from '@shared/types'
 import '@/games/sequenze/Sequenze.css'
 
-/** Fin dove si e' arrivati, detto in cubetti: la sequenza piu' lunga ripetuta. */
-const cubetti = (giuste: number) => (giuste === 0 ? 'nessuna sequenza' : `${lunghezzaRaggiunta(giuste)} cubetti`)
-const conto = (giuste: number) => (giuste === 0 ? '–' : String(lunghezzaRaggiunta(giuste)))
+/** Fin dove si e' arrivati, detto in cubetti: la sequenza piu' lunga ripetuta, che dipende da dove si parte. */
+const cubetti = (giuste: number, l: LivelloSequenze) =>
+  giuste === 0 ? 'nessuna sequenza' : `${lunghezzaRaggiunta(giuste, LIVELLI_SEQUENZE[l].prima)} cubetti`
+const conto = (giuste: number, l: LivelloSequenze) =>
+  giuste === 0 ? '–' : String(lunghezzaRaggiunta(giuste, LIVELLI_SEQUENZE[l].prima))
 
 /**
  * Una sfida a Sequenze con un amico: le stesse sequenze per tutti e due, dal
@@ -38,10 +42,12 @@ function Sfida({ id }: { id: string }) {
   const v = g.vista
   const [regole, setRegole] = useState(false)
   const { adesivo, accoda } = useCodaAdesivi()
+  const difficolta = LIVELLI_SEQUENZE[v?.livello ?? 'normale']
   const prova = useProva({
     sequenza: g.aperta?.sequenza ?? null,
     chiave: g.aperta?.chiave ?? 0,
-    ritmo: RITMO_NORMALE,
+    ritmo: difficolta.ritmo,
+    indietro: difficolta.indietro,
     onFine: g.rispondi,
   })
   const nome = v?.avversario?.displayName ?? 'L’altro'
@@ -56,7 +62,7 @@ function Sfida({ id }: { id: string }) {
         ? {
             tono: 'vivace',
             titolo: 'Hai vinto!',
-            sotto: `${cubetti(v.mie.giuste)} contro ${cubetti(v.sue.giuste)}`,
+            sotto: `${cubetti(v.mie.giuste, v.livello)} contro ${cubetti(v.sue.giuste, v.livello)}`,
             colore: 'linear-gradient(160deg, var(--sequenze-1), var(--sequenze-2))',
             durata: 1_800,
             suono: 'vittoria',
@@ -64,7 +70,7 @@ function Sfida({ id }: { id: string }) {
         : {
             tono: 'bordato',
             titolo: v.vincitore === 'pari' ? 'Pari' : `Vince ${nome}`,
-            sotto: `${cubetti(v.mie.giuste)} contro ${cubetti(v.sue.giuste)}`,
+            sotto: `${cubetti(v.mie.giuste, v.livello)} contro ${cubetti(v.sue.giuste, v.livello)}`,
             colore: 'var(--sequenze-2)',
             durata: 1_800,
             suono: v.vincitore === 'pari' ? 'pareggio' : 'sconfitta',
@@ -128,7 +134,9 @@ function Sfida({ id }: { id: string }) {
                   {prova.fase === 'guarda'
                     ? 'Guarda'
                     : prova.fase === 'tocca'
-                      ? 'Tocca a te'
+                      ? difficolta.indietro
+                        ? 'Al contrario'
+                        : 'Tocca a te'
                       : prova.fase === 'giusta'
                         ? 'Giusta!'
                         : prova.fase === 'sbagliata'
@@ -164,10 +172,13 @@ function Duello({ v }: { v: VistaSfidaSequenze }) {
         <Avatar nickname={player.nickname} color={player.avatarColor} size={36} />
         <span className="seq-duellante__testo">
           <span className="seq-duellante__nome">Tu</span>
-          <span className="seq-duellante__conto u-tabnum">{conto(v.mie.giuste)}</span>
+          <span className="seq-duellante__conto u-tabnum">{conto(v.mie.giuste, v.livello)}</span>
         </span>
       </span>
-      <span className="seq-duello__contro">cubetti</span>
+      <span className="seq-duello__contro">
+        <Tacche piene={LIVELLI_ORDINATI.indexOf(v.livello) + 1} colore="var(--sequenze-1)" />
+        <span>{NOMI_LIVELLI_SEQUENZE[v.livello]}</span>
+      </span>
       <span className={`seq-duellante is-lui${v.sue.finito ? ' is-finito' : ''}`}>
         <Avatar nickname={v.avversario?.nickname ?? '?'} color={v.avversario?.avatarColor} size={36} />
         <span className="seq-duellante__testo">
@@ -175,7 +186,7 @@ function Duello({ v }: { v: VistaSfidaSequenze }) {
             {v.avversario?.displayName}
             {v.sue.finito ? ' · ha finito' : ''}
           </span>
-          <span className="seq-duellante__conto u-tabnum">{conto(v.sue.giuste)}</span>
+          <span className="seq-duellante__conto u-tabnum">{conto(v.sue.giuste, v.livello)}</span>
         </span>
       </span>
     </div>
@@ -236,7 +247,7 @@ function Fine({ g, v }: { g: SfidaSequenze; v: VistaSfidaSequenze }) {
           <li key={r.chi} className={`seq-riepilogo__riga${r.vince ? ' is-vince' : ''}`}>
             <Avatar nickname={r.nickname} color={r.colore} size={32} />
             <span className="seq-riepilogo__nome">{r.chi}</span>
-            <span className="seq-riepilogo__valore u-tabnum">{cubetti(r.giuste)}</span>
+            <span className="seq-riepilogo__valore u-tabnum">{cubetti(r.giuste, v.livello)}</span>
           </li>
         ))}
       </ol>

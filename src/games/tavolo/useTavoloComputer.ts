@@ -93,8 +93,9 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
   const tocca = !partita.esito && !fermo && regole.tratto(partita.posizione) === computer
   const mio = !partita.esito && !fermo && regole.tratto(partita.posizione) === partita.mia
 
-  // Il tempo della mossa, nei giochi che ce l'hanno: riparte a ogni mio turno, e riaprendo la pagina.
-  const tempoMs = regole.tempoMossaMs ?? null
+  // Il tempo della mossa, se la partita ce l'ha: riparte a ogni mio turno, e riaprendo la pagina.
+  const scelto = partita.tempo === undefined ? undefined : partita.tempo === null ? null : partita.tempo * 1_000
+  const tempoMs = scelto === undefined ? (regole.tempoMossaMs ?? null) : scelto
   const [scadenza, setScadenza] = useState<number | null>(null)
   useEffect(() => {
     setScadenza(tempoMs && mio ? Date.now() + tempoMs : null)

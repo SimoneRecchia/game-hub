@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
+import { Cursore } from '@/components/Cursore'
 import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
-import { Coriandoli, Tacche, useFesta } from '@/components/Elementi'
+import { Coriandoli, Sezione, Tacche, useFesta } from '@/components/Elementi'
 import { IconComputer, IconInfo, IconRefresh, IconTimbro } from '@/components/Icons'
+import { Opzioni, Scelte } from '@/components/Opzioni'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Pillola } from '@/components/Scheda'
 import { SegmentedControl } from '@/components/SegmentedControl'
@@ -19,11 +21,24 @@ import { TIMBRO_MS, movimentoRidotto, tempiCorrezione } from '@/games/nomi/scena
 import { useNomiLibera, type NomiLibera } from '@/games/nomi/useNomiLibera'
 import { useDopo, useLetteraInVolo, useTimbro } from '@/games/nomi/useScena'
 import { SalaAmico } from '@/games/nomi/sfida/SalaAmico'
-import { CATEGORIE_NOMI, TEMPO_NOMI_MS } from '@shared/nomi-cose'
+import { CATEGORIE_NOMI, SECONDI_NOMI_LIBERI, secondiNomiValidi } from '@shared/nomi-cose'
 import '@/games/nomi/NomiCose.css'
 
 type Contro = 'computer' | 'amico'
 const CHIAVE_CONTRO = 'giochi.nomi.contro'
+/** Il tempo scelto l'ultima volta, in secondi: lo legge anche l'invito dal profilo di un amico. */
+const CHIAVE_TEMPO_NOMI = 'giochi.nomi.tempo'
+
+function leggiSecondi(): number {
+  try {
+    return secondiNomiValidi(JSON.parse(localStorage.getItem(CHIAVE_TEMPO_NOMI) ?? 'null'))
+  } catch {
+    return secondiNomiValidi(null)
+  }
+}
+
+/** I minuti di una scelta, come si leggono: "1 minuto", "3 minuti". */
+const minuti = (s: number) => `${s / 60} ${s === 60 ? 'minuto' : 'minuti'}`
 
 function leggiContro(): Contro {
   try {
@@ -48,6 +63,15 @@ export default function NomiCoseLibera() {
   const [regole, setRegole] = useState(false)
   const [contro, setContro] = useState<Contro>(leggiContro)
   const [livello, setLivello] = useState<LivelloNomi>('normale')
+  const [secondi, setSecondi] = useState(leggiSecondi)
+  const scegliSecondi = (s: number) => {
+    setSecondi(s)
+    try {
+      localStorage.setItem(CHIAVE_TEMPO_NOMI, JSON.stringify(s))
+    } catch {
+      /* e' una comodita' */
+    }
+  }
   const scegliContro = (c: Contro) => {
     setContro(c)
     try {
@@ -58,7 +82,7 @@ export default function NomiCoseLibera() {
   }
   const gioca = (l: LivelloNomi) => {
     setLivello(l)
-    g.nuova(l)
+    g.nuova(l, secondi)
   }
   const { adesivo, accoda } = useCodaAdesivi()
   const timbro = useTimbro(accoda)
@@ -125,7 +149,25 @@ export default function NomiCoseLibera() {
             ]}
           />
         </div>
-        {contro === 'computer' ? <SceltaLivello guasto={g.guasto} onGioca={gioca} /> : <SalaAmico />}
+        <Sezione titolo="Partita">
+          <Opzioni>
+            <Scelte titolo="Tempo" valore={minuti(secondi)}>
+              <Cursore
+                ariaLabel="Tempo"
+                valori={SECONDI_NOMI_LIBERI}
+                valore={secondi}
+                etichetta={(s) => `${s / 60} min`}
+                voce={minuti}
+                onChange={scegliSecondi}
+              />
+            </Scelte>
+          </Opzioni>
+        </Sezione>
+        {contro === 'computer' ? (
+          <SceltaLivello guasto={g.guasto} onGioca={gioca} />
+        ) : (
+          <SalaAmico secondi={secondi} />
+        )}
         <ComeSiGiocaNomi open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )
@@ -159,7 +201,7 @@ export default function NomiCoseLibera() {
           risposte={g.risposte}
           onScrivi={g.scrivi}
           scadenza={g.scadenza}
-          totaleMs={TEMPO_NOMI_MS}
+          totaleMs={g.tempoMs}
           onScaduto={g.tempoFinito}
           entrata={volo.arrivata}
           nascondiLettera={volo.volo !== null}
@@ -251,7 +293,7 @@ function Fine({ g }: { g: NomiLibera }) {
         />
       )}
       <div className="nomi-libera__azioni">
-        <Button size="lg" onClick={() => g.nuova(p.livello)}>
+        <Button size="lg" onClick={() => g.nuova(p.livello, p.tempoMs / 1_000)}>
           <IconRefresh size={18} /> Un’altra
         </Button>
         <Button size="lg" variant="tinted" onClick={g.scegli}>

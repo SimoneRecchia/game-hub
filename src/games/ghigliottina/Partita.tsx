@@ -83,13 +83,19 @@ export function PartitaGhigliottina({
   vista,
   comandi,
   fine,
+  subito = false,
 }: {
   vista: VistaGhigliottina
   comandi: ComandiGhigliottina
   fine: ReactNode
+  /** Senza il Comincia: in una sfida il tre-due-uno l'ha gia' fatto. */
+  subito?: boolean
 }) {
   const [mostrata, setMostrata] = useState(vista)
-  const [fase, setFase] = useState<Fase>(() => faseDi(vista))
+  const [fase, setFase] = useState<Fase>(() => {
+    const f = faseDi(vista)
+    return subito && f === 'intro' ? 'coppia' : f
+  })
   const [scelta, setScelta] = useState<0 | 1 | null>(null)
   const [lama, setLama] = useState<PosizioneLama>(vista.finita && vista.indovinata === false ? 'giu' : 'alta')
   const [colpi, setColpi] = useState(0)

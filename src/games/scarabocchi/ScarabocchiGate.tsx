@@ -32,6 +32,7 @@ export function ScarabocchiGate() {
     (dati?.tavolo.length ?? 0) > 0 ||
     (dati?.nomi.length ?? 0) > 0 ||
     (dati?.sequenze.length ?? 0) > 0 ||
+    (dati?.sfide.length ?? 0) > 0 ||
     (dati?.lupus.length ?? 0) > 0
   const invito = altroAvviso
     ? null
