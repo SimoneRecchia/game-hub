@@ -2,6 +2,7 @@ import { Hono, type Context } from 'hono'
 import * as go from '../../shared/go'
 import { GIOCHI_AL_TAVOLO, type GiocoAlTavolo } from '../../shared/tavolo'
 import { giocaMossa, inizialeDi, regoleDi } from '../../shared/tavolo-regole'
+import { tempoMossaValido } from '../../shared/tavolo-tempi'
 import type { SalaTavolo, VistaTavolo } from '../../shared/types'
 import type { AppEnv } from '../types'
 import { controllaNelDizionario } from '../lib/dizionario'
@@ -139,7 +140,8 @@ export const tavoloRoutes = new Hono<AppEnv>()
       if (await inPartita(db, a, ora)) fail(409, 'OCCUPATO', 'Sta già giocando un’altra partita.')
     }
     const posizione = inizialeDi(regoleDi(gioco), variante)
-    const row = await mandaInvito(db, { da: io, a, gioco, posizione }, ora)
+    const tempo = tempoMossaValido(gioco, corpo.tempoMossa)
+    const row = await mandaInvito(db, { da: io, a, gioco, posizione, tempoMossaMs: (tempo ?? 0) * 1_000 }, ora)
     return c.json({ id: row.id, codice: row.codice }, 201)
   })
 
@@ -337,8 +339,9 @@ export const tavoloRoutes = new Hono<AppEnv>()
         rivincitaDi: row.id,
         serie: serieDopo(row, mioId, altroId),
         primo: primoDellaRivincita(row, mioId),
-        // La rivincita si gioca sullo stesso goban.
+        // La rivincita si gioca sullo stesso goban, e con lo stesso tempo per mossa.
         posizione: inizialeDi(regole, regole.varianteDi?.(row.posizione)),
+        tempoMossaMs: row.tempo_mossa_ms,
       },
       ora,
     )

@@ -124,6 +124,39 @@ describe('la sfida a Nomi, cose e città fra amici', () => {
     expect(fine.sue?.risposte).toEqual({})
   })
 
+  it('il tempo lo sceglie chi sfida, la rivincita lo tiene, e uno che non c’e’ torna a tre minuti', async () => {
+    const b = banco()
+    const [anna, bruno] = [await b.giocatore('anna'), await b.giocatore('bruno')]
+    await online(b.chiama, anna, bruno)
+    const invito = await b.chiama<{ id: string }>('POST', '/nomi/sfide', anna, {
+      playerId: bruno.id,
+      impostazioni: { secondi: 60 },
+    })
+    await b.chiama('POST', `/nomi/sfide/${invito.dati.id}/accetta`, bruno)
+    const id = invito.dati.id
+    passano(b.db, id, NOMI_SFIDA_VIA_MS)
+    const v = (await b.chiama<VistaSfidaNomi>('GET', `/nomi/sfide/${id}`, anna)).dati
+    expect(v.tempoTotaleMs).toBe(60_000)
+    expect(v.restanteMs).toBeLessThanOrEqual(60_000)
+    // Passato il minuto e il margine, la sfida e' chiusa dal tempo.
+    passano(b.db, id, 60_000 + MARGINE_NOMI_MS + 1_000)
+    expect((await b.chiama<VistaSfidaNomi>('GET', `/nomi/sfide/${id}`, anna)).dati.stato).toBe('finita')
+
+    await online(b.chiama, anna, bruno)
+    const chiesta = await b.chiama<{ invitoId: string }>('POST', `/nomi/sfide/${id}/rivincita`, bruno)
+    const accettata = await b.chiama<{ partitaId: string }>('POST', `/nomi/sfide/${id}/rivincita`, anna)
+    expect(accettata.dati.partitaId).toBe(chiesta.dati.invitoId)
+    passano(b.db, accettata.dati.partitaId, NOMI_SFIDA_VIA_MS)
+    const nuova = (await b.chiama<VistaSfidaNomi>('GET', `/nomi/sfide/${accettata.dati.partitaId}`, anna)).dati
+    expect(nuova.tempoTotaleMs).toBe(60_000)
+
+    const carla = await b.giocatore('carla')
+    await online(b.chiama, carla)
+    const strano = await b.chiama<{ id: string }>('POST', '/nomi/sfide', carla, { impostazioni: { secondi: 7 } })
+    const riga = b.db.sqlite.prepare('SELECT secondi FROM nomi_sfide WHERE id = ?').get(strano.dati.id)
+    expect(riga?.secondi).toBe(TEMPO_NOMI_MS / 1_000)
+  })
+
   it('un invito con il link si apre anche senza sessione, e aprirlo e’ accettarlo', async () => {
     const b = banco()
     const [anna, carla] = [await b.giocatore('anna'), await b.giocatore('carla')]

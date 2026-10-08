@@ -12,6 +12,7 @@ import type { InvitoScarabocchi, StanzaScarabocchiBreve } from './scarabocchi'
 import type { Lato, Personaggi, Risposta } from './indovina'
 import type { GiocoAlTavolo, GiocoTavoliere, MotivoTavoliere, Parte } from './tavolo'
 import type { LivelloSudoku } from './sudoku'
+import type { LivelloSequenze } from './sequenze'
 import type { CategoriaNomi, PiuDate, RispostaContata } from './nomi-cose'
 import type { LatoMoneta } from './ruota'
 import type { Carta, ManoBJ } from './blackjack'
@@ -881,6 +882,8 @@ export interface LatoSfidaSequenze {
 export interface VistaSfidaSequenze {
   id: string
   stato: StatoSfidaSequenze
+  /** La difficolta' scelta da chi ha sfidato: da quanti cubetti si parte, il ritmo, e se si tocca al contrario. */
+  livello: LivelloSequenze
   avversario: GiocatoreBreve | null
   /** L'avversario ha il telefono acceso sull'app. */
   online: boolean

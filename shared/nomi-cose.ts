@@ -104,6 +104,18 @@ export const PAROLE_MINIME = 12
 export const SECONDI_NOMI = 180
 export const TEMPO_NOMI_MS = SECONDI_NOMI * 1_000
 
+/**
+ * I tempi fra cui si sceglie nella libera, contro il computer e con un amico:
+ * la classificata ha sempre i suoi tre minuti.
+ */
+export const SECONDI_NOMI_LIBERI = [60, 120, 180, 300] as const
+export const SECONDI_NOMI_MASSIMI = 300
+
+/** Il tempo come lo manda il telefono, se e' fra le scelte; se no quello della classificata. */
+export function secondiNomiValidi(valore: unknown): number {
+  return (SECONDI_NOMI_LIBERI as readonly unknown[]).includes(valore) ? (valore as number) : SECONDI_NOMI
+}
+
 /** Quanti caratteri si possono scrivere in una risposta. */
 export const LUNGHEZZA_MASSIMA_RISPOSTA = 40
 

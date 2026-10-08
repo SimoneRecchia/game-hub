@@ -25,7 +25,14 @@ import {
   SEQUENZE_SFIDA_VIA_MS,
   SFIDA_SCADENZA_MS,
 } from '../../shared/config'
-import { PRIMA_LUNGHEZZA, leggiTocchi, rispostaGiusta, sequenzaDelLivello } from '../../shared/sequenze'
+import {
+  LIVELLI_SEQUENZE,
+  leggiTocchi,
+  livelloSequenzeValido,
+  rispostaGiusta,
+  sequenzaDelLivello,
+  type LivelloSequenze,
+} from '../../shared/sequenze'
 import type {
   Attivita,
   GiocatoreBreve,
@@ -50,6 +57,8 @@ export interface SfidaRow {
   invitato: string | null
   codice: string | null
   stato: StatoSfidaSequenze
+  /** La difficolta': NULL nelle sfide di prima della migrazione 0043, che erano al normale. */
+  livello: string | null
   seme: number | null
   inizio_at: string | null
   livello_a: number
@@ -192,12 +201,14 @@ export async function mandaInvito(
   {
     da,
     a,
+    livello = 'normale',
     rivincitaDi = null,
     serie = null,
   }: {
     da: string
     /** null per un invito con il link. */
     a: string | null
+    livello?: LivelloSequenze
     rivincitaDi?: string | null
     serie?: { a: number; b: number; partite: number } | null
   },
@@ -216,11 +227,23 @@ export async function mandaInvito(
     db
       .prepare(
         `INSERT INTO sequenze_sfide
-           (id, giocatore_a, invitato, codice, stato, rivincita_di, serie_a, serie_b, partite_serie,
+           (id, giocatore_a, invitato, codice, stato, livello, rivincita_di, serie_a, serie_b, partite_serie,
             created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'invito', ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, 'invito', ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(id, da, a, codice, rivincitaDi, serie?.a ?? 0, serie?.b ?? 0, serie?.partite ?? 0, quando, quando),
+      .bind(
+        id,
+        da,
+        a,
+        codice,
+        livello,
+        rivincitaDi,
+        serie?.a ?? 0,
+        serie?.b ?? 0,
+        serie?.partite ?? 0,
+        quando,
+        quando,
+      ),
   ])
   return (await sfidaPerId(db, id))!
 }
@@ -465,9 +488,12 @@ export async function chiudiSeFinita(db: D1Database, row: SfidaRow, adesso: numb
   return (await sfidaPerId(db, row.id)) ?? row
 }
 
-/** La sequenza da ripetere a un livello, dal seme della partita: la prima di tre cubetti. */
+/** La difficolta' della sfida, con il normale per le sfide di prima. */
+export const livelloDi = (row: SfidaRow): LivelloSequenze => livelloSequenzeValido(row.livello)
+
+/** La sequenza da ripetere a un livello, dal seme della partita: la prima ha i cubetti della difficolta'. */
 function sequenzaDi(row: SfidaRow, giuste: number): number[] {
-  return sequenzaDelLivello(row.seme ?? 0, PRIMA_LUNGHEZZA + giuste)
+  return sequenzaDelLivello(row.seme ?? 0, LIVELLI_SEQUENZE[livelloDi(row)].prima + giuste)
 }
 
 /** Si puo' giocare: la partita e' cominciata, e chi chiede non ha finito. */
@@ -537,7 +563,7 @@ export async function rispondi(
   const sequenza = sequenzaDi(row, giuste)
   const tocchi = leggiTocchi(valore, sequenza.length)
   if (!tocchi) fail(400, 'TOCCHI', 'Risposta non valida.')
-  const giusta = rispostaGiusta(sequenza, tocchi)
+  const giusta = rispostaGiusta(sequenza, tocchi, LIVELLI_SEQUENZE[livelloDi(row)].indietro)
   const colonna = lato === 'a' ? 'a' : 'b'
   const quando = new Date(adesso).toISOString()
   const scritta = await db
@@ -585,6 +611,7 @@ export async function vistaSfida(
   return {
     id: row.id,
     stato: row.stato,
+    livello: livelloDi(row),
     avversario,
     online,
     inizioTraMs: row.stato === 'in_corso' && inizio !== null && adesso < inizio ? inizio - adesso : null,

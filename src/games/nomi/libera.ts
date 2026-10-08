@@ -12,6 +12,7 @@
 
 import {
   LETTERE_NOMI,
+  TEMPO_NOMI_MS,
   categorieIdonee,
   lessicoDa,
   normalizza,
@@ -54,6 +55,8 @@ export interface PartitaLibera {
   tempi: number[]
   /** Quando dice stop. */
   stopMs: number
+  /** Il tempo della partita, scelto prima di cominciare. */
+  tempoMs: number
 }
 
 /** La lettera e le categorie di una partita nuova, a caso. */
@@ -86,13 +89,19 @@ export function caricaLessico(lettera: LetteraNomi): Promise<FileLessicoNomi> {
   return lettura
 }
 
-/** La partita del computer: le sue risposte, quando le scrive, e quando dice stop. */
+/**
+ * La partita del computer: le sue risposte, quando le scrive, e quando dice
+ * stop. Con un tempo diverso dai tre minuti di sempre lo stop si sposta in
+ * proporzione: a un minuto il computer facile non aspetta piu' di due minuti e
+ * mezzo per dire stop.
+ */
 export function nuovaPartita(
   file: FileLessicoNomi,
   lettera: LetteraNomi,
   categorie: CategoriaNomi[],
   livello: LivelloNomi,
   rng: () => number = Math.random,
+  tempoMs: number = TEMPO_NOMI_MS,
 ): PartitaLibera {
   const come = COMPUTER_NOMI[livello]
   const computer = categorie.map((c) => {
@@ -100,14 +109,15 @@ export function nuovaPartita(
     if (note.length === 0 || rng() > come.scrive) return null
     return note[Math.floor(rng() * Math.min(come.fra, note.length))]
   })
-  const stopMs = Math.round(come.stop[0] + rng() * (come.stop[1] - come.stop[0]))
+  const scala = tempoMs / TEMPO_NOMI_MS
+  const stopMs = Math.round((come.stop[0] + rng() * (come.stop[1] - come.stop[0])) * scala)
   // Scrive fra un quarto del suo tempo e lo stop, l'ultima proprio allo stop.
   const scritte = computer.filter((r) => r !== null).length
   const istanti = Array.from({ length: scritte }, () => stopMs * (0.25 + 0.75 * rng())).sort((a, b) => a - b)
   if (istanti.length > 0) istanti[istanti.length - 1] = stopMs
   let k = 0
   const tempi = computer.map((r) => (r === null ? Number.POSITIVE_INFINITY : istanti[k++]))
-  return { lettera, categorie, livello, computer, tempi, stopMs }
+  return { lettera, categorie, livello, computer, tempi, stopMs, tempoMs }
 }
 
 /** Quante risposte ha scritto il computer dopo `ms` dall'inizio. */

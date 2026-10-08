@@ -24,7 +24,8 @@ import {
 import {
   LETTERE_NOMI,
   MARGINE_NOMI_MS,
-  TEMPO_NOMI_MS,
+  SECONDI_NOMI,
+  SECONDI_NOMI_MASSIMI,
   categorieIdonee,
   pescaCategorie,
   puntiSfida,
@@ -61,6 +62,8 @@ export interface SfidaRow {
   stato: StatoSfidaNomi
   lettera: string | null
   categorie: string | null
+  /** I secondi della partita; NULL nelle sfide di prima, con i tre minuti della classificata. */
+  secondi: number | null
   inizio_at: string | null
   stop_at: string | null
   stop_di: LatoNomi | 'tempo' | null
@@ -105,8 +108,8 @@ function prima(adesso: number, ms: number): string {
   return new Date(adesso - ms).toISOString()
 }
 
-/** Una partita cominciata da meno di cosi' e' ancora aperta: il via, il tempo, il margine e un respiro. */
-const DURATA_MASSIMA_MS = NOMI_SFIDA_VIA_MS + TEMPO_NOMI_MS + MARGINE_NOMI_MS + 60_000
+/** Una partita cominciata da meno di cosi' e' ancora aperta: il via, il tempo piu' lungo, il margine e un respiro. */
+const DURATA_MASSIMA_MS = NOMI_SFIDA_VIA_MS + SECONDI_NOMI_MASSIMI * 1_000 + MARGINE_NOMI_MS + 60_000
 
 /** Chi e' in una sfida aperta: in corso, e cominciata da poco. `soglia` e' il segnaposto dell'istante. */
 function aperte(soglia: string): string {
@@ -149,10 +152,15 @@ function scadeTra(row: SfidaRow, adesso: number): number {
 
 /* ─────────────────────────────  Il tempo  ───────────────────────────── */
 
+/** Il tempo della partita: quello scelto da chi ha sfidato, o i tre minuti della classificata nelle sfide di prima. */
+export function tempoDi(row: Pick<SfidaRow, 'secondi'>): number {
+  return (row.secondi ?? SECONDI_NOMI) * 1_000
+}
+
 /** Quando non si scrive piu': allo stop, o alla fine del tempo. null prima del via. */
-export function chiusuraDi(row: Pick<SfidaRow, 'inizio_at' | 'stop_at'>): number | null {
+export function chiusuraDi(row: Pick<SfidaRow, 'inizio_at' | 'stop_at' | 'secondi'>): number | null {
   if (!row.inizio_at) return null
-  const fine = Date.parse(row.inizio_at) + TEMPO_NOMI_MS
+  const fine = Date.parse(row.inizio_at) + tempoDi(row)
   return row.stop_at ? Math.min(fine, Date.parse(row.stop_at)) : fine
 }
 
@@ -238,12 +246,15 @@ export async function mandaInvito(
     a,
     rivincitaDi = null,
     serie = null,
+    secondi = SECONDI_NOMI,
   }: {
     da: string
     /** null per un invito con il link. */
     a: string | null
     rivincitaDi?: string | null
     serie?: { a: number; b: number; partite: number } | null
+    /** Il tempo della partita, fra quelli della libera. */
+    secondi?: number
   },
   adesso: number,
 ): Promise<SfidaRow> {
@@ -258,11 +269,23 @@ export async function mandaInvito(
     db
       .prepare(
         `INSERT INTO nomi_sfide
-           (id, giocatore_a, invitato, codice, stato, rivincita_di, serie_a, serie_b, partite_serie,
+           (id, giocatore_a, invitato, codice, stato, rivincita_di, serie_a, serie_b, partite_serie, secondi,
             created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'invito', ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, 'invito', ?, ?, ?, ?, ?, ?, ?)`,
       )
-      .bind(id, da, a, codice, rivincitaDi, serie?.a ?? 0, serie?.b ?? 0, serie?.partite ?? 0, quando, quando),
+      .bind(
+        id,
+        da,
+        a,
+        codice,
+        rivincitaDi,
+        serie?.a ?? 0,
+        serie?.b ?? 0,
+        serie?.partite ?? 0,
+        secondi,
+        quando,
+        quando,
+      ),
   ])
   return (await sfidaPerId(db, id))!
 }
@@ -482,7 +505,7 @@ export async function diciStop(
   if (!siScrive(row, adesso)) return
   const colonna = lato === 'a' ? 'risposte_a' : 'risposte_b'
   const quando = new Date(adesso).toISOString()
-  const stop = new Date(Math.min(adesso, Date.parse(row.inizio_at!) + TEMPO_NOMI_MS)).toISOString()
+  const stop = new Date(Math.min(adesso, Date.parse(row.inizio_at!) + tempoDi(row))).toISOString()
   await db
     .prepare(
       `UPDATE nomi_sfide
@@ -584,7 +607,7 @@ export async function vistaSfida(db: D1Database, row: SfidaRow, io: LatoNomi, ad
       row.stato === 'in_corso' && cominciata && chiusura !== null && !row.stop_at
         ? Math.max(0, chiusura - adesso)
         : null,
-    tempoTotaleMs: TEMPO_NOMI_MS,
+    tempoTotaleMs: tempoDi(row),
     stop:
       row.stop_at || row.stop_di
         ? {

@@ -8,6 +8,7 @@
  */
 
 import { inizialeDi, regoleDi } from '@shared/tavolo-regole'
+import { TEMPO_DI_SEMPRE } from '@shared/tavolo-tempi'
 import {
   LIVELLI_TAVOLIERE,
   type EsitoTavoliere,
@@ -32,6 +33,11 @@ export interface PartitaLocale {
   morte?: number[] | null
   /** A partita finita, se e' gia' nel conto: una partita si conta una volta sola. */
   contata: boolean
+  /**
+   * Il tempo per mossa scelto nella sala, in secondi, null senza; manca nelle
+   * partite di prima, che valgono con quello di allora.
+   */
+  tempo?: number | null
 }
 
 export interface Conto {
@@ -84,6 +90,8 @@ export function leggiPartita(gioco: GiocoTavoliere): PartitaLocale | null {
     punti: p.punti ?? null,
     morte: Array.isArray(p.morte) ? p.morte.filter((k): k is number => Number.isInteger(k)) : null,
     contata: p.contata === true,
+    // Il tempo scelto; nelle partite di prima manca, e vale quello di allora.
+    ...(p.tempo === null || (typeof p.tempo === 'number' && p.tempo > 0) ? { tempo: p.tempo } : {}),
   }
 }
 
@@ -104,6 +112,7 @@ export function nuovaPartita(
   gioco: GiocoTavoliere,
   livello: LivelloTavoliere,
   variante: string | null = leggiVariante(gioco),
+  tempo: number | null = TEMPO_DI_SEMPRE[gioco],
 ): PartitaLocale {
   const mia = prossimaParte(gioco)
   const p: PartitaLocale = {
@@ -117,6 +126,7 @@ export function nuovaPartita(
     punti: null,
     morte: null,
     contata: false,
+    tempo,
   }
   salvaPartita(p)
   scriviJson(chiaveLivello(gioco), livello)

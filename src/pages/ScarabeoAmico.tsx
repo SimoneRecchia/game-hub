@@ -23,6 +23,7 @@ import { ILLUMINATA_MS, annuncioDi, nelSacchetto, parolaDi } from '@/games/scara
 import { useComposizione } from '@/games/scarabeo/useComposizione'
 import { nonNelDizionario, tessereCambiate, useParoleSconosciute } from '@/games/scarabeo/useScarabeo'
 import { useScarabeoAmico, type PartitaScarabeoAmico } from '@/games/scarabeo/useScarabeoAmico'
+import { TempoMossa } from '@/games/tavolo/TempoMossa'
 import { usePlayer } from '@/lib/auth'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
@@ -249,6 +250,14 @@ function Partita({ g, v, s }: { g: PartitaScarabeoAmico; v: VistaTavolo; s: Vist
                 sotto={finita ? 'Partita finita' : nelSacchetto(s.restanti)}
                 onApri={() => setStoria(true)}
               />
+              {inCorso && v.tempo && g.scadenza !== null && (
+                <TempoMossa
+                  scadenza={g.scadenza}
+                  totaleMs={v.tempo.mossaMs}
+                  mio={v.tuoTurno}
+                  onScaduto={v.tuoTurno ? g.scaduto : undefined}
+                />
+              )}
               {v.puoiReclamare && (
                 <div className="tav-domanda">
                   <span>{nome} non muove da un po’.</span>
