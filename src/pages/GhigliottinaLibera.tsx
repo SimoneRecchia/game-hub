@@ -10,8 +10,9 @@ import { SceltaFinale } from '@/games/sfide/Scelta'
 import type { ImpostazioniFinale } from '@shared/sfide-libere'
 
 /**
- * La Ghigliottina libera: una a caso, quante se ne vuole, con il tempo della
- * finale che si sceglie. Tutto nel telefono, e non conta per la classifica.
+ * La Ghigliottina libera: una a caso, quante se ne vuole, con il tempo di ogni
+ * coppia e quello della parola vincente che si scelgono. Tutto nel telefono, e
+ * non conta per la classifica.
  * Con un amico la stessa per tutti e due, nella sfida.
  */
 export default function GhigliottinaLibera() {
@@ -23,7 +24,7 @@ export default function GhigliottinaLibera() {
   const festa = useFesta(v ? !v.finita : null, v?.indovinata === true, 4_300)
   const comincia = (o: ImpostazioniFinale) => {
     setUltime(o)
-    void g.comincia({ tempoFinaleMs: o.secondi * 1_000 })
+    void g.comincia({ tempoFinaleMs: o.secondi * 1_000, tempoSceltaMs: o.passo * 1_000 })
   }
 
   const info = (
@@ -35,7 +36,12 @@ export default function GhigliottinaLibera() {
   if (!v) {
     return (
       <Pagina titolo="Ghigliottina" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
-        <SceltaFinale gioco="ghigliottina" titoloTempo="Tempo per la parola vincente" onComincia={comincia}>
+        <SceltaFinale
+          gioco="ghigliottina"
+          titoloPasso="Tempo per coppia"
+          titoloTempo="Tempo per la parola vincente"
+          onComincia={comincia}
+        >
           {g.errore && <p className="sfl-errore">{g.errore}</p>}
         </SceltaFinale>
         <ComeSiGiocaGhigliottina open={regole} onClose={() => setRegole(false)} />

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Button } from '@/components/Button'
+import { TastieraGioco, useTastieraFisica } from '@/components/TastieraGioco'
 import { suona } from '@/lib/suoni'
 import { normalizzaGhigliottina } from '@shared/ghigliottina'
 import type { CoppiaGhigliottinaVista } from '@shared/types'
@@ -8,13 +9,18 @@ import './Ghigliottina.css'
 
 /** Quel che serve alla scena, dalla classificata (il server) o dalla libera (il telefono). */
 export interface VistaGhigliottina {
+  /** Si e' premuto Comincia: prima la scena e' la presentazione. */
+  iniziata: boolean
   coppie: CoppiaGhigliottinaVista[]
   totaleCoppie: number
   corrente: number | null
   montepremiIniziale: number
   montepremi: number
+  /** Il tempo della coppia di adesso, sull'orologio del telefono: quando parte e quando finisce. */
+  orologioCoppia: { inizio: number; scadenza: number } | null
+  tempoSceltaMs: number
   finaleAperto: boolean
-  /** Quando finisce il minuto, sull'orologio del telefono. */
+  /** Quando finisce il tempo della parola vincente, sull'orologio del telefono. */
   scadenza: number | null
   tempoFinaleMs: number
   soluzione: string | null
@@ -25,12 +31,16 @@ export interface VistaGhigliottina {
 }
 
 export interface ComandiGhigliottina {
+  /** Comincia: arriva la prima coppia, e il suo tempo parte dopo la scena. */
+  inizia: () => Promise<VistaGhigliottina | null>
+  /** Il tempo della coppia e' finito: conta come sbagliata, e si vede qual era la giusta. */
+  scadeScelta: () => Promise<VistaGhigliottina | null>
   /** La scelta della coppia di adesso: torna la vista dopo la scelta, o null se non e' andata. */
   scegli: (scelta: 0 | 1) => Promise<VistaGhigliottina | null>
-  /** Fa partire il minuto della parola vincente. */
+  /** Fa partire il tempo della parola vincente. */
   apriFinale: () => Promise<VistaGhigliottina | null>
   rispondi: (parola: string) => Promise<VistaGhigliottina | null>
-  /** Il minuto e' finito sul telefono senza una risposta. */
+  /** Il tempo della parola vincente e' finito sul telefono senza una risposta. */
   scade: () => void
 }
 
@@ -69,7 +79,63 @@ function faseDi(v: VistaGhigliottina): Fase {
   if (v.finita) return 'fine'
   if (v.finaleAperto) return 'finale'
   if (v.corrente === null) return 'cinque'
-  return v.coppie.some((c) => c.scelta !== null) ? 'coppia' : 'intro'
+  return v.iniziata ? 'coppia' : 'intro'
+}
+
+/**
+ * Fa scivolare dal posto di prima a quello nuovo gli elementi che cambiano
+ * posto quando cambia `chiave` (FLIP): le cinque parole che salgono sopra la
+ * tastiera, la ghigliottina che si fa piccola. `sposta` li porta per il centro,
+ * `scala` li rimpicciolisce anche, dall'alto: la ghigliottina ha le sue
+ * proporzioni, e scalata resta lei. I posti si misurano a ogni disegno, cosi'
+ * quelli di prima sono quelli che si vedevano davvero.
+ */
+function useScivola(
+  contenitore: { current: HTMLElement | null },
+  selettori: { sposta: string; scala: string },
+  chiave: unknown,
+) {
+  const posti = useRef(new Map<Element, DOMRect>())
+  const ultima = useRef(chiave)
+  useLayoutEffect(() => {
+    const el = contenitore.current
+    if (!el) return
+    const sposta = [...el.querySelectorAll(selettori.sposta)]
+    const scala = [...el.querySelectorAll(selettori.scala)]
+    if (ultima.current !== chiave && !ridotto()) {
+      const anima = (e: Element, ritardo: number, trasforma: (p: DOMRect, d: DOMRect) => string | null) => {
+        const p = posti.current.get(e)
+        if (!p) return
+        const t = trasforma(p, e.getBoundingClientRect())
+        if (!t) return
+        // Durante il ritardo resta dov'era: senza `backwards` comparirebbe al posto nuovo e poi tornerebbe indietro.
+        e.animate([{ transform: t }, { transform: 'none' }], {
+          duration: 650,
+          delay: ritardo,
+          easing: 'cubic-bezier(0.2, 0.9, 0.25, 1)',
+          fill: 'backwards',
+        })
+      }
+      // Una parola dopo l'altra, come se salissero in fila.
+      sposta.forEach((e, i) =>
+        anima(e, i * 45, (p, d) => {
+          const dx = p.left + p.width / 2 - (d.left + d.width / 2)
+          const dy = p.top + p.height / 2 - (d.top + d.height / 2)
+          return Math.abs(dx) < 1 && Math.abs(dy) < 1 ? null : `translate(${dx}px, ${dy}px)`
+        }),
+      )
+      scala.forEach((e) =>
+        anima(e, 0, (p, d) => {
+          const s = p.height / Math.max(1, d.height)
+          if (Math.abs(s - 1) < 0.01) return null
+          const dx = p.left + p.width / 2 - (d.left + d.width / 2)
+          return `translate(${dx}px, ${p.top - d.top}px) scale(${s})`
+        }),
+      )
+    }
+    ultima.current = chiave
+    posti.current = new Map([...sposta, ...scala].map((e) => [e, e.getBoundingClientRect()]))
+  })
 }
 
 /**
@@ -92,18 +158,23 @@ export function PartitaGhigliottina({
   subito?: boolean
 }) {
   const [mostrata, setMostrata] = useState(vista)
-  const [fase, setFase] = useState<Fase>(() => {
-    const f = faseDi(vista)
-    return subito && f === 'intro' ? 'coppia' : f
-  })
+  const [fase, setFase] = useState<Fase>(() => faseDi(vista))
   const [scelta, setScelta] = useState<0 | 1 | null>(null)
+  /** La coppia di adesso si e' chiusa per il tempo, non per una scelta. */
+  const [scaduta, setScaduta] = useState(false)
   const [lama, setLama] = useState<PosizioneLama>(vista.finita && vista.indovinata === false ? 'giu' : 'alta')
   const [colpi, setColpi] = useState(0)
-  /** Il montepremi tagliato: il valore di prima, che si spacca, e il numero del colpo, che fa ripartire l'animazione. */
-  const [taglio, setTaglio] = useState<{ prima: number; n: number; tutto: boolean } | null>(null)
+  /**
+   * Il montepremi tagliato: il valore di prima, che si spacca, quello di dopo,
+   * che c'e' gia' sotto i pezzi, e il numero del colpo, che fa ripartire
+   * l'animazione.
+   */
+  const [taglio, setTaglio] = useState<Taglio | null>(null)
   /** La coppia appena scelta, con l'esito, mentre la parola giusta vola nella colonna. */
   const [esito, setEsito] = useState<{ coppia: CoppiaGhigliottinaVista; indice: number } | null>(null)
   const montata = useRef(true)
+  const inVolo = useRef(false)
+  const scena = useRef<HTMLDivElement>(null)
   useEffect(
     () => () => {
       montata.current = false
@@ -111,17 +182,49 @@ export function PartitaGhigliottina({
     [],
   )
 
-  // Il minuto finito: il server ha chiuso la partita, e la vista arriva finita.
+  // Il tempo finito: il server ha chiuso la partita, e la vista arriva finita.
   useEffect(() => {
     if (fase === 'finale' && vista.finita) {
       setMostrata(vista)
       setFase('verdetto')
       setLama('giu')
-      setTaglio({ prima: mostrata.montepremi, n: Date.now(), tutto: true })
+      setTaglio({ prima: mostrata.montepremi, dopo: 0, n: Date.now(), tutto: true })
       suona('lama')
       suona('sconfitta', { ritardo: 0.5 })
     }
   }, [fase, vista, mostrata.montepremi])
+
+  // Uno stato arrivato da fuori — una scrittura rifiutata e riletta, un tempo finito applicato dal server —
+  // prende il posto di quello mostrato mentre si sceglie.
+  useEffect(() => {
+    if (inVolo.current || fase !== 'coppia' || vista === mostrata) return
+    if (vista.corrente === mostrata.corrente && vista.montepremi === mostrata.montepremi) return
+    setMostrata(vista)
+    setFase(faseDi(vista))
+  }, [vista, mostrata, fase])
+
+  // Comincia: la prima coppia arriva, e il suo tempo parte dopo la scena.
+  const comincia = useCallback(async () => {
+    if (inVolo.current) return
+    inVolo.current = true
+    try {
+      const dopo = await comandi.inizia()
+      if (!montata.current || !dopo) return
+      setMostrata(dopo)
+      setFase(faseDi(dopo) === 'intro' ? 'coppia' : faseDi(dopo))
+      suona('carta')
+    } finally {
+      inVolo.current = false
+    }
+  }, [comandi])
+
+  // In una sfida si comincia da soli: il tre-due-uno l'ha gia' fatto.
+  const partita = useRef(false)
+  useEffect(() => {
+    if (!subito || partita.current || fase !== 'intro') return
+    partita.current = true
+    void comincia()
+  }, [comincia, fase, subito])
 
   // Le cinque parole si accendono, poi parte il minuto.
   useEffect(() => {
@@ -153,46 +256,63 @@ export function PartitaGhigliottina({
   const k = mostrata.corrente
   const coppia = k !== null ? mostrata.coppie[k] : null
 
+  /**
+   * Una scelta, o il tempo della coppia finito (`null`): il rullo, poi la
+   * parola giusta che si accende; se era sbagliata, o se il tempo e' finito,
+   * cala la lama e il montepremi si spacca, con quello dimezzato gia' sotto.
+   */
   const scegli = useCallback(
-    async (i: 0 | 1) => {
-      if (fase !== 'coppia' || k === null) return
+    async (i: 0 | 1 | null) => {
+      if (fase !== 'coppia' || k === null || inVolo.current) return
       const t = tempi()
-      setScelta(i)
-      setFase('attesa')
-      suona('tocco')
-      suona('tamburo', { altezza: t.attesa / 1000 })
-      const [dopo] = await Promise.all([comandi.scegli(i), aspetta(t.attesa)])
-      if (!montata.current) return
-      if (!dopo) {
+      inVolo.current = true
+      try {
+        setScelta(i)
+        setScaduta(i === null)
+        setFase('attesa')
+        if (i === null) suona('scaduto')
+        else suona('tocco')
+        suona('tamburo', { altezza: t.attesa / 1000 })
+        const [dopo] = await Promise.all([i === null ? comandi.scadeScelta() : comandi.scegli(i), aspetta(t.attesa)])
+        if (!montata.current) return
+        if (!dopo) {
+          setScelta(null)
+          setScaduta(false)
+          setFase('coppia')
+          return
+        }
+        const scelta = dopo.coppie[k]
+        const giusta = i !== null && scelta.giusta === i
+        setEsito({ coppia: scelta, indice: k })
+        setFase('esito')
+        if (giusta) {
+          suona('giusto')
+          await aspetta(t.giusta)
+        } else {
+          setLama('cala')
+          setColpi((n) => n + 1)
+          suona('lama')
+          window.setTimeout(
+            () => {
+              if (!montata.current) return
+              setTaglio({ prima: mostrata.montepremi, dopo: dopo.montepremi, n: Date.now(), tutto: false })
+            },
+            ridotto() ? 0 : 200,
+          )
+          window.setTimeout(() => montata.current && setLama('alta'), ridotto() ? 100 : 900)
+          await aspetta(t.sbagliata)
+        }
+        if (!montata.current) return
+        setEsito(null)
         setScelta(null)
-        setFase('coppia')
-        return
+        setScaduta(false)
+        setTaglio(null)
+        setMostrata(dopo)
+        setFase(dopo.corrente === null ? 'cinque' : 'coppia')
+        if (dopo.corrente !== null) suona('carta')
+      } finally {
+        inVolo.current = false
       }
-      const scelta = dopo.coppie[k]
-      const giusta = scelta.giusta === i
-      setEsito({ coppia: scelta, indice: k })
-      setFase('esito')
-      if (giusta) {
-        suona('giusto')
-        await aspetta(t.giusta)
-      } else {
-        setLama('cala')
-        setColpi((n) => n + 1)
-        suona('lama')
-        window.setTimeout(() => {
-          if (!montata.current) return
-          setTaglio({ prima: mostrata.montepremi, n: Date.now(), tutto: false })
-        }, ridotto() ? 0 : 200)
-        window.setTimeout(() => montata.current && setLama('alta'), ridotto() ? 100 : 900)
-        await aspetta(t.sbagliata)
-      }
-      if (!montata.current) return
-      setEsito(null)
-      setScelta(null)
-      setTaglio(null)
-      setMostrata(dopo)
-      setFase(dopo.corrente === null ? 'cinque' : 'coppia')
-      if (dopo.corrente !== null) suona('carta')
     },
     [fase, k, comandi, mostrata.montepremi],
   )
@@ -215,13 +335,16 @@ export function PartitaGhigliottina({
       if (dopo.indovinata) {
         suona('vittoria', { ritardo: 0.9 })
       } else {
-        window.setTimeout(() => {
-          if (!montata.current) return
-          setLama('giu')
-          setTaglio({ prima: dopo.montepremi, n: Date.now(), tutto: true })
-          suona('lama')
-          suona('sconfitta', { ritardo: 0.4 })
-        }, ridotto() ? 0 : 1300)
+        window.setTimeout(
+          () => {
+            if (!montata.current) return
+            setLama('giu')
+            setTaglio({ prima: dopo.montepremi, dopo: 0, n: Date.now(), tutto: true })
+            suona('lama')
+            suona('sconfitta', { ritardo: 0.4 })
+          },
+          ridotto() ? 0 : 1300,
+        )
       }
     },
     [fase, comandi],
@@ -229,9 +352,18 @@ export function PartitaGhigliottina({
 
   const indovinata = mostrata.finita && mostrata.indovinata === true
   const valore = fase === 'fine' || fase === 'verdetto' ? (indovinata ? mostrata.punti : 0) : mostrata.montepremi
+  // Mentre si scrive la parola vincente le cinque parole salgono sopra la tastiera, e la ghigliottina si fa piccola.
+  const compatta = fase === 'finale' || fase === 'busta' || fase === 'verdetto'
+  useScivola(scena, { sposta: '.ghi-slot', scala: '.ghi-palco__macchina' }, compatta)
 
   return (
-    <div className={`ghi is-${fase}${indovinata && (fase === 'verdetto' || fase === 'fine') ? ' is-vinta' : ''}`}>
+    <div
+      ref={scena}
+      className={
+        `ghi is-${fase}${compatta ? ' is-compatta' : ''}` +
+        `${indovinata && (fase === 'verdetto' || fase === 'fine') ? ' is-vinta' : ''}`
+      }
+    >
       <div className="ghi-palco">
         <div className="ghi-palco__luci" aria-hidden="true" />
         <div className="ghi-palco__macchina">
@@ -252,9 +384,10 @@ export function PartitaGhigliottina({
         {fase === 'intro' && (
           <div className="ghi-intro">
             <p className="ghi-intro__testo">
-              In ogni coppia una sola parola porta alla parola vincente. Ogni errore dimezza il montepremi.
+              In ogni coppia una sola parola porta alla parola vincente: hai pochi secondi per sceglierla. Ogni
+              errore dimezza il montepremi.
             </p>
-            <Button size="lg" onClick={() => setFase('coppia')}>
+            <Button size="lg" onClick={() => void comincia()}>
               Comincia
             </Button>
           </div>
@@ -266,14 +399,17 @@ export function PartitaGhigliottina({
             numero={(k ?? 0) + 1}
             coppia={esito?.coppia ?? coppia}
             scelta={scelta}
+            scaduta={scaduta}
             fase={fase}
+            orologio={mostrata.orologioCoppia}
+            tempoMs={mostrata.tempoSceltaMs}
             onScegli={scegli}
           />
         )}
 
         {fase === 'cinque' && (
           <p className="ghi-annuncio" role="status">
-            Le cinque parole. Un minuto per la parola vincente!
+            Le cinque parole. {durataFinale(mostrata.tempoFinaleMs)} per la parola vincente!
           </p>
         )}
 
@@ -304,23 +440,41 @@ export function PartitaGhigliottina({
   )
 }
 
+/** Il tempo della parola vincente, come lo dice il conduttore: "Un minuto e mezzo". */
+function durataFinale(ms: number): string {
+  const s = Math.round(ms / 1000)
+  if (s === 60) return 'Un minuto'
+  if (s === 90) return 'Un minuto e mezzo'
+  if (s % 60 === 0) return `${s / 60} minuti`
+  return `${s} secondi`
+}
+
 /* ─────────────────────────────  Il montepremi  ───────────────────────────── */
+
+interface Taglio {
+  prima: number
+  /** Il montepremi dopo il colpo: sotto i pezzi che cadono c'e' gia' lui. */
+  dopo: number
+  /** Il numero del colpo: uno nuovo fa ripartire l'animazione. */
+  n: number
+  /** La parola vincente sbagliata: la targa cade tutta. */
+  tutto: boolean
+}
 
 /**
  * La targa d'oro del montepremi, nella lunetta della ghigliottina. Quando la
- * lama la colpisce si spacca: la meta' destra cade, e il numero scende. Alla
- * parola vincente sbagliata cade tutta.
+ * lama la colpisce si spacca: i pezzi con il numero di prima cadono, e sotto
+ * c'e' gia' quello dimezzato, che salta fuori. Alla parola vincente sbagliata
+ * cade tutta.
  */
-function Montepremi({
-  valore,
-  taglio,
-  vinto,
-}: {
-  valore: number
-  taglio: { prima: number; n: number; tutto: boolean } | null
-  vinto: boolean
-}) {
+function Montepremi({ valore, taglio, vinto }: { valore: number; taglio: Taglio | null; vinto: boolean }) {
   const [mostrato, setMostrato] = useState(valore)
+  // Il colpo: il numero nuovo c'e' subito, sotto i pezzi, senza aspettare che la scena vada avanti.
+  const colpo = taglio?.n
+  const dopoIlColpo = taglio?.dopo
+  useEffect(() => {
+    if (colpo !== undefined && dopoIlColpo !== undefined) setMostrato(dopoIlColpo)
+  }, [colpo, dopoIlColpo])
   useEffect(() => {
     if (mostrato === valore) return
     if (ridotto()) {
@@ -337,7 +491,7 @@ function Montepremi({
       setMostrato(Math.round(da + (valore - da) * (1 - Math.pow(1 - t, 3))))
       if (t < 1) f = requestAnimationFrame(passo)
     }
-    const ritardo = window.setTimeout(() => (f = requestAnimationFrame(passo)), taglio ? 380 : 0)
+    const ritardo = window.setTimeout(() => (f = requestAnimationFrame(passo)), 0)
     return () => {
       window.clearTimeout(ritardo)
       cancelAnimationFrame(f)
@@ -348,7 +502,13 @@ function Montepremi({
   return (
     <div className={`ghi-montepremi${vinto ? ' is-vinto' : ''}`} aria-live="polite">
       <span className="ghi-montepremi__etichetta">Montepremi</span>
-      <span className="ghi-montepremi__valore u-tabnum">{mostrato}</span>
+      {/* La chiave e' sua: quella del colpo ce l'hanno i pezzi, e due fratelli con la stessa lasciano nodi orfani. */}
+      <span
+        key={colpo === undefined ? 'valore' : `valore-${colpo}`}
+        className={`ghi-montepremi__valore u-tabnum${taglio ? ' is-nuovo' : ''}`}
+      >
+        {mostrato}
+      </span>
       <span className="u-visually-hidden">punti</span>
       {taglio && (
         <span key={taglio.n} className={`ghi-montepremi__pezzi${taglio.tutto ? ' is-tutto' : ''}`} aria-hidden="true">
@@ -422,7 +582,7 @@ function Colonna({
         const c = coppie[i]
         const nota = c && c.giusta !== null ? c : null
         const parola = nota ? nota.parole[nota.giusta!] : null
-        const sbagliata = nota !== null && nota.scelta !== null && nota.scelta !== nota.giusta
+        const sbagliata = nota !== null && (nota.scaduta || (nota.scelta !== null && nota.scelta !== nota.giusta))
         return (
           <li
             key={i}
@@ -431,7 +591,9 @@ function Colonna({
           >
             <span className="ghi-slot__n">{i + 1}</span>
             <span className="ghi-slot__parola">{parola ?? ''}</span>
-            {sbagliata && <span className="ghi-slot__taglio" aria-label="scelta sbagliata" />}
+            {sbagliata && (
+              <span className="ghi-slot__taglio" aria-label={nota?.scaduta ? 'tempo finito' : 'scelta sbagliata'} />
+            )}
             {mostraSpiegazioni && nota?.spiegazione && parola && (
               <span className="ghi-slot__spiegazione">
                 {partiDi(nota.spiegazione, parola, soluzione).map((p, j) =>
@@ -463,19 +625,42 @@ function Coppia({
   numero,
   coppia,
   scelta,
+  scaduta,
   fase,
+  orologio,
+  tempoMs,
   onScegli,
 }: {
   numero: number
   coppia: CoppiaGhigliottinaVista
   scelta: 0 | 1 | null
+  /** Il tempo e' finito senza una scelta. */
+  scaduta: boolean
   fase: Fase
-  onScegli: (i: 0 | 1) => void
+  orologio: { inizio: number; scadenza: number } | null
+  tempoMs: number
+  /** Una parola, o null quando il tempo finisce. */
+  onScegli: (i: 0 | 1 | null) => void
 }) {
   const libera = fase === 'coppia'
   return (
-    <div className={`ghi-coppia is-${fase}`} role="group" aria-label={`Coppia ${numero} di 5`}>
-      <p className="ghi-coppia__titolo">Coppia {numero}</p>
+    <div
+      className={`ghi-coppia is-${fase}${scaduta ? ' is-scaduta' : ''}`}
+      role="group"
+      aria-label={`Coppia ${numero} di 5`}
+    >
+      <div className="ghi-coppia__testa">
+        <p className="ghi-coppia__titolo">Coppia {numero}</p>
+        {orologio && (
+          <Clessidra
+            orologio={orologio}
+            tempoMs={tempoMs}
+            attiva={libera}
+            ferma={!libera}
+            onScade={() => onScegli(null)}
+          />
+        )}
+      </div>
       <div className="ghi-coppia__parole">
         {coppia.parole.map((parola, i) => {
           const giusta = fase === 'esito' && coppia.giusta === i
@@ -500,9 +685,89 @@ function Coppia({
         })}
       </div>
       <p className="ghi-coppia__stato" role="status">
-        {fase === 'attesa' ? 'Vediamo…' : fase === 'esito' ? (scelta === coppia.giusta ? 'Giusta!' : 'Sbagliata!') : ''}
+        {scaduta && (fase === 'attesa' || fase === 'esito')
+          ? 'Tempo scaduto!'
+          : fase === 'attesa'
+            ? 'Vediamo…'
+            : fase === 'esito'
+              ? scelta === coppia.giusta
+                ? 'Giusta!'
+                : 'Sbagliata!'
+              : ''}
       </p>
     </div>
+  )
+}
+
+const RAGGIO_COPPIA = 15
+const GIRO_COPPIA = 2 * Math.PI * RAGGIO_COPPIA
+
+/**
+ * Il tempo della coppia: un anello accanto al titolo che si svuota, con i
+ * secondi dentro. Prima che parta — la coppia sta entrando — e' pieno; negli
+ * ultimi cinque secondi diventa rosso, batte e si sente. Finisce una volta
+ * sola, e solo mentre si sceglie: una scelta gia' in viaggio decide da sola.
+ */
+function Clessidra({
+  orologio,
+  tempoMs,
+  attiva,
+  ferma,
+  onScade,
+}: {
+  orologio: { inizio: number; scadenza: number }
+  tempoMs: number
+  attiva: boolean
+  ferma: boolean
+  onScade: () => void
+}) {
+  const [adesso, setAdesso] = useState(() => Date.now())
+  const finita = useRef(false)
+  const accesa = adesso >= orologio.inizio
+  const resta = Math.max(0, Math.min(tempoMs, orologio.scadenza - adesso))
+  const secondi = Math.ceil(resta / 1000)
+  const urgente = accesa && secondi <= 5
+
+  useEffect(() => {
+    if (ferma) return
+    const t = window.setInterval(() => setAdesso(Date.now()), 100)
+    return () => window.clearInterval(t)
+  }, [ferma])
+
+  const ultimoTic = useRef<number | null>(null)
+  useEffect(() => {
+    if (!accesa || ferma) return
+    if (secondi <= 5 && secondi > 0 && ultimoTic.current !== secondi) {
+      ultimoTic.current = secondi
+      suona('tic')
+    }
+    if (resta <= 0 && attiva && !finita.current) {
+      finita.current = true
+      onScade()
+    }
+  }, [accesa, attiva, ferma, onScade, resta, secondi])
+
+  return (
+    <span
+      className={`ghi-clessidra${accesa ? ' is-accesa' : ''}${urgente ? ' is-urgente' : ''}`}
+      role="timer"
+      aria-label={`${secondi} secondi per scegliere`}
+    >
+      <svg viewBox="0 0 36 36" aria-hidden="true">
+        <circle className="ghi-clessidra__fondo" cx="18" cy="18" r={RAGGIO_COPPIA} />
+        <circle
+          className="ghi-clessidra__anello"
+          cx="18"
+          cy="18"
+          r={RAGGIO_COPPIA}
+          strokeDasharray={GIRO_COPPIA}
+          strokeDashoffset={GIRO_COPPIA * (1 - resta / tempoMs)}
+        />
+      </svg>
+      <span className="ghi-clessidra__secondi u-tabnum" aria-hidden="true">
+        {secondi}
+      </span>
+    </span>
   )
 }
 
@@ -511,7 +776,14 @@ function Coppia({
 const RAGGIO = 26
 const GIRO = 2 * Math.PI * RAGGIO
 
-/** Il minuto della parola vincente: l'anello che si svuota, e la parola da scrivere. */
+/** Quante lettere si scrivono al piu': la parola vincente non e' mai cosi' lunga. */
+const MASSIMO_RISPOSTA = 16
+
+/**
+ * Il tempo della parola vincente: l'anello che si svuota, la parola che si
+ * compone a ogni tasto, e la tastiera del gioco, come nella Catena. Le cinque
+ * parole intanto sono salite sopra, piccole, e si leggono ancora.
+ */
 function Finale({
   scadenza,
   tempoMs,
@@ -528,9 +800,9 @@ function Finale({
   const [testo, setTesto] = useState('')
   const [adesso, setAdesso] = useState(() => Date.now())
   const scaduto = useRef(false)
-  const campo = useRef<HTMLInputElement>(null)
   const resta = scadenza === null ? tempoMs : Math.max(0, scadenza - adesso)
   const secondi = Math.ceil(resta / 1000)
+  const libera = !inviata && resta > 0
 
   useEffect(() => {
     if (inviata) return
@@ -538,11 +810,7 @@ function Finale({
     return () => window.clearInterval(t)
   }, [inviata])
 
-  useEffect(() => {
-    campo.current?.focus({ preventScroll: true })
-  }, [])
-
-  // Gli ultimi dieci secondi si sentono, e allo zero il minuto e' finito.
+  // Gli ultimi dieci secondi si sentono, e allo zero il tempo e' finito.
   const ultimoTic = useRef<number | null>(null)
   useEffect(() => {
     if (inviata) return
@@ -557,55 +825,68 @@ function Finale({
     }
   }, [secondi, resta, inviata, onScade])
 
-  const invia = (e: FormEvent) => {
-    e.preventDefault()
-    if (inviata || resta <= 0) return
-    campo.current?.blur()
-    onRispondi(testo)
-  }
+  const scrivi = useCallback(
+    (l: string) => {
+      if (!libera) return
+      setTesto((t) => (t.length >= MASSIMO_RISPOSTA ? t : t + l))
+      suona('tocco', { volume: 0.6 })
+    },
+    [libera],
+  )
+  const cancella = useCallback(() => {
+    if (libera) setTesto((t) => t.slice(0, -1))
+  }, [libera])
+  const invia = useCallback(() => {
+    if (libera && testo.length > 0) onRispondi(testo)
+  }, [libera, onRispondi, testo])
+  useTastieraFisica(!inviata, { onLettera: scrivi, onCancella: cancella, onInvio: invia })
 
+  const lettere = [...testo.toUpperCase()]
   return (
-    <form className={`ghi-finale${secondi <= 10 ? ' is-urgente' : ''}`} onSubmit={invia}>
-      <div className="ghi-finale__tempo" aria-label={`${secondi} secondi`}>
-        <svg viewBox="0 0 60 60" aria-hidden="true">
-          <circle className="ghi-finale__fondo" cx="30" cy="30" r={RAGGIO} />
-          <circle
-            className="ghi-finale__anello"
-            cx="30"
-            cy="30"
-            r={RAGGIO}
-            strokeDasharray={GIRO}
-            strokeDashoffset={GIRO * (1 - resta / tempoMs)}
-          />
-        </svg>
-        <span className="ghi-finale__secondi u-tabnum">{secondi}</span>
+    <div className={`ghi-finale${secondi <= 10 ? ' is-urgente' : ''}${inviata ? ' is-inviata' : ''}`}>
+      <div className="ghi-finale__riga">
+        <div className="ghi-finale__tempo" role="timer" aria-label={`${secondi} secondi`}>
+          <svg viewBox="0 0 60 60" aria-hidden="true">
+            <circle className="ghi-finale__fondo" cx="30" cy="30" r={RAGGIO} />
+            <circle
+              className="ghi-finale__anello"
+              cx="30"
+              cy="30"
+              r={RAGGIO}
+              strokeDasharray={GIRO}
+              strokeDashoffset={GIRO * (1 - resta / tempoMs)}
+            />
+          </svg>
+          <span className="ghi-finale__secondi u-tabnum">{secondi}</span>
+        </div>
+        <p
+          className="ghi-finale__parola"
+          role="img"
+          aria-label={testo ? `Hai scritto ${testo.toUpperCase()}` : 'Scrivi la parola vincente'}
+          style={{ '--n': Math.max(lettere.length + 1, 8) } as CSSProperties}
+        >
+          {lettere.length === 0 && <span className="ghi-finale__invito">La parola vincente</span>}
+          {lettere.map((l, i) => (
+            <span key={i} className="ghi-finale__lettera" aria-hidden="true">
+              {l}
+            </span>
+          ))}
+          {libera && lettere.length < MASSIMO_RISPOSTA && <span className="ghi-finale__cursore" aria-hidden="true" />}
+        </p>
       </div>
-      <label className="ghi-finale__campo">
-        <span className="u-visually-hidden">La parola vincente</span>
-        <input
-          ref={campo}
-          type="text"
-          value={testo}
-          onChange={(e) => setTesto(e.target.value)}
-          placeholder="La parola vincente"
-          autoCapitalize="characters"
-          autoCorrect="off"
-          autoComplete="off"
-          spellCheck={false}
-          enterKeyHint="send"
-          maxLength={24}
-          disabled={inviata}
-        />
-      </label>
-      <div className="ghi-finale__azioni">
-        <Button type="submit" size="lg" disabled={inviata || normalizzaGhigliottina(testo).length === 0}>
-          Conferma
-        </Button>
-        <Button type="button" variant="plain" disabled={inviata} onClick={() => onRispondi('')}>
-          Non lo so
-        </Button>
-      </div>
-    </form>
+      <button type="button" className="ghi-finale__nonso" disabled={!libera} onClick={() => onRispondi('')}>
+        Non lo so
+      </button>
+      <TastieraGioco
+        className="ghi-tastiera"
+        disabled={!libera}
+        pronta={testo.length > 0}
+        invio="Invia"
+        onLettera={scrivi}
+        onCancella={cancella}
+        onInvio={invia}
+      />
+    </div>
   )
 }
 

@@ -9,6 +9,8 @@ import { Sheet } from '@/components/Sheet'
 import { SalaSfida } from '@/games/amici/SalaSfida'
 import {
   SECONDI_FINALE,
+  SECONDI_PAROLA,
+  SECONDI_SCELTA,
   impostazioniValide,
   type GiocoSfidaLibera,
   type ImpostazioniDi,
@@ -18,6 +20,14 @@ import { descriviOpzioni, salaDi } from './giochi'
 import './Sfide.css'
 
 export type Contro = 'solo' | 'amico'
+
+/** Un tempo come si legge: "45 secondi", "1 minuto", "1 minuto e mezzo", "2 minuti". */
+function durata(secondi: number): string {
+  if (secondi === 60) return '1 minuto'
+  if (secondi === 90) return '1 minuto e mezzo'
+  if (secondi % 60 === 0) return `${secondi / 60} minuti`
+  return `${secondi} secondi`
+}
 
 function leggi<T>(chiave: string, ripiego: T): T {
   try {
@@ -129,17 +139,20 @@ export function FoglioSfida<G extends GiocoSfidaLibera>({
 }
 
 /**
- * Prima della Ghigliottina e della Catena libere: da solo o con un amico, e il
- * tempo della parola finale. Non hanno livelli, quindi Comincia sta sotto le
- * opzioni.
+ * Prima della Ghigliottina e della Catena libere: da solo o con un amico, il
+ * tempo di ogni passo — una coppia, una parola — e quello della parola finale.
+ * Non hanno livelli, quindi Comincia sta sotto le opzioni.
  */
 export function SceltaFinale({
   gioco,
+  titoloPasso,
   titoloTempo,
   onComincia,
   children,
 }: {
   gioco: 'ghigliottina' | 'catena'
+  /** "Tempo per coppia", "Tempo per parola". */
+  titoloPasso: string
   /** "Tempo per la parola vincente". */
   titoloTempo: string
   onComincia: (opzioni: ImpostazioniFinale) => void
@@ -154,13 +167,23 @@ export function SceltaFinale({
       <InterruttoreContro value={contro} onChange={setContro} />
       <Sezione titolo="Partita">
         <Opzioni>
-          <Scelte titolo={titoloTempo} valore={`${opzioni.secondi} secondi`}>
+          <Scelte titolo={titoloPasso} valore={`${opzioni.passo} secondi`}>
+            <Cursore
+              ariaLabel={titoloPasso}
+              valori={gioco === 'ghigliottina' ? SECONDI_SCELTA : SECONDI_PAROLA}
+              valore={opzioni.passo}
+              etichetta={(n) => `${n} s`}
+              voce={(n) => `${n} secondi`}
+              onChange={(n) => cambia({ passo: n })}
+            />
+          </Scelte>
+          <Scelte titolo={titoloTempo} valore={durata(opzioni.secondi)}>
             <Cursore
               ariaLabel={titoloTempo}
               valori={SECONDI_FINALE}
               valore={opzioni.secondi}
-              etichetta={(n) => `${n} s`}
-              voce={(n) => `${n} secondi`}
+              etichetta={(n) => (n % 60 === 0 ? `${n / 60} min` : `${n} s`)}
+              voce={durata}
               onChange={(n) => cambia({ secondi: n })}
             />
           </Scelte>

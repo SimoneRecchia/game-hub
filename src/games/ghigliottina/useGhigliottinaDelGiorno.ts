@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
-import { MARGINE_GHIGLIOTTINA_MS } from '@shared/ghigliottina'
+import { MARGINE_GHIGLIOTTINA_MS, TEMPO_SCELTA_MS } from '@shared/ghigliottina'
 import type { GhigliottinaStato } from '@shared/types'
 import type { ComandiGhigliottina, VistaGhigliottina } from './Partita'
 
@@ -15,14 +15,23 @@ export interface GhigliottinaDelGiorno {
   ricarica: () => void
 }
 
-/** Lo stato del server come lo vede la scena, con la fine del minuto sull'orologio del telefono. */
+/** Lo stato del server come lo vede la scena, con i tempi sull'orologio del telefono. */
 function vistaDa(s: GhigliottinaStato): VistaGhigliottina {
+  const adesso = Date.now()
   return {
+    iniziata: s.iniziata,
     coppie: s.coppie,
     totaleCoppie: s.totaleCoppie,
     corrente: s.corrente,
     montepremiIniziale: s.montepremiIniziale,
     montepremi: s.montepremi,
+    orologioCoppia: s.coppia
+      ? {
+          inizio: adesso + s.coppia.inizioMs,
+          scadenza: adesso + (s.coppia.inizioMs > 0 ? s.coppia.inizioMs + s.coppia.tempoMs : s.coppia.restanteMs),
+        }
+      : null,
+    tempoSceltaMs: s.coppia?.tempoMs ?? TEMPO_SCELTA_MS,
     finaleAperto: s.finale.aperto,
     scadenza: s.finale.restanteMs !== null ? Date.now() + s.finale.restanteMs : null,
     tempoFinaleMs: s.finale.tempoMs,
@@ -36,7 +45,8 @@ function vistaDa(s: GhigliottinaStato): VistaGhigliottina {
 
 /**
  * La Ghigliottina del giorno. Ogni scelta va al server, che dice qual era la
- * parola giusta solo dopo; il minuto lo tiene lui. Allo scadere il telefono
+ * parola giusta solo dopo; i tempi li tiene lui. Finito quello di una coppia il
+ * telefono lo dice subito (`/tempo`); finito quello della parola vincente
  * aspetta il margine della rete e rilegge: il server ha chiuso la partita.
  */
 export function useGhigliottinaDelGiorno(): GhigliottinaDelGiorno {
@@ -59,7 +69,7 @@ export function useGhigliottinaDelGiorno(): GhigliottinaDelGiorno {
     statoRef.current = s
     setStato(s)
     // Una scelta cambia la carta delle Giornaliere, e la partita finita la classifica.
-    const scelte = (x: GhigliottinaStato | null) => x?.coppie.filter((c) => c.scelta !== null).length ?? 0
+    const scelte = (x: GhigliottinaStato | null) => x?.coppie.filter((c) => c.giusta !== null).length ?? 0
     if (scelte(s) !== scelte(prima) || s.status !== prima?.status) dimentica('/oggi')
     if (s.status === 'done' && prima?.status !== 'done') dimentica('/leaderboard')
   }, [])
@@ -98,6 +108,12 @@ export function useGhigliottinaDelGiorno(): GhigliottinaDelGiorno {
 
   const comandi = useMemo<ComandiGhigliottina>(
     () => ({
+      inizia: () => scrivi('/ghigliottina/inizia', {}),
+      scadeScelta: () => {
+        const s = statoRef.current
+        if (!s || s.corrente === null) return Promise.resolve(null)
+        return scrivi('/ghigliottina/tempo', { versione: s.versione, coppia: s.corrente })
+      },
       scegli: (scelta) => {
         const s = statoRef.current
         if (!s || s.corrente === null) return Promise.resolve(null)
