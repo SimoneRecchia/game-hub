@@ -409,7 +409,7 @@
 }
 
 .ct-ruota:is(.is-magia, .is-aumento) .ct-conto {
-  animation: ct-conto-passo var(--dura) steps(1, end) var(--da) forwards;
+  animation: ct-conto-passo var(--dura) linear var(--da) forwards;
 }
 
 .ct-ruota:is(.is-magia, .is-aumento) .ct-conto.is-ultimo {
@@ -417,11 +417,20 @@
   animation: ct-conto-ultimo 1ms linear var(--da) forwards;
 }
 
+/*
+ * Un numero del conto si vede dal suo passo al seguente, e si spegne nell'ultimo
+ * cinquantesimo: un paio di millisecondi. Era un salto (`steps(1, end)`), ma alla
+ * fine dell'animazione Chrome calcola il progresso come 0,9999999999999984 e non
+ * come uno, e un salto a un soffio dall'uno non e' ancora saltato: alcuni numeri
+ * restavano accesi, e sulla medaglia e sul triplo si leggevano ×4, ×7 e ×10
+ * insieme. Cosi' un soffio sotto l'uno e' gia' spento.
+ */
 @keyframes ct-conto-passo {
-  from {
+  0%,
+  98% {
     opacity: 1;
   }
-  to {
+  100% {
     opacity: 0;
   }
 }
@@ -432,11 +441,15 @@
   }
 }
 
-/* L'ultimo numero del triplo arriva grande, e si posa. */
+/*
+ * L'ultimo numero del triplo arriva grande, e si posa. Solo `forwards`: con
+ * `both` il primo fotogramma, grande e acceso, valeva gia' durante l'attesa, e
+ * per tutto il conto un ×10 enorme stava sopra i numeri che salivano.
+ */
 .ct-ruota.is-magia .ct-posto.is-dieci .ct-conto.is-ultimo {
   transform-box: fill-box;
   transform-origin: 50% 50%;
-  animation: ct-conto-colpo 640ms cubic-bezier(0.2, 0.9, 0.3, 1.3) var(--da) both;
+  animation: ct-conto-colpo 640ms cubic-bezier(0.2, 0.9, 0.3, 1.3) var(--da) forwards;
 }
 
 @keyframes ct-conto-colpo {

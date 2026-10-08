@@ -762,7 +762,14 @@ quel che si vede. Dalla ruota fortunata al quiz, la ruota del quiz arriva con i
 moltiplicatori di sempre, e solo dopo salgono, uno dopo l'altro dal piu'
 piccolo, con il ×4 che conta fino al ×10: si vede che cosa ha portato la
 fortuna. Lo stesso fanno le buche del Pachinko e le caselle del Cash Hunt, con
-la stessa magia (`aumento` in `magia.ts`). Il nastro (`NastroFortuna`) dice
+la stessa magia (`aumento` in `magia.ts`). I numeri di un conto stanno uno sopra
+l'altro e il CSS ne accende uno alla volta: si spengono con una dissolvenza
+negli ultimi millesimi del loro passo e non con un salto (`steps`), perché alla
+fine di un'animazione Chrome calcola il progresso come 0,9999999999999984, e un
+salto restava acceso — sulla medaglia e sul triplo si leggevano ×4, ×7 e ×10
+insieme; e l'ultimo arriva con `forwards`, perché con `both` il suo primo
+fotogramma, grande, copriva tutto il conto. Un test
+(`ruota/__tests__/conto.test.ts`) li tiene. Il nastro (`NastroFortuna`) dice
 "Ruota fortunata", "Quiz fortunato", "Moneta fortunata", "Pachinko fortunato"
 o "Cash Hunt fortunato" finché la fortuna dura, e dopo l'esito la ruota torna
 quella di sempre. Al neon, sui palchi alti, il carattere si stringe quanto
