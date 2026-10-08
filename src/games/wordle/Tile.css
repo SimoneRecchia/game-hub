@@ -22,7 +22,9 @@
    */
   border: 2px solid transparent;
   background: var(--slot);
-  box-shadow: inset 0 2px 4px var(--slot-ombra);
+  box-shadow:
+    inset 0 2px 4px var(--slot-ombra),
+    inset 0 -1px 0 var(--slot-orlo);
   color: var(--label);
   font-family: var(--font-rounded);
   font-weight: 700;
