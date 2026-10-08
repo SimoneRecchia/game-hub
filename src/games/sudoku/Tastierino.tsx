@@ -24,7 +24,8 @@ export function Tastierino({
   onCancella: () => void
   onAnnulla: () => void
   onNote: () => void
-  onAiuti: () => void
+  /** Senza, gli aiuti non ci sono: nelle sfide fra amici. Il bottone resta, spento, perché il tastierino non cambi. */
+  onAiuti?: () => void
 }) {
   return (
     <div className={`sud-tastierino${modoNote ? ' is-note' : ''}`}>
@@ -50,7 +51,7 @@ export function Tastierino({
           </span>
           <span className="sud-strumento__nome">Note</span>
         </button>
-        <button type="button" className="sud-strumento" onClick={onAiuti} aria-label="Aiuti">
+        <button type="button" className="sud-strumento" onClick={onAiuti} disabled={!onAiuti} aria-label="Aiuti">
           <IconAiuto size={22} />
           <span className="sud-strumento__nome">Aiuti</span>
         </button>

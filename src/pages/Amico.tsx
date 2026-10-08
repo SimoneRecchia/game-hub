@@ -31,6 +31,11 @@ const NOMI: Record<GiocoInsieme, string> = {
   dama: 'Dama',
   forza4: 'Forza 4',
   go: 'Go',
+  sudoku: 'Sudoku',
+  anagrammi: 'Anagrammi',
+  paroliere: 'Paroliere',
+  ghigliottina: 'Ghigliottina',
+  catena: 'Catena',
   lupus: 'Lupus',
   scarabocchi: 'Scarabocchi',
 }

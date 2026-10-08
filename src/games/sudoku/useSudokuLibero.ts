@@ -35,7 +35,8 @@ export interface SudokuLiberoController {
   guasto: string | null
   /** Lo schema appena risolto e' il record del suo livello. */
   record: boolean
-  nuova: (livello: LivelloSudoku) => void
+  /** Uno schema nuovo; con il seme di una sfida, quello dei due telefoni. */
+  nuova: (livello: LivelloSudoku, seme?: number) => void
   /** Lascia lo schema, finito o no, e torna alla scelta del livello. */
   lascia: () => void
   gioco: SudokuInCorso
@@ -44,10 +45,11 @@ export interface SudokuLiberoController {
 /**
  * Il sudoku libero, tutto nel telefono: la soluzione c'e' gia', quindi
  * controlli e svelate si fanno qui, e non costano niente. Rendono pero' la
- * partita "aiutata", che non fa record.
+ * partita "aiutata", che non fa record. Lo schema di una sfida (`salva` a
+ * false) non tocca quello salvato da soli, e non va nei conti.
  */
-export function useSudokuLibero(): SudokuLiberoController {
-  const [partita, setPartita] = useState<PartitaSudokuLibera | null>(() => leggiPartitaSudoku())
+export function useSudokuLibero({ salva = true }: { salva?: boolean } = {}): SudokuLiberoController {
+  const [partita, setPartita] = useState<PartitaSudokuLibera | null>(() => (salva ? leggiPartitaSudoku() : null))
   const [conti, setConti] = useState(() => leggiContiSudoku())
   const [generando, setGenerando] = useState<LivelloSudoku | null>(null)
   const [guasto, setGuasto] = useState<string | null>(null)
@@ -71,11 +73,14 @@ export function useSudokuLibero(): SudokuLiberoController {
     timerMessaggio.current = setTimeout(() => setMessaggio(null), DURATA_MESSAGGIO_MS)
   }, [])
 
-  const scrivi = useCallback((p: PartitaSudokuLibera | null) => {
-    partitaRef.current = p
-    setPartita(p)
-    salvaPartitaSudoku(p)
-  }, [])
+  const scrivi = useCallback(
+    (p: PartitaSudokuLibera | null) => {
+      partitaRef.current = p
+      setPartita(p)
+      if (salva) salvaPartitaSudoku(p)
+    },
+    [salva],
+  )
 
   /** La partita dopo una cifra: chiusa se la griglia e' la soluzione, con i conti aggiornati. */
   const chiudiSeRisolta = useCallback(
@@ -85,12 +90,14 @@ export function useSudokuLibero(): SudokuLiberoController {
         return p
       }
       const chiusa = { ...p, finita: true }
-      const esito = contaRisolta(chiusa)
-      setConti(esito.conti)
-      setRecord(esito.record)
+      if (salva) {
+        const esito = contaRisolta(chiusa)
+        setConti(esito.conti)
+        setRecord(esito.record)
+      }
       return chiusa
     },
-    [mostra],
+    [mostra, salva],
   )
 
   const onCambio = useCallback(
@@ -119,7 +126,7 @@ export function useSudokuLibero(): SudokuLiberoController {
 
   // Il tempo si salva anche senza cifre nuove: ogni tanto, a pagina nascosta e uscendo.
   useEffect(() => {
-    if (!inCorso) return
+    if (!inCorso || !salva) return
     const salvaTempo = () => {
       const p = partitaRef.current
       if (p && !p.finita) salvaPartitaSudoku({ ...p, tempoMs: tempoRef.current })
@@ -134,7 +141,7 @@ export function useSudokuLibero(): SudokuLiberoController {
       clearInterval(id)
       salvaTempo()
     }
-  }, [inCorso, iniziata, tempoRef])
+  }, [inCorso, iniziata, salva, tempoRef])
 
   useEffect(
     () => () => {
@@ -144,13 +151,13 @@ export function useSudokuLibero(): SudokuLiberoController {
   )
 
   const nuova = useCallback(
-    (livello: LivelloSudoku) => {
+    (livello: LivelloSudoku, seme?: number) => {
       setGenerando(livello)
       setGuasto(null)
       setRecord(false)
-      generaSchemaLibero(livello)
+      generaSchemaLibero(livello, seme)
         .then((schema) => {
-          setConti(contaCominciata(livello))
+          if (salva) setConti(contaCominciata(livello))
           scrivi({
             iniziata: Date.now(),
             livello,
@@ -167,7 +174,7 @@ export function useSudokuLibero(): SudokuLiberoController {
         .catch((e: unknown) => setGuasto(e instanceof Error ? e.message : 'Non riesco a preparare lo schema.'))
         .finally(() => setGenerando(null))
     },
-    [scrivi],
+    [salva, scrivi],
   )
 
   const lascia = useCallback(() => {

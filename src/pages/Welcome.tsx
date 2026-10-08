@@ -6,11 +6,13 @@ import { Field } from '@/components/Field'
 import { Marchio } from '@/components/Marchio'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { ThemeButton } from '@/components/ThemeButton'
+import { SFIDE_LIBERE } from '@/games/sfide/giochi'
 import { A_GIOCO } from '@/games/tavolo/nomi'
 import { useAuth } from '@/lib/auth'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { CODE_LENGTH, CODE_TTL_MINUTES, EMAIL_PATTERN, NICKNAME_MAX, NICKNAME_MIN } from '@shared/config'
+import type { GiocoSfidaLibera } from '@shared/sfide-libere'
 import type { InvitoConLink } from '@shared/types'
 import './Welcome.css'
 
@@ -205,7 +207,9 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
                           sfida.gioco === 'tris' ||
                           sfida.gioco === 'scarabeo'
                         ? `ti invita a giocare ${A_GIOCO[sfida.gioco]}.`
-                        : 'ti sfida a battaglia navale.'}{' '}
+                        : sfida.gioco && sfida.gioco in SFIDE_LIBERE
+                          ? SFIDE_LIBERE[sfida.gioco as GiocoSfidaLibera].sfida
+                          : 'ti sfida a battaglia navale.'}{' '}
                   {isRegister ? 'Registrati e gioca subito.' : 'Entra e gioca subito.'}
                 </>
               ) : (

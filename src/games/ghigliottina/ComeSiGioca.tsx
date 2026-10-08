@@ -29,7 +29,11 @@ export function ComeSiGiocaGhigliottina({ open, onClose }: { open: boolean; onCl
               Il montepremi parte da {MONTEPREMI_GHIGLIOTTINA} punti. Se indovini la parola vincente lo vinci; se no,
               niente.
             </li>
-            <li>Una al giorno, la stessa per tutti. La libera non conta per la classifica.</li>
+            <li>Una al giorno, la stessa per tutti.</li>
+            <li>
+              Nella libera scegli il tempo della parola vincente, e puoi sfidare un amico sulla stessa ghigliottina:
+              vince chi vince di più, e a pari punti chi la scrive prima. Non conta per la classifica.
+            </li>
           </ul>
         </section>
         <p className="cru-aiuto__nota">Il gioco è quello del finale dell’Eredità, su Rai 1.</p>

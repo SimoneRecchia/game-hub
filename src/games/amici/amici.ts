@@ -3,6 +3,7 @@ import { ROTTE } from '@/app/rotte'
 import { api } from '@/lib/api'
 import { useDati } from '@/lib/dati'
 import { AMICI_POLL_MS } from '@shared/config'
+import { eGiocoSfidaLibera, type GiocoSfidaLibera } from '@shared/sfide-libere'
 import type { StanzaLupusBreve, VistaStanzaLupus } from '@shared/lupus-stanza'
 import type { StanzaScarabocchiBreve, VistaStanzaScarabocchi } from '@shared/scarabocchi'
 import type { AmiciRisposta, AmicoOnline, Attivita, GiocatoreBreve } from '@shared/types'
@@ -77,6 +78,7 @@ export type GiocoInsieme =
   | 'go'
   | 'lupus'
   | 'scarabocchi'
+  | GiocoSfidaLibera
 
 export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'battaglia',
@@ -90,6 +92,11 @@ export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
   'dama',
   'forza4',
   'go',
+  'sudoku',
+  'anagrammi',
+  'paroliere',
+  'ghigliottina',
+  'catena',
   'lupus',
   'scarabocchi',
 ]
@@ -149,6 +156,17 @@ export async function invitaA(
     await api(`/${gioco}/sfide`, { method: 'POST', body: { playerId } })
     return salaDi(gioco)
   }
+  if (eGiocoSfidaLibera(gioco)) {
+    // Con le opzioni scelte l'ultima volta nella libera (la chiave di useOpzioniLibera).
+    let impostazioni: unknown = null
+    try {
+      impostazioni = JSON.parse(localStorage.getItem(`giochi.${gioco}.opzioni`) ?? 'null')
+    } catch {
+      /* le opzioni di sempre */
+    }
+    await api(`/sfide/${gioco}`, { method: 'POST', body: { playerId, impostazioni } })
+    return salaDi(gioco)
+  }
   if (gioco === 'indovina') {
     const set = scelta('giochi.indovina.set', false)
     await api('/indovina/inviti', {
@@ -177,6 +195,11 @@ export function salaDi(gioco: GiocoInsieme): string {
     // Lo stesso per le Sequenze (la chiave di SequenzeLibera).
     ricorda('giochi.sequenze.contro', 'amico')
     return ROTTE.libera('sequenze')
+  }
+  if (eGiocoSfidaLibera(gioco)) {
+    // La libera si apre dalla parte dell'amico, con il foglio della sfida, che aspetta la risposta.
+    ricorda(`giochi.${gioco}.contro`, 'amico')
+    return `${ROTTE.libera(gioco)}?sfida=1`
   }
   if (gioco === 'indovina') return ROTTE.indovina
   // La libera dello Scarabeo si apre dalla parte dell'amico, dove si invita con il link (la chiave di ScarabeoLibero).

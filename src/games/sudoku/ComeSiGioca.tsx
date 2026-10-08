@@ -66,7 +66,8 @@ export function ComeSiGiocaSudoku({
               domenica.
             </li>
             <li>
-              <strong>Libera</strong>: uno schema nuovo della difficoltà che vuoi. Non conta per la classifica.
+              <strong>Libera</strong>: uno schema nuovo della difficoltà che vuoi, da solo o contro un amico, sullo
+              stesso schema e senza aiuti: vince chi lo risolve prima. Non conta per la classifica.
             </li>
           </ul>
         </section>

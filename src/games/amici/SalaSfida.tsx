@@ -23,6 +23,8 @@ const RITMO_TRANQUILLO_MS = 12_000
 export interface GiocoSfida {
   /** Le rotte delle sfide sul server, come `/nomi/sfide`. */
   api: string
+  /** Dove stanno le sfide una per una, se non sotto `api`: `/sfide/partita` per le libere da soli. */
+  partite?: string
   sfida: (id: string) => string
   invito: (codice: string) => string
   nome: string
@@ -57,11 +59,12 @@ async function copia(url: string, avvisa: (testo: string) => void) {
 
 /**
  * La sfida con un amico, nella libera dei giochi che si giocano in due nello
- * stesso momento — Nomi, cose e città, le Sequenze: chi e' online, con un
- * invito a testa, o un link da mandare. Quando l'altro accetta, la sala porta
- * tutti e due alla sfida.
+ * stesso momento — Nomi, cose e città, le Sequenze, e le libere da soli: chi
+ * e' online, con un invito a testa, o un link da mandare. Le opzioni scelte
+ * viaggiano con l'invito. Quando l'altro accetta, la sala porta tutti e due
+ * alla sfida.
  */
-export function SalaSfida({ gioco }: { gioco: GiocoSfida }) {
+export function SalaSfida({ gioco, impostazioni }: { gioco: GiocoSfida; impostazioni?: unknown }) {
   const { vai } = useNavigazione()
   const toast = useToast()
   const [dati, setDati] = useState<SalaNomi | null>(null)
@@ -106,7 +109,7 @@ export function SalaSfida({ gioco }: { gioco: GiocoSfida }) {
     try {
       const creato = await api<{ id: string; codice: string | null }>(gioco.api, {
         method: 'POST',
-        body: { playerId },
+        body: { playerId, impostazioni },
       })
       atteso.current = creato.id
       if (creato.codice) await condividi(gioco, creato.codice, toast.show)
@@ -119,7 +122,7 @@ export function SalaSfida({ gioco }: { gioco: GiocoSfida }) {
   }
 
   const annulla = async (invito: InvitoNomiMandato) => {
-    await api(`${gioco.api}/${invito.id}/annulla`, { method: 'POST' }).catch(() => {})
+    await api(`${gioco.partite ?? gioco.api}/${invito.id}/annulla`, { method: 'POST' }).catch(() => {})
     await carica()
   }
 
