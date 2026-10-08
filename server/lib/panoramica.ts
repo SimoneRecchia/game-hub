@@ -21,7 +21,6 @@ import { leaderboard } from './leaderboard'
 import { classificaQuiz } from './quizStore'
 import { classificaScarabeo } from './scarabeoStore'
 import { classificaSudoku } from './sudokuStore'
-import { classificaTris } from './trisStore'
 import { classificaNomi } from './nomiStore'
 import { classificaAnagrammi } from './anagrammiStore'
 import { classificaSequenze } from './sequenzeStore'
@@ -67,7 +66,6 @@ export async function panoramica(
     cruciverba,
     sudoku,
     quiz,
-    tris,
     nomi,
     anagrammi,
     sequenze,
@@ -82,7 +80,6 @@ export async function panoramica(
     classificaCruciverba(db, periodo, numeroDiOggi, viewerId),
     classificaSudoku(db, periodo, numeroDiOggi, viewerId),
     classificaQuiz(db, periodo, numeroDiOggi, viewerId),
-    classificaTris(db, periodo, numeroDiOggi, viewerId),
     classificaNomi(db, periodo, numeroDiOggi, viewerId),
     classificaAnagrammi(db, periodo, numeroDiOggi, viewerId),
     classificaSequenze(db, periodo, numeroDiOggi, viewerId),
@@ -102,7 +99,6 @@ export async function panoramica(
       ...cruciverba.rows.filter((r) => r.inCorso),
       ...sudoku.rows.filter((r) => r.inCorso),
       ...quiz.rows.filter((r) => r.inCorso),
-      ...tris.rows.filter((r) => r.inCorso),
       ...anagrammi.rows.filter((r) => r.inCorso),
       ...sequenze.rows.filter((r) => r.inCorso),
       ...ghigliottina.rows.filter((r) => r.inCorso),
@@ -129,7 +125,6 @@ export async function panoramica(
       cruciverba: anteprima(cruciverba.rows, cruciverba.me, colPunti, aperta),
       sudoku: anteprima(sudoku.rows, sudoku.me, colPunti, aperta),
       quiz: anteprima(quiz.rows, quiz.me, colPunti, aperta),
-      tris: anteprima(tris.rows, tris.me, colPunti, aperta),
       anagrammi: anteprima(anagrammi.rows, anagrammi.me, colPunti, aperta),
       sequenze: anteprima(sequenze.rows, sequenze.me, colPunti, aperta),
       ghigliottina: anteprima(ghigliottina.rows, ghigliottina.me, colPunti, aperta),

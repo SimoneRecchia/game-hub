@@ -30,7 +30,6 @@ import type {
   QuizSummary,
   ScarabeoSummary,
   SudokuSummary,
-  TrisSummary,
   WordleStatus,
   WordleSummary,
 } from '../../shared/types'
@@ -40,14 +39,12 @@ import { compagniaBreve } from './compagniaStore'
 import { aiutiDi, giornata as giornataCruciverba, schemaDelGiorno, type PartitaRow } from './cruciverbaStore'
 import { giornata as giornataQuiz, giornataQuiz as domandeDelGiorno, partitaDi as partitaQuiz, risposteDi } from './quizStore'
 import { puntiQuiz } from '../../shared/quiz'
-import { PARTITE_TRIS, puntiTris } from '../../shared/tris'
 import { CATEGORIE_PER_PARTITA } from '../../shared/nomi-cose'
 import {
   giornata as giornataSudoku,
   partitaDi as partitaSudoku,
   schemaDelGiorno as schemaSudoku,
 } from './sudokuStore'
-import { giornata as giornataTris, partiteDi as partiteTris, serieDi as serieTris } from './trisStore'
 import { giornata as giornataNomi, partitaDi as partitaNomi, risposteDi as risposteNomi, scaduta } from './nomiStore'
 import {
   giornata as giornataAnagrammi,
@@ -272,28 +269,6 @@ export async function riepilogoQuiz(db: D1Database, playerId: string): Promise<Q
     giuste,
     totale,
     punti: row?.status === 'done' ? row.score : puntiQuiz(giuste, totale),
-    msToNextPuzzle: msToNextPuzzle(),
-  }
-}
-
-/**
- * Il tris di oggi: com'e' andata ogni partita finita della serie, e i punti.
- * Non apre niente e non chiude le partite scadute: una mossa lasciata a meta'
- * la chiude la pagina del tris quando la si riapre.
- */
-export async function riepilogoTris(db: D1Database, playerId: string): Promise<TrisSummary> {
-  const quando = giornataTris()
-  const row = await serieTris(db, playerId, quando.puzzleNumber)
-  const esiti = row ? partiteTris(row).flatMap((p) => (p.e ? [p.e] : [])) : []
-  const vinte = esiti.filter((e) => e === 'vinta').length
-  const patte = esiti.filter((e) => e === 'patta').length
-  return {
-    puzzleNumber: quando.puzzleNumber,
-    date: quando.date,
-    status: row ? row.status : 'new',
-    esiti,
-    totale: PARTITE_TRIS,
-    punti: row?.status === 'done' ? row.score : puntiTris(vinte, patte),
     msToNextPuzzle: msToNextPuzzle(),
   }
 }

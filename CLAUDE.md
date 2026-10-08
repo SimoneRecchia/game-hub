@@ -74,16 +74,16 @@ il test che verifica la condizione numerica cade prima di quello sull'ordine:
 guarda quello.
 
 **La scala dei punti e' derivata, non scritta a mano**: base di partecipazione
-piu' gradino per tentativo risparmiato, cioe' `[70, 63, 56, 49, 42, 35]`, e
-quattordici per una parola non indovinata. Il rapporto fra la giornata migliore
+piu' gradino per tentativo risparmiato, cioe' `[100, 90, 80, 70, 60, 50]`, e
+venti per una parola non indovinata. Il rapporto fra la giornata migliore
 e la peggiore e' **2:1** di proposito: con il 6:1 di una volta due giornate
 sfortunate decidevano la classifica, e una vittoria al sesto tentativo valeva
 un sesto di una perfetta. C'e' un test su entrambi i lati del compromesso — che
 sia recuperabile, e che il gradino non sia simbolico. I bonus di velocità (fino
 a uno) e di costanza (fino a tre) sono spareggi: sommati restano sotto il
-gradino di sette. Fino alla ridistribuzione dei punti la scala era la stessa
-moltiplicata per dieci settimi, da cento a cinquanta e venti: le giornate di
-allora valgono quel che valevano.
+gradino di dieci. Per un periodo, con i tetti diversi per gioco, la scala era
+la stessa moltiplicata per sette decimi, da settanta a trentacinque e
+quattordici: le giornate di allora valgono quel che valevano.
 
 **La classificata del Wordle e' una parola sola al giorno**, la stessa per
 tutti, come la partita del giorno di ogni altro gioco; chi ne vuole altre ha la
@@ -304,7 +304,7 @@ finito.** `statoDa` manda lo schema con i punti al posto delle lettere, e la
 `voce` di ogni definizione solo a partita chiusa: "Milano" accanto a "Città
 dell'Italia settentrionale" sarebbe la risposta.
 
-**Nel cruciverba il tempo non da' punti.** Centosessanta a chi lo completa
+**Nel cruciverba il tempo non da' punti.** Cento a chi lo completa
 senza aiuti, e ogni aiuto costa quel che da' (vedi sotto) — e ricontrollare lo
 stesso errore non costa (`registraControllo`). La partita conta gli aiuti — le
 svelate, gli errori (`errori`), i controlli (`controlli`, `controlli_schema`,
@@ -337,7 +337,7 @@ chiede di tirare a indovinare non esce mai: `valuta` non ci arriva, e il
 generatore lo scarta.
 
 **Nel sudoku la soluzione resta sul server, e gli aiuti costano come nel
-cruciverba.** Centocinquanta a chi lo risolve senza aiuti, e gli aiuti con la
+cruciverba.** Cento a chi lo risolve senza aiuti, e gli aiuti con la
 regola del cruciverba (vedi sotto) — e ricontrollare la stessa cifra sbagliata
 non costa (`segnalate` tiene la cifra, con lo stesso `registraControllo`).
 Due cifre uguali che si vedono si segnano subito nel browser, perché si vedono
@@ -348,9 +348,13 @@ un altro telefono ci sono.
 
 **Un aiuto costa quel che da'.** Nel cruciverba e nel sudoku tutto si misura
 sulla parte di una casella, il tetto diviso le caselle da trovare (`costiAiuti`
-in `shared/aiuti.ts`, arrotondata al punto): due punti nel cruciverba, che ha
-una ottantina di lettere, tre nel sudoku, che ha da trovare fra quarantacinque e
-cinquantanove cifre. Svelare una casella costa tre parti, perché ne apre altre —
+in `shared/aiuti.ts`): un punto e un quarto nel cruciverba, che ha una ottantina
+di lettere, circa due nel sudoku, che ha da trovare fra quarantacinque e
+cinquantanove cifre. Ogni aiuto costa le sue parti arrotondate al punto — una
+casella svelata del cruciverba quattro punti, e non tre parti da un punto —
+perché arrotondare la parte prima di moltiplicarla, con i tetti a cento, faceva
+svelare un terzo dello schema lasciandone un quinto. Svelare una casella costa
+tre parti, perché ne apre altre —
 le parole incrociate, la riga, la colonna e il riquadro — e svelato un terzo
 dello schema la giornata vale zero; un sesto ne lascia la meta'. Un controllo
 costa una parte anche quando trova tutto giusto, perché "e' tutto giusto" e' una
@@ -423,34 +427,28 @@ occupati i due giocatori, altrimenti chi chiude l'app a meta' non potrebbe piu'
 essere sfidato. Chi resta ad aspettare puo' chiedere la vittoria a tavolino
 dopo tre minuti senza colpi, o cinque senza flotta.
 
-**Ogni classificata ha il suo tetto, e la generale e' la somma.** Prima una
+**Ogni classificata vale cento, e la generale e' la somma.** Prima una
 giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche centinaio,
 e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni gioco misura
 quel che gli e' proprio dentro un tetto deciso (`TETTI` in `shared/punti.ts`,
-che ha la tabella di tutti), che segue il tempo che una giornata chiede a chi la
-gioca bene: il cruciverba 160, lo Scarabeo e il sudoku 150, il quiz 75, il
-Wordle 70, la Ghigliottina e la Catena 64, Nomi, cose e città, gli Anagrammi e
-il Paroliere 60, il tris e le Sequenze 50. Sono dodici, e fanno milletredici, un
-po' meno di novanta a gioco, e un test lo tiene. Erano otto e facevano ottocento con
-la battaglia navale (85), che il 6 ottobre 2026 e' uscita dalle classificate
-(vedi sotto); due giorni dopo sono arrivati gli Anagrammi, che valgono quanto
-Nomi, cose e città perché chiedono lo stesso tempo, le Sequenze, che valgono
-quanto il tris, il Paroliere, tre minuti come Nomi, cose e città, e la
-Ghigliottina, fra il Wordle e loro, con sessantaquattro perché il montepremi si
-dimezzi cinque volte senza virgole, e poi la Catena, che si gioca allo stesso
-modo e vale quanto lei: gli altri tetti sono rimasti quelli, perché
-i giorni nuovi valgano come i vecchi. Non in proporzione diretta: un cruciverba chiede dieci volte il tempo
-del tris e vale tre volte tanto, cosi' nessun gioco da solo decide la generale.
-Per un periodo tutte valevano cento: una partita perfetta a tris valeva una
-perfetta a sudoku. Le giornate di allora restano come sono, perché i punti si
+che ha la tabella di tutti), e il tetto e' cento per tutti: sono undici, e
+fanno millecento, e un test lo tiene. La storia e' andata avanti e indietro.
+All'inizio valevano tutte cento; poi i tetti hanno seguito il tempo che una
+giornata chiede — il cruciverba 160, lo Scarabeo e il sudoku 150, il quiz 75, il
+Wordle 70, la Ghigliottina e la Catena 64, Nomi, cose e città, gli Anagrammi e il
+Paroliere 60, il tris e le Sequenze 50 —, e in pratica in alcuni giochi si
+guadagnava troppo e in altri troppo poco: chi faceva il cruciverba prendeva
+quanto chi faceva tre giochi brevi. L'8 ottobre 2026 si e' tornati a cento per
+tutti, e il tris e la battaglia navale (vedi sotto) non sono piu' classificate.
+Le giornate giocate con i tetti di prima restano come sono, perché i punti si
 salvano a fine partita e non si ricalcolano. Il Wordle misura i tentativi, lo
 Scarabeo il punteggio in rapporto al computer, il cruciverba e il sudoku gli
-aiuti, il quiz le risposte giuste (quindici per aver giocato, sei per ogni
-giusta), il tris le vittorie e le patte, Nomi, cose e città le risposte valide,
-di piu' quelle date da pochi, gli Anagrammi le parole trovate, di piu' quelle
-trovate presto, le Sequenze le sequenze ripetute giuste, il Paroliere i punti
-delle parole rispetto al traguardo della griglia, la Ghigliottina e la Catena il
-montepremi che resta. Tutti tengono il principio del Wordle — **giocarla bene
+aiuti, il quiz le risposte giuste (venti per aver giocato, otto per ogni
+giusta), Nomi, cose e città le risposte valide, di piu' quelle date da pochi,
+gli Anagrammi le parole trovate, di piu' quelle trovate presto, le Sequenze le
+sequenze ripetute giuste, il Paroliere i punti delle parole rispetto al
+traguardo della griglia, la Ghigliottina e la Catena il montepremi che resta.
+Tutti tengono il principio del Wordle — **giocarla bene
 vale circa il doppio di giocarla male**, non dieci volte tanto — tranne la
 Ghigliottina e la Catena, di proposito (vedi sotto), e
 `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
@@ -1193,9 +1191,9 @@ famiglia (vedi sotto), anche nel menu laterale del computer (`GIOCHI_DA_TAVOLO`
 in `src/games/catalog.ts`), non in `GiocoClassificato`, che porta con se'
 classifiche, anelli e statistiche. Sono Indovina chi, Lupus e Scarabocchi, che
 il computer non ce l'hanno — si giocano parlandosi, o disegnando — e la
-battaglia navale, scacchi, dama, Forza 4 e go, con un amico o contro il
-computer. Il tris e' un tavoliere ma non sta qui: ha la sua classificata (vedi
-sotto).
+battaglia navale, scacchi, dama, Forza 4, go e tris, con un amico o contro il
+computer. La battaglia e il tris una classificata l'hanno avuta, e le giornate
+di allora restano nella generale (vedi sotto).
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -1511,59 +1509,42 @@ tornano a zero, non quando il server non prende una mossa e la griglia torna
 indietro di un disco. `griglia.test.ts` tiene d'accordo il CSS con le misure e i
 tempi del codice.
 
-**Il tris ha una classificata, e i tavolieri sono la sua libera.** La
-classificata e' una serie di cinque partite contro il computer del giorno
-(`/tris/classificata`); la libera e' quella dei giochi da tavoliere: il tris
-sta in `GIOCHI_TAVOLIERE` e in `RegoleTavoliere`, con la sala a `/tris/libera`
-(`SLUG_TAVOLIERE`), contro il computer o con un amico. Non sta in
-`GIOCHI_DA_TAVOLO`, che sono i giochi senza classificata, e le pagine dei
-tavolieri lo trovano con `giocoTavoloDi`. Per farlo entrare la migrazione
+**Il tris e' un tavoliere, e dall'8 ottobre 2026 non ha piu' la
+classificata.** Era una serie di cinque partite contro il computer del giorno,
+ma il tris non si puo' fare uguale per tutti: chi sa le mosse giuste pareggia
+sempre, e una vittoria la decideva la svista che il computer aveva quel giorno
+piu' di come si era giocato. Ora sta solo fra i tavolieri, in `GIOCHI_TAVOLIERE`
+e in `RegoleTavoliere`, con la sala a `/tris/libera` (`SLUG_TAVOLIERE`), contro
+il computer o con un amico, e in `GIOCHI_DA_TAVOLO` con gli altri giochi senza
+classificata; `/tris` e `/tris/classificata` portano alla sala. Le serie di
+allora restano in `tris_partite`, e i loro punti stanno nella generale dei
+periodi che le comprendono, in una colonna a parte (`GeneraleRow.tris`, e la
+stessa somma in `puntiClassificateDi`), come quelli della battaglia: una
+giornata vale quel che valeva. Per farlo entrare fra i tavolieri la migrazione
 `0028` ha rifatto `tavolo_partite` senza il `CHECK` sul gioco, che in SQLite
 non si allarga: il gioco lo controlla il server, e un gioco nuovo non deve
 volerla rifare un'altra volta. Prima delle migrazioni il deploy scrive nel log
 il segnalibro di Time Travel di D1, da cui si torna a com'era se una tabella
 rifatta andasse storta.
 
-**Nel tris ogni mossa ha dieci secondi, e il tempo lo tiene il server.** Senza
-tempo chi ci pensa abbastanza non sbaglia mai, e il tris finisce sempre patta.
-Nella classificata `mossa_at` e' quando e' partito il tempo della mossa da
-fare: una mossa che arriva oltre il tempo piu' `MARGINE_MOSSA_TRIS_MS` (tre
-secondi, come nel quiz) non vale e la partita e' persa, e una partita lasciata
-a meta' la chiude la prima richiesta che arriva dopo (`chiudiScaduta`). Allo
-scadere il telefono lo dice lui (`/tris/tempo`), senza aspettare il margine: e'
-una resa. Fra amici e' lo stesso (`tempoMossaMs` in `RegoleTavoliere`,
-`scadenzaMossa` e `chiudiSeScaduta` in `tavoloStore.ts`), tranne la prima mossa
-di ciascuno, che e' senza tempo: chi ha mandato l'invito arriva al tavoliere un
-momento dopo chi l'ha accettato, quando la sala se ne accorge. Nelle partite a
-tempo il giro di controllo e' di un secondo (`TAVOLO_POLL_A_TEMPO_MS`): la
-mossa dell'altro arriva con il ritardo del giro, e intanto il mio tempo corre.
-Contro il computer il tempo sta nel telefono, e riparte a ogni turno.
+**Nel tris ogni mossa ha dieci secondi.** Senza tempo chi ci pensa abbastanza
+non sbaglia mai, e il tris finisce sempre patta. Fra amici il tempo lo tiene il
+server (`tempoMossaMs` in `RegoleTavoliere`, `scadenzaMossa` e
+`chiudiSeScaduta` in `tavoloStore.ts`), tranne la prima mossa di ciascuno, che
+e' senza tempo: chi ha mandato l'invito arriva al tavoliere un momento dopo chi
+l'ha accettato, quando la sala se ne accorge. Nelle partite a tempo il giro di
+controllo e' di un secondo (`TAVOLO_POLL_A_TEMPO_MS`): la mossa dell'altro
+arriva con il ritardo del giro, e intanto il mio tempo corre. Contro il
+computer il tempo sta nel telefono, e riparte a ogni turno.
 
-**Il computer del tris e' lo stesso per tutti, e ogni partita si puo'
-vincere.** Il tris e' risolto: il valore di ogni posizione sta in una tabella
-(`shared/tris-valori.ts`, che scrive `scripts/genera-tris-valori.ts` e un test
-ricalcola con il minimax), perché il minimax a ogni isolato nuovo costava sei
-dei dieci millisecondi. Il computer sbaglia come una persona: una svista
-sottile, che lascia una forchetta, tanto piu' spesso quanto meno sono le mosse
-giuste; una grossa, che non para una fila, di rado. Nella classificata le
-sviste vengono dal seme della partita e dalla posizione (`mossaDelGiorno`),
-quindi chi gioca le stesse mosse trova le stesse risposte. Ogni partita ha un
-punto debole (`debolezzaDi`): una posizione, raggiungibile tenendo la patta, in
-cui il computer sbaglia di sicuro. Si cerca una svista sottile, mai sulla prima
-risposta (`PRIMA_MOSSA_DEBOLE`), che sarebbe un'apertura fortunata e non una
-strada; quando comincia il computer di solito non ce n'e' — chi ha la mossa in
-piu' perde con una forchetta solo alla quinta — e allora e' una fila lasciata
-aperta. Un test verifica su quattrocento giorni che ogni partita si possa
-vincere. Chi gioca bene ne vince circa una su due; chi sbaglia ogni tanto una
-su tre, e ne perde una su cinque.
-
-**La serie del tris conta finita.** Dieci punti per averla finita, otto per
-ogni vittoria e quattro per ogni patta (`puntiTris`), fino a cinquanta: la
-patta e' quel che fa chi gioca bene contro chi gioca bene, e vale la meta'
-della vittoria, non zero. Il giocatore comincia la prima, la terza e la
-quinta. I punti si scrivono a serie finita, come in ogni classificata, e nella
-classifica del tris a pari punti passa avanti chi ha vinto di piu'. Guardare la
-pagina non apre niente: la riga nasce con la prima partita (`/tris/partita`).
+**Il computer del tris sbaglia come una persona.** Il tris e' risolto: il
+valore di ogni posizione sta in una tabella (`shared/tris-valori.ts`, che
+scrive `scripts/genera-tris-valori.ts` e un test ricalcola con il minimax),
+perché il minimax a ogni isolato nuovo costava sei dei dieci millisecondi. Il
+computer sa sempre quali mosse tengono la patta, e a volte non le gioca: una
+svista sottile, che lascia una forchetta, tanto piu' spesso quanto meno sono
+le mosse giuste; una grossa, che non para una fila, di rado. Quanto spesso lo
+dice il livello (`DISTRAZIONI`).
 
 **Nomi, cose e città si conta la notte, e vale il giorno dopo.** Una risposta
 vale di piu' quanto meno l'hanno data gli altri, quindi i punti si fanno quando
@@ -1582,11 +1563,11 @@ classifica "in arrivo", a zero. Il conto non si fa nel Worker: con molti
 giocatori passerebbe di molto i dieci millisecondi, e vuole il lessico intero.
 
 **La rarita' e' un logaritmo, perché con cinquemila giocatori non valga tutto
-zero.** Quindici punti per aver scritto almeno una risposta, da quattro a nove
-per ogni risposta valida, e il tempo che toglie al piu' un quarto alle risposte:
-al massimo sessanta (`shared/nomi-cose.ts`). La rarita' di una risposta e'
-`ln(giocatori / uguali) / ln(giocatori)`: uno su cinquemila vale nove, tutti
-quattro, dieci su cinquemila ancora piu' di sette e mezzo. Una scala lineare
+zero.** Venticinque punti per aver scritto almeno una risposta, da sette a
+quindici per ogni risposta valida, e il tempo che toglie al piu' un quarto alle
+risposte: al massimo cento (`shared/nomi-cose.ts`). La rarita' di una risposta
+e' `ln(giocatori / uguali) / ln(giocatori)`: uno su cinquemila vale quindici,
+tutti sette, dieci su cinquemila ancora quasi tredici. Una scala lineare
 ("una su cinque l'hanno scritta in mille") darebbe il minimo a quasi tutte le
 risposte di una partita affollata. Due risposte sono uguali se il lessico le
 riconosce nella stessa forma: "le arance" e "arancia" sono la stessa.
@@ -1665,10 +1646,10 @@ presto.** Novanta secondi a parola (`TEMPO_PAROLA_MS`): l'orologio parte quando
 la si apre (`/apri`), fra una parola e l'altra ci si ferma quanto si vuole, e
 una risposta vale entro il tempo piu' `MARGINE_ANAGRAMMI_MS`; una parola rimasta
 aperta la chiude, persa, la prima richiesta che arriva dopo. Una risposta
-sbagliata non si scrive, e si riprova finché c'e' tempo. Dieci punti per aver
-finito, quattro per ogni parola trovata e fino a sei di bonus, pieno per tre
-secondi a lettera e poi a scendere fino allo scadere (`puntiParola`): sessanta
-tutte subito, trenta tutte all'ultimo. La definizione costa tre punti, e una
+sbagliata non si scrive, e si riprova finché c'e' tempo. Venti punti per aver
+finito, sei per ogni parola trovata e fino a dieci di bonus, pieno per tre
+secondi a lettera e poi a scendere fino allo scadere (`puntiParola`): cento
+tutte subito, cinquanta tutte all'ultimo. La definizione costa cinque punti, e una
 parola trovata ne vale almeno uno. Guardare non apre niente: la partita nasce
 con la prima parola aperta. La libera sta tutta nel telefono, con gli stessi
 tempi e gli stessi punti, come il sudoku libero.
@@ -1682,9 +1663,9 @@ non dice niente, e il gioco si chiama per quel che si fa. I cubetti sono sparsi
 e non in una griglia, come sulla tavola vera: in una griglia una sequenza si
 ricorderebbe come un disegno di righe e colonne, e un test tiene che tre non
 stiano mai in fila. La classificata e' di cinque turni uguali per tutti, ognuno
-da tre a nove cubetti, e il primo errore chiude il turno: quindici punti per
-averli giocati tutti e uno per sequenza giusta, fino a cinquanta (`puntiSequenze`).
-Chi arriva a cinque o sei, la media degli adulti, fa trenta o trentacinque; a
+da tre a nove cubetti, e il primo errore chiude il turno: trenta punti per
+averli giocati tutti e due per sequenza giusta, fino a cento (`puntiSequenze`).
+Chi arriva a cinque o sei, la media degli adulti, fa sessanta o settanta; a
 pari punti conta la sequenza piu' lunga, poi il tempo. Fra un turno e l'altro ci
 si ferma quanto si vuole. Ogni cubetto ha la sua nota della scala pentatonica
 (`NOTE_CUBETTI`), perché una sequenza si ricorda anche a orecchio, come al Simon.
@@ -1754,8 +1735,8 @@ a un doppio tocco risponde come la prima volta), e la vincente e le
 espressioni solo a partita chiusa. Il minuto lo tiene il server (`finale_at`,
 scritto da `/finale`), con il margine della rete del quiz, e la risposta e' una
 sola. I punti sono l'eccezione al principio del Wordle, perché il gioco e'
-quello della televisione: ogni scelta sbagliata dimezza il montepremi (64, 32,
-16...), e una vincente sbagliata o non data vale zero. Le cinque parole si
+quello della televisione: ogni scelta sbagliata dimezza il montepremi (100, 50,
+25...), e una vincente sbagliata o non data vale zero. Le cinque parole si
 vedono sempre, quindi anche con cinque errori la vincente si puo' trovare.
 Nella classifica a pari punti contano le vincenti indovinate, poi il tempo
 per scriverle. La scena (`src/games/ghigliottina/Partita.tsx`) e' una
@@ -1794,7 +1775,7 @@ Un errore dimezza e mostra un'altra lettera, il secondo dimezza e mostra la
 parola; i jolly sono due, e ne' un jolly ne' un errore mostrano l'ultima
 lettera. Della finale si vedono le prime due lettere e l'ultima; il terzo
 elemento si compra dimezzando, e chi arriva con tutti e due i jolly lo ha in
-regalo. Il montepremi parte da 64 come quello della Ghigliottina e non scende
+regalo. Il montepremi parte da cento come quello della Ghigliottina e non scende
 sotto uno, perché la finale valga sempre qualcosa; sbagliata vale zero.
 `vistaCatena` manda solo le parole fino alla coppia di adesso, e di quella da
 indovinare le lettere e la lunghezza, come le caselle in studio. Il minuto della
@@ -1818,8 +1799,8 @@ ottanta parole comuni (`grigliaDelGiorno`), e la scrive con le comuni e il
 traguardo in `paroliere_giornate` (`INSERT OR IGNORE`). Il traguardo e' un
 quinto del punteggio di tutte le comuni, fra 25 e 60 (`traguardoDi`): le
 griglie non sono uguali, e chi trova meta' delle parole in una griglia povera
-ha giocato quanto chi ne trova meta' in una ricca. I punti sono quindici per
-aver giocato e quarantacinque in proporzione al traguardo, che oltre non
+ha giocato quanto chi ne trova meta' in una ricca. I punti sono venticinque per
+aver giocato e settantacinque in proporzione al traguardo, che oltre non
 crescono (`puntiParoliere`); in classifica a pari punti conta il punteggio
 sulla griglia, che oltre il traguardo continua a salire. Se la giornata manca,
 `PAROLIERE_ASSENTE` (503): in locale `npm run paroliere:locale`.
@@ -1906,8 +1887,9 @@ solo porta alla classificata. I giochi da tavolo non hanno ne' l'una ne'
 l'altra: la loro sala e' `/<gioco>`, e da li' `/computer`, `/partita/:id`,
 `/invito/:codice` (`/scacchi`, `/dama`, `/forza-4`, `/go`); la battaglia ha la
 sala a `/battaglia-navale` e le partite a `/battaglia-navale/partita/:id`, anche
-contro il computer, che sta sul server. Il tris ha le due cose: la sua libera e'
-una sala da tavoliere, a `/tris/libera`. Lo Scarabeo con un amico sta sotto la
+contro il computer, che sta sul server. Il tris e' un tavoliere come gli altri,
+ma la sua sala sta a `/tris/libera`, l'indirizzo di quando aveva anche la
+classificata. Lo Scarabeo con un amico sta sotto la
 sua libera: `/scarabeo/libera/partita/:id` e `/scarabeo/libera/invito/:codice`.
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
@@ -1921,7 +1903,7 @@ giornata come la trova chi gioca — dieci mosse a testa contro il computer del
 giorno, con le tessere del giorno (`giornataATurni`) — e scrive il suo punteggio
 in `scarabeo_computer`: il traguardo di una giornata non cambia, altrimenti due
 giocatori dello stesso giorno avrebbero punti su scale diverse. I punti sono
-`150 × punteggio / traguardo`, fino al tetto (`puntiScarabeo`): il rapporto
+`100 × punteggio / traguardo`, fino al tetto (`puntiScarabeo`): il rapporto
 invece di una scala fissa tiene conto della fortuna del sacchetto. Il traguardo
 e' il computer al posto di chi gioca, e non il punteggio dell'avversario nella
 stessa partita, perché quello cresce con la partita: in rapporto a lui una buona

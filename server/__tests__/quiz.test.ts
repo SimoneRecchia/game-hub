@@ -182,8 +182,8 @@ describe('il quiz del giorno', () => {
     db.sqlite.prepare('UPDATE quiz_partite SET tempo_ms = 40000 WHERE player_id = ?').run(bruno.id)
     const c = (await chiama<QuizLeaderboard>('GET', '/leaderboard/quiz?scope=today', anna)).dati
     expect(c.rows.map((r) => [r.nickname, r.punti, r.giuste])).toEqual([
-      ['bruno', 75, 10],
-      ['anna', 75, 10],
+      ['bruno', 100, 10],
+      ['anna', 100, 10],
     ])
     expect(c.me?.rank).toBe(2)
   })

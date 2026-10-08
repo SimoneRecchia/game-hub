@@ -465,78 +465,6 @@ export interface SudokuLeaderboard {
   me: SudokuRow | null
 }
 
-/* ────────────────────────────────  Tris  ───────────────────────────── */
-
-export type TrisStatus = 'playing' | 'done'
-
-/** Com'e' finita una partita della serie, per chi gioca. */
-export type EsitoPartitaTris = 'vinta' | 'patta' | 'persa'
-
-/** Una partita della serie del giorno, come la vede chi gioca. */
-export interface PartitaTris {
-  /** Le mosse dall'inizio, del giocatore e del computer, a turno: le caselle da 0 a 8. */
-  mosse: number[]
-  /** Il segno del giocatore: 0 comincia, ed e' la X. */
-  segno: 0 | 1
-  /** Com'e' finita; null finché si gioca. */
-  esito: EsitoPartitaTris | null
-  /** Persa perché e' scaduto il tempo della mossa. */
-  tempo: boolean
-}
-
-export interface TrisStato {
-  puzzleNumber: number
-  date: string
-  status: TrisStatus
-  /** Le partite finite e quella in corso, in ordine. */
-  partite: PartitaTris[]
-  /** Quante partite ha la serie. */
-  totale: number
-  /** Il tempo che resta per la mossa, se una partita e' in corso; null fra una partita e l'altra. */
-  restanteMs: number | null
-  tempoMossaMs: number
-  /** I punti fatti finora: a serie finita, quelli della classifica. */
-  punti: number
-  /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni mossa. */
-  versione: number
-  msToNextPuzzle: number
-}
-
-export interface TrisSummary {
-  puzzleNumber: number
-  date: string
-  status: 'new' | TrisStatus
-  /** Le partite finite, com'e' andata ognuna. */
-  esiti: EsitoPartitaTris[]
-  totale: number
-  punti: number
-  msToNextPuzzle: number
-}
-
-export interface TrisRow {
-  rank: number
-  playerId: string
-  nickname: string
-  displayName: string
-  avatarColor: string
-  /** Punti nel periodo: solo le serie finite. */
-  punti: number
-  /** Serie finite nel periodo. */
-  giornate: number
-  vinte: number
-  patte: number
-  /** true se oggi ha una serie cominciata e non finita. */
-  inCorso: boolean
-}
-
-export interface TrisLeaderboard {
-  scope: LeaderboardScope
-  periodo: PeriodoClassifica
-  updatedAt: string
-  rows: TrisRow[]
-  me: TrisRow | null
-}
-
 /* ───────────────────────────────  Anagrammi  ─────────────────────────────── */
 
 export type AnagrammiStatus = 'playing' | 'done'
@@ -1784,7 +1712,6 @@ export type GiocoClassificato =
   | 'cruciverba'
   | 'sudoku'
   | 'quiz'
-  | 'tris'
   | 'nomi'
   | 'anagrammi'
   | 'sequenze'
@@ -1849,6 +1776,8 @@ export interface GeneraleRow {
    * c'era: e' gia' dentro `punti`, perché una giornata vale quel che valeva.
    */
   battaglia: number
+  /** Il tris classificato, nei periodi con i giorni in cui c'era: anche lui gia' dentro `punti`. */
+  tris: number
   /** Quel che ha dato o tolto Crazy Time nel periodo: e' gia' dentro `punti`. */
   ruota: number
   /** Quel che hanno dato o tolto la slot e il blackjack: anche questo e' gia' dentro `punti`. */
@@ -1900,7 +1829,6 @@ export interface OggiRisposta {
   cruciverba: CruciverbaSummary
   sudoku: SudokuSummary
   quiz: QuizSummary
-  tris: TrisSummary
   nomi: NomiSummary
   anagrammi: AnagrammiSummary
   sequenze: SequenzeSummary

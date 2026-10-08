@@ -107,11 +107,11 @@ describe('la difficoltà e il generatore', () => {
 })
 
 describe('i punti e le note', () => {
-  it('centocinquanta senza aiuti, nove per cifra svelata, tre per controllo e per errore, mai sotto zero', () => {
+  it('cento senza aiuti; con 45 cifre da trovare sette per cifra svelata, due per controllo e per errore', () => {
     const costi = costiSudoku(schemaDelGiorno(31, '2026-09-28')!.dati)
-    expect(puntiSudoku(NESSUN_AIUTO, costi)).toBe(150)
-    expect(puntiSudoku({ svelate: 2, errori: 5, controlli: 1, controlliSchema: 0 }, costi)).toBe(150 - 18 - 15 - 3)
-    expect(puntiSudoku({ ...NESSUN_AIUTO, controlliSchema: 1 }, costi)).toBe(135)
+    expect(puntiSudoku(NESSUN_AIUTO, costi)).toBe(100)
+    expect(puntiSudoku({ svelate: 2, errori: 5, controlli: 1, controlliSchema: 0 }, costi)).toBe(100 - 14 - 10 - 2)
+    expect(puntiSudoku({ ...NESSUN_AIUTO, controlliSchema: 1 }, costi)).toBe(89)
     expect(puntiSudoku({ ...NESSUN_AIUTO, svelate: 60 }, costi)).toBe(0)
   })
 

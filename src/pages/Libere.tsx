@@ -17,8 +17,7 @@ import './Libere.css'
 
 /**
  * Le famiglie dei giochi, con le tessere: un gioco classificato porta alla sua
- * libera, uno da tavolo alla sua sala. Il tris e' tutti e due, e porta alla
- * libera, che e' la sua sala.
+ * libera, uno da tavolo alla sua sala.
  */
 const FAMIGLIE = CATEGORIE_LIBERE.map((c, k) => ({
   nome: c.nome,

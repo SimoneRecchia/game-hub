@@ -30,7 +30,6 @@
  *   /nomi-cose-citta/libera             una lettera a caso, contro il computer o un amico
  *   /nomi-cose-citta/sfida/:id          una sfida con un amico
  *   /nomi-cose-citta/invito/:codice     una sfida arrivata con un link
- *   /tris/classificata                  le cinque partite di oggi contro il computer
  *   /tris/libera                        la sala: contro il computer, o con un amico
  *   /tris/libera/computer               la partita contro il computer, nel telefono
  *   /tris/libera/partita/:id            una partita con un amico
@@ -93,7 +92,6 @@ export const SLUG: Record<GiocoClassificato, string> = {
   cruciverba: 'cruciverba',
   sudoku: 'sudoku',
   quiz: 'quiz',
-  tris: 'tris',
   nomi: 'nomi-cose-citta',
   anagrammi: 'anagrammi',
   sequenze: 'sequenze',
@@ -108,9 +106,9 @@ export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null 
 }
 
 /**
- * Lo stesso per i giochi da tavoliere: "forza-4", non "forza4". Il tris ha una
- * classificata, e le sue partite fra amici e contro il computer sono la sua
- * libera: la sala sta a /tris/libera.
+ * Lo stesso per i giochi da tavoliere: "forza-4", non "forza4". La sala del
+ * tris sta a /tris/libera, dove stava quando il tris aveva una classificata:
+ * gli inviti con il link di allora funzionano ancora.
  */
 export const SLUG_TAVOLIERE: Record<GiocoTavoliere, string> = {
   scacchi: 'scacchi',
