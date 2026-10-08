@@ -15,15 +15,20 @@
  *   Sudoku       10-20 minuti               150
  *   Quiz         3-4 minuti                  75
  *   Wordle       3-5 minuti                  70
+ *   Ghigliottina 2-3 minuti                  64
  *   Nomi, cose   2-3 minuti                  60
+ *   Paroliere    3 minuti                    60
  *   Anagrammi    2-4 minuti                  60
  *   Sequenze     3-5 minuti                  50
  *   Tris         2-3 minuti                  50
  *
- * Sono nove, e la somma e' ottocentoventicinque: un po' meno di cento a
+ * Sono undici, e la somma e' novecentoquarantanove: un po' meno di novanta a
  * gioco. Gli Anagrammi valgono quanto Nomi, cose e città, che chiede lo stesso
- * tempo; le Sequenze, arrivate per ultime, quanto il tris: cinque turni brevi,
- * e il tempo se ne va a guardare i lampi.
+ * tempo; le Sequenze quanto il tris: cinque turni brevi, e il tempo se ne va a
+ * guardare i lampi. Il Paroliere, arrivato per ultimo con la Ghigliottina,
+ * vale quanto Nomi, cose e città, che dura come lui tre minuti; la
+ * Ghigliottina sessantaquattro, fra il Wordle e loro, perché il montepremi si
+ * dimezzi cinque volte senza virgole.
  * Erano otto, e facevano ottocento, finché la battaglia navale ha avuto la sua
  * classificata (85, i colpi per affondare la flotta del giorno): era piu'
  * fortuna che bravura, e il 6 ottobre 2026 e' diventata solo una libera. Gli
@@ -43,11 +48,18 @@
  *   Tris         vinte e patte su cinque partite       30-40     10        50
  *   Anagrammi    parole trovate, e quanto presto       40-50     10        60
  *   Sequenze     sequenze ripetute giuste in 5 turni   30-35     15        50
+ *   Paroliere    i punti delle parole, al traguardo    35-50     15        60
+ *   Ghigliottina il montepremi, se si indovina         16-32      0**      64
  *
  *   * la parola non indovinata vale quattordici, la peggiore indovinata
  *     trentacinque; un cruciverba o un sudoku svelato per intero non e' stato
  *     risolto: vale zero. Ogni casella svelata toglie la sua parte, e svelarne
  *     un quarto lascia tre quarti dei punti (vedi shared/aiuti.ts).
+ *
+ *   ** la Ghigliottina e' l'eccezione, di proposito: si gioca come alla
+ *     televisione, dove ogni scelta sbagliata dimezza il montepremi e una
+ *     parola vincente sbagliata lo azzera. Le cinque parole si vedono sempre,
+ *     quindi anche chi ha sbagliato ogni scelta puo' indovinare: due punti.
  *
  * I pochi punti oltre il tetto del Wordle sono i bonus di velocità e costanza,
  * che servono da spareggio e restano sotto il gradino di un tentativo.
@@ -64,6 +76,8 @@ import { PARTITE_TRIS, puntiTris } from './tris'
 import { MASSIMO_NOMI } from './nomi-cose'
 import { MASSIMO_ANAGRAMMI } from './anagrammi'
 import { MASSIMO_SEQUENZE } from './sequenze'
+import { MASSIMO_GHIGLIOTTINA } from './ghigliottina'
+import { MASSIMO_PAROLIERE } from './paroliere'
 import type { GiocoClassificato } from './types'
 
 export { punteggio as puntiCruciverba } from './cruciverba'
@@ -72,6 +86,8 @@ export { puntiSudoku } from './sudoku'
 export { puntiTris } from './tris'
 export { puntiAnagrammi } from './anagrammi'
 export { puntiSequenze } from './sequenze'
+export { puntiGhigliottina } from './ghigliottina'
+export { puntiParoliere } from './paroliere'
 
 /** Il tetto di ogni classificata: quanto vale una giornata perfetta. Un test lo confronta con le formule. */
 export const TETTI: Record<GiocoClassificato, number> = {
@@ -84,6 +100,8 @@ export const TETTI: Record<GiocoClassificato, number> = {
   nomi: 60,
   anagrammi: 60,
   sequenze: 50,
+  ghigliottina: 64,
+  paroliere: 60,
 }
 
 /* ─────────────────────────────  Scarabeo  ─────────────────────────── */
@@ -123,4 +141,6 @@ export const MASSIMI: Record<GiocoClassificato, number> = {
   nomi: MASSIMO_NOMI,
   anagrammi: MASSIMO_ANAGRAMMI,
   sequenze: MASSIMO_SEQUENZE,
+  ghigliottina: MASSIMO_GHIGLIOTTINA,
+  paroliere: MASSIMO_PAROLIERE,
 }

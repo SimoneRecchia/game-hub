@@ -6,6 +6,7 @@
 
 import type { Mossa } from '@shared/scarabeo'
 import type { PartitaLibera } from '@shared/scarabeo-computer'
+import type { GrigliaLibera } from '@shared/paroliere'
 
 interface Attesa {
   risolvi: (valore: unknown) => void
@@ -65,4 +66,9 @@ export async function mossaDelComputer(partita: PartitaLibera): Promise<Mossa | 
 export async function rispostaDelComputer(numero: number, mosse: Mossa[]): Promise<Mossa | null> {
   const { mossa } = await chiedi<{ mossa: Mossa | null }>({ tipo: 'risposta', numero, mosse })
   return mossa
+}
+
+/** Una griglia del Paroliere libero, con le sue parole: lo stesso dizionario, quindi lo stesso lavoratore. */
+export function grigliaDelParoliere(lato: number): Promise<GrigliaLibera> {
+  return chiedi<GrigliaLibera>({ tipo: 'paroliere', lato })
 }

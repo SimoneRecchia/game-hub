@@ -57,6 +57,14 @@ const caricaAnagrammi = () => import('./pages/Anagrammi')
 const caricaAnagrammiLibera = () => import('./pages/AnagrammiLibera')
 const Anagrammi = lazy(caricaAnagrammi)
 const AnagrammiLibera = lazy(caricaAnagrammiLibera)
+const caricaGhigliottina = () => import('./pages/Ghigliottina')
+const caricaGhigliottinaLibera = () => import('./pages/GhigliottinaLibera')
+const Ghigliottina = lazy(caricaGhigliottina)
+const GhigliottinaLibera = lazy(caricaGhigliottinaLibera)
+const caricaParoliere = () => import('./pages/Paroliere')
+const caricaParoliereLibera = () => import('./pages/ParoliereLibera')
+const Paroliere = lazy(caricaParoliere)
+const ParoliereLibera = lazy(caricaParoliereLibera)
 const caricaNomi = () => import('./pages/NomiCose')
 const caricaNomiLibera = () => import('./pages/NomiCoseLibera')
 const caricaNomiSfida = () => import('./pages/NomiCoseSfida')
@@ -142,6 +150,10 @@ function usePrecarica() {
         caricaTris,
         caricaAnagrammi,
         caricaAnagrammiLibera,
+        caricaGhigliottina,
+        caricaGhigliottinaLibera,
+        caricaParoliere,
+        caricaParoliereLibera,
         caricaNomi,
         caricaNomiLibera,
         caricaNomiSfida,
@@ -255,6 +267,10 @@ export default function App() {
 
             <Route path="/anagrammi/classificata" element={<Anagrammi />} />
             <Route path="/anagrammi/libera" element={<AnagrammiLibera />} />
+            <Route path="/ghigliottina/classificata" element={<Ghigliottina />} />
+            <Route path="/ghigliottina/libera" element={<GhigliottinaLibera />} />
+            <Route path="/paroliere/classificata" element={<Paroliere />} />
+            <Route path="/paroliere/libera" element={<ParoliereLibera />} />
 
             <Route path="/nomi-cose-citta/classificata" element={<NomiCose />} />
             <Route path="/nomi-cose-citta/libera" element={<NomiCoseLibera />} />

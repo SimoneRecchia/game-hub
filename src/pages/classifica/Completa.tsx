@@ -16,6 +16,7 @@ import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
 import { PUNTI_FINITA_ANAGRAMMI } from '@shared/anagrammi'
 import { PUNTI_FINITA_SEQUENZE } from '@shared/sequenze'
+import { PUNTI_GIOCATA_PAROLIERE } from '@shared/paroliere'
 import { TETTI } from '@shared/punti'
 import { DOMANDE_PER_PARTITA, PUNTI_BASE_QUIZ, PUNTI_QUIZ } from '@shared/quiz'
 import { conSegno } from '@shared/ruota'
@@ -49,6 +50,8 @@ const LEDE: Record<ChiaveClassifica, string> = {
   nomi: `Fino a ${TETTI.nomi} punti, che valgono il giorno dopo: di più per le risposte date da pochi.`,
   anagrammi: `${PUNTI_FINITA_ANAGRAMMI} punti per aver giocato, fino a 10 per ogni parola: di più se la trovi subito.`,
   sequenze: `${PUNTI_FINITA_SEQUENZE} punti per aver giocato, uno per ogni sequenza giusta: fino a ${TETTI.sequenze}.`,
+  ghigliottina: `Si parte da ${TETTI.ghigliottina} punti, ogni scelta sbagliata li dimezza; zero se sbagli la parola vincente.`,
+  paroliere: `${PUNTI_GIOCATA_PAROLIERE} punti per aver giocato, fino a ${TETTI.paroliere} con le parole della griglia.`,
   fortuna: 'Quel che Crazy Time, la slot e il blackjack hanno dato o tolto.',
 }
 
