@@ -871,16 +871,17 @@ poco meno di un terzo della resa, come le funzioni speciali delle slot video
 (Starburst: il 27%). La resa la conta `contaSlot` su tutte le 64.000
 combinazioni: la linea il 66,6%, con le domande tutte giuste il 97%, come Crazy
 Time, e `shared/__tests__/slot.test.ts` tiene ferme la resa, la frequenza, la
-scala delle triple e le vincite grosse. Si punta da 1 a `PUNTATA_MASSIMA_SLOT`,
-dieci, con le fiches che si sommano (vedi sotto), e non tutto il saldo come a
-Crazy Time: il ×300 dei sette su un saldo intero darebbe in un giro decine di
-migliaia di punti, e la generale non vorrebbe piu' dire niente.
+scala delle triple e le vincite grosse. Si punta da 1 a tutto il saldo, come a
+Crazy Time e al blackjack, con le fiches che si sommano (vedi sotto). Fino
+all'8 ottobre 2026 il tetto era dieci, perché il ×300 dei sette su un saldo
+intero da' in un giro decine di migliaia di punti; il tetto l'ha tolto chi
+gioca, sapendolo: i sette escono una volta ogni sessantaquattromila giri.
 
 **Le fiches si sommano, e la puntata la dice il display.** Ogni tocco di una
-fiche aggiunge il suo valore, quindi si punta qualunque cifra fra uno e dieci;
-erano un gruppo di scelte, e il tocco sostituiva la puntata invece di
-aggiungere. Una fiche che passerebbe il tetto — dieci, o il saldo se e' meno —
-si ferma li', e il display lo dice con il MAX che lampeggia e un tocco morbido
+fiche aggiunge il suo valore — 1, 5, 25 e 100, i colori delle fiches dei casino'
+(`PUNTATE_SLOT`) —, quindi si punta qualunque cifra fino al saldo; erano un
+gruppo di scelte, e il tocco sostituiva la puntata invece di aggiungere. Una
+fiche che passerebbe il saldo si ferma li', e il display lo dice con il MAX che lampeggia e un tocco morbido
 (`tetto` in `suoni.ts`), mai con un errore: e' quel che fanno le slot vere. La
 fiche vola dal bottone al display, che conta quando arriva, mentre la puntata
 e' gia' cresciuta (`inVoloFiches`): una leva tirata con le fiches ancora in

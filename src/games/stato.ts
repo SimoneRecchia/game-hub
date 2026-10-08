@@ -9,7 +9,7 @@
 
 import { NOMI_CATEGORIE } from '@shared/quiz'
 import { PUNTATA_MINIMA, SPICCHI_FORTUNATI, SPICCHI_RUOTA, nomeDi } from '@shared/ruota'
-import { PUNTATA_MASSIMA_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
+import { PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import { PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
@@ -640,7 +640,7 @@ export function statoSlot(s: FortunaRisposta): StatoRuota {
   return {
     fase: 'da-giocare',
     titolo: 'Da giocare',
-    dettaglio: `Puntate da ${PUNTATA_MINIMA_SLOT} a ${Math.min(PUNTATA_MASSIMA_SLOT, s.saldo)} punti`,
+    dettaglio: `Puntate da ${PUNTATA_MINIMA_SLOT} a ${s.saldo} punti`,
     avanzamento: null,
     azione: 'Gioca',
     a,
