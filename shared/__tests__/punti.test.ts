@@ -14,6 +14,7 @@ import { PARTITE_TRIS } from '../tris'
 import { BASE_NOMI, CATEGORIE_PER_PARTITA, TEMPO_NOMI_MS, puntiNomi } from '../nomi-cose'
 import { PUNTI_BASE_QUIZ } from '../quiz'
 import { LUNGHEZZE_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, TEMPO_PAROLA_MS, puntiAnagrammi } from '../anagrammi'
+import { PUNTI_FINITA_SEQUENZE, SEQUENZE_PER_TURNO, TURNI_SEQUENZE, puntiSequenze } from '../sequenze'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
 /** Uno schema del cruciverba e uno del sudoku della misura di tutti i giorni: ottanta lettere, cinquanta cifre. */
@@ -37,13 +38,13 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(Object.keys(MASSIMI).sort()).toEqual(Object.keys(TETTI).sort())
   })
 
-  it("sono otto classificate, e valgono settecentosettantacinque: un po' meno di cento a gioco", () => {
-    expect(Object.keys(TETTI)).toHaveLength(8)
-    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(775)
+  it("sono nove classificate, e valgono ottocentoventicinque: un po' meno di cento a gioco", () => {
+    expect(Object.keys(TETTI)).toHaveLength(9)
+    expect(Object.values(TETTI).reduce((s, t) => s + t, 0)).toBe(825)
   })
 
   it('i tetti seguono il tempo che chiede ogni gioco, ma nessuno vale piu’ di tre volte un altro', () => {
-    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'quiz', 'wordle', 'nomi', 'anagrammi', 'tris'] as const
+    const ordine = ['cruciverba', 'scarabeo', 'sudoku', 'quiz', 'wordle', 'nomi', 'anagrammi', 'sequenze', 'tris'] as const
     for (let i = 1; i < ordine.length; i += 1) expect(TETTI[ordine[i]]).toBeLessThanOrEqual(TETTI[ordine[i - 1]])
     const valori = Object.values(TETTI)
     expect(Math.max(...valori) / Math.min(...valori)).toBeLessThanOrEqual(3.2)
@@ -83,6 +84,12 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
   it('negli Anagrammi le cinque parole trovate subito valgono il tetto', () => {
     const subito = LUNGHEZZE_ANAGRAMMI.map((lettere) => ({ lettere, trovata: true, ms: 1_000, aiuto: false }))
     expect(puntiAnagrammi(subito)).toBe(TETTI.anagrammi)
+  })
+
+  it('nelle Sequenze arrivare a nove in tutti e cinque i turni vale il tetto', () => {
+    expect(puntiSequenze(Array(TURNI_SEQUENZE).fill(SEQUENZE_PER_TURNO))).toBe(TETTI.sequenze)
+    // Oltre i nove cubetti un turno non va: il tetto resta quello.
+    expect(puntiSequenze(Array(TURNI_SEQUENZE).fill(SEQUENZE_PER_TURNO + 3))).toBe(TETTI.sequenze)
   })
 
   it('nel tris la serie perfetta vale il tetto', () => {
@@ -157,6 +164,19 @@ describe('una giornata storta si recupera', () => {
     expect(normale / TETTI.anagrammi).toBeGreaterThan(0.4)
     expect(normale / TETTI.anagrammi).toBeLessThan(0.75)
     expect(puntiAnagrammi([])).toBe(PUNTI_FINITA_ANAGRAMMI)
+  })
+
+  it('nelle Sequenze chi si ferma a quattro vale la metà di chi arriva a nove, e la media sta in mezzo', () => {
+    // La sequenza piu' lunga ripetuta: quattro cubetti sono due sequenze giuste per turno, nove sono sette.
+    const quattro = puntiSequenze(Array(TURNI_SEQUENZE).fill(2))
+    expect(quattro / TETTI.sequenze).toBe(0.5)
+    // Cinque o sei, la media degli adulti al test di Corsi: fra il sessanta e il settanta per cento.
+    const media = puntiSequenze([3, 4, 3, 4, 3])
+    expect(media / TETTI.sequenze).toBeGreaterThan(0.6)
+    expect(media / TETTI.sequenze).toBeLessThan(0.7)
+    expect(puntiSequenze(Array(TURNI_SEQUENZE).fill(0))).toBe(PUNTI_FINITA_SEQUENZE)
+    // Ogni sequenza giusta conta, e conta uguale.
+    expect(puntiSequenze([1, 0, 0, 0, 0]) - puntiSequenze([0, 0, 0, 0, 0])).toBe(1)
   })
 
   it('nel quiz una partita storta vale circa la metà di una perfetta, e finirla vale sempre qualcosa', () => {

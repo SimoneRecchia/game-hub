@@ -11,6 +11,7 @@ import {
   riepilogoNomi,
   riepilogoQuiz,
   riepilogoScarabeo,
+  riepilogoSequenze,
   riepilogoSudoku,
   riepilogoTris,
   riepilogoWordle,
@@ -31,7 +32,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
   const db = c.env.DB
   const io = c.get('player').id
   const quando = today()
-  const [wordle, scarabeo, cruciverba, sudoku, quiz, tris, nomi, anagrammi, generale] = await Promise.all([
+  const [wordle, scarabeo, cruciverba, sudoku, quiz, tris, nomi, anagrammi, sequenze, generale] = await Promise.all([
     riepilogoWordle(db, io),
     riepilogoScarabeo(db, io),
     riepilogoCruciverba(db, io),
@@ -40,6 +41,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     riepilogoTris(db, io),
     riepilogoNomi(db, io),
     riepilogoAnagrammi(db, io),
+    riepilogoSequenze(db, io),
     classificaGenerale(db, periodoDi('today', quando.puzzleNumber), io),
   ])
   return c.json<OggiRisposta>({
@@ -54,6 +56,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     tris,
     nomi,
     anagrammi,
+    sequenze,
     generale: {
       posizione: generale.me?.rank ?? null,
       punti: generale.me?.punti ?? 0,

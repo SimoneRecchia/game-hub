@@ -192,6 +192,32 @@ export const NOMI_SFIDA_POLL_MS = 1_000
 export const NOMI_SFIDA_POLL_ATTESA_MS = 1_500
 export const NOMI_SFIDA_POLL_FINE_MS = 3_000
 
+/* ──────────────────────────  Le Sequenze fra amici  ────────────────────────── */
+
+/** Un invito con il link vale un'ora: si gioca in due nello stesso momento, come le altre sfide. */
+export const SEQUENZE_SFIDA_LINK_MS = 60 * 60_000
+
+/** Il tre-due-uno, dall'accettazione al via: la prima sequenza la vedono tutti e due insieme. */
+export const SEQUENZE_SFIDA_VIA_MS = 4_000
+
+/**
+ * Chi non dice niente da cosi' ha smesso: la sfida lo da' per finito dove era
+ * arrivato. Una sequenza di venti cubetti dura diciassette secondi a guardarla
+ * e altrettanti a ripeterla, e un minuto e mezzo li copre con un respiro.
+ */
+export const SEQUENZE_SFIDA_FERMA_MS = 90_000
+
+/** Le sfide ferme da due giorni si cancellano: non hanno classifica, e non serve tenerle. */
+export const SEQUENZE_SFIDA_CONSERVA_MS = 2 * 24 * 60 * 60_000
+
+/**
+ * Il giro di controllo di una sfida: piu' fitto mentre si gioca, per vedere a
+ * che sequenza e' l'altro; piu' largo prima del via e a sfida finita, per la
+ * rivincita.
+ */
+export const SEQUENZE_SFIDA_POLL_MS = 1_500
+export const SEQUENZE_SFIDA_POLL_FINE_MS = 3_000
+
 /* ─────────────────────────  Email e verifica  ───────────────────────── */
 
 export const EMAIL_MAX = 254

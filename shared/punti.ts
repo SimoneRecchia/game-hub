@@ -17,11 +17,13 @@
  *   Wordle       3-5 minuti                  70
  *   Nomi, cose   2-3 minuti                  60
  *   Anagrammi    2-4 minuti                  60
+ *   Sequenze     3-5 minuti                  50
  *   Tris         2-3 minuti                  50
  *
- * Sono otto, e la somma e' settecentosettantacinque: un po' meno di cento a
- * gioco. Gli Anagrammi sono arrivati per ultimi, e valgono quanto Nomi, cose e
- * città, che chiede lo stesso tempo.
+ * Sono nove, e la somma e' ottocentoventicinque: un po' meno di cento a
+ * gioco. Gli Anagrammi valgono quanto Nomi, cose e città, che chiede lo stesso
+ * tempo; le Sequenze, arrivate per ultime, quanto il tris: cinque turni brevi,
+ * e il tempo se ne va a guardare i lampi.
  * Erano otto, e facevano ottocento, finché la battaglia navale ha avuto la sua
  * classificata (85, i colpi per affondare la flotta del giorno): era piu'
  * fortuna che bravura, e il 6 ottobre 2026 e' diventata solo una libera. Gli
@@ -40,6 +42,7 @@
  *   Nomi, cose   risposte valide, rare e veloci        35-45     15        60
  *   Tris         vinte e patte su cinque partite       30-40     10        50
  *   Anagrammi    parole trovate, e quanto presto       40-50     10        60
+ *   Sequenze     sequenze ripetute giuste in 5 turni   30-35     15        50
  *
  *   * la parola non indovinata vale quattordici, la peggiore indovinata
  *     trentacinque; un cruciverba o un sudoku svelato per intero non e' stato
@@ -60,6 +63,7 @@ import { PUNTI_COMPLETO as PUNTI_SUDOKU } from './sudoku'
 import { PARTITE_TRIS, puntiTris } from './tris'
 import { MASSIMO_NOMI } from './nomi-cose'
 import { MASSIMO_ANAGRAMMI } from './anagrammi'
+import { MASSIMO_SEQUENZE } from './sequenze'
 import type { GiocoClassificato } from './types'
 
 export { punteggio as puntiCruciverba } from './cruciverba'
@@ -67,6 +71,7 @@ export { puntiQuiz } from './quiz'
 export { puntiSudoku } from './sudoku'
 export { puntiTris } from './tris'
 export { puntiAnagrammi } from './anagrammi'
+export { puntiSequenze } from './sequenze'
 
 /** Il tetto di ogni classificata: quanto vale una giornata perfetta. Un test lo confronta con le formule. */
 export const TETTI: Record<GiocoClassificato, number> = {
@@ -78,6 +83,7 @@ export const TETTI: Record<GiocoClassificato, number> = {
   tris: 50,
   nomi: 60,
   anagrammi: 60,
+  sequenze: 50,
 }
 
 /* ─────────────────────────────  Scarabeo  ─────────────────────────── */
@@ -116,4 +122,5 @@ export const MASSIMI: Record<GiocoClassificato, number> = {
   tris: puntiTris(PARTITE_TRIS, 0),
   nomi: MASSIMO_NOMI,
   anagrammi: MASSIMO_ANAGRAMMI,
+  sequenze: MASSIMO_SEQUENZE,
 }
