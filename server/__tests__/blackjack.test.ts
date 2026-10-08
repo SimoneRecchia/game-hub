@@ -491,7 +491,7 @@ describe('la classifica della Fortuna', () => {
       ['anna', 40, 1],
       ['bruno', -20, 1],
     ])
-    expect(classifica.rows[0].netti).toEqual({ ruota: 0, slot: 0, blackjack: 40 })
+    expect(classifica.rows[0].netti).toEqual({ ruota: 0, slot: 0, blackjack: 40, roulette: 0 })
     expect(classifica.me).toMatchObject({ rank: 2, punti: -20 })
     const generale = await ok(b.chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', carla))
     expect(generale.rows.map((r) => [r.nickname, r.punti, r.blackjack])).toEqual([

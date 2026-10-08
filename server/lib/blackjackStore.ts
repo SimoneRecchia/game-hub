@@ -52,14 +52,14 @@ interface TavoloRow {
   updated_at: string
 }
 
-interface GiocatoreRow {
+export interface GiocatoreRow {
   id: string
   nickname: string
   display_name: string
   avatar_color: string
 }
 
-const breve = (r: GiocatoreRow): GiocatoreBreve => ({
+export const breve = (r: GiocatoreRow): GiocatoreBreve => ({
   playerId: r.id,
   nickname: r.nickname,
   displayName: r.display_name || r.nickname,
@@ -87,14 +87,20 @@ export async function mioTavolo(db: D1Database, playerId: string): Promise<strin
 }
 
 /** Dove sono, fra questi, quelli online: lo dice la presenza, che il telefono scrive da solo. */
-interface Presenze {
-  /** Hanno la pagina del blackjack aperta. */
+export interface Presenze {
+  /** Hanno la pagina del gioco aperta. */
   qui: Set<string>
   /** Sono online in un'altra schermata, da quando: chi e' andato altrove dopo l'ultima mossa non si aspetta. */
   altrove: Map<string, number>
 }
 
-async function presentiFra(db: D1Database, ids: readonly string[], adesso: number): Promise<Presenze> {
+/** Chi, fra questi, ha la pagina di `attivita` aperta, e chi e' altrove: anche per i tavoli della roulette. */
+export async function presentiFra(
+  db: D1Database,
+  ids: readonly string[],
+  adesso: number,
+  attivita = 'blackjack',
+): Promise<Presenze> {
   const presenze: Presenze = { qui: new Set(), altrove: new Map() }
   if (ids.length === 0) return presenze
   const { results } = await db
@@ -105,7 +111,7 @@ async function presentiFra(db: D1Database, ids: readonly string[], adesso: numbe
     .bind(JSON.stringify(ids), new Date(adesso - PRESENZA_ONLINE_MS).toISOString())
     .all<{ player_id: string; visto_at: string; attivita: string }>()
   for (const r of results) {
-    if (r.attivita === 'blackjack') presenze.qui.add(r.player_id)
+    if (r.attivita === attivita) presenze.qui.add(r.player_id)
     else presenze.altrove.set(r.player_id, Date.parse(r.visto_at))
   }
   return presenze
@@ -121,7 +127,7 @@ function contestoPer(io: string, presenze: Presenze, adesso: number, pesca: () =
   }
 }
 
-async function giocatoriDi(db: D1Database, ids: readonly string[]): Promise<Map<string, GiocatoreBreve>> {
+export async function giocatoriDi(db: D1Database, ids: readonly string[]): Promise<Map<string, GiocatoreBreve>> {
   if (ids.length === 0) return new Map()
   const { results } = await db
     .prepare(

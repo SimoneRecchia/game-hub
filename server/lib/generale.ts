@@ -6,8 +6,8 @@
  * sommarle non richiede un tasso di cambio inventato. Chi gioca a tutto ogni
  * giorno puo' fare la somma dei tetti; chi gioca solo al Wordle fino al suo, e
  * nella classifica del Wordle compete alla pari con tutti. I giochi della
- * Fortuna — Crazy Time, la slot, il blackjack — si sommano a parte (`ruota`,
- * `slot`, `blackjack`): non sono classificate, ma quel che danno o tolgono e'
+ * Fortuna — Crazy Time, la slot, il blackjack, la roulette — si sommano a parte
+ * (`ruota`, `slot`, `blackjack`, `roulette`): non sono classificate, ma quel che danno o tolgono e'
  * fatto con i punti delle classificate, e va dove vanno loro.
  *
  * La battaglia navale ha avuto una classificata fino al 6 ottobre 2026: le sue
@@ -56,6 +56,7 @@ export interface TotaliGenerale {
   ruota: number
   slot: number
   blackjack: number
+  roulette: number
   assist: number
   partite: number
 }
@@ -88,7 +89,8 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.tris +
       g.ruota +
       g.slot +
-      g.blackjack,
+      g.blackjack +
+      g.roulette,
   }))
   return conPunti
     .sort((a, b) => {
@@ -284,14 +286,14 @@ export async function classificaGenerale(
       )
       .bind(da, a)
       .all<Parziale>(),
-    // La slot e il blackjack: lo stesso conto per giornata, un gioco per riga.
+    // La slot, il blackjack e la roulette: lo stesso conto per giornata, un gioco per riga.
     db
       .prepare(
         `SELECT player_id, gioco, COALESCE(SUM(netto), 0) AS punti
            FROM fortuna_giornate WHERE puzzle_number BETWEEN ? AND ? GROUP BY player_id, gioco`,
       )
       .bind(da, a)
-      .all<{ player_id: string; gioco: 'slot' | 'blackjack'; punti: number }>(),
+      .all<{ player_id: string; gioco: Exclude<GiocoFortuna, 'ruota'>; punti: number }>(),
   ])
 
   const totali = new Map<string, TotaliGenerale>()
@@ -321,6 +323,7 @@ export async function classificaGenerale(
         ruota: 0,
         slot: 0,
         blackjack: 0,
+        roulette: 0,
         assist: 0,
         partite: 0,
       }
@@ -385,8 +388,8 @@ export async function classificaGenerale(
 }
 
 /**
- * La classifica della Fortuna: quel che Crazy Time, la slot e il blackjack
- * hanno dato o tolto nel periodo, tutti insieme. E' gia' dentro la generale;
+ * La classifica della Fortuna: quel che Crazy Time, la slot, il blackjack e la
+ * roulette hanno dato o tolto nel periodo, tutti insieme. E' gia' dentro la generale;
  * qui si vede da solo, chi ha vinto di piu' e chi ha perso. Ci sta chi ha
  * giocato almeno una volta; a pari conto passa avanti chi ha giocato meno,
  * perché ha rischiato meno per lo stesso risultato.
@@ -429,7 +432,7 @@ export async function classificaFortuna(
         displayName: r.display_name || r.nickname,
         avatarColor: r.avatar_color,
         punti: 0,
-        netti: { ruota: 0, slot: 0, blackjack: 0 },
+        netti: { ruota: 0, slot: 0, blackjack: 0, roulette: 0 },
         giocate: 0,
       }
       righe.set(r.player_id, riga)

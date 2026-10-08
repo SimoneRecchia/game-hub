@@ -62,6 +62,7 @@ const TUTTE_LE_ATTIVITA: Record<Attivita, true> = {
   fortuna: true,
   slot: true,
   blackjack: true,
+  roulette: true,
   lupus: true,
   scarabocchi: true,
   classifica: true,
