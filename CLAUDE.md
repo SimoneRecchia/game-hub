@@ -389,10 +389,11 @@ non fa record.
 visibile: dice al server dove si trova il giocatore e riporta gli inviti a
 giocare in compagnia il Wordle, il cruciverba e lo Scarabeo, le sfide a
 battaglia navale, a quiz, a Indovina chi, ai tavolieri, allo Scarabeo, a Nomi,
-cose e città e a Sequenze (rivincite comprese), gli inviti a una stanza di Lupus
-o di Scarabocchi, le partite e il duello aperti. Gli avvisi fuori dalle rotte
-(`CoopGate`, `BattagliaGate`, `QuizGate`, `IndovinaGate`, `TavoloGate`,
-`NomiGate`, `SequenzeGate`, `LupusGate`, `ScarabocchiGate`, `CompagniaGate`) si
+cose e città, a Sequenze e alle libere da soli (rivincite comprese), gli inviti
+a una stanza di Lupus o di Scarabocchi, le partite e il duello aperti. Gli
+avvisi fuori dalle rotte (`CoopGate`, `BattagliaGate`, `QuizGate`,
+`IndovinaGate`, `TavoloGate`, `NomiGate`, `SequenzeGate`, `SfideGate`,
+`LupusGate`, `ScarabocchiGate`, `CompagniaGate`) si
 danno la precedenza in quest'ordine: due insieme non si leggerebbero, e gli inviti del
 cruciverba e dello Scarabeo, che valgono tutto il giorno, aspettano le sfide,
 che scadono in pochi minuti. Prima gli inviti del Wordle avevano il loro
@@ -1744,7 +1745,7 @@ macchina a fasi con i suoi tempi (`tempi()`): la coppia arriva, la scelta
 aspetta un respiro ("Vediamo…"), e una sbagliata fa cadere la lama sul
 montepremi, che si spezza a meta'; la vincente arriva in una busta e si
 gira lettera per lettera. La festa aspetta il verdetto, e la libera sta tutta
-nel telefono, con gli stessi tempi.
+nel telefono, con le stesse regole e il minuto che si sceglie.
 
 **La Catena e' l'ultima catena di Reazione a catena, e le catene vengono dalle
 espressioni.** Undici parole, ognuna legata alla successiva da un'espressione
@@ -1818,8 +1819,7 @@ partita finita. La libera sta tutta nel telefono: i dadi li tira il
 lavoratore dello Scarabeo (`grigliaLibera`, con quattro o cinque dadi per
 lato), che ha gia' il dizionario e manda con la griglia tutte le sue parole,
 cosi' ogni parola si controlla subito; il tempo parte quando i dadi sono
-fermi. Il traguardo e' misurato sulla griglia di sedici, e su quella grande
-non c'e'.
+fermi. Il traguardo e' misurato sulla griglia di sedici in tre minuti, e con un'altra griglia o un altro tempo non c'e'.
 
 **I dadi del Paroliere si tracciano col dito, e il dito lo sente la griglia.**
 `Griglia` (`src/games/paroliere/`) cattura il puntatore sul contenitore e
@@ -1851,15 +1851,47 @@ giochi con una soluzione — il Wordle, il cruciverba, lo Scarabeo — si giocan
 classificata con il suo stesso punteggio e nella libera senza punti. I giochi a
 turni o a tempo fra due — la battaglia, il quiz, il tris, Nomi cose e città, le
 Sequenze, i tavolieri — si giocano **in sfida**, e solo nelle libere: la classificata e' una
-partita uguale per tutti, e un amico la cambierebbe. Lo Scarabeo ha tutte e due:
+partita uguale per tutti, e un amico la cambierebbe. In sfida si giocano anche
+le libere che si giocano da soli — il sudoku, gli Anagrammi, il Paroliere, la
+Ghigliottina, la Catena —, sulla stessa partita nello stesso momento (vedi
+sotto). Lo Scarabeo ha tutte e due:
 in compagnia contro il computer, nella classificata e nella libera, e in sfida
 con un amico nella libera, perché e' un gioco a turni fra due anche al tavolo.
 Contro il computer dove ha senso: non in Indovina chi, che si gioca parlandosi,
 ne' nel quiz, dove il computer saprebbe tutte le risposte, e li' si gioca da
-soli. Il sudoku resta da solo: guardarlo fare non insegna niente, e suggerire
-una cifra vorrebbe dire darla. Contro chi si gioca lo dice l'interruttore
-Computer | Amico, ricordato per gioco. Un gioco nuovo prende le regole della sua
-famiglia invece di inventarne di nuove.
+soli. Il sudoku non si gioca in compagnia: guardarlo fare non insegna niente, e
+suggerire una cifra vorrebbe dire darla; si sfida. Contro chi si gioca lo dice
+l'interruttore Computer | Amico, o Da solo | Con un amico dove il computer non
+c'e', ricordato per gioco. Un gioco nuovo prende le regole della sua famiglia
+invece di inventarne di nuove.
+
+**Le libere da soli si sfidano sulla stessa partita.** Il sudoku, gli
+Anagrammi, il Paroliere, la Ghigliottina e la Catena hanno una sfida sola, in
+una tabella sola (`sfide_libere`, `shared/sfide-libere.ts`): chi sfida sceglie
+le opzioni della libera, che viaggiano con l'invito; quando l'altro accetta il
+server pesca il seme, e dal via ognuno gioca sul suo telefono la partita che il
+seme da' a tutti e due, con il motore e la scena della sua libera
+(`src/games/<gioco>/Sfida.tsx`, dentro `PaginaSfida`). Vince chi fa piu' punti,
+e a pari punti chi ci ha messo meno. I conti li fa il telefono e li manda
+mentre gioca (`/avanza`, uno ogni `SFIDE_LIBERE_AVANZA_MS`, e la fine subito):
+e' un'amichevole, come la sfida a quiz, e il server guarda solo la misura
+(`avanzamentoValido`); i motori non starebbero nei dieci millisecondi. Tre cose
+che non si vedono. Il seme esce solo dal via, perché chi lo sapesse prima
+potrebbe prepararsi lo schema. Una partita si gioca una volta: il telefono dice
+al server che parte (`/parti`), e la seconda volta — la pagina ricaricata, o
+lasciata e ritrovata — la sua partita finisce li', con quel che aveva detto;
+rigiocarla da capo, con le parole gia' viste, sarebbe un aiuto (in sviluppo
+React monta due volte, e `partenze` tiene la richiesta per un attimo). E la
+sfida si chiude comunque a `scade_at`, il via piu' la durata massima del gioco
+(`durataMassimaMs`): chi chiude l'app non fa aspettare l'altro per sempre. Il
+sudoku in sfida non ha aiuti, ha un tempo, e si chiude da solo quando l'altro
+l'ha gia' risolto. Una sfida alla volta, a tutti e cinque i giochi insieme; gli
+inviti, il link, la rivincita con la serie e la sala sono quelli delle
+Sequenze, e l'avviso (`SfideGate`) dice anche le opzioni, perché si accetta
+una partita precisa. Le opzioni stanno nella carta "Partita" come nel quiz
+(`Opzioni` e `Scelte` in `src/components/Opzioni.tsx`), con il tempo su un
+cursore: le stesse da soli e con un amico, ricordate per gioco
+(`useOpzioniLibera`).
 
 **Le libere del Wordle, del cruciverba e dello Scarabeo si guardano in
 compagnia.** Una compagnia per host e gioco (`modalita = 'libera'`) segue la
@@ -1879,8 +1911,10 @@ Wordle con una parola a caso, Scarabeo fino in fondo al sacchetto contro il
 computer o un amico, cruciverba da una scorta di schemi, quiz sulla materia, la
 categoria, il modo, la zona o l'ambito e le opzioni che si scelgono, Nomi, cose
 e città con una lettera a caso contro il computer, Anagrammi con cinque parole a
-caso della lunghezza che si sceglie, Sequenze finché non si sbaglia, Ghigliottina
-e Catena con una a caso, Paroliere con una griglia a caso di sedici o venticinque dadi. Gli indirizzi dicono sempre dove si e':
+caso della lunghezza e con il tempo che si sceglie, Sequenze finché non si
+sbaglia, Ghigliottina e Catena con una a caso e il tempo della finale che si
+sceglie, Paroliere con una griglia a caso di sedici o venticinque dadi e il
+tempo che si sceglie. Gli indirizzi dicono sempre dove si e':
 `/<gioco>/classificata`, `/<gioco>/libera` (`src/app/rotte.ts`, che ha l'elenco
 completo, e i vecchi indirizzi portano ai nuovi in `App.tsx`); `/<gioco>` da
 solo porta alla classificata. I giochi da tavolo non hanno ne' l'una ne'
@@ -1890,7 +1924,9 @@ sala a `/battaglia-navale` e le partite a `/battaglia-navale/partita/:id`, anche
 contro il computer, che sta sul server. Il tris e' un tavoliere come gli altri,
 ma la sua sala sta a `/tris/libera`, l'indirizzo di quando aveva anche la
 classificata. Lo Scarabeo con un amico sta sotto la
-sua libera: `/scarabeo/libera/partita/:id` e `/scarabeo/libera/invito/:codice`.
+sua libera: `/scarabeo/libera/partita/:id` e `/scarabeo/libera/invito/:codice`,
+e cosi' le sfide delle libere da soli: `/paroliere/libera/sfida/:id` e
+`/paroliere/libera/invito/:codice`.
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
 esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso

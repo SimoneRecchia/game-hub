@@ -69,6 +69,6 @@ export async function rispostaDelComputer(numero: number, mosse: Mossa[]): Promi
 }
 
 /** Una griglia del Paroliere libero, con le sue parole: lo stesso dizionario, quindi lo stesso lavoratore. */
-export function grigliaDelParoliere(lato: number): Promise<GrigliaLibera> {
-  return chiedi<GrigliaLibera>({ tipo: 'paroliere', lato })
+export function grigliaDelParoliere(lato: number, seme?: number): Promise<GrigliaLibera> {
+  return chiedi<GrigliaLibera>({ tipo: 'paroliere', lato, seme })
 }

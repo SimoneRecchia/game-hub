@@ -11,6 +11,7 @@ import {
   type GhigliottinaDelGiorno,
   type GhigliottinaDellElenco,
 } from '@shared/ghigliottina'
+import { mulberry32 } from '@shared/daily'
 import { VERSIONE_LIBERE_GHIGLIOTTINA } from '@shared/ghigliottina-libere'
 import { leggiContiGhigliottina, registraLiberaGhigliottina } from './conti'
 import type { ComandiGhigliottina, VistaGhigliottina } from './Partita'
@@ -34,8 +35,17 @@ function fileLibere(): Promise<FileLibere> {
   return caricato
 }
 
+/** Come si gioca una partita: il seme della sfida, se e' una sfida, il minuto della finale, e se va nei conti. */
+export interface OpzioniPartita {
+  seme?: number
+  tempoFinaleMs?: number
+  conta?: boolean
+}
+
 interface Partita {
   giorno: GhigliottinaDelGiorno
+  tempoFinaleMs: number
+  conta: boolean
   scelte: Array<0 | 1>
   /** Quando finisce il minuto, sull'orologio del telefono. */
   scadenza: number | null
@@ -60,7 +70,7 @@ function vistaDa(p: Partita): VistaGhigliottina {
     montepremi: montepremi(sbagliate),
     finaleAperto: !p.finita && p.scadenza !== null,
     scadenza: p.scadenza,
-    tempoFinaleMs: TEMPO_FINALE_MS,
+    tempoFinaleMs: p.tempoFinaleMs,
     soluzione: p.finita ? p.giorno.soluzione : null,
     risposta: p.risposta,
     indovinata: p.indovinata,
@@ -99,33 +109,40 @@ export function useGhigliottinaLibera() {
         finita: true,
       }
       const vista = vistaDa(chiusa)
-      setConti(registraLiberaGhigliottina(p.giorno.soluzione, indovinata, vista.punti))
+      if (p.conta) setConti(registraLiberaGhigliottina(p.giorno.soluzione, indovinata, vista.punti))
       return aggiorna(chiusa)
     },
     [aggiorna],
   )
 
-  const comincia = useCallback(async () => {
-    setErrore(null)
-    try {
-      const file = await fileLibere()
-      const giocate = new Set(leggiContiGhigliottina().giocate)
-      const nuove = file.ghigliottine.filter(([s]) => !giocate.has(s))
-      const elenco = nuove.length > 0 ? nuove : file.ghigliottine
-      const [s, c] = elenco[Math.floor(Math.random() * elenco.length)]
-      aggiorna({
-        giorno: disponiGhigliottina({ s, c }, Math.random),
-        scelte: [],
-        scadenza: null,
-        risposta: null,
-        indovinata: null,
-        finita: false,
-      })
-      setNumero((n) => n + 1)
-    } catch {
-      setErrore('Non riesco a scaricare le ghigliottine. Riprova fra poco.')
-    }
-  }, [aggiorna])
+  const comincia = useCallback(
+    async (opzioni: OpzioniPartita = {}) => {
+      setErrore(null)
+      try {
+        const file = await fileLibere()
+        // In una sfida viene dal seme, fra tutte: le gia' giocate non sono le stesse sui due telefoni.
+        const caso = opzioni.seme !== undefined ? mulberry32(opzioni.seme) : Math.random
+        const giocate = new Set(opzioni.seme !== undefined ? [] : leggiContiGhigliottina().giocate)
+        const nuove = file.ghigliottine.filter(([s]) => !giocate.has(s))
+        const elenco = nuove.length > 0 ? nuove : file.ghigliottine
+        const [s, c] = elenco[Math.floor(caso() * elenco.length)]
+        aggiorna({
+          giorno: disponiGhigliottina({ s, c }, caso),
+          tempoFinaleMs: opzioni.tempoFinaleMs ?? TEMPO_FINALE_MS,
+          conta: opzioni.conta ?? true,
+          scelte: [],
+          scadenza: null,
+          risposta: null,
+          indovinata: null,
+          finita: false,
+        })
+        setNumero((n) => n + 1)
+      } catch {
+        setErrore('Non riesco a scaricare le ghigliottine. Riprova fra poco.')
+      }
+    },
+    [aggiorna],
+  )
 
   const comandi = useMemo<ComandiGhigliottina>(
     () => ({
@@ -138,7 +155,7 @@ export function useGhigliottinaLibera() {
         const p = ref.current
         if (!p || p.finita) return null
         if (p.scadenza !== null) return vistaDa(p)
-        return aggiorna({ ...p, scadenza: Date.now() + TEMPO_FINALE_MS })
+        return aggiorna({ ...p, scadenza: Date.now() + p.tempoFinaleMs })
       },
       rispondi: async (parola) => {
         const p = ref.current

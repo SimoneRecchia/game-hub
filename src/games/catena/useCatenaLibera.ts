@@ -18,6 +18,7 @@ import {
   type MossaCatena,
 } from '@shared/catena'
 import { VERSIONE_LIBERE_CATENA } from '@shared/catena-libere'
+import { mulberry32 } from '@shared/daily'
 import { leggiContiCatena, registraLiberaCatena } from './conti'
 import type { ComandiCatena, RispostaCatena, VistaCatena } from './Partita'
 
@@ -43,8 +44,17 @@ function fileLibere(): Promise<FileLibere> {
 /** Come il telefono ricorda una catena giocata: la prima parola e la finale. */
 const nomeDi = (parole: readonly string[]) => `${parole[0]}|${parole[NASCOSTE_CATENA[PASSO_FINALE]]}`
 
+/** Come si gioca una partita: il seme della sfida, se e' una sfida, il minuto della finale, e se va nei conti. */
+export interface OpzioniPartita {
+  seme?: number
+  tempoFinaleMs?: number
+  conta?: boolean
+}
+
 interface Partita {
   catena: CatenaDelGiorno
+  tempoFinaleMs: number
+  conta: boolean
   mosse: MossaCatena[]
   /** Il minuto della parola finale, sull'orologio del telefono. */
   finale: { inizio: number; scadenza: number } | null
@@ -67,7 +77,7 @@ function vistaDa(p: Partita): VistaCatena {
     montepremiIniziale: MONTEPREMI_CATENA,
     montepremi: s.montepremi,
     finale: p.finita ? null : p.finale,
-    tempoFinaleMs: TEMPO_FINALE_CATENA_MS,
+    tempoFinaleMs: p.tempoFinaleMs,
     risposta: p.risposta,
     indovinata: p.indovinata,
     finita: p.finita,
@@ -106,26 +116,40 @@ export function useCatenaLibera() {
         finita: true,
       }
       const vista = aggiorna(chiusa)
-      setConti(registraLiberaCatena(nomeDi(p.catena.parole), indovinata, vista.punti))
+      if (p.conta) setConti(registraLiberaCatena(nomeDi(p.catena.parole), indovinata, vista.punti))
       return { vista, esito: indovinata ? 'giusta' : 'sbagliata' }
     },
     [aggiorna],
   )
 
-  const comincia = useCallback(async () => {
-    setErrore(null)
-    try {
-      const file = await fileLibere()
-      const giocate = new Set(leggiContiCatena().giocate)
-      const nuove = file.catene.filter(([p]) => !giocate.has(nomeDi(p)))
-      const elenco = nuove.length > 0 ? nuove : file.catene
-      const [parole, espressioni] = elenco[Math.floor(Math.random() * elenco.length)]
-      aggiorna({ catena: { parole, espressioni }, mosse: [], finale: null, risposta: null, indovinata: null, finita: false })
-      setNumero((n) => n + 1)
-    } catch {
-      setErrore('Non riesco a scaricare le catene. Riprova fra poco.')
-    }
-  }, [aggiorna])
+  const comincia = useCallback(
+    async (opzioni: OpzioniPartita = {}) => {
+      setErrore(null)
+      try {
+        const file = await fileLibere()
+        // In una sfida viene dal seme, fra tutte: le gia' giocate non sono le stesse sui due telefoni.
+        const caso = opzioni.seme !== undefined ? mulberry32(opzioni.seme) : Math.random
+        const giocate = new Set(opzioni.seme !== undefined ? [] : leggiContiCatena().giocate)
+        const nuove = file.catene.filter(([p]) => !giocate.has(nomeDi(p)))
+        const elenco = nuove.length > 0 ? nuove : file.catene
+        const [parole, espressioni] = elenco[Math.floor(caso() * elenco.length)]
+        aggiorna({
+          catena: { parole, espressioni },
+          tempoFinaleMs: opzioni.tempoFinaleMs ?? TEMPO_FINALE_CATENA_MS,
+          conta: opzioni.conta ?? true,
+          mosse: [],
+          finale: null,
+          risposta: null,
+          indovinata: null,
+          finita: false,
+        })
+        setNumero((n) => n + 1)
+      } catch {
+        setErrore('Non riesco a scaricare le catene. Riprova fra poco.')
+      }
+    },
+    [aggiorna],
+  )
 
   /** Il minuto della finale e' finito: oltre non si gioca, come nella classificata. */
   const scaduta = (p: Partita) => p.finale !== null && Date.now() > p.finale.scadenza
@@ -143,7 +167,7 @@ export function useCatenaLibera() {
       const vista = aggiorna({
         ...p,
         mosse: [...p.mosse, mossa],
-        finale: arriva ? { inizio, scadenza: inizio + TEMPO_FINALE_CATENA_MS } : p.finale,
+        finale: arriva ? { inizio, scadenza: inizio + p.tempoFinaleMs } : p.finale,
       })
       return { vista, esito: fatta.esito }
     }
@@ -164,5 +188,9 @@ export function useCatenaLibera() {
   }, [aggiorna, chiudi])
 
   const vista = useMemo(() => (partita ? vistaDa(partita) : null), [partita])
-  return { vista, comandi, comincia, errore, conti, numero }
+  const ricomincia = useCallback(() => {
+    ref.current = null
+    setPartita(null)
+  }, [])
+  return { vista, comandi, comincia, ricomincia, errore, conti, numero }
 }

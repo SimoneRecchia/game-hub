@@ -18,6 +18,7 @@ import { Dawg } from '@shared/dawg'
 import { sacchettoDaSeme, type Mossa } from '@shared/scarabeo'
 import { rispostaDelGiorno, turnoDelComputer, type PartitaLibera } from '@shared/scarabeo-computer'
 import { BYTE_DIZIONARIO, URL_DIZIONARIO, URL_DIZIONARIO_COMPRESSO } from '@shared/scarabeo-dizionario'
+import { mulberry32 } from '@shared/daily'
 import { grigliaLibera } from '@shared/paroliere'
 
 type Richiesta =
@@ -25,7 +26,7 @@ type Richiesta =
   | { id: number; tipo: 'parole'; parole: string[] }
   | { id: number; tipo: 'mossa'; partita: PartitaLibera }
   | { id: number; tipo: 'risposta'; numero: number; mosse: Mossa[] }
-  | { id: number; tipo: 'paroliere'; lato: number }
+  | { id: number; tipo: 'paroliere'; lato: number; seme?: number }
 
 let dizionario: Promise<Dawg> | null = null
 
@@ -75,7 +76,9 @@ self.onmessage = async (evento: MessageEvent<Richiesta>) => {
     } else if (richiesta.tipo === 'parole') {
       self.postMessage({ id: richiesta.id, ok: true, sconosciute: richiesta.parole.filter((p) => !dawg.contiene(p)) })
     } else if (richiesta.tipo === 'paroliere') {
-      self.postMessage({ id: richiesta.id, ok: true, ...grigliaLibera(dawg, richiesta.lato, Math.random) })
+      // Con il seme di una sfida i dadi cadono uguali sui due telefoni; senza, a caso.
+      const caso = richiesta.seme !== undefined ? mulberry32(richiesta.seme) : Math.random
+      self.postMessage({ id: richiesta.id, ok: true, ...grigliaLibera(dawg, richiesta.lato, caso) })
     } else if (richiesta.tipo === 'risposta') {
       const mossa = rispostaDelGiorno(dawg, richiesta.numero, richiesta.mosse)
       self.postMessage({ id: richiesta.id, ok: true, mossa })

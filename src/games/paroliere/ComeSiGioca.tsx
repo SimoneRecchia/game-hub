@@ -28,7 +28,11 @@ export function ComeSiGiocaParoliere({ open, onClose }: { open: boolean; onClose
               In classifica {PUNTI_GIOCATA_PAROLIERE} punti per aver giocato, fino a {TETTI.paroliere} arrivando al
               traguardo della griglia.
             </li>
-            <li>Una griglia al giorno, la stessa per tutti. La libera non conta per la classifica.</li>
+            <li>Una griglia al giorno, la stessa per tutti.</li>
+            <li>
+              Nella libera scegli il tempo e la griglia, e puoi sfidare un amico sulla stessa: vince chi fa più punti.
+              Non conta per la classifica.
+            </li>
           </ul>
         </section>
         <p className="cru-aiuto__nota">Il gioco è il Boggle, che in Italia si chiama Paroliere.</p>

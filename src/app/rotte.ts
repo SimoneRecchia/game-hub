@@ -35,7 +35,10 @@
  *   /tris/libera/partita/:id            una partita con un amico
  *   /tris/libera/invito/:codice         un invito arrivato con un link
  *   /anagrammi/classificata             le cinque parole di oggi, a tempo
- *   /anagrammi/libera                   parole a caso, della lunghezza che vuoi
+ *   /anagrammi/libera                   parole a caso, della lunghezza che vuoi, da solo o con un amico
+ *   /anagrammi/libera/sfida/:id         una sfida con un amico (lo stesso per il sudoku, il Paroliere,
+ *                                       la Ghigliottina e la Catena)
+ *   /anagrammi/libera/invito/:codice    una sfida arrivata con un link
  *   /ghigliottina/classificata          la ghigliottina di oggi: cinque coppie, poi la parola che le lega
  *   /ghigliottina/libera                una ghigliottina a caso
  *   /paroliere/classificata             la griglia di oggi, tre minuti
@@ -82,6 +85,7 @@
  */
 
 import type { MateriaQuiz } from '@shared/quiz'
+import type { GiocoSfidaLibera } from '@shared/sfide-libere'
 import type { GiocoAlTavolo, GiocoTavoliere } from '@shared/tavolo'
 import type { ChiaveClassifica, GiocoClassificato, GiocoLiberoInCompagnia, ModalitaCompagnia } from '@shared/types'
 
@@ -160,6 +164,9 @@ export const ROTTE = {
   invitoNomi: (codice: string) => `/nomi-cose-citta/invito/${codice}`,
   sfidaSequenze: (id: string) => `/sequenze/sfida/${id}`,
   invitoSequenze: (codice: string) => `/sequenze/invito/${codice}`,
+  /** Le sfide delle libere che si giocano da soli: stanno sotto la libera del gioco. */
+  sfidaLibera: (gioco: GiocoSfidaLibera, id: string) => `/${SLUG[gioco]}/libera/sfida/${id}`,
+  invitoSfidaLibera: (gioco: GiocoSfidaLibera, codice: string) => `/${SLUG[gioco]}/libera/invito/${codice}`,
 
   indovina: '/indovina-chi',
   partitaIndovina: (id: string) => `/indovina-chi/partita/${id}`,
