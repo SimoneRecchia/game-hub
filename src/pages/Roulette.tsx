@@ -5,15 +5,15 @@ import { Button } from '@/components/Button'
 import { Numero, Sezione } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
-import { useToast } from '@/components/Toast'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
 import { finitaLUscita } from '@/games/blackjack/uscita'
 import { ComeSiGiocaRoulette } from '@/games/roulette/ComeSiGioca'
 import { RuotaRoulette } from '@/games/roulette/Ruota'
-import { ApiFetchError, api } from '@/lib/api'
-import { dimentica } from '@/lib/dati'
+import { api } from '@/lib/api'
 import { PUNTATA_MINIMA_RL } from '@shared/roulette'
-import type { SalaRoulette, VistaTavoloRL } from '@shared/types'
+import type { SalaRoulette } from '@shared/types'
+import { TAVOLO_NUOVO } from '@/games/roulette/nuovo'
+import '@/games/roulette/Feltro.css'
 import './Roulette.css'
 
 /** Ogni quanto la sala guarda i tavoli degli amici, a pagina aperta. */
@@ -27,10 +27,8 @@ const SALA_POLL_MS = 5_000
  */
 export default function Roulette() {
   const { vai } = useNavigazione()
-  const toast = useToast()
   const [sala, setSala] = useState<SalaRoulette | null>(null)
   const [regole, setRegole] = useState(false)
-  const [apro, setApro] = useState(false)
 
   const leggi = useCallback(async () => {
     await finitaLUscita()
@@ -49,19 +47,13 @@ export default function Roulette() {
     return () => window.clearInterval(t)
   }, [leggi])
 
-  const apri = async () => {
-    if (apro) return
-    setApro(true)
-    try {
-      const t = await api<VistaTavoloRL>('/roulette/tavoli', { method: 'POST', body: {} })
-      dimentica('/fortuna')
-      vai(ROTTE.tavoloRL(t.id))
-    } catch (e) {
-      toast.show(e instanceof ApiFetchError ? e.message : 'Non riesco ad aprire il tavolo: riprova.', 'error')
-    } finally {
-      setApro(false)
-    }
-  }
+  // Il tavolo si scarica mentre si guarda la sala: toccando, c'e' gia'.
+  useEffect(() => {
+    void import('./RouletteTavolo')
+  }, [])
+
+  // Al tavolo si va subito: il tavolo nuovo lo apre la sua pagina (`TAVOLO_NUOVO`), mentre il feltro si allarga.
+  const alTavolo = (id: string) => vai(ROTTE.tavoloRL(id), { direzione: 'tavolo', state: { saldo: sala?.saldo } })
 
   return (
     <Pagina
@@ -74,7 +66,9 @@ export default function Roulette() {
       }
     >
       <section className="rl-sala entra" aria-label="Il tuo tavolo">
-        <span className="rl-sala__luce" aria-hidden="true" />
+        <span className="rl-feltro" aria-hidden="true">
+          <span className="rl-sala__luce" />
+        </span>
         <div className="rl-sala__ruota">
           <RuotaRoulette lancio={null} ultimo={null} />
         </div>
@@ -83,11 +77,11 @@ export default function Roulette() {
             Saldo <strong className="u-tabnum">{sala ? <Numero valore={sala.saldo} /> : '…'}</strong>
           </p>
           {sala?.mioTavolo ? (
-            <Button size="lg" onClick={() => vai(ROTTE.tavoloRL(sala.mioTavolo!))}>
+            <Button size="lg" onClick={() => alTavolo(sala.mioTavolo!)}>
               Torna al tavolo
             </Button>
           ) : (
-            <Button size="lg" onClick={() => void apri()} disabled={apro || !sala}>
+            <Button size="lg" onClick={() => alTavolo(TAVOLO_NUOVO)} disabled={!sala}>
               Tavolo nuovo
             </Button>
           )}

@@ -20,15 +20,17 @@ export const fortunaRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/
   const io = c.get('player').id
   const quando = today()
   // I premi del SuperEnalotto prima del saldo: finita la diretta, chi apre la scheda li trova gia' dentro.
+  // Il saldo si conta una volta, e lo usano anche Crazy Time e il SuperEnalotto, che partono appena c'e'.
   await assicura(db)
-  const [saldo, slot, blackjack, roulette, superenalotto] = await Promise.all([
-    saldoDi(db, io, quando.puzzleNumber),
+  const conto = saldoDi(db, io, quando.puzzleNumber)
+  const [saldo, slot, blackjack, roulette, superenalotto, ruota] = await Promise.all([
+    conto,
     riepilogoSlot(db, io),
     riepilogoBlackjack(db, io),
     riepilogoRoulette(db, io),
-    riepilogoEnalotto(db, io),
+    conto.then((s) => riepilogoEnalotto(db, io, s)),
+    conto.then((s) => riepilogoRuota(db, io, s)),
   ])
-  const ruota = await riepilogoRuota(db, io, saldo)
   return c.json<FortunaRisposta>({
     puzzleNumber: quando.puzzleNumber,
     date: quando.date,

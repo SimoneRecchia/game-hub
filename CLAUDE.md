@@ -1025,11 +1025,18 @@ quindi i figli ereditano una lunghezza vera: non registrata, le unita' del
 contenitore si risolverebbero dove la si usa, e dentro la pancia, che e' un
 contenitore anche lei, varrebbero le sue.
 
-**Il SuperEnalotto e' quello vero, con quattro numeri su venti.** Le regole
-stanno in `shared/superenalotto.ts`: una scheda costa un punto, se ne giocano
-al piu' cinque per estrazione, e si estrae il lunedi', il mercoledi' e il
-venerdi'; alle 21 il gioco chiude, alle 21:05 c'e' la diretta (`DURATA_DIRETTA_MS`),
-e il concorso dopo si apre a diretta finita. Il montepremi e' il 60% della
+**Il SuperEnalotto e' quello vero, con quattro numeri estratti su novanta.** Le
+regole stanno in `shared/superenalotto.ts`: una scheda di quattro numeri costa
+dieci punti, una di cinque — il "4+1" — venti (`COSTI`), se ne giocano al piu'
+cinque per estrazione, e si estrae il lunedi', il mercoledi' e il venerdi'; alle
+21 il gioco chiude, alle 21:05 c'e' la diretta (`DURATA_DIRETTA_MS`), e il
+concorso dopo si apre a diretta finita. Fra cinque numeri ci sono cinque
+quaterne, quindi il 4+1 fa 4 cinque volte piu' spesso per il doppio, e il 3 e
+il 2 piu' spesso anche loro; una scheda vince una volta sola, con i numeri che
+ha preso. La raccolta e' in punti, la somma di quel che sono costate le schede
+(`costo`, in colonna: la `0048` l'ha aggiunta, e ha annullato le schede di
+prima, quattro numeri su venti per un concorso non ancora estratto, ridando i
+punti). Il montepremi e' il 60% della
 raccolta, come nel gioco vero, e si divide nelle sue proporzioni: il vero ha sei
 categorie — al 6 il 17,4% del montepremi, a 5+1, 5, 4 e 3 insieme il 34,2%, al
 2 il 40%, e l'8,4% alle vincite immediate —, e con quattro numeri il 4 e' il
@@ -1039,13 +1046,14 @@ fatto la categoria; se nessuno fa 4 il jackpot passa al concorso dopo, e cosi'
 le parti delle categorie senza vincitori; una categoria che pagherebbe a testa
 meno di quella sotto si unisce a lei (`liquida`, come nel regolamento). I conti
 sono in centesimi di punto e i premi in punti, per difetto: gli avanzi vanno nel
-jackpot, e niente si perde oltre al 40% che il gioco tiene. Venti numeri e non
-novanta perché il jackpot esca: con quattro su venti una scheda su 4845 fa 4,
-una su 76 il 3 e una su sette il 2, e con qualche decina di schede a estrazione
-il jackpot esce in qualche mese. Il nome e' quello vero, e il marchio e' di
-Sisal: come per Crazy Time, se l'app diventasse pubblica andrebbe cambiato.
-Con poche schede i premi sono piccoli, e il jackpot comincia da zero: e' quel
-che si e' chiesto, "dipende da quanti giocano".
+jackpot, e niente si perde oltre al 40% che il gioco tiene. Per un giorno i
+numeri sono stati venti, perché il jackpot uscisse; si e' scelto il gioco vero:
+con novanta il 4 lo fa una scheda su 2.555.190 (col 4+1 una su 511.038), il 3
+una su 7428 (3006) e il 2 una su 117 (72), e il jackpot cresce a lungo. Il nome
+e' quello vero, e il marchio e' di Sisal: come per Crazy Time, se l'app
+diventasse pubblica andrebbe cambiato. Con poche schede i premi sono piccoli, e
+il jackpot comincia da zero: e' quel che si e' chiesto, "dipende da quanti
+giocano".
 
 **L'estrazione la fa la prima richiesta dopo le 21, e i premi la prima dopo la
 diretta.** Non c'e' un orologio sul server: `assicura` (`server/lib/enalottoStore.ts`),
@@ -1061,12 +1069,23 @@ saldo del giorno in cui la si compra, e il premio va a quello dell'estrazione:
 lunedi' con una scheda comprata sabato ha il premio nella giornata di lunedi', e
 la classifica della Fortuna lo mostra anche se quel giorno non ha giocato. Un
 concorso che nessuno ha guardato lo paga la prima richiesta dopo, nel suo
-giorno.
+giorno. Le vincite arrivano nel saldo da sole, e le schede servono solo a
+rivederle: il pagamento di un concorso butta via quelle dei concorsi pagati da
+piu' di una settimana (`CONSERVA_GIORNI`), e restano il concorso, con i numeri e
+i premi, e la riga della giornata, che nessuno riconta piu' (si ricontano solo
+il giorno delle schede nuove e quello dell'estrazione che si paga). Le schede da
+"controllare entro una settimana", come i biglietti veri, non ci sono: chi non
+apre l'app perderebbe una vincita che il server sa gia'. Per lo stesso ordine
+dei pagamenti `assicura` guarda solo le schede dopo l'ultimo concorso pagato.
 
 **La diretta e' in 3D vero, con three.js, e arriva a parte.** `Urna`
 (`src/games/superenalotto/urna.ts`) e' una scena sola: la sfera di vetro sul
-piedistallo d'oro, le venti palline con il numero dipinto due volte, davanti e
-dietro, il tubo, la rotaia, e una regia che segue la pallina estratta. Tutto e'
+piedistallo d'oro, le novanta palline con il numero dipinto due volte, davanti
+e dietro, il tubo, la rotaia, e una regia che segue la pallina estratta. Le
+palline nell'urna sono piccole, con una forma sola e un'immagine di 128 per 64
+(`LATO_FACCIA`): novanta immagini grandi sarebbero dodici mega nella scheda
+grafica. Quella che esce cresce nel tubo fino alla misura della rotaia
+(`RB_FUORI`), e prende un'immagine grande, perché li' la si guarda da vicino. Tutto e'
 una funzione del tempo della diretta, tranne le palline nell'urna, che hanno una
 fisica loro — l'aria dal fondo che fa la fontana, le pareti, gli urti — con due
 vettori di lavoro, perché un vettore nuovo per coppia sarebbero ventimila
@@ -1167,7 +1186,12 @@ un giro dopo, perché in sviluppo React smonta e rimonta. Chiudere la scheda o
 ricaricarla no — una mano in corso non si perde per un ricaricamento — e se non
 si torna e' la presenza a liberare il posto. La sala aspetta l'uscita
 (`finitaLUscita`) prima di leggere, altrimenti direbbe ancora "Torna al
-tavolo". I tavoli degli amici sono quelli con qualcuno seduto e presente, nella
+tavolo" — a un tavolo che, rimasto vuoto, il server ha gia' cancellato.
+L'attesa si segna nello smontaggio, e la richiesta parte il giro dopo
+(`esciFraPoco`): segnata con la richiesta, arrivava dopo la lettura della sala,
+che si monta nello stesso momento, e il tavolo riaperto rispondeva "non c'e'
+piu'". Un tavolo che non c'e' piu' riporta alla sala, con un avviso, invece di
+fermarsi su un errore. I tavoli degli amici sono quelli con qualcuno seduto e presente, nella
 sala e nella scheda della Fortuna, e "Siediti" porta al loro.
 
 **Le carte arrivano nell'ordine del tavolo.** Il server risponde con tutte le
@@ -1282,9 +1306,12 @@ strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
 (`nitidezza`, al piu' tre, e due per la conca e la luce, che non hanno scritte);
 Safari li disegna gia' nitidi, e ingranditi vorrebbero nove volte la memoria.
 Niente `will-change` sugli strati che girano: fisserebbe la loro risoluzione a
-quella del primo disegno, e la ruota arriva piccola. Anche il tavolo lascia il
-suo strato finita l'entrata (`backwards`, non `both`): col velo dentro, che
-sporge di `100vmax`, era il piu' grande della pagina. La biglia inclinata
+quella del primo disegno, e la ruota arriva piccola. Il tavolo non ha
+un'entrata sua, e il velo sta dentro il feltro: con un'animazione che restava
+(`both`) e il velo che sporgeva di `100vmax`, il tavolo era lo strato piu'
+grande della pagina. Il cilindro riparte dall'angolo dove l'aveva lasciato
+l'altra ruota, con i giri che avrebbe fatto nel frattempo (`cilindro`): la
+ruota della sala e quella del tavolo sono la stessa. La biglia inclinata
 diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua posizione
 la calcola `proietta` con la stessa prospettiva del CSS. Il suo angolo si conta
 sul cilindro e finisce nella casella del numero qualunque sia la velocita' del
@@ -1294,9 +1321,32 @@ attimo prima, e la sua ombra e' sfumata dal suo sfondo e non da un `filter`, che
 si rifarebbe a ogni fotogramma. La ruota e' disegnata grande e rimpicciolita
 sul palco (`--piccola`): quando la biglia parte si fa grande sopra il panno, che
 si vela, e torna al suo posto dopo l'annuncio del numero. Disegnata piccola e
-ingrandita, a pieno schermo sarebbe sfocata. Il tabellone dei numeri usciti non
+ingrandita, a pieno schermo sarebbe sfocata. Il passaggio fra il palco e il
+centro si accende solo dopo la prima misura (`is-misurata`): la pagina legge le
+misure appena montata, e il browser, che a quel punto non aveva ancora
+`--piccola`, partiva dalla ruota grande e la faceva rimpicciolire sotto gli
+occhi — proprio mentre si arrivava al tavolo. Il tabellone dei numeri usciti non
 dice il numero mentre la biglia gira: il server lo mette nella storia al
 lancio, e sarebbe la soluzione.
+
+**Dalla sala al tavolo il feltro e' uno solo.** La sala e il tavolo della
+roulette hanno lo stesso feltro (`src/games/roulette/Feltro.css`), un livello
+vuoto sotto il contenuto: toccando "Tavolo nuovo" la View Transition lo allarga
+dalla carta della sala fino al tavolo, la ruota sale al suo posto sul palco, la
+scritta della sala se ne va e il panno arriva quando il feltro e' quasi grande;
+tornando, il contrario. E' la direzione `tavolo` di `useNavigazione`, che usa
+anche la freccia indietro del tavolo (`indietro.direzione`), e i nomi delle View
+Transitions ci sono solo durante il passaggio (`html[data-transizione='tavolo']`):
+fuori, ogni navigazione fotografa la pagina intera, e un test lo controlla. Al
+tavolo nuovo si va subito, senza aspettare il server: l'indirizzo e'
+`TAVOLO_NUOVO`, la pagina apre il tavolo mentre il feltro si allarga e poi mette
+al suo posto l'indirizzo vero, senza rileggerlo. Aspettare la risposta prima di
+partire era il piccolo scatto fra il tocco e il passaggio. La sala porta il
+saldo nello stato della navigazione, e il tabellone c'e' dal primo disegno, senza
+contare da zero (`da` di `Numero`). Il panno e' stampato sul feltro, senza un
+fondo suo, e i comandi stanno sulla sponda di legno in fondo, che si unisce a
+quella del feltro: le fiches, e i tasti tondi per annullare, togliere tutto e
+ripetere o raddoppiare.
 
 **Il panno si tocca dove si posa la fiche.** Sul telefono il panno sta in
 piedi, lo zero in cima, e le puntate interne si scelgono dal punto toccato
