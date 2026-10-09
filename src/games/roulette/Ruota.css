@@ -1,10 +1,20 @@
 /*
  * La ruota della roulette. Il riquadro (`__scatola`) e' quadrato e largo
- * quanto la ruota; il piatto inclinato se ne vede dal 24% all'88% dell'altezza,
- * quindi `.rl-ruota` taglia sopra e sotto quel che resta vuoto: e' alto il 70%
- * del lato, e la scatola sale del 21%. La trasformazione del piatto la scrive
- * Ruota.tsx, con la prospettiva in proporzione al lato: la stessa che usa per
- * la biglia.
+ * quanto la ruota; il piatto inclinato, con il fianco del mobile sotto, se ne
+ * vede dal 23% al 93% dell'altezza, quindi `.rl-ruota` taglia sopra e sotto
+ * quel che resta vuoto: e' alto il 70% del lato, e la scatola sale del 23%.
+ *
+ * Il piatto e' un contesto 3D: la trasformazione la scrive Ruota.tsx, con la
+ * prospettiva in proporzione al lato (la stessa che usa per la biglia), e ogni
+ * strato sta alla sua altezza (`--z`, in unita' del disegno, per `--u`, i pixel
+ * di un'unita'). Niente `overflow`, `filter` o `opacity` sul piatto e sul
+ * cilindro: appiattirebbero gli strati in uno.
+ *
+ * Ogni strato e' disegnato `--nitido` volte piu' grande e rimpicciolito nella
+ * sua trasformazione, attorno al suo centro: Chrome disegna gli strati in
+ * prospettiva senza la densita' dello schermo (vedi `nitidezza` in Ruota.tsx).
+ * Le misure dentro gli strati (i bordi dei dischi) si moltiplicano per lo
+ * stesso numero.
  */
 
 .rl-ruota {
@@ -15,66 +25,148 @@
 
 .rl-ruota__scatola {
   position: absolute;
-  inset: -21% 0 auto;
+  inset: -21.6% 0 auto;
   aspect-ratio: 1;
 }
 
-.rl-ruota__piatto,
-.rl-ruota__spessore {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  transform-origin: 50% 50%;
-}
-
-/* Lo spessore del legno: lo stesso piatto, piu' scuro e un po' piu' giu', che sporge sotto. */
-.rl-ruota__spessore {
-  translate: 0 5.5%;
-  background:
-    linear-gradient(180deg, transparent 55%, rgb(0 0 0 / 0.35)),
-    radial-gradient(circle at 50% 50%, #5a2a0e 0 70%, #2a1104 100%);
-  box-shadow: 0 0 0 1px rgb(255 214 150 / 0.08) inset;
-}
-
-/* L'ombra della ruota sul panno, morbida e larga. */
-.rl-ruota__base {
-  position: absolute;
-  left: 4%;
-  right: 4%;
-  top: 72%;
-  height: 22%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(0 0 0 / 0.55), transparent);
-  filter: blur(6px);
-}
-
-.rl-ruota__conca,
-.rl-ruota__luce,
-.rl-ruota__rotore,
-.rl-ruota__cilindro {
+.rl-ruota__fianco {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
+.rl-ruota__piatto {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+/*
+ * Niente `will-change` sul cilindro: Chrome fisserebbe la risoluzione dei suoi
+ * strati a quella del primo disegno, e nella sala, dove la ruota arriva
+ * piccola e si ingrandisce, i numeri restavano sgranati.
+ */
 .rl-ruota__rotore {
-  will-change: transform;
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
 }
 
-.rl-ruota__luce {
+/*
+ * Un elemento del piatto: `--d` e' quanto e' largo, in centesimi del piatto,
+ * e sta centrato nel punto (`--x`, `--y`), di solito il centro.
+ */
+.rl-ruota__strato,
+.rl-ruota__cono,
+.rl-ruota__fusto,
+.rl-ruota__braccia,
+.rl-ruota__cupola,
+.rl-ruota__pomo,
+.rl-ruota__luccichio,
+.rl-ruota__ombra-torretta {
+  --n: var(--nitido, 1);
+  position: absolute;
+  left: calc(var(--x, 50%) - var(--d) * var(--n) * 0.5%);
+  top: calc(var(--y, 50%) - var(--d) * var(--n) * 0.5%);
+  width: calc(var(--d) * var(--n) * 1%);
+  aspect-ratio: 1;
+  transform: translateZ(calc(var(--u, 1px) * var(--z, 0))) scale(calc(1 / var(--n)));
+}
+
+.rl-ruota__strato {
+  --d: 100;
+}
+
+.rl-ruota__disegno {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.rl-ruota__luce-cono {
+  pointer-events: none;
+}
+
+/*
+ * Il cono di legno tornito, a gradini bassi: ogni anello e' appena piu' scuro
+ * dove scende al gradino sotto, e da lontano la salita sembra liscia.
+ */
+.rl-ruota__cono {
+  --d: var(--r);
+  --bordo: calc(var(--u, 1px) * var(--n));
+  border-radius: 50%;
+  background: radial-gradient(circle, #96532a 0%, #86471f 70%, #73391a 90%, #5a2a10 100%);
+  box-shadow: inset 0 0 0 calc(var(--bordo) * 0.22) rgb(255 214 160 / 0.14);
+}
+
+.rl-ruota__cono.is-base {
+  background: radial-gradient(circle, #7a3f1c 0%, #5a2b10 88%, #2a1305 100%);
+  box-shadow:
+    inset 0 0 0 calc(var(--bordo) * 0.9) #c99a33,
+    inset 0 0 0 calc(var(--bordo) * 1.3) #3a2404;
+}
+
+/* La cima del cono e' la base d'oro della torretta. */
+.rl-ruota__cono.is-cima {
+  background: radial-gradient(circle, #fff1bf 0%, #e3b44a 40%, #a8771c 78%, #5e3f0a 100%);
+  box-shadow: inset 0 0 0 calc(var(--bordo) * 0.4) #fff0b8;
+}
+
+/* Il fusto della torretta: dischetti d'oro uno sopra l'altro, che insieme fanno un cilindro. */
+.rl-ruota__fusto {
+  --d: 2.6;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff3c4 0%, #d6a63e 55%, #7a5414 100%);
+}
+
+.rl-ruota__braccia {
+  --d: 30;
+}
+
+.rl-ruota__cupola {
+  --d: 3.6;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbe6 0%, #f0c75a 40%, #9a6a14 85%, #4a3006 100%);
+}
+
+.rl-ruota__pomo {
+  --d: 1.8;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffef4 0%, #f3cf6c 50%, #8a5d12 100%);
+}
+
+.rl-ruota__luccichio {
+  --d: 1.2;
+  --x: 49.2%;
+  --y: 49.1%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(255 255 255 / 0.95) 0 30%, rgb(255 255 255 / 0) 70%);
+  pointer-events: none;
+}
+
+/* L'ombra della torretta: la trasformazione la scrive Ruota.tsx, perché gira con il cilindro. */
+.rl-ruota__ombra-torretta {
+  --d: 30;
+  opacity: 0.4;
   pointer-events: none;
 }
 
 .rl-ruota__numero {
   fill: #fff;
   font-family: var(--font-rounded);
-  font-size: 6.4px;
+  font-size: 6.2px;
   font-weight: 800;
+  paint-order: stroke;
+  stroke: rgb(0 0 0 / 0.35);
+  stroke-width: 0.5px;
 }
 
 .rl-ruota__biglia,
-.rl-ruota__ombra {
+.rl-ruota__ombra,
+.rl-ruota__scia {
   position: absolute;
   left: 0;
   top: 0;
@@ -84,14 +176,22 @@
   will-change: transform;
 }
 
+/* La biglia d'avorio: il lampo della luce in alto, il calore del legno riflesso sotto, il bordo che si scurisce. */
 .rl-ruota__biglia {
-  background: radial-gradient(circle at 34% 30%, #fff 0 18%, #ececf0 38%, #a7a7b0 74%, #6c6c76 100%);
+  background:
+    radial-gradient(circle at 31% 27%, rgb(255 255 255 / 0.98) 0 9%, rgb(255 255 255 / 0) 24%),
+    radial-gradient(circle at 64% 80%, rgb(255 196 130 / 0.5) 0 8%, rgb(255 196 130 / 0) 36%),
+    radial-gradient(circle at 42% 38%, #fdfdff 0%, #e2e2ea 42%, #9a9aa6 80%, #55555e 100%);
   box-shadow:
-    0 0.5px 1px rgb(0 0 0 / 0.5),
-    0 0 4px rgb(255 255 255 / 0.25);
+    inset -0.5px -0.7px 1.2px rgb(0 0 0 / 0.3),
+    0 0 5px rgb(255 255 255 / 0.25);
+}
+
+.rl-ruota__scia {
+  background: radial-gradient(circle, rgb(255 255 255 / 0.9) 0%, rgb(230 230 240 / 0.5) 55%, rgb(230 230 240 / 0) 100%);
 }
 
 .rl-ruota__ombra {
-  background: radial-gradient(closest-side, rgb(0 0 0 / 0.7), transparent);
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.75), transparent);
   filter: blur(1px);
 }
