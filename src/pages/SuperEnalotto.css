@@ -245,10 +245,91 @@
   border-color: var(--penna);
 }
 
+/* Le due giocate, stampate come le caselle della schedina: quella scelta ha la croce. */
+.se-giocate {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.se-giocata {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 10px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--inchiostro);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.55);
+  color: var(--inchiostro);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.se-giocata.is-scelta {
+  background: rgb(29 63 191 / 0.07);
+}
+
+.se-giocata:disabled {
+  cursor: default;
+}
+
+.se-giocata:focus-visible {
+  outline: 2px solid var(--penna);
+  outline-offset: 2px;
+}
+
+.se-giocata__casella {
+  position: relative;
+  grid-row: 1 / span 2;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--inchiostro);
+  border-radius: 4px;
+}
+
+.se-giocata__casella svg {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  overflow: visible;
+}
+
+.se-giocata__casella path {
+  fill: none;
+  stroke: var(--penna);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: se-tratto 0.16s ease-out forwards;
+}
+
+.se-giocata__casella path + path {
+  animation-delay: 0.12s;
+}
+
+.se-giocata__nome {
+  font-family: var(--font-rounded);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.se-giocata__costo {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* Novanta caselle, dieci per riga come sulla schedina vera. */
 .se-schedina__griglia {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
 }
 
 /* Una casella: il numero stampato, e sopra la croce di penna, che si traccia quando la si segna. */
@@ -256,14 +337,15 @@
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 48px;
-  aspect-ratio: 1.25;
-  border: 1.5px solid var(--inchiostro);
-  border-radius: 8px;
+  min-width: 0;
+  aspect-ratio: 0.9;
+  padding: 0;
+  border: 1px solid var(--inchiostro);
+  border-radius: 5px;
   background: rgb(255 255 255 / 0.55);
   color: var(--inchiostro);
   font-family: var(--font-rounded);
-  font-size: 20px;
+  font-size: clamp(11px, 3.5vw, 16px);
   font-weight: 800;
   cursor: pointer;
   transition:
@@ -290,9 +372,9 @@
 
 .se-casella__croce {
   position: absolute;
-  inset: 4px;
-  width: calc(100% - 8px);
-  height: calc(100% - 8px);
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
   overflow: visible;
   pointer-events: none;
 }
@@ -319,6 +401,7 @@
 
 .se-schedina__piede {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
@@ -327,10 +410,12 @@
   border-top: 1.5px dashed rgb(209 35 95 / 0.4);
 }
 
+/* I numeri scritti a mano stanno su una riga: con cinque, se non ci stanno, i comandi vanno sotto. */
 .se-schedina__mano {
   font-family: var(--font-mano);
   font-size: 20px;
   color: var(--penna);
+  white-space: nowrap;
 }
 
 .se-schedina__comandi {
@@ -434,6 +519,20 @@
 
 .se-ricevuta.is-vince {
   background: #fff4cf;
+}
+
+/* Una scheda del 4+1 ha cinque palline: un po' piu' piccole, perché ci stiano. */
+.se-ricevuta:has(.se-ricevuta__giocata) {
+  --pallina-lato: 32px;
+}
+
+.se-ricevuta__giocata {
+  margin-block-start: 6px;
+  padding: 3px 1px;
+  border-radius: 4px;
+  background: #d1235f;
+  color: #fff;
+  letter-spacing: 0.04em;
 }
 
 .se-ricevuta__titolo {

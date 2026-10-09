@@ -126,10 +126,9 @@ a.eroe:active {
   min-height: 28px;
   padding: 0 10px 0 12px;
   border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.18);
+  /* Niente sfocatura dietro: sopra un fondo che si muove andrebbe rifatta a ogni fotogramma. */
+  background: rgba(255, 255, 255, 0.2);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   font-size: var(--text-footnote);
   font-weight: 700;
   white-space: nowrap;
@@ -146,20 +145,30 @@ a.eroe:active {
     inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
-/* Le righe del campo: diagonali che scorrono piano. */
+/*
+ * Le righe del campo: diagonali che scorrono piano. Scorrono con una
+ * trasformazione, che la scheda grafica fa da sola, e non spostando il fondo,
+ * che andrebbe ridisegnato a ogni fotogramma: lo strato e' piu' largo
+ * dell'eroe di venticinque passi della trama, e si sposta di tanto, cosi'
+ * alla fine il disegno e' di nuovo quello dell'inizio. Il passo lungo
+ * l'orizzontale e' quello delle righe diviso il seno dei loro 115 gradi.
+ */
 .eroe--giornaliere::before {
+  --passo-righe: calc(26px / 0.906308);
   content: '';
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
   z-index: -1;
+  width: calc(100% + 25 * var(--passo-righe));
   background: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.07) 0 2px, transparent 2px 26px);
-  background-size: 200% 100%;
   animation: giornaliere-righe 14s linear infinite;
 }
 
 @keyframes giornaliere-righe {
   to {
-    background-position: -200% 0;
+    transform: translateX(calc(-25 * var(--passo-righe)));
   }
 }
 
@@ -177,13 +186,14 @@ a.eroe:active {
   animation: giornaliere-lampo 6.5s var(--ease-in-out) infinite;
 }
 
+/* Da -50% a 130% dell'eroe: centottanta centesimi, cioe' 474 della larghezza del lampo, che e' il 38%. */
 @keyframes giornaliere-lampo {
   0%,
   58% {
-    left: -50%;
+    transform: translateX(0) skewX(-18deg);
   }
   100% {
-    left: 130%;
+    transform: translateX(474%) skewX(-18deg);
   }
 }
 

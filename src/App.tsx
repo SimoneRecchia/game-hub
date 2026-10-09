@@ -18,32 +18,61 @@ import { ScarabocchiGate } from './games/scarabocchi/ScarabocchiGate'
 import { CompagniaGate } from './games/compagnia/CompagniaGate'
 import Giornaliere from './pages/Giornaliere'
 import Libere from './pages/Libere'
-import Amico from './pages/Amico'
-import Classifica from './pages/Classifica'
-import Profilo from './pages/Profilo'
 import Fortuna from './pages/Fortuna'
 import NotFound from './pages/NotFound'
 import VerifyEmail from './pages/VerifyEmail'
 import Welcome from './pages/Welcome'
-import Wordle from './pages/Wordle'
-import WordleLibero from './pages/WordleLibero'
-import WordleInsieme from './pages/WordleInsieme'
-import Scarabeo from './pages/Scarabeo'
-import ScarabeoInsieme from './pages/ScarabeoInsieme'
-import Cruciverba from './pages/Cruciverba'
-import CruciverbaLibero from './pages/CruciverbaLibero'
-import CruciverbaInsieme from './pages/CruciverbaInsieme'
-import WordleLiberaInsieme from './pages/WordleLiberaInsieme'
-import Sudoku from './pages/Sudoku'
-import SudokuLibero from './pages/SudokuLibero'
-import BattagliaSala from './pages/BattagliaSala'
-import BattagliaPartita from './pages/BattagliaPartita'
-import BattagliaInvito from './pages/BattagliaInvito'
-import IndovinaChi from './pages/IndovinaChi'
-import IndovinaPartita from './pages/IndovinaPartita'
-import IndovinaInvito from './pages/IndovinaInvito'
-import IndovinaSet from './pages/IndovinaSet'
 import { GIOCHI_TAVOLIERE } from '@shared/tavolo'
+
+/*
+ * Nel pezzo che si scarica all'avvio ci sono solo le tre schede, l'accesso e
+ * gli avvisi degli inviti. Ogni gioco arriva a parte, e la classifica, il
+ * profilo e il profilo di un amico anche: erano un terzo dell'app che si apre,
+ * e la prima schermata li aspettava tutti. I pezzi si precaricano quando il
+ * telefono e' libero (`usePrecarica`), quelli delle Giornaliere per primi.
+ */
+const caricaClassifica = () => import('./pages/Classifica')
+const caricaProfilo = () => import('./pages/Profilo')
+const caricaAmico = () => import('./pages/Amico')
+const Classifica = lazy(caricaClassifica)
+const Profilo = lazy(caricaProfilo)
+const Amico = lazy(caricaAmico)
+const caricaWordle = () => import('./pages/Wordle')
+const caricaWordleLibero = () => import('./pages/WordleLibero')
+const caricaWordleInsieme = () => import('./pages/WordleInsieme')
+const caricaWordleLiberaInsieme = () => import('./pages/WordleLiberaInsieme')
+const Wordle = lazy(caricaWordle)
+const WordleLibero = lazy(caricaWordleLibero)
+const WordleInsieme = lazy(caricaWordleInsieme)
+const WordleLiberaInsieme = lazy(caricaWordleLiberaInsieme)
+const caricaScarabeo = () => import('./pages/Scarabeo')
+const caricaScarabeoInsieme = () => import('./pages/ScarabeoInsieme')
+const Scarabeo = lazy(caricaScarabeo)
+const ScarabeoInsieme = lazy(caricaScarabeoInsieme)
+const caricaCruciverba = () => import('./pages/Cruciverba')
+const caricaCruciverbaLibero = () => import('./pages/CruciverbaLibero')
+const caricaCruciverbaInsieme = () => import('./pages/CruciverbaInsieme')
+const Cruciverba = lazy(caricaCruciverba)
+const CruciverbaLibero = lazy(caricaCruciverbaLibero)
+const CruciverbaInsieme = lazy(caricaCruciverbaInsieme)
+const caricaSudoku = () => import('./pages/Sudoku')
+const caricaSudokuLibero = () => import('./pages/SudokuLibero')
+const Sudoku = lazy(caricaSudoku)
+const SudokuLibero = lazy(caricaSudokuLibero)
+const caricaBattagliaSala = () => import('./pages/BattagliaSala')
+const caricaBattagliaPartita = () => import('./pages/BattagliaPartita')
+const caricaBattagliaInvito = () => import('./pages/BattagliaInvito')
+const BattagliaSala = lazy(caricaBattagliaSala)
+const BattagliaPartita = lazy(caricaBattagliaPartita)
+const BattagliaInvito = lazy(caricaBattagliaInvito)
+const caricaIndovinaChi = () => import('./pages/IndovinaChi')
+const caricaIndovinaPartita = () => import('./pages/IndovinaPartita')
+const caricaIndovinaInvito = () => import('./pages/IndovinaInvito')
+const caricaIndovinaSet = () => import('./pages/IndovinaSet')
+const IndovinaChi = lazy(caricaIndovinaChi)
+const IndovinaPartita = lazy(caricaIndovinaPartita)
+const IndovinaInvito = lazy(caricaIndovinaInvito)
+const IndovinaSet = lazy(caricaIndovinaSet)
 
 /*
  * Le pagine di scacchi, dama, Forza 4 e go arrivano a parte: le regole, i pezzi e i
@@ -152,50 +181,96 @@ const RouletteTavolo = lazy(caricaTavoloRL)
 const caricaSuperEnalotto = () => import('./pages/SuperEnalotto')
 const SuperEnalotto = lazy(caricaSuperEnalotto)
 
+/** Quanti pezzi si scaricano insieme, a ogni momento libero del telefono. */
+const PEZZI_PER_VOLTA = 4
+
+/**
+ * Precarica i pezzi dell'app, perché toccando un gioco ci sia gia'. Comincia
+ * un paio di secondi dopo l'avvio, e va a gruppi, uno per ogni momento libero
+ * del telefono (`requestIdleCallback`): tutti insieme, erano un centinaio di
+ * file che si contendevano la rete e il processore con la prima schermata. Per
+ * primi i giochi delle Giornaliere, che si aprono di piu', poi la classifica e
+ * il profilo, poi il resto.
+ */
 function usePrecarica() {
   useEffect(() => {
-    const t = window.setTimeout(() => {
-      const pezzi = [
-        caricaSala,
-        caricaComputer,
-        caricaPartita,
-        caricaInvito,
-        caricaScarabeoAmico,
-        caricaScarabeoLibero,
-        caricaQuiz,
-        caricaQuizLibero,
-        caricaAnagrammi,
-        caricaAnagrammiLibera,
-        caricaGhigliottina,
-        caricaGhigliottinaLibera,
-        caricaParoliere,
-        caricaParoliereLibera,
-        caricaCatena,
-        caricaCatenaLibera,
-        caricaNomi,
-        caricaNomiLibera,
-        caricaNomiSfida,
-        caricaNomiInvito,
-        caricaSequenze,
-        caricaSequenzeLibera,
-        caricaSequenzeSfida,
-        caricaSequenzeInvito,
-      ]
-      const fortuna = [
-        caricaRuota,
-        caricaSlot,
-        caricaBlackjack,
-        caricaTavoloBJ,
-        caricaRoulette,
-        caricaTavoloRL,
-        caricaSuperEnalotto,
-      ]
-      const lupus = [caricaLupus, caricaLupusTelefono, caricaLupusStanza]
-      const scarabocchi = [caricaScarabocchi, caricaScarabocchiStanza]
-      const tutti = [...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna, ...lupus, ...scarabocchi]
-      void Promise.all(tutti.map((c) => c())).catch(() => {})
-    }, 2_500)
-    return () => window.clearTimeout(t)
+    const coda = [
+      caricaWordle,
+      caricaScarabeo,
+      caricaCruciverba,
+      caricaSudoku,
+      caricaQuiz,
+      caricaNomi,
+      caricaAnagrammi,
+      caricaSequenze,
+      caricaGhigliottina,
+      caricaParoliere,
+      caricaCatena,
+      caricaClassifica,
+      caricaProfilo,
+      caricaAmico,
+      caricaWordleLibero,
+      caricaCruciverbaLibero,
+      caricaSudokuLibero,
+      caricaScarabeoLibero,
+      caricaQuizLibero,
+      caricaAnagrammiLibera,
+      caricaGhigliottinaLibera,
+      caricaParoliereLibera,
+      caricaCatenaLibera,
+      caricaNomiLibera,
+      caricaSequenzeLibera,
+      caricaSala,
+      caricaComputer,
+      caricaPartita,
+      caricaInvito,
+      caricaScarabeoAmico,
+      caricaBattagliaSala,
+      caricaBattagliaPartita,
+      caricaIndovinaChi,
+      caricaIndovinaPartita,
+      caricaRuota,
+      caricaSlot,
+      caricaBlackjack,
+      caricaTavoloBJ,
+      caricaRoulette,
+      caricaTavoloRL,
+      caricaSuperEnalotto,
+      caricaWordleInsieme,
+      caricaScarabeoInsieme,
+      caricaCruciverbaInsieme,
+      caricaWordleLiberaInsieme,
+      caricaNomiSfida,
+      caricaNomiInvito,
+      caricaSequenzeSfida,
+      caricaSequenzeInvito,
+      caricaQuizDuello,
+      caricaQuizInvito,
+      caricaBattagliaInvito,
+      caricaIndovinaInvito,
+      caricaIndovinaSet,
+      caricaLupus,
+      caricaLupusTelefono,
+      caricaLupusStanza,
+      caricaScarabocchi,
+      caricaScarabocchiStanza,
+    ]
+    let fermo = false
+    // Safari non ha `requestIdleCallback`: li' un attimo di pausa fra un gruppo e l'altro.
+    const libero = (fai: () => void) =>
+      typeof window.requestIdleCallback === 'function'
+        ? window.requestIdleCallback(fai, { timeout: 2_000 })
+        : setTimeout(fai, 200)
+    const prossimi = () => {
+      if (fermo || coda.length === 0) return
+      const gruppo = coda.splice(0, PEZZI_PER_VOLTA)
+      void Promise.all(gruppo.map((c) => c().catch(() => {}))).then(() => libero(prossimi))
+    }
+    const t = window.setTimeout(() => libero(prossimi), 2_000)
+    return () => {
+      fermo = true
+      window.clearTimeout(t)
+    }
   }, [])
 }
 

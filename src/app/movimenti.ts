@@ -4,8 +4,11 @@
  * Le usa `navigazione.tsx`, e i test le provano da sole.
  */
 
-/** Il movimento di una navigazione: lo sceglie chi naviga (vedi `navigazione.tsx`). */
-export type Direzione = 'avanti' | 'indietro' | 'scheda' | 'nessuna'
+/**
+ * Il movimento di una navigazione: lo sceglie chi naviga (vedi `navigazione.tsx`).
+ * `tavolo` e' il passaggio fra la sala della roulette e il tavolo, nei due versi.
+ */
+export type Direzione = 'avanti' | 'indietro' | 'scheda' | 'nessuna' | 'tavolo'
 
 /** Come React Router chiama una navigazione: indietro o avanti nella history, una nuova, una sostituita. */
 export type TipoNavigazione = 'POP' | 'PUSH' | 'REPLACE'
@@ -62,7 +65,7 @@ export function entrataDi({
   // Un passo indietro col gesto del browser, subito dopo un avanti dell'app: la schermata c'era gia'.
   if (tipo === 'POP' && ultima.direzione !== 'indietro') return FERMA
   const daSola = !ultima.transizione && !ridotto
-  if (ultima.direzione === 'avanti') return { cascata: true, daSola }
+  if (ultima.direzione === 'avanti' || ultima.direzione === 'tavolo') return { cascata: true, daSola }
   if (ultima.direzione === 'indietro') return { cascata: false, daSola }
   return FERMA
 }

@@ -15,6 +15,8 @@ import { gameDate } from '@shared/daily'
 import type { OggiRisposta } from '@shared/types'
 import './Giornaliere.css'
 
+const OGGI_FRESCO_MS = 15_000
+
 /**
  * Le Giornaliere, la scheda principale e quella che si apre per prima: le
  * classificate di oggi, che fanno la classifica. In cima la giornata — dove
@@ -23,11 +25,13 @@ import './Giornaliere.css'
  * dritta alla partita di oggi.
  *
  * I dati arrivano con una richiesta sola (`/api/oggi`), e restano in memoria:
- * tornando qui dalla partita si vedono subito, e si aggiornano da soli.
+ * tornando qui dalla partita si vedono subito, e si aggiornano da soli. Per un
+ * quarto di minuto non si richiedono (`OGGI_FRESCO_MS`): passando da una
+ * scheda all'altra non e' cambiato niente, e una partita giocata li dimentica.
  */
 export default function Giornaliere() {
   const player = usePlayer()
-  const { dati: oggi } = useDati<OggiRisposta>('/oggi')
+  const { dati: oggi } = useDati<OggiRisposta>('/oggi', { fresco: OGGI_FRESCO_MS })
   const stati = oggi ? statiDiOggi(oggi) : null
 
   return (

@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { istanteItaliano } from '../daily'
 import {
   CATEGORIE,
+  COSTI,
   DURATA_DIRETTA_MS,
   PALLINE_MS,
   RIPARTIZIONE,
   concorsoAperto,
+  costoDi,
   estrai,
   jackpotDi,
   liquida,
@@ -58,13 +60,22 @@ describe('il calendario del SuperEnalotto', () => {
 })
 
 describe('la schedina e l’estrazione', () => {
-  it('quattro numeri diversi da 1 a 20', () => {
-    expect(schedaValida([1, 2, 3, 20])).toBe(true)
+  it('quattro numeri diversi da 1 a 90, o cinque con il 4+1', () => {
+    expect(schedaValida([1, 2, 3, 90])).toBe(true)
+    expect(schedaValida([1, 2, 3, 45, 90])).toBe(true)
     expect(schedaValida([1, 2, 3])).toBe(false)
+    expect(schedaValida([1, 2, 3, 4, 5, 6])).toBe(false)
     expect(schedaValida([1, 2, 3, 3])).toBe(false)
+    expect(schedaValida([1, 2, 3, 4, 4])).toBe(false)
     expect(schedaValida([0, 2, 3, 4])).toBe(false)
-    expect(schedaValida([1, 2, 3, 21])).toBe(false)
+    expect(schedaValida([1, 2, 3, 91])).toBe(false)
     expect(schedaValida([1, 2, 3, 4.5])).toBe(false)
+  })
+
+  it('una scheda da quattro costa dieci punti, il 4+1 venti', () => {
+    expect(COSTI).toEqual({ 4: 10, 5: 20 })
+    expect(costoDi([1, 2, 3, 4])).toBe(10)
+    expect(costoDi([1, 2, 3, 4, 5])).toBe(20)
   })
 
   it('l’estrazione pesca dall’urna senza rimettere', () => {
@@ -74,13 +85,19 @@ describe('la schedina e l’estrazione', () => {
       expect(schedaValida(fuori)).toBe(true)
     }
     expect(estrai(() => 0)).toEqual([1, 2, 3, 4])
+    expect(estrai((n) => n - 1)).toEqual([90, 89, 88, 87])
     expect(presiDi([1, 5, 9, 20], [20, 9, 2, 3])).toBe(2)
+    // Cinque numeri prendono al piu' i quattro estratti.
+    expect(presiDi([2, 3, 9, 20, 44], [20, 9, 2, 3])).toBe(4)
   })
 
-  it('le probabilita’: una su 4845 il 4, una su 76 circa il 3, una su 6,7 il 2', () => {
-    expect(unaSu(4)).toBe(4845)
-    expect(Math.round(unaSu(3))).toBe(76)
-    expect(unaSu(2)).toBeCloseTo(6.73, 2)
+  it('le probabilita’ su novanta: il 4 una su 2.555.190, e con il 4+1 cinque volte piu’ spesso', () => {
+    expect(unaSu(4)).toBe(2_555_190)
+    expect(Math.round(unaSu(3))).toBe(7428)
+    expect(unaSu(2)).toBeCloseTo(116.5, 1)
+    expect(unaSu(4, 5)).toBe(2_555_190 / 5)
+    expect(Math.round(unaSu(3, 5))).toBe(3006)
+    expect(unaSu(2, 5)).toBeCloseTo(71.6, 1)
   })
 })
 

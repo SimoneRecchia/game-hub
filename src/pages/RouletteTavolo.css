@@ -1,8 +1,9 @@
 /*
- * Il tavolo della roulette. In cima il tabellone, poi il palco — la ruota e il
- * tabellone dei numeri usciti —, chi altro c'e', il panno e i comandi. Il
- * tavolo e' un contenitore (`rl`): tutto si misura sulla sua altezza, cosi'
- * sta nello schermo senza scorrere.
+ * Il tavolo della roulette: un feltro solo (Feltro.css), con in cima il
+ * tabellone, poi il palco — la ruota e il tabellone dei numeri usciti —, chi
+ * altro c'e', il panno stampato sul feltro e in fondo la sponda di legno con le
+ * fiches e i comandi. Il tavolo e' un contenitore (`rl`): tutto si misura sulla
+ * sua altezza, cosi' sta nello schermo senza scorrere.
  *
  * La ruota e' disegnata grande (`--grande-w`) e rimpicciolita sul palco
  * (`--piccola`): quando la biglia parte si fa grande sopra il panno, che si
@@ -17,31 +18,57 @@
   display: flex;
   container: rl / size;
   isolation: isolate;
-  animation: rl-entra 460ms var(--ease-out) backwards;
+  border-radius: 26px;
+  color: #f6ecd2;
 }
 
-/* Il contenitore non si interroga da solo: la disposizione la prende questo, che sta dentro. */
+/* Sul telefono il tavolo arriva quasi ai bordi: ogni punto in piu' e' panno. */
+@media (max-width: 599px) {
+  .pagina--intera:has(.rl) .pagina__corpo {
+    padding-inline: max(8px, var(--safe-left)) max(8px, var(--safe-right));
+  }
+}
+
+/*
+ * Il contenitore non si interroga da solo: la disposizione la prende questo,
+ * che sta dentro. `--rl-bordo` e' quanto il contenuto sta lontano dal bordo
+ * del feltro, sponda compresa.
+ */
 .rl__dentro {
-  --rl-palco-h: clamp(92px, 17cqh, 160px);
+  --rl-palco-h: clamp(96px, 19cqh, 172px);
+  --rl-bordo: 14px;
   position: relative;
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+  padding: var(--rl-bordo) var(--rl-bordo) 0;
 }
 
-@keyframes rl-entra {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-}
-
+/* Il tabellone sul feltro: una riga sola, scura, con il filo d'oro. */
 .rl__dentro > .ct-tabellone {
   position: relative;
   z-index: 6;
   flex: none;
+  padding: 5px 14px;
+  border-radius: 14px;
+  background: rgb(0 0 0 / 0.28);
+  box-shadow: inset 0 0 0 1px rgb(242 210 122 / 0.42);
+}
+
+.rl__dentro > .ct-tabellone .ct-tabellone__voce {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.rl__dentro > .ct-tabellone .ct-tabellone__saldo {
+  font-size: 21px;
+}
+
+.rl__dentro > .ct-tabellone .ct-tabellone__puntata {
+  font-size: 19px;
 }
 
 .rl-errore {
@@ -79,6 +106,10 @@
   width: var(--grande-w, 100%);
   transform-origin: 0 0;
   transform: scale(var(--piccola, 1));
+}
+
+/* Dopo la prima misura (`is-misurata`): prima, la ruota rimpicciolirebbe dal suo disegno grande. */
+.rl.is-misurata .rl-palco__grande {
   transition: transform 0.8s cubic-bezier(0.6, 0, 0.25, 1);
 }
 
@@ -86,14 +117,13 @@
   transform: translate(var(--zoom-x, 0), var(--zoom-y, 0)) scale(1);
 }
 
-/* Il velo sul panno mentre la biglia gira: la sala si fa buia attorno alla ruota. */
+/* Il velo sul panno mentre la biglia gira: il tavolo si fa buio attorno alla ruota. */
 .rl-velo {
   position: absolute;
   inset: 0;
   z-index: 5;
-  background: radial-gradient(70% 45% at 50% 48%, rgb(255 214 140 / 0.1), transparent 70%), rgb(6 10 8 / 0.82);
-  /* Il buio va oltre il tavolo, fino ai bordi della pagina: senza, sul computer si vedrebbe il riquadro. */
-  box-shadow: 0 0 0 100vmax rgb(6 10 8 / 0.82);
+  border-radius: 26px;
+  background: radial-gradient(70% 45% at 50% 48%, rgb(255 214 140 / 0.1), transparent 70%), rgb(6 10 8 / 0.8);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.6s ease;
@@ -348,8 +378,9 @@
   min-width: 0;
   padding: 2px 8px 2px 2px;
   border-radius: 999px;
-  background: var(--fill-tertiary);
+  background: rgb(0 0 0 / 0.28);
   box-shadow: inset 0 0 0 1.5px var(--posto);
+  color: #fff;
   font-size: 13px;
   font-weight: 700;
 }
@@ -379,8 +410,8 @@
 }
 
 .rl-giocatore__conto.is-perso {
-  background: var(--fill-secondary);
-  color: var(--label-secondary);
+  background: rgb(255 255 255 / 0.18);
+  color: rgb(255 255 255 / 0.8);
 }
 
 /* ---- Il panno ---- */
@@ -400,7 +431,12 @@
   height: 100cqh;
 }
 
-/* ---- I comandi ---- */
+/*
+ * ---- La sponda ----
+ *
+ * I comandi stanno sul legno in fondo al tavolo, che si unisce alla sponda del
+ * feltro: arriva fino al suo legno (8px dal bordo, in Feltro.css) da tre lati.
+ */
 
 .rl-comandi {
   position: relative;
@@ -408,11 +444,22 @@
   flex: none;
   display: grid;
   gap: 6px;
+  margin: 2px calc(8px - var(--rl-bordo)) 8px;
+  padding: 8px 10px 10px;
+  border-radius: 4px 4px 18px 18px;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.12), transparent 26%),
+    repeating-linear-gradient(91deg, rgb(0 0 0 / 0.07) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #6e3617, #4a210b 62%, #3a1806);
+  box-shadow:
+    0 -1.5px 0 rgb(242 210 122 / 0.5),
+    0 -10px 20px rgb(0 0 0 / 0.22);
 }
 
 .rl-comandi__riga {
   display: flex;
   justify-content: center;
+  align-items: center;
   gap: var(--sp-2);
 }
 
@@ -421,15 +468,15 @@
   justify-items: center;
   align-content: center;
   gap: 5px;
-  min-height: 28px;
-  color: var(--label);
+  min-height: 26px;
+  color: #f6ecd2;
   font-size: 15px;
   font-weight: 700;
   text-align: center;
 }
 
 .rl-stato__paga {
-  color: #c9962a;
+  color: #f2d27a;
   font-family: var(--font-rounded);
   font-weight: 900;
 }
@@ -439,7 +486,7 @@
   width: min(72%, 280px);
   height: 5px;
   border-radius: 3px;
-  background: var(--fill-tertiary);
+  background: rgb(0 0 0 / 0.35);
 }
 
 .rl-stato__pieno {
@@ -459,7 +506,7 @@
   display: flex;
   justify-content: center;
   gap: clamp(6px, 2.6vw, 14px);
-  padding-top: 6px;
+  padding-top: 4px;
 }
 
 .rl-gettone {
@@ -495,20 +542,42 @@
   outline-offset: 3px;
 }
 
+/* I tasti tondi della sponda: annulla, togli tutto, ripeti o raddoppia. */
 .rl-tasto {
-  min-width: 56px;
-  min-height: 46px;
-  padding: 0 var(--sp-3);
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
   border: 0;
-  border-radius: var(--r-pill);
-  background: var(--fill-secondary);
-  color: var(--label);
-  font: inherit;
-  font-weight: 800;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(0 0 0 / 0.2)), #2c1408;
+  box-shadow:
+    inset 0 0 0 1px rgb(242 210 122 / 0.45),
+    0 2px 0 rgb(0 0 0 / 0.4);
+  color: #f6ecd2;
+  transition: transform 0.12s var(--ease-out);
+}
+
+.rl-tasto--testo {
+  font-family: var(--font-rounded);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.rl-tasto:active:not(:disabled) {
+  transform: translateY(2px);
 }
 
 .rl-tasto:disabled {
-  opacity: 0.4;
+  opacity: 0.38;
+}
+
+.rl-tasto:focus-visible,
+.rl-lancia:focus-visible {
+  outline: 2px solid #f2d27a;
+  outline-offset: 2px;
 }
 
 .rl-lancia {
@@ -555,7 +624,11 @@
     --bj-fiche-lato: clamp(36px, 10vw, 44px);
   }
 
-  .rl-tasto,
+  .rl-tasto {
+    width: 40px;
+    height: 40px;
+  }
+
   .rl-lancia {
     min-height: 40px;
   }
@@ -568,13 +641,14 @@
 
 /*
  * Largo — il computer, o il telefono di traverso —: la ruota a sinistra,
- * grande, e il panno con i comandi a destra.
+ * grande, il panno a destra, e la sponda con i comandi lungo tutto il tavolo,
+ * su una riga.
  */
 @container rl (min-aspect-ratio: 23 / 20) {
   .rl__dentro {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
     column-gap: var(--sp-5);
   }
 
@@ -584,15 +658,15 @@
   }
 
   .rl-palco {
-    --rl-palco-h: min(52cqh, 27cqw);
+    --rl-palco-h: min(48cqh, 27cqw);
     grid-column: 1;
-    grid-row: 2 / span 2;
+    grid-row: 2;
     align-self: center;
   }
 
   .rl-giocatori {
     grid-column: 1;
-    grid-row: 4;
+    grid-row: 3;
   }
 
   .rl-panno-posto {
@@ -601,8 +675,25 @@
   }
 
   .rl-comandi {
-    grid-column: 2;
+    grid-column: 1 / -1;
     grid-row: 4;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: var(--sp-4);
+    padding-inline: 18px;
+  }
+
+  .rl-comandi .rl-stato {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .rl-comandi .rl-gettoni {
+    padding-top: 0;
+  }
+
+  .rl-comandi .rl-lancia {
+    min-width: 160px;
   }
 }
 
@@ -614,7 +705,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rl,
   .rl-nvp,
   .rl-annuncio,
   .rl-annuncio__targa,

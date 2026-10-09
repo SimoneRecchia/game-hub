@@ -13,8 +13,18 @@ import { Pallina } from '@/games/superenalotto/Pallina'
 import { casuali } from '@/games/superenalotto/palline'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
+import { frecceDelGruppo } from '@/lib/gruppo'
 import { suona } from '@/lib/suoni'
-import { COSTO_SCHEDA, DA_SCEGLIERE, NUMERI, SCHEDE_MASSIME, presiDi } from '@shared/superenalotto'
+import {
+  COSTI,
+  ESTRATTI,
+  GIOCATE,
+  NUMERI,
+  SCHEDE_MASSIME,
+  costoDi,
+  presiDi,
+  type GiocataEnalotto,
+} from '@shared/superenalotto'
 import type { ConcorsoEnalottoVista, SchedaEnalotto, VistaEnalotto } from '@shared/types'
 import './SuperEnalotto.css'
 
@@ -139,7 +149,7 @@ export default function SuperEnalotto() {
   }
 
   const aperto = vista?.aperto ?? null
-  const giocate = aperto?.mie.length ?? 0
+  const puntato = aperto?.mie.reduce((s, x) => s + costoDi(x.numeri), 0) ?? 0
   const tempoDi = (fra: number) => arrivata + fra - adesso
 
   return (
@@ -153,7 +163,7 @@ export default function SuperEnalotto() {
       }
     >
       <div className="se">
-        {vista && <Tabellone saldo={vista.saldo} puntata={giocate * COSTO_SCHEDA || null} saldoRef={saldoRef} />}
+        {vista && <Tabellone saldo={vista.saldo} puntata={puntato || null} saldoRef={saldoRef} />}
 
         <Jackpot vista={vista} tempoDi={tempoDi} onDiretta={() => ultimo && setDiretta({ replica: false, inizio: inizioUltimo })} />
 
@@ -256,11 +266,21 @@ function Jackpot({
   )
 }
 
+/** La giocata scelta l'ultima volta, che la schedina ripropone. */
+function leggiGiocata(): GiocataEnalotto {
+  try {
+    return localStorage.getItem('enalotto-giocata') === '5' ? 5 : 4
+  } catch {
+    return 4
+  }
+}
+
 /**
- * La schedina: venti caselle stampate in rosso, che si segnano con una croce
- * di penna blu, e i quattro numeri scelti scritti a mano in fondo. "Casuale"
- * li sceglie a caso, come alla ricevitoria; giocata, la scheda prende il
- * timbro e torna bianca per la prossima.
+ * La schedina: in cima le due giocate, quattro numeri o il "4+1", poi le
+ * novanta caselle stampate in rosso, dieci per riga come sulla schedina vera,
+ * che si segnano con una croce di penna blu, e i numeri scelti scritti a mano in
+ * fondo. "Casuale" li sceglie a caso, come alla ricevitoria; giocata, la scheda
+ * prende il timbro e torna bianca per la prossima.
  */
 function Schedina({
   concorso,
@@ -276,19 +296,35 @@ function Schedina({
   onGioca: (numeri: number[]) => Promise<boolean>
 }) {
   const [scelti, setScelti] = useState<number[]>([])
+  const [giocata, setGiocata] = useState<GiocataEnalotto>(leggiGiocata)
   const [timbro, setTimbro] = useState(0)
   const [scossa, setScossa] = useState(0)
   const mescola = useRef(0)
   const rimaste = SCHEDE_MASSIME - concorso.mie.length
-  const pochi = saldo < COSTO_SCHEDA
+  const costo = COSTI[giocata]
+  const pochi = saldo < costo
   const puo = rimaste > 0 && !pochi && !inviando
+
+  const scegliGiocata = (g: GiocataEnalotto) => {
+    if (g === giocata) return
+    mescola.current += 1
+    setGiocata(g)
+    // Passando a quattro, il quinto numero segnato se ne va.
+    setScelti((x) => x.slice(0, g))
+    suona('tocco')
+    try {
+      localStorage.setItem('enalotto-giocata', String(g))
+    } catch {
+      /* resta per questa volta */
+    }
+  }
 
   const tocca = (n: number) => {
     if (!puo) return
     if (scelti.includes(n)) {
       setScelti(scelti.filter((x) => x !== n))
       suona('tocco')
-    } else if (scelti.length < DA_SCEGLIERE) {
+    } else if (scelti.length < giocata) {
       setScelti([...scelti, n])
       suona('tocco', { volume: 1.2 })
     } else {
@@ -301,13 +337,13 @@ function Schedina({
   const casuale = () => {
     if (!puo) return
     const giro = ++mescola.current
-    const finale = casuali()
+    const finale = casuali(giocata)
     let volte = 0
     const passo = () => {
       if (giro !== mescola.current) return
       volte += 1
       if (volte < 7) {
-        setScelti(casuali())
+        setScelti(casuali(giocata))
         suona('tocco', { volume: 0.6 })
         window.setTimeout(passo, 70)
       } else {
@@ -319,7 +355,7 @@ function Schedina({
   }
 
   const conferma = async () => {
-    if (scelti.length !== DA_SCEGLIERE || !puo) return
+    if (scelti.length !== giocata || !puo) return
     mescola.current += 1
     if (await onGioca([...scelti].sort((a, b) => a - b))) {
       setTimbro((x) => x + 1)
@@ -345,10 +381,35 @@ function Schedina({
             Concorso di {giornoEstrazione(concorso.data, oggi)} · {breve}
           </span>
         </header>
+        <div className="se-giocate" role="radiogroup" aria-label="La giocata" onKeyDown={frecceDelGruppo}>
+          {GIOCATE.map((g) => (
+            <button
+              key={g}
+              type="button"
+              role="radio"
+              aria-checked={giocata === g}
+              tabIndex={giocata === g ? 0 : -1}
+              className={`se-giocata${giocata === g ? ' is-scelta' : ''}`}
+              disabled={!puo}
+              onClick={() => scegliGiocata(g)}
+            >
+              <span className="se-giocata__casella" aria-hidden="true">
+                {giocata === g && (
+                  <svg viewBox="0 0 40 40">
+                    <path d="M8 9 L32 32" />
+                    <path d="M31 8 L9 31" />
+                  </svg>
+                )}
+              </span>
+              <span className="se-giocata__nome">{g === 4 ? '4 numeri' : '4+1'}</span>
+              <span className="se-giocata__costo u-tabnum">{COSTI[g]} punti</span>
+            </button>
+          ))}
+        </div>
         <p className="se-schedina__istruzioni">
-          Segna {DA_SCEGLIERE} numeri
+          Segna {giocata} numeri
           <span className="se-schedina__segni" aria-hidden="true">
-            {Array.from({ length: DA_SCEGLIERE }, (_, i) => (
+            {Array.from({ length: giocata }, (_, i) => (
               <span key={i} className={i < scelti.length ? 'is-pieno' : ''} />
             ))}
           </span>
@@ -403,16 +464,16 @@ function Schedina({
       </div>
       <Button
         className="se-gioca"
-        disabled={!puo || scelti.length !== DA_SCEGLIERE}
+        disabled={!puo || scelti.length !== giocata}
         onClick={() => void conferma()}
       >
         {rimaste <= 0
           ? `Hai giocato ${SCHEDE_MASSIME} schede`
           : pochi
             ? 'Il saldo non basta'
-            : scelti.length === DA_SCEGLIERE
-              ? `Gioca la scheda · ${COSTO_SCHEDA} punto`
-              : `Segna ancora ${DA_SCEGLIERE - scelti.length} ${DA_SCEGLIERE - scelti.length === 1 ? 'numero' : 'numeri'}`}
+            : scelti.length === giocata
+              ? `Gioca la scheda · ${costo} punti`
+              : `Segna ancora ${giocata - scelti.length} ${giocata - scelti.length === 1 ? 'numero' : 'numeri'}`}
       </Button>
       {rimaste > 0 && concorso.mie.length > 0 && (
         <p className="se-nota">
@@ -431,7 +492,10 @@ function Ricevuta({ scheda, indice, estratti }: { scheda: SchedaEnalotto; indice
       className={`se-ricevuta${presi !== null && presi >= 2 ? ' is-vince' : ''}`}
       style={{ '--i': indice } as CSSProperties}
     >
-      <span className="se-ricevuta__titolo">Scheda {indice + 1}</span>
+      <span className="se-ricevuta__titolo">
+        Scheda {indice + 1}
+        {scheda.numeri.length > ESTRATTI && <span className="se-ricevuta__giocata">4+1</span>}
+      </span>
       <span className="se-ricevuta__numeri">
         {scheda.numeri.map((n) => (
           <Pallina key={n} n={n} piccola accesa={!!estratti?.includes(n)} />
@@ -439,12 +503,12 @@ function Ricevuta({ scheda, indice, estratti }: { scheda: SchedaEnalotto; indice
       </span>
       <span className="se-ricevuta__esito">
         {presi === null
-          ? `${COSTO_SCHEDA} punto`
+          ? `${costoDi(scheda.numeri)} punti`
           : scheda.vincita
             ? `+${scheda.vincita}`
             : presi >= 2
               ? `${presi} numeri`
-              : `${presi}/4`}
+              : `${presi}/${ESTRATTI}`}
       </span>
     </li>
   )

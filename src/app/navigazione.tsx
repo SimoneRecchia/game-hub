@@ -1,7 +1,7 @@
 /**
  * La navigazione dell'app, con i movimenti di un'app vera.
  *
- * Tre movimenti, come in iOS:
+ * Tre movimenti, come in iOS, e uno della roulette:
  *
  *  - **avanti**: la schermata nuova entra da destra e copre la vecchia, che
  *    scivola un po' a sinistra e si scurisce — il push di un navigation
@@ -9,7 +9,11 @@
  *  - **indietro**: il contrario, e la schermata che se ne va resta sopra;
  *  - **scheda**: fra le sezioni della tab bar il cambio e' immediato, come
  *    nella tab bar di iOS. C'era una dissolvenza, che a meta' mostrava il fondo
- *    vuoto: sembrava che la pagina si ricaricasse.
+ *    vuoto: sembrava che la pagina si ricaricasse;
+ *  - **tavolo**: fra la sala della roulette e il tavolo il feltro della sala si
+ *    allarga nel tavolo, e la ruota sale al suo posto; tornando, il contrario.
+ *    I nomi delle View Transitions ci sono solo in questo passaggio
+ *    (`html[data-transizione='tavolo']` in Roulette.css e RouletteTavolo.css).
  *
  * Avanti e indietro li fa l'API delle View Transitions
  * (`document.startViewTransition`), che fotografa la pagina prima e dopo il
@@ -59,7 +63,7 @@ interface Opzioni {
 interface Transizioni {
   vai: (a: To, opzioni?: Opzioni) => void
   /** Torna alla schermata di prima, o a `ripiego` se si e' entrati da qui. */
-  indietro: (ripiego: string) => void
+  indietro: (ripiego: string, direzione?: Direzione) => void
 }
 
 const Contesto = createContext<Transizioni | null>(null)
@@ -118,7 +122,7 @@ export function TransizioniProvider({ children }: { children: ReactNode }) {
 
   const conTransizione = useCallback((direzione: Direzione, cambia: () => void) => {
     const doc = document as DocumentoConTransizioni
-    const scorre = direzione === 'avanti' || direzione === 'indietro'
+    const scorre = direzione === 'avanti' || direzione === 'indietro' || direzione === 'tavolo'
     const avvia = scorre && !movimentoRidotto() ? doc.startViewTransition?.bind(doc) : undefined
     ultima = { direzione, transizione: avvia !== undefined, quando: performance.now() }
     if (!avvia) {
@@ -151,9 +155,9 @@ export function TransizioniProvider({ children }: { children: ReactNode }) {
   )
 
   const indietro = useCallback(
-    (ripiego: string) => {
-      if (profondita() > 0) conTransizione('indietro', () => navigate(-1))
-      else conTransizione('indietro', () => navigate(ripiego, { replace: true }))
+    (ripiego: string, direzione: Direzione = 'indietro') => {
+      if (profondita() > 0) conTransizione(direzione, () => navigate(-1))
+      else conTransizione(direzione, () => navigate(ripiego, { replace: true }))
     },
     [conTransizione, navigate],
   )

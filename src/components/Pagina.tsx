@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useEntrata, useNavigazione } from '@/app/navigazione'
+import { useEntrata, useNavigazione, type Direzione } from '@/app/navigazione'
 import { IconChevronLeft } from './Icons'
 import './Pagina.css'
 import './BottoneTondo.css'
@@ -9,6 +9,8 @@ interface Indietro {
   a: string
   /** Il nome della schermata di prima, accanto alla freccia: "Giochi", "Wordle". */
   etichetta: string
+  /** Il movimento del ritorno, se non e' quello di sempre: il tavolo della roulette torna alla sala con il suo. */
+  direzione?: Direzione
 }
 
 interface Props {
@@ -114,7 +116,7 @@ export function Pagina({
                 <button
                   type="button"
                   className="pagina__indietro"
-                  onClick={() => torna(indietro.a)}
+                  onClick={() => torna(indietro.a, indietro.direzione)}
                   aria-label={`Indietro: ${indietro.etichetta}`}
                 >
                   <IconChevronLeft size={24} />
