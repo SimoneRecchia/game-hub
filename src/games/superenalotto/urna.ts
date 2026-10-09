@@ -34,24 +34,31 @@ import { coloreDellaPallina } from './palline'
 
 /**
  * L'urna del SuperEnalotto in 3D: la sfera di vetro sul piedistallo d'oro, le
- * venti palline che l'aria fa saltare, il tubo da cui esce la pallina estratta
- * e la rotaia davanti, dove le quattro si mettono in fila con il numero verso
- * chi guarda. E' tutta una funzione del tempo della diretta (`tempo`, in
+ * novanta palline che l'aria fa saltare, il tubo da cui esce la pallina
+ * estratta e la rotaia davanti, dove le quattro si mettono in fila con il
+ * numero verso chi guarda. E' tutta una funzione del tempo della diretta (`tempo`, in
  * millisecondi dall'inizio): chi arriva a meta' trova le palline gia' uscite al
  * loro posto, e quella che sta uscendo dove deve essere. Le palline dentro
  * l'urna invece si muovono con una fisica loro, a caso: due telefoni non le
  * vedono uguali, ed e' giusto cosi', l'urna vera non si ripete.
  *
  * Una scena sola, con pochi oggetti e niente ombre vere: un telefono la fa
- * girare senza scaldarsi. La luce del vetro e dell'oro viene da un ambiente
+ * girare senza scaldarsi. Le novanta palline hanno una forma sola e un'immagine
+ * piccola ciascuna (`LATO_FACCIA`); quella che esce, che si guarda da vicino
+ * sulla rotaia, cresce nel tubo fino alla misura della rotaia (`RB_FUORI`) e
+ * prende un'immagine grande, una alla volta. La luce del vetro e dell'oro viene da un ambiente
  * calcolato una volta (`RoomEnvironment`), non da un'immagine da scaricare.
  */
 
 const R = 2
-const RB = 0.27
+/** Il raggio di una pallina dentro l'urna, e quello che ha sulla rotaia, dove la si guarda da vicino. */
+const RB = 0.19
+const RB_FUORI = 0.27
+/** Il lato delle immagini dei numeri: piccole nell'urna, grandi per le quattro che escono. */
+const LATO_FACCIA = { dentro: 128, fuori: 256 }
 const CENTRO = new Vector3(0, 0.55, 0)
 const PIANO = CENTRO.y - R - 0.85
-const BINARIO = { y: PIANO + 0.18 + RB, z: 2.35 }
+const BINARIO = { y: PIANO + 0.18 + RB_FUORI, z: 2.35 }
 const POSTI_X = [-1.2, -0.4, 0.4, 1.2]
 /** Quanto dura il viaggio di una pallina, dall'urna al suo posto sulla rotaia. */
 export const VIAGGIO_MS = 3800
@@ -80,21 +87,25 @@ interface Pallina {
   fuori: { posto: number; da: Vector3 } | null
 }
 
-/** La faccia di una pallina: il colore, e il numero in un tondo bianco, due volte, davanti e dietro. */
-function facciaDi(n: number): CanvasTexture {
+/**
+ * La faccia di una pallina: il colore, e il numero in un tondo bianco, due
+ * volte, davanti e dietro. `lato` e' la larghezza; l'altezza e' la meta'.
+ */
+function facciaDi(n: number, lato: number): CanvasTexture {
   const c = document.createElement('canvas')
-  c.width = 256
-  c.height = 128
+  c.width = lato
+  c.height = lato / 2
   const g = c.getContext('2d')!
+  g.scale(lato / 256, lato / 256)
   g.fillStyle = coloreDellaPallina(n)
   g.fillRect(0, 0, 256, 128)
   for (const x of [64, 192]) {
     g.fillStyle = '#fbfbf7'
     g.beginPath()
-    g.ellipse(x, 64, 34, 38, 0, 0, Math.PI * 2)
+    g.ellipse(x, 64, 36, 40, 0, 0, Math.PI * 2)
     g.fill()
     g.fillStyle = '#16161c'
-    g.font = '800 46px system-ui, -apple-system, sans-serif'
+    g.font = `800 ${n >= 10 ? 40 : 46}px system-ui, -apple-system, sans-serif`
     g.textAlign = 'center'
     g.textBaseline = 'middle'
     g.fillText(String(n), x, 67)
@@ -252,9 +263,9 @@ export class Urna {
     const vetroTubo = this.tieni(vetro.clone())
     vetroTubo.opacity = 0.07
     vetroTubo.envMapIntensity = 1.4
-    const tubo = new Mesh(this.tieni(new TubeGeometry(TUBO, 96, RB * 1.18, 16, false)), vetroTubo)
+    const tubo = new Mesh(this.tieni(new TubeGeometry(TUBO, 96, RB_FUORI * 1.18, 16, false)), vetroTubo)
     tubo.renderOrder = 2
-    const bocca = new Mesh(this.tieni(new TorusGeometry(RB * 1.4, 0.06, 12, 40)), oro)
+    const bocca = new Mesh(this.tieni(new TorusGeometry(RB_FUORI * 1.4, 0.06, 12, 40)), oro)
     bocca.rotation.x = Math.PI / 2
     bocca.position.copy(USCITA)
     this.scene.add(tubo, bocca)
@@ -265,35 +276,40 @@ export class Urna {
     barra.rotation.z = Math.PI / 2
     for (const dz of [-0.3, 0.3]) {
       const guida = barra.clone()
-      guida.position.set(0.5, BINARIO.y - RB * 0.72, BINARIO.z + dz * 1.1)
+      guida.position.set(0.5, BINARIO.y - RB_FUORI * 0.72, BINARIO.z + dz * 1.1)
       rotaia.add(guida)
     }
     const fondo = new Mesh(this.tieni(new BoxGeometry(4.6, 0.18, 0.78)), oroScuro)
-    fondo.position.set(0.5, BINARIO.y - RB - 0.09, BINARIO.z)
+    fondo.position.set(0.5, BINARIO.y - RB_FUORI - 0.09, BINARIO.z)
     rotaia.add(fondo)
     POSTI_X.forEach((x) => {
       const posto = new Mesh(
-        this.tieni(new TorusGeometry(RB * 0.95, 0.035, 8, 40)),
+        this.tieni(new TorusGeometry(RB_FUORI * 0.95, 0.035, 8, 40)),
         this.tieni(new MeshStandardMaterial({ color: 0xffd27a, emissive: 0xffb02e, emissiveIntensity: 0.15 })),
       )
       posto.rotation.x = Math.PI / 2
-      posto.position.set(x, BINARIO.y - RB * 0.75, BINARIO.z)
+      posto.position.set(x, BINARIO.y - RB_FUORI * 0.75, BINARIO.z)
       this.posti.push(posto)
       rotaia.add(posto)
     })
     this.scene.add(rotaia)
   }
 
-  /** Le venti palline, ferme sul fondo dell'urna. */
+  /** Le novanta palline, ferme sul fondo dell'urna. */
   private mettiPalline() {
-    const forma = this.tieni(new SphereGeometry(RB, 32, 20))
+    const forma = this.tieni(new SphereGeometry(RB, 24, 16))
     for (let n = 1; n <= NUMERI; n += 1) {
       const materiale = this.tieni(
-        new MeshStandardMaterial({ map: this.tieni(facciaDi(n)), roughness: 0.22, metalness: 0, envMapIntensity: 1.2 }),
+        new MeshStandardMaterial({
+          map: this.tieni(facciaDi(n, LATO_FACCIA.dentro)),
+          roughness: 0.22,
+          metalness: 0,
+          envMapIntensity: 1.2,
+        }),
       )
       const mesh = new Mesh(forma, materiale)
       const p = CENTRO.clone().add(
-        new Vector3((Math.random() - 0.5) * 2.4, -R + RB + Math.random() * 1.2, (Math.random() - 0.5) * 2.4),
+        new Vector3((Math.random() - 0.5) * 2.6, -R + RB + Math.random() * 1.8, (Math.random() - 0.5) * 2.6),
       )
       mesh.position.copy(p)
       mesh.quaternion.setFromAxisAngle(new Vector3(Math.random(), Math.random(), Math.random()).normalize(), Math.random() * 6)
@@ -386,6 +402,14 @@ export class Urna {
     }
   }
 
+  /** La pallina che esce si guarda da vicino: il suo numero passa all'immagine grande. */
+  private daVicino(b: Pallina) {
+    const materiale = b.mesh.material as MeshStandardMaterial
+    const piccola = materiale.map
+    materiale.map = this.tieni(facciaDi(b.numero, LATO_FACCIA.fuori))
+    piccola?.dispose()
+  }
+
   /** Dove sta una pallina uscita, a un punto del suo viaggio (`k` da 0 a 1). */
   private viaggio(b: Pallina, k: number): Vector3 {
     const { posto, da } = b.fuori!
@@ -413,7 +437,10 @@ export class Urna {
     if (this.estratti) {
       this.estratti.forEach((n, posto) => {
         const b = this.palline.find((x) => x.numero === n)
-        if (b && !b.fuori && t >= PALLINE_MS[posto]) b.fuori = { posto, da: b.p.clone() }
+        if (b && !b.fuori && t >= PALLINE_MS[posto]) {
+          b.fuori = { posto, da: b.p.clone() }
+          this.daVicino(b)
+        }
       })
     }
     const soffia = t >= SOFFIO.da && t < SOFFIO.a
@@ -427,6 +454,8 @@ export class Urna {
       if (b.fuori) {
         const k = entro((t - PALLINE_MS[b.fuori.posto]) / VIAGGIO_MS)
         b.mesh.position.copy(this.viaggio(b, k))
+        // Nel tubo cresce fino alla misura della rotaia.
+        b.mesh.scale.setScalar(1 + (RB_FUORI / RB - 1) * liscia(entro((k - 0.16) / 0.52)))
         if (k < 1) inViaggio = b.mesh.position
         ;(this.posti[b.fuori.posto].material as MeshStandardMaterial).emissiveIntensity = k >= 0.9 ? 1.4 : 0.15
         if (k >= 0.9) {
@@ -442,7 +471,7 @@ export class Urna {
       const l = passo.length()
       if (l > 1e-4) {
         const asse = new Vector3(passo.z, 0, -passo.x)
-        if (asse.lengthSq() > 1e-8) b.mesh.rotateOnWorldAxis(asse.normalize(), l / RB)
+        if (asse.lengthSq() > 1e-8) b.mesh.rotateOnWorldAxis(asse.normalize(), l / (RB * b.mesh.scale.x))
       }
     }
 

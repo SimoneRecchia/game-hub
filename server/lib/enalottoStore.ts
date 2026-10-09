@@ -13,16 +13,20 @@
  * giorno dell'estrazione, e i concorsi si pagano in ordine, perché il jackpot
  * passa dall'uno all'altro.
  *
- * Una scheda costa un punto al saldo del giorno in cui la si compra, e i premi
- * vanno al saldo del giorno dell'estrazione: `fortuna_giornate` ha una riga per
- * giocatore e giorno, ricontata dalle schede (`ricontaSql`).
+ * Una scheda costa i suoi punti (`costo`, dieci o venti) al saldo del giorno in
+ * cui la si compra, e i premi vanno al saldo del giorno dell'estrazione:
+ * `fortuna_giornate` ha una riga per giocatore e giorno, ricontata dalle schede
+ * (`ricontaSql`). Il pagamento di un concorso butta via le schede dei concorsi
+ * pagati da piu' di una settimana (`CONSERVA_GIORNI`): i loro giorni non si
+ * ricontano piu', e la riga della giornata resta com'era.
  */
 
 import {
-  COSTO_SCHEDA,
+  CONSERVA_GIORNI,
   SCHEDE_MASSIME,
   categoriaDi,
   concorsoAperto,
+  costoDi,
   estrai,
   jackpotDi,
   liquida,
@@ -34,9 +38,9 @@ import {
   type CategoriaEnalotto,
   type PremioEnalotto,
 } from '../../shared/superenalotto'
-import { msToNextPuzzle, puzzleNumberFor } from '../../shared/daily'
+import { addDays, msToNextPuzzle, puzzleNumberFor } from '../../shared/daily'
 import type { ConcorsoEnalottoVista, RiepilogoEnalotto, SchedaEnalotto, VistaEnalotto } from '../../shared/types'
-import { nettoFortunaSql, saldoDi } from './fortuna'
+import { nettoFortunaSql, saldoDi, type SaldoFortuna } from './fortuna'
 import { fail, newId, nowIso } from './http'
 import { aCaso } from './ruotaStore'
 import { today } from './wordleStore'
@@ -66,12 +70,12 @@ interface SchedaRow {
  * `giocatore` e `giorno` sono espressioni dell'istruzione che lo usa.
  */
 function ricontaSql(giocatore: string, giorno: string): string {
-  const comprate = `(SELECT COUNT(*) FROM enalotto_schede WHERE player_id = ${giocatore} AND giorno = ${giorno})`
+  const comprate = `FROM enalotto_schede WHERE player_id = ${giocatore} AND giorno = ${giorno}`
   return `${giocatore}, ${giorno}, 'superenalotto',
           COALESCE((SELECT SUM(s.vincita) FROM enalotto_schede s JOIN enalotto_concorsi c ON c.data = s.concorso
                      WHERE s.player_id = ${giocatore} AND c.numero = ${giorno} AND s.vincita IS NOT NULL), 0)
-          - ${comprate} * ${COSTO_SCHEDA},
-          ${comprate}`
+          - COALESCE((SELECT SUM(costo) ${comprate}), 0),
+          (SELECT COUNT(*) ${comprate})`
 }
 
 const RISCRIVI = `ON CONFLICT (player_id, puzzle_number, gioco) DO UPDATE SET netto = excluded.netto, giocate = excluded.giocate`
@@ -106,19 +110,28 @@ async function estrazioneDi(db: D1Database, data: string): Promise<ConcorsoRow> 
   return (await leggi())!
 }
 
-/** Paga i premi di un concorso estratto: le schede, le loro vincite, e il conto della giornata di chi ha giocato. */
+/**
+ * Paga i premi di un concorso estratto: le schede, le loro vincite, e il conto
+ * della giornata di chi ha giocato. Nello stesso batch se ne vanno le schede dei
+ * concorsi pagati da piu' di `CONSERVA_GIORNI`.
+ */
 async function paga(db: D1Database, c: ConcorsoRow): Promise<void> {
   const estratti = JSON.parse(c.estratti) as number[]
   const [{ results }, riporto] = await Promise.all([
-    db.prepare('SELECT numeri FROM enalotto_schede WHERE concorso = ?').bind(c.data).all<{ numeri: string }>(),
+    db
+      .prepare('SELECT numeri, costo FROM enalotto_schede WHERE concorso = ?')
+      .bind(c.data)
+      .all<{ numeri: string; costo: number }>(),
     jackpotArrivato(db, c.data),
   ])
   const vincitori: Record<CategoriaEnalotto, number> = { 4: 0, 3: 0, 2: 0 }
+  let raccolta = 0
   for (const r of results) {
+    raccolta += r.costo
     const categoria = categoriaDi(presiDi(JSON.parse(r.numeri) as number[], estratti))
     if (categoria) vincitori[categoria] += 1
   }
-  const { premi, jackpot } = liquida(results.length, riporto, vincitori)
+  const { premi, jackpot } = liquida(raccolta, riporto, vincitori)
   const premio = (k: CategoriaEnalotto) => premi.find((p) => p.categoria === k)!.premio
   const impronta = newId('pag')
   // Le istruzioni dopo la prima valgono solo se la prima ha preso il pagamento: e' lei che scrive l'impronta.
@@ -129,7 +142,7 @@ async function paga(db: D1Database, c: ConcorsoRow): Promise<void> {
         `UPDATE enalotto_concorsi SET raccolta = ?, riporto = ?, premi = ?, jackpot = ?, pagato_at = ?, scrittura = ?
           WHERE data = ? AND pagato_at IS NULL`,
       )
-      .bind(results.length, riporto, JSON.stringify(premi), jackpot, nowIso(), impronta, c.data),
+      .bind(raccolta, riporto, JSON.stringify(premi), jackpot, nowIso(), impronta, c.data),
     db
       .prepare(
         `UPDATE enalotto_schede
@@ -154,12 +167,22 @@ async function paga(db: D1Database, c: ConcorsoRow): Promise<void> {
          ${RISCRIVI}`,
       )
       .bind(impronta, c.data, c.numero),
+    // Le schede vecchie: i loro giorni sono gia' contati, e il concorso tiene i numeri e i premi.
+    db
+      .prepare(
+        `DELETE FROM enalotto_schede
+          WHERE concorso < ?3 AND concorso IN (SELECT data FROM enalotto_concorsi WHERE pagato_at IS NOT NULL)
+            AND ${preso}`,
+      )
+      .bind(impronta, c.data, addDays(c.data, -CONSERVA_GIORNI)),
   ])
 }
 
 /**
  * Quel che l'ora richiede: i numeri dell'ultimo concorso chiuso, e i premi dei
- * concorsi la cui diretta e' finita. Di solito sono gia' fatti, e costa due letture.
+ * concorsi la cui diretta e' finita. Di solito sono gia' fatti, e costa due
+ * letture. I concorsi si pagano in ordine, quindi quelli da pagare stanno dopo
+ * l'ultimo pagato: le schede di prima non si guardano.
  */
 export async function assicura(db: D1Database, adesso = Date.now()): Promise<void> {
   const ultima = ultimoConcorso(adesso)
@@ -168,7 +191,8 @@ export async function assicura(db: D1Database, adesso = Date.now()): Promise<voi
     .prepare(
       `SELECT DISTINCT s.concorso FROM enalotto_schede s
          LEFT JOIN enalotto_concorsi c ON c.data = s.concorso
-        WHERE s.concorso <= ? AND c.pagato_at IS NULL`,
+        WHERE s.concorso <= ?1 AND c.pagato_at IS NULL
+          AND s.concorso > COALESCE((SELECT MAX(data) FROM enalotto_concorsi WHERE pagato_at IS NOT NULL), '')`,
     )
     .bind(ultima)
     .all<{ concorso: string }>()
@@ -186,12 +210,17 @@ const scheda = (r: SchedaRow): SchedaEnalotto => ({
   vincita: r.vincita,
 })
 
-/** Lo stato del gioco per chi lo guarda: il concorso aperto, e l'ultimo estratto. */
+/**
+ * Lo stato del gioco per chi lo guarda: il concorso aperto, e l'ultimo
+ * estratto. Chi ha gia' il saldo della Fortuna — la scheda della Fortuna — lo
+ * passa (`saldo`), e non lo si conta due volte.
+ */
 export async function statoEnalotto(
   db: D1Database,
   playerId: string,
   adesso = Date.now(),
   assicurato = false,
+  saldo?: SaldoFortuna,
 ): Promise<VistaEnalotto> {
   if (!assicurato) await assicura(db, adesso)
   const oggi = today(new Date(adesso))
@@ -200,7 +229,7 @@ export async function statoEnalotto(
   const date = [aperto, ultimo].filter((d): d is string => d !== null)
   const lista = JSON.stringify(date)
   const [fortuna, mie, conti, riga, arrivato] = await Promise.all([
-    saldoDi(db, playerId, oggi.puzzleNumber),
+    saldo ?? saldoDi(db, playerId, oggi.puzzleNumber),
     db
       .prepare(
         `SELECT id, concorso, numeri, presi, vincita FROM enalotto_schede
@@ -210,15 +239,16 @@ export async function statoEnalotto(
       .all<SchedaRow>(),
     db
       .prepare(
-        `SELECT concorso, COUNT(*) AS n FROM enalotto_schede
+        `SELECT concorso, COUNT(*) AS n, SUM(costo) AS raccolta FROM enalotto_schede
           WHERE concorso IN (SELECT value FROM json_each(?)) GROUP BY concorso`,
       )
       .bind(lista)
-      .all<{ concorso: string; n: number }>(),
+      .all<{ concorso: string; n: number; raccolta: number }>(),
     ultimo ? db.prepare('SELECT * FROM enalotto_concorsi WHERE data = ?').bind(ultimo).first<ConcorsoRow>() : null,
     jackpotArrivato(db, aperto ?? ultimo ?? '9999-12-31'),
   ])
   const quante = (d: string) => conti.results.find((r) => r.concorso === d)?.n ?? 0
+  const raccolta = (d: string) => conti.results.find((r) => r.concorso === d)?.raccolta ?? 0
   const vista = (data: string, jackpot: number): ConcorsoEnalottoVista => {
     const m = momentiDi(data)
     return {
@@ -239,7 +269,7 @@ export async function statoEnalotto(
     // Il jackpot di quel concorso: dai conti del pagamento, o com'era alla chiusura.
     const jackpot = pagato
       ? Math.floor(((riga.riporto ?? 0) + quotaDi(4, riga.raccolta ?? 0)) / 100)
-      : jackpotDi(await jackpotArrivato(db, ultimo), quante(ultimo))
+      : jackpotDi(await jackpotArrivato(db, ultimo), raccolta(ultimo))
     const base = vista(ultimo, jackpot)
     fatto = {
       ...base,
@@ -257,18 +287,19 @@ export async function statoEnalotto(
     classificate: fortuna.classificate,
     saldo: fortuna.saldo,
     netto: fortuna.netti.superenalotto,
-    aperto: aperto ? vista(aperto, jackpotDi(arrivato, quante(aperto))) : null,
+    aperto: aperto ? vista(aperto, jackpotDi(arrivato, raccolta(aperto))) : null,
     ultimo: fatto,
   }
 }
 
-/** Il SuperEnalotto nella scheda della Fortuna, a estrazioni e premi gia' fatti (`assicura`). */
+/** Il SuperEnalotto nella scheda della Fortuna, a estrazioni e premi gia' fatti (`assicura`), con il saldo gia' contato. */
 export async function riepilogoEnalotto(
   db: D1Database,
   playerId: string,
+  saldo: SaldoFortuna,
   adesso = Date.now(),
 ): Promise<RiepilogoEnalotto> {
-  const v = await statoEnalotto(db, playerId, adesso, true)
+  const v = await statoEnalotto(db, playerId, adesso, true, saldo)
   const diretta = v.ultimo && v.ultimo.fineFra > 0 ? { inizioFra: v.ultimo.inizioFra, fineFra: v.ultimo.fineFra } : null
   return {
     aperto: v.aperto?.data ?? null,
@@ -287,7 +318,7 @@ export async function giocaSchede(db: D1Database, playerId: string, schede: unkn
   const concorso = concorsoAperto(adesso)
   if (!concorso) fail(409, 'CHIUSO', 'Il gioco è chiuso fino alla fine dell’estrazione.')
   if (!Array.isArray(schede) || schede.length === 0 || !schede.every(schedaValida)) {
-    fail(400, 'SCHEDA', 'Ogni scheda ha quattro numeri diversi, da 1 a 20.')
+    fail(400, 'SCHEDA', 'Ogni scheda ha quattro o cinque numeri diversi, da 1 a 90.')
   }
   const oggi = today(new Date(adesso))
   const [fortuna, gia] = await Promise.all([
@@ -300,15 +331,15 @@ export async function giocaSchede(db: D1Database, playerId: string, schede: unkn
   if ((gia?.n ?? 0) + schede.length > SCHEDE_MASSIME) {
     fail(409, 'TROPPE_SCHEDE', `Si giocano al massimo ${SCHEDE_MASSIME} schede per estrazione.`)
   }
-  if (fortuna.saldo < schede.length * COSTO_SCHEDA) {
+  if (fortuna.saldo < schede.reduce((s, numeri) => s + costoDi(numeri), 0)) {
     fail(409, 'POCHI_PUNTI', 'Il saldo non basta per queste schede.')
   }
   const adessoIso = new Date(adesso).toISOString()
   const scritture = schede.flatMap((numeri) => [
     db
       .prepare(
-        `INSERT INTO enalotto_schede (id, concorso, player_id, numeri, giorno, created_at)
-         SELECT ?3, ?4, ?1, ?5, ?2, ?6
+        `INSERT INTO enalotto_schede (id, concorso, player_id, numeri, giorno, costo, created_at)
+         SELECT ?3, ?4, ?1, ?5, ?2, ?9, ?6
           WHERE (SELECT COUNT(*) FROM enalotto_schede WHERE concorso = ?4 AND player_id = ?1) < ?7
             AND ?8 + ${nettoFortunaSql('?1', '?2')} >= ?9`,
       )
@@ -321,7 +352,7 @@ export async function giocaSchede(db: D1Database, playerId: string, schede: unkn
         adessoIso,
         SCHEDE_MASSIME,
         fortuna.classificate,
-        COSTO_SCHEDA,
+        costoDi(numeri),
       ),
     riconta(db, playerId, oggi.puzzleNumber),
   ])

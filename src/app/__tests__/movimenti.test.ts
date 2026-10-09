@@ -28,6 +28,11 @@ describe('come entra una schermata', () => {
     expect(entrata(appena('avanti', false), 'PUSH', true)).toEqual({ cascata: true, daSola: false })
   })
 
+  it('fra la sala della roulette e il tavolo si va avanti con il feltro, e si torna con la sala già al suo posto', () => {
+    expect(entrata(appena('tavolo', true))).toEqual({ cascata: true, daSola: false })
+    expect(entrata(appena('tavolo', true), 'POP')).toEqual({ cascata: false, daSola: false })
+  })
+
   it('una schermata ritrovata, indietro o da una scheda, è già al suo posto', () => {
     expect(entrata(appena('indietro'), 'POP')).toEqual({ cascata: false, daSola: false })
     expect(entrata(appena('indietro', false), 'POP')).toEqual({ cascata: false, daSola: true })
@@ -87,9 +92,19 @@ describe('le transizioni nei fogli di stile', () => {
     for (const { f, testo } of CSS) expect(testo, f).not.toContain("data-transizione='scheda'")
   })
 
-  it('si fotografano a parte solo la barra in basso e quella laterale', () => {
-    const nomi = CSS.flatMap(({ testo }) => [...testo.matchAll(/view-transition-name:\s*([\w-]+)/g)].map((m) => m[1]))
-    expect(nomi.sort()).toEqual(['laterale', 'tabbar'])
+  it('si fotografano a parte solo la barra in basso e quella laterale, e il tavolo della roulette nel suo passaggio', () => {
+    // Ogni regola con il suo selettore: i nomi della roulette valgono solo durante la direzione `tavolo`.
+    const nomi = CSS.flatMap(({ f, testo }) =>
+      [...testo.matchAll(/([^{}]+)\{([^{}]*)\}/g)].flatMap(([, selettore, corpo]) =>
+        [...corpo.matchAll(/view-transition-name:\s*([\w-]+)/g)].map((m) => ({ f, selettore, nome: m[1] })),
+      ),
+    )
+    const delTavolo = (n: { selettore: string }) =>
+      n.selettore.split(',').every((s) => s.trim().startsWith("html[data-transizione='tavolo'] "))
+    expect(nomi.filter((n) => !delTavolo(n)).map((n) => n.nome).sort()).toEqual(['laterale', 'tabbar'])
+    const tavolo = nomi.filter(delTavolo)
+    expect(new Set(tavolo.map((n) => n.f.replace(SRC, '')))).toEqual(new Set(['/games/roulette/Feltro.css']))
+    expect([...new Set(tavolo.map((n) => n.nome))].sort()).toEqual(['rl-feltro', 'rl-ruota', 'rl-sala', 'rl-tavolo'])
     for (const f of file(SRC, '.tsx')) expect(readFileSync(f, 'utf8'), f).not.toContain('viewTransitionName')
   })
 

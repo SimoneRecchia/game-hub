@@ -155,13 +155,13 @@ export function Anello({
 /**
  * Un numero che arriva contando, invece di comparire.
  *
- * Conta solo la prima volta e quando cambia; con il movimento ridotto compare
- * e basta. La durata cresce poco col valore: un 12 e un 312 arrivano quasi
- * insieme.
+ * Conta la prima volta, da `da`, e quando cambia; con il movimento ridotto
+ * compare e basta. La durata cresce poco col valore: un 12 e un 312 arrivano
+ * quasi insieme.
  */
-export function Numero({ valore, durata = 700 }: { valore: number; durata?: number }) {
+export function Numero({ valore, durata = 700, da = 0 }: { valore: number; durata?: number; da?: number }) {
   const [mostrato, setMostrato] = useState(valore)
-  const precedente = useRef(0)
+  const precedente = useRef(da)
 
   useEffect(() => {
     const da = precedente.current
@@ -173,7 +173,8 @@ export function Numero({ valore, durata = 700 }: { valore: number; durata?: numb
     const inizio = performance.now()
     let fotogramma = 0
     const passo = (adesso: number) => {
-      const t = Math.min(1, (adesso - inizio) / durata)
+      // Il primo fotogramma puo' avere un'ora di poco prima dell'inizio: sotto zero la curva darebbe numeri negativi.
+      const t = Math.max(0, Math.min(1, (adesso - inizio) / durata))
       // Rallenta arrivando: la stessa curva di un oggetto che si posa.
       const curva = 1 - Math.pow(1 - t, 3)
       setMostrato(Math.round(da + (valore - da) * curva))
