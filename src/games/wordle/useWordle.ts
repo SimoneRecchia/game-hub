@@ -9,6 +9,7 @@ import type {
 } from '@shared/types'
 import { isGameLetter, keyboardStates } from '@shared/wordle'
 import { ApiFetchError, api } from '@/lib/api'
+import { dimentica } from '@/lib/dati'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { ADESIVO_FINE_MS, type FinaleWordle } from './fine'
@@ -306,6 +307,8 @@ function usePartita<T extends Griglia>(sorgente: Sorgente<T>): WordleController<
     try {
       const next = await sorgente.invia(word)
       setState(next)
+      dimentica('/oggi')
+      if (next.status !== 'playing') dimentica('/leaderboard')
       setDraft('')
       setRevealing(row)
 

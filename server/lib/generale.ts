@@ -185,8 +185,24 @@ const AGGREGATI: readonly string[] = [
      FROM fortuna_giornate WHERE puzzle_number BETWEEN ?1 AND ?2 GROUP BY player_id, gioco`,
 ]
 
+/**
+ * D1 accetta al massimo cinque termini in un SELECT composto (SQLite, di suo,
+ * cinquecento): gli aggregati si uniscono a gruppi di cinque, e i gruppi fra
+ * loro, uno dentro l'altro. Il banco dei test ha lo stesso limite.
+ */
+const TERMINI_PER_UNIONE = 5
+
+function unisci(parti: readonly string[]): string {
+  if (parti.length <= TERMINI_PER_UNIONE) return parti.join('\nUNION ALL\n')
+  const gruppi: string[] = []
+  for (let i = 0; i < parti.length; i += TERMINI_PER_UNIONE) {
+    gruppi.push(`SELECT * FROM (${unisci(parti.slice(i, i + TERMINI_PER_UNIONE))})`)
+  }
+  return unisci(gruppi)
+}
+
 /** Tutti gli aggregati in un'istruzione sola: vedi in testa. */
-const GENERALE_SQL = AGGREGATI.join('\nUNION ALL\n')
+const GENERALE_SQL = unisci(AGGREGATI)
 
 interface Aggregato {
   fonte: string

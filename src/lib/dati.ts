@@ -10,7 +10,7 @@ import { ApiFetchError, api } from './api'
  * dura quanto la scheda del browser, e si svuota per prefisso quando una
  * partita cambia (`dimentica`).
  */
-const memoria = new Map<string, unknown>()
+const memoria = new Map<string, { dati: unknown; quando: number }>()
 
 export function dimentica(prefisso: string) {
   for (const chiave of [...memoria.keys()]) if (chiave.startsWith(prefisso)) memoria.delete(chiave)
@@ -24,9 +24,15 @@ export interface Dati<T> {
   ricarica: () => Promise<void>
 }
 
-export function useDati<T>(percorso: string | null): Dati<T> {
+/**
+ * `fresco`: per quanti millisecondi una risposta in memoria vale senza
+ * richiederla, tornando alla schermata. La schermata iniziale si riapre a ogni
+ * cambio di scheda, e ogni volta erano una ventina di letture del database; i
+ * giochi la dimenticano quando cambia qualcosa (`dimentica('/oggi')`).
+ */
+export function useDati<T>(percorso: string | null, { fresco = 0 }: { fresco?: number } = {}): Dati<T> {
   const [dati, setDati] = useState<T | undefined>(() =>
-    percorso ? (memoria.get(percorso) as T | undefined) : undefined,
+    percorso ? (memoria.get(percorso)?.dati as T | undefined) : undefined,
   )
   const [errore, setErrore] = useState<string | null>(null)
   const vivo = useRef(true)
@@ -41,10 +47,10 @@ export function useDati<T>(percorso: string | null): Dati<T> {
   const ricarica = useCallback(async () => {
     if (!percorso) return
     try {
-      const fresco = await api<T>(percorso)
-      memoria.set(percorso, fresco)
+      const nuovi = await api<T>(percorso)
+      memoria.set(percorso, { dati: nuovi, quando: Date.now() })
       if (vivo.current) {
-        setDati(fresco)
+        setDati(nuovi)
         setErrore(null)
       }
     } catch (e) {
@@ -53,9 +59,11 @@ export function useDati<T>(percorso: string | null): Dati<T> {
   }, [percorso])
 
   useEffect(() => {
-    if (percorso) setDati(memoria.get(percorso) as T | undefined)
+    const ricordo = percorso ? memoria.get(percorso) : undefined
+    if (percorso) setDati(ricordo?.dati as T | undefined)
+    if (ricordo && Date.now() - ricordo.quando < fresco) return
     void ricarica()
-  }, [percorso, ricarica])
+  }, [percorso, ricarica, fresco])
 
   return { dati, errore, caricando: dati === undefined && errore === null, ricarica }
 }

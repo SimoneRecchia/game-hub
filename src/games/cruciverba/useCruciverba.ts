@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
+import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
 import { NERA, PUNTI_COMPLETO, VUOTA, grigliaPiena } from '@shared/cruciverba'
 import type {
@@ -165,7 +166,9 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
     (esito: CruciverbaEsito) => {
       versioneRef.current = esito.versione
       setPunti(esito.punti)
+      dimentica('/oggi')
       if (esito.stato) {
+        dimentica('/leaderboard')
         applicaStato(esito.stato)
         return
       }

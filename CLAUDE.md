@@ -27,6 +27,16 @@ dal centunesimo in poi. Il banco dei test (`server/__tests__/banco.ts`) ha lo
 stesso limite, perché SQLite in locale ne regge molti di piu' e il test
 passerebbe lo stesso.
 
+**D1 accetta al massimo cinque termini in un'unione.** Un `SELECT` con sei
+pezzi uniti da `UNION ALL` risponde "too many terms in compound SELECT", e
+SQLite in locale ne regge cinquecento. La classifica generale somma i conti di
+tutti i giochi in un'istruzione sola — erano quindici, e ogni istruzione e' una
+delle cinquanta query che una richiesta puo' fare — e per starci li unisce a
+gruppi di cinque, uno dentro l'altro (`unisci` in `server/lib/generale.ts`).
+Le righe portano il nome del loro conto (`fonte`), e il codice le smista. Il
+banco dei test conta i termini e rifiuta come D1: senza, i test passavano e in
+produzione la schermata iniziale avrebbe risposto 500.
+
 **L'app ha un indirizzo solo, `giochi.<dominio>`, e i sottodomini dei giochi
 sono scorciatoie.** `wordle.<dominio>` porta a `giochi.<dominio>/wordle` prima
 ancora che parta l'app: lo fa lo script in testa a `index.html`, perché le
@@ -401,8 +411,10 @@ polling: due giri separati avrebbero raddoppiato le richieste, e le Pages
 Functions gratuite ne contano centomila al giorno per tutto il sito. La
 scrittura in `presenza` passa solo ogni venti secondi o al cambio di attivita'
 (`segnaPresenza`), e a pagina nascosta il giro si ferma: un telefono in tasca
-non e' "online" per chi vuole sfidarlo. Gli amici online invece non stanno nel
-giro: `GET /api/amici` lo chiedono solo il profilo, le Libere e il profilo di un
+non e' "online" per chi vuole sfidarlo. Le letture del giro partono tutte
+insieme, la scrittura della presenza compresa: una dopo l'altra erano una
+dozzina di viaggi al database in fila, otto secondi si' e otto no. Gli amici
+online invece non stanno nel giro: `GET /api/amici` lo chiedono solo il profilo, le Libere e il profilo di un
 amico, ogni `AMICI_POLL_MS` e mentre li si guarda.
 
 **Nella battaglia navale la flotta dell'avversario non esce dal server.**
@@ -711,6 +723,11 @@ rivede una domanda lo stesso giorno e la riconosce dall'impronta
 non dal posto nell'elenco; una categoria di cui ha visto tutto non gli esce piu'
 fino a domani. `--se-manca` guarda anche queste righe, e il formato, quindi il
 deploy le crea per i giorni che non le hanno.
+Le righe di piu' di una settimana fa si cancellano a ogni scrittura
+(`CONSERVA_RUOTA`): il server legge solo quelle di oggi, la notte quelle della
+memoria, e sono duecento kB al giorno sui cinquecento mega di D1. Allo stesso
+modo una sessione nuova si porta via quelle scadute, e un codice nuovo quelli
+scaduti da due giorni: nel database restava tutto, e nessuno lo leggeva.
 
 **La ruota si gira col dito, e si disegna una volta.** `RuotaFisica`
 (`src/games/ruota/`) e' la ruota grande e quella del quiz: la si prende, la si
@@ -1580,10 +1597,15 @@ lasciando a meta' quella in corso la conta persa, come nella battaglia. I
 motori misurano il tempo con `Date.now()`, che nel Worker di Cloudflare non
 avanza durante il calcolo: non si chiamano mai dal server.
 
-**Le pagine dei tavolieri si scaricano a parte, e quelle del quiz anche.**
-Regole, pezzi e tavolieri sono un quinto dell'app, e i generatori delle domande
-di tutte le materie del quiz un altro bel pezzo: `App.tsx` le carica con `lazy`,
-in un `Suspense` attorno alle rotte, e le precarica dopo un paio di secondi. Le
+**Ogni gioco si scarica a parte.** Nel pezzo dell'avvio ci sono solo le tre
+schede, l'accesso e gli avvisi degli inviti: regole, pezzi e tavolieri erano un
+quinto dell'app, i generatori del quiz un altro bel pezzo, e i giochi delle
+Giornaliere, la classifica e il profilo un terzo di quel che restava. `App.tsx`
+carica ogni pagina di gioco con `lazy`, in un `Suspense` attorno alle rotte, e
+le precarica a gruppi di quattro, a ogni momento libero del telefono
+(`requestIdleCallback`), dopo un paio di secondi: prima le Giornaliere, poi la
+classifica e il profilo, poi il resto. Tutte insieme, erano un centinaio di
+file che si contendevano la rete con la prima schermata. Le
 statistiche delle libere del quiz stanno in `quiz/statistiche.ts` perché le
 legge anche il profilo, che altrimenti si porterebbe dietro i generatori. Lo
 Scarabeo libero arriva a parte anche lui: ha la sala degli amici dei tavolieri.
@@ -2863,7 +2885,13 @@ nel colore del gioco sul lato c'e' stata per un giorno, e sapeva di gia'
 visto. L'eroe delle Giornaliere e' la giornata: il posto nella generale di
 oggi, i punti, il podio e un anello per gioco. Il podio arriva con
 `/api/oggi` (`generale.podio`), che la generale la calcola comunque: nessuna
-richiesta in piu' per la schermata che si apre di piu'.
+richiesta in piu' per la schermata che si apre di piu'. Che si riapre anche a
+ogni cambio di scheda, e per quindici secondi la risposta in memoria vale senza
+richiederla (`fresco` di `useDati`, `OGGI_FRESCO_MS`): ogni gioco, quando cambia
+qualcosa, la dimentica (`dimentica('/oggi')`), e un gioco nuovo deve farlo
+anche lui. I movimenti dell'eroe sono solo `transform` e `opacity`, perché il
+telefono li fa senza ridisegnare: le righe scorrono di un multiplo esatto del
+loro passo, e il ritorno non si vede.
 
 **La Fortuna e' scura in tutti e due i temi.** `Vetrina.css` mette
 `color-scheme: dark` sulla sua pagina e ne ridefinisce `--bg` e `--vetro-barra`:

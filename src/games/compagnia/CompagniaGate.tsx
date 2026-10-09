@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
 import { ApiFetchError, api } from '@/lib/api'
+import { dimentica } from '@/lib/dati'
 import { haptic } from '@/lib/haptics'
 import { usePresenza } from '@/lib/presenza'
 import { suona } from '@/lib/suoni'
@@ -75,6 +76,7 @@ export function CompagniaGate() {
       invito={invito}
       onAccetta={async () => {
         await api(`/compagnia/partita/${invito.compagniaId}/accetta`, { method: 'POST' })
+        dimentica('/oggi')
         risposto()
         aggiorna()
         vai(ROTTE.insiemeA(invito.gioco, invito.compagniaId, invito.modalita))
