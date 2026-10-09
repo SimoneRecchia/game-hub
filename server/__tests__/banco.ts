@@ -47,6 +47,24 @@ function riga<T>(r: Record<string, unknown> | undefined): T | null {
   return r ? ({ ...r } as T) : null
 }
 
+/**
+ * Quanti termini ha il SELECT composto piu' lungo di un'istruzione (UNION,
+ * INTERSECT, EXCEPT), contati a ogni livello di parentesi: D1 ne accetta
+ * cinque, SQLite cinquecento, e il SQLite di Node non lascia cambiare il
+ * limite. Le stringhe fra apici non contano.
+ */
+function terminiComposti(sql: string): number {
+  const livelli = [0]
+  let massimo = 0
+  for (const [t] of sql.matchAll(/'(?:[^']|'')*'|\(|\)|\b(?:UNION|INTERSECT|EXCEPT)\b/gi)) {
+    if (t.startsWith("'")) continue
+    if (t === '(') livelli.push(0)
+    else if (t === ')') livelli.pop()
+    else massimo = Math.max(massimo, (livelli[livelli.length - 1] += 1))
+  }
+  return massimo + 1
+}
+
 function legge(sql: string): boolean {
   return /^\s*(select|with)\b/i.test(sql) || /\breturning\b/i.test(sql)
 }
@@ -117,6 +135,9 @@ export class ProvaD1 {
   }
 
   prepare(sql: string): Istruzione {
+    // Come D1: al massimo cinque termini in un SELECT composto. In produzione l'errore e' "too many terms".
+    const termini = terminiComposti(sql)
+    if (termini > 5) throw new Error(`too many terms in compound SELECT: ${termini}, D1 ne accetta 5`)
     return new Istruzione(this.sqlite, sql)
   }
 

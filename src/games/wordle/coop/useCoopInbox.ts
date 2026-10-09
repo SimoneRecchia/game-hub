@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CoopInvite } from '@shared/types'
 import { api } from '@/lib/api'
+import { dimentica } from '@/lib/dati'
 import { haptic } from '@/lib/haptics'
 import { usePresenza } from '@/lib/presenza'
 
@@ -35,6 +36,7 @@ export function useCoopInbox(attivo: boolean) {
       const { roomId } = await api<{ roomId: string }>(`/coop/invite/${inviteId}/accept`, {
         method: 'POST',
       })
+      dimentica('/oggi')
       setRisposti((prima) => new Set(prima).add(inviteId))
       aggiorna()
       return roomId
