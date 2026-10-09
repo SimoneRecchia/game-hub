@@ -56,6 +56,7 @@
  *   /blackjack/tavolo/:id               un tavolo, fino a cinque giocatori
  *   /roulette                           la sala della roulette: un tavolo nuovo, o quello di un amico
  *   /roulette/tavolo/:id                un tavolo, fino a sei giocatori
+ *   /superenalotto                      la schedina, le schede giocate e l'estrazione in diretta
  *   /battaglia-navale                   la sala: contro il computer, o con un amico
  *   /battaglia-navale/partita/:id       una partita
  *   /battaglia-navale/invito/:codice    un invito arrivato con un link
@@ -139,6 +140,7 @@ export const ROTTE = {
   tavoloBJ: (id: string) => `/blackjack/tavolo/${id}`,
   roulette: '/roulette',
   tavoloRL: (id: string) => `/roulette/tavolo/${id}`,
+  superenalotto: '/superenalotto',
   /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero. */
   classifica: (chiave?: ChiaveClassifica) =>
     !chiave

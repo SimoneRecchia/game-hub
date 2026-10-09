@@ -26,6 +26,7 @@ import { slotRoutes } from './routes/slot'
 import { fortunaRoutes } from './routes/fortuna'
 import { blackjackRoutes } from './routes/blackjack'
 import { rouletteRoutes } from './routes/roulette'
+import { superenalottoRoutes } from './routes/superenalotto'
 import { amiciRoutes } from './routes/amici'
 import { lupusRoutes } from './routes/lupus'
 import { scarabocchiRoutes } from './routes/scarabocchi'
@@ -85,6 +86,7 @@ export function createApp() {
   app.route('/fortuna', fortunaRoutes)
   app.route('/blackjack', blackjackRoutes)
   app.route('/roulette', rouletteRoutes)
+  app.route('/superenalotto', superenalottoRoutes)
   app.route('/amici', amiciRoutes)
   app.route('/lupus', lupusRoutes)
   app.route('/scarabocchi', scarabocchiRoutes)

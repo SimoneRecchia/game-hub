@@ -1,0 +1,491 @@
+/*
+ * La diretta dell'estrazione: uno studio televisivo al buio, con i fasci di
+ * luce che girano dietro l'urna, e sopra la tela del 3D le scritte. Scura in
+ * tutti e due i temi, come le sale della Fortuna.
+ */
+
+.se-diretta {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(60% 45% at 50% 42%, rgb(64 120 255 / 0.32), transparent 70%),
+    radial-gradient(120% 80% at 50% 110%, rgb(255 190 80 / 0.16), transparent 60%),
+    linear-gradient(180deg, #050a1f, #0a1840 55%, #050a1f);
+  animation: se-diretta-entra 0.5s var(--ease-out) both;
+  font-family: var(--font-rounded);
+}
+
+@keyframes se-diretta-entra {
+  from {
+    opacity: 0;
+  }
+}
+
+/* I fasci dello studio: due coni di luce che girano piano, in una cornice loro perche' non allarghino la pagina. */
+.se-diretta__fasci {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.se-diretta__fasci::before,
+.se-diretta__fasci::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -30%;
+  width: 160vmax;
+  height: 160vmax;
+  margin-left: -80vmax;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgb(140 180 255 / 0.07) 0 8deg, transparent 8deg 30deg);
+  animation: se-fasci 40s linear infinite;
+}
+
+.se-diretta__fasci::after {
+  animation-direction: reverse;
+  animation-duration: 64s;
+  opacity: 0.6;
+}
+
+@keyframes se-fasci {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.se-diretta__tela {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Senza WebGL: un'urna disegnata, ferma. Le palline si leggono comunque sotto. */
+.se-diretta__urna2d {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: min(60vw, 46vh);
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, rgb(255 255 255 / 0.5), transparent 25%),
+    radial-gradient(circle, rgb(160 200 255 / 0.12), rgb(160 200 255 / 0.3));
+  box-shadow:
+    inset 0 0 40px rgb(160 200 255 / 0.4),
+    0 0 0 3px rgb(242 196 92 / 0.7);
+}
+
+.se-diretta__testa {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px 8px;
+}
+
+.se-diretta__chiudi {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.se-diretta__marchio {
+  flex: 1;
+  font-size: 20px;
+  font-weight: 700;
+  font-style: italic;
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 12px rgb(60 120 255 / 0.8);
+}
+
+.se-diretta__marchio b {
+  color: #ffd166;
+  font-weight: 900;
+}
+
+.se-diretta__bollino {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #e5383b;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 0 0 18px rgb(229 56 59 / 0.6);
+}
+
+.se-diretta__bollino::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  animation: se-lampeggia 1.2s ease-in-out infinite;
+}
+
+.se-diretta__bollino.is-replica {
+  background: rgb(255 255 255 / 0.16);
+  box-shadow: none;
+}
+
+.se-diretta__bollino.is-replica::before {
+  display: none;
+}
+
+@keyframes se-lampeggia {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.se-diretta__centro {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.se-diretta__centro > * {
+  pointer-events: auto;
+}
+
+.se-diretta__attesa,
+.se-diretta__titolo {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  align-self: start;
+  margin-top: 8vh;
+  text-align: center;
+  text-shadow: 0 2px 14px rgb(0 0 0 / 0.7);
+}
+
+.se-diretta__attesa span,
+.se-diretta__titolo span {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 0.75);
+}
+
+.se-diretta__attesa strong {
+  font-size: clamp(26px, 7vw, 40px);
+  font-weight: 900;
+}
+
+/* Il titolo dell'inizio: arriva grande, con la luce che ci passa sopra, e se ne va. */
+.se-diretta__titolo strong {
+  font-size: clamp(32px, 10vw, 64px);
+  font-weight: 900;
+  line-height: 1;
+  text-transform: capitalize;
+  background: linear-gradient(100deg, #ffd166 0 40%, #fff 50%, #ffd166 60% 100%) 0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: se-luce 2.2s ease-in-out 0.3s both;
+}
+
+.se-diretta__titolo {
+  animation: se-titolo 4.5s ease both;
+}
+
+@keyframes se-titolo {
+  0% {
+    opacity: 0;
+    transform: scale(1.4);
+    filter: blur(8px);
+  }
+  15%,
+  80% {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes se-luce {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+.se-diretta__prossima {
+  align-self: start;
+  margin: 8vh 0 0;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgb(5 10 31 / 0.55);
+  font-size: 17px;
+  font-weight: 800;
+  backdrop-filter: blur(6px);
+  animation: se-sale 0.4s var(--ease-spring) both;
+}
+
+/* L'annuncio di una pallina: arriva dall'alto, grande, con l'onda dietro. */
+.se-diretta__annuncio {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  align-self: start;
+  margin-top: 4vh;
+  --pallina-lato: clamp(96px, 30vw, 150px);
+  animation: se-annuncio 2.6s var(--ease-out) both;
+}
+
+.se-diretta__annuncio::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 60%;
+  width: calc(var(--pallina-lato) * 1.2);
+  aspect-ratio: 1;
+  margin-left: calc(var(--pallina-lato) * -0.6);
+  margin-top: calc(var(--pallina-lato) * -0.6);
+  border-radius: 50%;
+  border: 3px solid rgb(255 209 102 / 0.8);
+  animation: se-onda 1.1s ease-out 0.15s both;
+  pointer-events: none;
+}
+
+@keyframes se-annuncio {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.6);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  20%,
+  85% {
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92);
+  }
+}
+
+@keyframes se-onda {
+  from {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@keyframes se-sale {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.se-diretta__ordinale {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #ffd166;
+  text-shadow: 0 2px 10px rgb(0 0 0 / 0.6);
+}
+
+.se-diretta__tuo {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe08a, #f2b630);
+  color: #3a2600;
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: 0 0 24px rgb(255 209 102 / 0.7);
+  animation: se-sale 0.4s var(--ease-spring) 0.35s both;
+}
+
+.se-diretta__riepilogo {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  align-self: start;
+  margin-top: 3vh;
+  padding: 18px 20px 20px;
+  border-radius: 26px;
+  background: rgb(5 10 31 / 0.66);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 209 102 / 0.35),
+    0 20px 60px rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(12px);
+  text-align: center;
+  animation: se-sale 0.6s var(--ease-spring) both;
+  --pallina-lato: clamp(48px, 13vw, 64px);
+}
+
+.se-diretta__combinazione {
+  display: flex;
+  gap: 10px;
+}
+
+.se-diretta__esito {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.se-diretta__premio {
+  margin: 0;
+  color: #ffd166;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.se-diretta__fine {
+  min-height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffe08a, #f2b630);
+  color: #3a2600;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.se-diretta__piede {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 10px;
+  padding: 10px 16px calc(env(safe-area-inset-bottom) + 14px);
+  background: linear-gradient(180deg, transparent, rgb(5 10 31 / 0.85) 40%);
+}
+
+.se-diretta__estratti {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  --pallina-lato: 46px;
+}
+
+.se-diretta__posto {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.06);
+  box-shadow: inset 0 0 0 2px rgb(255 209 102 / 0.35);
+}
+
+.se-diretta__posto .se-pallina {
+  animation: se-arriva 0.5s var(--ease-spring) both;
+}
+
+@keyframes se-arriva {
+  from {
+    transform: translateX(40px) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.se-diretta__vuoto {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.se-diretta__mie {
+  display: grid;
+  gap: 6px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  width: min(100%, 360px);
+}
+
+.se-diretta__scheda {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 0.08);
+  transition: background 0.3s ease;
+}
+
+.se-diretta__scheda.is-vince {
+  background: rgb(255 209 102 / 0.2);
+  box-shadow: inset 0 0 0 1px rgb(255 209 102 / 0.6);
+}
+
+.se-diretta__numero {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 0.1);
+  font-size: 16px;
+  font-weight: 800;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease,
+    transform 0.3s var(--ease-spring);
+}
+
+.se-diretta__numero.is-preso {
+  background: #ffd166;
+  color: #3a2600;
+  transform: scale(1.08);
+}
+
+.se-diretta__conto {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 800;
+  color: rgb(255 255 255 / 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .se-diretta__fasci::before,
+  .se-diretta__fasci::after,
+  .se-diretta__titolo,
+  .se-diretta__annuncio {
+    animation: none;
+  }
+}

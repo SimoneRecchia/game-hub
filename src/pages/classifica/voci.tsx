@@ -8,6 +8,7 @@ import { NOME_BLACKJACK } from '@shared/blackjack'
 import { NOME_ROULETTE } from '@shared/roulette'
 import { NOME_CRAZY_TIME, conSegno } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
+import { NOME_SUPERENALOTTO } from '@shared/superenalotto'
 import type {
   AnagrammiLeaderboard,
   CatenaLeaderboard,
@@ -92,6 +93,7 @@ export const GIOCHI_FORTUNA: ReadonlyArray<[GiocoFortuna, string]> = [
   ['slot', NOME_SLOT],
   ['blackjack', NOME_BLACKJACK],
   ['roulette', NOME_ROULETTE],
+  ['superenalotto', NOME_SUPERENALOTTO],
 ]
 
 /** I giochi, nell'ordine in cui si mostrano. */
@@ -174,7 +176,13 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
               : `${partite(r.partite)} · ${giochi} ${giochi === 1 ? 'gioco' : 'giochi'}`,
           breve: partite(r.partite),
           composizione,
-          fortuna: { ruota: r.ruota, slot: r.slot, blackjack: r.blackjack, roulette: r.roulette },
+          fortuna: {
+            ruota: r.ruota,
+            slot: r.slot,
+            blackjack: r.blackjack,
+            roulette: r.roulette,
+            superenalotto: r.superenalotto,
+          },
           segni:
             r.assist > 0 ? (
               <span className="cl-segno" title={`${r.assist} punti in compagnia`}>
