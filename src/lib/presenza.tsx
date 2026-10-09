@@ -109,17 +109,23 @@ export function PresenzaProvider({ children }: { children: ReactNode }) {
   const [dati, setDati] = useState<PresenzaRisposta | null>(null)
   const attivitaRef = useRef(attivita)
   const inCorso = useRef(false)
+  /** L'ultima risposta, in testo: quasi sempre e' uguale alla nuova, e allora l'app non si ridisegna. */
+  const ultima = useRef('')
 
   const giro = useCallback(async () => {
     if (inCorso.current || document.visibilityState !== 'visible') return
     inCorso.current = true
     try {
-      setDati(
-        await api<PresenzaRisposta>('/presenza', {
-          method: 'POST',
-          body: { attivita: attivitaRef.current },
-        }),
-      )
+      const nuova = await api<PresenzaRisposta>('/presenza', {
+        method: 'POST',
+        body: { attivita: attivitaRef.current },
+      })
+      // Ogni otto secondi un oggetto nuovo ridisegnava gli avvisi e le schermate che leggono la presenza.
+      const testo = JSON.stringify(nuova)
+      if (testo !== ultima.current) {
+        ultima.current = testo
+        setDati(nuova)
+      }
     } catch {
       /* il giro resta silenzioso: si riprova al prossimo */
     } finally {

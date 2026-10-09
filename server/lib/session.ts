@@ -45,19 +45,25 @@ export async function issueSession(c: Context<AppEnv>, playerId: string): Promis
   const now = new Date()
   const expires = new Date(now.getTime() + TTL_MS)
 
-  await c.env.DB.prepare(
-    `INSERT INTO sessions (token_hash, player_id, created_at, expires_at, last_used_at, user_agent)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-  )
-    .bind(
-      tokenHash,
-      playerId,
-      now.toISOString(),
-      expires.toISOString(),
-      now.toISOString(),
-      c.req.header('user-agent')?.slice(0, 200) ?? null,
-    )
-    .run()
+  const db = c.env.DB
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO sessions (token_hash, player_id, created_at, expires_at, last_used_at, user_agent)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+      )
+      .bind(
+        tokenHash,
+        playerId,
+        now.toISOString(),
+        expires.toISOString(),
+        now.toISOString(),
+        c.req.header('user-agent')?.slice(0, 200) ?? null,
+      ),
+    // Le sessioni scadute di tutti: altrimenti se ne andrebbero solo presentandole. Entrare e' raro, e la
+    // pulizia viaggia con la sessione nuova.
+    db.prepare('DELETE FROM sessions WHERE expires_at < ?').bind(now.toISOString()),
+  ])
 
   setCookie(c, COOKIE_NAME, token, cookieOptions(c))
 }
