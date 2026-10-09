@@ -1,8 +1,9 @@
 /*
  * La cartina muta: un atlante di scuola dentro una scheda. Il mare e' il fondo
- * del mondo, i paesi stanno sopra con i confini bianchi; fuori dalla zona della
- * partita le terre si spengono, ma restano, perché senza non si capirebbe dove
- * si e'. I mari da toccare sono tracciati trasparenti sotto le terre; fiumi e
+ * del mondo, con il reticolo dei meridiani; i paesi stanno sopra, ognuno nella
+ * sua tinta, con i confini scuri e la riva lungo le coste. Fuori dalla zona
+ * della partita le terre si spengono, ma restano, perché senza non si
+ * capirebbe dove si e'. I mari da toccare sono tracciati trasparenti sotto le terre; fiumi e
  * laghi stanno sopra, e i pallini di capitali e città sopra tutto.
  *
  * Gli spessori non crescono con lo zoom (`vector-effect: non-scaling-stroke`):
@@ -53,15 +54,57 @@
 
 /* ─────────────────────────────  Le terre  ───────────────────────────── */
 
-.cartina__paese {
-  fill: var(--carta-terra);
-  stroke: var(--carta-confine);
-  stroke-width: 0.9px;
+.cartina__reticolo {
+  fill: none;
+  stroke: var(--carta-reticolo);
+  stroke-width: 0.7px;
+}
+
+/*
+ * La riva: le terre ancora una volta, sotto i paesi, con un tratto largo
+ * d'acqua piu' scura. Ne resta fuori la meta', un filo che segna le coste.
+ */
+.cartina__riva {
+  fill: none;
+  stroke: var(--carta-riva);
+  stroke-width: 3px;
   stroke-linejoin: round;
-  paint-order: stroke;
+}
+
+/*
+ * Ogni paese ha la sua tinta (`--terra`), e gli stati ci mescolano il loro
+ * colore. Il confine e' un filo intero: con `paint-order: stroke` il paese
+ * disegnato dopo ne copriva meta', e sul telefono restava mezzo pixel bianco.
+ */
+.cartina__paese {
+  --terra: var(--carta-terra);
+  fill: var(--terra);
+  stroke: var(--carta-confine);
+  stroke-width: 0.8px;
+  stroke-linejoin: round;
   transition:
     fill var(--dur-fast) var(--ease-out),
     stroke var(--dur-fast) var(--ease-out);
+}
+
+.cartina__paese.tinta-0 {
+  --terra: var(--carta-tinta-0);
+}
+
+.cartina__paese.tinta-1 {
+  --terra: var(--carta-tinta-1);
+}
+
+.cartina__paese.tinta-2 {
+  --terra: var(--carta-tinta-2);
+}
+
+.cartina__paese.tinta-3 {
+  --terra: var(--carta-tinta-3);
+}
+
+.cartina__paese.tinta-4 {
+  --terra: var(--carta-tinta-4);
 }
 
 .cartina__paese.is-fuori {
@@ -75,7 +118,7 @@
 
 @media (hover: hover) {
   .cartina--paesi.is-attiva .cartina__paese:not(.is-bloccato):hover {
-    fill: var(--carta-terra-sopra);
+    fill: color-mix(in srgb, var(--brand) 16%, var(--terra));
   }
 
   .cartina--acque.is-attiva .cartina__acqua:not(.is-bloccato):hover {
@@ -84,11 +127,11 @@
 }
 
 .cartina__paese.is-mostra {
-  fill: color-mix(in srgb, var(--brand) 38%, var(--carta-terra));
+  fill: color-mix(in srgb, var(--brand) 38%, var(--terra));
 }
 
 .cartina__paese.is-altro {
-  fill: color-mix(in srgb, var(--brand) 22%, var(--carta-terra));
+  fill: color-mix(in srgb, var(--brand) 26%, var(--terra));
 }
 
 .cartina__paese.is-scelta {

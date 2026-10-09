@@ -1,3 +1,4 @@
+import { NICKNAME_OGNI_GIORNI } from '../shared/config'
 import type { Player } from '../shared/types'
 
 /** Binding e variabili disponibili nelle Pages Functions (vedi wrangler.toml). */
@@ -72,6 +73,15 @@ export interface PlayerRow {
   email: string | null
   email_lower: string | null
   email_verified_at: string | null
+  /** L'ultimo cambio di nickname, dalla 0046: NULL per chi non l'ha mai cambiato. */
+  nickname_changed_at?: string | null
+}
+
+/** Da quando si puo' cambiare di nuovo il nickname: null se si puo' adesso. */
+export function nicknameCambiabileDal(row: Pick<PlayerRow, 'nickname_changed_at'>, adesso = Date.now()): string | null {
+  if (!row.nickname_changed_at) return null
+  const dal = new Date(row.nickname_changed_at).getTime() + NICKNAME_OGNI_GIORNI * 86_400_000
+  return dal > adesso ? new Date(dal).toISOString() : null
 }
 
 export function toPlayer(row: PlayerRow): Player {
@@ -83,5 +93,6 @@ export function toPlayer(row: PlayerRow): Player {
     createdAt: row.created_at,
     email: row.email,
     emailVerified: row.email_verified_at !== null,
+    nicknameCambiabileDal: nicknameCambiabileDal(row),
   }
 }

@@ -159,3 +159,38 @@ export function loginMessage(nickname: string, code: string, minuti: number): Om
     ),
   }
 }
+
+/**
+ * Il codice per cambiare il nickname, con il nickname di adesso e quello nuovo:
+ * chi lo riceve senza averlo chiesto capisce subito che cosa sta succedendo.
+ * Nickname e codice sono gia' controllati (lettere, numeri, punto, trattino e
+ * underscore), quindi nell'HTML non serve altro.
+ */
+export function nicknameMessage(
+  nickname: string,
+  nuovo: string,
+  code: string,
+  minuti: number,
+): Omit<EmailMessage, 'to'> {
+  return {
+    subject: `${code} è il codice per cambiare il nickname su Game Hub`,
+    text: [
+      `Ciao ${nickname},`,
+      `per cambiare il nickname in «${nuovo}» il codice è:`,
+      code,
+      `Il codice vale ${minuti} minuti. Se non l’hai chiesto tu, ignora questo messaggio:` +
+        ' senza il codice il nickname resta quello di adesso.',
+      'giochi.simonerecchia.com',
+    ].join('\n\n'),
+    html: layout(
+      `Ciao ${nickname}, cambi il nickname?`,
+      `<p style="margin:0 0 8px;font-size:15px;color:#3c3c43;line-height:1.5">Il nickname nuovo sarà:</p>
+      <p style="margin:0 0 24px;font-size:26px;font-weight:700;letter-spacing:0.5px">${nuovo}</p>
+      ${blocoCodice(code)}
+      <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
+        Il codice vale <strong>${minuti} minuti</strong>. Se non l’hai chiesto tu, ignora questo
+        messaggio: senza il codice il nickname resta quello di adesso.
+      </p>`,
+    ),
+  }
+}

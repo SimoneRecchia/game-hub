@@ -20,7 +20,7 @@
 
 import { api } from '@/lib/api'
 import { URL_ACQUE, URL_CONFINI, decodificaLinea, type GeometrieQuiz } from '@shared/quiz-dati'
-import { forme, partiPrincipali, poligoniGeoJson, type Poligono, type Topologia } from '@shared/topojson'
+import { coloriVicini, forme, partiPrincipali, poligoniGeoJson, type Poligono, type Topologia } from '@shared/topojson'
 
 export type PuntoXY = [number, number]
 
@@ -31,7 +31,12 @@ export interface Luogo {
   poligoni: Poligono[]
   /** Le parti che contano per inquadrarlo: la Francia senza la Guyana. */
   principali: Poligono[]
+  /** Il colore della carta politica, dei paesi: diverso da quello di ogni paese che confina. */
+  tinta?: number
 }
+
+/** Quanti colori ha la carta politica: `--carta-tinta-0`... in tokens.css. */
+export const TINTE_PAESI = 5
 
 export interface Tratti {
   id: string
@@ -53,14 +58,17 @@ async function scarica<T>(url: string): Promise<T> {
 /** I paesi del mondo, con l'identificativo della cartina: "n" e il codice numerico. */
 export function caricaPaesi(): Promise<Luogo[]> {
   paesi ??= scarica<Topologia>(URL_CONFINI)
-    .then((topo) =>
-      forme(topo, 'countries').map((f) => ({
+    .then((topo) => {
+      const elenco = forme(topo, 'countries')
+      const tinte = coloriVicini(elenco, TINTE_PAESI)
+      return elenco.map((f) => ({
         id: `n${f.id}`,
         nome: f.nome,
         poligoni: f.poligoni,
         principali: partiPrincipali(f.poligoni),
-      })),
-    )
+        tinta: tinte.get(f.id),
+      }))
+    })
     .catch((e) => {
       paesi = null
       throw e

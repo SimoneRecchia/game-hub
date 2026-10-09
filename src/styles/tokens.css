@@ -430,28 +430,43 @@
   --rallenty-velo: light-dark(rgba(60, 150, 220, 0.22), rgba(90, 190, 255, 0.2));
 
   /* ---- La cartina muta del quiz ----
-     Un atlante di scuola: mare azzurro chiaro, terre color carta, confini
-     bianchi. In scuro le terre restano piu' chiare del mare, altrimenti i paesi
-     sparirebbero nel buio. La scelta e' indaco come ogni selezione dell'app;
-     giusto e sbagliato sono il verde e il rosso di sempre. */
+     Un atlante di scuola: mare azzurro chiaro con il reticolo, e una carta
+     politica, cinque tinte pastello che due paesi vicini non hanno mai uguali
+     (`coloriVicini`), con i confini scuri e la riva d'acqua bassa lungo le
+     coste. Prima le terre erano tutte di un colore, con i confini bianchi, e
+     sul telefono i confini non si vedevano. In scuro le terre restano piu'
+     chiare del mare, altrimenti i paesi sparirebbero nel buio. La scelta e'
+     indaco come ogni selezione dell'app; giusto e sbagliato sono il verde e il
+     rosso di sempre: per questo fra le tinte non c'e' il lilla. */
   --carta-mare: #d4eaf5;
   --carta-mare: light-dark(#d4eaf5, #0f2536);
-  --carta-onda: rgba(255, 255, 255, 0.45);
-  --carta-onda: light-dark(rgba(255, 255, 255, 0.45), rgba(140, 200, 235, 0.07));
   --carta-terra: #f5ecd9;
   --carta-terra: light-dark(#f5ecd9, #334250);
-  --carta-terra-sopra: #ecdfc2;
-  --carta-terra-sopra: light-dark(#ecdfc2, #3e5061);
-  --carta-confine: #ffffff;
-  --carta-confine: light-dark(#ffffff, #1b2733);
+  --carta-tinta-0: #f6e8c6;
+  --carta-tinta-0: light-dark(#f6e8c6, #4a566b);
+  --carta-tinta-1: #dde8c3;
+  --carta-tinta-1: light-dark(#dde8c3, #3f5a4b);
+  --carta-tinta-2: #f7d8bd;
+  --carta-tinta-2: light-dark(#f7d8bd, #5e4c40);
+  --carta-tinta-3: #f1d5d8;
+  --carta-tinta-3: light-dark(#f1d5d8, #594861);
+  --carta-tinta-4: #eee3ad;
+  --carta-tinta-4: light-dark(#eee3ad, #58573a);
+  --carta-confine: rgba(92, 70, 44, 0.55);
+  --carta-confine: light-dark(rgba(92, 70, 44, 0.55), rgba(225, 235, 245, 0.34));
+  /* La riva, un filo d'acqua piu' scura attorno alle terre, e il reticolo dei meridiani. */
+  --carta-riva: rgba(52, 128, 178, 0.42);
+  --carta-riva: light-dark(rgba(52, 128, 178, 0.42), rgba(120, 190, 232, 0.3));
+  --carta-reticolo: rgba(52, 118, 160, 0.16);
+  --carta-reticolo: light-dark(rgba(52, 118, 160, 0.16), rgba(140, 200, 235, 0.09));
   --carta-costa: rgba(40, 90, 120, 0.35);
   --carta-costa: light-dark(rgba(40, 90, 120, 0.35), rgba(150, 205, 235, 0.25));
   /* Le terre fuori dalla zona della partita: ci sono, ma spente. */
   --carta-terra-fuori: #ece8e0;
   --carta-terra-fuori: light-dark(#ece8e0, #29333d);
-  /* Oltre il bordo del mondo, quando lo si guarda tutto da lontano. */
-  --carta-fuori: #e6edf1;
-  --carta-fuori: light-dark(#e6edf1, #0a141c);
+  /* Oltre il bordo del mondo, quando lo si guarda tutto da lontano: mare aperto, un po' piu' fondo. */
+  --carta-fuori: #c6e0ee;
+  --carta-fuori: light-dark(#c6e0ee, #0b1c2a);
   /* Fiumi e laghi: l'azzurro del mare, piu' deciso per farsi vedere sulla terra. */
   --carta-fiume: #5aa6d6;
   --carta-fiume: light-dark(#5aa6d6, #5fb0e0);
