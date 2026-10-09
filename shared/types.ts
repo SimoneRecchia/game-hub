@@ -46,6 +46,8 @@ export interface Player {
   /** null per gli account creati prima dell'introduzione dell'email. */
   email: string | null
   emailVerified: boolean
+  /** Il nickname si cambia una volta a settimana: da quando si puo' di nuovo, o null se si puo' adesso. */
+  nicknameCambiabileDal: string | null
 }
 
 /** Cosa il client deve sapere sulla configurazione, prima di disegnare la UI. */

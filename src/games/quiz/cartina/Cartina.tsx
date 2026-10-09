@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
   type PointerEvent as EventoPuntatore,
-  type WheelEvent as EventoRotella,
 } from 'react'
 import type { Riquadro as RiquadroGradi } from '@shared/quiz'
 import type { IndiceQuiz, LuogoQuiz, StratoCartina } from '@shared/quiz-domande'
@@ -220,9 +219,18 @@ export function Cartina(props: Props) {
   }, [strato, tipi, capitali, punti, puntiLaghi])
 
   const tracciatiPaesi = useMemo(
-    () => (paesi ?? []).map((l) => ({ id: l.id, d: tracciato(anelliDi(l.poligoni), p, TOLLERANZA) })),
+    () => (paesi ?? []).map((l) => ({ id: l.id, d: tracciato(anelliDi(l.poligoni), p, TOLLERANZA), tinta: l.tinta })),
     [paesi, p],
   )
+  /** Tutte le terre in un tracciato solo: la riva, il filo d'acqua bassa lungo le coste. */
+  const riva = useMemo(() => tracciatiPaesi.map((t) => t.d).join(''), [tracciatiPaesi])
+  /** Meridiani e paralleli ogni trenta gradi, come sugli atlanti: sul mare si capisce dove si e'. */
+  const reticolo = useMemo(() => {
+    const linee: string[] = []
+    for (let x = Math.ceil(p.ovest / 30) * 30; x <= p.est; x += 30) linee.push(`M${x} ${p.alto}V${p.basso}`)
+    for (const lat of [-60, -30, 0, 30, 60]) linee.push(`M${p.ovest} ${p.punto(0, lat)[1].toFixed(3)}H${p.est}`)
+    return linee.join('')
+  }, [p])
   const tracciatiAcque = useMemo(
     () => (acque ?? []).map((l) => ({ id: l.id, d: tracciato(anelliDi(l.poligoni), p, TOLLERANZA) })),
     [acque, p],
@@ -544,12 +552,75 @@ export function Cartina(props: Props) {
     if (id) onScegli(id)
   }
 
-  const rotella = (e: EventoRotella<HTMLDivElement>) => {
-    if (!v) return
-    const rett = e.currentTarget.getBoundingClientRect()
-    setAnimata(false)
-    setV(ingrandisci(v, Math.exp(-e.deltaY * 0.0016), e.clientX - rett.left, e.clientY - rett.top))
+  /**
+   * La rotella e il trackpad. Una rotella vera, o due dita che scorrono,
+   * ingrandiscono come in tutte le cartine; il pizzico del trackpad arriva come
+   * una rotella con il ctrl (Chrome, Firefox, Edge), con passi molto piu'
+   * piccoli, e per questo ha un'altra misura. Safari invece manda i suoi
+   * GestureEvent, con la scala. React ascolta la rotella come passiva e non la
+   * puo' fermare: il pizzico ingrandiva la pagina intera, e la cartina restava
+   * com'era. Per questo gli ascoltatori stanno sul nodo, senza `passive`.
+   */
+  const zoomDa = useRef<{
+    rotella: (e: WheelEvent) => void
+    gesto: (fattore: number, cx: number, cy: number) => void
+  } | null>(null)
+  zoomDa.current = {
+    rotella: (e) => {
+      const attuale = vRef.current
+      if (!attuale) return
+      const rett = contenitore.current!.getBoundingClientRect()
+      // Firefox con una rotella vera conta in righe, o in pagine.
+      const passo = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? rett.height : 1
+      const sensibilita = e.ctrlKey ? 0.01 : 0.0016
+      setAnimata(false)
+      setV(ingrandisci(attuale, Math.exp(-e.deltaY * passo * sensibilita), e.clientX - rett.left, e.clientY - rett.top))
+    },
+    gesto: (fattore, cx, cy) => {
+      const attuale = vRef.current
+      if (!attuale) return
+      const rett = contenitore.current!.getBoundingClientRect()
+      setAnimata(false)
+      setV(ingrandisci(attuale, fattore, cx - rett.left, cy - rett.top))
+    },
   }
+  useEffect(() => {
+    const nodo = contenitore.current
+    if (!nodo) return
+    let scala = 1
+    let inGesto = false
+    const rotella = (e: WheelEvent) => {
+      e.preventDefault()
+      // Durante un pizzico di Safari una rotella con il ctrl sarebbe lo stesso gesto due volte.
+      if (!(inGesto && e.ctrlKey)) zoomDa.current?.rotella(e)
+    }
+    const inizio = (e: Event) => {
+      e.preventDefault()
+      inGesto = true
+      scala = 1
+    }
+    const cambio = (e: Event) => {
+      e.preventDefault()
+      const g = e as Event & { scale: number; clientX: number; clientY: number }
+      // Sul telefono il pizzico lo seguono gia' i puntatori, due dita: il gesto di Safari lo farebbe doppio.
+      if (puntatori.current.size === 0 && scala > 0) zoomDa.current?.gesto(g.scale / scala, g.clientX, g.clientY)
+      scala = g.scale
+    }
+    const fine = (e: Event) => {
+      e.preventDefault()
+      inGesto = false
+    }
+    nodo.addEventListener('wheel', rotella, { passive: false })
+    nodo.addEventListener('gesturestart', inizio)
+    nodo.addEventListener('gesturechange', cambio)
+    nodo.addEventListener('gestureend', fine)
+    return () => {
+      nodo.removeEventListener('wheel', rotella)
+      nodo.removeEventListener('gesturestart', inizio)
+      nodo.removeEventListener('gesturechange', cambio)
+      nodo.removeEventListener('gestureend', fine)
+    }
+  }, [])
 
   const bottone = (fattore: number) => {
     if (!v) return
@@ -610,7 +681,6 @@ export function Cartina(props: Props) {
       onPointerMove={muovi}
       onPointerUp={su}
       onPointerCancel={su}
-      onWheel={rotella}
     >
       {errore ? (
         <div className="cartina__avviso">
@@ -637,6 +707,7 @@ export function Cartina(props: Props) {
             >
               <g clipPath={`url(#${idClip})`}>
                 <rect className="cartina__oceano" x={p.ovest} y={p.alto} width={p.est - p.ovest} height={p.basso - p.alto} />
+                <path className="cartina__reticolo" d={reticolo} />
                 <Strato
                   voci={tracciatiAcque}
                   classe="cartina__acqua"
@@ -645,6 +716,7 @@ export function Cartina(props: Props) {
                   accesi={perStrato('acque')}
                   toccabili={perStrato('acque')}
                 />
+                <path className="cartina__riva" d={riva} />
                 <Strato
                   voci={tracciatiPaesi}
                   classe="cartina__paese"
@@ -708,6 +780,8 @@ export function Cartina(props: Props) {
 interface Voce {
   id: string
   d: string
+  /** Il colore della carta politica, per i paesi. */
+  tinta?: number
 }
 
 /**
@@ -739,9 +813,9 @@ const Strato = memo(function Strato({
           <path
             key={l.id}
             d={l.d}
-            className={`${classe}${statoDi(l.id)}${accesi && !accesi.has(l.id) ? ' is-fuori' : ''}${
-              toccabili && !toccabili.has(l.id) ? ' is-bloccato' : ''
-            }`}
+            className={`${classe}${l.tinta !== undefined ? ` tinta-${l.tinta}` : ''}${statoDi(l.id)}${
+              accesi && !accesi.has(l.id) ? ' is-fuori' : ''
+            }${toccabili && !toccabili.has(l.id) ? ' is-bloccato' : ''}`}
             data-luogo={l.id}
             data-strato={livello}
           />
