@@ -354,8 +354,8 @@ export async function gira(db: D1Database, playerId: string, puntata: unknown): 
   const numero = today().puzzleNumber
   const [ultimo, fortuna] = await Promise.all([ultimoGiro(db, playerId, numero), saldoDi(db, playerId, numero)])
   const { classificate, saldo } = fortuna
-  if (saldo < PUNTATA_MINIMA) fail(409, 'POCHI_PUNTI', `Per girare servono almeno ${PUNTATA_MINIMA} punti di oggi.`)
-  if (!puntataValida(puntata, saldo)) fail(400, 'PUNTATA', `Si puntano da ${PUNTATA_MINIMA} a ${saldo} punti.`)
+  if (saldo < PUNTATA_MINIMA) fail(409, 'POCHI_PUNTI', 'Per girare serve almeno un punto di oggi.')
+  if (!puntataValida(puntata, saldo)) fail(400, 'PUNTATA', `Si puntano da ${PUNTATA_MINIMA} a ${saldo} ${saldo === 1 ? 'punto' : 'punti'}.`)
   if (ultimo && Date.now() - Date.parse(ultimo.created_at) < INTERVALLO_GIRI_MS) {
     fail(429, 'TROPPO_PRESTO', 'La ruota sta ancora girando.')
   }
