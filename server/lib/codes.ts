@@ -15,8 +15,8 @@ import {
 import { toBase64 } from '../../shared/base64'
 import { newId, nowIso } from './http'
 
-/** A che serve un codice: confermare l'email appena registrata, o entrare. */
-export type CodePurpose = 'verify_email' | 'login'
+/** A che serve un codice: confermare l'email appena registrata, entrare, o cambiare il nickname. */
+export type CodePurpose = 'verify_email' | 'login' | 'nickname'
 
 /**
  * Come si chiama lo scopo nel database. Il `CHECK` della 0004 ne conosce due, e
@@ -27,6 +27,8 @@ export type CodePurpose = 'verify_email' | 'login'
 const NEL_DATABASE: Record<CodePurpose, string> = {
   verify_email: 'verify_email',
   login: 'reset_password',
+  // Uno scopo suo, dalla 0046: con quello per entrare, il codice del cambio aprirebbe anche l'account.
+  nickname: 'nickname',
 }
 
 /**

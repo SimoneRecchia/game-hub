@@ -1893,8 +1893,13 @@ una parola il telefono lo dice (`/tempo`, la miccia della scena); un tempo
 passato lo applica la prima richiesta dopo, dalla scadenza (`chiudiScadute`), e
 una parola arrivata dopo trova la versione cambiata. Si scrive con la tastiera
 del gioco (`TastieraGioco`), come il Wordle: con quella del telefono aperta la
-catena non si vedrebbe. Nella finale le lettere scritte stanno fra quelle che si
-vedono e l'ultima, staccata dai tre puntini.
+catena non si vedrebbe. La parola da indovinare non ha caselle: e' un riquadro
+sempre della stessa misura (`Scrittura` in `Partita.tsx`), con le lettere che si
+vedono, tessere d'oro, e accanto la riga su cui si scrive, con il cursore. Con
+una casella per lettera, una lettera data e la casella vuota della prossima
+sembravano una parola di due. Nella finale l'ultima lettera chiude la riga
+dall'altra parte, e si scrive in mezzo. Le caselle tornano a parola trovata o
+mostrata, quando la lunghezza non e' piu' un segreto.
 
 **Il Paroliere e' il Boggle, con il dizionario dello Scarabeo.** Sedici dadi in
 una griglia di quattro (`DADI` in `shared/paroliere.ts`, con le lettere del
@@ -3046,6 +3051,30 @@ tocco cerca il paese anche attorno al dito (`elementsFromPoint` su due anelli di
 punti; fiumi, laghi e pallini con `piuVicino`): un dito e' piu' grande di Malta.
 Sotto `SUPERFICIE_MINIMA_CARTINA` un paese non si chiede.
 
+**La cartina e' una carta politica.** Cinque tinte pastello (`--carta-tinta-*`),
+e due paesi che confinano non hanno mai la stessa: i confini di world-atlas sono
+archi condivisi, quindi chi ne ha uno in comune confina, e `coloriVicini`
+(`shared/topojson.ts`) li colora con DSATUR quando la cartina arriva, in una
+ventina di millisecondi. Sui 235 paesi del mondo cinque tinte bastano sempre, e
+vengono usate lo stesso numero di volte. I confini sono un filo scuro intero:
+erano bianchi su un colore solo, disegnati con `paint-order: stroke`, e il paese
+disegnato dopo ne copriva meta': sul telefono restava mezzo pixel bianco su una
+terra quasi bianca. Sotto le terre corre la riva, le terre ancora una volta con
+un tratto largo d'acqua piu' scura (`cartina__riva`, un tracciato solo), e sul
+mare il reticolo ogni trenta gradi. Fra le tinte non c'e' il lilla: il colore di
+una scelta e' l'indaco, e gli stati (`is-mostra`, `is-altro`, il passaggio del
+mouse) lo mescolano alla tinta del paese (`--terra`).
+
+**Il pizzico del trackpad e' una rotella con il ctrl.** Chrome, Firefox ed Edge
+lo mandano cosi', a passi piccoli; Safari con i suoi GestureEvent, con la scala.
+React ascolta la rotella come passiva, e una rotella passiva non si ferma: il
+pizzico ingrandiva la pagina intera, e la cartina restava com'era. Gli
+ascoltatori stanno sul nodo, con `passive: false` (`zoomDa` in `Cartina.tsx`); il
+pizzico ha una misura sua (`0.01` contro `0.0016` di una rotella), e durante un
+gesto di Safari la rotella con il ctrl non conta, perché sarebbe lo stesso gesto
+due volte. Sul telefono il gesto di Safari non si segue: il pizzico lo seguono
+gia' i due puntatori.
+
 **La vista della cartina resta dove la lascia chi gioca.** La cartina e' una
 sola per tutta la partita, e da una domanda all'altra non salta sul continente
 della risposta: sarebbe un aiuto. La prima vista e' la zona della partita; a
@@ -3327,10 +3356,25 @@ codice scrive il nickname, perché chi entra con l'email puo' non ricordarlo, ed
 entrare con il codice conferma anche l'email.
 
 **Il codice per entrare nel database si chiama `reset_password`.** Il `CHECK`
-della `0004` conosce due scopi, e cambiarlo vorrebbe dire rifare la tabella dei
-codici: il codice per entrare ha preso il posto di quello per la password nuova,
-che apriva l'account allo stesso modo, con l'email (`NEL_DATABASE` in
-`server/lib/codes.ts`).
+della `0004` conosceva due scopi: il codice per entrare ha preso il posto di
+quello per la password nuova, che apriva l'account allo stesso modo, con l'email
+(`NEL_DATABASE` in `server/lib/codes.ts`). La `0046` ha rifatto la tabella per
+il terzo, `nickname`, e il nome di prima e' rimasto: cambiarlo avrebbe voluto
+copiare i codici in giro durante il deploy.
+
+**Il nickname si cambia dal profilo, una volta a settimana, con un codice
+all'email** (`/auth/nickname/code`, poi `/auth/nickname`). Il codice ha lo scopo
+suo, perché con quello per entrare il cambio aprirebbe anche l'account, e i due
+codici si consumerebbero a vicenda. Le domande — il nome e' cambiato, e' libero,
+e' passata la settimana (`NICKNAME_OGNI_GIORNI`) — si fanno prima di mandare il
+codice e di nuovo quando torna, e l'`UPDATE` guarda la settimana nella sua
+condizione, cosi' due richieste insieme non lo cambiano due volte; l'unicita'
+la tiene l'indice di `nickname_lower`. Qui le risposte dicono che cosa non va:
+chi chiede e' gia' dentro. Restano l'id, la sessione e il colore dell'avatar,
+quindi le classifiche e le partite seguono da sole; cambiano gli indirizzi dei
+profili degli amici (`/amici/:nickname`). Il giocatore porta da quando si
+potra' cambiare di nuovo (`nicknameCambiabileDal`), e il foglio del profilo lo
+dice invece di chiedere il nome.
 
 **Senza la posta in produzione non si entra.** `emailVerificationEnabled` vuole
 `EMAIL_VERIFICATION = "on"` e la chiave di Resend; senza, la registrazione crea

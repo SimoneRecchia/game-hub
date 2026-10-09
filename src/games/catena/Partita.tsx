@@ -664,60 +664,86 @@ function Riga({
     )
   }
   const tipo = voce.tipo
-  // Una parola che si vede ha tutte le sue caselle. Quella da indovinare no: le lettere che si vedono, quelle
-  // scritte, e la casella dove va la prossima; nella finale, staccata, l'ultima. Quanto e' lunga non si sa.
-  const caselle: Casella[] = voce.parola
-    ? [...normalizzaCatena(voce.parola).toUpperCase()].map((l) => ({ l, tipo: 'parola' }))
-    : [
-        ...[...voce.lettere].map((l): Casella => ({ l, tipo: 'data' })),
-        ...[...scritte.toUpperCase()].map((l): Casella => ({ l, tipo: 'scritta' })),
-        ...(attiva && voce.lettere.length + scritte.length + (voce.ultima ? 1 : 0) < MASSIMO_LETTERE
-          ? [{ l: '', tipo: 'cursore' } as Casella]
-          : []),
-        ...(voce.ultima ? [{ l: '', tipo: 'salto' } as Casella, { l: voce.ultima, tipo: 'ultima' } as Casella] : []),
-      ]
-  // Le caselle restano della stessa misura finché la parola ci sta: crescendo non si stringe a ogni tasto.
-  const misura = Math.max(caselle.length, 9)
+  const classi =
+    `${attiva ? ' is-attiva' : ''}${esito && attiva ? ` esito-${esito}` : ''}` +
+    `${fase === 'attesa' && attiva ? ' is-attesa' : ''}${fase === 'busta' && attiva ? ' is-busta' : ''}`
+  if (!voce.parola) return <Scrittura voce={voce} attiva={attiva} classi={classi} scritte={scritte} />
+  // Una parola trovata, o mostrata, ha tutte le sue caselle, che si girano una dopo l'altra.
+  const lettere = [...normalizzaCatena(voce.parola).toUpperCase()]
+  // Le caselle restano della stessa misura finché la parola ci sta.
+  const misura = Math.max(lettere.length, 9)
   return (
     <div
-      className={
-        `cat-caselle is-${tipo}${attiva ? ' is-attiva' : ''}${esito && attiva ? ` esito-${esito}` : ''}` +
-        `${fase === 'attesa' && attiva ? ' is-attesa' : ''}${fase === 'busta' && attiva ? ' is-busta' : ''}`
-      }
+      className={`cat-caselle is-${tipo}${classi}`}
       style={{ '--n': misura } as CSSProperties}
       role="img"
-      aria-label={
-        voce.parola
-          ? voce.parola
-          : `Comincia con ${voce.lettere}${voce.ultima ? `, finisce con ${voce.ultima}` : ''}` +
-            `${scritte ? `; hai scritto ${voce.lettere}${scritte.toUpperCase()}` : ''}`
-      }
+      aria-label={voce.parola}
     >
-      {caselle.map((c, i) => {
-        const data = c.tipo === 'data' || c.tipo === 'ultima'
-        return (
-          <span
-            // Una lettera che si scopre e' una casella nuova: rimontata, si gira.
-            key={`${i}-${c.tipo}`}
-            className={
-              `cat-casella${data ? ' is-data' : ''}${c.tipo === 'scritta' ? ' is-scritta' : ''}` +
-              `${c.tipo === 'cursore' ? ' is-vuota is-cursore' : ''}${c.tipo === 'salto' ? ' is-salto' : ''}`
-            }
-            style={{ '--k': i } as CSSProperties}
-            aria-hidden="true"
-          >
-            {c.tipo === 'salto' ? '…' : c.l}
-          </span>
-        )
-      })}
+      {lettere.map((l, i) => (
+        <span key={i} className="cat-casella" style={{ '--k': i } as CSSProperties} aria-hidden="true">
+          {l}
+        </span>
+      ))}
     </div>
   )
 }
 
-/** Una casella di una parola: una lettera vista, scritta, la prossima, o il salto prima dell'ultima della finale. */
-interface Casella {
-  l: string
-  tipo: 'parola' | 'data' | 'scritta' | 'cursore' | 'salto' | 'ultima'
+/**
+ * La parola da indovinare: un riquadro con le lettere che si vedono, d'oro, e
+ * accanto la riga su cui si scrive, con il cursore. La riga e' larga quanto il
+ * riquadro e non dice quanto e' lunga la parola: con una casella per lettera,
+ * una lettera data e la casella vuota sembravano una parola di due. Nella
+ * finale l'ultima lettera chiude la riga dall'altra parte, e si scrive in mezzo.
+ */
+function Scrittura({
+  voce,
+  attiva,
+  classi,
+  scritte,
+}: {
+  voce: VoceCatena
+  attiva: boolean
+  classi: string
+  scritte: string
+}) {
+  const date = voce.lettere.length + (voce.ultima ? 1 : 0)
+  const scritto = scritte.toUpperCase()
+  return (
+    <div
+      className={`cat-scrivi${classi}`}
+      // Le lettere si stringono solo quando non ci starebbero piu': fino a otto restano grandi.
+      style={{ '--n': Math.max(scritto.length, 8), '--date': date } as CSSProperties}
+      role="img"
+      aria-label={
+        `Comincia con ${voce.lettere}${voce.ultima ? `, finisce con ${voce.ultima}` : ''}` +
+        `${scritte ? `; hai scritto ${voce.lettere}${scritto}${voce.ultima ?? ''}` : ''}`
+      }
+    >
+      <span className="cat-scrivi__date" aria-hidden="true">
+        {[...voce.lettere].map((l, i) => (
+          // Una lettera che si scopre e' una tessera nuova: montata, si gira.
+          <span key={i} className="cat-scrivi__data">
+            {l}
+          </span>
+        ))}
+      </span>
+      <span className="cat-scrivi__riga" aria-hidden="true">
+        {[...scritto].map((l, i) => (
+          <span key={i} className="cat-scrivi__lettera" style={{ '--k': i } as CSSProperties}>
+            {l}
+          </span>
+        ))}
+        {attiva && voce.lettere.length + scritto.length + (voce.ultima ? 1 : 0) < MASSIMO_LETTERE && (
+          <span className="cat-scrivi__cursore" />
+        )}
+      </span>
+      {voce.ultima && (
+        <span className="cat-scrivi__data is-ultima" aria-hidden="true">
+          {voce.ultima}
+        </span>
+      )}
+    </div>
+  )
 }
 
 /**

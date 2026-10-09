@@ -1,15 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
+import { CODE_LENGTH, CODE_TTL_MINUTES, NICKNAME_MAX, NICKNAME_OGNI_GIORNI, NICKNAME_PATTERN } from '@shared/config'
+import type { CodiceMandato, Player } from '@shared/types'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
+import { CampoCodice } from '@/components/CampoCodice'
 import { Elenco, Riga, Sezione } from '@/components/Elementi'
+import { Field } from '@/components/Field'
 import { IconBook, IconLogout, IconMail, IconPeople, IconPerson } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
+import { useToast } from '@/components/Toast'
 import { useAmiciOnline } from '@/games/amici/amici'
+import { ApiFetchError, api } from '@/lib/api'
 import { useAuth, usePlayer } from '@/lib/auth'
+import { haptic } from '@/lib/haptics'
 import { formatGameDate } from '@/lib/format'
 import { DOVE } from '@/lib/presenza'
 import { useSuoni } from '@/lib/suoni'
@@ -43,6 +50,7 @@ export default function Profilo() {
   const da = (state as { da?: string } | null)?.da ?? 'Giornaliere'
   const [uscita, setUscita] = useState(false)
   const [fonti, setFonti] = useState(false)
+  const [nickname, setNickname] = useState(false)
   const [busy, setBusy] = useState(false)
 
   return (
@@ -100,7 +108,12 @@ export default function Profilo() {
 
       <Sezione titolo="Account">
         <Elenco>
-          <Riga icona={<IconPerson size={18} />} titolo="Nickname" valore={player.nickname} />
+          <Riga
+            icona={<IconPerson size={18} />}
+            titolo="Nickname"
+            valore={player.nickname}
+            onClick={() => setNickname(true)}
+          />
           {player.email && (
             <Riga
               icona={<IconMail size={18} />}
@@ -118,6 +131,10 @@ export default function Profilo() {
           <Riga icona={<IconBook size={18} />} titolo="Fonti e licenze" onClick={() => setFonti(true)} />
         </Elenco>
       </Sezione>
+
+      <Sheet open={nickname} onClose={() => setNickname(false)} title="Cambia il nickname">
+        {nickname && <CambioNickname onFatto={() => setNickname(false)} onAnnulla={() => setNickname(false)} />}
+      </Sheet>
 
       <Sheet open={fonti} onClose={() => setFonti(false)} title="Fonti e licenze">
         <Fonti />
@@ -147,6 +164,199 @@ export default function Profilo() {
         </Button>
       </Sheet>
     </Pagina>
+  )
+}
+
+/* ─────────────────────────  Il nickname  ───────────────────────── */
+
+/** "16 ottobre": da quando si potra' cambiare di nuovo. */
+const giornoDi = (iso: string) => new Date(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'long' })
+
+/**
+ * Il cambio del nickname, in due passi come l'accesso: il nome nuovo, e il
+ * codice che arriva all'email dell'account. Una volta a settimana: prima della
+ * settimana il foglio dice soltanto da quando.
+ */
+function CambioNickname({ onFatto, onAnnulla }: { onFatto: () => void; onAnnulla: () => void }) {
+  const player = usePlayer()
+  const { apply } = useAuth()
+  const toast = useToast()
+  const [nuovo, setNuovo] = useState('')
+  const [inviato, setInviato] = useState(false)
+  const [codice, setCodice] = useState('')
+  const [codiceDiProva, setCodiceDiProva] = useState<string | null>(null)
+  const [attesa, setAttesa] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const [errore, setErrore] = useState<{ testo: string; campo: 'nickname' | 'codice' | null } | null>(null)
+  const campoCodice = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (attesa <= 0) return
+    const t = window.setTimeout(() => setAttesa((a) => a - 1), 1000)
+    return () => window.clearTimeout(t)
+  }, [attesa])
+  useEffect(() => {
+    if (inviato) campoCodice.current?.focus()
+  }, [inviato])
+
+  if (player.nicknameCambiabileDal) {
+    return (
+      <>
+        <p className="profilo__testo">
+          Il nickname si cambia una volta a settimana: potrai cambiarlo di nuovo dal{' '}
+          <strong>{giornoDi(player.nicknameCambiabileDal)}</strong>.
+        </p>
+        <Button variant="plain" size="lg" fullWidth onClick={onAnnulla}>
+          Chiudi
+        </Button>
+      </>
+    )
+  }
+
+  const sbaglia = (err: unknown, altrimenti: string) => {
+    haptic('error')
+    if (!(err instanceof ApiFetchError)) return setErrore({ testo: altrimenti, campo: null })
+    const campo = err.code.startsWith('NICKNAME') ? 'nickname' : err.code.startsWith('CODE') ? 'codice' : null
+    setErrore({ testo: err.message, campo })
+    if (campo === 'nickname') setInviato(false)
+  }
+
+  async function chiedi() {
+    setErrore(null)
+    const nome = nuovo.trim()
+    if (!NICKNAME_PATTERN.test(nome)) {
+      return setErrore({ testo: 'Da 3 a 16 caratteri: lettere, numeri, punto, trattino e underscore.', campo: 'nickname' })
+    }
+    setBusy(true)
+    try {
+      const r = await api<CodiceMandato>('/auth/nickname/code', { method: 'POST', body: { nickname: nome } })
+      haptic('success')
+      setInviato(true)
+      setCodice('')
+      setAttesa(r.cooldownSeconds)
+      setCodiceDiProva(r.codiceDiProva ?? null)
+    } catch (err) {
+      sbaglia(err, 'Non riesco a mandare il codice. Riprova.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function conferma(valore: string) {
+    setErrore(null)
+    setBusy(true)
+    try {
+      const { player: aggiornato } = await api<{ player: Player }>('/auth/nickname', {
+        method: 'POST',
+        body: { nickname: nuovo.trim(), code: valore },
+      })
+      haptic('success')
+      apply(aggiornato)
+      toast.show(`Adesso sei @${aggiornato.nickname}`, 'success')
+      onFatto()
+    } catch (err) {
+      sbaglia(err, 'Non riesco a cambiare il nickname. Riprova.')
+      setCodice('')
+      campoCodice.current?.focus()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function invia(event: FormEvent) {
+    event.preventDefault()
+    if (!inviato) void chiedi()
+    else if (codice.length === CODE_LENGTH) void conferma(codice)
+  }
+
+  return (
+    <form className="profilo-nick" onSubmit={invia} noValidate>
+      {!inviato ? (
+        <>
+          <div className="profilo-nick__campi">
+            <Field
+              label="Nickname nuovo"
+              placeholder={player.nickname}
+              value={nuovo}
+              onChange={(e) => {
+                setNuovo(e.target.value)
+                setErrore(null)
+              }}
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={NICKNAME_MAX}
+              autoFocus
+              error={errore?.campo === 'nickname' ? errore.testo : null}
+            />
+          </div>
+          <p className="profilo__testo">
+            Ti mandiamo un codice all’email. Poi lo potrai cambiare di nuovo fra {NICKNAME_OGNI_GIORNI} giorni.
+          </p>
+          {errore && errore.campo === null && (
+            <p className="profilo-nick__errore" role="alert">
+              {errore.testo}
+            </p>
+          )}
+          <Button type="submit" size="lg" fullWidth loading={busy} disabled={nuovo.trim().length === 0}>
+            Mandami il codice
+          </Button>
+        </>
+      ) : (
+        <>
+          <p className="profilo-nick__cambio" aria-live="polite">
+            <span>@{player.nickname}</span>
+            <span className="profilo-nick__freccia" aria-hidden="true">
+              →
+            </span>
+            <strong>@{nuovo.trim()}</strong>
+          </p>
+          <p className="profilo__testo profilo-nick__dove" role="status">
+            Il codice è partito per <strong>{player.email}</strong>. Vale {CODE_TTL_MINUTES} minuti.
+          </p>
+          <CampoCodice
+            id="codice-nickname"
+            ref={campoCodice}
+            etichetta="Codice per cambiare il nickname"
+            valore={codice}
+            onCambia={(cifre) => {
+              setCodice(cifre)
+              setErrore(null)
+            }}
+            onCompleto={(cifre) => void conferma(cifre)}
+            disabled={busy}
+            errore={errore?.campo === 'codice'}
+          />
+          {codiceDiProva && <p className="profilo-nick__nota">In locale, senza la posta: il codice è {codiceDiProva}.</p>}
+          {errore && (
+            <p className="profilo-nick__errore" role="alert">
+              {errore.testo}
+            </p>
+          )}
+          <Button type="submit" size="lg" fullWidth loading={busy} disabled={codice.length !== CODE_LENGTH}>
+            Cambia il nickname
+          </Button>
+          <div className="profilo-nick__azioni">
+            <button type="button" className="profilo-nick__link" disabled={busy || attesa > 0} onClick={() => void chiedi()}>
+              {attesa > 0 ? `Rimanda il codice fra ${attesa}s` : 'Rimanda il codice'}
+            </button>
+            <button
+              type="button"
+              className="profilo-nick__link is-tenue"
+              onClick={() => {
+                setInviato(false)
+                setCodice('')
+                setCodiceDiProva(null)
+                setErrore(null)
+              }}
+            >
+              Scegli un altro nickname
+            </button>
+          </div>
+        </>
+      )}
+    </form>
   )
 }
 
