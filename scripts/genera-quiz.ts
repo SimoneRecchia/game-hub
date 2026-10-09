@@ -447,6 +447,13 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
  */
 const MEMORIA_RUOTA = 3
 /**
+ * Per quanti giorni si tengono le domande di Crazy Time dei giorni passati: il
+ * server legge solo quelle di oggi, e la notte quelle della memoria. Sono
+ * duecento kB al giorno, e il database del piano gratuito ne tiene cinquecento
+ * mega: tenute tutte, in un anno sarebbero ottanta.
+ */
+const CONSERVA_RUOTA = 7
+/**
  * Le categorie che di soggetti noti ne hanno pochi, e ricordano meno giorni:
  * ogni categoria esce tutti i giorni, e tre giorni sono novanta soggetti da
  * evitare prima dei trenta nuovi. Misurato su centoventi giorni: i mari con
@@ -522,6 +529,7 @@ for (let numero = DA; numero < (SCRIVE ? DA + GIORNI : DA + 1); numero += 1) {
 }
 
 if (SCRIVE && istruzioni.length > 0) {
+  istruzioni.push(`DELETE FROM ruota_domande WHERE puzzle_number < ${DA - CONSERVA_RUOTA};`)
   const cartella = join(HERE, '.cache')
   mkdirSync(cartella, { recursive: true })
   const file = join(cartella, 'quiz.sql')

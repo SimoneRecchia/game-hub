@@ -1,11 +1,17 @@
 /**
- * Il SuperEnalotto, con quattro numeri invece di sei: le regole, il calendario
- * delle estrazioni e la divisione del montepremi.
+ * Il SuperEnalotto, con quattro numeri estratti invece di sei: le regole, il
+ * calendario delle estrazioni e la divisione del montepremi.
  *
- * Si scelgono quattro numeri da 1 a `NUMERI`, e una scheda costa un punto del
- * saldo della Fortuna; ognuno ne gioca al piu' `SCHEDE_MASSIME` per concorso.
+ * I numeri vanno da 1 a 90, come nel gioco vero. Una scheda ha quattro numeri e
+ * costa dieci punti del saldo della Fortuna, o cinque — il "4+1" — e ne costa
+ * venti (`COSTI`): fra cinque numeri ci sono cinque quaterne, quindi il 4 esce
+ * cinque volte piu' spesso, per il doppio. Una scheda vince una volta sola, con
+ * i numeri che ha preso. Ognuno ne gioca al piu' `SCHEDE_MASSIME` per concorso.
  * Si estrae il lunedi', il mercoledi' e il venerdi': alle 21 il gioco chiude,
- * alle 21:05 c'e' la diretta, e finita la diretta si pagano i premi.
+ * alle 21:05 c'e' la diretta, e finita la diretta si pagano i premi, che vanno
+ * nel saldo da soli: non c'e' niente da riscuotere. Le schede di un concorso
+ * pagato restano una settimana (`CONSERVA_GIORNI`), poi se ne vanno; restano il
+ * concorso, con i suoi numeri e i suoi premi, e i conti delle giornate.
  *
  * I premi sono quelli del gioco vero: il 60% della raccolta va nel montepremi
  * (`QUOTA_PREMI`), e il montepremi si divide fra le categorie nelle proporzioni
@@ -31,12 +37,18 @@ import { addDays, gameDate, giornoDellaSettimana, istanteItaliano } from './dail
 
 export const NOME_SUPERENALOTTO = 'SuperEnalotto'
 
-/** I numeri della schedina, da 1 a venti. */
-export const NUMERI = 20
-/** Quanti se ne scelgono, e quanti se ne estraggono. */
-export const DA_SCEGLIERE = 4
-export const COSTO_SCHEDA = 1
+/** I numeri della schedina, da 1 a novanta. */
+export const NUMERI = 90
+/** Quanti se ne estraggono. */
+export const ESTRATTI = 4
+/** Le due giocate, per quanti numeri hanno: quattro, o cinque (il "4+1"). */
+export type GiocataEnalotto = 4 | 5
+export const GIOCATE: readonly GiocataEnalotto[] = [4, 5]
+/** Quanto costa una scheda, in punti. */
+export const COSTI: Readonly<Record<GiocataEnalotto, number>> = { 4: 10, 5: 20 }
 export const SCHEDE_MASSIME = 5
+/** Per quanti giorni dopo l'estrazione si tengono le schede di un concorso pagato. */
+export const CONSERVA_GIORNI = 7
 
 /** Le categorie: quanti numeri presi. */
 export type CategoriaEnalotto = 4 | 3 | 2
@@ -105,18 +117,22 @@ export function ultimoConcorso(adesso: number): string | null {
 export function estrai(caso: (n: number) => number): number[] {
   const urna = Array.from({ length: NUMERI }, (_, i) => i + 1)
   const fuori: number[] = []
-  for (let i = 0; i < DA_SCEGLIERE; i += 1) fuori.push(urna.splice(caso(urna.length), 1)[0])
+  for (let i = 0; i < ESTRATTI; i += 1) fuori.push(urna.splice(caso(urna.length), 1)[0])
   return fuori
 }
 
+/** Quattro o cinque numeri diversi, da 1 a `NUMERI`. */
 export function schedaValida(numeri: unknown): numeri is number[] {
   return (
     Array.isArray(numeri) &&
-    numeri.length === DA_SCEGLIERE &&
+    (GIOCATE as readonly number[]).includes(numeri.length) &&
     numeri.every((n) => Number.isInteger(n) && n >= 1 && n <= NUMERI) &&
-    new Set(numeri).size === DA_SCEGLIERE
+    new Set(numeri).size === numeri.length
   )
 }
+
+/** Quanto costa una scheda valida: dalla giocata, cioe' da quanti numeri ha. */
+export const costoDi = (numeri: readonly number[]) => COSTI[numeri.length as GiocataEnalotto]
 
 /** Quanti numeri di una scheda sono fra gli estratti. */
 export const presiDi = (numeri: readonly number[], estratti: readonly number[]) =>
@@ -124,12 +140,12 @@ export const presiDi = (numeri: readonly number[], estratti: readonly number[]) 
 
 /** La categoria di una scheda, o null se non ha vinto niente. */
 export const categoriaDi = (presi: number): CategoriaEnalotto | null =>
-  presi >= 2 ? (Math.min(presi, DA_SCEGLIERE) as CategoriaEnalotto) : null
+  presi >= 2 ? (Math.min(presi, ESTRATTI) as CategoriaEnalotto) : null
 
 /* ─────────────────────────────  Il montepremi  ───────────────────────────── */
 
-/** Il montepremi di una raccolta, in centesimi di punto: un punto a scheda, il 60%. */
-export const montepremiDi = (raccolta: number) => (raccolta * COSTO_SCHEDA * 100 * QUOTA_PREMI) / 100
+/** Il montepremi di una raccolta (i punti delle schede giocate), in centesimi di punto: il 60%. */
+export const montepremiDi = (raccolta: number) => raccolta * QUOTA_PREMI
 
 /** La parte di una categoria, in centesimi, per difetto. */
 export const quotaDi = (categoria: CategoriaEnalotto, raccolta: number) =>
@@ -152,7 +168,7 @@ export interface Liquidazione {
 }
 
 /**
- * I premi di un concorso: la raccolta, il jackpot arrivato dal concorso prima
+ * I premi di un concorso: la raccolta in punti, il jackpot arrivato dal concorso prima
  * (in centesimi) e quanti hanno fatto ogni categoria. Le categorie senza
  * vincitori vanno nel jackpot; fra quelle con vincitori, una che pagherebbe a
  * testa meno di quella sotto si unisce a lei, e si dividono insieme, finché
@@ -194,10 +210,10 @@ export function liquida(raccolta: number, riporto: number, vincitori: Record<Cat
   }
 }
 
-/** Le probabilita' di una scheda, per le regole: una su quante fa ogni categoria. */
-export function unaSu(categoria: CategoriaEnalotto): number {
+/** Le probabilita' di una scheda della giocata data, per le regole: una su quante fa ogni categoria. */
+export function unaSu(categoria: CategoriaEnalotto, giocata: GiocataEnalotto = 4): number {
   const comb = (n: number, k: number): number => (k === 0 ? 1 : (comb(n - 1, k - 1) * n) / k)
-  const tutte = comb(NUMERI, DA_SCEGLIERE)
-  const modi = comb(DA_SCEGLIERE, categoria) * comb(NUMERI - DA_SCEGLIERE, DA_SCEGLIERE - categoria)
+  const tutte = comb(NUMERI, ESTRATTI)
+  const modi = comb(giocata, categoria) * comb(NUMERI - giocata, ESTRATTI - categoria)
   return tutte / modi
 }

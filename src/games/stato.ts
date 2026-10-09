@@ -12,7 +12,7 @@ import { PUNTATA_MINIMA, SPICCHI_FORTUNATI, SPICCHI_RUOTA, nomeDi } from '@share
 import { PREMI, PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import { PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { PUNTATA_MINIMA_RL } from '@shared/roulette'
-import { COSTO_SCHEDA, SCHEDE_MASSIME } from '@shared/superenalotto'
+import { COSTI, SCHEDE_MASSIME } from '@shared/superenalotto'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   AnagrammiSummary,
@@ -607,7 +607,7 @@ export function statoRuota(s: RuotaSummary): StatoRuota {
     return {
       fase: 'non-pronta',
       titolo: 'Prima le classificate',
-      dettaglio: `Servono ${PUNTATA_MINIMA} punti di oggi`,
+      dettaglio: PUNTATA_MINIMA === 1 ? 'Serve 1 punto di oggi' : `Servono ${PUNTATA_MINIMA} punti di oggi`,
       avanzamento: s.giri > 0 ? null : Math.max(0, s.saldo) / PUNTATA_MINIMA,
       azione: '',
       a,
@@ -732,8 +732,15 @@ export function statoSuperEnalotto(s: FortunaRisposta): StatoRuota {
     return { fase: 'in-corso', titolo: 'Gioco chiuso', dettaglio: 'L’estrazione è alle 21:05', avanzamento: null, azione: 'Apri', a }
   }
   const quando = giornoEstrazione(aperto, s.date)
-  if (s.saldo < COSTO_SCHEDA && mie === 0) {
-    return { fase: 'non-pronta', titolo: 'Prima le classificate', dettaglio: 'Una scheda costa 1 punto', avanzamento: null, azione: '', a }
+  if (s.saldo < COSTI[4] && mie === 0) {
+    return {
+      fase: 'non-pronta',
+      titolo: 'Prima le classificate',
+      dettaglio: `Una scheda costa ${COSTI[4]} punti`,
+      avanzamento: null,
+      azione: '',
+      a,
+    }
   }
   return {
     fase: 'da-giocare',

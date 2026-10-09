@@ -423,9 +423,15 @@ describe('la vincita', () => {
     for (let puntata = PUNTATA_MINIMA; puntata <= 3_000; puntata += 1) {
       for (const m of TUTTI) {
         const esatta = (puntata * Math.round(m * 100) - ((puntata * Math.round(m * 100)) % 100)) / 100
-        expect(vincitaDi(puntata, m)).toBe(esatta)
+        // Un premio da' almeno un punto in piu' della puntata: per difetto, 1 × 1,25 ridarebbe la puntata.
+        expect(vincitaDi(puntata, m)).toBe(m > 1 ? Math.max(esatta, puntata + 1) : esatta)
       }
     }
+    expect(PUNTATA_MINIMA).toBe(1)
+    expect(vincitaDi(1, 1.25)).toBe(2)
+    expect(vincitaDi(3, 1.25)).toBe(4)
+    expect(vincitaDi(4, 1.25)).toBe(5)
+    expect(vincitaDi(1, MOLTIPLICATORE_SPLIT)).toBe(0)
   })
 
   it('un premio vero restituisce piu’ della puntata; lo split e il ×0,5 la meta’, di proposito', () => {
@@ -482,11 +488,16 @@ describe('vince il banco', () => {
       for (let puntata = PUNTATA_MINIMA; puntata <= 2_000; puntata += 1) {
         const torna = restituitoInPunti(puntata, s)
         expect(torna, `puntata ${puntata}, giuste ${s}`).toBeLessThan(puntata)
-        // Gli arrotondamenti tolgono, e meno di un punto a giro.
-        expect(torna).toBeLessThanOrEqual(resa(s) * puntata + 1e-9)
+        // Gli arrotondamenti cambiano meno di un punto a giro. Tolgono, tranne che con le puntate piccole, dove
+        // il punto in piu' dei premi aggiunge qualcosa: a due punti chi sa tutto riceve il 97,75%.
+        if (puntata >= 10) expect(torna).toBeLessThanOrEqual(resa(s) * puntata + 1e-9)
+        expect(torna).toBeLessThan(Math.min(resa(s) * puntata + 1, puntata))
         expect(torna).toBeGreaterThan(resa(s) * puntata - 1)
       }
     }
+    // Anche con un punto, e con due, vince il banco.
+    for (const puntata of [1, 2, 3]) expect(restituitoInPunti(puntata, 1) / puntata).toBeLessThan(0.98)
+    expect(restituitoInPunti(2, 1) / 2).toBeCloseTo(0.9775, 4)
   })
 
   it('la ruota fortunata vale due volte e mezzo la puntata, e la fortuna non rende piu’ del triplo', () => {

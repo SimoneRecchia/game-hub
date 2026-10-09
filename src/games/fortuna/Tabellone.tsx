@@ -21,6 +21,8 @@ export function Tabellone({
   saldoRef?: RefObject<HTMLSpanElement | null>
 }) {
   const prima = useRef(saldo)
+  /** Il saldo con cui il tabellone e' arrivato: c'e' gia', e non conta da zero. */
+  const iniziale = useRef(saldo)
   const [lampo, setLampo] = useState<{ chiave: number; sale: boolean } | null>(null)
   useEffect(() => {
     const d = saldo - prima.current
@@ -39,7 +41,7 @@ export function Tabellone({
       <span className="ct-tabellone__voce">
         <span className="ct-tabellone__etichetta">Saldo</span>
         <span className="ct-tabellone__saldo" ref={saldoRef}>
-          <Numero valore={saldo} />
+          <Numero valore={saldo} da={iniziale.current} />
         </span>
       </span>
       <span className="ct-tabellone__voce is-destra">

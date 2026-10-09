@@ -77,6 +77,13 @@ const SCIA = [0.008, 0.016] as const
 /** L'angolo di una casella sul cilindro, dall'asse x come nel disegno: lo zero in cima. */
 export const angoloDi = (numero: number) => RUOTA_ROULETTE.indexOf(numero) * PASSO - 90
 
+/**
+ * Dove sta il cilindro, ed era quando: una ruota che si monta riparte da li',
+ * con i giri che avrebbe fatto nel frattempo. Cosi' la ruota della sala e
+ * quella del tavolo sono la stessa, anche nel passaggio dall'una all'altra.
+ */
+const cilindro = { phi: Math.random() * 360, quando: Date.now() }
+
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
@@ -198,8 +205,8 @@ export function RuotaRoulette({
     osserva.observe(box)
 
     const fermo = ridotto()
-    let phi = Math.random() * 360
     let prima = Date.now()
+    let phi = fermo ? cilindro.phi : (cilindro.phi + (GIRI_CALMO * (prima - cilindro.quando)) / 1000) % 360
     let frame = 0
     /** Il lancio che si sta raccontando: da dove parte la biglia sul cilindro, quanto corre, che cosa ha gia' suonato. */
     let corrente: { chiave: string; fine: number; corsa: number; suonati: Set<number>; fermata: boolean } | null = null
@@ -236,6 +243,8 @@ export function RuotaRoulette({
       const trascorso = l ? adesso - l.inizio : Infinity
       const spinta = l && trascorso < LANCIO_MS ? Math.pow(1 - trascorso / LANCIO_MS, 2) : 0
       if (!fermo) phi = (phi + (GIRI_CALMO + GIRI_SPINTA * spinta) * dt) % 360
+      cilindro.phi = phi
+      cilindro.quando = adesso
       const k = lato / 200
       if (rotore.current) rotore.current.style.transform = gira(0)
       if (braccia.current) braccia.current.style.transform = gira(Z.braccia)

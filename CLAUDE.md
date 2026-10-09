@@ -27,6 +27,16 @@ dal centunesimo in poi. Il banco dei test (`server/__tests__/banco.ts`) ha lo
 stesso limite, perché SQLite in locale ne regge molti di piu' e il test
 passerebbe lo stesso.
 
+**D1 accetta al massimo cinque termini in un'unione.** Un `SELECT` con sei
+pezzi uniti da `UNION ALL` risponde "too many terms in compound SELECT", e
+SQLite in locale ne regge cinquecento. La classifica generale somma i conti di
+tutti i giochi in un'istruzione sola — erano quindici, e ogni istruzione e' una
+delle cinquanta query che una richiesta puo' fare — e per starci li unisce a
+gruppi di cinque, uno dentro l'altro (`unisci` in `server/lib/generale.ts`).
+Le righe portano il nome del loro conto (`fonte`), e il codice le smista. Il
+banco dei test conta i termini e rifiuta come D1: senza, i test passavano e in
+produzione la schermata iniziale avrebbe risposto 500.
+
 **L'app ha un indirizzo solo, `giochi.<dominio>`, e i sottodomini dei giochi
 sono scorciatoie.** `wordle.<dominio>` porta a `giochi.<dominio>/wordle` prima
 ancora che parta l'app: lo fa lo script in testa a `index.html`, perché le
@@ -401,8 +411,10 @@ polling: due giri separati avrebbero raddoppiato le richieste, e le Pages
 Functions gratuite ne contano centomila al giorno per tutto il sito. La
 scrittura in `presenza` passa solo ogni venti secondi o al cambio di attivita'
 (`segnaPresenza`), e a pagina nascosta il giro si ferma: un telefono in tasca
-non e' "online" per chi vuole sfidarlo. Gli amici online invece non stanno nel
-giro: `GET /api/amici` lo chiedono solo il profilo, le Libere e il profilo di un
+non e' "online" per chi vuole sfidarlo. Le letture del giro partono tutte
+insieme, la scrittura della presenza compresa: una dopo l'altra erano una
+dozzina di viaggi al database in fila, otto secondi si' e otto no. Gli amici
+online invece non stanno nel giro: `GET /api/amici` lo chiedono solo il profilo, le Libere e il profilo di un
 amico, ogni `AMICI_POLL_MS` e mentre li si guarda.
 
 **Nella battaglia navale la flotta dell'avversario non esce dal server.**
@@ -547,7 +559,12 @@ quattro moltiplicatori di `MOLTIPLICATORI_MONETA`, deciso con il giro, che il
 blu paga e il rosso no; il Pachinko e il Cash Hunt hanno i loro (vedi sotto);
 la fortuna fa girare la ruota fortunata. Nessun esito ridà la puntata com'era,
 che sarebbe il banco con un altro nome: un premio la restituisce con qualcosa
-in piu', lo split e il ×0,5 dei minigiochi con la meta' in meno. Chi risponde
+in piu', lo split e il ×0,5 dei minigiochi con la meta' in meno. Si punta da un
+punto (`PUNTATA_MINIMA`), e per difetto 1 × 1,25 farebbe 1: per questo un
+premio da' sempre almeno un punto piu' della puntata (`vincitaDi`), e con un
+punto lo split ridà zero e si racconta come il banco. Con le puntate piccole la
+resa si sposta — a un punto chi sa tutto riceve il 90%, a due il 97,75% — ma
+resta sotto la puntata. Chi risponde
 sempre giusto riceve in media il 97,12% di quel che punta (`resa`), quanto alla
 roulette e come la slot e il blackjack; chi risponde giusto a tre domande su
 quattro l'89%, a una su due l'81%, chi tira a indovinare il 74%: nemmeno chi sa
@@ -711,6 +728,11 @@ rivede una domanda lo stesso giorno e la riconosce dall'impronta
 non dal posto nell'elenco; una categoria di cui ha visto tutto non gli esce piu'
 fino a domani. `--se-manca` guarda anche queste righe, e il formato, quindi il
 deploy le crea per i giorni che non le hanno.
+Le righe di piu' di una settimana fa si cancellano a ogni scrittura
+(`CONSERVA_RUOTA`): il server legge solo quelle di oggi, la notte quelle della
+memoria, e sono duecento kB al giorno sui cinquecento mega di D1. Allo stesso
+modo una sessione nuova si porta via quelle scadute, e un codice nuovo quelli
+scaduti da due giorni: nel database restava tutto, e nessuno lo leggeva.
 
 **La ruota si gira col dito, e si disegna una volta.** `RuotaFisica`
 (`src/games/ruota/`) e' la ruota grande e quella del quiz: la si prende, la si
@@ -1025,11 +1047,18 @@ quindi i figli ereditano una lunghezza vera: non registrata, le unita' del
 contenitore si risolverebbero dove la si usa, e dentro la pancia, che e' un
 contenitore anche lei, varrebbero le sue.
 
-**Il SuperEnalotto e' quello vero, con quattro numeri su venti.** Le regole
-stanno in `shared/superenalotto.ts`: una scheda costa un punto, se ne giocano
-al piu' cinque per estrazione, e si estrae il lunedi', il mercoledi' e il
-venerdi'; alle 21 il gioco chiude, alle 21:05 c'e' la diretta (`DURATA_DIRETTA_MS`),
-e il concorso dopo si apre a diretta finita. Il montepremi e' il 60% della
+**Il SuperEnalotto e' quello vero, con quattro numeri estratti su novanta.** Le
+regole stanno in `shared/superenalotto.ts`: una scheda di quattro numeri costa
+dieci punti, una di cinque — il "4+1" — venti (`COSTI`), se ne giocano al piu'
+cinque per estrazione, e si estrae il lunedi', il mercoledi' e il venerdi'; alle
+21 il gioco chiude, alle 21:05 c'e' la diretta (`DURATA_DIRETTA_MS`), e il
+concorso dopo si apre a diretta finita. Fra cinque numeri ci sono cinque
+quaterne, quindi il 4+1 fa 4 cinque volte piu' spesso per il doppio, e il 3 e
+il 2 piu' spesso anche loro; una scheda vince una volta sola, con i numeri che
+ha preso. La raccolta e' in punti, la somma di quel che sono costate le schede
+(`costo`, in colonna: la `0048` l'ha aggiunta, e ha annullato le schede di
+prima, quattro numeri su venti per un concorso non ancora estratto, ridando i
+punti). Il montepremi e' il 60% della
 raccolta, come nel gioco vero, e si divide nelle sue proporzioni: il vero ha sei
 categorie — al 6 il 17,4% del montepremi, a 5+1, 5, 4 e 3 insieme il 34,2%, al
 2 il 40%, e l'8,4% alle vincite immediate —, e con quattro numeri il 4 e' il
@@ -1039,13 +1068,14 @@ fatto la categoria; se nessuno fa 4 il jackpot passa al concorso dopo, e cosi'
 le parti delle categorie senza vincitori; una categoria che pagherebbe a testa
 meno di quella sotto si unisce a lei (`liquida`, come nel regolamento). I conti
 sono in centesimi di punto e i premi in punti, per difetto: gli avanzi vanno nel
-jackpot, e niente si perde oltre al 40% che il gioco tiene. Venti numeri e non
-novanta perché il jackpot esca: con quattro su venti una scheda su 4845 fa 4,
-una su 76 il 3 e una su sette il 2, e con qualche decina di schede a estrazione
-il jackpot esce in qualche mese. Il nome e' quello vero, e il marchio e' di
-Sisal: come per Crazy Time, se l'app diventasse pubblica andrebbe cambiato.
-Con poche schede i premi sono piccoli, e il jackpot comincia da zero: e' quel
-che si e' chiesto, "dipende da quanti giocano".
+jackpot, e niente si perde oltre al 40% che il gioco tiene. Per un giorno i
+numeri sono stati venti, perché il jackpot uscisse; si e' scelto il gioco vero:
+con novanta il 4 lo fa una scheda su 2.555.190 (col 4+1 una su 511.038), il 3
+una su 7428 (3006) e il 2 una su 117 (72), e il jackpot cresce a lungo. Il nome
+e' quello vero, e il marchio e' di Sisal: come per Crazy Time, se l'app
+diventasse pubblica andrebbe cambiato. Con poche schede i premi sono piccoli, e
+il jackpot comincia da zero: e' quel che si e' chiesto, "dipende da quanti
+giocano".
 
 **L'estrazione la fa la prima richiesta dopo le 21, e i premi la prima dopo la
 diretta.** Non c'e' un orologio sul server: `assicura` (`server/lib/enalottoStore.ts`),
@@ -1061,12 +1091,23 @@ saldo del giorno in cui la si compra, e il premio va a quello dell'estrazione:
 lunedi' con una scheda comprata sabato ha il premio nella giornata di lunedi', e
 la classifica della Fortuna lo mostra anche se quel giorno non ha giocato. Un
 concorso che nessuno ha guardato lo paga la prima richiesta dopo, nel suo
-giorno.
+giorno. Le vincite arrivano nel saldo da sole, e le schede servono solo a
+rivederle: il pagamento di un concorso butta via quelle dei concorsi pagati da
+piu' di una settimana (`CONSERVA_GIORNI`), e restano il concorso, con i numeri e
+i premi, e la riga della giornata, che nessuno riconta piu' (si ricontano solo
+il giorno delle schede nuove e quello dell'estrazione che si paga). Le schede da
+"controllare entro una settimana", come i biglietti veri, non ci sono: chi non
+apre l'app perderebbe una vincita che il server sa gia'. Per lo stesso ordine
+dei pagamenti `assicura` guarda solo le schede dopo l'ultimo concorso pagato.
 
 **La diretta e' in 3D vero, con three.js, e arriva a parte.** `Urna`
 (`src/games/superenalotto/urna.ts`) e' una scena sola: la sfera di vetro sul
-piedistallo d'oro, le venti palline con il numero dipinto due volte, davanti e
-dietro, il tubo, la rotaia, e una regia che segue la pallina estratta. Tutto e'
+piedistallo d'oro, le novanta palline con il numero dipinto due volte, davanti
+e dietro, il tubo, la rotaia, e una regia che segue la pallina estratta. Le
+palline nell'urna sono piccole, con una forma sola e un'immagine di 128 per 64
+(`LATO_FACCIA`): novanta immagini grandi sarebbero dodici mega nella scheda
+grafica. Quella che esce cresce nel tubo fino alla misura della rotaia
+(`RB_FUORI`), e prende un'immagine grande, perché li' la si guarda da vicino. Tutto e'
 una funzione del tempo della diretta, tranne le palline nell'urna, che hanno una
 fisica loro — l'aria dal fondo che fa la fontana, le pareti, gli urti — con due
 vettori di lavoro, perché un vettore nuovo per coppia sarebbero ventimila
@@ -1167,7 +1208,12 @@ un giro dopo, perché in sviluppo React smonta e rimonta. Chiudere la scheda o
 ricaricarla no — una mano in corso non si perde per un ricaricamento — e se non
 si torna e' la presenza a liberare il posto. La sala aspetta l'uscita
 (`finitaLUscita`) prima di leggere, altrimenti direbbe ancora "Torna al
-tavolo". I tavoli degli amici sono quelli con qualcuno seduto e presente, nella
+tavolo" — a un tavolo che, rimasto vuoto, il server ha gia' cancellato.
+L'attesa si segna nello smontaggio, e la richiesta parte il giro dopo
+(`esciFraPoco`): segnata con la richiesta, arrivava dopo la lettura della sala,
+che si monta nello stesso momento, e il tavolo riaperto rispondeva "non c'e'
+piu'". Un tavolo che non c'e' piu' riporta alla sala, con un avviso, invece di
+fermarsi su un errore. I tavoli degli amici sono quelli con qualcuno seduto e presente, nella
 sala e nella scheda della Fortuna, e "Siediti" porta al loro.
 
 **Le carte arrivano nell'ordine del tavolo.** Il server risponde con tutte le
@@ -1282,9 +1328,12 @@ strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
 (`nitidezza`, al piu' tre, e due per la conca e la luce, che non hanno scritte);
 Safari li disegna gia' nitidi, e ingranditi vorrebbero nove volte la memoria.
 Niente `will-change` sugli strati che girano: fisserebbe la loro risoluzione a
-quella del primo disegno, e la ruota arriva piccola. Anche il tavolo lascia il
-suo strato finita l'entrata (`backwards`, non `both`): col velo dentro, che
-sporge di `100vmax`, era il piu' grande della pagina. La biglia inclinata
+quella del primo disegno, e la ruota arriva piccola. Il tavolo non ha
+un'entrata sua, e il velo sta dentro il feltro: con un'animazione che restava
+(`both`) e il velo che sporgeva di `100vmax`, il tavolo era lo strato piu'
+grande della pagina. Il cilindro riparte dall'angolo dove l'aveva lasciato
+l'altra ruota, con i giri che avrebbe fatto nel frattempo (`cilindro`): la
+ruota della sala e quella del tavolo sono la stessa. La biglia inclinata
 diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua posizione
 la calcola `proietta` con la stessa prospettiva del CSS. Il suo angolo si conta
 sul cilindro e finisce nella casella del numero qualunque sia la velocita' del
@@ -1294,9 +1343,32 @@ attimo prima, e la sua ombra e' sfumata dal suo sfondo e non da un `filter`, che
 si rifarebbe a ogni fotogramma. La ruota e' disegnata grande e rimpicciolita
 sul palco (`--piccola`): quando la biglia parte si fa grande sopra il panno, che
 si vela, e torna al suo posto dopo l'annuncio del numero. Disegnata piccola e
-ingrandita, a pieno schermo sarebbe sfocata. Il tabellone dei numeri usciti non
+ingrandita, a pieno schermo sarebbe sfocata. Il passaggio fra il palco e il
+centro si accende solo dopo la prima misura (`is-misurata`): la pagina legge le
+misure appena montata, e il browser, che a quel punto non aveva ancora
+`--piccola`, partiva dalla ruota grande e la faceva rimpicciolire sotto gli
+occhi — proprio mentre si arrivava al tavolo. Il tabellone dei numeri usciti non
 dice il numero mentre la biglia gira: il server lo mette nella storia al
 lancio, e sarebbe la soluzione.
+
+**Dalla sala al tavolo il feltro e' uno solo.** La sala e il tavolo della
+roulette hanno lo stesso feltro (`src/games/roulette/Feltro.css`), un livello
+vuoto sotto il contenuto: toccando "Tavolo nuovo" la View Transition lo allarga
+dalla carta della sala fino al tavolo, la ruota sale al suo posto sul palco, la
+scritta della sala se ne va e il panno arriva quando il feltro e' quasi grande;
+tornando, il contrario. E' la direzione `tavolo` di `useNavigazione`, che usa
+anche la freccia indietro del tavolo (`indietro.direzione`), e i nomi delle View
+Transitions ci sono solo durante il passaggio (`html[data-transizione='tavolo']`):
+fuori, ogni navigazione fotografa la pagina intera, e un test lo controlla. Al
+tavolo nuovo si va subito, senza aspettare il server: l'indirizzo e'
+`TAVOLO_NUOVO`, la pagina apre il tavolo mentre il feltro si allarga e poi mette
+al suo posto l'indirizzo vero, senza rileggerlo. Aspettare la risposta prima di
+partire era il piccolo scatto fra il tocco e il passaggio. La sala porta il
+saldo nello stato della navigazione, e il tabellone c'e' dal primo disegno, senza
+contare da zero (`da` di `Numero`). Il panno e' stampato sul feltro, senza un
+fondo suo, e i comandi stanno sulla sponda di legno in fondo, che si unisce a
+quella del feltro: le fiches, e i tasti tondi per annullare, togliere tutto e
+ripetere o raddoppiare.
 
 **Il panno si tocca dove si posa la fiche.** Sul telefono il panno sta in
 piedi, lo zero in cima, e le puntate interne si scelgono dal punto toccato
@@ -1530,10 +1602,15 @@ lasciando a meta' quella in corso la conta persa, come nella battaglia. I
 motori misurano il tempo con `Date.now()`, che nel Worker di Cloudflare non
 avanza durante il calcolo: non si chiamano mai dal server.
 
-**Le pagine dei tavolieri si scaricano a parte, e quelle del quiz anche.**
-Regole, pezzi e tavolieri sono un quinto dell'app, e i generatori delle domande
-di tutte le materie del quiz un altro bel pezzo: `App.tsx` le carica con `lazy`,
-in un `Suspense` attorno alle rotte, e le precarica dopo un paio di secondi. Le
+**Ogni gioco si scarica a parte.** Nel pezzo dell'avvio ci sono solo le tre
+schede, l'accesso e gli avvisi degli inviti: regole, pezzi e tavolieri erano un
+quinto dell'app, i generatori del quiz un altro bel pezzo, e i giochi delle
+Giornaliere, la classifica e il profilo un terzo di quel che restava. `App.tsx`
+carica ogni pagina di gioco con `lazy`, in un `Suspense` attorno alle rotte, e
+le precarica a gruppi di quattro, a ogni momento libero del telefono
+(`requestIdleCallback`), dopo un paio di secondi: prima le Giornaliere, poi la
+classifica e il profilo, poi il resto. Tutte insieme, erano un centinaio di
+file che si contendevano la rete con la prima schermata. Le
 statistiche delle libere del quiz stanno in `quiz/statistiche.ts` perché le
 legge anche il profilo, che altrimenti si porterebbe dietro i generatori. Lo
 Scarabeo libero arriva a parte anche lui: ha la sala degli amici dei tavolieri.
@@ -2813,7 +2890,13 @@ nel colore del gioco sul lato c'e' stata per un giorno, e sapeva di gia'
 visto. L'eroe delle Giornaliere e' la giornata: il posto nella generale di
 oggi, i punti, il podio e un anello per gioco. Il podio arriva con
 `/api/oggi` (`generale.podio`), che la generale la calcola comunque: nessuna
-richiesta in piu' per la schermata che si apre di piu'.
+richiesta in piu' per la schermata che si apre di piu'. Che si riapre anche a
+ogni cambio di scheda, e per quindici secondi la risposta in memoria vale senza
+richiederla (`fresco` di `useDati`, `OGGI_FRESCO_MS`): ogni gioco, quando cambia
+qualcosa, la dimentica (`dimentica('/oggi')`), e un gioco nuovo deve farlo
+anche lui. I movimenti dell'eroe sono solo `transform` e `opacity`, perché il
+telefono li fa senza ridisegnare: le righe scorrono di un multiplo esatto del
+loro passo, e il ritorno non si vede.
 
 **La Fortuna e' scura in tutti e due i temi.** `Vetrina.css` mette
 `color-scheme: dark` sulla sua pagina e ne ridefinisce `--bg` e `--vetro-barra`:

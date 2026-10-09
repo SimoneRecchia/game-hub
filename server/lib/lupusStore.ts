@@ -566,11 +566,15 @@ export async function invitiRicevuti(db: D1Database, io: string, adesso: number)
 
 /** La stanza in cui sono, in breve: per tornarci dalle Libere. Una stanza ferma da tanto non conta. */
 export async function stanzaBreve(db: D1Database, io: string, adesso: number): Promise<StanzaLupusBreve | null> {
-  const s = await miaStanza(db, io)
+  // Una lettura sola, senza la partita: la chiede il giro della presenza, ogni otto secondi.
+  const s = await db
+    .prepare(
+      `SELECT s.codice, s.stato, s.updated_at,
+              (SELECT COUNT(*) FROM lupus_iscritti n WHERE n.stanza_id = s.id) AS iscritti
+         FROM lupus_iscritti i JOIN lupus_stanze s ON s.id = i.stanza_id WHERE i.player_id = ?`,
+    )
+    .bind(io)
+    .first<Pick<StanzaRow, 'codice' | 'stato' | 'updated_at'> & { iscritti: number }>()
   if (!s || adesso - Date.parse(s.updated_at) > LUPUS_STANZA_FERMA_MS) return null
-  const n = await db
-    .prepare('SELECT COUNT(*) AS n FROM lupus_iscritti WHERE stanza_id = ?')
-    .bind(s.id)
-    .first<{ n: number }>()
-  return { codice: s.codice, stato: s.stato, iscritti: n?.n ?? 0 }
+  return { codice: s.codice, stato: s.stato, iscritti: s.iscritti }
 }

@@ -8,22 +8,23 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react'
-import { useParams } from 'react-router-dom'
+import { useLocation, useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi, type DatiAdesivo } from '@/components/Adesivo'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { IconInfo } from '@/components/Icons'
+import { IconAnnulla, IconCestino, IconInfo, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
-import { uscitaDalTavolo } from '@/games/blackjack/uscita'
+import { esciFraPoco } from '@/games/blackjack/uscita'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { centroDi, incassaMonete, volaFiche } from '@/games/fortuna/voli'
 import { ComeSiGiocaRoulette } from '@/games/roulette/ComeSiGioca'
 import { COLORE_FICHE_RL, FicheRL } from '@/games/roulette/Fiches'
 import { Panno, type FicheAltrui } from '@/games/roulette/Panno'
+import { TAVOLO_NUOVO } from '@/games/roulette/nuovo'
 import { RuotaRoulette, type LancioRuota } from '@/games/roulette/Ruota'
 import { FestaRuota, type DatiFestaRuota } from '@/games/ruota/Festa'
 import { PIOGGIA_MS, PioggiaDiMonete } from '@/games/ruota/Intermezzo'
@@ -44,6 +45,7 @@ import {
 } from '@shared/roulette'
 import { PUNTATE_RL_MS } from '@shared/roulette-tavolo'
 import type { VistaTavoloRL } from '@shared/types'
+import '@/games/roulette/Feltro.css'
 import './RouletteTavolo.css'
 
 /** I colori dei posti: le fiches di ognuno sul panno, e l'anello attorno al suo volto. */
@@ -179,10 +181,14 @@ const somma = (a: PuntateRL, chiave: string, v: number): PuntateRL => ({ ...a, [
  * che arrivano al saldo. Il saldo resta fermo (`conto`) finché non arrivano.
  *
  * Chi lascia la pagina si alza dal tavolo: le puntate di un giro non ancora
- * lanciato tornano.
+ * lanciato tornano. Un tavolo nuovo (`TAVOLO_NUOVO`) lo apre questa pagina,
+ * mentre il feltro della sala si allarga nel tavolo.
  */
 export default function RouletteTavolo() {
   const { id = '' } = useParams()
+  const nuovo = id === TAVOLO_NUOVO
+  /** Il saldo che la sala sapeva gia': il tabellone c'e' dal primo disegno, e il passaggio non lo vede arrivare. */
+  const saldoDellaSala = (useLocation().state as { saldo?: number } | null)?.saldo ?? null
   const { vai } = useNavigazione()
   const toast = useToast()
   const dopo = useDopo()
@@ -313,19 +319,57 @@ export default function RouletteTavolo() {
 
   /* ─────────────────────────────────  Il server  ───────────────────────────────── */
 
+  /** Si torna alla sala una volta sola, anche se intanto arriva un altro controllo. */
+  const andatoVia = useRef(false)
+  const allaSala = useCallback(
+    (messaggio: string, tono?: 'error') => {
+      if (andatoVia.current) return
+      andatoVia.current = true
+      toast.show(messaggio, tono)
+      vai(ROTTE.roulette, { direzione: 'tavolo', replace: true })
+    },
+    [toast, vai],
+  )
+
   const leggi = useCallback(async () => {
+    if (id === TAVOLO_NUOVO) return
     try {
       const v = await api<VistaTavoloRL>(`/roulette/tavolo/${id}`)
       applica(v, vistaRef.current === null)
     } catch (e) {
-      if (e instanceof ApiFetchError && e.status === 404) setErrore('Questo tavolo non c’è più.')
+      // Un tavolo che non c'e' piu' — lo si era lasciato, e vuoto se n'e' andato —: si torna alla sala.
+      if (e instanceof ApiFetchError && e.status === 404) allaSala('Il tavolo si è chiuso.')
       else if (!vistaRef.current) setErrore(e instanceof ApiFetchError ? e.message : 'Non riesco ad aprire il tavolo.')
     }
-  }, [id, applica])
+  }, [id, applica, allaSala])
 
   useEffect(() => {
-    void leggi()
-  }, [leggi])
+    // Il tavolo appena aperto e' gia' qui, con la risposta che l'ha aperto.
+    if (vistaRef.current?.id !== id) void leggi()
+  }, [id, leggi])
+
+  // Il tavolo nuovo: lo si apre adesso, e l'indirizzo diventa il suo. Se intanto si e' usciti, ci si alza.
+  useEffect(() => {
+    if (!nuovo) return
+    let vivo = true
+    api<VistaTavoloRL>('/roulette/tavoli', { method: 'POST', body: {} }).then(
+      (v) => {
+        dimentica('/fortuna')
+        if (!vivo) {
+          void api(`/roulette/tavolo/${v.id}/lascia`, { method: 'POST', body: {}, keepalive: true }).catch(() => {})
+          return
+        }
+        applica(v, true)
+        vai(ROTTE.tavoloRL(v.id), { direzione: 'nessuna', replace: true })
+      },
+      (e: unknown) => {
+        if (vivo) allaSala(e instanceof ApiFetchError ? e.message : 'Non riesco ad aprire il tavolo: riprova.', 'error')
+      },
+    )
+    return () => {
+      vivo = false
+    }
+  }, [nuovo, applica, vai, allaSala])
 
   // Il controllo: stretto quando si aspettano gli altri, largo da soli; e subito dopo una scadenza.
   useEffect(() => {
@@ -352,15 +396,17 @@ export default function RouletteTavolo() {
     }
   }, [leggi])
 
-  // Chi lascia la pagina dall'app si alza; chi chiude la scheda lo libera la presenza, se non torna.
-  const uscita = useRef(0)
+  // Chi lascia la pagina dall'app si alza (vedi `esciFraPoco`); chi chiude la scheda lo libera la presenza, se non torna.
+  const annullaUscita = useRef<(() => void) | null>(null)
   useEffect(() => {
-    window.clearTimeout(uscita.current)
+    annullaUscita.current?.()
+    annullaUscita.current = null
+    if (id === TAVOLO_NUOVO) return
     return () => {
-      uscita.current = window.setTimeout(() => {
-        uscitaDalTavolo(api(`/roulette/tavolo/${id}/lascia`, { method: 'POST', body: {}, keepalive: true }))
-        dimentica('/fortuna')
-      }, 0)
+      annullaUscita.current = esciFraPoco(
+        () => api(`/roulette/tavolo/${id}/lascia`, { method: 'POST', body: {}, keepalive: true }),
+        () => dimentica('/fortuna'),
+      )
     }
   }, [id])
 
@@ -441,6 +487,9 @@ export default function RouletteTavolo() {
   // La ruota e' disegnata grande e rimpicciolita sul palco: mentre la biglia gira si fa grande sopra il panno.
   // Quanto, e dove, lo dice lo spazio che c'e'; le misure sono quelle del layout, senza le trasformazioni.
   const [zoom, setZoom] = useState<CSSProperties>({})
+  // La ruota si muove fra il palco e il centro solo dopo la prima misura: prima di quella il browser la vedeva grande
+  // (`--piccola` non c'era ancora), e la faceva rimpicciolire sotto gli occhi, proprio mentre si arrivava al tavolo.
+  const [misurata, setMisurata] = useState(false)
   const pronta = vista !== null
   useLayoutEffect(() => {
     const radiceEl = radice.current
@@ -471,10 +520,14 @@ export default function RouletteTavolo() {
       } as CSSProperties)
     }
     misura()
+    const dopoLaMisura = requestAnimationFrame(() => setMisurata(true))
     const osserva = new ResizeObserver(misura)
     osserva.observe(radiceEl)
     osserva.observe(piccola)
-    return () => osserva.disconnect()
+    return () => {
+      cancelAnimationFrame(dopoLaMisura)
+      osserva.disconnect()
+    }
   }, [pronta])
 
   /* ───────────────────────────────────  Le puntate  ─────────────────────────────────── */
@@ -579,13 +632,13 @@ export default function RouletteTavolo() {
 
   /* ──────────────────────────────────  La pagina  ────────────────────────────────── */
 
-  const indietro = { a: ROTTE.roulette, etichetta: 'Roulette' }
+  const indietro = { a: ROTTE.roulette, etichetta: 'Roulette', direzione: 'tavolo' as const }
   if (errore) {
     return (
       <Pagina titolo="Roulette" indietro={indietro} intera>
         <div className="rl-errore">
           <p>{errore}</p>
-          <Button onClick={() => vai(ROTTE.roulette)}>Alla sala</Button>
+          <Button onClick={() => vai(ROTTE.roulette, { direzione: 'tavolo', replace: true })}>Alla sala</Button>
         </div>
       </Pagina>
     )
@@ -617,9 +670,16 @@ export default function RouletteTavolo() {
         </BottoneBarra>
       }
     >
-      <div className={`rl is-${scena}${grande ? ' is-grande' : ''}`} style={zoom}>
+      <div className={`rl is-${scena}${grande ? ' is-grande' : ''}${misurata ? ' is-misurata' : ''}`} style={zoom}>
+        <span className="rl-feltro" aria-hidden="true" />
         <div className="rl__dentro" ref={radice}>
-        {vista && <Tabellone saldo={conto ?? saldo} puntata={totaleSulPanno || null} saldoRef={saldoRef} />}
+        {(vista || saldoDellaSala !== null) && (
+          <Tabellone
+            saldo={conto ?? (vista ? saldo : (saldoDellaSala ?? 0))}
+            puntata={totaleSulPanno || null}
+            saldoRef={saldoRef}
+          />
+        )}
 
         <div className="rl-palco">
           <div className="rl-palco__ruota" ref={palcoRuota}>
@@ -718,36 +778,41 @@ export default function RouletteTavolo() {
                 <button
                   type="button"
                   className="rl-tasto"
+                  aria-label="Annulla l’ultima fiche"
                   onClick={annulla}
                   disabled={!puoPuntare || mosse.length === 0 || !bozza}
                 >
-                  Annulla
+                  <IconAnnulla size={20} />
                 </button>
                 <button
                   type="button"
                   className="rl-tasto"
-                  onClick={raddoppia}
-                  disabled={!puoPuntare || totaleSulPanno === 0 || totaleSulPanno * 2 > disponibile}
+                  aria-label="Togli tutte le fiches"
+                  onClick={azzera}
+                  disabled={!puoPuntare || totaleSulPanno === 0 || scena === 'esito'}
                 >
-                  ×2
+                  <IconCestino size={20} />
                 </button>
+                {/* Sul panno vuoto le puntate dell'ultimo giro, su quello pieno il doppio. */}
                 {totaleSulPanno === 0 && totaleDi(ultime) > 0 ? (
                   <button
                     type="button"
                     className="rl-tasto"
+                    aria-label="Ripeti le ultime puntate"
                     onClick={ripeti}
                     disabled={!puoPuntare || totaleDi(ultime) > disponibile}
                   >
-                    Ripeti
+                    <IconRefresh size={20} />
                   </button>
                 ) : (
                   <button
                     type="button"
-                    className="rl-tasto"
-                    onClick={azzera}
-                    disabled={!puoPuntare || totaleSulPanno === 0 || scena === 'esito'}
+                    className="rl-tasto rl-tasto--testo"
+                    aria-label="Raddoppia le puntate"
+                    onClick={raddoppia}
+                    disabled={!puoPuntare || totaleSulPanno === 0 || totaleSulPanno * 2 > disponibile}
                   >
-                    Azzera
+                    ×2
                   </button>
                 )}
                 <button

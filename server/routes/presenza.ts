@@ -73,13 +73,15 @@ export const presenzaRoutes = new Hono<AppEnv>()
     const adesso = Date.now()
     const db = c.env.DB
 
-    await segnaPresenza(db, io, attivita, adesso)
-
+    // La presenza si scrive insieme alle letture, non prima: nessuna guarda la propria, e un giro in meno
+    // verso il database si sente a ogni giro, ogni otto secondi, per tutti quelli che hanno l'app aperta.
     // Gli inviti del Wordle: la stessa regola di /coop/inbox. Chi gioca gia' la
     // giornata in una stanza non ne riceve altri.
     const when = today()
     const [
+      ,
       mia,
+      inviti,
       sfide,
       aperta,
       quiz,
@@ -100,7 +102,9 @@ export const presenzaRoutes = new Hono<AppEnv>()
       scarabocchi,
       stanzaScarabocchi,
     ] = await Promise.all([
+      segnaPresenza(db, io, attivita, adesso),
       participation(db, io, when.puzzleNumber),
+      pendingInvites(db, io, when),
       sfideRicevute(db, io, adesso),
       partitaAperta(db, io),
       sfideQuizRicevute(db, io, adesso),
@@ -121,7 +125,7 @@ export const presenzaRoutes = new Hono<AppEnv>()
       invitiScarabocchi(db, io, adesso),
       stanzaScarabocchiBreve(db, io, adesso),
     ])
-    const coop: CoopInvite[] = mia?.spectated ? [] : await pendingInvites(db, io, when)
+    const coop: CoopInvite[] = mia?.spectated ? [] : inviti
 
     const lato = aperta ? latoDi(aperta, io) : null
     const latoInIndovina = apertaIndovina ? latoIndovina(apertaIndovina, io) : null
@@ -129,30 +133,37 @@ export const presenzaRoutes = new Hono<AppEnv>()
     const latoInNomi = apertaNomi ? latoNomi(apertaNomi, io) : null
     const latoInSequenze = apertaSequenze ? latoSequenze(apertaSequenze, io) : null
     const latoInSfida = apertaSfida ? latoSfida(apertaSfida, io) : null
+    // Le partite aperte con l'avversario, tutte insieme: una dopo l'altra erano un giro ciascuna.
+    const [partita, partitaIndovina, partitaTavolo, partitaNomi, partitaSequenze, partitaSfida] = await Promise.all([
+      aperta && lato ? partitaBreve(db, aperta, lato) : null,
+      apertaIndovina && latoInIndovina ? partitaIndovinaBreve(db, apertaIndovina, latoInIndovina) : null,
+      apertaTavolo && latoInTavolo ? partitaTavoloBreve(db, apertaTavolo, latoInTavolo) : null,
+      apertaNomi && latoInNomi ? sfidaNomiBreve(db, apertaNomi, latoInNomi) : null,
+      apertaSequenze && latoInSequenze ? sfidaSequenzeBreve(db, apertaSequenze, latoInSequenze) : null,
+      apertaSfida && latoInSfida ? sfidaLiberaBreve(db, apertaSfida, latoInSfida) : null,
+    ])
     return c.json<PresenzaRisposta>({
       coop,
       // Chi e' gia' in battaglia non riceve altre sfide: le vedrebbe e non
       // potrebbe accettarle.
       battaglia: aperta ? [] : sfide,
-      partita: aperta && lato ? await partitaBreve(db, aperta, lato) : null,
+      partita,
       // Chi e' gia' in un duello non riceve altre sfide a quiz, tranne la rivincita di quello.
       quiz: duello ? quiz.filter((s) => s.rivincita) : quiz,
       duello,
       // Come per la battaglia: chi e' gia' in una partita non riceve altri inviti.
       indovina: apertaIndovina ? [] : indovina,
-      partitaIndovina:
-        apertaIndovina && latoInIndovina ? await partitaIndovinaBreve(db, apertaIndovina, latoInIndovina) : null,
+      partitaIndovina,
       // Scacchi, dama, Forza 4 e go si contano insieme: una partita alla volta, a uno dei quattro.
       tavolo: apertaTavolo ? [] : tavolo,
-      partitaTavolo: apertaTavolo && latoInTavolo ? await partitaTavoloBreve(db, apertaTavolo, latoInTavolo) : null,
+      partitaTavolo,
       // Come per gli altri: chi e' gia' in una sfida a Nomi, cose e città non ne riceve altre.
       nomi: apertaNomi ? [] : nomi,
-      partitaNomi: apertaNomi && latoInNomi ? await sfidaNomiBreve(db, apertaNomi, latoInNomi) : null,
+      partitaNomi,
       sequenze: apertaSequenze ? [] : sequenze,
-      partitaSequenze:
-        apertaSequenze && latoInSequenze ? await sfidaSequenzeBreve(db, apertaSequenze, latoInSequenze) : null,
+      partitaSequenze,
       sfide: apertaSfida ? [] : sfideLibere,
-      partitaSfida: apertaSfida && latoInSfida ? await sfidaLiberaBreve(db, apertaSfida, latoInSfida) : null,
+      partitaSfida,
       compagnia,
       lupus,
       stanzaLupus,

@@ -38,7 +38,7 @@ import {
   type CarteInGioco,
   type LatoPosto,
 } from '@/games/blackjack/Tavolo'
-import { uscitaDalTavolo } from '@/games/blackjack/uscita'
+import { esciFraPoco } from '@/games/blackjack/uscita'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { centroDi, incassaMonete, puntaFiches, spostaFiches, volaFiche } from '@/games/fortuna/voli'
@@ -367,15 +367,22 @@ export default function BlackjackTavolo() {
 
   /* ─────────────────────────────────  Il server  ───────────────────────────────── */
 
+  const andatoVia = useRef(false)
   const leggi = useCallback(async () => {
     try {
       const v = await api<VistaTavoloBJ>(`/blackjack/tavolo/${id}`)
       applica(v, vistaRef.current === null)
     } catch (e) {
-      if (e instanceof ApiFetchError && e.status === 404) setErrore('Questo tavolo non c’è più.')
-      else if (!vistaRef.current) setErrore(e instanceof ApiFetchError ? e.message : 'Non riesco ad aprire il tavolo.')
+      // Un tavolo che non c'e' piu' — lo si era lasciato, e vuoto se n'e' andato —: si torna alla sala.
+      if (e instanceof ApiFetchError && e.status === 404) {
+        if (!andatoVia.current) {
+          andatoVia.current = true
+          toast.show('Il tavolo si è chiuso.')
+          vai(ROTTE.blackjack, { direzione: 'indietro', replace: true })
+        }
+      } else if (!vistaRef.current) setErrore(e instanceof ApiFetchError ? e.message : 'Non riesco ad aprire il tavolo.')
     }
-  }, [id, applica])
+  }, [id, applica, toast, vai])
 
   useEffect(() => {
     void leggi()
@@ -407,16 +414,17 @@ export default function BlackjackTavolo() {
     }
   }, [leggi])
 
-  // Chi lascia la pagina dall'app si alza. In sviluppo React smonta e rimonta subito: l'uscita aspetta un giro
-  // per saperlo. Chi chiude la scheda, o la ricarica, resta seduto: lo libera la presenza, se non torna.
-  const uscita = useRef(0)
+  // Chi lascia la pagina dall'app si alza (vedi `esciFraPoco`). Chi chiude la scheda, o la ricarica, resta
+  // seduto: lo libera la presenza, se non torna.
+  const annullaUscita = useRef<(() => void) | null>(null)
   useEffect(() => {
-    window.clearTimeout(uscita.current)
+    annullaUscita.current?.()
+    annullaUscita.current = null
     return () => {
-      uscita.current = window.setTimeout(() => {
-        uscitaDalTavolo(api(`/blackjack/tavolo/${id}/lascia`, { method: 'POST', body: {}, keepalive: true }))
-        dimentica('/fortuna')
-      }, 0)
+      annullaUscita.current = esciFraPoco(
+        () => api(`/blackjack/tavolo/${id}/lascia`, { method: 'POST', body: {}, keepalive: true }),
+        () => dimentica('/fortuna'),
+      )
     }
   }, [id])
 
