@@ -81,8 +81,12 @@ export const MOLTIPLICATORE_SPLIT = 0.5
 /** I due lati della moneta: il blu vince, il rosso e' del banco. */
 export type LatoMoneta = 'blu' | 'rosso'
 
-/** La puntata piu' bassa: con meno, la vincita piu' piccola (×1,25) non darebbe nemmeno un punto. */
-export const PUNTATA_MINIMA = 10
+/**
+ * La puntata piu' bassa, un punto: si gioca anche con quel che resta. Con le
+ * puntate piccole il ×1,25 per difetto ridarebbe la puntata com'era, e per
+ * questo un premio da' sempre almeno un punto in piu' (`vincitaDi`).
+ */
+export const PUNTATA_MINIMA = 1
 
 /** Fra un giro e l'altro: la ruota impiega qualche secondo a fermarsi, e chi gira con un programma va fermato. */
 export const INTERVALLO_GIRI_MS = 3_000
@@ -356,10 +360,13 @@ export function categorieDelGiorno(numero: number): CategoriaQuiz[] {
 /**
  * Quel che restituisce una puntata vinta: la puntata per il moltiplicatore, per
  * difetto, come al banco. Si conta in centesimi: 1,25 × 13 non deve diventare
- * 16,249999.
+ * 16,249999. Un premio restituisce sempre almeno un punto piu' della puntata:
+ * per difetto, 1 × 1,25 ridarebbe la puntata com'era, che e' il banco con un
+ * altro nome. Lo split e il ×0,5 no: con un punto ridanno zero.
  */
 export function vincitaDi(puntata: number, moltiplicatore: number): number {
-  return Math.floor((puntata * Math.round(moltiplicatore * 100)) / 100)
+  const perDifetto = Math.floor((puntata * Math.round(moltiplicatore * 100)) / 100)
+  return moltiplicatore > 1 ? Math.max(perDifetto, puntata + 1) : perDifetto
 }
 
 /** Quel che un giro da' o toglie alla giornata: la vincita meno la puntata, o la puntata persa. */

@@ -17,7 +17,7 @@ import {
   type StatoRuota,
 } from '@/games/stato'
 import { useDati } from '@/lib/dati'
-import { formatGameDate } from '@/lib/format'
+import { formatGameDate, inPunti } from '@/lib/format'
 import { NOME_BLACKJACK, PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { gameDate } from '@shared/daily'
 import { NOME_ROULETTE, PUNTATA_MINIMA_RL } from '@shared/roulette'
@@ -115,7 +115,7 @@ export default function Fortuna() {
             <h3 className="cru-aiuto__titolo">Quanto si punta</h3>
             <ul className="cru-aiuto__elenco">
               <li>
-                <strong>{NOME_CRAZY_TIME}</strong>: da {PUNTATA_MINIMA} punti a tutto il saldo.
+                <strong>{NOME_CRAZY_TIME}</strong>: da {inPunti(PUNTATA_MINIMA)} a tutto il saldo.
               </li>
               <li>
                 <strong>{NOME_SLOT}</strong>: da {PUNTATA_MINIMA_SLOT} punto a tutto il saldo.

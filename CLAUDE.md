@@ -559,7 +559,12 @@ quattro moltiplicatori di `MOLTIPLICATORI_MONETA`, deciso con il giro, che il
 blu paga e il rosso no; il Pachinko e il Cash Hunt hanno i loro (vedi sotto);
 la fortuna fa girare la ruota fortunata. Nessun esito ridà la puntata com'era,
 che sarebbe il banco con un altro nome: un premio la restituisce con qualcosa
-in piu', lo split e il ×0,5 dei minigiochi con la meta' in meno. Chi risponde
+in piu', lo split e il ×0,5 dei minigiochi con la meta' in meno. Si punta da un
+punto (`PUNTATA_MINIMA`), e per difetto 1 × 1,25 farebbe 1: per questo un
+premio da' sempre almeno un punto piu' della puntata (`vincitaDi`), e con un
+punto lo split ridà zero e si racconta come il banco. Con le puntate piccole la
+resa si sposta — a un punto chi sa tutto riceve il 90%, a due il 97,75% — ma
+resta sotto la puntata. Chi risponde
 sempre giusto riceve in media il 97,12% di quel che punta (`resa`), quanto alla
 roulette e come la slot e il blackjack; chi risponde giusto a tre domande su
 quattro l'89%, a una su due l'81%, chi tira a indovinare il 74%: nemmeno chi sa

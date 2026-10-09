@@ -52,6 +52,7 @@ import { COLORE_FICHE, inFiches } from '@/games/fortuna/fiches'
 import { centroDi, incassaMonete, perdiFiches, puntaFiches, spostaFiches, volaFiche, type Punto } from '@/games/fortuna/voli'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
+import { inPunti } from '@/lib/format'
 import { suona } from '@/lib/suoni'
 import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
 import {
@@ -417,7 +418,8 @@ export default function RuotaPagina() {
       return
     }
     annuncia(g)
-    incassa(palio.moltiplicatore, da)
+    if (tornatoDa(g) > 0) incassa(palio.moltiplicatore, da)
+    else setConto(null)
     dopo(MONETA_IN_VISTA_MS, allaRuota)
   }
 
@@ -516,7 +518,8 @@ export default function RuotaPagina() {
     }
     const fortunata = g.fortunata !== null
     const s = spicchioDi(g)
-    if (s.tipo === 'banco') {
+    // Con un punto sul tavolo la meta' dello split e' zero: e' il banco, e si racconta come lui.
+    if (s.tipo === 'banco' || (s.tipo === 'split' && tornatoDa(g) === 0)) {
       setConto(null)
       setEsito(true)
       setLuci('perso')
@@ -1259,7 +1262,7 @@ function Indicazione({ titolo, children }: { titolo: string; children: ReactNode
 function PochiPunti({ saldo, onClassificate }: { saldo: number; onClassificate: () => void }) {
   return (
     <div className="ct-indicazione">
-      <p className="ct-indicazione__titolo">Servono {PUNTATA_MINIMA} punti</p>
+      <p className="ct-indicazione__titolo">Serve {inPunti(PUNTATA_MINIMA)}</p>
       <p className="ct-indicazione__testo">{saldo > 0 ? `Ne hai ${saldo}.` : 'Fai punti nelle classificate.'}</p>
       <Button size="lg" fullWidth variant="tinted" onClick={onClassificate}>
         Alle classificate

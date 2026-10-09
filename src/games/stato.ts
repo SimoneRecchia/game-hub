@@ -607,7 +607,7 @@ export function statoRuota(s: RuotaSummary): StatoRuota {
     return {
       fase: 'non-pronta',
       titolo: 'Prima le classificate',
-      dettaglio: `Servono ${PUNTATA_MINIMA} punti di oggi`,
+      dettaglio: PUNTATA_MINIMA === 1 ? 'Serve 1 punto di oggi' : `Servono ${PUNTATA_MINIMA} punti di oggi`,
       avanzamento: s.giri > 0 ? null : Math.max(0, s.saldo) / PUNTATA_MINIMA,
       azione: '',
       a,
