@@ -8,7 +8,14 @@ import { BottoneBarra } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
 import { Vetrina } from '@/components/Vetrina'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
-import { statoBlackjack, statoRoulette, statoRuota, statoSlot, type StatoRuota } from '@/games/stato'
+import {
+  statoBlackjack,
+  statoRoulette,
+  statoRuota,
+  statoSlot,
+  statoSuperEnalotto,
+  type StatoRuota,
+} from '@/games/stato'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
 import { NOME_BLACKJACK, PUNTATA_MINIMA_BJ } from '@shared/blackjack'
@@ -16,6 +23,7 @@ import { gameDate } from '@shared/daily'
 import { NOME_ROULETTE, PUNTATA_MINIMA_RL } from '@shared/roulette'
 import { NOME_CRAZY_TIME, PUNTATA_MINIMA, resa } from '@shared/ruota'
 import { NOME_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
+import { NOME_SUPERENALOTTO, QUOTA_PREMI, SCHEDE_MASSIME } from '@shared/superenalotto'
 import type { FortunaRisposta, GiocoFortuna } from '@shared/types'
 import '@/games/cruciverba/ComeSiGioca.css'
 import './Fortuna.css'
@@ -26,6 +34,7 @@ const GIOCHI: ReadonlyArray<{ id: GiocoFortuna; nome: string; a: string }> = [
   { id: 'slot', nome: NOME_SLOT, a: ROTTE.slot },
   { id: 'blackjack', nome: NOME_BLACKJACK, a: ROTTE.blackjack },
   { id: 'roulette', nome: NOME_ROULETTE, a: ROTTE.roulette },
+  { id: 'superenalotto', nome: NOME_SUPERENALOTTO, a: ROTTE.superenalotto },
 ]
 
 const RESA = Math.round(resa(1) * 100)
@@ -51,6 +60,7 @@ export default function Fortuna() {
         slot: statoSlot(dati),
         blackjack: statoBlackjack(dati),
         roulette: statoRoulette(dati),
+        superenalotto: statoSuperEnalotto(dati),
       }
     : null
 
@@ -118,13 +128,18 @@ export default function Fortuna() {
                 <strong>{NOME_ROULETTE}</strong>: da {PUNTATA_MINIMA_RL} punto a tutto il saldo, al tavolo con gli
                 amici o da solo.
               </li>
+              <li>
+                <strong>{NOME_SUPERENALOTTO}</strong>: una scheda costa 1 punto, fino a {SCHEDE_MASSIME} per
+                estrazione.
+              </li>
             </ul>
           </section>
           <section className="cru-aiuto__sezione">
             <h3 className="cru-aiuto__titolo">Vince il banco</h3>
             <p className="cru-aiuto__testo">
               In tutti i giochi, chi gioca al meglio riceve in media il {RESA}% di quel che punta: si può avere fortuna
-              una volta, e giocando a lungo si perde. Domani si riparte dalle classificate di domani.
+              una volta, e giocando a lungo si perde. Al {NOME_SUPERENALOTTO} va in premi il {QUOTA_PREMI}% delle
+              giocate, come in quello vero. Domani si riparte dalle classificate di domani.
             </p>
           </section>
         </div>

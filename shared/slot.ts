@@ -69,13 +69,11 @@ export const CILIEGIE: readonly number[] = [0, 1, 5, 20]
 /** Una domanda vinta: quante volte la puntata. */
 export const VINCITA_DOMANDA = 15
 
-export const PUNTATA_MINIMA_SLOT = 1
 /**
- * Le fiches della slot: ogni tocco aggiunge il suo valore alla puntata, fino al
- * saldo. Non c'e' un massimo, come a Crazy Time e al blackjack: le fiches
- * grandi servono ad arrivare a una puntata alta in pochi tocchi.
+ * Si punta da uno a tutto il saldo, con le fiches di Crazy Time
+ * (`src/games/fortuna/fiches.ts`): ogni tocco aggiunge il suo valore.
  */
-export const PUNTATE_SLOT: readonly number[] = [1, 5, 25, 100]
+export const PUNTATA_MINIMA_SLOT = 1
 
 /**
  * Fra due giri: i rulli si fermano uno dopo l'altro, e un programma che tira la

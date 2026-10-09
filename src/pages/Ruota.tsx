@@ -34,7 +34,7 @@ import { FestaRuota, type DatiFestaRuota } from '@/games/ruota/Festa'
 import { COLPO_MS, ColpoDiFortuna, NastroFortuna, PremioCheSale } from '@/games/ruota/Fortuna'
 import { VISTA } from '@/games/ruota/geometria'
 import { Intermezzo, PIOGGIA_MS, PioggiaDiMonete, type DatiIntermezzo } from '@/games/ruota/Intermezzo'
-import { LineaPuntata } from '@/games/ruota/LineaPuntata'
+import { FichesPuntata } from '@/games/ruota/FichesPuntata'
 import {
   CONTO_DIECI,
   CONTO_QUIZ,
@@ -48,7 +48,8 @@ import { Pachinko, type FasePachinko } from '@/games/ruota/Pachinko'
 import { RuotaFisica, type Meta, type Mozzo } from '@/games/ruota/RuotaFisica'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
-import { centroDi, incassaMonete, perdiFiches, puntaFiches, type Punto } from '@/games/fortuna/voli'
+import { COLORE_FICHE, inFiches } from '@/games/fortuna/fiches'
+import { centroDi, incassaMonete, perdiFiches, puntaFiches, spostaFiches, volaFiche, type Punto } from '@/games/fortuna/voli'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
@@ -222,6 +223,9 @@ export default function RuotaPagina() {
   const { adesivo, accoda } = useCodaAdesivi()
   // Il saldo sul tabellone: da li' partono le fiches e li' arrivano le monete.
   const saldoRef = useRef<HTMLSpanElement>(null)
+  /** Il numero della puntata, dove arrivano le fiches, e la loro riga, dove tornano. */
+  const puntataRef = useRef<HTMLSpanElement>(null)
+  const ficheRef = useRef<HTMLDivElement>(null)
   // Com'e' finita la domanda, da raccontare sulla ruota quando si torna: le monete al saldo, o le fiches al banco.
   const daRaccontare = useRef<{ vinto: boolean; moltiplicatore: number; puntata: number; vincita: number } | null>(
     null,
@@ -312,8 +316,9 @@ export default function RuotaPagina() {
   const quiz = quizDi(giro)
   const saldo = stato?.saldo ?? 0
   const puoGirare = saldo >= PUNTATA_MINIMA
-  // Si punta quanto si vuole, dalla minima a tutto il saldo; finché non la si cambia, la puntata e' quella di prima.
-  const scelta = Math.min(saldo, Math.max(PUNTATA_MINIMA, puntata ?? giro?.puntata ?? PUNTATA_MINIMA))
+  // Si punta con le fiches, dalla minima a tutto il saldo; finché non la si tocca, la puntata e' quella di prima.
+  const scelta = Math.min(saldo, puntata ?? giro?.puntata ?? 0)
+  const puntataPronta = scelta >= PUNTATA_MINIMA
   const girando = inGioco !== null
   /** La ruota fortunata da girare: la puntata e' gia' sul tavolo. */
   const fortunaDaGirare = giro?.stato === 'sfida' && sfida?.tipo === 'fortuna'
@@ -414,6 +419,34 @@ export default function RuotaPagina() {
     annuncia(g)
     incassa(palio.moltiplicatore, da)
     dopo(MONETA_IN_VISTA_MS, allaRuota)
+  }
+
+  /* ───────────────────────────────  La puntata  ─────────────────────────────── */
+
+  /** Una fiche: la puntata cresce del suo valore, fino al saldo, e la fiche vola sul numero della puntata. */
+  const aggiungiFiche = (valore: number, bottone: HTMLElement) => {
+    const nuova = Math.min(saldo, scelta + valore)
+    if (nuova <= scelta) {
+      suona('tetto')
+      return
+    }
+    setPuntata(nuova)
+    const da = centroDi(bottone)
+    const a = centroDi(puntataRef.current)
+    if (da && a) void volaFiche(da, a, valore, COLORE_FICHE[valore])
+    else suona('fiche', { volume: 0.6 })
+    if (nuova < scelta + valore) suona('tetto', { ritardo: 0.4 })
+  }
+
+  /** Azzera: le fiches tornano dal numero della puntata alla loro riga, in pila. */
+  const azzeraPuntata = () => {
+    if (scelta === 0) return
+    setPuntata(0)
+    const da = centroDi(puntataRef.current)
+    const a = centroDi(ficheRef.current)
+    const pila = inFiches(scelta).map((v) => COLORE_FICHE[v])
+    if (da && a) void spostaFiches(da, a, pila)
+    else suona('fiche', { volume: 0.4 })
   }
 
   /* ───────────────────────────────  La ruota  ─────────────────────────────── */
@@ -805,7 +838,8 @@ export default function RuotaPagina() {
   const mozzoQ: Mozzo = rivelato && palio ? { testo: scriviMoltiplicatore(palio.moltiplicatore) } : { testo: '×?' }
   const libera = scena === 'ruota' && !intermezzo && !girando && !inviando && !festa && colpo === null
   const prontaRuota =
-    libera && (fortunaDaGirare ? modo === 'fortunata' : modo === 'normale' && !inSfida && puoGirare && riposata)
+    libera &&
+    (fortunaDaGirare ? modo === 'fortunata' : modo === 'normale' && !inSfida && puoGirare && puntataPronta && riposata)
   const prontaQ =
     scena === 'quiz' && !intermezzo && !girandoQ && !rivelato && !inviando && modoQ !== 'aumento' && !!quiz
   const inDomanda = scena === 'domanda' && !!quiz
@@ -1103,15 +1137,26 @@ export default function RuotaPagina() {
               <PochiPunti saldo={saldo} onClassificate={() => vai(ROTTE.home)} />
             ) : (
               <>
-                <LineaPuntata min={PUNTATA_MINIMA} max={saldo} valore={scelta} onChange={setPuntata} />
-                <p className={`ct-suggerimento${debole ? ' is-debole' : ''}`}>
-                  <ManoCheTrascina />
-                  {girando
-                    ? `${inGioco} punti in gioco`
-                    : debole
-                      ? 'Più forte: trascinala e lasciala andare'
-                      : 'Trascina la ruota per girarla'}
-                </p>
+                <FichesPuntata
+                  valore={scelta}
+                  minima={PUNTATA_MINIMA}
+                  tetto={saldo}
+                  attiva={!girando && !inviando}
+                  valoreRef={puntataRef}
+                  rigaRef={ficheRef}
+                  onAggiungi={aggiungiFiche}
+                  onAzzera={azzeraPuntata}
+                />
+                {(puntataPronta || girando) && (
+                  <p className={`ct-suggerimento${debole ? ' is-debole' : ''}`}>
+                    <ManoCheTrascina />
+                    {girando
+                      ? `${inGioco} punti in gioco`
+                      : debole
+                        ? 'Più forte: trascinala e lasciala andare'
+                        : 'Trascina la ruota per girarla'}
+                  </p>
+                )}
               </>
             )}
           </section>

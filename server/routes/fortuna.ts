@@ -8,6 +8,7 @@ import { riepilogoRuota } from '../lib/ruotaStore'
 import { riepilogoSlot } from '../lib/slotStore'
 import { riepilogoBlackjack } from '../lib/blackjackStore'
 import { riepilogoRoulette } from '../lib/rouletteStore'
+import { assicura, riepilogoEnalotto } from '../lib/enalottoStore'
 import { today } from '../lib/wordleStore'
 
 /**
@@ -18,11 +19,14 @@ export const fortunaRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/
   const db = c.env.DB
   const io = c.get('player').id
   const quando = today()
-  const [saldo, slot, blackjack, roulette] = await Promise.all([
+  // I premi del SuperEnalotto prima del saldo: finita la diretta, chi apre la scheda li trova gia' dentro.
+  await assicura(db)
+  const [saldo, slot, blackjack, roulette, superenalotto] = await Promise.all([
     saldoDi(db, io, quando.puzzleNumber),
     riepilogoSlot(db, io),
     riepilogoBlackjack(db, io),
     riepilogoRoulette(db, io),
+    riepilogoEnalotto(db, io),
   ])
   const ruota = await riepilogoRuota(db, io, saldo)
   return c.json<FortunaRisposta>({
@@ -37,5 +41,6 @@ export const fortunaRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/
     slot,
     blackjack,
     roulette,
+    superenalotto,
   })
 })

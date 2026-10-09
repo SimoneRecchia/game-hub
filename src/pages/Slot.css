@@ -1668,20 +1668,6 @@
   border: 1.5px dashed rgba(255, 255, 255, 0.75);
 }
 
-/* I colori delle fiches dei casinò: bianca o blu da uno, rossa da cinque, verde da venticinque, nera da cento. */
-.slot-gettone.is-5 {
-  --fiche: #e3132f;
-}
-
-.slot-gettone.is-25 {
-  --fiche: #1f9d55;
-}
-
-.slot-gettone.is-100 {
-  --fiche: #1b1b22;
-  font-size: calc(var(--u) * 3.4);
-}
-
 /* Le fiches si sommano: ogni tocco ne posa una, e il gettone si abbassa sul banco come premuto. */
 .slot-gettone:active:not(:disabled) {
   transform: translateY(calc(var(--u) * 0.9)) scale(0.96);

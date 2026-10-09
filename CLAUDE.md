@@ -467,7 +467,7 @@ giochi hanno dato o tolto nel periodo: si va sotto zero, e a pari conto passa
 avanti chi ha giocato meno.
 
 **La Fortuna e' una scheda, e i suoi giochi puntano un saldo solo.**
-Crazy Time, la slot, il blackjack e la roulette stanno nella scheda Fortuna (`/fortuna`, il
+Crazy Time, la slot, il blackjack, la roulette e il SuperEnalotto stanno nella scheda Fortuna (`/fortuna`, il
 quadrifoglio), con il saldo di oggi in cima: i punti delle classificate piu'
 quel che i giochi della Fortuna hanno dato o tolto oggi (`saldoDi` in
 `server/lib/fortuna.ts`). Quel che si vince a un gioco si punta all'altro. Ogni
@@ -480,7 +480,7 @@ il prossimo gioco della Fortuna ci scrive e basta.
 Crazy Time e' rimasto nelle sue tabelle perché spostarne i conti avrebbe voluto
 copiare i giorni passati, e nei minuti del deploy il codice di prima avrebbe
 scritto dove il nuovo non leggeva. La generale li somma tutti e li tiene ognuno
-nella sua colonna (`GeneraleRow.ruota`, `slot`, `blackjack`, `roulette`); la scheda ha la
+nella sua colonna (`GeneraleRow.ruota`, `slot`, `blackjack`, `roulette`, `superenalotto`); la scheda ha la
 sua richiesta (`/api/fortuna`), e le Giornaliere non mostrano Crazy Time.
 
 **Nei giochi della Fortuna si vedono il saldo e la puntata, e basta.** Il
@@ -489,7 +489,10 @@ voci, il saldo di adesso e la puntata in gioco o scelta; la scheda della
 Fortuna ha il saldo grande, senza scomporlo. Quel che si e' vinto o perso oggi,
 e da quanto si e' partiti — i punti delle classificate — non si dicono, per
 scelta: al tavolo si guarda quel che si ha davanti. Le carte della scheda
-dicono quanto si puo' puntare, non com'e' andata. Il momento di un giro invece
+non dicono com'e' andata, e nemmeno quanto si puo' puntare, che e' il saldo in
+cima: ognuna dice quel che il suo gioco ha di suo ("Tre sette pagano 300
+volte", "Il pieno paga 35 a 1", il jackpot del SuperEnalotto). Ripetere sotto
+ogni gioco "puntate da 1 a 400 punti" diceva quattro volte la stessa cosa. Il momento di un giro invece
 si vede tutto — l'adesivo con la vincita, il display, le targhe e la festa della
 slot, il mozzo e le feste della ruota, le fasce sulle mani del blackjack —
 perché e' il gioco. Il conto della giornata resta nella classifica della
@@ -880,9 +883,12 @@ intero da' in un giro decine di migliaia di punti; il tetto l'ha tolto chi
 gioca, sapendolo: i sette escono una volta ogni sessantaquattromila giri.
 
 **Le fiches si sommano, e la puntata la dice il display.** Ogni tocco di una
-fiche aggiunge il suo valore — 1, 5, 25 e 100, i colori delle fiches dei casino'
-(`PUNTATE_SLOT`) —, quindi si punta qualunque cifra fino al saldo; erano un
-gruppo di scelte, e il tocco sostituiva la puntata invece di aggiungere. Una
+fiche aggiunge il suo valore — 1, 5, 10 e 25, con i colori dei casino', le
+stesse di Crazy Time (`FICHES` in `src/games/fortuna/fiches.ts`) —, quindi si
+punta qualunque cifra fino al saldo; erano un gruppo di scelte, e il tocco
+sostituiva la puntata invece di aggiungere. Per un periodo c'erano anche le
+fiches da cento: chi gioca ha voluto le quattro piccole, toccate quante volte
+si vuole. Una
 fiche che passerebbe il saldo si ferma li', e il display lo dice con il MAX che lampeggia e un tocco morbido
 (`tetto` in `suoni.ts`), mai con un errore: e' quel che fanno le slot vere. La
 fiche vola dal bottone al display, che conta quando arriva, mentre la puntata
@@ -1018,6 +1024,62 @@ non ci si mette altro. `--w` e' registrata con `@property`,
 quindi i figli ereditano una lunghezza vera: non registrata, le unita' del
 contenitore si risolverebbero dove la si usa, e dentro la pancia, che e' un
 contenitore anche lei, varrebbero le sue.
+
+**Il SuperEnalotto e' quello vero, con quattro numeri su venti.** Le regole
+stanno in `shared/superenalotto.ts`: una scheda costa un punto, se ne giocano
+al piu' cinque per estrazione, e si estrae il lunedi', il mercoledi' e il
+venerdi'; alle 21 il gioco chiude, alle 21:05 c'e' la diretta (`DURATA_DIRETTA_MS`),
+e il concorso dopo si apre a diretta finita. Il montepremi e' il 60% della
+raccolta, come nel gioco vero, e si divide nelle sue proporzioni: il vero ha sei
+categorie — al 6 il 17,4% del montepremi, a 5+1, 5, 4 e 3 insieme il 34,2%, al
+2 il 40%, e l'8,4% alle vincite immediate —, e con quattro numeri il 4 e' il
+jackpot, il 3 prende le categorie di mezzo e il 2 la sua, rifatte su cento
+(`RIPARTIZIONE`: 19, 37, 44). Ogni premio si divide in parti uguali fra chi ha
+fatto la categoria; se nessuno fa 4 il jackpot passa al concorso dopo, e cosi'
+le parti delle categorie senza vincitori; una categoria che pagherebbe a testa
+meno di quella sotto si unisce a lei (`liquida`, come nel regolamento). I conti
+sono in centesimi di punto e i premi in punti, per difetto: gli avanzi vanno nel
+jackpot, e niente si perde oltre al 40% che il gioco tiene. Venti numeri e non
+novanta perché il jackpot esca: con quattro su venti una scheda su 4845 fa 4,
+una su 76 il 3 e una su sette il 2, e con qualche decina di schede a estrazione
+il jackpot esce in qualche mese. Il nome e' quello vero, e il marchio e' di
+Sisal: come per Crazy Time, se l'app diventasse pubblica andrebbe cambiato.
+Con poche schede i premi sono piccoli, e il jackpot comincia da zero: e' quel
+che si e' chiesto, "dipende da quanti giocano".
+
+**L'estrazione la fa la prima richiesta dopo le 21, e i premi la prima dopo la
+diretta.** Non c'e' un orologio sul server: `assicura` (`server/lib/enalottoStore.ts`),
+chiamata dal gioco e dalla scheda della Fortuna, pesca i numeri dell'ultimo
+concorso chiuso con `crypto.getRandomValues` e li fissa (`INSERT OR IGNORE`, e
+la rilettura), e paga i concorsi la cui diretta e' finita, in ordine perché il
+jackpot passa dall'uno all'altro. I numeri non escono prima delle 21:05, e
+nella diretta quanti numeri ha preso una scheda lo dice la diretta, non il
+server. Il pagamento e' un batch con l'impronta in `scrittura`, come il tavolo
+del blackjack: due richieste insieme non pagano due volte. Una scheda costa al
+saldo del giorno in cui la si compra, e il premio va a quello dell'estrazione:
+`fortuna_giornate` si riconta dalle schede (`ricontaSql`), quindi chi vince
+lunedi' con una scheda comprata sabato ha il premio nella giornata di lunedi', e
+la classifica della Fortuna lo mostra anche se quel giorno non ha giocato. Un
+concorso che nessuno ha guardato lo paga la prima richiesta dopo, nel suo
+giorno.
+
+**La diretta e' in 3D vero, con three.js, e arriva a parte.** `Urna`
+(`src/games/superenalotto/urna.ts`) e' una scena sola: la sfera di vetro sul
+piedistallo d'oro, le venti palline con il numero dipinto due volte, davanti e
+dietro, il tubo, la rotaia, e una regia che segue la pallina estratta. Tutto e'
+una funzione del tempo della diretta, tranne le palline nell'urna, che hanno una
+fisica loro — l'aria dal fondo che fa la fontana, le pareti, gli urti — con due
+vettori di lavoro, perché un vettore nuovo per coppia sarebbero ventimila
+oggetti al secondo. Niente ombre vere e un ambiente calcolato
+(`RoomEnvironment`) invece di un'immagine da scaricare: dopo la roulette, la
+regola e' che un telefono la faccia girare senza scaldarsi. three.js sta solo
+nel pezzo della diretta (`Diretta`, con `lazy`): la pagina della schedina non lo
+scarica. Chi ha la pagina aperta vede la diretta aprirsi da sola un minuto
+prima; chi arriva a meta' la trova a meta', e dopo la si rivede ("Rivedi
+l'estrazione"), con lo stesso orologio che parte da li'. Senza WebGL l'urna e'
+disegnata e ferma, e le palline si leggono sotto. La schedina invece e' di
+carta: le caselle stampate in rosso, la croce a penna blu che si traccia, i
+numeri scritti a mano (`--font-mano`) e il timbro "Giocata".
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
 europee dei casinò italiani, controllate sui regolamenti di Venezia e di
@@ -2832,14 +2894,14 @@ un punto qualunque e le etichette anche, così non serve trascinare (WCAG
 tastiera e' lo slider di WAI-ARIA, con le frecce, Inizio e Fine, e
 `aria-valuetext` che dice "senza tempo" invece del numero del punto.
 
-**La puntata di Crazy Time invece e' una cifra, e si sceglie libera.** Non e'
-una scelta fra poche alternative: si punta quanto si vuole, un punto alla volta,
-dalla minima a tutto il saldo (`LineaPuntata`). La linea e' un `input type="range"` senza
-punti, con la pista e la maniglia del cursore, e accanto il numero si scrive:
-su una linea di trecento punti col dito la cifra esatta non si prende, e con un
-cursore va dato anche il campo per il valore preciso (Nielsen Norman Group). Il
-campo ha il testo a 17 punti, perché sotto i 16 Safari ingrandisce la pagina
-quando prende il fuoco.
+**La puntata di Crazy Time si fa con le fiches, come al tavolo.** Le stesse
+quattro della slot (1, 5, 10 e 25, `FichesPuntata`): ogni tocco aggiunge il suo
+valore fino al saldo, e la fiche vola sul numero della puntata; "Azzera" le
+riporta alla loro riga. La puntata resta quella del giro di prima finché non la
+si tocca, e sotto `PUNTATA_MINIMA` la ruota non si prende: la carta dice da
+quanto si punta, e l'invito a trascinare compare quando la puntata c'e'. Prima
+era una linea continua con il numero da scrivere (`LineaPuntata`), e in un gioco
+d'azzardo una cifra scritta non sembrava una puntata.
 
 **Dove si gioca si sceglie su una cartina.** Il foglio "Dove" del quiz ha una
 tessera per zona, con la sagoma del continente nel colore della materia e le

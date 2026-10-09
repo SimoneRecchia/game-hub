@@ -9,6 +9,7 @@ import { NOME_BLACKJACK } from '@shared/blackjack'
 import { NOME_ROULETTE } from '@shared/roulette'
 import { NOME_CRAZY_TIME } from '@shared/ruota'
 import { NOME_SLOT } from '@shared/slot'
+import { NOME_SUPERENALOTTO } from '@shared/superenalotto'
 import type { GiocoClassificato, GiocoDaTavolo } from '@shared/types'
 
 /** Il percorso e' questo, o una schermata sotto questo. */
@@ -20,6 +21,7 @@ export const GIOCHI_FORTUNA = [
   { id: 'slot', nome: NOME_SLOT, a: ROTTE.slot },
   { id: 'blackjack', nome: NOME_BLACKJACK, a: ROTTE.blackjack },
   { id: 'roulette', nome: NOME_ROULETTE, a: ROTTE.roulette },
+  { id: 'superenalotto', nome: NOME_SUPERENALOTTO, a: ROTTE.superenalotto },
 ] as const
 export const PERCORSI_FORTUNA = [ROTTE.fortuna, ...GIOCHI_FORTUNA.map((g) => g.a)]
 

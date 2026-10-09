@@ -134,6 +134,11 @@
   --c2: var(--roulette-2);
 }
 
+.copertina--superenalotto {
+  --c1: var(--superenalotto-1);
+  --c2: var(--superenalotto-2);
+}
+
 .copertina--fortuna {
   --c1: var(--fortuna-1);
   --c2: var(--fortuna-2);
