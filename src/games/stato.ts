@@ -9,9 +9,10 @@
 
 import { NOMI_CATEGORIE } from '@shared/quiz'
 import { PUNTATA_MINIMA, SPICCHI_FORTUNATI, SPICCHI_RUOTA, nomeDi } from '@shared/ruota'
-import { PUNTATA_MINIMA_SLOT } from '@shared/slot'
+import { PREMI, PUNTATA_MINIMA_SLOT } from '@shared/slot'
 import { PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { PUNTATA_MINIMA_RL } from '@shared/roulette'
+import { COSTO_SCHEDA, SCHEDE_MASSIME } from '@shared/superenalotto'
 import { NOMI_LIVELLI } from '@shared/sudoku'
 import type {
   AnagrammiSummary,
@@ -612,10 +613,11 @@ export function statoRuota(s: RuotaSummary): StatoRuota {
       a,
     }
   }
+  // Quanto si puo' puntare lo dice il saldo, in cima alla scheda: ogni carta dice invece che cosa ha di suo.
   return {
     fase: 'da-giocare',
-    titolo: 'Da girare',
-    dettaglio: `Puoi puntare fino a ${s.saldo} punti`,
+    titolo: 'Gira la ruota',
+    dettaglio: 'Quattro minigiochi e la ruota fortunata',
     avanzamento: null,
     azione: 'Gira',
     a,
@@ -640,8 +642,8 @@ export function statoSlot(s: FortunaRisposta): StatoRuota {
   }
   return {
     fase: 'da-giocare',
-    titolo: 'Da giocare',
-    dettaglio: `Puntate da ${PUNTATA_MINIMA_SLOT} a ${s.saldo} punti`,
+    titolo: 'Tira la leva',
+    dettaglio: `Tre sette pagano ${PREMI['7']} volte`,
     avanzamento: null,
     azione: 'Gioca',
     a,
@@ -653,12 +655,18 @@ export function statoSlot(s: FortunaRisposta): StatoRuota {
  * quelli degli amici, o un tavolo nuovo.
  */
 export function statoBlackjack(s: FortunaRisposta): StatoRuota {
-  return statoDelTavolo(s, s.blackjack, PUNTATA_MINIMA_BJ, ROTTE.blackjack, ROTTE.tavoloBJ)
+  return statoDelTavolo(s, s.blackjack, PUNTATA_MINIMA_BJ, ROTTE.blackjack, ROTTE.tavoloBJ, {
+    titolo: 'Batti il banco',
+    dettaglio: 'Il blackjack paga 1 a 1',
+  })
 }
 
 /** La roulette nella scheda della Fortuna: come il blackjack, il tavolo a cui si e' seduti o quelli degli amici. */
 export function statoRoulette(s: FortunaRisposta): StatoRuota {
-  return statoDelTavolo(s, s.roulette, PUNTATA_MINIMA_RL, ROTTE.roulette, ROTTE.tavoloRL)
+  return statoDelTavolo(s, s.roulette, PUNTATA_MINIMA_RL, ROTTE.roulette, ROTTE.tavoloRL, {
+    titolo: 'Fate il vostro gioco',
+    dettaglio: 'Il pieno paga 35 a 1',
+  })
 }
 
 function statoDelTavolo(
@@ -667,6 +675,8 @@ function statoDelTavolo(
   minima: number,
   sala: string,
   tavolo: (id: string) => string,
+  /** Che cosa dice la carta quando si puo' giocare, se al tavolo non c'e' un amico. */
+  invito: { titolo: string; dettaglio: string },
 ): StatoRuota {
   if (mioTavolo) {
     return {
@@ -697,10 +707,40 @@ function statoDelTavolo(
   }
   return {
     fase: 'da-giocare',
-    titolo: chi || 'Da giocare',
-    dettaglio: minima === 1 ? `Puntate da 1 a ${s.saldo} punti` : `Puntate da ${minima} punti`,
+    titolo: chi || invito.titolo,
+    dettaglio: invito.dettaglio,
     avanzamento: null,
     azione: tavoli.length > 0 ? 'Siediti' : 'Gioca',
     a: sala,
+  }
+}
+
+/** Il giorno di un'estrazione, come si dice: "oggi", o il giorno della settimana. */
+export function giornoEstrazione(data: string, oggi: string): string {
+  if (data === oggi) return 'stasera'
+  return new Date(`${data}T12:00:00Z`).toLocaleDateString('it-IT', { weekday: 'long', timeZone: 'UTC' })
+}
+
+/** Il SuperEnalotto nella scheda della Fortuna: il jackpot, le schede giocate, o la diretta di stasera. */
+export function statoSuperEnalotto(s: FortunaRisposta): StatoRuota {
+  const a = ROTTE.superenalotto
+  const { aperto, jackpot, mie, diretta } = s.superenalotto
+  if (diretta && diretta.inizioFra <= 0) {
+    return { fase: 'in-corso', titolo: 'In diretta', dettaglio: 'L’estrazione è cominciata', avanzamento: null, azione: 'Guarda', a }
+  }
+  if (diretta || !aperto) {
+    return { fase: 'in-corso', titolo: 'Gioco chiuso', dettaglio: 'L’estrazione è alle 21:05', avanzamento: null, azione: 'Apri', a }
+  }
+  const quando = giornoEstrazione(aperto, s.date)
+  if (s.saldo < COSTO_SCHEDA && mie === 0) {
+    return { fase: 'non-pronta', titolo: 'Prima le classificate', dettaglio: 'Una scheda costa 1 punto', avanzamento: null, azione: '', a }
+  }
+  return {
+    fase: 'da-giocare',
+    titolo: `Jackpot ${jackpot} ${jackpot === 1 ? 'punto' : 'punti'}`,
+    dettaglio: mie > 0 ? `${mie} ${mie === 1 ? 'scheda giocata' : 'schede giocate'}, estrazione ${quando}` : `Estrazione ${quando} alle 21:05`,
+    avanzamento: null,
+    azione: mie > 0 && mie >= SCHEDE_MASSIME ? 'Apri' : 'Gioca',
+    a,
   }
 }

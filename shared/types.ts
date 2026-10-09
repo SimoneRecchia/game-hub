@@ -17,6 +17,7 @@ import type { CategoriaNomi, PiuDate, RispostaContata } from './nomi-cose'
 import type { LatoMoneta } from './ruota'
 import type { Carta, ManoBJ } from './blackjack'
 import type { FaseBJ } from './blackjack-tavolo'
+import type { PremioEnalotto } from './superenalotto'
 import type { PuntateRL } from './roulette'
 import type { FaseRL } from './roulette-tavolo'
 import type { EsitoMossaCatena, TerzoElemento, VoceCatena } from './catena'
@@ -1160,6 +1161,7 @@ export type Attivita =
   | 'slot'
   | 'blackjack'
   | 'roulette'
+  | 'superenalotto'
   | 'lupus'
   | 'scarabocchi'
   | 'classifica'
@@ -1879,6 +1881,7 @@ export interface GeneraleRow {
   slot: number
   blackjack: number
   roulette: number
+  superenalotto: number
   /** La parte del Wordle fatta nella stanza di qualcun altro: e' lo spareggio. */
   assist: number
   /** Classificate chiuse nel periodo: una giornata di Wordle conta una. */
@@ -1903,7 +1906,7 @@ export interface FortunaRow {
   /** Quel che i giochi della Fortuna hanno dato o tolto, insieme: puo' essere sotto zero. */
   punti: number
   netti: Record<GiocoFortuna, number>
-  /** I giri della ruota, della slot e della roulette, e le mani del blackjack. */
+  /** I giri della ruota, della slot e della roulette, le mani del blackjack e le schede del SuperEnalotto. */
   giocate: number
 }
 
@@ -2068,7 +2071,7 @@ export interface RuotaSummary {
 /* ────────────────────────────────  La Fortuna  ──────────────────────────────── */
 
 /** I giochi d'azzardo della scheda Fortuna: puntano tutti lo stesso saldo, i punti fatti oggi. */
-export type GiocoFortuna = 'ruota' | 'slot' | 'blackjack' | 'roulette'
+export type GiocoFortuna = 'ruota' | 'slot' | 'blackjack' | 'roulette' | 'superenalotto'
 
 /** La scheda della Fortuna in una richiesta: il saldo di oggi, e com'e' andata a ogni gioco. */
 export interface FortunaRisposta {
@@ -2087,6 +2090,67 @@ export interface FortunaRisposta {
   /** Il tavolo a cui si e' seduti, e quelli degli amici online. */
   blackjack: { mioTavolo: string | null; tavoli: TavoloInSala[] }
   roulette: { mioTavolo: string | null; tavoli: TavoloInSala[] }
+  superenalotto: RiepilogoEnalotto
+}
+
+/* ────────────────────────────────  Il SuperEnalotto  ──────────────────────────────── */
+
+/** Il SuperEnalotto nella scheda della Fortuna: il concorso aperto, o la diretta di stasera. */
+export interface RiepilogoEnalotto {
+  /** Il concorso per cui si gioca, o null fra le 21 e la fine della diretta. */
+  aperto: string | null
+  /** Il jackpot del concorso aperto, o di quello che si estrae, in punti. */
+  jackpot: number
+  /** Le schede giocate per il concorso aperto. */
+  mie: number
+  /** La diretta di stasera, dall'ora del server: da quando a quando, se non e' gia' finita. */
+  diretta: { inizioFra: number; fineFra: number } | null
+}
+
+/** Una scheda come la vede chi l'ha giocata: quanti numeri ha preso e quanto ha vinto, a premi pagati. */
+export interface SchedaEnalotto {
+  id: string
+  numeri: number[]
+  presi: number | null
+  vincita: number | null
+}
+
+/** Un concorso, con i suoi momenti in millisecondi dall'ora del server (`ora`): negativi se passati. */
+export interface ConcorsoEnalottoVista {
+  data: string
+  chiusuraFra: number
+  inizioFra: number
+  fineFra: number
+  /** Il jackpot in gioco, in punti. */
+  jackpot: number
+  /** Le schede giocate da tutti. */
+  schede: number
+  mie: SchedaEnalotto[]
+}
+
+/** Il SuperEnalotto per chi lo guarda. */
+export interface VistaEnalotto {
+  puzzleNumber: number
+  date: string
+  msToNextPuzzle: number
+  classificate: number
+  saldo: number
+  /** Quel che il SuperEnalotto ha dato o tolto oggi. */
+  netto: number
+  /** Il concorso per cui si gioca adesso, o null fra la chiusura e la fine della diretta. */
+  aperto: ConcorsoEnalottoVista | null
+  /**
+   * L'ultimo concorso chiuso: i numeri si vedono dall'inizio della diretta, nell'ordine in cui
+   * escono, e i premi quando sono pagati, finita la diretta.
+   */
+  ultimo:
+    | (ConcorsoEnalottoVista & {
+        estratti: number[] | null
+        premi: PremioEnalotto[] | null
+        /** Il jackpot che passa al concorso dopo, in punti, a premi pagati. */
+        prossimoJackpot: number | null
+      })
+    | null
 }
 
 /** Un giro della slot, come lo vede chi gioca: la domanda senza la risposta finché non si risponde. */

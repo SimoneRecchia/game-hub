@@ -7,6 +7,7 @@ import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
+import { COLORE_FICHE, FICHES, inFiches } from '@/games/fortuna/fiches'
 import { centroDi, incassaMonete, puntaFiches, spostaFiches, volaFiche } from '@/games/fortuna/voli'
 import { coloreDellaCategoria, iconaDellaCategoria } from '@/games/ruota/disegni'
 import { Intermezzo, type DatiIntermezzo } from '@/games/ruota/Intermezzo'
@@ -26,7 +27,6 @@ import {
   INTERVALLO_SLOT_MS,
   PREMI,
   PUNTATA_MINIMA_SLOT,
-  PUNTATE_SLOT,
   VINCITA_DOMANDA,
   lineaDi,
   righeDelleDomande,
@@ -72,19 +72,6 @@ const FESTA_MS = 900
 /** Quanto i punti di domanda si girano prima della domanda, e quanto si torna alla slot prima della festa. */
 const TRIPLA_MS = 1_500
 const RITORNO_MS = 650
-
-/** La puntata in fiches, dalle piu' grandi: la pila che torna indietro quando la si azzera. */
-function inFiches(puntata: number): number[] {
-  const pezzi: number[] = []
-  let resto = puntata
-  for (const valore of [...PUNTATE_SLOT].reverse()) {
-    while (resto >= valore) {
-      pezzi.push(valore)
-      resto -= valore
-    }
-  }
-  return pezzi
-}
 
 /** Le monete che cadono nel vassoio, e poi volano al saldo: piu' vale la vincita, piu' sono. */
 const moneteDi = (premio: number) => Math.min(24, Math.round(3 + Math.sqrt(premio) * 2))
@@ -261,8 +248,7 @@ export default function SlotPagina() {
     }
     const da = centroDi(bottone)
     const a = centroDi(puntataRef.current)
-    const colore = getComputedStyle(bottone).getPropertyValue('--fiche').trim() || 'var(--ct-blu)'
-    if (da && a) void volaFiche(da, a, valore, colore).then(posa)
+    if (da && a) void volaFiche(da, a, valore, COLORE_FICHE[valore]).then(posa)
     else {
       suona('fiche', { volume: 0.6 })
       posa()
@@ -277,12 +263,7 @@ export default function SlotPagina() {
     setPuntata(0)
     const da = centroDi(puntataRef.current)
     const a = centroDi(gettoniRef.current)
-    // Il colore di ogni fiche e' quello del suo bottone, scritto una volta in Slot.css.
-    const coloreDi = (valore: number) => {
-      const bottone = gettoniRef.current?.querySelector(`.slot-gettone.is-${valore}`)
-      return (bottone && getComputedStyle(bottone).getPropertyValue('--fiche').trim()) || 'var(--ct-blu)'
-    }
-    const pila = inFiches(mostrata).map(coloreDi)
+    const pila = inFiches(mostrata).map((v) => COLORE_FICHE[v])
     if (da && a && pila.length > 0) void spostaFiches(da, a, pila)
     else suona('fiche', { volume: 0.4 })
   }
@@ -594,11 +575,12 @@ export default function SlotPagina() {
               <div className="slot-banco__piano">
                 <div className="slot-banco__fiches">
                   <div className="slot-gettoni" ref={gettoniRef} role="group" aria-label="Fiches">
-                    {PUNTATE_SLOT.map((p) => (
+                    {FICHES.map((p) => (
                       <button
                         key={p}
                         type="button"
                         className={`slot-gettone is-${p}`}
+                        style={{ '--fiche': COLORE_FICHE[p] } as CSSProperties}
                         aria-label={`Aggiungi ${p}`}
                         disabled={!puoPuntare}
                         onClick={(e) => aggiungi(p, e.currentTarget)}

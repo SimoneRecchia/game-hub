@@ -13,6 +13,7 @@ type Soggetto =
   | 'slot'
   | 'blackjack'
   | 'roulette'
+  | 'superenalotto'
   | 'fortuna'
 
 interface Props {
@@ -817,6 +818,33 @@ const DISEGNI: Record<Soggetto, ReactElement> = {
       <circle cx={84} cy={90} r={15} fill="#fff" />
       <circle cx={84} cy={90} r={10} fill="var(--c2)" fillOpacity={0.85} />
       <circle cx={84} cy={90} r={6.5} fill="none" stroke="#fff" strokeWidth={1.6} strokeDasharray="2.6 2" />
+    </g>
+  ),
+
+  // Il SuperEnalotto: la schedina un po' storta, con quattro caselle segnate, e una pallina dell'urna davanti.
+  superenalotto: (
+    <g fontFamily={TONDO} fontWeight={900}>
+      <g transform="rotate(-9 52 58)">
+        <rect x={20} y={20} width={62} height={76} rx={7} fill="#fff" fillOpacity={0.95} />
+        <rect x={20} y={20} width={62} height={14} rx={7} fill="var(--c2)" fillOpacity={0.3} />
+        {Array.from({ length: 20 }, (_, i) => (
+          <rect
+            key={i}
+            x={26 + (i % 4) * 13}
+            y={40 + Math.floor(i / 4) * 10.5}
+            width={10}
+            height={7.5}
+            rx={2}
+            fill="var(--c2)"
+            fillOpacity={[2, 5, 11, 16].includes(i) ? 0.9 : 0.16}
+          />
+        ))}
+      </g>
+      <circle cx={86} cy={84} r={21} fill="#fff" />
+      <circle cx={86} cy={84} r={14} fill="var(--c2)" fillOpacity={0.14} />
+      <text x={86} y={91} textAnchor="middle" fontSize={20} fill="var(--c2)">
+        7
+      </text>
     </g>
   ),
 

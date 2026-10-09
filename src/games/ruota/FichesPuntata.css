@@ -1,0 +1,121 @@
+/*
+ * La puntata di Crazy Time: la carta con il titolo e il numero, e sotto le
+ * fiches che si toccano, con il tasto che le riporta indietro. Le fiches sono
+ * quelle del blackjack e della roulette (`bj-fiche`), grandi da toccare.
+ */
+.ct-fiches {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 14px 14px;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow:
+    var(--edge-light),
+    var(--shadow-sm);
+}
+
+.ct-fiches__testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 36px;
+}
+
+.ct-fiches__titolo {
+  font-size: var(--text-body);
+  font-weight: 600;
+  color: var(--label);
+}
+
+.ct-fiches__stato {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ct-fiches__minima {
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.ct-fiches__valore {
+  min-width: 2ch;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  line-height: 1;
+  text-align: right;
+  color: var(--label);
+}
+
+.ct-fiches__valore.is-sotto {
+  color: var(--label-secondary);
+}
+
+.ct-fiches__riga {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.ct-fiches__gettoni {
+  display: flex;
+  gap: 10px;
+}
+
+/* Una fiche da toccare: si abbassa sul tavolo come premuta, e il dito ha i suoi 44 punti. */
+.ct-fiches__fiche {
+  --bj-fiche-lato: 46px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-spring),
+    opacity var(--dur-fast) var(--ease-out);
+}
+
+.ct-fiches__fiche:active:not(:disabled) {
+  transform: translateY(2px) scale(0.95);
+}
+
+.ct-fiches__fiche:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ct-fiches__fiche:focus-visible,
+.ct-fiches__azzera:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.ct-fiches__azzera {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label);
+  font: inherit;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ct-fiches__azzera:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+@media (max-width: 360px) {
+  .ct-fiches__gettoni {
+    gap: 6px;
+  }
+
+  .ct-fiches__fiche {
+    --bj-fiche-lato: 42px;
+  }
+}

@@ -1,0 +1,48 @@
+/*
+ * Una pallina dell'urna disegnata: il colore del suo gruppo, il lampo della
+ * luce in alto, e il numero nel tondo bianco. La stessa nella pagina e nella
+ * diretta; `--pallina-lato` la fa grande quanto serve.
+ */
+
+.se-pallina {
+  --lato: var(--pallina-lato, 40px);
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--lato);
+  height: var(--lato);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgb(255 255 255 / 0.85) 0 7%, rgb(255 255 255 / 0) 26%),
+    radial-gradient(circle at 50% 50%, var(--pallina) 0 58%, color-mix(in srgb, var(--pallina) 70%, #000) 100%);
+  box-shadow:
+    inset calc(var(--lato) * -0.06) calc(var(--lato) * -0.08) calc(var(--lato) * 0.14) rgb(0 0 0 / 0.35),
+    0 calc(var(--lato) * 0.06) calc(var(--lato) * 0.16) rgb(0 0 0 / 0.35);
+}
+
+.se-pallina.is-piccola {
+  --lato: var(--pallina-lato, 30px);
+}
+
+.se-pallina__numero {
+  display: grid;
+  place-items: center;
+  width: 58%;
+  height: 58%;
+  border-radius: 50%;
+  background: #fbfbf7;
+  color: #16161c;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.3);
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: inset 0 calc(var(--lato) * -0.02) calc(var(--lato) * 0.04) rgb(0 0 0 / 0.2);
+}
+
+.se-pallina.is-accesa {
+  box-shadow:
+    0 0 0 3px #ffd166,
+    0 0 18px rgb(255 209 102 / 0.8);
+}
+
