@@ -272,3 +272,9 @@ export const CODE_RESEND_COOLDOWN_SECONDS = 60
  * proverebbe settemila combinazioni al giorno su un milione; cosi' cinquanta.
  */
 export const CODE_LOGIN_PER_DAY = 10
+/**
+ * Ogni quanto si cambia il nickname: una volta a settimana. E' il nome con cui
+ * gli altri ti trovano in classifica e negli inviti, e cambiato ogni giorno non
+ * lo riconoscerebbe nessuno.
+ */
+export const NICKNAME_OGNI_GIORNI = 7

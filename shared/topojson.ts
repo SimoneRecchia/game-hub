@@ -168,3 +168,60 @@ export function partiPrincipali(poligoni: readonly Poligono[]): Poligono[] {
     .filter((m) => m === grande || m.area >= grande.area * 0.18 || distanzaKm(m.bb, grande.bb) <= 900)
     .map((m) => m.p)
 }
+
+/**
+ * I colori di una carta politica: due paesi che confinano — che hanno un arco
+ * in comune — non hanno mai lo stesso. E' DSATUR: si colora per primo il paese
+ * con piu' colori diversi fra i vicini, a pari quello con piu' vicini, e gli si
+ * da' il colore libero meno usato finora, cosi' le isole non vengono tutte del
+ * primo. A una carta bastano quattro colori; con cinque l'algoritmo non resta
+ * senza, e se succedesse prende quello che si ripete meno attorno.
+ */
+export function coloriVicini(elenco: readonly Forma[], quanti = 5): Map<string, number> {
+  const perArco = new Map<number, string[]>()
+  for (const f of elenco) {
+    for (const a of new Set(f.archi.flat())) {
+      const ids = perArco.get(a)
+      if (ids) ids.push(f.id)
+      else perArco.set(a, [f.id])
+    }
+  }
+  const vicini = new Map(elenco.map((f) => [f.id, new Set<string>()]))
+  for (const ids of perArco.values()) {
+    for (const a of ids) for (const b of ids) if (a !== b) vicini.get(a)!.add(b)
+  }
+  const ordine = elenco.map((f) => f.id).sort()
+  const colore = new Map<string, number>()
+  const usi = new Array<number>(quanti).fill(0)
+  const attorno = (id: string) => {
+    const conta = new Array<number>(quanti).fill(0)
+    for (const v of vicini.get(id)!) {
+      const c = colore.get(v)
+      if (c !== undefined) conta[c] += 1
+    }
+    return conta
+  }
+  while (colore.size < ordine.length) {
+    let scelto = ''
+    let saturazione = -1
+    let grado = -1
+    for (const id of ordine) {
+      if (colore.has(id)) continue
+      const diversi = attorno(id).filter((n) => n > 0).length
+      const g = vicini.get(id)!.size
+      if (diversi > saturazione || (diversi === saturazione && g > grado)) {
+        scelto = id
+        saturazione = diversi
+        grado = g
+      }
+    }
+    const conta = attorno(scelto)
+    const liberi = conta.map((n, c) => (n === 0 ? c : -1)).filter((c) => c >= 0)
+    const c = liberi.length
+      ? liberi.reduce((a, b) => (usi[b] < usi[a] ? b : a))
+      : conta.indexOf(Math.min(...conta))
+    colore.set(scelto, c)
+    usi[c] += 1
+  }
+  return colore
+}

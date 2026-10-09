@@ -105,3 +105,89 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
+
+/* Il cambio del nickname: il nome nuovo, poi il codice, come all'accesso. */
+.profilo-nick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.profilo-nick__campi {
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.profilo-nick__cambio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px 10px;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  text-align: center;
+}
+
+.profilo-nick__cambio span:first-child {
+  color: var(--label-secondary);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--label-secondary) 60%, transparent);
+}
+
+.profilo-nick__cambio strong {
+  color: var(--brand);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.profilo-nick__freccia {
+  color: var(--label-secondary);
+}
+
+.profilo-nick__dove {
+  text-align: center;
+}
+
+.profilo-nick__dove strong {
+  color: var(--label);
+  overflow-wrap: anywhere;
+}
+
+.profilo-nick__nota {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.profilo-nick__errore {
+  font-size: var(--text-footnote);
+  color: var(--red);
+  text-align: center;
+}
+
+.profilo-nick__azioni {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.profilo-nick__link {
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  color: var(--brand);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.profilo-nick__link:disabled {
+  color: var(--label-secondary);
+}
+
+.profilo-nick__link.is-tenue {
+  color: var(--label-secondary);
+  font-weight: 500;
+}

@@ -9,10 +9,11 @@ import {
   EMAIL_PATTERN,
   NICKNAME_MAX,
   NICKNAME_MIN,
+  NICKNAME_OGNI_GIORNI,
   NICKNAME_PATTERN,
 } from '../../shared/config'
 import type { AuthConfig, CodiceMandato, Player } from '../../shared/types'
-import { toPlayer, type AppEnv, type Bindings, type PlayerRow } from '../types'
+import { nicknameCambiabileDal, toPlayer, type AppEnv, type Bindings, type PlayerRow } from '../types'
 import { fail, newId, nowIso } from '../lib/http'
 import {
   issueSession,
@@ -23,7 +24,7 @@ import {
   revokeSession,
 } from '../lib/session'
 import { codesLastDay, consumeCode, issueCode, resendWaitSeconds, type CodePurpose } from '../lib/codes'
-import { emailVerificationEnabled, loginMessage, sendEmail, verifyEmailMessage } from '../lib/email'
+import { emailVerificationEnabled, loginMessage, nicknameMessage, sendEmail, verifyEmailMessage } from '../lib/email'
 
 /*
  * L'accesso e' senza password: chi si registra sceglie il nickname e da'
@@ -127,6 +128,32 @@ function trovaGiocatore(db: D1Database, identifier: string): Promise<PlayerRow |
     .prepare('SELECT * FROM players WHERE nickname_lower = ? OR email_lower = ?')
     .bind(lower, lower)
     .first<PlayerRow>()
+}
+
+/** "il 16 ottobre": quando si potra' cambiare di nuovo il nickname. */
+function giornoDi(iso: string): string {
+  return new Date(iso).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', timeZone: 'Europe/Rome' })
+}
+
+/**
+ * Il nickname nuovo, se si puo' prendere: cambiato, libero, e passata una
+ * settimana dall'ultimo cambio. Le stesse domande prima di mandare il codice e
+ * quando torna, perché nel frattempo qualcuno puo' averlo preso.
+ */
+async function nicknameNuovo(db: D1Database, io: string, valore: unknown): Promise<{ row: PlayerRow; nuovo: string }> {
+  const nuovo = readNickname(valore)
+  const row = await db.prepare('SELECT * FROM players WHERE id = ?').bind(io).first<PlayerRow>()
+  if (!row) fail(401, 'NOT_AUTHENTICATED', 'Accedi per continuare.')
+  if (nuovo === row.nickname) fail(400, 'NICKNAME_UGUALE', 'È già il tuo nickname.')
+  const dal = nicknameCambiabileDal(row)
+  if (dal) fail(429, 'NICKNAME_TROPPO_PRESTO', `Il nickname si cambia una volta a settimana: di nuovo dal ${giornoDi(dal)}.`)
+  // Lo stesso nome con le maiuscole cambiate e' ancora il proprio.
+  const preso = await db
+    .prepare('SELECT id FROM players WHERE nickname_lower = ? AND id <> ?')
+    .bind(nuovo.toLowerCase(), io)
+    .first<{ id: string }>()
+  if (preso) fail(409, 'NICKNAME_TAKEN', 'Questo nickname è già preso. Provane un altro.')
+  return { row, nuovo }
 }
 
 /** Colore stabile dal nickname: l'avatar di un giocatore non cambia mai. */
@@ -371,6 +398,92 @@ export const authRoutes = new Hono<AppEnv>()
       fail(502, 'EMAIL_SEND_FAILED', 'Non riesco a mandare il codice. Riprova fra un minuto.')
     }
     return c.json({ ok: true, cooldownSeconds: CODE_RESEND_COOLDOWN_SECONDS })
+  })
+
+  /* ────────────────────  Il cambio del nickname  ──────────────────── */
+
+  /**
+   * Il codice per cambiare il nickname, all'email dell'account: chi ha il
+   * telefono di un altro in mano non gli cambia il nome. Qui non serve
+   * rispondere sempre allo stesso modo: chi chiede e' gia' dentro, e sa di
+   * avere un account.
+   */
+  .post('/nickname/code', requireAuth, async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { nickname?: unknown } | null
+    const io = c.get('player').id
+    const { row, nuovo } = await nicknameNuovo(c.env.DB, io, body?.nickname)
+    if (!row.email) fail(409, 'NO_EMAIL', 'Questo account non ha un’email a cui mandare il codice.')
+
+    const posta = emailVerificationEnabled(c.env)
+    const inLocale = !posta && daQuestoComputer(c.req.url)
+    if (!posta && !inLocale) fail(503, 'EMAIL_DISABLED', 'L’invio delle email non è attivo.')
+
+    const attesa = await resendWaitSeconds(c.env.DB, io, 'nickname')
+    if (attesa > 0) fail(429, 'RESEND_TOO_SOON', `Riprova fra ${attesa} ${attesa === 1 ? 'secondo' : 'secondi'}.`)
+    if ((await codesLastDay(c.env.DB, io, 'nickname')) >= CODE_LOGIN_PER_DAY) {
+      fail(429, 'TROPPI_CODICI', 'Oggi hai chiesto troppi codici. Riprova domani.')
+    }
+
+    const code = await issueCode(c.env.DB, io, 'nickname')
+    const risposta: CodiceMandato = { ok: true, cooldownSeconds: CODE_RESEND_COOLDOWN_SECONDS }
+    if (inLocale) {
+      console.log(`Il codice per cambiare il nickname di ${row.nickname} è ${code}`)
+      return c.json<CodiceMandato>({ ...risposta, codiceDiProva: code })
+    }
+    const esito = await sendEmail(c.env, { to: row.email, ...nicknameMessage(row.nickname, nuovo, code, CODE_TTL_MINUTES) })
+    if (!esito.ok) {
+      console.error(`Invio email fallito (${esito.reason}): ${esito.detail}`)
+      fail(502, 'EMAIL_SEND_FAILED', 'Non riesco a mandare il codice. Riprova fra un minuto.')
+    }
+    return c.json(risposta)
+  })
+
+  /**
+   * Il nickname nuovo, con il codice. L'UPDATE guarda di nuovo la settimana,
+   * cosi' due richieste insieme non lo cambiano due volte; l'unicita' la tiene
+   * l'indice di `nickname_lower`, anche contro chi si registra nello stesso
+   * istante con lo stesso nome. Il colore dell'avatar resta quello di prima.
+   */
+  .post('/nickname', requireAuth, async (c) => {
+    const body = (await c.req.json().catch(() => null)) as { nickname?: unknown; code?: unknown } | null
+    const io = c.get('player').id
+    const { nuovo } = await nicknameNuovo(c.env.DB, io, body?.nickname)
+    const code = readCode(body?.code)
+
+    const esito = await consumeCode(c.env.DB, io, 'nickname', code)
+    if (!esito.ok) {
+      if (esito.reason === 'missing') fail(409, 'CODE_MISSING', 'Nessun codice in attesa. Chiedine uno nuovo.')
+      if (esito.reason === 'expired') fail(409, 'CODE_EXPIRED', 'Il codice è scaduto. Chiedine uno nuovo.')
+      if (esito.reason === 'burned') fail(429, 'CODE_BURNED', 'Troppi tentativi. Chiedi un codice nuovo.')
+      fail(
+        400,
+        'CODE_WRONG',
+        esito.attemptsLeft > 0
+          ? `Codice non corretto. Hai ancora ${esito.attemptsLeft} ${esito.attemptsLeft === 1 ? 'tentativo' : 'tentativi'}.`
+          : 'Codice non corretto. Chiedi un codice nuovo.',
+      )
+    }
+
+    const adesso = new Date()
+    const settimanaFa = new Date(adesso.getTime() - NICKNAME_OGNI_GIORNI * 86_400_000).toISOString()
+    let cambiate = 0
+    try {
+      const r = await c.env.DB.prepare(
+        `UPDATE players SET nickname = ?, nickname_lower = ?, display_name = ?, nickname_changed_at = ?
+          WHERE id = ? AND (nickname_changed_at IS NULL OR nickname_changed_at <= ?)`,
+      )
+        .bind(nuovo, nuovo.toLowerCase(), nuovo, adesso.toISOString(), io, settimanaFa)
+        .run()
+      cambiate = r.meta.changes ?? 0
+    } catch (error) {
+      if (String(error).includes('UNIQUE')) fail(409, 'NICKNAME_TAKEN', 'Questo nickname è già preso. Provane un altro.')
+      throw error
+    }
+    if (cambiate !== 1) fail(429, 'NICKNAME_TROPPO_PRESTO', 'Il nickname si cambia una volta a settimana.')
+
+    const row = await c.env.DB.prepare('SELECT * FROM players WHERE id = ?').bind(io).first<PlayerRow>()
+    if (!row) fail(500, 'PLAYER_MISSING', 'Giocatore non trovato.')
+    return c.json<{ player: Player }>({ player: toPlayer(row) })
   })
 
   /** Esce da tutti i dispositivi, incluso quello corrente. */
