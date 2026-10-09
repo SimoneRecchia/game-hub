@@ -4,17 +4,20 @@
  * vede dal 23% al 93% dell'altezza, quindi `.rl-ruota` taglia sopra e sotto
  * quel che resta vuoto: e' alto il 70% del lato, e la scatola sale del 23%.
  *
- * Il piatto e' un contesto 3D: la trasformazione la scrive Ruota.tsx, con la
- * prospettiva in proporzione al lato (la stessa che usa per la biglia), e ogni
- * strato sta alla sua altezza (`--z`, in unita' del disegno, per `--u`, i pixel
- * di un'unita'). Niente `overflow`, `filter` o `opacity` sul piatto e sul
- * cilindro: appiattirebbero gli strati in uno.
+ * Ogni parte e' uno strato piatto con la sua prospettiva (`__pezzo`), centrato
+ * nel riquadro: la prospettiva parte dal centro di ognuno, che e' il centro
+ * della ruota, quindi tutti si vedono come parti dello stesso piatto, ognuno
+ * alla sua altezza (`--z`, in unita' del disegno, per `--u`, i pixel di
+ * un'unita'). Ruota.tsx scrive la prospettiva in proporzione al lato, la
+ * stessa che usa per la biglia. Niente `preserve-3d`: un contesto 3D con uno
+ * strato per parte, su Android, finiva la memoria della scheda grafica.
  *
  * Ogni strato e' disegnato `--nitido` volte piu' grande e rimpicciolito nella
  * sua trasformazione, attorno al suo centro: Chrome disegna gli strati in
  * prospettiva senza la densita' dello schermo (vedi `nitidezza` in Ruota.tsx).
- * Le misure dentro gli strati (i bordi dei dischi) si moltiplicano per lo
- * stesso numero.
+ * Quelli senza scritte (`is-morbido`) al piu' due volte, perché la conca e la
+ * luce sono gli strati piu' grandi. Le misure dentro gli strati (i bordi dei
+ * dischi) si moltiplicano per lo stesso numero.
  */
 
 .rl-ruota {
@@ -37,47 +40,21 @@
   overflow: visible;
 }
 
-.rl-ruota__piatto {
-  position: absolute;
-  inset: 0;
-  transform-origin: 50% 50%;
-  transform-style: preserve-3d;
-}
-
-/*
- * Niente `will-change` sul cilindro: Chrome fisserebbe la risoluzione dei suoi
- * strati a quella del primo disegno, e nella sala, dove la ruota arriva
- * piccola e si ingrandisce, i numeri restavano sgranati.
- */
-.rl-ruota__rotore {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
-}
-
-/*
- * Un elemento del piatto: `--d` e' quanto e' largo, in centesimi del piatto,
- * e sta centrato nel punto (`--x`, `--y`), di solito il centro.
- */
-.rl-ruota__strato,
-.rl-ruota__cono,
-.rl-ruota__fusto,
-.rl-ruota__braccia,
-.rl-ruota__cupola,
-.rl-ruota__pomo,
-.rl-ruota__luccichio,
-.rl-ruota__ombra-torretta {
+/* `--d` e' quanto e' largo, in centesimi del piatto; il cilindro, le braccia e la loro ombra li gira Ruota.tsx. */
+.rl-ruota__pezzo {
   --n: var(--nitido, 1);
   position: absolute;
-  left: calc(var(--x, 50%) - var(--d) * var(--n) * 0.5%);
-  top: calc(var(--y, 50%) - var(--d) * var(--n) * 0.5%);
+  left: calc(50% - var(--d) * var(--n) * 0.5%);
+  top: calc(50% - var(--d) * var(--n) * 0.5%);
   width: calc(var(--d) * var(--n) * 1%);
   aspect-ratio: 1;
-  transform: translateZ(calc(var(--u, 1px) * var(--z, 0))) scale(calc(1 / var(--n)));
+  pointer-events: none;
+  transform: perspective(var(--prospettiva, 1000px)) rotateX(var(--inclina, 54deg))
+    translateZ(calc(var(--u, 1px) * var(--z, 0))) scale(calc(1 / var(--n)));
 }
 
-.rl-ruota__strato {
-  --d: 100;
+.rl-ruota__pezzo.is-morbido {
+  --n: min(var(--nitido, 1), 2);
 }
 
 .rl-ruota__disegno {
@@ -86,72 +63,54 @@
   height: 100%;
 }
 
-.rl-ruota__luce-cono {
-  pointer-events: none;
-}
-
 /*
- * Il cono di legno tornito, a gradini bassi: ogni anello e' appena piu' scuro
- * dove scende al gradino sotto, e da lontano la salita sembra liscia.
+ * Gli anelli del cono di legno tornito, uno sopra l'altro: ognuno e' appena
+ * piu' scuro dove scende al gradino sotto, e l'ombra spostata verso chi guarda
+ * e' l'alzata del gradino, che si vede davanti.
  */
 .rl-ruota__cono {
-  --d: var(--r);
   --bordo: calc(var(--u, 1px) * var(--n));
   border-radius: 50%;
   background: radial-gradient(circle, #96532a 0%, #86471f 70%, #73391a 90%, #5a2a10 100%);
-  box-shadow: inset 0 0 0 calc(var(--bordo) * 0.22) rgb(255 214 160 / 0.14);
-}
-
-.rl-ruota__cono.is-base {
-  background: radial-gradient(circle, #7a3f1c 0%, #5a2b10 88%, #2a1305 100%);
   box-shadow:
-    inset 0 0 0 calc(var(--bordo) * 0.9) #c99a33,
-    inset 0 0 0 calc(var(--bordo) * 1.3) #3a2404;
+    inset 0 0 0 calc(var(--bordo) * 0.22) rgb(255 214 160 / 0.14),
+    0 calc(var(--bordo) * 1.15) 0 #4a210b;
 }
 
 /* La cima del cono e' la base d'oro della torretta. */
 .rl-ruota__cono.is-cima {
   background: radial-gradient(circle, #fff1bf 0%, #e3b44a 40%, #a8771c 78%, #5e3f0a 100%);
-  box-shadow: inset 0 0 0 calc(var(--bordo) * 0.4) #fff0b8;
+  box-shadow:
+    inset 0 0 0 calc(var(--bordo) * 0.4) #fff0b8,
+    0 calc(var(--bordo) * 1) 0 #6b4810;
 }
 
-/* Il fusto della torretta: dischetti d'oro uno sopra l'altro, che insieme fanno un cilindro. */
+/* Il fusto della torretta: disegnato sullo schermo, in piedi, con la luce da sinistra. */
 .rl-ruota__fusto {
-  --d: 2.6;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fff3c4 0%, #d6a63e 55%, #7a5414 100%);
-}
-
-.rl-ruota__braccia {
-  --d: 30;
+  position: absolute;
+  pointer-events: none;
+  background: linear-gradient(90deg, #5e3f0a 0%, #c99a33 18%, #fff3c4 36%, #d6a63e 58%, #7a5414 85%, #4a3006 100%);
 }
 
 .rl-ruota__cupola {
-  --d: 3.6;
   border-radius: 50%;
   background: radial-gradient(circle, #fffbe6 0%, #f0c75a 40%, #9a6a14 85%, #4a3006 100%);
 }
 
 .rl-ruota__pomo {
-  --d: 1.8;
   border-radius: 50%;
   background: radial-gradient(circle, #fffef4 0%, #f3cf6c 50%, #8a5d12 100%);
 }
 
 .rl-ruota__luccichio {
-  --d: 1.2;
-  --x: 49.2%;
-  --y: 49.1%;
+  left: calc(49.2% - var(--d) * var(--n) * 0.5%);
+  top: calc(49.1% - var(--d) * var(--n) * 0.5%);
   border-radius: 50%;
   background: radial-gradient(circle, rgb(255 255 255 / 0.95) 0 30%, rgb(255 255 255 / 0) 70%);
-  pointer-events: none;
 }
 
-/* L'ombra della torretta: la trasformazione la scrive Ruota.tsx, perché gira con il cilindro. */
 .rl-ruota__ombra-torretta {
-  --d: 30;
   opacity: 0.4;
-  pointer-events: none;
 }
 
 .rl-ruota__numero {
@@ -191,7 +150,7 @@
   background: radial-gradient(circle, rgb(255 255 255 / 0.9) 0%, rgb(230 230 240 / 0.5) 55%, rgb(230 230 240 / 0) 100%);
 }
 
+/* L'ombra e' gia' sfumata dal suo sfondo: un `filter` su uno strato che si muove si rifarebbe a ogni fotogramma. */
 .rl-ruota__ombra {
-  background: radial-gradient(closest-side, rgb(0 0 0 / 0.75), transparent);
-  filter: blur(1px);
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.72), rgb(0 0 0 / 0.3) 55%, rgb(0 0 0 / 0));
 }

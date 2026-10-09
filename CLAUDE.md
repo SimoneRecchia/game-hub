@@ -1197,31 +1197,39 @@ il giro dopo per tutti: chi guarda l'ha gia' vista cadere. Chi si alza prima
 del lancio si riprende le fiches.
 
 **La ruota della roulette e' inclinata, e la biglia no.** `RuotaRoulette`
-(`src/games/roulette/Ruota.tsx`) e' un piatto in prospettiva (`TILT`), e non un
-disegno piatto: un contesto 3D (`preserve-3d`) in cui ogni parte sta alla sua
-altezza (`Z`, in unita' del disegno): il bordo di legno sopra la pista, il
-cilindro piu' in basso, i separatori di metallo che sporgono dalle caselle in
-due strati, il cono a gradini, il fusto della torretta fatto di dischetti uno
-sopra l'altro e le braccia sospese sopra il cono, con l'ombra che gira con
-loro. Girando, le parti alte scorrono sopra quelle basse, ed e' quello che le
-fa sembrare vere. Le luci stanno ferme sopra il cilindro (`Luce`, `LuceCono`,
-il luccichio sulla torretta), cosi' il legno e l'oro luccicano passandoci
-sotto; i rombi hanno le facce chiare quanto guardano verso la luce. Il fianco
-del mobile, con le doghe e la fascia d'oro, non e' nel piatto: e' disegnato
-sullo schermo con `proietta` (`Fianco`), e combacia con il bordo perché i conti
-sono gli stessi del CSS. Chrome disegna gli strati in prospettiva a un punto
-per pixel, senza la densita' dello schermo, e sul telefono i numeri venivano
-sgranati: li' ogni strato e' grande `--nitido` volte e rimpicciolito nella sua
-trasformazione (`nitidezza`); Safari li disegna gia' nitidi, e ingranditi
-vorrebbero nove volte la memoria. Niente `will-change`, `overflow`, `filter` o
-`opacity` sul piatto e sul cilindro: appiattirebbero gli strati. La biglia inclinata
+(`src/games/roulette/Ruota.tsx`) e' fatta di pochi strati piatti, ognuno con la
+sua prospettiva (`TILT`) e la sua altezza (`Z`, in unita' del disegno), centrati
+nello stesso punto: la conca ferma con il bordo di legno, il cilindro che gira
+con le caselle, i separatori e la base del cono, gli anelli del cono uno piu'
+alto dell'altro, la luce ferma sopra, e la torretta con le braccia sospese e la
+loro ombra, che girano. Uno strato piu' alto si disegna sopra quelli piu' bassi,
+che e' quel che si vede da sopra, e girando le braccia scorrono sul cono come
+quelle vere. Per un giorno e' stata un contesto 3D (`preserve-3d`) con una
+trentina di strati, molti grandi quanto la ruota: su Android finiva la memoria
+della scheda grafica, e comparivano quadrati neri anche sul panno. Quel che
+dava la profondita' si disegna: la parete del bordo che si vede in fondo, e il
+cilindro piu' basso della pista, sono falci (`parete`: un cerchio meno lo stesso
+cerchio abbassato), i separatori hanno l'ombra ai due lati e il filo di luce in
+mezzo, perché girano e una luce da una parte sola girerebbe con loro, e
+l'alzata di ogni anello del cono e' un'ombra spostata verso chi guarda. Il
+fianco del mobile e il fusto della torretta sono disegnati sullo schermo con
+`proietta` (`Fianco`, `Fusto`), e combaciano perché i conti sono gli stessi del
+CSS. Chrome disegna gli strati in prospettiva a un punto per pixel, senza la
+densita' dello schermo, e sul telefono i numeri venivano sgranati: li' ogni
+strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
+(`nitidezza`, al piu' tre, e due per la conca e la luce, che non hanno scritte);
+Safari li disegna gia' nitidi, e ingranditi vorrebbero nove volte la memoria.
+Niente `will-change` sugli strati che girano: fisserebbe la loro risoluzione a
+quella del primo disegno, e la ruota arriva piccola. Anche il tavolo lascia il
+suo strato finita l'entrata (`backwards`, non `both`): col velo dentro, che
+sporge di `100vmax`, era il piu' grande della pagina. La biglia inclinata
 diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua posizione
 la calcola `proietta` con la stessa prospettiva del CSS. Il suo angolo si conta
 sul cilindro e finisce nella casella del numero qualunque sia la velocita' del
 cilindro; corre sulla pista, scende verso i rombi, rimbalza fra i separatori, e
-i suoni seguono gli stessi momenti. La sua altezza segue quel che ha sotto
-(`fondoA`: la pista, poi il cilindro, piu' basso), e finché corre veloce ha la
-scia, due copie di un attimo prima. La ruota e' disegnata grande e rimpicciolita
+i suoni seguono gli stessi momenti. Finché corre veloce ha la scia, due copie di un
+attimo prima, e la sua ombra e' sfumata dal suo sfondo e non da un `filter`, che
+si rifarebbe a ogni fotogramma. La ruota e' disegnata grande e rimpicciolita
 sul palco (`--piccola`): quando la biglia parte si fa grande sopra il panno, che
 si vela, e torna al suo posto dopo l'annuncio del numero. Disegnata piccola e
 ingrandita, a pieno schermo sarebbe sfocata. Il tabellone dei numeri usciti non
