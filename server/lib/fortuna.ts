@@ -1,6 +1,7 @@
 /**
  * Il saldo della Fortuna: i punti delle classificate di oggi, piu' quel che
- * Crazy Time, la slot, il blackjack e la roulette hanno dato o tolto oggi. E'
+ * Crazy Time, la slot, il blackjack, la roulette e il SuperEnalotto hanno dato
+ * o tolto oggi. E'
  * uno solo per tutti: quel che si vince alla slot si puo' puntare al blackjack.
  *
  * Ogni gioco lo controlla dentro la sua scrittura — l'`INSERT` del giro o della
@@ -28,7 +29,7 @@ export interface SaldoFortuna {
   classificate: number
   /** Quel che ogni gioco ha dato o tolto oggi. */
   netti: Record<GiocoFortuna, number>
-  /** Quante giocate oggi: i giri della ruota, della slot e della roulette, le mani del blackjack. */
+  /** Quante giocate oggi: i giri della ruota, della slot e della roulette, le mani del blackjack, le schede. */
   giocate: Record<GiocoFortuna, number>
   /** Le classificate piu' i netti: quel che si puo' puntare. Mai sotto zero. */
   saldo: number
@@ -61,13 +62,13 @@ export async function saldoDi(db: D1Database, playerId: string, numero: number):
       .bind(playerId, numero)
       .all<{ gioco: GiocoFortuna; netto: number; giocate: number }>(),
   ])
-  const netti: Record<GiocoFortuna, number> = { ruota: 0, slot: 0, blackjack: 0, roulette: 0 }
-  const giocate: Record<GiocoFortuna, number> = { ruota: 0, slot: 0, blackjack: 0, roulette: 0 }
+  const netti: Record<GiocoFortuna, number> = { ruota: 0, slot: 0, blackjack: 0, roulette: 0, superenalotto: 0 }
+  const giocate: Record<GiocoFortuna, number> = { ruota: 0, slot: 0, blackjack: 0, roulette: 0, superenalotto: 0 }
   for (const r of results) {
     netti[r.gioco] += r.netto
     giocate[r.gioco] += r.giocate
   }
-  const totale = netti.ruota + netti.slot + netti.blackjack + netti.roulette
+  const totale = Object.values(netti).reduce((s, n) => s + n, 0)
   return { classificate, netti, giocate, saldo: Math.max(0, classificate + totale) }
 }
 

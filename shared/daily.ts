@@ -76,6 +76,18 @@ function zonedTimeToUtc(
   return utc
 }
 
+/** L'istante di un'ora italiana in una data YYYY-MM-DD: le 21 di un giorno, con l'ora legale o la solare. */
+export function istanteItaliano(date: string, hour: number, minute = 0): number {
+  const { year, month, day } = parseIsoDate(date)
+  return zonedTimeToUtc(year, month, day, hour, minute)
+}
+
+/** Il giorno della settimana di una data YYYY-MM-DD: 0 la domenica, 1 il lunedi'. */
+export function giornoDellaSettimana(date: string): number {
+  const { year, month, day } = parseIsoDate(date)
+  return new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+}
+
 /** Data di gioco corrente in formato YYYY-MM-DD (fuso italiano). */
 export function gameDate(now: Date = new Date()): string {
   const wc = wallClockIn(now)

@@ -30,6 +30,7 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
     slot: 0,
     blackjack: 0,
     roulette: 0,
+    superenalotto: 0,
     assist,
     partite,
   }
@@ -139,7 +140,7 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     expect(g.me?.partite).toBe(12)
     // La Fortuna legge i punti di oggi di un giocatore solo: devono essere quelli della generale.
     expect(await puntiClassificateDi(db as unknown as D1Database, anna.id, n)).toBe(
-      g.me!.punti - g.me!.ruota - g.me!.slot - g.me!.blackjack - g.me!.roulette,
+      g.me!.punti - g.me!.ruota - g.me!.slot - g.me!.blackjack - g.me!.roulette - g.me!.superenalotto,
     )
     expect(await puntiClassificateDi(db as unknown as D1Database, bruno.id, n)).toBe(0)
 

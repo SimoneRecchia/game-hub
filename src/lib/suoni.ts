@@ -180,6 +180,10 @@ export type NomeSuono =
   | 'casella'
   /** Il croupier che chiude le puntate: il campanello di "rien ne va plus". */
   | 'nienteVaPiu'
+  /** L'urna del SuperEnalotto che mescola: l'aria dal fondo e le palline che si urtano, per `altezza` secondi. */
+  | 'urna'
+  /** Una pallina estratta: il risucchio, i colpi nel tubo, e il campanello del numero. */
+  | 'estratto'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -1290,6 +1294,25 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     legno(u, t + 0.09, vario(1350), 0.06 * v, 0.02)
     legno(u, t + 0.15, vario(1250), 0.045 * v, 0.02)
     tonfo(u, t + 0.19, 0.16 * v, { da: 260, a: 110, durata: 0.18 })
+  },
+
+  // L'urna che mescola: l'aria che soffia dal fondo, e le palline che si urtano a caso.
+  urna: (u, t, v, lunghezza = 2) => {
+    const durata = Math.max(0.5, lunghezza)
+    soffio(u, t, durata, 0.06 * v, { tipo: 'lowpass', da: 700, a: 420, q: 0.7 }, { attacco: 0.25, eco: 0.1 })
+    let x = 0.05
+    while (x < durata - 0.05) {
+      colpo(u, t + x, voce(u, (0.012 + Math.random() * 0.02) * v, 0.05), vario(2500, 0.3), 0.02, 0.8)
+      x += 0.035 + Math.random() * 0.1
+    }
+  },
+
+  // La pallina estratta: il risucchio verso l'alto, i colpi nel tubo, e il campanello quando arriva.
+  estratto: (u, t, v) => {
+    soffio(u, t, 0.5, 0.08 * v, { tipo: 'bandpass', da: 380, a: 2400, q: 1.2 }, { attacco: 0.02, eco: 0.1 })
+    for (let i = 0; i < 5; i += 1) legno(u, t + 0.55 + i * 0.17, vario(1700 - i * 110), 0.06 * v, 0.03)
+    campanello(u, t + 1.5, N.E6, 0.12 * v, { eco: 0.4, durata: 1.2 })
+    campanello(u, t + 1.58, N.A6, 0.08 * v, { eco: 0.4, durata: 1.2 })
   },
 
   // "Rien ne va plus": il campanello del croupier, due note che scendono.

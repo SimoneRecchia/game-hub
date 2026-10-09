@@ -135,7 +135,7 @@ const caricaScarabocchiStanza = () => import('./pages/ScarabocchiStanza')
 const Scarabocchi = lazy(caricaScarabocchi)
 const ScarabocchiStanza = lazy(caricaScarabocchiStanza)
 
-/* E i giochi della Fortuna: Crazy Time, la slot, il blackjack e la roulette, che puntano i punti di oggi. */
+/* E i giochi della Fortuna: Crazy Time, la slot, il blackjack, la roulette e il SuperEnalotto, che puntano i punti di oggi. */
 const caricaRuota = () => import('./pages/Ruota')
 const Ruota = lazy(caricaRuota)
 const caricaSlot = () => import('./pages/Slot')
@@ -148,6 +148,9 @@ const caricaRoulette = () => import('./pages/Roulette')
 const Roulette = lazy(caricaRoulette)
 const caricaTavoloRL = () => import('./pages/RouletteTavolo')
 const RouletteTavolo = lazy(caricaTavoloRL)
+// La diretta del SuperEnalotto, con three.js, arriva a parte: la precarica prende solo la pagina.
+const caricaSuperEnalotto = () => import('./pages/SuperEnalotto')
+const SuperEnalotto = lazy(caricaSuperEnalotto)
 
 function usePrecarica() {
   useEffect(() => {
@@ -178,7 +181,15 @@ function usePrecarica() {
         caricaSequenzeSfida,
         caricaSequenzeInvito,
       ]
-      const fortuna = [caricaRuota, caricaSlot, caricaBlackjack, caricaTavoloBJ, caricaRoulette, caricaTavoloRL]
+      const fortuna = [
+        caricaRuota,
+        caricaSlot,
+        caricaBlackjack,
+        caricaTavoloBJ,
+        caricaRoulette,
+        caricaTavoloRL,
+        caricaSuperEnalotto,
+      ]
       const lupus = [caricaLupus, caricaLupusTelefono, caricaLupusStanza]
       const scarabocchi = [caricaScarabocchi, caricaScarabocchiStanza]
       const tutti = [...pezzi, caricaQuizDuello, caricaQuizInvito, ...fortuna, ...lupus, ...scarabocchi]
@@ -315,6 +326,7 @@ export default function App() {
             <Route path={ROTTE.blackjack} element={<Blackjack />} />
             <Route path="/blackjack/tavolo/:id" element={<BlackjackTavolo />} />
             <Route path={ROTTE.roulette} element={<Roulette />} />
+            <Route path={ROTTE.superenalotto} element={<SuperEnalotto />} />
             <Route path="/roulette/tavolo/:id" element={<RouletteTavolo />} />
             <Route path="/ruota" element={<Navigate to={ROTTE.ruota} replace />} />
 
