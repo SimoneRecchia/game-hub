@@ -7,18 +7,20 @@ import './Ruota.css'
 /**
  * La ruota della roulette, vista dal tavolo: un piatto inclinato in
  * prospettiva (`TILT`), che gira piano anche quando non si gioca, come quelle
- * vere. Non e' un disegno piatto: ogni parte sta alla sua altezza, in un
- * contesto 3D (`preserve-3d`) — il bordo di legno sopra la pista, la conca con
- * i rombi, il cilindro piu' in basso con le caselle incavate e i separatori di
- * metallo che sporgono, il cono che sale verso il mezzo, e la torretta con le
- * braccia sospese sopra il cono, che ci fanno ombra. Girando, le parti alte
- * scorrono sopra quelle basse, ed e' quello che le fa sembrare vere. Le altezze
- * sono in unita' del disegno (`Z`), come i raggi.
+ * vere. Le parti sono pochi strati piatti, ognuno con la sua prospettiva e la
+ * sua altezza (`Z`, in unita' del disegno come i raggi), e non un contesto 3D:
+ * la conca ferma con il bordo di legno, il cilindro che gira con le caselle, i
+ * separatori e la base del cono, la luce ferma sopra, gli anelli del cono uno
+ * piu' alto dell'altro, e la torretta con le braccia sospese sopra il cono, che
+ * ci fanno ombra. Uno strato piu' alto si disegna sopra quelli piu' bassi, ed e'
+ * quel che si vede da sopra; con la prospettiva di ognuno, girando, le braccia
+ * scorrono sul cono come quelle vere. Un contesto 3D con uno strato per parte,
+ * com'era, su Android finiva la memoria della scheda grafica: quadrati neri, e
+ * il resto della pagina che si rompeva.
  *
- * Le luci stanno ferme sopra il cilindro (`Luce`, `LuceCono`): il legno e
- * l'oro luccicano passandoci sotto. Il fianco del mobile non e' nel piatto:
- * e' la parte del cilindro di legno che si vede davanti, e lo si disegna sullo
- * schermo con la stessa prospettiva della biglia (`Fianco`).
+ * Il fianco del mobile e il fusto della torretta non sono strati: sono
+ * disegnati sullo schermo con la stessa prospettiva della biglia (`Fianco`,
+ * `proietta`).
  *
  * La biglia non sta nel piatto, perché inclinata diventerebbe un'ellisse: la
  * sua posizione si calcola con la stessa prospettiva del CSS (`proietta`) e la
@@ -29,8 +31,8 @@ import './Ruota.css'
  * finisce esattamente su quella casella qualunque sia la velocita' del
  * cilindro. Dal lancio alla casella passano `LANCIO_MS`, gli stessi del server.
  *
- * A ogni fotogramma si scrivono poche trasformazioni — il cilindro, l'ombra
- * della torretta, la biglia e la sua scia —: passare dallo stato di React
+ * A ogni fotogramma si scrivono poche trasformazioni — il cilindro, le braccia
+ * e la loro ombra, la biglia e la sua scia —: passare dallo stato di React
  * ridisegnerebbe le caselle sessanta volte al secondo.
  */
 
@@ -44,31 +46,23 @@ const COS = Math.cos((TILT * Math.PI) / 180)
 const R_PISTA = 87.2
 const R_CASELLA = 53.2
 const R_BIGLIA = 3.3
-/** Le altezze, nelle stesse unita': la pista e' lo zero. */
+/** Quanto e' largo il cilindro, che gira: fino all'anello d'oro, poi la conca. */
+const R_CILINDRO = 76
+/** Le altezze, nelle stesse unita': la pista, il bordo e il cilindro sono lo zero. */
 const Z = {
-  bordo: 2.4,
-  fondo: -9.5,
-  cilindro: -2.5,
-  separatori: [-1.7, -0.9],
-  luce: 0.15,
-  ombraTorretta: 2.7,
-  luceCono: 2.75,
-  braccia: 11.8,
+  fondo: -10,
+  ombraTorretta: 4,
+  braccia: 13.2,
 } as const
-/** Il cono a gradini: raggio e altezza di ogni anello, dalla base alla cima. */
+/** Gli anelli del cono, sopra la sua base che gira con il cilindro: raggio e altezza, dal piu' largo alla cima d'oro. */
 const CONO: ReadonlyArray<readonly [number, number]> = [
-  [46, -2.4],
-  [42, -1.7],
-  [37.5, -0.95],
-  [32.5, -0.2],
-  [27, 0.55],
-  [21.5, 1.25],
-  [16, 1.9],
-  [10.5, 2.5],
-  [6.5, 2.85],
+  [40, 0.9],
+  [33.5, 1.85],
+  [27, 2.75],
+  [20.5, 3.6],
+  [14, 4.4],
+  [7, 5.1],
 ]
-/** Il fusto della torretta: dischetti uno sopra l'altro, dalla cima del cono alle braccia. */
-const FUSTO = Array.from({ length: 12 }, (_, i) => 3.1 + i * 0.73)
 /** Dove cade l'ombra della torretta: la luce viene da sopra a sinistra. */
 const OMBRA_DX = 3.6
 const OMBRA_DY = 4.6
@@ -86,13 +80,13 @@ export const angoloDi = (numero: number) => RUOTA_ROULETTE.indexOf(numero) * PAS
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 /**
- * Quanto piu' grandi si disegnano gli strati del piatto, per rimpicciolirli
- * poi nella loro trasformazione. Chrome disegna gli strati che hanno una
- * prospettiva a un punto per pixel, senza la densita' dello schermo: su un
- * telefono i numeri venivano sgranati. Disegnati tre volte piu' grandi e
- * rimpiccioliti di tre, tornano nitidi. Safari (anche Chrome su iPhone, che e'
- * Safari) li disegna gia' alla densita' dello schermo, e li' ingrandirli
- * vorrebbe dire nove volte la memoria.
+ * Quanto piu' grandi si disegnano gli strati, per rimpicciolirli poi nella loro
+ * trasformazione. Chrome disegna gli strati che hanno una prospettiva a un
+ * punto per pixel, senza la densita' dello schermo: su un telefono i numeri
+ * venivano sgranati. Disegnati piu' grandi e rimpiccioliti tornano nitidi.
+ * Safari (anche Chrome su iPhone, che e' Safari) li disegna gia' alla densita'
+ * dello schermo, e li' ingrandirli vorrebbe dire nove volte la memoria. Il
+ * tetto e' tre: oltre, i numeri non migliorano e la memoria si'.
  */
 function nitidezza(): number {
   if (typeof navigator === 'undefined') return 1
@@ -141,13 +135,6 @@ function salto(u: number): number {
   return 0
 }
 
-/** L'altezza di quel che la biglia ha sotto: la pista e la conca, poi il cilindro, piu' in basso. */
-function fondoA(r: number): number {
-  if (r >= 73) return 0
-  if (r <= 70.5) return Z.cilindro
-  return Z.cilindro * ((73 - r) / 2.5)
-}
-
 /** I suoni del lancio, con il momento in cui cadono (`u`). */
 const SUONI: ReadonlyArray<{ u: number; fai: () => void }> = [
   { u: 0, fai: () => suona('biglia', { altezza: (LANCIO_MS * 0.6) / 1000 }) },
@@ -164,8 +151,8 @@ export interface LancioRuota {
   numero: number
 }
 
-/** Uno strato del piatto alla sua altezza. */
-const alto = (z: number) => ({ '--z': z }) as CSSProperties
+/** Uno strato: quanto e' largo, in centesimi del piatto, e a che altezza sta. */
+const pezzo = (d: number, z = 0) => ({ '--d': d, '--z': z }) as CSSProperties
 
 export function RuotaRoulette({
   lancio,
@@ -181,8 +168,8 @@ export function RuotaRoulette({
   className?: string
 }) {
   const scatola = useRef<HTMLDivElement>(null)
-  const piatto = useRef<HTMLDivElement>(null)
   const rotore = useRef<HTMLDivElement>(null)
+  const braccia = useRef<HTMLDivElement>(null)
   const ombraTorretta = useRef<HTMLDivElement>(null)
   const biglia = useRef<HTMLSpanElement>(null)
   const ombra = useRef<HTMLSpanElement>(null)
@@ -201,11 +188,10 @@ export function RuotaRoulette({
     const misura = () => {
       lato = box.clientWidth
       setLato(lato)
-      if (piatto.current) {
-        piatto.current.style.transform = `perspective(${(PROSPETTIVA * lato).toFixed(1)}px) rotateX(${TILT}deg)`
-        piatto.current.style.setProperty('--u', `${(lato / 200).toFixed(4)}px`)
-        piatto.current.style.setProperty('--nitido', String(nitido))
-      }
+      box.style.setProperty('--prospettiva', `${(PROSPETTIVA * lato).toFixed(1)}px`)
+      box.style.setProperty('--inclina', `${TILT}deg`)
+      box.style.setProperty('--u', `${(lato / 200).toFixed(4)}px`)
+      box.style.setProperty('--nitido', String(nitido))
     }
     misura()
     const osserva = new ResizeObserver(misura)
@@ -217,6 +203,11 @@ export function RuotaRoulette({
     let frame = 0
     /** Il lancio che si sta raccontando: da dove parte la biglia sul cilindro, quanto corre, che cosa ha gia' suonato. */
     let corrente: { chiave: string; fine: number; corsa: number; suonati: Set<number>; fermata: boolean } | null = null
+
+    /** La trasformazione di uno strato che gira, come quella che il CSS da' agli altri. */
+    const gira = (z: number, dopo = '') =>
+      `perspective(${(PROSPETTIVA * lato).toFixed(1)}px) rotateX(${TILT}deg) ` +
+      `translateZ(${((z * lato) / 200).toFixed(2)}px) ${dopo}rotate(${phi.toFixed(2)}deg) scale(${(1 / nitido).toFixed(4)})`
 
     /** Dove sta la biglia sul cilindro a un punto del lancio: l'angolo, il raggio, il salto. */
     const lungo = (u: number) => {
@@ -230,7 +221,7 @@ export function RuotaRoulette({
       const theta = ((phi + psi) * Math.PI) / 180
       const x = r * Math.cos(theta)
       const y = r * Math.sin(theta)
-      const centro = proietta(x, y, lato, fondoA(r) + R_BIGLIA + h)
+      const centro = proietta(x, y, lato, R_BIGLIA + h)
       const d = 2 * R_BIGLIA * (lato / 200) * centro.s
       el.style.width = el.style.height = `${d.toFixed(1)}px`
       el.style.transform = `translate(${(centro.x - d / 2).toFixed(1)}px, ${(centro.y - d / 2).toFixed(1)}px)`
@@ -245,12 +236,14 @@ export function RuotaRoulette({
       const trascorso = l ? adesso - l.inizio : Infinity
       const spinta = l && trascorso < LANCIO_MS ? Math.pow(1 - trascorso / LANCIO_MS, 2) : 0
       if (!fermo) phi = (phi + (GIRI_CALMO + GIRI_SPINTA * spinta) * dt) % 360
-      if (rotore.current) rotore.current.style.transform = `rotate(${phi.toFixed(2)}deg)`
       const k = lato / 200
+      if (rotore.current) rotore.current.style.transform = gira(0)
+      if (braccia.current) braccia.current.style.transform = gira(Z.braccia)
       if (ombraTorretta.current) {
-        ombraTorretta.current.style.transform =
-          `translateZ(${(Z.ombraTorretta * k).toFixed(2)}px) translate(${(OMBRA_DX * k).toFixed(2)}px, ` +
-          `${(OMBRA_DY * k).toFixed(2)}px) rotate(${phi.toFixed(2)}deg) scale(${(1 / nitido).toFixed(4)})`
+        ombraTorretta.current.style.transform = gira(
+          Z.ombraTorretta,
+          `translate(${(OMBRA_DX * k).toFixed(2)}px, ${(OMBRA_DY * k).toFixed(2)}px) `,
+        )
       }
 
       let psi: number | null = null
@@ -293,12 +286,12 @@ export function RuotaRoulette({
           o.style.opacity = '0'
         } else {
           const { d, x, y } = posa(b, psi, r, h)
-          const terra = proietta(x, y, lato, fondoA(r))
+          const terra = proietta(x, y, lato)
           b.style.opacity = '1'
           o.style.opacity = String(Math.max(0.2, 0.6 - h * 0.06))
-          o.style.width = `${(d * 1.3).toFixed(1)}px`
-          o.style.height = `${(d * 1.3 * COS).toFixed(1)}px`
-          o.style.transform = `translate(${(terra.x - d * 0.5).toFixed(1)}px, ${(terra.y - d * 0.28).toFixed(1)}px)`
+          o.style.width = `${(d * 1.5).toFixed(1)}px`
+          o.style.height = `${(d * 1.5 * COS).toFixed(1)}px`
+          o.style.transform = `translate(${(terra.x - d * 0.6).toFixed(1)}px, ${(terra.y - d * 0.36).toFixed(1)}px)`
         }
       }
       // La scia: due copie della biglia un attimo prima, finché corre veloce sulla pista.
@@ -326,53 +319,33 @@ export function RuotaRoulette({
     <div className={`rl-ruota ${className}`} aria-hidden="true">
       <div className="rl-ruota__scatola" ref={scatola}>
         <Fianco lato={lato} />
-        <div className="rl-ruota__piatto" ref={piatto}>
-          <div className="rl-ruota__strato" style={alto(0)}>
-            <Conca />
-          </div>
-          <div className="rl-ruota__rotore" ref={rotore}>
-            <div className="rl-ruota__strato" style={alto(Z.cilindro)}>
-              <Cilindro />
-            </div>
-            {Z.separatori.map((z, i) => (
-              <div key={z} className="rl-ruota__strato" style={alto(z)}>
-                <Separatori cima={i === Z.separatori.length - 1} />
-              </div>
-            ))}
-            {CONO.map(([r, z], i) => (
-              <span
-                key={r}
-                className={`rl-ruota__cono${i === 0 ? ' is-base' : ''}${i === CONO.length - 1 ? ' is-cima' : ''}`}
-                style={{ ...alto(z), '--r': r } as CSSProperties}
-              />
-            ))}
-            <div className="rl-ruota__strato" style={alto(CONO[0][1] + 0.05)}>
-              <Intarsi />
-            </div>
-            {FUSTO.map((z) => (
-              <span key={z} className="rl-ruota__fusto" style={alto(z)} />
-            ))}
-            <div className="rl-ruota__braccia" style={alto(Z.braccia)}>
-              <Braccia />
-            </div>
-            <span className="rl-ruota__cupola" style={alto(Z.braccia + 0.9)} />
-            <span className="rl-ruota__pomo" style={alto(Z.braccia + 2.1)} />
-          </div>
-          <div className="rl-ruota__strato" style={alto(Z.luce)}>
-            <Luce />
-          </div>
-          <div className="rl-ruota__ombra-torretta" ref={ombraTorretta}>
-            <OmbraBraccia />
-          </div>
-          <div className="rl-ruota__strato rl-ruota__luce-cono" style={alto(Z.luceCono)}>
-            <LuceCono />
-          </div>
-          {/* Il luccichio sulla cima della torretta sta fermo: la luce non gira con il cilindro. */}
-          <span className="rl-ruota__luccichio" style={alto(Z.braccia + 2.4)} />
-          <div className="rl-ruota__strato" style={alto(Z.bordo)}>
-            <Bordo />
-          </div>
+        <div className="rl-ruota__pezzo is-morbido" style={pezzo(100)}>
+          <Conca />
         </div>
+        <div className="rl-ruota__pezzo" style={pezzo(R_CILINDRO)} ref={rotore}>
+          <Cilindro />
+        </div>
+        {CONO.map(([r, z], i) => (
+          <span
+            key={r}
+            className={`rl-ruota__pezzo rl-ruota__cono${i === CONO.length - 1 ? ' is-cima' : ''}`}
+            style={pezzo(r, z)}
+          />
+        ))}
+        <div className="rl-ruota__pezzo is-morbido" style={pezzo(R_CILINDRO, 0.1)}>
+          <Luce />
+        </div>
+        <div className="rl-ruota__pezzo rl-ruota__ombra-torretta" style={pezzo(30)} ref={ombraTorretta}>
+          <OmbraBraccia />
+        </div>
+        <Fusto lato={lato} />
+        <div className="rl-ruota__pezzo" style={pezzo(30)} ref={braccia}>
+          <Braccia />
+        </div>
+        <span className="rl-ruota__pezzo rl-ruota__cupola" style={pezzo(3.6, Z.braccia + 0.9)} />
+        <span className="rl-ruota__pezzo rl-ruota__pomo" style={pezzo(1.8, Z.braccia + 2.1)} />
+        {/* Il luccichio sulla cima della torretta sta fermo: la luce non gira con il cilindro. */}
+        <span className="rl-ruota__pezzo rl-ruota__luccichio" style={pezzo(1.2, Z.braccia + 2.4)} />
         {SCIA.map((_, i) => (
           <span
             key={i}
@@ -399,12 +372,25 @@ function settore(r1: number, r2: number, da: number, a: number): string {
   return `M${punto(r2, da)}A${r2} ${r2} 0 0 1 ${punto(r2, a)}L${punto(r1, a)}A${r1} ${r1} 0 0 0 ${punto(r1, da)}Z`
 }
 
+/** Un cerchio come tracciato, con il centro spostato di `dy`. */
+function cerchio(r: number, verso: 0 | 1, dy = 0): string {
+  return `M${r} ${dy}A${r} ${r} 0 1 ${verso} ${-r} ${dy}A${r} ${r} 0 1 ${verso} ${r} ${dy}Z`
+}
 
 /** Una corona fra due raggi, da riempire con `evenodd`: il buco in mezzo lascia vedere gli strati sotto. */
 function corona(r1: number, r2: number): string {
-  const cerchio = (r: number, verso: 0 | 1) =>
-    `M${r} 0A${r} ${r} 0 1 ${verso} ${-r} 0A${r} ${r} 0 1 ${verso} ${r} 0Z`
   return cerchio(r2, 1) + cerchio(r1, 0)
+}
+
+/**
+ * La parete di un gradino vista da sopra: quel che c'e' fra un cerchio e lo
+ * stesso cerchio piu' in basso di quanto e' alta. In cima e' una falce, ai lati
+ * si assottiglia, davanti non si vede: e' la proiezione di un muro tondo, e in
+ * uno strato piatto fa sembrare piu' bassa la parte di dentro. Il pezzo che
+ * esce dal cerchio, davanti, lo copre quel che si disegna dopo, o lo taglia `clip`.
+ */
+function parete(r: number, alta: number): string {
+  return cerchio(r, 1) + cerchio(r, 0, alta * (SEN / COS))
 }
 
 /** Un arco, per i riflessi del legno. */
@@ -432,6 +418,9 @@ function oro(t: number): string {
 const TINTE = { rosso: ['#7d0a1b', '#d4182f', '#9c0e22'], nero: ['#050505', '#2a2a2e', '#0b0b0d'], verde: ['#04502a', '#12a352', '#066b34'] } as const
 const FONDI = { rosso: ['#a0142a', '#5a0712'], nero: ['#26262a', '#030303'], verde: ['#0b7a3f', '#033d1d'] } as const
 
+/** Il fianco del mobile, dall'orlo del bordo in giu': la fascia d'oro e lo zoccolo. */
+const FIANCO = { oro: [-2.6, -4] as const, zoccolo: -8 }
+
 /** Il fianco del mobile: la parte del cilindro di legno che si vede davanti, sotto il bordo. */
 const Fianco = memo(function Fianco({ lato }: { lato: number }) {
   const id = useId().replace(/:/g, '')
@@ -451,10 +440,9 @@ const Fianco = memo(function Fianco({ lato }: { lato: number }) {
   // Le commessure fra le doghe di legno: le generatrici del cilindro, piu' fitte verso i lati, come si vedono.
   const doghe = Array.from({ length: 23 }, (_, i) => {
     const t = (((i + 1) * 180) / 24) * (Math.PI / 180)
-    const a = proietta(100 * Math.cos(t), 100 * Math.sin(t), lato, Z.bordo - 0.6)
-    const b = proietta(100 * Math.cos(t), 100 * Math.sin(t), lato, -2.2)
-    const c = proietta(100 * Math.cos(t), 100 * Math.sin(t), lato, -3.6)
-    const d = proietta(100 * Math.cos(t), 100 * Math.sin(t), lato, -7.6)
+    const [a, b, c, d] = [-0.6, FIANCO.oro[0], FIANCO.oro[1], FIANCO.zoccolo].map((z) =>
+      proietta(100 * Math.cos(t), 100 * Math.sin(t), lato, z),
+    )
     return `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}M${c.x.toFixed(1)} ${c.y.toFixed(1)}L${d.x.toFixed(1)} ${d.y.toFixed(1)}`
   }).join('')
   const sx = proietta(-100, 0, lato, 0).x
@@ -506,19 +494,43 @@ const Fianco = memo(function Fianco({ lato }: { lato: number }) {
         </radialGradient>
       </defs>
       <ellipse cx={centro.x} cy={centro.y + basso * 0.18} rx={largo * 1.04} ry={basso * 0.9} fill={`url(#${id}-ombra)`} />
-      <path d={fascia(Z.bordo, Z.fondo)} fill={`url(#${id}-legno)`} />
-      <path d={fascia(Z.bordo, Z.fondo)} fill={`url(#${id}-alto)`} />
+      <path d={fascia(0, Z.fondo)} fill={`url(#${id}-legno)`} />
+      <path d={fascia(0, Z.fondo)} fill={`url(#${id}-alto)`} />
       <path d={doghe} stroke="#000" strokeOpacity="0.28" strokeWidth={lato * 0.0022} fill="none" />
-      <path d={fascia(-2.2, -3.6, 100.15)} fill={`url(#${id}-oro)`} />
-      <path d={linea(-2.2)} stroke="#fff6d6" strokeOpacity="0.55" strokeWidth={lato * 0.0016} fill="none" />
-      <path d={fascia(-7.6, Z.fondo, 100.3)} fill={`url(#${id}-piede)`} />
-      <path d={linea(-7.6)} stroke="#d9a93e" strokeOpacity="0.7" strokeWidth={lato * 0.002} fill="none" />
-      <path d={linea(Z.bordo)} stroke="#ffd6a0" strokeOpacity="0.45" strokeWidth={lato * 0.004} fill="none" />
+      <path d={fascia(FIANCO.oro[0], FIANCO.oro[1], 100.15)} fill={`url(#${id}-oro)`} />
+      <path d={linea(FIANCO.oro[0])} stroke="#fff6d6" strokeOpacity="0.55" strokeWidth={lato * 0.0016} fill="none" />
+      <path d={fascia(FIANCO.zoccolo, Z.fondo, 100.3)} fill={`url(#${id}-piede)`} />
+      <path d={linea(FIANCO.zoccolo)} stroke="#d9a93e" strokeOpacity="0.7" strokeWidth={lato * 0.002} fill="none" />
+      <path d={linea(0)} stroke="#ffd6a0" strokeOpacity="0.45" strokeWidth={lato * 0.004} fill="none" />
     </svg>
   )
 })
 
-/** La conca ferma: la parete del bordo, la pista lucida, il pendio scuro con i rombi, l'ombra sul cilindro. */
+/** Il fusto della torretta, dalla cima del cono alle braccia: un cilindro d'oro in piedi, disegnato sullo schermo. */
+const Fusto = memo(function Fusto({ lato }: { lato: number }) {
+  if (lato <= 0) return null
+  const sotto = proietta(0, 0, lato, CONO[CONO.length - 1][1])
+  const sopra = proietta(0, 0, lato, Z.braccia)
+  const largo = 2.6 * (lato / 200) * sopra.s
+  return (
+    <span
+      className="rl-ruota__fusto"
+      style={{
+        left: lato / 2 - largo / 2,
+        top: sopra.y,
+        width: largo,
+        height: sotto.y - sopra.y,
+        borderRadius: `50% / ${(largo * 0.5 * COS).toFixed(2)}px`,
+      }}
+    />
+  )
+})
+
+/**
+ * La conca ferma: la pista lucida, il pendio scuro con i rombi, e il bordo di
+ * legno con le venature e i filetti d'oro, con la parete che si vede in fondo.
+ * Ci sono anche la luce sulla pista e i riflessi, che stanno fermi come la conca.
+ */
 const Conca = memo(function Conca() {
   const id = useId().replace(/:/g, '')
   const rombi = Array.from({ length: 8 }, (_, i) => {
@@ -544,14 +556,14 @@ const Conca = memo(function Conca() {
     })
     return { a, lungo, largo, facce, dritto }
   })
+  const vene = Array.from({ length: 26 }, (_, i) => ({
+    r: 93.2 + venatura(i) * 6.4,
+    chiara: venatura(i + 40) > 0.55,
+    forza: 0.04 + venatura(i + 80) * 0.08,
+  }))
   return (
     <svg className="rl-ruota__disegno" viewBox="-100 -100 200 200">
       <defs>
-        <linearGradient id={`${id}-parete`} x1="0" y1="-100" x2="0" y2="100" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#6a3514" />
-          <stop offset="0.45" stopColor="#3c1b08" />
-          <stop offset="1" stopColor="#1f0d03" />
-        </linearGradient>
         <radialGradient id={`${id}-pista`} cx="0" cy="0" r="92.6" gradientUnits="userSpaceOnUse">
           <stop offset="0.85" stopColor="#5e3110" />
           <stop offset="0.9" stopColor="#a3662f" />
@@ -564,12 +576,33 @@ const Conca = memo(function Conca() {
           <stop offset="0.97" stopColor="#2b1407" />
           <stop offset="1" stopColor="#4a240d" />
         </radialGradient>
-        <radialGradient id={`${id}-orlo`} cx="0" cy="0" r="76" gradientUnits="userSpaceOnUse">
-          <stop offset="0.955" stopColor="#000" stopOpacity="0.75" />
-          <stop offset="1" stopColor="#000" stopOpacity="0" />
+        <linearGradient id={`${id}-parete`} x1="0" y1="-100" x2="0" y2="-40" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#3c1b08" />
+          <stop offset="1" stopColor="#1f0d03" />
+        </linearGradient>
+        <radialGradient id={`${id}-legno`} cx="0" cy="0" r="100" gradientUnits="userSpaceOnUse">
+          <stop offset="0.925" stopColor="#2e1305" />
+          <stop offset="0.936" stopColor="#7a411d" />
+          <stop offset="0.958" stopColor="#a8622f" />
+          <stop offset="0.975" stopColor="#6e3514" />
+          <stop offset="0.992" stopColor="#4a210b" />
+          <stop offset="1" stopColor="#2a1104" />
+        </radialGradient>
+        <linearGradient id={`${id}-oro`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fff2c2" />
+          <stop offset="0.5" stopColor="#d9a93e" />
+          <stop offset="1" stopColor="#7a5414" />
+        </linearGradient>
+        <radialGradient id={`${id}-riflesso`} cx="-36" cy="-44" r="72" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#fff" stopOpacity="0.34" />
+          <stop offset="0.5" stopColor="#fff" stopOpacity="0.07" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id={`${id}-buio`} cx="22" cy="30" r="96" gradientUnits="userSpaceOnUse">
+          <stop offset="0.55" stopColor="#000" stopOpacity="0" />
+          <stop offset="1" stopColor="#000" stopOpacity="0.35" />
         </radialGradient>
       </defs>
-      <path d={corona(91.9, 100)} fill={`url(#${id}-parete)`} fillRule="evenodd" />
       <path d={corona(79, 92.6)} fill={`url(#${id}-pista)`} fillRule="evenodd" />
       {/* I segni del tornio sulla pista: cerchi appena accennati, chiari e scuri. */}
       {[80.6, 82.3, 84.1, 85.8, 87.4, 89.2, 90.8].map((r, i) => (
@@ -601,36 +634,10 @@ const Conca = memo(function Conca() {
           ))}
         </g>
       ))}
-      <path d={corona(72.8, 76)} fill={`url(#${id}-orlo)`} fillRule="evenodd" />
-    </svg>
-  )
-})
-
-/** Il bordo di legno, piu' alto della pista: le venature, i filetti d'oro, i riflessi della luce. */
-const Bordo = memo(function Bordo() {
-  const id = useId().replace(/:/g, '')
-  const vene = Array.from({ length: 26 }, (_, i) => ({
-    r: 93.2 + venatura(i) * 6.4,
-    chiara: venatura(i + 40) > 0.55,
-    forza: 0.04 + venatura(i + 80) * 0.08,
-  }))
-  return (
-    <svg className="rl-ruota__disegno" viewBox="-100 -100 200 200">
-      <defs>
-        <radialGradient id={`${id}-legno`} cx="0" cy="0" r="100" gradientUnits="userSpaceOnUse">
-          <stop offset="0.925" stopColor="#2e1305" />
-          <stop offset="0.936" stopColor="#7a411d" />
-          <stop offset="0.958" stopColor="#a8622f" />
-          <stop offset="0.975" stopColor="#6e3514" />
-          <stop offset="0.992" stopColor="#4a210b" />
-          <stop offset="1" stopColor="#2a1104" />
-        </radialGradient>
-        <linearGradient id={`${id}-oro`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#fff2c2" />
-          <stop offset="0.5" stopColor="#d9a93e" />
-          <stop offset="1" stopColor="#7a5414" />
-        </linearGradient>
-      </defs>
+      <path d={corona(75, 92.5)} fill={`url(#${id}-riflesso)`} fillRule="evenodd" />
+      <path d={corona(75, 92.5)} fill={`url(#${id}-buio)`} fillRule="evenodd" />
+      {/* La parete di dentro del bordo, che si vede in fondo: il bordo e' piu' alto della pista. */}
+      <path d={parete(92.5, 2.4)} fill={`url(#${id}-parete)`} fillRule="evenodd" />
       <path d={corona(92.5, 100)} fill={`url(#${id}-legno)`} fillRule="evenodd" />
       {vene.map((v, i) => (
         <circle
@@ -652,11 +659,21 @@ const Bordo = memo(function Bordo() {
   )
 })
 
-/** Il cilindro che gira: la fascia d'oro, l'anello dei numeri lucido, le caselle incavate. */
+/**
+ * Il cilindro che gira: la fascia d'oro, l'anello dei numeri, le caselle, i
+ * separatori di metallo e la base del cono con i fregi. I separatori sono
+ * disegnati come sporgono, con il filo di luce in mezzo e l'ombra ai due lati:
+ * girano, e una luce da una parte sola girerebbe con loro.
+ */
 const Cilindro = memo(function Cilindro() {
   const id = useId().replace(/:/g, '')
+  const fili = RUOTA_ROULETTE.map((_, k) => {
+    const a = k * PASSO - 90 - PASSO / 2
+    return `M${punto(46.9, a)}L${punto(59.85, a)}`
+  }).join('')
+  const v = R_CILINDRO
   return (
-    <svg className="rl-ruota__disegno" viewBox="-100 -100 200 200">
+    <svg className="rl-ruota__disegno" viewBox={`${-v} ${-v} ${2 * v} ${2 * v}`}>
       <defs>
         <linearGradient id={`${id}-oro`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#fff4c4" />
@@ -676,6 +693,11 @@ const Cilindro = memo(function Cilindro() {
             <stop offset="1" stopColor={FONDI[c][1]} />
           </radialGradient>
         ))}
+        <radialGradient id={`${id}-cono`} cx="0" cy="0" r="46" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#7a3f1c" />
+          <stop offset="0.88" stopColor="#5a2b10" />
+          <stop offset="1" stopColor="#2a1305" />
+        </radialGradient>
       </defs>
       <path d={corona(72, 75)} fill={`url(#${id}-oro)`} fillRule="evenodd" />
       <circle r="74.7" fill="none" stroke="#3a2604" strokeOpacity="0.6" strokeWidth="0.5" />
@@ -705,45 +727,27 @@ const Cilindro = memo(function Cilindro() {
       })}
       <path d={corona(59.6, 60.6)} fill={`url(#${id}-oro)`} fillRule="evenodd" />
       <circle r="59.1" fill="none" stroke="#000" strokeOpacity="0.5" strokeWidth="1.4" />
+      {/* I separatori e le due pareti: l'ombra larga, il metallo, il filo di luce. */}
+      <g fill="none" strokeLinecap="round">
+        <path d={fili} stroke="#000" strokeOpacity="0.55" strokeWidth="1.9" />
+        <circle r="59.85" stroke="#000" strokeOpacity="0.5" strokeWidth="1.8" />
+        <circle r="46.9" stroke="#000" strokeOpacity="0.5" strokeWidth="1.7" />
+        <circle r="59.85" stroke="#b08a2c" strokeWidth="0.95" />
+        <circle r="46.9" stroke="#b08a2c" strokeWidth="0.9" />
+        <path d={fili} stroke="#9a9aa6" strokeWidth="1.05" />
+        <circle r="59.85" stroke="#f3d98e" strokeWidth="0.4" />
+        <circle r="46.9" stroke="#f3d98e" strokeWidth="0.38" />
+        <path d={fili} stroke="#fbfbff" strokeWidth="0.42" />
+      </g>
+      <circle r="46" fill={`url(#${id}-cono)`} />
       <path d={corona(46, 47)} fill={`url(#${id}-oro)`} fillRule="evenodd" />
-    </svg>
-  )
-})
-
-/** I separatori di metallo fra le caselle, e le pareti di dentro e di fuori: due strati, uno sopra l'altro, sporgono. */
-const Separatori = memo(function Separatori({ cima }: { cima: boolean }) {
-  const colore = cima ? '#f5f5fa' : '#6f6f7a'
-  const anello = cima ? '#f3d98e' : '#8a6418'
-  return (
-    <svg className="rl-ruota__disegno" viewBox="-100 -100 200 200">
-      <circle r="59.85" fill="none" stroke={anello} strokeWidth={cima ? 0.55 : 0.9} />
-      <circle r="46.9" fill="none" stroke={anello} strokeWidth={cima ? 0.5 : 0.85} />
-      {RUOTA_ROULETTE.map((_, k) => {
-        const a = k * PASSO - 90 - PASSO / 2
-        return (
-          <path
-            key={k}
-            d={`M${punto(46.9, a)}L${punto(59.85, a)}`}
-            stroke={colore}
-            strokeWidth={cima ? 0.62 : 0.95}
-            strokeLinecap="round"
-          />
-        )
-      })}
-    </svg>
-  )
-})
-
-/** I fregi d'oro sulla base del cono: si vedono girare. */
-const Intarsi = memo(function Intarsi() {
-  return (
-    <svg className="rl-ruota__disegno" viewBox="-100 -100 200 200">
+      <path d={corona(44.7, 45.1)} fill="#3a2404" fillRule="evenodd" />
       {Array.from({ length: 16 }, (_, i) => (
         <path
           key={i}
           d="M0 -1.3L0.7 0 0 1.3-0.7 0Z"
           fill={i % 2 ? '#f6dc8f' : '#c99a33'}
-          transform={`rotate(${i * 22.5}) translate(43.6 0) rotate(90)`}
+          transform={`rotate(${i * 22.5}) translate(43 0) rotate(90)`}
         />
       ))}
     </svg>
@@ -803,11 +807,19 @@ const OmbraBraccia = memo(function OmbraBraccia() {
   )
 })
 
-/** La luce ferma sopra la pista e il cilindro: il riflesso in alto a sinistra, e il bordo che si scurisce. */
+/**
+ * La luce ferma sopra il cilindro e il cono: il riflesso in alto a sinistra, il
+ * buio dalla parte opposta, la parete della conca che si vede in fondo (il
+ * cilindro sta piu' in basso della pista), e la luce e l'ombra del cono. Sta
+ * sopra gli anelli del cono, piu' alti di lei, quindi la luce del cono ha il
+ * centro spostato in fondo di quanto il cono e' alto: cosi' cade dove si vede.
+ */
 const Luce = memo(function Luce() {
   const id = useId().replace(/:/g, '')
+  const v = R_CILINDRO
+  const su = -3 * (SEN / COS)
   return (
-    <svg className="rl-ruota__disegno" viewBox="-100 -100 200 200">
+    <svg className="rl-ruota__disegno" viewBox={`${-v} ${-v} ${2 * v} ${2 * v}`}>
       <defs>
         <radialGradient id={`${id}-riflesso`} cx="-36" cy="-44" r="72" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#fff" stopOpacity="0.34" />
@@ -818,32 +830,40 @@ const Luce = memo(function Luce() {
           <stop offset="0.55" stopColor="#000" stopOpacity="0" />
           <stop offset="1" stopColor="#000" stopOpacity="0.35" />
         </radialGradient>
-      </defs>
-      <path d={corona(47, 92)} fill={`url(#${id}-riflesso)`} fillRule="evenodd" />
-      <path d={corona(47, 92)} fill={`url(#${id}-buio)`} fillRule="evenodd" />
-    </svg>
-  )
-})
-
-/** La luce ferma sul cono, e il luccichio sulla cima della torretta. */
-const LuceCono = memo(function LuceCono() {
-  const id = useId().replace(/:/g, '')
-  return (
-    <svg className="rl-ruota__disegno" viewBox="-100 -100 200 200">
-      <defs>
-        <radialGradient id={`${id}-cono`} cx="-13" cy="-16" r="30" gradientUnits="userSpaceOnUse">
+        <radialGradient id={`${id}-fosso`} cx="0" cy="0" r="76" gradientUnits="userSpaceOnUse">
+          <stop offset="0.955" stopColor="#000" stopOpacity="0" />
+          <stop offset="0.985" stopColor="#000" stopOpacity="0.55" />
+          <stop offset="1" stopColor="#000" stopOpacity="0.8" />
+        </radialGradient>
+        <linearGradient id={`${id}-parete`} x1="0" y1="-76" x2="0" y2="-30" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#2b1407" />
+          <stop offset="1" stopColor="#0b0402" />
+        </linearGradient>
+        <radialGradient id={`${id}-cono`} cx="-13" cy={-16 + su} r="30" gradientUnits="userSpaceOnUse">
           <stop offset="0" stopColor="#ffe6c0" stopOpacity="0.42" />
           <stop offset="0.6" stopColor="#ffe6c0" stopOpacity="0.1" />
           <stop offset="1" stopColor="#ffe6c0" stopOpacity="0" />
         </radialGradient>
-        <radialGradient id={`${id}-ombra`} cx="10" cy="12" r="34" gradientUnits="userSpaceOnUse">
+        <radialGradient id={`${id}-ombra`} cx="10" cy={12 + su} r="34" gradientUnits="userSpaceOnUse">
           <stop offset="0.4" stopColor="#000" stopOpacity="0" />
           <stop offset="0.85" stopColor="#000" stopOpacity="0.28" />
           <stop offset="1" stopColor="#000" stopOpacity="0" />
         </radialGradient>
+        <clipPath id={`${id}-dentro`}>
+          <circle r="75.6" />
+        </clipPath>
       </defs>
-      <circle r="40" fill={`url(#${id}-ombra)`} />
-      <circle r="40" fill={`url(#${id}-cono)`} />
+      <path d={corona(46, 75)} fill={`url(#${id}-riflesso)`} fillRule="evenodd" />
+      <path d={corona(46, 75)} fill={`url(#${id}-buio)`} fillRule="evenodd" />
+      <path d={corona(72, 76)} fill={`url(#${id}-fosso)`} fillRule="evenodd" />
+      <path
+        d={parete(75.6, 2.5)}
+        fill={`url(#${id}-parete)`}
+        fillRule="evenodd"
+        clipPath={`url(#${id}-dentro)`}
+      />
+      <circle r="44" cy={su} fill={`url(#${id}-ombra)`} />
+      <circle r="44" cy={su} fill={`url(#${id}-cono)`} />
     </svg>
   )
 })
