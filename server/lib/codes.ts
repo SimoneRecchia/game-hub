@@ -142,6 +142,11 @@ export async function issueCode(
         now.toISOString(),
         expires.toISOString(),
       ),
+    // I codici di due giorni fa non servono piu' a niente: il tetto del giorno conta quelli delle ultime
+    // ventiquattr'ore. Li porta via il codice nuovo, che e' raro: una pulizia che non costa un giro in piu'.
+    db
+      .prepare('DELETE FROM verification_codes WHERE expires_at < ?')
+      .bind(new Date(now.getTime() - 2 * 86_400_000).toISOString()),
   ])
 
   return code
