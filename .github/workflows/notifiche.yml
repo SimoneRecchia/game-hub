@@ -1,0 +1,63 @@
+name: Notifiche a orario
+
+# Le notifiche che non nascono da una richiesta: l'estrazione del SuperEnalotto
+# che sta per cominciare (lunedi', mercoledi' e venerdi', le 21:05 italiane) e
+# il promemoria della sera (fra le 19 e le 21). Ogni invio ha due orari, uno
+# per l'ora legale e uno per la solare: lo script guarda l'ora italiana, manda
+# solo se e' il momento, e una volta sola (scripts/notifiche.ts). Gli orari
+# sono un po' prima del momento giusto, perché i workflow programmati partono
+# spesso con qualche minuto di ritardo.
+on:
+  schedule:
+    - cron: '40 18,19 * * 1,3,5'
+    - cron: '25 17,18 * * *'
+  workflow_dispatch:
+    inputs:
+      cosa:
+        description: 'estrazione o promemoria'
+        required: true
+        default: 'promemoria'
+
+concurrency:
+  group: notifiche
+  cancel-in-progress: false
+
+jobs:
+  manda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Controllo dei segreti
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ]; then
+            echo "::error::Mancano i segreti CLOUDFLARE_API_TOKEN o CLOUDFLARE_ACCOUNT_ID (vedi DEPLOY.md)."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Le notifiche del momento
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROGRAMMA: ${{ github.event.schedule }}
+          A_MANO: ${{ github.event.inputs.cosa }}
+        run: |
+          if [ -n "$A_MANO" ]; then
+            cosa="$A_MANO"
+          elif [ "$PROGRAMMA" = '40 18,19 * * 1,3,5' ]; then
+            cosa=estrazione
+          else
+            cosa=promemoria
+          fi
+          npx vite-node scripts/notifiche.ts -- --$cosa --remote

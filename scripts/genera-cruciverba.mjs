@@ -11,8 +11,16 @@
  *
  * Solo le giornate che mancano: quelle già scritte non si toccano, e con
  * `INSERT OR IGNORE` non si toccherebbero comunque. Le parole degli ultimi
- * trenta schemi finiscono in fondo all'ordine dei tentativi, perché "sempre
- * diversi" vuol dire anche non ritrovare ORSO tre giorni di fila.
+ * trenta schemi finiscono in fondo all'ordine dei tentativi, quelle di tre
+ * lettere della settimana prima anche, perché "sempre diversi" vuol dire anche
+ * non ritrovare ORSO tre giorni di fila; e una parola che torna prende una
+ * definizione che non ha avuto negli ultimi trenta (`recenti`).
+ *
+ * L'eccezione sono le giornate di un formato vecchio (`FORMATO`) **nel futuro e
+ * che nessuno ha aperto**: si rifanno, perché nessuno le ha viste, con un
+ * `UPDATE` condizionato al formato e all'assenza di partite. Il 2 e' quello con
+ * la memoria delle definizioni, i sinonimi e le definizioni da enigmista. Oggi e
+ * il passato restano come sono.
  *
  * Gli schemi **liberi** — quelli della partita libera, senza giornata — li fa lo
  * stesso script con `--liberi`: la scorta cresce di qualche decina a notte fino
@@ -38,10 +46,11 @@ import { fileURLToPath } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 import {
   correggiDefinizioni,
+  definizioniDellaSoluzione,
   generaCruciverba,
+  istruzioneRifai,
   istruzioneSql,
   leggiDefinizioni,
-  paroleDellaSoluzione,
   preparaDizionario,
   semeDelGiorno,
   semeLibero,
@@ -52,8 +61,12 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 const DB = 'game-hub-db'
 
-/** Quanti schemi precedenti guardare per non ripetere le parole. */
+/** Quanti schemi precedenti guardare per non ripetere le parole e le definizioni. */
 const FINESTRA = 30
+/** Le parole di tre lettere sono poche: si evitano solo quelle della settimana. */
+const FINESTRA_CORTE = 7
+/** Il formato degli schemi che scrive questo script (vedi sopra). */
+const FORMATO = 2
 
 function argomento(nome, predefinito) {
   const i = process.argv.indexOf(`--${nome}`)
@@ -107,25 +120,24 @@ function generaLiberi() {
   console.log(`Cruciverba liberi: ${ultimo} pronti, obiettivo ${LIBERI}, questa volta fino al ${fino}`)
   if (fino <= ultimo) return
 
-  const recenti = new Map()
+  const precedenti = new Map()
   for (const r of interroga(
-    `SELECT id, righe, colonne, soluzione FROM cruciverba_schemi_liberi WHERE id > ${ultimo - FINESTRA}`,
+    `SELECT id, righe, colonne, soluzione, definizioni FROM cruciverba_schemi_liberi WHERE id > ${ultimo - FINESTRA}`,
   )) {
-    recenti.set(r.id, paroleDellaSoluzione(r.soluzione, r.righe, r.colonne))
+    precedenti.set(r.id, { dette: definizioniDellaSoluzione(r.soluzione, r.righe, r.colonne, JSON.parse(r.definizioni)) })
   }
 
   const istruzioni = []
   const adesso = new Date().toISOString()
   for (let numero = ultimo + 1; numero <= fino; numero += 1) {
-    const evita = new Set()
-    for (let n = numero - FINESTRA; n < numero; n += 1) for (const p of recenti.get(n) ?? []) evita.add(p)
+    const { evita, recenti } = memoria(numero, precedenti)
     const inizio = Date.now()
-    const cruciverba = generaCruciverba({ indici, seme: semeLibero(numero), evita })
+    const cruciverba = generaCruciverba({ indici, seme: semeLibero(numero), evita, recenti })
     if (!cruciverba) {
       console.error(`  libero ${numero}: nessuno schema riempito, mi fermo`)
       process.exit(1)
     }
-    recenti.set(numero, cruciverba.parole.filter((p) => p.length >= 4))
+    precedenti.set(numero, { dette: detteDi(cruciverba) })
     istruzioni.push(istruzioneSql(numero, cruciverba, adesso, true))
     console.log(`  libero ${numero}: ${cruciverba.parole.length} parole, qualità ${cruciverba.voto.punti.toFixed(2)} (${Date.now() - inizio} ms)`)
   }
@@ -173,44 +185,69 @@ function correggiSalvati(tabella, colonna, dove, nome) {
   if (istruzioni.length > 0) scriviIstruzioni(istruzioni, `correzioni-${tabella}.sql`, 'schemi corretti')
 }
 
-/** numero → parole, per gli schemi che ci sono già. */
+/**
+ * numero → le parole con le loro definizioni, per gli schemi che ci sono gia', e
+ * se lo schema va rifatto: un formato vecchio, nel futuro, che nessuno ha aperto.
+ */
 const esistenti = new Map()
 if (REMOTO || LOCALE) {
   const righe = interroga(
-    `SELECT puzzle_number, righe, colonne, soluzione FROM cruciverba_schemi
-      WHERE puzzle_number >= ${DA - FINESTRA} AND puzzle_number < ${DA + GIORNI}`,
+    `SELECT s.puzzle_number, s.righe, s.colonne, s.soluzione, s.definizioni, s.formato,
+            EXISTS (SELECT 1 FROM cruciverba_games g WHERE g.puzzle_number = s.puzzle_number) AS aperto
+       FROM cruciverba_schemi s
+      WHERE s.puzzle_number >= ${DA - FINESTRA} AND s.puzzle_number < ${DA + GIORNI}`,
   )
   for (const r of righe) {
-    esistenti.set(r.puzzle_number, paroleDellaSoluzione(r.soluzione, r.righe, r.colonne))
+    esistenti.set(r.puzzle_number, {
+      dette: definizioniDellaSoluzione(r.soluzione, r.righe, r.colonne, JSON.parse(r.definizioni)),
+      rifare: r.puzzle_number > DA && r.formato < FORMATO && !r.aperto,
+    })
   }
 }
 
-console.log(
-  `Cruciverba: dal ${DA} al ${DA + GIORNI - 1}, ${[...esistenti.keys()].filter((n) => n >= DA).length} già pronti`,
-)
+/** Le parole da evitare e le definizioni gia' date negli schemi prima di `numero`. */
+function memoria(numero, schemi) {
+  const evita = new Set()
+  const recenti = new Map()
+  for (let n = numero - FINESTRA; n < numero; n += 1) {
+    for (const [parola, testo] of schemi.get(n)?.dette ?? []) {
+      if (parola.length >= 4 || (parola.length === 3 && n >= numero - FINESTRA_CORTE)) evita.add(parola)
+      if (!recenti.has(parola)) recenti.set(parola, new Set())
+      recenti.get(parola).add(testo.toLowerCase())
+    }
+  }
+  return { evita, recenti }
+}
+
+/** Le parole e le definizioni di uno schema appena fatto, come quelle lette da D1. */
+function detteDi(cruciverba) {
+  const salvate = Object.fromEntries(Object.entries(cruciverba.definizioni).map(([k, d]) => [k, { t: d.testo }]))
+  return definizioniDellaSoluzione(cruciverba.griglia, cruciverba.righe, cruciverba.colonne, salvate)
+}
+
+const pronti = [...esistenti].filter(([n, e]) => n >= DA && !e.rifare).length
+const daRifare = [...esistenti.values()].filter((e) => e.rifare).length
+console.log(`Cruciverba: dal ${DA} al ${DA + GIORNI - 1}, ${pronti} già pronti, ${daRifare} da rifare`)
 
 const istruzioni = []
 const adesso = new Date().toISOString()
 for (let numero = DA; numero < DA + GIORNI; numero += 1) {
-  if (esistenti.has(numero)) continue
+  const gia = esistenti.get(numero)
+  if (gia && !gia.rifare) continue
 
-  const evita = new Set()
-  for (let n = numero - FINESTRA; n < numero; n += 1) {
-    for (const p of esistenti.get(n) ?? []) evita.add(p)
-  }
-
+  const { evita, recenti } = memoria(numero, esistenti)
   const inizio = Date.now()
-  const cruciverba = generaCruciverba({ indici, seme: semeDelGiorno(numero), evita })
+  const cruciverba = generaCruciverba({ indici, seme: semeDelGiorno(numero), evita, recenti })
   if (!cruciverba) {
     // Non succede con il dizionario attuale; se succedesse, meglio fermarsi e
     // dirlo che lasciare un buco silenzioso nella scorta.
     console.error(`  #${numero}: nessuno schema riempito, mi fermo`)
     process.exit(1)
   }
-  esistenti.set(numero, cruciverba.parole.filter((p) => p.length >= 4))
-  istruzioni.push(istruzioneSql(numero, cruciverba, adesso))
+  esistenti.set(numero, { dette: detteDi(cruciverba), rifare: false })
+  istruzioni.push(gia ? istruzioneRifai(numero, cruciverba, adesso, FORMATO) : istruzioneSql(numero, cruciverba, adesso, false, FORMATO))
   console.log(
-    `  #${numero}: ${cruciverba.parole.length} parole, ${cruciverba.voto.sigle} sigle, ` +
+    `  #${numero}${gia ? ' (rifatto)' : ''}: ${cruciverba.parole.length} parole, ${cruciverba.voto.sigle} sigle, ` +
       `qualità ${cruciverba.voto.punti.toFixed(2)} (${Date.now() - inizio} ms)`,
   )
 

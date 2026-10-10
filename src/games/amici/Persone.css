@@ -1,0 +1,120 @@
+/* Le persone del gruppo, nel foglio del profilo: il campo per cercare e l'elenco, chi e' online per primo. */
+
+.persone {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Il testo a 17 punti: sotto i 16 Safari ingrandisce la pagina quando il campo prende il fuoco. */
+.persone__cerca {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  color: var(--label);
+  font-size: 17px;
+}
+
+.persone__cerca:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 0;
+}
+
+.persone__attesa {
+  height: 220px;
+  border-radius: var(--r-lg);
+}
+
+.persone__vuoto {
+  margin: 0;
+  padding: var(--sp-5) 0;
+  text-align: center;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.persone__elenco {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--edge-light);
+}
+
+.persone__elenco li + li .persona::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: calc(var(--sp-4) + 40px + var(--sp-3));
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.persona {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 58px;
+  padding: var(--sp-2) var(--sp-4);
+  color: inherit;
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.persona:active {
+  background: var(--fill-quaternary);
+}
+
+.persona__avatar {
+  position: relative;
+  display: inline-grid;
+  flex: none;
+}
+
+.persona__online {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.persona__chi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.persona__nome,
+.persona__sotto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.persona__nome {
+  font-weight: 600;
+  color: var(--label);
+}
+
+.persona__sotto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.persona__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+}

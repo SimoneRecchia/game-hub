@@ -1,4 +1,4 @@
-import { memo, useEffect, useId, useRef, useState, type CSSProperties } from 'react'
+import { memo, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { suona } from '@/lib/suoni'
 import { RUOTA_ROULETTE, coloreDi } from '@shared/roulette'
 import { LANCIO_MS } from '@shared/roulette-tavolo'
@@ -48,20 +48,25 @@ const R_CASELLA = 53.2
 const R_BIGLIA = 3.3
 /** Quanto e' largo il cilindro, che gira: fino all'anello d'oro, poi la conca. */
 const R_CILINDRO = 76
-/** Le altezze, nelle stesse unita': la pista, il bordo e il cilindro sono lo zero. */
+/**
+ * Le altezze, nelle stesse unita': la pista e il bordo sono lo zero, e il
+ * cilindro sta piu' in basso, come in una ruota vera. La biglia ci scende
+ * (`fondoA`) quando lascia il pendio dei rombi.
+ */
 const Z = {
-  fondo: -10,
-  ombraTorretta: 4,
-  braccia: 13.2,
+  fondo: -6.5,
+  cilindro: -2.5,
+  ombraTorretta: 1.5,
+  braccia: 10.7,
 } as const
 /** Gli anelli del cono, sopra la sua base che gira con il cilindro: raggio e altezza, dal piu' largo alla cima d'oro. */
 const CONO: ReadonlyArray<readonly [number, number]> = [
-  [40, 0.9],
-  [33.5, 1.85],
-  [27, 2.75],
-  [20.5, 3.6],
-  [14, 4.4],
-  [7, 5.1],
+  [40, -1.6],
+  [33.5, -0.65],
+  [27, 0.25],
+  [20.5, 1.1],
+  [14, 1.9],
+  [7, 2.6],
 ]
 /** Dove cade l'ombra della torretta: la luce viene da sopra a sinistra. */
 const OMBRA_DX = 3.6
@@ -142,6 +147,13 @@ function salto(u: number): number {
   return 0
 }
 
+/** L'altezza di quel che la biglia ha sotto: la pista e il pendio, poi il cilindro, piu' in basso. */
+function fondoA(r: number): number {
+  if (r >= 73) return 0
+  if (r <= 70.5) return Z.cilindro
+  return Z.cilindro * ((73 - r) / 2.5)
+}
+
 /** I suoni del lancio, con il momento in cui cadono (`u`). */
 const SUONI: ReadonlyArray<{ u: number; fai: () => void }> = [
   { u: 0, fai: () => suona('biglia', { altezza: (LANCIO_MS * 0.6) / 1000 }) },
@@ -187,7 +199,9 @@ export function RuotaRoulette({
     dati.current = { lancio, ultimo, onFerma }
   })
 
-  useEffect(() => {
+  // Prima che la pagina si veda: misurata dopo, la ruota compariva per un fotogramma con le misure di partenza, senza
+  // il fianco e con il cilindro fermo a zero, e nel passaggio dalla sala al tavolo si vedeva lo scatto.
+  useLayoutEffect(() => {
     const box = scatola.current
     if (!box) return
     const nitido = nitidezza()
@@ -228,7 +242,7 @@ export function RuotaRoulette({
       const theta = ((phi + psi) * Math.PI) / 180
       const x = r * Math.cos(theta)
       const y = r * Math.sin(theta)
-      const centro = proietta(x, y, lato, R_BIGLIA + h)
+      const centro = proietta(x, y, lato, fondoA(r) + R_BIGLIA + h)
       const d = 2 * R_BIGLIA * (lato / 200) * centro.s
       el.style.width = el.style.height = `${d.toFixed(1)}px`
       el.style.transform = `translate(${(centro.x - d / 2).toFixed(1)}px, ${(centro.y - d / 2).toFixed(1)}px)`
@@ -246,7 +260,7 @@ export function RuotaRoulette({
       cilindro.phi = phi
       cilindro.quando = adesso
       const k = lato / 200
-      if (rotore.current) rotore.current.style.transform = gira(0)
+      if (rotore.current) rotore.current.style.transform = gira(Z.cilindro)
       if (braccia.current) braccia.current.style.transform = gira(Z.braccia)
       if (ombraTorretta.current) {
         ombraTorretta.current.style.transform = gira(
@@ -295,7 +309,7 @@ export function RuotaRoulette({
           o.style.opacity = '0'
         } else {
           const { d, x, y } = posa(b, psi, r, h)
-          const terra = proietta(x, y, lato)
+          const terra = proietta(x, y, lato, fondoA(r))
           b.style.opacity = '1'
           o.style.opacity = String(Math.max(0.2, 0.6 - h * 0.06))
           o.style.width = `${(d * 1.5).toFixed(1)}px`
@@ -317,7 +331,7 @@ export function RuotaRoulette({
       })
       frame = requestAnimationFrame(disegna)
     }
-    frame = requestAnimationFrame(disegna)
+    disegna()
     return () => {
       cancelAnimationFrame(frame)
       osserva.disconnect()
@@ -341,7 +355,7 @@ export function RuotaRoulette({
             style={pezzo(r, z)}
           />
         ))}
-        <div className="rl-ruota__pezzo is-morbido" style={pezzo(R_CILINDRO, 0.1)}>
+        <div className="rl-ruota__pezzo is-morbido" style={pezzo(R_CILINDRO, Z.cilindro + 0.1)}>
           <Luce />
         </div>
         <div className="rl-ruota__pezzo rl-ruota__ombra-torretta" style={pezzo(30)} ref={ombraTorretta}>
@@ -427,10 +441,12 @@ function oro(t: number): string {
 const TINTE = { rosso: ['#7d0a1b', '#d4182f', '#9c0e22'], nero: ['#050505', '#2a2a2e', '#0b0b0d'], verde: ['#04502a', '#12a352', '#066b34'] } as const
 const FONDI = { rosso: ['#a0142a', '#5a0712'], nero: ['#26262a', '#030303'], verde: ['#0b7a3f', '#033d1d'] } as const
 
-/** Il fianco del mobile, dall'orlo del bordo in giu': la fascia d'oro e lo zoccolo. */
-const FIANCO = { oro: [-2.6, -4] as const, zoccolo: -8 }
-
-/** Il fianco del mobile: la parte del cilindro di legno che si vede davanti, sotto il bordo. */
+/**
+ * Il fianco del mobile: la parte del cilindro di legno che si vede davanti,
+ * sotto il bordo, e l'ombra sul panno. E' una fascia sola, con la luce sull'orlo:
+ * le doghe, lo zoccolo e le fasce d'oro che c'erano, a grandezza di telefono,
+ * erano righe fitte che sporcavano il bordo invece di dargli spessore.
+ */
 const Fianco = memo(function Fianco({ lato }: { lato: number }) {
   const id = useId().replace(/:/g, '')
   if (lato <= 0) return null
@@ -446,14 +462,6 @@ const Fianco = memo(function Fianco({ lato }: { lato: number }) {
     return `M${[...a, ...b].map((q) => `${q.x.toFixed(1)} ${q.y.toFixed(1)}`).join('L')}Z`
   }
   const linea = (z: number) => `M${giro(z).map((q) => `${q.x.toFixed(1)} ${q.y.toFixed(1)}`).join('L')}`
-  // Le commessure fra le doghe di legno: le generatrici del cilindro, piu' fitte verso i lati, come si vedono.
-  const doghe = Array.from({ length: 23 }, (_, i) => {
-    const t = (((i + 1) * 180) / 24) * (Math.PI / 180)
-    const [a, b, c, d] = [-0.6, FIANCO.oro[0], FIANCO.oro[1], FIANCO.zoccolo].map((z) =>
-      proietta(100 * Math.cos(t), 100 * Math.sin(t), lato, z),
-    )
-    return `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}M${c.x.toFixed(1)} ${c.y.toFixed(1)}L${d.x.toFixed(1)} ${d.y.toFixed(1)}`
-  }).join('')
   const sx = proietta(-100, 0, lato, 0).x
   const dx = proietta(100, 0, lato, 0).x
   const centro = proietta(0, 6, lato, Z.fondo)
@@ -470,47 +478,28 @@ const Fianco = memo(function Fianco({ lato }: { lato: number }) {
     <svg className="rl-ruota__fianco" viewBox={`0 0 ${lato} ${lato}`}>
       <defs>
         {orizzontale('legno', [
-          [0, '#120601'],
-          [0.12, '#3a1a08'],
-          [0.3, '#7a4220'],
-          [0.42, '#93552b'],
-          [0.58, '#5e2d12'],
-          [0.82, '#2c1306'],
-          [1, '#0d0401'],
-        ])}
-        {orizzontale('oro', [
-          [0, '#4a3008'],
-          [0.25, '#c9952e'],
-          [0.4, '#fff0b8'],
-          [0.55, '#d6a53e'],
-          [0.85, '#6b4810'],
-          [1, '#2e1d04'],
-        ])}
-        {orizzontale('piede', [
-          [0, '#080301'],
-          [0.35, '#3a1b09'],
-          [0.6, '#24100499'],
-          [1, '#050100'],
+          [0, '#140701'],
+          [0.16, '#45200a'],
+          [0.36, '#8a4c25'],
+          [0.5, '#9a5a2e'],
+          [0.68, '#5e2d12'],
+          [0.86, '#2a1205'],
+          [1, '#0e0401'],
         ])}
         <linearGradient id={`${id}-alto`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#ffd9a6" stopOpacity="0.22" />
-          <stop offset="0.35" stopColor="#000" stopOpacity="0" />
-          <stop offset="1" stopColor="#000" stopOpacity="0.45" />
+          <stop offset="0" stopColor="#ffd9a6" stopOpacity="0.18" />
+          <stop offset="0.4" stopColor="#000" stopOpacity="0" />
+          <stop offset="1" stopColor="#000" stopOpacity="0.5" />
         </linearGradient>
         <radialGradient id={`${id}-ombra`}>
-          <stop offset="0.55" stopColor="#000" stopOpacity="0.6" />
+          <stop offset="0.55" stopColor="#000" stopOpacity="0.55" />
           <stop offset="1" stopColor="#000" stopOpacity="0" />
         </radialGradient>
       </defs>
       <ellipse cx={centro.x} cy={centro.y + basso * 0.18} rx={largo * 1.04} ry={basso * 0.9} fill={`url(#${id}-ombra)`} />
       <path d={fascia(0, Z.fondo)} fill={`url(#${id}-legno)`} />
       <path d={fascia(0, Z.fondo)} fill={`url(#${id}-alto)`} />
-      <path d={doghe} stroke="#000" strokeOpacity="0.28" strokeWidth={lato * 0.0022} fill="none" />
-      <path d={fascia(FIANCO.oro[0], FIANCO.oro[1], 100.15)} fill={`url(#${id}-oro)`} />
-      <path d={linea(FIANCO.oro[0])} stroke="#fff6d6" strokeOpacity="0.55" strokeWidth={lato * 0.0016} fill="none" />
-      <path d={fascia(FIANCO.zoccolo, Z.fondo, 100.3)} fill={`url(#${id}-piede)`} />
-      <path d={linea(FIANCO.zoccolo)} stroke="#d9a93e" strokeOpacity="0.7" strokeWidth={lato * 0.002} fill="none" />
-      <path d={linea(0)} stroke="#ffd6a0" strokeOpacity="0.45" strokeWidth={lato * 0.004} fill="none" />
+      <path d={linea(0)} stroke="#ffd6a0" strokeOpacity="0.4" strokeWidth={lato * 0.0035} fill="none" />
     </svg>
   )
 })
@@ -565,10 +554,11 @@ const Conca = memo(function Conca() {
     })
     return { a, lungo, largo, facce, dritto }
   })
-  const vene = Array.from({ length: 26 }, (_, i) => ({
-    r: 93.2 + venatura(i) * 6.4,
+  // Poche venature appena accennate: fitte, a grandezza di telefono, facevano righe.
+  const vene = Array.from({ length: 7 }, (_, i) => ({
+    r: 93.6 + venatura(i) * 5.6,
     chiara: venatura(i + 40) > 0.55,
-    forza: 0.04 + venatura(i + 80) * 0.08,
+    forza: 0.03 + venatura(i + 80) * 0.05,
   }))
   return (
     <svg className="rl-ruota__disegno" viewBox="-100 -100 200 200">
@@ -659,7 +649,6 @@ const Conca = memo(function Conca() {
         />
       ))}
       <circle r="98.3" fill="none" stroke={`url(#${id}-oro)`} strokeWidth="0.6" />
-      <circle r="94" fill="none" stroke={`url(#${id}-oro)`} strokeWidth="0.35" strokeOpacity="0.9" />
       <circle r="92.75" fill="none" stroke="#ffd9a6" strokeOpacity="0.5" strokeWidth="0.4" />
       <path d={arco(96.2, 198, 252)} fill="none" stroke="#fff" strokeOpacity="0.32" strokeWidth="1.8" strokeLinecap="round" />
       <path d={arco(96.2, 210, 238)} fill="none" stroke="#fff" strokeOpacity="0.45" strokeWidth="0.6" strokeLinecap="round" />

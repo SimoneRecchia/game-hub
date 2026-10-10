@@ -12,6 +12,7 @@ import { useLocation } from 'react-router-dom'
 import { COOP_POLL_INBOX_MS } from '@shared/config'
 import type { Attivita, PresenzaRisposta } from '@shared/types'
 import { api } from '@/lib/api'
+import { ridiciIscrizione } from '@/lib/notifiche'
 
 /** Dove si trova il giocatore, dall'indirizzo: e' quel che vedono gli altri nella sala. */
 export function attivitaDa(pathname: string): Attivita {
@@ -137,6 +138,11 @@ export function PresenzaProvider({ children }: { children: ReactNode }) {
     attivitaRef.current = attivita
     void giro()
   }, [attivita, giro])
+
+  // Una volta per apertura: le notifiche vanno a chi c'e' adesso su questo telefono.
+  useEffect(() => {
+    void ridiciIscrizione()
+  }, [])
 
   useEffect(() => {
     const id = window.setInterval(() => void giro(), COOP_POLL_INBOX_MS)

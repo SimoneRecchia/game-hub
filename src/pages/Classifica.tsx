@@ -1,23 +1,22 @@
 import { Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { ROTTE, SLUG, giocoDaSlug } from '@/app/rotte'
 import type { ChiaveClassifica, GiocoClassificato } from '@shared/types'
-import { Completa } from './classifica/Completa'
 import { Panoramica } from './classifica/Panoramica'
 import { indietroDa, scopeDa } from './classifica/Periodo'
 import './classifica/Classifica.css'
 
 /**
- * Le classifiche: la generale, che somma le classificate di tutti i giochi, e
- * quella di ogni gioco, per giorno, settimana, mese o da sempre.
+ * Le classifiche, in una pagina sola: la generale, che somma le classificate
+ * di tutti i giochi, con il podio grande, e sotto i primi tre di ogni gioco.
+ * Una classifica per intero si apre in un foglio sopra la pagina, e non in
+ * una pagina sua: erano tre schermate che dicevano la stessa cosa, la
+ * panoramica, la classifica di un gioco e il foglio di un giocatore.
  *
- * Si possono sommare perché ogni classificata ha un tetto deciso, secondo il
- * tempo che chiede (vedi shared/punti.ts); ogni gioco tiene comunque la sua,
- * con i suoi spareggi, perché chi gioca solo al cruciverba vuole sapere come
- * va lì.
- *
- * /classifica le mette tutte insieme, i primi tre di ognuna; /classifica/generale
- * e /classifica/<gioco> ne aprono una per intero. Il periodo sta nell'indirizzo
- * (?periodo=week&indietro=1), così una classifica si linka com'e'.
+ * Il foglio aperto sta nell'indirizzo (/classifica/wordle), come il periodo
+ * (?periodo=week&indietro=1): le schermate di fine partita ci portano dritte,
+ * e tornando indietro dal profilo di un giocatore il foglio e' ancora aperto.
+ * Una rotta sola, con il gioco facoltativo, così aprire e chiudere il foglio
+ * non rimonta la pagina.
  */
 export default function Classifica() {
   const { gioco: slug } = useParams()
@@ -33,10 +32,11 @@ export default function Classifica() {
 
   const scope = scopeDa(query.get('periodo'))
   const indietro = indietroDa(query.get('indietro'))
-  if (!slug) return <Panoramica scope={scope} indietro={indietro} />
-
-  const chiave: ChiaveClassifica | null =
-    slug === 'generale' || slug === 'fortuna' ? slug : giocoDaSlug(slug)
-  if (!chiave) return <Navigate to={ROTTE.classifica()} replace />
-  return <Completa key={chiave} chiave={chiave} scope={scope} indietro={indietro} />
+  const aperta: ChiaveClassifica | null = !slug
+    ? null
+    : slug === 'generale' || slug === 'fortuna'
+      ? slug
+      : giocoDaSlug(slug)
+  if (slug && !aperta) return <Navigate to={ROTTE.classifica()} replace />
+  return <Panoramica scope={scope} indietro={indietro} aperta={aperta} />
 }

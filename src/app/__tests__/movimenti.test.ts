@@ -64,6 +64,9 @@ describe('lo scorrimento dopo una navigazione', () => {
 
   it('una sostituzione nella stessa schermata lascia lo scorrimento dov’è', () => {
     expect(scorrimentoDopo('REPLACE', '/classifica/wordle', '/classifica/wordle', 640)).toBeNull()
+    // Il foglio di una classifica si apre e si chiude nell'indirizzo, sopra la stessa pagina.
+    expect(scorrimentoDopo('REPLACE', '/classifica', '/classifica/wordle', 640)).toBeNull()
+    expect(scorrimentoDopo('REPLACE', '/classifica/generale', '/classifica', 640)).toBeNull()
   })
 })
 

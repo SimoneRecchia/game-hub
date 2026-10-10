@@ -16,6 +16,7 @@ import { SfideGate } from './games/sfide/SfideGate'
 import { LupusGate } from './games/lupus/LupusGate'
 import { ScarabocchiGate } from './games/scarabocchi/ScarabocchiGate'
 import { CompagniaGate } from './games/compagnia/CompagniaGate'
+import { AscoltaNotifiche, ChiamataGate } from './games/amici/ChiamataGate'
 import Giornaliere from './pages/Giornaliere'
 import Libere from './pages/Libere'
 import Fortuna from './pages/Fortuna'
@@ -323,13 +324,14 @@ export default function App() {
       <LupusGate />
       <ScarabocchiGate />
       <CompagniaGate />
+      <ChiamataGate />
+      <AscoltaNotifiche />
       <Shell>
         <Suspense fallback={null}>
           <Routes>
             <Route path="/" element={<Giornaliere />} />
             <Route path={ROTTE.libere} element={<Libere />} />
-            <Route path="/classifica" element={<Classifica />} />
-            <Route path="/classifica/:gioco" element={<Classifica />} />
+            <Route path="/classifica/:gioco?" element={<Classifica />} />
             <Route path="/profilo" element={<Profilo />} />
             <Route path="/amici/:nickname" element={<Amico />} />
 

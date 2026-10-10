@@ -41,6 +41,13 @@ export const QUALITA_MINIMA = 0.05
 /** Il riempimento si arrende dopo tanti nodi e si passa a un altro schema. */
 const BUDGET_NODI = 4000
 
+/**
+ * Quanto scende nell'ordine dei tentativi una parola uscita di recente: piu' di
+ * quel che vale la parola piu' comune, quindi torna solo se non c'e' altro che
+ * incastri. Con 1,5 ATEO era uscito sei volte in un mese.
+ */
+const PENALITA_RECENTE = 3
+
 /** Quanti candidati provare per sequenza prima di tornare indietro. */
 const RAMI = 6
 
@@ -396,7 +403,7 @@ export function riempi(nere, righe, colonne, indici, rng, { evita = new Set(), b
   for (const [n, { parole }] of indici) {
     rumore.set(
       n,
-      Float64Array.from(parole, (p) => rng() - (evita.has(p.parola) ? 1.5 : 0)),
+      Float64Array.from(parole, (p) => rng() - (evita.has(p.parola) ? PENALITA_RECENTE : 0)),
     )
   }
 
@@ -508,27 +515,110 @@ export function valuta(riempimento, evita = new Set()) {
     somma += voce.q * n
     peso += n
     if (voce.sigla) sigle += 1
-    if (n >= 4 && evita.has(voce.parola)) ripetute += 1
+    if (n >= 3 && evita.has(voce.parola)) ripetute += 1
   }
-  return { punti: somma / peso - 0.02 * sigle - 0.05 * ripetute, sigle, ripetute }
+  return { punti: somma / peso - 0.02 * sigle - 0.08 * ripetute, sigle, ripetute }
+}
+
+/** Da quanto e' comune una parola da cui nasce una definizione da enigmista: fra le prime seimila. */
+const QUALITA_ENIGMISTA = 0.2
+
+/** Fra quante definizioni da enigmista, dalle parole piu' comuni, si pesca. */
+const SCELTA_ENIGMISTA = 8
+
+/** Le definizioni da enigmista: non le ha il dizionario, e `correggiDefinizioni` le lascia stare. */
+export const DA_ENIGMISTA = /^(?:Inizio di|Fine di|Il cuore di|Le vocali di|Le consonanti di|Le lettere (?:pari|dispari) di) [a-z]+$/
+
+const comuniPerIndici = new WeakMap()
+
+/**
+ * Le parole da cui nascono le definizioni da enigmista: lemmi senza accenti,
+ * da quattro a nove lettere, fra le piu' comuni, dalla piu' comune.
+ */
+function comuniDi(indici) {
+  let comuni = comuniPerIndici.get(indici)
+  if (!comuni) {
+    comuni = []
+    for (const [n, { parole }] of indici) {
+      if (n < 4 || n > 9) continue
+      for (const p of parole) {
+        if (p.q >= QUALITA_ENIGMISTA && !p.sigla && p.definizioni.some((d) => d.voce === p.parola)) comuni.push(p)
+      }
+    }
+    comuni = comuni.sort((a, b) => b.q - a.q).map((p) => p.parola)
+    comuniPerIndici.set(indici, comuni)
+  }
+  return comuni
+}
+
+const VOCALI = 'aeiou'
+
+/**
+ * Le definizioni da enigmista di una parola corta, come nei cruciverba della
+ * Settimana Enigmistica: "Il cuore di Milano" per LA, "Inizio di tavolo" per
+ * TA, "Le vocali di farina" per AIA. Sono giuste per costruzione — la parola e'
+ * dentro la parola che le da' — e ce ne sono a centinaia: le parole di due e tre
+ * lettere sono meno di seicento, ne servono una ventina a schema, e con le sole
+ * definizioni del Wikizionario IL era "Articolo determinativo maschile singolare"
+ * tredici volte in un mese. Dalla parola piu' comune.
+ */
+export function definizioniDaEnigmista(parola, comuni) {
+  const n = parola.length
+  const vocali = (x) => [...x].filter((c) => VOCALI.includes(c)).join('')
+  const consonanti = (x) => [...x].filter((c) => !VOCALI.includes(c)).join('')
+  const pari = (x) => [...x].filter((_, i) => i % 2 === 1).join('')
+  const dispari = (x) => [...x].filter((_, i) => i % 2 === 0).join('')
+  const tutteVocali = vocali(parola) === parola
+  const tutteConsonanti = consonanti(parola) === parola
+  const trovate = []
+  for (const x of comuni) {
+    const resto = x.length - n
+    if (x.startsWith(parola)) trovate.push(`Inizio di ${x}`)
+    if (x.endsWith(parola)) trovate.push(`Fine di ${x}`)
+    if (resto >= 2 && resto % 2 === 0 && x.slice(resto / 2, resto / 2 + n) === parola) trovate.push(`Il cuore di ${x}`)
+    if (tutteVocali && vocali(x) === parola) trovate.push(`Le vocali di ${x}`)
+    if (tutteConsonanti && consonanti(x) === parola) trovate.push(`Le consonanti di ${x}`)
+    if (pari(x) === parola) trovate.push(`Le lettere pari di ${x}`)
+    if (dispari(x) === parola) trovate.push(`Le lettere dispari di ${x}`)
+  }
+  return trovate
 }
 
 /**
- * Sceglie la definizione di ogni parola: la prima del Wikizionario, che e' il
- * significato principale. "Macchina da assedio usata nel medioevo" e' un senso
- * vero di GATTO, ma in uno schema e' un tranello — e pescare a caso fra i sensi
- * dava a OCA quello figurato e a IO la grammatica del predicato nominale.
+ * Sceglie la definizione di ogni parola: la prima del Wikizionario che la
+ * parola non ha avuto di recente, e il senso principale viene prima.
+ * "Macchina da assedio usata nel medioevo" e' un senso vero di GATTO, ma in uno
+ * schema e' un tranello — e pescare a caso fra i sensi dava a OCA quello
+ * figurato e a IO la grammatica del predicato nominale —; dopo i primi sensi
+ * vengono i sinonimi ("Micio"), poi gli altri.
  *
- * L'unica eccezione sono due definizioni uguali nello stesso schema ("Qui, in
- * questo luogo" per CI e per VI): la seconda passa al senso successivo, se c'e'.
+ * `recenti` sono le definizioni che ogni parola ha avuto negli schemi dei giorni
+ * prima (parola → testi in minuscolo): una parola che torna prende la prossima.
+ * Una parola corta che le ha avute tutte prende una definizione da enigmista
+ * (`definizioniDaEnigmista`), pescata con `rng` fra le prime; una lunga, che
+ * torna di rado, riparte dalla prima. Due definizioni uguali nello stesso schema
+ * ("Qui, in questo luogo" per CI e per VI) non ci sono mai.
  */
-export function scegliDefinizioni(riempimento) {
+export function scegliDefinizioni(riempimento, { recenti = new Map(), rng = () => 0, comuni = [] } = {}) {
   const gia = new Set()
+  const nelloSchema = new Set(riempimento.map(({ voce }) => voce.parola))
   const definizioni = {}
   for (const { chiave, voce } of riempimento) {
+    const dette = recenti.get(voce.parola)
+    const libera = (t) => !gia.has(t.toLowerCase()) && !dette?.has(t.toLowerCase())
     const proprie = voce.definizioni.filter((d) => !d.sigla)
     const elenco = proprie.length > 0 ? proprie : voce.definizioni
-    const d = elenco.find((x) => !gia.has(x.testo.toLowerCase())) ?? elenco[0]
+    let d = elenco.find((x) => libera(x.testo))
+    if (!d && voce.parola.length <= 3) {
+      const scelte = definizioniDaEnigmista(voce.parola, comuni).filter(
+        (t) => libera(t) && !nelloSchema.has(t.slice(t.lastIndexOf(' ') + 1)),
+      )
+      if (scelte.length > 0) {
+        const testo = scelte[Math.floor(rng() * Math.min(SCELTA_ENIGMISTA, scelte.length))]
+        d = { testo, voce: elenco[0].voce, nota: '' }
+      }
+    }
+    d ??= elenco.find((x) => !gia.has(x.testo.toLowerCase())) ?? elenco[0]
     gia.add(d.testo.toLowerCase())
     // "Sigla automobilistica di Sassari (sigla)" direbbe due volte la stessa cosa.
     const nota = d.nota === 'sigla' && GIA_SIGLA.test(d.testo) ? '' : d.nota
@@ -558,6 +648,7 @@ export function correggiDefinizioni(soluzione, righe, colonne, salvate, perParol
     const parola = caselle.map((k) => soluzione[k]).join('')
     const voce = perParola.get(parola)
     if (!salvata || !voce) continue
+    if (DA_ENIGMISTA.test(salvata.t)) continue
     if (voce.definizioni.some((d) => d.testo.toLowerCase() === salvata.t.toLowerCase())) continue
     const proprie = voce.definizioni.filter((d) => !d.sigla)
     const elenco = proprie.length > 0 ? proprie : voce.definizioni
@@ -577,7 +668,8 @@ export function correggiDefinizioni(soluzione, righe, colonne, salvate, perParol
  *
  * `evita` sono le parole uscite di recente: non sono vietate — le parole corte
  * tornano per forza — ma scendono in fondo all'ordine dei tentativi, e un
- * riempimento che ne usa molte perde il confronto con gli altri.
+ * riempimento che ne usa molte perde il confronto con gli altri. `recenti` le
+ * definizioni che le parole hanno avuto di recente (vedi `scegliDefinizioni`).
  */
 export function generaCruciverba({
   indici,
@@ -586,6 +678,7 @@ export function generaCruciverba({
   colonne = 10,
   schemi = 100,
   evita = new Set(),
+  recenti = new Map(),
   forma = {},
 }) {
   const rng = mulberry32(seme)
@@ -611,7 +704,7 @@ export function generaCruciverba({
     righe,
     colonne,
     griglia: griglia.join(''),
-    definizioni: scegliDefinizioni(migliore.riempimento),
+    definizioni: scegliDefinizioni(migliore.riempimento, { recenti, rng, comuni: comuniDi(indici) }),
     parole: migliore.riempimento.map(({ voce }) => voce.parola),
     voto: migliore.voto,
   }
@@ -639,36 +732,73 @@ export function semeLibero(numero) {
  * giorni dopo. Solo quelle da quattro lettere in su: le corte tornano per
  * forza, e contarle come ripetizioni vorrebbe dire non poter usare "re".
  */
-export function paroleDellaSoluzione(soluzione, righe, colonne) {
+export function paroleDellaSoluzione(soluzione, righe, colonne, minima = 4) {
   const nere = [...soluzione].map((c) => c === '#')
   return sequenzeDi(nere, righe, colonne)
     .map((s) => s.caselle.map((k) => soluzione[k]).join(''))
-    .filter((p) => p.length >= 4)
+    .filter((p) => p.length >= minima)
 }
 
-/**
- * L'istruzione SQL che salva uno schema. `INSERT OR IGNORE`: uno schema scritto
- * non cambia. `libero` lo scrive fra gli schemi liberi, col suo numero.
- */
-export function istruzioneSql(numero, cruciverba, adesso, libero = false) {
+/** Le parole di uno schema gia' scritto con la loro definizione: `[parola, testo]`. */
+export function definizioniDellaSoluzione(soluzione, righe, colonne, salvate) {
+  const nere = [...soluzione].map((c) => c === '#')
+  return sequenzeDi(nere, righe, colonne)
+    .filter((s) => salvate[s.chiave])
+    .map((s) => [s.caselle.map((k) => soluzione[k]).join(''), salvate[s.chiave].t])
+}
+
+/** Le definizioni come le salva D1: `{ o12: { t, v, n } }`. */
+function definizioniSalvate(cruciverba) {
   const definizioni = {}
   for (const [chiave, d] of Object.entries(cruciverba.definizioni)) {
     definizioni[chiave] = d.nota ? { t: d.testo, v: d.voce, n: d.nota } : { t: d.testo, v: d.voce }
   }
-  const cita = (s) => `'${String(s).replace(/'/g, "''")}'`
+  return definizioni
+}
+
+const cita = (s) => `'${String(s).replace(/'/g, "''")}'`
+
+/**
+ * L'istruzione SQL che salva uno schema. `INSERT OR IGNORE`: uno schema scritto
+ * non cambia. `libero` lo scrive fra gli schemi liberi, col suo numero; uno del
+ * giorno porta il suo `formato`.
+ */
+export function istruzioneSql(numero, cruciverba, adesso, libero = false, formato = null) {
+  const colonne = ['righe', 'colonne', 'soluzione', 'definizioni', 'created_at']
+  const valori = [
+    numero,
+    cruciverba.righe,
+    cruciverba.colonne,
+    cita(cruciverba.griglia),
+    cita(JSON.stringify(definizioniSalvate(cruciverba))),
+    cita(adesso),
+  ]
+  if (!libero && formato !== null) {
+    colonne.push('formato')
+    valori.push(formato)
+  }
   return (
     (libero
       ? 'INSERT OR IGNORE INTO cruciverba_schemi_liberi (id, '
       : 'INSERT OR IGNORE INTO cruciverba_schemi (puzzle_number, ') +
-    'righe, colonne, soluzione, definizioni, created_at) VALUES (' +
-    [
-      numero,
-      cruciverba.righe,
-      cruciverba.colonne,
-      cita(cruciverba.griglia),
-      cita(JSON.stringify(definizioni)),
-      cita(adesso),
-    ].join(', ') +
+    colonne.join(', ') +
+    ') VALUES (' +
+    valori.join(', ') +
     ');'
+  )
+}
+
+/**
+ * L'istruzione che rifa' uno schema del giorno di un formato vecchio: solo se e'
+ * ancora di quel formato e nessuno l'ha aperto, cosi' una partita cominciata nel
+ * frattempo tiene lo schema che ha visto.
+ */
+export function istruzioneRifai(numero, cruciverba, adesso, formato = 2) {
+  return (
+    `UPDATE cruciverba_schemi SET righe = ${cruciverba.righe}, colonne = ${cruciverba.colonne}, ` +
+    `soluzione = ${cita(cruciverba.griglia)}, definizioni = ${cita(JSON.stringify(definizioniSalvate(cruciverba)))}, ` +
+    `formato = ${formato}, created_at = ${cita(adesso)} ` +
+    `WHERE puzzle_number = ${numero} AND formato < ${formato} ` +
+    `AND NOT EXISTS (SELECT 1 FROM cruciverba_games WHERE puzzle_number = ${numero});`
   )
 }

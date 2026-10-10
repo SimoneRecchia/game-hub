@@ -1,3 +1,4 @@
+import type { ChiamataRicevuta } from './notifiche'
 /** Tipi condivisi tra client React e Pages Functions. */
 
 import type { Mossa, MossaGiocata } from './scarabeo'
@@ -1182,6 +1183,14 @@ export interface AmicoOnline extends GiocatoreBreve {
 
 export interface AmiciRisposta {
   online: AmicoOnline[]
+  /** Tutti gli altri del gruppo, chi e' online per primo: solo se chiesti (`?tutti=1`), per cercarne uno. */
+  tutti?: Persona[]
+}
+
+/** Una persona del gruppo, nell'elenco da cui la si cerca. */
+export interface Persona extends GiocatoreBreve {
+  online: boolean
+  attivita: Attivita | null
 }
 
 /** Il profilo di un altro giocatore, come lo vede chi lo apre: per invitarlo a giocare. */
@@ -1191,6 +1200,30 @@ export interface ProfiloAmico extends GiocatoreBreve {
   online: boolean
   /** Dove si trova, se e' online. */
   attivita: Attivita | null
+}
+
+/** I punti di un giocatore in un periodo, come li conta la generale. */
+export interface PuntiDelPeriodo {
+  /** Il suo posto nella generale del periodo; null se non ha giocato. */
+  rank: number | null
+  /** Quanti ci sono nella generale del periodo. */
+  giocatori: number
+  punti: number
+  /** Le classificate chiuse. */
+  partite: number
+  perGioco: Record<GiocoClassificato, number>
+  /** La battaglia navale e il tris, nei giorni in cui avevano la classificata. */
+  storici: number
+  /** Quel che hanno dato o tolto i giochi della Fortuna. */
+  fortuna: number
+}
+
+/** I punti di un giocatore, per il suo profilo: il mese, da sempre, e il gioco che preferisce. */
+export interface PuntiGiocatore {
+  /** Il gioco con piu' punti negli ultimi trenta giorni, o da sempre se nel mese non ha giocato. */
+  preferito: GiocoClassificato | null
+  mese: PuntiDelPeriodo
+  sempre: PuntiDelPeriodo
 }
 
 export interface GiocatoreOnline extends GiocatoreBreve {
@@ -1320,6 +1353,8 @@ export interface PresenzaRisposta {
   scarabocchi: InvitoScarabocchi[]
   /** La stanza di Scarabocchi in cui sono, per tornarci. */
   stanzaScarabocchi: StanzaScarabocchiBreve | null
+  /** Gli inviti a giocare arrivati quando non ero online (shared/notifiche.ts). */
+  chiamate: ChiamataRicevuta[]
 }
 
 /* ─────────────────────────────  Indovina chi  ──────────────────────── */

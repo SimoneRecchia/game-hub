@@ -267,7 +267,11 @@ corregge e' una definizione che il dizionario non ha piu', perché il filtro l'h
 scartata dopo: la stessa esecuzione la sostituisce con quella che sceglierebbe
 adesso (`correggiDefinizioni`), da oggi in avanti e nella scorta dei liberi, con
 un `UPDATE` condizionato alle definizioni lette. La griglia resta quella, e i
-giorni passati come li si e' giocati. E' deterministico dal numero del giorno, e
+giorni passati come li si e' giocati. L'altra eccezione sono gli schemi di un
+formato vecchio (`FORMATO`, colonna `formato` dalla `0050`) **nel futuro e che
+nessuno ha aperto**, che si rifanno, come le giornate del quiz, con un `UPDATE`
+condizionato al formato e all'assenza di partite: nessuno li ha visti. Il 2 e'
+quello della memoria delle definizioni (vedi sotto). E' deterministico dal numero del giorno, e
 il budget si conta in nodi e non in millisecondi, così una macchina piu' lenta
 non cambia lo schema. Se la tabella non ha la giornata di oggi il gioco risponde
 `SCHEMA_ASSENTE` (503) e la card dell'hub non mostra lo stato: in locale,
@@ -290,6 +294,27 @@ nome "ora", non dell'avverbio "in questo momento", e la definizione del
 Wikizionario di una forma flessa ("plurale di ala") darebbe la risposta. La
 licenza chiede di citare la fonte: la citano le regole, e a partita chiusa ogni
 definizione porta alla sua voce.
+
+**Una parola che torna cambia definizione.** Le parole di due e tre lettere
+sono meno di seicento e fanno quasi meta' di ogni schema, e con la sola prima
+definizione del Wikizionario IL era "Articolo determinativo maschile singolare"
+tredici volte in un mese. Ogni parola ha fino a sette definizioni
+(`PER_RISPOSTA` in `scripts/build-cruciverba.mjs`): i primi tre sensi, poi fino
+a due sinonimi ("Epoca" per ERA, "Squadra" per TEAM), poi gli altri sensi. Un
+sinonimo vale solo se e' reciproco — il Wikizionario li elenca per voce e ci
+mette parole solo vicine, "spiaggia" per MARE —, un lemma con una parte del
+discorso della risposta, comune, e per risposte di quattro lettere in su: quelli
+delle parole corte sono preposizioni e pronomi ("Per" per IN). La notte
+(`scegliDefinizioni`) da' a ogni parola la prima definizione che non ha avuto
+negli ultimi trenta schemi (`recenti`), e a una parola corta che le ha avute
+tutte una definizione da enigmista (`definizioniDaEnigmista`): "Il cuore di
+milano" per LA, "Inizio di tavolo" per TA, "Le vocali di farina" per AIA, dalle
+parole comuni, giuste per costruzione e riconosciute da `DA_ENIGMISTA`, perché
+`correggiDefinizioni` non le scambi per definizioni sparite dal dizionario. Le
+parole uscite nei trenta giorni prima, e quelle di tre lettere della settimana,
+scendono in fondo ai tentativi (`PENALITA_RECENTE`): misurato su trenta giorni,
+le parole gia' uscite nella settimana sono passate dal 22 al 14% e la
+definizione piu' ripetuta da tredici volte a sette.
 
 **Ogni casella del cruciverba sta in due parole.** E' la convenzione del
 cruciverba italiano, e `disegnaSchema` la garantisce: nessun tratto bianco di
@@ -400,13 +425,15 @@ visibile: dice al server dove si trova il giocatore e riporta gli inviti a
 giocare in compagnia il Wordle, il cruciverba e lo Scarabeo, le sfide a
 battaglia navale, a quiz, a Indovina chi, ai tavolieri, allo Scarabeo, a Nomi,
 cose e città, a Sequenze e alle libere da soli (rivincite comprese), gli inviti
-a una stanza di Lupus o di Scarabocchi, le partite e il duello aperti. Gli
+a una stanza di Lupus o di Scarabocchi, le partite e il duello aperti, e gli
+inviti arrivati quando non si era online (`chiamate`, vedi sotto). Gli
 avvisi fuori dalle rotte (`CoopGate`, `BattagliaGate`, `QuizGate`,
 `IndovinaGate`, `TavoloGate`, `NomiGate`, `SequenzeGate`, `SfideGate`,
-`LupusGate`, `ScarabocchiGate`, `CompagniaGate`) si
+`LupusGate`, `ScarabocchiGate`, `CompagniaGate`, `ChiamataGate`) si
 danno la precedenza in quest'ordine: due insieme non si leggerebbero, e gli inviti del
 cruciverba e dello Scarabeo, che valgono tutto il giorno, aspettano le sfide,
-che scadono in pochi minuti. Prima gli inviti del Wordle avevano il loro
+che scadono in pochi minuti; le chiamate vengono per ultime, perché non sono
+ancora un invito. Prima gli inviti del Wordle avevano il loro
 polling: due giri separati avrebbero raddoppiato le richieste, e le Pages
 Functions gratuite ne contano centomila al giorno per tutto il sito. La
 scrittura in `presenza` passa solo ogni venti secondi o al cambio di attivita'
@@ -469,7 +496,7 @@ per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
 `/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna e
 dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
-ognuna si apre per intero (`/classifica/generale`, `/classifica/wordle`). Non si
+ognuna si apre per intero in un foglio sopra la pagina (vedi sotto). Non si
 normalizza per giornata ("il migliore prende tutto il tetto"): cambierebbe le
 classifiche di ieri ogni volta che qualcuno gioca. Alla generale si aggiungono
 solo i giochi della Fortuna, che non sono classificate (vedi sotto), con un
@@ -1322,7 +1349,9 @@ mezzo, perché girano e una luce da una parte sola girerebbe con loro, e
 l'alzata di ogni anello del cono e' un'ombra spostata verso chi guarda. Il
 fianco del mobile e il fusto della torretta sono disegnati sullo schermo con
 `proietta` (`Fianco`, `Fusto`), e combaciano perché i conti sono gli stessi del
-CSS. Chrome disegna gli strati in prospettiva a un punto per pixel, senza la
+CSS. Il fianco e' una fascia di legno sola, con la luce sull'orlo: le doghe, lo
+zoccolo e le fasce d'oro che aveva, a grandezza di telefono, erano righe fitte
+sotto il bordo che lo sporcavano invece di dargli spessore. Chrome disegna gli strati in prospettiva a un punto per pixel, senza la
 densita' dello schermo, e sul telefono i numeri venivano sgranati: li' ogni
 strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
 (`nitidezza`, al piu' tre, e due per la conca e la luce, che non hanno scritte);
@@ -1338,7 +1367,12 @@ diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua posizione
 la calcola `proietta` con la stessa prospettiva del CSS. Il suo angolo si conta
 sul cilindro e finisce nella casella del numero qualunque sia la velocita' del
 cilindro; corre sulla pista, scende verso i rombi, rimbalza fra i separatori, e
-i suoni seguono gli stessi momenti. Finché corre veloce ha la scia, due copie di un
+i suoni seguono gli stessi momenti. Il cilindro sta piu' in basso della pista
+(`Z.cilindro`), e la biglia ci scende quando lascia il pendio (`fondoA`), con
+l'ombra: quando la ruota e' diventata a strati piatti il cilindro era finito
+all'altezza della pista, e la biglia restava sospesa sopra le caselle. Disegnato
+dopo la conca, uno strato piu' basso ne copre il pendio davanti e lo lascia
+vedere in fondo, che e' come si vede una conca da sopra. Finché corre veloce ha la scia, due copie di un
 attimo prima, e la sua ombra e' sfumata dal suo sfondo e non da un `filter`, che
 si rifarebbe a ogni fotogramma. La ruota e' disegnata grande e rimpicciolita
 sul palco (`--piccola`): quando la biglia parte si fa grande sopra il panno, che
@@ -1347,7 +1381,11 @@ ingrandita, a pieno schermo sarebbe sfocata. Il passaggio fra il palco e il
 centro si accende solo dopo la prima misura (`is-misurata`): la pagina legge le
 misure appena montata, e il browser, che a quel punto non aveva ancora
 `--piccola`, partiva dalla ruota grande e la faceva rimpicciolire sotto gli
-occhi — proprio mentre si arrivava al tavolo. Il tabellone dei numeri usciti non
+occhi — proprio mentre si arrivava al tavolo. La ruota si misura e si disegna
+la prima volta prima che la pagina si veda (`useLayoutEffect`): misurata dopo,
+compariva per un fotogramma con le misure di partenza, senza il fianco e con il
+cilindro fermo a zero, e nel passaggio dalla sala al tavolo era lo scatto che si
+vedeva. Il tabellone dei numeri usciti non
 dice il numero mentre la biglia gira: il server lo mette nella storia al
 lancio, e sarebbe la soluzione.
 
@@ -1356,7 +1394,9 @@ roulette hanno lo stesso feltro (`src/games/roulette/Feltro.css`), un livello
 vuoto sotto il contenuto: toccando "Tavolo nuovo" la View Transition lo allarga
 dalla carta della sala fino al tavolo, la ruota sale al suo posto sul palco, la
 scritta della sala se ne va e il panno arriva quando il feltro e' quasi grande;
-tornando, il contrario. E' la direzione `tavolo` di `useNavigazione`, che usa
+tornando, il contrario. Della ruota si vede solo quella d'arrivo, che e' viva:
+in dissolvenza le due ruote, una ferma e una che girava, si vedevano insieme con
+le caselle sfalsate. E' la direzione `tavolo` di `useNavigazione`, che usa
 anche la freccia indietro del tavolo (`indietro.direzione`), e i nomi delle View
 Transitions ci sono solo durante il passaggio (`html[data-transizione='tavolo']`):
 fuori, ogni navigazione fotografa la pagina intera, e un test lo controlla. Al
@@ -2908,22 +2948,83 @@ sopra una sala scura.
 
 **Gli amici sono tutti gli altri del gruppo.** Non c'e' una lista da tenere:
 l'app e' fra colleghi, e chi c'e' lo dice la presenza (`server/lib/amici.ts`).
-Il profilo ha gli amici online, le Libere li mettono nell'eroe, e toccandone uno
-si apre il suo profilo (`/amici/:nickname`, anche dal foglio di un giocatore in
-classifica), con i giochi a cui invitarlo. Gli inviti sono quelli delle sale
-(`invitaA` in `src/games/amici/amici.ts`): si manda l'invito e si va nella sala
-del gioco, che lo trova in attesa e aspetta la risposta come se lo si fosse
-mandato da li'. Se l'amico non e' online si va nella sala, da cui lo si invita
-con un link; il quiz apre la libera con l'amico in vista (`?sfida=1`), perché la
-sfida la prepara il telefono di chi sfida. Il lato del goban e il set di
-Indovina chi sono quelli scelti l'ultima volta nella sala, letti dalle loro
-chiavi del `localStorage` senza importare `tavolo/locale.ts`, che porta con se'
-le regole di tutti i tavolieri.
+Il profilo ha gli amici online e "Cerca una persona", un foglio con tutti gli
+altri (`GET /api/amici?tutti=1`, chi e' online per primo); le Libere li mettono
+nell'eroe; e toccandone uno, o toccando qualcuno in classifica, si apre il suo
+profilo (`/amici/:nickname`). Il profilo di una persona ha chi e', il gioco che
+preferisce — quello con piu' punti negli ultimi trenta giorni, o da sempre —,
+i suoi posti nella generale del mese e di sempre, e i punti di ogni gioco
+(`GET /api/amici/:nickname/punti`, che prende la sua riga dalla generale
+calcolata con le stesse regole: il posto e' quello della classifica). Sta a
+parte dal profilo perché quello si rilegge ogni `AMICI_POLL_MS`, e i punti
+non cambiano mentre li si guarda. Gli inviti stanno dietro un bottone solo,
+"Invita a giocare", che apre i giochi in un foglio: erano diciotto tessere
+sulla pagina. Online, l'invito e' quello della sala (`invitaA` in
+`src/games/amici/amici.ts`): si manda e si va nella sala, che lo trova in
+attesa e aspetta la risposta come se lo si fosse mandato da li'; il quiz apre
+la libera con l'amico in vista (`?sfida=1`), perché la sfida la prepara il
+telefono di chi sfida. Se non e' online parte una chiamata (vedi sotto), e si
+resta li'. Il lato del goban e il set di Indovina chi sono quelli scelti
+l'ultima volta nella sala, letti dalle loro chiavi del `localStorage` senza
+importare `tavolo/locale.ts`, che porta con se' le regole di tutti i tavolieri.
 
-**I punti e i conti di ogni gioco stanno nella classifica.** Il profilo ha solo
-chi sei, gli amici e le impostazioni: le classificate da sempre, le libere e le
-statistiche del Wordle si aprono da "I tuoi numeri", nella classifica di ogni
-gioco (`classifica/Conti.tsx`), che e' dove si guarda come si sta andando.
+**Un invito a chi non e' online e' una chiamata, non l'invito di un gioco.**
+Gli inviti dei giochi vogliono l'altro online e scadono in pochi minuti, e
+ognuno ha il suo sistema (sette, fra sfide, tavolieri, stanze e compagnie):
+farli aspettare chi ha chiuso l'app voleva dire cambiarli tutti. La chiamata
+(`chiamate`, migrazione `0051`, `server/routes/notifiche.ts`) dice solo chi,
+a che cosa e quando: una per coppia, la nuova al posto della vecchia, per
+`CHIAMATA_MS` (mezz'ora). Arriva con una notifica, se l'altro le ha accese, e
+con il giro della presenza (`ChiamataGate`); rispondere "Gioca" manda l'invito
+vero, quello della sala, da chi e' stato chiamato a chi ha chiamato, se e'
+ancora online, e se no lo richiama: la palla torna dall'altra parte, e i giochi
+restano come sono. I giochi sono quelli che si invitano dal profilo
+(`GIOCHI_CHIAMATA` in `shared/notifiche.ts`).
+
+**Le notifiche sono Web Push, senza librerie e senza email.** `shared/webpush.ts`
+cifra il messaggio (aes128gcm, RFC 8291) e lo firma (VAPID, RFC 8292) con
+WebCrypto, che c'e' nel Worker, in Node e nel browser; un test lo prova sul
+vettore d'esempio dell'RFC, byte per byte. Le chiavi per firmare stanno in D1
+(`segreti`), create la prima volta che servono con `INSERT OR IGNORE` e una
+rilettura: un segreto delle Pages si imposta solo dal pannello di Cloudflare, e
+cambiare le chiavi vorrebbe dire perdere tutte le iscrizioni. Non si stampano
+mai. Le notifiche sono quattro categorie (`CATEGORIE_NOTIFICHE`): gli inviti,
+"tocca a te" nei tavolieri fra amici (solo a chi non e' online, e non a fine
+partita), l'estrazione del SuperEnalotto che sta per cominciare, e il
+promemoria della sera delle giornaliere che mancano, spento di partenza perché
+e' il tipo di notifica che fa togliere il permesso. Le preferenze stanno in
+`players.notifiche`, una per categoria, e valgono su tutti i dispositivi;
+l'interruttore "Su questo dispositivo" iscrive o toglie quello che si ha in
+mano. Le notifiche che nascono da una richiesta — un invito, una mossa — le
+manda il Worker dopo la risposta (`dopoLaRisposta`, con `waitUntil`); quelle a
+orario le manda `scripts/notifiche.ts` dal workflow `notifiche.yml`, con due
+orari per invio, l'ora legale e la solare, e una volta sola
+(`notifiche_inviate`): cifrarne una per ogni dispositivo di tutti nel Worker
+passerebbe i dieci millisecondi. Un'iscrizione che il servizio dice morta (404,
+410) si cancella. Su iPhone arrivano solo dall'app aggiunta alla schermata Home
+(iOS 16.4), e il profilo lo dice; uscendo dall'account il telefono si toglie,
+perché le notifiche di uno non arrivino a chi entra dopo sullo stesso telefono.
+
+**La classifica e' una pagina sola, e una classifica intera e' un foglio.**
+Erano tre schermate che dicevano la stessa cosa: la panoramica, la classifica
+di un gioco e il foglio di un giocatore, da cui si arrivava al suo profilo. Ora
+`/classifica` ha in cima la generale, con il podio grande che sale come alle
+premiazioni — il terzo, il secondo, poi il primo con la corona e i raggi — e
+sotto il tuo posto se non sei sul podio, poi i primi tre di ogni gioco in una
+carta stretta. Toccandone una si apre per intero in un foglio, con il periodo
+della pagina; toccando qualcuno si apre il suo profilo. Il foglio aperto sta
+nell'indirizzo (`/classifica/wordle`, una rotta sola con il gioco facoltativo,
+cosi' aprirlo non rimonta la pagina): le schermate di fine partita ci portano
+dritte, e tornando dal profilo di qualcuno il foglio e' ancora aperto. Aprirlo
+e chiuderlo sostituisce l'indirizzo, e lo scorrimento resta dov'e'
+(`schermataDi` in `src/app/movimenti.ts`).
+
+**I punti di ognuno stanno nel suo profilo, i propri anche.** Il profilo che si
+apre dall'avatar ha chi sei, le persone e le impostazioni; "I tuoi punteggi"
+porta al proprio profilo come lo vedono gli altri, dove ogni gioco apre "I tuoi
+numeri" — le classificate da sempre, le libere e le statistiche del Wordle
+(`classifica/Conti.tsx`) —, che si aprono anche dal foglio della classifica di
+ogni gioco.
 
 **La barra si fa vetro appena qualcosa le scorre sotto**, e il titolo piccolo
 compare quando il grande e' passato: sono due momenti diversi (`is-velata`,

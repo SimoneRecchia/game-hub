@@ -31,6 +31,7 @@ import { amiciRoutes } from './routes/amici'
 import { lupusRoutes } from './routes/lupus'
 import { scarabocchiRoutes } from './routes/scarabocchi'
 import { sfideLibereRoutes } from './routes/sfideLibere'
+import { chiamateRoutes, notificheRoutes } from './routes/notifiche'
 import { gameDate, msToNextPuzzle, puzzleNumberFor } from '../shared/daily'
 
 /**
@@ -91,6 +92,8 @@ export function createApp() {
   app.route('/lupus', lupusRoutes)
   app.route('/scarabocchi', scarabocchiRoutes)
   app.route('/sfide', sfideLibereRoutes)
+  app.route('/notifiche', notificheRoutes)
+  app.route('/chiamate', chiamateRoutes)
 
   app.notFound((c) => c.json({ error: 'Endpoint non trovato.', code: 'NOT_FOUND' }, 404))
 

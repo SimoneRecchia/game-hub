@@ -8,12 +8,14 @@ import { Button } from '@/components/Button'
 import { CampoCodice } from '@/components/CampoCodice'
 import { Elenco, Riga, Sezione } from '@/components/Elementi'
 import { Field } from '@/components/Field'
-import { IconBook, IconLogout, IconMail, IconPeople, IconPerson } from '@/components/Icons'
+import { IconBook, IconChart, IconLogout, IconMail, IconPeople, IconPerson } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { useAmiciOnline } from '@/games/amici/amici'
+import { PannelloNotifiche } from '@/games/amici/PannelloNotifiche'
+import { Persone } from '@/games/amici/Persone'
 import { ApiFetchError, api } from '@/lib/api'
 import { useAuth, usePlayer } from '@/lib/auth'
 import { haptic } from '@/lib/haptics'
@@ -36,9 +38,10 @@ const SUONI: { value: 'si' | 'no'; label: string }[] = [
 
 /**
  * Il profilo, che si apre dall'avatar in alto a destra delle schede: chi sei,
- * gli amici online — toccandone uno se ne apre il profilo, da cui lo si
- * invita a giocare — e le impostazioni. I punti e i conti di ogni gioco stanno
- * nella classifica, che e' dove si guarda come si sta andando.
+ * le persone del gruppo — gli amici online, e tutte le altre da cercare: da
+ * una si apre il suo profilo, e la si invita a giocare anche se non c'e' —
+ * e le impostazioni. I propri punti stanno nel proprio profilo, lo stesso che
+ * vedono gli altri, che si apre da qui e dalla classifica.
  */
 export default function Profilo() {
   const player = usePlayer()
@@ -50,6 +53,7 @@ export default function Profilo() {
   const da = (state as { da?: string } | null)?.da ?? 'Giornaliere'
   const [uscita, setUscita] = useState(false)
   const [fonti, setFonti] = useState(false)
+  const [persone, setPersone] = useState(false)
   const [nickname, setNickname] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -65,14 +69,20 @@ export default function Profilo() {
         </div>
       </section>
 
-      <Sezione titolo="Amici online">
+      <Sezione>
+        <Elenco>
+          <Riga
+            icona={<IconChart size={18} />}
+            titolo="I tuoi punteggi"
+            sotto="Il tuo profilo, come lo vedono gli altri"
+            a={ROTTE.amico(player.nickname)}
+          />
+        </Elenco>
+      </Sezione>
+
+      <Sezione titolo="Persone">
         {amici === null ? (
           <div className="profilo-amici__attesa scheletro" aria-hidden="true" />
-        ) : amici.length === 0 ? (
-          <div className="profilo-amici__nessuno">
-            <IconPeople size={22} />
-            <span>Nessun amico online adesso</span>
-          </div>
         ) : (
           <Elenco>
             {amici.map((a) => (
@@ -89,6 +99,12 @@ export default function Profilo() {
                 a={ROTTE.amico(a.nickname)}
               />
             ))}
+            <Riga
+              icona={<IconPeople size={18} />}
+              titolo="Cerca una persona"
+              sotto={amici.length === 0 ? 'Nessuno è online adesso' : undefined}
+              onClick={() => setPersone(true)}
+            />
           </Elenco>
         )}
       </Sezione>
@@ -105,6 +121,8 @@ export default function Profilo() {
           onChange={(v) => impostaSuoni(v === 'si')}
         />
       </Sezione>
+
+      <PannelloNotifiche />
 
       <Sezione titolo="Account">
         <Elenco>
@@ -134,6 +152,10 @@ export default function Profilo() {
 
       <Sheet open={nickname} onClose={() => setNickname(false)} title="Cambia il nickname">
         {nickname && <CambioNickname onFatto={() => setNickname(false)} onAnnulla={() => setNickname(false)} />}
+      </Sheet>
+
+      <Sheet open={persone} onClose={() => setPersone(false)} title="Persone">
+        {persone && <Persone onScelta={() => setPersone(false)} />}
       </Sheet>
 
       <Sheet open={fonti} onClose={() => setFonti(false)} title="Fonti e licenze">

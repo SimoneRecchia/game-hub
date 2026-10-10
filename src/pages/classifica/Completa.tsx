@@ -1,15 +1,12 @@
 import { useState, type CSSProperties } from 'react'
-import { useLocation } from 'react-router-dom'
 import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Copertina } from '@/components/Copertina'
 import { Numero, Vuoto } from '@/components/Elementi'
 import { IconChart, IconChevronRight, IconTrophy } from '@/components/Icons'
-import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
-import { indirizzoClassifica, percorsoClassifica, type ChiaveClassifica } from '@/games/classifiche'
+import { percorsoClassifica, type ChiaveClassifica } from '@/games/classifiche'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
@@ -27,7 +24,6 @@ import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
 import {
   GIOCHI_FORTUNA,
-  NOMI_CLASSIFICHE,
   NOMI_GENERALE,
   ORDINE_GENERALE,
   vociDi,
@@ -56,34 +52,30 @@ const LEDE: Record<ChiaveClassifica, string> = {
 }
 
 /**
- * Una classifica per intero: il podio, poi tutti gli altri. Il periodo sta
- * nell'indirizzo, così la si puo' linkare com'e' — la settimana scorsa del
- * Wordle — ed e' quel che fanno le schermate di fine partita.
+ * Una classifica per intero, nel foglio che si apre dalla pagina delle
+ * classifiche: il podio, poi tutti gli altri. Toccando qualcuno si apre il suo
+ * profilo, con i punti di ogni gioco; il periodo e' quello della pagina, e
+ * cambiarlo qui lo cambia anche li'. Dalla classifica di un gioco si aprono i
+ * propri numeri, in un foglio sopra.
  */
 export function Completa({
   chiave,
   scope,
   indietro,
+  onCambia,
 }: {
   chiave: ChiaveClassifica
   scope: LeaderboardScope
   indietro: number
+  onCambia: (scope: LeaderboardScope, indietro: number) => void
 }) {
   const { vai } = useNavigazione()
   const me = usePlayer()
-  // Da dove si arriva, per la freccia indietro: dalla panoramica, o dal trofeo di una scheda. Cambiando
-  // periodo l'indirizzo si sostituisce, e lo stato va con lui.
-  const { state } = useLocation()
-  const da = (state as { da?: string } | null)?.da ?? 'Classifica'
   const { dati, errore, ricarica } = useDati<Risposta>(percorsoClassifica(chiave, scope, indietro))
   const { mostrati, vecchi } = useUltimi(dati)
-  const [aperta, setAperta] = useState<Voce | null>(null)
   const [conti, setConti] = useState(false)
   // I conti di ogni gioco, classificate e libere: sono le statistiche di chi guarda, e stanno con la sua classifica.
   const gioco: GiocoClassificato | null = chiave === 'generale' || chiave === 'fortuna' ? null : chiave
-
-  const cambia = (s: LeaderboardScope, i: number) =>
-    vai(indirizzoClassifica(chiave, s, i), { replace: true, direzione: 'nessuna', state })
 
   const oggi = numeroDiOggi()
   const periodo = mostrati?.periodo ?? periodoDi(scope, oggi, indietro)
@@ -98,20 +90,9 @@ export function Completa({
   const inCima = voci?.[0]?.punti ?? 0
 
   return (
-    <Pagina
-      titolo={NOMI_CLASSIFICHE[chiave]}
-      sopra="Classifica"
-      sotto={LEDE[chiave]}
-      indietro={{ a: indirizzoClassifica(null, scope, indietro), etichetta: da }}
-      azioni={
-        gioco && (
-          <BottoneBarra etichetta="I tuoi numeri" onClick={() => setConti(true)}>
-            <IconChart size={20} />
-          </BottoneBarra>
-        )
-      }
-    >
-      <SceltaPeriodo scope={scope} indietro={indietro} onCambia={cambia} />
+    <div className="cl-foglio">
+      <p className="cl-foglio__lede">{LEDE[chiave]}</p>
+      <SceltaPeriodo scope={scope} indietro={indietro} onCambia={onCambia} />
 
       {errore && !mostrati ? (
         <Vuoto
@@ -147,37 +128,35 @@ export function Completa({
         />
       ) : (
         <div className={`cl${vecchi ? ' is-vecchia' : ''}`} key={`${chiave}-${periodo.scope}-${periodo.indietro}`}>
-          {podio.length > 0 && <Podio voci={podio} meId={me.id} onApri={setAperta} />}
+          {podio.length > 0 && <Podio voci={podio} meId={me.id} />}
 
           {resto.length > 0 && (
             <ol className="cl-elenco" start={podio.length + 1}>
               {resto.map((v, i) => (
-                <RigaVoce
-                  key={v.playerId}
-                  voce={v}
-                  io={v.playerId === me.id}
-                  indice={i}
-                  inCima={inCima}
-                  onApri={setAperta}
-                />
+                <RigaVoce key={v.playerId} voce={v} io={v.playerId === me.id} indice={i} inCima={inCima} />
               ))}
             </ol>
           )}
         </div>
       )}
 
-      <Sheet open={aperta !== null} onClose={() => setAperta(null)} title={aperta?.displayName}>
-        {aperta && <Dettaglio voce={aperta} io={aperta.playerId === me.id} />}
-      </Sheet>
-
       {gioco && (
-        <Sheet open={conti} onClose={() => setConti(false)} title="I tuoi numeri">
-          {conti && <ContiDi gioco={gioco} />}
-        </Sheet>
+        <>
+          <Button variant="tinted" fullWidth onClick={() => setConti(true)}>
+            <IconChart size={18} />
+            I tuoi numeri
+          </Button>
+          <Sheet open={conti} onClose={() => setConti(false)} title="I tuoi numeri">
+            {conti && <ContiDi gioco={gioco} />}
+          </Sheet>
+        </>
       )}
-    </Pagina>
+    </div>
   )
 }
+
+/** Dove porta toccare qualcuno in classifica: il suo profilo, con i punti di ogni gioco. */
+const profiloDi = (v: Voce) => ROTTE.amico(v.nickname)
 
 /* ─────────────────────────────  Il podio  ───────────────────────────── */
 
@@ -188,7 +167,7 @@ const ORDINE_PODIO = [2, 1, 3] as const
  * al bordo della carta, che li arrotonda con i suoi angoli; un posto senza
  * nessuno resta, vuoto, perché il podio non cambi forma.
  */
-function Podio({ voci, meId, onApri }: { voci: Voce[]; meId: string; onApri: (v: Voce) => void }) {
+function Podio({ voci, meId }: { voci: Voce[]; meId: string }) {
   return (
     <div className="cl-podio">
       {ORDINE_PODIO.map((posto) => {
@@ -202,11 +181,11 @@ function Podio({ voci, meId, onApri }: { voci: Voce[]; meId: string; onApri: (v:
           )
         }
         return (
-          <button
+          <Collegamento
             key={v.playerId}
-            type="button"
+            to={profiloDi(v)}
+            stato={{ da: 'Classifica' }}
             className={`cl-podio__posto cl-podio__posto--${posto}${v.playerId === meId ? ' is-io' : ''}`}
-            onClick={() => onApri(v)}
           >
             <Avatar nickname={v.nickname} color={v.avatarColor} size={posto === 1 ? 64 : 50} medal={posto} />
             <span className="cl-podio__nome">{v.displayName}</span>
@@ -218,7 +197,7 @@ function Podio({ voci, meId, onApri }: { voci: Voce[]; meId: string; onApri: (v:
             <span className="cl-podio__gradino" aria-label={`${posto}º`}>
               {posto}
             </span>
-          </button>
+          </Collegamento>
         )
       })}
     </div>
@@ -232,18 +211,16 @@ function RigaVoce({
   io,
   indice,
   inCima,
-  onApri,
 }: {
   voce: Voce
   io: boolean
   indice: number
   /** I punti del primo: la barra della generale si misura su quelli. */
   inCima: number
-  onApri: (v: Voce) => void
 }) {
   return (
     <li className={`cl-riga${io ? ' is-io' : ''}`} style={{ animationDelay: `${Math.min(indice, 10) * 30}ms` }}>
-      <button type="button" className="cl-riga__tocca" onClick={() => onApri(voce)}>
+      <Collegamento to={profiloDi(voce)} stato={{ da: 'Classifica' }} className="cl-riga__tocca">
         <span className="cl-riga__rank u-tabnum">{voce.rank}</span>
         <Avatar nickname={voce.nickname} color={voce.avatarColor} size={38} />
         <span className="cl-riga__chi">
@@ -261,7 +238,8 @@ function RigaVoce({
         <span className="cl-riga__punti u-tabnum">
           {voce.conSegno ? conSegno(voce.punti) : formatNumber(voce.punti)}
         </span>
-      </button>
+        <IconChevronRight size={16} className="cl-riga__freccia" />
+      </Collegamento>
     </li>
   )
 }
@@ -307,37 +285,5 @@ function BarraGiochi({
           <span key={g} className="cl-barra__tratto" style={{ flexGrow: fortuna![g], background: `var(--${g}-2)` }} />
         ))}
     </span>
-  )
-}
-
-function Dettaglio({ voce, io }: { voce: Voce; io: boolean }) {
-  return (
-    <div className="cl-dettaglio">
-      <div className="cl-dettaglio__testa">
-        <Avatar nickname={voce.nickname} color={voce.avatarColor} size={56} />
-        <div>
-          <p className="cl-dettaglio__punti u-tabnum">{formatNumber(voce.punti)} punti</p>
-          <p className="cl-dettaglio__rank">{voce.rank}º in classifica</p>
-        </div>
-      </div>
-      <dl className="cl-dettaglio__voci">
-        {voce.dettaglio.map((d) => (
-          <div key={d.etichetta} className={`cl-dettaglio__voce${d.forte ? ' is-forte' : ''}`}>
-            <dt>
-              {d.gioco && <Copertina gioco={d.gioco} formato="icona" />}
-              {d.etichetta}
-            </dt>
-            <dd className="u-tabnum">{d.valore}</dd>
-          </div>
-        ))}
-      </dl>
-      {voce.nota && <p className="cl-dettaglio__nota">{voce.nota}</p>}
-      {!io && (
-        <Collegamento to={ROTTE.amico(voce.nickname)} stato={{ da: 'Classifica' }} className="cl-dettaglio__profilo">
-          Il profilo di {voce.displayName}
-          <IconChevronRight size={16} />
-        </Collegamento>
-      )}
-    </div>
   )
 }
