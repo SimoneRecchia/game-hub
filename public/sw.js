@@ -75,3 +75,44 @@ self.addEventListener('fetch', (event) => {
     )
   }
 })
+
+/*
+ * Le notifiche: il messaggio arriva cifrato, il browser lo apre, e qui si
+ * mostra (shared/webpush.ts lo scrive: titolo, testo, indirizzo, tag). Una
+ * notifica con lo stesso tag prende il posto di quella di prima.
+ */
+self.addEventListener('push', (event) => {
+  let m = {}
+  try {
+    m = event.data ? event.data.json() : {}
+  } catch {
+    m = { titolo: event.data ? event.data.text() : '' }
+  }
+  event.waitUntil(
+    self.registration.showNotification(m.titolo || 'Giochi', {
+      body: m.testo || '',
+      icon: '/icon-192.png',
+      badge: '/icon-monochrome-512.png',
+      tag: m.tag || undefined,
+      renotify: Boolean(m.tag),
+      data: { url: m.url || '/' },
+    }),
+  )
+})
+
+/*
+ * Toccandola si va dove dice: nell'app gia' aperta, che sposta la pagina da
+ * sola (`vai`, senza ricaricare), o in una finestra nuova.
+ */
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = new URL((event.notification.data && event.notification.data.url) || '/', self.location.origin).href
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((finestre) => {
+      const aperta = finestre.find((f) => new URL(f.url).origin === self.location.origin)
+      if (!aperta) return self.clients.openWindow(url)
+      aperta.postMessage({ tipo: 'vai', url })
+      return aperta.focus()
+    }),
+  )
+})
