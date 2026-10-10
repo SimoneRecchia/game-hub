@@ -6,15 +6,20 @@ import { EPOCH_DATE, GAME_TIMEZONE } from '../../shared/config'
 import { NERA, sequenzeDelloSchema } from '../../shared/cruciverba'
 import { addDays, mulberry32 as mulberryCondiviso, puzzleNumberFor } from '../../shared/daily'
 import {
+  DA_ENIGMISTA,
   TRATTO_MASSIMO,
   correggiDefinizioni,
+  definizioniDaEnigmista,
+  definizioniDellaSoluzione,
   disegnaSchema,
   generaCruciverba,
+  istruzioneRifai,
   istruzioneSql,
   leggiDefinizioni,
   mulberry32,
   paroleDellaSoluzione,
   preparaDizionario,
+  scegliDefinizioni,
   semeDelGiorno,
   sequenzeDi,
   // @ts-expect-error — script in JavaScript, senza dichiarazioni di tipo
@@ -181,5 +186,100 @@ describe('gli schemi gia\' scritti', () => {
 
   it('una parola che il dizionario non ha piu\' tiene la sua definizione', () => {
     expect(correggiDefinizioni('zzzz', 1, 4, { o0: { t: 'Il verso di chi dorme', v: 'zzzz' } }, perParola)).toBeNull()
+  })
+})
+
+describe('una parola che torna cambia definizione', () => {
+  const VOCALI = 'aeiou'
+  /** Rifa' la parola dalla definizione da enigmista: se il conto e' giusto, la definizione e' giusta. */
+  function risolvi(testo: string): string {
+    const x = testo.slice(testo.lastIndexOf(' ') + 1)
+    const n = (s: string) => s.length
+    if (testo.startsWith('Le vocali di ')) return [...x].filter((c) => VOCALI.includes(c)).join('')
+    if (testo.startsWith('Le consonanti di ')) return [...x].filter((c) => !VOCALI.includes(c)).join('')
+    if (testo.startsWith('Le lettere pari di ')) return [...x].filter((_, i) => i % 2 === 1).join('')
+    if (testo.startsWith('Le lettere dispari di ')) return [...x].filter((_, i) => i % 2 === 0).join('')
+    void n
+    return x
+  }
+
+  it('le definizioni da enigmista sono giuste per costruzione, e il riconoscitore le riconosce', () => {
+    const comuni = ['milano', 'farina', 'tavolo', 'aprile', 'mare', 'sole', 'lento', 'strada']
+    const tutte = ['la', 'ta', 'le', 'aia', 'ar', 'il', 'so', 'tr'].flatMap((p) =>
+      definizioniDaEnigmista(p, comuni).map((t: string) => [p, t] as const),
+    )
+    expect(tutte.map(([, t]) => t)).toEqual(
+      expect.arrayContaining(['Il cuore di milano', 'Inizio di tavolo', 'Le vocali di farina', 'Fine di aprile']),
+    )
+    for (const [parola, testo] of tutte) {
+      expect(DA_ENIGMISTA.test(testo), testo).toBe(true)
+      const x = testo.slice(testo.lastIndexOf(' ') + 1)
+      if (testo.startsWith('Inizio di ')) expect(x.startsWith(parola), testo).toBe(true)
+      else if (testo.startsWith('Fine di ')) expect(x.endsWith(parola), testo).toBe(true)
+      else if (testo.startsWith('Il cuore di ')) {
+        const resto = x.length - parola.length
+        expect(resto % 2, testo).toBe(0)
+        expect(x.slice(resto / 2, resto / 2 + parola.length), testo).toBe(parola)
+      } else expect(risolvi(testo), testo).toBe(parola)
+    }
+    // Una definizione del Wikizionario non e' da enigmista.
+    expect(DA_ENIGMISTA.test('Articolo determinativo maschile singolare')).toBe(false)
+    expect(DA_ENIGMISTA.test('Il cuore di Milano e della Lombardia')).toBe(false)
+  })
+
+  it('la prima definizione che la parola non ha avuto di recente, poi quelle da enigmista', () => {
+    const voce = (parola: string) => voci.find((v: { parola: string }) => v.parola === parola)
+    const il = { chiave: 'o0', voce: { ...voce('il'), sigla: false } }
+    const era = { chiave: 'o5', voce: { ...voce('era'), sigla: false } }
+    const prima = scegliDefinizioni([il, era])
+    expect(prima.o0.testo).toBe('Articolo determinativo maschile singolare')
+    expect(prima.o5.testo).toBe(era.voce.definizioni[0].testo)
+    const recenti = new Map([
+      ['il', new Set([prima.o0.testo.toLowerCase()])],
+      ['era', new Set([prima.o5.testo.toLowerCase()])],
+    ])
+    const dopo = scegliDefinizioni([il, era], { recenti, comuni: ['milano', 'vile', 'filo'] })
+    expect(dopo.o5.testo).toBe(era.voce.definizioni[1].testo)
+    expect(DA_ENIGMISTA.test(dopo.o0.testo)).toBe(true)
+    expect(dopo.o0.voce).toBe('il')
+    // Senza definizioni da enigmista per lei, una parola corta riparte dalla prima.
+    expect(scegliDefinizioni([il], { recenti, comuni: [] }).o0.testo).toBe(prima.o0.testo)
+  })
+
+  it('con la memoria, le definizioni che tornano uguali sono molte meno', () => {
+    /** Cinque giorni di fila come li fa la notte; restituisce quante parole hanno avuto una definizione gia' data. */
+    const ripetute = (memoria: boolean) => {
+      const recenti = new Map<string, Set<string>>()
+      const evita = new Set<string>()
+      let volte = 0
+      for (let numero = 200; numero < 205; numero += 1) {
+        const c = generaCruciverba({ indici, seme: semeDelGiorno(numero), schemi: 40, evita, recenti: memoria ? recenti : new Map() })
+        const salvate = Object.fromEntries(Object.entries(c.definizioni).map(([k, d]: [string, any]) => [k, { t: d.testo }]))
+        for (const [parola, testo] of definizioniDellaSoluzione(c.griglia, c.righe, c.colonne, salvate)) {
+          if (recenti.get(parola)?.has(testo.toLowerCase())) volte += 1
+          if (!recenti.has(parola)) recenti.set(parola, new Set())
+          recenti.get(parola)!.add(testo.toLowerCase())
+          if (parola.length >= 3) evita.add(parola)
+        }
+      }
+      return volte
+    }
+    const senza = ripetute(false)
+    const con = ripetute(true)
+    expect(senza).toBeGreaterThan(10)
+    expect(con).toBeLessThanOrEqual(senza / 3)
+  }, 120_000)
+
+  it('correggere gli schemi non tocca le definizioni da enigmista', () => {
+    const perParola = new Map(voci.map((v: { parola: string }) => [v.parola, v]))
+    expect(correggiDefinizioni('la', 1, 2, { o0: { t: 'Il cuore di milano', v: 'la' } }, perParola)).toBeNull()
+  })
+
+  it('uno schema si rifa solo se e\' di un formato vecchio e nessuno l\'ha aperto', () => {
+    const finto = { righe: 1, colonne: 2, griglia: 'la', definizioni: { o0: { testo: 'Il cuore di milano', voce: 'la', nota: '' } } }
+    const sql = istruzioneRifai(50, finto, 'x', 2)
+    expect(sql).toMatch(/^UPDATE cruciverba_schemi SET /)
+    expect(sql).toMatch(/WHERE puzzle_number = 50 AND formato < 2 AND NOT EXISTS \(SELECT 1 FROM cruciverba_games WHERE puzzle_number = 50\);$/)
+    expect(istruzioneSql(50, finto, 'x', false, 2)).toMatch(/created_at, formato\) VALUES \(.*, 2\);$/)
   })
 })

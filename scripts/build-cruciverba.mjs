@@ -55,8 +55,21 @@ const FONTI = {
   },
 }
 
-/** Quante definizioni tenere per risposta: bastano a variare fra un giorno e l'altro. */
-const PER_RISPOSTA = 3
+/**
+ * Quante definizioni tenere per risposta: i primi sensi del Wikizionario, poi i
+ * sinonimi, poi gli altri sensi. Il generatore usa la prima che la parola non ha
+ * avuto di recente, quindi piu' ce ne sono e meno la stessa parola torna con la
+ * stessa definizione.
+ */
+const PER_RISPOSTA = 7
+/** I sensi che vengono prima dei sinonimi: i successivi sono spesso rari o tecnici. */
+const SENSI_PRIMA = 3
+/** Quanti sinonimi per risposta. */
+const SINONIMI = 2
+/** Un sinonimo fa da definizione solo se e' comune: "Epoca" per ERA, non "Evo". */
+const RANGO_SINONIMO = 30000
+/** Sinonimi veri ma da bambini: "Cacca" non e' una definizione da cruciverba. */
+const INFANTILI = new Set(['cacca', 'popo', 'pupu', 'pipi', 'bua', 'nanna', 'pappa'])
 
 const OFFLINE = process.argv.includes('--offline')
 
@@ -111,6 +124,13 @@ const escluse = new Set(
 const definizioni = new Map()
 /** Le forme flesse, da risolvere alla fine: il lemma puo' venire dopo nel dump. */
 const forme = []
+/**
+ * risposta → i sinonimi che il Wikizionario le da', normalizzati come le
+ * risposte, con la loro grafia nella voce: "età", non "eta".
+ */
+const sinonimi = new Map()
+/** Le parti del discorso di ogni lemma: un sinonimo deve averne una in comune con la risposta. */
+const partiDi = new Map()
 let voci = 0
 
 function aggiungi(risposta, d) {
@@ -129,6 +149,16 @@ for await (const riga of righe) {
   if (!risposta || escluse.has(risposta)) continue
   for (const d of definizioniDellaVoce(voce, risposta)) aggiungi(risposta, d)
   for (const f of formeDellaVoce(voce)) forme.push({ risposta, ...f })
+  // Solo i lemmi: una forma flessa ("pensa") non e' un sinonimo di niente.
+  if ((voce.senses ?? []).every((senso) => (senso.tags ?? []).includes('form-of'))) continue
+  partiDi.set(risposta, (partiDi.get(risposta) ?? new Set()).add(voce.pos))
+  for (const { word } of voce.synonyms ?? []) {
+    const forma = typeof word === 'string' && /^[\p{L}']+$/u.test(word.trim()) ? normalizzaRisposta(word) : null
+    if (!forma || forma === risposta) continue
+    const elenco = sinonimi.get(risposta) ?? new Map()
+    if (!elenco.has(forma)) elenco.set(forma, word.trim().toLowerCase())
+    sinonimi.set(risposta, elenco)
+  }
 }
 
 /*
@@ -146,6 +176,42 @@ for await (const riga of righe) {
 for (const [risposta, elenco] of definizioni) {
   if (risposta.length <= 3) continue
   elenco.sort((x, y) => (x.pos === 'intj' ? 1 : 0) - (y.pos === 'intj' ? 1 : 0))
+}
+
+/*
+ * I sinonimi come definizioni: "Epoca" per ERA, "Micio" per GATTO. Il
+ * Wikizionario li elenca per voce e non per senso, e ci mette anche parole solo
+ * vicine — per MARE "spiaggia" e "riva" — quindi vale solo un sinonimo
+ * reciproco, che a sua volta da' la risposta fra i suoi: "spiaggia" non ha
+ * "mare". Poi deve essere un lemma con una parte del discorso della risposta —
+ * per IDEA usciva "Pensa" —, comune, non una parolaccia, e non deve rivelare la
+ * risposta. Le parole di due e tre lettere no: i loro sinonimi sono preposizioni
+ * e pronomi ("Per" per IN), e hanno le definizioni da enigmista del generatore.
+ * Vanno dopo i primi sensi, perché il senso principale resta la definizione
+ * migliore, e prima degli altri, che sono spesso rari.
+ */
+let conSinonimi = 0
+for (const [risposta, elenco] of definizioni) {
+  const propri = definizioni.get(risposta).filter((d) => !d.nota)
+  if (propri.length === 0 || risposta.length < 4) continue
+  const propriSinonimi = sinonimi.get(risposta) ?? new Map()
+  const scelti = [...propriSinonimi.keys()]
+    .filter((s) => sinonimi.get(s)?.has(risposta))
+    .filter((s) => [...(partiDi.get(s) ?? [])].some((p) => partiDi.get(risposta)?.has(p)))
+    .filter((s) => s.length >= 3 && (rango.get(s) ?? Infinity) <= RANGO_SINONIMO)
+    .filter((s) => !escluse.has(s) && !INFANTILI.has(s))
+    .sort((a, b) => rango.get(a) - rango.get(b))
+    .map((s) => propriSinonimi.get(s))
+    .map((s) => s[0].toUpperCase() + s.slice(1))
+    .filter((t) => !rivelaLaRisposta(t, risposta))
+    .slice(0, SINONIMI)
+  if (scelti.length === 0) continue
+  conSinonimi += 1
+  const voce = propri[0].voce
+  const nuovi = scelti.map((testo) => ({ testo, voce, nota: '', pos: 'sinonimo' }))
+  const testi = new Set(elenco.map((d) => d.testo.toLowerCase()))
+  const daAggiungere = nuovi.filter((d) => !testi.has(d.testo.toLowerCase()))
+  definizioni.set(risposta, [...elenco.slice(0, SENSI_PRIMA), ...daAggiungere, ...elenco.slice(SENSI_PRIMA)])
 }
 
 /*
@@ -197,6 +263,7 @@ for (const r of risposte) {
 console.log(`  voci italiane lette: ${voci.toLocaleString('it-IT')}`)
 console.log(`  risposte con almeno una definizione: ${risposte.length.toLocaleString('it-IT')}`)
 console.log(`  di cui forme flesse (plurali, femminili): ${flesse.toLocaleString('it-IT')}`)
+console.log(`  con almeno un sinonimo reciproco: ${conSinonimi.toLocaleString('it-IT')}`)
 console.log(`  di cui nell'elenco di frequenza: ${comuni.toLocaleString('it-IT')}`)
 console.log(
   '  per lunghezza: ' +

@@ -70,6 +70,10 @@ export function ComeSiGiocaCruciverba({
               <strong>plurale</strong>, <strong>femminile</strong>: la risposta va al plurale o al femminile.
             </li>
             <li>
+              Alcune parole corte hanno definizioni da enigmista: <em>Il cuore di milano</em> è LA,{' '}
+              <em>Le vocali di farina</em> è AIA.
+            </li>
+            <li>
               <strong>Classificata</strong>: uno schema al giorno, uguale per tutti.
             </li>
             <li>
