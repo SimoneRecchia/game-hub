@@ -267,7 +267,11 @@ corregge e' una definizione che il dizionario non ha piu', perché il filtro l'h
 scartata dopo: la stessa esecuzione la sostituisce con quella che sceglierebbe
 adesso (`correggiDefinizioni`), da oggi in avanti e nella scorta dei liberi, con
 un `UPDATE` condizionato alle definizioni lette. La griglia resta quella, e i
-giorni passati come li si e' giocati. E' deterministico dal numero del giorno, e
+giorni passati come li si e' giocati. L'altra eccezione sono gli schemi di un
+formato vecchio (`FORMATO`, colonna `formato` dalla `0050`) **nel futuro e che
+nessuno ha aperto**, che si rifanno, come le giornate del quiz, con un `UPDATE`
+condizionato al formato e all'assenza di partite: nessuno li ha visti. Il 2 e'
+quello della memoria delle definizioni (vedi sotto). E' deterministico dal numero del giorno, e
 il budget si conta in nodi e non in millisecondi, così una macchina piu' lenta
 non cambia lo schema. Se la tabella non ha la giornata di oggi il gioco risponde
 `SCHEMA_ASSENTE` (503) e la card dell'hub non mostra lo stato: in locale,
@@ -290,6 +294,27 @@ nome "ora", non dell'avverbio "in questo momento", e la definizione del
 Wikizionario di una forma flessa ("plurale di ala") darebbe la risposta. La
 licenza chiede di citare la fonte: la citano le regole, e a partita chiusa ogni
 definizione porta alla sua voce.
+
+**Una parola che torna cambia definizione.** Le parole di due e tre lettere
+sono meno di seicento e fanno quasi meta' di ogni schema, e con la sola prima
+definizione del Wikizionario IL era "Articolo determinativo maschile singolare"
+tredici volte in un mese. Ogni parola ha fino a sette definizioni
+(`PER_RISPOSTA` in `scripts/build-cruciverba.mjs`): i primi tre sensi, poi fino
+a due sinonimi ("Epoca" per ERA, "Squadra" per TEAM), poi gli altri sensi. Un
+sinonimo vale solo se e' reciproco — il Wikizionario li elenca per voce e ci
+mette parole solo vicine, "spiaggia" per MARE —, un lemma con una parte del
+discorso della risposta, comune, e per risposte di quattro lettere in su: quelli
+delle parole corte sono preposizioni e pronomi ("Per" per IN). La notte
+(`scegliDefinizioni`) da' a ogni parola la prima definizione che non ha avuto
+negli ultimi trenta schemi (`recenti`), e a una parola corta che le ha avute
+tutte una definizione da enigmista (`definizioniDaEnigmista`): "Il cuore di
+milano" per LA, "Inizio di tavolo" per TA, "Le vocali di farina" per AIA, dalle
+parole comuni, giuste per costruzione e riconosciute da `DA_ENIGMISTA`, perché
+`correggiDefinizioni` non le scambi per definizioni sparite dal dizionario. Le
+parole uscite nei trenta giorni prima, e quelle di tre lettere della settimana,
+scendono in fondo ai tentativi (`PENALITA_RECENTE`): misurato su trenta giorni,
+le parole gia' uscite nella settimana sono passate dal 22 al 14% e la
+definizione piu' ripetuta da tredici volte a sette.
 
 **Ogni casella del cruciverba sta in due parole.** E' la convenzione del
 cruciverba italiano, e `disegnaSchema` la garantisce: nessun tratto bianco di
