@@ -3,7 +3,8 @@ import { ROTTE } from '@/app/rotte'
 import { api } from '@/lib/api'
 import { useDati } from '@/lib/dati'
 import { AMICI_POLL_MS } from '@shared/config'
-import { eGiocoSfidaLibera, type GiocoSfidaLibera } from '@shared/sfide-libere'
+import { GIOCHI_CHIAMATA, type GiocoChiamata } from '@shared/notifiche'
+import { eGiocoSfidaLibera } from '@shared/sfide-libere'
 import type { StanzaLupusBreve, VistaStanzaLupus } from '@shared/lupus-stanza'
 import type { StanzaScarabocchiBreve, VistaStanzaScarabocchi } from '@shared/scarabocchi'
 import type { AmiciRisposta, AmicoOnline, Attivita, GiocatoreBreve } from '@shared/types'
@@ -65,43 +66,13 @@ export const DOVE_BREVE: Record<Attivita, string> = {
   altro: 'Online',
 }
 
-/** I giochi a cui si invita un amico: quelli che si giocano in due nella libera, e Lupus, che si gioca in tanti. */
-export type GiocoInsieme =
-  | 'battaglia'
-  | 'quiz'
-  | 'nomi'
-  | 'sequenze'
-  | 'scarabeo'
-  | 'tris'
-  | 'indovina'
-  | 'scacchi'
-  | 'dama'
-  | 'forza4'
-  | 'go'
-  | 'lupus'
-  | 'scarabocchi'
-  | GiocoSfidaLibera
-
-export const GIOCHI_INSIEME: readonly GiocoInsieme[] = [
-  'battaglia',
-  'quiz',
-  'nomi',
-  'sequenze',
-  'scarabeo',
-  'tris',
-  'indovina',
-  'scacchi',
-  'dama',
-  'forza4',
-  'go',
-  'sudoku',
-  'anagrammi',
-  'paroliere',
-  'ghigliottina',
-  'catena',
-  'lupus',
-  'scarabocchi',
-]
+/**
+ * I giochi a cui si invita un amico: quelli che si giocano in due nella libera,
+ * e Lupus e Scarabocchi, che si giocano in tanti. Sono gli stessi degli inviti a
+ * chi non e' online (shared/notifiche.ts).
+ */
+export type GiocoInsieme = GiocoChiamata
+export const GIOCHI_INSIEME: readonly GiocoInsieme[] = GIOCHI_CHIAMATA
 
 /**
  * La variante e il set scelti l'ultima volta nella sala, come li salva la

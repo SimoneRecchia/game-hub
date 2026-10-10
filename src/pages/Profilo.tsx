@@ -14,6 +14,7 @@ import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { useAmiciOnline } from '@/games/amici/amici'
+import { PannelloNotifiche } from '@/games/amici/PannelloNotifiche'
 import { ApiFetchError, api } from '@/lib/api'
 import { useAuth, usePlayer } from '@/lib/auth'
 import { haptic } from '@/lib/haptics'
@@ -105,6 +106,8 @@ export default function Profilo() {
           onChange={(v) => impostaSuoni(v === 'si')}
         />
       </Sezione>
+
+      <PannelloNotifiche />
 
       <Sezione titolo="Account">
         <Elenco>

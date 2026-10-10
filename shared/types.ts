@@ -1,3 +1,4 @@
+import type { ChiamataRicevuta } from './notifiche'
 /** Tipi condivisi tra client React e Pages Functions. */
 
 import type { Mossa, MossaGiocata } from './scarabeo'
@@ -1320,6 +1321,8 @@ export interface PresenzaRisposta {
   scarabocchi: InvitoScarabocchi[]
   /** La stanza di Scarabocchi in cui sono, per tornarci. */
   stanzaScarabocchi: StanzaScarabocchiBreve | null
+  /** Gli inviti a giocare arrivati quando non ero online (shared/notifiche.ts). */
+  chiamate: ChiamataRicevuta[]
 }
 
 /* ─────────────────────────────  Indovina chi  ──────────────────────── */

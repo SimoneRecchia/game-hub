@@ -10,6 +10,7 @@ import {
   stanzaBreve as stanzaScarabocchiBreve,
 } from '../lib/scarabocchiStore'
 import { today } from '../lib/wordleStore'
+import { chiamateRicevute } from '../lib/notifiche'
 import { duelloAperto, sfideQuizRicevute } from '../lib/quizSfideStore'
 import {
   invitiRicevuti,
@@ -101,6 +102,7 @@ export const presenzaRoutes = new Hono<AppEnv>()
       stanzaLupus,
       scarabocchi,
       stanzaScarabocchi,
+      chiamate,
     ] = await Promise.all([
       segnaPresenza(db, io, attivita, adesso),
       participation(db, io, when.puzzleNumber),
@@ -124,6 +126,7 @@ export const presenzaRoutes = new Hono<AppEnv>()
       stanzaLupusBreve(db, io, adesso),
       invitiScarabocchi(db, io, adesso),
       stanzaScarabocchiBreve(db, io, adesso),
+      chiamateRicevute(db, io, adesso),
     ])
     const coop: CoopInvite[] = mia?.spectated ? [] : inviti
 
@@ -169,5 +172,6 @@ export const presenzaRoutes = new Hono<AppEnv>()
       stanzaLupus,
       scarabocchi,
       stanzaScarabocchi,
+      chiamate,
     })
   })
