@@ -75,9 +75,10 @@ export function entrataDi({
  *
  * Una schermata nuova comincia dall'alto, e una schermata ritrovata tornando
  * indietro e' dove la si era lasciata. Una sostituzione nella stessa schermata
- * (il periodo della classifica) non sposta niente. Senza, la pagina nuova
- * prendeva lo scorrimento di quella di prima: dal fondo delle Libere le
- * Giornaliere si aprivano a meta', senza il titolo.
+ * (il periodo della classifica, o il foglio di una classifica che si apre e si
+ * chiude) non sposta niente. Senza, la pagina nuova prendeva lo scorrimento di
+ * quella di prima: dal fondo delle Libere le Giornaliere si aprivano a meta',
+ * senza il titolo.
  */
 export function scorrimentoDopo(
   tipo: TipoNavigazione,
@@ -86,6 +87,11 @@ export function scorrimentoDopo(
   salvato: number | undefined,
 ): number | null {
   if (tipo === 'POP') return salvato ?? 0
-  if (tipo === 'REPLACE' && da === a) return null
+  if (tipo === 'REPLACE' && schermataDi(da) === schermataDi(a)) return null
   return 0
+}
+
+/** La schermata di un indirizzo: la classifica e' una, con il foglio di una classifica aperto o no. */
+function schermataDi(percorso: string): string {
+  return percorso.startsWith('/classifica/') ? '/classifica' : percorso
 }
