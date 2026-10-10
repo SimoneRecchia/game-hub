@@ -86,6 +86,21 @@ html[data-transizione='tavolo']::view-transition-new(rl-feltro) {
   height: 100%;
 }
 
+/*
+ * Anche la ruota e' una: si vede solo quella d'arrivo, che e' viva e gira dal
+ * punto dove era quella di prima (il cilindro e' lo stesso, in Ruota.tsx). In
+ * dissolvenza si vedevano due ruote, una ferma e una che girava, con le caselle
+ * sfalsate.
+ */
+html[data-transizione='tavolo']::view-transition-old(rl-ruota) {
+  animation: none;
+  opacity: 0;
+}
+
+html[data-transizione='tavolo']::view-transition-new(rl-ruota) {
+  animation: none;
+}
+
 html[data-transizione='tavolo']::view-transition-old(rl-sala),
 html[data-transizione='tavolo']::view-transition-old(rl-tavolo) {
   animation: vt-svanisce 160ms ease-out both;
