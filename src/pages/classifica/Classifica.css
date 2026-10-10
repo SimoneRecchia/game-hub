@@ -17,8 +17,8 @@
   container-type: inline-size;
 }
 
-/* Su un telefono stretto "Settimana" non sta in un quarto del controllo, alla misura di sempre. */
-@container (max-width: 340px) {
+/* Su un telefono stretto, e nel foglio, "Settimana" non sta in un quarto del controllo, alla misura di sempre. */
+@container (max-width: 360px) {
   .cl-periodo .segmented__item {
     padding: 0 2px;
     font-size: var(--text-footnote);
@@ -158,7 +158,7 @@
   flex-direction: column;
   gap: var(--sp-2);
   height: 100%;
-  padding: var(--sp-3) var(--sp-4) var(--sp-3);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
   border-radius: var(--r-xl);
   background:
     radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--c1) 12%, transparent), transparent 62%),
@@ -223,17 +223,15 @@
   color: var(--label-secondary);
 }
 
-/* Sopra il velo che apre la classifica: questo porta alla partita. */
+/* "Gioca", nella testata al posto della pillola: sopra il velo che apre la classifica, porta alla partita. */
 .cl-carta__gioca {
   position: relative;
   z-index: 2;
-  align-self: flex-start;
+  flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  min-height: 32px;
-  margin-top: 2px;
-  padding: 0 var(--sp-2) 0 var(--sp-3);
+  min-height: 28px;
+  padding: 0 var(--sp-3);
   border-radius: var(--r-pill);
   background: color-mix(in srgb, var(--c1) 16%, transparent);
   color: color-mix(in srgb, var(--c2) 80%, var(--label));
@@ -246,160 +244,447 @@
   transform: scale(0.95);
 }
 
-/* La generale, in cima: un velo d'oro dietro il podio. */
-.cl-carta--generale {
-  gap: var(--sp-3);
-  padding-bottom: var(--sp-4);
-  background:
-    radial-gradient(70% 60% at 50% 12%, color-mix(in srgb, var(--oro) 13%, transparent), transparent 72%),
-    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--c1) 15%, transparent), transparent 60%),
-    var(--surface);
-}
-
-/* Il podio della panoramica: senza gradini, il primo al centro e piu' in alto. */
-.cl-podietto {
+/* I primi tre di un gioco, in fila: l'avatar con l'anello della medaglia, il nome e i punti. */
+.cl-primi {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: end;
   gap: var(--sp-2);
-  margin: 0;
-  padding: var(--sp-1) 0 0;
-  list-style: none;
-}
-
-.cl-podietto__posto {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 0;
-  animation: cl-sale 560ms var(--ease-spring) both;
-}
-
-.cl-podietto__posto--1 {
-  padding-bottom: var(--sp-4);
-  animation-delay: 120ms;
-}
-
-.cl-podietto__posto--3 {
-  animation-delay: 60ms;
-}
-
-.cl-podietto__nome {
-  max-width: 100%;
-  margin-top: 6px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  color: var(--label);
-}
-
-.cl-podietto__posto.is-io .cl-podietto__nome {
-  color: var(--brand);
-}
-
-.cl-podietto__punti {
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
-  line-height: 1.1;
-  color: var(--label);
-}
-
-.cl-podietto__posto--1 .cl-podietto__punti {
-  font-size: var(--text-title-2);
-}
-
-/* Un posto senza nessuno: il cerchio dove starebbe l'avatar, all'altezza degli altri. */
-.cl-podietto__vuoto {
-  width: 46px;
-  height: 46px;
-  margin-bottom: 48px;
-  border: 1.5px dashed var(--separator-opaque);
-  border-radius: 50%;
-}
-
-/* I primi tre di un gioco, e la tua riga. */
-.cl-mini {
-  display: flex;
-  flex-direction: column;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.cl-mini__riga {
-  position: relative;
+.cl-primo {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  min-height: 44px;
+  gap: 9px;
+  min-width: 0;
+  padding: 2px 0 2px 3px;
 }
 
-.cl-mini__riga + .cl-mini__riga::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 76px;
-  height: 0.5px;
-  background: var(--separator);
-}
-
-.cl-mini__rank {
+.cl-primo .avatar {
   flex: none;
-  width: 22px;
+}
+
+.cl-primo__testo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.2;
+}
+
+.cl-primo__nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label);
+}
+
+.cl-primo.is-io .cl-primo__nome {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.cl-primo__punti {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-rounded);
   font-size: var(--text-subhead);
   font-weight: 800;
-  text-align: center;
+  color: var(--label);
+}
+
+/* ─────────────────────────────  La generale  ───────────────────────────── */
+
+/*
+ * La generale in cima, grande: una carta con la luce d'oro, la testata che
+ * apre la classifica intera, il podio con i gradini che arrivano al bordo, e
+ * sotto il tuo posto. Il podio sale come alle premiazioni: il terzo, il
+ * secondo e poi il primo, ogni gradino da terra e il suo giocatore dopo.
+ */
+.cl-gen {
+  --gradino-1: 92px;
+  --gradino-2: 64px;
+  --gradino-3: 44px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(70% 55% at 50% 30%, color-mix(in srgb, var(--oro) 18%, transparent), transparent 75%),
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--generale-1) 16%, transparent), transparent 60%),
+    var(--surface);
+  box-shadow:
+    var(--shadow-md),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--oro) 26%, transparent);
+}
+
+.cl-gen__testa {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 56px;
+  padding: var(--sp-3) var(--sp-4) 0;
+  color: inherit;
+  text-align: left;
+}
+
+.cl-gen__testa .copertina {
+  --lato: 38px;
+}
+
+.cl-gen__titolo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cl-gen__nome {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.cl-gen__sotto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.cl-gen__freccia {
+  flex: none;
+  margin-right: -4px;
   color: var(--label-tertiary);
 }
 
-.cl-mini__rank.is-1 {
-  color: var(--oro);
+.cl-gen__vuota {
+  margin: 0;
+  padding: var(--sp-6) var(--sp-4) var(--sp-5);
+  text-align: center;
+  color: var(--label-secondary);
 }
 
-.cl-mini__rank.is-2 {
-  color: var(--argento);
+.cl-gen__podio {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  column-gap: 6px;
+  margin: 0;
+  padding: var(--sp-5) var(--sp-3) 0;
+  list-style: none;
 }
 
-.cl-mini__rank.is-3 {
-  color: var(--bronzo);
+.cl-gen__posto {
+  --medaglia: var(--bronzo);
+  --gradino: var(--gradino-bronzo);
+  --alto: var(--gradino-3);
+  --ritardo: 0ms;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
 }
 
-.cl-mini__nome {
+.cl-gen__posto--2 {
+  --medaglia: var(--argento);
+  --gradino: var(--gradino-argento);
+  --alto: var(--gradino-2);
+  --ritardo: 260ms;
+}
+
+.cl-gen__posto--1 {
+  --medaglia: var(--oro);
+  --gradino: var(--gradino-oro);
+  --alto: var(--gradino-1);
+  --ritardo: 520ms;
+}
+
+.cl-gen__chi {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  padding-bottom: var(--sp-2);
+  color: inherit;
+  animation: cl-gen-arriva 620ms var(--ease-spring) both;
+  animation-delay: calc(var(--ritardo) + 300ms);
+}
+
+@keyframes cl-gen-arriva {
+  from {
+    opacity: 0;
+    transform: translateY(-26px) scale(0.6);
+  }
+}
+
+.cl-gen__chi:active .cl-gen__avatar {
+  transform: scale(0.94);
+}
+
+.cl-gen__avatar {
+  display: inline-grid;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.cl-gen__posto--1 .cl-gen__avatar {
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--oro) 45%, transparent);
+}
+
+.cl-gen__nome-posto {
+  max-width: 100%;
+  padding: 0 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  color: var(--label);
+}
+
+.cl-gen__posto.is-io .cl-gen__nome-posto {
+  color: var(--brand);
+}
+
+.cl-gen__punti {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: var(--tracking-tight);
+  color: color-mix(in srgb, var(--medaglia) 55%, var(--label));
+}
+
+.cl-gen__posto--1 .cl-gen__punti {
+  font-size: var(--text-title-1);
+}
+
+/* La corona del primo: cade sulla testa, poi ogni tanto la luce ci passa sopra. */
+.cl-gen__corona {
+  width: 40px;
+  height: 27px;
+  margin-bottom: -6px;
+  filter: drop-shadow(0 3px 5px rgba(168, 111, 0, 0.35));
+  transform-origin: 50% 100%;
+  animation:
+    cl-gen-corona 700ms var(--ease-spring) both,
+    cl-gen-luccica 3.4s ease-in-out 2s infinite;
+  animation-delay: calc(var(--ritardo) + 700ms), calc(var(--ritardo) + 2000ms);
+}
+
+@keyframes cl-gen-corona {
+  from {
+    opacity: 0;
+    transform: translateY(-34px) rotate(-18deg) scale(0.4);
+  }
+}
+
+@keyframes cl-gen-luccica {
+  0%,
+  86%,
+  100% {
+    filter: drop-shadow(0 3px 5px rgba(168, 111, 0, 0.35)) brightness(1);
+  }
+  92% {
+    filter: drop-shadow(0 0 10px rgba(255, 210, 80, 0.9)) brightness(1.3);
+  }
+}
+
+/* I raggi dietro il primo: una luce d'oro che gira piano, sfumata ai bordi. */
+.cl-gen__raggi {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  z-index: 0;
+  width: 250px;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--oro) 24%, transparent) 0deg 9deg,
+    transparent 9deg 24deg
+  );
+  mask: radial-gradient(closest-side, #000 18%, transparent 100%);
+  pointer-events: none;
+  animation:
+    cl-gen-raggi-arriva 900ms var(--ease-out) both,
+    cl-gen-raggi 26s linear infinite;
+  animation-delay: 900ms, 0ms;
+}
+
+@keyframes cl-gen-raggi-arriva {
+  from {
+    opacity: 0;
+    scale: 0.4;
+  }
+}
+
+@keyframes cl-gen-raggi {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* Il gradino, nel metallo del suo posto: sale da terra, con il numero dentro. */
+.cl-gen__gradino {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: start center;
+  width: 100%;
+  height: var(--alto);
+  padding-top: 8px;
+  border-radius: 14px 14px 0 0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.35), transparent 40%),
+    var(--gradino);
+  box-shadow: inset 0 2.5px 0 var(--medaglia);
+  transform-origin: 50% 100%;
+  animation: cl-gen-gradino 640ms var(--ease-spring) both;
+  animation-delay: var(--ritardo);
+}
+
+@keyframes cl-gen-gradino {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.cl-gen__numero {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  color: color-mix(in srgb, var(--medaglia) 70%, var(--label));
+  animation: cl-gen-arriva 500ms var(--ease-spring) both;
+  animation-delay: calc(var(--ritardo) + 260ms);
+}
+
+.cl-gen__posto--1 .cl-gen__numero {
+  font-size: var(--text-large-title, 34px);
+}
+
+/* Un posto senza nessuno: il cerchio dove starebbe l'avatar, e il gradino grigio. */
+.cl-gen__vuoto {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 44px;
+  border: 1.5px dashed var(--separator-opaque);
+  border-radius: 50%;
+}
+
+.cl-gen__posto:has(.cl-gen__vuoto) .cl-gen__gradino {
+  background: var(--fill-quaternary);
+  box-shadow: none;
+}
+
+.cl-gen__posto:has(.cl-gen__vuoto) .cl-gen__numero {
+  color: var(--label-quaternary);
+}
+
+/* Il tuo posto, quando non sei sul podio: una riga sotto i gradini. */
+.cl-gen__mia {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 56px;
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--brand-soft);
+  color: inherit;
+  animation: cl-entra 420ms var(--ease-push) 1.1s both;
+}
+
+.cl-gen__mia:active {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+}
+
+.cl-gen__mia-rank {
+  flex: none;
+  min-width: 34px;
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 800;
+  color: var(--brand);
+}
+
+.cl-gen__mia-nome {
   flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  font-weight: 600;
+  overflow: hidden;
+  white-space: nowrap;
+  font-weight: 700;
   color: var(--label);
 }
 
-.cl-mini__testo {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cl-mini__punti {
+.cl-gen__mia-punti {
   flex: none;
   font-family: var(--font-rounded);
-  font-size: var(--text-callout);
+  font-size: var(--text-headline);
   font-weight: 800;
   color: var(--label);
 }
 
-/* Quando non sei fra i primi, la tua riga sta sotto, in una capsula: si trova subito. */
-.cl-mini--mia {
-  margin: 0 calc(-1 * var(--sp-2));
-  padding: 0 var(--sp-2);
-  border-radius: var(--r-md);
-  background: var(--brand-soft);
+.cl-gen__tutta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 46px;
+  border-top: 0.5px solid var(--separator);
+  color: var(--brand);
+  font-size: var(--text-subhead);
+  font-weight: 700;
+}
+
+.cl-gen__tutta:active {
+  background: var(--fill-quaternary);
+}
+
+/* Tornando alla classifica, il podio e' gia' dove lo si era lasciato. */
+.pagina--ferma :is(.cl-gen__chi, .cl-gen__gradino, .cl-gen__numero, .cl-gen__mia) {
+  animation: none;
+}
+
+.pagina--ferma .cl-gen__corona {
+  animation: cl-gen-luccica 3.4s ease-in-out 2s infinite;
+}
+
+.pagina--ferma .cl-gen__raggi {
+  animation: cl-gen-raggi 26s linear infinite;
+}
+
+/* ─────────────────────────────  Il foglio  ───────────────────────────── */
+
+.cl-foglio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.cl-foglio__lede {
+  margin: calc(-1 * var(--sp-3)) 0 0;
+  text-align: center;
+  font-size: var(--text-footnote);
+  line-height: 1.4;
+  color: var(--label-secondary);
+  text-wrap: balance;
 }
 
 /* ─────────────────────────────  Una per intero  ───────────────────────────── */
@@ -558,7 +843,7 @@
 }
 
 /* Tornando alla classifica, il podio e le righe sono gia' dove li si era lasciati. */
-.pagina--ferma :is(.cl-podietto__posto, .cl-podio__posto, .cl-riga) {
+.pagina--ferma :is(.cl-podio__posto, .cl-riga) {
   animation: none;
 }
 
@@ -633,6 +918,12 @@
   color: var(--label-secondary);
 }
 
+.cl-riga__freccia {
+  flex: none;
+  margin: 0 -6px 0 -4px;
+  color: var(--label-tertiary);
+}
+
 .cl-riga__punti {
   flex: none;
   min-width: 40px;
@@ -688,94 +979,6 @@
   color: var(--orange);
 }
 
-/* ─────────────────────────────  Il dettaglio  ───────────────────────────── */
-
-.cl-dettaglio {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-}
-
-.cl-dettaglio__testa {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-}
-
-.cl-dettaglio__punti {
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
-}
-
-.cl-dettaglio__rank {
-  font-size: var(--text-subhead);
-  color: var(--label-secondary);
-}
-
-.cl-dettaglio__voci {
-  margin: 0;
-  overflow: hidden;
-  border-radius: var(--r-lg);
-  background: var(--fill-quaternary);
-}
-
-.cl-dettaglio__voce {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  min-height: 46px;
-  padding: var(--sp-2) var(--sp-4);
-  font-size: var(--text-subhead);
-}
-
-.cl-dettaglio__voce + .cl-dettaglio__voce {
-  box-shadow: inset 0 0.5px 0 var(--separator);
-}
-
-.cl-dettaglio__voce dt {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  color: var(--label-secondary);
-}
-
-.cl-dettaglio__voce dt .copertina {
-  --lato: 24px;
-}
-
-.cl-dettaglio__voce dd {
-  margin: 0;
-  font-weight: 600;
-  color: var(--label);
-}
-
-.cl-dettaglio__voce.is-forte dt,
-.cl-dettaglio__voce.is-forte dd {
-  font-weight: 800;
-  color: var(--label);
-}
-
-.cl-dettaglio__nota {
-  font-size: var(--text-footnote);
-  line-height: 1.45;
-  color: var(--label-secondary);
-}
-
-/* Dal foglio di un altro giocatore, il suo profilo: da li' lo si invita a giocare. */
-.cl-dettaglio__profilo {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--r-lg);
-  background: var(--brand-soft);
-  color: var(--brand);
-  font-weight: 700;
-}
-
 /* ─────────────────────────────  Mentre carica  ───────────────────────────── */
 
 .cl-scheletro {
@@ -795,19 +998,24 @@
 }
 
 .cl-scheletro__generale {
-  height: 232px;
+  height: 330px;
   border-radius: var(--r-xl);
 }
 
 .cl-scheletro__gioco {
-  height: 196px;
+  height: 104px;
   border-radius: var(--r-xl);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cl-riga,
   .cl-podio__posto,
-  .cl-podietto__posto,
+  .cl-gen__chi,
+  .cl-gen__gradino,
+  .cl-gen__numero,
+  .cl-gen__corona,
+  .cl-gen__raggi,
+  .cl-gen__mia,
   .cl-periodo__nome--prima,
   .cl-periodo__nome--dopo {
     animation: none;

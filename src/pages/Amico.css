@@ -1,6 +1,8 @@
 /*
- * Il profilo di un amico: l'avatar grande con un alone del suo colore, chi e',
- * se e' online, e i giochi a cui lo si invita, una tessera ciascuno.
+ * Il profilo di una persona: l'avatar grande con un alone, chi e', se e'
+ * online, il bottone per invitarla, il gioco preferito, i posti nella generale
+ * e i punti di ogni gioco. I giochi a cui la si invita stanno in un foglio,
+ * una tessera ciascuno.
  */
 
 .amico-testa {
@@ -191,7 +193,370 @@
   }
 }
 
+/* ─────────────────────────  L'invito  ───────────────────────── */
+
+.amico-invita {
+  width: 100%;
+  max-width: 420px;
+  margin: calc(-1 * var(--sp-1)) auto var(--sp-5);
+}
+
+.amico-inviti {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.amico-inviti__nota {
+  margin: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+/* Nel foglio le tessere sono quattro per riga, piu' piccole: diciotto giochi stanno in cinque righe. */
+.amico-inviti .amico-giochi {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+
+.amico-inviti .amico-gioco {
+  gap: 5px;
+  padding: var(--sp-3) 2px var(--sp-2);
+  border-radius: 18px;
+}
+
+.amico-inviti .amico-gioco .copertina {
+  --lato: 42px;
+}
+
+.amico-inviti .amico-gioco__nome {
+  font-size: var(--text-caption-1);
+}
+
+/* ─────────────────────────  I numeri  ───────────────────────── */
+
+.amico-numeri {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+}
+
+/* Il gioco preferito: una carta nel suo colore, con la stella. */
+.amico-preferito {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--c1) 26%, transparent), transparent 70%),
+    var(--surface);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 30%, transparent);
+}
+
+.amico-preferito .copertina {
+  --lato: 44px;
+  flex: none;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--c2) 30%, transparent);
+}
+
+.amico-preferito__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.amico-preferito__sopra {
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--c2) 70%, var(--label-secondary));
+}
+
+.amico-preferito__nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.amico-preferito__stella {
+  flex: none;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--oro);
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--oro) 50%, transparent));
+  animation: amico-stella 3.6s var(--ease-in-out) infinite;
+}
+
+@keyframes amico-stella {
+  50% {
+    transform: rotate(14deg) scale(1.12);
+  }
+}
+
+/* I posti: tre tessere uguali, il numero grande e sotto i punti. */
+.amico-posti {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin: 0;
+}
+
+.amico-posto {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-3) var(--sp-3);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+}
+
+.amico-posto dt {
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.amico-posto dd {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  min-width: 0;
+}
+
+.amico-posto__rank {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: var(--tracking-tight);
+  color: var(--label);
+}
+
+.amico-posto__sotto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+/* I punti di ogni gioco: due colonne, il mese e da sempre, e una barra sotto il nome. */
+.amico-punti {
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--edge-light), var(--shadow-sm);
+}
+
+.amico-punti__testa,
+.amico-riga__corpo {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 52px 60px;
+  align-items: center;
+  column-gap: var(--sp-3);
+  padding: 0 var(--sp-4);
+}
+
+.amico-punti--tocca :is(.amico-punti__testa, .amico-riga__corpo) {
+  grid-template-columns: 34px minmax(0, 1fr) 52px 60px 16px;
+}
+
+.amico-punti__testa {
+  min-height: 34px;
+  padding-top: var(--sp-1);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
+.amico-punti__testa span:nth-child(n + 3) {
+  text-align: right;
+}
+
+.amico-punti__elenco {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.amico-riga {
+  position: relative;
+}
+
+.amico-riga + .amico-riga::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: calc(var(--sp-4) + 34px + var(--sp-3));
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.amico-riga__corpo {
+  width: 100%;
+  min-height: 56px;
+  padding-block: var(--sp-2);
+  color: inherit;
+  text-align: left;
+}
+
+.amico-riga__corpo--tocca {
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.amico-riga__corpo--tocca:active {
+  background: var(--fill-quaternary);
+}
+
+.amico-riga .copertina {
+  --lato: 34px;
+}
+
+.amico-riga__chi {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.amico-riga__nome {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.amico-riga__sotto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+.amico-riga__barra {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--fill-quaternary);
+}
+
+.amico-riga__barra span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--c1), var(--c2));
+  transform-origin: left;
+  animation: amico-barra 700ms var(--ease-out) both;
+}
+
+@keyframes amico-barra {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.pagina--ferma .amico-riga__barra span {
+  animation: none;
+}
+
+.amico-riga__mese,
+.amico-riga__sempre {
+  font-family: var(--font-rounded);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.amico-riga__mese {
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
+.amico-riga__sempre {
+  font-size: var(--text-headline);
+  font-weight: 800;
+  color: var(--label);
+}
+
+.amico-riga__freccia {
+  color: var(--label-tertiary);
+}
+
+/* I giochi mai giocati: solo l'icona, in fila, sotto i punti. */
+.amico-mai {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding: 0 var(--sp-1);
+}
+
+.amico-mai__titolo {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.amico-mai__icone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.amico-mai__icone .copertina {
+  --lato: 30px;
+  opacity: 0.55;
+  filter: saturate(0.6);
+}
+
+.amico-vuoto {
+  margin: 0;
+  padding: var(--sp-4);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.amico-attesa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.amico-attesa__numeri {
+  height: 170px;
+  border-radius: var(--r-xl);
+}
+
+.amico-attesa__giochi {
+  height: 280px;
+  border-radius: var(--r-xl);
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .amico-preferito__stella,
+  .amico-riga__barra span,
   .amico-testa__alone,
   .amico-testa__avatar,
   .amico-gioco.is-invio .amico-gioco__azione {

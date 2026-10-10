@@ -73,12 +73,12 @@
  *   /scacchi/computer                   la partita contro il computer, nel telefono
  *   /scacchi/partita/:id                una partita con un amico
  *   /scacchi/invito/:codice             un invito arrivato con un link
- *   /classifica                         tutte le classifiche: la generale e i giochi
- *   /classifica/generale                la generale per intero
- *   /classifica/fortuna                 chi ha vinto di piu' ai giochi della Fortuna
- *   /classifica/wordle                  quella di un gioco (?periodo=week&indietro=1)
- *   /profilo                            le impostazioni e gli amici online
- *   /amici/:nickname                    il profilo di un amico, da cui lo si invita a giocare
+ *   /classifica                         tutte le classifiche: la generale con il podio, e i primi tre di ogni gioco
+ *   /classifica/generale                la stessa pagina, con la generale per intero in un foglio
+ *   /classifica/fortuna                 ... con chi ha vinto di piu' ai giochi della Fortuna
+ *   /classifica/wordle                  ... con quella di un gioco (?periodo=week&indietro=1)
+ *   /profilo                            le impostazioni, gli amici online e la ricerca delle persone
+ *   /amici/:nickname                    il profilo di una persona: i suoi punti, e l'invito a giocare
  *
  * I vecchi indirizzi — /insieme/..., /battaglia/..., /wordle/3, la classificata
  * e la libera della battaglia — portano a quelli nuovi (vedi App.tsx), e i
@@ -141,7 +141,7 @@ export const ROTTE = {
   roulette: '/roulette',
   tavoloRL: (id: string) => `/roulette/tavolo/${id}`,
   superenalotto: '/superenalotto',
-  /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero. */
+  /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero nel foglio. */
   classifica: (chiave?: ChiaveClassifica) =>
     !chiave
       ? '/classifica'

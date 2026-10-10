@@ -331,8 +331,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Giornaliere />} />
             <Route path={ROTTE.libere} element={<Libere />} />
-            <Route path="/classifica" element={<Classifica />} />
-            <Route path="/classifica/:gioco" element={<Classifica />} />
+            <Route path="/classifica/:gioco?" element={<Classifica />} />
             <Route path="/profilo" element={<Profilo />} />
             <Route path="/amici/:nickname" element={<Amico />} />
 

@@ -425,13 +425,15 @@ visibile: dice al server dove si trova il giocatore e riporta gli inviti a
 giocare in compagnia il Wordle, il cruciverba e lo Scarabeo, le sfide a
 battaglia navale, a quiz, a Indovina chi, ai tavolieri, allo Scarabeo, a Nomi,
 cose e città, a Sequenze e alle libere da soli (rivincite comprese), gli inviti
-a una stanza di Lupus o di Scarabocchi, le partite e il duello aperti. Gli
+a una stanza di Lupus o di Scarabocchi, le partite e il duello aperti, e gli
+inviti arrivati quando non si era online (`chiamate`, vedi sotto). Gli
 avvisi fuori dalle rotte (`CoopGate`, `BattagliaGate`, `QuizGate`,
 `IndovinaGate`, `TavoloGate`, `NomiGate`, `SequenzeGate`, `SfideGate`,
-`LupusGate`, `ScarabocchiGate`, `CompagniaGate`) si
+`LupusGate`, `ScarabocchiGate`, `CompagniaGate`, `ChiamataGate`) si
 danno la precedenza in quest'ordine: due insieme non si leggerebbero, e gli inviti del
 cruciverba e dello Scarabeo, che valgono tutto il giorno, aspettano le sfide,
-che scadono in pochi minuti. Prima gli inviti del Wordle avevano il loro
+che scadono in pochi minuti; le chiamate vengono per ultime, perché non sono
+ancora un invito. Prima gli inviti del Wordle avevano il loro
 polling: due giri separati avrebbero raddoppiato le richieste, e le Pages
 Functions gratuite ne contano centomila al giorno per tutto il sito. La
 scrittura in `presenza` passa solo ogni venti secondi o al cambio di attivita'
@@ -494,7 +496,7 @@ per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
 `/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna e
 dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
-ognuna si apre per intero (`/classifica/generale`, `/classifica/wordle`). Non si
+ognuna si apre per intero in un foglio sopra la pagina (vedi sotto). Non si
 normalizza per giornata ("il migliore prende tutto il tetto"): cambierebbe le
 classifiche di ieri ogni volta che qualcuno gioca. Alla generale si aggiungono
 solo i giochi della Fortuna, che non sono classificate (vedi sotto), con un
@@ -2946,22 +2948,83 @@ sopra una sala scura.
 
 **Gli amici sono tutti gli altri del gruppo.** Non c'e' una lista da tenere:
 l'app e' fra colleghi, e chi c'e' lo dice la presenza (`server/lib/amici.ts`).
-Il profilo ha gli amici online, le Libere li mettono nell'eroe, e toccandone uno
-si apre il suo profilo (`/amici/:nickname`, anche dal foglio di un giocatore in
-classifica), con i giochi a cui invitarlo. Gli inviti sono quelli delle sale
-(`invitaA` in `src/games/amici/amici.ts`): si manda l'invito e si va nella sala
-del gioco, che lo trova in attesa e aspetta la risposta come se lo si fosse
-mandato da li'. Se l'amico non e' online si va nella sala, da cui lo si invita
-con un link; il quiz apre la libera con l'amico in vista (`?sfida=1`), perché la
-sfida la prepara il telefono di chi sfida. Il lato del goban e il set di
-Indovina chi sono quelli scelti l'ultima volta nella sala, letti dalle loro
-chiavi del `localStorage` senza importare `tavolo/locale.ts`, che porta con se'
-le regole di tutti i tavolieri.
+Il profilo ha gli amici online e "Cerca una persona", un foglio con tutti gli
+altri (`GET /api/amici?tutti=1`, chi e' online per primo); le Libere li mettono
+nell'eroe; e toccandone uno, o toccando qualcuno in classifica, si apre il suo
+profilo (`/amici/:nickname`). Il profilo di una persona ha chi e', il gioco che
+preferisce — quello con piu' punti negli ultimi trenta giorni, o da sempre —,
+i suoi posti nella generale del mese e di sempre, e i punti di ogni gioco
+(`GET /api/amici/:nickname/punti`, che prende la sua riga dalla generale
+calcolata con le stesse regole: il posto e' quello della classifica). Sta a
+parte dal profilo perché quello si rilegge ogni `AMICI_POLL_MS`, e i punti
+non cambiano mentre li si guarda. Gli inviti stanno dietro un bottone solo,
+"Invita a giocare", che apre i giochi in un foglio: erano diciotto tessere
+sulla pagina. Online, l'invito e' quello della sala (`invitaA` in
+`src/games/amici/amici.ts`): si manda e si va nella sala, che lo trova in
+attesa e aspetta la risposta come se lo si fosse mandato da li'; il quiz apre
+la libera con l'amico in vista (`?sfida=1`), perché la sfida la prepara il
+telefono di chi sfida. Se non e' online parte una chiamata (vedi sotto), e si
+resta li'. Il lato del goban e il set di Indovina chi sono quelli scelti
+l'ultima volta nella sala, letti dalle loro chiavi del `localStorage` senza
+importare `tavolo/locale.ts`, che porta con se' le regole di tutti i tavolieri.
 
-**I punti e i conti di ogni gioco stanno nella classifica.** Il profilo ha solo
-chi sei, gli amici e le impostazioni: le classificate da sempre, le libere e le
-statistiche del Wordle si aprono da "I tuoi numeri", nella classifica di ogni
-gioco (`classifica/Conti.tsx`), che e' dove si guarda come si sta andando.
+**Un invito a chi non e' online e' una chiamata, non l'invito di un gioco.**
+Gli inviti dei giochi vogliono l'altro online e scadono in pochi minuti, e
+ognuno ha il suo sistema (sette, fra sfide, tavolieri, stanze e compagnie):
+farli aspettare chi ha chiuso l'app voleva dire cambiarli tutti. La chiamata
+(`chiamate`, migrazione `0051`, `server/routes/notifiche.ts`) dice solo chi,
+a che cosa e quando: una per coppia, la nuova al posto della vecchia, per
+`CHIAMATA_MS` (mezz'ora). Arriva con una notifica, se l'altro le ha accese, e
+con il giro della presenza (`ChiamataGate`); rispondere "Gioca" manda l'invito
+vero, quello della sala, da chi e' stato chiamato a chi ha chiamato, se e'
+ancora online, e se no lo richiama: la palla torna dall'altra parte, e i giochi
+restano come sono. I giochi sono quelli che si invitano dal profilo
+(`GIOCHI_CHIAMATA` in `shared/notifiche.ts`).
+
+**Le notifiche sono Web Push, senza librerie e senza email.** `shared/webpush.ts`
+cifra il messaggio (aes128gcm, RFC 8291) e lo firma (VAPID, RFC 8292) con
+WebCrypto, che c'e' nel Worker, in Node e nel browser; un test lo prova sul
+vettore d'esempio dell'RFC, byte per byte. Le chiavi per firmare stanno in D1
+(`segreti`), create la prima volta che servono con `INSERT OR IGNORE` e una
+rilettura: un segreto delle Pages si imposta solo dal pannello di Cloudflare, e
+cambiare le chiavi vorrebbe dire perdere tutte le iscrizioni. Non si stampano
+mai. Le notifiche sono quattro categorie (`CATEGORIE_NOTIFICHE`): gli inviti,
+"tocca a te" nei tavolieri fra amici (solo a chi non e' online, e non a fine
+partita), l'estrazione del SuperEnalotto che sta per cominciare, e il
+promemoria della sera delle giornaliere che mancano, spento di partenza perché
+e' il tipo di notifica che fa togliere il permesso. Le preferenze stanno in
+`players.notifiche`, una per categoria, e valgono su tutti i dispositivi;
+l'interruttore "Su questo dispositivo" iscrive o toglie quello che si ha in
+mano. Le notifiche che nascono da una richiesta — un invito, una mossa — le
+manda il Worker dopo la risposta (`dopoLaRisposta`, con `waitUntil`); quelle a
+orario le manda `scripts/notifiche.ts` dal workflow `notifiche.yml`, con due
+orari per invio, l'ora legale e la solare, e una volta sola
+(`notifiche_inviate`): cifrarne una per ogni dispositivo di tutti nel Worker
+passerebbe i dieci millisecondi. Un'iscrizione che il servizio dice morta (404,
+410) si cancella. Su iPhone arrivano solo dall'app aggiunta alla schermata Home
+(iOS 16.4), e il profilo lo dice; uscendo dall'account il telefono si toglie,
+perché le notifiche di uno non arrivino a chi entra dopo sullo stesso telefono.
+
+**La classifica e' una pagina sola, e una classifica intera e' un foglio.**
+Erano tre schermate che dicevano la stessa cosa: la panoramica, la classifica
+di un gioco e il foglio di un giocatore, da cui si arrivava al suo profilo. Ora
+`/classifica` ha in cima la generale, con il podio grande che sale come alle
+premiazioni — il terzo, il secondo, poi il primo con la corona e i raggi — e
+sotto il tuo posto se non sei sul podio, poi i primi tre di ogni gioco in una
+carta stretta. Toccandone una si apre per intero in un foglio, con il periodo
+della pagina; toccando qualcuno si apre il suo profilo. Il foglio aperto sta
+nell'indirizzo (`/classifica/wordle`, una rotta sola con il gioco facoltativo,
+cosi' aprirlo non rimonta la pagina): le schermate di fine partita ci portano
+dritte, e tornando dal profilo di qualcuno il foglio e' ancora aperto. Aprirlo
+e chiuderlo sostituisce l'indirizzo, e lo scorrimento resta dov'e'
+(`schermataDi` in `src/app/movimenti.ts`).
+
+**I punti di ognuno stanno nel suo profilo, i propri anche.** Il profilo che si
+apre dall'avatar ha chi sei, le persone e le impostazioni; "I tuoi punteggi"
+porta al proprio profilo come lo vedono gli altri, dove ogni gioco apre "I tuoi
+numeri" — le classificate da sempre, le libere e le statistiche del Wordle
+(`classifica/Conti.tsx`) —, che si aprono anche dal foglio della classifica di
+ogni gioco.
 
 **La barra si fa vetro appena qualcosa le scorre sotto**, e il titolo piccolo
 compare quando il grande e' passato: sono due momenti diversi (`is-velata`,
