@@ -1322,7 +1322,9 @@ mezzo, perché girano e una luce da una parte sola girerebbe con loro, e
 l'alzata di ogni anello del cono e' un'ombra spostata verso chi guarda. Il
 fianco del mobile e il fusto della torretta sono disegnati sullo schermo con
 `proietta` (`Fianco`, `Fusto`), e combaciano perché i conti sono gli stessi del
-CSS. Chrome disegna gli strati in prospettiva a un punto per pixel, senza la
+CSS. Il fianco e' una fascia di legno sola, con la luce sull'orlo: le doghe, lo
+zoccolo e le fasce d'oro che aveva, a grandezza di telefono, erano righe fitte
+sotto il bordo che lo sporcavano invece di dargli spessore. Chrome disegna gli strati in prospettiva a un punto per pixel, senza la
 densita' dello schermo, e sul telefono i numeri venivano sgranati: li' ogni
 strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
 (`nitidezza`, al piu' tre, e due per la conca e la luce, che non hanno scritte);
@@ -1338,7 +1340,12 @@ diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua posizione
 la calcola `proietta` con la stessa prospettiva del CSS. Il suo angolo si conta
 sul cilindro e finisce nella casella del numero qualunque sia la velocita' del
 cilindro; corre sulla pista, scende verso i rombi, rimbalza fra i separatori, e
-i suoni seguono gli stessi momenti. Finché corre veloce ha la scia, due copie di un
+i suoni seguono gli stessi momenti. Il cilindro sta piu' in basso della pista
+(`Z.cilindro`), e la biglia ci scende quando lascia il pendio (`fondoA`), con
+l'ombra: quando la ruota e' diventata a strati piatti il cilindro era finito
+all'altezza della pista, e la biglia restava sospesa sopra le caselle. Disegnato
+dopo la conca, uno strato piu' basso ne copre il pendio davanti e lo lascia
+vedere in fondo, che e' come si vede una conca da sopra. Finché corre veloce ha la scia, due copie di un
 attimo prima, e la sua ombra e' sfumata dal suo sfondo e non da un `filter`, che
 si rifarebbe a ogni fotogramma. La ruota e' disegnata grande e rimpicciolita
 sul palco (`--piccola`): quando la biglia parte si fa grande sopra il panno, che
@@ -1347,7 +1354,11 @@ ingrandita, a pieno schermo sarebbe sfocata. Il passaggio fra il palco e il
 centro si accende solo dopo la prima misura (`is-misurata`): la pagina legge le
 misure appena montata, e il browser, che a quel punto non aveva ancora
 `--piccola`, partiva dalla ruota grande e la faceva rimpicciolire sotto gli
-occhi — proprio mentre si arrivava al tavolo. Il tabellone dei numeri usciti non
+occhi — proprio mentre si arrivava al tavolo. La ruota si misura e si disegna
+la prima volta prima che la pagina si veda (`useLayoutEffect`): misurata dopo,
+compariva per un fotogramma con le misure di partenza, senza il fianco e con il
+cilindro fermo a zero, e nel passaggio dalla sala al tavolo era lo scatto che si
+vedeva. Il tabellone dei numeri usciti non
 dice il numero mentre la biglia gira: il server lo mette nella storia al
 lancio, e sarebbe la soluzione.
 
@@ -1356,7 +1367,9 @@ roulette hanno lo stesso feltro (`src/games/roulette/Feltro.css`), un livello
 vuoto sotto il contenuto: toccando "Tavolo nuovo" la View Transition lo allarga
 dalla carta della sala fino al tavolo, la ruota sale al suo posto sul palco, la
 scritta della sala se ne va e il panno arriva quando il feltro e' quasi grande;
-tornando, il contrario. E' la direzione `tavolo` di `useNavigazione`, che usa
+tornando, il contrario. Della ruota si vede solo quella d'arrivo, che e' viva:
+in dissolvenza le due ruote, una ferma e una che girava, si vedevano insieme con
+le caselle sfalsate. E' la direzione `tavolo` di `useNavigazione`, che usa
 anche la freccia indietro del tavolo (`indietro.direzione`), e i nomi delle View
 Transitions ci sono solo durante il passaggio (`html[data-transizione='tavolo']`):
 fuori, ogni navigazione fotografa la pagina intera, e un test lo controlla. Al
