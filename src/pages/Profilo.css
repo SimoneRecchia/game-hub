@@ -51,19 +51,6 @@
   box-shadow: 0 0 0 2px var(--surface);
 }
 
-.profilo-amici__nessuno {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  color: var(--label-secondary);
-  font-size: var(--text-subhead);
-  font-weight: 600;
-}
-
 .profilo-amici__attesa {
   height: 64px;
 }

@@ -9,6 +9,8 @@ import { controllaNelDizionario } from '../lib/dizionario'
 import { fail } from '../lib/http'
 import { requireVerified } from '../lib/session'
 import { eOnline } from '../lib/battagliaStore'
+import { avvisa, dopoLaRisposta } from '../lib/notifiche'
+import { NOMI_CHIAMATA, SLUG_PARTITA_TAVOLO } from '../../shared/notifiche'
 import {
   accettaInvito,
   altroLato,
@@ -218,6 +220,26 @@ export const tavoloRoutes = new Hono<AppEnv>()
       },
       Date.now(),
     )
+    // Tocca all'altro: se ha chiuso l'app, glielo dice una notifica. Dopo la risposta, e solo se la presenza non lo vede.
+    const altro = io === 'a' ? row.giocatore_b : row.giocatore_a
+    if (!fine && altro) {
+      const nome = c.get('player').displayName || c.get('player').nickname
+      await dopoLaRisposta(
+        c,
+        avvisa(
+          c.env,
+          altro,
+          'turno',
+          {
+            titolo: 'Tocca a te',
+            testo: `${NOMI_CHIAMATA[row.gioco]} con ${nome}`,
+            url: `/${SLUG_PARTITA_TAVOLO[row.gioco]}/partita/${row.id}`,
+            tag: `turno-${row.id}`,
+          },
+          { soloSeAssente: true, ttl: 600 },
+        ),
+      )
+    }
     return rispondi(c, dopo, io)
   })
 

@@ -10,6 +10,7 @@ import {
 } from 'react'
 import type { AuthConfig, CodiceMandato, Player } from '@shared/types'
 import { ApiFetchError, api } from './api'
+import { spegniNotifiche } from './notifiche'
 
 const CACHE_KEY = 'gh.player'
 
@@ -161,6 +162,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
+      // Prima di uscire, finché la sessione c'e': le notifiche di questo telefono non vanno piu' a chi esce.
+      await spegniNotifiche().catch(() => {})
       await api('/auth/logout', { method: 'POST' })
     } finally {
       apply(null)
