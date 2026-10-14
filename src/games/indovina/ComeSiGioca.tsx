@@ -24,7 +24,7 @@ export function ComeSiGiocaIndovina({ open, onClose }: { open: boolean; onClose:
             <li>Chi indovina vince; chi sbaglia perde.</li>
             <li>Il tuo personaggio è in alto: rispondi pensando a lui.</li>
             <li>
-              <strong>I tuoi set</strong>: personaggi con le tue foto. Restano nel tuo telefono.
+              <strong>I tuoi set</strong>: personaggi con le tue foto, o anche solo con i nomi. Restano nel tuo telefono.
             </li>
           </ul>
         </section>

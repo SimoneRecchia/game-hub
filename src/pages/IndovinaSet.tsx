@@ -4,22 +4,23 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Elenco, Riga, Sezione, Vuoto } from '@/components/Elementi'
-import { IconCestino, IconClose, IconFoto, IconImporta, IconShare } from '@/components/Icons'
+import { IconCestino, IconClose, IconFoto, IconImporta, IconMatita, IconShare } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
 import { useToast } from '@/components/Toast'
 import { eliminaSet, leggiImmagine, leggiSet, nuovoIdSet, salvaImmagine, salvaSet, type SetProprio } from '@/games/indovina/archivio'
 import { nomeDaFile, preparaFoto } from '@/games/indovina/foto'
-import { fileDelSet, problemaDelSet, setDalFile } from '@/games/indovina/setFile'
+import { fileDelSet, nomiDaElenco, problemaDelSet, setDalFile } from '@/games/indovina/setFile'
 import { Faccia } from '@/games/indovina/Tabellone'
-import { NOME_MASSIMO, NOME_SET_MASSIMO, VOCI_MASSIME, VOCI_MINIME } from '@shared/indovina'
+import { NOME_MASSIMO, NOME_SET_MASSIMO, VOCI_MASSIME, VOCI_MINIME, coloreDelPersonaggio, type Voce } from '@shared/indovina'
 import './Indovina.css'
 
 /**
- * Un set di personaggi proprio: un nome, e da sei a trenta foto, ognuna con il
- * suo nome. Si salva da solo a ogni cambio, nel telefono: niente va al server.
- * Le foto si prendono dalla galleria, piu' di una alla volta, e si tagliano
- * da sole in un quadrato.
+ * Un set di personaggi proprio: un nome, e da sei a trenta personaggi, ognuno
+ * con il suo nome e, se si vuole, una foto. Si salva da solo a ogni cambio, nel
+ * telefono: niente va al server. Le foto si prendono dalla galleria, piu' di una
+ * alla volta, e si tagliano da sole in un quadrato; senza foto si scrivono i
+ * nomi, o si incolla un elenco, e la foto si aggiunge dopo toccando la carta.
  */
 export default function IndovinaSet() {
   const { id = 'nuovo' } = useParams()
@@ -30,6 +31,8 @@ export default function IndovinaSet() {
   const [url, setUrl] = useState<ReadonlyMap<string, string>>(new Map())
   const [preparo, setPreparo] = useState<{ fatte: number; tutte: number } | null>(null)
   const [elimina, setElimina] = useState(false)
+  const [scrivi, setScrivi] = useState(false)
+  const [elenco, setElenco] = useState('')
   const scelta = useRef<HTMLInputElement>(null)
   const importa = useRef<HTMLInputElement>(null)
   const sostituisci = useRef<number | null>(null)
@@ -57,6 +60,7 @@ export default function IndovinaSet() {
       setSet(letto)
       const trovate = new Map<string, string>()
       for (const v of letto.voci) {
+        if (!v.img) continue
         const blob = await leggiImmagine(v.img)
         if (blob) {
           const u = URL.createObjectURL(blob)
@@ -107,7 +111,7 @@ export default function IndovinaSet() {
     const presi = file.slice(0, posto)
     if (file.length > posto) toast.show(`Al massimo ${VOCI_MASSIME} personaggi.`, 'error')
     setPreparo({ fatte: 0, tutte: presi.length })
-    const nuove: SetProprio['voci'] = []
+    const nuove: Required<Voce>[] = []
     for (const f of presi) {
       try {
         const { blob, hash } = await preparaFoto(f)
@@ -137,15 +141,40 @@ export default function IndovinaSet() {
     try {
       const letto = await setDalFile(file)
       for (const v of letto.voci) {
+        if (!v.img || !v.blob) continue
         await salvaImmagine(v.img, v.blob)
         mostra(v.img, v.blob)
       }
       const attuale = setRef.current ?? set
-      cambia({ ...attuale, nome: attuale.nome || letto.nome, voci: letto.voci.map(({ nome, img }) => ({ nome, img })) })
+      cambia({
+        ...attuale,
+        nome: attuale.nome || letto.nome,
+        voci: letto.voci.map(({ nome, img }) => (img ? { nome, img } : { nome })),
+      })
       toast.show(`Importati ${letto.voci.length} personaggi`)
     } catch (err) {
       toast.show(err instanceof Error ? err.message : 'File non valido.', 'error')
     }
+  }
+
+  const posto = set ? VOCI_MASSIME - set.voci.length : 0
+  const daAggiungere = set ? nomiDaElenco(elenco, set.voci.map((v) => v.nome), posto) : null
+
+  /** I nomi scritti nel foglio, in fondo al set: senza foto, che si puo' aggiungere dopo. */
+  const aggiungiNomi = () => {
+    const attuale = setRef.current
+    if (!attuale || !daAggiungere || daAggiungere.nomi.length === 0) return
+    cambia({ ...attuale, voci: [...attuale.voci, ...daAggiungere.nomi.map((nome) => ({ nome }))] })
+    const fuori = [
+      daAggiungere.doppi > 0 && `${daAggiungere.doppi} già nel set`,
+      daAggiungere.oltre > 0 && `${daAggiungere.oltre} oltre i ${VOCI_MASSIME}`,
+    ].filter(Boolean)
+    toast.show(
+      `Aggiunti ${daAggiungere.nomi.length}${fuori.length > 0 ? ` · ${fuori.join(', ')}` : ''}`,
+      fuori.length > 0 ? 'error' : 'success',
+    )
+    setElenco('')
+    setScrivi(false)
   }
 
   const condividi = async () => {
@@ -200,13 +229,13 @@ export default function IndovinaSet() {
           <Sezione
             titolo="Personaggi"
             azione={<span className="ic-set-editor__conto u-tabnum">{set.voci.length}/{VOCI_MASSIME}</span>}
-            nota={problema ?? (set.voci.length > 0 ? 'Tocca una foto per cambiarla.' : undefined)}
+            nota={problema ?? (set.voci.length > 0 ? 'Tocca una carta per mettere o cambiare la foto.' : undefined)}
           >
             <div className="ic-set-editor">
               {set.voci.map((v, i) => {
                 const doppio = v.nome.trim() !== '' && nomi.indexOf(v.nome.trim().toLowerCase()) !== i
                 return (
-                  <div key={`${v.img}-${i}`} className="ic-voce">
+                  <div key={`${v.img ?? 'nome'}-${i}`} className="ic-voce">
                     <button
                       type="button"
                       className="ic-voce__foto"
@@ -214,9 +243,13 @@ export default function IndovinaSet() {
                         sostituisci.current = i
                         scelta.current?.click()
                       }}
-                      aria-label={`Cambia la foto di ${v.nome || `personaggio ${i + 1}`}`}
+                      aria-label={`${v.img ? 'Cambia la foto di' : 'Aggiungi una foto a'} ${v.nome || `personaggio ${i + 1}`}`}
                     >
-                      <Faccia url={url.get(v.img) ?? null} nome={v.nome || '?'} />
+                      <Faccia
+                        url={v.img ? (url.get(v.img) ?? null) : null}
+                        sfondo={v.img ? null : coloreDelPersonaggio(i)}
+                        nome={v.nome || '?'}
+                      />
                     </button>
                     <button
                       type="button"
@@ -242,19 +275,27 @@ export default function IndovinaSet() {
                 )
               })}
               {set.voci.length < VOCI_MASSIME && (
-                <button type="button" className="ic-voce ic-voce--aggiungi" onClick={() => scelta.current?.click()} disabled={preparo !== null}>
-                  <span className="ic-voce__piu" aria-hidden="true">
-                    <IconFoto size={26} />
-                  </span>
-                  <span>{preparo ? `${preparo.fatte}/${preparo.tutte}` : 'Aggiungi foto'}</span>
-                </button>
+                <>
+                  <button type="button" className="ic-voce ic-voce--aggiungi" onClick={() => scelta.current?.click()} disabled={preparo !== null}>
+                    <span className="ic-voce__piu" aria-hidden="true">
+                      <IconFoto size={26} />
+                    </span>
+                    <span>{preparo ? `${preparo.fatte}/${preparo.tutte}` : 'Aggiungi foto'}</span>
+                  </button>
+                  <button type="button" className="ic-voce ic-voce--aggiungi" onClick={() => setScrivi(true)}>
+                    <span className="ic-voce__piu" aria-hidden="true">
+                      <IconMatita size={24} />
+                    </span>
+                    <span>Scrivi i nomi</span>
+                  </button>
+                </>
               )}
             </div>
             <input ref={scelta} type="file" accept="image/*" multiple hidden onChange={(e) => void aggiungi(e)} />
             <input ref={importa} type="file" accept=".json,application/json" hidden onChange={(e) => void daFile(e)} />
           </Sezione>
 
-          <Sezione nota={`Le foto restano nel telefono. Servono da ${VOCI_MINIME} a ${VOCI_MASSIME} personaggi.`}>
+          <Sezione nota={`Servono da ${VOCI_MINIME} a ${VOCI_MASSIME} personaggi. Le foto non sono obbligatorie, e restano nel telefono.`}>
             <Elenco>
               {set.voci.length > 0 && (
                 <Riga icona={<IconShare size={18} />} titolo="Manda il set a un amico" sotto="Come file, da aprire nel suo telefono" onClick={() => void condividi()} />
@@ -270,9 +311,35 @@ export default function IndovinaSet() {
         </>
       )}
 
+      <Sheet open={scrivi} onClose={() => setScrivi(false)} title="Scrivi i nomi">
+        {scrivi && set && (
+          <div className="ic-nomi">
+            <textarea
+              className="ic-nomi__testo"
+              value={elenco}
+              onChange={(e) => setElenco(e.target.value)}
+              placeholder={'Uno per riga, o incolla un elenco:\nMario\nGiulia\nIl capo'}
+              aria-label="I nomi dei personaggi, uno per riga"
+              rows={8}
+              autoFocus
+            />
+            <p className="ic-nomi__nota">
+              {posto === 0
+                ? `Il set ha già ${VOCI_MASSIME} personaggi.`
+                : `Ancora ${posto} ${posto === 1 ? 'posto' : 'posti'}. La foto la puoi aggiungere dopo, toccando la carta.`}
+            </p>
+            <Button size="lg" fullWidth disabled={!daAggiungere || daAggiungere.nomi.length === 0} onClick={aggiungiNomi}>
+              {daAggiungere && daAggiungere.nomi.length > 0
+                ? `Aggiungi ${daAggiungere.nomi.length} ${daAggiungere.nomi.length === 1 ? 'personaggio' : 'personaggi'}`
+                : 'Aggiungi'}
+            </Button>
+          </div>
+        )}
+      </Sheet>
+
       <Sheet open={elimina} onClose={() => setElimina(false)} title="Eliminare il set?">
         <div className="ic-conferma">
-          <p className="ic-conferma__testo">Le foto spariscono dal telefono.</p>
+          <p className="ic-conferma__testo">Il set e le sue foto spariscono dal telefono.</p>
           <Button
             size="lg"
             fullWidth
