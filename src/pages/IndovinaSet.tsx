@@ -12,12 +12,13 @@ import { eliminaSet, leggiImmagine, leggiSet, nuovoIdSet, salvaImmagine, salvaSe
 import { nomeDaFile, preparaFoto } from '@/games/indovina/foto'
 import { fileDelSet, nomiDaElenco, problemaDelSet, setDalFile } from '@/games/indovina/setFile'
 import { Faccia } from '@/games/indovina/Tabellone'
-import { NOME_MASSIMO, NOME_SET_MASSIMO, VOCI_MASSIME, VOCI_MINIME, coloreDelPersonaggio, type Voce } from '@shared/indovina'
+import { NOME_MASSIMO, NOME_SET_MASSIMO, VOCI_MASSIME, VOCI_MINIME, VOCI_SET_MASSIME, coloreDelPersonaggio, type Voce } from '@shared/indovina'
 import './Indovina.css'
 
 /**
- * Un set di personaggi proprio: un nome, e da sei a trenta personaggi, ognuno
- * con il suo nome e, se si vuole, una foto. Si salva da solo a ogni cambio, nel
+ * Un set di personaggi proprio: un nome, e da sei a settantacinque personaggi,
+ * ognuno con il suo nome e, se si vuole, una foto; in partita se ne pescano
+ * quanti se ne vogliono, al piu' trenta. Si salva da solo a ogni cambio, nel
  * telefono: niente va al server. Le foto si prendono dalla galleria, piu' di una
  * alla volta, e si tagliano da sole in un quadrato; senza foto si scrivono i
  * nomi, o si incolla un elenco, e la foto si aggiunge dopo toccando la carta.
@@ -107,9 +108,9 @@ export default function IndovinaSet() {
     if (!set || file.length === 0) return
     const quale = sostituisci.current
     sostituisci.current = null
-    const posto = quale !== null ? 1 : VOCI_MASSIME - set.voci.length
+    const posto = quale !== null ? 1 : VOCI_SET_MASSIME - set.voci.length
     const presi = file.slice(0, posto)
-    if (file.length > posto) toast.show(`Al massimo ${VOCI_MASSIME} personaggi.`, 'error')
+    if (file.length > posto) toast.show(`Al massimo ${VOCI_SET_MASSIME} personaggi.`, 'error')
     setPreparo({ fatte: 0, tutte: presi.length })
     const nuove: Required<Voce>[] = []
     for (const f of presi) {
@@ -157,7 +158,7 @@ export default function IndovinaSet() {
     }
   }
 
-  const posto = set ? VOCI_MASSIME - set.voci.length : 0
+  const posto = set ? VOCI_SET_MASSIME - set.voci.length : 0
   const daAggiungere = set ? nomiDaElenco(elenco, set.voci.map((v) => v.nome), posto) : null
 
   /** I nomi scritti nel foglio, in fondo al set: senza foto, che si puo' aggiungere dopo. */
@@ -167,7 +168,7 @@ export default function IndovinaSet() {
     cambia({ ...attuale, voci: [...attuale.voci, ...daAggiungere.nomi.map((nome) => ({ nome }))] })
     const fuori = [
       daAggiungere.doppi > 0 && `${daAggiungere.doppi} già nel set`,
-      daAggiungere.oltre > 0 && `${daAggiungere.oltre} oltre i ${VOCI_MASSIME}`,
+      daAggiungere.oltre > 0 && `${daAggiungere.oltre} oltre i ${VOCI_SET_MASSIME}`,
     ].filter(Boolean)
     toast.show(
       `Aggiunti ${daAggiungere.nomi.length}${fuori.length > 0 ? ` · ${fuori.join(', ')}` : ''}`,
@@ -228,7 +229,7 @@ export default function IndovinaSet() {
 
           <Sezione
             titolo="Personaggi"
-            azione={<span className="ic-set-editor__conto u-tabnum">{set.voci.length}/{VOCI_MASSIME}</span>}
+            azione={<span className="ic-set-editor__conto u-tabnum">{set.voci.length}/{VOCI_SET_MASSIME}</span>}
             nota={problema ?? (set.voci.length > 0 ? 'Tocca una carta per mettere o cambiare la foto.' : undefined)}
           >
             <div className="ic-set-editor">
@@ -274,7 +275,7 @@ export default function IndovinaSet() {
                   </div>
                 )
               })}
-              {set.voci.length < VOCI_MASSIME && (
+              {set.voci.length < VOCI_SET_MASSIME && (
                 <>
                   <button type="button" className="ic-voce ic-voce--aggiungi" onClick={() => scelta.current?.click()} disabled={preparo !== null}>
                     <span className="ic-voce__piu" aria-hidden="true">
@@ -295,7 +296,9 @@ export default function IndovinaSet() {
             <input ref={importa} type="file" accept=".json,application/json" hidden onChange={(e) => void daFile(e)} />
           </Sezione>
 
-          <Sezione nota={`Servono da ${VOCI_MINIME} a ${VOCI_MASSIME} personaggi. Le foto non sono obbligatorie, e restano nel telefono.`}>
+          <Sezione
+            nota={`Da ${VOCI_MINIME} a ${VOCI_SET_MASSIME} personaggi: in partita ne giochi fino a ${VOCI_MASSIME}, pescati a caso. Le foto non sono obbligatorie, e restano nel telefono.`}
+          >
             <Elenco>
               {set.voci.length > 0 && (
                 <Riga icona={<IconShare size={18} />} titolo="Manda il set a un amico" sotto="Come file, da aprire nel suo telefono" onClick={() => void condividi()} />
@@ -325,7 +328,7 @@ export default function IndovinaSet() {
             />
             <p className="ic-nomi__nota">
               {posto === 0
-                ? `Il set ha già ${VOCI_MASSIME} personaggi.`
+                ? `Il set ha già ${VOCI_SET_MASSIME} personaggi.`
                 : `Ancora ${posto} ${posto === 1 ? 'posto' : 'posti'}. La foto la puoi aggiungere dopo, toccando la carta.`}
             </p>
             <Button size="lg" fullWidth disabled={!daAggiungere || daAggiungere.nomi.length === 0} onClick={aggiungiNomi}>

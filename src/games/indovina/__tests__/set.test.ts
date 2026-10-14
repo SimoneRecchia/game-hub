@@ -27,8 +27,11 @@ describe('un set pronto per giocare', () => {
 })
 
 describe('un set di soli nomi', () => {
-  it('e’ pronto come uno con le foto', () => {
+  it('e’ pronto come uno con le foto, fino a settantacinque', () => {
     expect(problemaDelSet({ voci: ['A', 'B', 'C', 'D', 'E', 'F'].map((nome) => ({ nome })) })).toBeNull()
+    const nomi = (n: number) => Array.from({ length: n }, (_, i) => ({ nome: `Persona ${i}` }))
+    expect(problemaDelSet({ voci: nomi(75) })).toBeNull()
+    expect(problemaDelSet({ voci: nomi(76) })).toMatch(/massimo 75/)
   })
 
   it('si scrive un nome per riga, o separati da virgole, e si incolla con i segni degli elenchi', () => {
