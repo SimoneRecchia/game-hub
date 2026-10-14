@@ -27,9 +27,17 @@ export const RISPOSTE: readonly Risposta[] = ['si', 'no', 'forse']
 
 export const NOMI_RISPOSTE: Record<Risposta, string> = { si: 'Sì', no: 'No', forse: 'Non so' }
 
-/** Quanti personaggi in un set proprio: meno di sei non e' una partita, piu' di trenta non stanno in uno schermo. */
+/** Quanti personaggi in una partita: meno di sei non e' una partita, piu' di trenta non stanno in uno schermo. */
 export const VOCI_MINIME = 6
 export const VOCI_MASSIME = 30
+/**
+ * Quanti in un set proprio, nel telefono: piu' di quanti ne stanno in una
+ * partita, perché a ogni partita se ne pescano a caso quanti se ne vogliono
+ * (`IN_PARTITA`), e settantacinque colleghi fanno partite sempre diverse.
+ */
+export const VOCI_SET_MASSIME = 75
+/** Quanti personaggi si possono mettere in una partita, se il set ne ha di piu'. */
+export const IN_PARTITA = [12, 16, 20, 24, 30] as const
 export const NOME_MASSIMO = 20
 export const NOME_SET_MASSIMO = 24
 export const DOMANDA_MASSIMA = 120
@@ -204,6 +212,36 @@ export function immaginePredefinita(set: SetPredefinito, nome: string): string |
 
 /* ─────────────────────────────  Da fuori  ───────────────────────────── */
 
+/**
+ * Con quanti personaggi si puo' giocare con un set che ne ha `totale`: le
+ * misure di `IN_PARTITA` piu' piccole del set, e il set intero se sta in una
+ * partita. Un set di sei ne ha una sola; uno di settantacinque arriva a trenta.
+ */
+export function quantiInPartita(totale: number): number[] {
+  const meno = IN_PARTITA.filter((n) => n < totale)
+  return totale <= VOCI_MASSIME ? [...meno, totale] : meno
+}
+
+/** La misura da usare fra quelle possibili: la scelta, se c'e', o la piu' grande che non la supera. */
+export function quantiScelti(totale: number, scelta: number): number {
+  const possibili = quantiInPartita(totale)
+  return [...possibili].reverse().find((n) => n <= scelta) ?? possibili[0] ?? totale
+}
+
+/**
+ * I personaggi di una partita, pescati a caso da un set piu' grande, nell'ordine
+ * in cui escono: anche il tabellone cambia da una partita all'altra. `caso` e'
+ * un numero fra zero e uno, come quello di Math.random, che i test fissano.
+ */
+export function pescaPersonaggi<T>(voci: readonly T[], quanti: number, caso: () => number = Math.random): T[] {
+  const mazzo = [...voci]
+  for (let i = mazzo.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(caso() * (i + 1))
+    ;[mazzo[i], mazzo[j]] = [mazzo[j], mazzo[i]]
+  }
+  return mazzo.slice(0, Math.max(0, Math.min(quanti, mazzo.length)))
+}
+
 /** Un nome come lo si mostra: senza spazi in piu', e non piu' lungo del massimo. */
 export function pulisciNome(testo: unknown, massimo = NOME_MASSIMO): string {
   if (typeof testo !== 'string') return ''
@@ -212,16 +250,25 @@ export function pulisciNome(testo: unknown, massimo = NOME_MASSIMO): string {
 
 /**
  * I personaggi scelti da chi invita, controllati: un set predefinito si
- * riconosce dal nome e si ricostruisce da qui; un set proprio deve avere da sei
- * a trenta personaggi, ognuno con un nome diverso, e chi ha una foto la sua
+ * riconosce dal nome e si ricostruisce da qui, tutto o, se si gioca con meno
+ * personaggi, con quelli scelti, purché siano suoi; un set proprio deve avere da
+ * sei a trenta personaggi, ognuno con un nome diverso, e chi ha una foto la sua
  * impronta. La foto non e' obbligatoria: un set puo' essere di soli nomi, o
- * avere le foto solo di alcuni.
+ * avere le foto solo di alcuni. Un set piu' grande, nel telefono, arriva qui
+ * gia' pescato (`pescaPersonaggi`).
  */
 export function leggiPersonaggi(valore: unknown): Personaggi | null {
   if (!valore || typeof valore !== 'object') return null
   const v = valore as { set?: unknown; nome?: unknown; voci?: unknown }
   if (typeof v.set === 'string' && (SET_PREDEFINITI as readonly string[]).includes(v.set)) {
-    return personaggiPredefiniti(v.set as SetPredefinito)
+    const tutti = personaggiPredefiniti(v.set as SetPredefinito)
+    // Meno personaggi del set: quelli scelti, se sono del set, diversi e abbastanza. Se no il set intero.
+    if (!Array.isArray(v.voci)) return tutti
+    const suoi = new Set(tutti.voci.map((x) => x.nome))
+    const scelti = [...new Set((v.voci as unknown[]).map((x) => (x as { nome?: unknown } | null)?.nome))]
+    if (scelti.length < VOCI_MINIME || scelti.length > tutti.voci.length) return tutti
+    if (!scelti.every((n): n is string => typeof n === 'string' && suoi.has(n))) return tutti
+    return { ...tutti, voci: scelti.map((nome) => ({ nome })) }
   }
   if (v.set !== 'mio' || !Array.isArray(v.voci)) return null
   if (v.voci.length < VOCI_MINIME || v.voci.length > VOCI_MASSIME) return null

@@ -11,7 +11,10 @@ on:
 jobs:
   verifica:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Di solito bastano tre o quattro minuti. Il margine e' per le macchine lente:
+    # il 14 ottobre 2026 una ha fatto i test tre volte piu' piano del solito, senza
+    # bloccarsi da nessuna parte, ed e' arrivata ai dieci minuti di prima a meta'.
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
