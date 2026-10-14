@@ -4,6 +4,10 @@ import {
   PERSONE,
   VOCI_MASSIME,
   VOCI_MINIME,
+  VOCI_SET_MASSIME,
+  pescaPersonaggi,
+  quantiInPartita,
+  quantiScelti,
   coloreDelPersonaggio,
   domandaInSospeso,
   immaginePredefinita,
@@ -117,6 +121,47 @@ describe('i personaggi scelti da chi invita', () => {
     for (const colonne of [3, 4, 6, 8]) {
       for (let k = colonne; k < colori.length; k += 1) expect(colori[k], `${colonne} colonne`).not.toBe(colori[k - colonne])
     }
+  })
+})
+
+describe('un set piu’ grande della partita', () => {
+  it('si gioca con una delle misure che ha, fino a trenta; un set piccolo anche tutto', () => {
+    expect(quantiInPartita(VOCI_SET_MASSIME)).toEqual([12, 16, 20, 24, 30])
+    expect(quantiInPartita(24)).toEqual([12, 16, 20, 24])
+    expect(quantiInPartita(18)).toEqual([12, 16, 18])
+    expect(quantiInPartita(VOCI_MINIME)).toEqual([VOCI_MINIME])
+    // La scelta di prima vale finché il set ne ha abbastanza; se no la misura piu' grande sotto.
+    expect(quantiScelti(75, 20)).toBe(20)
+    expect(quantiScelti(18, 24)).toBe(18)
+    expect(quantiScelti(18, 17)).toBe(16)
+    expect(quantiScelti(75, 3)).toBe(12)
+  })
+
+  it('i personaggi si pescano a caso, diversi, quanti se ne vogliono', () => {
+    const set = Array.from({ length: VOCI_SET_MASSIME }, (_, i) => ({ nome: `P${i}` }))
+    const presi = pescaPersonaggi(set, 24)
+    expect(presi).toHaveLength(24)
+    expect(new Set(presi.map((v) => v.nome)).size).toBe(24)
+    // Con lo stesso caso, gli stessi; con un altro, altri.
+    let seme = 1
+    const caso = () => ((seme = (seme * 16807) % 2147483647) / 2147483647)
+    const primi = pescaPersonaggi(set, 12, caso).map((v) => v.nome)
+    seme = 1
+    expect(pescaPersonaggi(set, 12, caso).map((v) => v.nome)).toEqual(primi)
+    expect(pescaPersonaggi(set, 12).map((v) => v.nome)).not.toEqual(primi)
+    expect(pescaPersonaggi(set.slice(0, 8), 30)).toHaveLength(8)
+  })
+
+  it('dei set predefiniti si possono mandare meno personaggi, se sono suoi', () => {
+    const dodici = PERSONE.slice(0, 12).map(({ nome }) => ({ nome }))
+    expect(leggiPersonaggi({ set: 'persone', voci: dodici })?.voci).toEqual(dodici)
+    // Un nome che il set non ha, o troppo pochi: il set intero, come prima.
+    expect(leggiPersonaggi({ set: 'persone', voci: [...dodici.slice(1), { nome: 'Intruso' }] })).toEqual(
+      personaggiPredefiniti('persone'),
+    )
+    expect(leggiPersonaggi({ set: 'animali', voci: ANIMALI.slice(0, 3).map(({ nome }) => ({ nome })) })).toEqual(
+      personaggiPredefiniti('animali'),
+    )
   })
 })
 

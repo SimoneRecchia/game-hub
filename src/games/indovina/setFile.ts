@@ -7,7 +7,7 @@
  * tutte, e si aprono uguali.
  */
 
-import { VOCI_MASSIME, VOCI_MINIME, pulisciNome, NOME_SET_MASSIMO, type Voce } from '@shared/indovina'
+import { VOCI_MINIME, VOCI_SET_MASSIME, pulisciNome, NOME_SET_MASSIMO, type Voce } from '@shared/indovina'
 import type { SetProprio } from './archivio'
 import { leggiImmagine } from './archivio'
 import { impronta } from './foto'
@@ -52,7 +52,7 @@ export async function setDalFile(file: File): Promise<{ nome: string; voci: (Voc
   const dati = JSON.parse(await file.text()) as Partial<FileSet>
   if (dati.tipo !== TIPO || !Array.isArray(dati.voci)) throw new Error('Non è un set di Indovina chi.')
   const voci: (Voce & { blob?: Blob })[] = []
-  for (const v of dati.voci.slice(0, VOCI_MASSIME)) {
+  for (const v of dati.voci.slice(0, VOCI_SET_MASSIME)) {
     const nome = pulisciNome(v?.nome)
     if (typeof v?.jpeg === 'string') {
       const blob = daBase64(v.jpeg)
@@ -68,6 +68,7 @@ export async function setDalFile(file: File): Promise<{ nome: string; voci: (Voc
 /** Cosa manca a un set per giocarci: null se e' pronto. */
 export function problemaDelSet(set: Pick<SetProprio, 'voci'>): string | null {
   if (set.voci.length < VOCI_MINIME) return `Servono almeno ${VOCI_MINIME} personaggi.`
+  if (set.voci.length > VOCI_SET_MASSIME) return `Al massimo ${VOCI_SET_MASSIME} personaggi.`
   if (set.voci.some((v) => !pulisciNome(v.nome))) return 'Dai un nome a tutti i personaggi.'
   const nomi = set.voci.map((v) => pulisciNome(v.nome).toLowerCase())
   if (new Set(nomi).size !== nomi.length) return 'Due personaggi hanno lo stesso nome.'
