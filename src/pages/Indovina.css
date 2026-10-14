@@ -756,6 +756,40 @@
   place-items: center;
 }
 
+/* Il foglio dei nomi: un elenco da scrivere o incollare, uno per riga. */
+.ic-nomi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Il testo a 17 punti: sotto i 16 Safari ingrandisce la pagina quando il campo prende il fuoco. */
+.ic-nomi__testo {
+  width: 100%;
+  min-height: 200px;
+  padding: var(--sp-3) var(--sp-4);
+  border: none;
+  border-radius: var(--r-lg);
+  background: var(--fill-quaternary);
+  color: var(--label);
+  font: inherit;
+  font-size: 17px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.ic-nomi__testo:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.ic-nomi__nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
 .ic-attesa--corta {
   height: 240px;
   flex: none;

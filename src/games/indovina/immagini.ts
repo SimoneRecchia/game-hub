@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { immaginePredefinita, sfondoPredefinito, type Personaggi } from '@shared/indovina'
+import { coloreDelPersonaggio, immaginePredefinita, sfondoPredefinito, type Personaggi } from '@shared/indovina'
 import { leggiImmagine, salvaImmagine } from './archivio'
 
 export interface Immagini {
   /** L'immagine di un personaggio: un indirizzo, o null finché la foto non c'e'. */
   url: (k: number) => string | null
-  /** Il fondo della carta, per le immagini trasparenti. */
+  /** Il fondo della carta: per le immagini trasparenti, e per i personaggi senza foto. */
   sfondo: (k: number) => string | null
   /** Le impronte delle foto che mancano in questo telefono. */
   mancanti: string[]
@@ -82,7 +82,9 @@ export function useImmagini(personaggi: Personaggi | null): Immagini {
   const sfondo = useCallback(
     (k: number): string | null => {
       const voce = personaggi?.voci[k]
-      if (!voce || !personaggi || personaggi.set === 'mio') return null
+      if (!voce || !personaggi) return null
+      // Una foto che deve ancora arrivare resta grigia, e pulsa: il colore e' per chi una foto non ce l'ha.
+      if (personaggi.set === 'mio') return voce.img ? null : coloreDelPersonaggio(k)
       return sfondoPredefinito(personaggi.set, voce.nome)
     },
     [personaggi],

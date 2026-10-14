@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { IconMatita, IconPlus } from '@/components/Icons'
 import { frecceDelGruppo } from '@/lib/gruppo'
-import { immaginePredefinita, sfondoPredefinito, type SetPredefinito } from '@shared/indovina'
+import { coloreDelPersonaggio, immaginePredefinita, sfondoPredefinito, type SetPredefinito } from '@shared/indovina'
 import { leggiImmagine, type SetProprio } from './archivio'
 import { problemaDelSet } from './setFile'
 import { Faccia } from './Tabellone'
@@ -33,7 +33,7 @@ export function opzionePredefinita(set: SetPredefinito, nome: string, quanti: nu
   }
 }
 
-/** Le anteprime dei set propri: le prime quattro foto, dall'archivio del telefono. */
+/** Le anteprime dei set propri: le prime quattro facce, le foto dall'archivio del telefono, i soli nomi colorati. */
 export function useOpzioniProprie(set: SetProprio[]): OpzioneSet[] {
   const [url, setUrl] = useState<ReadonlyMap<string, string>>(new Map())
   const chiave = set.map((s) => s.voci.slice(0, 4).map((v) => v.img).join(',')).join(';')
@@ -44,7 +44,7 @@ export function useOpzioniProprie(set: SetProprio[]): OpzioneSet[] {
       const trovate = new Map<string, string>()
       for (const s of set) {
         for (const v of s.voci.slice(0, 4)) {
-          if (trovate.has(v.img)) continue
+          if (!v.img || trovate.has(v.img)) continue
           const blob = await leggiImmagine(v.img)
           if (blob) {
             const u = URL.createObjectURL(blob)
@@ -65,7 +65,9 @@ export function useOpzioniProprie(set: SetProprio[]): OpzioneSet[] {
     chiave: s.id,
     nome: s.nome,
     quanti: s.voci.length,
-    facce: s.voci.slice(0, 4).map((v) => ({ nome: v.nome, url: url.get(v.img) ?? null })),
+    facce: s.voci
+      .slice(0, 4)
+      .map((v, k) => ({ nome: v.nome, url: v.img ? (url.get(v.img) ?? null) : null, sfondo: v.img ? null : coloreDelPersonaggio(k) })),
     proprio: true,
     daCompletare: problemaDelSet(s) !== null,
   }))
@@ -128,7 +130,7 @@ export function SceltaSet({
           <IconPlus size={26} />
         </span>
         <span className="ic-set__nome">Nuovo set</span>
-        <span className="ic-set__quanti">Con le tue foto</span>
+        <span className="ic-set__quanti">Foto o solo nomi</span>
       </button>
     </div>
   )
