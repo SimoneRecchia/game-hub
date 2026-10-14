@@ -1508,6 +1508,18 @@ vedono uguale. Il canale delle foto si apre solo se ne manca qualcuna, quindi
 un set di soli nomi non lo apre mai, e si gioca anche fra due reti che non si
 parlano.
 
+**Un set proprio arriva a settantacinque, una partita a trenta.** Il set nel
+telefono puo' avere fino a `VOCI_SET_MASSIME` personaggi, e nella sala si
+sceglie con quanti si gioca (`IN_PARTITA`: 12, 16, 20, 24, 30, o tutti se il set
+ci sta): il telefono di chi invita li pesca a caso quando manda l'invito
+(`pescaPersonaggi`), e al server arrivano solo quelli, cosi' le regole della
+partita, il tabellone e il canale delle foto restano quelli di sempre — al piu'
+trenta, e passano solo le foto di chi e' in partita. Vale anche per le persone
+e gli animali, per una partita piu' corta: dei set predefiniti si mandano i
+nomi scelti, e il server li tiene se sono del set (`leggiPersonaggi`). La
+rivincita resta con gli stessi personaggi, come al tavolo; una partita nuova ne
+pesca altri.
+
 **Lupus si gioca su un telefono o in una stanza, con lo stesso motore.**
 `shared/lupus.ts` e' una funzione che fa avanzare la partita (`applica`),
 deterministica dal seme e dall'ora che le si da', e la eseguono il telefono che

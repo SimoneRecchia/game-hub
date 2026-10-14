@@ -4,7 +4,9 @@ import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Copertina } from '@/components/Copertina'
+import { Cursore } from '@/components/Cursore'
 import { Sezione, Vuoto } from '@/components/Elementi'
+import { Opzioni, Scelte } from '@/components/Opzioni'
 import { IconCopy, IconInfo, IconShare } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
@@ -17,7 +19,16 @@ import { ApiFetchError, api } from '@/lib/api'
 import { formatCronometro } from '@/lib/format'
 import { DOVE } from '@/lib/presenza'
 import { BATTAGLIA_POLL_LOBBY_MS } from '@shared/config'
-import { ANIMALI, NOMI_SET, PERSONE, type SetPredefinito } from '@shared/indovina'
+import {
+  ANIMALI,
+  NOMI_SET,
+  PERSONE,
+  pescaPersonaggi,
+  personaggiPredefiniti,
+  quantiInPartita,
+  quantiScelti,
+  type SetPredefinito,
+} from '@shared/indovina'
 import type { InvitoIndovinaMandato, PartitaIndovinaBreve, SalaIndovina } from '@shared/types'
 import './Battaglia.css'
 import './Indovina.css'
@@ -25,6 +36,8 @@ import './Indovina.css'
 /** Senza niente in sospeso la sala si rilegge di rado: serve solo a vedere chi entra. */
 const RITMO_TRANQUILLO_MS = 12_000
 const CHIAVE_SCELTA = 'giochi.indovina.set'
+/** Con quanti personaggi si gioca, l'ultima volta: vale per tutti i set, finché ne hanno abbastanza. */
+const CHIAVE_QUANTI = 'giochi.indovina.quanti'
 
 function sceltaSalvata(): string {
   try {
@@ -34,10 +47,22 @@ function sceltaSalvata(): string {
   }
 }
 
+function quantiSalvati(): number {
+  try {
+    const n = Number(localStorage.getItem(CHIAVE_QUANTI))
+    return Number.isInteger(n) && n > 0 ? n : 24
+  } catch {
+    return 24
+  }
+}
+
 /**
  * Indovina chi: la sala. Si scelgono i personaggi — le persone, gli animali, o
- * un set con le proprie foto — e poi con chi: un amico online, o chiunque apra
- * un link. Quando l'altro accetta, la sala porta tutti e due alla partita.
+ * un set proprio — e con quanti si gioca, e poi con chi: un amico online, o
+ * chiunque apra un link. Un set con piu' personaggi di quelli della partita (un
+ * set proprio arriva a settantacinque) ne da' ogni volta altri, pescati a caso
+ * quando si invita. Quando l'altro accetta, la sala porta tutti e due alla
+ * partita.
  */
 export default function IndovinaChi() {
   const { vai } = useNavigazione()
@@ -46,6 +71,7 @@ export default function IndovinaChi() {
   const [errore, setErrore] = useState<string | null>(null)
   const [propri, setPropri] = useState<SetProprio[]>([])
   const [scelta, setScelta] = useState(sceltaSalvata)
+  const [quantiVoluti, setQuantiVoluti] = useState(quantiSalvati)
   const [invio, setInvio] = useState<string | null>(null)
   const [regole, setRegole] = useState(false)
   const partitaVista = useRef<string | null>(null)
@@ -105,12 +131,34 @@ export default function IndovinaChi() {
     }
   }
 
-  /** I personaggi scelti, come vanno al server: di un set proprio solo i nomi e le impronte. */
+  // Con quanti si gioca: la scelta, ridotta a una misura che il set scelto ha.
+  const totale = opzioni.find((o) => o.chiave === sceltaValida)?.quanti ?? PERSONE.length
+  const misure = quantiInPartita(totale)
+  const quanti = quantiScelti(totale, quantiVoluti)
+  const cambiaQuanti = (n: number) => {
+    setQuantiVoluti(n)
+    try {
+      localStorage.setItem(CHIAVE_QUANTI, String(n))
+    } catch {
+      /* la scelta resta per questa visita */
+    }
+  }
+
+  /**
+   * I personaggi scelti, come vanno al server: di un set proprio solo i nomi e
+   * le impronte, e se il set ne ha piu' di quanti se ne giocano, quelli pescati
+   * adesso, a caso, cosi' ogni partita ha i suoi.
+   */
   const personaggi = (): unknown => {
-    if (sceltaValida === 'persone' || sceltaValida === 'animali') return { set: sceltaValida as SetPredefinito }
+    if (sceltaValida === 'persone' || sceltaValida === 'animali') {
+      const set = sceltaValida as SetPredefinito
+      if (quanti >= totale) return { set }
+      return { set, voci: pescaPersonaggi(personaggiPredefiniti(set).voci, quanti) }
+    }
     const s = propri.find((p) => p.id === sceltaValida)
     if (!s) return { set: 'persone' }
-    return { set: 'mio', nome: s.nome, voci: s.voci.map((v) => ({ nome: v.nome, img: v.img })) }
+    const voci = s.voci.map((v) => ({ nome: v.nome, img: v.img }))
+    return { set: 'mio', nome: s.nome, voci: quanti >= voci.length ? voci : pescaPersonaggi(voci, quanti) }
   }
 
   /** Un set proprio non ancora pronto — pochi personaggi, nomi mancanti o doppi — lo si dice prima di invitare. */
@@ -169,6 +217,24 @@ export default function IndovinaChi() {
           onModifica={(id) => vai(ROTTE.setIndovina(id))}
           onNuovo={() => vai(ROTTE.setIndovina('nuovo'))}
         />
+        {misure.length > 1 && (
+          <Opzioni>
+            <Scelte
+              titolo="In partita"
+              sotto={quanti < totale ? `A caso fra i ${totale}, a ogni partita` : undefined}
+              valore={quanti < totale ? `${quanti} personaggi` : `Tutti e ${totale}`}
+            >
+              <Cursore
+                ariaLabel="Personaggi in partita"
+                valori={misure}
+                valore={quanti}
+                etichetta={(n) => (n === totale ? 'Tutti' : String(n))}
+                voce={(n) => (n === totale ? `tutti e ${n}` : `${n} personaggi`)}
+                onChange={cambiaQuanti}
+              />
+            </Scelte>
+          </Opzioni>
+        )}
       </Sezione>
 
       <Sezione titolo="Invita">

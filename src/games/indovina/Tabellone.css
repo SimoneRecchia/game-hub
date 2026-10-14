@@ -143,9 +143,11 @@
 /*
  * La carta di un personaggio senza foto: tutta del suo colore, con il nome in
  * grande al centro, fino a tre righe. Il carattere si misura sulla parola piu'
- * lunga (`--parola`, circa sei decimi di em a lettera nell'ottanta per cento
- * della carta), cosi' "Francesca" sta in una riga invece di spezzarsi; va a capo
- * dentro una parola solo una che non ci starebbe nemmeno al minimo.
+ * lunga (`--parola`): una lettera del tondo in grassetto e' larga fino a sette
+ * decimi di em, e la carta ne lascia libero l'ottanta per cento, cosi'
+ * "Francesca" e "Tommaso" stanno in una riga invece di spezzarsi (con sei
+ * decimi, "Tommas-o" andava a capo); va a capo dentro una parola solo una che
+ * non ci starebbe nemmeno al minimo.
  */
 .ic-carta__testo {
   flex: 1;
@@ -155,7 +157,7 @@
   padding: 10%;
   color: rgba(22, 27, 45, 0.82);
   font-family: var(--font-rounded);
-  font-size: clamp(10px, min(calc(var(--lato) * 0.21), calc(var(--lato) * 1.3 / var(--parola, 6))), 30px);
+  font-size: clamp(10px, min(calc(var(--lato) * 0.21), calc(var(--lato) * 1.08 / var(--parola, 6))), 30px);
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: var(--tracking-tight);

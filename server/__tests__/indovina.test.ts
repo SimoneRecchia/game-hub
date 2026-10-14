@@ -179,6 +179,11 @@ describe('Indovina chi, dalle API', () => {
       personaggi: { set: 'mio', nome: 'Calcetto', voci: voci.map(({ nome }, i) => (i === 0 ? voci[0] : { nome })) },
     })
     expect(soliNomi.status).toBe(201)
+    // Con meno personaggi: dodici delle persone, pescati da chi invita.
+    const dodici = await chiama<{ id: string }>('POST', '/indovina/inviti', anna, {
+      personaggi: { set: 'persone', voci: PERSONE.slice(6, 18).map(({ nome }) => ({ nome })) },
+    })
+    expect(dodici.status).toBe(201)
 
     const male = [
       { set: 'mio', nome: 'Pochi', voci: voci.slice(1) },
