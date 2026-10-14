@@ -174,11 +174,15 @@ describe('Indovina chi, dalle API', () => {
     const voci = Array.from({ length: VOCI_MINIME }, (_, i) => ({ nome: `Collega ${i}`, img: `${i}`.repeat(32) }))
     const buono = await chiama('POST', '/indovina/inviti', anna, { personaggi: { set: 'mio', nome: 'Ufficio', voci } })
     expect(buono.status).toBe(201)
+    // Anche solo con i nomi, o con la foto di alcuni: chi non ce l'ha si gioca con il nome.
+    const soliNomi = await chiama('POST', '/indovina/inviti', anna, {
+      personaggi: { set: 'mio', nome: 'Calcetto', voci: voci.map(({ nome }, i) => (i === 0 ? voci[0] : { nome })) },
+    })
+    expect(soliNomi.status).toBe(201)
 
     const male = [
       { set: 'mio', nome: 'Pochi', voci: voci.slice(1) },
       { set: 'mio', nome: 'Doppi', voci: [...voci.slice(1), { ...voci[1] }] },
-      { set: 'mio', nome: 'Senza foto', voci: voci.map(({ nome }) => ({ nome })) },
       { set: 'mio', nome: 'Foto vera', voci: voci.map((v) => ({ ...v, img: 'data:image/jpeg;base64,AAAA' })) },
       { set: 'altro' },
     ]

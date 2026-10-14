@@ -4,6 +4,7 @@ import {
   PERSONE,
   VOCI_MASSIME,
   VOCI_MINIME,
+  coloreDelPersonaggio,
   domandaInSospeso,
   immaginePredefinita,
   leggiAbbassate,
@@ -95,6 +96,27 @@ describe('i personaggi scelti da chi invita', () => {
     expect(leggiPersonaggi({ set: 'mio', nome: 'Doppi', voci: [...voci.slice(1), { ...voci[1], nome: 'COLLEGA 1' }] })).toBeNull()
     expect(leggiPersonaggi({ set: 'mio', nome: 'Foto', voci: voci.map((v) => ({ ...v, img: 'data:image/png' })) })).toBeNull()
     expect(leggiPersonaggi(null)).toBeNull()
+  })
+
+  it('un set proprio puo’ essere di soli nomi, o avere la foto solo di alcuni', () => {
+    const soliNomi = voci.map(({ nome }) => ({ nome }))
+    expect(leggiPersonaggi({ set: 'mio', nome: 'Calcetto', voci: soliNomi })?.voci).toEqual(soliNomi)
+    const misto = voci.map((v, i) => (i % 2 === 0 ? v : { nome: v.nome, img: null }))
+    expect(leggiPersonaggi({ set: 'mio', nome: 'Misto', voci: misto })?.voci).toEqual(
+      voci.map((v, i) => (i % 2 === 0 ? v : { nome: v.nome })),
+    )
+    // Senza foto si gioca con i nomi, ma un'impronta che c'e' deve essere un'impronta.
+    expect(leggiPersonaggi({ set: 'mio', nome: 'X', voci: [...soliNomi.slice(1), { nome: 'Strano', img: 42 }] })).toBeNull()
+  })
+
+  it('una carta senza foto ha un colore suo, mai lo stesso della carta accanto', () => {
+    const colori = Array.from({ length: VOCI_MASSIME }, (_, k) => coloreDelPersonaggio(k))
+    for (const c of colori) expect(c).toMatch(/^#[0-9a-f]{6}$/)
+    for (let k = 1; k < colori.length; k += 1) expect(colori[k]).not.toBe(colori[k - 1])
+    // Anche sotto: in un tabellone a quattro, sei o otto colonne.
+    for (const colonne of [3, 4, 6, 8]) {
+      for (let k = colonne; k < colori.length; k += 1) expect(colori[k], `${colonne} colonne`).not.toBe(colori[k - colonne])
+    }
   })
 })
 

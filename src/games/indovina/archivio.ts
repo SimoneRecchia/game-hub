@@ -5,7 +5,7 @@
  * Due scomparti. Le **immagini**, per impronta: sia quelle dei propri set sia
  * quelle arrivate da un amico durante una partita, cosi' la seconda partita con
  * gli stessi personaggi non le chiede di nuovo. I **set**, con il nome e, per
- * ogni personaggio, il nome e l'impronta della sua foto.
+ * ogni personaggio, il nome e l'impronta della sua foto, se ce l'ha.
  *
  * Niente di tutto questo va al server: al server arrivano solo i nomi e le
  * impronte, quando si invita qualcuno con un set proprio.
@@ -20,7 +20,7 @@ const SET = 'set'
 export interface SetProprio {
   id: string
   nome: string
-  voci: Required<Voce>[]
+  voci: Voce[]
   modificato: number
 }
 
@@ -134,7 +134,7 @@ export async function eliminaSet(id: string): Promise<void> {
   const s = await scomparto(SET, 'readwrite')
   await attendi(s.delete(id))
   const rimasti = await elencoSet()
-  await pulisciImmagini(new Set(rimasti.flatMap((r) => r.voci.map((v) => v.img)))).catch(() => {})
+  await pulisciImmagini(new Set(rimasti.flatMap((r) => r.voci.flatMap((v) => (v.img ? [v.img] : []))))).catch(() => {})
 }
 
 export function nuovoIdSet(): string {
