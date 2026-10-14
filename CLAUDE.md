@@ -1494,6 +1494,20 @@ TURN: fra due reti che non si lasciano attraversare il canale non si apre, e
 la pagina lo dice. Il ripiego e' il file del set (`setFile.ts`), che si manda
 come un documento qualunque e si apre da "Nuovo set".
 
+**Un set proprio puo' essere di soli nomi.** La foto e' facoltativa per ogni
+personaggio (`img` in `Voce`): i colleghi, i calciatori, i personaggi di una
+serie si scrivono, o si incolla un elenco ("Scrivi i nomi", `nomiDaElenco`:
+uno per riga, o con le virgole se e' una riga sola, senza i numeri e i
+trattini degli elenchi), e la foto si aggiunge dopo toccando la carta. Sul
+tabellone un personaggio senza foto e' una carta tutta del suo colore con il
+nome in grande (`ic-carta__testo`), e non le iniziali: Marco, Martina e Matteo
+sarebbero tutti MA. Il colore viene dal posto nel set (`coloreDelPersonaggio`),
+non dal nome, perché due carte vicine — accanto o una sopra l'altra — non
+l'abbiano mai uguale; i due telefoni hanno il set nello stesso ordine, e lo
+vedono uguale. Il canale delle foto si apre solo se ne manca qualcuna, quindi
+un set di soli nomi non lo apre mai, e si gioca anche fra due reti che non si
+parlano.
+
 **Lupus si gioca su un telefono o in una stanza, con lo stesso motore.**
 `shared/lupus.ts` e' una funzione che fa avanzare la partita (`applica`),
 deterministica dal seme e dall'ora che le si da', e la eseguono il telefono che

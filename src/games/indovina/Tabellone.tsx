@@ -24,6 +24,11 @@ function disposizione(quante: number, larghezza: number, altezza: number): { col
   return migliore
 }
 
+/** Quante lettere ha la parola piu' lunga di un nome: la carta di testo ci misura il carattere. */
+function parolaPiuLunga(nome: string): number {
+  return Math.max(4, ...nome.split(/\s+/).map((p) => [...p].length))
+}
+
 export function iniziali(nome: string): string {
   const parole = nome.trim().split(/\s+/)
   return (parole.length > 1 ? parole[0][0] + parole[1][0] : nome.slice(0, 2)).toUpperCase()
@@ -32,7 +37,8 @@ export function iniziali(nome: string): string {
 /**
  * L'immagine di un personaggio. Una foto che non arriva — la rete, il servizio
  * delle immagini — si riprova una volta; poi restano le iniziali, e la
- * partita si gioca lo stesso con i nomi.
+ * partita si gioca lo stesso con i nomi. Un personaggio senza foto ha le
+ * iniziali sul suo colore (`sfondo`), scure perché il colore e' chiaro.
  */
 export function Faccia({
   url,
@@ -54,7 +60,7 @@ export function Faccia({
   if (!url || rotta) {
     return (
       <span
-        className={`ic-faccia ic-faccia--vuota${attesa && !url ? ' is-attesa' : ''}`}
+        className={`ic-faccia ic-faccia--vuota${sfondo ? ' ic-faccia--nome' : ''}${attesa && !url ? ' is-attesa' : ''}`}
         style={sfondo ? { background: sfondo } : undefined}
         aria-hidden="true"
       >
@@ -134,8 +140,11 @@ export function Tabellone({
         {misura.lato > 0 &&
           personaggi.voci.map((voce, k) => {
             const giu = abbassate.has(k)
+            // Senza foto, la carta e' il nome: grande, sul suo colore. Le iniziali si confondono (Marco, Martina).
+            const testo = personaggi.set === 'mio' && !voce.img
             const classi = [
               'ic-carta',
+              testo ? 'is-testo' : '',
               giu ? 'is-abbassata' : '',
               scelta === k ? 'is-scelta' : '',
               rivelato === k ? (vinto ? 'is-rivelata is-vinta' : 'is-rivelata') : '',
@@ -155,10 +164,21 @@ export function Tabellone({
               >
                 <span className="ic-carta__dentro">
                   <span className="ic-carta__fronte">
-                    <Faccia url={url(k)} sfondo={sfondo?.(k)} nome={voce.nome} attesa={attesaFoto} />
-                    <span className="ic-carta__nome">
-                      <span>{voce.nome}</span>
-                    </span>
+                    {testo ? (
+                      <span
+                        className="ic-carta__testo"
+                        style={{ background: sfondo?.(k) ?? undefined, '--parola': parolaPiuLunga(voce.nome) } as CSSProperties}
+                      >
+                        <span>{voce.nome}</span>
+                      </span>
+                    ) : (
+                      <>
+                        <Faccia url={url(k)} sfondo={sfondo?.(k)} nome={voce.nome} attesa={attesaFoto} />
+                        <span className="ic-carta__nome">
+                          <span>{voce.nome}</span>
+                        </span>
+                      </>
+                    )}
                   </span>
                   <span className="ic-carta__retro" aria-hidden="true" />
                 </span>

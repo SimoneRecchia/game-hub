@@ -11,9 +11,11 @@
  * I personaggi sono di due tipi. I set predefiniti — persone e animali — sono
  * immagini prese da servizi pubblici (DiceBear e le Fluent Emoji su jsDelivr)
  * che il browser scarica da solo: il server non le vede mai. I set propri li fa
- * chi gioca con le sue foto, e restano nel suo telefono: al server arrivano solo
- * i nomi e l'impronta di ogni immagine, e le foto passano da un telefono
- * all'altro (vedi src/games/indovina/trasferimento.ts).
+ * chi gioca, con le sue foto o anche solo con i nomi — i colleghi, i calciatori,
+ * i personaggi di una serie — e restano nel suo telefono: al server arrivano
+ * solo i nomi e l'impronta di ogni foto che c'e', e le foto passano da un
+ * telefono all'altro (vedi src/games/indovina/trasferimento.ts). Un personaggio
+ * senza foto e' una carta colorata con il suo nome in grande.
  */
 
 export type Lato = 'a' | 'b'
@@ -40,7 +42,7 @@ export const SET_PREDEFINITI: readonly SetPredefinito[] = ['persone', 'animali']
 
 export interface Voce {
   nome: string
-  /** Solo nei set propri: l'impronta della foto, che ognuno cerca nel suo telefono. */
+  /** Solo nei set propri, e solo se ha una foto: la sua impronta, che ognuno cerca nel suo telefono. */
   img?: string
 }
 
@@ -158,6 +160,20 @@ export const ANIMALI: readonly { nome: string; emoji: string }[] = (
 
 export const NOMI_SET: Record<SetPredefinito, string> = { persone: 'Persone', animali: 'Animali' }
 
+/**
+ * Il fondo della carta di un personaggio senza foto: dodici colori chiari, a
+ * giro nell'ordine del set, cosi' due carte vicine non hanno mai lo stesso — col
+ * colore dal nome, Marco e Martina venivano dello stesso lilla — e i due
+ * telefoni, che hanno il set nello stesso ordine, li vedono uguali. Sono chiari
+ * in tutti e due i temi, e quel che ci sta sopra e' scuro (`ic-faccia--nome`).
+ */
+export function coloreDelPersonaggio(k: number): string {
+  return `#${COLORI_NOMI[((k % COLORI_NOMI.length) + COLORI_NOMI.length) % COLORI_NOMI.length]}`
+}
+
+/** I colori delle carte senza foto: quelli dei set, mescolati a sei in piu', perché un set di trenta non si ripeta troppo. */
+const COLORI_NOMI = ['b6e3f4', 'ffd5dc', 'c1f4c5', 'ffe8a3', 'c0aede', 'ffdfbf', 'bfe9f2', 'f9c6c9', 'd7f2b8', 'e2d4f7', 'd1d4f9', 'ffd0e8']
+
 /** I personaggi di un set predefinito, come si salvano nella partita. */
 export function personaggiPredefiniti(set: SetPredefinito): Personaggi {
   const voci = set === 'persone' ? PERSONE : ANIMALI
@@ -197,7 +213,9 @@ export function pulisciNome(testo: unknown, massimo = NOME_MASSIMO): string {
 /**
  * I personaggi scelti da chi invita, controllati: un set predefinito si
  * riconosce dal nome e si ricostruisce da qui; un set proprio deve avere da sei
- * a trenta personaggi, ognuno con un nome diverso e l'impronta di una foto.
+ * a trenta personaggi, ognuno con un nome diverso, e chi ha una foto la sua
+ * impronta. La foto non e' obbligatoria: un set puo' essere di soli nomi, o
+ * avere le foto solo di alcuni.
  */
 export function leggiPersonaggi(valore: unknown): Personaggi | null {
   if (!valore || typeof valore !== 'object') return null
@@ -215,9 +233,9 @@ export function leggiPersonaggi(valore: unknown): Personaggi | null {
     const g = (grezza ?? {}) as { nome?: unknown; img?: unknown }
     const n = pulisciNome(g.nome)
     if (!n || visti.has(n.toLowerCase())) return null
-    if (typeof g.img !== 'string' || !IMPRONTA.test(g.img)) return null
+    if (g.img !== undefined && g.img !== null && (typeof g.img !== 'string' || !IMPRONTA.test(g.img))) return null
     visti.add(n.toLowerCase())
-    voci.push({ nome: n, img: g.img })
+    voci.push(typeof g.img === 'string' ? { nome: n, img: g.img } : { nome: n })
   }
   return { set: 'mio', nome, voci }
 }
