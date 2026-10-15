@@ -271,7 +271,8 @@ giorni passati come li si e' giocati. L'altra eccezione sono gli schemi di un
 formato vecchio (`FORMATO`, colonna `formato` dalla `0050`) **nel futuro e che
 nessuno ha aperto**, che si rifanno, come le giornate del quiz, con un `UPDATE`
 condizionato al formato e all'assenza di partite: nessuno li ha visti. Il 2 e'
-quello della memoria delle definizioni (vedi sotto). E' deterministico dal numero del giorno, e
+quello della memoria delle definizioni (vedi sotto), il 3 quello del nove per
+nove facile (vedi sotto). E' deterministico dal numero del giorno, e
 il budget si conta in nodi e non in millisecondi, così una macchina piu' lenta
 non cambia lo schema. Se la tabella non ha la giornata di oggi il gioco risponde
 `SCHEMA_ASSENTE` (503) e la card dell'hub non mostra lo stato: in locale,
@@ -294,6 +295,26 @@ nome "ora", non dell'avverbio "in questo momento", e la definizione del
 Wikizionario di una forma flessa ("plurale di ala") darebbe la risposta. La
 licenza chiede di citare la fonte: la citano le regole, e a partita chiusa ogni
 definizione porta alla sua voce.
+
+**La classificata del cruciverba e' un nove per nove facile, la libera ha tre
+livelli.** Fino al 15 ottobre 2026 la classificata era un dieci per dieci con
+tutto il dizionario, e chiedeva molto piu' di un Wordle: "Genere di piante della
+famiglia delle Mimosacee", "In vulcanologia indica una colata lavica" per AA,
+quattro o cinque "Inizio di" a schema. I livelli stanno in `LIVELLI_CRUCIVERBA`
+(`scripts/cruciverba/generatore.mjs`) e la classificata e' il facile
+(`LIVELLO_DEL_GIORNO`): nove per nove, con da quattordici a diciassette nere e
+non piu' di sei parole di due lettere, le parole fra le seimila piu' comuni
+(`qualitaMinima`), le sole definizioni che si capiscono senza essere del
+mestiere (`definizioneChiara`: niente classificazioni, note d'uso o materie da
+specialista) e al piu' due da enigmista (`massimoEnigmista`). Una parola che
+resta senza definizioni chiare non entra nel dizionario del livello
+(`dizionarioDelLivello`). Il medio e' un dieci per dieci con le parole fra le
+ventimila piu' comuni e le definizioni chiare, il difficile lo schema di prima,
+con le piante e le materie. Gli schemi liberi hanno il loro `livello` (migrazione
+`0052`, che ha messo a difficile quelli di prima, perché lo sono), la pagina
+della libera lo fa scegliere (`/cruciverba/libera`, con le tacche) e
+`POST /cruciverba/libera` ne apre uno di quel livello; senza livello, un
+telefono con la pagina di prima, e' un difficile.
 
 **Una parola che torna cambia definizione.** Le parole di due e tre lettere
 sono meno di seicento e fanno quasi meta' di ogni schema, e con la sola prima
@@ -339,15 +360,21 @@ finito.** `statoDa` manda lo schema con i punti al posto delle lettere, e la
 `voce` di ogni definizione solo a partita chiusa: "Milano" accanto a "Città
 dell'Italia settentrionale" sarebbe la risposta.
 
-**Nel cruciverba il tempo non da' punti.** Cento a chi lo completa
-senza aiuti, e ogni aiuto costa quel che da' (vedi sotto) — e ricontrollare lo
+**Nel cruciverba i punti li fa il tempo, come nel sudoku.** Si da' per
+scontato che lo finiscano tutti: cento fino a cinque secondi a lettera da
+trovare, poi a scendere fino alla meta' a venti (`RITMO_CRUCIVERBA`), cioe'
+cinque minuti e mezzo e una ventina di minuti per il nove per nove, e ogni
+aiuto si toglie da li' e costa quel che da' (vedi sotto) — e ricontrollare lo
 stesso errore non costa (`registraControllo`). La partita conta gli aiuti — le
 svelate, gli errori (`errori`), i controlli (`controlli`, `controlli_schema`,
 migrazione `0033`) — e non quel che costano: il costo lo applica `punteggio`,
-una volta sola.
-Il tempo e' lo spareggio in classifica: lo conta il browser a pagina visibile,
-perché un cruciverba si fa a pezzi, e il server lo limita a quanto e' passato
-davvero fra due scritture (`tempoDichiarato`).
+una volta sola, con il tempo. Il server manda quel che gli aiuti hanno tolto
+(`spesi`), e il telefono mostra il valore che scende mentre si gioca. Il tempo
+lo conta il browser a pagina visibile, perché un cruciverba si fa a pezzi, e il
+server lo limita a quanto e' passato davvero fra due scritture
+(`tempoDichiarato`). Prima del 15 ottobre 2026 il tempo era solo lo spareggio,
+ed era il dieci per dieci: chi ci metteva un'ora prendeva quanto chi ci metteva
+dieci minuti.
 
 **Le scritture del cruciverba passano da una coda.** La griglia si scrive in
 locale e si salva dopo un attimo di pausa — una richiesta per tasto sarebbero
@@ -399,10 +426,10 @@ un altro telefono ci sono.
 
 **Un aiuto costa quel che da'.** Nel cruciverba e nel sudoku tutto si misura
 sulla parte di una casella, il tetto diviso le caselle da trovare (`costiAiuti`
-in `shared/aiuti.ts`): un punto e un quarto nel cruciverba, che ha una ottantina
-di lettere, circa due nel sudoku, che ha da trovare fra quarantacinque e
+in `shared/aiuti.ts`): un punto e mezzo nel cruciverba del giorno, che ha una
+sessantina di lettere, circa due nel sudoku, che ha da trovare fra quarantacinque e
 cinquantanove cifre. Ogni aiuto costa le sue parti arrotondate al punto — una
-casella svelata del cruciverba quattro punti, e non tre parti da un punto —
+casella svelata del cruciverba cinque punti, e non tre parti da un punto e mezzo —
 perché arrotondare la parte prima di moltiplicarla, con i tetti a cento, faceva
 svelare un terzo dello schema lasciandone un quinto. Svelare una casella costa
 tre parti, perché ne apre altre —
@@ -499,8 +526,8 @@ tutti, e il tris e la battaglia navale (vedi sotto) non sono piu' classificate;
 le Sequenze dal 15 ottobre.
 Le giornate giocate con i tetti di prima restano come sono, perché i punti si
 salvano a fine partita e non si ricalcolano. Il Wordle misura i tentativi, lo
-Scarabeo il punteggio in rapporto al computer, il cruciverba e il sudoku gli
-aiuti, il quiz le risposte giuste (venti per aver giocato, otto per ogni
+Scarabeo il punteggio in rapporto al computer, il cruciverba e il sudoku il
+tempo e gli aiuti, il quiz le risposte giuste (venti per aver giocato, otto per ogni
 giusta), Nomi, cose e città le risposte valide, di piu' quelle date da pochi,
 gli Anagrammi le parole trovate, di piu' quelle trovate presto, il Paroliere i
 punti delle parole rispetto al traguardo della griglia, la Ghigliottina e la
@@ -2278,7 +2305,8 @@ porta via inviti e suggerimenti. Un invito a una libera vale due ore
 giorno, uguale per tutti, contro il computer o contro il gioco stesso, e fa i
 punti. La **libera** e' quante se ne vuole, a caso, e non entra in classifica:
 Wordle con una parola a caso, Scarabeo fino in fondo al sacchetto contro il
-computer o un amico, cruciverba da una scorta di schemi, quiz sulla materia, la
+computer o un amico, cruciverba da una scorta di schemi del livello che si
+sceglie, quiz sulla materia, la
 categoria, il modo, la zona o l'ambito e le opzioni che si scelgono, Nomi, cose
 e città con una lettera a caso contro il computer, Anagrammi con cinque parole a
 caso della lunghezza e con il tempo che si sceglie, Ghigliottina e Catena con una a caso e il tempo della finale che si
@@ -3630,10 +3658,12 @@ custom domain.
 
 **Gli schemi liberi del cruciverba vengono da una scorta.** Non se ne genera uno
 a richiesta, per la stessa ragione di quelli del giorno: la notte
-`cruciverba.yml` tiene `cruciverba_schemi_liberi` rifornita (`--liberi`, fino a
-`--al-massimo`), e ognuno ha un seme suo (`semeLibero`), diverso da quello di
-qualunque giornata. Se la scorta finisce il gioco lo dice invece di rifare uno
-schema gia' fatto da chi gioca.
+`cruciverba.yml` tiene `cruciverba_schemi_liberi` rifornita, livello per
+livello (`--liberi` per ognuno, al piu' `--al-massimo` a livello per volta), e
+ognuno ha un seme suo (`semeLibero`), diverso da quello di qualunque giornata:
+i numeri sono in fila fra tutti i livelli, e il seme viene dal numero. Se la
+scorta di un livello finisce il gioco lo dice invece di rifare uno schema gia'
+fatto da chi gioca.
 
 **Non c'e' un formattatore.** Il codice e' scritto a mano nello stile di
 prettier — apici singoli, niente punti e virgola, virgole finali, righe fino a

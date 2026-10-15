@@ -9,13 +9,16 @@
  */
 
 import {
+  LIVELLI_CRUCIVERBA,
   costiCruciverba,
   grigliaIniziale,
+  livelloCruciverbaValido,
   punteggio,
+  type LivelloCruciverba,
   schemaVuoto,
   sequenzeDelloSchema,
 } from '../../shared/cruciverba'
-import type { AiutiChiesti } from '../../shared/aiuti'
+import { spesiPerAiuti, type AiutiChiesti } from '../../shared/aiuti'
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
 import type {
   CruciverbaLeaderboard,
@@ -33,6 +36,8 @@ export interface Schema {
   colonne: number
   soluzione: string
   definizioni: string
+  /** Solo negli schemi liberi: facile, media o difficile. */
+  livello?: string
 }
 
 export interface SchemaRow extends Schema {
@@ -286,7 +291,9 @@ export function statoDa(
     tempoMs: row.tempo_ms,
     versione: row.versione,
     status: row.status,
-    punti: finita ? row.score : punteggio(aiutiDi(row), costiCruciverba(schema.soluzione)),
+    punti: finita ? row.score : punteggio(aiutiDi(row), costiCruciverba(schema.soluzione), row.tempo_ms),
+    spesi: spesiPerAiuti(costiCruciverba(schema.soluzione), aiutiDi(row)),
+    livello: livelloCruciverbaValido(schema.livello) ? schema.livello : null,
     soluzione: finita ? schema.soluzione : null,
     msToNextPuzzle,
   }
@@ -404,21 +411,22 @@ export async function liberaAperta(db: D1Database, playerId: string): Promise<Pa
 }
 
 /**
- * Un cruciverba libero nuovo: uno schema a caso fra quelli che il giocatore non
- * ha ancora aperto. Null se li ha fatti tutti — la scorta cresce ogni notte, e
- * la schermata lo dice invece di riproporne uno vecchio.
+ * Un cruciverba libero nuovo: uno schema a caso del livello chiesto, fra quelli
+ * che il giocatore non ha ancora aperto. Null se li ha fatti tutti — la scorta
+ * cresce ogni notte, e la schermata lo dice invece di riproporne uno vecchio.
  */
 export async function nuovaLibera(
   db: D1Database,
   playerId: string,
   caso: () => number,
+  livello: LivelloCruciverba,
 ): Promise<{ row: PartitaLiberaRow; schema: SchemaLiberoRow } | null> {
   const conta = await db
     .prepare(
       `SELECT COUNT(*) AS n FROM cruciverba_schemi_liberi
-        WHERE id NOT IN (SELECT schema_id FROM cruciverba_partite_libere WHERE player_id = ?)`,
+        WHERE livello = ? AND id NOT IN (SELECT schema_id FROM cruciverba_partite_libere WHERE player_id = ?)`,
     )
-    .bind(playerId)
+    .bind(livello, playerId)
     .first<{ n: number }>()
   const quanti = conta?.n ?? 0
   if (quanti === 0) return null
@@ -426,10 +434,10 @@ export async function nuovaLibera(
   const schema = await db
     .prepare(
       `SELECT * FROM cruciverba_schemi_liberi
-        WHERE id NOT IN (SELECT schema_id FROM cruciverba_partite_libere WHERE player_id = ?)
+        WHERE livello = ? AND id NOT IN (SELECT schema_id FROM cruciverba_partite_libere WHERE player_id = ?)
         ORDER BY id LIMIT 1 OFFSET ?`,
     )
-    .bind(playerId, Math.floor(caso() * quanti))
+    .bind(livello, playerId, Math.floor(caso() * quanti))
     .first<SchemaLiberoRow>()
   if (!schema) return null
 
@@ -471,8 +479,14 @@ export async function nuovaLibera(
 export async function statisticheLibere(
   db: D1Database,
   playerId: string,
-): Promise<{ giocate: number; completate: number; senzaAiuti: number; disponibili: number }> {
-  const [mie, scorta] = await Promise.all([
+): Promise<{
+  giocate: number
+  completate: number
+  senzaAiuti: number
+  disponibili: number
+  perLivello: Record<LivelloCruciverba, number>
+}> {
+  const [mie, scorta, livelli] = await Promise.all([
     db
       .prepare(
         `SELECT COUNT(*) AS giocate,
@@ -484,13 +498,25 @@ export async function statisticheLibere(
       .bind(playerId)
       .first<{ giocate: number; completate: number | null; perfetti: number | null }>(),
     db.prepare('SELECT COUNT(*) AS n FROM cruciverba_schemi_liberi').first<{ n: number }>(),
+    // Gli schemi ancora da aprire, livello per livello.
+    db
+      .prepare(
+        `SELECT livello, COUNT(*) AS n FROM cruciverba_schemi_liberi
+          WHERE id NOT IN (SELECT schema_id FROM cruciverba_partite_libere WHERE player_id = ?)
+          GROUP BY livello`,
+      )
+      .bind(playerId)
+      .all<{ livello: string; n: number }>(),
   ])
   const giocate = mie?.giocate ?? 0
+  const perLivello = Object.fromEntries(LIVELLI_CRUCIVERBA.map((l) => [l, 0])) as Record<LivelloCruciverba, number>
+  for (const r of livelli.results) if (livelloCruciverbaValido(r.livello)) perLivello[r.livello] = r.n
   return {
     giocate,
     completate: mie?.completate ?? 0,
     senzaAiuti: mie?.perfetti ?? 0,
     disponibili: Math.max(0, (scorta?.n ?? 0) - giocate),
+    perLivello,
   }
 }
 

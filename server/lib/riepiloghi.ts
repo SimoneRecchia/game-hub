@@ -212,7 +212,7 @@ export async function riepilogoCruciverba(db: D1Database, playerId: string): Pro
       schema && row
         ? row.status === 'done'
           ? row.score
-          : punteggio(aiutiDi(row), costiCruciverba(schema.soluzione))
+          : punteggio(aiutiDi(row), costiCruciverba(schema.soluzione), row.tempo_ms)
         : PUNTI_COMPLETO,
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
