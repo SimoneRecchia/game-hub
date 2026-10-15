@@ -1,55 +1,95 @@
 import { useEffect, useState } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
-import { Button } from '@/components/Button'
-import { Vuoto } from '@/components/Elementi'
-import { IconShuffle } from '@/components/Icons'
-import { Pagina } from '@/components/Pagina'
+import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
+import { Riga, Tacche } from '@/components/Elementi'
+import { IconInfo } from '@/components/Icons'
+import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { ComeSiGiocaCruciverba } from '@/games/cruciverba/ComeSiGioca'
 import { ApiFetchError, api } from '@/lib/api'
+import { LIVELLI_CRUCIVERBA, NOMI_LIVELLI_CRUCIVERBA } from '@shared/cruciverba'
 import type { CruciverbaLiberaRisposta, CruciverbaState } from '@shared/types'
 import './Cruciverba.css'
 
 /**
- * L'ingresso del cruciverba libero: riapre lo schema in corso, o ne apre uno
- * nuovo, e porta al suo indirizzo. Non si ferma qui: e' un passaggio.
+ * Il cruciverba libero: si sceglie la difficoltà e si apre uno schema di quel
+ * livello, mai aperto prima. Lo schema in corso sta in cima, da riprendere.
  */
 export default function CruciverbaLibero() {
   const { vai } = useNavigazione()
+  const [livello, setLivello] = useLivelloScelto('cruciverba', LIVELLI_CRUCIVERBA)
+  const [dati, setDati] = useState<CruciverbaLiberaRisposta | null>(null)
+  const [regole, setRegole] = useState(false)
+  const [apertura, setApertura] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
-  const [tentativo, setTentativo] = useState(0)
 
   useEffect(() => {
     let annullato = false
-    void (async () => {
-      try {
-        const { partita } = await api<CruciverbaLiberaRisposta>('/cruciverba/libera')
-        const stato = partita ?? (await api<CruciverbaState>('/cruciverba/libera', { method: 'POST' }))
-        if (!annullato) vai(ROTTE.cruciverbaLibero(stato.partitaId), { replace: true, direzione: 'nessuna' })
-      } catch (e) {
-        if (!annullato) setErrore(e instanceof ApiFetchError ? e.message : 'Non riesco ad aprire uno schema.')
-      }
-    })()
+    api<CruciverbaLiberaRisposta>('/cruciverba/libera')
+      .then((d) => !annullato && setDati(d))
+      .catch(() => {
+        // Senza i numeri si sceglie lo stesso: lo schema si chiede a Comincia.
+      })
     return () => {
       annullato = true
     }
-  }, [vai, tentativo])
+  }, [])
 
+  const comincia = async () => {
+    setApertura(true)
+    setErrore(null)
+    try {
+      const stato = await api<CruciverbaState>('/cruciverba/libera', { method: 'POST', body: { livello } })
+      vai(ROTTE.cruciverbaLibero(stato.partitaId))
+    } catch (e) {
+      setErrore(e instanceof ApiFetchError ? e.message : 'Non riesco ad aprire uno schema.')
+      setApertura(false)
+    }
+  }
+
+  const aperta = dati?.partita ?? null
   return (
-    <Pagina titolo="Schema libero" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}>
-      {errore ? (
-        <Vuoto
-          icona={<IconShuffle size={28} />}
-          titolo="Nessuno schema da aprire"
-          testo={errore}
-          azione={
-            <Button variant="tinted" onClick={() => setTentativo((n) => n + 1)}>
-              Riprova
-            </Button>
-          }
-        />
-      ) : (
-        <div className="cru__attesa" aria-hidden="true" />
-      )}
+    <Pagina
+      titolo="Cruciverba"
+      indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
+      azioni={
+        <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
+          <IconInfo size={21} />
+        </BottoneBarra>
+      }
+    >
+      <Difficolta
+        livelli={LIVELLI_CRUCIVERBA.map((id) => ({
+          id,
+          nome: NOMI_LIVELLI_CRUCIVERBA[id],
+          valore: dati && dati.perLivello[id] === 0 ? 'Finiti' : undefined,
+        }))}
+        scelto={livello}
+        onScegli={setLivello}
+        onComincia={() => void comincia()}
+        occupato={apertura}
+        colore="var(--cruciverba-1)"
+        di={3}
+        sopra={
+          aperta && (
+            <Riga
+              icona={
+                <Tacche
+                  piene={LIVELLI_CRUCIVERBA.indexOf(aperta.livello ?? 'difficile') + 1}
+                  di={3}
+                  colore="var(--cruciverba-1)"
+                />
+              }
+              titolo="Riprendi lo schema"
+              sotto={NOMI_LIVELLI_CRUCIVERBA[aperta.livello ?? 'difficile']}
+              a={ROTTE.cruciverbaLibero(aperta.partitaId)}
+            />
+          )
+        }
+      >
+        {errore && <p className="cru-guasto">{errore}</p>}
+      </Difficolta>
+      <ComeSiGiocaCruciverba open={regole} onClose={() => setRegole(false)} />
     </Pagina>
   )
 }

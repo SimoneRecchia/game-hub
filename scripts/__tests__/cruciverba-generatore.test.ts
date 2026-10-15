@@ -3,15 +3,19 @@ import { join } from 'node:path'
 import { gunzipSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { EPOCH_DATE, GAME_TIMEZONE } from '../../shared/config'
-import { NERA, sequenzeDelloSchema } from '../../shared/cruciverba'
+import { LIVELLI_CRUCIVERBA as LIVELLI_GIOCO, NERA, sequenzeDelloSchema } from '../../shared/cruciverba'
 import { addDays, mulberry32 as mulberryCondiviso, puzzleNumberFor } from '../../shared/daily'
 import {
   DA_ENIGMISTA,
+  LIVELLI_CRUCIVERBA,
+  LIVELLO_DEL_GIORNO,
   TRATTO_MASSIMO,
   correggiDefinizioni,
   definizioniDaEnigmista,
+  definizioneChiara,
   definizioniDellaSoluzione,
   disegnaSchema,
+  dizionarioDelLivello,
   generaCruciverba,
   istruzioneRifai,
   istruzioneSql,
@@ -151,6 +155,59 @@ describe('gli schemi liberi', () => {
     const finto = { righe: 1, colonne: 2, griglia: 'ab', definizioni: {} }
     expect(istruzioneSql(7, finto, 'x', true)).toMatch(/^INSERT OR IGNORE INTO cruciverba_schemi_liberi \(id, /)
     expect(istruzioneSql(7, finto, 'x')).toMatch(/^INSERT OR IGNORE INTO cruciverba_schemi \(puzzle_number, /)
+  })
+
+  it('portano il loro livello, uno di quelli che il gioco conosce, nello stesso ordine', () => {
+    const finto = { righe: 1, colonne: 2, griglia: 'ab', definizioni: {} }
+    expect(istruzioneSql(7, finto, 'x', true, null, 'facile')).toMatch(/, livello\) VALUES \(.*, 'facile'\);$/)
+    expect(Object.keys(LIVELLI_CRUCIVERBA)).toEqual([...LIVELLI_GIOCO])
+  })
+})
+
+describe('le definizioni chiare', () => {
+  it('lasciano fuori le classificazioni, le note d\'uso e le materie da specialista', () => {
+    for (const testo of [
+      'Genere di piante della famiglia delle Mimosacee',
+      'Pianta erbacea della famiglia delle Graminacee',
+      "Superclasse di vertebrati del phylum dei cordati",
+      'In vulcanologia indica una colata lavica',
+      'Con uso enfatico',
+      'Normalmente utilizzato in alcune espressioni',
+    ]) {
+      expect(definizioneChiara(testo), testo).toBe(false)
+    }
+  })
+
+  it('tengono le definizioni di tutti i giorni', () => {
+    for (const testo of ['Animale domestico che abbaia', 'Città della Toscana', 'Il contrario di alto', 'Si beve al mattino']) {
+      expect(definizioneChiara(testo), testo).toBe(true)
+    }
+  })
+})
+
+describe('lo schema facile della classificata', () => {
+  const livello = LIVELLI_CRUCIVERBA[LIVELLO_DEL_GIORNO]
+  const facili = dizionarioDelLivello(voci, LIVELLO_DEL_GIORNO)
+  const schemi = [31, 32, 33].map((numero) =>
+    generaCruciverba({ indici: facili, seme: semeDelGiorno(numero), livello: LIVELLO_DEL_GIORNO, schemi: 30 }),
+  )
+
+  it('e\' un nove per nove, e si riempie', () => {
+    expect(LIVELLO_DEL_GIORNO).toBe('facile')
+    for (const c of schemi) {
+      expect(c).not.toBeNull()
+      expect([c.righe, c.colonne]).toEqual([9, 9])
+      expect(c.griglia).toHaveLength(81)
+    }
+  })
+
+  it('ha definizioni chiare, e al piu\' due da enigmista', () => {
+    for (const c of schemi) {
+      const testi = Object.values(c.definizioni as Record<string, { testo: string }>).map((d) => d.testo)
+      const enigmista = testi.filter((t) => DA_ENIGMISTA.test(t))
+      expect(enigmista.length).toBeLessThanOrEqual(livello.massimoEnigmista)
+      for (const t of testi) if (!DA_ENIGMISTA.test(t)) expect(definizioneChiara(t), t).toBe(true)
+    }
   })
 })
 

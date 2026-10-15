@@ -19,12 +19,14 @@
  * L'eccezione sono le giornate di un formato vecchio (`FORMATO`) **nel futuro e
  * che nessuno ha aperto**: si rifanno, perché nessuno le ha viste, con un
  * `UPDATE` condizionato al formato e all'assenza di partite. Il 2 e' quello con
- * la memoria delle definizioni, i sinonimi e le definizioni da enigmista. Oggi e
- * il passato restano come sono.
+ * la memoria delle definizioni, i sinonimi e le definizioni da enigmista; il 3
+ * quello del nove per nove facile (`LIVELLO_DEL_GIORNO`). Oggi e il passato
+ * restano come sono.
  *
  * Gli schemi **liberi** — quelli della partita libera, senza giornata — li fa lo
- * stesso script con `--liberi`: la scorta cresce di qualche decina a notte fino
- * al totale chiesto, e gli schemi gia' scritti non cambiano.
+ * stesso script con `--liberi`: la scorta di ogni livello (facile, media,
+ * difficile) cresce di qualche decina a notte fino al totale chiesto, e gli
+ * schemi gia' scritti non cambiano.
  *
  * Una cosa sola degli schemi scritti si corregge: una definizione che il
  * dizionario non ha piu', perché il filtro l'ha scartata dopo. La griglia resta
@@ -36,7 +38,7 @@
  *   node scripts/genera-cruciverba.mjs --local         riempie il D1 locale di wrangler
  *   node scripts/genera-cruciverba.mjs --remote        produzione (serve il token Cloudflare)
  *   … --giorni 60                                      quanti giorni tenere pronti (da oggi)
- *   … --liberi 500 [--al-massimo 40]                   la scorta degli schemi liberi
+ *   … --liberi 500 [--al-massimo 40]                   la scorta degli schemi liberi, per livello
  */
 
 import { execFileSync } from 'node:child_process'
@@ -45,13 +47,15 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gunzipSync } from 'node:zlib'
 import {
+  LIVELLI_CRUCIVERBA,
+  LIVELLO_DEL_GIORNO,
   correggiDefinizioni,
   definizioniDellaSoluzione,
+  dizionarioDelLivello,
   generaCruciverba,
   istruzioneRifai,
   istruzioneSql,
   leggiDefinizioni,
-  preparaDizionario,
   semeDelGiorno,
   semeLibero,
 } from './cruciverba/generatore.mjs'
@@ -66,7 +70,7 @@ const FINESTRA = 30
 /** Le parole di tre lettere sono poche: si evitano solo quelle della settimana. */
 const FINESTRA_CORTE = 7
 /** Il formato degli schemi che scrive questo script (vedi sopra). */
-const FORMATO = 2
+const FORMATO = 3
 
 function argomento(nome, predefinito) {
   const i = process.argv.indexOf(`--${nome}`)
@@ -97,7 +101,12 @@ function interroga(sql) {
 const voci = leggiDefinizioni(
   gunzipSync(readFileSync(join(HERE, 'data', 'cruciverba-definizioni.tsv.gz'))).toString('utf8'),
 )
-const indici = preparaDizionario(voci)
+/** Il dizionario di ogni livello, fatto la prima volta che serve: costa qualche secondo. */
+const dizionari = new Map()
+function indiciDel(livello) {
+  if (!dizionari.has(livello)) dizionari.set(livello, dizionarioDelLivello(voci, livello))
+  return dizionari.get(livello)
+}
 
 if (LIBERI !== null) {
   generaLiberi()
@@ -106,9 +115,11 @@ if (LIBERI !== null) {
 }
 
 /**
- * La scorta degli schemi liberi: da quello dopo l'ultimo scritto fino a
- * `LIBERI`, al massimo `AL_MASSIMO` per volta — un minuto e mezzo di lavoro —
- * cosi' il workflow della notte non diventa lungo quanto un deploy.
+ * La scorta degli schemi liberi: per ogni livello fino a `LIBERI` schemi, al
+ * massimo `AL_MASSIMO` per volta — qualche minuto di lavoro — cosi' il workflow
+ * della notte non diventa lungo quanto un deploy. Gli schemi di tutti i livelli
+ * hanno i numeri in fila, e il seme viene dal numero: uno schema scritto non
+ * cambia.
  */
 function generaLiberi() {
   if (!REMOTO && !LOCALE) {
@@ -116,9 +127,9 @@ function generaLiberi() {
     process.exit(1)
   }
   const [{ ultimo }] = interroga('SELECT COALESCE(MAX(id), 0) AS ultimo FROM cruciverba_schemi_liberi')
-  const fino = Math.min(LIBERI, ultimo + AL_MASSIMO)
-  console.log(`Cruciverba liberi: ${ultimo} pronti, obiettivo ${LIBERI}, questa volta fino al ${fino}`)
-  if (fino <= ultimo) return
+  const contati = new Map(
+    interroga('SELECT livello, COUNT(*) AS n FROM cruciverba_schemi_liberi GROUP BY livello').map((r) => [r.livello, r.n]),
+  )
 
   const precedenti = new Map()
   for (const r of interroga(
@@ -129,19 +140,29 @@ function generaLiberi() {
 
   const istruzioni = []
   const adesso = new Date().toISOString()
-  for (let numero = ultimo + 1; numero <= fino; numero += 1) {
-    const { evita, recenti } = memoria(numero, precedenti)
-    const inizio = Date.now()
-    const cruciverba = generaCruciverba({ indici, seme: semeLibero(numero), evita, recenti })
-    if (!cruciverba) {
-      console.error(`  libero ${numero}: nessuno schema riempito, mi fermo`)
-      process.exit(1)
+  let numero = ultimo
+  for (const livello of Object.keys(LIVELLI_CRUCIVERBA)) {
+    const pronti = contati.get(livello) ?? 0
+    const daFare = Math.max(0, Math.min(LIBERI - pronti, AL_MASSIMO))
+    console.log(`Cruciverba liberi, ${livello}: ${pronti} pronti, obiettivo ${LIBERI}, questa volta ${daFare}`)
+    for (let fatti = 0; fatti < daFare; fatti += 1) {
+      numero += 1
+      const { evita, recenti } = memoria(numero, precedenti)
+      const inizio = Date.now()
+      const cruciverba = generaCruciverba({ indici: indiciDel(livello), seme: semeLibero(numero), livello, evita, recenti })
+      if (!cruciverba) {
+        console.error(`  libero ${numero}: nessuno schema riempito, mi fermo`)
+        process.exit(1)
+      }
+      precedenti.set(numero, { dette: detteDi(cruciverba) })
+      istruzioni.push(istruzioneSql(numero, cruciverba, adesso, true, null, livello))
+      console.log(
+        `  libero ${numero} (${livello}): ${cruciverba.parole.length} parole, ` +
+          `qualità ${cruciverba.voto.punti.toFixed(2)} (${Date.now() - inizio} ms)`,
+      )
     }
-    precedenti.set(numero, { dette: detteDi(cruciverba) })
-    istruzioni.push(istruzioneSql(numero, cruciverba, adesso, true))
-    console.log(`  libero ${numero}: ${cruciverba.parole.length} parole, qualità ${cruciverba.voto.punti.toFixed(2)} (${Date.now() - inizio} ms)`)
   }
-  scriviIstruzioni(istruzioni, 'cruciverba-liberi.sql')
+  if (istruzioni.length > 0) scriviIstruzioni(istruzioni, 'cruciverba-liberi.sql')
 }
 
 function scriviIstruzioni(istruzioni, nome, cosa = 'schemi') {
@@ -237,7 +258,13 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
 
   const { evita, recenti } = memoria(numero, esistenti)
   const inizio = Date.now()
-  const cruciverba = generaCruciverba({ indici, seme: semeDelGiorno(numero), evita, recenti })
+  const cruciverba = generaCruciverba({
+    indici: indiciDel(LIVELLO_DEL_GIORNO),
+    seme: semeDelGiorno(numero),
+    livello: LIVELLO_DEL_GIORNO,
+    evita,
+    recenti,
+  })
   if (!cruciverba) {
     // Non succede con il dizionario attuale; se succedesse, meglio fermarsi e
     // dirlo che lasciare un buco silenzioso nella scorta.
@@ -245,7 +272,9 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
     process.exit(1)
   }
   esistenti.set(numero, { dette: detteDi(cruciverba), rifare: false })
-  istruzioni.push(gia ? istruzioneRifai(numero, cruciverba, adesso, FORMATO) : istruzioneSql(numero, cruciverba, adesso, false, FORMATO))
+  istruzioni.push(
+    gia ? istruzioneRifai(numero, cruciverba, adesso, FORMATO) : istruzioneSql(numero, cruciverba, adesso, false, FORMATO),
+  )
   console.log(
     `  #${numero}${gia ? ' (rifatto)' : ''}: ${cruciverba.parole.length} parole, ${cruciverba.voto.sigle} sigle, ` +
       `qualità ${cruciverba.voto.punti.toFixed(2)} (${Date.now() - inizio} ms)`,

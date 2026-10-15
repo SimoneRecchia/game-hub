@@ -55,6 +55,86 @@ const RAMI = 6
 export const MASSIMO_SIGLE = 5
 
 /**
+ * Le definizioni da classificazione — la famiglia, il genere, l'ordine, il nome
+ * scientifico — che vengono dalle voci di botanica e di zoologia del
+ * Wikizionario: "Genere di piante della famiglia delle Mimosacee" e' giusto, ma
+ * lo sa chi ha studiato botanica, e in uno schema da giocare in cinque minuti e'
+ * uno scoglio. Restano solo al livello difficile.
+ */
+export const DA_CLASSIFICAZIONE =
+  /\b(?:sotto|super)?(?:famiglia|ordine|classe|genere|tribù|phylum|regno) (?:de(?:i|gli|lle|l)\b|dell['’])|^(?:Genere|Specie|Famiglia|Sottofamiglia|Superclasse|Ordine|Sottordine|Classe|Varietà) (?:di|de|appartenente)|\bphylum\b|classificazione scientifica|nome scientifico/i
+
+/**
+ * Le note d'uso del Wikizionario, che da sole non dicono la parola: "Con uso
+ * enfatico" per TI, "Normalmente utilizzato in alcune espressioni" per AMEN.
+ */
+export const DA_NOTA =
+  /^(?:Con uso|Con valore|Normalmente utilizzat|Usat[oaie] (?:per|nella|nelle|nel|in)|Utilizzat[oaie] (?:per|anche)|In alcune|Si usa|Preceduto d|Seguito da|Rafforzativo|Riferito)/i
+
+/**
+ * Le definizioni da specialista, che cominciano dicendo la materia: "In
+ * vulcanologia indica una colata lavica…" per AA. La parola e' giusta, ma chi
+ * non e' del mestiere non la conosce.
+ */
+export const DA_SPECIALISTA =
+  /^(?:In|Nella|Nel|Nell['’]) (?:vulcanologia|chimica|fisica|botanica|zoologia|medicina|anatomia|geologia|mineralogia|biologia|astronomia|geometria|matematica|informatica|elettronica|elettrotecnica|economia|diritto|filosofia|linguistica|grammatica|fonetica|metrica|retorica|musica|marineria|marina|araldica|tipografia|statistica|teologia|liturgia|ingegneria|meccanica|farmacologia|psicologia|chirurgia|veterinaria|agricoltura|edilizia|tessitura|ottica|topografia|cartografia|ornitologia|entomologia|micologia|paleontologia|genetica|ecologia)\b/i
+
+/** Una definizione che si capisce senza saperne piu' di chi gioca: niente classificazioni, note d'uso o materie da specialista. */
+export function definizioneChiara(testo) {
+  return !DA_CLASSIFICAZIONE.test(testo) && !DA_NOTA.test(testo) && !DA_SPECIALISTA.test(testo)
+}
+
+/**
+ * I livelli degli schemi. Il facile e' quello della classificata: nove per
+ * nove, parole comuni, definizioni chiare, al piu' due da enigmista e poche
+ * parole da due lettere. Il difficile e' lo schema di prima del 15 ottobre
+ * 2026, dieci per dieci con tutto il dizionario: era la classificata, e per
+ * una giornata da Wordle chiedeva troppo. Il medio sta in mezzo.
+ *
+ * `qualitaMinima` decide quali parole entrano (vedi `qualita`): 0,2 vuol dire
+ * fra le prime seimila forme dell'elenco di frequenza, 0,1 fra le prime
+ * ventimila, 0,05 fra le prime trentacinquemila.
+ */
+export const LIVELLI_CRUCIVERBA = {
+  facile: {
+    righe: 9,
+    colonne: 9,
+    qualitaMinima: 0.2,
+    chiare: true,
+    massimoEnigmista: 2,
+    massimoSigle: MASSIMO_SIGLE,
+    forma: { minimoNere: 14, massimoNere: 17, massimoCorte: 6 },
+  },
+  media: {
+    righe: 10,
+    colonne: 10,
+    qualitaMinima: 0.1,
+    chiare: true,
+    massimoEnigmista: 4,
+    massimoSigle: MASSIMO_SIGLE,
+    forma: {},
+  },
+  difficile: {
+    righe: 10,
+    colonne: 10,
+    qualitaMinima: QUALITA_MINIMA,
+    chiare: false,
+    massimoEnigmista: Infinity,
+    massimoSigle: MASSIMO_SIGLE,
+    forma: {},
+  },
+}
+
+/** Il livello della classificata. */
+export const LIVELLO_DEL_GIORNO = 'facile'
+
+/** Il dizionario di un livello: le parole che ammette, con le sole definizioni che ammette. */
+export function dizionarioDelLivello(voci, livello) {
+  const { qualitaMinima, chiare } = LIVELLI_CRUCIVERBA[livello]
+  return preparaDizionario(voci, { qualitaMinima, chiare })
+}
+
+/**
  * PRNG deterministico: la stessa funzione di shared/daily.ts, copiata perché
  * gli script girano in Node senza compilare TypeScript. Un test verifica che le
  * due diano la stessa sequenza.
@@ -127,11 +207,14 @@ export function qualita(voce, minima = QUALITA_MINIMA) {
  * bitset) delle parole che hanno quella lettera in quella posizione. Il
  * controllo in avanti diventa un AND fra due array di interi.
  */
-export function preparaDizionario(voci, { lunghezzaMassima = 10, qualitaMinima = QUALITA_MINIMA } = {}) {
+export function preparaDizionario(voci, { lunghezzaMassima = 10, qualitaMinima = QUALITA_MINIMA, chiare = false } = {}) {
   const perLunghezza = new Map()
-  for (const voce of voci) {
-    const n = voce.parola.length
+  for (const tutta of voci) {
+    const n = tutta.parola.length
     if (n < 2 || n > lunghezzaMassima) continue
+    // Con le sole definizioni chiare, una parola che non ne ha nessuna non entra.
+    const voce = chiare ? { ...tutta, definizioni: tutta.definizioni.filter((d) => definizioneChiara(d.testo)) } : tutta
+    if (voce.definizioni.length === 0) continue
     const q = qualita(voce, qualitaMinima)
     if (q < 0) continue
     if (!perLunghezza.has(n)) perLunghezza.set(n, [])
@@ -598,24 +681,33 @@ export function definizioniDaEnigmista(parola, comuni) {
  * (`definizioniDaEnigmista`), pescata con `rng` fra le prime; una lunga, che
  * torna di rado, riparte dalla prima. Due definizioni uguali nello stesso schema
  * ("Qui, in questo luogo" per CI e per VI) non ci sono mai.
+ *
+ * Le definizioni da enigmista sono al piu' `massimoEnigmista` per schema: oltre,
+ * una parola corta riprende una definizione che ha gia' avuto. Uno schema con
+ * dieci "Inizio di" e "Fine di" sembrava un gioco di lettere, non un cruciverba.
  */
-export function scegliDefinizioni(riempimento, { recenti = new Map(), rng = () => 0, comuni = [] } = {}) {
+export function scegliDefinizioni(
+  riempimento,
+  { recenti = new Map(), rng = () => 0, comuni = [], massimoEnigmista = Infinity } = {},
+) {
   const gia = new Set()
   const nelloSchema = new Set(riempimento.map(({ voce }) => voce.parola))
   const definizioni = {}
+  let enigmista = 0
   for (const { chiave, voce } of riempimento) {
     const dette = recenti.get(voce.parola)
     const libera = (t) => !gia.has(t.toLowerCase()) && !dette?.has(t.toLowerCase())
     const proprie = voce.definizioni.filter((d) => !d.sigla)
     const elenco = proprie.length > 0 ? proprie : voce.definizioni
     let d = elenco.find((x) => libera(x.testo))
-    if (!d && voce.parola.length <= 3) {
+    if (!d && voce.parola.length <= 3 && enigmista < massimoEnigmista) {
       const scelte = definizioniDaEnigmista(voce.parola, comuni).filter(
         (t) => libera(t) && !nelloSchema.has(t.slice(t.lastIndexOf(' ') + 1)),
       )
       if (scelte.length > 0) {
         const testo = scelte[Math.floor(rng() * Math.min(SCELTA_ENIGMISTA, scelte.length))]
         d = { testo, voce: elenco[0].voce, nota: '' }
+        enigmista += 1
       }
     }
     d ??= elenco.find((x) => !gia.has(x.testo.toLowerCase())) ?? elenco[0]
@@ -670,26 +762,32 @@ export function correggiDefinizioni(soluzione, righe, colonne, salvate, perParol
  * tornano per forza — ma scendono in fondo all'ordine dei tentativi, e un
  * riempimento che ne usa molte perde il confronto con gli altri. `recenti` le
  * definizioni che le parole hanno avuto di recente (vedi `scegliDefinizioni`).
+ * `livello` decide la misura, la forma e le definizioni da enigmista
+ * (`LIVELLI_CRUCIVERBA`); gli `indici` devono essere quelli del suo dizionario
+ * (`dizionarioDelLivello`).
  */
 export function generaCruciverba({
   indici,
   seme,
-  righe = 10,
-  colonne = 10,
+  livello = 'difficile',
+  righe = LIVELLI_CRUCIVERBA[livello].righe,
+  colonne = LIVELLI_CRUCIVERBA[livello].colonne,
   schemi = 100,
   evita = new Set(),
   recenti = new Map(),
-  forma = {},
+  forma = LIVELLI_CRUCIVERBA[livello].forma,
 }) {
+  const { massimoSigle, massimoEnigmista } = LIVELLI_CRUCIVERBA[livello]
   const rng = mulberry32(seme)
   let migliore = null
-  for (let i = 0; i < schemi; i += 1) {
+  // Si provano `schemi` schemi; se nessuno si e' riempito si va avanti, fino a quattro volte tanti.
+  for (let i = 0; i < schemi || (!migliore && i < schemi * 4); i += 1) {
     const schema = disegnaSchema(rng, righe, colonne, forma)
     if (!schema) continue
     const riempimento = riempi(schema, righe, colonne, indici, rng, { evita })
     if (!riempimento) continue
     const voto = valuta(riempimento, evita)
-    if (voto.sigle > MASSIMO_SIGLE) continue
+    if (voto.sigle > massimoSigle) continue
     if (!migliore || voto.punti > migliore.voto.punti) migliore = { schema, riempimento, voto }
   }
   if (!migliore) return null
@@ -704,7 +802,7 @@ export function generaCruciverba({
     righe,
     colonne,
     griglia: griglia.join(''),
-    definizioni: scegliDefinizioni(migliore.riempimento, { recenti, rng, comuni: comuniDi(indici) }),
+    definizioni: scegliDefinizioni(migliore.riempimento, { recenti, rng, comuni: comuniDi(indici), massimoEnigmista }),
     parole: migliore.riempimento.map(({ voce }) => voce.parola),
     voto: migliore.voto,
   }
@@ -760,10 +858,10 @@ const cita = (s) => `'${String(s).replace(/'/g, "''")}'`
 
 /**
  * L'istruzione SQL che salva uno schema. `INSERT OR IGNORE`: uno schema scritto
- * non cambia. `libero` lo scrive fra gli schemi liberi, col suo numero; uno del
- * giorno porta il suo `formato`.
+ * non cambia. `libero` lo scrive fra gli schemi liberi, col suo numero e il suo
+ * `livello`; uno del giorno porta il suo `formato`.
  */
-export function istruzioneSql(numero, cruciverba, adesso, libero = false, formato = null) {
+export function istruzioneSql(numero, cruciverba, adesso, libero = false, formato = null, livello = null) {
   const colonne = ['righe', 'colonne', 'soluzione', 'definizioni', 'created_at']
   const valori = [
     numero,
@@ -776,6 +874,10 @@ export function istruzioneSql(numero, cruciverba, adesso, libero = false, format
   if (!libero && formato !== null) {
     colonne.push('formato')
     valori.push(formato)
+  }
+  if (libero && livello !== null) {
+    colonne.push('livello')
+    valori.push(cita(livello))
   }
   return (
     (libero

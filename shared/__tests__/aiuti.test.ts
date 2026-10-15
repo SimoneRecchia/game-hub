@@ -107,7 +107,7 @@ describe('i costi vengono dallo schema', () => {
     const sette = costiAiuti(TETTO_CRUCIVERBA, 7)
     expect(costiCruciverba(schema)).toEqual(sette)
     const aiuti = con({ svelate: 1, errori: 1, controlli: 1 })
-    expect(punteggio(aiuti, costiCruciverba(schema))).toBe(puntiConAiuti(TETTO_CRUCIVERBA, sette, aiuti))
+    expect(punteggio(aiuti, costiCruciverba(schema), 0)).toBe(puntiConAiuti(TETTO_CRUCIVERBA, sette, aiuti))
   })
 
   it('nel sudoku dalle caselle vuote', () => {
