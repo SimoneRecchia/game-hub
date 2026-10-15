@@ -41,7 +41,7 @@ const LEDE: Record<ChiaveClassifica, string> = {
   wordle: `${ATTEMPT_POINTS[0]} punti al primo tentativo, ${ATTEMPT_POINTS[ATTEMPT_POINTS.length - 1]} al sesto.`,
   scarabeo: `Pareggiare il computer vale ${TETTI.scarabeo} punti.`,
   cruciverba: `${TETTI.cruciverba} punti se lo completi senza aiuti.`,
-  sudoku: `${TETTI.sudoku} punti se lo risolvi senza aiuti.`,
+  sudoku: `${TETTI.sudoku} punti se lo risolvi presto e senza aiuti, ${TETTI.sudoku / 2} se ci metti tanto.`,
   quiz: `${PUNTI_BASE_QUIZ} punti per aver giocato, ${PUNTI_PER_GIUSTA} per ogni risposta giusta.`,
   nomi: `Fino a ${TETTI.nomi} punti, che valgono il giorno dopo: di più per le risposte date da pochi.`,
   anagrammi: `${PUNTI_FINITA_ANAGRAMMI} punti per aver giocato, fino a ${PUNTI_PAROLA_ANAGRAMMI + BONUS_ANAGRAMMI} per ogni parola: di più se la trovi subito.`,

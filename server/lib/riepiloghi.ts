@@ -237,7 +237,7 @@ export async function riepilogoSudoku(db: D1Database, playerId: string): Promise
       ? PUNTI_SUDOKU
       : row.status === 'done'
         ? row.score
-        : puntiSudoku(aiutiDi(row), costiSudoku(schema.dati)),
+        : puntiSudoku(aiutiDi(row), costiSudoku(schema.dati), row.tempo_ms),
     tempoMs: row?.tempo_ms ?? 0,
     msToNextPuzzle: msToNextPuzzle(),
   }

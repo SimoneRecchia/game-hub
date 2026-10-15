@@ -63,7 +63,7 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
   })
 
   it('nel sudoku il risolto senza aiuti vale il tetto, e gli aiuti seguono la stessa regola del cruciverba', () => {
-    expect(puntiSudoku(NESSUN_AIUTO, SUDOKU)).toBe(TETTI.sudoku)
+    expect(puntiSudoku(NESSUN_AIUTO, SUDOKU, 0)).toBe(TETTI.sudoku)
     expect(SUDOKU).toEqual(costiAiuti(TETTI.sudoku, 50))
   })
 
@@ -126,14 +126,14 @@ describe('una giornata storta si recupera', () => {
   })
 
   it('nel sudoku lo stesso: un aiuto si sente, e svelarlo tutto vale zero', () => {
-    expect(puntiSudoku(con({ svelate: 1 }), SUDOKU)).toBe(TETTI.sudoku - SUDOKU.svelata)
-    expect(puntiSudoku(con({ controlli: 1, errori: 1 }), SUDOKU)).toBe(TETTI.sudoku - SUDOKU.controllo - SUDOKU.errore)
+    expect(puntiSudoku(con({ svelate: 1 }), SUDOKU, 0)).toBe(TETTI.sudoku - SUDOKU.svelata)
+    expect(puntiSudoku(con({ controlli: 1, errori: 1 }), SUDOKU, 0)).toBe(TETTI.sudoku - SUDOKU.controllo - SUDOKU.errore)
     // Due cifre svelate e due controlli con un errore: sotto il novanta per cento, sopra il settantacinque.
-    const qualcuno = puntiSudoku(con({ svelate: 2, controlli: 2, errori: 1 }), SUDOKU)
+    const qualcuno = puntiSudoku(con({ svelate: 2, controlli: 2, errori: 1 }), SUDOKU, 0)
     expect(qualcuno).toBeLessThan(0.9 * TETTI.sudoku)
     expect(qualcuno).toBeGreaterThan(0.75 * TETTI.sudoku)
-    expect(puntiSudoku(con({ svelate: 8 }), SUDOKU)).toBeGreaterThan(TETTI.sudoku / 2)
-    expect(puntiSudoku(con({ svelate: 50 }), SUDOKU)).toBe(0)
+    expect(puntiSudoku(con({ svelate: 8 }), SUDOKU, 0)).toBeGreaterThan(TETTI.sudoku / 2)
+    expect(puntiSudoku(con({ svelate: 50 }), SUDOKU, 0)).toBe(0)
   })
 
   it('in Nomi, cose e città una partita normale vale piu’ della meta’ del tetto, e scrivere vale qualcosa', () => {
