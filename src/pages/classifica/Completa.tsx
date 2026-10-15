@@ -12,7 +12,8 @@ import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
 import { BONUS_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, PUNTI_PAROLA_ANAGRAMMI } from '@shared/anagrammi'
-import { PUNTI_FINITA_SEQUENZE, PUNTI_SEQUENZA } from '@shared/sequenze'
+import { ERRORE_CATENA, PUNTI_CATENA_PERSA } from '@shared/catena'
+import { ERRORE_GHIGLIOTTINA, PUNTI_GHIGLIOTTINA_PERSA } from '@shared/ghigliottina'
 import { PUNTI_GIOCATA_PAROLIERE } from '@shared/paroliere'
 import { TETTI } from '@shared/punti'
 import { DOMANDE_PER_PARTITA, PUNTI_BASE_QUIZ, PUNTI_QUIZ } from '@shared/quiz'
@@ -44,10 +45,9 @@ const LEDE: Record<ChiaveClassifica, string> = {
   quiz: `${PUNTI_BASE_QUIZ} punti per aver giocato, ${PUNTI_PER_GIUSTA} per ogni risposta giusta.`,
   nomi: `Fino a ${TETTI.nomi} punti, che valgono il giorno dopo: di più per le risposte date da pochi.`,
   anagrammi: `${PUNTI_FINITA_ANAGRAMMI} punti per aver giocato, fino a ${PUNTI_PAROLA_ANAGRAMMI + BONUS_ANAGRAMMI} per ogni parola: di più se la trovi subito.`,
-  sequenze: `${PUNTI_FINITA_SEQUENZE} punti per aver giocato, ${PUNTI_SEQUENZA} per ogni sequenza giusta: fino a ${TETTI.sequenze}.`,
-  ghigliottina: `Si parte da ${TETTI.ghigliottina} punti, ogni scelta sbagliata li dimezza; zero se sbagli la parola vincente.`,
+  ghigliottina: `Si parte da ${TETTI.ghigliottina} punti, ${ERRORE_GHIGLIOTTINA} in meno per ogni scelta sbagliata; ${PUNTI_GHIGLIOTTINA_PERSA} se sbagli la parola vincente.`,
   paroliere: `${PUNTI_GIOCATA_PAROLIERE} punti per aver giocato, fino a ${TETTI.paroliere} con le parole della griglia.`,
-  catena: `Si parte da ${TETTI.catena} punti, ogni errore li dimezza; zero se sbagli la parola finale.`,
+  catena: `Si parte da ${TETTI.catena} punti, ${ERRORE_CATENA} in meno per ogni errore; ${PUNTI_CATENA_PERSA} se sbagli la parola finale.`,
   fortuna: 'Quel che Crazy Time, la slot, il blackjack, la roulette e il SuperEnalotto hanno dato o tolto.',
 }
 

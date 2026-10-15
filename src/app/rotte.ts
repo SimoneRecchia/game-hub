@@ -45,8 +45,8 @@
  *   /paroliere/libera                   una griglia a caso, quattro per quattro o cinque per cinque
  *   /catena/classificata                la catena di oggi: cinque parole da indovinare, l'ultima decide
  *   /catena/libera                      una catena a caso
- *   /sequenze/classificata              i cinque turni di oggi, gli stessi per tutti
- *   /sequenze/libera                    finché non sbagli, da solo o con un amico
+ *   /sequenze/libera                    la sala: finché non sbagli, da solo o con un amico (/sequenze e
+ *                                       /sequenze/classificata, l'indirizzo di quando c'era, ci portano)
  *   /sequenze/sfida/:id                 una sfida con un amico
  *   /sequenze/invito/:codice            una sfida arrivata con un link
  *   /fortuna                            i giochi d'azzardo: si puntano i punti delle classificate
@@ -101,7 +101,6 @@ export const SLUG: Record<GiocoClassificato, string> = {
   quiz: 'quiz',
   nomi: 'nomi-cose-citta',
   anagrammi: 'anagrammi',
-  sequenze: 'sequenze',
   ghigliottina: 'ghigliottina',
   paroliere: 'paroliere',
   catena: 'catena',
@@ -168,6 +167,8 @@ export const ROTTE = {
   invitoQuiz: (codice: string) => `/quiz/sfida/${codice}`,
   sfidaNomi: (id: string) => `/nomi-cose-citta/sfida/${id}`,
   invitoNomi: (codice: string) => `/nomi-cose-citta/invito/${codice}`,
+  /** Le Sequenze non hanno piu' la classificata: la sala sta all'indirizzo della libera. */
+  sequenze: '/sequenze/libera',
   sfidaSequenze: (id: string) => `/sequenze/sfida/${id}`,
   invitoSequenze: (codice: string) => `/sequenze/invito/${codice}`,
   /** Le sfide delle libere che si giocano da soli: stanno sotto la libera del gioco. */

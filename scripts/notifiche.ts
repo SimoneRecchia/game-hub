@@ -66,7 +66,6 @@ const GIORNALIERE: ReadonlyArray<readonly [GiocoClassificato, string, string]> =
   ['quiz', 'quiz_partite', 'Quiz'],
   ['nomi', 'nomi_partite', 'Nomi, cose e città'],
   ['anagrammi', 'anagrammi_partite', 'Anagrammi'],
-  ['sequenze', 'sequenze_partite', 'Sequenze'],
   ['ghigliottina', 'ghigliottina_partite', 'Ghigliottina'],
   ['paroliere', 'paroliere_partite', 'Paroliere'],
   ['catena', 'catena_partite', 'Catena'],

@@ -16,7 +16,8 @@
  * una colonna a parte (`battaglia`), perché una giornata vale quel che valeva.
  * Dopo non ce ne sono, e la colonna resta a zero. Lo stesso per il tris, che
  * ha avuto la sua fino all'8 ottobre 2026 (`tris`): contro il computer del
- * giorno la serie non era una partita uguale per tutti come le altre.
+ * giorno la serie non era una partita uguale per tutti come le altre. E per le
+ * Sequenze, fino al 15 ottobre 2026 (`sequenze`): restano la libera e la sfida.
  *
  * Un aggregato per gioco (`AGGREGATI`), tutti con le stesse colonne, uniti
  * in un'istruzione sola (`UNION ALL`) e sommati qui. Erano quindici
@@ -56,6 +57,8 @@ export interface TotaliGenerale {
   battaglia: number
   /** Il tris classificato, nei giorni in cui c'era. */
   tris: number
+  /** Le Sequenze classificate, nei giorni in cui c'erano. */
+  sequenze: number
   /** Quel che hanno dato o tolto i giochi della Fortuna: si sommano ai punti, e non sono partite. */
   ruota: number
   slot: number
@@ -86,12 +89,12 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
       g.perGioco.quiz +
       g.perGioco.nomi +
       g.perGioco.anagrammi +
-      g.perGioco.sequenze +
       g.perGioco.ghigliottina +
       g.perGioco.paroliere +
       g.perGioco.catena +
       g.battaglia +
       g.tris +
+      g.sequenze +
       g.ruota +
       g.slot +
       g.blackjack +
@@ -110,8 +113,8 @@ export function ordinaGenerale(giocatori: TotaliGenerale[]): GeneraleRow[] {
 
 /**
  * I totali di ogni gioco in un periodo, uno per giocatore, con le stesse
- * colonne: da dove vengono (`fonte`: un gioco classificato, la battaglia o il
- * tris dei giorni in cui avevano la classificata, o un gioco della Fortuna),
+ * colonne: da dove vengono (`fonte`: un gioco classificato, la battaglia, il
+ * tris o le Sequenze dei giorni in cui avevano la classificata, o un gioco della Fortuna),
  * i punti, gli assist e le partite. `?1` e `?2` sono il primo e l'ultimo giorno
  * del periodo, `?3` e `?4` gli stessi un giorno prima, per Nomi, cose e città.
  */
@@ -159,7 +162,7 @@ const AGGREGATI: readonly string[] = [
    */
   `SELECT 'nomi', player_id, COALESCE(SUM(score), 0), 0, COUNT(*)
      FROM nomi_partite WHERE puzzle_number BETWEEN ?3 AND ?4 AND score IS NOT NULL GROUP BY player_id`,
-  // Gli altri, il tris compreso nei giorni in cui aveva una classificata: la giornata conta una partita.
+  // Gli altri, il tris e le Sequenze compresi nei giorni in cui avevano una classificata: la giornata conta una partita.
   ...(
     [
       ['sudoku', 'sudoku_games'],
@@ -224,13 +227,13 @@ export async function classificaGenerale(
           quiz: 0,
           nomi: 0,
           anagrammi: 0,
-          sequenze: 0,
           ghigliottina: 0,
           paroliere: 0,
           catena: 0,
         },
         battaglia: 0,
         tris: 0,
+        sequenze: 0,
         ruota: 0,
         slot: 0,
         blackjack: 0,
@@ -250,6 +253,7 @@ export async function classificaGenerale(
     else {
       if (r.fonte === 'battaglia') t.battaglia += r.punti
       else if (r.fonte === 'tris') t.tris += r.punti
+      else if (r.fonte === 'sequenze') t.sequenze += r.punti
       else t.perGioco[r.fonte as GiocoClassificato] += r.punti
       t.partite += r.partite
       t.assist += r.assist
@@ -366,7 +370,8 @@ export async function classificaFortuna(
  * le partite di tutti. Le somme sono
  * quelle di `classificaGenerale`, gioco per gioco: un test le tiene d'accordo.
  * Nomi, cose e città conta la partita di ieri, che la notte ha contato, e la
- * battaglia c'e' ancora perché la generale la conta nei giorni in cui c'era.
+ * battaglia, il tris e le Sequenze ci sono ancora perché la generale li conta
+ * nei giorni in cui c'erano.
  */
 export async function puntiClassificateDi(db: D1Database, playerId: string, numero: number): Promise<number> {
   const riga = await db

@@ -12,11 +12,10 @@ import {
 import { BASE_NOMI, CATEGORIE_PER_PARTITA, TEMPO_NOMI_MS, puntiNomi } from '../nomi-cose'
 import { PUNTI_BASE_QUIZ } from '../quiz'
 import { LUNGHEZZE_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, TEMPO_PAROLA_MS, puntiAnagrammi } from '../anagrammi'
-import { PUNTI_FINITA_SEQUENZE, PUNTI_SEQUENZA, SEQUENZE_PER_TURNO, TURNI_SEQUENZE, puntiSequenze } from '../sequenze'
 import { COPPIE_GHIGLIOTTINA, montepremi, puntiGhigliottina } from '../ghigliottina'
 import { PUNTI_GIOCATA_PAROLIERE, puntiParoliere } from '../paroliere'
 import { inizio as inizioCatena, montepremiCatena, puntiCatena } from '../catena'
-import { ATTEMPT_POINTS, ATTEMPT_STEP, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
+import { ATTEMPT_POINTS, ATTEMPT_STEP, LOSS_POINTS, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
 /** Uno schema del cruciverba e uno del sudoku della misura di tutti i giorni: ottanta lettere, cinquanta cifre. */
 const CRUCIVERBA = costiAiuti(PUNTI_COMPLETO, 80)
@@ -39,8 +38,8 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
     expect(Object.keys(MASSIMI).sort()).toEqual(Object.keys(TETTI).sort())
   })
 
-  it('sono undici classificate, e valgono cento ciascuna: nessuna pesa piu’ di un’altra nella generale', () => {
-    expect(Object.keys(TETTI)).toHaveLength(11)
+  it('sono dieci classificate, e valgono cento ciascuna: nessuna pesa piu’ di un’altra nella generale', () => {
+    expect(Object.keys(TETTI)).toHaveLength(10)
     for (const [gioco, tetto] of Object.entries(TETTI)) expect(tetto, gioco).toBe(100)
   })
 
@@ -78,12 +77,6 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
   it('negli Anagrammi le cinque parole trovate subito valgono il tetto', () => {
     const subito = LUNGHEZZE_ANAGRAMMI.map((lettere) => ({ lettere, trovata: true, ms: 1_000, aiuto: false }))
     expect(puntiAnagrammi(subito)).toBe(TETTI.anagrammi)
-  })
-
-  it('nelle Sequenze arrivare a nove in tutti e cinque i turni vale il tetto', () => {
-    expect(puntiSequenze(Array(TURNI_SEQUENZE).fill(SEQUENZE_PER_TURNO))).toBe(TETTI.sequenze)
-    // Oltre i nove cubetti un turno non va: il tetto resta quello.
-    expect(puntiSequenze(Array(TURNI_SEQUENZE).fill(SEQUENZE_PER_TURNO + 3))).toBe(TETTI.sequenze)
   })
 
   it('nella Ghigliottina cinque scelte giuste e la parola vincente valgono il tetto', () => {
@@ -164,19 +157,6 @@ describe('una giornata storta si recupera', () => {
     expect(puntiAnagrammi([])).toBe(PUNTI_FINITA_ANAGRAMMI)
   })
 
-  it('nelle Sequenze chi si ferma a quattro vale la metà di chi arriva a nove, e la media sta in mezzo', () => {
-    // La sequenza piu' lunga ripetuta: quattro cubetti sono due sequenze giuste per turno, nove sono sette.
-    const quattro = puntiSequenze(Array(TURNI_SEQUENZE).fill(2))
-    expect(quattro / TETTI.sequenze).toBe(0.5)
-    // Cinque o sei, la media degli adulti al test di Corsi: fra il sessanta e il settanta per cento.
-    const media = puntiSequenze([3, 4, 3, 4, 3])
-    expect(media / TETTI.sequenze).toBeGreaterThan(0.6)
-    expect(media / TETTI.sequenze).toBeLessThan(0.7)
-    expect(puntiSequenze(Array(TURNI_SEQUENZE).fill(0))).toBe(PUNTI_FINITA_SEQUENZE)
-    // Ogni sequenza giusta conta, e conta uguale.
-    expect(puntiSequenze([1, 0, 0, 0, 0]) - puntiSequenze([0, 0, 0, 0, 0])).toBe(PUNTI_SEQUENZA)
-  })
-
   it('nel quiz una partita storta vale circa la metà di una perfetta, e finirla vale sempre qualcosa', () => {
     const storta = puntiQuiz(3, 10)
     expect(storta / puntiQuiz(10, 10)).toBeGreaterThan(0.4)
@@ -194,28 +174,36 @@ describe('una giornata storta si recupera', () => {
 })
 
 /**
- * La Ghigliottina e' l'eccezione, di proposito: si gioca come alla
- * televisione. Ogni scelta sbagliata dimezza il montepremi, e una parola
- * vincente sbagliata non vale niente.
+ * La Ghigliottina e la Catena tengono il principio del Wordle: ogni errore
+ * toglie una parte fissa del montepremi, e una parola finale sbagliata vale
+ * quanto una parola del Wordle non indovinata. Erano l'eccezione, come alla
+ * televisione, dove ogni errore dimezza: due errori lasciavano un quarto.
  */
-describe('la Ghigliottina si gioca come in televisione', () => {
-  it('ogni scelta sbagliata dimezza il montepremi, per difetto', () => {
-    expect(Array.from({ length: COPPIE_GHIGLIOTTINA + 1 }, (_, k) => montepremi(k))).toEqual([100, 50, 25, 12, 6, 3])
+describe('la Ghigliottina: ogni errore costa come un tentativo del Wordle', () => {
+  it('ogni scelta sbagliata toglie dieci punti, e tutte sbagliate lasciano la metà', () => {
+    expect(Array.from({ length: COPPIE_GHIGLIOTTINA + 1 }, (_, k) => montepremi(k))).toEqual([100, 90, 80, 70, 60, 50])
+    expect(montepremi(1)).toBe(TETTI.ghigliottina - ATTEMPT_STEP)
   })
 
-  it('una parola vincente sbagliata non vale niente, ma chi ha sbagliato tutte le scelte può ancora vincere', () => {
-    for (let k = 0; k <= COPPIE_GHIGLIOTTINA; k += 1) expect(puntiGhigliottina(k, false)).toBe(0)
-    expect(puntiGhigliottina(COPPIE_GHIGLIOTTINA, true)).toBe(3)
+  it('una parola vincente sbagliata vale quanto un Wordle perso, e meno della peggiore indovinata', () => {
+    for (let k = 0; k <= COPPIE_GHIGLIOTTINA; k += 1) expect(puntiGhigliottina(k, false)).toBe(LOSS_POINTS)
+    expect(puntiGhigliottina(COPPIE_GHIGLIOTTINA, true)).toBe(50)
+    expect(puntiGhigliottina(COPPIE_GHIGLIOTTINA, true)).toBeGreaterThan(puntiGhigliottina(0, false))
   })
 })
 
-/** La Catena si gioca come la Ghigliottina: ogni errore dimezza, e la parola finale sbagliata azzera. */
-describe('la Catena si gioca come in televisione', () => {
-  it('ogni errore o acquisto dimezza il montepremi, che non scende sotto un punto', () => {
-    expect(Array.from({ length: 10 }, (_, k) => montepremiCatena(k))).toEqual([100, 50, 25, 12, 6, 3, 1, 1, 1, 1])
+describe('la Catena: errori lievi, e il montepremi non scende sotto la metà', () => {
+  it('ogni errore o acquisto toglie sei punti, fino a cinquanta', () => {
+    expect(Array.from({ length: 10 }, (_, k) => montepremiCatena(k))).toEqual([100, 94, 88, 82, 76, 70, 64, 58, 52, 50])
+    expect(montepremiCatena(20)).toBe(50)
   })
 
-  it('una parola finale sbagliata non vale niente', () => {
-    expect(puntiCatena(inizioCatena(), false)).toBe(0)
+  it('il gradino resta sotto quello del Wordle, perché gli errori possibili sono otto', () => {
+    expect(montepremiCatena(0) - montepremiCatena(1)).toBeLessThan(ATTEMPT_STEP)
+    expect(montepremiCatena(0) - montepremiCatena(1)).toBeGreaterThan(ATTEMPT_STEP / 2)
+  })
+
+  it('una parola finale sbagliata vale quanto un Wordle perso', () => {
+    expect(puntiCatena(inizioCatena(), false)).toBe(LOSS_POINTS)
   })
 })
