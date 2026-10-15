@@ -4,13 +4,13 @@
  *
  * Scritto da scripts/build-dawg.mjs: non va toccato a mano.
  */
-export const IMPRONTA_DIZIONARIO = 'addd89ea9daaa268'
+export const IMPRONTA_DIZIONARIO = 'd63b30f3fdb9a31b'
 
 /**
  * Quanto e' lungo, aperto. Le Pages rispondono con la pagina dell'app a un
  * indirizzo che non esiste, e chi legge il file controlla di non avere quella.
  */
-export const BYTE_DIZIONARIO = 1304904
+export const BYTE_DIZIONARIO = 1378624
 
 /** Il file intero: lo legge il server. */
 export const URL_DIZIONARIO = `/scarabeo/dizionario.dawg?v=${IMPRONTA_DIZIONARIO}`

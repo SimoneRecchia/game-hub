@@ -63,8 +63,8 @@ export async function mossaDelComputer(partita: PartitaLibera): Promise<Mossa | 
 }
 
 /** La risposta del computer del giorno alle mosse della classificata, che finiscono con la mia. */
-export async function rispostaDelComputer(numero: number, mosse: Mossa[]): Promise<Mossa | null> {
-  const { mossa } = await chiedi<{ mossa: Mossa | null }>({ tipo: 'risposta', numero, mosse })
+export async function rispostaDelComputer(numero: number, mosse: Mossa[], formato: number): Promise<Mossa | null> {
+  const { mossa } = await chiedi<{ mossa: Mossa | null }>({ tipo: 'risposta', numero, mosse, formato })
   return mossa
 }
 

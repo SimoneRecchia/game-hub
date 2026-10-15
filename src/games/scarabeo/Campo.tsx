@@ -21,6 +21,8 @@ interface Props {
   attesa?: string | null
   /** Tessere rimaste nel sacchetto: senza, non si cambia. */
   restanti: number
+  /** Le tessere si cambiano: non con i leggii gemelli, che sono nuovi a ogni turno, e il bottone non c'e'. */
+  cambiabili?: boolean
   evidenziate?: ReadonlySet<number>
   /** Chi guarda in compagnia compone e suggerisce: niente cambio e niente passo, e il bottone lo dice. */
   suggerisci?: boolean
@@ -46,6 +48,7 @@ export function Campo({
   bloccato,
   attesa,
   restanti,
+  cambiabili = true,
   evidenziate,
   suggerisci = false,
   onGioca,
@@ -147,13 +150,15 @@ export function Campo({
               </Button>
               {!suggerisci && (
                 <>
-                  <Button
-                    variant="plain"
-                    onClick={() => setCambio(true)}
-                    disabled={bloccato || restanti === 0 || c.mano.length === 0}
-                  >
-                    Cambia
-                  </Button>
+                  {cambiabili && (
+                    <Button
+                      variant="plain"
+                      onClick={() => setCambio(true)}
+                      disabled={bloccato || restanti === 0 || c.mano.length === 0}
+                    >
+                      Cambia
+                    </Button>
+                  )}
                   <Button variant="plain" onClick={onPassa} disabled={bloccato}>
                     Passa
                   </Button>

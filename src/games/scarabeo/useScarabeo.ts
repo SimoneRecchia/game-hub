@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MossaAppena } from './adesivi'
 import type { CellaPiena, ScarabeoState } from '@shared/types'
 import { LATO, sacchettoDelGiorno, type EsitoPosa, type Mossa } from '@shared/scarabeo'
-import { PARTITA_DEL_GIORNO, caselleDi } from '@shared/scarabeo-computer'
-import { statoADue } from '@shared/scarabeo-due'
+import { caselleDi } from '@shared/scarabeo-computer'
+import { regoleDellaGiornata, statoADue } from '@shared/scarabeo-due'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { haptic } from '@/lib/haptics'
@@ -79,6 +79,16 @@ export function tessereCambiate(quante: number): string {
   return quante === 1 ? '1 tessera cambiata.' : `${quante} tessere cambiate.`
 }
 
+/** Il formato della giornata, come lo scrive il server (`FORMATO_TRAGUARDO`): 3 con i leggii gemelli, 2 dal sacchetto. */
+export function formatoDi(s: ScarabeoState): number {
+  return s.gemelli ? 3 : 2
+}
+
+/** La partita a due della giornata, ricavata dalle mosse come la ricava il server. */
+function aDue(s: ScarabeoState, mosse: readonly Mossa[]) {
+  return statoADue(sacchettoDelGiorno(s.puzzleNumber), mosse, regoleDellaGiornata(formatoDi(s), s.puzzleNumber))
+}
+
 /**
  * Lo stato di prima della risposta del computer, ricavato dalle mosse come lo
  * ricava il server: la risposta arriva insieme alla mia mossa, e la schermata
@@ -86,7 +96,7 @@ export function tessereCambiate(quante: number): string {
  */
 export function primaDellaRisposta(s: ScarabeoState): ScarabeoState {
   const partita = s.partita.slice(0, -1)
-  const due = statoADue(sacchettoDelGiorno(s.puzzleNumber), partita, PARTITA_DEL_GIORNO)
+  const due = aDue(s, partita)
   const celle: CellaPiena[] = []
   due.tabellone.forEach((casella, i) => {
     if (casella) celle.push({ r: Math.floor(i / LATO), c: i % LATO, lettera: casella.lettera, jolly: casella.jolly })
@@ -172,10 +182,10 @@ export function useScarabeo(): ScarabeoController {
         let risposta: Mossa | null = null
         if (mossa && stato.controComputer) {
           const dopo = [...stato.partita, mossa]
-          // Risponde a ogni mia mossa, anche all'ultima: dieci a testa. Non risponde a una partita gia' finita.
-          if (statoADue(sacchettoDelGiorno(stato.puzzleNumber), dopo, PARTITA_DEL_GIORNO).turno === 1) {
+          // Risponde a ogni mia mossa, anche all'ultima. Non risponde a una partita gia' finita.
+          if (aDue(stato, dopo).turno === 1) {
             try {
-              risposta = await rispostaDelComputer(stato.puzzleNumber, dopo)
+              risposta = await rispostaDelComputer(stato.puzzleNumber, dopo, formatoDi(stato))
             } catch {
               avvisa('Il computer non risponde. Riprova fra poco.')
               return

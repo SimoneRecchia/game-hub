@@ -175,6 +175,8 @@ export interface ScarabeoState {
   partita: Mossa[]
   /** La giornata si gioca a turni contro il computer del giorno: le giornate di prima erano da soli. */
   controComputer: boolean
+  /** Le tessere sono nuove a ogni turno, gemelle di quelle del computer: niente sacchetto, niente cambio. */
+  gemelli: boolean
   /** Il punteggio del computer nella stessa partita, se si gioca contro di lui. */
   avversario: number | null
   /** Le mie mosse. */

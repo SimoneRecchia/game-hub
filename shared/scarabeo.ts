@@ -29,8 +29,10 @@ export const TESSERE_LEGGIO = 8
  *
  * Un limite serve, e non e' un ripiego: senza, la partita finisce quando il
  * sacchetto e' vuoto — centoventi tessere, un'ora di gioco — e due giocatori
- * che si fermano a punti diversi non sono confrontabili. Dieci mosse sono una
- * pausa caffe' e riempiono una buona parte del tabellone.
+ * che si fermano a punti diversi non sono confrontabili. Dieci erano le mosse
+ * delle giornate dal sacchetto, fino al 15 ottobre 2026; quelle con i leggii
+ * gemelli ne hanno cinque (`MOSSE_GEMELLE` in shared/scarabeo-gemelli.ts), il
+ * tempo di un Wordle.
  */
 export const MOSSE_PER_GIORNATA = 10
 
@@ -274,11 +276,19 @@ export function leggioDa(sacchetto: readonly string[], mosse: readonly Mossa[]):
  * testa — come al tavolo. Da lì valgono le stesse regole del leggio singolo: si
  * pesca dopo ogni posa e dopo ogni cambio, e le tessere cambiate tornano in
  * fondo alla coda.
+ *
+ * Con `qConU` la Q non arriva mai da sola: se tocca a lei e nel leggio non c'e'
+ * una U, la prima U ancora nel sacchetto passa avanti e arriva con lei — o
+ * prima di lei, se nel leggio c'e' posto per una tessera sola. In italiano
+ * una Q senza la U non si gioca, ed e' la tessera che vale di piu'. Vale per la
+ * partita intera, dal 15 ottobre 2026; le giornate classificate di prima
+ * restano come le si e' giocate.
  */
 export function leggiiDa(
   sacchetto: readonly string[],
   mosse: readonly Mossa[],
   giocatori: number,
+  qConU = false,
 ): { leggii: string[][]; restanti: number } {
   const coda = [...sacchetto]
   let prossima = 0
@@ -286,6 +296,14 @@ export function leggiiDa(
 
   const pesca = (leggio: string[]) => {
     while (leggio.length < TESSERE_LEGGIO && prossima < coda.length) {
+      if (qConU && coda[prossima] === 'q' && !leggio.includes('u')) {
+        const u = coda.indexOf('u', prossima + 1)
+        if (u >= 0) {
+          const [tessera] = coda.splice(u, 1)
+          // Con due posti la U arriva subito dopo la Q; con uno arriva lei, e la Q aspetta il turno dopo.
+          coda.splice(leggio.length < TESSERE_LEGGIO - 1 ? prossima + 1 : prossima, 0, tessera)
+        }
+      }
       leggio.push(coda[prossima])
       prossima += 1
     }

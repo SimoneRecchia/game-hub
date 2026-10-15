@@ -2,9 +2,9 @@
  * Fa giocare al computer lo Scarabeo dei prossimi giorni e scrive i risultati
  * in D1.
  *
- * Il computer normale gioca ogni giornata come la trova chi gioca: dieci mosse
- * a testa, a turni contro il computer del giorno, sulle tessere che avranno
- * tutti (`giornataATurni`). Il suo punteggio e' il traguardo dei punti in
+ * Il computer normale gioca ogni giornata come la trova chi gioca: cinque mosse
+ * a testa, a turni contro il computer del giorno, con i leggii gemelli che
+ * avranno tutti (`giornataATurni`). Il suo punteggio e' il traguardo dei punti in
  * classifica (il tetto a chi lo pareggia, vedi shared/punti.ts), e la sua
  * partita si mostra a chi ha finito la propria. Non si fa nel Worker, che ha
  * dieci millisecondi di CPU per richiesta — una mossa del computer ne costa
@@ -12,11 +12,11 @@
  *
  * Solo le giornate che mancano: il traguardo di una giornata non cambia,
  * altrimenti due giocatori dello stesso giorno avrebbero punti su scale
- * diverse. L'eccezione sono i traguardi di un formato vecchio — quelli giocati
- * da solo, di prima dei turni — dei giorni che devono ancora venire e che
- * nessuno ha aperto: si rifanno, come le giornate del quiz di un formato
- * vecchio, e con loro la giornata si gioca a turni. E' deterministico — stesso
- * sacchetto, stesso seme, stesse mosse — quindi rilanciarlo non sposta niente.
+ * diverse. L'eccezione sono i traguardi di un formato vecchio
+ * (`FORMATO_TRAGUARDO`) dei giorni che devono ancora venire e che nessuno ha
+ * aperto: si rifanno, come le giornate del quiz di un formato vecchio, e con
+ * loro la giornata si gioca nel formato nuovo. E' deterministico — stesse
+ * tessere, stesso seme, stesse mosse — quindi rilanciarlo non sposta niente.
  *
  * Gira con vite-node, che capisce il TypeScript di shared/ senza compilarlo:
  *
@@ -33,16 +33,19 @@ import { fileURLToPath } from 'node:url'
 import { gameDate, puzzleNumberFor } from '../shared/daily'
 import { Dawg } from '../shared/dawg'
 import { sacchettoDelGiorno } from '../shared/scarabeo'
-import { FORMATO_TRAGUARDO, PARTITA_DEL_GIORNO, giornataATurni } from '../shared/scarabeo-computer'
-import { statoADue } from '../shared/scarabeo-due'
+import { FORMATO_TRAGUARDO, giornataATurni } from '../shared/scarabeo-computer'
+import { regoleDellaGiornata, statoADue } from '../shared/scarabeo-due'
 import { giornateFerme, scriviTraguardo } from './scarabeo/traguardo'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..')
 const DB = 'game-hub-db'
 
-/** Sotto questo il traguardo non scende: un computer bloccato non deve regalare il tetto a tutti. */
-const RIFERIMENTO_MINIMO = 150
+/**
+ * Sotto questo il traguardo non scende: un computer bloccato non deve regalare
+ * il tetto a tutti. Su quaranta giornate il traguardo piu' basso e' stato 91.
+ */
+const RIFERIMENTO_MINIMO = 75
 
 /** Il seme del computer del traguardo: suo, perché le scelte non ricalchino il sacchetto ne' l'avversario. */
 function semeDelComputer(numero: number): number {
@@ -95,7 +98,7 @@ for (let numero = DA; numero < DA + GIORNI; numero += 1) {
   const { mosse, punti, avversario } = giornataATurni(dawg, numero, semeDelComputer(numero))
   const riferimento = Math.max(RIFERIMENTO_MINIMO, punti)
   istruzioni.push(scriviTraguardo({ numero, punti: riferimento, mosse, formato: FORMATO_TRAGUARDO, adesso }, OGGI))
-  const parole = statoADue(sacchettoDelGiorno(numero), mosse, PARTITA_DEL_GIORNO)
+  const parole = statoADue(sacchettoDelGiorno(numero), mosse, regoleDellaGiornata(FORMATO_TRAGUARDO, numero))
     .giocate.filter((g) => g.di === 0)
     .flatMap((g) => g.parole.slice(0, 1))
     .join(' ')

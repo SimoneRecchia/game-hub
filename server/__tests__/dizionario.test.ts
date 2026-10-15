@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Dawg } from '../../shared/dawg'
-import { CENTRO, JOLLY, leggioDa, sacchettoDelGiorno } from '../../shared/scarabeo'
+import { CENTRO, JOLLY } from '../../shared/scarabeo'
+import { leggiiGemelli } from '../../shared/scarabeo-gemelli'
 import type { Bindings } from '../types'
 import { paroleSconosciute } from '../lib/dizionario'
 import { giornata } from '../lib/scarabeoStore'
@@ -26,7 +27,8 @@ const SENZA_FILE = {
  * leggio non si posa due volte, e il server risponderebbe che manca la tessera.
  */
 function posaInventata() {
-  const { leggio } = leggioDa(sacchettoDelGiorno(giornata().puzzleNumber), [])
+  // Senza traguardo la giornata si gioca con i leggii gemelli: il mio, al primo turno.
+  const [leggio] = leggiiGemelli(giornata().puzzleNumber, 0)
   const lettere = leggio.filter((t) => t !== JOLLY)
   for (const [i, a] of lettere.entries()) {
     for (const [j, b] of lettere.entries()) {
