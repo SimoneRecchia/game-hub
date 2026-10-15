@@ -10,7 +10,7 @@
  * in gara con chi fa anche il cruciverba.
  *
  *   gioco        tempo di chi gioca bene   tetto
- *   Cruciverba   15-25 minuti               100
+ *   Cruciverba   5-10 minuti                100
  *   Scarabeo     10-20 minuti               100
  *   Sudoku       4-10 minuti                100
  *   Quiz         3-4 minuti                 100
@@ -33,7 +33,7 @@
  *   gioco        cosa misura                          tipico    pessimo   perfetto
  *   Wordle       i tentativi                           70-90     20*       100 (+4)
  *   Scarabeo     punti rispetto al computer            60-90    ~40        100
- *   Cruciverba   completato, meno gli aiuti            90-98     0*        100
+ *   Cruciverba   il tempo, meno gli aiuti              75-95    50*       100
  *   Sudoku       il tempo, meno gli aiuti              75-95    50*       100
  *   Quiz         risposte giuste su dieci              60-92     20        100
  *   Nomi, cose   risposte valide, rare e veloci        60-75     25        100

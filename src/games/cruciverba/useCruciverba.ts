@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
-import { NERA, PUNTI_COMPLETO, VUOTA, grigliaPiena } from '@shared/cruciverba'
+import { NERA, PUNTI_COMPLETO, VUOTA, costiCruciverba, grigliaPiena, puntiDelTempoCruciverba } from '@shared/cruciverba'
 import type {
   CruciverbaEsito,
   CruciverbaState,
@@ -72,7 +72,9 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
   const [segnalate, setSegnalate] = useState<Set<number>>(new Set())
   const [selezione, setSelezione] = useState<Selezione | null>(null)
   const [tempoMs, setTempoMs] = useState(0)
+  // I punti fatti, a partita chiusa; prima quel che gli aiuti hanno tolto, e il resto lo dice il tempo che corre.
   const [punti, setPunti] = useState(PUNTI_COMPLETO)
+  const [spesi, setSpesi] = useState(0)
   const [finita, setFinita] = useState(false)
   const [messaggio, setMessaggio] = useState<string | null>(null)
   /** L'esito dell'ultimo controllo, per l'adesivo al centro: quante lettere erano sbagliate. */
@@ -129,6 +131,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
     tempoRef.current = s.tempoMs
     versioneRef.current = s.versione
     setPunti(s.punti)
+    setSpesi(s.spesi)
     setFinita(s.status === 'done')
     finitaRef.current = s.status === 'done'
     // Uno schema nuovo (la pagina e' rimasta aperta oltre la mezzanotte) non
@@ -166,6 +169,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
     (esito: CruciverbaEsito) => {
       versioneRef.current = esito.versione
       setPunti(esito.punti)
+      setSpesi(esito.spesi)
       dimentica('/oggi')
       if (esito.stato) {
         dimentica('/leaderboard')
@@ -514,6 +518,10 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
     [accoda, applicaEsito, corrente, selezione],
   )
 
+  // Quanto varrebbe finirlo adesso: il tempo che corre, meno gli aiuti.
+  const costi = useMemo(() => (stato ? costiCruciverba(stato.schema) : null), [stato?.schema])
+  const valore = finita || !costi ? punti : Math.max(0, puntiDelTempoCruciverba(tempoMs, costi) - spesi)
+
   return {
     stato,
     loadError,
@@ -525,7 +533,7 @@ export function useCruciverba(indirizzi: IndirizziCruciverba = CRUCIVERBA_DEL_GI
     corrente,
     perCasella,
     tempoMs,
-    punti,
+    punti: valore,
     finita,
     messaggio,
     ultimoControllo,

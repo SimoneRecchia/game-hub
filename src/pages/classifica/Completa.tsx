@@ -40,7 +40,7 @@ const LEDE: Record<ChiaveClassifica, string> = {
   generale: 'Tutte le classificate e i giochi della Fortuna.',
   wordle: `${ATTEMPT_POINTS[0]} punti al primo tentativo, ${ATTEMPT_POINTS[ATTEMPT_POINTS.length - 1]} al sesto.`,
   scarabeo: `Pareggiare il computer vale ${TETTI.scarabeo} punti.`,
-  cruciverba: `${TETTI.cruciverba} punti se lo completi senza aiuti.`,
+  cruciverba: `${TETTI.cruciverba} punti se lo completi presto e senza aiuti, ${TETTI.cruciverba / 2} se ci metti tanto.`,
   sudoku: `${TETTI.sudoku} punti se lo risolvi presto e senza aiuti, ${TETTI.sudoku / 2} se ci metti tanto.`,
   quiz: `${PUNTI_BASE_QUIZ} punti per aver giocato, ${PUNTI_PER_GIUSTA} per ogni risposta giusta.`,
   nomi: `Fino a ${TETTI.nomi} punti, che valgono il giorno dopo: di più per le risposte date da pochi.`,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PUNTI_COMPLETO, costiCruciverba } from '../../shared/cruciverba'
+import { PUNTI_COMPLETO, RITMO_CRUCIVERBA, costiCruciverba } from '../../shared/cruciverba'
 import type { CruciverbaEsito, CruciverbaLiberaRisposta, CruciverbaState } from '../../shared/types'
 import { banco } from './banco'
 
@@ -11,7 +11,8 @@ import { banco } from './banco'
  */
 const SOLUZIONE = 'canea##rsolea##a'
 
-function conSchemi(quanti: number) {
+/** Gli schemi liberi, tutti difficili come quelli di prima dei livelli, o dei livelli chiesti. */
+function conSchemi(quanti: number, livelli: string[] = []) {
   const b = banco()
   for (let id = 1; id <= quanti; id += 1) {
     b.db.sqlite
@@ -20,6 +21,9 @@ function conSchemi(quanti: number) {
          VALUES (?, 4, 4, ?, ?, '2026-09-26T00:00:00.000Z')`,
       )
       .run(id, SOLUZIONE, JSON.stringify({ o0: { t: 'Il migliore amico', v: 'cane' } }))
+    if (livelli[id - 1]) {
+      b.db.sqlite.prepare('UPDATE cruciverba_schemi_liberi SET livello = ? WHERE id = ?').run(livelli[id - 1], id)
+    }
   }
   return b
 }
@@ -123,6 +127,44 @@ describe('il cruciverba libero, dalle API', () => {
     expect((await chiama('POST', '/cruciverba/libera', io)).status).toBe(503)
     expect((await chiama('GET', `/cruciverba/libera/${p.partitaId}`, altro)).status).toBe(404)
     expect((await chiama('GET', `/cruciverba/libera/${p.partitaId}`, io)).status).toBe(200)
+  })
+
+  it('si sceglie il livello, e senza livello e\' un difficile come prima', async () => {
+    const { chiama, giocatore } = conSchemi(3, ['facile', 'difficile', 'facile'])
+    const io = await giocatore('franca')
+    const prima = await chiama<CruciverbaLiberaRisposta>('GET', '/cruciverba/libera', io)
+    expect(prima.dati.perLivello).toEqual({ facile: 2, media: 0, difficile: 1 })
+
+    const facile = await chiama<CruciverbaState>('POST', '/cruciverba/libera', io, { livello: 'facile' })
+    expect(facile.status).toBe(201)
+    expect(facile.dati.livello).toBe('facile')
+    expect((await chiama('POST', '/cruciverba/libera', io, { livello: 'media' })).status).toBe(503)
+    const difficile = await chiama<CruciverbaState>('POST', '/cruciverba/libera', io)
+    expect(difficile.dati.livello).toBe('difficile')
+    // Un livello che non c'e' vale come nessun livello: i difficili sono finiti.
+    expect((await chiama('POST', '/cruciverba/libera', io, { livello: 'esperto' })).status).toBe(503)
+
+    const dopo = await chiama<CruciverbaLiberaRisposta>('GET', '/cruciverba/libera', io)
+    expect(dopo.dati.perLivello).toEqual({ facile: 1, media: 0, difficile: 0 })
+  })
+
+  it('il tempo fa i punti: lo schema finito tardi vale la meta\'', async () => {
+    const { chiama, giocatore, db } = conSchemi(1)
+    const io = await giocatore('gino')
+    const p = (await chiama<CruciverbaState>('POST', '/cruciverba/libera', io)).dati
+    const costi = costiCruciverba(SOLUZIONE)
+    const lento = RITMO_CRUCIVERBA.lentoMs * costi.daTrovare
+    // Il server crede al tempo dichiarato solo fino a quanto e' passato davvero dall'ultima scrittura.
+    const allora = new Date(Date.now() - lento - 60_000).toISOString()
+    db.sqlite.prepare('UPDATE cruciverba_partite_libere SET updated_at = ? WHERE id = ?').run(allora, p.partitaId)
+    const esito = await chiama<CruciverbaEsito>('PUT', `/cruciverba/libera/${p.partitaId}/lettere`, io, {
+      lettere: SOLUZIONE,
+      versione: p.versione,
+      tempoMs: lento,
+    })
+    expect(esito.dati.status).toBe('done')
+    expect(esito.dati.punti).toBe(PUNTI_COMPLETO / 2)
+    expect(esito.dati.spesi).toBe(0)
   })
 })
 

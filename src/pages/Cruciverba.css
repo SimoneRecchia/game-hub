@@ -300,6 +300,12 @@
 
 /* ---------- Attesa e ripieghi ---------- */
 
+.cru-guasto {
+  margin: 0;
+  font-size: var(--text-footnote);
+  color: var(--red);
+}
+
 .cru__attesa {
   flex: 1;
   min-height: 0;

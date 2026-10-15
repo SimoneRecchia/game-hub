@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import { caselleDaPagare } from '../../shared/aiuti'
+import { caselleDaPagare, spesiPerAiuti } from '../../shared/aiuti'
 import {
   NERA,
   VUOTA,
@@ -7,6 +7,7 @@ import {
   costiCruciverba,
   grigliaPiena,
   grigliaValida,
+  livelloCruciverbaValido,
   punteggio,
 } from '../../shared/cruciverba'
 import { msToNextPuzzle } from '../../shared/daily'
@@ -114,13 +115,15 @@ function conLettere(lettere: string, cambi: Iterable<[number, string]>): string 
 
 /** A partita chiusa ogni scrittura risponde con lo stato finale e non tocca niente. */
 function esitoFinito({ row, schema, identita }: Bersaglio): CruciverbaEsito {
+  const stato = statoDa(row, schema, identita, msToNextPuzzle())
   return {
     versione: row.versione,
     status: 'done',
     punti: row.score,
+    spesi: stato.spesi,
     tempoMs: row.tempo_ms,
     pienaConErrori: false,
-    stato: statoDa(row, schema, identita, msToNextPuzzle()),
+    stato,
   }
 }
 
@@ -216,7 +219,11 @@ async function scrivi(
 
   const piena = grigliaPiena(lettere)
   const completa = piena && caselleSbagliate(lettere, soluzione).length === 0
-  const punti = punteggio({ svelate: svelate.length, errori, controlli, controlliSchema }, costiCruciverba(soluzione))
+  // Il tempo decide il valore della giornata, e gli aiuti ne tolgono una parte (vedi shared/aiuti.ts).
+  const tempoMs = tempoDichiarato(row, corpo.tempoMs, Date.now())
+  const aiuti = { svelate: svelate.length, errori, controlli, controlliSchema }
+  const costi = costiCruciverba(soluzione)
+  const punti = punteggio(aiuti, costi, tempoMs)
   const dopo = await salvaPartita(c.env.DB, tabella, row, {
     lettere,
     svelate,
@@ -224,7 +231,7 @@ async function scrivi(
     errori,
     controlli,
     controlliSchema,
-    tempoMs: tempoDichiarato(row, corpo.tempoMs, Date.now()),
+    tempoMs,
     status: completa ? 'done' : 'playing',
     score: completa ? punti : 0,
   })
@@ -237,6 +244,7 @@ async function scrivi(
     versione: dopo.versione,
     status: dopo.status,
     punti,
+    spesi: spesiPerAiuti(costi, aiuti),
     tempoMs: dopo.tempo_ms,
     pienaConErrori: piena && !completa,
     ...(errate ? { errate } : {}),
@@ -308,11 +316,17 @@ export const cruciverbaRoutes = new Hono<AppEnv>()
     })
   })
 
-  /** Uno schema libero nuovo, fra quelli mai aperti. */
+  /**
+   * Uno schema libero nuovo, del livello chiesto, fra quelli mai aperti. Senza
+   * livello — un telefono con la pagina di prima — e' un difficile, cioe' uno
+   * schema come quelli di prima.
+   */
   .post('/libera', async (c) => {
-    const nuova = await nuovaLibera(c.env.DB, c.get('player').id, casoCrittografico)
+    const corpo = (await c.req.json().catch(() => ({}))) as { livello?: unknown }
+    const livello = livelloCruciverbaValido(corpo.livello) ? corpo.livello : 'difficile'
+    const nuova = await nuovaLibera(c.env.DB, c.get('player').id, casoCrittografico, livello)
     if (!nuova) {
-      fail(503, 'SCHEMI_FINITI', 'Hai già aperto tutti gli schemi liberi. Riprova domani.')
+      fail(503, 'SCHEMI_FINITI', 'Hai già aperto tutti gli schemi liberi di questo livello. Riprova domani.')
     }
     return c.json<CruciverbaState>(
       statoDa(nuova.row, nuova.schema, identitaLibera(nuova.row), msToNextPuzzle()),

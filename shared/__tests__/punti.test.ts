@@ -59,7 +59,7 @@ describe('ogni classificata vale al massimo il suo tetto', () => {
 
   it('nel cruciverba il completo senza aiuti vale il tetto', () => {
     expect(PUNTI_COMPLETO).toBe(TETTI.cruciverba)
-    expect(puntiCruciverba(NESSUN_AIUTO, CRUCIVERBA)).toBe(TETTI.cruciverba)
+    expect(puntiCruciverba(NESSUN_AIUTO, CRUCIVERBA, 0)).toBe(TETTI.cruciverba)
   })
 
   it('nel sudoku il risolto senza aiuti vale il tetto, e gli aiuti seguono la stessa regola del cruciverba', () => {
@@ -113,16 +113,16 @@ describe('una giornata storta si recupera', () => {
   })
 
   it('nel cruciverba un aiuto si sente ma non decide la giornata, e un sesto svelato ne vale la metà', () => {
-    expect(puntiCruciverba(con({ svelate: 1 }), CRUCIVERBA)).toBe(TETTI.cruciverba - CRUCIVERBA.svelata)
+    expect(puntiCruciverba(con({ svelate: 1 }), CRUCIVERBA, 0)).toBe(TETTI.cruciverba - CRUCIVERBA.svelata)
     // Una lettera svelata e una parola controllata: meno del novanta per cento, piu' dell'ottanta.
-    const qualcuno = puntiCruciverba(con({ svelate: 1, controlli: 1, errori: 1 }), CRUCIVERBA)
+    const qualcuno = puntiCruciverba(con({ svelate: 1, controlli: 1, errori: 1 }), CRUCIVERBA, 0)
     expect(qualcuno).toBeLessThan(0.95 * TETTI.cruciverba)
     expect(qualcuno).toBeGreaterThan(0.9 * TETTI.cruciverba)
-    expect(puntiCruciverba(con({ svelate: 12 }), CRUCIVERBA)).toBeGreaterThan(TETTI.cruciverba / 2)
-    expect(puntiCruciverba(con({ svelate: 14 }), CRUCIVERBA)).toBeLessThan(TETTI.cruciverba / 2)
+    expect(puntiCruciverba(con({ svelate: 12 }), CRUCIVERBA, 0)).toBeGreaterThan(TETTI.cruciverba / 2)
+    expect(puntiCruciverba(con({ svelate: 14 }), CRUCIVERBA, 0)).toBeLessThan(TETTI.cruciverba / 2)
     // Svelato un terzo dello schema, la giornata vale zero.
-    expect(puntiCruciverba(con({ svelate: 27 }), CRUCIVERBA)).toBe(0)
-    expect(puntiCruciverba(con({ svelate: 80 }), CRUCIVERBA)).toBe(0)
+    expect(puntiCruciverba(con({ svelate: 27 }), CRUCIVERBA, 0)).toBe(0)
+    expect(puntiCruciverba(con({ svelate: 80 }), CRUCIVERBA, 0)).toBe(0)
   })
 
   it('nel sudoku lo stesso: un aiuto si sente, e svelarlo tutto vale zero', () => {
