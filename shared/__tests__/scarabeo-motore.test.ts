@@ -18,8 +18,9 @@ import {
 import { chiave, mosseLegali, sceltaDelComputer, type MossaTrovata } from '../scarabeo-motore'
 
 const RADICE_PROGETTO = join(__dirname, '..', '..')
+/** Le parole del computer: le note. */
 const parole = new Set(
-  gunzipSync(readFileSync(join(RADICE_PROGETTO, 'scripts', 'data', 'dizionario-scarabeo.txt.gz')))
+  gunzipSync(readFileSync(join(RADICE_PROGETTO, 'scripts', 'data', 'dizionario-scarabeo-note.txt.gz')))
     .toString('utf8')
     .split('\n')
     .filter(Boolean),

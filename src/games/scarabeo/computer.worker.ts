@@ -25,7 +25,7 @@ type Richiesta =
   | { id: number; tipo: 'prepara' }
   | { id: number; tipo: 'parole'; parole: string[] }
   | { id: number; tipo: 'mossa'; partita: PartitaLibera }
-  | { id: number; tipo: 'risposta'; numero: number; mosse: Mossa[] }
+  | { id: number; tipo: 'risposta'; numero: number; mosse: Mossa[]; formato: number }
   | { id: number; tipo: 'paroliere'; lato: number; seme?: number }
 
 let dizionario: Promise<Dawg> | null = null
@@ -80,7 +80,7 @@ self.onmessage = async (evento: MessageEvent<Richiesta>) => {
       const caso = richiesta.seme !== undefined ? mulberry32(richiesta.seme) : Math.random
       self.postMessage({ id: richiesta.id, ok: true, ...grigliaLibera(dawg, richiesta.lato, caso) })
     } else if (richiesta.tipo === 'risposta') {
-      const mossa = rispostaDelGiorno(dawg, richiesta.numero, richiesta.mosse)
+      const mossa = rispostaDelGiorno(dawg, richiesta.numero, richiesta.mosse, richiesta.formato)
       self.postMessage({ id: richiesta.id, ok: true, mossa })
     } else {
       const mossa = turnoDelComputer(dawg, richiesta.partita, sacchettoDaSeme(richiesta.partita.seme))
