@@ -90,7 +90,7 @@ function sulLeggio(leggio: readonly string[], tessere: readonly string[]): boole
 export function giocaScarabeo(p: PosizioneScarabeo, mossa: Mossa): PosizioneScarabeo | null {
   const sacchetto = sacchettoDaSeme(p.seme)
   if (statoADue(sacchetto, p.mosse, PARTITA_INTERA).finita) return null
-  const { leggii, restanti } = leggiiDa(sacchetto, p.mosse, 2)
+  const { leggii, restanti } = leggiiDa(sacchetto, p.mosse, 2, PARTITA_INTERA.qConU)
   const leggio = leggii[p.mosse.length % 2]
   if (mossa.tipo === 'cambio') {
     if (restanti === 0 || mossa.tessere.length === 0 || !sulLeggio(leggio, mossa.tessere)) return null

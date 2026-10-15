@@ -188,6 +188,23 @@ elenco di parole che potrebbe essere rigenerato, questo da una tabella di
 costanti nel codice. Cambiare `DISTRIBUZIONE` o il seme cambierebbe le mani di
 tutte le giornate passate.
 
+**Dal 15 ottobre 2026 la classificata ha i leggii gemelli, e niente sacchetto.**
+Con un sacchetto solo il computer del giorno pescava le sue tessere e chi gioca
+le sue, e spesso una mano valeva molto piu' dell'altra: la giornata la decideva
+la pesca. Adesso a ogni turno arrivano otto tessere nuove a testa
+(`leggiiGemelli` in `shared/scarabeo-gemelli.ts`), e quelle del computer sono
+gemelle delle mie: per ogni mia tessera una del suo stesso gruppo — vocale o
+consonante, e lo stesso valore (`gruppoDi`) —, diversa quando il gruppo ha
+altre lettere. Stesse vocali, stesse consonanti, stesso jolly, stessi punti,
+lettere diverse. La mia mano si ripesca finché non si gioca (`leggioBuono`: da
+tre a cinque vocali, mai la Q senza la U, al piu' un jolly, due tessere da otto
+in su e tre uguali), e la gemella non ne prende quattro uguali. Le mani
+dipendono dal giorno e dal turno e non dalle mosse: chi gioca lo stesso giorno
+ha le stesse tessere a ogni turno, e la stessa regola del sacchetto vale per il
+generatore. Le tessere che restano se ne vanno, quindi nella classificata il
+cambio non c'e' (`SENZA_CAMBIO`, e la pagina non ha il bottone); `restanti` e'
+zero, e il computer che non sa posare passa.
+
 **La verita' di una partita sono le mosse.** `scarabeo_games.mosse` salva solo
 le decisioni — di chi gioca e, nelle giornate a turni, del computer del giorno,
 a turno —; tabellone, leggii e punti di ogni mossa si ricalcolano con `rigioca`
@@ -203,10 +220,11 @@ applicano alle sole caselle **appena coperte**: una parola che passa su una
 tripla già usata non la riusa. Senza quel controllo la stessa casella pagherebbe
 per tutta la partita, e il tabellone diventerebbe una macchina da punti.
 
-**Passare e cambiare costano una mossa.** Altrimenti il limite di dieci mosse
-della classificata non vorrebbe dire niente e il cambio diventerebbe un modo
-gratuito di scegliersi il leggio; nella partita intera contano fra i turni senza
-parole che la chiudono. Le tessere cambiate tornano **in fondo alla coda** e non
+**Passare e cambiare costano una mossa.** Altrimenti il limite di mosse della
+classificata non vorrebbe dire niente e il cambio diventerebbe un modo
+gratuito di scegliersi il leggio (con i leggii gemelli cambiare non si puo',
+vedi sopra); nella partita intera contano fra i turni senza parole che la
+chiudono. Le tessere cambiate tornano **in fondo alla coda** e non
 rimescolate: il leggio deve restare una funzione delle sole mosse, e rimescolare
 richiederebbe di salvare lo stato del generatore.
 
@@ -232,15 +250,22 @@ La tabella `dizionario` di D1 non la legge piu' nessuno. Resta perché una
 versione di prima, rimessa in linea, ne avrebbe bisogno; se ne andra' con una
 migrazione.
 
-**Il dizionario ha due livelli, e il computer gioca solo le comuni.** Le comuni
-sono le 272.000 parole di napolux, quelle su cui sono misurati i livelli
-(`FASCE`); le altre — le forme del Wikizionario e del Wiktionary che napolux non
-ha, e un milione e mezzo di enclitiche — valgono quando le gioca una persona. Il
-livello sta nel DAWG, un bit sul finale e uno sulla strada, e `Dawg.comuni()` e'
-il dizionario visto dal computer: il motore cerca le mosse come se ci fossero
-solo le comuni. Senza, il computer farebbe punti con "portarglielo", e le medie
-dei livelli — rimaste quelle nel passaggio al dizionario nuovo: 169, 245, 350 —
-sposterebbero il riferimento della classificata.
+**Il dizionario ha tre livelli, e il computer gioca solo le note.** Le comuni
+sono le 272.000 parole di napolux; le altre — le forme del Wikizionario e del
+Wiktionary che napolux non ha, e un milione e mezzo di enclitiche — valgono
+quando le gioca una persona. Le **note** sono le comuni fra le cinquantamila
+forme piu' frequenti dei sottotitoli (OpenSubtitles, hermitdave), tranne quelle
+che non finiscono per vocale, quasi sempre inglesi o nomi, con l'eccezione di un
+elenco breve ("il", "per", "bar", "sport"): 33.000 parole, che scrive
+`scripts/build-note-scarabeo.mjs` in un elenco versionato. Il livello sta nel
+DAWG, un bit sul finale e uno sulla strada per livello, e `Dawg.note()` e' il
+dizionario del computer: il motore cerca le mosse, trasversali comprese, come se
+ci fossero solo le note. Fino al 15 ottobre 2026 il computer giocava tutte le
+comuni, e chi perdeva contro di lui non conosceva meta' delle sue parole
+("scalvo", "apside"). Con le note le medie dei livelli, dieci mosse da soli su
+sessanta sacchetti, sono 145, 211 e 287 (con le comuni erano 169, 245 e 350);
+il traguardo della classificata lo gioca lo stesso computer, quindi si e' mosso
+con lui.
 
 **Le enclitiche si costruiscono, non si elencano.** Il regolamento della
 federazione (articolo 22) ammette i pronomi attaccati all'infinito, al gerundio
@@ -2332,8 +2357,8 @@ arriva, e chi gioca tanto partirebbe avvantaggiato.
 
 **Il traguardo dello Scarabeo lo gioca il computer, la notte prima.**
 `scripts/genera-computer-scarabeo.ts` fa giocare al computer normale ogni
-giornata come la trova chi gioca — dieci mosse a testa contro il computer del
-giorno, con le tessere del giorno (`giornataATurni`) — e scrive il suo punteggio
+giornata come la trova chi gioca — cinque mosse a testa contro il computer del
+giorno, con i leggii gemelli del giorno (`giornataATurni`) — e scrive il suo punteggio
 in `scarabeo_computer`: il traguardo di una giornata non cambia, altrimenti due
 giocatori dello stesso giorno avrebbero punti su scale diverse. I punti sono
 `100 × punteggio / traguardo`, fino al tetto (`puntiScarabeo`): il rapporto
@@ -2342,32 +2367,37 @@ e' il computer al posto di chi gioca, e non il punteggio dell'avversario nella
 stessa partita, perché quello cresce con la partita: in rapporto a lui una buona
 prima mossa, e poi basta, varrebbe il tetto, e chiudere la giornata quando si e'
 avanti converrebbe sempre. Non si fa nel Worker — una mossa del computer costa
-decine di millisecondi — e se la riga manca si usa `RIFERIMENTO_SCARABEO`, che a
-turni e' rimasto giusto (su quaranta giornate 247 di media, contro i 243 da
-solo). Le mosse del traguardo si mostrano solo a giornata chiusa: prima
-sarebbero la soluzione.
+decine di millisecondi — e se la riga manca si usa `RIFERIMENTO_SCARABEO`, la
+media su quaranta giornate a leggii gemelli: 119, da 91 a 169 (con le dieci
+mosse dal sacchetto era 245). Le mosse del traguardo si mostrano solo a
+giornata chiusa: prima sarebbero la soluzione.
 
 **La giornata si gioca come il suo traguardo.** `scarabeo_computer.formato` dice
-com'e' stato giocato: 1 da solo, le dieci mosse senza avversario delle giornate
-di prima dei turni, 2 a turni. `apriPartita` ne ricava `contro_computer` (un
-traguardo che manca si scrive di ripiego a turni), cosi' chi gioca lo stesso
-giorno gioca la stessa partita. Lo script della notte rifà i traguardi da solo
-dei giorni che devono venire e che nessuno ha aperto (`giornateFerme` e
-`scriviTraguardo` in `scripts/scarabeo/traguardo.ts`, con la stessa condizione
-nell'aggiornamento, per una giornata aperta nel frattempo): oggi e i giorni
-passati restano come sono, e il giorno del deploy si gioca da soli fino a
-mezzanotte.
+com'e' stato giocato (`FORMATO_TRAGUARDO`): 1 da solo, le dieci mosse senza
+avversario delle prime giornate; 2 a turni, dieci mosse a testa dal sacchetto
+del giorno; 3 a turni con i leggii gemelli, cinque mosse a testa e il computer
+delle parole note. `apriPartita` ne ricava `contro_computer`, che e' il formato
+meno uno (un traguardo che manca si scrive di ripiego nel formato di adesso), e
+`regoleDellaGiornata` le regole della partita a due, cosi' chi gioca lo stesso
+giorno gioca la stessa partita. Lo script della notte rifà i traguardi di un
+formato vecchio dei giorni che devono venire e che nessuno ha aperto
+(`giornateFerme` e `scriviTraguardo` in `scripts/scarabeo/traguardo.ts`, con la
+stessa condizione nell'aggiornamento, per una giornata aperta nel frattempo):
+oggi e i giorni passati restano come sono, e il giorno del deploy si gioca nel
+formato di prima fino a mezzanotte.
 
 **La classificata dello Scarabeo e' a turni contro il computer del giorno.** Una
-mossa a testa, come al tavolo: il computer normale risponde a ogni mia mossa,
-anche alla decima, e il suo caso viene dal numero del giorno
+mossa a testa, come al tavolo, cinque a testa (`MOSSE_GEMELLE`): erano dieci, e
+la giornata durava tre volte un Wordle. Il computer normale risponde a ogni mia
+mossa, anche all'ultima, e il suo caso viene dal numero del giorno
 (`semeDellAvversario`), quindi a mosse uguali risponde uguale. Pensa nel
 telefono, nel Web Worker del dizionario (`rispostaDelGiorno`), e la sua mossa va
 al server con la mia: un turno, una richiesta, e la pagina le racconta in ordine
 — la mia, «Il computer pensa…», la sua (`primaDellaRisposta`). Il server non la
 puo' rifare, ma la controlla come una mia: le tessere del suo leggio, la posa in
 piedi, le parole nel dizionario, il cambio con il sacchetto che ne ha
-(`rispostaControllata`). Che sia proprio quella del computer non lo sa: chi
+(`rispostaControllata`): con i leggii gemelli il sacchetto non c'e', e un cambio
+non passa. Che sia proprio quella del computer non lo sa: chi
 volesse barare allo Scarabeo ha gia' il motore nel telefono, e scegliere anche
 le mosse dell'avversario non gli darebbe molto di piu'. I punti in classifica
 restano i miei, in rapporto al traguardo; il punteggio dell'avversario e' per il
@@ -2384,7 +2414,10 @@ nel `localStorage` a ogni turno, e a fine partita va al server, che la rigioca
 con le stesse regole per le statistiche. Il computer usa lo stesso motore
 (`shared/scarabeo-motore.ts`) del traguardo della classificata, con tre fasce di
 scelta: facile, normale, difficile. Con un amico si gioca sul tavolo del server
-(vedi sotto).
+(vedi sotto). Nella partita intera la Q arriva con la U (`qConU` di `leggiiDa`,
+acceso da `PARTITA_INTERA`): se tocca alla Q e nel leggio non c'e' una U, la
+prima U del sacchetto passa avanti e arriva con lei. Le giornate classificate
+dal sacchetto non hanno la regola, perché si rigiocano come le si e' giocate.
 
 **Lo Scarabeo fra amici sta sul tavolo dei tavolieri, con le tessere nascoste.**
 Le partite sono righe di `tavolo_partite` con `gioco = 'scarabeo'` — l'invito,

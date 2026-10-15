@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Dawg } from '../../shared/dawg'
 import { MOSSE_PER_GIORNATA, leggiiDa, sacchettoDelGiorno, tabelloneDa, type Mossa } from '../../shared/scarabeo'
+import { MOSSE_GEMELLE, leggiiGemelli, leggiiGemelliDa } from '../../shared/scarabeo-gemelli'
 import { mosseLegali } from '../../shared/scarabeo-motore'
 import { FORMATO_TRAGUARDO, giornataATurni, rispostaDelGiorno } from '../../shared/scarabeo-computer'
 import { puntiScarabeo } from '../../shared/punti'
@@ -22,9 +23,9 @@ function traguardo(b: Banco, numero: number, formato: number, punti = 240, mosse
     .run(numero, punti, JSON.stringify(mosse), formato, 'x')
 }
 
-/** La mia posa piu' ricca, adesso, con il mio leggio della partita a due. */
+/** La mia posa piu' ricca, adesso, con il mio leggio gemello. */
 function miaMigliore(numero: number, mosse: Mossa[]): Mossa & { tipo: 'posa' } {
-  const { leggii } = leggiiDa(sacchettoDelGiorno(numero), mosse, 2)
+  const { leggii } = leggiiGemelliDa(numero, mosse)
   const primaMossa = !mosse.some((m) => m.tipo === 'posa')
   const migliore = mosseLegali(dawg, tabelloneDa(mosse), leggii[0], primaMossa).sort((a, b) => b.punti - a.punti)[0]
   return { tipo: 'posa', posa: migliore.posa }
@@ -41,8 +42,14 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     expect(prima.dati).toMatchObject({ computer: 240, avversario: 0 })
 
     const stato = await b.chiama<ScarabeoState>('GET', '/scarabeo/state', io)
-    expect(stato.dati).toMatchObject({ controComputer: true, avversario: 0, partita: [] })
-    expect(stato.dati.leggio).toEqual(leggiiDa(sacchettoDelGiorno(numero), [], 2).leggii[0])
+    expect(stato.dati).toMatchObject({
+      controComputer: true,
+      gemelli: true,
+      avversario: 0,
+      partita: [],
+      mosseTotali: MOSSE_GEMELLE,
+    })
+    expect(stato.dati.leggio).toEqual(leggiiGemelli(numero, 0)[0])
 
     const mossa = miaMigliore(numero, [])
     const senza = await b.chiama<{ code: string }>('POST', '/scarabeo/mossa', io, { posa: mossa.posa })
@@ -58,13 +65,14 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     expect(dopo.dati.mosseUsate).toBe(1)
     expect(dopo.dati.avversario).toBe(dopo.dati.mosse[1].punti)
     expect(dopo.dati.puntiClassifica).toBe(puntiScarabeo(dopo.dati.punti, 240))
-    expect(dopo.dati.leggio).toEqual(leggiiDa(sacchettoDelGiorno(numero), [mossa, risposta], 2).leggii[0])
+    // Al turno dopo un leggio nuovo, qualunque cosa si sia giocato.
+    expect(dopo.dati.leggio).toEqual(leggiiGemelli(numero, 1)[0])
     const riga = b.db.sqlite.prepare('SELECT turns, score, punti_computer, contro_computer FROM scarabeo_games').get()
     expect(riga).toEqual({
       turns: 1,
       score: dopo.dati.punti,
       punti_computer: dopo.dati.avversario,
-      contro_computer: 1,
+      contro_computer: 2,
     })
 
     const riepilogo = await b.chiama<ScarabeoSummary>('GET', '/scarabeo/summary', io)
@@ -77,7 +85,7 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     traguardo(b, numero, FORMATO_TRAGUARDO)
     const io = await b.giocatore('bruno')
     const mia: Mossa = { tipo: 'passo' }
-    const { leggii } = leggiiDa(sacchettoDelGiorno(numero), [mia], 2)
+    const { leggii } = leggiiGemelliDa(numero, [mia])
     const suaMigliore = mosseLegali(dawg, tabelloneDa([]), leggii[1], true).sort((a, b) => b.punti - a.punti)[0]
 
     // Una tessera che il computer non ha.
@@ -98,15 +106,29 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     expect((await b.chiama('POST', '/scarabeo/passo', io, { risposta: { tipo: 'vinci' } })).status).toBe(422)
     expect(b.db.sqlite.prepare('SELECT turns FROM scarabeo_games').get()?.turns).toBe(0)
 
-    // Il cambio di tutto il leggio, quando non sa posare niente, e' una mossa vera.
-    const cambio = await b.chiama<ScarabeoState>('POST', '/scarabeo/passo', io, {
+    // Con i leggii gemelli non c'e' un sacchetto: anche il cambio di tessere che ha non vale, e lui passa.
+    const cambio = await b.chiama<{ code: string }>('POST', '/scarabeo/passo', io, {
       risposta: { tipo: 'cambio', tessere: leggii[1] },
     })
-    expect(cambio.status).toBe(200)
-    expect(cambio.dati.mosse.map((m) => [m.tipo, m.mia])).toEqual([
+    expect(cambio.status).toBe(422)
+    const passo = await b.chiama<ScarabeoState>('POST', '/scarabeo/passo', io, { risposta: { tipo: 'passo' } })
+    expect(passo.status).toBe(200)
+    expect(passo.dati.mosse.map((m) => [m.tipo, m.mia])).toEqual([
       ['passo', true],
-      ['cambio', false],
+      ['passo', false],
     ])
+  })
+
+  it('le tessere non si cambiano: sono nuove a ogni turno', async () => {
+    const b = banco()
+    const numero = giornata().puzzleNumber
+    traguardo(b, numero, FORMATO_TRAGUARDO)
+    const io = await b.giocatore('cesare')
+    const r = await b.chiama<{ code: string }>('POST', '/scarabeo/cambio', io, {
+      tessere: leggiiGemelli(numero, 0)[0].slice(0, 2),
+    })
+    expect(r.status).toBe(409)
+    expect(r.dati.code).toBe('SENZA_CAMBIO')
   })
 
   it('una parola del computer che non esiste non passa', async () => {
@@ -114,7 +136,7 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     const numero = giornata().puzzleNumber
     traguardo(b, numero, FORMATO_TRAGUARDO)
     const io = await b.giocatore('carla')
-    const { leggii } = leggiiDa(sacchettoDelGiorno(numero), [{ tipo: 'passo' }], 2)
+    const { leggii } = leggiiGemelliDa(numero, [{ tipo: 'passo' }])
     // Le prime tessere del suo leggio in fila sulla stella: quasi mai una parola, e il test lo controlla.
     const posa = leggii[1]
       .slice(0, 4)
@@ -128,14 +150,14 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     expect(r.dati.error).toMatch(/^La mossa del computer non va: .* nel dizionario\.$/)
   })
 
-  it('dieci mosse a testa: il computer risponde anche all’ultima, e la giornata si chiude', async () => {
+  it('cinque mosse a testa: il computer risponde anche all’ultima, e la giornata si chiude', async () => {
     const b = banco()
     const numero = giornata().puzzleNumber
     traguardo(b, numero, FORMATO_TRAGUARDO)
     const io = await b.giocatore('dario')
     const mosse: Mossa[] = []
     let ultima: ScarabeoState | null = null
-    for (let i = 0; i < MOSSE_PER_GIORNATA; i += 1) {
+    for (let i = 0; i < MOSSE_GEMELLE; i += 1) {
       mosse.push({ tipo: 'passo' })
       const risposta = rispostaDelGiorno(dawg, numero, mosse)!
       mosse.push(risposta)
@@ -158,8 +180,23 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     const io = await b.giocatore('elena')
     const chiusa = await b.chiama<ScarabeoState>('POST', '/scarabeo/chiudi', io)
     const mosse = chiusa.dati.computer.mosse!
-    expect(mosse.map((m) => m.numero)).toEqual(Array.from({ length: MOSSE_PER_GIORNATA }, (_, i) => i + 1))
+    expect(mosse.map((m) => m.numero)).toEqual(Array.from({ length: MOSSE_GEMELLE }, (_, i) => i + 1))
     expect(mosse.reduce((s, m) => s + m.punti, 0)).toBe(partita.punti)
+  })
+
+  it('le giornate dal sacchetto restano di dieci mosse, con il cambio', async () => {
+    const b = banco()
+    const numero = giornata().puzzleNumber
+    traguardo(b, numero, 2)
+    const io = await b.giocatore('ettore')
+    const stato = await b.chiama<ScarabeoState>('GET', '/scarabeo/state', io)
+    expect(stato.dati).toMatchObject({ controComputer: true, gemelli: false, mosseTotali: MOSSE_PER_GIORNATA })
+    expect(stato.dati.leggio).toEqual(leggiiDa(sacchettoDelGiorno(numero), [], 2).leggii[0])
+    const tessere = stato.dati.leggio.slice(0, 2)
+    const risposta = rispostaDelGiorno(dawg, numero, [{ tipo: 'cambio', tessere }], 2)!
+    const cambio = await b.chiama<ScarabeoState>('POST', '/scarabeo/cambio', io, { tessere, risposta })
+    expect(cambio.status).toBe(200)
+    expect(b.db.sqlite.prepare('SELECT contro_computer FROM scarabeo_games').get()?.contro_computer).toBe(1)
   })
 
   it('le giornate di prima dei turni restano da sole', async () => {

@@ -37,8 +37,9 @@ const leggi = (file) => gunzipSync(readFileSync(join(DATI, file))).toString('utf
 const comuni = leggi('dizionario-scarabeo.txt.gz')
 const altre = leggi('dizionario-scarabeo-altre.txt.gz')
 const enclitiche = formeEnclitiche(leggi('dizionario-scarabeo-enclitiche.txt.gz'))
+const note = leggi('dizionario-scarabeo-note.txt.gz')
 
-const archi = costruisciDawg(comuni, [...altre, ...enclitiche])
+const archi = costruisciDawg(comuni, [...altre, ...enclitiche], note)
 const byte = byteDelDawg(archi)
 const impronta = createHash('sha256').update(byte).digest('hex').slice(0, 16)
 
@@ -70,6 +71,7 @@ export const URL_DIZIONARIO_COMPRESSO = \`/scarabeo/dizionario.dawg.gz?v=\${IMPR
 
 const it = (n) => n.toLocaleString('it-IT')
 console.log(
-  `DAWG: ${it(comuni.length)} comuni, ${it(altre.length + enclitiche.size)} altre, ${it(archi.length)} archi, ` +
+  `DAWG: ${it(note.length)} note, ${it(comuni.length)} comuni, ${it(altre.length + enclitiche.size)} altre, ` +
+    `${it(archi.length)} archi, ` +
     `${(byte.length / 1024).toFixed(0)} kB → ${USCITA.replace(ROOT + '/', '')} (${impronta})`,
 )

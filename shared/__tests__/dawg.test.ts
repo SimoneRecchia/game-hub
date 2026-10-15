@@ -19,6 +19,7 @@ const elenco = (file: string) =>
 const comuni = elenco('dizionario-scarabeo.txt.gz')
 const altre = elenco('dizionario-scarabeo-altre.txt.gz')
 const basi = elenco('dizionario-scarabeo-enclitiche.txt.gz')
+const note = elenco('dizionario-scarabeo-note.txt.gz')
 const versionato = readFileSync(join(RADICE_PROGETTO, 'public', 'scarabeo', 'dizionario.dawg'))
 const dawg = Dawg.da(versionato)
 
@@ -35,18 +36,24 @@ describe('il DAWG del dizionario dello Scarabeo', () => {
     () => {
       // Se cade, gli elenchi sono cambiati senza rigenerare il DAWG: `npm run dawg:build`.
       const insiemeComuni = new Set(comuni)
+      const insiemeNote = new Set(note)
       const tutte = new Set([...comuni, ...altre, ...formeEnclitiche(basi)])
-      const computer = dawg.comuni()
+      const vocabolario = dawg.comuni()
+      const computer = dawg.note()
       for (const p of comuni) {
-        if (!computer.contiene(p)) expect.fail(`"${p}" dovrebbe essere comune`)
+        if (!vocabolario.contiene(p)) expect.fail(`"${p}" dovrebbe essere comune`)
+        if (insiemeNote.has(p) !== computer.contiene(p)) expect.fail(`"${p}" ${insiemeNote.has(p) ? 'dovrebbe' : 'non dovrebbe'} essere nota`)
       }
       for (const p of tutte) {
         if (!dawg.contiene(p)) expect.fail(`"${p}" manca`)
-        if (!insiemeComuni.has(p) && computer.contiene(p)) expect.fail(`"${p}" non dovrebbe essere comune`)
+        if (!insiemeComuni.has(p) && vocabolario.contiene(p)) expect.fail(`"${p}" non dovrebbe essere comune`)
       }
+      // Le note sono una parte delle comuni.
+      for (const p of note) if (!insiemeComuni.has(p)) expect.fail(`"${p}" e' nota ma non comune`)
       // Con le parole degli elenchi tutte dentro, contarle dice che non ce n'e' una in piu'.
       expect(dawg.quante()).toBe(tutte.size)
-      expect(computer.quante()).toBe(insiemeComuni.size)
+      expect(vocabolario.quante()).toBe(insiemeComuni.size)
+      expect(computer.quante()).toBe(insiemeNote.size)
     },
     60_000,
   )
@@ -69,13 +76,20 @@ describe('il DAWG del dizionario dello Scarabeo', () => {
     expect(dawg.contiene('cantavamo')).toBe(true)
   })
 
-  it('il computer conosce solo le comuni', () => {
-    const computer = dawg.comuni()
-    expect(computer.contiene('casa')).toBe(true)
-    expect(computer.contiene('stella')).toBe(true)
-    expect(dawg.contiene('portarglielo')).toBe(true)
-    expect(computer.contiene('portarglielo')).toBe(false)
-    expect(computer.comuni()).toBe(computer)
+  it('il computer conosce solo le note', () => {
+    const computer = dawg.note()
+    for (const p of ['casa', 'stella', 'cantavamo', 'bassotto', 'il', 'bar']) expect(computer.contiene(p), p).toBe(true)
+    // Comuni da vocabolario, che nessuno al tavolo conosce, e forme con i pronomi: valgono, ma non per lui.
+    for (const p of ['scalvo', 'apside', 'viple', 'portarglielo']) {
+      expect(dawg.contiene(p), p).toBe(true)
+      expect(computer.contiene(p), p).toBe(false)
+    }
+    // Le comuni che non finiscono per vocale sono quasi sempre inglesi o nomi.
+    for (const p of ['boston', 'hitler', 'andar']) expect(computer.contiene(p), p).toBe(false)
+    const vocabolario = dawg.comuni()
+    expect(vocabolario.contiene('scalvo')).toBe(true)
+    expect(computer.note()).toBe(computer)
+    expect(vocabolario.comuni()).toBe(vocabolario)
   })
 
   it('segue le lettere una alla volta', () => {
@@ -91,7 +105,21 @@ describe('il DAWG del dizionario dello Scarabeo', () => {
 
 describe('la costruzione del DAWG', () => {
   // Un dizionario piccolo, costruito e riletto: le due meta' devono dire le stesse cose.
-  const piccolo = Dawg.da(byteDelDawg(costruisciDawg(['casa', 'case', 'caso', 'rosa'], ['casale', 'rose', 'cas', 'casa'])))
+  const piccolo = Dawg.da(
+    byteDelDawg(costruisciDawg(['casa', 'case', 'caso', 'rosa'], ['casale', 'rose', 'cas', 'casa'], ['casa', 'rosa'])),
+  )
+
+  it('le note sono una parte delle comuni, e il computer vede solo quelle', () => {
+    const computer = piccolo.note()
+    for (const p of ['casa', 'rosa']) expect(computer.contiene(p), p).toBe(true)
+    for (const p of ['case', 'caso', 'casale', 'rose']) expect(computer.contiene(p), p).toBe(false)
+    expect(computer.quante()).toBe(2)
+    // Da "cas" il computer vede solo la "a" di casa.
+    const cas = computer.segui(RADICE, [...'cas'].map(indiceDi))
+    expect(computer.arco(cas, indiceDi('a'))).toBeGreaterThanOrEqual(0)
+    expect(computer.arco(cas, indiceDi('e'))).toBe(-1)
+    expect(() => costruisciDawg(['casa'], [], ['cosa'])).toThrow(/non e' fra le comuni/)
+  })
 
   it('ogni parola al suo livello, e una parola in tutti e due gli elenchi e’ comune', () => {
     for (const p of ['casa', 'case', 'caso', 'rosa', 'casale', 'rose', 'cas']) expect(piccolo.contiene(p), p).toBe(true)

@@ -15,9 +15,12 @@
  * Le colonne sono le righe del tabellone trasposto: lo stesso codice cerca le
  * parole orizzontali e quelle verticali.
  *
- * Il computer gioca solo le parole **comuni** del dizionario (vedi
- * shared/dawg.ts): quelle che valgono solo quando le gioca una persona — le
- * forme rare, i "portarglielo" — per lui non esistono.
+ * Il computer gioca solo le parole **note** del dizionario (vedi
+ * shared/dawg.ts e scripts/build-note-scarabeo.mjs): quelle dei sottotitoli,
+ * che chi gioca riconosce. Le altre — le comuni da vocabolario, "scalvo" e
+ * "apside", le forme rare, i "portarglielo" — valgono quando le gioca una
+ * persona, e per lui non esistono. Le trasversali anche: una mossa che lascia
+ * accanto una parola che lui non conosce non la trova.
  *
  * I punti si contano mentre si cerca, con le stesse regole di `validaPosa` —
  * premi solo sulle caselle appena coperte, parole trasversali comprese, bonus
@@ -89,9 +92,9 @@ export function mosseLegali(
   }
 
   const trovate: MossaTrovata[] = []
-  const comuni = dawg.comuni()
-  cerca(comuni, lettere, valori, mano, jolly, primaMossa, true, trovate)
-  cerca(comuni, lettere, valori, mano, jolly, primaMossa, false, trovate)
+  const note = dawg.note()
+  cerca(note, lettere, valori, mano, jolly, primaMossa, true, trovate)
+  cerca(note, lettere, valori, mano, jolly, primaMossa, false, trovate)
   return trovate
 }
 
@@ -358,15 +361,16 @@ export type Livello = 'facile' | 'normale' | 'difficile'
  * La mossa migliore non e' un livello di gioco: con tutto il dizionario in
  * memoria e' spesso una parola che nessuno al tavolo conosce, da ottanta punti,
  * e in dieci mosse fa in media 557 punti — imbattibile, quindi noioso. I tre
- * livelli pescano piu' in basso. Misurati su sessanta sacchetti, dieci mosse da
- * soli:
+ * livelli pescano piu' in basso, e solo fra le parole note. Misurati su
+ * sessanta sacchetti, dieci mosse da soli:
  *
- *     facile     170 punti in media   chi gioca per la prima volta
- *     normale    245                  chi gioca bene
- *     difficile  366                  chi conosce il dizionario a memoria
+ *     facile     145 punti in media   chi gioca per la prima volta
+ *     normale    211                  chi gioca bene
+ *     difficile  287                  chi gioca spesso
  *
- * Il normale e' anche il computer della classificata: il suo punteggio sulle
- * tessere del giorno e' il riferimento dei punti in classifica.
+ * Con tutte le comuni erano 169, 245 e 350. Il normale e' anche il computer
+ * della classificata: il suo punteggio sulle tessere del giorno e' il
+ * riferimento dei punti in classifica.
  */
 const FASCE: Record<Livello, readonly [number, number]> = {
   facile: [0.2, 0.45],

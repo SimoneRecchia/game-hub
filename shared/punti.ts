@@ -11,7 +11,7 @@
  *
  *   gioco        tempo di chi gioca bene   tetto
  *   Cruciverba   5-10 minuti                100
- *   Scarabeo     10-20 minuti               100
+ *   Scarabeo     4-6 minuti                 100
  *   Sudoku       4-10 minuti                100
  *   Quiz         3-4 minuti                 100
  *   Wordle       3-5 minuti                 100
@@ -98,10 +98,11 @@ export const TETTI: Record<GiocoClassificato, number> = {
 
 /**
  * Il riferimento di ripiego, se lo script della notte non ha scritto quello del
- * giorno: la media del computer normale su sessanta sacchetti (vedi
- * shared/scarabeo-motore.ts). Non dovrebbe servire mai.
+ * giorno: la media del traguardo su quaranta giornate a leggii gemelli, cinque
+ * mosse a testa con le parole note (vedi shared/scarabeo-gemelli.ts), da 91 a
+ * 169. Con le dieci mosse dal sacchetto era 245. Non dovrebbe servire mai.
  */
-export const RIFERIMENTO_SCARABEO = 245
+export const RIFERIMENTO_SCARABEO = 119
 
 /**
  * I punti in classifica di una giornata di Scarabeo: il punteggio fatto sul

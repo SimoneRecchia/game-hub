@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { msToNextPuzzle } from '../../shared/daily'
-import { MOSSE_PER_GIORNATA, TESSERE_LEGGIO, leggiiDa, sacchettoDelGiorno, type Mossa } from '../../shared/scarabeo'
+import { TESSERE_LEGGIO, type Mossa } from '../../shared/scarabeo'
 import type { ScarabeoState, ScarabeoSummary, StatisticheScarabeoLibero } from '../../shared/types'
 import { LIVELLI, statoLibera, type Livello } from '../../shared/scarabeo-computer'
 import { MOSSE_MASSIME_LIBERA } from '../../shared/scarabeo-due'
@@ -16,6 +16,7 @@ import {
   controllaPosa,
   giornata,
   leggiPosa,
+  mosseDellaGiornata,
   mosseDi,
   partitaDi,
   statisticheLibere,
@@ -50,9 +51,11 @@ function aggiornaOspiti(db: D1Database, row: PartitaRow) {
   return pagaOspiti(db, 'scarabeo', row.player_id, row.puzzle_number, row.punti, row.status === 'done')
 }
 
-/** Quanti giocano: chi gioca e, nelle giornate a turni, il computer del giorno. */
-function giocatoriDi(row: PartitaRow): 1 | 2 {
-  return row.contro_computer === 1 ? 2 : 1
+/** Le mosse di oggi sono finite: non si muove piu'. */
+function mosseFinite(row: PartitaRow): void {
+  if (row.status === 'done' || row.turns >= mosseDellaGiornata(row)) {
+    fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
+  }
 }
 
 /**
@@ -71,35 +74,34 @@ async function rispostaControllata(
   env: AppEnv['Bindings'],
   url: string,
   row: PartitaRow,
-  sacchetto: readonly string[],
   mosse: readonly Mossa[],
   body: unknown,
 ): Promise<{ mossa: Mossa; punti: number } | null> {
-  if (row.contro_computer !== 1) return null
-  // Risponde anche alla mia decima mossa, ma non a una partita finita prima, con un leggio vuoto a sacchetto vuoto.
-  if (partitaDi(row, mosse).tocca !== 1) return null
+  if (row.contro_computer < 1) return null
+  // Risponde anche alla mia ultima mossa, ma non a una partita finita prima, con un leggio vuoto a sacchetto vuoto.
+  const prima = partitaDi(row, mosse)
+  if (prima.tocca !== 1) return null
   const r = (body as { risposta?: unknown } | null)?.risposta as
     | { tipo?: unknown; posa?: unknown; tessere?: unknown }
     | undefined
   if (!r) fail(422, 'RISPOSTA_MANCANTE', 'Manca la mossa del computer: riprova.')
   if (r.tipo === 'passo') return { mossa: { tipo: 'passo' }, punti: 0 }
   if (r.tipo === 'cambio') {
-    const { leggii, restanti } = leggiiDa(sacchetto, mosse, 2)
     const tessere = Array.isArray(r.tessere) ? r.tessere.map((t) => String(t)) : []
-    const mano = [...leggii[1]]
+    const mano = [...(prima.leggioComputer ?? [])]
     const sue = tessere.every((t) => {
       const i = mano.indexOf(t)
       if (i >= 0) mano.splice(i, 1)
       return i >= 0
     })
-    if (tessere.length === 0 || restanti === 0 || !sue) fail(422, 'RISPOSTA', 'La mossa del computer non è valida.')
+    if (tessere.length === 0 || prima.restanti === 0 || !sue) fail(422, 'RISPOSTA', 'La mossa del computer non è valida.')
     return { mossa: { tipo: 'cambio', tessere }, punti: 0 }
   }
   // Una posa che non sta in piedi: i messaggi di `leggiPosa` e `controllaPosa` parlerebbero a chi gioca.
   const controllata = (() => {
     try {
       const posa = leggiPosa({ posa: r.posa })
-      return { posa, esito: controllaPosa(sacchetto, mosse, 2, posa) }
+      return { posa, esito: controllaPosa(prima.leggioComputer ?? [], mosse, posa) }
     } catch {
       return null
     }
@@ -146,13 +148,10 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     const body = await c.req.json().catch(() => ({}))
     const posa = leggiPosa(body)
     const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
-    if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
-      fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
-    }
+    mosseFinite(row)
 
     const mosse = mosseDi(row)
-    const sacchetto = sacchettoDelGiorno(row.puzzle_number)
-    const esito = controllaPosa(sacchetto, mosse, giocatoriDi(row), posa)
+    const esito = controllaPosa(partitaDi(row, mosse).leggio, mosse, posa)
     /*
      * Il dizionario si interroga **dopo** la validazione geometrica: se la posa
      * non sta in piedi non c'e' motivo di leggerlo, e la risposta piu' utile e'
@@ -161,7 +160,7 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     await controllaNelDizionario(c.env, c.req.url, esito.parole.map((p) => p.parola))
 
     const mossa: Mossa = { tipo: 'posa', posa }
-    const risposta = await rispostaControllata(c.env, c.req.url, row, sacchetto, [...mosse, mossa], body)
+    const risposta = await rispostaControllata(c.env, c.req.url, row, [...mosse, mossa], body)
     const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, esito.punti, risposta)
     await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
@@ -171,18 +170,15 @@ export const scarabeoRoutes = new Hono<AppEnv>()
    * Passa la mossa.
    *
    * Costa una mossa come una posa. Senza quel costo, passare sarebbe gratis e
-   * il limite di dieci mosse non vorrebbe dire niente.
+   * il limite di mosse non vorrebbe dire niente.
    */
   .post('/passo', async (c) => {
     const body = await c.req.json().catch(() => ({}))
     const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
-    if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
-      fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
-    }
+    mosseFinite(row)
 
     const mossa: Mossa = { tipo: 'passo' }
-    const sacchetto = sacchettoDelGiorno(row.puzzle_number)
-    const risposta = await rispostaControllata(c.env, c.req.url, row, sacchetto, [...mosseDi(row), mossa], body)
+    const risposta = await rispostaControllata(c.env, c.req.url, row, [...mosseDi(row), mossa], body)
     const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, 0, risposta)
     await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
@@ -193,7 +189,8 @@ export const scarabeoRoutes = new Hono<AppEnv>()
    *
    * Costa una mossa, e serve il sacchetto non vuoto: a sacchetto finito non ci
    * sarebbe niente da pescare e il cambio sarebbe solo un modo di bruciare una
-   * mossa per niente.
+   * mossa per niente. Con i leggii gemelli il sacchetto non c'e': il turno dopo
+   * le tessere sono nuove comunque.
    */
   .post('/cambio', async (c) => {
     const body = (await c.req.json().catch(() => ({}))) as { tessere?: unknown }
@@ -201,13 +198,13 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     if (chieste.length === 0) fail(400, 'CAMBIO_VUOTO', 'Scegli almeno una tessera da cambiare.')
 
     const { row, computer } = await perMuovere(c.env.DB, c.get('player').id)
-    if (row.status === 'done' || row.turns >= MOSSE_PER_GIORNATA) {
-      fail(409, 'MOSSE_FINITE', 'Le mosse di oggi sono finite.')
-    }
+    mosseFinite(row)
 
     const mosse = mosseDi(row)
-    const sacchetto = sacchettoDelGiorno(row.puzzle_number)
     const { leggio, restanti } = partitaDi(row, mosse)
+    if (row.contro_computer >= 2) {
+      fail(409, 'SENZA_CAMBIO', 'Oggi le tessere sono nuove a ogni turno: non serve cambiarle.')
+    }
     if (restanti === 0) fail(409, 'SACCHETTO_VUOTO', 'Il sacchetto è vuoto: non puoi cambiare.')
 
     const mano = [...leggio]
@@ -218,7 +215,7 @@ export const scarabeoRoutes = new Hono<AppEnv>()
     }
 
     const mossa: Mossa = { tipo: 'cambio', tessere: chieste }
-    const risposta = await rispostaControllata(c.env, c.req.url, row, sacchetto, [...mosse, mossa], body)
+    const risposta = await rispostaControllata(c.env, c.req.url, row, [...mosse, mossa], body)
     const aggiornata = await aggiungiMossa(c.env.DB, row, computer, mossa, 0, risposta)
     await aggiornaOspiti(c.env.DB, aggiornata)
     return c.json<ScarabeoState>(statoDa(aggiornata, computer, msToNextPuzzle()))
