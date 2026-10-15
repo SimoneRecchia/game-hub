@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ERRORE_CATENA,
   MARGINE_CATENA_MS,
   MONTEPREMI_CATENA,
   PREAMBOLO_FINALE_CATENA_MS,
   PREAMBOLO_PAROLA_CATENA_MS,
+  PREAMBOLO_RIPRESA_CATENA_MS,
+  PUNTI_CATENA_PERSA,
   TEMPO_FINALE_CATENA_MS,
   TEMPO_PAROLA_CATENA_MS,
   type CatenaDelGiorno,
@@ -123,7 +126,7 @@ describe('la Catena del giorno, dalle API', () => {
     expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM catena_partite').get()?.n).toBe(1)
   })
 
-  it('il minuto di una parola: finito, la parola si mostra e si dimezza, dalla scadenza e non da adesso', async () => {
+  it('il minuto di una parola: finito, la parola si mostra e costa due errori, dalla scadenza e non da adesso', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
@@ -137,7 +140,7 @@ describe('la Catena del giorno, dalle API', () => {
     // La parola arrivata dopo il tempo non vale: la partita e' andata avanti, e il telefono rilegge.
     expect(vecchia.status).toBe(409)
     s = await stato(chiama, io)
-    expect(s).toMatchObject({ passo: 2, montepremi: MONTEPREMI_CATENA / 4 })
+    expect(s).toMatchObject({ passo: 2, montepremi: MONTEPREMI_CATENA - 4 * ERRORE_CATENA })
     expect(s.voci[1]).toMatchObject({ parola: 'libero', tipo: 'rivelata' })
     expect(s.voci[3]).toMatchObject({ parola: 'cavallo', tipo: 'rivelata' })
     // Il minuto della terza parola parte dalla scadenza della seconda, con la scena: ne resta meno di uno intero.
@@ -146,28 +149,49 @@ describe('la Catena del giorno, dalle API', () => {
 
     // Allo scadere il telefono lo dice da solo, senza aspettare il margine.
     s = await manda(chiama, io, 'tempo', s)
-    expect(s).toMatchObject({ esito: 'scaduta', passo: 3, montepremi: Math.floor(MONTEPREMI_CATENA / 8) })
+    expect(s).toMatchObject({ esito: 'scaduta', passo: 3, montepremi: MONTEPREMI_CATENA - 6 * ERRORE_CATENA })
     expect(s.parola?.inizioMs).toBeGreaterThan(PREAMBOLO_PAROLA_CATENA_MS - 2_000)
   })
 
-  it('un errore dimezza e mostra una lettera; il secondo mostra la parola e si scende', async () => {
+  it('un errore costa sei punti e mostra una lettera; il secondo mostra la parola e si scende', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
     let s = await manda(chiama, io, 'prova', await stato(chiama, io), 'lancio')
-    expect(s).toMatchObject({ esito: 'sbagliata', passo: 0, montepremi: 50 })
+    expect(s).toMatchObject({ esito: 'sbagliata', passo: 0, montepremi: MONTEPREMI_CATENA - ERRORE_CATENA })
     expect(s.voci[1].lettere).toBe('LI')
     s = await manda(chiama, io, 'prova', s, 'lavoro')
-    expect(s).toMatchObject({ esito: 'rivelata', passo: 1, montepremi: 25 })
+    expect(s).toMatchObject({ esito: 'rivelata', passo: 1, montepremi: MONTEPREMI_CATENA - 2 * ERRORE_CATENA })
     expect(s.voci[1]).toMatchObject({ parola: 'libero', tipo: 'rivelata' })
     expect(s.voci.map((v) => v.parola)).toEqual(['spirito', 'libero', 'tiro', null, 'dondolo'])
     // Un doppio tocco con la versione di prima non prova due volte.
     const vecchia = await chiama('POST', '/catena/prova', io, { versione: s.versione - 1, parola: 'cane' })
     expect(vecchia.status).toBe(409)
-    expect((await stato(chiama, io)).montepremi).toBe(25)
+    expect((await stato(chiama, io)).montepremi).toBe(MONTEPREMI_CATENA - 2 * ERRORE_CATENA)
   })
 
-  it('i jolly sono due, e non dimezzano', async () => {
+  it('un errore o un jolly fanno ripartire il minuto della parola', async () => {
+    const { chiama, giocatore, db } = banco()
+    conLaGiornata(db)
+    const io = await giocatore('anna')
+    let s = await manda(chiama, io, 'inizia', await stato(chiama, io))
+    // Sono passati quaranta secondi della prima parola.
+    const fa = Date.now() - PREAMBOLO_PAROLA_CATENA_MS - 40_000
+    const indietro = () =>
+      db.sqlite.prepare('UPDATE catena_partite SET parola_at = ? WHERE player_id = ?').run(new Date(fa).toISOString(), io.id)
+    indietro()
+    s = await stato(chiama, io)
+    expect(s.parola?.restanteMs).toBeLessThan(TEMPO_PAROLA_CATENA_MS - 30_000)
+    s = await manda(chiama, io, 'prova', s, 'lancio')
+    expect(s.parola?.inizioMs).toBeGreaterThan(PREAMBOLO_RIPRESA_CATENA_MS - 1_000)
+    expect(s.parola?.restanteMs).toBe(TEMPO_PAROLA_CATENA_MS)
+    indietro()
+    s = await manda(chiama, io, 'jolly', await stato(chiama, io))
+    expect(s.parola?.inizioMs).toBeGreaterThan(PREAMBOLO_RIPRESA_CATENA_MS - 1_000)
+    expect(s.parola?.restanteMs).toBe(TEMPO_PAROLA_CATENA_MS)
+  })
+
+  it('i jolly sono due, e non costano niente', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
@@ -209,7 +233,7 @@ describe('la Catena del giorno, dalle API', () => {
     })
   })
 
-  it('con un jolly usato il terzo elemento si compra, e dimezza', async () => {
+  it('con un jolly usato il terzo elemento si compra, e costa quanto un errore', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
@@ -219,7 +243,7 @@ describe('la Catena del giorno, dalle API', () => {
     expect(s.voci[10].parola).toBeNull()
     expect(JSON.stringify(s)).not.toContain('base')
     s = await manda(chiama, io, 'compra', s)
-    expect(s).toMatchObject({ esito: 'comprato', terzo: 'comprato', montepremi: 50 })
+    expect(s).toMatchObject({ esito: 'comprato', terzo: 'comprato', montepremi: MONTEPREMI_CATENA - ERRORE_CATENA })
     expect(s.voci[10].parola).toBe('base')
     // Il jolly rimasto nella finale non si usa.
     expect(s.jollyUsabile).toBe(false)
@@ -227,19 +251,32 @@ describe('la Catena del giorno, dalle API', () => {
     expect((await chiama('POST', '/catena/tempo', io, { versione: s.versione })).status).toBe(409)
   })
 
-  it('una parola finale sbagliata non vale niente, e la risposta e’ una sola', async () => {
+  it('una parola finale sbagliata vale quanto un Wordle perso, e la risposta e’ una sola', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
     let s = await catena(chiama, io, [false, true, true, true])
-    expect(s.montepremi).toBe(25)
+    expect(s.montepremi).toBe(MONTEPREMI_CATENA - 2 * ERRORE_CATENA)
     s = await manda(chiama, io, 'rispondi', s, 'nave')
-    expect(s).toMatchObject({ status: 'done', indovinata: false, risposta: 'nave', punti: 0 })
+    expect(s).toMatchObject({ status: 'done', indovinata: false, risposta: 'nave', punti: PUNTI_CATENA_PERSA })
     const ancora = await manda(chiama, io, 'rispondi', s, 'navale')
-    expect(ancora.punti).toBe(0)
+    expect(ancora.punti).toBe(PUNTI_CATENA_PERSA)
   })
 
-  it('prima della finale non si risponde, e il minuto finito chiude la partita senza punti', async () => {
+  it('tutte le parole mostrate e la finale giusta valgono ancora la metà', async () => {
+    const { chiama, giocatore, db } = banco()
+    conLaGiornata(db)
+    const io = await giocatore('anna')
+    let s = await manda(chiama, io, 'jolly', await stato(chiama, io))
+    s = await catena(chiama, io, [false, false, false, false])
+    expect(s.montepremi).toBe(MONTEPREMI_CATENA - 8 * ERRORE_CATENA)
+    s = await manda(chiama, io, 'compra', s)
+    expect(s.montepremi).toBe(50)
+    s = await manda(chiama, io, 'rispondi', s, 'navale')
+    expect(s).toMatchObject({ status: 'done', indovinata: true, punti: 50 })
+  })
+
+  it('prima della finale non si risponde, e il minuto finito chiude la partita con i punti di consolazione', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
@@ -251,6 +288,6 @@ describe('la Catena del giorno, dalle API', () => {
       .prepare('UPDATE catena_partite SET finale_at = ? WHERE player_id = ?')
       .run(new Date(Date.now() - TEMPO_FINALE_CATENA_MS - 10_000).toISOString(), io.id)
     const tardi = await manda(chiama, io, 'rispondi', s, 'navale')
-    expect(tardi).toMatchObject({ status: 'done', indovinata: false, risposta: null, punti: 0 })
+    expect(tardi).toMatchObject({ status: 'done', indovinata: false, risposta: null, punti: PUNTI_CATENA_PERSA })
   })
 })

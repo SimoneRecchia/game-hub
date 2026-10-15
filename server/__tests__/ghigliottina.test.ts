@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ERRORE_GHIGLIOTTINA,
   MARGINE_GHIGLIOTTINA_MS,
   MONTEPREMI_GHIGLIOTTINA,
+  PUNTI_GHIGLIOTTINA_PERSA,
   PREAMBOLO_PRIMA_COPPIA_MS,
   TEMPO_FINALE_MS,
   TEMPO_SCELTA_MS,
@@ -158,7 +160,7 @@ describe('la Ghigliottina del giorno, dalle API', () => {
     })
     expect(tardi.status).toBe(200)
     s = tardi.dati
-    expect(s).toMatchObject({ corrente: 2, montepremi: MONTEPREMI_GHIGLIOTTINA / 4 })
+    expect(s).toMatchObject({ corrente: 2, montepremi: MONTEPREMI_GHIGLIOTTINA - 2 * ERRORE_GHIGLIOTTINA })
     expect(s.coppie[0]).toMatchObject({ scelta: null, scaduta: true, giusta: 0 })
     expect(s.coppie[1]).toMatchObject({ scelta: null, scaduta: true, giusta: 1 })
     // La terza coppia e' partita dalla scadenza della seconda: il suo tempo corre gia'.
@@ -171,7 +173,7 @@ describe('la Ghigliottina del giorno, dalle API', () => {
       coppia: 2,
     })
     expect(tempo.status).toBe(200)
-    expect(tempo.dati).toMatchObject({ corrente: 3, montepremi: Math.floor(MONTEPREMI_GHIGLIOTTINA / 8) })
+    expect(tempo.dati).toMatchObject({ corrente: 3, montepremi: MONTEPREMI_GHIGLIOTTINA - 3 * ERRORE_GHIGLIOTTINA })
     expect(tempo.dati.coppie[2]).toMatchObject({ scaduta: true, giusta: 0 })
   })
 
@@ -185,11 +187,11 @@ describe('la Ghigliottina del giorno, dalle API', () => {
       .prepare('UPDATE ghigliottina_partite SET coppia_at = ? WHERE player_id = ?')
       .run(new Date(fa).toISOString(), io.id)
     const s = await stato(chiama, io)
-    expect(s).toMatchObject({ status: 'done', indovinata: false, risposta: null, punti: 0 })
+    expect(s).toMatchObject({ status: 'done', indovinata: false, risposta: null, punti: PUNTI_GHIGLIOTTINA_PERSA })
     expect(s.coppie.every((c) => c.scaduta)).toBe(true)
   })
 
-  it('una scelta sbagliata dimezza il montepremi, e la giusta si vede lo stesso', async () => {
+  it('una scelta sbagliata toglie dieci punti al montepremi, e la giusta si vede lo stesso', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
@@ -199,7 +201,7 @@ describe('la Ghigliottina del giorno, dalle API', () => {
     expect(giusta.coppie[1]).toMatchObject({ parole: ['sedia', 'scena'], giusta: null })
     const sbagliata = await scegli(chiama, io, giusta, 0)
     expect(sbagliata.coppie[1]).toMatchObject({ scelta: 0, giusta: 1 })
-    expect(sbagliata.montepremi).toBe(50)
+    expect(sbagliata.montepremi).toBe(90)
     // Un doppio tocco sulla stessa coppia non sceglie di nuovo.
     const r = await chiama<GhigliottinaStato>('POST', '/ghigliottina/scegli', io, {
       versione: giusta.versione,
@@ -207,7 +209,7 @@ describe('la Ghigliottina del giorno, dalle API', () => {
       scelta: 1,
     })
     expect(r.status).toBe(200)
-    expect(r.dati.montepremi).toBe(50)
+    expect(r.dati.montepremi).toBe(90)
     // Una coppia che non e' ancora uscita non si sceglie.
     const avanti = await chiama('POST', '/ghigliottina/scegli', io, { versione: sbagliata.versione, coppia: 4, scelta: 0 })
     expect(avanti.status).toBe(409)
@@ -219,40 +221,46 @@ describe('la Ghigliottina del giorno, dalle API', () => {
     const io = await giocatore('anna')
     let s = await scegliTutte(chiama, io, [true, false, true, false, true])
     expect(s.corrente).toBeNull()
-    expect(s.montepremi).toBe(25)
+    expect(s.montepremi).toBe(80)
     expect(s.finale.aperto).toBe(false)
     s = await finale(chiama, io, s)
     expect(s.finale.aperto).toBe(true)
     expect(s.finale.restanteMs).toBeGreaterThan(TEMPO_FINALE_MS - 2_000)
     s = await rispondi(chiama, io, s, ' Colpo ')
-    expect(s).toMatchObject({ status: 'done', indovinata: true, soluzione: 'colpo', punti: 25 })
+    expect(s).toMatchObject({ status: 'done', indovinata: true, soluzione: 'colpo', punti: 80 })
     expect(s.coppie.map((c) => c.spiegazione)).toEqual(GIORNO.coppie.map((c) => c.spiegazione))
 
     const classifica = (await chiama<GhigliottinaLeaderboard>('GET', '/leaderboard/ghigliottina?scope=today', io)).dati
-    expect(classifica.me).toMatchObject({ punti: 25, giornate: 1, indovinate: 1 })
+    expect(classifica.me).toMatchObject({ punti: 80, giornate: 1, indovinate: 1 })
     const generale = (await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', io)).dati
-    expect(generale.me?.perGioco.ghigliottina).toBe(25)
-    expect(await puntiClassificateDi(db as unknown as D1Database, io.id, today().puzzleNumber)).toBe(25)
+    expect(generale.me?.perGioco.ghigliottina).toBe(80)
+    expect(await puntiClassificateDi(db as unknown as D1Database, io.id, today().puzzleNumber)).toBe(80)
     expect((await chiama<OggiRisposta>('GET', '/oggi', io)).dati.ghigliottina).toMatchObject({
       status: 'done',
       scelte: 5,
       indovinata: true,
-      punti: 25,
+      punti: 80,
     })
   })
 
-  it('una parola sbagliata non vale niente, e una sola risposta', async () => {
+  it('una parola sbagliata vale quanto un Wordle perso, e una sola risposta', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
     let s = await finale(chiama, io, await scegliTutte(chiama, io, [true, true, true, true, true]))
     s = await rispondi(chiama, io, s, 'botta')
-    expect(s).toMatchObject({ status: 'done', indovinata: false, risposta: 'botta', soluzione: 'colpo', punti: 0 })
+    expect(s).toMatchObject({
+      status: 'done',
+      indovinata: false,
+      risposta: 'botta',
+      soluzione: 'colpo',
+      punti: PUNTI_GHIGLIOTTINA_PERSA,
+    })
     const ancora = await rispondi(chiama, io, s, 'colpo')
-    expect(ancora.punti).toBe(0)
+    expect(ancora.punti).toBe(PUNTI_GHIGLIOTTINA_PERSA)
   })
 
-  it('prima delle cinque scelte non si risponde, e il minuto finito chiude la partita senza punti', async () => {
+  it('prima delle cinque scelte non si risponde, e il minuto finito chiude la partita come una risposta sbagliata', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
@@ -264,6 +272,6 @@ describe('la Ghigliottina del giorno, dalle API', () => {
       .prepare('UPDATE ghigliottina_partite SET finale_at = ? WHERE player_id = ?')
       .run(new Date(Date.now() - TEMPO_FINALE_MS - 10_000).toISOString(), io.id)
     const tardi = await rispondi(chiama, io, s, 'colpo')
-    expect(tardi).toMatchObject({ status: 'done', indovinata: false, risposta: null, punti: 0 })
+    expect(tardi).toMatchObject({ status: 'done', indovinata: false, risposta: null, punti: PUNTI_GHIGLIOTTINA_PERSA })
   })
 })

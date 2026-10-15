@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SEQUENZE_SFIDA_FERMA_MS, SEQUENZE_SFIDA_VIA_MS } from '../../shared/config'
-import {
-  MASSIMO_SEQUENZE,
-  PRIMA_LUNGHEZZA,
-  PUNTI_FINITA_SEQUENZE,
-  PUNTI_SEQUENZA,
-  SEQUENZE_PER_TURNO,
-  TURNI_SEQUENZE,
-  giornataDaTesto,
-} from '../../shared/sequenze'
+import { PRIMA_LUNGHEZZA } from '../../shared/sequenze'
 import type {
   GeneraleLeaderboard,
   InvitoConLink,
@@ -16,33 +8,14 @@ import type {
   OggiRisposta,
   PresenzaRisposta,
   SalaSequenze,
-  SequenzeLeaderboard,
-  SequenzeMossa,
-  SequenzeStato,
   VistaSfidaSequenze,
 } from '../../shared/types'
 import { puntiClassificateDi } from '../lib/generale'
-import { ordinaSequenze, type TotaliSequenze } from '../lib/sequenzeStore'
 import { today } from '../lib/wordleStore'
 import { banco, type Giocatore } from './banco'
 
 type Banco = ReturnType<typeof banco>
 type Chiama = Banco['chiama']
-
-const stato = async (chiama: Chiama, chi: Giocatore) =>
-  (await chiama<SequenzeStato>('GET', '/sequenze/state', chi)).dati
-
-async function turno(chiama: Chiama, chi: Giocatore, s: SequenzeStato) {
-  const r = await chiama<SequenzeMossa>('POST', '/sequenze/turno', chi, { versione: s.versione })
-  expect(r.status).toBe(200)
-  return r.dati
-}
-
-async function risposta(chiama: Chiama, chi: Giocatore, s: SequenzeStato, tocchi: number[]) {
-  const r = await chiama<SequenzeMossa>('POST', '/sequenze/risposta', chi, { versione: s.versione, tocchi })
-  expect(r.status).toBe(200)
-  return r.dati
-}
 
 /** Una risposta sbagliata alla sequenza data: il primo cubetto giusto, poi uno che non c'entra. */
 function sbagliata(sequenza: number[]): number[] {
@@ -50,159 +23,36 @@ function sbagliata(sequenza: number[]): number[] {
   return [sequenza[0], altro]
 }
 
-/** Gioca un turno ripetendo giuste le prime `giuste` sequenze, e sbagliando la seguente se ce n'e' una. */
-async function giocaTurno(chiama: Chiama, chi: Giocatore, s: SequenzeStato, giuste: number) {
-  let m = await turno(chiama, chi, s)
-  for (let k = 0; k < giuste; k += 1) {
-    expect(m.sequenza).toHaveLength(PRIMA_LUNGHEZZA + k)
-    m = await risposta(chiama, chi, m, m.sequenza!)
-    expect(m.giusta).toBe(true)
-  }
-  if (giuste < SEQUENZE_PER_TURNO) {
-    m = await risposta(chiama, chi, m, sbagliata(m.sequenza!))
-    expect(m.giusta).toBe(false)
-  }
-  expect(m.sequenza).toBeNull()
-  return m
-}
-
-describe('la classifica delle Sequenze', () => {
-  const g = (nickname: string, punti: number, giornate: number, migliore: number, tempoMs: number): TotaliSequenze => ({
-    playerId: nickname,
-    nickname,
-    displayName: nickname,
-    avatarColor: '#000',
-    punti,
-    giornate,
-    migliore,
-    tempoMs,
-    inCorso: giornate === 0,
-  })
-
-  it('punti prima, poi la sequenza piu’ lunga, poi meno tempo, e chi non ha finito in fondo', () => {
-    const righe = ordinaSequenze([
-      g('lenta', 40, 1, 8, 300_000),
-      g('aperta', 0, 0, 0, 0),
-      g('veloce', 40, 1, 8, 120_000),
-      g('corta', 40, 1, 7, 60_000),
-      g('meno', 30, 1, 9, 10_000),
-    ])
-    expect(righe.map((r) => r.nickname)).toEqual(['veloce', 'lenta', 'corta', 'meno', 'aperta'])
-  })
-})
-
-describe('la giornata delle Sequenze, dalle API', () => {
-  it('guardare non apre niente; il primo turno manda una sequenza di tre, e fissa la giornata per tutti', async () => {
-    const { chiama, giocatore, db } = banco()
-    const anna = await giocatore('anna')
-    const bruno = await giocatore('bruno')
-    const vuoto = await stato(chiama, anna)
-    expect(vuoto).toMatchObject({ turni: [], corrente: null, punti: 0, totaleTurni: TURNI_SEQUENZE })
-    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM sequenze_partite').get()?.n).toBe(0)
-    expect(db.sqlite.prepare('SELECT COUNT(*) AS n FROM sequenze_giornate').get()?.n).toBe(0)
-
-    const sua = await turno(chiama, anna, vuoto)
-    expect(sua.sequenza).toHaveLength(PRIMA_LUNGHEZZA)
-    expect(sua.corrente).toBe(0)
-    const mia = await turno(chiama, bruno, await stato(chiama, bruno))
-    expect(mia.sequenza).toEqual(sua.sequenza)
-    const salvata = db.sqlite.prepare('SELECT sequenze FROM sequenze_giornate').get() as { sequenze: string }
-    expect(giornataDaTesto(salvata.sequenze)?.[0][0]).toEqual(sua.sequenza)
-    // Lo stato non porta mai la sequenza.
-    expect(JSON.stringify(await stato(chiama, bruno))).not.toContain('sequenza')
-  })
-
-  it('un turno cresce di un cubetto a ogni giusta, e il primo errore lo chiude', async () => {
-    const { chiama, giocatore } = banco()
-    const io = await giocatore('anna')
-    let m = await turno(chiama, io, await stato(chiama, io))
-    m = await risposta(chiama, io, m, m.sequenza!)
-    expect(m).toMatchObject({ giusta: true, corrente: 0 })
-    expect(m.sequenza).toHaveLength(PRIMA_LUNGHEZZA + 1)
-    m = await risposta(chiama, io, m, sbagliata(m.sequenza!))
-    expect(m).toMatchObject({ giusta: false, sequenza: null, corrente: null, punti: 1 })
-    expect(m.turni[0]).toMatchObject({ giuste: 1, raggiunta: PRIMA_LUNGHEZZA, chiuso: true, riaperto: false })
-    // Una risposta senza sequenza aperta, o con una versione vecchia, non vale.
-    const r = await chiama<{ code: string }>('POST', '/sequenze/risposta', io, { versione: m.versione, tocchi: [0] })
-    expect(r.dati.code).toBe('NESSUNA_SEQUENZA')
-  })
-
-  it('un doppio tocco non risponde due volte, e un turno aperto non si ricomincia', async () => {
-    const { chiama, giocatore } = banco()
-    const io = await giocatore('anna')
-    const aperto = await turno(chiama, io, await stato(chiama, io))
-    const ancora = await chiama<{ code: string }>('POST', '/sequenze/turno', io, { versione: aperto.versione })
-    expect(ancora.dati.code).toBe('TURNO_APERTO')
-    const prima = await risposta(chiama, io, aperto, aperto.sequenza!)
-    const doppia = await chiama<{ code: string }>('POST', '/sequenze/risposta', io, {
-      versione: aperto.versione,
-      tocchi: aperto.sequenza,
-    })
-    expect(doppia.status).toBe(409)
-    expect(doppia.dati.code).toBe('CONFLITTO')
-    expect((await stato(chiama, io)).turni[0].giuste).toBe(prima.turni[0].giuste)
-  })
-
-  it('una sequenza si vede una volta: riaprendo la pagina il turno conta chiuso', async () => {
-    const { chiama, giocatore } = banco()
-    const io = await giocatore('anna')
-    let m = await turno(chiama, io, await stato(chiama, io))
-    m = await risposta(chiama, io, m, m.sequenza!)
-    const riaperta = await stato(chiama, io)
-    expect(riaperta.corrente).toBeNull()
-    expect(riaperta.turni[0]).toMatchObject({ giuste: 1, chiuso: true, riaperto: true })
-    const tardi = await chiama<{ code: string }>('POST', '/sequenze/risposta', io, {
-      versione: riaperta.versione,
-      tocchi: m.sequenza,
-    })
-    expect(tardi.dati.code).toBe('NESSUNA_SEQUENZA')
-  })
-
-  it('cinque turni fanno la giornata: i punti vanno in classifica, nella generale e nel saldo della Fortuna', async () => {
+/**
+ * La classificata delle Sequenze c'e' stata fino al 15 ottobre 2026: le
+ * giornate di allora restano nella generale, in una colonna a parte, e le rotte
+ * della giornata non ci sono piu'.
+ */
+describe('le Sequenze senza classificata', () => {
+  it('le giornate di allora restano nella generale e nel saldo, e la giornata non si gioca piu’', async () => {
     const { chiama, giocatore, db } = banco()
     const io = await giocatore('anna')
-    const giuste = [SEQUENZE_PER_TURNO, 3, 0, 4, 2]
-    let s: SequenzeStato = await stato(chiama, io)
-    for (const g of giuste) s = await giocaTurno(chiama, io, s, g)
-    expect(s.status).toBe('done')
-    const attesi = PUNTI_FINITA_SEQUENZE + PUNTI_SEQUENZA * giuste.reduce((a, b) => a + b, 0)
-    expect(s.punti).toBe(attesi)
-    const altro = await chiama<{ code: string }>('POST', '/sequenze/turno', io, { versione: s.versione })
-    expect(altro.dati.code).toBe('GIORNATA_FINITA')
-
-    const classifica = (await chiama<SequenzeLeaderboard>('GET', '/leaderboard/sequenze?scope=today', io)).dati
-    expect(classifica.me).toMatchObject({ punti: attesi, giornate: 1, migliore: PRIMA_LUNGHEZZA - 1 + 7 })
+    const n = today().puzzleNumber
+    const adesso = new Date().toISOString()
+    db.sqlite
+      .prepare(
+        `INSERT INTO sequenze_partite
+           (id, player_id, puzzle_number, date, status, giuste, migliore, tempo_ms, score, started_at, updated_at)
+         VALUES ('s1', ?, ?, 'x', 'done', 18, 8, 120000, 66, ?, ?)`,
+      )
+      .run(io.id, n, adesso, adesso)
     const generale = (await chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', io)).dati
-    expect(generale.me?.perGioco.sequenze).toBe(attesi)
-    expect(await puntiClassificateDi(db as unknown as D1Database, io.id, today().puzzleNumber)).toBe(attesi)
-    expect((await chiama<OggiRisposta>('GET', '/oggi', io)).dati.sequenze).toMatchObject({
-      status: 'done',
-      giocati: TURNI_SEQUENZE,
-      migliore: 9,
-      punti: attesi,
-    })
-  })
+    expect(generale.me).toMatchObject({ punti: 66, sequenze: 66, partite: 1 })
+    expect(Object.keys(generale.me!.perGioco)).not.toContain('sequenze')
+    expect(await puntiClassificateDi(db as unknown as D1Database, io.id, n)).toBe(66)
 
-  it('tutti giusti fino a nove in ogni turno fanno il tetto', async () => {
-    const { chiama, giocatore } = banco()
-    const io = await giocatore('anna')
-    let s: SequenzeStato = await stato(chiama, io)
-    for (let t = 0; t < TURNI_SEQUENZE; t += 1) s = await giocaTurno(chiama, io, s, SEQUENZE_PER_TURNO)
-    expect(s.punti).toBe(MASSIMO_SEQUENZE)
-  })
-
-  it('una giornata cominciata e’ "in corso" in classifica, a zero', async () => {
-    const { chiama, giocatore } = banco()
-    const io = await giocatore('anna')
-    await giocaTurno(chiama, io, await stato(chiama, io), 2)
-    const classifica = (await chiama<SequenzeLeaderboard>('GET', '/leaderboard/sequenze?scope=today', io)).dati
-    expect(classifica.me).toMatchObject({ punti: 0, giornate: 0, inCorso: true })
+    expect((await chiama('GET', '/sequenze/state', io)).status).toBe(404)
+    expect((await chiama('POST', '/sequenze/turno', io, { versione: 0 })).status).toBe(404)
+    expect((await chiama('GET', '/leaderboard/sequenze?scope=today', io)).status).toBe(404)
+    expect(Object.keys((await chiama<OggiRisposta>('GET', '/oggi', io)).dati)).not.toContain('sequenze')
   })
 })
 
-/* ─────────────────────────────  La sfida fra amici  ───────────────────────────── */
-
-/** Porta indietro gli orologi della sfida: come se fossero passati `ms` millisecondi. */
 function passano(db: Banco['db'], id: string, ms: number) {
   for (const colonna of ['inizio_at', 'aperta_a', 'aperta_b', 'created_at', 'updated_at']) {
     const prima = db.sqlite.prepare(`SELECT ${colonna} AS t FROM sequenze_sfide WHERE id = ?`).get(id)?.t

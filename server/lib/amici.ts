@@ -106,12 +106,11 @@ function delPeriodo(riga: GeneraleRow | null, giocatori: number): PuntiDelPeriod
       quiz: 0,
       nomi: 0,
       anagrammi: 0,
-      sequenze: 0,
       ghigliottina: 0,
       paroliere: 0,
       catena: 0,
     },
-    storici: (riga?.battaglia ?? 0) + (riga?.tris ?? 0),
+    storici: (riga?.battaglia ?? 0) + (riga?.tris ?? 0) + (riga?.sequenze ?? 0),
     fortuna: riga
       ? riga.ruota + riga.slot + riga.blackjack + riga.roulette + riga.superenalotto
       : 0,

@@ -471,28 +471,31 @@ dopo tre minuti senza colpi, o cinque senza flotta.
 giornata di Wordle valeva fino a 209 punti e una di Scarabeo qualche centinaio,
 e sommarle avrebbe voluto un tasso di cambio inventato. Adesso ogni gioco misura
 quel che gli e' proprio dentro un tetto deciso (`TETTI` in `shared/punti.ts`,
-che ha la tabella di tutti), e il tetto e' cento per tutti: sono undici, e
-fanno millecento, e un test lo tiene. La storia e' andata avanti e indietro.
+che ha la tabella di tutti), e il tetto e' cento per tutti: sono dieci, e
+fanno mille, e un test lo tiene. La storia e' andata avanti e indietro.
 All'inizio valevano tutte cento; poi i tetti hanno seguito il tempo che una
 giornata chiede — il cruciverba 160, lo Scarabeo e il sudoku 150, il quiz 75, il
 Wordle 70, la Ghigliottina e la Catena 64, Nomi, cose e città, gli Anagrammi e il
 Paroliere 60, il tris e le Sequenze 50 —, e in pratica in alcuni giochi si
 guadagnava troppo e in altri troppo poco: chi faceva il cruciverba prendeva
 quanto chi faceva tre giochi brevi. L'8 ottobre 2026 si e' tornati a cento per
-tutti, e il tris e la battaglia navale (vedi sotto) non sono piu' classificate.
+tutti, e il tris e la battaglia navale (vedi sotto) non sono piu' classificate;
+le Sequenze dal 15 ottobre.
 Le giornate giocate con i tetti di prima restano come sono, perché i punti si
 salvano a fine partita e non si ricalcolano. Il Wordle misura i tentativi, lo
 Scarabeo il punteggio in rapporto al computer, il cruciverba e il sudoku gli
 aiuti, il quiz le risposte giuste (venti per aver giocato, otto per ogni
 giusta), Nomi, cose e città le risposte valide, di piu' quelle date da pochi,
-gli Anagrammi le parole trovate, di piu' quelle trovate presto, le Sequenze le
-sequenze ripetute giuste, il Paroliere i punti delle parole rispetto al
-traguardo della griglia, la Ghigliottina e la Catena il montepremi che resta.
-Tutti tengono il principio del Wordle — **giocarla bene
-vale circa il doppio di giocarla male**, non dieci volte tanto — tranne la
-Ghigliottina e la Catena, di proposito (vedi sotto), e
-`shared/__tests__/punti.test.ts` verifica i tetti e i due lati del compromesso
-per ogni gioco. La classifica di ogni gioco resta (`/leaderboard`,
+gli Anagrammi le parole trovate, di piu' quelle trovate presto, il Paroliere i
+punti delle parole rispetto al traguardo della griglia, la Ghigliottina e la
+Catena il montepremi che resta. Tutti tengono il principio del Wordle —
+**giocarla bene vale circa il doppio di giocarla male**, non dieci volte tanto
+— e `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del
+compromesso per ogni gioco. **Un errore costa lo stesso in tutti i giochi**: il
+gradino di un tentativo del Wordle, dieci punti, e venti per una parola finale
+non indovinata. La Ghigliottina e la Catena erano l'eccezione, come alla
+televisione, dove ogni errore dimezza: due errori lasciavano un quarto del
+montepremi, e una giornata storta non valeva piu' niente (vedi sotto). La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
 `/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna e
 dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
@@ -1449,10 +1452,11 @@ nelle Libere stanno con le libere dei giochi classificati, ognuno nella sua
 famiglia (vedi sotto), anche nel menu laterale del computer (`GIOCHI_DA_TAVOLO`
 in `src/games/catalog.ts`), non in `GiocoClassificato`, che porta con se'
 classifiche, anelli e statistiche. Sono Indovina chi, Lupus e Scarabocchi, che
-il computer non ce l'hanno — si giocano parlandosi, o disegnando — e la
+il computer non ce l'hanno — si giocano parlandosi, o disegnando — la
 battaglia navale, scacchi, dama, Forza 4, go e tris, con un amico o contro il
-computer. La battaglia e il tris una classificata l'hanno avuta, e le giornate
-di allora restano nella generale (vedi sotto).
+computer, e le Sequenze, da soli o con un amico. La battaglia, il tris e le
+Sequenze una classificata l'hanno avuta, e le giornate di allora restano nella
+generale (vedi sotto).
 
 **In Indovina chi l'invito e' gia' la partita.** Una riga di
 `indovina_partite` nasce invito — a un amico online (`invitato`) o con un link
@@ -1979,30 +1983,25 @@ misurano la memoria visuospaziale (Philip Corsi, 1972), ma "Corsi" a chi gioca
 non dice niente, e il gioco si chiama per quel che si fa. I cubetti sono sparsi
 e non in una griglia, come sulla tavola vera: in una griglia una sequenza si
 ricorderebbe come un disegno di righe e colonne, e un test tiene che tre non
-stiano mai in fila. La classificata e' di cinque turni uguali per tutti, ognuno
-da tre a nove cubetti, e il primo errore chiude il turno: trenta punti per
-averli giocati tutti e due per sequenza giusta, fino a cento (`puntiSequenze`).
-Chi arriva a cinque o sei, la media degli adulti, fa sessanta o settanta; a
-pari punti conta la sequenza piu' lunga, poi il tempo. Fra un turno e l'altro ci
-si ferma quanto si vuole. Ogni cubetto ha la sua nota della scala pentatonica
+stiano mai in fila. Ogni cubetto ha la sua nota della scala pentatonica
 (`NOTE_CUBETTI`), perché una sequenza si ricorda anche a orecchio, come al Simon.
 
-**Una sequenza si vede una volta, e non esce mai prima.** Le sequenze del giorno
-non vengono da un seme che il telefono potrebbe rifare: le pesca a caso il primo
-che apre un turno e le salva `sequenze_giornate`, con `INSERT OR IGNORE` e poi
-la rilettura, come la parola del Wordle. Ne esce una alla volta: la prima con il
-turno (`/sequenze/turno`), ognuna delle altre con la risposta giusta alla
-precedente (`/sequenze/risposta`), e lo stato non le porta. Una pagina riaperta
-con una sequenza aperta la trova chiusa come sbagliata (`chiudiAperta`, alla
-prima `GET /state`): rivederla sarebbe un aiuto, e il turno lo dice
-(`riaperto`). Le risposte sono condizionate alla `versione`, come le altre
-partite del giorno. Il tempo per ripetere le giuste e' lo spareggio, e lo conta
-il server dall'uscita della sequenza alla risposta.
+**Le Sequenze non hanno piu' la classificata.** Fino al 15 ottobre 2026 c'era:
+cinque turni uguali per tutti, da tre a nove cubetti, con le sequenze pescate
+dal primo che apriva un turno (`sequenze_giornate`). Cinque turni chiedevano il
+doppio del tempo di un Wordle, e le Giornaliere devono durare tutte piu' o meno
+uguale; ora le Sequenze sono un gioco da tavolo, con la sala all'indirizzo della
+libera (`/sequenze/libera`, e `/sequenze` e `/sequenze/classificata` ci
+portano). Le giornate di allora restano in `sequenze_partite`, e i loro punti
+stanno nella generale dei periodi che le comprendono, in una colonna a parte
+(`GeneraleRow.sequenze`, e la stessa somma in `puntiClassificateDi`), come
+quelli del tris e della battaglia. Il server ha ancora solo le rotte della
+sfida (`/sequenze/sfide`).
 
 **La libera delle Sequenze va avanti finché non si sbaglia, e la sfida anche.**
 La libera sta tutta nel telefono, dal seme della partita (`sequenzaDelLivello`):
 oltre i nove cubetti uno torna, mai due volte di fila. I livelli sono il facile,
-piu' lento e da due cubetti, il normale della classificata, e "al contrario",
+piu' lento e da due cubetti, il normale, che e' il test com'e', e "al contrario",
 che chiede di toccarli dall'ultimo al primo come la seconda meta' del test di
 Corsi; il record di ogni livello sta nel `localStorage` (`games/sequenze/conti.ts`).
 Con un amico l'invito e' gia' la partita, come in Nomi, cose e città, e la sala
@@ -2059,16 +2058,19 @@ scena che la porta: `preamboloCoppia`), e finiti conta sbagliata (una scelta
 una coppia il telefono lo dice subito (`/tempo`); un tempo passato lo applica la
 prima richiesta dopo, dalla scadenza (`chiudiScadute`), e se finiscono cosi'
 tutte le coppie parte anche la finale, e si chiude: chi ha chiuso la pagina non
-resta "in corso" per sempre. I punti sono l'eccezione al principio del Wordle,
-perché il gioco e' quello della televisione: ogni scelta sbagliata dimezza il
-montepremi (100, 50, 25...), e una vincente sbagliata o non data vale zero. Le
-cinque parole si vedono sempre, quindi anche con cinque errori la vincente si
-puo' trovare. Nella classifica a pari punti contano le vincenti indovinate, poi
+resta "in corso" per sempre. Ogni scelta sbagliata toglie dieci punti al
+montepremi (`ERRORE_GHIGLIOTTINA`, il gradino di un tentativo del Wordle), e
+una vincente sbagliata o non data vale venti (`PUNTI_GHIGLIOTTINA_PERSA`, una
+parola del Wordle non indovinata). Alla televisione ogni errore dimezza, e cosi'
+era anche qui fino al 15 ottobre 2026: due errori lasciavano venticinque punti,
+e la vincente sbagliata zero, che era perdere troppo per un gioco di due
+minuti. Le cinque parole si vedono sempre, quindi anche con cinque errori la
+vincente si puo' trovare: vale cinquanta. Nella classifica a pari punti contano le vincenti indovinate, poi
 il tempo per scriverle. La scena (`src/games/ghigliottina/Partita.tsx`) e' una
 macchina a fasi con i suoi tempi (`tempi()`): la coppia arriva con il suo
 anello che si svuota, la scelta aspetta un respiro ("Vediamo…"), e una
 sbagliata, o il tempo finito, fa cadere la lama sul montepremi, che si spezza:
-i pezzi hanno il numero di prima, e sotto c'e' gia' quello dimezzato (`Taglio`
+i pezzi hanno il numero di prima, e sotto c'e' gia' quello sceso (`Taglio`
 porta tutti e due). Era il contrario, e per due secondi sotto la targa spaccata
 restava il montepremi intero. La vincente si scrive con la tastiera del gioco
 (`TastieraGioco`, la stessa della Catena), e intanto la ghigliottina si fa
@@ -2103,14 +2105,21 @@ le stesse, e la direbbe. Se manca, `CATENA_ASSENTE` (503): in locale
 `catena_partite.mosse` ha le parole provate, i jolly, il terzo elemento comprato
 e i tempi finiti (`t`); montepremi, lettere viste e terzo elemento si ricavano
 rigiocandole (`svolgiCatena`), con le stesse regole nel server e nel telefono
-della libera. Un errore dimezza e mostra un'altra lettera, il secondo dimezza e
-mostra la parola, e cosi' il minuto di una parola finito (`TEMPO_PAROLA_CATENA_MS`):
-senza un tempo chi ci pensa abbastanza troverebbe ogni parola. I jolly sono due,
-non si usano nella finale, e ne' un jolly ne' un errore mostrano l'ultima
-lettera. Della finale si vedono le prime due lettere e l'ultima; il terzo
-elemento si compra dimezzando, e chi arriva con tutti e due i jolly lo ha in
-regalo. Il montepremi parte da cento come quello della Ghigliottina e non scende
-sotto uno, perché la finale valga sempre qualcosa; sbagliata vale zero.
+della libera. Un errore toglie sei punti (`ERRORE_CATENA`) e mostra un'altra
+lettera, il secondo mostra la parola, e il minuto di una parola finito
+(`TEMPO_PAROLA_CATENA_MS`) la mostra costando i due errori che l'avrebbero
+mostrata: senza un tempo chi ci pensa abbastanza troverebbe ogni parola. Un
+errore e un jolly fanno ripartire il minuto (`riparteIlMinuto`, scritto in
+`parola_at` dopo `PREAMBOLO_RIPRESA_CATENA_MS`): c'e' una lettera nuova, e un
+minuto per pensarci. I jolly sono due, gratis, non si usano nella finale, e ne'
+un jolly ne' un errore mostrano l'ultima lettera. Della finale si vedono le
+prime due lettere e l'ultima; il terzo elemento costa quanto un errore, e chi
+arriva con tutti e due i jolly lo ha in regalo. Il montepremi parte da cento
+come quello della Ghigliottina e non scende sotto cinquanta (`FONDO_CATENA`),
+quanto il Wordle indovinato al sesto tentativo; la finale sbagliata vale venti.
+Gli errori possibili sono otto, e per questo uno vale meno del gradino del
+Wordle. Fino al 15 ottobre 2026 ogni errore dimezzava, come alla televisione, e
+la finale sbagliata valeva zero.
 `vistaCatena` manda solo le parole fino alla coppia di adesso, e di quella da
 indovinare le lettere, non la lunghezza: con le caselle tutte in vista sbagliare
 era quasi impossibile, e la parola ora cresce a ogni tasto. Prima di Comincia
@@ -2256,8 +2265,7 @@ Wordle con una parola a caso, Scarabeo fino in fondo al sacchetto contro il
 computer o un amico, cruciverba da una scorta di schemi, quiz sulla materia, la
 categoria, il modo, la zona o l'ambito e le opzioni che si scelgono, Nomi, cose
 e città con una lettera a caso contro il computer, Anagrammi con cinque parole a
-caso della lunghezza e con il tempo che si sceglie, Sequenze finché non si
-sbaglia, Ghigliottina e Catena con una a caso e il tempo della finale che si
+caso della lunghezza e con il tempo che si sceglie, Ghigliottina e Catena con una a caso e il tempo della finale che si
 sceglie, Paroliere con una griglia a caso di sedici o venticinque dadi e il
 tempo che si sceglie. Gli indirizzi dicono sempre dove si e':
 `/<gioco>/classificata`, `/<gioco>/libera` (`src/app/rotte.ts`, che ha l'elenco

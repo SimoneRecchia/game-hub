@@ -4,6 +4,7 @@ import { TastieraGioco, useTastieraFisica } from '@/components/TastieraGioco'
 import { suona } from '@/lib/suoni'
 import {
   DA_INDOVINARE_CATENA,
+  ERRORE_CATENA,
   NASCOSTE_CATENA,
   PASSO_FINALE,
   normalizzaCatena,
@@ -47,12 +48,12 @@ export interface RispostaCatena {
 export interface ComandiCatena {
   /** Comincia: la prima coppia arriva, e il suo minuto parte dopo la scena. */
   inizia: () => Promise<RispostaCatena | null>
-  /** Il minuto della parola e' finito: si mostra, e il montepremi si dimezza. */
+  /** Il minuto della parola e' finito: si mostra, e costa come due errori. */
   scadeParola: () => Promise<RispostaCatena | null>
   /** Una parola della catena: torna la vista dopo, con l'esito, o null se non e' andata. */
   prova: (parola: string) => Promise<RispostaCatena | null>
   jolly: () => Promise<RispostaCatena | null>
-  /** Il terzo elemento della finale, che dimezza il montepremi. */
+  /** Il terzo elemento della finale, che costa quanto un errore. */
   compra: () => Promise<RispostaCatena | null>
   rispondi: (parola: string) => Promise<RispostaCatena | null>
   /** Il tempo della finale e' finito sul telefono senza una risposta. */
@@ -141,7 +142,7 @@ export function PartitaCatena({
   const [scritte, setScritte] = useState('')
   /** L'esito della mossa appena fatta, per le caselle: verdi, rosse che tremano, arancio. */
   const [esito, setEsito] = useState<EsitoMossaCatena | null>(null)
-  /** Il montepremi dimezzato, o azzerato: il valore di prima che vola via, e il numero del colpo. */
+  /** Il montepremi sceso, o caduto: il valore di prima che vola via, quanto si e' perso, e il numero del colpo. */
   const [taglio, setTaglio] = useState<Taglio | null>(null)
   /** La riga sotto la catena: com'e' andata, o che cosa succede. */
   const [stato, setStato] = useState<string>('')
@@ -162,10 +163,10 @@ export function PartitaCatena({
   const spazio = spazioDi(corrente)
   const finale = mostrata.passo >= PASSO_FINALE
 
-  /** La vista nuova, e con lei il montepremi che si dimezza se e' sceso. */
+  /** La vista nuova, e con lei il montepremi che scende, se e' sceso. */
   const mostra = useCallback((dopo: VistaCatena, prima: VistaCatena) => {
     if (dopo.montepremi < prima.montepremi) {
-      setTaglio({ prima: prima.montepremi, n: Date.now(), tutto: false })
+      setTaglio({ prima: prima.montepremi, perso: prima.montepremi - dopo.montepremi, n: Date.now(), tutto: false })
       suona('dimezza')
     }
     setMostrata(dopo)
@@ -424,8 +425,8 @@ export function PartitaCatena({
           setStato(`Catena completata! ${dopo.punti} punti`)
           suona('vittoria', { ritardo: 0.6 })
         } else {
-          setStato(testo === null ? 'Niente punti' : 'Sbagliata: niente punti')
-          setTaglio({ prima: mostrata.montepremi, n: Date.now(), tutto: true })
+          setStato(testo === null ? `Nessuna risposta: ${dopo.punti} punti` : `Sbagliata: ${dopo.punti} punti`)
+          setTaglio({ prima: mostrata.montepremi, perso: mostrata.montepremi - dopo.punti, n: Date.now(), tutto: true })
           suona('sbagliato')
           suona('sconfitta', { ritardo: 0.5 })
         }
@@ -458,7 +459,7 @@ export function PartitaCatena({
 
   const libera = fase === 'gioco' || fase === 'finale'
   const indovinata = mostrata.finita && mostrata.indovinata === true
-  const valore = fase === 'fine' || fase === 'verdetto' ? (indovinata ? mostrata.punti : 0) : mostrata.montepremi
+  const valore = fase === 'fine' || fase === 'verdetto' ? mostrata.punti : mostrata.montepremi
 
   return (
     <div
@@ -508,8 +509,8 @@ export function PartitaCatena({
             <div className="cat-intro">
               <p className="cat-intro__titolo">La Catena</p>
               <p className="cat-intro__testo">
-                Ogni parola si lega a quella dopo. Trovane cinque, un minuto ciascuna: ogni errore dimezza il
-                montepremi.
+                Ogni parola si lega a quella dopo. Trovane cinque, un minuto ciascuna: ogni errore toglie{' '}
+                {ERRORE_CATENA} punti al montepremi.
               </p>
               <Button size="lg" onClick={() => void comincia()}>
                 Comincia
@@ -785,13 +786,15 @@ function CatenaIntera({ voci }: { voci: VoceCatena[] }) {
 
 interface Taglio {
   prima: number
+  /** Quanto e' sceso. */
+  perso: number
   /** Il numero del colpo: uno nuovo fa ripartire l'animazione. */
   n: number
   /** La parola finale sbagliata: il montepremi cade tutto. */
   tutto: boolean
 }
 
-/** Il montepremi: quando si dimezza il valore di prima vola via, e arriva il ÷2; quando si azzera, cade. */
+/** Il montepremi: quando scende il valore di prima vola via, con quel che si e' perso; alla finale sbagliata cade. */
 function Montepremi({ valore, taglio, vinto }: { valore: number; taglio: Taglio | null; vinto: boolean }) {
   return (
     <div className={`cat-montepremi${vinto ? ' is-vinto' : ''}`}>
@@ -802,7 +805,7 @@ function Montepremi({ valore, taglio, vinto }: { valore: number; taglio: Taglio 
       {taglio && (
         <span key={taglio.n} className={`cat-montepremi__taglio${taglio.tutto ? ' is-tutto' : ''}`} aria-hidden="true">
           <span className="cat-montepremi__prima u-tabnum">{taglio.prima}</span>
-          {!taglio.tutto && <span className="cat-montepremi__meta">÷2</span>}
+          {!taglio.tutto && <span className="cat-montepremi__meta">−{taglio.perso}</span>}
         </span>
       )}
     </div>

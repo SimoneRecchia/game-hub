@@ -113,11 +113,9 @@ const NomiCose = lazy(caricaNomi)
 const NomiCoseLibera = lazy(caricaNomiLibera)
 const NomiCoseSfida = lazy(caricaNomiSfida)
 const NomiCoseInvito = lazy(caricaNomiInvito)
-const caricaSequenze = () => import('./pages/Sequenze')
 const caricaSequenzeLibera = () => import('./pages/SequenzeLibera')
 const caricaSequenzeSfida = () => import('./pages/SequenzeSfida')
 const caricaSequenzeInvito = () => import('./pages/SequenzeInvito')
-const Sequenze = lazy(caricaSequenze)
 const SequenzeLibera = lazy(caricaSequenzeLibera)
 const SequenzeSfida = lazy(caricaSequenzeSfida)
 const SequenzeInvito = lazy(caricaSequenzeInvito)
@@ -203,7 +201,6 @@ function usePrecarica() {
       caricaQuiz,
       caricaNomi,
       caricaAnagrammi,
-      caricaSequenze,
       caricaGhigliottina,
       caricaParoliere,
       caricaCatena,
@@ -392,8 +389,7 @@ export default function App() {
             <Route path="/nomi-cose-citta/libera" element={<NomiCoseLibera />} />
             <Route path="/nomi-cose-citta/sfida/:id" element={<NomiCoseSfida />} />
             <Route path="/nomi-cose-citta/invito/:codice" element={<NomiCoseInvito />} />
-            <Route path="/sequenze/classificata" element={<Sequenze />} />
-            <Route path="/sequenze/libera" element={<SequenzeLibera />} />
+            <Route path={ROTTE.sequenze} element={<SequenzeLibera />} />
             <Route path="/sequenze/sfida/:id" element={<SequenzeSfida />} />
             <Route path="/sequenze/invito/:codice" element={<SequenzeInvito />} />
 
@@ -444,6 +440,9 @@ export default function App() {
             {/* La classificata del tris non c'e' piu': il suo indirizzo, e quello del gioco, portano alla sala. */}
             <Route path="/tris" element={<Navigate to={ROTTE.tavolo('tris')} replace />} />
             <Route path="/tris/classificata" element={<Navigate to={ROTTE.tavolo('tris')} replace />} />
+            {/* Lo stesso per le Sequenze, che l'hanno avuta fino al 15 ottobre 2026. */}
+            <Route path="/sequenze" element={<Navigate to={ROTTE.sequenze} replace />} />
+            <Route path="/sequenze/classificata" element={<Navigate to={ROTTE.sequenze} replace />} />
             <Route path="/battaglia/:id" element={<Vecchio verso={(p) => ROTTE.partitaBattaglia(p.id ?? '')} />} />
             <Route path="/salotto" element={<Navigate to={ROTTE.libere} replace />} />
             {/* Le cinque parole di prima: ora la classificata e' una parola sola. */}

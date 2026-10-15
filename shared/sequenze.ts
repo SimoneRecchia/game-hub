@@ -11,9 +11,10 @@
  * Corsi: in una griglia una sequenza si ricorderebbe come un disegno di righe
  * e colonne, e sarebbe un altro gioco.
  *
- * La classificata e' di cinque turni uguali per tutti: ogni turno comincia da
- * tre cubetti e cresce fino a nove, e il primo errore lo chiude. La libera va
- * avanti finché non si sbaglia, oltre i nove, da soli o con un amico.
+ * Si gioca nella libera, che va avanti finché non si sbaglia, oltre i nove, da
+ * soli o con un amico. Fino al 15 ottobre 2026 c'era anche una classificata,
+ * cinque turni uguali per tutti da tre a nove cubetti: e' uscita dalle
+ * Giornaliere, e le giornate di allora restano nella generale.
  */
 
 import { mulberry32 } from './daily'
@@ -53,40 +54,12 @@ export const CUBETTI: readonly Cubetto[] = [
 
 export const NUMERO_CUBETTI = CUBETTI.length
 
-/* ─────────────────────────────  La classificata  ───────────────────────────── */
+/* ─────────────────────────────  Le lunghezze  ───────────────────────────── */
 
-export const TURNI_SEQUENZE = 5
-
-/** Da quanti cubetti comincia un turno, e fin dove arriva: oltre i nove un cubetto tornerebbe due volte. */
+/** Da quanti cubetti comincia una partita del livello normale. */
 export const PRIMA_LUNGHEZZA = 3
-export const ULTIMA_LUNGHEZZA = NUMERO_CUBETTI
 
-/** Le sequenze di un turno, una per lunghezza: da tre a nove sono sette. */
-export const SEQUENZE_PER_TURNO = ULTIMA_LUNGHEZZA - PRIMA_LUNGHEZZA + 1
-
-/** I punti di una giornata finita, anche con tutti i turni sbagliati alla prima: si e' giocato. */
-export const PUNTI_FINITA_SEQUENZE = 30
-
-/** I punti di ogni sequenza ripetuta giusta. */
-export const PUNTI_SEQUENZA = 2
-
-/**
- * I punti di una giornata: trenta per averla finita, e due per ogni sequenza
- * ripetuta giusta, sette al piu' per turno. Chi arriva a cinque o sei, la
- * media, ne fa sessanta o settanta; chi si ferma a quattro cinquanta; chi
- * arriva a nove in tutti e cinque i turni il tetto, cento. Giocarla bene vale
- * il doppio di giocarla male, come in tutte le classificate.
- */
-export function puntiSequenze(giusteDeiTurni: readonly number[]): number {
-  return giusteDeiTurni.reduce(
-    (s, giuste) => s + PUNTI_SEQUENZA * Math.max(0, Math.min(SEQUENZE_PER_TURNO, Math.floor(giuste))),
-    PUNTI_FINITA_SEQUENZE,
-  )
-}
-
-export const MASSIMO_SEQUENZE = PUNTI_FINITA_SEQUENZE + PUNTI_SEQUENZA * TURNI_SEQUENZE * SEQUENZE_PER_TURNO
-
-/** La lunghezza raggiunta in un turno: l'ultima sequenza ripetuta giusta, o zero se e' sbagliata la prima. */
+/** La lunghezza raggiunta: l'ultima sequenza ripetuta giusta, o zero se e' sbagliata la prima. */
 export function lunghezzaRaggiunta(giuste: number, prima = PRIMA_LUNGHEZZA): number {
   return giuste <= 0 ? 0 : prima - 1 + giuste
 }
@@ -99,7 +72,7 @@ export interface Ritmo {
   pausaMs: number
 }
 
-/** Il ritmo della classificata e della sfida: un cubetto ogni ottocentocinquanta millisecondi. */
+/** Il ritmo del normale e del difficile: un cubetto ogni ottocentocinquanta millisecondi. */
 export const RITMO_NORMALE: Ritmo = { lampoMs: 600, pausaMs: 250 }
 
 /** Quanto dura una sequenza, dal primo lampo alla fine dell'ultimo. */
@@ -121,7 +94,7 @@ export interface RegoleLivello {
 
 /**
  * I livelli della libera. Il facile e' piu' lento e parte da due; il normale e'
- * la classificata; il difficile la chiede al contrario, che e' la seconda meta'
+ * il test di Corsi com'e'; il difficile la chiede al contrario, che e' la seconda meta'
  * del test di Corsi e chiede di tenere a mente la sequenza mentre la si gira.
  */
 export const LIVELLI_SEQUENZE: Record<LivelloSequenze, RegoleLivello> = {
@@ -161,41 +134,6 @@ export function sequenzaACaso(lunghezza: number, caso: () => number): number[] {
     fuori.push(c)
   }
   return fuori
-}
-
-/** Le sequenze di una giornata: cinque turni, e in ognuno una per lunghezza, da tre a nove. */
-export function giornataACaso(caso: () => number): number[][][] {
-  return Array.from({ length: TURNI_SEQUENZE }, () =>
-    Array.from({ length: SEQUENZE_PER_TURNO }, (_, k) => sequenzaACaso(PRIMA_LUNGHEZZA + k, caso)),
-  )
-}
-
-/** Una giornata come la salva il database: per turno, le sequenze in cifre ("4071"). */
-export function giornataInTesto(giornata: readonly (readonly number[])[][]): string {
-  return JSON.stringify(giornata.map((turno) => turno.map((s) => s.join(''))))
-}
-
-/** Una giornata letta dal database, o null se non ha la forma giusta. */
-export function giornataDaTesto(testo: string): number[][][] | null {
-  let valore: unknown
-  try {
-    valore = JSON.parse(testo)
-  } catch {
-    return null
-  }
-  if (!Array.isArray(valore) || valore.length !== TURNI_SEQUENZE) return null
-  const turni: number[][][] = []
-  for (const turno of valore) {
-    if (!Array.isArray(turno) || turno.length !== SEQUENZE_PER_TURNO) return null
-    const sequenze: number[][] = []
-    for (let k = 0; k < turno.length; k += 1) {
-      const s = turno[k]
-      if (typeof s !== 'string' || s.length !== PRIMA_LUNGHEZZA + k || !/^[0-8]+$/.test(s)) return null
-      sequenze.push([...s].map(Number))
-    }
-    turni.push(sequenze)
-  }
-  return turni
 }
 
 /**

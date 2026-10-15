@@ -4,10 +4,10 @@
  *
  * Si gioca come il finale dell'Eredità, il gioco di Rai 1 da cui viene il
  * nome: si parte da un montepremi, e a ogni coppia si sceglie una parola, in
- * venti secondi. Una scelta sbagliata, o il tempo finito, dimezza il
+ * venti secondi. Una scelta sbagliata, o il tempo finito, toglie dieci punti al
  * montepremi — e la parola giusta si vede lo stesso, quindi alla fine le cinque
  * parole ci sono sempre. Poi c'e' un minuto e mezzo per scrivere la parola che
- * le lega: se e' giusta si vince quel che resta del montepremi, se no niente.
+ * le lega: se e' giusta si vince quel che resta del montepremi, se no venti.
  *
  * La parola vincente e le cinque parole sono scritte a mano
  * (scripts/data/ghigliottina.tsv); l'esca di ogni coppia viene da un'altra
@@ -15,6 +15,7 @@
  */
 
 import { mulberry32, solutionPermutation } from './daily'
+import { ATTEMPT_STEP, LOSS_POINTS } from './scoring'
 
 export const NOME_GHIGLIOTTINA = 'Ghigliottina'
 
@@ -23,10 +24,19 @@ export const COPPIE_GHIGLIOTTINA = 5
 
 /**
  * Il montepremi di partenza: cento, come ogni classificata (vedi
- * shared/punti.ts). Si dimezza per difetto — 50, 25, 12, 6, 3 — e chi sbaglia
- * tutte le scelte puo' ancora vincerne tre.
+ * shared/punti.ts). Ogni scelta sbagliata ne toglie dieci, il gradino di un
+ * tentativo del Wordle, e chi le sbaglia tutte e cinque ne vince cinquanta,
+ * quanto chi indovina il Wordle al sesto tentativo. Alla televisione si
+ * dimezza, e cosi' era anche qui: due errori lasciavano un quarto, e una
+ * giornata storta non valeva piu' niente.
  */
 export const MONTEPREMI_GHIGLIOTTINA = 100
+
+/** Quel che toglie una scelta sbagliata. */
+export const ERRORE_GHIGLIOTTINA = ATTEMPT_STEP
+
+/** La parola vincente sbagliata, o non data: quanto una parola del Wordle non indovinata. */
+export const PUNTI_GHIGLIOTTINA_PERSA = LOSS_POINTS
 
 /** Il tempo per scrivere la parola vincente: un minuto e mezzo, come quello della Catena. */
 export const TEMPO_FINALE_MS = 90_000
@@ -60,14 +70,14 @@ export type SceltaGhigliottina = 0 | 1 | null
 /** Quanto arriva in ritardo una risposta per la rete e vale lo stesso, come nel quiz. */
 export const MARGINE_GHIGLIOTTINA_MS = 3_000
 
-/** Il montepremi dopo `sbagliate` scelte sbagliate: la meta' per ognuna. */
+/** Il montepremi dopo `sbagliate` scelte sbagliate: dieci in meno per ognuna. */
 export function montepremi(sbagliate: number): number {
-  return Math.floor(MONTEPREMI_GHIGLIOTTINA / 2 ** Math.max(0, sbagliate))
+  return MONTEPREMI_GHIGLIOTTINA - ERRORE_GHIGLIOTTINA * Math.min(COPPIE_GHIGLIOTTINA, Math.max(0, sbagliate))
 }
 
-/** I punti di una partita: il montepremi rimasto, se si e' indovinata la parola; se no niente. */
+/** I punti di una partita: il montepremi rimasto, se si e' indovinata la parola; se no venti. */
 export function puntiGhigliottina(sbagliate: number, indovinata: boolean): number {
-  return indovinata ? montepremi(sbagliate) : 0
+  return indovinata ? montepremi(sbagliate) : PUNTI_GHIGLIOTTINA_PERSA
 }
 
 export const MASSIMO_GHIGLIOTTINA = MONTEPREMI_GHIGLIOTTINA

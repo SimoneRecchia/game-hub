@@ -23,7 +23,6 @@ import type {
   ParoliereLeaderboard,
   QuizLeaderboard,
   ScarabeoLeaderboard,
-  SequenzeLeaderboard,
   SudokuLeaderboard,
 } from '@shared/types'
 
@@ -42,7 +41,6 @@ export type Risposta =
   | QuizLeaderboard
   | NomiLeaderboard
   | AnagrammiLeaderboard
-  | SequenzeLeaderboard
   | GhigliottinaLeaderboard
   | ParoliereLeaderboard
   | CatenaLeaderboard
@@ -80,7 +78,6 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   quiz: 'Quiz',
   nomi: 'Nomi, cose e città',
   anagrammi: 'Anagrammi',
-  sequenze: 'Sequenze',
   ghigliottina: 'Ghigliottina',
   paroliere: 'Paroliere',
   catena: 'Catena',
@@ -108,18 +105,17 @@ export const ORDINE_GIOCHI: GiocoClassificato[] = [
   'nomi',
   'anagrammi',
   'paroliere',
-  'sequenze',
 ]
 
 /**
  * Quel che compone un totale della generale: le classificate di adesso, e la
- * battaglia navale e il tris nei periodi in cui avevano la loro. Si mostrano
- * solo dove ci sono.
+ * battaglia navale, il tris e le Sequenze nei periodi in cui avevano la loro.
+ * Si mostrano solo dove ci sono.
  */
-export type GiocoDellaGenerale = GiocoClassificato | 'battaglia' | 'tris'
+export type GiocoDellaGenerale = GiocoClassificato | 'battaglia' | 'tris' | 'sequenze'
 
 /** I giochi che hanno avuto una classificata, e non l'hanno piu'. */
-const DI_UNA_VOLTA = ['battaglia', 'tris'] as const
+const DI_UNA_VOLTA = ['battaglia', 'tris', 'sequenze'] as const
 
 export const ORDINE_GENERALE: GiocoDellaGenerale[] = [...ORDINE_GIOCHI, ...DI_UNA_VOLTA]
 
@@ -127,6 +123,7 @@ export const NOMI_GENERALE: Record<GiocoDellaGenerale, string> = {
   ...(NOMI_CLASSIFICHE as Record<GiocoClassificato, string>),
   battaglia: 'Battaglia navale',
   tris: 'Tris',
+  sequenze: 'Sequenze',
 }
 
 const partite = (n: number) => `${formatNumber(n)} ${n === 1 ? 'partita' : 'partite'}`
@@ -164,7 +161,12 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
   switch (chiave) {
     case 'generale':
       return (risposta as GeneraleLeaderboard).rows.map((r) => {
-        const composizione: Record<GiocoDellaGenerale, number> = { ...r.perGioco, battaglia: r.battaglia, tris: r.tris }
+        const composizione: Record<GiocoDellaGenerale, number> = {
+          ...r.perGioco,
+          battaglia: r.battaglia,
+          tris: r.tris,
+          sequenze: r.sequenze,
+        }
         const giochi = ORDINE_GENERALE.filter((g) => composizione[g] > 0).length
         return {
           ...r,
@@ -391,29 +393,6 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
             { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
           ],
           nota: 'A pari punti contano le parole trovate, poi il tempo.',
-        }
-      })
-
-    case 'sequenze':
-      return (risposta as SequenzeLeaderboard).rows.map((r) => {
-        const fino = r.migliore > 0 ? `fino a ${formatNumber(r.migliore)} cubetti` : 'nessuna sequenza'
-        return {
-          ...r,
-          sotto:
-            r.giornate === 0
-              ? 'In corso'
-              : giorno
-                ? fino.charAt(0).toUpperCase() + fino.slice(1)
-                : `${giornate(r.giornate)} · ${fino}`,
-          breve: r.giornate > 0 ? `${r.migliore} cubetti` : 'in corso',
-          segni: r.inCorso ? inCorso : undefined,
-          dettaglio: [
-            { etichetta: 'Punti', valore: formatNumber(r.punti), forte: true },
-            { etichetta: 'Giornate finite', valore: formatNumber(r.giornate) },
-            { etichetta: 'La sequenza più lunga', valore: `${formatNumber(r.migliore)} cubetti` },
-            { etichetta: 'Tempo', valore: formatDuration(r.tempoMs) },
-          ],
-          nota: 'A pari punti conta la sequenza più lunga, poi il tempo.',
         }
       })
 
