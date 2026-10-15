@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "words:build": "node scripts/build-wordlist.mjs",
     "cruciverba:dati": "node scripts/build-cruciverba.mjs",
-    "cruciverba:locale": "node scripts/genera-cruciverba.mjs --local && node scripts/genera-cruciverba.mjs --local --liberi 20",
+    "cruciverba:locale": "node scripts/genera-cruciverba.mjs --local && node scripts/genera-cruciverba.mjs --local --liberi 10",
     "scarabeo:locale": "vite-node scripts/genera-computer-scarabeo.ts -- --local",
     "quiz:locale": "vite-node scripts/genera-quiz.ts -- --local",
     "quiz:cultura": "vite-node scripts/genera-cultura.ts && vite-node scripts/versioni-cultura.ts",

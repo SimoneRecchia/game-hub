@@ -14,7 +14,7 @@
  * chiavi delle definizioni salvate ritrovino le loro caselle.
  */
 
-import { costiAiuti, puntiConAiuti, type AiutiChiesti, type CostiAiuti } from './aiuti'
+import { costiAiuti, puntiConAiuti, puntiDelTempo, type AiutiChiesti, type CostiAiuti, type RitmoGriglia } from './aiuti'
 import { ALFABETO } from './wordle'
 
 /** La casella nera, nello schema e nella soluzione. */
@@ -31,9 +31,11 @@ export const VUOTA = ' '
  * anche **cosa** va scritto, e ricontrollare lo stesso errore non lo si paga
  * due volte.
  *
- * Il tempo non entra nei punti: sta in classifica come spareggio. Un
- * cruciverba si fa a pezzi, in pausa caffe', e un bonus di velocità
- * premierebbe chi ha mezz'ora di fila invece di chi lo risolve meglio.
+ * Dal 15 ottobre 2026 i punti li fa anche il tempo (`RITMO_CRUCIVERBA`): si
+ * da' per scontato che lo schema lo finiscano tutti, e a distinguere chi ha
+ * giocato bene e' quanto ci ha messo. Il tempo e' quello a pagina visibile,
+ * quindi un cruciverba fatto a pezzi, in pausa caffe', conta solo i pezzi.
+ * Prima il tempo era solo lo spareggio.
  */
 export const PUNTI_COMPLETO = 100
 
@@ -167,9 +169,39 @@ export function costiCruciverba(schema: string): CostiAiuti {
   return costiAiuti(PUNTI_COMPLETO, caselleBianche(schema))
 }
 
-/** Quanto vale la giornata, con questi aiuti. Mai sotto zero. */
-export function punteggio(aiuti: AiutiChiesti, costi: CostiAiuti): number {
-  return puntiConAiuti(PUNTI_COMPLETO, costi, aiuti)
+/**
+ * Il passo del cruciverba: cinque secondi a lettera per il tetto, cinque minuti
+ * e mezzo per un nove per nove, e venti per la meta', una ventina di minuti.
+ * Come nel sudoku si da' per scontato che lo finiscano tutti, e i punti li fa
+ * quanto ci si mette.
+ */
+export const RITMO_CRUCIVERBA: RitmoGriglia = { pienoMs: 5_000, lentoMs: 20_000 }
+
+/** Quanto vale il tempo in questo schema, prima degli aiuti. */
+export function puntiDelTempoCruciverba(tempoMs: number, costi: CostiAiuti): number {
+  return puntiDelTempo(PUNTI_COMPLETO, tempoMs, costi.daTrovare, RITMO_CRUCIVERBA)
+}
+
+/** Quanto vale la giornata finita in `tempoMs`, con questi aiuti. Mai sotto zero. */
+export function punteggio(aiuti: AiutiChiesti, costi: CostiAiuti, tempoMs: number): number {
+  return puntiConAiuti(PUNTI_COMPLETO, costi, aiuti, puntiDelTempoCruciverba(tempoMs, costi))
+}
+
+/**
+ * I livelli degli schemi liberi, come li fa la notte (LIVELLI_CRUCIVERBA in
+ * scripts/cruciverba/generatore.mjs): il facile e' il nove per nove della
+ * classificata, il difficile il dieci per dieci con tutto il dizionario.
+ */
+export type LivelloCruciverba = 'facile' | 'media' | 'difficile'
+export const LIVELLI_CRUCIVERBA: readonly LivelloCruciverba[] = ['facile', 'media', 'difficile']
+export const NOMI_LIVELLI_CRUCIVERBA: Record<LivelloCruciverba, string> = {
+  facile: 'Facile',
+  media: 'Media',
+  difficile: 'Difficile',
+}
+
+export function livelloCruciverbaValido(valore: unknown): valore is LivelloCruciverba {
+  return (LIVELLI_CRUCIVERBA as readonly unknown[]).includes(valore)
 }
 
 /**

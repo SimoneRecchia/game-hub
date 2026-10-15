@@ -4,7 +4,7 @@ name: Scorte notturne
 # di una richiesta — e che si preparano qui, ogni notte, in anticipo:
 #
 #  - gli schemi del cruciverba del giorno, fino a due mesi da oggi;
-#  - gli schemi del cruciverba libero, trenta a notte fino a seicento;
+#  - gli schemi del cruciverba libero, trenta a notte per livello fino a seicento;
 #  - la partita del computer dello Scarabeo per ogni giornata, il riferimento
 #    dei punti della classificata, fino a due mesi da oggi;
 #  - i sudoku del giorno, fino a due mesi da oggi;

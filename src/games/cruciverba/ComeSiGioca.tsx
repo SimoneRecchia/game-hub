@@ -1,9 +1,11 @@
 import { Sheet } from '@/components/Sheet'
-import { inPunti } from '@/lib/format'
+import { formatCronometro, inPunti } from '@/lib/format'
 import type { CostiAiuti } from '@shared/aiuti'
 import { MAX_COOP_GUESTS } from '@shared/config'
-import { PUNTI_COMPLETO } from '@shared/cruciverba'
+import { PUNTI_COMPLETO, RITMO_CRUCIVERBA } from '@shared/cruciverba'
 import './ComeSiGioca.css'
+
+const secondi = (ms: number) => Math.round(ms / 1000)
 
 /** Le regole. I costi degli aiuti sono quelli dello schema aperto: senza, si dice la regola. */
 export function ComeSiGiocaCruciverba({
@@ -37,7 +39,20 @@ export function ComeSiGiocaCruciverba({
           <h3 className="cru-aiuto__titolo">Punteggio</h3>
           <ul className="cru-aiuto__elenco">
             <li>
-              Completarlo senza aiuti vale <strong>{PUNTI_COMPLETO} punti</strong>.
+              {costi ? (
+                <>
+                  Completarlo senza aiuti entro {formatCronometro(RITMO_CRUCIVERBA.pienoMs * costi.daTrovare)} vale{' '}
+                  <strong>{PUNTI_COMPLETO} punti</strong>; poi scende, fino a {PUNTI_COMPLETO / 2} a{' '}
+                  {formatCronometro(RITMO_CRUCIVERBA.lentoMs * costi.daTrovare)}.
+                </>
+              ) : (
+                <>
+                  Completarlo senza aiuti entro {secondi(RITMO_CRUCIVERBA.pienoMs)} secondi a lettera vale{' '}
+                  <strong>{PUNTI_COMPLETO} punti</strong>; poi scende, fino a {PUNTI_COMPLETO / 2} a{' '}
+                  {secondi(RITMO_CRUCIVERBA.lentoMs)} secondi a lettera.
+                </>
+              )}{' '}
+              Conta il tempo con la pagina aperta.
             </li>
             <li>
               <strong>Controlla</strong>:{' '}
@@ -53,7 +68,6 @@ export function ComeSiGiocaCruciverba({
                 : 'ogni lettera svelata costa tre volte la sua parte dei punti, anche se era giusta.'}{' '}
               Svelato un terzo dello schema, vale zero.
             </li>
-            <li>Il tempo conta solo a pari punti.</li>
           </ul>
         </section>
 
@@ -74,10 +88,11 @@ export function ComeSiGiocaCruciverba({
               <em>Le vocali di farina</em> è AIA.
             </li>
             <li>
-              <strong>Classificata</strong>: uno schema al giorno, uguale per tutti.
+              <strong>Classificata</strong>: uno schema facile al giorno, nove per nove, uguale per tutti.
             </li>
             <li>
-              <strong>Libera</strong>: uno schema a caso. Non conta per la classifica.
+              <strong>Libera</strong>: uno schema a caso della difficoltà che vuoi. Il difficile ha tutte le parole,
+              anche quelle da specialisti. Non conta per la classifica.
             </li>
             <li>
               <strong>In compagnia</strong>: inviti fino a {MAX_COOP_GUESTS} persone a suggerirti parole. Chi gioca

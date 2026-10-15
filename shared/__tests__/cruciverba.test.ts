@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { NESSUN_AIUTO } from '../aiuti'
 import {
   PUNTI_COMPLETO,
+  RITMO_CRUCIVERBA,
   caselleBianche,
   caselleSbagliate,
   caselleScritte,
@@ -85,19 +86,35 @@ describe('il punteggio', () => {
   const costi = costiCruciverba(SOLUZIONE)
 
   it('vale il tetto senza aiuti', () => {
-    expect(punteggio(NESSUN_AIUTO, costi)).toBe(PUNTI_COMPLETO)
+    expect(punteggio(NESSUN_AIUTO, costi, 0)).toBe(PUNTI_COMPLETO)
   })
 
   it('svelare costa piu\' che controllare: la risposta vale piu\' della conferma', () => {
     expect(costi.svelata).toBeGreaterThan(costi.controllo + costi.errore)
     expect(costi.controlloSchema).toBeGreaterThan(costi.controllo)
     // Lo schema di prova ha poche lettere, e ognuna vale tanto: bastano tre aiuti.
-    expect(punteggio({ svelate: 1, errori: 1, controlli: 1, controlliSchema: 0 }, costi)).toBe(
+    expect(punteggio({ svelate: 1, errori: 1, controlli: 1, controlliSchema: 0 }, costi, 0)).toBe(
       PUNTI_COMPLETO - costi.svelata - costi.errore - costi.controllo,
     )
   })
 
   it('non scende sotto zero', () => {
-    expect(punteggio({ ...NESSUN_AIUTO, svelate: 80, errori: 50 }, costi)).toBe(0)
+    expect(punteggio({ ...NESSUN_AIUTO, svelate: 80, errori: 50 }, costi, 0)).toBe(0)
+  })
+
+  it('il tempo fa i punti: pieni presto, a scendere fino alla meta\'', () => {
+    const n = costi.daTrovare
+    expect(punteggio(NESSUN_AIUTO, costi, RITMO_CRUCIVERBA.pienoMs * n)).toBe(PUNTI_COMPLETO)
+    expect(punteggio(NESSUN_AIUTO, costi, ((RITMO_CRUCIVERBA.pienoMs + RITMO_CRUCIVERBA.lentoMs) / 2) * n)).toBe(75)
+    expect(punteggio(NESSUN_AIUTO, costi, RITMO_CRUCIVERBA.lentoMs * n)).toBe(PUNTI_COMPLETO / 2)
+    expect(punteggio(NESSUN_AIUTO, costi, 10 * 3_600_000)).toBe(PUNTI_COMPLETO / 2)
+    // Gli aiuti si tolgono da quel che vale il tempo.
+    const lento = { ...NESSUN_AIUTO, controlli: 1 }
+    expect(punteggio(lento, costi, RITMO_CRUCIVERBA.lentoMs * n)).toBe(PUNTI_COMPLETO / 2 - costi.controllo)
+  })
+
+  it('un nove per nove facile si fa nel tempo di un Wordle per i punti pieni', () => {
+    // Una sessantina di lettere da trovare: cinque minuti e mezzo per i cento punti.
+    expect(RITMO_CRUCIVERBA.pienoMs * 65).toBeLessThanOrEqual(6 * 60_000)
   })
 })

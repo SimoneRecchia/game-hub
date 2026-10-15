@@ -1,3 +1,4 @@
+import type { LivelloCruciverba } from './cruciverba'
 import type { ChiamataRicevuta } from './notifiche'
 /** Tipi condivisi tra client React e Pages Functions. */
 
@@ -305,6 +306,10 @@ export interface CruciverbaState {
   status: CruciverbaStatus
   /** A partita chiusa i punti fatti, prima quelli che varrebbe finirla adesso. */
   punti: number
+  /** Quel che gli aiuti hanno tolto finora: il telefono lo toglie dal valore del tempo che corre. */
+  spesi: number
+  /** Il livello di uno schema libero; null per quello del giorno. */
+  livello: LivelloCruciverba | null
   /** La soluzione, solo a partita chiusa. */
   soluzione: string | null
   msToNextPuzzle: number
@@ -317,6 +322,8 @@ export interface CruciverbaEsito {
   versione: number
   status: CruciverbaStatus
   punti: number
+  /** Quel che gli aiuti hanno tolto finora. */
+  spesi: number
   tempoMs: number
   /** Griglia piena ma con almeno un errore: si dice, ma non dove. */
   pienaConErrori: boolean
@@ -339,6 +346,8 @@ export interface CruciverbaLiberaRisposta {
   senzaAiuti: number
   /** Quanti schemi liberi restano da aprire. */
   disponibili: number
+  /** Gli stessi, livello per livello. */
+  perLivello: Record<LivelloCruciverba, number>
 }
 
 export interface CruciverbaSummary {

@@ -32,7 +32,7 @@ import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown, formatCronometro, inPunti, pluralize } from '@/lib/format'
 import { caselleDaPagare } from '@shared/aiuti'
-import { VUOTA, caselleBianche, costiCruciverba, numeriDelleCaselle } from '@shared/cruciverba'
+import { NOMI_LIVELLI_CRUCIVERBA, VUOTA, caselleBianche, costiCruciverba, numeriDelleCaselle } from '@shared/cruciverba'
 import { isGameLetter } from '@shared/wordle'
 import type { CruciverbaState, DefinizioneCruciverba } from '@shared/types'
 import './Cruciverba.css'
@@ -181,7 +181,9 @@ export default function Cruciverba() {
       }
       intera
       larga
-      indietro={libera ? { a: ROTTE.libere, etichetta: 'Libere' } : { a: ROTTE.home, etichetta: 'Giornaliere' }}
+      indietro={
+        libera ? { a: ROTTE.libera('cruciverba'), etichetta: 'Cruciverba' } : { a: ROTTE.home, etichetta: 'Giornaliere' }
+      }
       azioni={
         <>
           {ospitante && (
@@ -424,7 +426,10 @@ function Fine({ stato, libera, onElenco }: { stato: CruciverbaState; libera: boo
   const unAltro = async () => {
     setCercando(true)
     try {
-      const nuovo = await api<CruciverbaState>('/cruciverba/libera', { method: 'POST' })
+      const nuovo = await api<CruciverbaState>('/cruciverba/libera', {
+        method: 'POST',
+        body: { livello: stato.livello ?? 'difficile' },
+      })
       vai(ROTTE.cruciverbaLibero(nuovo.partitaId), { replace: true })
     } catch (e) {
       toast.show(e instanceof Error ? e.message : 'Non riesco ad aprire un altro schema.', 'error')
@@ -438,6 +443,7 @@ function Fine({ stato, libera, onElenco }: { stato: CruciverbaState; libera: boo
       <p className="cru__fine-titolo">Completato</p>
       <p className="cru__fine-punti u-tabnum">{stato.punti} punti</p>
       <p className="cru__fine-dettaglio u-tabnum">
+        {libera && stato.livello && `${NOMI_LIVELLI_CRUCIVERBA[stato.livello]} · `}
         in {formatCronometro(stato.tempoMs)}
         {aiuti.length > 0 ? ` · ${aiuti.join(' · ')}` : ' · senza aiuti'}
       </p>
