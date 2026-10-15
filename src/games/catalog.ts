@@ -65,7 +65,7 @@ export const GIOCHI: readonly Gioco[] = [
     id: 'ghigliottina',
     nome: 'Ghigliottina',
     motto: 'Cinque parole, una che le lega tutte',
-    classificata: 'Una ghigliottina al giorno, la stessa per tutti: ogni scelta sbagliata dimezza il montepremi.',
+    classificata: 'Una ghigliottina al giorno, la stessa per tutti: ogni scelta sbagliata toglie dieci punti.',
     libera: 'Una ghigliottina a caso, quante ne vuoi.',
     liberaBreve: 'Ghigliottina libera',
   },
@@ -73,7 +73,7 @@ export const GIOCHI: readonly Gioco[] = [
     id: 'catena',
     nome: 'Catena',
     motto: 'Ogni parola si lega a quella dopo',
-    classificata: 'Una catena al giorno, la stessa per tutti: ogni errore dimezza il montepremi.',
+    classificata: 'Una catena al giorno, la stessa per tutti: ogni errore toglie sei punti.',
     libera: 'Una catena a caso, quante ne vuoi.',
     liberaBreve: 'Catena libera',
   },
@@ -101,15 +101,6 @@ export const GIOCHI: readonly Gioco[] = [
     libera: 'Una griglia a caso, quattro per quattro o cinque per cinque.',
     liberaBreve: 'Griglia libera',
   },
-  {
-    id: 'sequenze',
-    nome: 'Sequenze',
-    motto: 'I cubetti si accendono: tocca nello stesso ordine',
-    classificata: 'Cinque turni al giorno, gli stessi per tutti, da tre a nove cubetti.',
-    libera: 'Finché non sbagli, da solo o contro un amico.',
-    liberaBreve: 'Solo o con un amico',
-  },
-
 ]
 
 export function giocoDi(id: GiocoClassificato): Gioco {
@@ -130,10 +121,12 @@ export interface GiocoTavolo {
  * I giochi da tavolo: niente partita del giorno e niente classifica, solo
  * partite quando si vuole, con gli amici — e contro il computer dove ha senso.
  * Indovina chi, Lupus e Scarabocchi non ce l'hanno: si giocano parlandosi, o
- * disegnando. La battaglia navale e il tris hanno avuto una classificata, e non
- * l'hanno piu': quella della battaglia misurava piu' la fortuna che il gioco, e
- * contro il computer del giorno il tris non era una partita uguale per tutti.
- * La sala del tris e' rimasta all'indirizzo della sua libera.
+ * disegnando. La battaglia navale, il tris e le Sequenze hanno avuto una
+ * classificata, e non l'hanno piu': quella della battaglia misurava piu' la
+ * fortuna che il gioco, contro il computer del giorno il tris non era una
+ * partita uguale per tutti, e le Sequenze sono uscite dalle Giornaliere per
+ * tenerle tutte della stessa durata. Le sale del tris e delle Sequenze sono
+ * rimaste all'indirizzo della loro libera.
  */
 export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
   {
@@ -177,6 +170,13 @@ export const GIOCHI_DA_TAVOLO: readonly GiocoTavolo[] = [
     motto: 'Tre in fila, dieci secondi a mossa',
     conChi: 'Amici o computer',
     slug: 'tris/libera',
+  },
+  {
+    id: 'sequenze',
+    nome: 'Sequenze',
+    motto: 'I cubetti si accendono: tocca nello stesso ordine',
+    conChi: 'Da solo o con un amico',
+    slug: 'sequenze/libera',
   },
   {
     id: 'indovina',

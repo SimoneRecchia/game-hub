@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProp
 import { Button } from '@/components/Button'
 import { TastieraGioco, useTastieraFisica } from '@/components/TastieraGioco'
 import { suona } from '@/lib/suoni'
-import { normalizzaGhigliottina } from '@shared/ghigliottina'
+import { ERRORE_GHIGLIOTTINA, normalizzaGhigliottina } from '@shared/ghigliottina'
 import type { CoppiaGhigliottinaVista } from '@shared/types'
 import { Lama, type PosizioneLama } from './Lama'
 import './Ghigliottina.css'
@@ -188,7 +188,7 @@ export function PartitaGhigliottina({
       setMostrata(vista)
       setFase('verdetto')
       setLama('giu')
-      setTaglio({ prima: mostrata.montepremi, dopo: 0, n: Date.now(), tutto: true })
+      setTaglio({ prima: mostrata.montepremi, dopo: vista.punti, n: Date.now(), tutto: true })
       suona('lama')
       suona('sconfitta', { ritardo: 0.5 })
     }
@@ -259,7 +259,7 @@ export function PartitaGhigliottina({
   /**
    * Una scelta, o il tempo della coppia finito (`null`): il rullo, poi la
    * parola giusta che si accende; se era sbagliata, o se il tempo e' finito,
-   * cala la lama e il montepremi si spacca, con quello dimezzato gia' sotto.
+   * cala la lama e il montepremi si spacca, con quello sceso gia' sotto.
    */
   const scegli = useCallback(
     async (i: 0 | 1 | null) => {
@@ -339,7 +339,7 @@ export function PartitaGhigliottina({
           () => {
             if (!montata.current) return
             setLama('giu')
-            setTaglio({ prima: dopo.montepremi, dopo: 0, n: Date.now(), tutto: true })
+            setTaglio({ prima: dopo.montepremi, dopo: dopo.punti, n: Date.now(), tutto: true })
             suona('lama')
             suona('sconfitta', { ritardo: 0.4 })
           },
@@ -351,7 +351,7 @@ export function PartitaGhigliottina({
   )
 
   const indovinata = mostrata.finita && mostrata.indovinata === true
-  const valore = fase === 'fine' || fase === 'verdetto' ? (indovinata ? mostrata.punti : 0) : mostrata.montepremi
+  const valore = fase === 'fine' || fase === 'verdetto' ? mostrata.punti : mostrata.montepremi
   // Mentre si scrive la parola vincente le cinque parole salgono sopra la tastiera, e la ghigliottina si fa piccola.
   const compatta = fase === 'finale' || fase === 'busta' || fase === 'verdetto'
   useScivola(scena, { sposta: '.ghi-slot', scala: '.ghi-palco__macchina' }, compatta)
@@ -385,7 +385,7 @@ export function PartitaGhigliottina({
           <div className="ghi-intro">
             <p className="ghi-intro__testo">
               In ogni coppia una sola parola porta alla parola vincente: hai pochi secondi per sceglierla. Ogni
-              errore dimezza il montepremi.
+              errore toglie {ERRORE_GHIGLIOTTINA} punti al montepremi.
             </p>
             <Button size="lg" onClick={() => void comincia()}>
               Comincia
@@ -464,8 +464,8 @@ interface Taglio {
 /**
  * La targa d'oro del montepremi, nella lunetta della ghigliottina. Quando la
  * lama la colpisce si spacca: i pezzi con il numero di prima cadono, e sotto
- * c'e' gia' quello dimezzato, che salta fuori. Alla parola vincente sbagliata
- * cade tutta.
+ * c'e' gia' quello sceso, che salta fuori. Alla parola vincente sbagliata
+ * cade tutta, e sotto restano i punti di consolazione.
  */
 function Montepremi({ valore, taglio, vinto }: { valore: number; taglio: Taglio | null; vinto: boolean }) {
   const [mostrato, setMostrato] = useState(valore)
@@ -939,8 +939,8 @@ function Verdetto({
         {indovinata
           ? `Indovinata! ${punti} punti`
           : risposta
-            ? `Hai scritto «${risposta.toUpperCase()}»: niente punti`
-            : 'Nessuna risposta: niente punti'}
+            ? `Hai scritto «${risposta.toUpperCase()}»: ${punti} punti`
+            : `Nessuna risposta: ${punti} punti`}
       </p>
     </div>
   )

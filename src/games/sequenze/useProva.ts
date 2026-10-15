@@ -13,6 +13,16 @@ export const NOTE_CUBETTI = [1, 9 / 8, 5 / 4, 3 / 2, 5 / 3, 2, 9 / 4, 5 / 2, 3] 
 /** Quanto si aspetta, dopo che la sequenza e' arrivata, prima del primo lampo: il tempo di guardare la tavola. */
 export const ATTESA_LAMPI_MS = 700
 
+/** Quanto resta in vista com'e' andata una sequenza, il verde o il rosso, prima della prossima. */
+export const DOPO_LA_RISPOSTA_MS = 950
+
+/** La sequenza da guardare e ripetere. */
+export interface SequenzaAperta {
+  sequenza: number[]
+  /** Cambia a ogni sequenza: fa ripartire i lampi. */
+  chiave: number
+}
+
 export type FaseProva = 'ferma' | 'guarda' | 'tocca' | 'giusta' | 'sbagliata'
 
 export interface ErroreProva {

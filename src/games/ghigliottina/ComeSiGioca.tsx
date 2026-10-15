@@ -1,5 +1,12 @@
 import { Sheet } from '@/components/Sheet'
-import { COPPIE_GHIGLIOTTINA, MONTEPREMI_GHIGLIOTTINA, TEMPO_FINALE_MS, TEMPO_SCELTA_MS } from '@shared/ghigliottina'
+import {
+  COPPIE_GHIGLIOTTINA,
+  ERRORE_GHIGLIOTTINA,
+  MONTEPREMI_GHIGLIOTTINA,
+  PUNTI_GHIGLIOTTINA_PERSA,
+  TEMPO_FINALE_MS,
+  TEMPO_SCELTA_MS,
+} from '@shared/ghigliottina'
 import '@/games/cruciverba/ComeSiGioca.css'
 
 /** Le regole della Ghigliottina, il minimo per giocare. */
@@ -16,7 +23,8 @@ export function ComeSiGiocaGhigliottina({ open, onClose }: { open: boolean; onCl
               vincente. Hai {Math.round(TEMPO_SCELTA_MS / 1000)} secondi per coppia.
             </li>
             <li>
-              Se sbagli, o se il tempo finisce, la lama dimezza il montepremi. La parola giusta si vede comunque.
+              Se sbagli, o se il tempo finisce, la lama toglie {ERRORE_GHIGLIOTTINA} punti al montepremi. La parola
+              giusta si vede comunque.
             </li>
             <li>
               Con le cinque parole hai un minuto e mezzo ({Math.round(TEMPO_FINALE_MS / 1000)} secondi) per scrivere
@@ -28,8 +36,8 @@ export function ComeSiGiocaGhigliottina({ open, onClose }: { open: boolean; onCl
           <h3 className="cru-aiuto__titolo">I punti</h3>
           <ul className="cru-aiuto__elenco">
             <li>
-              Il montepremi parte da {MONTEPREMI_GHIGLIOTTINA} punti. Se indovini la parola vincente lo vinci; se no,
-              niente.
+              Il montepremi parte da {MONTEPREMI_GHIGLIOTTINA} punti. Se indovini la parola vincente lo vinci; se no,{' '}
+              {PUNTI_GHIGLIOTTINA_PERSA}.
             </li>
             <li>Una al giorno, la stessa per tutti.</li>
             <li>

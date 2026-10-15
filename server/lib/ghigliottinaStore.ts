@@ -23,6 +23,7 @@ import {
   montepremi,
   normalizzaGhigliottina,
   preamboloCoppia,
+  puntiGhigliottina,
   type GhigliottinaDelGiorno,
   type SceltaGhigliottina,
 } from '../../shared/ghigliottina'
@@ -318,7 +319,9 @@ export async function chiudiScadute(
   try {
     return await salvaPartita(db, row, {
       ...modifica,
-      fine: finita ? { risposta: null, indovinata: false, tempoMs: TEMPO_FINALE_MS, score: 0 } : undefined,
+      fine: finita
+        ? { risposta: null, indovinata: false, tempoMs: TEMPO_FINALE_MS, score: puntiGhigliottina(sbagliate, false) }
+        : undefined,
     })
   } catch {
     return (await partitaDi(db, row.player_id, row.puzzle_number)) ?? row

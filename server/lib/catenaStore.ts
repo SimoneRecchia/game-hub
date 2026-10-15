@@ -21,6 +21,7 @@ import {
   PASSO_FINALE,
   PREAMBOLO_FINALE_CATENA_MS,
   PREAMBOLO_PAROLA_CATENA_MS,
+  PREAMBOLO_RIPRESA_CATENA_MS,
   TEMPO_FINALE_CATENA_MS,
   TEMPO_PAROLA_CATENA_MS,
   applicaCatena,
@@ -28,6 +29,8 @@ import {
   giornataValida,
   jollyUsabile,
   mosseValide,
+  puntiCatena,
+  riparteIlMinuto,
   normalizzaCatena,
   svolgiCatena,
   vistaCatena,
@@ -140,16 +143,24 @@ export function scaduta(row: Pick<PartitaRow, 'finale_at' | 'status'>, adesso: n
 
 /**
  * Quando partono i tempi dopo una mossa: il minuto della parola dopo, o quello
- * della finale, dal momento `da` piu' il tempo della scena; se la mossa non
- * cambia parola, restano quelli di prima.
+ * della finale, dal momento `da` piu' il tempo della scena. Se la mossa non
+ * cambia parola, un errore o un jolly fanno ripartire il suo minuto, e il terzo
+ * elemento lascia correre quello della finale.
  */
 export function tempiDopo(
   row: Pick<PartitaRow, 'parola_at' | 'finale_at'>,
   passoPrima: number,
   passoDopo: number,
   da: number,
+  esito: EsitoMossaCatena | null = null,
 ): Pick<PartitaRow, 'parola_at' | 'finale_at'> {
-  if (passoDopo === passoPrima) return { parola_at: row.parola_at, finale_at: row.finale_at }
+  if (passoDopo === passoPrima) {
+    const riparte = passoDopo < PASSO_FINALE && esito !== null && riparteIlMinuto(esito)
+    return {
+      parola_at: riparte ? new Date(da + PREAMBOLO_RIPRESA_CATENA_MS).toISOString() : row.parola_at,
+      finale_at: row.finale_at,
+    }
+  }
   if (passoDopo >= PASSO_FINALE) {
     return { parola_at: null, finale_at: new Date(da + PREAMBOLO_FINALE_CATENA_MS).toISOString() }
   }
@@ -302,7 +313,9 @@ export async function chiudiScadute(
     return await salvaPartita(db, row, {
       mosse: scadute > 0 ? mosse : undefined,
       ...tempi,
-      fine: finita ? { risposta: null, indovinata: false, tempoMs: TEMPO_FINALE_CATENA_MS, score: 0 } : undefined,
+      fine: finita
+        ? { risposta: null, indovinata: false, tempoMs: TEMPO_FINALE_CATENA_MS, score: puntiCatena(s, false) }
+        : undefined,
     })
   } catch {
     return (await partitaDi(db, row.player_id, row.puzzle_number)) ?? row

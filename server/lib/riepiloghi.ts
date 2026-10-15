@@ -25,7 +25,6 @@ import type {
   GhigliottinaSummary,
   ParoliereSummary,
   CruciverbaSummary,
-  SequenzeSummary,
   NomiSummary,
   QuizSummary,
   ScarabeoSummary,
@@ -53,8 +52,6 @@ import {
   partitaDi as partitaAnagrammi,
 } from './anagrammiStore'
 import { PAROLE_ANAGRAMMI } from '../../shared/anagrammi'
-import { giornata as giornataSequenze, partitaDi as partitaSequenze, turniDi } from './sequenzeStore'
-import { TURNI_SEQUENZE } from '../../shared/sequenze'
 import {
   ghigliottinaDelGiorno,
   giornata as giornataGhigliottina,
@@ -319,26 +316,6 @@ export async function riepilogoAnagrammi(db: D1Database, playerId: string): Prom
     trovate: parole.filter((p) => p.e === 'trovata').length,
     giocate: parole.filter((p) => p.e !== null).length,
     totale: PAROLE_ANAGRAMMI,
-    punti: row?.status === 'done' ? row.score : 0,
-    msToNextPuzzle: msToNextPuzzle(),
-  }
-}
-
-/**
- * Le Sequenze: quanti turni sono chiusi, e fin dove si e' arrivati. Non chiude
- * una sequenza rimasta aperta: la chiudera' la pagina, quando la si riapre.
- */
-export async function riepilogoSequenze(db: D1Database, playerId: string): Promise<SequenzeSummary> {
-  const quando = giornataSequenze()
-  const row = await partitaSequenze(db, playerId, quando.puzzleNumber)
-  const turni = row ? turniDi(row) : []
-  return {
-    puzzleNumber: quando.puzzleNumber,
-    date: quando.date,
-    status: row ? row.status : 'new',
-    giocati: turni.filter((t) => t.c === 1).length,
-    totale: TURNI_SEQUENZE,
-    migliore: row?.migliore ?? 0,
     punti: row?.status === 'done' ? row.score : 0,
     msToNextPuzzle: msToNextPuzzle(),
   }

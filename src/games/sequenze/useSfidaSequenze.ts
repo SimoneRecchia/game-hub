@@ -4,7 +4,7 @@ import { ROTTE } from '@/app/rotte'
 import { ApiFetchError, api } from '@/lib/api'
 import { SEQUENZE_SFIDA_POLL_FINE_MS, SEQUENZE_SFIDA_POLL_MS } from '@shared/config'
 import type { MossaSfidaSequenze, VistaSfidaSequenze } from '@shared/types'
-import { DOPO_LA_RISPOSTA_MS, type SequenzaAperta } from './useSequenzeDelGiorno'
+import { DOPO_LA_RISPOSTA_MS, type SequenzaAperta } from './useProva'
 
 export interface SfidaSequenze {
   vista: VistaSfidaSequenze | null

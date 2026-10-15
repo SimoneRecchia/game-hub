@@ -186,7 +186,7 @@ export function salaDi(gioco: GiocoInsieme): string {
   if (gioco === 'sequenze') {
     // Lo stesso per le Sequenze (la chiave di SequenzeLibera), con il foglio della sfida aperto.
     ricorda('giochi.sequenze.contro', 'amico')
-    return `${ROTTE.libera('sequenze')}?sfida=1`
+    return `${ROTTE.sequenze}?sfida=1`
   }
   if (eGiocoSfidaLibera(gioco)) {
     // La libera si apre dalla parte dell'amico, con il foglio della sfida, che aspetta la risposta.
