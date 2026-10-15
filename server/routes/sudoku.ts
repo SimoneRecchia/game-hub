@@ -1,5 +1,5 @@
 import { Hono, type Context } from 'hono'
-import { caselleDaPagare } from '../../shared/aiuti'
+import { caselleDaPagare, spesiPerAiuti } from '../../shared/aiuti'
 import { msToNextPuzzle } from '../../shared/daily'
 import {
   CASELLE,
@@ -104,13 +104,15 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
   const azione = leggiAzione(corpo, schema.dati)
 
   if (row.status === 'done') {
+    const stato = statoDa(row, schema, msToNextPuzzle())
     return c.json<SudokuEsito>({
       versione: row.versione,
       status: 'done',
       punti: row.score,
+      spesi: stato.spesi,
       tempoMs: row.tempo_ms,
       pienaConErrori: false,
-      stato: statoDa(row, schema, msToNextPuzzle()),
+      stato,
     })
   }
   if (Number(corpo.versione) !== row.versione) {
@@ -162,7 +164,11 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
 
   const piena = grigliaPiena(cifre)
   const completa = piena && caselleSbagliate(cifre, soluzione).length === 0
-  const punti = puntiSudoku({ svelate: svelate.length, errori, controlli, controlliSchema }, costiSudoku(schema.dati))
+  // Il tempo decide il valore della giornata, e gli aiuti ne tolgono una parte (vedi shared/aiuti.ts).
+  const tempoMs = tempoDichiarato(row, corpo.tempoMs, Date.now())
+  const aiuti = { svelate: svelate.length, errori, controlli, controlliSchema }
+  const costi = costiSudoku(schema.dati)
+  const punti = puntiSudoku(aiuti, costi, tempoMs)
   const dopo = await salvaPartita(c.env.DB, row, {
     cifre,
     note,
@@ -171,7 +177,7 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
     errori,
     controlli,
     controlliSchema,
-    tempoMs: tempoDichiarato(row, corpo.tempoMs, Date.now()),
+    tempoMs,
     status: completa ? 'done' : 'playing',
     score: completa ? punti : 0,
   })
@@ -180,6 +186,7 @@ async function scrivi(c: Context<AppEnv>, leggiAzione: (corpo: Corpo, dati: stri
     versione: dopo.versione,
     status: dopo.status,
     punti,
+    spesi: spesiPerAiuti(costi, aiuti),
     tempoMs: dopo.tempo_ms,
     pienaConErrori: piena && !completa,
     ...(errate ? { errate } : {}),

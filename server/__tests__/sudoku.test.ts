@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { mulberry32 } from '../../shared/daily'
-import { NOTE_VUOTE, PUNTI_COMPLETO, VUOTA, costiSudoku, generaSchema } from '../../shared/sudoku'
+import { NOTE_VUOTE, PUNTI_COMPLETO, RITMO_SUDOKU, VUOTA, costiSudoku, generaSchema } from '../../shared/sudoku'
 import type { GeneraleLeaderboard, OggiRisposta, SudokuEsito, SudokuLeaderboard, SudokuState } from '../../shared/types'
 import { ordinaSudoku, type TotaliSudoku } from '../lib/sudokuStore'
 import { today } from '../lib/wordleStore'
@@ -95,7 +95,7 @@ describe('il sudoku del giorno, dalle API', () => {
   it('il controllo si paga, con gli errori nuovi; lo svelare tre parti, e la griglia giusta chiude', async () => {
     // Uno schema medio: una cinquantina di cifre da trovare, una parte vale due punti.
     const costi = costiSudoku(SCHEMA.dati)
-    expect(costi).toMatchObject({ svelata: 6, errore: 2, controllo: 2, controlloSchema: 9 })
+    expect(costi).toMatchObject({ svelata: 6, errore: 2, controllo: 2, controlloSchema: 10 })
     const dopoIlControllo = PUNTI_COMPLETO - costi.controlloSchema - costi.errore
     const dopoIlSecondo = dopoIlControllo - costi.controlloSchema
     const finale = dopoIlSecondo - costi.svelata
@@ -162,6 +162,26 @@ describe('il sudoku del giorno, dalle API', () => {
       caselle: [prima],
     })
     expect(ancora.dati.punti).toBe(giusta.dati.punti)
+  })
+
+  it('il tempo decide i punti: chi lo finisce con calma ne prende la metà', async () => {
+    const costi = costiSudoku(SCHEMA.dati)
+    const { chiama, giocatore, db } = preparaBanco()
+    const io = await giocatore('gino')
+    const stato = (await chiama<SudokuState>('GET', '/sudoku/state', io)).dati
+    expect(stato).toMatchObject({ punti: PUNTI_COMPLETO, spesi: 0 })
+    // Il tempo dichiarato non puo' crescere piu' di quel che e' passato: la partita e' aperta da un'ora.
+    const unOraFa = new Date(Date.now() - 3_600_000).toISOString()
+    db.sqlite.prepare('UPDATE sudoku_games SET updated_at = ? WHERE player_id = ?').run(unOraFa, io.id)
+    const lento = RITMO_SUDOKU.lentoMs * costi.daTrovare
+    const finita = await chiama<SudokuEsito>('PUT', '/sudoku/cifre', io, {
+      cifre: SCHEMA.soluzione,
+      versione: 0,
+      tempoMs: lento,
+    })
+    expect(finita.dati).toMatchObject({ status: 'done', punti: PUNTI_COMPLETO / 2, tempoMs: lento })
+    const classifica = (await chiama<SudokuLeaderboard>('GET', '/leaderboard/sudoku?scope=today', io)).dati
+    expect(classifica.me).toMatchObject({ punti: PUNTI_COMPLETO / 2 })
   })
 
   it('una griglia piena ma sbagliata non chiude, e lo dice', async () => {

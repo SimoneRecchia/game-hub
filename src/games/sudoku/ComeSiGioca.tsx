@@ -1,8 +1,10 @@
 import { Sheet } from '@/components/Sheet'
-import { inPunti } from '@/lib/format'
+import { formatCronometro, inPunti } from '@/lib/format'
 import type { CostiAiuti } from '@shared/aiuti'
-import { PUNTI_COMPLETO } from '@shared/sudoku'
+import { PUNTI_COMPLETO, RITMO_SUDOKU } from '@shared/sudoku'
 import '@/games/cruciverba/ComeSiGioca.css'
+
+const secondi = (ms: number) => Math.round(ms / 1000)
 
 /** Le regole. I costi degli aiuti sono quelli dello schema del giorno: senza, si dice la regola. */
 export function ComeSiGiocaSudoku({
@@ -38,7 +40,20 @@ export function ComeSiGiocaSudoku({
           <h3 className="cru-aiuto__titolo">Punteggio</h3>
           <ul className="cru-aiuto__elenco">
             <li>
-              Completarlo senza aiuti vale <strong>{PUNTI_COMPLETO} punti</strong>.
+              {costi ? (
+                <>
+                  Completarlo senza aiuti entro {formatCronometro(RITMO_SUDOKU.pienoMs * costi.daTrovare)} vale{' '}
+                  <strong>{PUNTI_COMPLETO} punti</strong>; poi scende, fino a {PUNTI_COMPLETO / 2} a{' '}
+                  {formatCronometro(RITMO_SUDOKU.lentoMs * costi.daTrovare)}.
+                </>
+              ) : (
+                <>
+                  Completarlo senza aiuti entro {secondi(RITMO_SUDOKU.pienoMs)} secondi a cifra vale{' '}
+                  <strong>{PUNTI_COMPLETO} punti</strong>; poi scende, fino a {PUNTI_COMPLETO / 2} a{' '}
+                  {secondi(RITMO_SUDOKU.lentoMs)} secondi a cifra.
+                </>
+              )}{' '}
+              Conta il tempo con la pagina aperta.
             </li>
             <li>
               <strong>Controlla</strong>:{' '}
@@ -54,7 +69,6 @@ export function ComeSiGiocaSudoku({
                 : 'ogni cifra svelata costa tre volte la sua parte dei punti, anche se era giusta.'}{' '}
               Svelato un terzo dello schema, vale zero.
             </li>
-            <li>Il tempo conta solo a pari punti.</li>
           </ul>
         </section>
 
@@ -62,8 +76,7 @@ export function ComeSiGiocaSudoku({
           <h3 className="cru-aiuto__titolo">Da sapere</h3>
           <ul className="cru-aiuto__elenco">
             <li>
-              <strong>Classificata</strong>: uno schema al giorno, uguale per tutti. Facile a inizio settimana, esperto la
-              domenica.
+              <strong>Classificata</strong>: uno schema facile al giorno, uguale per tutti.
             </li>
             <li>
               <strong>Libera</strong>: uno schema nuovo della difficoltà che vuoi, da solo o contro un amico, sullo

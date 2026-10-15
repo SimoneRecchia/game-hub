@@ -412,6 +412,8 @@ export interface SudokuState {
   status: SudokuStatus
   /** A partita chiusa i punti fatti, prima quelli che varrebbe finirla adesso. */
   punti: number
+  /** Quel che gli aiuti hanno tolto finora: il telefono lo toglie dal valore del tempo che corre. */
+  spesi: number
   /** La soluzione, solo a partita chiusa. */
   soluzione: string | null
   msToNextPuzzle: number
@@ -422,6 +424,8 @@ export interface SudokuEsito {
   versione: number
   status: SudokuStatus
   punti: number
+  /** Quel che gli aiuti hanno tolto finora. */
+  spesi: number
   tempoMs: number
   /** Griglia piena ma con almeno un errore: si dice, ma non dove. */
   pienaConErrori: boolean
