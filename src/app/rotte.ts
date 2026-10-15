@@ -11,7 +11,7 @@
  *   /wordle/libera                      una parola a caso
  *   /wordle/insieme/:stanza             la partita di un collega che ti ha invitato
  *   /wordle/libera/insieme/:compagnia   una sua partita libera, da guardare
- *   /scarabeo/classificata              le dieci mosse di oggi
+ *   /scarabeo/classificata              le mosse di oggi
  *   /scarabeo/libera                    contro il computer
  *   /scarabeo/insieme/:compagnia        lo Scarabeo di un collega che ti ha invitato
  *   /scarabeo/libera/insieme/:compagnia una sua partita libera, da guardare

@@ -25,10 +25,10 @@ import type { ScarabeoState } from '@shared/types'
 import './Scarabeo.css'
 
 /**
- * Lo Scarabeo classificato: le dieci mosse di oggi, a turni contro il computer
- * del giorno.
+ * Lo Scarabeo classificato: le mosse di oggi, a turni contro il computer del
+ * giorno — cinque a testa, con le tessere nuove a ogni turno e gemelle delle sue.
  *
- * Il sacchetto e l'avversario sono gli stessi per tutti, e il computer normale
+ * Le tessere e l'avversario sono gli stessi per tutti, e il computer normale
  * ha gia' giocato la stessa partita al posto di chi gioca: il suo punteggio e' il
  * traguardo, e pareggiarlo vale il tetto dello Scarabeo in classifica. Le sue
  * mosse si vedono solo a giornata chiusa: sarebbero la soluzione. Le giornate
@@ -118,6 +118,7 @@ export default function Scarabeo() {
           bloccato={finita || g.inviando}
           attesa={g.pensa ? 'Il computer pensa…' : null}
           restanti={stato.restanti}
+          cambiabili={!stato.gemelli}
           evidenziate={g.ultimaDelComputer}
           testa={
             <>
@@ -194,7 +195,7 @@ export default function Scarabeo() {
         )}
 
         {/*
-          Chiudere prima delle dieci mosse: sta qui e non fra i comandi perché
+          Chiudere prima dell'ultima mossa: sta qui e non fra i comandi perché
           e' una decisione che si prende una volta, guardando quel che si e'
           fatto — mentre un bottone accanto a "Passa" si preme per sbaglio.
         */}

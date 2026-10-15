@@ -1,7 +1,8 @@
 import { Sheet } from '@/components/Sheet'
 import { MAX_COOP_GUESTS } from '@shared/config'
 import { TETTI } from '@shared/punti'
-import { BONUS_SCARABEO, DISTRIBUZIONE, JOLLY, MOSSE_PER_GIORNATA, TESSERE_LEGGIO, VALORI } from '@shared/scarabeo'
+import { BONUS_SCARABEO, DISTRIBUZIONE, JOLLY, TESSERE_LEGGIO, VALORI } from '@shared/scarabeo'
+import { MOSSE_GEMELLE } from '@shared/scarabeo-gemelli'
 import { TURNI_SENZA_PAROLE } from '@shared/scarabeo-due'
 import './ComeSiGioca.css'
 
@@ -114,13 +115,16 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
               Valgono anche i verbi coniugati e con i pronomi attaccati: DIMMELO, PORTARLO. Niente accenti, sigle né
               nomi propri: &ldquo;città&rdquo; si scrive CITTA.
             </li>
+            <li>Il computer gioca solo parole di tutti i giorni.</li>
             <li>
-              <strong>Classificata</strong>: {MOSSE_PER_GIORNATA} mosse a testa contro il computer, con lo stesso
-              sacchetto per tutti. Fare quanto il <strong>traguardo</strong>, il computer al tuo posto, vale{' '}
+              <strong>Classificata</strong>: {MOSSE_GEMELLE} mosse a testa contro il computer. A ogni turno{' '}
+              {TESSERE_LEGGIO} tessere nuove, uguali per tutti: il computer ne ha altrettante, con le stesse vocali
+              e gli stessi punti. Fare quanto il <strong>traguardo</strong>, il computer al tuo posto, vale{' '}
               {TETTI.scarabeo} punti in classifica, farne la metà {TETTI.scarabeo / 2}.
             </li>
             <li>
-              <strong>Libera</strong>: contro il computer o un amico, fino in fondo al sacchetto. Chi posa
+              <strong>Libera</strong>: contro il computer o un amico, fino in fondo al sacchetto. La Q arriva
+              sempre con la U. Chi posa
               l’ultima tessera prende il valore di quelle rimaste all’altro; dopo {TURNI_SENZA_PAROLE} turni senza
               parole si chiude, e ognuno perde le sue. Con un amico scegli il tempo per mossa, o nessuno. Non conta
               per la classifica.

@@ -8,10 +8,12 @@
  * totale, che sta in colonna perché la classifica lo somma in SQL senza
  * rigiocare le partite di tutti.
  *
- * Le giornate nuove si giocano a turni contro il computer del giorno
+ * Le giornate si giocano a turni contro il computer del giorno
  * (`contro_computer`): le mosse si alternano, le pari di chi gioca e le dispari
- * del computer, e i leggii sono due (`leggiiDa`). Quelle di prima restano da
- * sole, come le si e' giocate.
+ * del computer, e i leggii sono due. Con `contro_computer = 2`, dal 15 ottobre
+ * 2026, sono i leggii gemelli, cinque mosse a testa; con 1 il sacchetto del
+ * giorno, dieci mosse. Le prime giornate (0) restano da sole, come le si e'
+ * giocate.
  */
 
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
@@ -19,7 +21,6 @@ import {
   JOLLY,
   MOSSE_PER_GIORNATA,
   TESSERE_LEGGIO,
-  leggiiDa,
   leggioDa,
   rigioca,
   sacchettoDelGiorno,
@@ -29,8 +30,8 @@ import {
   type MossaGiocata,
   type Posa,
 } from '../../shared/scarabeo'
-import { FORMATO_TRAGUARDO, PARTITA_DEL_GIORNO } from '../../shared/scarabeo-computer'
-import { statoADue } from '../../shared/scarabeo-due'
+import { FORMATO_TRAGUARDO } from '../../shared/scarabeo-computer'
+import { regoleDellaGiornata, statoADue } from '../../shared/scarabeo-due'
 import type {
   CellaPiena,
   PeriodoClassifica,
@@ -62,7 +63,11 @@ export interface PartitaRow {
   in_compagnia: string | null
   /** I punti dell'host, per chi gioca la giornata con lui. */
   assist_score: number | null
-  /** 1 se la giornata si gioca a turni contro il computer del giorno; 0 per quelle di prima, da soli. */
+  /**
+   * Come si gioca la giornata: il formato del suo traguardo meno uno. 0 da soli,
+   * come le prime; 1 a turni dal sacchetto del giorno; 2 a turni con i leggii
+   * gemelli.
+   */
   contro_computer: number
   /** Il punteggio del computer nella stessa partita. */
   punti_computer: number
@@ -73,7 +78,7 @@ export interface ComputerRow {
   puzzle_number: number
   punti: number
   mosse: string | null
-  /** 1 se il computer ha giocato da solo, come le giornate di prima; 2 a turni contro il computer del giorno. */
+  /** 1 se il computer ha giocato da solo, come le prime giornate; 2 a turni dal sacchetto; 3 con i leggii gemelli. */
   formato: number
   created_at: string
 }
@@ -131,8 +136,9 @@ export function mosseDelComputer(computer: ComputerRow): Mossa[] | null {
 export function giocateDelTraguardo(computer: ComputerRow): MossaGiocata[] | null {
   const mosse = mosseDelComputer(computer)
   if (!mosse) return null
-  if (computer.formato < FORMATO_TRAGUARDO) return rigioca(mosse).giocate
-  return statoADue(sacchettoDelGiorno(computer.puzzle_number), mosse, PARTITA_DEL_GIORNO)
+  if (computer.formato < 2) return rigioca(mosse).giocate
+  const regole = regoleDellaGiornata(computer.formato, computer.puzzle_number)
+  return statoADue(sacchettoDelGiorno(computer.puzzle_number), mosse, regole)
     .giocate.filter((g) => g.di === 0)
     .map((g, i) => ({ numero: i + 1, tipo: g.tipo, parole: g.parole, punti: g.punti, scarabeo: g.scarabeo }))
 }
@@ -229,18 +235,9 @@ export async function apriPartita(
       `INSERT OR IGNORE INTO scarabeo_games
          (id, player_id, puzzle_number, date, status, mosse, turns, score, started_at, contro_computer)
        VALUES (?, ?, ?, ?, 'playing', '[]', 0, 0, ?,
-               COALESCE((SELECT formato FROM scarabeo_computer WHERE puzzle_number = ?), ?) >= ?)`,
+               MAX(0, COALESCE((SELECT formato FROM scarabeo_computer WHERE puzzle_number = ?), ?) - 1))`,
     )
-    .bind(
-      newId('scr'),
-      playerId,
-      quando.puzzleNumber,
-      quando.date,
-      nowIso(),
-      quando.puzzleNumber,
-      FORMATO_TRAGUARDO,
-      FORMATO_TRAGUARDO,
-    )
+    .bind(newId('scr'), playerId, quando.puzzleNumber, quando.date, nowIso(), quando.puzzleNumber, FORMATO_TRAGUARDO)
     .run()
 
   const row = await db
@@ -252,15 +249,22 @@ export async function apriPartita(
   return row
 }
 
+/** Le mosse a testa di una giornata: dieci, o cinque con i leggii gemelli. */
+export function mosseDellaGiornata(row: Pick<PartitaRow, 'puzzle_number' | 'contro_computer'>): number {
+  return row.contro_computer >= 1
+    ? (regoleDellaGiornata(row.contro_computer + 1, row.puzzle_number).mosseATesta ?? MOSSE_PER_GIORNATA)
+    : MOSSE_PER_GIORNATA
+}
+
 /**
- * La partita rigiocata: da soli, come le giornate di prima, o a turni contro il
+ * La partita rigiocata: da soli, come le prime giornate, o a turni contro il
  * computer del giorno. I punti sono sempre quelli di chi gioca; `avversario`
  * quelli del computer, se c'e'.
  */
 export function partitaDi(row: Pick<PartitaRow, 'puzzle_number' | 'contro_computer'>, mosse: readonly Mossa[]) {
   const sacchetto = sacchettoDelGiorno(row.puzzle_number)
-  if (row.contro_computer === 1) {
-    const s = statoADue(sacchetto, mosse, PARTITA_DEL_GIORNO)
+  if (row.contro_computer >= 1) {
+    const s = statoADue(sacchetto, mosse, regoleDellaGiornata(row.contro_computer + 1, row.puzzle_number))
     return {
       tabellone: s.tabellone,
       giocate: s.giocate.map(({ di, ...g }) => ({ ...g, mia: di === 0 })),
@@ -291,16 +295,10 @@ export function partitaDi(row: Pick<PartitaRow, 'puzzle_number' | 'contro_comput
  * di chi la fa, sta in piedi sul tabellone. Le parole le controlla chi chiama,
  * con il dizionario. Vale per le mie mosse e per quelle del computer del
  * giorno, che pensa nel telefono: la sua mossa arriva con la mia, e passa dagli
- * stessi controlli.
+ * stessi controlli. `leggio` e' quello di chi muove (`partitaDi`).
  */
-export function controllaPosa(
-  sacchetto: readonly string[],
-  mosse: readonly Mossa[],
-  giocatori: 1 | 2,
-  posa: readonly Posa[],
-) {
-  const { leggii } = leggiiDa(sacchetto, mosse, giocatori)
-  verificaLeggio(leggii[mosse.length % giocatori], posa)
+export function controllaPosa(leggio: readonly string[], mosse: readonly Mossa[], posa: readonly Posa[]) {
+  verificaLeggio(leggio, posa)
   const esito = validaPosa(tabelloneDa(mosse), posa, !mosse.some((m) => m.tipo === 'posa'))
   if (!esito.ok) fail(422, esito.codice, esito.errore)
   return esito
@@ -337,10 +335,11 @@ export function statoDa(row: PartitaRow, computer: ComputerRow, msToNextPuzzle: 
     restanti,
     mosse: giocate,
     partita: mosse,
-    controComputer: row.contro_computer === 1,
+    controComputer: row.contro_computer >= 1,
+    gemelli: row.contro_computer >= 2,
     avversario,
     mosseUsate: row.turns,
-    mosseTotali: MOSSE_PER_GIORNATA,
+    mosseTotali: mosseDellaGiornata(row),
     /*
      * Il totale e' quello rigiocato, non quello in colonna. I due coincidono,
      * ma se un domani divergessero — un cambio nelle costanti dei punti — la
@@ -381,7 +380,7 @@ export async function aggiungiMossa(
   const puntiComputer = row.punti_computer + (risposta?.punti ?? 0)
   const classifica = puntiScarabeo(punteggio, computer.punti)
   // A turni la partita finisce anche prima, se chi deve muovere resta senza tessere a sacchetto vuoto.
-  const finita = turns >= MOSSE_PER_GIORNATA || (row.contro_computer === 1 && partitaDi(row, mosse).tocca === null)
+  const finita = turns >= mosseDellaGiornata(row) || (row.contro_computer >= 1 && partitaDi(row, mosse).tocca === null)
   const adesso = nowIso()
 
   const esito = await db

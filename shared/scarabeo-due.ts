@@ -14,12 +14,15 @@
  * piu' fare niente si finisce dopo sei turni di fila senza una parola, come nei
  * tornei: tre passi o cambi a testa, e ognuno perde il valore delle sue.
  *
- * La classificata invece ha dieci mosse a testa (`mosseATesta`), come una
- * giornata: due giocatori che si fermano a punti diversi non sarebbero
+ * La classificata invece ha un numero di mosse a testa (`mosseATesta`), come
+ * una giornata: due giocatori che si fermano a punti diversi non sarebbero
  * confrontabili, e un'ora di gioco non e' una pausa caffe'. Finisce li', senza
- * il conto delle tessere rimaste.
+ * il conto delle tessere rimaste. Erano dieci dal sacchetto del giorno
+ * (`PARTITA_DEL_GIORNO`); dal 15 ottobre 2026 sono cinque, con i leggii
+ * gemelli (`partitaGemella`, vedi shared/scarabeo-gemelli.ts).
  */
 
+import { MOSSE_GEMELLE, leggiiGemelliDa } from './scarabeo-gemelli'
 import {
   JOLLY,
   MOSSE_PER_GIORNATA,
@@ -46,13 +49,34 @@ export type Lato2 = 0 | 1
 export interface RegoleADue {
   /** Mosse a testa, se la partita ha un limite; null e' la partita intera, fino in fondo al sacchetto. */
   mosseATesta: number | null
+  /** Il numero del giorno dei leggii gemelli: otto tessere nuove a turno, senza sacchetto. */
+  gemelli?: number
+  /** La Q arriva con la U (vedi `leggiiDa`). */
+  qConU?: boolean
 }
 
-/** La partita intera, fino in fondo al sacchetto, come al tavolo: la libera, contro il computer o un amico. */
-export const PARTITA_INTERA: RegoleADue = { mosseATesta: null }
+/**
+ * La partita intera, fino in fondo al sacchetto, come al tavolo: la libera,
+ * contro il computer o un amico. La Q arriva con la U.
+ */
+export const PARTITA_INTERA: RegoleADue = { mosseATesta: null, qConU: true }
 
-/** La classificata: dieci mosse a testa, come una giornata. */
+/** La classificata fino al 15 ottobre 2026: dieci mosse a testa dal sacchetto del giorno. */
 export const PARTITA_DEL_GIORNO: RegoleADue = { mosseATesta: MOSSE_PER_GIORNATA }
+
+/** La classificata di adesso: cinque mosse a testa, con i leggii gemelli del giorno. */
+export function partitaGemella(puzzleNumber: number): RegoleADue {
+  return { mosseATesta: MOSSE_GEMELLE, gemelli: puzzleNumber }
+}
+
+/**
+ * Le regole di una giornata a turni dal formato del suo traguardo (vedi
+ * `FORMATO_TRAGUARDO` in shared/scarabeo-computer.ts): il 2 e' il sacchetto del
+ * giorno, il 3 i leggii gemelli.
+ */
+export function regoleDellaGiornata(formato: number, puzzleNumber: number): RegoleADue {
+  return formato >= 3 ? partitaGemella(puzzleNumber) : PARTITA_DEL_GIORNO
+}
 
 /** Come e' finita una partita: le mosse a testa, l'ultima tessera posata, o sei turni senza parole. */
 export type FineADue = 'mosse' | 'chiusa' | 'ferma'
@@ -83,7 +107,10 @@ export function valoreLeggio(leggio: readonly string[]): number {
 }
 
 export function statoADue(sacchetto: readonly string[], mosse: readonly Mossa[], regole: RegoleADue): StatoADue {
-  const { leggii, restanti } = leggiiDa(sacchetto, mosse, 2)
+  const { leggii, restanti } =
+    regole.gemelli !== undefined
+      ? leggiiGemelliDa(regole.gemelli, mosse)
+      : leggiiDa(sacchetto, mosse, 2, regole.qConU ?? false)
   const { tabellone, giocate } = rigioca(mosse)
 
   const punti: [number, number] = [0, 0]
@@ -98,7 +125,7 @@ export function statoADue(sacchetto: readonly string[], mosse: readonly Mossa[],
   let fine: FineADue | null = null
   const aggiustamento: [number, number] = [0, 0]
   if (regole.mosseATesta !== null) {
-    // Dieci mosse a testa, o prima se chi deve muovere non ha piu' tessere: non avrebbe niente da giocare.
+    // Le mosse a testa, o prima se chi deve muovere non ha piu' tessere: non avrebbe niente da giocare.
     if (fatte[1] >= regole.mosseATesta || (leggii[tocca].length === 0 && restanti === 0)) fine = 'mosse'
   } else {
     const ultima = mosse.length - 1

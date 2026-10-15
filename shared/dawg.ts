@@ -7,10 +7,11 @@
  * chi cerca parole: seguire una lettera, sapere se una parola puo' finire,
  * elencare le lettere che proseguono.
  *
- * Il dizionario ha due livelli: le parole comuni, che gioca il computer, e le
- * altre, che valgono quando le gioca una persona. `Dawg.da` le legge tutte;
- * `comuni()` da' lo stesso dizionario come lo vede il computer, in cui gli archi
- * che portano solo ad altre parole non esistono.
+ * Il dizionario ha tre livelli: le parole note, che gioca il computer, le
+ * comuni, che le comprendono, e le altre, che valgono quando le gioca una
+ * persona. `Dawg.da` le legge tutte; `comuni()` e `note()` danno lo stesso
+ * dizionario a quel livello, in cui gli archi che portano solo a parole degli
+ * altri non esistono. `note()` e' il dizionario del computer.
  *
  * Un nodo si indica con l'indice del suo primo arco. `FOGLIA` e' il nodo senza
  * figli: da lì non si prosegue.
@@ -30,7 +31,12 @@ const ULTIMO = 1 << 5
 const FINALE = 1 << 6
 const FINALE_COMUNE = 1 << 7
 const STRADA_COMUNE = 1 << 8
-const SPOSTAMENTO_FIGLIO = 9
+const FINALE_NOTA = 1 << 9
+const STRADA_NOTA = 1 << 10
+const SPOSTAMENTO_FIGLIO = 11
+
+/** Quali parole si leggono: tutte, le comuni, o le sole note. */
+export type LivelloDawg = 'tutte' | 'comuni' | 'note'
 
 const INDICI: Readonly<Record<string, number>> = Object.fromEntries(
   [...LETTERE].map((l, i) => [l, i]),
@@ -49,11 +55,11 @@ export class Dawg {
 
   constructor(
     readonly archi: Uint32Array,
-    /** Solo le parole comuni: e' il dizionario del computer. */
-    readonly soloComuni = false,
+    /** Le parole che si leggono; le note sono il dizionario del computer. */
+    readonly livello: LivelloDawg = 'tutte',
   ) {
-    this.fine = soloComuni ? FINALE_COMUNE : FINALE
-    this.strada = soloComuni ? STRADA_COMUNE : 0
+    this.fine = livello === 'note' ? FINALE_NOTA : livello === 'comuni' ? FINALE_COMUNE : FINALE
+    this.strada = livello === 'note' ? STRADA_NOTA : livello === 'comuni' ? STRADA_COMUNE : 0
   }
 
   /** Da un file letto per intero, per esempio con `fetch(...).arrayBuffer()`. */
@@ -71,7 +77,12 @@ export class Dawg {
 
   /** Lo stesso dizionario con le sole parole comuni, senza copiarlo. */
   comuni(): Dawg {
-    return this.soloComuni ? this : new Dawg(this.archi, true)
+    return this.livello === 'comuni' ? this : new Dawg(this.archi, 'comuni')
+  }
+
+  /** Lo stesso dizionario con le sole parole note: quello del computer. */
+  note(): Dawg {
+    return this.livello === 'note' ? this : new Dawg(this.archi, 'note')
   }
 
   /**

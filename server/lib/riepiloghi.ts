@@ -15,7 +15,6 @@
 
 import { PUNTI_COMPLETO, caselleBianche, caselleScritte, costiCruciverba, punteggio } from '../../shared/cruciverba'
 import { msToNextPuzzle } from '../../shared/daily'
-import { MOSSE_PER_GIORNATA } from '../../shared/scarabeo'
 import { FORMATO_TRAGUARDO } from '../../shared/scarabeo-computer'
 import { RIFERIMENTO_SCARABEO } from '../../shared/punti'
 import { PUNTI_COMPLETO as PUNTI_SUDOKU, VUOTA, costiSudoku, puntiSudoku } from '../../shared/sudoku'
@@ -33,7 +32,7 @@ import type {
   WordleSummary,
 } from '../../shared/types'
 import { today } from './wordleStore'
-import { giornata as giornataScarabeo } from './scarabeoStore'
+import { giornata as giornataScarabeo, mosseDellaGiornata } from './scarabeoStore'
 import { compagniaBreve } from './compagniaStore'
 import { aiutiDi, giornata as giornataCruciverba, schemaDelGiorno, type PartitaRow } from './cruciverbaStore'
 import { giornata as giornataQuiz, giornataQuiz as domandeDelGiorno, partitaDi as partitaQuiz, risposteDi } from './quizStore'
@@ -138,8 +137,9 @@ export async function riepilogoScarabeo(db: D1Database, playerId: string): Promi
       .bind(quando.puzzleNumber)
       .first<{ punti: number; formato: number }>(),
   ])
-  // La giornata si gioca come il suo traguardo: a turni, se non e' uno di prima (come in `apriPartita`).
-  const aTurni = row ? row.contro_computer === 1 : (computer?.formato ?? FORMATO_TRAGUARDO) >= FORMATO_TRAGUARDO
+  // La giornata si gioca come il suo traguardo (come in `apriPartita`): il formato meno uno.
+  const contro = row ? row.contro_computer : Math.max(0, (computer?.formato ?? FORMATO_TRAGUARDO) - 1)
+  const aTurni = contro >= 1
 
   // In compagnia la giornata e' quella dell'host: i suoi punti, man mano che li fa.
   const insieme = row?.in_compagnia ? await compagniaBreve(db, row.in_compagnia, row.assist_score) : null
@@ -152,7 +152,7 @@ export async function riepilogoScarabeo(db: D1Database, playerId: string): Promi
     computer: computer?.punti ?? RIFERIMENTO_SCARABEO,
     avversario: aTurni && !insieme ? (row?.punti_computer ?? 0) : null,
     mosseUsate: insieme ? 0 : (row?.turns ?? 0),
-    mosseTotali: MOSSE_PER_GIORNATA,
+    mosseTotali: mosseDellaGiornata({ puzzle_number: quando.puzzleNumber, contro_computer: contro }),
     msToNextPuzzle: msToNextPuzzle(),
     inCompagnia: insieme,
   }

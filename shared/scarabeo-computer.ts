@@ -5,8 +5,9 @@
  *
  *  - la **partita libera**, a turni contro di lui, con un sacchetto a caso,
  *    fino in fondo come al tavolo;
- *  - la **classificata**, a turni contro il computer del giorno: dieci mosse a
- *    testa sul sacchetto di tutti, e il computer normale con un caso fisso dal
+ *  - la **classificata**, a turni contro il computer del giorno: cinque mosse a
+ *    testa con i leggii gemelli del giorno (shared/scarabeo-gemelli.ts), e il
+ *    computer normale con un caso fisso dal
  *    numero del giorno (`semeDellAvversario`), quindi a mosse uguali risponde
  *    uguale. Gira nel telefono, perché cercare una mossa costa decine di
  *    millisecondi e il Worker ne ha dieci; il server controlla che le sue
@@ -33,25 +34,25 @@ import {
   type Mossa,
   type MossaGiocata,
 } from './scarabeo'
-import { PARTITA_DEL_GIORNO, PARTITA_INTERA, statoADue, type FineADue, type RegoleADue } from './scarabeo-due'
+import { PARTITA_INTERA, regoleDellaGiornata, statoADue, type FineADue, type RegoleADue } from './scarabeo-due'
 import { mosseLegali, sceltaDelComputer, type Livello } from './scarabeo-motore'
 
 export type { Livello } from './scarabeo-motore'
 
-/** Mosse a testa nella classificata: le dieci della giornata. La libera si gioca fino in fondo. */
-export const MOSSE_A_TESTA = MOSSE_PER_GIORNATA
-
-export { PARTITA_DEL_GIORNO, PARTITA_INTERA } from './scarabeo-due'
+export { PARTITA_DEL_GIORNO, PARTITA_INTERA, regoleDellaGiornata } from './scarabeo-due'
 
 /** Il livello del computer della classificata: quello del traguardo. */
 export const LIVELLO_DEL_GIORNO: Livello = 'normale'
 
 /**
  * Come e' giocato il traguardo di una giornata: 1 da solo, le dieci mosse
- * senza avversario, come le giornate di prima; 2 a turni contro il computer del
- * giorno. La giornata si gioca come il suo traguardo (`contro_computer`).
+ * senza avversario, come le prime giornate; 2 a turni contro il computer del
+ * giorno, dieci mosse a testa dal sacchetto; 3 a turni con i leggii gemelli,
+ * cinque mosse a testa e il computer che gioca solo le parole note. La
+ * giornata si gioca come il suo traguardo (`contro_computer`, che e' il
+ * formato meno uno).
  */
-export const FORMATO_TRAGUARDO = 2
+export const FORMATO_TRAGUARDO = 3
 
 export const LIVELLI: readonly Livello[] = ['facile', 'normale', 'difficile']
 
@@ -190,10 +191,16 @@ export function turnoDelComputer(
  * La risposta del computer del giorno, nella classificata: dopo le mosse
  * `mosse`, che finiscono con una mia. Il server non la rifa' — costerebbe
  * troppo — ma lo stesso computer, sulle stesse mosse, risponde sempre uguale.
+ * `formato` e' quello della giornata (`FORMATO_TRAGUARDO`).
  */
-export function rispostaDelGiorno(dawg: Dawg, puzzleNumber: number, mosse: readonly Mossa[]): Mossa | null {
+export function rispostaDelGiorno(
+  dawg: Dawg,
+  puzzleNumber: number,
+  mosse: readonly Mossa[],
+  formato: number = FORMATO_TRAGUARDO,
+): Mossa | null {
   const partita: PartitaLibera = { seme: 0, livello: LIVELLO_DEL_GIORNO, mosse: [...mosse] }
-  const stato = statoLibera(partita, sacchettoDelGiorno(puzzleNumber), PARTITA_DEL_GIORNO)
+  const stato = statoLibera(partita, sacchettoDelGiorno(puzzleNumber), regoleDellaGiornata(formato, puzzleNumber))
   if (stato.turno !== 'computer') return null
   return mossaDelComputer(
     dawg,
@@ -207,24 +214,26 @@ export function rispostaDelGiorno(dawg: Dawg, puzzleNumber: number, mosse: reado
 
 /**
  * La partita del traguardo: il computer normale al posto di chi gioca, con il
- * suo caso (`seme`), contro il computer del giorno, dieci mosse a testa. E' la
- * stessa partita che trova chi gioca — lo stesso sacchetto, lo stesso
- * avversario — e i suoi punti (`punti`) sono la misura della classificata.
+ * suo caso (`seme`), contro il computer del giorno. E' la stessa partita che
+ * trova chi gioca — le stesse tessere, lo stesso avversario — e i suoi punti
+ * (`punti`) sono la misura della classificata.
  */
 export function giornataATurni(
   dawg: Dawg,
   puzzleNumber: number,
   seme: number,
+  formato: number = FORMATO_TRAGUARDO,
 ): { mosse: Mossa[]; punti: number; avversario: number } {
   const sacchetto = sacchettoDelGiorno(puzzleNumber)
+  const regole = regoleDellaGiornata(formato, puzzleNumber)
   const mosse: Mossa[] = []
   for (;;) {
-    const s = statoADue(sacchetto, mosse, PARTITA_DEL_GIORNO)
+    const s = statoADue(sacchetto, mosse, regole)
     if (s.turno === null) return { mosse, punti: s.punti[0], avversario: s.punti[1] }
     mosse.push(
       s.turno === 0
         ? mossaDelComputer(dawg, mosse, s.leggii[0], s.restanti, LIVELLO_DEL_GIORNO, casoDelTurno(seme, mosse.length))
-        : rispostaDelGiorno(dawg, puzzleNumber, mosse)!,
+        : rispostaDelGiorno(dawg, puzzleNumber, mosse, formato)!,
     )
   }
 }

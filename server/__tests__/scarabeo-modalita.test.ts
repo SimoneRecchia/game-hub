@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Dawg } from '../../shared/dawg'
-import { leggioDa, sacchettoDaSeme, sacchettoDelGiorno, tabelloneVuoto } from '../../shared/scarabeo'
+import { MOSSE_PER_GIORNATA, leggioDa, sacchettoDaSeme, sacchettoDelGiorno, tabelloneVuoto } from '../../shared/scarabeo'
 import { mosseLegali } from '../../shared/scarabeo-motore'
-import { MOSSE_A_TESTA, statoLibera, turnoDelComputer, type PartitaLibera } from '../../shared/scarabeo-computer'
+import { statoLibera, turnoDelComputer, type PartitaLibera } from '../../shared/scarabeo-computer'
 import { RIFERIMENTO_SCARABEO, puntiScarabeo } from '../../shared/punti'
 import type { ScarabeoState, ScarabeoSummary, StatisticheScarabeoLibero } from '../../shared/types'
 import { giornata } from '../lib/scarabeoStore'
@@ -92,7 +92,8 @@ describe('le partite libere contro il computer', () => {
     const { chiama, giocatore } = banco()
     const io = await giocatore('dario')
     const partita = partitaFinita(99)
-    expect(partita.mosse.length).toBeGreaterThan(2 * MOSSE_A_TESTA)
+    // Ben oltre le mosse di una giornata: la libera va fino in fondo al sacchetto.
+    expect(partita.mosse.length).toBeGreaterThan(2 * MOSSE_PER_GIORNATA)
     const meta = { ...partita, mosse: partita.mosse.slice(0, 5) }
     expect((await chiama('POST', '/scarabeo/libera', io, meta)).status).toBe(422)
     expect((await chiama('POST', '/scarabeo/libera', io, { ...partita, livello: 'impossibile' })).status).toBe(400)

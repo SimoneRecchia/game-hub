@@ -13,7 +13,6 @@ import {
   type Mossa,
 } from '../scarabeo'
 import {
-  MOSSE_A_TESTA,
   PARTITA_DEL_GIORNO,
   giornataDelComputer,
   rispostaDelGiorno,
@@ -21,7 +20,11 @@ import {
   turnoDelComputer,
   type PartitaLibera,
 } from '../scarabeo-computer'
-import { valoreLeggio } from '../scarabeo-due'
+import { partitaGemella, valoreLeggio } from '../scarabeo-due'
+import { MOSSE_GEMELLE } from '../scarabeo-gemelli'
+
+/** Le mosse a testa delle giornate dal sacchetto, prima dei leggii gemelli. */
+const MOSSE_A_TESTA = MOSSE_PER_GIORNATA
 
 const dawg = Dawg.da(
   readFileSync(join(__dirname, '..', '..', 'public', 'scarabeo', 'dizionario.dawg')),
@@ -110,7 +113,7 @@ describe('la partita libera contro il computer', () => {
     while (!statoLibera(partita, sacchetto, PARTITA_DEL_GIORNO).finita) {
       const stato = statoLibera(partita, sacchetto, PARTITA_DEL_GIORNO)
       if (stato.turno === 'io') partita.mosse.push({ tipo: 'passo' })
-      else partita.mosse.push(rispostaDelGiorno(dawg, 31, partita.mosse)!)
+      else partita.mosse.push(rispostaDelGiorno(dawg, 31, partita.mosse, 2)!)
     }
     const fine = statoLibera(partita, sacchetto, PARTITA_DEL_GIORNO)
     expect(fine.fine).toBe('mosse')
@@ -120,8 +123,26 @@ describe('la partita libera contro il computer', () => {
     // Il computer del giorno non cambia mai le tessere: se non puo' posare, passa.
     expect(partita.mosse.filter((m, i) => i % 2 === 1 && m.tipo === 'cambio')).toEqual([])
     // A mosse uguali risponde uguale.
+    expect(rispostaDelGiorno(dawg, 31, partita.mosse.slice(0, 1), 2)).toEqual(partita.mosse[1])
+    expect(rispostaDelGiorno(dawg, 31, partita.mosse.slice(0, 2), 2)).toBeNull()
+  })
+
+  it('con i leggii gemelli finisce dopo cinque mosse a testa, e il computer non cambia mai', () => {
+    const partita: PartitaLibera = { seme: 3, livello: 'normale', mosse: [] }
+    const sacchetto = sacchettoDelGiorno(31)
+    const regole = partitaGemella(31)
+    while (!statoLibera(partita, sacchetto, regole).finita) {
+      const stato = statoLibera(partita, sacchetto, regole)
+      if (stato.turno === 'io') partita.mosse.push({ tipo: 'passo' })
+      else partita.mosse.push(rispostaDelGiorno(dawg, 31, partita.mosse)!)
+    }
+    const fine = statoLibera(partita, sacchetto, regole)
+    expect(fine.fine).toBe('mosse')
+    expect([fine.mieMosse, fine.mosseComputer]).toEqual([MOSSE_GEMELLE, MOSSE_GEMELLE])
+    expect(partita.mosse.filter((m) => m.tipo === 'cambio')).toEqual([])
+    // Con il tabellone libero il computer posa sempre: le sue mani si giocano.
+    expect(partita.mosse.filter((m, i) => i % 2 === 1 && m.tipo === 'posa').length).toBeGreaterThanOrEqual(4)
     expect(rispostaDelGiorno(dawg, 31, partita.mosse.slice(0, 1))).toEqual(partita.mosse[1])
-    expect(rispostaDelGiorno(dawg, 31, partita.mosse.slice(0, 2))).toBeNull()
   })
 
   it('rigiocata dalle mosse, e’ la stessa partita', () => {
