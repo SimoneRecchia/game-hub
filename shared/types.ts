@@ -559,85 +559,6 @@ export interface AnagrammiLeaderboard {
   me: AnagrammiRow | null
 }
 
-/* ───────────────────────────────  Sequenze  ─────────────────────────────── */
-
-export type SequenzeStatus = 'playing' | 'done'
-
-/** Un turno della giornata, come lo vede chi gioca. */
-export interface TurnoSequenze {
-  /** Le sequenze ripetute giuste: da zero a sette. */
-  giuste: number
-  /** La sequenza piu' lunga ripetuta giusta; due, se e' sbagliata la prima. */
-  raggiunta: number
-  chiuso: boolean
-  /** Chiuso perché la pagina si e' riaperta con una sequenza aperta: una sequenza si vede una volta. */
-  riaperto: boolean
-}
-
-export interface SequenzeStato {
-  puzzleNumber: number
-  date: string
-  status: SequenzeStatus
-  /** I turni cominciati, nell'ordine. */
-  turni: TurnoSequenze[]
-  totaleTurni: number
-  /** Il turno con una sequenza aperta, se c'e'. */
-  corrente: number | null
-  /** I punti fatti finora; a giornata finita, quelli della classifica. */
-  punti: number
-  /** Il lucchetto della concorrenza ottimistica: va rimandato a ogni scrittura. */
-  versione: number
-  msToNextPuzzle: number
-}
-
-/**
- * La risposta a un turno cominciato o a una risposta: lo stato, se la risposta
- * era giusta, e la sequenza da guardare, se ce n'e' una. La sequenza esce solo
- * qui: lo stato non la porta, perché si vede una volta.
- */
-export interface SequenzeMossa extends SequenzeStato {
-  giusta: boolean | null
-  sequenza: number[] | null
-}
-
-export interface SequenzeSummary {
-  puzzleNumber: number
-  date: string
-  status: 'new' | SequenzeStatus
-  /** I turni chiusi. */
-  giocati: number
-  totale: number
-  /** La sequenza piu' lunga ripetuta oggi. */
-  migliore: number
-  punti: number
-  msToNextPuzzle: number
-}
-
-export interface SequenzeRow {
-  rank: number
-  playerId: string
-  nickname: string
-  displayName: string
-  avatarColor: string
-  /** Punti nel periodo: solo le giornate finite. */
-  punti: number
-  giornate: number
-  /** La sequenza piu' lunga ripetuta nel periodo. */
-  migliore: number
-  /** Quanto ci ha messo a ripetere le sequenze giuste, in tutto: lo spareggio. */
-  tempoMs: number
-  /** true se oggi ha una giornata cominciata e non finita. */
-  inCorso: boolean
-}
-
-export interface SequenzeLeaderboard {
-  scope: LeaderboardScope
-  periodo: PeriodoClassifica
-  updatedAt: string
-  rows: SequenzeRow[]
-  me: SequenzeRow | null
-}
-
 /* ──────────────────────────────  Ghigliottina  ────────────────────────────── */
 
 export type GhigliottinaStatus = 'playing' | 'done'
@@ -1212,7 +1133,7 @@ export interface PuntiDelPeriodo {
   /** Le classificate chiuse. */
   partite: number
   perGioco: Record<GiocoClassificato, number>
-  /** La battaglia navale e il tris, nei giorni in cui avevano la classificata. */
+  /** La battaglia navale, il tris e le Sequenze, nei giorni in cui avevano la classificata. */
   storici: number
   /** Quel che hanno dato o tolto i giochi della Fortuna. */
   fortuna: number
@@ -1846,7 +1767,6 @@ export type GiocoClassificato =
   | 'quiz'
   | 'nomi'
   | 'anagrammi'
-  | 'sequenze'
   | 'ghigliottina'
   | 'paroliere'
   | 'catena'
@@ -1855,9 +1775,10 @@ export type GiocoClassificato =
  * I giochi da tavolo: niente classificata, solo partite fra amici (e, dove ha
  * senso, contro il computer). La battaglia navale ha avuto una classificata
  * fino al 6 ottobre 2026: e' piu' fortuna che bravura, e una partita del
- * giorno non misurava niente.
+ * giorno non misurava niente. Le Sequenze l'hanno avuta fino al 15 ottobre 2026:
+ * restano la libera e la sfida, che sono le partite che si giocano davvero.
  */
-export type GiocoDaTavolo = 'battaglia' | 'indovina' | 'lupus' | 'scarabocchi' | GiocoTavoliere
+export type GiocoDaTavolo = 'battaglia' | 'indovina' | 'lupus' | 'scarabocchi' | 'sequenze' | GiocoTavoliere
 
 /** Una classifica: quella di un gioco, o la generale che le somma. */
 export type ChiaveClassifica = GiocoClassificato | 'generale' | 'fortuna'
@@ -1910,6 +1831,8 @@ export interface GeneraleRow {
   battaglia: number
   /** Il tris classificato, nei periodi con i giorni in cui c'era: anche lui gia' dentro `punti`. */
   tris: number
+  /** Le Sequenze classificate, nei periodi con i giorni in cui c'erano: gia' dentro `punti`. */
+  sequenze: number
   /** Quel che ha dato o tolto Crazy Time nel periodo: e' gia' dentro `punti`. */
   ruota: number
   /** Quel che hanno dato o tolto la slot, il blackjack e la roulette: anche questo e' gia' dentro `punti`. */
@@ -1965,7 +1888,6 @@ export interface OggiRisposta {
   quiz: QuizSummary
   nomi: NomiSummary
   anagrammi: AnagrammiSummary
-  sequenze: SequenzeSummary
   ghigliottina: GhigliottinaSummary
   paroliere: ParoliereSummary
   catena: CatenaSummary

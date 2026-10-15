@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LIVELLI_SEQUENZE, lunghezzaRaggiunta, sequenzaDelLivello, type LivelloSequenze } from '@shared/sequenze'
 import { registraLiberaSequenze } from './conti'
-import { DOPO_LA_RISPOSTA_MS, type SequenzaAperta } from './useSequenzeDelGiorno'
+import { DOPO_LA_RISPOSTA_MS, type SequenzaAperta } from './useProva'
 
 export const NOMI_LIVELLI_SEQUENZE: Record<LivelloSequenze, string> = {
   facile: 'Facile',

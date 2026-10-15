@@ -45,7 +45,7 @@ export default function SequenzeInvito() {
   }, [codice, vai])
 
   return (
-    <Pagina titolo="Invito" intera indietro={{ a: ROTTE.libera('sequenze'), etichetta: 'Sequenze' }}>
+    <Pagina titolo="Invito" intera indietro={{ a: ROTTE.sequenze, etichetta: 'Sequenze' }}>
       {errore ? (
         <Vuoto
           icona={
@@ -58,7 +58,7 @@ export default function SequenzeInvito() {
           titolo={errore.codice === 'INVITO_TUO' ? 'È il tuo invito' : 'L’invito non vale più'}
           testo={errore.codice === 'INVITO_TUO' ? 'Mandalo a chi vuoi sfidare.' : errore.testo}
           azione={
-            <Button variant="tinted" onClick={() => vai(ROTTE.libera('sequenze'), { replace: true })}>
+            <Button variant="tinted" onClick={() => vai(ROTTE.sequenze, { replace: true })}>
               Vai a Sequenze
             </Button>
           }

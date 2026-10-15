@@ -23,7 +23,6 @@ import { classificaScarabeo } from './scarabeoStore'
 import { classificaSudoku } from './sudokuStore'
 import { classificaNomi } from './nomiStore'
 import { classificaAnagrammi } from './anagrammiStore'
-import { classificaSequenze } from './sequenzeStore'
 import { classificaGhigliottina } from './ghigliottinaStore'
 import { classificaParoliere } from './paroliereStore'
 import { classificaCatena } from './catenaStore'
@@ -68,7 +67,6 @@ export async function panoramica(
     quiz,
     nomi,
     anagrammi,
-    sequenze,
     ghigliottina,
     paroliere,
     catena,
@@ -82,7 +80,6 @@ export async function panoramica(
     classificaQuiz(db, periodo, numeroDiOggi, viewerId),
     classificaNomi(db, periodo, numeroDiOggi, viewerId),
     classificaAnagrammi(db, periodo, numeroDiOggi, viewerId),
-    classificaSequenze(db, periodo, numeroDiOggi, viewerId),
     classificaGhigliottina(db, periodo, numeroDiOggi, viewerId),
     classificaParoliere(db, periodo, numeroDiOggi, viewerId),
     classificaCatena(db, periodo, numeroDiOggi, viewerId),
@@ -100,7 +97,6 @@ export async function panoramica(
       ...sudoku.rows.filter((r) => r.inCorso),
       ...quiz.rows.filter((r) => r.inCorso),
       ...anagrammi.rows.filter((r) => r.inCorso),
-      ...sequenze.rows.filter((r) => r.inCorso),
       ...ghigliottina.rows.filter((r) => r.inCorso),
       ...paroliere.rows.filter((r) => r.inCorso),
       ...catena.rows.filter((r) => r.inCorso),
@@ -126,7 +122,6 @@ export async function panoramica(
       sudoku: anteprima(sudoku.rows, sudoku.me, colPunti, aperta),
       quiz: anteprima(quiz.rows, quiz.me, colPunti, aperta),
       anagrammi: anteprima(anagrammi.rows, anagrammi.me, colPunti, aperta),
-      sequenze: anteprima(sequenze.rows, sequenze.me, colPunti, aperta),
       ghigliottina: anteprima(ghigliottina.rows, ghigliottina.me, colPunti, aperta),
       paroliere: anteprima(paroliere.rows, paroliere.me, colPunti, aperta),
       catena: anteprima(catena.rows, catena.me, colPunti, aperta),

@@ -20,11 +20,11 @@
  *   Nomi, cose   3 minuti                   100
  *   Paroliere    3 minuti                   100
  *   Anagrammi    2-4 minuti                 100
- *   Sequenze     3-5 minuti                 100
  *
- * Sono undici, e fanno millecento. Il tris ne e' uscito l'8 ottobre 2026, come
- * la battaglia navale due giorni prima: contro il computer del giorno la serie
- * non era una partita uguale per tutti, e ora e' solo una libera.
+ * Sono dieci, e fanno mille. Il tris ne e' uscito l'8 ottobre 2026, come la
+ * battaglia navale due giorni prima: contro il computer del giorno la serie
+ * non era una partita uguale per tutti, e ora e' solo una libera. Le Sequenze
+ * il 15 ottobre: restano la libera e la sfida.
  *
  * Dentro i cento ogni gioco misura quel che gli e' proprio, e tutti tengono lo
  * stesso principio del Wordle: **giocarla bene vale circa il doppio di
@@ -38,21 +38,21 @@
  *   Quiz         risposte giuste su dieci              60-92     20        100
  *   Nomi, cose   risposte valide, rare e veloci        60-75     25        100
  *   Anagrammi    parole trovate, e quanto presto       65-85     20        100
- *   Sequenze     sequenze ripetute giuste in 5 turni   60-70     30        100
  *   Paroliere    i punti delle parole, al traguardo    60-85     25        100
- *   Ghigliottina il montepremi, se si indovina         25-50      0**      100
- *   Catena       il montepremi, se si indovina         25-50      0**      100
+ *   Ghigliottina il montepremi, se si indovina         70-90     20*       100
+ *   Catena       il montepremi, se si indovina         76-88     20*       100
  *
  *   * la parola non indovinata vale venti, la peggiore indovinata cinquanta; un
  *     cruciverba o un sudoku svelato per intero non e' stato risolto: vale
  *     zero. Ogni casella svelata toglie la sua parte, e svelarne un sesto
  *     lascia la meta' dei punti (vedi shared/aiuti.ts).
  *
- *   ** la Ghigliottina e la Catena sono l'eccezione, di proposito: si giocano
- *     come alla televisione, dove ogni errore dimezza il montepremi e una
- *     parola finale sbagliata lo azzera. Le cinque parole della Ghigliottina si
- *     vedono sempre, quindi anche chi ha sbagliato ogni scelta puo' indovinare:
- *     tre punti; la Catena non scende sotto uno.
+ * Gli errori costano lo stesso dappertutto: un tentativo del Wordle dieci
+ * punti, una scelta sbagliata della Ghigliottina dieci, un errore della Catena
+ * sei (ne ha otto possibili, e non scende sotto cinquanta). La Ghigliottina e
+ * la Catena erano l'eccezione, come alla televisione, dove ogni errore dimezza
+ * il montepremi e una parola finale sbagliata lo azzera: due errori lasciavano
+ * un quarto, e una giornata storta non valeva piu' niente.
  *
  * I pochi punti oltre il tetto del Wordle sono i bonus di velocità e costanza,
  * che servono da spareggio e restano sotto il gradino di un tentativo.
@@ -67,7 +67,6 @@ import { DOMANDE_PER_PARTITA, puntiQuiz } from './quiz'
 import { PUNTI_COMPLETO as PUNTI_SUDOKU } from './sudoku'
 import { MASSIMO_NOMI } from './nomi-cose'
 import { MASSIMO_ANAGRAMMI } from './anagrammi'
-import { MASSIMO_SEQUENZE } from './sequenze'
 import { MASSIMO_GHIGLIOTTINA } from './ghigliottina'
 import { MASSIMO_PAROLIERE } from './paroliere'
 import { MASSIMO_CATENA } from './catena'
@@ -77,7 +76,6 @@ export { punteggio as puntiCruciverba } from './cruciverba'
 export { puntiQuiz } from './quiz'
 export { puntiSudoku } from './sudoku'
 export { puntiAnagrammi } from './anagrammi'
-export { puntiSequenze } from './sequenze'
 export { puntiGhigliottina } from './ghigliottina'
 export { puntiParoliere } from './paroliere'
 export { puntiCatena } from './catena'
@@ -91,7 +89,6 @@ export const TETTI: Record<GiocoClassificato, number> = {
   wordle: 100,
   nomi: 100,
   anagrammi: 100,
-  sequenze: 100,
   ghigliottina: 100,
   paroliere: 100,
   catena: 100,
@@ -132,7 +129,6 @@ export const MASSIMI: Record<GiocoClassificato, number> = {
   quiz: puntiQuiz(DOMANDE_PER_PARTITA, DOMANDE_PER_PARTITA),
   nomi: MASSIMO_NOMI,
   anagrammi: MASSIMO_ANAGRAMMI,
-  sequenze: MASSIMO_SEQUENZE,
   ghigliottina: MASSIMO_GHIGLIOTTINA,
   paroliere: MASSIMO_PAROLIERE,
   catena: MASSIMO_CATENA,

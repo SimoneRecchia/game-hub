@@ -5,22 +5,25 @@
  * Si gioca come l'ultima catena di Reazione a catena, su Rai 1. Si vedono due
  * parole e in mezzo la prima lettera di quella che le lega, senza sapere quanto
  * e' lunga; trovata quella, si scende: la terza parola e una nuova, e in mezzo
- * la prossima da indovinare. Ogni parola ha un minuto. Una risposta sbagliata
- * dimezza il montepremi e mostra un'altra lettera; una seconda, o il minuto
- * finito, lo dimezza ancora e mostra la parola, e si va avanti. Due jolly
- * mostrano una lettera senza costare niente, ma non nella finale.
+ * la prossima da indovinare. Ogni parola ha un minuto, che riparte dopo una
+ * risposta sbagliata o un jolly. Una risposta sbagliata toglie sei punti al
+ * montepremi e mostra un'altra lettera; una seconda mostra la parola, e si va
+ * avanti; il minuto finito la mostra come due errori. Due jolly mostrano una
+ * lettera senza costare niente, ma non nella finale.
  *
  * L'ultima parola e' quella decisiva: si vede la parola prima — l'ultima della
  * catena — e della finale le prime due lettere e l'ultima, ma non il terzo
- * elemento, la parola dopo. Comprarlo dimezza il montepremi; chi arriva con
+ * elemento, la parola dopo. Comprarlo costa quanto un errore; chi arriva con
  * tutti e due i jolly lo ha in regalo. C'e' un minuto e mezzo per una risposta
- * sola: giusta vale il montepremi, sbagliata niente.
+ * sola: giusta vale il montepremi, che non scende sotto cinquanta, sbagliata
+ * venti.
  *
  * Le catene vengono dalle espressioni scritte a mano per la Ghigliottina e
  * dal Wikizionario (scripts/build-catena.mjs).
  */
 
 import { mulberry32, solutionPermutation } from './daily'
+import { LOSS_POINTS } from './scoring'
 
 export const NOME_CATENA = 'Catena'
 
@@ -39,7 +42,21 @@ export const POSTO_TERZO = 10
 export const MONTEPREMI_CATENA = 100
 export const MASSIMO_CATENA = MONTEPREMI_CATENA
 
-/** I jolly: una lettera in piu', senza dimezzare. */
+/**
+ * Quel che toglie un errore, o il terzo elemento comprato. Gli errori possibili
+ * sono otto, due per parola, quindi un errore vale un po' meno del gradino del
+ * Wordle: chi le sbaglia tutte arriva al fondo del montepremi, e il fondo e'
+ * cinquanta, quanto il Wordle indovinato al sesto tentativo.
+ */
+export const ERRORE_CATENA = 6
+
+/** Il montepremi non scende sotto questo: la parola finale indovinata vale sempre almeno la meta'. */
+export const FONDO_CATENA = 50
+
+/** La parola finale sbagliata, o non data: quanto una parola del Wordle non indovinata. */
+export const PUNTI_CATENA_PERSA = LOSS_POINTS
+
+/** I jolly: una lettera in piu', senza costare niente. */
 export const JOLLY_CATENA = 2
 
 /** Gli errori che una parola della catena regge: al secondo si vede, e si va avanti. */
@@ -49,12 +66,24 @@ export const ERRORI_PER_PAROLA = 2
 export const TEMPO_FINALE_CATENA_MS = 90_000
 
 /**
- * Il minuto di ogni parola della catena. Finito, la parola si mostra e il
- * montepremi si dimezza, come al secondo errore: senza un tempo chi ci pensa
+ * Il minuto di ogni parola della catena. Finito, la parola si mostra e costa
+ * come i due errori che l'avrebbero mostrata: senza un tempo chi ci pensa
  * abbastanza troverebbe ogni parola, e gli errori non costerebbero niente a chi
- * non prova finché non e' sicuro.
+ * non prova finché non e' sicuro. Una risposta sbagliata o un jolly lo fanno
+ * ripartire: c'e' una lettera nuova, e un minuto per pensarci.
  */
 export const TEMPO_PAROLA_CATENA_MS = 60_000
+
+/**
+ * Quanto aspetta il minuto che riparte: il tempo che la scena mette a far cadere
+ * le lettere sbagliate e ad accendere quella nuova.
+ */
+export const PREAMBOLO_RIPRESA_CATENA_MS = 1_500
+
+/** Le mosse dopo cui il minuto della parola riparte: una lettera nuova, e la parola ancora da trovare. */
+export function riparteIlMinuto(esito: EsitoMossaCatena): boolean {
+  return esito === 'sbagliata' || esito === 'jolly'
+}
 
 /**
  * Quanto aspetta il minuto di una parola: il tempo che la scena mette a
@@ -75,13 +104,13 @@ export const PREAMBOLO_FINALE_CATENA_MS = 4_500
 export const MARGINE_CATENA_MS = 3_000
 
 /**
- * Il montepremi dopo `dimezzamenti` errori o acquisti: la meta' per ognuno, per
- * difetto, e mai meno di un punto, perché la parola finale valga sempre
- * qualcosa: gli errori possibili sono otto, e il terzo elemento un dimezzamento
- * in piu'.
+ * Il montepremi dopo `errori` errori o acquisti: sei in meno per ognuno, e mai
+ * meno di cinquanta. Alla televisione ogni errore lo dimezza, e cosi' era anche
+ * qui: due errori lasciavano un quarto, e una giornata storta non valeva piu'
+ * niente.
  */
-export function montepremiCatena(dimezzamenti: number): number {
-  return Math.max(1, Math.floor(MONTEPREMI_CATENA / 2 ** Math.max(0, dimezzamenti)))
+export function montepremiCatena(errori: number): number {
+  return Math.max(FONDO_CATENA, MONTEPREMI_CATENA - ERRORE_CATENA * Math.max(0, errori))
 }
 
 const ACCENTI: Record<string, string> = {
@@ -143,7 +172,8 @@ export interface Svolgimento {
   parole: ParolaSvolta[]
   jollyUsati: number
   terzo: TerzoElemento
-  dimezzamenti: number
+  /** Gli errori che costano: le risposte sbagliate, i minuti finiti (come due errori) e il terzo elemento comprato. */
+  errori: number
   montepremi: number
 }
 
@@ -164,7 +194,7 @@ export function inizio(): Svolgimento {
     parole: NASCOSTE_CATENA.map((_, i) => ({ lettere: lettereIniziali(i), errori: 0, esito: null })),
     jollyUsati: 0,
     terzo: 'no',
-    dimezzamenti: 0,
+    errori: 0,
     montepremi: MONTEPREMI_CATENA,
   }
 }
@@ -192,13 +222,14 @@ export function applicaCatena(
     terzo: passo === PASSO_FINALE && s.jollyUsati === 0 ? ('regalato' as const) : s.terzo,
   })
   if (mossa.k === 't') {
-    // Il tempo finito vale un errore che mostra la parola, quanti che fossero quelli di prima.
+    // Il tempo finito mostra la parola, e costa gli errori che mancavano a mostrarla.
     if (s.passo >= PASSO_FINALE || !corrente) return null
-    corrente.errori += 1
+    const mancano = Math.max(1, ERRORI_PER_PAROLA - corrente.errori)
+    corrente.errori += mancano
     corrente.esito = 'rivelata'
-    const dimezzamenti = s.dimezzamenti + 1
+    const errori = s.errori + mancano
     return {
-      dopo: { ...s, parole, dimezzamenti, montepremi: montepremiCatena(dimezzamenti), ...avanti(s.passo + 1) },
+      dopo: { ...s, parole, errori, montepremi: montepremiCatena(errori), ...avanti(s.passo + 1) },
       esito: 'scaduta',
     }
   }
@@ -209,14 +240,14 @@ export function applicaCatena(
       return { dopo: { ...s, parole, ...avanti(s.passo + 1) }, esito: 'giusta' }
     }
     corrente.errori += 1
-    const dimezzamenti = s.dimezzamenti + 1
-    const montepremi = montepremiCatena(dimezzamenti)
+    const errori = s.errori + 1
+    const montepremi = montepremiCatena(errori)
     if (corrente.errori >= ERRORI_PER_PAROLA) {
       corrente.esito = 'rivelata'
-      return { dopo: { ...s, parole, dimezzamenti, montepremi, ...avanti(s.passo + 1) }, esito: 'rivelata' }
+      return { dopo: { ...s, parole, errori, montepremi, ...avanti(s.passo + 1) }, esito: 'rivelata' }
     }
     if (nascosteDi(catena, s.passo, corrente.lettere) > 1) corrente.lettere += 1
-    return { dopo: { ...s, parole, dimezzamenti, montepremi }, esito: 'sbagliata' }
+    return { dopo: { ...s, parole, errori, montepremi }, esito: 'sbagliata' }
   }
   if (mossa.k === 'j') {
     if (!jollyUsabile(catena, s)) return null
@@ -224,9 +255,9 @@ export function applicaCatena(
     return { dopo: { ...s, parole, jollyUsati: s.jollyUsati + 1 }, esito: 'jolly' }
   }
   if (!compraUsabile(s)) return null
-  const dimezzamenti = s.dimezzamenti + 1
+  const errori = s.errori + 1
   return {
-    dopo: { ...s, terzo: 'comprato', dimezzamenti, montepremi: montepremiCatena(dimezzamenti) },
+    dopo: { ...s, terzo: 'comprato', errori, montepremi: montepremiCatena(errori) },
     esito: 'comprato',
   }
 }
@@ -258,9 +289,9 @@ export function compraUsabile(s: Svolgimento): boolean {
   return s.passo === PASSO_FINALE && s.terzo === 'no'
 }
 
-/** I punti di una partita finita: il montepremi rimasto, se la parola finale e' giusta; se no niente. */
+/** I punti di una partita finita: il montepremi rimasto, se la parola finale e' giusta; se no venti. */
 export function puntiCatena(s: Svolgimento, indovinata: boolean): number {
-  return indovinata ? s.montepremi : 0
+  return indovinata ? s.montepremi : PUNTI_CATENA_PERSA
 }
 
 /** Una parola della catena come la vede chi gioca. */

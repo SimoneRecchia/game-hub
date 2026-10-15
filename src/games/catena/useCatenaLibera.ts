@@ -6,6 +6,7 @@ import {
   PASSO_FINALE,
   PREAMBOLO_FINALE_CATENA_MS,
   PREAMBOLO_PAROLA_CATENA_MS,
+  PREAMBOLO_RIPRESA_CATENA_MS,
   TEMPO_FINALE_CATENA_MS,
   TEMPO_PAROLA_CATENA_MS,
   applicaCatena,
@@ -13,6 +14,7 @@ import {
   jollyUsabile,
   normalizzaCatena,
   puntiCatena,
+  riparteIlMinuto,
   stessaParola,
   svolgiCatena,
   vistaCatena,
@@ -185,12 +187,19 @@ export function useCatenaLibera() {
       const adesso = Date.now()
       const cambia = fatta.dopo.passo !== prima.passo
       const finale = cambia && fatta.dopo.passo >= PASSO_FINALE
-      const inizioParola = adesso + PREAMBOLO_PAROLA_CATENA_MS
+      // Un errore o un jolly fanno ripartire il minuto della parola, come nella classificata.
+      const riparte = !cambia && p.parola !== null && riparteIlMinuto(fatta.esito)
+      const inizioParola = adesso + (riparte ? PREAMBOLO_RIPRESA_CATENA_MS : PREAMBOLO_PAROLA_CATENA_MS)
       const inizioFinale = adesso + PREAMBOLO_FINALE_CATENA_MS
       const vista = aggiorna({
         ...p,
         mosse: [...p.mosse, vera],
-        parola: !cambia ? p.parola : finale ? null : { inizio: inizioParola, scadenza: inizioParola + p.tempoParolaMs },
+        parola:
+          !cambia && !riparte
+            ? p.parola
+            : finale
+              ? null
+              : { inizio: inizioParola, scadenza: inizioParola + p.tempoParolaMs },
         finale: finale ? { inizio: inizioFinale, scadenza: inizioFinale + p.tempoFinaleMs } : p.finale,
       })
       return { vista, esito: fatta.esito }

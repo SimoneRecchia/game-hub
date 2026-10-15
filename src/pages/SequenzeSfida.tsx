@@ -89,7 +89,7 @@ function Sfida({ id }: { id: string }) {
     <Pagina
       titolo="Sequenze"
       intera
-      indietro={{ a: ROTTE.libera('sequenze'), etichetta: 'Sequenze' }}
+      indietro={{ a: ROTTE.sequenze, etichetta: 'Sequenze' }}
       azioni={info}
     >
       {!v ? (

@@ -18,7 +18,6 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
       quiz: 0,
       nomi: 0,
       anagrammi: 0,
-      sequenze: 0,
       ghigliottina: 0,
       paroliere: 0,
       catena: 0,
@@ -26,6 +25,7 @@ function totali(nickname: string, perGioco: Partial<TotaliGenerale['perGioco']>,
     },
     battaglia: 0,
     tris: 0,
+    sequenze: 0,
     ruota: 0,
     slot: 0,
     blackjack: 0,
@@ -129,7 +129,6 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
       quiz: 76,
       nomi: 44,
       anagrammi: 47,
-      sequenze: 33,
       ghigliottina: 16,
       paroliere: 52,
       catena: 8,
@@ -137,6 +136,8 @@ describe('la classifica generale e la schermata di oggi, dalle API', () => {
     expect(g.me?.battaglia).toBe(84)
     // Il tris, dei giorni in cui aveva la sua classificata, sta a parte come la battaglia.
     expect(g.me?.tris).toBe(38)
+    // E le Sequenze, che l'hanno avuta fino al 15 ottobre 2026.
+    expect(g.me?.sequenze).toBe(33)
     expect(g.me?.partite).toBe(12)
     // La Fortuna legge i punti di oggi di un giocatore solo: devono essere quelli della generale.
     expect(await puntiClassificateDi(db as unknown as D1Database, anna.id, n)).toBe(

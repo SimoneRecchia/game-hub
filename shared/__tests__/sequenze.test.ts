@@ -8,12 +8,7 @@ import {
   LIVELLI_SEQUENZE,
   NUMERO_CUBETTI,
   PRIMA_LUNGHEZZA,
-  SEQUENZE_PER_TURNO,
-  TURNI_SEQUENZE,
   durataSequenza,
-  giornataACaso,
-  giornataDaTesto,
-  giornataInTesto,
   leggiTocchi,
   lunghezzaRaggiunta,
   primoErrore,
@@ -82,24 +77,6 @@ describe('le sequenze', () => {
     expect(visti.size).toBe(NUMERO_CUBETTI)
   })
 
-  it('una giornata ha cinque turni, e in ognuno una sequenza per lunghezza, da tre a nove', () => {
-    const giornata = giornataACaso(mulberry32(1))
-    expect(giornata).toHaveLength(TURNI_SEQUENZE)
-    for (const turno of giornata) {
-      expect(turno).toHaveLength(SEQUENZE_PER_TURNO)
-      turno.forEach((s, k) => expect(s).toHaveLength(PRIMA_LUNGHEZZA + k))
-    }
-    expect(giornataDaTesto(giornataInTesto(giornata))).toEqual(giornata)
-  })
-
-  it('una giornata scritta male non si legge', () => {
-    expect(giornataDaTesto('niente')).toBeNull()
-    expect(giornataDaTesto('[]')).toBeNull()
-    const giusta = JSON.parse(giornataInTesto(giornataACaso(mulberry32(3)))) as string[][]
-    giusta[0][0] = '9a1'
-    expect(giornataDaTesto(JSON.stringify(giusta))).toBeNull()
-  })
-
   it('nella libera e nella sfida la sequenza viene dal seme e dal livello: due telefoni vedono la stessa', () => {
     expect(sequenzaDelLivello(1234, 6)).toEqual(sequenzaDelLivello(1234, 6))
     expect(sequenzaDelLivello(1234, 6)).not.toEqual(sequenzaDelLivello(1235, 6))
@@ -133,7 +110,7 @@ describe('le risposte', () => {
   it('la lunghezza raggiunta è l’ultima ripetuta: zero se e’ sbagliata la prima', () => {
     expect(lunghezzaRaggiunta(0)).toBe(0)
     expect(lunghezzaRaggiunta(1)).toBe(PRIMA_LUNGHEZZA)
-    expect(lunghezzaRaggiunta(SEQUENZE_PER_TURNO)).toBe(NUMERO_CUBETTI)
+    expect(lunghezzaRaggiunta(NUMERO_CUBETTI - PRIMA_LUNGHEZZA + 1)).toBe(NUMERO_CUBETTI)
     expect(lunghezzaRaggiunta(1, LIVELLI_SEQUENZE.facile.prima)).toBe(2)
   })
 

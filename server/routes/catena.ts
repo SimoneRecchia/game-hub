@@ -102,7 +102,7 @@ async function giocaMossa(c: Context<AppEnv>, corpo: Corpo, mossa: MossaCatena):
   if (!fatta) fail(409, 'MOSSA', 'Questa mossa adesso non si può fare.')
   const dopo = await salvaPartita(c.env.DB, row, {
     mosse: [...mosse, mossa],
-    ...tempiDopo(row, prima.passo, fatta.dopo.passo, adesso),
+    ...tempiDopo(row, prima.passo, fatta.dopo.passo, adesso, fatta.esito),
   })
   return stato(dopo, catena, adesso, fatta.esito)
 }
@@ -141,8 +141,8 @@ export const catenaRoutes = new Hono<AppEnv>()
 
   /**
    * Una parola della catena. Giusta si scende alla coppia dopo; sbagliata
-   * dimezza il montepremi e mostra un'altra lettera, e alla seconda volta mostra
-   * la parola e si scende lo stesso.
+   * costa un errore, mostra un'altra lettera e fa ripartire il minuto, e alla
+   * seconda volta mostra la parola e si scende lo stesso.
    */
   .post('/prova', async (c) => {
     const corpo = await corpoDi(c)
@@ -150,22 +150,22 @@ export const catenaRoutes = new Hono<AppEnv>()
   })
 
   /**
-   * Il minuto della parola e' finito sul telefono: la parola si mostra e il
-   * montepremi si dimezza, senza aspettare il margine della rete. E' una resa,
-   * e il server la prende quando arriva.
+   * Il minuto della parola e' finito sul telefono: la parola si mostra, e costa
+   * come i due errori che l'avrebbero mostrata, senza aspettare il margine della
+   * rete. E' una resa, e il server la prende quando arriva.
    */
   .post('/tempo', async (c) => {
     const corpo = await corpoDi(c)
     return c.json<CatenaStato>(await giocaMossa(c, corpo, { k: 't' }))
   })
 
-  /** Un jolly: la lettera dopo, senza dimezzare. L'ultima lettera resta da trovare, e nella finale non si usa. */
+  /** Un jolly: la lettera dopo, gratis, e il minuto che riparte. L'ultima lettera resta da trovare, e nella finale non si usa. */
   .post('/jolly', async (c) => {
     const corpo = await corpoDi(c)
     return c.json<CatenaStato>(await giocaMossa(c, corpo, { k: 'j' }))
   })
 
-  /** Il terzo elemento della finale, che dimezza il montepremi: chi ha ancora tutti e due i jolly lo ha gia'. */
+  /** Il terzo elemento della finale, che costa quanto un errore: chi ha ancora tutti e due i jolly lo ha gia'. */
   .post('/compra', async (c) => {
     const corpo = await corpoDi(c)
     return c.json<CatenaStato>(await giocaMossa(c, corpo, { k: 'c' }))
@@ -173,7 +173,7 @@ export const catenaRoutes = new Hono<AppEnv>()
 
   /**
    * La parola finale. Una sola risposta: giusta vale il montepremi rimasto,
-   * sbagliata niente. Arrivata dopo il tempo (e il margine della rete) non
+   * sbagliata venti. Arrivata dopo il tempo (e il margine della rete) non
    * vale, e la partita si chiude senza risposta. Una risposta vuota e' un "non
    * lo so".
    */

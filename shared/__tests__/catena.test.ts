@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   DA_INDOVINARE_CATENA,
+  ERRORE_CATENA,
   JOLLY_CATENA,
   MONTEPREMI_CATENA,
   NASCOSTE_CATENA,
@@ -17,6 +18,7 @@ import {
   jollyUsabile,
   mosseValide,
   normalizzaCatena,
+  riparteIlMinuto,
   stessaParola,
   svolgiCatena,
   vistaCatena,
@@ -95,20 +97,26 @@ describe('la catena', () => {
     expect(s.montepremi).toBe(MONTEPREMI_CATENA)
   })
 
-  it('un errore dimezza e mostra un’altra lettera; il secondo dimezza, mostra la parola e si va avanti', () => {
+  it('un errore costa sei punti e mostra un’altra lettera; il secondo mostra la parola e si va avanti', () => {
     const una = applicaCatena(CATENA, inizio(), prova('lancio'))!
     expect(una.esito).toBe('sbagliata')
     expect(una.dopo.passo).toBe(0)
     expect(una.dopo.parole[0].lettere).toBe(2)
-    expect(una.dopo.montepremi).toBe(MONTEPREMI_CATENA / 2)
+    expect(una.dopo.montepremi).toBe(MONTEPREMI_CATENA - ERRORE_CATENA)
     const due = applicaCatena(CATENA, una.dopo, prova('lavoro'))!
     expect(due.esito).toBe('rivelata')
     expect(due.dopo.passo).toBe(1)
     expect(due.dopo.parole[0].esito).toBe('rivelata')
-    expect(due.dopo.montepremi).toBe(MONTEPREMI_CATENA / 4)
+    expect(due.dopo.montepremi).toBe(MONTEPREMI_CATENA - 2 * ERRORE_CATENA)
   })
 
-  it('i jolly sono due, mostrano la lettera dopo e non dimezzano', () => {
+  it('il minuto riparte dopo un errore o un jolly, non dopo una parola trovata o mostrata', () => {
+    expect(riparteIlMinuto('sbagliata')).toBe(true)
+    expect(riparteIlMinuto('jolly')).toBe(true)
+    for (const esito of ['giusta', 'rivelata', 'scaduta', 'comprato'] as const) expect(riparteIlMinuto(esito)).toBe(false)
+  })
+
+  it('i jolly sono due, mostrano la lettera dopo e non costano niente', () => {
     const s = gioca({ k: 'j' }, { k: 'j' })
     expect(s.jollyUsati).toBe(JOLLY_CATENA)
     expect(s.parole[0].lettere).toBe(3)
@@ -134,13 +142,13 @@ describe('la catena', () => {
     expect(applicaCatena(CATENA, s, { k: 'c' })).toBeNull()
   })
 
-  it('con un jolly usato il terzo elemento si compra, e dimezza', () => {
+  it('con un jolly usato il terzo elemento si compra, e costa quanto un errore', () => {
     const s = gioca({ k: 'j' }, ...giuste)
     expect(s.terzo).toBe('no')
     const comprato = applicaCatena(CATENA, s, { k: 'c' })!
     expect(comprato.esito).toBe('comprato')
     expect(comprato.dopo.terzo).toBe('comprato')
-    expect(comprato.dopo.montepremi).toBe(MONTEPREMI_CATENA / 2)
+    expect(comprato.dopo.montepremi).toBe(MONTEPREMI_CATENA - ERRORE_CATENA)
     expect(applicaCatena(CATENA, comprato.dopo, { k: 'c' })).toBeNull()
   })
 
@@ -153,13 +161,13 @@ describe('la catena', () => {
     expect(applicaCatena(CATENA, s, { k: 't' })).toBeNull()
   })
 
-  it('il tempo finito mostra la parola e dimezza, come il secondo errore, quanti errori ci fossero', () => {
+  it('il tempo finito mostra la parola e costa come i due errori che l’avrebbero mostrata', () => {
     const subito = applicaCatena(CATENA, inizio(), { k: 't' })!
     expect(subito.esito).toBe('scaduta')
-    expect(subito.dopo).toMatchObject({ passo: 1, montepremi: MONTEPREMI_CATENA / 2 })
-    expect(subito.dopo.parole[0]).toMatchObject({ esito: 'rivelata', errori: 1 })
+    expect(subito.dopo).toMatchObject({ passo: 1, montepremi: MONTEPREMI_CATENA - 2 * ERRORE_CATENA })
+    expect(subito.dopo.parole[0]).toMatchObject({ esito: 'rivelata', errori: 2 })
     const dopoUnErrore = applicaCatena(CATENA, gioca(prova('lancio')), { k: 't' })!
-    expect(dopoUnErrore.dopo).toMatchObject({ passo: 1, montepremi: MONTEPREMI_CATENA / 4 })
+    expect(dopoUnErrore.dopo).toMatchObject({ passo: 1, montepremi: MONTEPREMI_CATENA - 2 * ERRORE_CATENA })
   })
 
   it('il terzo elemento non si compra prima della finale', () => {

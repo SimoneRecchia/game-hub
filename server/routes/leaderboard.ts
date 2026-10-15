@@ -14,7 +14,6 @@ import type {
   PeriodoClassifica,
   QuizLeaderboard,
   ScarabeoLeaderboard,
-  SequenzeLeaderboard,
   SudokuLeaderboard,
 } from '../../shared/types'
 import type { AppEnv } from '../types'
@@ -27,7 +26,6 @@ import { classificaSudoku } from '../lib/sudokuStore'
 import { classificaQuiz } from '../lib/quizStore'
 import { classificaNomi } from '../lib/nomiStore'
 import { classificaAnagrammi } from '../lib/anagrammiStore'
-import { classificaSequenze } from '../lib/sequenzeStore'
 import { classificaGhigliottina } from '../lib/ghigliottinaStore'
 import { classificaParoliere } from '../lib/paroliereStore'
 import { classificaCatena } from '../lib/catenaStore'
@@ -112,12 +110,6 @@ export const leaderboardRoutes = new Hono<AppEnv>()
   .get('/anagrammi', async (c) => {
     const result = await classificaAnagrammi(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
     return c.json<AnagrammiLeaderboard>(result)
-  })
-
-  /** Le Sequenze: i punti delle giornate finite, poi la sequenza piu' lunga e il tempo. */
-  .get('/sequenze', async (c) => {
-    const result = await classificaSequenze(c.env.DB, leggiPeriodo(c), today().puzzleNumber, c.get('player').id)
-    return c.json<SequenzeLeaderboard>(result)
   })
 
   /** La Ghigliottina: i punti delle partite finite, poi le parole vincenti indovinate e il tempo. */
