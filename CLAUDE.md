@@ -360,20 +360,36 @@ dispositivi aperti sulla stessa partita non si sovrascrivono un aiuto pagato.
 che chiedono.** `scripts/genera-sudoku.ts` (il passo "Il sudoku" di
 `cruciverba.yml`, e il deploy per le prossime due settimane) scrive in
 `sudoku_schemi` con `INSERT OR IGNORE`: togliere caselle controllando che la
-soluzione resti una sola costa qualche decimo di secondo per uno schema esperto,
-troppo per il Worker. Lo schema e' deterministico dal numero del giorno
-(`schemaDelGiorno`), il livello dal giorno della settimana — facile il lunedì e
-il martedì, esperto la domenica — e se la giornata manca il gioco risponde
-`SCHEMA_ASSENTE` (503): in locale, `npm run sudoku:locale`. Il livello non si
-misura dalle cifre date ma **risolvendo come una persona** (`valuta`): la
-tecnica piu' difficile che serve decide il gradino (`TECNICHE`), e solo fra i
-due livelli di sole "singole" decidono le date (`livelloDi`). Uno schema che
-chiede di tirare a indovinare non esce mai: `valuta` non ci arriva, e il
+soluzione resti una sola costa troppo per il Worker. Lo schema e' deterministico
+dal numero del giorno (`schemaDelGiorno`), ed e' **facile tutti i giorni**
+(`LIVELLO_CLASSIFICATA`): una giornata deve durare piu' o meno quanto un
+Wordle, e i punti li fa il tempo (vedi sotto). Fino al 15 ottobre 2026 il
+livello veniva dal giorno della settimana, facile il lunedì ed esperto la
+domenica. Lo script riscrive anche le giornate dei giorni che devono venire che
+nessuno ha aperto, se il generatore adesso le farebbe diverse, con un `UPDATE`
+condizionato a nessuna partita: oggi e il passato restano come sono. Se la
+giornata manca il gioco risponde `SCHEMA_ASSENTE` (503): in locale,
+`npm run sudoku:locale`. Il livello non si misura dalle cifre date ma
+**risolvendo come una persona** (`valuta`): la tecnica piu' difficile che serve
+decide il gradino (`TECNICHE`), e dentro un gradino decidono le date
+(`livelloDi`): facile e media con le sole singole, difficile ed esperto con
+incastri e coppie. Le tecniche avanzate (terzine, x-wing, swordfish) non le
+vuole nessun livello, neanche nelle libere, e uno schema che le chiede non esce,
+come quello che chiede di tirare a indovinare: `valuta` non ci arriva, e il
 generatore lo scarta.
 
-**Nel sudoku la soluzione resta sul server, e gli aiuti costano come nel
-cruciverba.** Cento a chi lo risolve senza aiuti, e gli aiuti con la
-regola del cruciverba (vedi sotto) — e ricontrollare la stessa cifra sbagliata
+**Nel sudoku la soluzione resta sul server, i punti li fa il tempo, e gli aiuti
+costano come nel cruciverba.** Si da' per scontato che lo finiscano tutti, e a
+distinguere chi ha giocato bene e' quanto ci ha messo, come i tentativi nel
+Wordle: cento fino a sei secondi a cifra da trovare, poi a scendere fino alla
+meta' a ventiquattro secondi a cifra (`RITMO_SUDOKU`, `puntiDelTempo` in
+`shared/aiuti.ts`), cioe' quattro minuti e mezzo e diciotto minuti per uno
+schema facile. Il tempo e' quello a pagina visibile che conta il telefono, con
+il tetto di `tempoDichiarato`: chi volesse barare dichiarerebbe meno tempo, ed
+e' lo stesso compromesso dello spareggio di prima, fra colleghi. Gli aiuti si
+tolgono da quel che vale il tempo, con la regola del cruciverba (vedi sotto),
+e il telefono mostra il valore che scende mentre si gioca: il server manda quel
+che gli aiuti hanno tolto (`spesi`), e il resto lo fa il tempo che corre — e ricontrollare la stessa cifra sbagliata
 non costa (`segnalate` tiene la cifra, con lo stesso `registraControllo`).
 Due cifre uguali che si vedono si segnano subito nel browser, perché si vedono
 a occhio; se una cifra e' sbagliata lo sa solo il server. Le scritture passano

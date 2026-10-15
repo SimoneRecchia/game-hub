@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
-import { NOTE_VUOTE, PUNTI_COMPLETO, costiSudoku, noteDaTesto, noteInTesto } from '@shared/sudoku'
+import { NOTE_VUOTE, PUNTI_COMPLETO, costiSudoku, noteDaTesto, noteInTesto, puntiDelTempoSudoku } from '@shared/sudoku'
 import type { SudokuEsito, SudokuState } from '@shared/types'
 import { useCronometro } from './useCronometro'
 import { useEditor } from './useEditor'
@@ -27,7 +27,9 @@ export function useSudoku(): SudokuInCorso & { stato: SudokuState | null; loadEr
   const [svelate, setSvelate] = useState<ReadonlySet<number>>(new Set())
   // Le caselle segnalate, con la cifra che avevano: rosse finché hanno quella cifra.
   const [segnalate, setSegnalate] = useState<ReadonlyMap<number, string>>(new Map())
+  // I punti fatti, a partita chiusa; prima quel che gli aiuti hanno tolto, e il resto lo dice il tempo che corre.
   const [punti, setPunti] = useState(PUNTI_COMPLETO)
+  const [spesi, setSpesi] = useState(0)
   const [finita, setFinita] = useState(false)
   const [messaggio, setMessaggio] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -76,6 +78,7 @@ export function useSudoku(): SudokuInCorso & { stato: SudokuState | null; loadEr
       setSvelate(new Set(s.svelate))
       setSegnalate(new Map(s.segnalate.map((k) => [k, s.cifre[k]])))
       setPunti(s.punti)
+      setSpesi(s.spesi)
       setFinita(s.status === 'done')
       finitaRef.current = s.status === 'done'
     },
@@ -99,6 +102,7 @@ export function useSudoku(): SudokuInCorso & { stato: SudokuState | null; loadEr
     (esito: SudokuEsito) => {
       versioneRef.current = esito.versione
       setPunti(esito.punti)
+      setSpesi(esito.spesi)
       if (esito.stato) {
         dimentica('/oggi')
         dimentica('/leaderboard')
@@ -228,6 +232,8 @@ export function useSudoku(): SudokuInCorso & { stato: SudokuState | null; loadEr
 
   // Dallo schema, con gli stessi conti del server: erano scritti qui, e quando il server li ha cambiati sono rimasti.
   const aiuti = useMemo(() => (stato ? costiSudoku(stato.dati) : null), [stato?.dati])
+  // Quanto varrebbe finirlo adesso: il tempo che corre, meno gli aiuti.
+  const valore = finita || !aiuti ? punti : Math.max(0, puntiDelTempoSudoku(tempoMs, aiuti) - spesi)
 
   return {
     stato,
@@ -240,7 +246,7 @@ export function useSudoku(): SudokuInCorso & { stato: SudokuState | null; loadEr
     segnalate: segnalateVive,
     soluzione: stato?.soluzione ?? null,
     tempoMs,
-    punti,
+    punti: valore,
     finita,
     messaggio,
     inviando,

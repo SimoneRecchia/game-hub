@@ -113,7 +113,7 @@ describe('i costi vengono dallo schema', () => {
   it('nel sudoku dalle caselle vuote', () => {
     const dati = '5'.repeat(30) + '.'.repeat(51)
     expect(costiSudoku(dati)).toEqual(costiAiuti(TETTO_SUDOKU, 51))
-    expect(puntiSudoku(NESSUN_AIUTO, costiSudoku(dati))).toBe(TETTO_SUDOKU)
+    expect(puntiSudoku(NESSUN_AIUTO, costiSudoku(dati), 0)).toBe(TETTO_SUDOKU)
   })
 })
 
