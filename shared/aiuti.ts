@@ -32,6 +32,11 @@
  * errore, e controllare tutto lo schema costava quanto controllare una parola.
  * Gli aiuti non si sentivano. Prima ancora costavano cinque punti una casella
  * e due un errore, in tutti e due i giochi e qualunque fosse lo schema.
+ *
+ * Gli aiuti si tolgono da quel che vale il tempo (`puntiDelTempo`): uno schema
+ * finito presto vale il tetto, uno finito con calma la meta'. Si da' per
+ * scontato che uno schema lo finiscano tutti, e che a distinguere chi ha
+ * giocato bene sia quanto ci ha messo, come i tentativi nel Wordle.
  */
 
 export interface CostiAiuti {
@@ -83,15 +88,48 @@ export function caselleDaPagare(caselle: readonly number[], svelate: Iterable<nu
   return [...new Set(caselle)].filter((k) => !gia.has(k))
 }
 
-/** Quanto vale la giornata, con questi aiuti. Mai sotto zero, e zero se si e' svelato tutto. */
-export function puntiConAiuti(tetto: number, costi: CostiAiuti, aiuti: AiutiChiesti): number {
-  if (aiuti.svelate >= costi.daTrovare) return 0
-  const spesi =
+/** Quel che gli aiuti chiesti tolgono alla giornata. */
+export function spesiPerAiuti(costi: CostiAiuti, aiuti: AiutiChiesti): number {
+  return (
     aiuti.svelate * costi.svelata +
     aiuti.errori * costi.errore +
     aiuti.controlli * costi.controllo +
     aiuti.controlliSchema * costi.controlloSchema
-  return Math.max(0, tetto - spesi)
+  )
+}
+
+/**
+ * Quanto vale la giornata, con questi aiuti: quel che vale il tempo (`base`, il
+ * tetto se non si dice), meno gli aiuti. Mai sotto zero, e zero se si e'
+ * svelato tutto.
+ */
+export function puntiConAiuti(tetto: number, costi: CostiAiuti, aiuti: AiutiChiesti, base = tetto): number {
+  if (aiuti.svelate >= costi.daTrovare) return 0
+  return Math.max(0, Math.min(tetto, base) - spesiPerAiuti(costi, aiuti))
+}
+
+/** Il passo di un gioco a griglia: il tempo a casella entro cui vale il tetto, e quello in cui ne vale la meta'. */
+export interface RitmoGriglia {
+  pienoMs: number
+  lentoMs: number
+}
+
+/**
+ * Quanto vale il tempo di uno schema finito: il tetto fino a `pienoMs` a
+ * casella, poi a scendere in linea retta fino alla meta' a `lentoMs` a
+ * casella, e oltre la meta' e basta. Il passo si conta a casella perché gli
+ * schemi non hanno tutti le stesse caselle da trovare: un sudoku facile ne ha
+ * quarantacinque, un cruciverba nove per nove una sessantina. Giocarla bene
+ * vale il doppio di giocarla con calma, come in tutte le classificate.
+ */
+export function puntiDelTempo(tetto: number, tempoMs: number, daTrovare: number, ritmo: RitmoGriglia): number {
+  const caselle = Math.max(1, daTrovare)
+  const pieno = ritmo.pienoMs * caselle
+  const lento = ritmo.lentoMs * caselle
+  const t = Math.max(0, tempoMs)
+  if (t <= pieno) return tetto
+  if (t >= lento) return Math.round(tetto / 2)
+  return Math.round(tetto - (tetto / 2) * ((t - pieno) / (lento - pieno)))
 }
 
 /** Una partita senza nessun aiuto: quella che fa il record dei "senza aiuti". */

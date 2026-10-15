@@ -12,7 +12,7 @@
  *   gioco        tempo di chi gioca bene   tetto
  *   Cruciverba   15-25 minuti               100
  *   Scarabeo     10-20 minuti               100
- *   Sudoku       10-20 minuti               100
+ *   Sudoku       4-10 minuti                100
  *   Quiz         3-4 minuti                 100
  *   Wordle       3-5 minuti                 100
  *   Ghigliottina 2-3 minuti                 100
@@ -34,7 +34,7 @@
  *   Wordle       i tentativi                           70-90     20*       100 (+4)
  *   Scarabeo     punti rispetto al computer            60-90    ~40        100
  *   Cruciverba   completato, meno gli aiuti            90-98     0*        100
- *   Sudoku       risolto, meno gli aiuti               90-100    0*        100
+ *   Sudoku       il tempo, meno gli aiuti              75-95    50*       100
  *   Quiz         risposte giuste su dieci              60-92     20        100
  *   Nomi, cose   risposte valide, rare e veloci        60-75     25        100
  *   Anagrammi    parole trovate, e quanto presto       65-85     20        100

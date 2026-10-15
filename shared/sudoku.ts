@@ -11,14 +11,15 @@
  * poi gli incastri e le coppie, poi le tecniche avanzate (terzine, x-wing,
  * xy-wing, swordfish) — e conta la piu' difficile che gli e' servita. Facile e
  * media si chiudono con le sole singole, e la media ha meno cifre date, quindi
- * le singole sono piu' nascoste; la difficile chiede incastri e coppie,
- * l'esperto le tecniche avanzate. E' la scala delle app di sudoku, e ha un
- * vantaggio pratico: ogni livello e' una fascia larga, e il generatore ci
- * arriva in pochi tentativi. Uno schema che a ragionare non si chiude
- * (servirebbe tirare a indovinare) non si propone mai.
+ * le singole sono piu' nascoste; difficile ed esperto chiedono incastri e
+ * coppie, e l'esperto ha meno cifre date. Le tecniche avanzate non servono a
+ * nessun livello: uno schema che le chiede non si propone, come quello che a
+ * ragionare non si chiude (servirebbe tirare a indovinare). Fino al 15 ottobre
+ * 2026 l'esperto le chiedeva, e la classificata della domenica era un esperto:
+ * un sudoku che fa sudare non e' una giornata da Wordle.
  */
 
-import { costiAiuti, puntiConAiuti, type AiutiChiesti, type CostiAiuti } from './aiuti'
+import { costiAiuti, puntiConAiuti, puntiDelTempo, type AiutiChiesti, type CostiAiuti, type RitmoGriglia } from './aiuti'
 import { mulberry32 } from './daily'
 
 export const LATO = 9
@@ -253,17 +254,20 @@ export interface Valutazione {
 }
 
 /** Con le sole singole e almeno tante cifre date e' facile; con meno, media. */
-export const DATE_FACILE = 34
+export const DATE_FACILE = 36
 
+/** Con incastri e coppie e almeno tante cifre date e' difficile; con meno, esperto. */
+export const DATE_DIFFICILE = 28
+
+/** Il livello di uno schema chiuso ragionando; null se chiede le tecniche avanzate, che nessun livello vuole. */
 export function livelloDi(gradino: number, date: number): LivelloSudoku | null {
   if (gradino === 1) return date >= DATE_FACILE ? 'facile' : 'media'
-  if (gradino === 2) return 'difficile'
-  if (gradino === 3) return 'esperto'
+  if (gradino === 2) return date >= DATE_DIFFICILE ? 'difficile' : 'esperto'
   return null
 }
 
 /** Il gradino piu' alto che un livello ammette mentre si tolgono le caselle. */
-const GRADINO: Record<LivelloSudoku, number> = { facile: 1, media: 1, difficile: 2, esperto: 3 }
+const GRADINO: Record<LivelloSudoku, number> = { facile: 1, media: 1, difficile: 2, esperto: 2 }
 
 /** Lo stato del ragionamento: le cifre messe e le possibili di ogni casella vuota. */
 class Ragionamento {
@@ -503,7 +507,7 @@ export interface SchemaSudoku {
 }
 
 /** Sotto quante cifre date non si scende, per livello: uno schema facile ne lascia molte. */
-export const MINIMO_DATE: Record<LivelloSudoku, number> = { facile: 36, media: 28, difficile: 24, esperto: 22 }
+export const MINIMO_DATE: Record<LivelloSudoku, number> = { facile: 38, media: 30, difficile: 28, esperto: 24 }
 
 /**
  * Uno schema del livello chiesto, dal generatore dato.
@@ -553,27 +557,29 @@ export function generaSchema(livello: LivelloSudoku, caso: () => number, tentati
 const SEME_SUDOKU = 0x5d0c0
 
 /**
- * Il livello della classificata, dal giorno della settimana: facile il lunedì
- * e il martedì, media il mercoledì e il giovedì, difficile il venerdì e il
- * sabato, esperto la domenica — come i giornali, che la domenica lo fanno
- * difficile. Il giorno della settimana viene dalla data, non dal numero, così
- * resta giusto anche se un domani cambiasse il primo giorno di gioco.
+ * Il livello della classificata: facile, tutti i giorni. Una giornata deve
+ * durare piu' o meno quanto un Wordle, e i punti li fa il tempo (vedi
+ * `RITMO_SUDOKU`). Fino al 15 ottobre 2026 il livello veniva dal giorno della
+ * settimana, facile il lunedì ed esperto la domenica, come nei giornali.
  */
-export function livelloDelGiorno(data: string): LivelloSudoku {
-  const [anno, mese, giorno] = data.split('-').map(Number)
-  const settimana = (new Date(Date.UTC(anno, mese - 1, giorno)).getUTCDay() + 6) % 7
-  return (['facile', 'facile', 'media', 'media', 'difficile', 'difficile', 'esperto'] as const)[settimana]
-}
+export const LIVELLO_CLASSIFICATA: LivelloSudoku = 'facile'
 
 /** Lo schema della classificata di una giornata: sempre lo stesso, dal numero del giorno. */
-export function schemaDelGiorno(numero: number, data: string): SchemaSudoku | null {
-  return generaSchema(livelloDelGiorno(data), mulberry32((SEME_SUDOKU ^ numero) >>> 0))
+export function schemaDelGiorno(numero: number): SchemaSudoku | null {
+  return generaSchema(LIVELLO_CLASSIFICATA, mulberry32((SEME_SUDOKU ^ numero) >>> 0))
 }
 
 /* ─────────────────────────────  I punti  ───────────────────────────── */
 
-/** Cento a chi lo completa senza aiuti (vedi shared/punti.ts). */
+/** Cento a chi lo completa presto e senza aiuti (vedi shared/punti.ts). */
 export const PUNTI_COMPLETO = 100
+
+/**
+ * Il passo del sudoku: sei secondi a cifra per il tetto, quattro minuti e
+ * mezzo per uno schema facile, e ventiquattro per la meta', diciotto minuti.
+ * Chi lo fa in otto minuti ne prende una novantina.
+ */
+export const RITMO_SUDOKU: RitmoGriglia = { pienoMs: 6_000, lentoMs: 24_000 }
 
 /** Quanto costano gli aiuti in questo schema (vedi shared/aiuti.ts): le caselle da trovare sono le vuote. */
 export function costiSudoku(dati: string): CostiAiuti {
@@ -582,8 +588,14 @@ export function costiSudoku(dati: string): CostiAiuti {
   return costiAiuti(PUNTI_COMPLETO, vuote)
 }
 
-export function puntiSudoku(aiuti: AiutiChiesti, costi: CostiAiuti): number {
-  return puntiConAiuti(PUNTI_COMPLETO, costi, aiuti)
+/** Quanto vale il tempo in questo schema, prima degli aiuti. */
+export function puntiDelTempoSudoku(tempoMs: number, costi: CostiAiuti): number {
+  return puntiDelTempo(PUNTI_COMPLETO, tempoMs, costi.daTrovare, RITMO_SUDOKU)
+}
+
+/** I punti di uno schema risolto in `tempoMs`, con questi aiuti. */
+export function puntiSudoku(aiuti: AiutiChiesti, costi: CostiAiuti, tempoMs: number): number {
+  return puntiConAiuti(PUNTI_COMPLETO, costi, aiuti, puntiDelTempoSudoku(tempoMs, costi))
 }
 
 /* ─────────────────────────────  Le note  ───────────────────────────── */

@@ -10,6 +10,7 @@
  */
 
 import { gameDate, puzzleNumberFor } from '../../shared/daily'
+import { spesiPerAiuti } from '../../shared/aiuti'
 import { NOTE_VUOTE, VUOTA, costiSudoku, puntiSudoku, type LivelloSudoku } from '../../shared/sudoku'
 import type {
   PeriodoClassifica,
@@ -146,7 +147,8 @@ export function statoDa(row: PartitaRow, schema: SchemaRow, msToNextPuzzle: numb
     tempoMs: row.tempo_ms,
     versione: row.versione,
     status: row.status,
-    punti: finita ? row.score : puntiSudoku(aiutiDi(row), costiSudoku(schema.dati)),
+    punti: finita ? row.score : puntiSudoku(aiutiDi(row), costiSudoku(schema.dati), row.tempo_ms),
+    spesi: spesiPerAiuti(costiSudoku(schema.dati), aiutiDi(row)),
     soluzione: finita ? schema.soluzione : null,
     msToNextPuzzle,
   }
