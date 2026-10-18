@@ -335,15 +335,17 @@ function DaConfigurare({ mancano }: { mancano: string[] }) {
           </li>
           <li>
             <strong>Zone</strong> · Analytics · Read{' '}
-            <span className="is-tenue">· facoltativo, per il traffico del dominio</span>
+            <span className="is-tenue">· facoltativo, il traffico di tutto il dominio</span>
           </li>
         </ul>
       </Carta>
 
       <Carta titolo="2. Salva i segreti">
         <p className="adm-passo">
-          L’id dell’account è nella barra a destra della home del dashboard. Dal terminale, nella cartella del progetto:
+          Su GitHub, in Settings → Secrets and variables → Actions: il token come <code>CF_STATS_TOKEN</code>, e il site
+          tag delle Web Analytics del sito come <code>CF_WEB_ANALYTICS_TAG</code>. Il deploy li porta qui da solo.
         </p>
+        <p className="adm-passo">Oppure dal terminale, nella cartella del progetto:</p>
         <Codice
           testo={[
             'npx wrangler pages secret put CF_ACCOUNT_ID --project-name game-hub',
