@@ -300,16 +300,16 @@ lettura:
 2. Le visite del solo sito dei giochi le danno le Web Analytics: **Workers &
    Pages → game-hub → Metrics → Web Analytics → Enable**, e il «site tag» è
    nell'indirizzo della pagina delle Web Analytics del sito (`siteTag~in=…`).
+   Non è un segreto, e sta in `wrangler.toml` (`CF_WEB_ANALYTICS_TAG`).
    Il traffico della zona invece è di tutto `simonerecchia.com`, con gli altri
    siti del dominio: lo si vuole solo se il dominio è tutto dei giochi, con
    **Zone → Analytics: Read** nel token e l'ID della zona, che è nella colonna
    a destra della sua pagina.
 3. Il token va fra i segreti del repository, **Settings → Secrets and variables
-   → Actions**, come `CF_STATS_TOKEN`, e accanto il site tag come
-   `CF_WEB_ANALYTICS_TAG` (e l'ID della zona come `CF_ZONE_ID`, se lo si
-   vuole): il deploy li porta da soli fra i secret del progetto Pages, con l'ID
-   dell'account che ha gia' (`CLOUDFLARE_ACCOUNT_ID`), e il pannello li legge
-   dal deploy dopo.
+   → Actions**, come `CF_STATS_TOKEN` (e l'ID della zona come `CF_ZONE_ID`, se
+   lo si vuole): il deploy li porta da soli fra i secret del progetto Pages,
+   con l'ID dell'account che ha gia' (`CLOUDFLARE_ACCOUNT_ID`), e il pannello li
+   legge dal deploy dopo.
 
 A mano, senza passare dal deploy, sono secret del progetto Pages, e poi si rifà
 il deploy:
@@ -317,9 +317,8 @@ il deploy:
 ```bash
 npx wrangler pages secret put CF_ACCOUNT_ID --project-name game-hub
 npx wrangler pages secret put CF_API_TOKEN --project-name game-hub
-# facoltativi
+# facoltativo
 npx wrangler pages secret put CF_ZONE_ID --project-name game-hub
-npx wrangler pages secret put CF_WEB_ANALYTICS_TAG --project-name game-hub
 ```
 
 Dalla dashboard è lo stesso: **Workers & Pages → game-hub → Settings →

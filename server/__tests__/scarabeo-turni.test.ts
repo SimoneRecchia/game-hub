@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Dawg } from '../../shared/dawg'
-import { MOSSE_PER_GIORNATA, leggiiDa, sacchettoDelGiorno, tabelloneDa, type Mossa } from '../../shared/scarabeo'
+import { JOLLY, MOSSE_PER_GIORNATA, leggiiDa, sacchettoDelGiorno, tabelloneDa, type Mossa } from '../../shared/scarabeo'
 import { MOSSE_GEMELLE, leggiiGemelli, leggiiGemelliDa } from '../../shared/scarabeo-gemelli'
 import { mosseLegali } from '../../shared/scarabeo-motore'
 import { FORMATO_TRAGUARDO, giornataATurni, rispostaDelGiorno } from '../../shared/scarabeo-computer'
@@ -137,10 +137,12 @@ describe('lo Scarabeo classificato a turni contro il computer del giorno', () =>
     traguardo(b, numero, FORMATO_TRAGUARDO)
     const io = await b.giocatore('carla')
     const { leggii } = leggiiGemelliDa(numero, [{ tipo: 'passo' }])
-    // Le prime tessere del suo leggio in fila sulla stella: quasi mai una parola, e il test lo controlla.
+    // Le prime tessere del suo leggio in fila sulla stella: quasi mai una parola, e il test lo controlla. Il
+    // jolly e' JOLLY, e non un punto di domanda: scritto cosi', il giorno che il jolly era fra le prime quattro la
+    // posa non stava in piedi e il server la rifiutava prima del dizionario.
     const posa = leggii[1]
       .slice(0, 4)
-      .map((l, i) => ({ r: 7, c: 5 + i, lettera: l === '?' ? 'a' : l, jolly: l === '?' }))
+      .map((l, i) => ({ r: 7, c: 5 + i, lettera: l === JOLLY ? 'a' : l, jolly: l === JOLLY }))
     expect(dawg.contiene(posa.map((p) => p.lettera).join(''))).toBe(false)
     const r = await b.chiama<{ code: string; error: string }>('POST', '/scarabeo/passo', io, {
       risposta: { tipo: 'posa', posa },
