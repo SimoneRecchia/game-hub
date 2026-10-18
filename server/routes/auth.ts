@@ -28,6 +28,7 @@ import {
   verifyEmailMessage,
 } from '../lib/email'
 import { readCode, readEmail, readNickname } from '../lib/campi'
+import { prenotaInvio, reteDi, troppeEmail } from '../lib/postino'
 
 /*
  * L'accesso e' senza password: chi si registra sceglie il nickname e da'
@@ -83,6 +84,11 @@ async function dopoLaRisposta(c: Context<AppEnv>, lavoro: Promise<unknown>): Pro
   } catch {
     await lavoro
   }
+}
+
+/** Prende il posto di un'email che sta per partire (server/lib/postino.ts): false se un tetto e' pieno. */
+function puoPartire(c: Context<AppEnv>, email: string): Promise<boolean> {
+  return prenotaInvio(c.env.DB, reteDi(c.req.header('cf-connecting-ip')), email)
 }
 
 /** Il giocatore di un nickname o di un'email. */
@@ -187,6 +193,9 @@ export const authRoutes = new Hono<AppEnv>()
     if (conEmail && !inAttesa(conEmail)) {
       fail(409, 'EMAIL_TAKEN', 'Questa email è già registrata: entra da «Accedi».')
     }
+
+    // Il codice partira' dopo, ma il posto si prende adesso: senza codice l'account in attesa non servirebbe.
+    if (verifica && !(await puoPartire(c, email))) troppeEmail()
 
     const now = new Date(adesso).toISOString()
     const id = newId('plr')
@@ -297,6 +306,7 @@ export const authRoutes = new Hono<AppEnv>()
     if (!row || !row.email || row.sospeso_at) return c.json(generico)
     if ((await resendWaitSeconds(c.env.DB, row.id, 'login')) > 0) return c.json(generico)
     if ((await codesLastDay(c.env.DB, row.id, 'login')) >= CODE_LOGIN_PER_DAY) return c.json(generico)
+    if (!inLocale && !(await puoPartire(c, row.email))) return c.json(generico)
 
     const code = await issueCode(c.env.DB, row.id, 'login')
     if (inLocale) {
@@ -411,6 +421,10 @@ export const authRoutes = new Hono<AppEnv>()
       // "secondo" e "secondi": la schermata del codice legge il numero con /(\d+)\s*second/.
       fail(429, 'RESEND_TOO_SOON', `Riprova fra ${attesa} ${attesa === 1 ? 'secondo' : 'secondi'}.`)
     }
+    if ((await codesLastDay(c.env.DB, player.id, 'verify_email')) >= CODE_LOGIN_PER_DAY) {
+      fail(429, 'TROPPI_CODICI', 'Oggi hai chiesto troppi codici. Riprova domani.')
+    }
+    if (!(await puoPartire(c, player.email))) troppeEmail()
 
     const inviata = await inviaCodice(
       c.env,
@@ -457,6 +471,7 @@ export const authRoutes = new Hono<AppEnv>()
       console.log(`Il codice per cambiare il nickname di ${row.nickname} è ${code}`)
       return c.json<CodiceMandato>({ ...risposta, codiceDiProva: code })
     }
+    if (!(await puoPartire(c, row.email))) troppeEmail()
     const esito = await sendEmail(c.env, { to: row.email, ...nicknameMessage(row.nickname, nuovo, code, CODE_TTL_MINUTES) })
     if (!esito.ok) {
       console.error(`Invio email fallito (${esito.reason}): ${esito.detail}`)

@@ -3057,7 +3057,8 @@ dov'e', e le sezioni sostituiscono l'indirizzo, cosi' la freccia indietro torna
 al profilo. Il pannello ha tre porte — chi non e' amministratore, il codice, il
 pannello —, e le decide `/admin/io`, ma ogni risposta del server le rimette in
 discussione (`useChiama`): uno sblocco scaduto a meta' di una modifica riporta al
-codice da qualunque sezione. E' piu' fitto del resto dell'app (carte piccole,
+codice da qualunque sezione. Chi non e' amministratore trova la pagina che non
+c'e' (`NotFound`): del pannello non sa nemmeno che ci sia. E' piu' fitto del resto dell'app (carte piccole,
 cifre in griglia, tabelle), e tutto si misura sul contenuto (`container: adm`) e
 non sullo schermo, perché il menu del computer si prende la sua parte. Le tabelle
 larghe scorrono dentro la loro cornice, che e' posizionata: una scritta nascosta
@@ -3911,6 +3912,26 @@ tirare a indovinare: cinque tentativi a codice, un codice al minuto, sarebbero
 settemila combinazioni al giorno su un milione; cosi' cinquanta. L'email del
 codice scrive il nickname, perché chi entra con l'email puo' non ricordarlo, ed
 entrare con il codice conferma anche l'email.
+
+**Le email hanno dei tetti che non guardano l'account.** I limiti per account
+non bastavano: una registrazione e' un account nuovo, anche rifatta con la
+stessa email, e ognuna mandava il suo codice, quindi si poteva riempire la
+casella di chiunque e finire le cento email del giorno di Resend per tutti.
+Ogni email che parte — la registrazione, il codice per entrare, quello
+rimandato, il cambio del nickname, lo sblocco del pannello — prima prende il suo
+posto in `invii_posta` (`prenotaInvio` in `server/lib/postino.ts`), con un
+`INSERT` condizionato ai conti della tabella stessa: al piu' dieci in un'ora e
+trenta in un giorno dalla stessa rete, cinque e dodici allo stesso indirizzo,
+novanta in tutto nel giorno (`POSTA_*` in `shared/config.ts`). La rete e' l'IP
+che vede Cloudflare (`cf-connecting-ip`), e una rete e' anche un ufficio
+intero: trenta al giorno bastano alle registrazioni di un gruppo di colleghi.
+Le finestre scorrono, l'ultima ora e le ultime ventiquattro, e la tabella non
+ha indirizzi in chiaro: la rete e l'email sono impronte, e le righe di piu' di
+due giorni se ne vanno a ogni invio. La registrazione prende il posto prima di
+creare l'account, che senza codice non servirebbe; il codice per entrare a
+tetto pieno non parte e la risposta resta quella di sempre, per non dire chi e'
+iscritto; le altre rotte rispondono `TROPPE_EMAIL` (429). Il pannello, nel
+Sistema, dice quante ne sono partite nelle ultime ventiquattr'ore.
 
 **Il codice per entrare nel database si chiama `reset_password`.** Il `CHECK`
 della `0004` conosceva due scopi: il codice per entrare ha preso il posto di

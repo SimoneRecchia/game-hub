@@ -3,7 +3,6 @@ import type { AdminCodice, AdminIo } from '@shared/admin'
 import { SBLOCCO_ADMIN_ORE } from '@shared/admin'
 import { CODE_LENGTH } from '@shared/config'
 import { ROTTE } from '@/app/rotte'
-import { useNavigazione } from '@/app/navigazione'
 import { Button } from '@/components/Button'
 import { CampoCodice } from '@/components/CampoCodice'
 import { Vuoto } from '@/components/Elementi'
@@ -15,25 +14,6 @@ import { messaggioDi } from './dati'
 import { IconaSblocca } from './icone'
 
 const INDIETRO = { a: ROTTE.profilo, etichetta: 'Profilo' }
-
-/** Chi non amministra: la pagina c'e', ma non per lui. */
-export function SenzaAccesso() {
-  const { vai } = useNavigazione()
-  return (
-    <Pagina titolo="Pannello admin" indietro={INDIETRO}>
-      <Vuoto
-        icona={<IconLock size={28} />}
-        titolo="Non hai accesso"
-        testo="Questa pagina è per chi amministra i giochi."
-        azione={
-          <Button variant="tinted" onClick={() => vai(ROTTE.home, { direzione: 'scheda' })}>
-            Torna ai giochi
-          </Button>
-        }
-      />
-    </Pagina>
-  )
-}
 
 /** Il pannello sta arrivando, o non risponde. */
 export function InAttesa({ errore, onRiprova }: { errore: string | null; onRiprova: () => void }) {

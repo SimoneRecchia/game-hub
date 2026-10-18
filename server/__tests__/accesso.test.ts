@@ -241,11 +241,14 @@ describe('l’accesso con la posta', () => {
     await chiama('POST', '/auth/login/code', null, { identifier: 'giada' })
     expect(mandate).toHaveLength(1)
 
-    // Ogni volta il minuto passa: i codici restano nelle ventiquattr'ore.
-    const indietro = () =>
+    // Ogni volta il minuto passa: i codici restano nelle ventiquattr'ore. Passa anche l'ora del tetto
+    // dell'indirizzo (server/lib/postino.ts), che qui fermerebbe i codici prima di quello dell'account.
+    const indietro = () => {
       db.sqlite
         .prepare('UPDATE verification_codes SET created_at = ?')
         .run(new Date(Date.now() - 2 * 60_000).toISOString())
+      db.sqlite.prepare('UPDATE invii_posta SET at = ?').run(new Date(Date.now() - 2 * 3_600_000).toISOString())
+    }
     for (let i = 0; i < CODE_LOGIN_PER_DAY + 3; i += 1) {
       indietro()
       const r = await chiama('POST', '/auth/login/code', null, { identifier: 'giada' })
