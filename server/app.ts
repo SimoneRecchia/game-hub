@@ -32,6 +32,8 @@ import { lupusRoutes } from './routes/lupus'
 import { scarabocchiRoutes } from './routes/scarabocchi'
 import { sfideLibereRoutes } from './routes/sfideLibere'
 import { chiamateRoutes, notificheRoutes } from './routes/notifiche'
+import { adminRoutes } from './routes/admin'
+import { salvaErrore } from './lib/admin'
 import { gameDate, msToNextPuzzle, puzzleNumberFor } from '../shared/daily'
 
 /**
@@ -94,16 +96,18 @@ export function createApp() {
   app.route('/sfide', sfideLibereRoutes)
   app.route('/notifiche', notificheRoutes)
   app.route('/chiamate', chiamateRoutes)
+  app.route('/admin', adminRoutes)
 
   app.notFound((c) => c.json({ error: 'Endpoint non trovato.', code: 'NOT_FOUND' }, 404))
 
-  app.onError((error, c) => {
+  app.onError(async (error, c) => {
     if (error instanceof HTTPException) {
       const response = error.getResponse()
       if (response) return response
     }
-    // Il dettaglio resta nei log di Cloudflare; al client va un messaggio neutro.
+    // Il dettaglio resta nei log di Cloudflare e nel pannello di amministrazione; al client va un messaggio neutro.
     console.error('Errore non gestito:', error)
+    await salvaErrore(c, error)
     return c.json({ error: 'Errore interno del server.', code: 'INTERNAL' }, 500)
   })
 

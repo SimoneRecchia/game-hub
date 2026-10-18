@@ -1,0 +1,12 @@
+-- La registrazione in attesa del codice.
+--
+-- Prima un account nasceva con la registrazione, e il nickname restava preso
+-- anche se il codice non veniva mai confermato: chi si accorgeva di averlo
+-- scritto sbagliato non poteva piu' riprenderlo, ne' lasciarlo ad altri. Ora
+-- un account appena registrato, con l'email da confermare, tiene nickname ed
+-- email solo fino a `in_attesa_fino`, quanto vale il codice (ogni codice nuovo
+-- la sposta); passata quell'ora, una registrazione con lo stesso nickname o la
+-- stessa email lo porta via. La conferma, o l'ingresso con il codice, la
+-- svuotano: da li' l'account e' come gli altri. Gli account di prima l'hanno
+-- NULL, e non se ne vanno mai.
+ALTER TABLE players ADD COLUMN in_attesa_fino TEXT;

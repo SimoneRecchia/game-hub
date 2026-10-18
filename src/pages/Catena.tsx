@@ -14,7 +14,7 @@ import type { CatenaStato } from '@shared/types'
 
 /**
  * La Catena del giorno: undici parole, le stesse per tutti, cinque da
- * indovinare e l'ultima che decide. Il montepremi si dimezza a ogni errore.
+ * indovinare e l'ultima che decide. Ogni errore toglie qualcosa al montepremi.
  */
 export default function Catena() {
   const g = useCatenaDelGiorno()

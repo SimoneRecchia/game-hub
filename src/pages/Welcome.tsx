@@ -8,7 +8,7 @@ import { SegmentedControl } from '@/components/SegmentedControl'
 import { ThemeButton } from '@/components/ThemeButton'
 import { SFIDE_LIBERE } from '@/games/sfide/giochi'
 import { A_GIOCO } from '@/games/tavolo/nomi'
-import { useAuth } from '@/lib/auth'
+import { registrazioneDaCorreggere, useAuth } from '@/lib/auth'
 import { ApiFetchError, api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { CODE_LENGTH, CODE_TTL_MINUTES, EMAIL_PATTERN, NICKNAME_MAX, NICKNAME_MIN } from '@shared/config'
@@ -36,10 +36,12 @@ type Campo = 'nickname' | 'email' | 'identificativo' | 'codice' | null
  */
 export default function Welcome({ invito = null }: { invito?: string | null }) {
   const { login, register, requestCode, config } = useAuth()
-  const [mode, setMode] = useState<Mode>(invito ? 'register' : 'login')
+  // Chi torna indietro dalla schermata del codice ritrova quel che aveva scritto, da correggere.
+  const [daCorreggere] = useState(registrazioneDaCorreggere)
+  const [mode, setMode] = useState<Mode>(invito || daCorreggere ? 'register' : 'login')
   const [sfida, setSfida] = useState<InvitoConLink | null>(null)
-  const [nickname, setNickname] = useState('')
-  const [email, setEmail] = useState('')
+  const [nickname, setNickname] = useState(daCorreggere?.nickname ?? '')
+  const [email, setEmail] = useState(daCorreggere?.email ?? '')
   const [identificativo, setIdentificativo] = useState('')
   /** Il codice e' partito: si aspetta che lo si scriva. */
   const [inviato, setInviato] = useState(false)
@@ -246,6 +248,7 @@ export default function Welcome({ invito = null }: { invito?: string | null }) {
                   spellCheck={false}
                   maxLength={NICKNAME_MAX}
                   required
+                  autoFocus={daCorreggere !== null}
                   error={field === 'nickname' ? error : null}
                 />
                 <Field

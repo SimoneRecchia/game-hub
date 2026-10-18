@@ -179,6 +179,20 @@ giro completo con Playwright, non leggendo il codice. Un test in
 `shared/__tests__/wordle.test.ts` verifica le due direzioni: ogni tasto e'
 digitabile, ogni lettera giocabile sta sulla tastiera.
 
+**La tastiera dei giochi di parole e' quella dei telefoni, e una sola.** Il
+Wordle, la Catena, la Ghigliottina e il cruciverba usano `TastieraLettere`
+(`src/components/TastieraGioco.tsx`): le lettere chiare su un vassoio piu'
+scuro, la cancellazione in fondo alla seconda riga e sotto di lei, largo due,
+il tasto che manda — o nel cruciverba quello che cambia direzione —, dove lo
+mettono i telefoni; prima stava in basso a sinistra, come nel Wordle del New
+York Times, e chi scriveva lo cercava a destra. L'invio e' grigio finché non
+c'e' niente da mandare e poi si accende (`pronta`). Le righe sono tre, in una
+griglia di otto colonne: una quarta, come quella dello spazio, toglierebbe una
+riga alla griglia del Wordle sui telefoni bassi. Col dito, sopra il tasto
+premuto si vede la lettera grande (`data-tasto`, solo con `pointer: coarse`),
+perché il dito copre quel che tocca. I colori sono token (`--key-*`), e la
+Catena e la Ghigliottina li ridefiniscono per il loro palco.
+
 **Il sacchetto dello Scarabeo e' lo stesso per tutti, e non si salva.**
 `sacchettoDelGiorno(puzzleNumber)` mescola le 120 tessere con il PRNG condiviso:
 stesso giorno, stesso ordine, per chiunque. E' l'unica cosa che rende
@@ -561,9 +575,11 @@ Catena il montepremi che resta. Tutti tengono il principio del Wordle —
 — e `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del
 compromesso per ogni gioco. **Un errore costa lo stesso in tutti i giochi**: il
 gradino di un tentativo del Wordle, dieci punti, e venti per una parola finale
-non indovinata. La Ghigliottina e la Catena erano l'eccezione, come alla
+non indovinata; nella Catena il secondo errore su una parola, quello che la
+mostra, ne costa sei. La Ghigliottina e la Catena erano l'eccezione, come alla
 televisione, dove ogni errore dimezza: due errori lasciavano un quarto del
-montepremi, e una giornata storta non valeva piu' niente (vedi sotto). La classifica di ogni gioco resta (`/leaderboard`,
+montepremi, e una giornata storta non valeva piu' niente (vedi sotto); della
+televisione resta il terzo elemento della Catena, che dimezza. La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
 `/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna e
 dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
@@ -607,6 +623,29 @@ si vede tutto — l'adesivo con la vincita, il display, le targhe e la festa del
 slot, il mozzo e le feste della ruota, le fasce sulle mani del blackjack —
 perché e' il gioco. Il conto della giornata resta nella classifica della
 Fortuna, che e' il posto dove si va a guardarlo.
+
+**Quando il saldo non basta lo si dice dove si punterebbe, e una puntata a
+zero non sembra un gioco bloccato.** I giochi della Fortuna sono fatti per non
+stressarsi, e un bottone spento senza una parola sembrava un gioco rotto. Se il
+saldo non copre la prima puntata, o la scheda piu' economica del SuperEnalotto,
+c'e' `PochiPunti` (`src/games/fortuna/Avvisi.tsx`), lo stesso in tutti i giochi
+e nelle sale: una targa scura con il filo d'ambra, come il tabellone, che dice
+quanto serve e quanto si ha, con l'anello di quanto manca, e porta alle
+Giornaliere. Il tabellone si tinge d'ambra (`scarso`), ma lo decide il gioco, e
+solo mentre si punta: durante un giro il saldo e' gia' sceso della puntata, e non
+e' un problema. Quel che non si puo' fare si vede spento apposta: il panno della
+roulette, la schedina del SuperEnalotto, e il 4+1 quando il saldo paga solo i
+quattro numeri; nella scheda della Fortuna le carte dei giochi che non si possono
+giocare si spengono verso il fondo della sala, e al posto del bottone dicono
+quanto manca. A puntata zero la fila delle fiches chiama (`CHIAMA_FICHES`: un
+alone che respira e le fiches che saltano una dopo l'altra, con `translate`, che
+non tocca il `transform` di chi le preme), e la mossa che aspetta dice che cosa
+fare: "Tocca una fiche per puntare" a Crazy Time, "Tocca una fiche" sul bottone
+del blackjack, "Tocca il panno per puntare" e il filo del panno che si accende
+nella roulette. Mai mentre si gira o si gioca una mano. Nella roulette la fiche
+scelta che il saldo non copre piu' lascia il posto alla piu' grande che copre:
+prima restava accesa una fiche che non si poteva puntare, e toccare il panno
+rispondeva "non ci sta".
 
 **Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta
 nella scheda della Fortuna (`/crazy-time`; `/ruota`, l'indirizzo di quando si
@@ -1199,25 +1238,57 @@ apre l'app perderebbe una vincita che il server sa gia'. Per lo stesso ordine
 dei pagamenti `assicura` guarda solo le schede dopo l'ultimo concorso pagato.
 
 **La diretta e' in 3D vero, con three.js, e arriva a parte.** `Urna`
-(`src/games/superenalotto/urna.ts`) e' una scena sola: la sfera di vetro sul
-piedistallo d'oro, le novanta palline con il numero dipinto due volte, davanti
-e dietro, il tubo, la rotaia, e una regia che segue la pallina estratta. Le
-palline nell'urna sono piccole, con una forma sola e un'immagine di 128 per 64
-(`LATO_FACCIA`): novanta immagini grandi sarebbero dodici mega nella scheda
-grafica. Quella che esce cresce nel tubo fino alla misura della rotaia
-(`RB_FUORI`), e prende un'immagine grande, perché li' la si guarda da vicino. Tutto e'
-una funzione del tempo della diretta, tranne le palline nell'urna, che hanno una
-fisica loro — l'aria dal fondo che fa la fontana, le pareti, gli urti — con due
-vettori di lavoro, perché un vettore nuovo per coppia sarebbero ventimila
-oggetti al secondo. Niente ombre vere e un ambiente calcolato
-(`RoomEnvironment`) invece di un'immagine da scaricare: dopo la roulette, la
-regola e' che un telefono la faccia girare senza scaldarsi. three.js sta solo
-nel pezzo della diretta (`Diretta`, con `lazy`): la pagina della schedina non lo
-scarica. Chi ha la pagina aperta vede la diretta aprirsi da sola un minuto
-prima; chi arriva a meta' la trova a meta', e dopo la si rivede ("Rivedi
-l'estrazione"), con lo stesso orologio che parte da li'. Senza WebGL l'urna e'
-disegnata e ferma, e le palline si leggono sotto. La schedina invece e' di
-carta: le caselle stampate in rosso, la croce a penna blu che si traccia, i
+(`src/games/superenalotto/urna.ts`) e' uno studio televisivo: la sfera di vetro
+sul piedistallo d'oro, al centro di una pedana di vetro nero che la riflette, le
+novanta palline con il numero dipinto due volte, il tubo, la rotaia, i
+riflettori che si muovono, la parete di luci in fondo e il pulviscolo fuori
+fuoco. Tutto quel che si vede e' una funzione del tempo della diretta — la
+regia, le luci, la pallina che esce, i lampi — tranne le palline nell'urna, che
+hanno una fisica loro (la fontana dal fondo, un giro attorno all'asse, le
+pareti, gli urti) fatta con pochi vettori di lavoro: nel giro di un fotogramma
+non nasce nessun oggetto. I tempi stanno in `tempi.ts`, che leggono l'urna e le
+scritte, e la regia e' una scaletta (`REGIA`): lo studio dall'alto prima
+dell'inizio, la gru che scende con il titolo, l'urna da vicino mentre si
+mescola, e per ogni pallina la bocca nell'attesa (le luci calano, il tamburo),
+il tubo seguito da vicino con la scia che si accende, la vetrina al suo posto
+con il numero verso la camera, poi indietro; alla fine le quattro sulla rotaia.
+La camera segue la scaletta senza ritardo — non ha salti, e un ritardo
+lascerebbe la pallina fuori quadro — e assorbe in un attimo solo i salti veri,
+una finestra ridimensionata o un telefono che si era fermato; il primo
+fotogramma e' gia' quello giusto. Le scritte coprono una parte dello schermo, e
+la diretta dice all'urna quanta (`inquadratura`): la proiezione si centra nel
+campo che resta (`setViewOffset`), e ci scivola quando arriva il riepilogo. Un
+test (`__tests__/diretta.test.ts`) tiene la scaletta in ordine, con ogni
+passaggio finito prima dello stacco dopo, ogni pallina finita prima della
+prossima e il riepilogo prima della fine della diretta, che resta
+`DURATA_DIRETTA_MS` perché il server paga li'. I suoni seguono gli stessi tempi:
+`estratto` in `suoni.ts` ha il colpo alla bocca e il rotolare sulla rotaia dove
+li mette `tempi.ts`, e se cambiano gli uni va rifatto l'altro. Un telefono la
+deve far girare senza scaldarsi: niente ombre, niente post-produzione, e niente
+vernice sul vetro (`clearcoat`), che con la sfera a tutto schermo costerebbe un
+secondo riflesso per pixel. I riflessi vengono da un ambiente calcolato una
+volta, uno studio buio con i pannelli dei riflettori (`studioDaRiflettere` in
+`effetti.ts`); i fasci, i lampi e le scintille sono forme che sommano il colore,
+con materiali scritti a mano; il riflesso sulla pedana e' l'urna disegnata
+capovolta in un pozzo sotto il vetro nero, con le copie disegnate prima del
+vetro, che le scurisce, e le palline riflesse in un disegno solo
+(`InstancedMesh`), senza numeri. Le palline nell'urna hanno una forma sola e
+un'immagine piccola ciascuna (`LATO_FACCIA`); quella che esce cresce nel tubo
+fino alla misura della rotaia (`RB_FUORI`) e prende un'immagine di 512 per 256,
+perché in vetrina riempie mezzo schermo. three.js sta solo nel pezzo della
+diretta (`Diretta`, con `lazy`): la pagina della schedina non lo scarica. Chi ha
+la pagina aperta vede la diretta aprirsi da sola un minuto prima; chi arriva a
+meta' la trova a meta', e dopo la si rivede ("Rivedi l'estrazione"), con lo
+stesso orologio che parte da li'. Senza movimento la camera sta ferma sull'urna
+da lontano, i fasci non girano e i lampi sono deboli; senza WebGL l'urna e'
+disegnata e ferma, e le palline si leggono sotto. Sopra c'e' la grafica di una
+diretta (`Diretta.css`), che si muove solo con `transform` e `opacity`: il
+bollino rosso, il conto alla rovescia con gli ultimi tre secondi grandi, il
+titolo d'oro con la luce che passa, i sottopancia in basso — quello della
+pallina ha il numero anche in lettere (`inLettere`), ed e' d'oro se il numero e'
+di chi guarda — e lo screen reader sente una riga per momento da una regione
+sua, non le scritte che cambiano dieci volte al secondo. La schedina invece e'
+di carta: le caselle stampate in rosso, la croce a penna blu che si traccia, i
 numeri scritti a mano (`--font-mano`) e il timbro "Giocata".
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
@@ -2173,21 +2244,38 @@ le stesse, e la direbbe. Se manca, `CATENA_ASSENTE` (503): in locale
 `catena_partite.mosse` ha le parole provate, i jolly, il terzo elemento comprato
 e i tempi finiti (`t`); montepremi, lettere viste e terzo elemento si ricavano
 rigiocandole (`svolgiCatena`), con le stesse regole nel server e nel telefono
-della libera. Un errore toglie sei punti (`ERRORE_CATENA`) e mostra un'altra
-lettera, il secondo mostra la parola, e il minuto di una parola finito
-(`TEMPO_PAROLA_CATENA_MS`) la mostra costando i due errori che l'avrebbero
-mostrata: senza un tempo chi ci pensa abbastanza troverebbe ogni parola. Un
-errore e un jolly fanno ripartire il minuto (`riparteIlMinuto`, scritto in
-`parola_at` dopo `PREAMBOLO_RIPRESA_CATENA_MS`): c'e' una lettera nuova, e un
-minuto per pensarci. I jolly sono due, gratis, non si usano nella finale, e ne'
-un jolly ne' un errore mostrano l'ultima lettera. Della finale si vedono le
-prime due lettere e l'ultima; il terzo elemento costa quanto un errore, e chi
-arriva con tutti e due i jolly lo ha in regalo. Il montepremi parte da cento
-come quello della Ghigliottina e non scende sotto cinquanta (`FONDO_CATENA`),
-quanto il Wordle indovinato al sesto tentativo; la finale sbagliata vale venti.
-Gli errori possibili sono otto, e per questo uno vale meno del gradino del
-Wordle. Fino al 15 ottobre 2026 ogni errore dimezzava, come alla televisione, e
-la finale sbagliata valeva zero.
+della libera. Il primo errore su una parola toglie dieci punti
+(`ERRORE_CATENA`, il gradino del Wordle) e mostra un'altra lettera, il secondo
+ne toglie sei (`SECONDO_ERRORE_CATENA`) e mostra la parola, e il minuto di una
+parola finito (`TEMPO_PAROLA_CATENA_MS`) la mostra costando i due errori che
+l'avrebbero mostrata (`costoErrori`): senza un tempo chi ci pensa abbastanza
+troverebbe ogni parola. Un errore e un jolly fanno ripartire il minuto
+(`riparteIlMinuto`, scritto in `parola_at` dopo `PREAMBOLO_RIPRESA_CATENA_MS`):
+c'e' una lettera nuova, e un minuto per pensarci. I jolly sono due, gratis, non
+si usano nella finale, e ne' un jolly ne' un errore mostrano l'ultima lettera.
+Della finale si vedono le prime due lettere e l'ultima; il terzo elemento
+dimezza il montepremi, come dice il suo bottone (÷2), e chi arriva con tutti e
+due i jolly lo ha in regalo. Il montepremi parte da cento come quello della
+Ghigliottina, e lo conta `montepremiCatena` dagli errori di ogni parola: tutte
+sbagliate due volte lasciano trentasei punti, e dimezzati non
+scendono sotto i venti della finale sbagliata (`FONDO_CATENA`), perché una
+finale indovinata non valga mai meno di una sbagliata. Fino al 15 ottobre 2026
+ogni errore dimezzava, come alla televisione, e la finale sbagliata valeva zero;
+fino al 18 ogni errore toglieva sei punti, il terzo elemento anche, e il
+montepremi non scendeva sotto cinquanta: gli ultimi errori non costavano
+niente, e il ÷2 sul bottone non era vero.
+
+**Nella Catena la parola scritta per intero vale.** Della parola da indovinare
+si scrive il resto, e il telefono ci mette ai capi le lettere che si vedono; ma
+capita di riscriverle, la parola intera, o nella finale anche l'ultima lettera,
+che sta gia' in fondo alla riga. `parolaVoluta` prova le lettere date che
+mancano ai capi di quel che si e' scritto, e se fanno la parola giusta vale la
+parola giusta, senza dire niente: era la tastiera, non la parola, e i giochi
+sono fatti per non stressarsi. Si applica quando la parola arriva — al server
+(`/prova`, `/rispondi`) e nella libera — e la mossa si salva con la parola
+giusta: rigiocare le mosse, con il confronto di sempre (`stessaParola`), da' la
+partita che si e' giocata, anche quelle di prima, in cui "llibero" era un
+errore.
 `vistaCatena` manda solo le parole fino alla coppia di adesso, e di quella da
 indovinare le lettere, non la lunghezza: con le caselle tutte in vista sbagliare
 era quasi impossibile, e la parola ora cresce a ogni tasto. Prima di Comincia
@@ -2931,6 +3019,59 @@ dimensiona con `83.34cqh` per stare in altezza, ma dove la pagina scorre
 collassando le caselle. Per questo la media query orizzontale rimette
 `container-type: normal` e torna a dimensionare sulla larghezza.
 
+**Il pannello di amministrazione si apre con l'email e con un codice.** Il
+proprietario e' chi ha un'email confermata fra quelle di `ADMIN_EMAILS`
+(`wrangler.toml`), e non sta nel database, perché non lo si possa togliere dal
+pannello; gli altri amministratori li nomina lui (`players.ruolo`), e non
+toccano ne' il suo account ne' i ruoli (`puoToccare`). La sessione dura un anno,
+e un telefono perso non deve aprire il pannello: serve anche un codice
+all'email, che lo sblocca su quella sessione per dodici ore
+(`sessions.admin_fino`, `SBLOCCO_ADMIN_ORE`), con una tabella sua
+(`admin_codici`), perché quella dei codici per entrare ha un `CHECK` sugli
+scopi. Le rotte sono `/api/admin` (`server/routes/admin.ts`), i tipi in
+`shared/admin.ts`, i numeri in `server/lib/adminDati.ts`: ogni schermata fa le
+sue letture in un batch solo, e con una istruzione per gioco resta sotto le
+cinquanta query di una richiesta. D1 lega i parametri per posizione e non per
+nome (`:nome` non va): le liste costruite al volo mettono i `?` in ordine. Ogni
+modifica va nel registro (`admin_registro`), nello stesso batch quando c'e' un
+batch. Tre cose nuove servono al pannello e restano anche fuori: la presenza
+segna i giorni in cui ognuno apre l'app (`attivita_giorni`, un INSERT OR IGNORE
+nel batch di `segnaPresenza`; la `0053` l'ha riempita dalle partite di prima),
+gli errori non gestiti finiscono in `errori_server` (`salvaErrore`, in
+`app.onError`, dopo la risposta), e l'annuncio acceso arriva con `/api/oggi` in
+cima alle Giornaliere (`AvvisoATutti`, che chi lo chiude non rivede). Un account
+sospeso non entra: `resolveSession` non trova le sue sessioni, e la sospensione
+le cancella. Le statistiche di Cloudflare le legge l'API con un token in sola
+lettura (`CF_ACCOUNT_ID`, `CF_API_TOKEN` come secret, vedi `DEPLOY.md`), una
+sezione per richiesta, cosi' un permesso che manca al token spegne solo la sua;
+i valori stanno scritti nelle query, controllati, perché gli scalari della
+GraphQL di Cloudflare hanno nomi loro. La console SQL legge soltanto, finché non
+si accende la scrittura (`soloLettura`: WITH puo' precedere un DELETE).
+
+**Il pannello di amministrazione e' un attrezzo, non una scheda.** A `/admin`
+la tab bar e il menu dei giochi spariscono (`body:has(.adm-laterale)` in
+`Admin.css`), e al loro posto, sul computer, c'e' il menu delle sezioni nello
+stesso vetro; sul telefono le sezioni stanno in un foglio, mai in una fila che
+scorre di lato. E' una rotta sola (`/admin/*`): cambiando sezione il menu resta
+dov'e', e le sezioni sostituiscono l'indirizzo, cosi' la freccia indietro torna
+al profilo. Il pannello ha tre porte — chi non e' amministratore, il codice, il
+pannello —, e le decide `/admin/io`, ma ogni risposta del server le rimette in
+discussione (`useChiama`): uno sblocco scaduto a meta' di una modifica riporta al
+codice da qualunque sezione. E' piu' fitto del resto dell'app (carte piccole,
+cifre in griglia, tabelle), e tutto si misura sul contenuto (`container: adm`) e
+non sullo schermo, perché il menu del computer si prende la sua parte. Le tabelle
+larghe scorrono dentro la loro cornice, che e' posizionata: una scritta nascosta
+assoluta, fuori da li', allargava la pagina intera. I grafici sono SVG scritti a
+mano, disegnati in pixel sulla larghezza misurata e non stirati da un viewBox, con
+quattro colori loro (`--adm-*`: il blu, il blu tenue della parte che conta meno,
+l'arancione della seconda serie, il rosso sotto lo zero), passati al controllo
+per i daltonici sui due temi; il dito o le frecce cercano il giorno, e chi legge
+lo schermo ha la tabella. Ogni azione che non si disfa chiede conferma con il
+nome di quel che fa, eliminare un account vuole il nickname scritto, la console
+scrive solo dopo una conferma con la query sotto gli occhi, e le soluzioni del
+giorno stanno dietro un bottone. Contare le righe del database costa letture: si
+fa a richiesta, quaranta tabelle per volta.
+
 ## Il design
 
 **Deve sembrare un'app, non un sito.** Ogni schermata e' una `Pagina`
@@ -3245,10 +3386,10 @@ livelli di Icon Composer sono delle app native: di un'app web iOS 26 prende
 l'`apple-touch-icon`, ci stende sopra il vetro e ne ricava da solo le versioni
 scura, trasparente e colorata, separando il disegno dal fondo. Per questo
 l'icona e' piatta — le ombre e i riflessi li mette il vetro — con il fondo
-quasi a tinta unita e le copertine molto piu' chiare di lui: senza i colori
-resta la luminosita'. Nell'icona di prima il basso del cruciverba e della
-battaglia era scuro quanto il fondo, e il riflesso in alto a sinistra finiva
-nel disegno. L'`apple-touch-icon` e' piena e a filo, di 1024 punti: gli angoli
+quasi a tinta unita e il disegno molto piu' chiaro di lui: senza i colori
+resta la luminosita'. In una delle icone di prima il basso di due copertine era
+scuro quanto il fondo, e il riflesso in alto a sinistra finiva nel disegno.
+L'`apple-touch-icon` e' piena e a filo, di 1024 punti: gli angoli
 li taglia iOS, un pixel trasparente diventa nero, e a 180 le icone grandi della
 Home la ingrandirebbero. Il disegno sta a un quinto dal bordo, perché in basso
 il vetro fa da lente. Tutto viene da `scripts/genera-icone.mjs`
@@ -3257,6 +3398,24 @@ tiene le icone per indirizzo, e chi rimette l'app sulla Home si vedrebbe quella
 di prima. Un'app gia' sulla Home tiene l'icona con cui la si e' aggiunta: per
 la nuova va tolta e rimessa. I test tengono le soglie di luminosita', l'icona
 di iOS piena e l'impronta.
+
+**L'icona e' un dado davanti a una mano di tessere.** Il dado bianco con il
+cinque dice "si gioca", e i suoi punti hanno i colori dei giochi — il Wordle, lo
+Scarabeo, il cruciverba e il quiz agli angoli, l'indaco dell'app in mezzo —; le
+due tessere aperte a ventaglio dietro di lui sono quelle delle parole, verde e
+gialla come nel Wordle, e aperte cosi' anche le carte della Fortuna. Fra il
+dado e le tessere c'e' un solco del colore del fondo, che li separa senza
+un'ombra: per questo la sfumatura del fondo e' nello spazio dell'icona
+(`userSpaceOnUse`) e non del pezzo che la usa. I punti sono i toni scuri dei
+giochi, perche' sul bianco restino punti anche senza colori (un test lo
+misura). Fino al 18 ottobre 2026 l'icona erano le copertine di quattro giochi
+in una cartella, due per due: un gioco nuovo non ci entrava, e da lontano era
+una griglia di quadrati come tante. Il marchio dell'app (`Marchio`, nella
+schermata d'ingresso, nell'attesa e nella pagina che non c'e') e' la stessa
+icona disegnata con i pezzi veri, perche' si animi — il dado salta fuori, le
+tessere si aprono, i punti si accendono —, con le sue copie delle misure e dei
+colori in `disegnoMarchio.ts`, che un test tiene uguali a quelle del
+generatore.
 
 **La palette scura non esiste come blocco separato.** Ogni token e' un
 `light-dark(chiaro, scuro)`, che segue `color-scheme` — quindi copre sia la
@@ -3727,6 +3886,20 @@ nessuno le legge, e chi si registra le lascia vuote. L'impronta dei token di
 sessione usa `toBase64` di `shared/base64.ts`: se cambiasse, le sessioni salvate
 non si ritroverebbero piu' e uscirebbero tutti, e un test la tiene ferma su un
 token noto.
+
+**Una registrazione tiene nickname ed email solo quanto vale il codice.** Chi
+si registra ha subito la sua sessione, ma finché non conferma l'email la
+registrazione e' in attesa (`players.in_attesa_fino`, dalla `0054`): nessun
+altro prende quel nickname finché il codice vale (`NICKNAME_IN_ATTESA`), ogni
+codice nuovo sposta l'ora, e dopo, senza conferma, la prossima registrazione
+porta via l'account e libera nickname ed email. Rifarla con la stessa email
+sostituisce quella in attesa, con il nickname nuovo, e dalla schermata del
+codice «Ho sbagliato nickname o email» la annulla subito
+(`/auth/register/annulla`) e riporta al modulo con quel che si era scritto, da
+correggere. Prima un nickname scritto sbagliato restava preso per sempre. La
+conferma, l'ingresso con il codice e la conferma dal pannello svuotano
+l'attesa; gli account di prima l'hanno NULL, e non scadono mai. Se il codice
+non parte, la registrazione non resta: si riprova.
 
 **La richiesta del codice risponde sempre allo stesso modo**, che l'account
 esista o no, e anche quando il codice non parte per l'attesa di un minuto fra

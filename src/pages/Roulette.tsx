@@ -7,6 +7,7 @@ import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
 import { finitaLUscita } from '@/games/blackjack/uscita'
+import { PochiPunti } from '@/games/fortuna/Avvisi'
 import { ComeSiGiocaRoulette } from '@/games/roulette/ComeSiGioca'
 import { RuotaRoulette } from '@/games/roulette/Ruota'
 import { api } from '@/lib/api'
@@ -52,6 +53,9 @@ export default function Roulette() {
     void import('./RouletteTavolo')
   }, [])
 
+  /** Il saldo non basta per puntare: prima l'avviso, e il tavolo nuovo si fa da parte (ci si siede solo a guardare). */
+  const pochi = !!sala && sala.saldo < PUNTATA_MINIMA_RL
+
   // Al tavolo si va subito: il tavolo nuovo lo apre la sua pagina (`TAVOLO_NUOVO`), mentre il feltro si allarga.
   const alTavolo = (id: string) => vai(ROTTE.tavoloRL(id), { direzione: 'tavolo', state: { saldo: sala?.saldo } })
 
@@ -76,18 +80,22 @@ export default function Roulette() {
           <p className="rl-sala__saldo">
             Saldo <strong className="u-tabnum">{sala ? <Numero valore={sala.saldo} /> : '…'}</strong>
           </p>
+          {pochi && <PochiPunti servono={PUNTATA_MINIMA_RL} saldo={sala.saldo} className="rl-sala__pochi" />}
           {sala?.mioTavolo ? (
             <Button size="lg" onClick={() => alTavolo(sala.mioTavolo!)}>
               Torna al tavolo
             </Button>
           ) : (
-            <Button size="lg" onClick={() => alTavolo(TAVOLO_NUOVO)} disabled={!sala}>
+            <Button
+              size="lg"
+              className={pochi ? 'is-secondario' : ''}
+              onClick={() => alTavolo(TAVOLO_NUOVO)}
+              disabled={!sala}
+            >
               Tavolo nuovo
             </Button>
           )}
-          {sala && sala.saldo < PUNTATA_MINIMA_RL && (
-            <p className="rl-sala__nota">Serve almeno un punto di oggi per puntare.</p>
-          )}
+
         </div>
       </section>
 

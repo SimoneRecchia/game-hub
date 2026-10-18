@@ -14,7 +14,7 @@ import { PUNTI_BASE_QUIZ } from '../quiz'
 import { LUNGHEZZE_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, TEMPO_PAROLA_MS, puntiAnagrammi } from '../anagrammi'
 import { COPPIE_GHIGLIOTTINA, montepremi, puntiGhigliottina } from '../ghigliottina'
 import { PUNTI_GIOCATA_PAROLIERE, puntiParoliere } from '../paroliere'
-import { inizio as inizioCatena, montepremiCatena, puntiCatena } from '../catena'
+import { PUNTI_CATENA_PERSA, inizio as inizioCatena, montepremiCatena, puntiCatena } from '../catena'
 import { ATTEMPT_POINTS, ATTEMPT_STEP, LOSS_POINTS, MAX_DAY_SCORE, MAX_TIEBREAK } from '../scoring'
 
 /** Uno schema del cruciverba e uno del sudoku della misura di tutti i giorni: ottanta lettere, cinquanta cifre. */
@@ -192,15 +192,17 @@ describe('la Ghigliottina: ogni errore costa come un tentativo del Wordle', () =
   })
 })
 
-describe('la Catena: errori lievi, e il montepremi non scende sotto la metà', () => {
-  it('ogni errore o acquisto toglie sei punti, fino a cinquanta', () => {
-    expect(Array.from({ length: 10 }, (_, k) => montepremiCatena(k))).toEqual([100, 94, 88, 82, 76, 70, 64, 58, 52, 50])
-    expect(montepremiCatena(20)).toBe(50)
+describe('la Catena: il primo errore costa come un tentativo del Wordle, il secondo meno', () => {
+  it('il primo errore su una parola toglie dieci punti, il secondo sei', () => {
+    expect([0, 1, 2].map((k) => montepremiCatena([k, 0, 0, 0]))).toEqual([100, 90, 84])
+    expect(montepremiCatena([1, 0, 0, 0])).toBe(TETTI.catena - ATTEMPT_STEP)
+    expect(montepremiCatena([2, 2, 2, 2])).toBe(36)
   })
 
-  it('il gradino resta sotto quello del Wordle, perché gli errori possibili sono otto', () => {
-    expect(montepremiCatena(0) - montepremiCatena(1)).toBeLessThan(ATTEMPT_STEP)
-    expect(montepremiCatena(0) - montepremiCatena(1)).toBeGreaterThan(ATTEMPT_STEP / 2)
+  it('il terzo elemento dimezza, e il montepremi non scende sotto una finale sbagliata', () => {
+    expect(montepremiCatena([0, 0, 0, 0], true)).toBe(50)
+    expect(montepremiCatena([1, 0, 0, 0], true)).toBe(45)
+    expect(montepremiCatena([2, 2, 2, 2], true)).toBe(PUNTI_CATENA_PERSA)
   })
 
   it('una parola finale sbagliata vale quanto un Wordle perso', () => {

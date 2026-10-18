@@ -38,6 +38,8 @@ const caricaAmico = () => import('./pages/Amico')
 const Classifica = lazy(caricaClassifica)
 const Profilo = lazy(caricaProfilo)
 const Amico = lazy(caricaAmico)
+/* Il pannello di amministrazione: lo apre chi ne ha il ruolo, e non si precarica. */
+const Admin = lazy(() => import('./pages/admin/Admin'))
 const caricaWordle = () => import('./pages/Wordle')
 const caricaWordleLibero = () => import('./pages/WordleLibero')
 const caricaWordleInsieme = () => import('./pages/WordleInsieme')
@@ -331,6 +333,8 @@ export default function App() {
             <Route path="/classifica/:gioco?" element={<Classifica />} />
             <Route path="/profilo" element={<Profilo />} />
             <Route path="/amici/:nickname" element={<Amico />} />
+            {/* Una rotta sola per tutto il pannello: cambiando sezione il suo menu resta dov'e'. */}
+            <Route path="/admin/*" element={<Admin />} />
 
             <Route path="/wordle/classificata" element={<Wordle />} />
             <Route path="/wordle/libera" element={<WordleLibero />} />

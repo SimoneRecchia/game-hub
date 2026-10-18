@@ -1,0 +1,82 @@
+/*
+ * L'avviso a tutti: una carta sottile in cima alle Giornaliere, nel colore del
+ * suo tono — l'indaco per un'informazione, l'arancio per un avviso, il rosa per
+ * una festa —, che non copre niente e si chiude.
+ */
+.avviso-tutti {
+  --tono: var(--brand);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: var(--sp-3);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--tono) 12%, var(--surface));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tono) 28%, transparent),
+    var(--edge-light);
+  animation: avviso-tutti-entra 420ms var(--ease-out) both;
+}
+
+.avviso-tutti.is-avviso {
+  --tono: var(--orange);
+}
+
+.avviso-tutti.is-festa {
+  --tono: var(--pink);
+  background:
+    linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--pink) 14%, transparent),
+      color-mix(in srgb, var(--orange) 12%, transparent)
+    ),
+    var(--surface);
+}
+
+.avviso-tutti__icona {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: var(--tono);
+  color: #fff;
+}
+
+.avviso-tutti__testo {
+  margin: 0;
+  align-self: center;
+  color: var(--label);
+  font-size: var(--text-subhead);
+  line-height: 1.35;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.avviso-tutti__chiudi {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin: -2px -2px 0 0;
+  border-radius: 50%;
+  color: var(--label-secondary);
+}
+
+.avviso-tutti__chiudi:hover {
+  background: var(--fill-tertiary);
+}
+
+@keyframes avviso-tutti-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avviso-tutti {
+    animation: none;
+  }
+}

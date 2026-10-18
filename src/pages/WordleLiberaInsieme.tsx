@@ -231,6 +231,7 @@ export default function WordleLiberaInsieme() {
               onBackspace={() => setDraft((d) => d.slice(0, -1))}
               disabled={chiusa || inviando}
               enterLabel="Suggerisci"
+              pronta={draft.length === WORD_LENGTH}
             />
           </>
         )}

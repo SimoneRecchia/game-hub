@@ -18,6 +18,7 @@ import { IconAnnulla, IconCestino, IconInfo, IconRefresh } from '@/components/Ic
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { esciFraPoco } from '@/games/blackjack/uscita'
+import { InvitoPuntata, PochiPunti } from '@/games/fortuna/Avvisi'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { centroDi, incassaMonete, volaFiche } from '@/games/fortuna/voli'
@@ -464,6 +465,13 @@ export default function RouletteTavolo() {
   const totaleSulPanno = totaleDi(sulPanno)
   const disponibile = saldo + totaleDi(mandate)
   const puoPuntare = !!mio && (scena === 'puntate' || scena === 'pronto' || scena === 'esito')
+  /** Il saldo non basta per una fiche, e sul panno non c'e' niente: l'avviso prende il posto della sponda. */
+  const senzaSaldo = !!mio && disponibile < PUNTATA_MINIMA_RL && totaleSulPanno === 0 && scena !== 'lancio'
+  /**
+   * La fiche che si posa: quella scelta, o, se il saldo non la copre piu', la piu' grande che copre. Cosi' la fiche
+   * accesa non e' mai una spenta, e toccare il panno non risponde mai "non ci sta" a chi ha ancora punti.
+   */
+  const fiche = taglio <= disponibile ? taglio : ([...GETTONI_RL].reverse().find((v) => v <= disponibile) ?? taglio)
   const cambiata = bozza !== null && JSON.stringify(bozza) !== JSON.stringify(mandate)
   const numeroMostrato = scena === 'esito' || (scena === 'pronto' && bozza === null) ? (vista?.lancio?.numero ?? null) : null
 
@@ -546,13 +554,13 @@ export default function RouletteTavolo() {
     if (!puoPuntare) return
     chiudiEsito()
     const base = scena === 'esito' || scena === 'pronto' ? (bozza ?? {}) : (bozza ?? mandate)
-    if (totaleDi(base) + inVolo.current + taglio > disponibile) {
+    if (totaleDi(base) + inVolo.current + fiche > disponibile) {
       suona('tetto', { volume: 0.7 })
       toast.show(disponibile < PUNTATA_MINIMA_RL ? 'Il saldo è finito.' : `Sul panno ci stanno ${disponibile} punti.`)
       return
     }
-    inVolo.current += taglio
-    const valore = taglio
+    inVolo.current += fiche
+    const valore = fiche
     const bottone = fichesRef.current?.querySelector<HTMLElement>(`[data-taglio="${valore}"]`) ?? null
     const da = centroDi(bottone)
     const metti = () => {
@@ -651,6 +659,16 @@ export default function RouletteTavolo() {
   const nvpVisibile = nvp !== null && Date.now() - nvp < NVP_MS + 200
   const annuncioNumero = scena === 'annuncio' ? (vista?.lancio?.numero ?? null) : null
   const verbo = altri ? (totaleDi(mandate) > 0 ? 'Cambia' : 'Punta') : 'Lancia'
+  /** Il panno e' vuoto e si aspetta una puntata: l'invito sulla sponda, e il panno che si accende piano. */
+  const invito =
+    !!vista &&
+    !!mio &&
+    !senzaSaldo &&
+    !inviando &&
+    !anteprima &&
+    (scena === 'puntate' || scena === 'pronto') &&
+    totaleSulPanno === 0 &&
+    totaleDi(mandate) === 0
   // Si manda solo quel che si e' composto: piu' puntate, altre, o nessuna per ritirare quelle mandate.
   const puoLanciare =
     puoPuntare &&
@@ -678,6 +696,7 @@ export default function RouletteTavolo() {
             saldo={conto ?? (vista ? saldo : (saldoDellaSala ?? 0))}
             puntata={totaleSulPanno || null}
             saldoRef={saldoRef}
+            scarso={senzaSaldo}
           />
         )}
 
@@ -721,12 +740,12 @@ export default function RouletteTavolo() {
           </ul>
         )}
 
-        <div className="rl-panno-posto" ref={pannoRef}>
+        <div className={`rl-panno-posto${invito ? ' is-invito' : ''}${senzaSaldo ? ' is-spento' : ''}`} ref={pannoRef}>
           <Panno
             mie={sulPanno}
             altrui={altrui}
             numero={numeroMostrato}
-            attivo={puoPuntare}
+            attivo={puoPuntare && !senzaSaldo}
             onPosa={posa}
             onAnteprima={setAnteprima}
           />
@@ -745,27 +764,31 @@ export default function RouletteTavolo() {
                 <Riga>Il tavolo è pieno</Riga>
               )}
             </div>
-          ) : saldo + totaleDi(mandate) < PUNTATA_MINIMA_RL && totaleSulPanno === 0 && scena !== 'lancio' ? (
-            <Riga>Serve almeno un punto di oggi: gioca le classificate, poi torna qui.</Riga>
+          ) : senzaSaldo ? (
+            <PochiPunti servono={PUNTATA_MINIMA_RL} saldo={disponibile} />
           ) : (
             <>
-              <StatoTavolo
-                anteprima={anteprima}
-                scena={scena}
-                tempo={tempoPuntate}
-                mandate={totaleDi(mandate)}
-                cambiata={cambiata}
-                numero={vista.lancio?.numero ?? null}
-              />
+              {invito && !tempoPuntate ? (
+                <InvitoPuntata>Tocca il panno per puntare</InvitoPuntata>
+              ) : (
+                <StatoTavolo
+                  anteprima={anteprima}
+                  scena={scena}
+                  tempo={tempoPuntate}
+                  mandate={totaleDi(mandate)}
+                  cambiata={cambiata}
+                  numero={vista.lancio?.numero ?? null}
+                />
+              )}
               <div className="rl-gettoni" role="radiogroup" aria-label="La fiche" ref={fichesRef}>
                 {GETTONI_RL.map((v) => (
                   <button
                     key={v}
                     type="button"
                     role="radio"
-                    aria-checked={taglio === v}
+                    aria-checked={fiche === v}
                     data-taglio={v}
-                    className={`rl-gettone${taglio === v ? ' is-scelto' : ''}`}
+                    className={`rl-gettone${fiche === v ? ' is-scelto' : ''}`}
                     disabled={v > disponibile}
                     aria-label={`Fiche da ${v}`}
                     onClick={() => scegliTaglio(v)}

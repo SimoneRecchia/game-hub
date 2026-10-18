@@ -14,6 +14,25 @@ import { spegniNotifiche } from './notifiche'
 
 const CACHE_KEY = 'gh.player'
 
+/** Il nickname e l'email di una registrazione annullata, per ritrovarli nel modulo. */
+const DA_CORREGGERE = 'gh.registrazione-da-correggere'
+
+/** La registrazione da correggere, una volta sola: letta, se ne va. */
+export function registrazioneDaCorreggere(): { nickname: string; email: string } | null {
+  try {
+    const testo = sessionStorage.getItem(DA_CORREGGERE)
+    sessionStorage.removeItem(DA_CORREGGERE)
+    const valore = testo ? (JSON.parse(testo) as { nickname?: unknown; email?: unknown }) : null
+    if (!valore) return null
+    return {
+      nickname: typeof valore.nickname === 'string' ? valore.nickname : '',
+      email: typeof valore.email === 'string' ? valore.email : '',
+    }
+  } catch {
+    return null
+  }
+}
+
 interface AuthState {
   player: Player | null
   /** true finché non sappiamo se la sessione salvata e' ancora valida. */
@@ -31,6 +50,8 @@ interface AuthState {
   verify: (code: string) => Promise<void>
   /** Rimanda il codice. Restituisce i secondi di attesa dichiarati. */
   resendCode: () => Promise<number>
+  /** Torna indietro dalla registrazione in attesa: nickname ed email si liberano, e il modulo li ripropone. */
+  annullaRegistrazione: () => Promise<void>
   /** Applica un giocatore aggiornato. */
   apply: (player: Player) => void
 }
@@ -160,6 +181,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [apply],
   )
 
+  const annullaRegistrazione = useCallback(async () => {
+    await api('/auth/register/annulla', { method: 'POST' })
+    try {
+      const scritto = { nickname: player?.nickname ?? '', email: player?.email ?? '' }
+      sessionStorage.setItem(DA_CORREGGERE, JSON.stringify(scritto))
+    } catch {
+      // Senza memoria il modulo riparte vuoto.
+    }
+    apply(null)
+  }, [apply, player])
+
   const logout = useCallback(async () => {
     try {
       // Prima di uscire, finché la sessione c'e': le notifiche di questo telefono non vanno piu' a chi esce.
@@ -182,9 +214,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refresh,
       verify,
       resendCode,
+      annullaRegistrazione,
       apply,
     }),
-    [player, checking, config, register, requestCode, login, logout, refresh, verify, resendCode, apply],
+    [
+      player,
+      checking,
+      config,
+      register,
+      requestCode,
+      login,
+      logout,
+      refresh,
+      verify,
+      resendCode,
+      annullaRegistrazione,
+      apply,
+    ],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

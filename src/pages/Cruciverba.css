@@ -232,7 +232,7 @@
   padding-bottom: var(--sp-1);
 }
 
-.ctastiera__direzione {
+.ctastiera .key--azione {
   font-size: var(--text-title-3);
 }
 

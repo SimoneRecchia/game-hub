@@ -1,16 +1,11 @@
 import { Hono, type Context } from 'hono'
 import {
   AVATAR_COLORS,
-  CODE_LENGTH,
   CODE_LOGIN_PER_DAY,
   CODE_RESEND_COOLDOWN_SECONDS,
   CODE_TTL_MINUTES,
   EMAIL_MAX,
-  EMAIL_PATTERN,
-  NICKNAME_MAX,
-  NICKNAME_MIN,
   NICKNAME_OGNI_GIORNI,
-  NICKNAME_PATTERN,
 } from '../../shared/config'
 import type { AuthConfig, CodiceMandato, Player } from '../../shared/types'
 import { nicknameCambiabileDal, toPlayer, type AppEnv, type Bindings, type PlayerRow } from '../types'
@@ -24,7 +19,15 @@ import {
   revokeSession,
 } from '../lib/session'
 import { codesLastDay, consumeCode, issueCode, resendWaitSeconds, type CodePurpose } from '../lib/codes'
-import { emailVerificationEnabled, loginMessage, nicknameMessage, sendEmail, verifyEmailMessage } from '../lib/email'
+import {
+  daQuestoComputer,
+  emailVerificationEnabled,
+  loginMessage,
+  nicknameMessage,
+  sendEmail,
+  verifyEmailMessage,
+} from '../lib/email'
+import { readCode, readEmail, readNickname } from '../lib/campi'
 
 /*
  * L'accesso e' senza password: chi si registra sceglie il nickname e da'
@@ -32,27 +35,6 @@ import { emailVerificationEnabled, loginMessage, nicknameMessage, sendEmail, ver
  * sessioni durano un anno, quindi il codice serve di rado: a un telefono nuovo,
  * o dopo essere usciti.
  */
-
-function readNickname(value: unknown): string {
-  if (typeof value !== 'string') fail(400, 'BAD_REQUEST', 'Richiesta non valida.')
-  const nickname = value.trim()
-  if (nickname.length < NICKNAME_MIN || nickname.length > NICKNAME_MAX) {
-    fail(400, 'NICKNAME_LENGTH', `Il nickname deve avere fra ${NICKNAME_MIN} e ${NICKNAME_MAX} caratteri.`)
-  }
-  if (!NICKNAME_PATTERN.test(nickname)) {
-    fail(400, 'NICKNAME_CHARS', 'Il nickname può contenere solo lettere, numeri, punto, trattino e underscore.')
-  }
-  return nickname
-}
-
-function readEmail(value: unknown): string {
-  if (typeof value !== 'string') fail(400, 'EMAIL_REQUIRED', 'Scrivi l’email.')
-  const email = value.trim()
-  if (email.length === 0) fail(400, 'EMAIL_REQUIRED', 'Scrivi l’email.')
-  if (email.length > EMAIL_MAX) fail(400, 'EMAIL_INVALID', "Questa email è troppo lunga.")
-  if (!EMAIL_PATTERN.test(email)) fail(400, 'EMAIL_INVALID', "Questa email non sembra valida.")
-  return email
-}
 
 /** Il nickname o l'email con cui si entra: un nickname non ha la chiocciola, un'email si'. */
 function readIdentifier(value: unknown): string {
@@ -62,24 +44,6 @@ function readIdentifier(value: unknown): string {
   return identifier
 }
 
-function readCode(value: unknown): string {
-  const code = typeof value === 'string' ? value.trim() : ''
-  if (!new RegExp(`^\\d{${CODE_LENGTH}}$`).test(code)) {
-    fail(400, 'BAD_CODE_FORMAT', `Il codice è di ${CODE_LENGTH} cifre.`)
-  }
-  return code
-}
-
-/**
- * La richiesta arriva da questo computer: e' lo sviluppo in locale. Li', senza
- * la chiave di Resend, il codice per entrare torna nella risposta, perché non
- * ci sarebbe altro modo di leggerlo. In produzione l'indirizzo e' quello del
- * sito, e la condizione non si avvera mai, nemmeno senza la chiave.
- */
-function daQuestoComputer(url: string): boolean {
-  const host = new URL(url).hostname
-  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
-}
 
 type Destinatario = { id: string; nickname: string; email: string }
 
@@ -175,8 +139,11 @@ export const authRoutes = new Hono<AppEnv>()
   /**
    * La registrazione: il nickname e l'email, nient'altro. La sessione parte
    * subito, e quando la posta e' attiva l'email si conferma con un codice
-   * prima di giocare (vedi requireVerified): chi si registra resta sul suo
-   * account e non perde il nickname appena scelto.
+   * prima di giocare (vedi requireVerified). Finché non la conferma, la
+   * registrazione e' in attesa: tiene nickname ed email quanto vale il codice
+   * (`in_attesa_fino`), e poi li lascia a chi li vuole; chi la rifa' con la
+   * stessa email la sostituisce, con il nickname nuovo. Prima il nickname
+   * scritto sbagliato restava preso per sempre.
    */
   .post('/register', async (c) => {
     const body = (await c.req.json().catch(() => null)) as Record<string, unknown> | null
@@ -184,46 +151,80 @@ export const authRoutes = new Hono<AppEnv>()
     const email = readEmail(body?.email)
     const nicknameLower = nickname.toLowerCase()
     const emailLower = email.toLowerCase()
+    const db = c.env.DB
+    const adesso = Date.now()
+    const verifica = emailVerificationEnabled(c.env)
 
-    const existing = await c.env.DB.prepare('SELECT id FROM players WHERE nickname_lower = ?')
-      .bind(nicknameLower)
-      .first<{ id: string }>()
-    if (existing) {
+    // Le registrazioni in attesa scadute, di tutti: il loro nickname e la loro email tornano liberi.
+    await db
+      .prepare('DELETE FROM players WHERE in_attesa_fino < ? AND email_verified_at IS NULL')
+      .bind(new Date(adesso).toISOString())
+      .run()
+
+    type Presa = Pick<PlayerRow, 'id' | 'email_lower' | 'email_verified_at' | 'in_attesa_fino'>
+    const [conNickname, conEmail] = await Promise.all([
+      db
+        .prepare('SELECT id, email_lower, email_verified_at, in_attesa_fino FROM players WHERE nickname_lower = ?')
+        .bind(nicknameLower)
+        .first<Presa>(),
+      db
+        .prepare('SELECT id, email_lower, email_verified_at, in_attesa_fino FROM players WHERE email_lower = ?')
+        .bind(emailLower)
+        .first<Presa>(),
+    ])
+    const inAttesa = (r: Presa | null) => !!r && r.in_attesa_fino !== null && r.email_verified_at === null
+    // Una registrazione in attesa con la stessa email e' di chi ha quella email: si rifa', con il nickname nuovo.
+    if (conNickname && !(inAttesa(conNickname) && conNickname.email_lower === emailLower)) {
+      if (inAttesa(conNickname)) {
+        fail(
+          409,
+          'NICKNAME_IN_ATTESA',
+          'Questo nickname è prenotato per qualche minuto. Provane un altro, o riprova più tardi.',
+        )
+      }
       fail(409, 'NICKNAME_TAKEN', 'Questo nickname è già preso. Provane un altro.')
     }
-
-    const emailUsata = await c.env.DB.prepare('SELECT id FROM players WHERE email_lower = ?')
-      .bind(emailLower)
-      .first<{ id: string }>()
-    if (emailUsata) {
+    if (conEmail && !inAttesa(conEmail)) {
       fail(409, 'EMAIL_TAKEN', 'Questa email è già registrata: entra da «Accedi».')
     }
 
-    const now = nowIso()
+    const now = new Date(adesso).toISOString()
     const id = newId('plr')
     try {
-      // Le colonne della password ci sono ancora, e sono NOT NULL: restano vuote (vedi la migrazione 0032).
-      await c.env.DB.prepare(
-        `INSERT INTO players
-           (id, nickname, nickname_lower, display_name, password_hash, password_salt,
-            password_iterations, avatar_color, created_at, last_seen_at,
-            email, email_lower, email_verified_at)
-         VALUES (?, ?, ?, ?, '', '', 0, ?, ?, ?, ?, ?, ?)`,
-      )
-        .bind(
-          id,
-          nickname,
-          nicknameLower,
-          nickname,
-          avatarColorFor(nicknameLower),
-          now,
-          now,
-          email,
-          emailLower,
-          // Senza la posta l'account nasce confermato: non si puo' pretendere un codice senza il modo di spedirlo.
-          emailVerificationEnabled(c.env) ? null : now,
-        )
-        .run()
+      await db.batch([
+        // La registrazione in attesa con la stessa email, se c'e', lascia il posto a questa.
+        ...(conEmail
+          ? [
+              db
+                .prepare('DELETE FROM players WHERE id = ? AND email_verified_at IS NULL AND in_attesa_fino IS NOT NULL')
+                .bind(conEmail.id),
+            ]
+          : []),
+        // Le colonne della password ci sono ancora, e sono NOT NULL: restano vuote (vedi la migrazione 0032).
+        db
+          .prepare(
+            `INSERT INTO players
+               (id, nickname, nickname_lower, display_name, password_hash, password_salt,
+                password_iterations, avatar_color, created_at, last_seen_at,
+                email, email_lower, email_verified_at, in_attesa_fino)
+             VALUES (?, ?, ?, ?, '', '', 0, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .bind(
+            id,
+            nickname,
+            nicknameLower,
+            nickname,
+            avatarColorFor(nicknameLower),
+            now,
+            now,
+            email,
+            emailLower,
+            // Senza la posta l'account nasce confermato: non si puo' pretendere un codice senza il modo di spedirlo.
+            verifica ? null : now,
+            // Con la posta, nickname ed email restano suoi quanto vale il codice; poi, se non conferma, tornano liberi.
+            verifica ? new Date(adesso + CODE_TTL_MINUTES * 60_000).toISOString() : null,
+          ),
+      ])
     } catch (error) {
       // Due registrazioni contemporanee sullo stesso nickname: vince la prima,
       // l'altra incontra il vincolo di unicita'.
@@ -237,21 +238,38 @@ export const authRoutes = new Hono<AppEnv>()
       throw error
     }
 
-    await issueSession(c, id)
-
-    if (emailVerificationEnabled(c.env)) {
+    if (verifica) {
       const inviata = await inviaCodice(c.env, { id, nickname, email }, 'verify_email')
       if (!inviata) {
+        // Senza il codice la registrazione non si puo' confermare: non tiene il nickname, e si riprova.
+        await db.prepare('DELETE FROM players WHERE id = ?').bind(id).run()
         fail(502, 'EMAIL_SEND_FAILED', 'Non riesco a mandare il codice. Riprova fra un minuto.')
       }
     }
 
-    const row = await c.env.DB.prepare('SELECT * FROM players WHERE id = ?')
-      .bind(id)
-      .first<PlayerRow>()
+    await issueSession(c, id)
+
+    const row = await db.prepare('SELECT * FROM players WHERE id = ?').bind(id).first<PlayerRow>()
     if (!row) fail(500, 'PLAYER_MISSING', 'Non riesco a completare la registrazione. Riprova.')
 
     return c.json<{ player: Player }>({ player: toPlayer(row) }, 201)
+  })
+
+  /**
+   * Chi si e' registrato e non ha ancora confermato l'email puo' tornare
+   * indietro: il nickname scritto sbagliato, l'email di un altro. La
+   * registrazione in attesa se ne va subito, con la sua sessione, e nickname ed
+   * email tornano liberi senza aspettare che il codice scada.
+   */
+  .post('/register/annulla', requireAuth, async (c) => {
+    const fatto = await c.env.DB.prepare(
+      'DELETE FROM players WHERE id = ? AND email_verified_at IS NULL AND in_attesa_fino IS NOT NULL',
+    )
+      .bind(c.get('player').id)
+      .run()
+    if ((fatto.meta.changes ?? 0) === 0) fail(409, 'NON_IN_ATTESA', 'Questo account è già confermato.')
+    await revokeSession(c)
+    return c.json({ ok: true })
   })
 
   /**
@@ -275,7 +293,8 @@ export const authRoutes = new Hono<AppEnv>()
 
     const generico: CodiceMandato = { ok: true, cooldownSeconds: CODE_RESEND_COOLDOWN_SECONDS }
     const row = await trovaGiocatore(c.env.DB, identifier)
-    if (!row || !row.email) return c.json(generico)
+    // Un account sospeso non riceve codici, e la risposta e' la stessa: non dice chi e' sospeso.
+    if (!row || !row.email || row.sospeso_at) return c.json(generico)
     if ((await resendWaitSeconds(c.env.DB, row.id, 'login')) > 0) return c.json(generico)
     if ((await codesLastDay(c.env.DB, row.id, 'login')) >= CODE_LOGIN_PER_DAY) return c.json(generico)
 
@@ -304,8 +323,11 @@ export const authRoutes = new Hono<AppEnv>()
     if (!row) fail(400, 'CODE_INVALID', INVALIDO)
     const esito = await consumeCode(c.env.DB, row.id, 'login', code)
     if (!esito.ok) fail(400, 'CODE_INVALID', INVALIDO)
+    if (row.sospeso_at) fail(403, 'SOSPESO', 'Questo account è sospeso.')
 
-    await c.env.DB.prepare('UPDATE players SET email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?')
+    await c.env.DB.prepare(
+      'UPDATE players SET email_verified_at = COALESCE(email_verified_at, ?), in_attesa_fino = NULL WHERE id = ?',
+    )
       .bind(nowIso(), row.id)
       .run()
     await issueSession(c, row.id)
@@ -363,7 +385,8 @@ export const authRoutes = new Hono<AppEnv>()
       )
     }
 
-    await c.env.DB.prepare('UPDATE players SET email_verified_at = ? WHERE id = ?')
+    // Confermata, la registrazione non e' piu' in attesa: nickname ed email restano suoi.
+    await c.env.DB.prepare('UPDATE players SET email_verified_at = ?, in_attesa_fino = NULL WHERE id = ?')
       .bind(nowIso(), player.id)
       .run()
 
@@ -397,6 +420,10 @@ export const authRoutes = new Hono<AppEnv>()
     if (!inviata) {
       fail(502, 'EMAIL_SEND_FAILED', 'Non riesco a mandare il codice. Riprova fra un minuto.')
     }
+    // Un codice nuovo tiene nickname ed email quanto vale lui.
+    await c.env.DB.prepare('UPDATE players SET in_attesa_fino = ? WHERE id = ? AND in_attesa_fino IS NOT NULL')
+      .bind(new Date(Date.now() + CODE_TTL_MINUTES * 60_000).toISOString(), player.id)
+      .run()
     return c.json({ ok: true, cooldownSeconds: CODE_RESEND_COOLDOWN_SECONDS })
   })
 

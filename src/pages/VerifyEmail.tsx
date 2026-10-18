@@ -13,15 +13,18 @@ import './VerifyEmail.css'
 /**
  * Schermata del codice, mostrata finché l'email non e' confermata.
  *
- * Il giocatore ha già una sessione: puo' farsi rimandare il codice e non perde
- * il nickname appena scelto. Le rotte di gioco restano chiuse lato server.
+ * Il giocatore ha già una sessione: puo' farsi rimandare il codice, e finché
+ * il codice vale il nickname appena scelto resta suo. Se l'ha scritto sbagliato
+ * — o l'email — torna indietro, e il modulo glieli ripropone da correggere: la
+ * registrazione in attesa se ne va, e nickname ed email tornano liberi. Le rotte
+ * di gioco restano chiuse lato server.
  *
  * Chi si e' registrato da un invito a battaglia navale lo ritrova qui: la
  * conferma dell'email e' l'ultimo passo prima della partita, e l'indirizzo
  * resta quello dell'invito, che dopo la conferma lo porta dentro.
  */
 export default function VerifyEmail({ invito = null }: { invito?: string | null }) {
-  const { player, verify, resendCode, logout } = useAuth()
+  const { player, verify, resendCode, logout, annullaRegistrazione } = useAuth()
   const [sfida, setSfida] = useState<InvitoConLink | null>(null)
   const [code, setCode] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -95,6 +98,18 @@ export default function VerifyEmail({ invito = null }: { invito?: string | null 
     }
   }
 
+  /** Il nickname o l'email sbagliati: la registrazione si annulla, e il modulo li ripropone da correggere. */
+  async function correggi() {
+    setBusy(true)
+    setError(null)
+    try {
+      await annullaRegistrazione()
+    } catch (err) {
+      setError(err instanceof ApiFetchError ? err.message : 'Non riesco a tornare indietro. Riprova.')
+      setBusy(false)
+    }
+  }
+
   return (
     <div className="verifica">
       <div className="verifica__theme">
@@ -109,7 +124,14 @@ export default function VerifyEmail({ invito = null }: { invito?: string | null 
           <h1 className="verifica__title">Controlla la posta</h1>
           <p className="verifica__lede">
             Abbiamo mandato un codice di {CODE_LENGTH} cifre a{' '}
-            <strong>{player?.email ?? 'la tua email'}</strong>. Vale {CODE_TTL_MINUTES} minuti.
+            <strong>{player?.email ?? 'la tua email'}</strong>
+            {player?.inAttesa ? (
+              <>
+                {' '}
+                per <strong>@{player.nickname}</strong>
+              </>
+            ) : null}
+            . Vale {CODE_TTL_MINUTES} minuti.
           </p>
         </header>
 
@@ -162,9 +184,20 @@ export default function VerifyEmail({ invito = null }: { invito?: string | null 
           >
             {attesa > 0 ? `Rimanda il codice fra ${attesa}s` : 'Rimanda il codice'}
           </button>
-          <button type="button" className="verifica__link verifica__link--tenue" onClick={() => void logout()}>
-            Esci e usa un altro account
-          </button>
+          {player?.inAttesa ? (
+            <button
+              type="button"
+              className="verifica__link verifica__link--tenue"
+              onClick={() => void correggi()}
+              disabled={busy}
+            >
+              Ho sbagliato nickname o email
+            </button>
+          ) : (
+            <button type="button" className="verifica__link verifica__link--tenue" onClick={() => void logout()}>
+              Esci e usa un altro account
+            </button>
+          )}
         </div>
 
         <p className="verifica__nota">Se non lo trovi, guarda nello spam.</p>

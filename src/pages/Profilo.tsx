@@ -8,7 +8,7 @@ import { Button } from '@/components/Button'
 import { CampoCodice } from '@/components/CampoCodice'
 import { Elenco, Riga, Sezione } from '@/components/Elementi'
 import { Field } from '@/components/Field'
-import { IconBook, IconChart, IconLogout, IconMail, IconPeople, IconPerson } from '@/components/Icons'
+import { IconBook, IconChart, IconKey, IconLogout, IconMail, IconPeople, IconPerson } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
@@ -18,6 +18,8 @@ import { PannelloNotifiche } from '@/games/amici/PannelloNotifiche'
 import { Persone } from '@/games/amici/Persone'
 import { ApiFetchError, api } from '@/lib/api'
 import { useAuth, usePlayer } from '@/lib/auth'
+import { useDati } from '@/lib/dati'
+import type { AdminIo } from '@shared/admin'
 import { haptic } from '@/lib/haptics'
 import { formatGameDate } from '@/lib/format'
 import { DOVE } from '@/lib/presenza'
@@ -56,6 +58,8 @@ export default function Profilo() {
   const [persone, setPersone] = useState(false)
   const [nickname, setNickname] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Il pannello di amministrazione: la riga c'e' solo per chi ne ha il ruolo, e lo chiede solo il profilo.
+  const { dati: admin } = useDati<AdminIo>('/admin/io')
 
   return (
     <Pagina titolo="Profilo" indietro={{ a: ROTTE.home, etichetta: da }}>
@@ -143,6 +147,14 @@ export default function Profilo() {
           <Riga icona={<IconLogout size={18} />} titolo="Esci" distruttiva onClick={() => setUscita(true)} />
         </Elenco>
       </Sezione>
+
+      {admin?.admin && (
+        <Sezione>
+          <Elenco>
+            <Riga icona={<IconKey size={18} />} titolo="Pannello admin" a={ROTTE.admin()} />
+          </Elenco>
+        </Sezione>
+      )}
 
       <Sezione>
         <Elenco>

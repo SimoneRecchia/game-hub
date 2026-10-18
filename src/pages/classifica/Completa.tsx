@@ -12,7 +12,7 @@ import { useDati } from '@/lib/dati'
 import { formatNumber } from '@/lib/format'
 import { comprendeOggi, periodoDi } from '@shared/periodi'
 import { BONUS_ANAGRAMMI, PUNTI_FINITA_ANAGRAMMI, PUNTI_PAROLA_ANAGRAMMI } from '@shared/anagrammi'
-import { ERRORE_CATENA, PUNTI_CATENA_PERSA } from '@shared/catena'
+import { ERRORE_CATENA, PUNTI_CATENA_PERSA, SECONDO_ERRORE_CATENA } from '@shared/catena'
 import { ERRORE_GHIGLIOTTINA, PUNTI_GHIGLIOTTINA_PERSA } from '@shared/ghigliottina'
 import { PUNTI_GIOCATA_PAROLIERE } from '@shared/paroliere'
 import { TETTI } from '@shared/punti'
@@ -47,7 +47,7 @@ const LEDE: Record<ChiaveClassifica, string> = {
   anagrammi: `${PUNTI_FINITA_ANAGRAMMI} punti per aver giocato, fino a ${PUNTI_PAROLA_ANAGRAMMI + BONUS_ANAGRAMMI} per ogni parola: di più se la trovi subito.`,
   ghigliottina: `Si parte da ${TETTI.ghigliottina} punti, ${ERRORE_GHIGLIOTTINA} in meno per ogni scelta sbagliata; ${PUNTI_GHIGLIOTTINA_PERSA} se sbagli la parola vincente.`,
   paroliere: `${PUNTI_GIOCATA_PAROLIERE} punti per aver giocato, fino a ${TETTI.paroliere} con le parole della griglia.`,
-  catena: `Si parte da ${TETTI.catena} punti, ${ERRORE_CATENA} in meno per ogni errore; ${PUNTI_CATENA_PERSA} se sbagli la parola finale.`,
+  catena: `Si parte da ${TETTI.catena} punti: ${ERRORE_CATENA} in meno per un errore, ${SECONDO_ERRORE_CATENA} per il secondo sulla stessa parola, e il terzo elemento dimezza; ${PUNTI_CATENA_PERSA} se sbagli la parola finale.`,
   fortuna: 'Quel che Crazy Time, la slot, il blackjack, la roulette e il SuperEnalotto hanno dato o tolto.',
 }
 

@@ -22,6 +22,7 @@ import type { FaseBJ } from './blackjack-tavolo'
 import type { PremioEnalotto } from './superenalotto'
 import type { PuntateRL } from './roulette'
 import type { FaseRL } from './roulette-tavolo'
+import type { AnnuncioVisibile } from './admin'
 import type { EsitoMossaCatena, TerzoElemento, VoceCatena } from './catena'
 import type { GiocoSfidaLibera, ImpostazioniSfidaLibera } from './sfide-libere'
 
@@ -51,6 +52,11 @@ export interface Player {
   emailVerified: boolean
   /** Il nickname si cambia una volta a settimana: da quando si puo' di nuovo, o null se si puo' adesso. */
   nicknameCambiabileDal: string | null
+  /**
+   * La registrazione aspetta il codice: nickname ed email sono suoi per poco, e
+   * si puo' tornare indietro a correggerli (`/auth/register/annulla`).
+   */
+  inAttesa?: boolean
 }
 
 /** Cosa il client deve sapere sulla configurazione, prima di disegnare la UI. */
@@ -1914,6 +1920,8 @@ export interface OggiRisposta {
     /** I primi tre di oggi, fra chi ha fatto punti. */
     podio: Array<GiocatoreBreve & { punti: number }>
   }
+  /** L'avviso a tutti scritto dal pannello di amministrazione, se ce n'e' uno acceso. */
+  annuncio: AnnuncioVisibile | null
 }
 
 /* ───────────────────────────────  Crazy Time  ──────────────────────────────── */

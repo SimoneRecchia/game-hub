@@ -5,12 +5,14 @@ import { describe, expect, it } from 'vitest'
 import {
   DA_INDOVINARE_CATENA,
   ERRORE_CATENA,
+  FONDO_CATENA,
   JOLLY_CATENA,
   MONTEPREMI_CATENA,
   NASCOSTE_CATENA,
   PAROLE_CATENA,
   PASSO_FINALE,
   POSTO_TERZO,
+  SECONDO_ERRORE_CATENA,
   applicaCatena,
   catenaDelGiorno,
   giornataValida,
@@ -18,6 +20,8 @@ import {
   jollyUsabile,
   mosseValide,
   normalizzaCatena,
+  parolaRiconosciuta,
+  parolaVoluta,
   riparteIlMinuto,
   stessaParola,
   svolgiCatena,
@@ -97,7 +101,7 @@ describe('la catena', () => {
     expect(s.montepremi).toBe(MONTEPREMI_CATENA)
   })
 
-  it('un errore costa sei punti e mostra un’altra lettera; il secondo mostra la parola e si va avanti', () => {
+  it('un errore costa dieci punti e mostra un’altra lettera; il secondo ne costa sei, mostra la parola e si va avanti', () => {
     const una = applicaCatena(CATENA, inizio(), prova('lancio'))!
     expect(una.esito).toBe('sbagliata')
     expect(una.dopo.passo).toBe(0)
@@ -107,7 +111,23 @@ describe('la catena', () => {
     expect(due.esito).toBe('rivelata')
     expect(due.dopo.passo).toBe(1)
     expect(due.dopo.parole[0].esito).toBe('rivelata')
-    expect(due.dopo.montepremi).toBe(MONTEPREMI_CATENA - 2 * ERRORE_CATENA)
+    expect(due.dopo.montepremi).toBe(MONTEPREMI_CATENA - ERRORE_CATENA - SECONDO_ERRORE_CATENA)
+    // Sulla parola dopo il primo errore torna a costare dieci.
+    const tre = applicaCatena(CATENA, due.dopo, prova('cammello'))!
+    expect(tre.dopo.montepremi).toBe(MONTEPREMI_CATENA - 2 * ERRORE_CATENA - SECONDO_ERRORE_CATENA)
+  })
+
+  it('tutte le parole sbagliate due volte lasciano trentasei punti, e nessun errore e’ gratis', () => {
+    const sbagliate = NASCOSTE_CATENA.slice(0, PASSO_FINALE).flatMap(() => [prova('nulla'), prova('niente')])
+    const s = gioca(...sbagliate)
+    expect(s.passo).toBe(PASSO_FINALE)
+    expect(s.montepremi).toBe(MONTEPREMI_CATENA - 4 * (ERRORE_CATENA + SECONDO_ERRORE_CATENA))
+    let prima = MONTEPREMI_CATENA
+    for (let i = 1; i <= sbagliate.length; i += 1) {
+      const dopo = gioca(...sbagliate.slice(0, i)).montepremi
+      expect(dopo).toBeLessThan(prima)
+      prima = dopo
+    }
   })
 
   it('il minuto riparte dopo un errore o un jolly, non dopo una parola trovata o mostrata', () => {
@@ -142,14 +162,24 @@ describe('la catena', () => {
     expect(applicaCatena(CATENA, s, { k: 'c' })).toBeNull()
   })
 
-  it('con un jolly usato il terzo elemento si compra, e costa quanto un errore', () => {
+  it('con un jolly usato il terzo elemento si compra, e dimezza il montepremi', () => {
     const s = gioca({ k: 'j' }, ...giuste)
     expect(s.terzo).toBe('no')
     const comprato = applicaCatena(CATENA, s, { k: 'c' })!
     expect(comprato.esito).toBe('comprato')
     expect(comprato.dopo.terzo).toBe('comprato')
-    expect(comprato.dopo.montepremi).toBe(MONTEPREMI_CATENA - ERRORE_CATENA)
+    expect(comprato.dopo.montepremi).toBe(MONTEPREMI_CATENA / 2)
     expect(applicaCatena(CATENA, comprato.dopo, { k: 'c' })).toBeNull()
+    // Dopo un errore si dimezza quel che resta.
+    const conErrore = applicaCatena(CATENA, gioca({ k: 'j' }, prova('lancio'), ...giuste), { k: 'c' })!
+    expect(conErrore.dopo.montepremi).toBe((MONTEPREMI_CATENA - ERRORE_CATENA) / 2)
+  })
+
+  it('dimezzato dopo tutti gli errori non scende sotto quel che vale una finale sbagliata', () => {
+    const sbagliate = NASCOSTE_CATENA.slice(0, PASSO_FINALE).flatMap(() => [prova('nulla'), prova('niente')])
+    const s = applicaCatena(CATENA, gioca({ k: 'j' }, ...sbagliate), { k: 'c' })!
+    expect(s.dopo.montepremi).toBe(FONDO_CATENA)
+    expect(FONDO_CATENA).toBeGreaterThan(0)
   })
 
   it('nella finale non si provano parole: la risposta e’ una sola, a parte', () => {
@@ -164,10 +194,11 @@ describe('la catena', () => {
   it('il tempo finito mostra la parola e costa come i due errori che l’avrebbero mostrata', () => {
     const subito = applicaCatena(CATENA, inizio(), { k: 't' })!
     expect(subito.esito).toBe('scaduta')
-    expect(subito.dopo).toMatchObject({ passo: 1, montepremi: MONTEPREMI_CATENA - 2 * ERRORE_CATENA })
+    const dueErrori = MONTEPREMI_CATENA - ERRORE_CATENA - SECONDO_ERRORE_CATENA
+    expect(subito.dopo).toMatchObject({ passo: 1, montepremi: dueErrori })
     expect(subito.dopo.parole[0]).toMatchObject({ esito: 'rivelata', errori: 2 })
     const dopoUnErrore = applicaCatena(CATENA, gioca(prova('lancio')), { k: 't' })!
-    expect(dopoUnErrore.dopo).toMatchObject({ passo: 1, montepremi: MONTEPREMI_CATENA - 2 * ERRORE_CATENA })
+    expect(dopoUnErrore.dopo).toMatchObject({ passo: 1, montepremi: dueErrori })
   })
 
   it('il terzo elemento non si compra prima della finale', () => {
@@ -185,6 +216,37 @@ describe('la catena', () => {
       { k: 'c' },
     ])
     expect(mosseValide('no')).toEqual([])
+  })
+})
+
+describe('la parola scritta per intero', () => {
+  const finale = () => gioca(...giuste)
+
+  it('vale anche con le lettere che si vedevano già', () => {
+    // La parola si scrive dopo la L; chi la riscrive tutta manda "llibero".
+    expect(parolaVoluta('libero', 'llibero', { prime: 1, ultima: false })).toBe('libero')
+    expect(parolaVoluta('libero', 'libero', { prime: 1, ultima: false })).toBe('libero')
+    // Dopo un errore se ne vedono due: riscrivere la seconda, o tutte e due, vale lo stesso.
+    expect(parolaVoluta('libero', 'liibero', { prime: 2, ultima: false })).toBe('libero')
+    expect(parolaVoluta('libero', 'lilibero', { prime: 2, ultima: false })).toBe('libero')
+    const s = applicaCatena(CATENA, inizio(), prova(parolaRiconosciuta(CATENA, inizio(), 'llibero')))!
+    expect(s.esito).toBe('giusta')
+  })
+
+  it('nella finale vale anche scrivendo l’ultima lettera, o le prime due', () => {
+    // NA…E: si scrive VAL. Chi scrive VALE manda "navalee", chi scrive NAVALE "nanavalee", chi scrive NAVAL "nanavale".
+    for (const scritta of ['navale', 'navalee', 'nanavalee', 'nanavale', 'naavalee']) {
+      expect(parolaRiconosciuta(CATENA, finale(), scritta), scritta).toBe('navale')
+    }
+  })
+
+  it('una parola sbagliata resta sbagliata', () => {
+    expect(parolaVoluta('libero', 'llibera', { prime: 1, ultima: false })).toBe('llibera')
+    expect(parolaVoluta('libero', 'lancio', { prime: 1, ultima: false })).toBe('lancio')
+    expect(parolaVoluta('libero', 'l', { prime: 1, ultima: false })).toBe('l')
+    expect(parolaRiconosciuta(CATENA, finale(), 'navigee')).toBe('navigee')
+    // Le lettere date al loro posto, ma niente in mezzo, non sono una parola.
+    expect(parolaRiconosciuta(CATENA, finale(), 'nae')).toBe('nae')
   })
 })
 

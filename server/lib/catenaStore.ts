@@ -279,10 +279,10 @@ export async function salvaPartita(db: D1Database, row: PartitaRow, modifica: Mo
 
 /**
  * I tempi finiti, applicati dalla loro scadenza: ogni parola della catena il cui
- * minuto e' passato, margine compreso, prende una mossa `t` — si mostra, e il
- * montepremi si dimezza — e il minuto della dopo parte da quella scadenza, non
- * da adesso: una partita lasciata a meta' e riaperta un'ora dopo e' quella che
- * sarebbe stata guardandola. Poi, se e' finito anche il tempo della finale, la
+ * minuto e' passato, margine compreso, prende una mossa `t` — si mostra, e
+ * costa come i due errori che l'avrebbero mostrata — e il minuto della dopo
+ * parte da quella scadenza, non da adesso: una partita lasciata a meta' e
+ * riaperta un'ora dopo e' quella che sarebbe stata guardandola. Poi, se e' finito anche il tempo della finale, la
  * chiude senza risposta e senza punti. Una scrittura sola, condizionata: una
  * richiesta arrivata insieme puo' averla gia' fatta, e chi perde rilegge.
  */
