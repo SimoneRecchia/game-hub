@@ -1238,25 +1238,57 @@ apre l'app perderebbe una vincita che il server sa gia'. Per lo stesso ordine
 dei pagamenti `assicura` guarda solo le schede dopo l'ultimo concorso pagato.
 
 **La diretta e' in 3D vero, con three.js, e arriva a parte.** `Urna`
-(`src/games/superenalotto/urna.ts`) e' una scena sola: la sfera di vetro sul
-piedistallo d'oro, le novanta palline con il numero dipinto due volte, davanti
-e dietro, il tubo, la rotaia, e una regia che segue la pallina estratta. Le
-palline nell'urna sono piccole, con una forma sola e un'immagine di 128 per 64
-(`LATO_FACCIA`): novanta immagini grandi sarebbero dodici mega nella scheda
-grafica. Quella che esce cresce nel tubo fino alla misura della rotaia
-(`RB_FUORI`), e prende un'immagine grande, perché li' la si guarda da vicino. Tutto e'
-una funzione del tempo della diretta, tranne le palline nell'urna, che hanno una
-fisica loro — l'aria dal fondo che fa la fontana, le pareti, gli urti — con due
-vettori di lavoro, perché un vettore nuovo per coppia sarebbero ventimila
-oggetti al secondo. Niente ombre vere e un ambiente calcolato
-(`RoomEnvironment`) invece di un'immagine da scaricare: dopo la roulette, la
-regola e' che un telefono la faccia girare senza scaldarsi. three.js sta solo
-nel pezzo della diretta (`Diretta`, con `lazy`): la pagina della schedina non lo
-scarica. Chi ha la pagina aperta vede la diretta aprirsi da sola un minuto
-prima; chi arriva a meta' la trova a meta', e dopo la si rivede ("Rivedi
-l'estrazione"), con lo stesso orologio che parte da li'. Senza WebGL l'urna e'
-disegnata e ferma, e le palline si leggono sotto. La schedina invece e' di
-carta: le caselle stampate in rosso, la croce a penna blu che si traccia, i
+(`src/games/superenalotto/urna.ts`) e' uno studio televisivo: la sfera di vetro
+sul piedistallo d'oro, al centro di una pedana di vetro nero che la riflette, le
+novanta palline con il numero dipinto due volte, il tubo, la rotaia, i
+riflettori che si muovono, la parete di luci in fondo e il pulviscolo fuori
+fuoco. Tutto quel che si vede e' una funzione del tempo della diretta — la
+regia, le luci, la pallina che esce, i lampi — tranne le palline nell'urna, che
+hanno una fisica loro (la fontana dal fondo, un giro attorno all'asse, le
+pareti, gli urti) fatta con pochi vettori di lavoro: nel giro di un fotogramma
+non nasce nessun oggetto. I tempi stanno in `tempi.ts`, che leggono l'urna e le
+scritte, e la regia e' una scaletta (`REGIA`): lo studio dall'alto prima
+dell'inizio, la gru che scende con il titolo, l'urna da vicino mentre si
+mescola, e per ogni pallina la bocca nell'attesa (le luci calano, il tamburo),
+il tubo seguito da vicino con la scia che si accende, la vetrina al suo posto
+con il numero verso la camera, poi indietro; alla fine le quattro sulla rotaia.
+La camera segue la scaletta senza ritardo — non ha salti, e un ritardo
+lascerebbe la pallina fuori quadro — e assorbe in un attimo solo i salti veri,
+una finestra ridimensionata o un telefono che si era fermato; il primo
+fotogramma e' gia' quello giusto. Le scritte coprono una parte dello schermo, e
+la diretta dice all'urna quanta (`inquadratura`): la proiezione si centra nel
+campo che resta (`setViewOffset`), e ci scivola quando arriva il riepilogo. Un
+test (`__tests__/diretta.test.ts`) tiene la scaletta in ordine, con ogni
+passaggio finito prima dello stacco dopo, ogni pallina finita prima della
+prossima e il riepilogo prima della fine della diretta, che resta
+`DURATA_DIRETTA_MS` perché il server paga li'. I suoni seguono gli stessi tempi:
+`estratto` in `suoni.ts` ha il colpo alla bocca e il rotolare sulla rotaia dove
+li mette `tempi.ts`, e se cambiano gli uni va rifatto l'altro. Un telefono la
+deve far girare senza scaldarsi: niente ombre, niente post-produzione, e niente
+vernice sul vetro (`clearcoat`), che con la sfera a tutto schermo costerebbe un
+secondo riflesso per pixel. I riflessi vengono da un ambiente calcolato una
+volta, uno studio buio con i pannelli dei riflettori (`studioDaRiflettere` in
+`effetti.ts`); i fasci, i lampi e le scintille sono forme che sommano il colore,
+con materiali scritti a mano; il riflesso sulla pedana e' l'urna disegnata
+capovolta in un pozzo sotto il vetro nero, con le copie disegnate prima del
+vetro, che le scurisce, e le palline riflesse in un disegno solo
+(`InstancedMesh`), senza numeri. Le palline nell'urna hanno una forma sola e
+un'immagine piccola ciascuna (`LATO_FACCIA`); quella che esce cresce nel tubo
+fino alla misura della rotaia (`RB_FUORI`) e prende un'immagine di 512 per 256,
+perché in vetrina riempie mezzo schermo. three.js sta solo nel pezzo della
+diretta (`Diretta`, con `lazy`): la pagina della schedina non lo scarica. Chi ha
+la pagina aperta vede la diretta aprirsi da sola un minuto prima; chi arriva a
+meta' la trova a meta', e dopo la si rivede ("Rivedi l'estrazione"), con lo
+stesso orologio che parte da li'. Senza movimento la camera sta ferma sull'urna
+da lontano, i fasci non girano e i lampi sono deboli; senza WebGL l'urna e'
+disegnata e ferma, e le palline si leggono sotto. Sopra c'e' la grafica di una
+diretta (`Diretta.css`), che si muove solo con `transform` e `opacity`: il
+bollino rosso, il conto alla rovescia con gli ultimi tre secondi grandi, il
+titolo d'oro con la luce che passa, i sottopancia in basso — quello della
+pallina ha il numero anche in lettere (`inLettere`), ed e' d'oro se il numero e'
+di chi guarda — e lo screen reader sente una riga per momento da una regione
+sua, non le scritte che cambiano dieci volte al secondo. La schedina invece e'
+di carta: le caselle stampate in rosso, la croce a penna blu che si traccia, i
 numeri scritti a mano (`--font-mano`) e il timbro "Giocata".
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
