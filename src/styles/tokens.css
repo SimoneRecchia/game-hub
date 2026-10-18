@@ -596,6 +596,16 @@
   --key-assente-ink: #ffffff;
   --key-assente-ink: light-dark(#ffffff, rgba(245, 246, 250, 0.42));
 
+  /* I colori dei grafici del pannello di amministrazione: vedi src/pages/admin/Grafici.css. */
+  --adm-serie-1: #2a78d6;
+  --adm-serie-1: light-dark(#2a78d6, #3987e5);
+  --adm-serie-1-tenue: #86b6ef;
+  --adm-serie-1-tenue: light-dark(#86b6ef, #184f95);
+  --adm-serie-2: #eb6834;
+  --adm-serie-2: light-dark(#eb6834, #d95926);
+  --adm-negativo: #e34948;
+  --adm-negativo: light-dark(#e34948, #e66767);
+
   /* ---- Tessere e caselle dello Scarabeo ----
      Scritti a mano e non ricavati con `color-mix` dai colori di sistema: la
      mescola cadeva dove capitava — in chiaro i premi erano quasi invisibili e in

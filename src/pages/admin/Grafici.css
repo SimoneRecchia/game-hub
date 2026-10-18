@@ -1,0 +1,378 @@
+/*
+ * I grafici del pannello.
+ *
+ * I colori dei dati sono quattro, e dicono una cosa ciascuno: il blu della
+ * prima serie, la sua versione tenue per la parte di una colonna che conta
+ * meno (le partite non finite), l'arancione della seconda serie, e il rosso
+ * della meta' sotto lo zero. Sono passati dal controllo per i daltonici
+ * (scripts/validate_palette.js della skill dei grafici) contro le superfici
+ * dell'app, in chiaro e in scuro: blu e arancione staccano anche per chi non
+ * distingue il rosso dal verde. Non sono l'indaco dell'interfaccia, che vuol
+ * dire "scelto", ne' il verde del gioco, che vuol dire "giusto".
+ *
+ * Stanno in tokens.css (`--adm-*`) con gli altri colori, e non dentro il
+ * pannello, perché i fogli che si aprono sopra sono nel body.
+ */
+
+.adm-grafico {
+  position: relative;
+  width: 100%;
+  border-radius: var(--r-sm);
+  touch-action: pan-y;
+}
+
+.adm-grafico:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 4px;
+}
+
+.adm-grafico__svg {
+  display: block;
+  overflow: visible;
+}
+
+.adm-grafico__griglia {
+  stroke: var(--separator);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.adm-grafico__base {
+  stroke: var(--separator-opaque);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+/* Il limite e' una riga piena, piu' scura della griglia: tratteggiata sembrerebbe una previsione. */
+.adm-grafico__limite {
+  stroke: var(--label-tertiary);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.adm-grafico__tacca,
+.adm-grafico__nota {
+  fill: var(--label-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-grafico__tacca.is-oggi {
+  fill: var(--label);
+  font-weight: 700;
+}
+
+.adm-grafico__nota {
+  font-weight: 600;
+}
+
+.adm-grafico__fine {
+  fill: var(--label);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Il giorno sotto il dito: una fascia dietro le colonne, e le altre restano
+ * come sono. Sbiadirle le confonderebbe con la parte tenue delle colonne
+ * impilate, che e' un'altra serie.
+ */
+.adm-grafico__evidenza {
+  fill: var(--fill-tertiary);
+}
+
+.adm-grafico__linea {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.adm-grafico__velo {
+  opacity: 0.1;
+}
+
+.adm-grafico__mirino {
+  stroke: var(--label-tertiary);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+/* L'anello del colore della carta: il pallino si stacca dalla linea che attraversa. */
+.adm-grafico__punto {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+/* ─────────────────────────────  Il fumetto  ───────────────────────────── */
+
+.adm-fumetto {
+  position: absolute;
+  top: -6px;
+  z-index: 2;
+  min-width: 128px;
+  max-width: 168px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--bg-elevated);
+  box-shadow:
+    0 0 0 0.5px var(--separator),
+    var(--shadow-md);
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+}
+
+.adm-fumetto__titolo {
+  margin-bottom: 2px;
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.adm-fumetto__riga {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  white-space: nowrap;
+}
+
+.adm-fumetto__riga strong {
+  color: var(--label);
+  font-weight: 700;
+}
+
+.adm-fumetto__chiave {
+  flex: none;
+  width: 10px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.adm-fumetto__chiave.is-quadro {
+  height: 8px;
+  width: 8px;
+  border-radius: 2px;
+}
+
+/* ─────────────────────────────  La legenda  ───────────────────────────── */
+
+.adm-legenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-4);
+  margin-bottom: var(--sp-2);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-legenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.adm-legenda__chiave {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.adm-legenda__chiave.is-linea {
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+/* ─────────────────────────────  La misura  ───────────────────────────── */
+
+.adm-misura {
+  --misura: var(--adm-serie-1);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.adm-misura.is-quasi {
+  --misura: var(--orange);
+}
+
+.adm-misura.is-pieno {
+  --misura: var(--red);
+}
+
+.adm-misura__testa,
+.adm-misura__piede {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.adm-misura__nome {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-misura__valore {
+  flex: none;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-misura__valore strong {
+  color: var(--label);
+  font-weight: 700;
+}
+
+.adm-misura__binario {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--misura) 16%, transparent);
+}
+
+.adm-misura__pieno {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--misura);
+  transition: width 700ms var(--ease-push);
+}
+
+.adm-misura__piede {
+  justify-content: flex-start;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+.adm-misura__quota {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-misura__avviso {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: var(--label);
+}
+
+.adm-misura__avviso svg {
+  color: var(--misura);
+}
+
+/* ─────────────────────────  La linea dentro una cifra  ───────────────────────── */
+
+.adm-andamento {
+  display: block;
+  width: 100%;
+  height: 28px;
+  overflow: visible;
+}
+
+.adm-andamento__linea {
+  fill: none;
+  stroke: var(--label-tertiary);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.adm-andamento__oggi {
+  fill: var(--adm-serie-1);
+  stroke: var(--adm-serie-1);
+  stroke-width: 6;
+}
+
+/* ─────────────────────────  Le barre di traverso  ───────────────────────── */
+
+.adm-barre__righe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.adm-barre__riga {
+  display: grid;
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 28px;
+}
+
+.adm-barre__nome {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-size: var(--text-subhead);
+  font-weight: 500;
+}
+
+.adm-barre__nome > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-barre__binario {
+  display: block;
+  height: 14px;
+}
+
+.adm-barre__pieno {
+  display: flex;
+  gap: 2px;
+  height: 100%;
+  min-width: 0;
+  transition: width 700ms var(--ease-push);
+}
+
+.adm-barre__parte {
+  flex-basis: 0;
+  min-width: 3px;
+  height: 100%;
+}
+
+/* Dritte sulla linea di base, tonde dove finisce il dato. */
+.adm-barre__parte:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.adm-barre__dopo {
+  min-width: 4.5rem;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.adm-barre__dopo strong {
+  color: var(--label);
+  font-weight: 700;
+}
+
+@container adm-carta (max-width: 420px) {
+  .adm-barre__riga {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px var(--sp-3);
+  }
+
+  .adm-barre__binario {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

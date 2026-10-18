@@ -234,7 +234,9 @@ describe('i numeri del pannello', () => {
     expect(righe.dati.conteggi).toEqual({ players: 2 })
 
     const s = (await chiama<AdminSistema>('GET', '/admin/sistema', capo)).dati
-    expect(s.amministratori).toEqual([{ id: capo.id, nickname: 'capo', email: PROPRIETARIO, ruolo: 'proprietario' }])
+    expect(s.amministratori).toEqual([
+      { id: capo.id, nickname: 'capo', avatarColor: '#007aff', email: PROPRIETARIO, ruolo: 'proprietario' },
+    ])
 
     const cf = (await chiama<AdminCloudflare>('GET', '/admin/cloudflare', capo)).dati
     expect(cf).toMatchObject({ configurato: false, mancano: ['CF_ACCOUNT_ID', 'CF_API_TOKEN'] })

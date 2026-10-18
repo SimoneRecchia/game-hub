@@ -614,6 +614,7 @@ export const adminRoutes = new Hono<AppEnv>()
       amministratori: (amministratori.results as PlayerRow[]).map((r) => ({
         id: r.id,
         nickname: r.nickname,
+        avatarColor: r.avatar_color,
         email: r.email,
         ruolo: ruoloDi(env, r) ?? 'admin',
       })),

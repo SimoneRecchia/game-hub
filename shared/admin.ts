@@ -421,7 +421,7 @@ export interface AdminSistema {
   giornata: { data: string; numero: number }
   prossimaGiornataMs: number
   configurazione: Array<{ nome: string; valore: string; stato: 'ok' | 'avviso' | 'spento' }>
-  amministratori: Array<{ id: string; nickname: string; email: string | null; ruolo: RuoloAdmin }>
+  amministratori: Array<{ id: string; nickname: string; avatarColor: string; email: string | null; ruolo: RuoloAdmin }>
 }
 
 /** Un'email mascherata per lo schermo: "re•••@gmail.com". */

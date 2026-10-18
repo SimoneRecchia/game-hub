@@ -506,9 +506,12 @@ export async function contenuti(db: D1Database, adesso = Date.now()): Promise<Ad
   }
 }
 
-/** Una stringa JSON della tabella, aperta; se non lo e', com'e'. */
+/**
+ * Una stringa JSON della tabella, aperta; se non lo e', com'e'. Solo oggetti e
+ * liste: la soluzione del sudoku sono ottantuno cifre, e aperta sarebbe un numero.
+ */
 function apri(valore: unknown): unknown {
-  if (typeof valore !== 'string') return valore
+  if (typeof valore !== 'string' || !/^\s*[[{]/.test(valore)) return valore
   try {
     return JSON.parse(valore)
   } catch {

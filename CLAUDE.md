@@ -2987,6 +2987,59 @@ dimensiona con `83.34cqh` per stare in altezza, ma dove la pagina scorre
 collassando le caselle. Per questo la media query orizzontale rimette
 `container-type: normal` e torna a dimensionare sulla larghezza.
 
+**Il pannello di amministrazione si apre con l'email e con un codice.** Il
+proprietario e' chi ha un'email confermata fra quelle di `ADMIN_EMAILS`
+(`wrangler.toml`), e non sta nel database, perché non lo si possa togliere dal
+pannello; gli altri amministratori li nomina lui (`players.ruolo`), e non
+toccano ne' il suo account ne' i ruoli (`puoToccare`). La sessione dura un anno,
+e un telefono perso non deve aprire il pannello: serve anche un codice
+all'email, che lo sblocca su quella sessione per dodici ore
+(`sessions.admin_fino`, `SBLOCCO_ADMIN_ORE`), con una tabella sua
+(`admin_codici`), perché quella dei codici per entrare ha un `CHECK` sugli
+scopi. Le rotte sono `/api/admin` (`server/routes/admin.ts`), i tipi in
+`shared/admin.ts`, i numeri in `server/lib/adminDati.ts`: ogni schermata fa le
+sue letture in un batch solo, e con una istruzione per gioco resta sotto le
+cinquanta query di una richiesta. D1 lega i parametri per posizione e non per
+nome (`:nome` non va): le liste costruite al volo mettono i `?` in ordine. Ogni
+modifica va nel registro (`admin_registro`), nello stesso batch quando c'e' un
+batch. Tre cose nuove servono al pannello e restano anche fuori: la presenza
+segna i giorni in cui ognuno apre l'app (`attivita_giorni`, un INSERT OR IGNORE
+nel batch di `segnaPresenza`; la `0053` l'ha riempita dalle partite di prima),
+gli errori non gestiti finiscono in `errori_server` (`salvaErrore`, in
+`app.onError`, dopo la risposta), e l'annuncio acceso arriva con `/api/oggi` in
+cima alle Giornaliere (`AvvisoATutti`, che chi lo chiude non rivede). Un account
+sospeso non entra: `resolveSession` non trova le sue sessioni, e la sospensione
+le cancella. Le statistiche di Cloudflare le legge l'API con un token in sola
+lettura (`CF_ACCOUNT_ID`, `CF_API_TOKEN` come secret, vedi `DEPLOY.md`), una
+sezione per richiesta, cosi' un permesso che manca al token spegne solo la sua;
+i valori stanno scritti nelle query, controllati, perché gli scalari della
+GraphQL di Cloudflare hanno nomi loro. La console SQL legge soltanto, finché non
+si accende la scrittura (`soloLettura`: WITH puo' precedere un DELETE).
+
+**Il pannello di amministrazione e' un attrezzo, non una scheda.** A `/admin`
+la tab bar e il menu dei giochi spariscono (`body:has(.adm-laterale)` in
+`Admin.css`), e al loro posto, sul computer, c'e' il menu delle sezioni nello
+stesso vetro; sul telefono le sezioni stanno in un foglio, mai in una fila che
+scorre di lato. E' una rotta sola (`/admin/*`): cambiando sezione il menu resta
+dov'e', e le sezioni sostituiscono l'indirizzo, cosi' la freccia indietro torna
+al profilo. Il pannello ha tre porte — chi non e' amministratore, il codice, il
+pannello —, e le decide `/admin/io`, ma ogni risposta del server le rimette in
+discussione (`useChiama`): uno sblocco scaduto a meta' di una modifica riporta al
+codice da qualunque sezione. E' piu' fitto del resto dell'app (carte piccole,
+cifre in griglia, tabelle), e tutto si misura sul contenuto (`container: adm`) e
+non sullo schermo, perché il menu del computer si prende la sua parte. Le tabelle
+larghe scorrono dentro la loro cornice, che e' posizionata: una scritta nascosta
+assoluta, fuori da li', allargava la pagina intera. I grafici sono SVG scritti a
+mano, disegnati in pixel sulla larghezza misurata e non stirati da un viewBox, con
+quattro colori loro (`--adm-*`: il blu, il blu tenue della parte che conta meno,
+l'arancione della seconda serie, il rosso sotto lo zero), passati al controllo
+per i daltonici sui due temi; il dito o le frecce cercano il giorno, e chi legge
+lo schermo ha la tabella. Ogni azione che non si disfa chiede conferma con il
+nome di quel che fa, eliminare un account vuole il nickname scritto, la console
+scrive solo dopo una conferma con la query sotto gli occhi, e le soluzioni del
+giorno stanno dietro un bottone. Contare le righe del database costa letture: si
+fa a richiesta, quaranta tabelle per volta.
+
 ## Il design
 
 **Deve sembrare un'app, non un sito.** Ogni schermata e' una `Pagina`

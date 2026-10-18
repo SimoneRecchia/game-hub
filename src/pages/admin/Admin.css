@@ -1,0 +1,2854 @@
+/*
+ * Il pannello di amministrazione.
+ *
+ * Un cruscotto dentro l'app: le stesse superfici, gli stessi raggi, lo stesso
+ * indaco per le scelte, ma piu' fitto — carte da venti punti di raggio invece
+ * di ventiquattro, cifre in griglia, tabelle — perché qui si guardano tante
+ * cose insieme. Tutto si misura sul contenuto (`container: adm`) e non sullo
+ * schermo: sul computer il menu delle sezioni si prende la sua parte.
+ */
+
+/* ─────────────────────────  Il guscio: niente tab bar, il menu delle sezioni  ───────────────────────── */
+
+/*
+ * Il pannello e' un attrezzo a parte: la tab bar e il menu dei giochi
+ * spariscono, come nelle schermate di gioco, e sul computer al posto del menu
+ * dei giochi c'e' quello delle sezioni (`adm-laterale`), nello stesso posto.
+ */
+body:has(.adm-laterale) .tabbar,
+body:has(.adm-laterale) .laterale {
+  display: none;
+}
+
+body:has(.adm-laterale) .pagina__corpo {
+  padding-bottom: calc(var(--sp-12) + var(--safe-bottom));
+}
+
+.adm-laterale {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .adm-laterale {
+    position: fixed;
+    z-index: 50;
+    inset: 0 auto 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    width: var(--sidebar-w);
+    padding: calc(var(--safe-top) + var(--sp-5)) var(--sp-3) var(--sp-4);
+    overflow-y: auto;
+    background: var(--material-regular);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-right: 0.5px solid var(--separator);
+  }
+}
+
+.adm-solo-telefono {
+  display: contents;
+}
+
+@media (min-width: 900px) {
+  .adm-solo-telefono {
+    display: none;
+  }
+}
+
+.adm-laterale__marchio {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-1) var(--sp-3) var(--sp-3);
+  color: var(--label);
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  letter-spacing: var(--tracking-tight);
+}
+
+.adm-laterale__marchio img {
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.adm-laterale__admin {
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-family: var(--font-text);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.adm-laterale__voci {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.adm-laterale__gruppo-nome {
+  margin: var(--sp-2) var(--sp-3) var(--sp-1);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.adm-laterale__gruppo ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.adm-laterale__voce {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 36px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  color: var(--label);
+  font-size: var(--text-subhead);
+  font-weight: 500;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.adm-laterale__voce svg {
+  flex: none;
+  color: var(--label-secondary);
+}
+
+.adm-laterale__voce:hover {
+  background: var(--fill-quaternary);
+}
+
+.adm-laterale__voce.is-attiva {
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.adm-laterale__voce.is-attiva svg {
+  color: var(--brand);
+}
+
+.adm-laterale__piede {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin-top: auto;
+  padding-top: var(--sp-4);
+}
+
+.adm-laterale__io {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.adm-laterale__io-testo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.adm-laterale__io-nome {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-laterale__io-sotto {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+.adm-laterale__esci {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 36px;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  color: var(--brand);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.adm-laterale__esci:hover {
+  background: var(--fill-quaternary);
+}
+
+/* Il bottone "Aggiorna" gira mentre la richiesta e' in corso. */
+.adm-ricarica {
+  display: contents;
+}
+
+.adm-ricarica.is-gira svg {
+  animation: adm-gira 900ms linear infinite;
+}
+
+@keyframes adm-gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.adm-menu__gruppo .sezione__titolo {
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+/* ─────────────────────────────  Il contenuto  ───────────────────────────── */
+
+.adm {
+  container: adm / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.adm-dati {
+  display: contents;
+}
+
+/* Mentre arriva la pagina dopo di un elenco, quella di prima resta, sbiadita. */
+.adm-dati.is-aggiorna > * {
+  opacity: 0.55;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.adm-avviso-dati {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--orange) 12%, transparent);
+  font-size: var(--text-footnote);
+  color: var(--label);
+}
+
+.adm-griglia {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+}
+
+@container adm (min-width: 700px) {
+  .adm-griglia {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .adm-griglia--larga {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  }
+}
+
+@container adm-carta (min-width: 560px) {
+  .adm-griglia--interna {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.adm-griglia--interna {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.adm-pila {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* ─────────────────────────────  La carta  ───────────────────────────── */
+
+.adm-carta {
+  container: adm-carta / inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+  padding: var(--sp-4) var(--sp-4) var(--sp-5);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+@container adm (min-width: 560px) {
+  .adm-carta {
+    padding: var(--sp-5);
+  }
+}
+
+.adm-carta__testa {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.adm-carta__icona {
+  display: grid;
+  place-items: center;
+  flex: none;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.adm-carta__icona:has(.adm-icona-gioco) {
+  background: none;
+}
+
+/* Il titolo cede il posto alle azioni andando a capo, invece di schiacciarsi: sotto i dieci caratteri non si legge. */
+.adm-carta__testa:has(.adm-carta__azioni) {
+  flex-wrap: wrap;
+}
+
+.adm-carta__titoli {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+
+.adm-carta__titolo {
+  font-size: var(--text-headline);
+  font-weight: 700;
+  letter-spacing: var(--tracking-normal);
+}
+
+.adm-carta__sotto {
+  margin-top: 1px;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-carta__azioni {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex: none;
+}
+
+.adm-carta__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* Un elenco a righe dentro la carta arriva fino ai bordi, come nelle Impostazioni. */
+.adm-carta--elenco {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.adm-carta--elenco > .adm-carta__testa {
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+}
+
+@container adm (min-width: 560px) {
+  .adm-carta--elenco > .adm-carta__testa {
+    padding: var(--sp-5) var(--sp-5) var(--sp-3);
+  }
+}
+
+.adm-carta--elenco > .adm-carta__corpo {
+  gap: 0;
+}
+
+.adm-invito .adm-carta__testa {
+  flex-wrap: wrap;
+}
+
+.adm-invito .adm-carta__corpo:empty {
+  display: none;
+}
+
+.adm-invito__azione {
+  align-self: flex-start;
+}
+
+.adm-pericolo {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--red) 28%, transparent),
+    var(--shadow-sm);
+}
+
+.adm-pericolo .adm-carta__corpo {
+  align-items: flex-start;
+}
+
+/* ─────────────────────────────  Le cifre  ───────────────────────────── */
+
+.adm-cifre {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+/* Tre stanno in una riga anche sul telefono: due e una da sola sembrerebbero un errore. */
+.adm-cifre[data-quante='3'] {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@container adm (min-width: 600px) {
+  .adm-cifre[data-quante='6'] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .adm-cifre[data-quante='4'] {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@container adm (min-width: 960px) {
+  .adm-cifre[data-quante='5'] {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .adm-cifre[data-quante='6'] {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+.adm-cifra {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--label);
+}
+
+.adm-cifra.is-tocca {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.adm-cifra.is-tocca:active {
+  transform: scale(0.98);
+}
+
+@media (hover: hover) {
+  .adm-cifra.is-tocca:hover {
+    box-shadow: var(--shadow-md);
+  }
+}
+
+.adm-cifra__etichetta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: var(--sp-4);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Il numero grande con le cifre proporzionali: tabellari, a questa misura, sembrano larghe. */
+.adm-cifra__valore {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-1);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: var(--tracking-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-cifra__sotto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+.adm-cifra__andamento {
+  margin-top: var(--sp-2);
+}
+
+.adm-cifra__freccia {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  color: var(--label-tertiary);
+}
+
+/* Il pallino di chi e' online adesso, che respira. */
+.adm-vivo {
+  position: relative;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.adm-vivo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--green);
+  animation: adm-respira 1.8s var(--ease-out) infinite;
+}
+
+@keyframes adm-respira {
+  from {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+/* ─────────────────────────────  Pezzi piccoli  ───────────────────────────── */
+
+.adm-tronca {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-mono {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  letter-spacing: 0;
+}
+
+.is-tenue {
+  color: var(--label-secondary);
+}
+
+.adm-nota {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-sottotitolo {
+  margin-bottom: var(--sp-2);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.adm-vuoto-piccolo {
+  padding: var(--sp-3) 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.adm-link {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.adm-link--bottone {
+  align-self: flex-start;
+}
+
+.adm-iniziale {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 28%;
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+}
+
+.adm-icona-gioco {
+  display: inline-flex;
+  flex: none;
+}
+
+.adm-gioco {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-weight: 500;
+}
+
+.adm-gioco > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-chip-codice {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--fill-quaternary);
+  font-family: var(--font-mono);
+  font-size: var(--text-caption-1);
+  color: var(--label);
+}
+
+/* Un bottone piccolo dentro una riga o una testata: "Azzera oggi", "Chiudi". */
+.adm-bottoncino {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--brand-soft);
+  color: var(--brand);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.adm-bottoncino:hover {
+  background: color-mix(in srgb, var(--brand) 20%, transparent);
+}
+
+.adm-bottoncino:active {
+  transform: scale(0.95);
+}
+
+.adm-bottoncino.is-rosso {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+}
+
+.adm-tondo {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--fill-quaternary);
+  color: var(--label-secondary);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.adm-tondo:hover {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+}
+
+/* Un controllo segmentato dentro una testata: non piu' largo di quel che serve. */
+.adm-segmentato {
+  min-width: 220px;
+}
+
+.adm-segmentato .segmented {
+  min-height: 34px;
+}
+
+/* Il pallino di chi e' online, sull'angolo dell'avatar. */
+.adm-avatar {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.adm-punto {
+  display: none;
+}
+
+.adm-avatar .adm-punto.is-online {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 2.5px var(--surface);
+}
+
+.adm-avatar--grande .adm-punto.is-online {
+  width: 16px;
+  height: 16px;
+  right: 1px;
+  bottom: 1px;
+}
+
+/* La barretta dei giorni attivi in trenta, e delle righe di una tabella. */
+.adm-tacchette {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 44px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--adm-serie-1) 16%, transparent);
+}
+
+.adm-tacchette > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+  background: var(--adm-serie-1);
+}
+
+/* Un elenco di nomi e valori, una riga per voce. */
+.adm-voci {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.adm-voci__riga {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  font-size: var(--text-subhead);
+}
+
+.adm-voci__riga + .adm-voci__riga {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-voci__riga:first-child {
+  padding-top: 0;
+}
+
+.adm-voci__riga:last-child {
+  padding-bottom: 0;
+}
+
+.adm-voci__riga dt {
+  color: var(--label-secondary);
+}
+
+.adm-voci__riga dd {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  white-space: nowrap;
+  font-weight: 600;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─────────────────────────────  I campi  ───────────────────────────── */
+
+.adm-campo {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 1px var(--separator);
+  font-size: var(--text-body);
+  color: var(--label);
+  outline: none;
+  transition: box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.adm-campo:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.adm-campo.is-errore {
+  box-shadow: inset 0 0 0 2px var(--red);
+}
+
+.adm-campo--data {
+  width: auto;
+  min-width: 0;
+}
+
+/* La scelta da un elenco: il menu del sistema, vestito da capsula. */
+.adm-scelta {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+
+.adm-scelta select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 34px 0 var(--sp-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow:
+    var(--shadow-sm),
+    inset 0 0 0 0.5px var(--separator);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label);
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.adm-scelta select:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.adm-scelta__giu {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  color: var(--label-secondary);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+/* La ricerca, come la barra di ricerca di iOS. */
+.adm-filtri {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-2);
+}
+
+.adm-filtri .adm-cerca {
+  grid-column: 1 / -1;
+}
+
+@container adm (min-width: 640px) {
+  .adm-filtri {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .adm-filtri .adm-cerca {
+    grid-column: auto;
+  }
+}
+
+.adm-filtri--carta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.adm-filtri--carta .adm-cerca {
+  flex: 1 1 220px;
+}
+
+.adm-cerca {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-height: 40px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-pill);
+  background: var(--fill-tertiary);
+  color: var(--label-secondary);
+}
+
+.adm-cerca:focus-within {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.adm-cerca input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: var(--text-body);
+  color: var(--label);
+}
+
+.adm-cerca input::placeholder {
+  color: var(--label-secondary);
+}
+
+.adm-cerca input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.adm-cerca__via {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--label-tertiary);
+  color: var(--surface);
+}
+
+.adm-conteggio {
+  padding: 0 var(--sp-1);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+/* ─────────────────────────────  Le pagine  ───────────────────────────── */
+
+.adm-pagine {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+}
+
+.adm-pagine__freccia {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--brand);
+}
+
+.adm-pagine__freccia:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.adm-pagine__dove {
+  min-width: 9rem;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.adm-attesa {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+/* ─────────────────────────────  Il codice  ───────────────────────────── */
+
+.adm-codice {
+  position: relative;
+  min-width: 0;
+}
+
+.adm-codice pre {
+  margin: 0;
+  max-height: 480px;
+  overflow: auto;
+  padding: var(--sp-3) var(--sp-4);
+  padding-right: 48px;
+  border-radius: var(--r-sm);
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 0.5px var(--separator);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--label);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  tab-size: 2;
+}
+
+.adm-codice__copia {
+  position: absolute;
+  top: var(--sp-2);
+  right: var(--sp-2);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-xs);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--brand);
+}
+
+/* ─────────────────────────────  La conferma  ───────────────────────────── */
+
+.adm-conferma__testo {
+  font-size: var(--text-body);
+  color: var(--label-secondary);
+  text-align: center;
+  line-height: 1.45;
+}
+
+.adm-conferma__scrivi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.adm-conferma__scrivi strong {
+  color: var(--label);
+  font-family: var(--font-mono);
+}
+
+.adm-conferma__sql {
+  max-height: 200px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--fill-quaternary);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.adm-modifiche {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+}
+
+.adm-modifiche li {
+  overflow-wrap: anywhere;
+}
+
+/* ─────────────────────────────  Lo sblocco  ───────────────────────────── */
+
+.adm-sblocco {
+  display: grid;
+  place-items: center;
+  padding-top: var(--sp-6);
+}
+
+.adm-sblocco__carta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  width: min(100%, 400px);
+  padding: var(--sp-8) var(--sp-5) var(--sp-6);
+  border-radius: var(--r-2xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.adm-sblocco__icona {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.adm-sblocco__titolo {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+}
+
+.adm-sblocco__testo {
+  margin-top: calc(var(--sp-2) * -1);
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+  overflow-wrap: anywhere;
+}
+
+.adm-sblocco__testo strong {
+  color: var(--label);
+}
+
+.adm-sblocco__nota {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-sblocco__errore {
+  font-size: var(--text-footnote);
+  color: var(--red);
+}
+
+.adm-sblocco__link {
+  font-size: var(--text-subhead);
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.adm-sblocco__link:disabled {
+  color: var(--label-secondary);
+  cursor: default;
+}
+
+.adm-sblocco .campo-codice {
+  width: 100%;
+}
+
+/* ─────────────────────────────  Le tabelle  ───────────────────────────── */
+
+/*
+ * Una tabella larga scorre di lato dentro la sua cornice, mai la pagina. La
+ * cornice e' posizionata: senza, le scritte nascoste per chi legge lo schermo
+ * (assolute) avrebbero il contenitore fuori dalla cornice, e allargherebbero la
+ * pagina intera.
+ */
+.adm-tabella-scorre {
+  position: relative;
+  overflow-x: auto;
+  margin: 0 calc(var(--sp-4) * -1);
+  padding: 0 var(--sp-4);
+  overscroll-behavior-x: contain;
+}
+
+@container adm (min-width: 560px) {
+  .adm-tabella-scorre {
+    margin: 0 calc(var(--sp-5) * -1);
+    padding: 0 var(--sp-5);
+  }
+}
+
+.adm-tabella {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-subhead);
+}
+
+.adm-tabella th,
+.adm-tabella td {
+  padding: var(--sp-2) var(--sp-3);
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 0.5px solid var(--separator);
+}
+
+.adm-tabella th:first-child,
+.adm-tabella td:first-child {
+  padding-left: 0;
+}
+
+.adm-tabella th:last-child,
+.adm-tabella td:last-child {
+  padding-right: 0;
+}
+
+.adm-tabella thead th {
+  padding-top: 0;
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.adm-tabella tbody th {
+  font-weight: 500;
+}
+
+.adm-tabella tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.adm-tabella .is-numero {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-tabella .is-azione {
+  text-align: right;
+}
+
+/*
+ * Le colonne che dicono di nuovo un'altra (il netto dei giocatori e' il banco
+ * col segno girato) lasciano il posto sul telefono.
+ */
+@container adm-carta (max-width: 520px) {
+  .adm-tabella .is-largo {
+    display: none;
+  }
+}
+
+.adm-segno.is-piu {
+  color: var(--green);
+}
+
+.adm-segno.is-meno {
+  color: var(--red);
+}
+
+/* ─────────────────────────────  I giocatori  ───────────────────────────── */
+
+.adm-tabella-g {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-tabella-g__testa {
+  display: none;
+}
+
+.adm-tabella-g__riga {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas: 'chi visto freccia';
+  align-items: center;
+  gap: var(--sp-1) var(--sp-3);
+  min-height: 64px;
+  padding: var(--sp-3) var(--sp-4);
+  color: var(--label);
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.adm-tabella-g__riga + .adm-tabella-g__riga::before,
+.adm-tabella-g__testa + .adm-tabella-g__riga::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 66px;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.adm-tabella-g__testa + .adm-tabella-g__riga::before {
+  left: 0;
+}
+
+.adm-tabella-g__riga:active {
+  background: var(--fill-quaternary);
+}
+
+@media (hover: hover) {
+  .adm-tabella-g__riga:hover {
+    background: var(--fill-quaternary);
+  }
+}
+
+.adm-tabella-g__chi {
+  grid-area: chi;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.adm-tabella-g__nomi {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/*
+ * Il nome prima, le etichette accanto finché ci stanno, e sotto quando non ci
+ * stanno: un nome non si taglia per un'etichetta.
+ */
+.adm-tabella-g__nome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.adm-tabella-g__nome .etichetta {
+  flex: none;
+}
+
+.adm-tabella-g__sotto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-tabella-g__col {
+  display: none;
+  min-width: 0;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-tabella-g__etichetta {
+  display: none;
+}
+
+/* Sul telefono, accanto al nome, resta solo l'ultima visita. */
+.adm-tabella-g__col:nth-of-type(3) {
+  grid-area: visto;
+  display: flex;
+  max-width: 7.5rem;
+  text-align: right;
+}
+
+.adm-tabella-g__col.is-online {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.adm-tabella-g__freccia {
+  grid-area: freccia;
+  color: var(--label-tertiary);
+}
+
+@container adm (min-width: 720px) {
+  .adm-tabella-g__testa,
+  .adm-tabella-g__riga {
+    grid-template-columns: minmax(0, 2.4fr) minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(0, 1fr) 16px;
+    grid-template-areas: none;
+  }
+
+  .adm-tabella-g__testa {
+    display: grid;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-5) var(--sp-2);
+    font-size: var(--text-caption-1);
+    font-weight: 600;
+    color: var(--label-secondary);
+  }
+
+  .adm-tabella-g__riga {
+    padding: var(--sp-2) var(--sp-5);
+  }
+
+  .adm-tabella-g__chi,
+  .adm-tabella-g__col,
+  .adm-tabella-g__col:nth-of-type(3),
+  .adm-tabella-g__freccia {
+    grid-area: auto;
+  }
+
+  .adm-tabella-g__col,
+  .adm-tabella-g__col:nth-of-type(3) {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    max-width: none;
+    text-align: left;
+    font-size: var(--text-subhead);
+  }
+
+  .adm-tabella-g__riga + .adm-tabella-g__riga::before {
+    left: var(--sp-5);
+    right: var(--sp-5);
+  }
+}
+
+/* ─────────────────────────────  Il giocatore  ───────────────────────────── */
+
+.adm-chi__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+.adm-chi__testo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.adm-chi__nick {
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.adm-chi__tu {
+  font-family: var(--font-text);
+  font-size: var(--text-subhead);
+  font-weight: 500;
+  color: var(--label-secondary);
+}
+
+.adm-chi__email {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--sp-2);
+  min-width: 0;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.adm-chi__etichette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.adm-chi__etichette:empty {
+  display: none;
+}
+
+.adm-chi__fatti {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 0.5px solid var(--separator);
+}
+
+@container adm-carta (min-width: 640px) {
+  .adm-chi__fatti {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.adm-chi__fatti dt {
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.adm-chi__fatti dd {
+  margin: 2px 0 0;
+  font-size: var(--text-subhead);
+  font-weight: 500;
+}
+
+/* Trenta giorni, un quadratino per giorno: pieno se ha aperto l'app. */
+.adm-striscia {
+  display: grid;
+  grid-template-columns: repeat(30, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.adm-striscia li {
+  aspect-ratio: 1 / 1.6;
+  border-radius: 3px;
+  background: var(--fill-tertiary);
+}
+
+@container adm-carta (min-width: 520px) {
+  .adm-striscia li {
+    aspect-ratio: 1 / 1.2;
+    border-radius: 4px;
+  }
+}
+
+.adm-striscia li.is-attivo {
+  background: var(--adm-serie-1);
+}
+
+.adm-striscia li.is-oggi {
+  box-shadow:
+    0 0 0 1.5px var(--surface),
+    0 0 0 3px var(--label-tertiary);
+}
+
+.adm-striscia__assi {
+  display: flex;
+  justify-content: space-between;
+  margin-top: calc(var(--sp-2) * -1);
+  font-size: var(--text-caption-2);
+  color: var(--label-secondary);
+}
+
+.adm-sessioni {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-sessioni__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+
+.adm-sessioni__riga + .adm-sessioni__riga {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-sessioni__riga:first-child {
+  padding-top: 0;
+}
+
+.adm-sessioni__testo {
+  flex: 1;
+  min-width: 0;
+}
+
+.adm-sessioni__nome {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  font-weight: 600;
+}
+
+.adm-sessioni__sotto {
+  margin-top: 2px;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* Il modulo delle modifiche. */
+.adm-modulo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.adm-modulo__campi {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-3);
+}
+
+@container adm-carta (min-width: 620px) {
+  .adm-modulo__campi {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.adm-modulo__campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.adm-modulo__campo label {
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.adm-modulo__input {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 1px var(--separator);
+  transition: box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.adm-modulo__input:focus-within {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.adm-modulo__campo.is-errore .adm-modulo__input {
+  box-shadow: inset 0 0 0 2px var(--red);
+}
+
+.adm-modulo__input input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: var(--text-body);
+  color: var(--label);
+}
+
+.adm-modulo__prima {
+  color: var(--label-secondary);
+}
+
+.adm-modulo__errore {
+  font-size: var(--text-caption-1);
+  color: var(--red);
+}
+
+.adm-modulo__sblocca {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+}
+
+.adm-modulo__piede {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+.adm-interruttori {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+}
+
+.adm-interruttori__riga {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-height: 52px;
+  padding: var(--sp-2) var(--sp-4);
+}
+
+.adm-interruttori__riga + .adm-interruttori__riga {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-interruttori__testo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.adm-interruttori__sotto {
+  font-size: var(--text-footnote);
+  font-weight: 400;
+  color: var(--label-secondary);
+}
+
+.adm-interruttori__riga.is-rosso .interruttore.is-acceso {
+  background: var(--red);
+}
+
+/*
+ * Le classificate di un giocatore: sul telefono due righe per gioco — il nome
+ * e la partita di oggi, i conti e l'azione — e sul computer le colonne di una
+ * tabella, con la testata. I conti diventano colonne togliendo il loro
+ * contenitore (`display: contents`) e le unita' ("giornate", "punti").
+ */
+.adm-gg {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-gg__riga {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'gioco oggi'
+    'conti azione';
+  align-items: center;
+  gap: 4px var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+
+.adm-gg__riga + .adm-gg__riga {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-gg__testa {
+  display: none;
+}
+
+.adm-gg__gioco {
+  grid-area: gioco;
+  min-width: 0;
+}
+
+.adm-gg__conti {
+  grid-area: conti;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--sp-2);
+  padding-left: calc(22px + var(--sp-2));
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-gg__conti > span + span::before {
+  content: '·';
+  margin-right: var(--sp-2);
+}
+
+.adm-gg__oggi {
+  grid-area: oggi;
+  justify-self: end;
+}
+
+.adm-gg__azione {
+  grid-area: azione;
+  justify-self: end;
+}
+
+.adm-gg__azione:empty {
+  display: none;
+}
+
+@container adm-carta (min-width: 600px) {
+  .adm-gg__riga {
+    grid-template-columns: minmax(0, 1.6fr) 5rem 5rem 5rem minmax(0, 1.2fr) 7rem;
+    grid-template-areas: none;
+    padding: var(--sp-2) 0;
+  }
+
+  .adm-gg__testa {
+    display: grid;
+    padding-top: 0;
+    font-size: var(--text-caption-1);
+    font-weight: 600;
+    color: var(--label-secondary);
+  }
+
+  .adm-gg__riga > *,
+  .adm-gg__conti > * {
+    grid-area: auto;
+  }
+
+  .adm-gg__conti {
+    display: contents;
+    font-size: var(--text-subhead);
+    color: var(--label);
+  }
+
+  .adm-gg__testa .adm-gg__conti {
+    font-size: inherit;
+    color: inherit;
+  }
+
+  .adm-gg__conti > span + span::before {
+    content: none;
+  }
+
+  .adm-gg__conti > span:last-child {
+    padding-left: var(--sp-5);
+    color: var(--label-secondary);
+  }
+
+  .adm-gg__unita {
+    display: none;
+  }
+
+  .adm-gg .is-numero {
+    text-align: right;
+  }
+
+  .adm-gg__oggi {
+    justify-self: start;
+    padding-left: var(--sp-3);
+  }
+
+  .adm-gg__azione:empty {
+    display: block;
+  }
+}
+
+/* ─────────────────────────────  I giochi  ───────────────────────────── */
+
+.adm-tris {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.adm-tris dt {
+  font-size: var(--text-caption-1);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.adm-tris dd {
+  margin: 2px 0 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-2);
+  font-weight: 800;
+  letter-spacing: var(--tracking-display);
+}
+
+.adm-tris__sotto {
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+.adm-migliori {
+  padding-top: var(--sp-3);
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-migliori__titolo {
+  margin-bottom: var(--sp-2);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+  color: var(--label-secondary);
+}
+
+.adm-migliori li {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 30px;
+  font-size: var(--text-subhead);
+}
+
+.adm-migliori__posto {
+  width: 1.2em;
+  color: var(--label-secondary);
+  font-weight: 700;
+}
+
+.adm-migliori__nome {
+  flex: 1;
+  color: var(--label);
+  font-weight: 500;
+}
+
+.adm-migliori__nome:hover {
+  color: var(--brand);
+}
+
+.adm-migliori__punti {
+  font-weight: 700;
+}
+
+.adm-barre__media {
+  color: var(--label-secondary);
+}
+
+/* ─────────────────────────────  I contenuti  ───────────────────────────── */
+
+.adm-esito {
+  display: flex;
+}
+
+.adm-esito .etichetta {
+  white-space: normal;
+  line-height: 1.35;
+  padding-block: 5px;
+}
+
+.adm-calendario-cornice {
+  min-width: 0;
+}
+
+.adm-calendario {
+  display: grid;
+  gap: 4px;
+  align-items: center;
+}
+
+.adm-calendario__riga {
+  display: contents;
+}
+
+.adm-calendario__giorno {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2px 0 4px;
+  border-radius: var(--r-xs);
+  font-size: var(--text-caption-2);
+  color: var(--label-secondary);
+  line-height: 1.2;
+}
+
+.adm-calendario__giorno strong {
+  font-size: var(--text-footnote);
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
+}
+
+.adm-calendario__giorno.is-oggi {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+.adm-calendario__giorno.is-oggi strong {
+  color: var(--brand);
+}
+
+.adm-calendario.is-stretto .adm-calendario__giorno {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0 4px;
+  min-height: 28px;
+  align-items: center;
+}
+
+.adm-calendario__nome {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding-right: var(--sp-2);
+}
+
+.adm-calendario__testo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--text-subhead);
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.adm-calendario__cosa {
+  font-size: var(--text-caption-1);
+  font-weight: 400;
+  color: var(--label-secondary);
+}
+
+.adm-calendario__icona {
+  display: flex;
+  justify-content: center;
+}
+
+.adm-cella {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 28px;
+  border-radius: 7px;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.adm-cella:active {
+  transform: scale(0.9);
+}
+
+.adm-cella.is-pronto {
+  background: color-mix(in srgb, var(--green) 18%, transparent);
+  color: var(--green);
+}
+
+.adm-cella.is-manca {
+  background: color-mix(in srgb, var(--red) 16%, transparent);
+  color: var(--red);
+}
+
+.adm-cella.is-passato {
+  background: var(--fill-quaternary);
+}
+
+.adm-cella.is-oggi {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+@media (hover: hover) {
+  .adm-cella:hover {
+    filter: brightness(0.94);
+  }
+}
+
+.adm-cella.is-chiave {
+  display: inline-grid;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  cursor: default;
+}
+
+.adm-legenda--sotto {
+  margin: 0;
+}
+
+.adm-foglio__sotto {
+  margin-top: calc(var(--sp-3) * -1);
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.adm-foglio__testo {
+  font-size: var(--text-body);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.adm-foglio__errore {
+  font-size: var(--text-footnote);
+  color: var(--red);
+  text-align: center;
+}
+
+/* Le soluzioni coperte: righe finte, e il bottone per vederle davvero. */
+.adm-spoiler {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.adm-spoiler__righe {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 70%;
+}
+
+.adm-spoiler__righe span {
+  height: 9px;
+  border-radius: var(--r-pill);
+  background: var(--fill-secondary);
+}
+
+.adm-spoiler__righe span:nth-child(2) {
+  width: 80%;
+}
+
+.adm-spoiler__righe span:nth-child(3) {
+  width: 55%;
+}
+
+/* ─────────────────────────────  La Fortuna  ───────────────────────────── */
+
+.adm-jackpot {
+  font-family: var(--font-rounded);
+  font-size: var(--text-hero);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: var(--tracking-display);
+}
+
+.adm-jackpot span {
+  font-size: var(--text-title-3);
+  font-weight: 700;
+  color: var(--label-secondary);
+  letter-spacing: 0;
+}
+
+.adm-concorsi {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-concorsi__riga {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3) 0;
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-concorsi__testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.adm-concorsi__data {
+  font-weight: 600;
+}
+
+.adm-concorsi__conti {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-palline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.adm-palline li {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--fill-tertiary);
+  font-size: var(--text-subhead);
+  font-weight: 700;
+}
+
+/* ─────────────────────────────  Cloudflare  ───────────────────────────── */
+
+.adm-misure {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--sp-4);
+}
+
+@container adm-carta (min-width: 640px) {
+  .adm-misure {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.adm-avvisi {
+  background: color-mix(in srgb, var(--orange) 9%, var(--surface));
+}
+
+.adm-avvisi .adm-carta__icona {
+  background: color-mix(in srgb, var(--orange) 16%, transparent);
+  color: var(--orange);
+}
+
+.adm-avvisi__voci {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+  overflow-wrap: anywhere;
+}
+
+.adm-avvisi__voci strong {
+  color: var(--label);
+}
+
+.adm-deploy {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-deploy__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+
+.adm-deploy__riga + .adm-deploy__riga {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-deploy__riga:first-child {
+  padding-top: 0;
+}
+
+.adm-deploy__testo {
+  flex: 1;
+  min-width: 0;
+}
+
+.adm-deploy__messaggio {
+  font-weight: 500;
+}
+
+.adm-deploy__sotto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--sp-2);
+  margin-top: 2px;
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-deploy__apri {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--fill-quaternary);
+}
+
+.adm-mancano {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+}
+
+.adm-passo {
+  font-size: var(--text-subhead);
+  line-height: 1.5;
+  color: var(--label-secondary);
+}
+
+.adm-passo a {
+  font-weight: 600;
+}
+
+.adm-permessi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--fill-quaternary);
+  font-size: var(--text-subhead);
+}
+
+/* ─────────────────────────────  Il database  ───────────────────────────── */
+
+.adm-tabelle {
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(var(--sp-2) * -1);
+}
+
+.adm-tabelle__voce + .adm-tabelle__voce {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-tabelle__testa {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'chevron nome righe'
+    '. conti conti';
+  align-items: center;
+  gap: 2px var(--sp-2);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  text-align: left;
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.adm-tabelle__testa:hover {
+  background: var(--fill-quaternary);
+}
+
+@container adm-carta (min-width: 560px) {
+  .adm-tabelle__testa {
+    grid-template-columns: 14px minmax(0, 1fr) auto 8rem;
+    grid-template-areas: 'chevron nome conti righe';
+  }
+}
+
+.adm-tabelle__chevron {
+  grid-area: chevron;
+  color: var(--label-tertiary);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.adm-tabelle__voce.is-aperta .adm-tabelle__chevron {
+  transform: rotate(90deg);
+}
+
+.adm-tabelle__nome {
+  grid-area: nome;
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.adm-tabelle__conti {
+  grid-area: conti;
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+  white-space: nowrap;
+}
+
+.adm-tabelle__righe {
+  grid-area: righe;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  font-size: var(--text-footnote);
+  font-weight: 600;
+}
+
+.adm-tabelle__corpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-1) var(--sp-2) var(--sp-4) calc(14px + var(--sp-4));
+}
+
+.adm-colonne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.adm-migrazioni {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-migrazioni li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) 0;
+  font-size: var(--text-subhead);
+}
+
+.adm-migrazioni li + li {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-migrazioni li > :last-child {
+  flex: none;
+  font-size: var(--text-footnote);
+}
+
+/* ─────────────────────────────  La console  ───────────────────────────── */
+
+.adm-console {
+  gap: var(--sp-3);
+  transition: box-shadow var(--dur-base) var(--ease-out);
+}
+
+.adm-console .adm-carta__corpo {
+  gap: var(--sp-3);
+}
+
+.adm-console.is-scrittura {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--orange) 70%, transparent),
+    var(--shadow-sm);
+}
+
+.adm-console__barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.adm-console__barra .adm-scelta {
+  flex: 0 1 auto;
+  max-width: 60%;
+}
+
+.adm-console__barra .adm-scelta select {
+  background: var(--fill-quaternary);
+  box-shadow: none;
+}
+
+.adm-console__scrittura {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-subhead);
+  font-weight: 600;
+}
+
+.adm-console__area {
+  width: 100%;
+  min-height: 140px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 1px var(--separator);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--label);
+  resize: vertical;
+  outline: none;
+  tab-size: 2;
+}
+
+.adm-console__area:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.adm-console__piede {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.adm-console__aiuto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-console__errore {
+  background: color-mix(in srgb, var(--red) 8%, var(--surface));
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--red);
+  overflow-wrap: anywhere;
+}
+
+.adm-console__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px var(--sp-3);
+}
+
+.adm-console__troncato {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+/* I risultati scorrono dentro la loro cornice, nei due versi, con la testata ferma. */
+.adm-risultati {
+  max-height: min(70vh, 640px);
+  overflow: auto;
+  margin: 0 calc(var(--sp-4) * -1) calc(var(--sp-5) * -1);
+  border-top: 0.5px solid var(--separator);
+  overscroll-behavior: contain;
+}
+
+@container adm (min-width: 560px) {
+  .adm-risultati {
+    margin: 0 calc(var(--sp-5) * -1) calc(var(--sp-5) * -1);
+  }
+}
+
+.adm-risultati:focus-visible {
+  outline-offset: -2px;
+}
+
+.adm-risultati table {
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.adm-risultati th,
+.adm-risultati td {
+  max-width: 320px;
+  padding: 7px var(--sp-3);
+  border-bottom: 0.5px solid var(--separator);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adm-risultati thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-2);
+  font-family: var(--font-text);
+  font-size: var(--text-caption-1);
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
+.adm-risultati tbody tr:hover td {
+  background: var(--fill-quaternary);
+}
+
+.adm-risultati__n {
+  position: sticky;
+  left: 0;
+  width: 1%;
+  background: var(--surface);
+  color: var(--label-tertiary);
+  text-align: right;
+}
+
+.adm-risultati thead .adm-risultati__n {
+  z-index: 2;
+  background: var(--surface-2);
+}
+
+.adm-risultati td.is-null {
+  color: var(--label-tertiary);
+  font-style: italic;
+}
+
+.adm-risultati td.is-numero {
+  text-align: right;
+}
+
+.adm-recenti {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.adm-recenti__voce {
+  display: block;
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  text-align: left;
+  font-size: 12.5px;
+  color: var(--label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adm-recenti__voce:hover {
+  background: var(--fill-quaternary);
+}
+
+/* ─────────────────────────────  Gli annunci  ───────────────────────────── */
+
+.adm-nuovo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.adm-nuovo__testo {
+  position: relative;
+}
+
+.adm-nuovo__testo textarea {
+  width: 100%;
+  min-height: 92px;
+  padding: var(--sp-3) var(--sp-4) var(--sp-6);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--fill-quaternary);
+  box-shadow: inset 0 0 0 1px var(--separator);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  color: var(--label);
+  resize: vertical;
+  outline: none;
+}
+
+.adm-nuovo__testo textarea:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.adm-nuovo__testo.is-troppo textarea {
+  box-shadow: inset 0 0 0 2px var(--red);
+}
+
+.adm-nuovo__conto {
+  position: absolute;
+  right: var(--sp-3);
+  bottom: var(--sp-2);
+  font-size: var(--text-caption-1);
+  color: var(--label-secondary);
+}
+
+.adm-nuovo__testo.is-troppo .adm-nuovo__conto {
+  color: var(--red);
+  font-weight: 700;
+}
+
+.adm-nuovo__scelte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.adm-nuovo__scelte .adm-segmentato {
+  flex: 1 1 220px;
+  max-width: 320px;
+}
+
+.adm-nuovo__scelte .adm-scelta select {
+  background: var(--fill-quaternary);
+  box-shadow: none;
+}
+
+/* L'anteprima dell'annuncio: lo stesso componente delle Giornaliere, che qui non si tocca. */
+.adm-anteprima {
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: var(--bg);
+}
+
+.adm-anteprima .avviso-tutti {
+  margin: 0;
+}
+
+.adm-anteprima__vuota {
+  padding: var(--sp-3);
+  font-size: var(--text-subhead);
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.adm-annunci {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.adm-annunci__voce {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.adm-annunci__voce + .adm-annunci__voce {
+  padding-top: var(--sp-4);
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-annunci__voce.is-spento .adm-anteprima {
+  opacity: 0.5;
+}
+
+.adm-annunci__piede {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.adm-annunci__testo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--sp-2);
+  min-width: 0;
+}
+
+.adm-annunci__meta {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-annunci__azioni {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: none;
+}
+
+/* ─────────────────────────────  Il registro e gli errori  ───────────────────────────── */
+
+.adm-registro,
+.adm-errori {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-registro__voce + .adm-registro__voce,
+.adm-errori__voce + .adm-errori__voce {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-registro__riga,
+.adm-errori__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  min-height: 58px;
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  color: var(--label);
+}
+
+@container adm (min-width: 560px) {
+  .adm-registro__riga,
+  .adm-errori__riga {
+    padding: var(--sp-3) var(--sp-5);
+  }
+}
+
+button.adm-registro__riga:hover,
+.adm-errori__riga:hover {
+  background: var(--fill-quaternary);
+}
+
+.adm-registro__chi {
+  display: flex;
+  flex: none;
+}
+
+.adm-registro__testo,
+.adm-errori__testo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adm-registro__frase {
+  font-size: var(--text-subhead);
+  overflow-wrap: anywhere;
+}
+
+.adm-registro__quando,
+.adm-errori__quando {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-registro__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.adm-registro__freccia.is-aperta {
+  transform: rotate(90deg);
+}
+
+.adm-registro__dettagli {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-4) var(--sp-4);
+}
+
+@container adm (min-width: 560px) {
+  .adm-registro__dettagli {
+    padding: 0 var(--sp-5) var(--sp-4) calc(var(--sp-5) + 30px + var(--sp-3));
+  }
+
+  .adm-errori .adm-registro__dettagli {
+    padding-left: var(--sp-5);
+  }
+}
+
+.adm-errori__percorso {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.adm-errori__metodo {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.adm-errori__messaggio {
+  font-size: var(--text-subhead);
+  overflow-wrap: anywhere;
+}
+
+/* ─────────────────────────────  Il sistema  ───────────────────────────── */
+
+.adm-orologio {
+  font-family: var(--font-rounded);
+  font-size: var(--text-display);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: var(--tracking-display);
+}
+
+.adm-config {
+  display: flex;
+  flex-direction: column;
+}
+
+.adm-config__riga {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) 0;
+}
+
+.adm-config__riga + .adm-config__riga {
+  border-top: 0.5px solid var(--separator);
+}
+
+.adm-config__riga:first-child {
+  padding-top: 0;
+}
+
+.adm-config__testo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.adm-config__nome {
+  font-weight: 500;
+}
+
+.adm-config__valore {
+  font-size: 12.5px;
+  color: var(--label-secondary);
+  overflow-wrap: anywhere;
+}
+
+.adm-config__riga .etichetta {
+  flex: none;
+}
+
+.adm-persone {
+  display: flex;
+  flex-direction: column;
+  margin: 0 calc(var(--sp-2) * -1);
+}
+
+.adm-persone__riga {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-height: 52px;
+  padding: var(--sp-2);
+  border-radius: var(--r-sm);
+  color: var(--label);
+}
+
+.adm-persone__riga:hover {
+  background: var(--fill-quaternary);
+}
+
+.adm-persone__testo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.adm-persone__nome {
+  font-weight: 600;
+}
+
+.adm-persone__sotto {
+  font-size: var(--text-footnote);
+  color: var(--label-secondary);
+}
+
+.adm-persone__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-vivo::after,
+  .adm-ricarica.is-gira svg {
+    animation: none;
+  }
+}
