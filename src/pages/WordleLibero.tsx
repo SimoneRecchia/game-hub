@@ -168,6 +168,7 @@ export default function WordleLibero() {
                   onEnter={game.submit}
                   onBackspace={game.backspace}
                   disabled={game.loading || finita || game.revealing !== null}
+                  pronta={game.draft.length === WORD_LENGTH}
                 />
               </>
             )}

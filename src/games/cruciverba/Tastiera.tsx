@@ -1,6 +1,4 @@
-import { KEYBOARD_ROWS } from '@shared/wordle'
-import { IconBackspace } from '@/components/Icons'
-import '@/games/wordle/Keyboard.css'
+import { TastieraLettere } from '@/components/TastieraGioco'
 import type { Direzione } from './useCruciverba'
 
 /**
@@ -10,7 +8,8 @@ import type { Direzione } from './useCruciverba'
  * Al posto di "Invia" c'e' il tasto che cambia direzione: qui non c'e' niente
  * da inviare — la griglia si salva da sola — mentre passare da orizzontale a
  * verticale e' il gesto che si fa di continuo, e toccare due volte la stessa
- * casella non e' ovvio a chi non lo sa.
+ * casella non e' ovvio a chi non lo sa. Sta dove sta l'invio, in basso a
+ * destra, del grigio dei tasti di servizio.
  */
 interface Props {
   direzione: Direzione
@@ -22,55 +21,17 @@ interface Props {
 
 export function Tastiera({ direzione, disabled, onLettera, onCancella, onDirezione }: Props) {
   return (
-    <div className="keyboard ctastiera" role="group" aria-label="Tastiera">
-      {KEYBOARD_ROWS.map((riga, i) => (
-        <div className="keyboard__row" key={i}>
-          {riga.map((tasto) => {
-            if (tasto === 'ENTER') {
-              return (
-                <button
-                  key={tasto}
-                  type="button"
-                  className="key key--wide ctastiera__direzione"
-                  onClick={onDirezione}
-                  disabled={disabled}
-                  aria-label={
-                    direzione === 'o' ? 'Scrivi in verticale' : 'Scrivi in orizzontale'
-                  }
-                >
-                  <span aria-hidden="true">{direzione === 'o' ? '↕' : '↔'}</span>
-                </button>
-              )
-            }
-            if (tasto === 'BACK') {
-              return (
-                <button
-                  key={tasto}
-                  type="button"
-                  className="key key--wide"
-                  onClick={onCancella}
-                  disabled={disabled}
-                  aria-label="Cancella"
-                >
-                  <IconBackspace size={22} />
-                </button>
-              )
-            }
-            return (
-              <button
-                key={tasto}
-                type="button"
-                className="key"
-                onClick={() => onLettera(tasto)}
-                disabled={disabled}
-                aria-label={tasto.toUpperCase()}
-              >
-                {tasto.toUpperCase()}
-              </button>
-            )
-          })}
-        </div>
-      ))}
-    </div>
+    <TastieraLettere
+      className="ctastiera"
+      disabled={disabled}
+      onLettera={onLettera}
+      onCancella={onCancella}
+      azione={{
+        etichetta: <span aria-hidden="true">{direzione === 'o' ? '↕' : '↔'}</span>,
+        aria: direzione === 'o' ? 'Scrivi in verticale' : 'Scrivi in orizzontale',
+        onClick: onDirezione,
+        pronta: false,
+      }}
+    />
   )
 }

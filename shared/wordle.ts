@@ -127,7 +127,10 @@ export function shareText({
 export const ALFABETO = 'abcdefghilmnopqrstuvz'
 
 /**
- * La disposizione della tastiera: la QWERTY senza le cinque lettere in meno.
+ * La disposizione della tastiera: la QWERTY senza le cinque lettere in meno,
+ * con la cancellazione in fondo alla seconda riga e l'invio in fondo alla
+ * terza, sotto di lei, dove li hanno le tastiere dei telefoni. Prima l'invio
+ * apriva la terza riga, come nel Wordle del New York Times.
  *
  * Sta qui e non nel componente perché e' la stessa cosa che decide quali tasti
  * fisici il gioco accetta — e le due cose devono restare d'accordo. Non lo
@@ -137,8 +140,8 @@ export const ALFABETO = 'abcdefghilmnopqrstuvz'
  */
 export const KEYBOARD_ROWS = [
   ['q', 'e', 'r', 't', 'u', 'i', 'o', 'p'],
-  ['a', 's', 'd', 'f', 'g', 'h', 'l'],
-  ['ENTER', 'z', 'c', 'v', 'b', 'n', 'm', 'BACK'],
+  ['a', 's', 'd', 'f', 'g', 'h', 'l', 'BACK'],
+  ['z', 'c', 'v', 'b', 'n', 'm', 'ENTER'],
 ] as const
 
 /** true se il tasto premuto e' una lettera giocabile. */

@@ -153,6 +153,13 @@ describe('lettere del gioco', () => {
     }
   })
 
+  it('ha la cancellazione e l’invio a destra, l’invio in basso, come i telefoni', () => {
+    const [, seconda, terza] = KEYBOARD_ROWS
+    expect(seconda[seconda.length - 1]).toBe('BACK')
+    expect(terza[terza.length - 1]).toBe('ENTER')
+    expect(KEYBOARD_ROWS.flat().filter((k) => k === 'ENTER' || k === 'BACK')).toHaveLength(2)
+  })
+
   it('mette sulla tastiera ogni lettera giocabile', () => {
     const sulla = new Set<string>(KEYBOARD_ROWS.flat())
     for (const letter of ALFABETO) {

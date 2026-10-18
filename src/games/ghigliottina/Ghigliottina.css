@@ -6,8 +6,16 @@
  * su un telefono basso la ghigliottina si fa piccola, e il resto ci sta.
  */
 .ghi {
-  --key-bg: #3b2378;
-  --key-bg-active: #4c2f96;
+  /* La tastiera dello studio: tasti viola su un vassoio piu' scuro, e l'invio d'oro. */
+  --key-fondo: rgba(14, 4, 36, 0.42);
+  --key-bg: #44298a;
+  --key-bg-active: #5333a3;
+  --key-servizio: #2a1658;
+  --key-servizio-active: #36206e;
+  --key-ink: #fff;
+  --key-ombra: rgba(8, 0, 24, 0.6);
+  --key-azione: var(--ghi-oro);
+  --key-azione-ink: #241200;
   container-type: inline-size;
   position: relative;
   display: flex;
@@ -1083,18 +1091,12 @@
   margin-top: var(--sp-1);
 }
 
-.ghi .key {
-  height: clamp(40px, 6.2dvh, 52px);
-  color: #fff;
+.ghi .keyboard {
+  --tasto-alto: clamp(40px, 6.2dvh, 52px);
 }
 
-.ghi-tastiera .tastiera-gioco__invio {
+.ghi-tastiera .key--azione {
   font-weight: 800;
-}
-
-.ghi-tastiera .tastiera-gioco__invio.is-pronta {
-  background-color: var(--ghi-oro);
-  color: #241200;
 }
 
 /*
