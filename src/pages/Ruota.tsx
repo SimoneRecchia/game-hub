@@ -9,7 +9,6 @@ import {
   type CSSProperties,
   type ReactNode,
 } from 'react'
-import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi, type DatiAdesivo } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
@@ -46,13 +45,13 @@ import {
 import { Moneta } from '@/games/ruota/Moneta'
 import { Pachinko, type FasePachinko } from '@/games/ruota/Pachinko'
 import { RuotaFisica, type Meta, type Mozzo } from '@/games/ruota/RuotaFisica'
+import { CHIAMA_FICHES, InvitoPuntata, PochiPunti } from '@/games/fortuna/Avvisi'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { COLORE_FICHE, inFiches } from '@/games/fortuna/fiches'
 import { centroDi, incassaMonete, perdiFiches, puntaFiches, spostaFiches, volaFiche, type Punto } from '@/games/fortuna/voli'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
-import { inPunti } from '@/lib/format'
 import { suona } from '@/lib/suoni'
 import { NOMI_CATEGORIE, type CategoriaQuiz } from '@shared/quiz'
 import {
@@ -178,7 +177,6 @@ const quizDi = (giro: GiroRuota | null): Quiz | null => (giro?.sfida?.tipo === '
  * pagina riaperta dice in che scena si era.
  */
 export default function RuotaPagina() {
-  const { vai } = useNavigazione()
   const toast = useToast()
   const dopo = useDopo()
   const [stato, setStato] = useState<RuotaStato | null>(null)
@@ -900,6 +898,7 @@ export default function RuotaPagina() {
             saldo={conto?.saldo ?? saldo}
             puntata={inSfida && giro ? giro.puntata : scelta}
             saldoRef={saldoRef}
+            scarso={!puoGirare && !inSfida && !girando}
           />
         )}
         <div className="ct-corpo">
@@ -1137,7 +1136,7 @@ export default function RuotaPagina() {
             ) : inSfida && giro && !girando ? (
               <Indicazione titolo={nomeDi(spicchioDi(giro))}>{giro.puntata} punti in gioco</Indicazione>
             ) : !puoGirare ? (
-              <PochiPunti saldo={saldo} onClassificate={() => vai(ROTTE.home)} />
+              <PochiPunti servono={PUNTATA_MINIMA} saldo={saldo} />
             ) : (
               <>
                 <FichesPuntata
@@ -1147,10 +1146,12 @@ export default function RuotaPagina() {
                   attiva={!girando && !inviando}
                   valoreRef={puntataRef}
                   rigaRef={ficheRef}
+                  rigaClasse={!puntataPronta && !girando ? CHIAMA_FICHES : ''}
                   onAggiungi={aggiungiFiche}
                   onAzzera={azzeraPuntata}
                 />
-                {(puntataPronta || girando) && (
+                {/* A puntata zero la ruota non si prende: lo si dice, e le fiches si fanno toccare. */}
+                {puntataPronta || girando ? (
                   <p className={`ct-suggerimento${debole ? ' is-debole' : ''}`}>
                     <ManoCheTrascina />
                     {girando
@@ -1159,6 +1160,8 @@ export default function RuotaPagina() {
                         ? 'Più forte: trascinala e lasciala andare'
                         : 'Trascina la ruota per girarla'}
                   </p>
+                ) : (
+                  <InvitoPuntata>Tocca una fiche per puntare</InvitoPuntata>
                 )}
               </>
             )}
@@ -1255,18 +1258,6 @@ function Indicazione({ titolo, children }: { titolo: string; children: ReactNode
     <div className="ct-indicazione">
       <p className="ct-indicazione__titolo">{titolo}</p>
       <p className="ct-indicazione__testo">{children}</p>
-    </div>
-  )
-}
-
-function PochiPunti({ saldo, onClassificate }: { saldo: number; onClassificate: () => void }) {
-  return (
-    <div className="ct-indicazione">
-      <p className="ct-indicazione__titolo">Serve {inPunti(PUNTATA_MINIMA)}</p>
-      <p className="ct-indicazione__testo">{saldo > 0 ? `Ne hai ${saldo}.` : 'Fai punti nelle classificate.'}</p>
-      <Button size="lg" fullWidth variant="tinted" onClick={onClassificate}>
-        Alle classificate
-      </Button>
     </div>
   )
 }

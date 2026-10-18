@@ -4,6 +4,7 @@
  * quelle del blackjack e della roulette (`bj-fiche`), grandi da toccare.
  */
 .ct-fiches {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -54,8 +55,10 @@
   color: var(--label-secondary);
 }
 
+/* Se proprio non ci sta, Azzera va a capo, a destra: mai fuori dalla carta. */
 .ct-fiches__riga {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
@@ -93,6 +96,7 @@
 }
 
 .ct-fiches__azzera {
+  margin-left: auto;
   min-height: 44px;
   padding: 0 16px;
   border: 0;
@@ -117,5 +121,38 @@
 
   .ct-fiches__fiche {
     --bj-fiche-lato: 42px;
+  }
+}
+
+/*
+ * Una carta stretta — il telefono da 320, o il pannello di lato con il
+ * telefono di traverso —: le fiches si avvicinano e Azzera si stringe, e la
+ * riga ci sta. Prima Azzera usciva dalla carta.
+ */
+@container (max-width: 340px) {
+  .ct-fiches__riga {
+    gap: 8px;
+  }
+
+  .ct-fiches__gettoni {
+    gap: 6px;
+  }
+
+  .ct-fiches__fiche {
+    --bj-fiche-lato: 42px;
+  }
+
+  .ct-fiches__azzera {
+    padding: 0 12px;
+  }
+}
+
+@container (max-width: 300px) {
+  .ct-fiches__gettoni {
+    gap: 5px;
+  }
+
+  .ct-fiches__fiche {
+    --bj-fiche-lato: 40px;
   }
 }

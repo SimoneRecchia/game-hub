@@ -6,6 +6,7 @@ import { Numero } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
+import { PochiPunti } from '@/games/fortuna/Avvisi'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { giornoEstrazione } from '@/games/stato'
 import { ComeSiGiocaEnalotto } from '@/games/superenalotto/ComeSiGioca'
@@ -32,6 +33,9 @@ const Diretta = lazy(() => import('@/games/superenalotto/Diretta'))
 
 /** La diretta si apre da sola un minuto prima, per chi ha la pagina aperta. */
 const PRIMA_DELLA_DIRETTA_MS = 60_000
+
+/** Quanto costa la scheda piu' economica: sotto, non si gioca. */
+const COSTO_MINIMO = Math.min(...GIOCATE.map((g) => COSTI[g]))
 
 const dataLunga = (data: string) =>
   new Date(`${data}T12:00:00Z`).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
@@ -150,6 +154,8 @@ export default function SuperEnalotto() {
 
   const aperto = vista?.aperto ?? null
   const puntato = aperto?.mie.reduce((s, x) => s + costoDi(x.numeri), 0) ?? 0
+  /** Si potrebbe ancora giocare una scheda, ma il saldo non la paga: lo dicono il tabellone e la schedina. */
+  const senzaSaldo = !!vista && !!aperto && aperto.mie.length < SCHEDE_MASSIME && vista.saldo < COSTO_MINIMO
   const tempoDi = (fra: number) => arrivata + fra - adesso
 
   return (
@@ -163,7 +169,9 @@ export default function SuperEnalotto() {
       }
     >
       <div className="se">
-        {vista && <Tabellone saldo={vista.saldo} puntata={puntato || null} saldoRef={saldoRef} />}
+        {vista && (
+          <Tabellone saldo={vista.saldo} puntata={puntato || null} saldoRef={saldoRef} scarso={senzaSaldo} />
+        )}
 
         <Jackpot vista={vista} tempoDi={tempoDi} onDiretta={() => ultimo && setDiretta({ replica: false, inizio: inizioUltimo })} />
 
@@ -281,6 +289,10 @@ function leggiGiocata(): GiocataEnalotto {
  * che si segnano con una croce di penna blu, e i numeri scelti scritti a mano in
  * fondo. "Casuale" li sceglie a caso, come alla ricevitoria; giocata, la scheda
  * prende il timbro e torna bianca per la prossima.
+ *
+ * Una giocata che il saldo non paga non si sceglie: con quindici punti il 4+1
+ * e' spento, e la schedina passa ai quattro numeri. Senza i punti per nessuna
+ * delle due la schedina si spegne, e al posto del bottone c'e' l'avviso.
  */
 function Schedina({
   concorso,
@@ -295,12 +307,16 @@ function Schedina({
   inviando: boolean
   onGioca: (numeri: number[]) => Promise<boolean>
 }) {
-  const [scelti, setScelti] = useState<number[]>([])
-  const [giocata, setGiocata] = useState<GiocataEnalotto>(leggiGiocata)
+  const [segnati, setScelti] = useState<number[]>([])
+  const [voluta, setVoluta] = useState<GiocataEnalotto>(leggiGiocata)
   const [timbro, setTimbro] = useState(0)
   const [scossa, setScossa] = useState(0)
   const mescola = useRef(0)
   const rimaste = SCHEDE_MASSIME - concorso.mie.length
+  /** La giocata scelta, o la piu' ricca che il saldo paga. */
+  const giocata = COSTI[voluta] <= saldo ? voluta : (GIOCATE.filter((g) => COSTI[g] <= saldo).at(-1) ?? voluta)
+  // Passando ai quattro numeri perche' il saldo e' sceso, il quinto segnato se ne va.
+  const scelti = segnati.length > giocata ? segnati.slice(0, giocata) : segnati
   const costo = COSTI[giocata]
   const pochi = saldo < costo
   const puo = rimaste > 0 && !pochi && !inviando
@@ -308,7 +324,7 @@ function Schedina({
   const scegliGiocata = (g: GiocataEnalotto) => {
     if (g === giocata) return
     mescola.current += 1
-    setGiocata(g)
+    setVoluta(g)
     // Passando a quattro, il quinto numero segnato se ne va.
     setScelti((x) => x.slice(0, g))
     suona('tocco')
@@ -372,7 +388,10 @@ function Schedina({
   })
   return (
     <section className="se-sezione" aria-label="La schedina">
-      <div className={`se-schedina${scossa ? ' is-scossa' : ''}`} key={`s${scossa}`}>
+      <div
+        className={`se-schedina${scossa ? ' is-scossa' : ''}${rimaste > 0 && pochi ? ' is-spenta' : ''}`}
+        key={`s${scossa}`}
+      >
         <header className="se-schedina__testa">
           <span className="se-schedina__marchio">
             Super<b>Enalotto</b>
@@ -390,7 +409,7 @@ function Schedina({
               aria-checked={giocata === g}
               tabIndex={giocata === g ? 0 : -1}
               className={`se-giocata${giocata === g ? ' is-scelta' : ''}`}
-              disabled={!puo}
+              disabled={!puo || COSTI[g] > saldo}
               onClick={() => scegliGiocata(g)}
             >
               <span className="se-giocata__casella" aria-hidden="true">
@@ -462,19 +481,21 @@ function Schedina({
           </span>
         )}
       </div>
-      <Button
-        className="se-gioca"
-        disabled={!puo || scelti.length !== giocata}
-        onClick={() => void conferma()}
-      >
-        {rimaste <= 0
-          ? `Hai giocato ${SCHEDE_MASSIME} schede`
-          : pochi
-            ? 'Il saldo non basta'
+      {rimaste > 0 && pochi ? (
+        <PochiPunti servono={COSTO_MINIMO} saldo={saldo} titolo={`Una scheda costa ${COSTO_MINIMO} punti`} />
+      ) : (
+        <Button
+          className="se-gioca"
+          disabled={!puo || scelti.length !== giocata}
+          onClick={() => void conferma()}
+        >
+          {rimaste <= 0
+            ? `Hai giocato ${SCHEDE_MASSIME} schede`
             : scelti.length === giocata
               ? `Gioca la scheda · ${costo} punti`
               : `Segna ancora ${giocata - scelti.length} ${giocata - scelti.length === 1 ? 'numero' : 'numeri'}`}
-      </Button>
+        </Button>
+      )}
       {rimaste > 0 && concorso.mie.length > 0 && (
         <p className="se-nota">
           Puoi giocarne ancora {rimaste} per {giornoEstrazione(concorso.data, oggi)}.

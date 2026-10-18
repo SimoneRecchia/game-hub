@@ -624,6 +624,29 @@ slot, il mozzo e le feste della ruota, le fasce sulle mani del blackjack —
 perché e' il gioco. Il conto della giornata resta nella classifica della
 Fortuna, che e' il posto dove si va a guardarlo.
 
+**Quando il saldo non basta lo si dice dove si punterebbe, e una puntata a
+zero non sembra un gioco bloccato.** I giochi della Fortuna sono fatti per non
+stressarsi, e un bottone spento senza una parola sembrava un gioco rotto. Se il
+saldo non copre la prima puntata, o la scheda piu' economica del SuperEnalotto,
+c'e' `PochiPunti` (`src/games/fortuna/Avvisi.tsx`), lo stesso in tutti i giochi
+e nelle sale: una targa scura con il filo d'ambra, come il tabellone, che dice
+quanto serve e quanto si ha, con l'anello di quanto manca, e porta alle
+Giornaliere. Il tabellone si tinge d'ambra (`scarso`), ma lo decide il gioco, e
+solo mentre si punta: durante un giro il saldo e' gia' sceso della puntata, e non
+e' un problema. Quel che non si puo' fare si vede spento apposta: il panno della
+roulette, la schedina del SuperEnalotto, e il 4+1 quando il saldo paga solo i
+quattro numeri; nella scheda della Fortuna le carte dei giochi che non si possono
+giocare si spengono verso il fondo della sala, e al posto del bottone dicono
+quanto manca. A puntata zero la fila delle fiches chiama (`CHIAMA_FICHES`: un
+alone che respira e le fiches che saltano una dopo l'altra, con `translate`, che
+non tocca il `transform` di chi le preme), e la mossa che aspetta dice che cosa
+fare: "Tocca una fiche per puntare" a Crazy Time, "Tocca una fiche" sul bottone
+del blackjack, "Tocca il panno per puntare" e il filo del panno che si accende
+nella roulette. Mai mentre si gira o si gioca una mano. Nella roulette la fiche
+scelta che il saldo non copre piu' lascia il posto alla piu' grande che copre:
+prima restava accesa una fiche che non si poteva puntare, e toccare il panno
+rispondeva "non ci sta".
+
 **Crazy Time punta i punti delle classificate, quante volte si vuole.** Sta
 nella scheda della Fortuna (`/crazy-time`; `/ruota`, l'indirizzo di quando si
 girava una volta al giorno, ci porta): si punta da `PUNTATA_MINIMA` a tutto il

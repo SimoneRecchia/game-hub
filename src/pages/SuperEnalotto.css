@@ -276,6 +276,11 @@
   cursor: default;
 }
 
+/* La giocata che il saldo non paga: stampata sbiadita, come una casella che non si puo' segnare. */
+.se-giocata:disabled:not(.is-scelta) {
+  opacity: 0.45;
+}
+
 .se-giocata:focus-visible {
   outline: 2px solid var(--penna);
   outline-offset: 2px;
@@ -482,6 +487,17 @@
 
 .se-gioca {
   width: 100%;
+}
+
+/*
+ * Senza i punti per una scheda la schedina si spegne — le caselle non si
+ * segnano — e al posto del bottone c'e' l'avviso del saldo (Avvisi.css).
+ */
+.se-schedina.is-spenta .se-giocate,
+.se-schedina.is-spenta .se-schedina__istruzioni,
+.se-schedina.is-spenta .se-schedina__griglia,
+.se-schedina.is-spenta .se-schedina__piede {
+  opacity: 0.45;
 }
 
 /* ─────────────────────────────  Le ricevute  ───────────────────────────── */

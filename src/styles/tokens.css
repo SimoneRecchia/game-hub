@@ -350,6 +350,8 @@
   --ct-mozzo: #1b0f33;
   --ct-piu: #5ef09a;
   --ct-meno: #ff7083;
+  /* L'ambra di quel che manca: il saldo che non basta, e il display della slot che chiede le fiches. */
+  --ct-ambra: #ffb02e;
   --ct-m125: #2f7de1;
   --ct-m15: #f3a521;
   --ct-m2: #e0457b;

@@ -3,11 +3,12 @@ import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Copertina } from '@/components/Copertina'
 import { Numero, Sezione } from '@/components/Elementi'
-import { IconChevronRight, IconInfo, IconPlay } from '@/components/Icons'
+import { IconChevronRight, IconInfo, IconLock, IconPlay } from '@/components/Icons'
 import { BottoneBarra } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
 import { Vetrina } from '@/components/Vetrina'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
+import { PochiPunti } from '@/games/fortuna/Avvisi'
 import {
   statoBlackjack,
   statoRoulette,
@@ -23,7 +24,7 @@ import { gameDate } from '@shared/daily'
 import { NOME_ROULETTE, PUNTATA_MINIMA_RL } from '@shared/roulette'
 import { NOME_CRAZY_TIME, PUNTATA_MINIMA, resa } from '@shared/ruota'
 import { NOME_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
-import { NOME_SUPERENALOTTO, QUOTA_PREMI, SCHEDE_MASSIME } from '@shared/superenalotto'
+import { COSTI, NOME_SUPERENALOTTO, QUOTA_PREMI, SCHEDE_MASSIME } from '@shared/superenalotto'
 import type { FortunaRisposta, GiocoFortuna } from '@shared/types'
 import '@/games/cruciverba/ComeSiGioca.css'
 import './Fortuna.css'
@@ -38,6 +39,18 @@ const GIOCHI: ReadonlyArray<{ id: GiocoFortuna; nome: string; a: string }> = [
 ]
 
 const RESA = Math.round(resa(1) * 100)
+
+/** Quanto serve per giocare a ognuno: la puntata minima, o la scheda piu' economica del SuperEnalotto. */
+const SERVONO: Record<GiocoFortuna, number> = {
+  ruota: PUNTATA_MINIMA,
+  slot: PUNTATA_MINIMA_SLOT,
+  blackjack: PUNTATA_MINIMA_BJ,
+  roulette: PUNTATA_MINIMA_RL,
+  superenalotto: Math.min(...Object.values(COSTI)),
+}
+
+/** Sotto questo saldo non si gioca a niente. */
+const SERVE_PER_TUTTI = Math.min(...Object.values(SERVONO))
 
 /**
  * La scheda della Fortuna: i giochi d'azzardo, che puntano tutti lo stesso
@@ -77,18 +90,21 @@ export default function Fortuna() {
       }
     >
       <Saldo dati={dati ?? null} />
-      {dati && dati.saldo < PUNTATA_MINIMA_SLOT && (
-        <Collegamento to={ROTTE.home} direzione="scheda" className="fortuna-vuoto entra">
-          <span>Gioca le classificate di oggi: i loro punti sono il saldo</span>
-          <IconChevronRight size={18} />
-        </Collegamento>
+      {dati && dati.saldo < SERVE_PER_TUTTI && (
+        <PochiPunti
+          servono={SERVE_PER_TUTTI}
+          saldo={dati.saldo}
+          titolo={dati.saldo <= 0 ? 'Il saldo è a zero' : undefined}
+          testo="Si punta con i punti delle giornaliere"
+          className="fortuna-vuoto"
+        />
       )}
 
       <Sezione titolo="I giochi">
         <ul className="fortuna__giochi">
           {GIOCHI.map((g, i) => (
             <li key={g.id} className="entra" style={{ '--n': i + 1 } as CSSProperties}>
-              <CartaFortuna id={g.id} nome={g.nome} a={g.a} stato={stati?.[g.id] ?? null} />
+              <CartaFortuna id={g.id} nome={g.nome} a={g.a} stato={stati?.[g.id] ?? null} saldo={dati?.saldo ?? 0} />
             </li>
           ))}
         </ul>
@@ -129,8 +145,8 @@ export default function Fortuna() {
                 amici o da solo.
               </li>
               <li>
-                <strong>{NOME_SUPERENALOTTO}</strong>: una scheda costa 1 punto, fino a {SCHEDE_MASSIME} per
-                estrazione.
+                <strong>{NOME_SUPERENALOTTO}</strong>: una scheda costa {COSTI[4]} punti, il 4+1 {COSTI[5]}, fino a{' '}
+                {SCHEDE_MASSIME} per estrazione.
               </li>
             </ul>
           </section>
@@ -175,12 +191,31 @@ function Saldo({ dati }: { dati: FortunaRisposta | null }) {
   )
 }
 
-/** La carta di un gioco: la copertina, a che punto e', e il bottone. Tutta la carta porta al gioco. */
-function CartaFortuna({ id, nome, a, stato }: { id: GiocoFortuna; nome: string; a: string; stato: StatoRuota | null }) {
+/**
+ * La carta di un gioco: la copertina, a che punto e', e il bottone. Tutta la carta porta al gioco. Quando il saldo
+ * non basta (`non-pronta`) la carta si spegne, e al posto del bottone c'e' quanto manca, con la barra di quanto si ha.
+ */
+function CartaFortuna({
+  id,
+  nome,
+  a,
+  stato,
+  saldo,
+}: {
+  id: GiocoFortuna
+  nome: string
+  a: string
+  stato: StatoRuota | null
+  saldo: number
+}) {
+  const chiusa = stato?.fase === 'non-pronta'
+  const servono = SERVONO[id]
+  const manca = Math.max(1, servono - Math.max(0, saldo))
+  const pieno = Math.min(1, Math.max(0, saldo) / servono)
   return (
     <Collegamento
       to={stato?.a ?? a}
-      className={`fortuna-carta fortuna-carta--${id}`}
+      className={`fortuna-carta fortuna-carta--${id}${chiusa ? ' is-chiusa' : ''}`}
       style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
     >
       <span className="fortuna-carta__luce" aria-hidden="true" />
@@ -199,10 +234,16 @@ function CartaFortuna({ id, nome, a, stato }: { id: GiocoFortuna; nome: string; 
           </>
         )}
       </span>
-      {stato && stato.fase !== 'non-pronta' && (
+      {stato && !chiusa && (
         <span className="fortuna-carta__bottone">
           <IconPlay size={14} />
           {stato.azione}
+        </span>
+      )}
+      {chiusa && (
+        <span className="fortuna-carta__manca" style={{ '--pieno': `${Math.round(pieno * 100)}%` } as CSSProperties}>
+          <IconLock size={14} />
+          {manca === 1 ? 'Manca 1 punto' : `Mancano ${manca} punti`}
         </span>
       )}
     </Collegamento>

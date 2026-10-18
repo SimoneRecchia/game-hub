@@ -8,17 +8,23 @@ import './Tabellone.css'
  * da dove si e' partiti — al tavolo si guarda quel che si ha davanti. Il saldo
  * e' uno per tutti i giochi. A ogni cambio il tabellone si accende: rosso per
  * la puntata pagata, d'oro per la vincita che arriva. `saldoRef` e' il numero,
- * da dove partono le fiches e dove arrivano le monete.
+ * da dove partono le fiches e dove arrivano le monete. Quando il saldo non
+ * basta per puntare (`scarso`) si tinge d'ambra, come l'avviso che lo dice
+ * (`PochiPunti`): lo decide il gioco, che sa quando si sta puntando — durante
+ * un giro il saldo e' gia' sceso della puntata, e non e' un problema.
  */
 export function Tabellone({
   saldo,
   puntata,
   saldoRef,
+  scarso = false,
 }: {
   saldo: number
   /** La puntata in gioco o scelta; null se non ce n'e' una. */
   puntata: number | null
   saldoRef?: RefObject<HTMLSpanElement | null>
+  /** Il saldo non basta per la prima puntata. */
+  scarso?: boolean
 }) {
   const prima = useRef(saldo)
   /** Il saldo con cui il tabellone e' arrivato: c'e' gia', e non conta da zero. */
@@ -30,7 +36,7 @@ export function Tabellone({
     if (d !== 0) setLampo({ chiave: Date.now(), sale: d > 0 })
   }, [saldo])
   return (
-    <div className="ct-tabellone">
+    <div className={`ct-tabellone${scarso ? ' is-scarso' : ''}`}>
       {lampo && (
         <span
           key={lampo.chiave}

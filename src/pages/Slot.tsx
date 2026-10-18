@@ -5,6 +5,7 @@ import { Button } from '@/components/Button'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
+import { CHIAMA_FICHES, PochiPunti } from '@/games/fortuna/Avvisi'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { COLORE_FICHE, FICHES, inFiches } from '@/games/fortuna/fiches'
@@ -217,6 +218,8 @@ export default function SlotPagina() {
   const puoPuntare = ferma && saldo >= PUNTATA_MINIMA_SLOT
   const puoGiocare = puoPuntare && scelta >= PUNTATA_MINIMA_SLOT && riposata && !inviando
   const senzaPuntata = puoPuntare && mostrata === 0
+  /** Il saldo non basta per un giro: lo dicono il display, il tabellone e l'avviso sotto il mobile. */
+  const senzaSaldo = !!stato && ferma && saldo < PUNTATA_MINIMA_SLOT
 
   /** Una fiche che non entra, o che riempie la puntata: il MAX lampeggia, con un tocco morbido. Mai un errore. */
   const segnaMassimo = () => {
@@ -476,7 +479,9 @@ export default function SlotPagina() {
 
   const inDomanda = fase === 'domanda' && giro?.tripla
   const quanto = conto ?? (stato ? { saldo: stato.saldo, netto: stato.netto, giri: stato.giri } : null)
-  const classeVincita = `slot-display__voce is-vincita${vinta ? ' is-accesa' : ''}${senzaPuntata ? ' is-invito' : ''}`
+  const classeVincita = `slot-display__voce is-vincita${vinta ? ' is-accesa' : ''}${
+    senzaPuntata || senzaSaldo ? ' is-invito' : ''
+  }`
   return (
     <Pagina
       titolo="Slot"
@@ -513,7 +518,14 @@ export default function SlotPagina() {
         </Suspense>
       )}
       <div className="slot" hidden={!!inDomanda}>
-        {quanto && <Tabellone saldo={quanto.saldo} puntata={mostrata > 0 ? mostrata : null} saldoRef={saldoRef} />}
+        {quanto && (
+          <Tabellone
+            saldo={quanto.saldo}
+            puntata={mostrata > 0 ? mostrata : null}
+            saldoRef={saldoRef}
+            scarso={senzaSaldo}
+          />
+        )}
         <div
           className={`slot-sala is-${luci}`}
           data-vince={vinta?.tipo}
@@ -558,7 +570,9 @@ export default function SlotPagina() {
                   </span>
                 </span>
                 <span className={classeVincita} aria-live="polite" aria-atomic="true">
-                  {senzaPuntata ? (
+                  {senzaSaldo ? (
+                    <span className="slot-display__invito is-ferma">{saldo <= 0 ? 'Saldo a zero' : 'Saldo basso'}</span>
+                  ) : senzaPuntata ? (
                     <span className="slot-display__invito">Tocca le fiches</span>
                   ) : (
                     <>
@@ -574,7 +588,12 @@ export default function SlotPagina() {
             <div className="slot-banco">
               <div className="slot-banco__piano">
                 <div className="slot-banco__fiches">
-                  <div className="slot-gettoni" ref={gettoniRef} role="group" aria-label="Fiches">
+                  <div
+                    className={`slot-gettoni${puoPuntare && scelta === 0 ? ` ${CHIAMA_FICHES}` : ''}`}
+                    ref={gettoniRef}
+                    role="group"
+                    aria-label="Fiches"
+                  >
                     {FICHES.map((p) => (
                       <button
                         key={p}
@@ -620,9 +639,7 @@ export default function SlotPagina() {
             <Intermezzo dati={intermezzo} onMezzo={() => setFase('domanda')} onFine={() => setIntermezzo(null)} />
           )}
         </div>
-        {stato && saldo < PUNTATA_MINIMA_SLOT && fase === 'pronta' && !inMoto && (
-          <p className="slot-vuoto">Servono punti di oggi: gioca le classificate, poi torna qui.</p>
-        )}
+        {senzaSaldo && <PochiPunti servono={PUNTATA_MINIMA_SLOT} saldo={saldo} className="slot-pochi" />}
       </div>
       {festa && <FestaSlot dati={festa} onFine={fineFesta} />}
       <ComeSiGiocaSlot open={regole} onClose={() => setRegole(false)} categorie={categorie} />

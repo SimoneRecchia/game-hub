@@ -7,7 +7,8 @@ import './FichesPuntata.css'
  * La puntata di Crazy Time: le fiches da toccare, che si sommano, e il numero
  * di quel che c'e' sul tavolo. Sotto la minima la ruota non si lancia, e la
  * riga lo dice. Le fiches sono bottoni ("Aggiungi 5"), e la puntata la annuncia
- * una regione `polite`, come nella slot.
+ * una regione `polite`, come nella slot. A puntata zero la loro fila prende
+ * `rigaClasse` (`CHIAMA_FICHES`), e le fiches si fanno toccare.
  */
 export function FichesPuntata({
   valore,
@@ -16,6 +17,7 @@ export function FichesPuntata({
   attiva,
   valoreRef,
   rigaRef,
+  rigaClasse = '',
   onAggiungi,
   onAzzera,
 }: {
@@ -28,6 +30,8 @@ export function FichesPuntata({
   valoreRef?: Ref<HTMLSpanElement>
   /** Dove tornano quando la puntata si azzera. */
   rigaRef?: Ref<HTMLDivElement>
+  /** Una classe in piu' per la fila delle fiches: quella che le fa saltare quando aspettano il primo tocco. */
+  rigaClasse?: string
   onAggiungi: (fiche: number, bottone: HTMLElement) => void
   onAzzera: () => void
 }) {
@@ -44,7 +48,7 @@ export function FichesPuntata({
         </span>
       </div>
       <div className="ct-fiches__riga">
-        <div className="ct-fiches__gettoni" role="group" aria-label="Fiches" ref={rigaRef}>
+        <div className={`ct-fiches__gettoni ${rigaClasse}`} role="group" aria-label="Fiches" ref={rigaRef}>
           {FICHES.map((f) => (
             <button
               key={f}

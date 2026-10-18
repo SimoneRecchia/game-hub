@@ -1573,9 +1573,14 @@
   letter-spacing: 0.04em;
   text-align: center;
   text-transform: uppercase;
-  color: #ffb02e;
-  text-shadow: 0 0 calc(var(--u) * 1) rgba(255, 176, 46, 0.85);
+  color: var(--ct-ambra);
+  text-shadow: 0 0 calc(var(--u) * 1) color-mix(in srgb, var(--ct-ambra) 85%, transparent);
   animation: slot-invito 1.2s steps(1) infinite;
+}
+
+/* Senza saldo il display lo dice fermo: non c'e' niente da toccare, e l'avviso sotto il mobile dice dove andare. */
+.slot-display__invito.is-ferma {
+  animation: none;
 }
 
 @keyframes slot-invito {
@@ -1963,15 +1968,36 @@
   .slot-sala {
     min-height: 0;
   }
+
+  /* Con l'avviso del saldo: il tabellone e l'avviso in colonna a sinistra, la sala alta quanto lo schermo. */
+  .slot:has(> .slot-pochi) {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .slot:has(> .slot-pochi) > .ct-tabellone {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .slot:has(> .slot-pochi) > .slot-sala {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .slot > .slot-pochi {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: start;
+  }
 }
 
 /* ─────────────────────────────  Il resto  ───────────────────────────── */
 
-.slot-vuoto {
-  margin: 0;
-  text-align: center;
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
+/* Il saldo che non basta (Avvisi.css), sotto il mobile. */
+.slot-pochi {
+  flex: none;
 }
 
 .slot-attesa {
