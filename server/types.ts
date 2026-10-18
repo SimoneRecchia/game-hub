@@ -101,6 +101,11 @@ export interface PlayerRow {
   ruolo?: string | null
   /** Quando l'account e' stato sospeso, dalla 0053: NULL se non lo e'. */
   sospeso_at?: string | null
+  /**
+   * Una registrazione con l'email ancora da confermare tiene nickname ed email
+   * fino a quest'ora, dalla 0054: NULL per gli account confermati e per quelli di prima.
+   */
+  in_attesa_fino?: string | null
 }
 
 /** Da quando si puo' cambiare di nuovo il nickname: null se si puo' adesso. */
@@ -120,5 +125,6 @@ export function toPlayer(row: PlayerRow): Player {
     email: row.email,
     emailVerified: row.email_verified_at !== null,
     nicknameCambiabileDal: nicknameCambiabileDal(row),
+    inAttesa: Boolean(row.in_attesa_fino) && row.email_verified_at === null,
   }
 }

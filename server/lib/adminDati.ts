@@ -232,6 +232,7 @@ function rigaDa(env: Bindings, r: RigaGiocatore, adesso: number): AdminGiocatore
     attivita: online ? r.attivita : null,
     ruolo: ruoloDi(env, r),
     sospeso: r.sospeso_at !== null && r.sospeso_at !== undefined,
+    inAttesaFino: r.in_attesa_fino && r.email_verified_at === null ? r.in_attesa_fino : null,
     giorniAttivi30: r.giorni30 ?? 0,
   }
 }

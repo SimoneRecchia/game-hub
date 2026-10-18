@@ -128,6 +128,54 @@ describe('l’accesso con la posta', () => {
     expect(confermata.dati.player.emailVerified).toBe(true)
   })
 
+  it('la registrazione in attesa tiene il nickname solo quanto vale il codice', async () => {
+    const mandate = postino()
+    const { chiama, db } = banco(POSTA)
+    const r = await chiama<{ player: Player }>('POST', '/auth/register', null, GIADA)
+    expect(r.dati.player.inAttesa).toBe(true)
+    // Un altro, con un'altra email, trova il nickname prenotato.
+    const altro = await chiama<{ code: string }>('POST', '/auth/register', null, {
+      nickname: 'giada',
+      email: 'x@example.com',
+    })
+    expect(altro.status).toBe(409)
+    expect(altro.dati.code).toBe('NICKNAME_IN_ATTESA')
+    // Passato il tempo del codice senza conferma, il nickname torna libero, e l'account in attesa se ne va.
+    db.sqlite.prepare('UPDATE players SET in_attesa_fino = ?').run(new Date(Date.now() - 1000).toISOString())
+    const preso = await chiama<{ player: Player }>('POST', '/auth/register', null, {
+      nickname: 'Giada',
+      email: 'x@example.com',
+    })
+    expect(preso.status).toBe(201)
+    expect((await chiama('GET', '/auth/me', sessione(r.intestazioni))).status).toBe(401)
+    expect(mandate).toHaveLength(2)
+  })
+
+  it('chi ha sbagliato il nickname torna indietro, e nickname ed email si liberano subito', async () => {
+    const mandate = postino()
+    const { chiama } = banco(POSTA)
+    const sbagliata = await chiama<{ player: Player }>('POST', '/auth/register', null, { ...GIADA, nickname: 'Giaad' })
+    const io = sessione(sbagliata.intestazioni)
+    expect((await chiama('POST', '/auth/register/annulla', io)).status).toBe(200)
+    expect((await chiama('GET', '/auth/me', io)).status).toBe(401)
+    const giusta = await chiama<{ player: Player }>('POST', '/auth/register', null, GIADA)
+    expect(giusta.status).toBe(201)
+    // Anche senza tornare indietro: rifarla con la stessa email sostituisce quella in attesa.
+    const ancora = await chiama<{ player: Player }>('POST', '/auth/register', null, { ...GIADA, nickname: 'Giadina' })
+    expect(ancora.status).toBe(201)
+    const confermata = await chiama<{ player: Player }>('POST', '/auth/verify', sessione(ancora.intestazioni), {
+      code: codiceDi(mandate[mandate.length - 1]),
+    })
+    expect(confermata.dati.player).toMatchObject({ nickname: 'Giadina', emailVerified: true, inAttesa: false })
+    // Confermata, non si annulla piu', e non scade.
+    expect((await chiama('POST', '/auth/register/annulla', sessione(ancora.intestazioni))).status).toBe(409)
+    const dopo = await chiama<{ code: string }>('POST', '/auth/register', null, {
+      nickname: 'giadina',
+      email: 'y@example.com',
+    })
+    expect(dopo.dati.code).toBe('NICKNAME_TAKEN')
+  })
+
   it('il codice per entrare arriva all’email dell’account, con il nickname, e la risposta non lo dice', async () => {
     const mandate = postino()
     const { chiama } = banco(POSTA)

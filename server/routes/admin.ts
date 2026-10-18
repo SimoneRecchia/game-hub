@@ -283,6 +283,8 @@ export const adminRoutes = new Hono<AppEnv>()
     }
     if (corpo.emailVerificata !== undefined) {
       metti('email_verified_at', corpo.emailVerificata ? (riga.email_verified_at ?? nowIso()) : null)
+      // Confermata da qui, una registrazione in attesa non scade piu'.
+      if (corpo.emailVerificata) metti('in_attesa_fino', null)
       cambi.emailVerificata = Boolean(corpo.emailVerificata)
     }
     if (corpo.ruolo !== undefined) {

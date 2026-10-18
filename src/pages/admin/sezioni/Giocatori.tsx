@@ -150,7 +150,9 @@ export function Etichette({ g, email = true }: { g: AdminGiocatoreRiga; email?: 
       {g.ruolo === 'proprietario' && <Stato tono="neutro">Proprietario</Stato>}
       {g.ruolo === 'admin' && <Stato tono="neutro">Admin</Stato>}
       {g.sospeso && <Stato tono="cattivo">Sospeso</Stato>}
-      {email && g.email && !g.emailVerificata && <Stato tono="avviso">Da confermare</Stato>}
+      {email && g.email && !g.emailVerificata && (
+        <Stato tono="avviso">{g.inAttesaFino ? 'Aspetta il codice' : 'Da confermare'}</Stato>
+      )}
     </>
   )
 }

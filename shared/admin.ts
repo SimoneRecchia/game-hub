@@ -127,6 +127,11 @@ export interface AdminGiocatoreRiga {
   attivita: string | null
   ruolo: RuoloAdmin | null
   sospeso: boolean
+  /**
+   * Una registrazione che aspetta il codice: tiene nickname ed email fino a
+   * quest'ora, poi, se non la conferma, se ne va. null per gli account confermati.
+   */
+  inAttesaFino: string | null
   /** In quanti degli ultimi trenta giorni ha aperto l'app. */
   giorniAttivi30: number
 }

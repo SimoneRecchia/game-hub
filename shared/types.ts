@@ -52,6 +52,11 @@ export interface Player {
   emailVerified: boolean
   /** Il nickname si cambia una volta a settimana: da quando si puo' di nuovo, o null se si puo' adesso. */
   nicknameCambiabileDal: string | null
+  /**
+   * La registrazione aspetta il codice: nickname ed email sono suoi per poco, e
+   * si puo' tornare indietro a correggerli (`/auth/register/annulla`).
+   */
+  inAttesa?: boolean
 }
 
 /** Cosa il client deve sapere sulla configurazione, prima di disegnare la UI. */

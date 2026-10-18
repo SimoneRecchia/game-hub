@@ -3869,6 +3869,20 @@ sessione usa `toBase64` di `shared/base64.ts`: se cambiasse, le sessioni salvate
 non si ritroverebbero piu' e uscirebbero tutti, e un test la tiene ferma su un
 token noto.
 
+**Una registrazione tiene nickname ed email solo quanto vale il codice.** Chi
+si registra ha subito la sua sessione, ma finché non conferma l'email la
+registrazione e' in attesa (`players.in_attesa_fino`, dalla `0054`): nessun
+altro prende quel nickname finché il codice vale (`NICKNAME_IN_ATTESA`), ogni
+codice nuovo sposta l'ora, e dopo, senza conferma, la prossima registrazione
+porta via l'account e libera nickname ed email. Rifarla con la stessa email
+sostituisce quella in attesa, con il nickname nuovo, e dalla schermata del
+codice «Ho sbagliato nickname o email» la annulla subito
+(`/auth/register/annulla`) e riporta al modulo con quel che si era scritto, da
+correggere. Prima un nickname scritto sbagliato restava preso per sempre. La
+conferma, l'ingresso con il codice e la conferma dal pannello svuotano
+l'attesa; gli account di prima l'hanno NULL, e non scadono mai. Se il codice
+non parte, la registrazione non resta: si riprova.
+
 **La richiesta del codice risponde sempre allo stesso modo**, che l'account
 esista o no, e anche quando il codice non parte per l'attesa di un minuto fra
 due invii o perché quell'account ne ha gia' avuti dieci oggi

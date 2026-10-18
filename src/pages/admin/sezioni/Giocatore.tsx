@@ -144,7 +144,7 @@ function Scheda({ g: tutto, onCambiato }: { g: AdminGiocatore; onCambiato: (g: A
                 {g.emailVerificata ? (
                   <Stato tono="buono">Confermata</Stato>
                 ) : (
-                  <Stato tono="avviso">Da confermare</Stato>
+                  <Stato tono="avviso">{g.inAttesaFino ? 'Aspetta il codice' : 'Da confermare'}</Stato>
                 )}
               </p>
             ) : (
