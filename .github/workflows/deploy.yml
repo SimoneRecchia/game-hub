@@ -209,7 +209,8 @@ jobs:
 
       # Le statistiche di Cloudflare nel pannello admin vogliono un token in sola
       # lettura fra i secret del progetto Pages. Basta metterlo una volta fra i
-      # segreti del repository (CF_STATS_TOKEN, e CF_ZONE_ID per il traffico del
+      # segreti del repository (CF_STATS_TOKEN; CF_WEB_ANALYTICS_TAG per le visite
+      # del solo sito dei giochi, CF_ZONE_ID per il traffico di tutto il
       # dominio): il deploy lo porta alle Pages, con l'ID dell'account che ha
       # gia'. Prima della pubblicazione, perché un secret vale dal deploy dopo.
       # Non lo ferma: senza, il pannello dice che cosa manca.
@@ -221,6 +222,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           STATS_TOKEN: ${{ secrets.CF_STATS_TOKEN }}
           ZONA: ${{ secrets.CF_ZONE_ID }}
+          SITO: ${{ secrets.CF_WEB_ANALYTICS_TAG }}
         run: |
           if [ -z "$STATS_TOKEN" ]; then
             echo "CF_STATS_TOKEN non c'e': le statistiche di Cloudflare restano spente."
@@ -230,6 +232,9 @@ jobs:
           printf '%s' "$STATS_TOKEN" | npx wrangler pages secret put CF_API_TOKEN --project-name game-hub
           if [ -n "$ZONA" ]; then
             printf '%s' "$ZONA" | npx wrangler pages secret put CF_ZONE_ID --project-name game-hub
+          fi
+          if [ -n "$SITO" ]; then
+            printf '%s' "$SITO" | npx wrangler pages secret put CF_WEB_ANALYTICS_TAG --project-name game-hub
           fi
 
       - name: Pubblica su Cloudflare Pages
