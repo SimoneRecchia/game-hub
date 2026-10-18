@@ -9,7 +9,8 @@ import { IconChevronLeft, IconLock } from '@/components/Icons'
 import { Sheet } from '@/components/Sheet'
 import { api } from '@/lib/api'
 import { usePlayer } from '@/lib/auth'
-import { InAttesa, Sblocco, SenzaAccesso } from './Accesso'
+import NotFound from '@/pages/NotFound'
+import { InAttesa, Sblocco } from './Accesso'
 import { AdminContext, messaggioDi, type Chiusura } from './dati'
 import { durata } from './formato'
 import { GRUPPI, GuscioContext, SEZIONI, indirizzoDi, type IdSezione } from './Schermata'
@@ -97,7 +98,8 @@ export default function Admin() {
   const contesto = useMemo(() => (io ? { io, segnala, cambiaIo } : null), [io, segnala, cambiaIo])
 
   if (!io) return <InAttesa errore={errore} onRiprova={() => void leggi()} />
-  if (!io.admin) return <SenzaAccesso />
+  // Chi non amministra trova la pagina che non c'e': del pannello non sa niente, nemmeno che ci sia.
+  if (!io.admin) return <NotFound />
   if (!io.sbloccatoFino) return <Sblocco io={io} onSbloccato={cambiaIo} />
 
   return (

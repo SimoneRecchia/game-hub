@@ -32,7 +32,7 @@ import {
   type RuoloAdmin,
   type TonoAnnuncio,
 } from '../../shared/admin'
-import { CODE_RESEND_COOLDOWN_SECONDS, CODE_TTL_MINUTES, NICKNAME_MAX } from '../../shared/config'
+import { CODE_RESEND_COOLDOWN_SECONDS, CODE_TTL_MINUTES, NICKNAME_MAX, POSTA_AL_GIORNO } from '../../shared/config'
 import { gameDate, msToNextPuzzle, puzzleNumberFor } from '../../shared/daily'
 import type { AppEnv, PlayerRow } from '../types'
 import {
@@ -50,6 +50,7 @@ import { annuncioDa, TONI, type AnnuncioRow } from '../lib/annunci'
 import { readCode, readEmail, readNickname } from '../lib/campi'
 import { statisticheCloudflare } from '../lib/cloudflare'
 import { adminMessage, daQuestoComputer, emailVerificationEnabled, sendEmail } from '../lib/email'
+import { prenotaInvio, reteDi, troppeEmail } from '../lib/postino'
 import { fail, newId, nowIso } from '../lib/http'
 import { resolveSession } from '../lib/session'
 
@@ -154,6 +155,7 @@ export const adminRoutes = new Hono<AppEnv>()
       console.log(`Il codice per il pannello di ${io.nickname} è ${codice}`)
       return c.json<AdminCodice>({ ...risposta, codiceDiProva: codice })
     }
+    if (!(await prenotaInvio(c.env.DB, reteDi(c.req.header('cf-connecting-ip')), io.email))) troppeEmail()
     const esito = await sendEmail(c.env, { to: io.email, ...adminMessage(io.nickname, codice, CODE_TTL_MINUTES) })
     if (!esito.ok) {
       console.error(`Invio email fallito (${esito.reason}): ${esito.detail}`)
@@ -562,7 +564,7 @@ export const adminRoutes = new Hono<AppEnv>()
     const env = c.env
     const db = env.DB
     const proprietari = emailProprietari(env)
-    const [vapid, amministratori] = await db.batch([
+    const [vapid, amministratori, posta] = await db.batch([
       db.prepare("SELECT COUNT(*) AS n FROM segreti WHERE nome = 'vapid'"),
       db
         .prepare(
@@ -570,7 +572,9 @@ export const adminRoutes = new Hono<AppEnv>()
             WHERE ruolo = 'admin' OR email_lower IN (SELECT value FROM json_each(?)) ORDER BY nickname_lower`,
         )
         .bind(JSON.stringify(proprietari)),
+      db.prepare('SELECT COUNT(*) AS n FROM invii_posta WHERE at > ?').bind(new Date(Date.now() - 86_400_000).toISOString()),
     ])
+    const inviate = (posta.results[0] as { n: number }).n
     const data = gameDate()
     const cf = Boolean(env.CF_ACCOUNT_ID && env.CF_API_TOKEN)
     const configurazione: AdminSistema['configurazione'] = [
@@ -585,6 +589,11 @@ export const adminRoutes = new Hono<AppEnv>()
         stato: env.RESEND_API_KEY ? 'ok' : 'spento',
       },
       { nome: 'Mittente', valore: env.EMAIL_FROM ?? '—', stato: env.EMAIL_FROM ? 'ok' : 'avviso' },
+      {
+        nome: 'Email nelle ultime 24 ore',
+        valore: `${inviate} su ${POSTA_AL_GIORNO}`,
+        stato: inviate >= POSTA_AL_GIORNO * 0.8 ? 'avviso' : 'ok',
+      },
       { nome: 'Dominio del cookie', valore: env.COOKIE_DOMAIN ?? '—', stato: env.COOKIE_DOMAIN ? 'ok' : 'avviso' },
       {
         nome: 'Proprietari (ADMIN_EMAILS)',

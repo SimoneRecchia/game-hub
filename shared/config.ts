@@ -273,6 +273,23 @@ export const CODE_RESEND_COOLDOWN_SECONDS = 60
  */
 export const CODE_LOGIN_PER_DAY = 10
 /**
+ * Le email che partono, di qualunque scopo, chieste da una stessa rete (l'IP
+ * di chi chiede) in un'ora e in un giorno, e quelle che arrivano a uno stesso
+ * indirizzo. I limiti per account non bastano: ogni registrazione e' un account
+ * nuovo. Una rete e' anche un ufficio intero, e le registrazioni di un giorno
+ * di colleghi ci stanno.
+ */
+export const POSTA_PER_RETE_ORA = 10
+export const POSTA_PER_RETE_GIORNO = 30
+export const POSTA_PER_INDIRIZZO_ORA = 5
+export const POSTA_PER_INDIRIZZO_GIORNO = 12
+/**
+ * Tutte le email di un giorno, sotto le cento del piano gratuito di Resend:
+ * oltre, Resend le rifiuterebbe comunque, e cosi' non si arriva a scoprirlo da
+ * un errore.
+ */
+export const POSTA_AL_GIORNO = 90
+/**
  * Ogni quanto si cambia il nickname: una volta a settimana. E' il nome con cui
  * gli altri ti trovano in classifica e negli inviti, e cambiato ogni giorno non
  * lo riconoscerebbe nessuno.
