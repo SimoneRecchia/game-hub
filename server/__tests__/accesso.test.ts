@@ -4,7 +4,7 @@ import { generateSessionToken, hashSessionToken } from '../../shared/session'
 import type { CodiceMandato, Player } from '../../shared/types'
 import { createApp } from '../app'
 import type { Bindings } from '../types'
-import { ASSETS_FINTI, ProvaD1, applica, banco, type Giocatore } from './banco'
+import { ASSETS_FINTI, ProvaD1, applica, banco, migrazioni, type Giocatore } from './banco'
 
 /** Il cookie di sessione rilasciato da una risposta, pronto da rimandare. */
 function sessione(intestazioni?: Headers): Giocatore {
@@ -231,6 +231,8 @@ describe('la migrazione senza password', () => {
 
     const riga = db.sqlite.prepare('SELECT password_hash, password_salt, password_iterations FROM players').get()
     expect(riga).toEqual({ password_hash: '', password_salt: '', password_iterations: 0 })
+    // Le migrazioni dopo, come in produzione, dove il codice nuovo arriva con tutte le sue.
+    for (const file of migrazioni()) if (file > '0032_senza_password.sql') applica(db, file)
     const env = { DB: db as unknown as D1Database, ASSETS: ASSETS_FINTI, EMAIL_VERIFICATION: 'off' } as Bindings
     const me = await createApp().request(
       'http://localhost/api/auth/me',

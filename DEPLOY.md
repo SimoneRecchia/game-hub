@@ -276,6 +276,46 @@ EMAIL_ENDPOINT=http://127.0.0.1:8899/emails
 > sempre lì. Il file vuole formato dotenv (nessuno spazio attorno a `=`, nessuna
 > virgoletta) e il cambio richiede il riavvio di `pages dev`.
 
+## Il pannello di amministrazione
+
+Sta su `giochi.simonerecchia.com/admin`, e dal profilo c'è la riga «Pannello
+admin» per chi può aprirlo.
+
+**Chi entra.** Il proprietario è chi ha un'email, confermata, fra quelle di
+`ADMIN_EMAILS` in `wrangler.toml` (separate da virgole). Dal pannello il
+proprietario può nominare altri amministratori, che vedono e gestiscono tutto
+tranne il suo account e i ruoli. La sessione dura un anno, quindi non basta: il
+pannello chiede un codice mandato all'email, che lo sblocca su quel dispositivo
+per dodici ore. In locale, senza la chiave di Resend, il codice compare sullo
+schermo come quello per entrare.
+
+**Le statistiche di Cloudflare.** Le richieste delle Functions contro le
+centomila del giorno, le letture e le scritture di D1, la dimensione del
+database e gli ultimi deploy li legge l'API di Cloudflare, con un token in sola
+lettura:
+
+1. Dashboard → **My Profile → API Tokens → Create Token → Custom token**, con i
+   permessi **Account → Account Analytics: Read**, **Account → D1: Read** e
+   **Account → Cloudflare Pages: Read**; per il traffico di tutto il dominio
+   anche **Zone → Analytics: Read** sulla zona `simonerecchia.com`.
+2. L'ID dell'account è nella colonna a destra della pagina del dominio (o nella
+   URL della dashboard); l'ID della zona, se si vuole il traffico, è sulla
+   stessa pagina.
+3. Si mettono come secret del progetto Pages, e si rifà il deploy:
+
+```bash
+npx wrangler pages secret put CF_ACCOUNT_ID --project-name game-hub
+npx wrangler pages secret put CF_API_TOKEN --project-name game-hub
+# facoltativi
+npx wrangler pages secret put CF_ZONE_ID --project-name game-hub
+npx wrangler pages secret put CF_WEB_ANALYTICS_TAG --project-name game-hub
+```
+
+Dalla dashboard è lo stesso: **Workers & Pages → game-hub → Settings →
+Variables and Secrets → Add**, tipo *Secret*. `CF_WEB_ANALYTICS_TAG` è il «site
+tag» delle Web Analytics, se le si accende per il sito. Se un permesso manca, il
+pannello lo dice nella sezione che non riesce a leggere, e le altre restano.
+
 ## Manutenzione
 
 **Nuove migrazioni.** Aggiungi un file numerato in `migrations/` e applicalo

@@ -18,6 +18,7 @@ import {
   riepilogoWordle,
 } from '../lib/riepiloghi'
 import { today } from '../lib/wordleStore'
+import { annuncioVisibile } from '../lib/annunci'
 
 /**
  * La schermata iniziale in una richiesta: le classificate di oggi, la
@@ -27,7 +28,8 @@ import { today } from '../lib/wordleStore'
  *
  * Una e non una per gioco perché il piano gratuito delle Pages Functions conta le
  * richieste, e la schermata iniziale e' quella che si apre di piu'. Come i
- * riepiloghi che la compongono, non apre niente: e' di sola lettura.
+ * riepiloghi che la compongono, non apre niente: e' di sola lettura. Con lei
+ * arriva l'annuncio a tutti, se ce n'e' uno (vedi server/lib/annunci.ts).
  */
 export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', async (c) => {
   const db = c.env.DB
@@ -45,6 +47,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     paroliere,
     catena,
     generale,
+    annuncio,
   ] = await Promise.all([
     riepilogoWordle(db, io),
     riepilogoScarabeo(db, io),
@@ -57,6 +60,7 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
     riepilogoParoliere(db, io),
     riepilogoCatena(db, io),
     classificaGenerale(db, periodoDi('today', quando.puzzleNumber), io),
+    annuncioVisibile(db),
   ])
   return c.json<OggiRisposta>({
     date: quando.date,
@@ -87,5 +91,6 @@ export const oggiRoutes = new Hono<AppEnv>().use('*', requireVerified).get('/', 
           punti: r.punti,
         })),
     },
+    annuncio,
   })
 })

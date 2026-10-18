@@ -97,25 +97,30 @@ export async function revokeAllSessions(
   }
 }
 
-interface Resolved {
+export interface Resolved {
   player: PlayerRow
   tokenHash: string
   expiresAt: string
+  /** Fin quando il pannello di amministrazione e' sbloccato su questa sessione. */
+  adminFino: string | null
 }
 
-async function resolveSession(c: Context<AppEnv>): Promise<Resolved | null> {
+/** La sessione del cookie, con il suo giocatore; null se non c'e', e' scaduta o l'account e' sospeso. */
+export async function resolveSession(c: Context<AppEnv>): Promise<Resolved | null> {
   const token = getCookie(c, COOKIE_NAME)
   if (!token) return null
 
   const tokenHash = await hashSessionToken(token)
+  // Un account sospeso non ha sessioni: la sospensione le cancella, e questa condizione copre la richiesta
+  // che arriva nel frattempo.
   const row = await c.env.DB.prepare(
-    `SELECT p.*, s.expires_at AS session_expires_at
+    `SELECT p.*, s.expires_at AS session_expires_at, s.admin_fino AS session_admin_fino
        FROM sessions s
        JOIN players p ON p.id = s.player_id
-      WHERE s.token_hash = ?`,
+      WHERE s.token_hash = ? AND p.sospeso_at IS NULL`,
   )
     .bind(tokenHash)
-    .first<PlayerRow & { session_expires_at: string }>()
+    .first<PlayerRow & { session_expires_at: string; session_admin_fino: string | null }>()
 
   if (!row) return null
 
@@ -124,7 +129,7 @@ async function resolveSession(c: Context<AppEnv>): Promise<Resolved | null> {
     return null
   }
 
-  return { player: row, tokenHash, expiresAt: row.session_expires_at }
+  return { player: row, tokenHash, expiresAt: row.session_expires_at, adminFino: row.session_admin_fino }
 }
 
 /**
@@ -134,7 +139,7 @@ async function resolveSession(c: Context<AppEnv>): Promise<Resolved | null> {
  */
 const RENEW_WHEN_REMAINING_MS = 30 * 24 * 60 * 60 * 1000
 
-async function touchSession(c: Context<AppEnv>, resolved: Resolved): Promise<void> {
+export async function touchSession(c: Context<AppEnv>, resolved: Resolved): Promise<void> {
   const now = new Date()
   const remaining = new Date(resolved.expiresAt).getTime() - now.getTime()
   if (remaining > TTL_MS - RENEW_WHEN_REMAINING_MS) return

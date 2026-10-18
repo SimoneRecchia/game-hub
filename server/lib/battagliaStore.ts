@@ -18,7 +18,7 @@ import {
 } from '../../shared/config'
 import { disponiACaso, esitoDelColpo, naviAffondate, type Nave } from '../../shared/battaglia'
 import { casoDelColpo, colpoDelComputer, type LivelloBattaglia } from '../../shared/battaglia-computer'
-import { mulberry32 } from '../../shared/daily'
+import { gameDate, mulberry32 } from '../../shared/daily'
 import type {
   Attivita,
   ColpoVisto,
@@ -141,6 +141,10 @@ export function altro(lato: Lato): Lato {
  * schermata aperta, e una scrittura per giro sarebbero decine di migliaia al
  * giorno. La condizione nel `DO UPDATE` lascia passare la scrittura solo se
  * l'ultima e' vecchia di venti secondi o se l'attivita' e' cambiata.
+ *
+ * Nello stesso giro va la giornata in `attivita_giorni`, per i giocatori
+ * attivi del pannello di amministrazione: un INSERT OR IGNORE, che dalla seconda
+ * volta del giorno non scrive niente.
  */
 export async function segnaPresenza(
   db: D1Database,
@@ -148,15 +152,19 @@ export async function segnaPresenza(
   attivita: Attivita,
   adesso: number,
 ): Promise<void> {
-  await db
-    .prepare(
-      `INSERT INTO presenza (player_id, visto_at, attivita) VALUES (?, ?, ?)
-       ON CONFLICT (player_id) DO UPDATE
-          SET visto_at = excluded.visto_at, attivita = excluded.attivita
-        WHERE presenza.visto_at < ? OR presenza.attivita != excluded.attivita`,
-    )
-    .bind(playerId, new Date(adesso).toISOString(), attivita, prima(adesso, PRESENZA_SCRITTURA_MS))
-    .run()
+  await db.batch([
+    db
+      .prepare(
+        `INSERT INTO presenza (player_id, visto_at, attivita) VALUES (?, ?, ?)
+         ON CONFLICT (player_id) DO UPDATE
+            SET visto_at = excluded.visto_at, attivita = excluded.attivita
+          WHERE presenza.visto_at < ? OR presenza.attivita != excluded.attivita`,
+      )
+      .bind(playerId, new Date(adesso).toISOString(), attivita, prima(adesso, PRESENZA_SCRITTURA_MS)),
+    db
+      .prepare('INSERT OR IGNORE INTO attivita_giorni (data, player_id) VALUES (?, ?)')
+      .bind(gameDate(new Date(adesso)), playerId),
+  ])
 }
 
 export async function eOnline(db: D1Database, playerId: string, adesso: number): Promise<boolean> {

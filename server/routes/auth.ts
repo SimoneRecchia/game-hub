@@ -1,16 +1,11 @@
 import { Hono, type Context } from 'hono'
 import {
   AVATAR_COLORS,
-  CODE_LENGTH,
   CODE_LOGIN_PER_DAY,
   CODE_RESEND_COOLDOWN_SECONDS,
   CODE_TTL_MINUTES,
   EMAIL_MAX,
-  EMAIL_PATTERN,
-  NICKNAME_MAX,
-  NICKNAME_MIN,
   NICKNAME_OGNI_GIORNI,
-  NICKNAME_PATTERN,
 } from '../../shared/config'
 import type { AuthConfig, CodiceMandato, Player } from '../../shared/types'
 import { nicknameCambiabileDal, toPlayer, type AppEnv, type Bindings, type PlayerRow } from '../types'
@@ -24,7 +19,15 @@ import {
   revokeSession,
 } from '../lib/session'
 import { codesLastDay, consumeCode, issueCode, resendWaitSeconds, type CodePurpose } from '../lib/codes'
-import { emailVerificationEnabled, loginMessage, nicknameMessage, sendEmail, verifyEmailMessage } from '../lib/email'
+import {
+  daQuestoComputer,
+  emailVerificationEnabled,
+  loginMessage,
+  nicknameMessage,
+  sendEmail,
+  verifyEmailMessage,
+} from '../lib/email'
+import { readCode, readEmail, readNickname } from '../lib/campi'
 
 /*
  * L'accesso e' senza password: chi si registra sceglie il nickname e da'
@@ -32,27 +35,6 @@ import { emailVerificationEnabled, loginMessage, nicknameMessage, sendEmail, ver
  * sessioni durano un anno, quindi il codice serve di rado: a un telefono nuovo,
  * o dopo essere usciti.
  */
-
-function readNickname(value: unknown): string {
-  if (typeof value !== 'string') fail(400, 'BAD_REQUEST', 'Richiesta non valida.')
-  const nickname = value.trim()
-  if (nickname.length < NICKNAME_MIN || nickname.length > NICKNAME_MAX) {
-    fail(400, 'NICKNAME_LENGTH', `Il nickname deve avere fra ${NICKNAME_MIN} e ${NICKNAME_MAX} caratteri.`)
-  }
-  if (!NICKNAME_PATTERN.test(nickname)) {
-    fail(400, 'NICKNAME_CHARS', 'Il nickname può contenere solo lettere, numeri, punto, trattino e underscore.')
-  }
-  return nickname
-}
-
-function readEmail(value: unknown): string {
-  if (typeof value !== 'string') fail(400, 'EMAIL_REQUIRED', 'Scrivi l’email.')
-  const email = value.trim()
-  if (email.length === 0) fail(400, 'EMAIL_REQUIRED', 'Scrivi l’email.')
-  if (email.length > EMAIL_MAX) fail(400, 'EMAIL_INVALID', "Questa email è troppo lunga.")
-  if (!EMAIL_PATTERN.test(email)) fail(400, 'EMAIL_INVALID', "Questa email non sembra valida.")
-  return email
-}
 
 /** Il nickname o l'email con cui si entra: un nickname non ha la chiocciola, un'email si'. */
 function readIdentifier(value: unknown): string {
@@ -62,24 +44,6 @@ function readIdentifier(value: unknown): string {
   return identifier
 }
 
-function readCode(value: unknown): string {
-  const code = typeof value === 'string' ? value.trim() : ''
-  if (!new RegExp(`^\\d{${CODE_LENGTH}}$`).test(code)) {
-    fail(400, 'BAD_CODE_FORMAT', `Il codice è di ${CODE_LENGTH} cifre.`)
-  }
-  return code
-}
-
-/**
- * La richiesta arriva da questo computer: e' lo sviluppo in locale. Li', senza
- * la chiave di Resend, il codice per entrare torna nella risposta, perché non
- * ci sarebbe altro modo di leggerlo. In produzione l'indirizzo e' quello del
- * sito, e la condizione non si avvera mai, nemmeno senza la chiave.
- */
-function daQuestoComputer(url: string): boolean {
-  const host = new URL(url).hostname
-  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
-}
 
 type Destinatario = { id: string; nickname: string; email: string }
 
@@ -275,7 +239,8 @@ export const authRoutes = new Hono<AppEnv>()
 
     const generico: CodiceMandato = { ok: true, cooldownSeconds: CODE_RESEND_COOLDOWN_SECONDS }
     const row = await trovaGiocatore(c.env.DB, identifier)
-    if (!row || !row.email) return c.json(generico)
+    // Un account sospeso non riceve codici, e la risposta e' la stessa: non dice chi e' sospeso.
+    if (!row || !row.email || row.sospeso_at) return c.json(generico)
     if ((await resendWaitSeconds(c.env.DB, row.id, 'login')) > 0) return c.json(generico)
     if ((await codesLastDay(c.env.DB, row.id, 'login')) >= CODE_LOGIN_PER_DAY) return c.json(generico)
 
@@ -304,6 +269,7 @@ export const authRoutes = new Hono<AppEnv>()
     if (!row) fail(400, 'CODE_INVALID', INVALIDO)
     const esito = await consumeCode(c.env.DB, row.id, 'login', code)
     if (!esito.ok) fail(400, 'CODE_INVALID', INVALIDO)
+    if (row.sospeso_at) fail(403, 'SOSPESO', 'Questo account è sospeso.')
 
     await c.env.DB.prepare('UPDATE players SET email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?')
       .bind(nowIso(), row.id)

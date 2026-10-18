@@ -22,6 +22,7 @@ import type { FaseBJ } from './blackjack-tavolo'
 import type { PremioEnalotto } from './superenalotto'
 import type { PuntateRL } from './roulette'
 import type { FaseRL } from './roulette-tavolo'
+import type { AnnuncioVisibile } from './admin'
 import type { EsitoMossaCatena, TerzoElemento, VoceCatena } from './catena'
 import type { GiocoSfidaLibera, ImpostazioniSfidaLibera } from './sfide-libere'
 
@@ -1914,6 +1915,8 @@ export interface OggiRisposta {
     /** I primi tre di oggi, fra chi ha fatto punti. */
     podio: Array<GiocatoreBreve & { punti: number }>
   }
+  /** L'avviso a tutti scritto dal pannello di amministrazione, se ce n'e' uno acceso. */
+  annuncio: AnnuncioVisibile | null
 }
 
 /* ───────────────────────────────  Crazy Time  ──────────────────────────────── */

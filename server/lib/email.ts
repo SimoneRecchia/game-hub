@@ -26,6 +26,17 @@ export type SendResult =
   | { ok: true; id: string | null }
   | { ok: false; reason: 'not_configured' | 'rejected' | 'network'; detail: string }
 
+/**
+ * La richiesta arriva da questo computer: e' lo sviluppo in locale. Li', senza
+ * la chiave di Resend, il codice per entrare torna nella risposta, perché non
+ * ci sarebbe altro modo di leggerlo. In produzione l'indirizzo e' quello del
+ * sito, e la condizione non si avvera mai, nemmeno senza la chiave.
+ */
+export function daQuestoComputer(url: string): boolean {
+  const host = new URL(url).hostname
+  return host === 'localhost' || host === '127.0.0.1' || host === '[::1]'
+}
+
 /** La verifica per email e' attiva? Guida sia le rotte sia la UI. */
 export function emailVerificationEnabled(env: Bindings): boolean {
   return env.EMAIL_VERIFICATION === 'on' && Boolean(env.RESEND_API_KEY)
@@ -190,6 +201,32 @@ export function nicknameMessage(
       <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
         Il codice vale <strong>${minuti} minuti</strong>. Se non l’hai chiesto tu, ignora questo
         messaggio: senza il codice il nickname resta quello di adesso.
+      </p>`,
+    ),
+  }
+}
+
+/**
+ * Il codice che sblocca il pannello di amministrazione. Dice che cosa apre:
+ * chi lo riceve senza averlo chiesto deve capire che qualcuno ci sta provando.
+ */
+export function adminMessage(nickname: string, code: string, minuti: number): Omit<EmailMessage, 'to'> {
+  return {
+    subject: `${code} è il codice per il pannello di amministrazione di Game Hub`,
+    text: [
+      `Ciao ${nickname},`,
+      `il codice per aprire il pannello di amministrazione è:`,
+      code,
+      `Il codice vale ${minuti} minuti. Se non l’hai chiesto tu, qualcuno ha la tua sessione:` +
+        ' esci da tutti i dispositivi dal profilo.',
+      'giochi.simonerecchia.com/admin',
+    ].join('\n\n'),
+    html: layout(
+      `Ciao ${nickname}, ecco il codice per il pannello`,
+      `${blocoCodice(code)}
+      <p style="margin:20px 0 0;font-size:14px;color:#3c3c43;line-height:1.5">
+        Il codice vale <strong>${minuti} minuti</strong>. Se non l’hai chiesto tu, qualcuno ha la tua
+        sessione: esci da tutti i dispositivi dal profilo.
       </p>`,
     ),
   }
