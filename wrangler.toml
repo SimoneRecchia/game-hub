@@ -61,6 +61,12 @@ EMAIL_VERIFICATION = "on"
 # amministratori. Vedi server/lib/admin.ts.
 ADMIN_EMAILS = "recchia.sim@gmail.com"
 
-# Le statistiche di Cloudflare nel pannello vogliono CF_ACCOUNT_ID e
-# CF_API_TOKEN (e, se si vogliono, CF_ZONE_ID e CF_WEB_ANALYTICS_TAG) come
+# Il sito dei giochi nelle Web Analytics di Cloudflare (il «site tag» del
+# progetto game-hub, quello che conta solo le visite dei giochi e non il resto
+# del dominio): il pannello ne legge le visite. Non e' un segreto — per leggerle
+# serve il token — e sta qui invece che fra i secret delle Pages.
+CF_WEB_ANALYTICS_TAG = "8ff04dff55c640659dc436c7bdb2b410"
+
+# Le statistiche di Cloudflare nel pannello vogliono anche CF_ACCOUNT_ID e
+# CF_API_TOKEN (e, se si vuole il traffico di tutto il dominio, CF_ZONE_ID) come
 # secret del progetto Pages, non qui: vedi DEPLOY.md.

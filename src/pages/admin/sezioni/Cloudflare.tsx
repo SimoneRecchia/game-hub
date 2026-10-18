@@ -342,17 +342,16 @@ function DaConfigurare({ mancano }: { mancano: string[] }) {
 
       <Carta titolo="2. Salva i segreti">
         <p className="adm-passo">
-          Su GitHub, in Settings → Secrets and variables → Actions: il token come <code>CF_STATS_TOKEN</code>, e il site
-          tag delle Web Analytics del sito come <code>CF_WEB_ANALYTICS_TAG</code>. Il deploy li porta qui da solo.
+          Su GitHub, in Settings → Secrets and variables → Actions, il token come <code>CF_STATS_TOKEN</code>: il deploy
+          lo porta qui da solo. Il sito delle Web Analytics sta in <code>wrangler.toml</code>.
         </p>
         <p className="adm-passo">Oppure dal terminale, nella cartella del progetto:</p>
         <Codice
           testo={[
             'npx wrangler pages secret put CF_ACCOUNT_ID --project-name game-hub',
             'npx wrangler pages secret put CF_API_TOKEN --project-name game-hub',
-            '# facoltativi',
+            '# facoltativo',
             'npx wrangler pages secret put CF_ZONE_ID --project-name game-hub',
-            'npx wrangler pages secret put CF_WEB_ANALYTICS_TAG --project-name game-hub',
           ].join('\n')}
           etichetta="Copia i comandi"
         />
