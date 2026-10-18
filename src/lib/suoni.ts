@@ -182,8 +182,14 @@ export type NomeSuono =
   | 'nienteVaPiu'
   /** L'urna del SuperEnalotto che mescola: l'aria dal fondo e le palline che si urtano, per `altezza` secondi. */
   | 'urna'
-  /** Una pallina estratta: il risucchio, i colpi nel tubo, e il campanello del numero. */
+  /** Una pallina estratta: il risucchio, il colpo alla bocca, i colpi giu' per il tubo e il rotolare sulla rotaia. */
   | 'estratto'
+  /** La sigla della diretta del SuperEnalotto: il soffio che sale, il colpo, l'accordo che si apre. */
+  | 'sigla'
+  /** Il numero di una pallina estratta, quando arriva al suo posto; `altezza` sale di pallina in pallina. */
+  | 'svelato'
+  /** Un numero estratto che e' fra i propri: lo stesso, e la festa sopra. */
+  | 'tuo'
 
 export interface OpzioniSuono {
   /** Da 0 a 1: un colpo dell'avversario suona piu' piano di uno mio. */
@@ -1307,12 +1313,54 @@ export const PARTITURE: Record<NomeSuono, Partitura> = {
     }
   },
 
-  // La pallina estratta: il risucchio verso l'alto, i colpi nel tubo, e il campanello quando arriva.
+  // La pallina estratta: il risucchio verso la bocca, il colpo quando ci entra, i colpi sul vetro giu' per il tubo,
+  // sempre piu' fitti, e il rotolare sulla rotaia. I tempi sono quelli del viaggio della diretta.
   estratto: (u, t, v) => {
-    soffio(u, t, 0.5, 0.08 * v, { tipo: 'bandpass', da: 380, a: 2400, q: 1.2 }, { attacco: 0.02, eco: 0.1 })
-    for (let i = 0; i < 5; i += 1) legno(u, t + 0.55 + i * 0.17, vario(1700 - i * 110), 0.06 * v, 0.03)
-    campanello(u, t + 1.5, N.E6, 0.12 * v, { eco: 0.4, durata: 1.2 })
-    campanello(u, t + 1.58, N.A6, 0.08 * v, { eco: 0.4, durata: 1.2 })
+    soffio(u, t, 0.62, 0.1 * v, { tipo: 'bandpass', da: 320, a: 2600, q: 1.3 }, { attacco: 0.4, eco: 0.1 })
+    goccia(u, t + 0.65, 520, 0.12 * v)
+    colpo(u, t + 0.65, voce(u, 0.1 * v, 0.2), 1800, 0.05, 0.9)
+    campanello(u, t + 0.66, N.A6, 0.05 * v, { eco: 0.45, durata: 0.6 })
+    let x = 0.75
+    for (let i = 0; x < 2.65; i += 1) {
+      legno(u, t + x, vario(1900 - i * 35, 0.05), (0.035 + 0.02 * Math.random()) * v, 0.04)
+      x += 0.2 - Math.min(0.12, i * 0.012)
+    }
+    soffio(u, t + 2.7, 0.8, 0.05 * v, { tipo: 'lowpass', da: 900, a: 300, q: 0.7 }, { attacco: 0.05, eco: 0.05 })
+  },
+
+  // La sigla: il soffio che sale per quasi un secondo, poi il colpo grave, l'accordo pieno dal basso in alto e una
+  // corsa di campanelli che scende. E' l'apertura della diretta, come le luci che si accendono.
+  sigla: (u, t, v) => {
+    soffio(u, t, 0.95, 0.16 * v, { tipo: 'bandpass', da: 300, a: 5200, q: 0.9 }, { attacco: 0.8, eco: 0.35 })
+    const botta = t + 0.85
+    tonfo(u, botta, 0.32 * v, { da: 150, a: 38, durata: 0.7 })
+    ;[N.C4, N.G4, N.C5, N.E5, N.G5, N.C6].forEach((f, i) =>
+      marimba(u, botta + i * 0.012, f, 0.15 * v, { eco: 0.4, durata: 1.4 }),
+    )
+    ;[N.E6, N.G6, N.C7].forEach((f) => campanello(u, botta + 0.02, f, 0.07 * v, { eco: 0.55, durata: 1.8 }))
+    ;[N.C7, N.E7, N.G7, N.A7, N.G7, N.E7].forEach((f, i) =>
+      campanello(u, botta + 0.35 + i * 0.07, f, 0.035 * v, { eco: 0.6, durata: 0.5 }),
+    )
+  },
+
+  // Un numero arrivato: il colpo, il piatto che frigge appena, e la quarta che sale con il campanello in cima.
+  svelato: (u, t, v, altezza = 1) => {
+    tonfo(u, t, 0.2 * v, { da: 130, a: 55, durata: 0.4 })
+    soffio(u, t, 0.5, 0.07 * v, { tipo: 'highpass', da: 6000, a: 3000, q: 0.7 }, { attacco: 0.003, eco: 0.4 })
+    marimba(u, t, N.G5 * altezza, 0.2 * v, { eco: 0.3 })
+    marimba(u, t + 0.09, N.C6 * altezza, 0.22 * v, { eco: 0.35, durata: 1.2 })
+    campanello(u, t + 0.09, N.E7 * altezza, 0.06 * v, { eco: 0.5, durata: 1 })
+  },
+
+  // Un numero proprio: lo stesso arrivo, poi l'arpeggio che sale, l'accordo in alto e i tintinnii.
+  tuo: (u, t, v, altezza = 1) => {
+    PARTITURE.svelato(u, t, v, altezza)
+    ;[N.C6, N.E6, N.G6, N.C7].forEach((f, i) => marimba(u, t + 0.2 + i * 0.06, f * altezza, 0.17 * v, { eco: 0.35 }))
+    ;[N.C7, N.E7, N.G7].forEach((f) => campanello(u, t + 0.44, f, 0.08 * v, { eco: 0.55, durata: 1.4 }))
+    const tintinnii = [N.E7, N.G7, N.A7, N.C7]
+    for (let i = 0; i < 8; i += 1) {
+      campanello(u, t + 0.5 + i * 0.06, vario(tintinnii[i % 4]), 0.03 * v, { eco: 0.5, durata: 0.3 })
+    }
   },
 
   // "Rien ne va plus": il campanello del croupier, due note che scendono.

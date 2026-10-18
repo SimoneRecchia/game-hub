@@ -97,6 +97,29 @@
   }
 }
 
+/*
+ * Il saldo che non basta: il numero e la sua etichetta d'ambra, e il filo
+ * anche. Il filo sta in uno strato suo, perché la roulette ridisegna quello
+ * del tabellone sul feltro.
+ */
+.ct-tabellone.is-scarso::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ct-ambra) 80%, transparent);
+  pointer-events: none;
+}
+
+.ct-tabellone.is-scarso .ct-tabellone__voce:not(.is-destra) .ct-tabellone__etichetta {
+  color: var(--ct-ambra);
+}
+
+.ct-tabellone.is-scarso .ct-tabellone__saldo {
+  color: var(--ct-ambra);
+  text-shadow: 0 0 14px color-mix(in srgb, var(--ct-ambra) 55%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ct-tabellone__lampo,
   .ct-tabellone__puntata {

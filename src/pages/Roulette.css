@@ -68,10 +68,16 @@
   letter-spacing: 0;
 }
 
-.rl-sala__nota {
-  margin: 0;
-  color: rgb(255 255 255 / 0.85);
-  font-size: var(--text-footnote);
+/* Il saldo che non basta (Avvisi.css): prima del bottone, largo quanto lui o poco di piu'. */
+.rl-sala__pochi {
+  width: min(100%, 420px);
+}
+
+/* Senza saldo il tavolo nuovo si fa da parte: l'oro e' per le giornaliere, nell'avviso. */
+.rl-sala__testo .btn.is-secondario {
+  background: rgb(255 255 255 / 0.12);
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.28);
 }
 
 @keyframes rl-sala-riflesso {

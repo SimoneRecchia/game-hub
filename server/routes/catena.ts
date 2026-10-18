@@ -6,6 +6,7 @@ import {
   PREAMBOLO_PAROLA_CATENA_MS,
   TEMPO_FINALE_CATENA_MS,
   applicaCatena,
+  parolaRiconosciuta,
   puntiCatena,
   stessaParola,
   svolgiCatena,
@@ -98,10 +99,12 @@ async function giocaMossa(c: Context<AppEnv>, corpo: Corpo, mossa: MossaCatena):
   controllaVersione(corpo, row)
   const mosse = mosseDi(row)
   const prima = svolgiCatena(catena, mosse)
-  const fatta = applicaCatena(catena, prima, mossa)
+  // La parola scritta per intero, con le lettere che si vedevano gia', e' la parola giusta: si salva quella.
+  const vera: MossaCatena = mossa.k === 'p' ? { k: 'p', w: parolaRiconosciuta(catena, prima, mossa.w) } : mossa
+  const fatta = applicaCatena(catena, prima, vera)
   if (!fatta) fail(409, 'MOSSA', 'Questa mossa adesso non si può fare.')
   const dopo = await salvaPartita(c.env.DB, row, {
-    mosse: [...mosse, mossa],
+    mosse: [...mosse, vera],
     ...tempiDopo(row, prima.passo, fatta.dopo.passo, adesso, fatta.esito),
   })
   return stato(dopo, catena, adesso, fatta.esito)
@@ -165,7 +168,7 @@ export const catenaRoutes = new Hono<AppEnv>()
     return c.json<CatenaStato>(await giocaMossa(c, corpo, { k: 'j' }))
   })
 
-  /** Il terzo elemento della finale, che costa quanto un errore: chi ha ancora tutti e due i jolly lo ha gia'. */
+  /** Il terzo elemento della finale, che dimezza il montepremi: chi ha ancora tutti e due i jolly lo ha gia'. */
   .post('/compra', async (c) => {
     const corpo = await corpoDi(c)
     return c.json<CatenaStato>(await giocaMossa(c, corpo, { k: 'c' }))
@@ -186,7 +189,8 @@ export const catenaRoutes = new Hono<AppEnv>()
     if (row.status === 'done') return c.json<CatenaStato>(stato(row, catena, adesso))
     const s = svolgiCatena(catena, mosseDi(row))
     if (s.passo !== PASSO_FINALE || !row.finale_at) fail(409, 'FINALE', 'La parola finale non è ancora arrivata.')
-    const parola = parolaDi(corpo, true)
+    const scritta = parolaDi(corpo, true)
+    const parola = scritta && parolaRiconosciuta(catena, s, scritta)
     controllaVersione(corpo, row)
     const indovinata = stessaParola(catena.parole[NASCOSTE_CATENA[PASSO_FINALE]], parola)
     const dopo = await salvaPartita(c.env.DB, row, {

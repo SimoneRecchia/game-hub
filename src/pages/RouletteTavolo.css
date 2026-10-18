@@ -431,6 +431,35 @@
   height: 100cqh;
 }
 
+/* Il panno vuoto, quando si punta: il filo d'oro attorno si accende piano, e chiama il dito. */
+.rl-panno-posto.is-invito > .rl-panno::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 13px;
+  box-shadow:
+    0 0 0 1.5px var(--ct-oro),
+    0 0 20px color-mix(in srgb, var(--ct-oro) 45%, transparent);
+  opacity: 0.15;
+  pointer-events: none;
+  animation: rl-panno-invito 2.4s var(--ease-in-out) infinite;
+}
+
+@keyframes rl-panno-invito {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  62% {
+    opacity: 0.9;
+  }
+}
+
+/* Senza saldo il panno non si tocca, e lo si vede. */
+.rl-panno-posto.is-spento > .rl-panno {
+  opacity: 0.45;
+}
+
 /*
  * ---- La sponda ----
  *
@@ -688,6 +717,15 @@
     text-align: left;
   }
 
+  .rl-comandi > .ct-invito {
+    justify-self: start;
+  }
+
+  /* L'avviso del saldo prende tutta la sponda. */
+  .rl-comandi > .ct-pochi {
+    grid-column: 1 / -1;
+  }
+
   .rl-comandi .rl-gettoni {
     padding-top: 0;
   }
@@ -704,7 +742,18 @@
   }
 }
 
+/* L'invito sulla sponda e' alto quanto la riga di stato che sostituisce: le fiches non saltano. */
+.rl-comandi > .ct-invito {
+  min-height: 26px;
+  padding-block: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .rl-panno-posto.is-invito > .rl-panno::after {
+    animation: none;
+    opacity: 0.6;
+  }
+
   .rl-nvp,
   .rl-annuncio,
   .rl-annuncio__targa,

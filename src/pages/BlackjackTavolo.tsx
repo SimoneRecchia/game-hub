@@ -39,6 +39,7 @@ import {
   type LatoPosto,
 } from '@/games/blackjack/Tavolo'
 import { esciFraPoco } from '@/games/blackjack/uscita'
+import { CHIAMA_FICHES, PochiPunti } from '@/games/fortuna/Avvisi'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { centroDi, incassaMonete, puntaFiches, spostaFiches, volaFiche } from '@/games/fortuna/voli'
@@ -469,6 +470,8 @@ export default function BlackjackTavolo() {
   const puntataServer = mio && !pulita && (vista?.fase !== 'puntate' || mio.puntata > 0) ? mio.puntata : 0
   const assicurazione = puntataServer > 0 ? mio!.assicurazione : 0
   const devoPuntare = !!vista && !!mio && fase === 'puntate' && puntataServer === 0 && !mio.via
+  /** Tocca puntare, e il saldo non basta: lo dicono l'avviso al posto delle fiches e il tabellone. */
+  const senzaSaldo = devoPuntare && saldo < PUNTATA_MINIMA_BJ
   /** Sul tabellone, tutto quel che ho sul tavolo: le mani e l'assicurazione. */
   const puntataMostrata = puntataServer > 0 ? puntataServer + assicurazione : sommaFiches > 0 ? sommaFiches : null
 
@@ -574,7 +577,11 @@ export default function BlackjackTavolo() {
     vista?.aTempo && vista.fase === 'puntate' && tempo !== null ? { resta: tempo, tutto: PUNTATE_MS } : null
   const banco = vista && !pulita ? vista.banco : []
   const chiaviBanco = banco.map((_, i) => chiaveBanco(vista!.giro, i))
-  const classeCerchio = ['bj-mio__cerchio', devoPuntare && 'is-puntata', tempoTurno && manoDiTurno && 'is-turno']
+  const classeCerchio = [
+    'bj-mio__cerchio',
+    devoPuntare && !senzaSaldo && 'is-puntata',
+    tempoTurno && manoDiTurno && 'is-turno',
+  ]
     .filter(Boolean)
     .join(' ')
   // A giro chiuso il delta delle mani e' quello del giro senza l'assicurazione, che si paga dal suo posto.
@@ -600,7 +607,9 @@ export default function BlackjackTavolo() {
     >
       <DefinizioniCarte />
       <div className="bj">
-        {vista && <Tabellone saldo={conto ?? saldo} puntata={puntataMostrata} saldoRef={saldoRef} />}
+        {vista && (
+          <Tabellone saldo={conto ?? saldo} puntata={puntataMostrata} saldoRef={saldoRef} scarso={senzaSaldo} />
+        )}
         <SabotContext.Provider value={sabotRef}>
           <div className={`bj-tavolo is-${fase}${chiuso ? ' is-chiuso' : ''}`} ref={tavoloRef}>
             <span className="bj-tavolo__luce" aria-hidden="true" />
@@ -678,7 +687,9 @@ export default function BlackjackTavolo() {
                 />
                 <div className={classeCerchio} ref={cerchioRef}>
                   <PilaFiches pezzi={pilaMia} className={pila === 'vinta' ? 'is-vinta' : ''} />
-                  {pilaMia.length === 0 && devoPuntare && <span className="bj-mio__invito">Punta qui</span>}
+                  {pilaMia.length === 0 && devoPuntare && !senzaSaldo && (
+                    <span className="bj-mio__invito">Punta qui</span>
+                  )}
                   {tempoTurno && manoDiTurno && <AnelloTempo {...tempoTurno} />}
                 </div>
               </div>
@@ -701,8 +712,8 @@ export default function BlackjackTavolo() {
               )}
             </div>
           ) : devoPuntare ? (
-            saldo < PUNTATA_MINIMA_BJ ? (
-              <Stato>Servono {PUNTATA_MINIMA_BJ} punti di oggi: gioca le classificate, poi torna qui.</Stato>
+            senzaSaldo ? (
+              <PochiPunti servono={PUNTATA_MINIMA_BJ} saldo={saldo} />
             ) : (
               <Puntate
                 fiches={fiches}
@@ -802,11 +813,14 @@ function Puntate({
 }) {
   const somma = fiches.reduce((s, v) => s + v, 0)
   const ripeti = ultima.reduce((s, v) => s + v, 0)
+  const ripetibile = somma === 0 && ripeti >= PUNTATA_MINIMA_BJ && ripeti <= saldo
   const verbo = altri ? 'Punta' : 'Distribuisci'
+  // Senza fiches sul cerchio, e senza una puntata da ripetere, le carte non partono: le fiches si fanno toccare.
+  const chiama = somma === 0 && !ripetibile && !inviando
   return (
     <div className="bj-puntate">
       {tempo && <Stato tempo={tempo}>Punta entro {Math.ceil(tempo.resta / 1000)} secondi</Stato>}
-      <div className="bj-gettoni" role="group" aria-label="Le fiches">
+      <div className={`bj-gettoni${chiama ? ` ${CHIAMA_FICHES}` : ''}`} role="group" aria-label="Le fiches">
         {GETTONI_BJ.map((v) => (
           <button
             key={v}
@@ -827,7 +841,7 @@ function Puntate({
         <button type="button" className="bj-tasto" onClick={onRaddoppia} disabled={somma === 0 || somma * 2 > saldo}>
           ×2
         </button>
-        {somma === 0 && ripeti >= PUNTATA_MINIMA_BJ && ripeti <= saldo ? (
+        {ripetibile ? (
           <button type="button" className="bj-distribuisci" disabled={inviando} onClick={() => onPunta(ultima)}>
             Ripeti <span className="u-tabnum">{ripeti}</span>
           </button>
@@ -838,7 +852,7 @@ function Puntate({
             disabled={somma < PUNTATA_MINIMA_BJ || inviando}
             onClick={() => onPunta(fiches)}
           >
-            {somma < PUNTATA_MINIMA_BJ ? `Minimo ${PUNTATA_MINIMA_BJ}` : verbo}
+            {somma === 0 ? 'Tocca una fiche' : somma < PUNTATA_MINIMA_BJ ? `Minimo ${PUNTATA_MINIMA_BJ}` : verbo}
           </button>
         )}
       </div>

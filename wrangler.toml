@@ -54,3 +54,13 @@ EMAIL_FROM = "Game Hub <giochi@mail.simonerecchia.com>"
 #
 # La chiave e' un segreto e non va in questo file: vedi DEPLOY.md.
 EMAIL_VERIFICATION = "on"
+
+# I proprietari del pannello di amministrazione (giochi.simonerecchia.com/admin),
+# separati da virgole. Chi entra con una di queste email, confermata, apre il
+# pannello dopo un codice mandato all'email, e dal pannello puo' nominare altri
+# amministratori. Vedi server/lib/admin.ts.
+ADMIN_EMAILS = "recchia.sim@gmail.com"
+
+# Le statistiche di Cloudflare nel pannello vogliono CF_ACCOUNT_ID e
+# CF_API_TOKEN (e, se si vogliono, CF_ZONE_ID e CF_WEB_ANALYTICS_TAG) come
+# secret del progetto Pages, non qui: vedi DEPLOY.md.

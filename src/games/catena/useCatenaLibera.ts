@@ -13,6 +13,7 @@ import {
   compraUsabile,
   jollyUsabile,
   normalizzaCatena,
+  parolaRiconosciuta,
   puntiCatena,
   riparteIlMinuto,
   stessaParola,
@@ -125,10 +126,12 @@ export function useCatenaLibera() {
   const chiudi = useCallback(
     (p: Partita, risposta: string | null): RispostaCatena => {
       const finale = p.catena.parole[NASCOSTE_CATENA[PASSO_FINALE]]
-      const indovinata = risposta !== null && stessaParola(finale, risposta)
+      // Come nella classificata, la parola scritta per intero vale la parola giusta.
+      const voluta = risposta ? parolaRiconosciuta(p.catena, svolgiCatena(p.catena, p.mosse), risposta) : ''
+      const indovinata = stessaParola(finale, voluta)
       const chiusa: Partita = {
         ...p,
-        risposta: risposta ? normalizzaCatena(risposta) || null : null,
+        risposta: voluta || null,
         indovinata,
         finita: true,
       }
@@ -179,9 +182,15 @@ export function useCatenaLibera() {
       const p = ref.current
       if (!p || p.finita || !p.iniziata) return null
       if (scaduta(p)) return chiudi(p, null)
-      // Una parola provata a tempo finito e' il tempo finito: la parola si mostra.
-      const vera: MossaCatena = mossa.k === 'p' && p.parola && Date.now() > p.parola.scadenza ? { k: 't' } : mossa
       const prima = svolgiCatena(p.catena, p.mosse)
+      // Una parola provata a tempo finito e' il tempo finito: la parola si mostra. Una scritta per intero, con le
+      // lettere che si vedevano gia', e' la parola giusta, come nella classificata.
+      const vera: MossaCatena =
+        mossa.k !== 'p'
+          ? mossa
+          : p.parola && Date.now() > p.parola.scadenza
+            ? { k: 't' }
+            : { k: 'p', w: parolaRiconosciuta(p.catena, prima, mossa.w) }
       const fatta = applicaCatena(p.catena, prima, vera)
       if (!fatta) return null
       const adesso = Date.now()

@@ -270,6 +270,7 @@ export default function WordleInsieme() {
               onBackspace={() => setDraft((d) => d.slice(0, -1))}
               disabled={chiuso || busy}
               enterLabel="Suggerisci"
+              pronta={draft.length === WORD_LENGTH}
             />
           </>
         )}

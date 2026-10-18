@@ -6,6 +6,7 @@ import {
   DA_INDOVINARE_CATENA,
   ERRORE_CATENA,
   NASCOSTE_CATENA,
+  SECONDO_ERRORE_CATENA,
   PASSO_FINALE,
   normalizzaCatena,
   type EsitoMossaCatena,
@@ -163,10 +164,11 @@ export function PartitaCatena({
   const spazio = spazioDi(corrente)
   const finale = mostrata.passo >= PASSO_FINALE
 
-  /** La vista nuova, e con lei il montepremi che scende, se e' sceso. */
-  const mostra = useCallback((dopo: VistaCatena, prima: VistaCatena) => {
+  /** La vista nuova, e con lei il montepremi che scende, se e' sceso: di quel che si e' perso, o della meta'. */
+  const mostra = useCallback((dopo: VistaCatena, prima: VistaCatena, dimezzato = false) => {
     if (dopo.montepremi < prima.montepremi) {
-      setTaglio({ prima: prima.montepremi, perso: prima.montepremi - dopo.montepremi, n: Date.now(), tutto: false })
+      const perso = prima.montepremi - dopo.montepremi
+      setTaglio({ prima: prima.montepremi, perso, n: Date.now(), tutto: false, dimezzato })
       suona('dimezza')
     }
     setMostrata(dopo)
@@ -389,7 +391,7 @@ export function PartitaCatena({
       const r = await comandi.compra()
       if (!montata.current) return
       if (r) {
-        mostra(r.vista, prima)
+        mostra(r.vista, prima, true)
         setStato('Ecco il terzo elemento')
         suona('svela', { ritardo: 0.3 })
         window.setTimeout(() => montata.current && setStato(''), 1600)
@@ -426,7 +428,13 @@ export function PartitaCatena({
           suona('vittoria', { ritardo: 0.6 })
         } else {
           setStato(testo === null ? `Nessuna risposta: ${dopo.punti} punti` : `Sbagliata: ${dopo.punti} punti`)
-          setTaglio({ prima: mostrata.montepremi, perso: mostrata.montepremi - dopo.punti, n: Date.now(), tutto: true })
+          setTaglio({
+            prima: mostrata.montepremi,
+            perso: mostrata.montepremi - dopo.punti,
+            n: Date.now(),
+            tutto: true,
+            dimezzato: false,
+          })
           suona('sbagliato')
           suona('sconfitta', { ritardo: 0.5 })
         }
@@ -509,8 +517,8 @@ export function PartitaCatena({
             <div className="cat-intro">
               <p className="cat-intro__titolo">La Catena</p>
               <p className="cat-intro__testo">
-                Ogni parola si lega a quella dopo. Trovane cinque, un minuto ciascuna: ogni errore toglie{' '}
-                {ERRORE_CATENA} punti al montepremi.
+                Ogni parola si lega a quella dopo. Trovane cinque, un minuto ciascuna: un errore toglie {ERRORE_CATENA}{' '}
+                punti al montepremi, il secondo sulla stessa parola {SECONDO_ERRORE_CATENA}.
               </p>
               <Button size="lg" onClick={() => void comincia()}>
                 Comincia
@@ -792,6 +800,8 @@ interface Taglio {
   n: number
   /** La parola finale sbagliata: il montepremi cade tutto. */
   tutto: boolean
+  /** Il terzo elemento comprato: il montepremi si dimezza, e si vede il ÷2. */
+  dimezzato: boolean
 }
 
 /** Il montepremi: quando scende il valore di prima vola via, con quel che si e' perso; alla finale sbagliata cade. */
@@ -805,7 +815,9 @@ function Montepremi({ valore, taglio, vinto }: { valore: number; taglio: Taglio 
       {taglio && (
         <span key={taglio.n} className={`cat-montepremi__taglio${taglio.tutto ? ' is-tutto' : ''}`} aria-hidden="true">
           <span className="cat-montepremi__prima u-tabnum">{taglio.prima}</span>
-          {!taglio.tutto && <span className="cat-montepremi__meta">−{taglio.perso}</span>}
+          {!taglio.tutto && (
+            <span className="cat-montepremi__meta">{taglio.dimezzato ? '÷2' : `−${taglio.perso}`}</span>
+          )}
         </span>
       )}
     </div>

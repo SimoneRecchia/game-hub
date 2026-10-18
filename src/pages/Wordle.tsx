@@ -164,6 +164,7 @@ export default function Wordle() {
               onEnter={game.submit}
               onBackspace={game.backspace}
               disabled={game.loading || !!finished || game.revealing !== null}
+              pronta={game.draft.length === WORD_LENGTH}
             />
           </>
         )}

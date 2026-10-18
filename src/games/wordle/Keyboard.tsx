@@ -1,7 +1,6 @@
+import { useMemo } from 'react'
 import type { TileState } from '@shared/types'
-import { KEYBOARD_ROWS } from '@shared/wordle'
-import { IconBackspace } from '@/components/Icons'
-import './Keyboard.css'
+import { TastieraLettere } from '@/components/TastieraGioco'
 
 /**
  * Tastiera con le 21 lettere dell'alfabeto italiano.
@@ -9,7 +8,8 @@ import './Keyboard.css'
  * E' la QWERTY senza J, K, W, X e Y: quelle cinque lettere compaiono solo nei
  * prestiti stranieri, che il dizionario del gioco non contiene. Togliendole,
  * su un telefono i tasti restano sensibilmente piu' grandi e non ce n'e'
- * nessuno che non possa mai servire.
+ * nessuno che non possa mai servire. Il disegno e' quello di tutti i giochi di
+ * parole (`TastieraLettere`); qui le lettere prendono il colore dei tentativi.
  */
 const STATE_CLASS: Record<TileState, string> = {
   correct: 'is-correct',
@@ -28,6 +28,8 @@ interface Props {
    * l'invitato propone una parola, non la gioca.
    */
   enterLabel?: string
+  /** La riga e' piena: l'invio si accende. Con meno lettere si preme lo stesso, e il gioco dice che manca qualcosa. */
+  pronta?: boolean
 }
 
 export function Keyboard({
@@ -37,59 +39,22 @@ export function Keyboard({
   onBackspace,
   disabled,
   enterLabel = 'Invia',
+  pronta = true,
 }: Props) {
+  const stati = useMemo(() => new Map([...states].map(([lettera, stato]) => [lettera, STATE_CLASS[stato]])), [states])
   return (
-    <div className="keyboard" role="group" aria-label="Tastiera">
-      {KEYBOARD_ROWS.map((row, index) => (
-        <div className="keyboard__row" key={index}>
-          {row.map((key) => {
-            if (key === 'ENTER') {
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  /* "Suggerisci" non sta nello spazio di "Invia": il
-                     modificatore allarga il tasto e rimpicciolisce il testo,
-                     invece di lasciarlo tagliato. */
-                  className={`key key--wide${enterLabel.length > 6 ? ' key--wide-lungo' : ''}`}
-                  onClick={onEnter}
-                  disabled={disabled}
-                  aria-label={enterLabel === 'Invia' ? 'Invia il tentativo' : enterLabel}
-                >
-                  {enterLabel}
-                </button>
-              )
-            }
-            if (key === 'BACK') {
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  className="key key--wide"
-                  onClick={onBackspace}
-                  disabled={disabled}
-                  aria-label="Cancella l'ultima lettera"
-                >
-                  <IconBackspace size={22} />
-                </button>
-              )
-            }
-            const state = states.get(key)
-            return (
-              <button
-                key={key}
-                type="button"
-                className={`key${state ? ` ${STATE_CLASS[state]}` : ''}`}
-                onClick={() => onLetter(key)}
-                disabled={disabled}
-                aria-label={key.toUpperCase()}
-              >
-                {key.toUpperCase()}
-              </button>
-            )
-          })}
-        </div>
-      ))}
-    </div>
+    <TastieraLettere
+      disabled={disabled}
+      stati={stati}
+      onLettera={onLetter}
+      onCancella={onBackspace}
+      azione={{
+        etichetta: enterLabel,
+        aria: enterLabel === 'Invia' ? 'Invia il tentativo' : enterLabel,
+        onClick: onEnter,
+        pronta,
+        lunga: enterLabel.length > 6,
+      }}
+    />
   )
 }

@@ -6,16 +6,16 @@
  * parole e in mezzo la prima lettera di quella che le lega, senza sapere quanto
  * e' lunga; trovata quella, si scende: la terza parola e una nuova, e in mezzo
  * la prossima da indovinare. Ogni parola ha un minuto, che riparte dopo una
- * risposta sbagliata o un jolly. Una risposta sbagliata toglie sei punti al
- * montepremi e mostra un'altra lettera; una seconda mostra la parola, e si va
- * avanti; il minuto finito la mostra come due errori. Due jolly mostrano una
- * lettera senza costare niente, ma non nella finale.
+ * risposta sbagliata o un jolly. Una risposta sbagliata toglie dieci punti al
+ * montepremi e mostra un'altra lettera; una seconda ne toglie sei, mostra la
+ * parola, e si va avanti; il minuto finito la mostra come due errori. Due jolly
+ * mostrano una lettera senza costare niente, ma non nella finale.
  *
  * L'ultima parola e' quella decisiva: si vede la parola prima — l'ultima della
  * catena — e della finale le prime due lettere e l'ultima, ma non il terzo
- * elemento, la parola dopo. Comprarlo costa quanto un errore; chi arriva con
- * tutti e due i jolly lo ha in regalo. C'e' un minuto e mezzo per una risposta
- * sola: giusta vale il montepremi, che non scende sotto cinquanta, sbagliata
+ * elemento, la parola dopo. Comprarlo dimezza il montepremi, come alla
+ * televisione; chi arriva con tutti e due i jolly lo ha in regalo. C'e' un
+ * minuto e mezzo per una risposta sola: giusta vale il montepremi, sbagliata
  * venti.
  *
  * Le catene vengono dalle espressioni scritte a mano per la Ghigliottina e
@@ -43,18 +43,29 @@ export const MONTEPREMI_CATENA = 100
 export const MASSIMO_CATENA = MONTEPREMI_CATENA
 
 /**
- * Quel che toglie un errore, o il terzo elemento comprato. Gli errori possibili
- * sono otto, due per parola, quindi un errore vale un po' meno del gradino del
- * Wordle: chi le sbaglia tutte arriva al fondo del montepremi, e il fondo e'
- * cinquanta, quanto il Wordle indovinato al sesto tentativo.
+ * Quel che toglie un errore: il primo su una parola dieci, il gradino di un
+ * tentativo del Wordle, come ogni errore degli altri giochi; il secondo, che
+ * mostra la parola e chiude il conto di quella, sei. Chi le sbaglia tutte perde
+ * sedici punti a parola, sessantaquattro in tutto.
  */
-export const ERRORE_CATENA = 6
+export const ERRORE_CATENA = 10
+export const SECONDO_ERRORE_CATENA = 6
 
-/** Il montepremi non scende sotto questo: la parola finale indovinata vale sempre almeno la meta'. */
-export const FONDO_CATENA = 50
+/** Quel che costano gli errori su una parola, dal primo: oltre il secondo la parola e' gia' in vista. */
+export function costoErrori(errori: number): number {
+  if (errori <= 0) return 0
+  return ERRORE_CATENA + SECONDO_ERRORE_CATENA * (errori - 1)
+}
 
 /** La parola finale sbagliata, o non data: quanto una parola del Wordle non indovinata. */
 export const PUNTI_CATENA_PERSA = LOSS_POINTS
+
+/**
+ * Il montepremi non scende sotto questo: una finale indovinata non vale mai meno
+ * di una sbagliata. Conta solo dopo il terzo elemento, che dimezza: gli errori da
+ * soli lasciano almeno trentasei punti.
+ */
+export const FONDO_CATENA = PUNTI_CATENA_PERSA
 
 /** I jolly: una lettera in piu', senza costare niente. */
 export const JOLLY_CATENA = 2
@@ -104,13 +115,22 @@ export const PREAMBOLO_FINALE_CATENA_MS = 4_500
 export const MARGINE_CATENA_MS = 3_000
 
 /**
- * Il montepremi dopo `errori` errori o acquisti: sei in meno per ognuno, e mai
- * meno di cinquanta. Alla televisione ogni errore lo dimezza, e cosi' era anche
- * qui: due errori lasciavano un quarto, e una giornata storta non valeva piu'
- * niente.
+ * Il montepremi: cento, meno gli errori di ogni parola (`errori`, uno per
+ * parola, contati con `costoErrori`), e la meta' se si e' comprato il terzo
+ * elemento, che si compra nella finale, dopo tutti gli errori. Mai sotto il
+ * fondo. Alla televisione ogni errore lo dimezza, e cosi' era anche qui: due
+ * errori lasciavano un quarto, e una giornata storta non valeva piu' niente;
+ * poi ogni errore ne toglieva sei, e il terzo elemento anche, ma il bottone
+ * diceva ÷2.
  */
-export function montepremiCatena(errori: number): number {
-  return Math.max(FONDO_CATENA, MONTEPREMI_CATENA - ERRORE_CATENA * Math.max(0, errori))
+export function montepremiCatena(errori: readonly number[], dimezzato = false): number {
+  const resta = MONTEPREMI_CATENA - errori.reduce((somma, n) => somma + costoErrori(n), 0)
+  return Math.max(FONDO_CATENA, dimezzato ? Math.ceil(resta / 2) : resta)
+}
+
+/** Il montepremi di una partita a un suo punto. */
+function montepremiDi(parole: readonly ParolaSvolta[], terzo: TerzoElemento): number {
+  return montepremiCatena(parole.map((p) => p.errori), terzo === 'comprato')
 }
 
 const ACCENTI: Record<string, string> = {
@@ -137,6 +157,43 @@ export function normalizzaCatena(parola: string): string {
 export function stessaParola(giusta: string, tentativo: string): boolean {
   const t = normalizzaCatena(tentativo)
   return t.length > 0 && t === normalizzaCatena(giusta)
+}
+
+/**
+ * La parola che si voleva scrivere. Della parola da indovinare si scrive solo
+ * il resto: le lettere che si vedono — le prime, e nella finale l'ultima — ci
+ * sono gia', e il telefono le mette ai capi di quel che si e' scritto. Ma capita
+ * di riscriverle: la parola intera, o nella finale anche l'ultima, che sta in
+ * fondo alla riga. Se quel che si e' scritto, con le lettere date che mancano ai
+ * suoi capi, fa la parola giusta, vale la parola giusta, e il gioco non lo dice:
+ * era la tastiera, non la parola, e i giochi sono fatti per non stressarsi.
+ * Se no, vale quel che si e' scritto.
+ *
+ * Si applica quando la parola arriva, e la mossa salvata ha la parola giusta:
+ * rigiocando le mosse di prima, con il confronto di sempre, non cambia niente.
+ */
+export function parolaVoluta(giusta: string, scritta: string, date: { prime: number; ultima: boolean }): string {
+  const g = normalizzaCatena(giusta)
+  const w = normalizzaCatena(scritta)
+  const prime = g.slice(0, date.prime)
+  const ultima = date.ultima ? g.slice(-1) : ''
+  if (w === g || !w.startsWith(prime) || !w.endsWith(ultima)) return w
+  const mezzo = w.slice(prime.length, w.length - ultima.length)
+  if (!mezzo) return w
+  for (let k = 0; k <= prime.length; k += 1) {
+    if (prime.slice(0, k) + mezzo === g || prime.slice(0, k) + mezzo + ultima === g) return g
+  }
+  return w
+}
+
+/** La parola voluta per quella da indovinare adesso, nella catena o nella finale. */
+export function parolaRiconosciuta(catena: CatenaDelGiorno, s: Svolgimento, scritta: string): string {
+  const corrente = s.parole[s.passo]
+  if (!corrente) return normalizzaCatena(scritta)
+  return parolaVoluta(catena.parole[NASCOSTE_CATENA[s.passo]], scritta, {
+    prime: corrente.lettere,
+    ultima: s.passo === PASSO_FINALE,
+  })
 }
 
 /** Una catena: le undici parole, e le dieci espressioni che legano ognuna alla successiva. */
@@ -172,7 +229,7 @@ export interface Svolgimento {
   parole: ParolaSvolta[]
   jollyUsati: number
   terzo: TerzoElemento
-  /** Gli errori che costano: le risposte sbagliate, i minuti finiti (come due errori) e il terzo elemento comprato. */
+  /** Gli errori: le risposte sbagliate e i minuti finiti, come due errori. */
   errori: number
   montepremi: number
 }
@@ -229,7 +286,7 @@ export function applicaCatena(
     corrente.esito = 'rivelata'
     const errori = s.errori + mancano
     return {
-      dopo: { ...s, parole, errori, montepremi: montepremiCatena(errori), ...avanti(s.passo + 1) },
+      dopo: { ...s, parole, errori, montepremi: montepremiDi(parole, s.terzo), ...avanti(s.passo + 1) },
       esito: 'scaduta',
     }
   }
@@ -241,7 +298,7 @@ export function applicaCatena(
     }
     corrente.errori += 1
     const errori = s.errori + 1
-    const montepremi = montepremiCatena(errori)
+    const montepremi = montepremiDi(parole, s.terzo)
     if (corrente.errori >= ERRORI_PER_PAROLA) {
       corrente.esito = 'rivelata'
       return { dopo: { ...s, parole, errori, montepremi, ...avanti(s.passo + 1) }, esito: 'rivelata' }
@@ -255,9 +312,8 @@ export function applicaCatena(
     return { dopo: { ...s, parole, jollyUsati: s.jollyUsati + 1 }, esito: 'jolly' }
   }
   if (!compraUsabile(s)) return null
-  const errori = s.errori + 1
   return {
-    dopo: { ...s, terzo: 'comprato', errori, montepremi: montepremiCatena(errori) },
+    dopo: { ...s, terzo: 'comprato', montepremi: montepremiDi(parole, 'comprato') },
     esito: 'comprato',
   }
 }

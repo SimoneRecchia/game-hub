@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
+import { AvvisoATutti } from '@/components/AvvisoATutti'
 import { Copertina } from '@/components/Copertina'
 import { Anello, Numero, Sezione } from '@/components/Elementi'
 import { IconChevronRight, IconPlay } from '@/components/Icons'
@@ -41,6 +42,7 @@ export default function Giornaliere() {
       sopra={formatGameDate(oggi?.date ?? gameDate())}
       classifica={ROTTE.classifica()}
     >
+      <AvvisoATutti annuncio={oggi?.annuncio} />
       <Giornata io={player.id} oggi={oggi ?? null} stati={stati} />
 
       <Sezione titolo="Le classificate di oggi">

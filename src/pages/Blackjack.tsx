@@ -10,6 +10,7 @@ import { DefinizioniCarte, DorsoCarta, FacciaCarta } from '@/games/blackjack/Car
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
 import { ComeSiGiocaBlackjack } from '@/games/blackjack/ComeSiGioca'
 import { Fiche } from '@/games/blackjack/Fiches'
+import { PochiPunti } from '@/games/fortuna/Avvisi'
 import { finitaLUscita } from '@/games/blackjack/uscita'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
@@ -48,6 +49,9 @@ export default function Blackjack() {
     }, SALA_POLL_MS)
     return () => window.clearInterval(t)
   }, [leggi])
+
+  /** Il saldo non basta per puntare: prima l'avviso, e il tavolo nuovo si fa da parte (ci si siede solo a guardare). */
+  const pochi = !!sala && sala.saldo < PUNTATA_MINIMA_BJ
 
   const apri = async () => {
     if (apro) return
@@ -98,18 +102,22 @@ export default function Blackjack() {
             Saldo{' '}
             <strong className="u-tabnum">{sala ? <Numero valore={sala.saldo} /> : '…'}</strong>
           </p>
+          {pochi && <PochiPunti servono={PUNTATA_MINIMA_BJ} saldo={sala.saldo} className="bj-sala__pochi" />}
           {sala?.mioTavolo ? (
             <Button size="lg" onClick={() => vai(ROTTE.tavoloBJ(sala.mioTavolo!))}>
               Torna al tavolo
             </Button>
           ) : (
-            <Button size="lg" onClick={() => void apri()} disabled={apro || !sala}>
+            <Button
+              size="lg"
+              className={pochi ? 'is-secondario' : ''}
+              onClick={() => void apri()}
+              disabled={apro || !sala}
+            >
               Tavolo nuovo
             </Button>
           )}
-          {sala && sala.saldo < PUNTATA_MINIMA_BJ && (
-            <p className="bj-sala__nota">Servono {PUNTATA_MINIMA_BJ} punti di oggi per puntare.</p>
-          )}
+
         </div>
       </section>
 

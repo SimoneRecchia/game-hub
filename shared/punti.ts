@@ -40,19 +40,21 @@
  *   Anagrammi    parole trovate, e quanto presto       65-85     20        100
  *   Paroliere    i punti delle parole, al traguardo    60-85     25        100
  *   Ghigliottina il montepremi, se si indovina         70-90     20*       100
- *   Catena       il montepremi, se si indovina         76-88     20*       100
+ *   Catena       il montepremi, se si indovina         68-84     20*       100
  *
- *   * la parola non indovinata vale venti, la peggiore indovinata cinquanta; un
+ *   * la parola non indovinata vale venti, la peggiore indovinata cinquanta
+ *     (nella Catena trentasei, e venti con il terzo elemento, che dimezza); un
  *     cruciverba o un sudoku svelato per intero non e' stato risolto: vale
  *     zero. Ogni casella svelata toglie la sua parte, e svelarne un sesto
  *     lascia la meta' dei punti (vedi shared/aiuti.ts).
  *
  * Gli errori costano lo stesso dappertutto: un tentativo del Wordle dieci
- * punti, una scelta sbagliata della Ghigliottina dieci, un errore della Catena
- * sei (ne ha otto possibili, e non scende sotto cinquanta). La Ghigliottina e
- * la Catena erano l'eccezione, come alla televisione, dove ogni errore dimezza
- * il montepremi e una parola finale sbagliata lo azzera: due errori lasciavano
- * un quarto, e una giornata storta non valeva piu' niente.
+ * punti, una scelta sbagliata della Ghigliottina dieci, il primo errore su una
+ * parola della Catena dieci e il secondo, quello che la mostra, sei. La
+ * Ghigliottina e la Catena erano l'eccezione, come alla televisione, dove ogni
+ * errore dimezza il montepremi e una parola finale sbagliata lo azzera: due
+ * errori lasciavano un quarto, e una giornata storta non valeva piu' niente.
+ * Della televisione resta il terzo elemento della Catena, che dimezza.
  *
  * I pochi punti oltre il tetto del Wordle sono i bonus di velocità e costanza,
  * che servono da spareggio e restano sotto il gradino di un tentativo.

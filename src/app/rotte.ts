@@ -79,6 +79,10 @@
  *   /classifica/wordle                  ... con quella di un gioco (?periodo=week&indietro=1)
  *   /profilo                            le impostazioni, gli amici online e la ricerca delle persone
  *   /amici/:nickname                    il profilo di una persona: i suoi punti, e l'invito a giocare
+ *   /admin                              il pannello di amministrazione, per chi ne ha il ruolo: la panoramica
+ *   /admin/giocatori                    ... una sezione: giocatori, giochi, contenuti, fortuna, cloudflare,
+ *                                       database, sql, annunci, registro, errori, sistema
+ *   /admin/giocatori/:id                ... un giocatore: i suoi numeri, le sessioni, le modifiche
  *
  * I vecchi indirizzi — /insieme/..., /battaglia/..., /wordle/3, la classificata
  * e la libera della battaglia — portano a quelli nuovi (vedi App.tsx), e i
@@ -132,6 +136,9 @@ export const ROTTE = {
   libere: '/libere',
   profilo: '/profilo',
   amico: (nickname: string) => `/amici/${encodeURIComponent(nickname)}`,
+  /** Il pannello di amministrazione: senza niente la panoramica, o una sua sezione. */
+  admin: (sezione?: string) => (sezione ? `/admin/${sezione}` : '/admin'),
+  adminGiocatore: (id: string) => `/admin/giocatori/${encodeURIComponent(id)}`,
   fortuna: '/fortuna',
   ruota: '/crazy-time',
   slot: '/slot',

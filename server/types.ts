@@ -1,4 +1,5 @@
 import { NICKNAME_OGNI_GIORNI } from '../shared/config'
+import type { RuoloAdmin } from '../shared/admin'
 import type { Player } from '../shared/types'
 
 /** Binding e variabili disponibili nelle Pages Functions (vedi wrangler.toml). */
@@ -45,11 +46,32 @@ export interface Bindings {
    * spedire i codici bloccherebbe le registrazioni.
    */
   EMAIL_VERIFICATION?: 'on' | 'off'
+
+  /**
+   * Le email dei proprietari del pannello di amministrazione, separate da
+   * virgole: chi ha una di queste email, confermata, e' amministratore e puo'
+   * nominarne altri. Vedi server/lib/admin.ts.
+   */
+  ADMIN_EMAILS?: string
+
+  /**
+   * L'account Cloudflare e un token in sola lettura, per le statistiche del
+   * pannello (richieste, D1, deploy). Il token e' un *secret*
+   * (`wrangler pages secret put CF_API_TOKEN`): vedi DEPLOY.md.
+   */
+  CF_ACCOUNT_ID?: string
+  CF_API_TOKEN?: string
+  /** La zona del dominio, per il traffico di tutto il sito: facoltativa. */
+  CF_ZONE_ID?: string
+  /** Il sito delle Web Analytics, per le visite: facoltativo. */
+  CF_WEB_ANALYTICS_TAG?: string
 }
 
 /** Variabili aggiunte al contesto Hono dai middleware. */
 export interface Variables {
   player: Player
+  /** Messo da `requireAdmin`: il ruolo nel pannello e la sessione da cui si lavora. */
+  admin: { ruolo: RuoloAdmin; tokenHash: string }
 }
 
 export interface AppEnv {
@@ -75,6 +97,15 @@ export interface PlayerRow {
   email_verified_at: string | null
   /** L'ultimo cambio di nickname, dalla 0046: NULL per chi non l'ha mai cambiato. */
   nickname_changed_at?: string | null
+  /** 'admin' per chi il proprietario ha nominato amministratore, dalla 0053. */
+  ruolo?: string | null
+  /** Quando l'account e' stato sospeso, dalla 0053: NULL se non lo e'. */
+  sospeso_at?: string | null
+  /**
+   * Una registrazione con l'email ancora da confermare tiene nickname ed email
+   * fino a quest'ora, dalla 0054: NULL per gli account confermati e per quelli di prima.
+   */
+  in_attesa_fino?: string | null
 }
 
 /** Da quando si puo' cambiare di nuovo il nickname: null se si puo' adesso. */
@@ -94,5 +125,6 @@ export function toPlayer(row: PlayerRow): Player {
     email: row.email,
     emailVerified: row.email_verified_at !== null,
     nicknameCambiabileDal: nicknameCambiabileDal(row),
+    inAttesa: Boolean(row.in_attesa_fino) && row.email_verified_at === null,
   }
 }
