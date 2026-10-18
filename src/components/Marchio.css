@@ -1,43 +1,55 @@
 .marchio {
-  --lato: calc(var(--marchio) * 0.44);
-  display: grid;
-  grid-template-columns: repeat(2, var(--lato));
-  gap: calc(var(--marchio) * 0.08);
-  padding: calc(var(--marchio) * 0.02);
+  display: inline-block;
+  width: var(--marchio);
+  height: var(--marchio);
+  /* Gli angoli dell'icona: 114 su 512. */
+  border-radius: 22.27%;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    0 10px 28px var(--shadow-tint),
+    0 2px 8px var(--shadow-tint-soft);
 }
 
-.marchio .copertina--icona {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 6px 16px var(--shadow-tint-soft);
+.marchio svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.marchio__tessera,
+.marchio__dado,
+.marchio__punto {
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 /*
- * Entrano una alla volta, con un rimbalzo, e poi galleggiano appena: e' la
- * prima cosa che si vede dell'app, e deve sembrare un giocattolo, non un logo.
+ * Il dado salta fuori, le tessere si aprono a ventaglio da dietro di lui e i
+ * punti si accendono uno alla volta; poi tutto galleggia appena. E' la prima
+ * cosa che si vede dell'app, e deve sembrare un giocattolo, non un logo.
  */
-.marchio--animato .copertina--icona {
+.marchio--animato {
   animation:
-    marchio-entra 620ms var(--ease-spring) both,
-    marchio-galleggia 5.6s var(--ease-in-out) 900ms infinite;
+    marchio-entra 520ms var(--ease-spring) both,
+    marchio-galleggia 5.6s var(--ease-in-out) 1.4s infinite;
 }
 
-.marchio--animato .copertina--icona:nth-child(2) {
-  animation-delay: 70ms, 1.3s;
+.marchio--animato .marchio__dado {
+  animation: marchio-dado 560ms var(--ease-spring) 60ms both;
 }
 
-.marchio--animato .copertina--icona:nth-child(3) {
-  animation-delay: 140ms, 1.7s;
+.marchio--animato .marchio__tessera {
+  animation: marchio-ventaglio 640ms var(--ease-spring) 220ms both;
 }
 
-.marchio--animato .copertina--icona:nth-child(4) {
-  animation-delay: 210ms, 2.1s;
+.marchio--animato .marchio__punto {
+  animation: marchio-punto 360ms var(--ease-spring) calc(380ms + var(--i) * 70ms) both;
 }
 
 @keyframes marchio-entra {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.6) rotate(-8deg);
+    transform: translateY(10px) scale(0.86);
   }
 }
 
@@ -47,8 +59,31 @@
   }
 }
 
+@keyframes marchio-dado {
+  from {
+    transform: scale(0.5) rotate(-14deg);
+  }
+}
+
+/* Da chiuse, dritte e dietro il dado, al ventaglio: la rotazione finale e' quella del gruppo che le contiene. */
+@keyframes marchio-ventaglio {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--verso) * -46px)) rotate(calc(var(--verso) * -17deg)) scale(0.9);
+  }
+}
+
+@keyframes marchio-punto {
+  from {
+    transform: scale(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .marchio--animato .copertina--icona {
+  .marchio--animato,
+  .marchio--animato .marchio__dado,
+  .marchio--animato .marchio__tessera,
+  .marchio--animato .marchio__punto {
     animation: none;
   }
 }

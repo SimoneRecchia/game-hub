@@ -1,13 +1,16 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import * as marchio from '../../src/components/disegnoMarchio'
 import {
   CON_GLI_INDIRIZZI,
-  COPERTINE,
   FONDO,
+  MISURE,
   INDIRIZZO_ICONA,
   PNG,
+  PUNTI,
   SVG,
+  TESSERE,
   disegno,
   improntaDelleIcone,
   // @ts-expect-error — script in JavaScript, senza dichiarazioni di tipo
@@ -111,14 +114,20 @@ describe("l'icona di iOS", () => {
 /**
  * Senza i colori — la versione trasparente e quella colorata di iOS 26, le
  * icone a tema di Android — di un disegno resta la luminosita', ed e' quella
- * che lo separa dal fondo. Nell'icona di prima la parte bassa delle copertine
- * del cruciverba e della battaglia era scura quanto il fondo, e il riflesso in
- * alto a sinistra veniva preso per un pezzo del disegno.
+ * che lo separa dal fondo. In un'icona di prima la parte bassa di due
+ * copertine era scura quanto il fondo, e il riflesso in alto a sinistra veniva
+ * preso per un pezzo del disegno.
  */
 describe("i colori dell'icona", () => {
-  it("le copertine sono molto piu' chiare del fondo, ognuna in ogni suo punto", () => {
-    for (const [gioco, toni] of Object.entries(COPERTINE as Record<string, string[]>)) {
-      expect(staccoDa(piuScuro(toni), piuChiaro(FONDO)), gioco).toBeGreaterThanOrEqual(1.8)
+  it("le tessere sono molto piu' chiare del fondo, ognuna in ogni suo punto", () => {
+    for (const [tessera, toni] of Object.entries(TESSERE as Record<string, string[]>)) {
+      expect(staccoDa(piuScuro(toni), piuChiaro(FONDO)), tessera).toBeGreaterThanOrEqual(1.8)
+    }
+  })
+
+  it('i punti si vedono sul dado bianco anche senza i colori', () => {
+    for (const [gioco, colore] of Object.entries(PUNTI as Record<string, string>)) {
+      expect(staccoDa('#ffffff', colore), gioco).toBeGreaterThanOrEqual(2.2)
     }
   })
 
@@ -178,4 +187,18 @@ describe("l'impronta negli indirizzi delle icone", () => {
       for (const [intero, , versione] of indirizzi) expect(versione, intero).toBe(impronta)
     })
   }
+})
+
+/**
+ * Il marchio dell'app ridisegna l'icona con i pezzi veri, per animarla, e ha
+ * le sue copie delle misure e dei colori: se l'icona cambia, deve cambiare
+ * anche lui.
+ */
+describe("il marchio dell'app", () => {
+  it("ha le misure e i colori dell'icona", () => {
+    expect(marchio.FONDO).toEqual(FONDO)
+    expect(marchio.TESSERE).toEqual(TESSERE)
+    expect(marchio.PUNTI).toEqual(PUNTI)
+    expect(marchio.MISURE).toEqual(MISURE)
+  })
 })

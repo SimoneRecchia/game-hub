@@ -14,9 +14,9 @@
  *     icone grandi della Home la ingrandirebbero;
  *   - piatta: niente ombre ne' riflessi disegnati, che sotto il vetro
  *     farebbero una seconda luce;
- *   - un fondo quasi a tinta unita e le copertine molto piu' chiare di lui,
- *     con i segni bianchi: senza i colori resta la luminosita', ed e' quella
- *     che separa il disegno dal fondo (un test la misura);
+ *   - un fondo quasi a tinta unita e il disegno molto piu' chiaro di lui: senza
+ *     i colori resta la luminosita', ed e' quella che separa il disegno dal
+ *     fondo, e i punti dal dado (un test la misura);
  *   - il disegno a un quinto dal bordo: in basso il vetro fa da lente, e
  *     schiarisce e stira quel che ci passa sotto.
  *
@@ -40,19 +40,32 @@ const PUBBLICO = join(RADICE, 'public')
 export const FONDO = ['#4f46e5', '#4337d2']
 
 /**
- * Le copertine dei quattro giochi: i loro colori (tokens.css), un tono piu'
- * chiari, perche' si stacchino dal fondo anche quando iOS toglie i colori.
+ * Le due tessere a ventaglio dietro il dado: il verde e il giallo del Wordle,
+ * un tono piu' chiari di quelli del gioco, perche' si stacchino dal fondo anche
+ * quando iOS toglie i colori.
  */
-export const COPERTINE = {
-  wordle: ['#4fd96a', '#22b45e'],
-  scarabeo: ['#ffc54f', '#f2911f'],
-  cruciverba: ['#66a8ff', '#4d8df7'],
-  battaglia: ['#3ccbec', '#1b9ac6'],
+export const TESSERE = {
+  verde: ['#4fd96a', '#22b45e'],
+  giallo: ['#ffc54f', '#f2911f'],
+}
+
+/**
+ * I punti del cinque, dall'alto a sinistra: i colori di quattro giochi (il
+ * Wordle, lo Scarabeo, il cruciverba e il quiz, tokens.css) agli angoli, e in
+ * mezzo l'indaco dell'app, che li tiene insieme. Sono i toni scuri dei giochi:
+ * sul bianco del dado devono restare punti anche senza i colori.
+ */
+export const PUNTI = {
+  wordle: '#22b45e',
+  scarabeo: '#f2911f',
+  app: '#4f46e5',
+  cruciverba: '#4d8df7',
+  quiz: '#f0506e',
 }
 
 /**
  * I file, con il disegno di ognuno. `quadrata` e' a filo, senza angoli tondi
- * e senza trasparenze; `scala` rimpicciolisce le copertine attorno al centro,
+ * e senza trasparenze; `scala` rimpicciolisce il disegno attorno al centro,
  * per la zona sicura delle maschere di Android (un cerchio di raggio 0,4).
  */
 export const PNG = [
@@ -67,14 +80,30 @@ export const PNG = [
 export const SVG = ['icon.svg', 'favicon.svg']
 
 /** I file che fanno riferimento alle icone, con l'impronta nell'indirizzo. */
-export const CON_GLI_INDIRIZZI = ['index.html', 'public/manifest.webmanifest', 'src/components/Shell.tsx']
+export const CON_GLI_INDIRIZZI = [
+  'index.html',
+  'public/manifest.webmanifest',
+  'src/components/Shell.tsx',
+  'src/pages/admin/Admin.tsx',
+]
 
 /** L'indirizzo di un'icona, con l'impronta se c'e'. */
 export const INDIRIZZO_ICONA = /(\/(?:icon|favicon|apple-touch-icon)[\w-]*\.(?:png|svg))(?:\?v=([0-9a-f]+))?/g
 
-function sfumatura(id, [da, a]) {
+/**
+ * Le misure del disegno, in un quadrato di 512. Le usa anche il marchio
+ * dell'app (src/components/Marchio.tsx), che lo ridisegna con i pezzi veri.
+ */
+export const MISURE = {
+  tessera: { lato: 172, raggio: 42, x: 52, y: -26, angolo: 17 },
+  dado: { lato: 188, raggio: 48, solco: 12 },
+  punto: { passo: 50, raggio: 19 },
+  centro: { x: 256, y: 270 },
+}
+
+function sfumatura(id, [da, a], spazio = '') {
   return [
-    `    <linearGradient id="${id}" x1="0" y1="0" x2="0.45" y2="1">`,
+    `    <linearGradient id="${id}" ${spazio || 'x1="0" y1="0" x2="0.45" y2="1"'}>`,
     `      <stop offset="0" stop-color="${da}"/>`,
     `      <stop offset="1" stop-color="${a}"/>`,
     '    </linearGradient>',
@@ -82,58 +111,55 @@ function sfumatura(id, [da, a]) {
 }
 
 /**
- * Il disegno, in un quadrato di 512. `tonda` ha gli angoli dell'icona, per i
- * browser; `quadrata` e' a filo, per chi gli angoli li taglia da se'.
- * `mono` e' la sagoma per le icone a un colore solo: delle icone conta solo
- * l'alfa, quindi le copertine sono piene e i segni sono buchi.
+ * Il disegno, in un quadrato di 512: un dado bianco con il cinque, davanti a
+ * due tessere aperte a ventaglio come una mano. Il dado dice "si gioca", e i
+ * suoi punti hanno i colori dei giochi; le tessere sono quelle delle parole, e
+ * aperte cosi' anche le carte. Fra il dado e le tessere c'e' un solco del
+ * colore del fondo, che li separa senza un'ombra.
+ *
+ * `tonda` ha gli angoli dell'icona, per i browser; `quadrata` e' a filo, per
+ * chi gli angoli li taglia da se'. `mono` e' la sagoma per le icone a un
+ * colore solo: delle icone conta solo l'alfa, quindi il solco e i punti sono
+ * buchi.
  */
 export function disegno({ forma = 'tonda', scala = 1, mono = false } = {}) {
-  // Nella monocroma il disegno e' una maschera: bianco quel che resta, nero i buchi.
-  const copertina = (gioco) => (mono ? '#fff' : `url(#${gioco})`)
-  const segno = mono ? '#000' : '#fff'
-  const tessera = mono ? '#000' : '#fff4dc'
-  const lettera = mono ? '#fff' : '#5a3a0c'
-  const opaco = (o) => (o < 1 ? ` fill-opacity="${o}"` : '')
+  const { tessera, dado, punto, centro } = MISURE
+  const pieno = (id) => (mono ? '#fff' : `url(#${id})`)
+  const buco = (colore) => (mono ? '#000' : colore)
 
-  const quadro = (gioco, x, y) =>
-    `<rect x="${x}" y="${y}" width="148" height="148" rx="38" fill="${copertina(gioco)}"/>`
-  const caselle = []
-  for (let r = 0; r < 3; r++) {
-    for (let c = 0; c < 3; c++) {
-      // Le caselle nere stanno sulla diagonale, e sono un bianco appena accennato.
-      const [x, y, tono] = [118 + c * 38, 286 + r * 38, opaco(r + c === 2 ? 0.25 : 1)]
-      caselle.push(`    <rect x="${x}" y="${y}" width="32" height="32" rx="6" fill="${segno}"${tono}/>`)
-    }
+  const unaTessera = (id, verso) => {
+    const [cx, cy] = [centro.x + verso * tessera.x, centro.y + tessera.y]
+    const [x, y] = [cx - tessera.lato / 2, cy - tessera.lato / 2]
+    return (
+      `    <rect x="${x}" y="${y}" width="${tessera.lato}" height="${tessera.lato}" rx="${tessera.raggio}"` +
+      ` fill="${pieno(id)}" transform="rotate(${verso * tessera.angolo} ${cx} ${cy})"/>`
+    )
   }
+  const [dx, dy] = [centro.x - dado.lato / 2, centro.y - dado.lato / 2]
+  const posti = [
+    [-1, -1],
+    [1, -1],
+    [0, 0],
+    [-1, 1],
+    [1, 1],
+  ]
+  const punti = Object.values(PUNTI).map((colore, i) => {
+    const [px, py] = posti[i]
+    const [cx, cy] = [centro.x + px * punto.passo, centro.y + py * punto.passo]
+    return `    <circle cx="${cx}" cy="${cy}" r="${punto.raggio}" fill="${buco(colore)}"/>`
+  })
 
-  const copertine = [
-    '    <!-- Wordle: una riga di tentativi. -->',
-    `    ${quadro('wordle', 98, 98)}`,
-    ...[113, 155, 197].map(
-      (x, i) => `    <rect x="${x}" y="155" width="34" height="34" rx="8" fill="${segno}"${opaco(i === 1 ? 0.5 : 1)}/>`,
-    ),
+  const pezzi = [
+    '    <!-- Le tessere, aperte a ventaglio dietro il dado. -->',
+    unaTessera('verde', -1),
+    unaTessera('giallo', 1),
     '',
-    '    <!-- Scarabeo: due tessere di legno. -->',
-    `    ${quadro('scarabeo', 266, 98)}`,
-    '    <g transform="rotate(-10 309 169)">',
-    `      <rect x="282" y="142" width="54" height="54" rx="12" fill="${tessera}"/>`,
-    `      <rect x="298" y="155" width="9" height="28" rx="3" fill="${lettera}"/>`,
-    `      <rect x="298" y="174" width="24" height="9" rx="3" fill="${lettera}"/>`,
-    '    </g>',
-    '    <g transform="rotate(12 372 176)">',
-    `      <rect x="347" y="151" width="50" height="50" rx="11" fill="${tessera}"/>`,
-    `      <circle cx="372" cy="176" r="11.5" fill="none" stroke="${lettera}" stroke-width="9"/>`,
-    '    </g>',
+    '    <!-- Il dado, con il solco che lo stacca dalle tessere. -->',
+    `    <rect x="${dx}" y="${dy}" width="${dado.lato}" height="${dado.lato}" rx="${dado.raggio}"` +
+      ` fill="#fff" stroke="${buco('url(#fondo)')}" stroke-width="${dado.solco}"/>`,
     '',
-    '    <!-- Cruciverba: una griglia con le caselle nere. -->',
-    `    ${quadro('cruciverba', 98, 266)}`,
-    ...caselle,
-    '',
-    '    <!-- Battaglia navale: un bersaglio. -->',
-    `    ${quadro('battaglia', 266, 266)}`,
-    `    <circle cx="340" cy="340" r="44" fill="none" stroke="${segno}" stroke-opacity="0.55" stroke-width="10"/>`,
-    `    <circle cx="340" cy="340" r="24" fill="none" stroke="${segno}" stroke-width="10"/>`,
-    `    <circle cx="340" cy="340" r="8" fill="${segno}"/>`,
+    '    <!-- Il cinque, con i colori dei giochi e quello dell\'app in mezzo. -->',
+    ...punti,
   ]
   const trasforma = scala === 1 ? '' : ` transform="translate(256 256) scale(${scala}) translate(-256 -256)"`
 
@@ -141,8 +167,8 @@ export function disegno({ forma = 'tonda', scala = 1, mono = false } = {}) {
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"' +
       ' role="img" aria-label="Giochi">',
     '  <!--',
-    "    L'icona dell'app: le copertine dei quattro giochi, come le icone di una",
-    "    cartella sulla schermata Home, sull'indaco dell'app. La scrive",
+    "    L'icona dell'app: un dado con i punti nei colori dei giochi, davanti a",
+    "    due tessere a ventaglio, sull'indaco dell'app. La scrive",
     "    scripts/genera-icone.mjs, che ne fa anche i PNG: si cambia li'.",
     '  -->',
   ]
@@ -150,8 +176,8 @@ export function disegno({ forma = 'tonda', scala = 1, mono = false } = {}) {
     righe.push(
       '  <defs>',
       '    <mask id="sagoma" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">',
-      `      <g id="copertine"${trasforma}>`,
-      ...copertine.map((riga) => (riga ? `    ${riga}` : riga)),
+      `      <g id="disegno"${trasforma}>`,
+      ...pezzi.map((riga) => (riga ? `    ${riga}` : riga)),
       '      </g>',
       '    </mask>',
       '  </defs>',
@@ -160,14 +186,15 @@ export function disegno({ forma = 'tonda', scala = 1, mono = false } = {}) {
   } else {
     righe.push(
       '  <defs>',
-      ...sfumatura('fondo', FONDO),
-      ...Object.entries(COPERTINE).flatMap(([gioco, toni]) => sfumatura(gioco, toni)),
+      // Nello spazio dell'icona, e non del pezzo: il solco del dado e' dello stesso colore del fondo che ha sotto.
+      ...sfumatura('fondo', FONDO, 'gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="230" y2="512"'),
+      ...Object.entries(TESSERE).flatMap(([id, toni]) => sfumatura(id, toni)),
       '  </defs>',
       '',
       `  <rect width="512" height="512"${forma === 'tonda' ? ' rx="114"' : ''} fill="url(#fondo)"/>`,
       '',
-      `  <g id="copertine"${trasforma}>`,
-      ...copertine,
+      `  <g id="disegno"${trasforma}>`,
+      ...pezzi,
       '  </g>',
     )
   }

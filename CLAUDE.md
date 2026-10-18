@@ -3386,10 +3386,10 @@ livelli di Icon Composer sono delle app native: di un'app web iOS 26 prende
 l'`apple-touch-icon`, ci stende sopra il vetro e ne ricava da solo le versioni
 scura, trasparente e colorata, separando il disegno dal fondo. Per questo
 l'icona e' piatta — le ombre e i riflessi li mette il vetro — con il fondo
-quasi a tinta unita e le copertine molto piu' chiare di lui: senza i colori
-resta la luminosita'. Nell'icona di prima il basso del cruciverba e della
-battaglia era scuro quanto il fondo, e il riflesso in alto a sinistra finiva
-nel disegno. L'`apple-touch-icon` e' piena e a filo, di 1024 punti: gli angoli
+quasi a tinta unita e il disegno molto piu' chiaro di lui: senza i colori
+resta la luminosita'. In una delle icone di prima il basso di due copertine era
+scuro quanto il fondo, e il riflesso in alto a sinistra finiva nel disegno.
+L'`apple-touch-icon` e' piena e a filo, di 1024 punti: gli angoli
 li taglia iOS, un pixel trasparente diventa nero, e a 180 le icone grandi della
 Home la ingrandirebbero. Il disegno sta a un quinto dal bordo, perché in basso
 il vetro fa da lente. Tutto viene da `scripts/genera-icone.mjs`
@@ -3398,6 +3398,24 @@ tiene le icone per indirizzo, e chi rimette l'app sulla Home si vedrebbe quella
 di prima. Un'app gia' sulla Home tiene l'icona con cui la si e' aggiunta: per
 la nuova va tolta e rimessa. I test tengono le soglie di luminosita', l'icona
 di iOS piena e l'impronta.
+
+**L'icona e' un dado davanti a una mano di tessere.** Il dado bianco con il
+cinque dice "si gioca", e i suoi punti hanno i colori dei giochi — il Wordle, lo
+Scarabeo, il cruciverba e il quiz agli angoli, l'indaco dell'app in mezzo —; le
+due tessere aperte a ventaglio dietro di lui sono quelle delle parole, verde e
+gialla come nel Wordle, e aperte cosi' anche le carte della Fortuna. Fra il
+dado e le tessere c'e' un solco del colore del fondo, che li separa senza
+un'ombra: per questo la sfumatura del fondo e' nello spazio dell'icona
+(`userSpaceOnUse`) e non del pezzo che la usa. I punti sono i toni scuri dei
+giochi, perche' sul bianco restino punti anche senza colori (un test lo
+misura). Fino al 18 ottobre 2026 l'icona erano le copertine di quattro giochi
+in una cartella, due per due: un gioco nuovo non ci entrava, e da lontano era
+una griglia di quadrati come tante. Il marchio dell'app (`Marchio`, nella
+schermata d'ingresso, nell'attesa e nella pagina che non c'e') e' la stessa
+icona disegnata con i pezzi veri, perche' si animi — il dado salta fuori, le
+tessere si aprono, i punti si accendono —, con le sue copie delle misure e dei
+colori in `disegnoMarchio.ts`, che un test tiene uguali a quelle del
+generatore.
 
 **La palette scura non esiste come blocco separato.** Ogni token e' un
 `light-dark(chiaro, scuro)`, che segue `color-scheme` — quindi copre sia la

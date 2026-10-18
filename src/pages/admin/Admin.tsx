@@ -180,7 +180,7 @@ function Laterale({ attiva, io }: { attiva: IdSezione; io: AdminIo }) {
     <aside className="adm-laterale" aria-label="Sezioni del pannello">
       <Collegamento to={ROTTE.admin()} direzione="scheda" replace className="adm-laterale__marchio">
         {/* L'impronta nell'indirizzo la scrive npm run icone. */}
-        <img src="/icon.svg?v=cdd019ff" alt="" width={30} height={30} />
+        <img src="/icon.svg?v=cfcca6ba" alt="" width={30} height={30} />
         <span>Giochi</span>
         <span className="adm-laterale__admin">Admin</span>
       </Collegamento>

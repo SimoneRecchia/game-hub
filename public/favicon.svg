@@ -1,69 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Giochi">
   <!--
-    L'icona dell'app: le copertine dei quattro giochi, come le icone di una
-    cartella sulla schermata Home, sull'indaco dell'app. La scrive
+    L'icona dell'app: un dado con i punti nei colori dei giochi, davanti a
+    due tessere a ventaglio, sull'indaco dell'app. La scrive
     scripts/genera-icone.mjs, che ne fa anche i PNG: si cambia li'.
   -->
   <defs>
-    <linearGradient id="fondo" x1="0" y1="0" x2="0.45" y2="1">
+    <linearGradient id="fondo" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="230" y2="512">
       <stop offset="0" stop-color="#4f46e5"/>
       <stop offset="1" stop-color="#4337d2"/>
     </linearGradient>
-    <linearGradient id="wordle" x1="0" y1="0" x2="0.45" y2="1">
+    <linearGradient id="verde" x1="0" y1="0" x2="0.45" y2="1">
       <stop offset="0" stop-color="#4fd96a"/>
       <stop offset="1" stop-color="#22b45e"/>
     </linearGradient>
-    <linearGradient id="scarabeo" x1="0" y1="0" x2="0.45" y2="1">
+    <linearGradient id="giallo" x1="0" y1="0" x2="0.45" y2="1">
       <stop offset="0" stop-color="#ffc54f"/>
       <stop offset="1" stop-color="#f2911f"/>
-    </linearGradient>
-    <linearGradient id="cruciverba" x1="0" y1="0" x2="0.45" y2="1">
-      <stop offset="0" stop-color="#66a8ff"/>
-      <stop offset="1" stop-color="#4d8df7"/>
-    </linearGradient>
-    <linearGradient id="battaglia" x1="0" y1="0" x2="0.45" y2="1">
-      <stop offset="0" stop-color="#3ccbec"/>
-      <stop offset="1" stop-color="#1b9ac6"/>
     </linearGradient>
   </defs>
 
   <rect width="512" height="512" rx="114" fill="url(#fondo)"/>
 
-  <g id="copertine">
-    <!-- Wordle: una riga di tentativi. -->
-    <rect x="98" y="98" width="148" height="148" rx="38" fill="url(#wordle)"/>
-    <rect x="113" y="155" width="34" height="34" rx="8" fill="#fff"/>
-    <rect x="155" y="155" width="34" height="34" rx="8" fill="#fff" fill-opacity="0.5"/>
-    <rect x="197" y="155" width="34" height="34" rx="8" fill="#fff"/>
+  <g id="disegno">
+    <!-- Le tessere, aperte a ventaglio dietro il dado. -->
+    <rect x="118" y="158" width="172" height="172" rx="42" fill="url(#verde)" transform="rotate(-17 204 244)"/>
+    <rect x="222" y="158" width="172" height="172" rx="42" fill="url(#giallo)" transform="rotate(17 308 244)"/>
 
-    <!-- Scarabeo: due tessere di legno. -->
-    <rect x="266" y="98" width="148" height="148" rx="38" fill="url(#scarabeo)"/>
-    <g transform="rotate(-10 309 169)">
-      <rect x="282" y="142" width="54" height="54" rx="12" fill="#fff4dc"/>
-      <rect x="298" y="155" width="9" height="28" rx="3" fill="#5a3a0c"/>
-      <rect x="298" y="174" width="24" height="9" rx="3" fill="#5a3a0c"/>
-    </g>
-    <g transform="rotate(12 372 176)">
-      <rect x="347" y="151" width="50" height="50" rx="11" fill="#fff4dc"/>
-      <circle cx="372" cy="176" r="11.5" fill="none" stroke="#5a3a0c" stroke-width="9"/>
-    </g>
+    <!-- Il dado, con il solco che lo stacca dalle tessere. -->
+    <rect x="162" y="176" width="188" height="188" rx="48" fill="#fff" stroke="url(#fondo)" stroke-width="12"/>
 
-    <!-- Cruciverba: una griglia con le caselle nere. -->
-    <rect x="98" y="266" width="148" height="148" rx="38" fill="url(#cruciverba)"/>
-    <rect x="118" y="286" width="32" height="32" rx="6" fill="#fff"/>
-    <rect x="156" y="286" width="32" height="32" rx="6" fill="#fff"/>
-    <rect x="194" y="286" width="32" height="32" rx="6" fill="#fff" fill-opacity="0.25"/>
-    <rect x="118" y="324" width="32" height="32" rx="6" fill="#fff"/>
-    <rect x="156" y="324" width="32" height="32" rx="6" fill="#fff" fill-opacity="0.25"/>
-    <rect x="194" y="324" width="32" height="32" rx="6" fill="#fff"/>
-    <rect x="118" y="362" width="32" height="32" rx="6" fill="#fff" fill-opacity="0.25"/>
-    <rect x="156" y="362" width="32" height="32" rx="6" fill="#fff"/>
-    <rect x="194" y="362" width="32" height="32" rx="6" fill="#fff"/>
-
-    <!-- Battaglia navale: un bersaglio. -->
-    <rect x="266" y="266" width="148" height="148" rx="38" fill="url(#battaglia)"/>
-    <circle cx="340" cy="340" r="44" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="10"/>
-    <circle cx="340" cy="340" r="24" fill="none" stroke="#fff" stroke-width="10"/>
-    <circle cx="340" cy="340" r="8" fill="#fff"/>
+    <!-- Il cinque, con i colori dei giochi e quello dell'app in mezzo. -->
+    <circle cx="206" cy="220" r="19" fill="#22b45e"/>
+    <circle cx="306" cy="220" r="19" fill="#f2911f"/>
+    <circle cx="256" cy="270" r="19" fill="#4f46e5"/>
+    <circle cx="206" cy="320" r="19" fill="#4d8df7"/>
+    <circle cx="306" cy="320" r="19" fill="#f0506e"/>
   </g>
 </svg>
