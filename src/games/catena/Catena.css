@@ -7,8 +7,16 @@
  * sta.
  */
 .cat {
-  --key-bg: #22357c;
-  --key-bg-active: #2d4497;
+  /* La tastiera del palco: tasti blu su un vassoio piu' scuro, e l'invio d'oro. */
+  --key-fondo: rgba(4, 12, 48, 0.42);
+  --key-bg: #2b4192;
+  --key-bg-active: #3550ad;
+  --key-servizio: #1a2a68;
+  --key-servizio-active: #22357c;
+  --key-ink: #fff;
+  --key-ombra: rgba(0, 4, 24, 0.6);
+  --key-azione: var(--cat-oro);
+  --key-azione-ink: #241200;
   container-type: inline-size;
   position: relative;
   display: flex;
@@ -1187,18 +1195,12 @@
   flex: none;
 }
 
-.cat .key {
-  height: clamp(42px, 6.4vh, 54px);
-  color: #fff;
+.cat .keyboard {
+  --tasto-alto: clamp(42px, 6.4vh, 54px);
 }
 
-.cat-tastiera .tastiera-gioco__invio {
+.cat-tastiera .key--azione {
   font-weight: 800;
-}
-
-.cat-tastiera .tastiera-gioco__invio.is-pronta {
-  background-color: var(--cat-oro);
-  color: #241200;
 }
 
 /* ---------- La fine ---------- */
@@ -1370,8 +1372,8 @@
     align-self: end;
   }
 
-  .cat .key {
-    height: clamp(38px, 12vh, 48px);
+  .cat .keyboard {
+    --tasto-alto: clamp(38px, 12vh, 48px);
   }
 
   .cat-fine {

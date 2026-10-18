@@ -179,6 +179,20 @@ giro completo con Playwright, non leggendo il codice. Un test in
 `shared/__tests__/wordle.test.ts` verifica le due direzioni: ogni tasto e'
 digitabile, ogni lettera giocabile sta sulla tastiera.
 
+**La tastiera dei giochi di parole e' quella dei telefoni, e una sola.** Il
+Wordle, la Catena, la Ghigliottina e il cruciverba usano `TastieraLettere`
+(`src/components/TastieraGioco.tsx`): le lettere chiare su un vassoio piu'
+scuro, la cancellazione in fondo alla seconda riga e sotto di lei, largo due,
+il tasto che manda — o nel cruciverba quello che cambia direzione —, dove lo
+mettono i telefoni; prima stava in basso a sinistra, come nel Wordle del New
+York Times, e chi scriveva lo cercava a destra. L'invio e' grigio finché non
+c'e' niente da mandare e poi si accende (`pronta`). Le righe sono tre, in una
+griglia di otto colonne: una quarta, come quella dello spazio, toglierebbe una
+riga alla griglia del Wordle sui telefoni bassi. Col dito, sopra il tasto
+premuto si vede la lettera grande (`data-tasto`, solo con `pointer: coarse`),
+perché il dito copre quel che tocca. I colori sono token (`--key-*`), e la
+Catena e la Ghigliottina li ridefiniscono per il loro palco.
+
 **Il sacchetto dello Scarabeo e' lo stesso per tutti, e non si salva.**
 `sacchettoDelGiorno(puzzleNumber)` mescola le 120 tessere con il PRNG condiviso:
 stesso giorno, stesso ordine, per chiunque. E' l'unica cosa che rende
@@ -561,9 +575,11 @@ Catena il montepremi che resta. Tutti tengono il principio del Wordle —
 — e `shared/__tests__/punti.test.ts` verifica i tetti e i due lati del
 compromesso per ogni gioco. **Un errore costa lo stesso in tutti i giochi**: il
 gradino di un tentativo del Wordle, dieci punti, e venti per una parola finale
-non indovinata. La Ghigliottina e la Catena erano l'eccezione, come alla
+non indovinata; nella Catena il secondo errore su una parola, quello che la
+mostra, ne costa sei. La Ghigliottina e la Catena erano l'eccezione, come alla
 televisione, dove ogni errore dimezza: due errori lasciavano un quarto del
-montepremi, e una giornata storta non valeva piu' niente (vedi sotto). La classifica di ogni gioco resta (`/leaderboard`,
+montepremi, e una giornata storta non valeva piu' niente (vedi sotto); della
+televisione resta il terzo elemento della Catena, che dimezza. La classifica di ogni gioco resta (`/leaderboard`,
 `/leaderboard/scarabeo`, ...), la generale e' `/leaderboard/generale`, e
 `/leaderboard/panoramica` le da' tutte in una richiesta, i primi tre di ognuna e
 dove sei tu: e' la schermata `/classifica`, che le mette una sotto l'altra, e
@@ -2173,21 +2189,38 @@ le stesse, e la direbbe. Se manca, `CATENA_ASSENTE` (503): in locale
 `catena_partite.mosse` ha le parole provate, i jolly, il terzo elemento comprato
 e i tempi finiti (`t`); montepremi, lettere viste e terzo elemento si ricavano
 rigiocandole (`svolgiCatena`), con le stesse regole nel server e nel telefono
-della libera. Un errore toglie sei punti (`ERRORE_CATENA`) e mostra un'altra
-lettera, il secondo mostra la parola, e il minuto di una parola finito
-(`TEMPO_PAROLA_CATENA_MS`) la mostra costando i due errori che l'avrebbero
-mostrata: senza un tempo chi ci pensa abbastanza troverebbe ogni parola. Un
-errore e un jolly fanno ripartire il minuto (`riparteIlMinuto`, scritto in
-`parola_at` dopo `PREAMBOLO_RIPRESA_CATENA_MS`): c'e' una lettera nuova, e un
-minuto per pensarci. I jolly sono due, gratis, non si usano nella finale, e ne'
-un jolly ne' un errore mostrano l'ultima lettera. Della finale si vedono le
-prime due lettere e l'ultima; il terzo elemento costa quanto un errore, e chi
-arriva con tutti e due i jolly lo ha in regalo. Il montepremi parte da cento
-come quello della Ghigliottina e non scende sotto cinquanta (`FONDO_CATENA`),
-quanto il Wordle indovinato al sesto tentativo; la finale sbagliata vale venti.
-Gli errori possibili sono otto, e per questo uno vale meno del gradino del
-Wordle. Fino al 15 ottobre 2026 ogni errore dimezzava, come alla televisione, e
-la finale sbagliata valeva zero.
+della libera. Il primo errore su una parola toglie dieci punti
+(`ERRORE_CATENA`, il gradino del Wordle) e mostra un'altra lettera, il secondo
+ne toglie sei (`SECONDO_ERRORE_CATENA`) e mostra la parola, e il minuto di una
+parola finito (`TEMPO_PAROLA_CATENA_MS`) la mostra costando i due errori che
+l'avrebbero mostrata (`costoErrori`): senza un tempo chi ci pensa abbastanza
+troverebbe ogni parola. Un errore e un jolly fanno ripartire il minuto
+(`riparteIlMinuto`, scritto in `parola_at` dopo `PREAMBOLO_RIPRESA_CATENA_MS`):
+c'e' una lettera nuova, e un minuto per pensarci. I jolly sono due, gratis, non
+si usano nella finale, e ne' un jolly ne' un errore mostrano l'ultima lettera.
+Della finale si vedono le prime due lettere e l'ultima; il terzo elemento
+dimezza il montepremi, come dice il suo bottone (÷2), e chi arriva con tutti e
+due i jolly lo ha in regalo. Il montepremi parte da cento come quello della
+Ghigliottina, e lo conta `montepremiCatena` dagli errori di ogni parola: tutte
+sbagliate due volte lasciano trentasei punti, e dimezzati non
+scendono sotto i venti della finale sbagliata (`FONDO_CATENA`), perché una
+finale indovinata non valga mai meno di una sbagliata. Fino al 15 ottobre 2026
+ogni errore dimezzava, come alla televisione, e la finale sbagliata valeva zero;
+fino al 18 ogni errore toglieva sei punti, il terzo elemento anche, e il
+montepremi non scendeva sotto cinquanta: gli ultimi errori non costavano
+niente, e il ÷2 sul bottone non era vero.
+
+**Nella Catena la parola scritta per intero vale.** Della parola da indovinare
+si scrive il resto, e il telefono ci mette ai capi le lettere che si vedono; ma
+capita di riscriverle, la parola intera, o nella finale anche l'ultima lettera,
+che sta gia' in fondo alla riga. `parolaVoluta` prova le lettere date che
+mancano ai capi di quel che si e' scritto, e se fanno la parola giusta vale la
+parola giusta, senza dire niente: era la tastiera, non la parola, e i giochi
+sono fatti per non stressarsi. Si applica quando la parola arriva — al server
+(`/prova`, `/rispondi`) e nella libera — e la mossa si salva con la parola
+giusta: rigiocare le mosse, con il confronto di sempre (`stessaParola`), da' la
+partita che si e' giocata, anche quelle di prima, in cui "llibero" era un
+errore.
 `vistaCatena` manda solo le parole fino alla coppia di adesso, e di quella da
 indovinare le lettere, non la lunghezza: con le caselle tutte in vista sbagliare
 era quasi impossibile, e la parola ora cresce a ogni tasto. Prima di Comincia
