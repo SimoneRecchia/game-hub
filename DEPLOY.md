@@ -301,7 +301,14 @@ lettura:
 2. L'ID dell'account è nella colonna a destra della pagina del dominio (o nella
    URL della dashboard); l'ID della zona, se si vuole il traffico, è sulla
    stessa pagina.
-3. Si mettono come secret del progetto Pages, e si rifà il deploy:
+3. Il token va fra i segreti del repository, **Settings → Secrets and variables
+   → Actions**, come `CF_STATS_TOKEN` (e l'ID della zona come `CF_ZONE_ID`, se
+   si vuole il traffico): il deploy lo porta da solo fra i secret del progetto
+   Pages, con l'ID dell'account che ha gia' (`CLOUDFLARE_ACCOUNT_ID`), e il
+   pannello lo legge dal deploy dopo.
+
+A mano, senza passare dal deploy, sono secret del progetto Pages, e poi si rifà
+il deploy:
 
 ```bash
 npx wrangler pages secret put CF_ACCOUNT_ID --project-name game-hub
