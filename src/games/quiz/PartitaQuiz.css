@@ -1061,7 +1061,7 @@
 
 .quiz-opzione.is-scelta .quiz-opzione__lettera {
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-ink);
 }
 
 @keyframes quiz-scelta {

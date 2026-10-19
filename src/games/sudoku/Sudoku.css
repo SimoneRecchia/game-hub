@@ -79,7 +79,7 @@
   gap: 6px;
   font-size: var(--text-caption-1);
   font-weight: 700;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
 /* Quanto dello schema e' scritto: una barretta che si riempie. */

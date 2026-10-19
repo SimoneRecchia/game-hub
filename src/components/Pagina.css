@@ -178,9 +178,13 @@
  * prima resterebbe una lettera: meglio la freccia sola, come fa iOS quando il
  * titolo non lascia posto.
  */
-@media (max-width: 380px) {
+@media (max-width: 430px) {
   .pagina__barra-dentro:has(.pagina__lato--destra > :nth-child(3)) .pagina__indietro-nome {
     display: none;
+  }
+
+  .pagina__barra-dentro:has(.pagina__lato--destra > :nth-child(3)) .pagina__indietro {
+    padding-right: 6px;
   }
 }
 

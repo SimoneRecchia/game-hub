@@ -76,11 +76,14 @@
 
   /* ---- Accento dell'interfaccia ---- */
   --brand: #4f46e5;
-  --brand: light-dark(#4f46e5, #a29cff);
+  --brand: light-dark(#4f46e5, #b4aeff);
   --brand-strong: #3730c4;
   --brand-strong: light-dark(#3730c4, #bdb8ff);
+  /* La scritta sopra l'accento: bianca sull'indaco scuro del chiaro, d'inchiostro su quello chiaro dello scuro. */
+  --brand-ink: #ffffff;
+  --brand-ink: light-dark(#ffffff, #120c2b);
   --brand-soft: rgba(79, 70, 229, 0.12);
-  --brand-soft: light-dark(rgba(79, 70, 229, 0.12), rgba(162, 156, 255, 0.2));
+  --brand-soft: light-dark(rgba(79, 70, 229, 0.12), rgba(180, 174, 255, 0.16));
   --accent: #f59e0b;
   --accent: light-dark(#f59e0b, #fbbf24);
 
@@ -159,8 +162,8 @@
   --material-thin: rgba(255, 251, 242, 0.6);
   --material-thin: light-dark(rgba(255, 251, 242, 0.6), rgba(53, 49, 95, 0.62));
   --blur: saturate(180%) blur(20px);
-  --glass: rgba(255, 250, 242, 0.74);
-  --glass: light-dark(rgba(255, 250, 242, 0.74), rgba(40, 26, 92, 0.62));
+  --glass: rgba(255, 250, 242, 0.8);
+  --glass: light-dark(rgba(255, 250, 242, 0.8), rgba(40, 26, 92, 0.82));
   --glass-strong: rgba(255, 250, 242, 0.9);
   --glass-strong: light-dark(rgba(255, 250, 242, 0.9), rgba(40, 26, 92, 0.88));
   /* Il vetro della tab bar sopra il fondo della pagina, gia' mescolato: la capsula piena delle transizioni. */

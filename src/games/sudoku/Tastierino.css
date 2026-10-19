@@ -36,7 +36,7 @@
 }
 
 .sud-strumento:disabled {
-  opacity: 0.4;
+  opacity: 0.55;
 }
 
 .sud-strumento.is-acceso {
@@ -65,7 +65,7 @@
 
 .sud-strumento.is-acceso .sud-strumento__stato {
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-ink);
 }
 
 .sud-cifre {

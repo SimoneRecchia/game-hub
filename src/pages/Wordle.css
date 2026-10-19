@@ -47,7 +47,7 @@
   font-size: var(--text-caption-1);
   font-weight: 600;
   line-height: 18px;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
   text-align: center;
 }
 

@@ -925,7 +925,7 @@
   font-size: var(--text-callout);
   font-weight: 800;
   text-align: center;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
 .cl-riga__chi {
@@ -996,7 +996,7 @@
   padding: 0 6px;
   border-radius: var(--r-pill);
   background: var(--brand);
-  color: #fff;
+  color: var(--brand-ink);
   font-size: var(--text-caption-2);
   font-weight: 700;
   line-height: 16px;

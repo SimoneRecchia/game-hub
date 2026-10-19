@@ -99,7 +99,7 @@
 }
 
 .key--azione:not(.is-pronta) {
-  color: color-mix(in srgb, var(--key-ink) 55%, transparent);
+  color: color-mix(in srgb, var(--key-ink) 68%, transparent);
 }
 
 .key--azione.is-pronta {
