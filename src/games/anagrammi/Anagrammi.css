@@ -171,10 +171,7 @@
   border-radius: inherit;
   background-color: var(--surface);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 60%);
-  box-shadow:
-    var(--edge-light),
-    0 2px 0 var(--shadow-tint),
-    0 4px 10px var(--shadow-tint-soft);
+  box-shadow: var(--ombra-album);
   color: var(--label);
   font-family: var(--font-rounded);
   font-size: calc(var(--lato) * 0.5);
@@ -350,7 +347,7 @@
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-md);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   font-size: var(--text-subhead);
   line-height: 1.4;
   animation: ana-posa 260ms var(--ease-out);
@@ -517,7 +514,7 @@
   padding: 0;
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   list-style: none;
 }
 

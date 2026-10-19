@@ -178,7 +178,7 @@
   padding: 6px 12px;
   border-radius: var(--r-pill);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   font-size: var(--text-footnote);
   font-weight: 600;
   color: var(--label-secondary);
@@ -451,7 +451,7 @@
     linear-gradient(90deg, var(--quiz-reticolo) 1px, transparent 1px);
   background-size: 26px 26px;
   background-position: center;
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   animation: quiz-carta-entra 480ms var(--ease-spring) both;
   transition: box-shadow var(--dur-base) var(--ease-out);
 }
@@ -958,10 +958,7 @@
   border-radius: var(--r-lg);
   background-color: var(--surface);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.03));
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-key),
-    0 0 0 1px var(--separator);
+  box-shadow: var(--ombra-album);
   color: var(--label);
   font-size: clamp(var(--text-subhead), 4.2cqw, var(--text-headline));
   font-weight: 700;

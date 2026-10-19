@@ -37,7 +37,7 @@
   padding: 0 6px 0 var(--sp-3);
   border-radius: var(--r-pill);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .cru__tempo {

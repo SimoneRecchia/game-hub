@@ -231,6 +231,11 @@
   transform: rotate(-3deg);
 }
 
+/* La data arriva minuscola ("lunedì 19 ottobre"): in testa a un'etichetta vuole la maiuscola. */
+.pagina__sopra::first-letter {
+  text-transform: uppercase;
+}
+
 .pagina__titolo {
   margin: 0;
   font-family: var(--font-rounded);

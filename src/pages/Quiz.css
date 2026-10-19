@@ -52,10 +52,7 @@
   border-radius: var(--r-xl);
   background-color: var(--surface);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.03));
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-key),
-    0 0 0 1px var(--separator);
+  box-shadow: var(--ombra-album);
   color: var(--label);
   text-decoration: none;
   animation: quiz-tessera-entra 420ms var(--ease-spring) calc(var(--n) * 50ms) both;
@@ -127,9 +124,7 @@
   padding: 10px 12px;
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: var(--label);
   text-align: left;
   transition: transform 90ms var(--ease-out);
@@ -205,10 +200,7 @@
   border-radius: var(--r-lg);
   background-color: var(--surface);
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.03));
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-key),
-    0 0 0 1px var(--separator);
+  box-shadow: var(--ombra-album);
   color: var(--label);
   text-align: left;
   animation: quiz-tessera-entra 420ms var(--ease-spring) calc(var(--n) * 35ms) both;
@@ -325,9 +317,7 @@
   border-radius: var(--r-lg);
   background: var(--surface);
   /* Nel foglio la carta e' dello stesso colore del fondo: la staccano un filo e un'ombra morbida. */
-  box-shadow:
-    0 0 0 0.5px var(--separator),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: var(--label);
   text-align: left;
   transition:

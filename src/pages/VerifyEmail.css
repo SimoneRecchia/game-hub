@@ -41,7 +41,7 @@
   height: 72px;
   border-radius: var(--r-xl);
   background: var(--surface);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--ombra-album);
   font-size: 34px;
   color: var(--brand);
 }

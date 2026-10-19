@@ -11,9 +11,7 @@
   padding: 10px 14px 14px;
   border-radius: var(--r-xl);
   background: var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .ct-fiches__testa {

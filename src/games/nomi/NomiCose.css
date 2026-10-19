@@ -196,7 +196,7 @@
   padding: 6px 12px;
   border-radius: var(--r-pill);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   font-size: var(--text-footnote);
   font-weight: 600;
   color: var(--label-secondary);

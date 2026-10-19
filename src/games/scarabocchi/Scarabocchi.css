@@ -483,7 +483,7 @@
   overflow-y: auto;
   border-radius: var(--r-md);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   list-style: none;
   overscroll-behavior: contain;
 }
@@ -777,7 +777,7 @@
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   font-family: var(--font-rounded);
   font-size: var(--text-headline);
   font-weight: 700;
@@ -837,7 +837,7 @@
   border: 0;
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -873,7 +873,7 @@
   padding: var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .scr-codice__etichetta {

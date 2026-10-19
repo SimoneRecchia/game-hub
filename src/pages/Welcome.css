@@ -104,7 +104,7 @@
 .welcome__fields {
   background: var(--surface);
   border-radius: var(--r-xl);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   overflow: hidden;
 }
 

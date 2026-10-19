@@ -55,9 +55,7 @@
 .adesivo.is-bordato .adesivo__carta {
   background: var(--surface);
   color: var(--label);
-  box-shadow:
-    0 0 0 3px var(--adesivo-colore, var(--colpito)),
-    var(--shadow-lg);
+  box-shadow: var(--ombra-album);
   animation:
     adesivo-trema calc(var(--durata) * 0.4) var(--ease-out) both,
     adesivo-via calc(var(--durata) * 0.22) ease-in calc(var(--durata) * 0.78) forwards;

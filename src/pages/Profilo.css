@@ -2,10 +2,17 @@
  * Il profilo: chi sei, gli amici online, le impostazioni.
  */
 
+/* Chi sei: una carta con la faccina grande, come la prima pagina di un album. */
 .profilo-testa {
   display: flex;
   align-items: center;
   gap: var(--sp-4);
+  padding: 14px 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  margin-bottom: 5px;
 }
 
 .profilo-testa__chi {
@@ -14,8 +21,8 @@
 
 .profilo-testa__nome {
   font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
+  font-size: 1.5rem;
+  font-weight: 400;
   letter-spacing: var(--tracking-tight);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -24,6 +31,7 @@
 
 .profilo-testa__da {
   font-size: var(--text-footnote);
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
@@ -31,8 +39,10 @@
 .riga__icona:has(.profilo-amici__avatar) {
   width: auto;
   height: auto;
+  border: 0;
   border-radius: 0;
   background: none;
+  box-shadow: none;
 }
 
 .profilo-amici__avatar {
@@ -44,11 +54,11 @@
   position: absolute;
   right: -1px;
   bottom: -1px;
-  width: 11px;
-  height: 11px;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ink);
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 2px var(--surface);
+  background: #5edb84;
 }
 
 .profilo-amici__attesa {
@@ -104,7 +114,7 @@
   overflow: hidden;
   border-radius: var(--r-xl);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .profilo-nick__cambio {

@@ -235,7 +235,7 @@
   padding: 0;
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   overflow: hidden;
 }
 
@@ -400,7 +400,7 @@
   border: none;
   border-radius: var(--r-xl);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: var(--label-tertiary);
   text-align: left;
   cursor: pointer;
@@ -872,7 +872,7 @@
   padding: var(--sp-4);
   border-radius: var(--r-xl);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .bat-link--attivo {

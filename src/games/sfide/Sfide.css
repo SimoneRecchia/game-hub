@@ -17,9 +17,7 @@
   padding: 7px 12px;
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .sfl-barra__contro {
@@ -257,9 +255,7 @@
   overflow: hidden;
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   list-style: none;
 }
 

@@ -24,6 +24,23 @@
   text-shadow: 0 2px 0 light-dark(transparent, var(--ink));
 }
 
+/* Il conto accanto al titolo: un'etichetta gialla col filo, in Nunito. */
+.sezione__conto {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 1px 10px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--conto, var(--giallo));
+  color: var(--ink);
+  font-family: var(--font-text);
+  font-size: 0.8125rem;
+  font-weight: 900;
+  line-height: 1.35;
+  vertical-align: 0.2em;
+  text-shadow: none;
+}
+
 .sezione__azione {
   font-size: var(--text-subhead);
   font-weight: 900;

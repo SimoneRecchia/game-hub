@@ -338,7 +338,7 @@
   padding: 10px 14px;
   border-radius: var(--r-md);
   background: var(--bg-elevated);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .seq-riepilogo__riga.is-vince {

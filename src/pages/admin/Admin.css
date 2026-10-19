@@ -283,7 +283,7 @@ body:has(.adm-laterale) .pagina__corpo {
   padding: var(--sp-4) var(--sp-4) var(--sp-5);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 @container adm (min-width: 560px) {
@@ -435,7 +435,7 @@ body:has(.adm-laterale) .pagina__corpo {
   padding: var(--sp-3) var(--sp-4) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: var(--label);
 }
 
@@ -811,9 +811,7 @@ body:has(.adm-laterale) .pagina__corpo {
   border: 0;
   border-radius: var(--r-pill);
   background: var(--surface);
-  box-shadow:
-    var(--shadow-sm),
-    inset 0 0 0 0.5px var(--separator);
+  box-shadow: var(--ombra-album);
   font-size: var(--text-subhead);
   font-weight: 600;
   color: var(--label);
@@ -933,7 +931,7 @@ body:has(.adm-laterale) .pagina__corpo {
   height: 40px;
   border-radius: 50%;
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: var(--brand);
 }
 
@@ -991,7 +989,7 @@ body:has(.adm-laterale) .pagina__corpo {
   height: 32px;
   border-radius: var(--r-xs);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: var(--brand);
 }
 
@@ -1061,7 +1059,7 @@ body:has(.adm-laterale) .pagina__corpo {
   padding: var(--sp-8) var(--sp-5) var(--sp-6);
   border-radius: var(--r-2xl);
   background: var(--surface);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--ombra-album);
   text-align: center;
 }
 

@@ -11,11 +11,10 @@
   gap: var(--sp-3);
   margin: 0 0 var(--sp-4);
   padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--tono) 12%, var(--surface));
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--tono) 28%, transparent),
-    var(--edge-light);
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--tono) 10%, var(--surface));
+  box-shadow: var(--ombra-carta);
   animation: avviso-tutti-entra 420ms var(--ease-out) both;
 }
 
@@ -37,10 +36,12 @@
 .avviso-tutti__icona {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--ink);
   border-radius: 10px;
   background: var(--tono);
+  box-shadow: 0 2px 0 var(--ink);
   color: #fff;
 }
 
@@ -49,6 +50,7 @@
   align-self: center;
   color: var(--label);
   font-size: var(--text-subhead);
+  font-weight: 700;
   line-height: 1.35;
   white-space: pre-line;
   overflow-wrap: anywhere;

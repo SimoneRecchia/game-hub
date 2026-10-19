@@ -32,7 +32,7 @@
   padding: var(--sp-1);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: inherit;
   text-align: left;
   transition: transform var(--dur-fast) var(--ease-out);

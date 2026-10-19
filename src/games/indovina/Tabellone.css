@@ -62,7 +62,7 @@
   flex-direction: column;
   overflow: hidden;
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-key);
+  box-shadow: var(--ombra-album);
 }
 
 /* Il retro: il rosso del gioco con un punto di domanda in rilievo, come la plastica della scatola. */

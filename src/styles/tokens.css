@@ -187,6 +187,8 @@
   --carta-luce: rgba(255, 255, 255, 0.65);
   --carta-luce: light-dark(rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.08));
   --ombra-carta: 0 5px 0 var(--ink), inset 0 3px 0 var(--carta-luce);
+  /* La carta col filo fatto d'ombra: per le carte che i giochi misurano punto per punto, dove un bordo vero spostava tutto. */
+  --ombra-album: inset 0 0 0 var(--filo) var(--ink), 0 4px 0 var(--ink);
   --ombra-tasto: 0 4px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.5);
   --ombra-tasto-giu: 0 1px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.5);
   /* I colori pieni dei tasti e delle etichette: sopra ci va sempre l'inchiostro. */
@@ -389,6 +391,48 @@
   --superenalotto-tinta: #ffc93c;
   --fortuna-tinta: #5edb84;
   --generale-tinta: #ffd24a;
+
+  /* Le carte delle classificate da giocare: due toni pastello, piu' carichi in scuro, con l'inchiostro sopra. */
+  --wordle-carta-1: #eafaef;
+  --wordle-carta-1: light-dark(#eafaef, #ddf7e5);
+  --wordle-carta-2: #c9f1d5;
+  --wordle-carta-2: light-dark(#c9f1d5, #b2ebc4);
+  --cruciverba-carta-1: #ecf2ff;
+  --cruciverba-carta-1: light-dark(#ecf2ff, #e2ecff);
+  --cruciverba-carta-2: #d2e1ff;
+  --cruciverba-carta-2: light-dark(#d2e1ff, #bfd4ff);
+  --scarabeo-carta-1: #fff5de;
+  --scarabeo-carta-1: light-dark(#fff5de, #fff0cc);
+  --scarabeo-carta-2: #ffe2a8;
+  --scarabeo-carta-2: light-dark(#ffe2a8, #ffd98a);
+  --sudoku-carta-1: #f4edff;
+  --sudoku-carta-1: light-dark(#f4edff, #ede2ff);
+  --sudoku-carta-2: #e0cfff;
+  --sudoku-carta-2: light-dark(#e0cfff, #d3bdff);
+  --quiz-carta-1: #ffeef4;
+  --quiz-carta-1: light-dark(#ffeef4, #ffe2ec);
+  --quiz-carta-2: #ffd0e0;
+  --quiz-carta-2: light-dark(#ffd0e0, #ffbcd3);
+  --ghigliottina-carta-1: #fbeefe;
+  --ghigliottina-carta-1: light-dark(#fbeefe, #f8e3fd);
+  --ghigliottina-carta-2: #f0cffa;
+  --ghigliottina-carta-2: light-dark(#f0cffa, #ebbdf8);
+  --anagrammi-carta-1: #fff1e8;
+  --anagrammi-carta-1: light-dark(#fff1e8, #ffe8da);
+  --anagrammi-carta-2: #ffd7bf;
+  --anagrammi-carta-2: light-dark(#ffd7bf, #ffc7a5);
+  --catena-carta-1: #edf1ff;
+  --catena-carta-1: light-dark(#edf1ff, #e3eaff);
+  --catena-carta-2: #cfdcff;
+  --catena-carta-2: light-dark(#cfdcff, #bdcfff);
+  --nomi-carta-1: #fff8db;
+  --nomi-carta-1: light-dark(#fff8db, #fff4c7);
+  --nomi-carta-2: #ffec9e;
+  --nomi-carta-2: light-dark(#ffec9e, #ffe47a);
+  --paroliere-carta-1: #f0fae8;
+  --paroliere-carta-1: light-dark(#f0fae8, #e6f7da);
+  --paroliere-carta-2: #d3f0be;
+  --paroliere-carta-2: light-dark(#d3f0be, #c2eba6);
 
   /* ---- Le tre schede ----
      Ognuna ha il suo colore, per l'icona accesa nella barra, la lente sotto e
