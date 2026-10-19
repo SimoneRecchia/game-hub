@@ -33,8 +33,10 @@ export function Avatar({ nickname, color, size = 40, medal = null }: Props) {
       style={{
         width: size,
         height: size,
-        background: `linear-gradient(160deg, ${bg}, color-mix(in srgb, ${bg} 62%, #000))`,
-        fontSize: Math.round(size * 0.38),
+        // Il colore della persona, schiarito: una faccina pastello con l'inchiostro sopra, come gli adesivi.
+        background: `color-mix(in srgb, ${bg} 58%, #fff)`,
+        borderWidth: size >= 32 ? 2.5 : 2,
+        fontSize: Math.round(size * 0.4),
       }}
       aria-hidden="true"
     >

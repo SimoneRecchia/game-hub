@@ -10,7 +10,9 @@
 
 /*
  * Una capsula di vetro che galleggia sopra il contenuto, staccata dal bordo e
- * dalla linea della home: il contenuto le scorre sotto e si intravede.
+ * dalla linea della home: il contenuto le scorre sotto e si intravede. La
+ * scheda aperta ha la sua bolla, un tasto tondo che esce dalla capsula verso
+ * l'alto, con l'icona dentro.
  *
  * Ha un nome di transizione suo: quando si cambia schermata, la pagina scorre
  * e la tab bar resta ferma dov'e', come in un'app.
@@ -19,21 +21,21 @@
   position: fixed;
   z-index: 60;
   left: 50%;
-  bottom: max(12px, calc(var(--safe-bottom) - 6px));
+  bottom: max(16px, calc(var(--safe-bottom) - 4px));
   display: flex;
-  width: min(calc(100% - 32px), 380px);
+  width: min(calc(100% - 40px), 360px);
   height: var(--tabbar-h);
-  padding: 4px;
+  padding: 0 6px;
   transform: translateX(-50%);
   border-radius: var(--r-pill);
   background: var(--glass);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
-  border: 0.5px solid var(--glass-line);
+  border: 1px solid var(--glass-edge);
   box-shadow:
     inset 0 1px 0 var(--glass-edge),
-    0 12px 32px var(--shadow-tint),
-    0 2px 8px var(--shadow-tint-soft);
+    0 12px 28px -10px var(--shadow-tint),
+    0 0 0 1px var(--glass-line);
   view-transition-name: tabbar;
 }
 
@@ -51,27 +53,42 @@ html[data-transizione] .tabbar {
 }
 
 /*
- * La lente sotto la sezione aperta: scivola invece di comparire, e prende il
- * colore della sezione. Le sezioni sono tre. Sul profilo e sul profilo di un
- * amico, che non sono sezioni, si spegne dov'e'.
+ * La bolla sopra la sezione aperta: scivola da una scheda all'altra con una
+ * molla, invece di comparire, e prende il colore della sezione. Le sezioni
+ * sono tre. Sul profilo e sul profilo di un amico, che non sono sezioni, si
+ * spegne dov'e'.
  */
 .tabbar__lente {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: calc((100% - 8px) / 3);
-  height: calc(100% - 8px);
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--lente, var(--brand)) 15%, transparent);
-  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--lente, var(--brand)) 22%, transparent);
+  top: -28px;
+  left: 6px;
+  display: grid;
+  place-items: start center;
+  width: calc((100% - 12px) / 3);
+  height: 62px;
+  pointer-events: none;
   transition:
     transform var(--dur-slow) var(--ease-spring),
-    background-color var(--dur-slow) var(--ease-out),
     opacity var(--dur-base) var(--ease-out);
+}
+
+.tabbar__lente::before {
+  content: '';
+  width: 60px;
+  height: 60px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 50%;
+  background: var(--bolla, var(--brand));
+  box-shadow: var(--ombra-tasto);
+  transition: transform var(--dur-base) var(--ease-bounce);
 }
 
 .tabbar__lente.is-spenta {
   opacity: 0;
+}
+
+.tabbar__lente.is-spenta::before {
+  transform: scale(0.6);
 }
 
 .tabbar__voce {
@@ -80,43 +97,50 @@ html[data-transizione] .tabbar {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   gap: 2px;
+  padding-bottom: 9px;
   border-radius: var(--r-pill);
   color: var(--label-secondary);
   -webkit-tap-highlight-color: transparent;
-  transition:
-    color var(--dur-base) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out);
-}
-
-.tabbar__voce:active {
-  transform: scale(0.92);
+  transition: color var(--dur-base) var(--ease-out);
 }
 
 .tabbar__voce.is-attiva {
-  color: var(--colore, var(--brand));
+  color: var(--label);
 }
 
-/* L'icona della sezione che si apre fa un salto, e resta un filo piu' su. */
+/* L'icona della sezione aperta sale nella bolla, piu' grande, nel colore che ci sta sopra. */
 .tabbar__voce svg {
-  transition: transform var(--dur-base) var(--ease-bounce);
+  flex: none;
+  transition:
+    transform var(--dur-slow) var(--ease-bounce),
+    color var(--dur-base) var(--ease-out);
 }
 
 .tabbar__voce.is-attiva svg {
-  transform: translateY(-1px) scale(1.06);
-  animation: tabbar-salto 520ms var(--ease-bounce);
+  color: var(--bolla-ink, #fff);
+  transform: translateY(-21px) scale(1.24);
+  animation: tabbar-salto 560ms var(--ease-bounce);
+}
+
+.tabbar__voce:active svg {
+  transform: scale(0.88);
+}
+
+.tabbar__voce.is-attiva:active svg {
+  transform: translateY(-19px) scale(1.16);
 }
 
 @keyframes tabbar-salto {
   0% {
-    transform: scale(0.8);
+    transform: translateY(0) scale(1);
   }
-  45% {
-    transform: translateY(-4px) scale(1.18) rotate(-6deg);
+  55% {
+    transform: translateY(-26px) scale(1.34) rotate(-8deg);
   }
   100% {
-    transform: translateY(-1px) scale(1.06);
+    transform: translateY(-21px) scale(1.24);
   }
 }
 
@@ -128,8 +152,12 @@ html[data-transizione] .tabbar {
 
 .tabbar__nome {
   font-size: var(--text-caption-2);
-  font-weight: 600;
+  font-weight: 900;
   letter-spacing: 0;
+}
+
+.tabbar__voce.is-attiva .tabbar__nome {
+  font-size: var(--text-caption-1);
 }
 
 /* ──────────────────────────  Il computer: la dock  ────────────────────────── */
@@ -145,11 +173,41 @@ html[data-transizione] .tabbar {
     bottom: var(--sp-5);
     width: 420px;
     height: 56px;
+    padding: 5px;
+  }
+
+  /* Sulla dock la bolla non esce: e' una capsula dentro la capsula, sotto la sezione aperta. */
+  .tabbar__lente {
+    top: 5px;
+    left: 5px;
+    width: calc((100% - 10px) / 3);
+    height: calc(100% - 10px);
+    place-items: stretch;
+  }
+
+  .tabbar__lente::before {
+    width: auto;
+    height: auto;
+    border-radius: var(--r-pill);
+    box-shadow: 0 3px 0 var(--ink);
   }
 
   .tabbar__voce {
     flex-direction: row;
+    align-items: center;
+    justify-content: center;
     gap: var(--sp-2);
+    padding-bottom: 0;
+  }
+
+  .tabbar__voce.is-attiva {
+    color: var(--bolla-ink, #fff);
+  }
+
+  .tabbar__voce.is-attiva svg,
+  .tabbar__voce.is-attiva:active svg {
+    transform: none;
+    animation: none;
   }
 
   .tabbar__voce:not(.is-attiva):hover {
@@ -185,7 +243,7 @@ html[data-transizione] .tabbar {
     background: var(--material-regular);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);
-    border-right: 0.5px solid var(--separator);
+    border-right: var(--filo) solid var(--ink);
     view-transition-name: laterale;
   }
 }
@@ -197,21 +255,22 @@ html[data-transizione] .tabbar {
   padding: var(--sp-1) var(--sp-3) var(--sp-3);
   color: var(--label);
   font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
+  font-size: var(--text-title-1);
+  font-weight: 400;
   letter-spacing: var(--tracking-tight);
 }
 
 .laterale__marchio img {
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 0 3px 0 var(--ink);
 }
 
 /* Il nome della sezione aperta, nel suo colore: dice di che cosa e' il menu. */
 .laterale__sezione {
   margin: var(--sp-2) var(--sp-3) var(--sp-1);
   font-size: var(--text-caption-1);
-  font-weight: 700;
+  font-weight: 900;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--colore, var(--label-secondary));
@@ -237,7 +296,7 @@ html[data-transizione] .tabbar {
   color: var(--label-secondary);
   font: inherit;
   font-size: var(--text-footnote);
-  font-weight: 700;
+  font-weight: 900;
   text-align: left;
   cursor: pointer;
   transition:
@@ -295,7 +354,7 @@ html[data-transizione] .tabbar {
   border-radius: var(--r-sm);
   color: var(--label);
   font-size: var(--text-subhead);
-  font-weight: 500;
+  font-weight: 800;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 
@@ -308,9 +367,12 @@ html[data-transizione] .tabbar {
 }
 
 .laterale__voce.is-attiva {
-  background: color-mix(in srgb, var(--colore, var(--brand)) 13%, transparent);
-  color: var(--colore, var(--brand));
-  font-weight: 600;
+  background: var(--surface);
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 3px 0 var(--ink);
+  color: var(--label);
+  font-weight: 900;
 }
 
 .laterale__voce--gioco {
@@ -329,7 +391,7 @@ html[data-transizione] .tabbar {
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-md);
   color: var(--label);
-  font-weight: 600;
+  font-weight: 900;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 

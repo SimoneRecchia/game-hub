@@ -20,6 +20,8 @@ import {
 import './Shell.css'
 
 interface Scheda {
+  /** Il nome dei suoi token: la bolla della scheda accesa e il colore dell'icona sopra (`--bolla-<id>`). */
+  id: 'libere' | 'giornaliere' | 'fortuna'
   a: string
   nome: string
   Icona: typeof IconFortuna
@@ -40,6 +42,7 @@ interface Scheda {
  */
 const SCHEDE: Scheda[] = [
   {
+    id: 'libere',
     a: ROTTE.libere,
     nome: 'Libere',
     Icona: IconLibere,
@@ -52,6 +55,7 @@ const SCHEDE: Scheda[] = [
         GIOCHI_DA_TAVOLO.some((g) => sotto(p, `/${g.slug}`))),
   },
   {
+    id: 'giornaliere',
     a: ROTTE.home,
     nome: 'Giornaliere',
     Icona: IconGiornaliere,
@@ -60,6 +64,7 @@ const SCHEDE: Scheda[] = [
     sotto: delGiorno,
   },
   {
+    id: 'fortuna',
     a: ROTTE.fortuna,
     nome: 'Fortuna',
     Icona: IconFortuna,
@@ -139,7 +144,12 @@ export function Shell({ children }: { children: ReactNode }) {
   const ultima = useRef(DEL_GIORNO)
   if (trovata >= 0) ultima.current = trovata
   const attiva = trovata
-  const lente = { transform: `translateX(${ultima.current * 100}%)`, '--lente': SCHEDE[ultima.current].colore }
+  const accesa = SCHEDE[ultima.current]
+  const lente = {
+    transform: `translateX(${ultima.current * 100}%)`,
+    '--lente': accesa.colore,
+    '--bolla': `var(--bolla-${accesa.id})`,
+  }
 
   return (
     <div className="shell">
@@ -160,7 +170,7 @@ export function Shell({ children }: { children: ReactNode }) {
               direzione="scheda"
               onClick={inCimaSeAperta(pathname, s.a)}
               className={`tabbar__voce${i === attiva ? ' is-attiva' : ''}`}
-              style={{ '--colore': s.colore } as CSSProperties}
+              style={{ '--colore': s.colore, '--bolla-ink': `var(--bolla-${s.id}-ink)` } as CSSProperties}
               aria-current={i === attiva ? 'page' : undefined}
             >
               <Icona size={24} />

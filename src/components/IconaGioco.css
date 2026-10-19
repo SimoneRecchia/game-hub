@@ -1,0 +1,51 @@
+/*
+ * L'adesivo di un gioco (IconaGioco.tsx). Il disegno sborda dal suo quadrato
+ * di quanto vuole il bordo bianco: `overflow: visible`, e chi lo mette in un
+ * riquadro lascia lo spazio.
+ */
+.icona-gioco {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  line-height: 0;
+}
+
+.icona-gioco svg {
+  display: block;
+  max-width: none;
+  overflow: visible;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icona-gioco__bordo {
+  color: #fff;
+}
+
+.icona-gioco__ombra {
+  color: rgba(18, 12, 43, 0.3);
+}
+
+/* Il posto vuoto dell'album: il contorno, chiaro, del gioco che manca. */
+.icona-gioco--linea {
+  --icona-linea: #2a1f5c;
+  --icona-fondo: #fff7ea;
+  opacity: 0.32;
+}
+
+.icona-gioco--fluttua {
+  animation: icona-fluttua 3.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes icona-fluttua {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icona-gioco--fluttua {
+    animation: none;
+  }
+}

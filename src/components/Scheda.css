@@ -13,33 +13,34 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
-  padding: var(--scheda-padding);
-  border-radius: var(--r-xl);
+  border-radius: 22px;
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  /* Il filo e' un'ombra interna e non un bordo: i giochi contano sulle misure della scheda, punto per punto. */
+  --scheda-filo: inset 0 0 0 var(--filo) var(--ink), 0 4px 0 var(--ink);
+  box-shadow: var(--scheda-filo);
   transition: box-shadow var(--dur-base) var(--ease-out);
 }
 
-/* La scheda dove si deve agire. */
+/* La scheda dove si deve agire: un alone giallo attorno al filo. */
 .scheda.is-accesa {
   box-shadow:
-    0 0 0 2px var(--brand),
-    0 6px 24px color-mix(in srgb, var(--brand) 22%, transparent);
+    var(--scheda-filo),
+    0 0 0 4px var(--giallo);
 }
 
 /* La scheda sotto minaccia: il mirino di chi sta per colpire. */
 .scheda.is-allerta {
   box-shadow:
-    0 0 0 2px var(--mirino),
-    0 6px 24px color-mix(in srgb, var(--mirino) 24%, transparent);
+    var(--scheda-filo),
+    0 0 0 4px var(--mirino);
   animation: scheda-allerta 850ms var(--ease-in-out);
 }
 
 @keyframes scheda-allerta {
   30% {
     box-shadow:
-      0 0 0 4px var(--mirino),
-      0 6px 28px color-mix(in srgb, var(--mirino) 34%, transparent);
+      var(--scheda-filo),
+      0 0 0 6px var(--mirino);
   }
 }
 
@@ -55,8 +56,8 @@
   flex: 1;
   min-width: 0;
   margin: 0;
-  font-size: var(--text-headline);
-  font-weight: 700;
+  font-size: 1.125rem;
+  font-weight: 400;
   color: var(--label);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -71,6 +72,7 @@
   height: 26px;
   border-radius: 50%;
   background: var(--scheda-icona, var(--label-secondary));
+  box-shadow: inset 0 0 0 2px var(--ink);
   color: #fff;
 }
 
@@ -85,10 +87,11 @@
   height: 26px;
   padding: 0 10px;
   border-radius: var(--r-pill);
-  background: var(--fill-tertiary);
-  color: var(--label-secondary);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 2px var(--ink);
+  color: var(--label);
   font-size: var(--text-caption-1);
-  font-weight: 700;
+  font-weight: 900;
   white-space: nowrap;
   transition:
     background-color var(--dur-base) var(--ease-out),
@@ -106,10 +109,10 @@
   flex: none;
 }
 
-/* Tocca a te: indaco pieno, e respira. */
+/* Tocca a te: giallo pieno, e respira. */
 .pillola.is-turno {
-  background: var(--brand);
-  color: #fff;
+  background: var(--giallo);
+  color: var(--ink);
   animation: pillola-respira 1.8s var(--ease-in-out) infinite;
 }
 
@@ -120,19 +123,18 @@
 }
 
 .pillola.is-buona {
-  background: color-mix(in srgb, var(--green) 16%, transparent);
-  color: var(--green);
+  background: #c9f1d5;
+  color: var(--ink);
 }
 
 .pillola.is-cattiva {
-  background: color-mix(in srgb, var(--colpito) 14%, transparent);
-  color: var(--colpito);
+  background: #ffc7c0;
+  color: var(--ink);
 }
 
 @keyframes pillola-respira {
   50% {
     transform: scale(1.05);
-    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent);
   }
 }
 

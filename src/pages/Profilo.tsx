@@ -547,6 +547,14 @@ function Fonti() {
         </a>{' '}
         (licenza BSD).
       </p>
+      <p>
+        <strong>Caratteri.</strong> Lilita One, di Juan Montoreano, e Nunito, di Vernon Adams, Cyreal e Jacques Le
+        Bailly, con la{' '}
+        <a href="https://openfontlicense.org" target="_blank" rel="noreferrer">
+          SIL Open Font License
+        </a>
+        .
+      </p>
     </div>
   )
 }

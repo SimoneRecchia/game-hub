@@ -31,6 +31,10 @@
 /dati/*
   Cache-Control: public, max-age=31536000, immutable
 
+# I caratteri: la versione sta nel nome del file. Sotto /fonts/ non ci sono pagine.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /manifest.webmanifest
   Cache-Control: public, max-age=3600
 

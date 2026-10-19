@@ -17,23 +17,29 @@
 .sezione__titolo {
   margin: 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
+  font-size: 1.4375rem;
+  font-weight: 400;
+  line-height: 1.1;
   letter-spacing: var(--tracking-tight);
+  text-shadow: 0 2px 0 light-dark(transparent, var(--ink));
 }
 
 .sezione__azione {
   font-size: var(--text-subhead);
-  font-weight: 600;
+  font-weight: 900;
 }
 
 .sezione__azione a {
-  color: var(--brand);
+  color: var(--label);
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
 }
 
 .sezione__nota {
   padding: 0 var(--sp-2);
   font-size: var(--text-footnote);
+  font-weight: 700;
   color: var(--label-secondary);
   line-height: 1.45;
 }
@@ -44,9 +50,12 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: var(--r-xl);
+  border: var(--filo) solid var(--ink);
+  border-radius: 22px;
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-carta);
+  /* L'ombra secca sporge di cinque punti: chi viene dopo non la deve toccare. */
+  margin-bottom: 5px;
 }
 
 .riga {
@@ -62,19 +71,18 @@
   font-size: var(--text-body);
 }
 
-/* Il filo fra le righe parte dopo l'icona, come in iOS. */
+/* Fra le righe un tratteggio, come sul foglio di un quaderno; parte dopo l'icona, come in iOS. */
 .riga + .riga::before {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  left: var(--sp-4);
-  height: 0.5px;
-  background: var(--separator);
+  top: -1px;
+  right: var(--sp-3);
+  left: var(--sp-3);
+  border-top: 2px dashed var(--separator);
 }
 
 .riga:has(.riga__icona) + .riga::before {
-  left: 60px;
+  left: 58px;
 }
 
 .riga--tocca {
@@ -93,18 +101,20 @@
 }
 
 .riga--distruttiva {
-  color: var(--red);
+  color: light-dark(#c42639, #ff8f82);
 }
 
 .riga__icona {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex: none;
-  border-radius: 8px;
-  background: var(--brand);
-  color: #fff;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--lilla);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
 }
 
 .riga__icona .copertina {
@@ -113,8 +123,11 @@
 
 /* Le tacche di un livello e le onde non vogliono il quadratino colorato: sono gia' un segno. */
 .riga__icona:has(.tacche),
-.riga__icona:has(.bat-riga__onda) {
+.riga__icona:has(.bat-riga__onda),
+.riga__icona:has(.copertina) {
+  border: 0;
   background: none;
+  box-shadow: none;
 }
 
 .riga__testo {
@@ -126,11 +139,12 @@
 }
 
 .riga__titolo {
-  font-weight: 500;
+  font-weight: 800;
 }
 
 .riga__sotto {
   font-size: var(--text-footnote);
+  font-weight: 700;
   color: var(--label-secondary);
 }
 
@@ -138,6 +152,7 @@
   flex: none;
   color: var(--label-secondary);
   font-size: var(--text-subhead);
+  font-weight: 800;
 }
 
 .riga__freccia {
@@ -149,6 +164,7 @@
 .riga__spunta {
   flex: none;
   color: var(--brand);
+  stroke-width: 2.6;
 }
 
 /* ─────────────────────────  Anello  ───────────────────────── */
@@ -195,15 +211,17 @@
   width: 64px;
   height: 64px;
   margin-bottom: var(--sp-2);
+  border: var(--filo) solid var(--ink);
   border-radius: 20px;
-  background: var(--brand-soft);
-  color: var(--brand);
+  background: var(--lilla);
+  color: var(--ink);
+  box-shadow: 0 4px 0 var(--ink);
 }
 
 .vuoto__titolo {
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
+  font-size: var(--text-title-2);
+  font-weight: 400;
   color: var(--label);
 }
 
@@ -223,34 +241,36 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
+  padding: 1px 9px;
+  border: 2px solid var(--ink);
   border-radius: var(--r-pill);
   font-size: var(--text-caption-1);
-  font-weight: 700;
+  font-weight: 900;
   letter-spacing: 0.01em;
   white-space: nowrap;
-  background: var(--fill-tertiary);
-  color: var(--label-secondary);
+  background: var(--surface-2);
+  color: var(--label);
 }
 
+/* Le etichette colorate sono pastello in tutti e due i temi, con l'inchiostro sopra. */
 .etichetta--brand {
-  background: var(--brand-soft);
-  color: var(--brand);
+  background: var(--lilla);
+  color: var(--ink);
 }
 
 .etichetta--verde {
-  background: color-mix(in srgb, var(--green) 16%, transparent);
-  color: var(--green);
+  background: #c9f1d5;
+  color: var(--ink);
 }
 
 .etichetta--arancio {
-  background: color-mix(in srgb, var(--orange) 16%, transparent);
-  color: var(--orange);
+  background: #ffd9a8;
+  color: var(--ink);
 }
 
 .etichetta--rosso {
-  background: color-mix(in srgb, var(--red) 14%, transparent);
-  color: var(--red);
+  background: #ffc7c0;
+  color: var(--ink);
 }
 
 /* ─────────────────────────  Coriandoli  ───────────────────────── */
@@ -355,28 +375,18 @@
 .tacche {
   flex: none;
   display: inline-flex;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 3px;
   height: 22px;
   padding: 0 2px;
 }
 
+/* Tacche uguali, col filo: quante sono piene dice il livello, come le barre di una batteria. */
 .tacche__tacca {
-  width: 6px;
-  border-radius: 2px;
+  width: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 4px;
   background: var(--fill-tertiary);
-}
-
-.tacche__tacca:nth-child(1) {
-  height: 40%;
-}
-
-.tacche__tacca:nth-child(2) {
-  height: 70%;
-}
-
-.tacche__tacca:nth-child(3) {
-  height: 100%;
 }
 
 .tacche__tacca.is-piena {
@@ -389,21 +399,5 @@
 }
 
 .tacche--4 .tacche__tacca {
-  width: 5px;
-}
-
-.tacche--4 .tacche__tacca:nth-child(1) {
-  height: 34%;
-}
-
-.tacche--4 .tacche__tacca:nth-child(2) {
-  height: 56%;
-}
-
-.tacche--4 .tacche__tacca:nth-child(3) {
-  height: 78%;
-}
-
-.tacche--4 .tacche__tacca:nth-child(4) {
-  height: 100%;
+  width: 8px;
 }

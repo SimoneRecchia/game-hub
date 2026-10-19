@@ -305,6 +305,15 @@ la GPL; qui si usano con la **BSD**, che chiede di riportare l'avviso:
 Nel file i disegni sono gli stessi, senza gli spazi e con il `viewBox` al posto
 delle misure; nell'app il credito sta nel profilo, in «Fonti e licenze».
 
+## I caratteri
+
+I titoli sono in **Lilita One** (Juan Montoreano) e il testo in **Nunito**
+(Vernon Adams, Cyreal, Jacques Le Bailly), presi da Google Fonts nel
+sottoinsieme latino e serviti dal sito (`public/fonts/`). Tutti e due sono sotto
+la **SIL Open Font License 1.1**, il cui testo sta accanto ai file
+(`OFL-Lilita-One.txt`, `OFL-Nunito.txt`); nell'app il credito sta nel profilo,
+in «Fonti e licenze».
+
 ## Le altre materie del quiz
 
 I file di `public/dati/quiz/` (arte, libri, cinema, canzoni, musica classica,
