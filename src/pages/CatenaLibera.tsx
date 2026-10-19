@@ -34,7 +34,7 @@ export default function CatenaLibera() {
 
   if (!v) {
     return (
-      <Pagina titolo="Catena" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina titolo="Catena" gioco="catena" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <SceltaFinale
           gioco="catena"
           titoloPasso="Tempo per parola"

@@ -35,7 +35,7 @@ export default function GhigliottinaLibera() {
 
   if (!v) {
     return (
-      <Pagina titolo="Ghigliottina" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina titolo="Ghigliottina" gioco="ghigliottina" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <SceltaFinale
           gioco="ghigliottina"
           titoloPasso="Tempo per coppia"

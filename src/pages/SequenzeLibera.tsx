@@ -96,7 +96,7 @@ export default function SequenzeLibera() {
 
   if (!l) {
     return (
-      <Pagina key="scelta" titolo="Sequenze" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina key="scelta" titolo="Sequenze" gioco="sequenze" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <div className="seq-scelte">
           <SegmentedControl
             ariaLabel="Con chi"

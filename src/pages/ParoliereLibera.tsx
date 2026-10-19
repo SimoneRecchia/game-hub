@@ -47,7 +47,7 @@ export default function ParoliereLibera() {
 
   if (!v) {
     return (
-      <Pagina titolo="Paroliere" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina titolo="Paroliere" gioco="paroliere" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <InterruttoreContro value={contro} onChange={setContro} />
         <Sezione titolo="Partita">
           <Opzioni>

@@ -21,9 +21,11 @@
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
-  padding: 6px 4px;
-  border-radius: 20px;
+  padding: 8px 6px 10px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 22px;
   background: var(--key-fondo);
+  box-shadow: 0 4px 0 var(--ink);
   /* Nessuna selezione accidentale, e nessun menu, mentre si tocca ripetutamente. */
   user-select: none;
   -webkit-user-select: none;
@@ -36,26 +38,27 @@
 }
 
 /*
- * Il tasto: piatto, con l'ombra secca di un punto sotto, come quelli dei
- * telefoni. Premendo cambia colore e, col mouse, scende di un punto; col dito
- * sopra si vede la lettera grande (sotto), perché il dito copre quel che tocca.
+ * Il tasto: un tasto disegnato, col filo d'inchiostro e l'ombra secca sotto.
+ * Premendo scende sull'ombra; col dito sopra si vede la lettera grande
+ * (sotto), perché il dito copre quel che tocca.
  */
 .key {
   position: relative;
   min-width: 0;
   height: var(--tasto-alto);
   padding: 0;
-  border-radius: 9px;
+  border: 2px solid var(--key-ombra);
+  border-radius: 10px;
   background-color: var(--key-bg);
   color: var(--key-ink);
-  font-family: var(--font-text);
-  font-size: clamp(17px, 5.4cqw, 23px);
-  font-weight: 500;
+  font-family: var(--font-rounded);
+  font-size: clamp(17px, 5.2cqw, 22px);
+  font-weight: 400;
   line-height: 1;
   letter-spacing: 0;
   display: grid;
   place-items: center;
-  box-shadow: 0 1px 0 var(--key-ombra);
+  box-shadow: 0 3px 0 var(--key-ombra);
   -webkit-tap-highlight-color: transparent;
   transition:
     transform 80ms var(--ease-out),
@@ -65,13 +68,8 @@
 
 .key:active:not(:disabled) {
   background-color: var(--key-bg-active);
-}
-
-@media (hover: hover) {
-  .key:active:not(:disabled) {
-    transform: translateY(1px);
-    box-shadow: none;
-  }
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--key-ombra);
 }
 
 .key:disabled {
@@ -92,8 +90,7 @@
 .key--azione {
   grid-column: span 2;
   padding: 0 4px;
-  font-size: clamp(14px, 4.2cqw, 17px);
-  font-weight: 600;
+  font-size: clamp(15px, 4.4cqw, 18px);
 }
 
 .key--azione.is-lunga {
@@ -172,12 +169,13 @@
     place-items: center;
     width: calc(100% + 14px);
     height: calc(var(--tasto-alto) * 1.12);
+    border: 2px solid var(--key-ombra);
     border-radius: 12px;
     background-color: inherit;
     color: inherit;
     font-size: 1.55em;
     box-shadow:
-      0 1px 0 var(--key-ombra),
+      0 3px 0 var(--key-ombra),
       0 6px 16px rgba(0, 0, 0, 0.28);
     transform: translateX(-50%);
     pointer-events: none;

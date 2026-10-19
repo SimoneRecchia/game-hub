@@ -3,7 +3,6 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Copertina } from '@/components/Copertina'
 import { Cursore } from '@/components/Cursore'
 import { Sezione, Vuoto } from '@/components/Elementi'
 import { Opzioni, Scelte } from '@/components/Opzioni'
@@ -200,7 +199,7 @@ export default function IndovinaChi() {
     <Pagina
       titolo="Indovina chi"
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      eroe={<Copertina gioco="indovina" formato="eroe" />}
+      gioco="indovina"
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />

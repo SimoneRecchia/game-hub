@@ -3,7 +3,6 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { CampoCodice } from '@/components/CampoCodice'
-import { Copertina } from '@/components/Copertina'
 import { Elenco, Riga, Sezione } from '@/components/Elementi'
 import { IconClose, IconInfo, IconPlus } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
@@ -82,7 +81,7 @@ export default function Lupus() {
     <Pagina
       titolo="Lupus"
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      eroe={<Copertina gioco="lupus" formato="eroe" />}
+      gioco="lupus"
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegoleDelGioco(true)}>
           <IconInfo size={21} />

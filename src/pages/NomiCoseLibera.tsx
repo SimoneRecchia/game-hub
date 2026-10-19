@@ -135,6 +135,7 @@ export default function NomiCoseLibera() {
       <Pagina
         key="scelta"
         titolo="Nomi, cose e città"
+        gioco="nomi"
         indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
         azioni={info}
       >

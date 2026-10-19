@@ -3,7 +3,6 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { Copertina } from '@/components/Copertina'
 import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
 import { Riga, Sezione, Vuoto } from '@/components/Elementi'
 import { IconCopy, IconInfo, IconShare } from '@/components/Icons'
@@ -187,7 +186,7 @@ export default function BattagliaSala() {
     <Pagina
       titolo="Battaglia navale"
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      eroe={<Copertina gioco="battaglia" formato="eroe" />}
+      gioco="battaglia"
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
           <IconInfo size={21} />

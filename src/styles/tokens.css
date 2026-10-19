@@ -680,41 +680,32 @@
      16% spariva, e le caselle vuote diventavano macchie bianche invece di una
      griglia. Il gioco vero il bordo lo fa vedere. */
   /* L'alloggio vuoto del Wordle: un incavo nella tavoletta, dove la lettera si posa. */
-  --slot: #e6e9f1;
-  --slot: light-dark(#e6e9f1, #12141b);
+  --slot: #fffbf2;
+  --slot: light-dark(#fffbf2, #3a3566);
   --slot-ombra: rgba(24, 32, 64, 0.14);
   --slot-ombra: light-dark(rgba(24, 32, 64, 0.14), rgba(0, 0, 0, 0.55));
   /* L'orlo in basso dell'alloggio, che prende la luce: al buio e' quel che fa vedere la griglia vuota. */
   --slot-orlo: rgba(255, 255, 255, 0.85);
   --slot-orlo: light-dark(rgba(255, 255, 255, 0.85), rgba(190, 200, 235, 0.16));
-  --tile-empty-border: rgba(60, 64, 82, 0.26);
-  --tile-empty-border: light-dark(rgba(60, 64, 82, 0.26), rgba(160, 168, 200, 0.26));
-  --tile-active-border: rgba(60, 64, 82, 0.4);
-  --tile-active-border: light-dark(rgba(60, 64, 82, 0.4), rgba(160, 168, 200, 0.5));
-  --tile-correct: #1c8047;
-  --tile-correct: light-dark(#1c8047, #178a4b);
-  --tile-present: #dfa42b;
-  --tile-present: light-dark(#dfa42b, #efb63c);
-  --tile-absent: #7c8090;
-  --tile-absent: light-dark(#7c8090, #45495a);
+  --tile-empty-border: rgba(42, 31, 92, 0.3);
+  --tile-empty-border: light-dark(rgba(42, 31, 92, 0.3), rgba(196, 191, 224, 0.32));
+  --tile-active-border: #2a1f5c;
+  --tile-active-border: light-dark(#2a1f5c, #120c2b);
+  --tile-correct: #5edb84;
+  --tile-present: #ffc93c;
+  --tile-absent: #c9c3dd;
+  --tile-absent: light-dark(#c9c3dd, #8e88ae);
 
   /*
-   * Il colore della lettera sopra la casella piena, per stato.
-   *
-   * Non e' un vezzo: misurando il contrasto, il bianco sul giallo dava 2.21 in
-   * chiaro e 1.84 in scuro, sotto il minimo di 3:1 anche per testo grande — e il
-   * verde in scuro 2.35. Il gioco vero ha lo stesso difetto (bianco su #c9b458
-   * fa ~2.3) e saturando i colori l'avevo peggiorato.
-   *
-   * Un giallo abbastanza scuro da reggere il bianco non e' piu' giallo, e'
-   * marrone. Quindi sul giallo la lettera e' scura (8.6:1) e sul verde e' bianca
-   * con il verde abbassato quanto serve (5.0:1 in chiaro, 4.4:1 in scuro). Ogni
-   * stato prende il colore che legge meglio, invece di una regola unica che ne
-   * sacrifica uno.
+   * Il colore della lettera sopra la casella piena: l'inchiostro su tutti e tre
+   * gli stati, come gli adesivi. Il verde e il giallo dell'album sono chiari, e
+   * l'inchiostro ci fa sopra 7:1 e 9:1; il grigio scuro delle assenti in scuro
+   * 4,4:1, per lettere grandi. Prima la lettera era bianca sul verde scuro, e
+   * scura sul giallo: ogni stato prendeva il suo, con i colori di allora.
    */
-  --tile-text-on-correct: #ffffff;
-  --tile-text-on-present: #17130a;
-  --tile-text-on-absent: #ffffff;
+  --tile-text-on-correct: #2a1f5c;
+  --tile-text-on-present: #2a1f5c;
+  --tile-text-on-absent: #2a1f5c;
 
   /*
    * La tastiera dei giochi di parole, come quella dei telefoni: le lettere
@@ -723,28 +714,25 @@
    * dell'app quando c'e' qualcosa da mandare. La Catena e la Ghigliottina li
    * ridefiniscono per il loro palco.
    */
-  --key-fondo: #d5d8e1;
-  --key-fondo: light-dark(#d5d8e1, #1b1d26);
-  --key-bg: #ffffff;
-  --key-bg: light-dark(#ffffff, #4b4f60);
-  --key-bg-active: #e4e7ee;
-  --key-bg-active: light-dark(#e4e7ee, #5c6175);
-  --key-servizio: #adb3c2;
-  --key-servizio: light-dark(#adb3c2, #2e313d);
-  --key-servizio-active: #969dae;
-  --key-servizio-active: light-dark(#969dae, #3b3f4d);
-  --key-ink: #0d0f17;
-  --key-ink: light-dark(#0d0f17, #f5f6fa);
-  --key-ombra: rgba(40, 44, 62, 0.32);
-  --key-ombra: light-dark(rgba(40, 44, 62, 0.32), rgba(0, 0, 0, 0.55));
-  --key-azione: #4f46e5;
-  --key-azione: light-dark(#4f46e5, #5b53ee);
-  --key-azione-ink: #ffffff;
+  --key-fondo: #e6defa;
+  --key-fondo: light-dark(#e6defa, #1b1740);
+  --key-bg: #fffdf7;
+  --key-bg: light-dark(#fffdf7, #fff6e0);
+  --key-bg-active: #efe8fb;
+  --key-bg-active: light-dark(#efe8fb, #ebe0c4);
+  --key-servizio: #d9d0f0;
+  --key-servizio: light-dark(#d9d0f0, #c9bef0);
+  --key-servizio-active: #c9bef0;
+  --key-servizio-active: light-dark(#c9bef0, #b3a6e3);
+  --key-ink: #2a1f5c;
+  --key-ombra: #2a1f5c;
+  --key-ombra: light-dark(#2a1f5c, #120c2b);
+  --key-azione: #ffc93c;
+  --key-azione-ink: #2a1f5c;
   /* Una lettera gia' provata e assente: in scuro piu' cupa dei tasti, non solo grigia come loro. */
-  --key-assente: #7c8090;
-  --key-assente: light-dark(#7c8090, #25272f);
-  --key-assente-ink: #ffffff;
-  --key-assente-ink: light-dark(#ffffff, rgba(245, 246, 250, 0.42));
+  --key-assente: #c9c3dd;
+  --key-assente: light-dark(#c9c3dd, #8e88ae);
+  --key-assente-ink: #2a1f5c;
 
   /* I colori dei grafici del pannello di amministrazione: vedi src/pages/admin/Grafici.css. */
   --adm-serie-1: #2a78d6;

@@ -233,7 +233,8 @@ function Rulli({ lato }: { lato: number }) {
 
 const rr = (x: number, y: number, w: number, h: number, r: number) =>
   `M${x + r} ${y}h${w - 2 * r}a${r} ${r} 0 0 1 ${r} ${r}v${h - 2 * r}a${r} ${r} 0 0 1 ${-r} ${r}h${-(w - 2 * r)}a${r} ${r} 0 0 1 ${-r} ${-r}v${-(h - 2 * r)}a${r} ${r} 0 0 1 ${r} ${-r}z`
-const tondo = (x: number, y: number, r: number) => `M${x - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0z`
+const tondo = (x: number, y: number, r: number) =>
+  `M${x - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0z`
 const stella = (x: number, y: number, r: number) =>
   `M${x} ${y - r}Q${x} ${y} ${x + r} ${y}Q${x} ${y} ${x} ${y + r}Q${x} ${y} ${x - r} ${y}Q${x} ${y} ${x} ${y - r}z`
 const P = (d: string, f: string, o: Partial<Pezzo> = {}): Pezzo => ({ d, f, ...o })
@@ -288,7 +289,7 @@ const pallina = (cx: number, cy: number, r: number, c: string, rl: number, numer
   P(luce, 'none', { s: W, w: 1.6 }),
 ]
 
-/** Le parti della slot e del blackjack, le stesse delle loro icone piccole. */
+/** Le parti della slot, le stesse della sua icona piccola (`IconaGioco`); i 7 li fanno i rulli. */
 const SLOT = {
   corpo: P(rr(5, 9.5, 36, 33, 5), '#FF4FA3'),
   leva: P('M41 16h3v12h-3z', '#DCE3F2', { w: 1.8 }),
@@ -299,6 +300,7 @@ const SLOT = {
   divisori: P('M18.3 15v15M27.7 15v15', 'none', { w: 1.8 }),
   vassoio: P(rr(10, 34, 26, 5, 2), '#C02A7E', { w: 1.8 }),
 }
+/** Le due carte del blackjack, ognuna storta attorno al suo centro. */
 const PICCHE = 'rotate(-12 16 23)'
 const CUORI = 'rotate(10 31.5 24.5)'
 
@@ -341,11 +343,10 @@ const GIOCHI: Record<GiocoIconaFortuna, Gioco> = {
       S(
         [
           P(rr(6, 9, 20, 28, 3), W, { t: PICCHE }),
-          P(
-            'M16 16c-2.4 3-6 5-6 8a3 3 0 0 0 5.2 2l-1 3.4h3.6l-1-3.4A3 3 0 0 0 22 24c0-3-3.6-5-6-8z',
-            INK,
-            { w: 1.4, t: PICCHE },
-          ),
+          P('M16 16c-2.4 3-6 5-6 8a3 3 0 0 0 5.2 2l-1 3.4h3.6l-1-3.4A3 3 0 0 0 22 24c0-3-3.6-5-6-8z', INK, {
+            w: 1.4,
+            t: PICCHE,
+          }),
         ],
         'galleggia',
         { piega: -8 },
@@ -353,11 +354,10 @@ const GIOCHI: Record<GiocoIconaFortuna, Gioco> = {
       S(
         [
           P(rr(21, 10, 21, 29, 3), W, { t: CUORI }),
-          P(
-            'M31.5 33c-4.6-3-7-5.6-7-8.4a3.6 3.6 0 0 1 7-1.2 3.6 3.6 0 0 1 7 1.2c0 2.8-2.4 5.4-7 8.4z',
-            '#E5383B',
-            { w: 1.6, t: CUORI },
-          ),
+          P('M31.5 33c-4.6-3-7-5.6-7-8.4a3.6 3.6 0 0 1 7-1.2 3.6 3.6 0 0 1 7 1.2c0 2.8-2.4 5.4-7 8.4z', '#E5383B', {
+            w: 1.6,
+            t: CUORI,
+          }),
           P('M24.4 19l2-5.4 2 5.4M25.1 17.2h2.6', 'none', { s: '#E5383B', w: 1.8, t: CUORI }),
         ],
         'galleggia',
@@ -378,11 +378,9 @@ const GIOCHI: Record<GiocoIconaFortuna, Gioco> = {
           P(tondo(24, 24, 10.5), '#E3A86B', { w: 1.6 }),
           P(tondo(24, 24, 7), '#C88A52', { w: 1.3 }),
           P('M24 17.5v13M17.5 24h13', 'none', { s: '#FFD84D', w: 2.4 }),
-          P(
-            tondo(24, 17.5, 1.5) + tondo(24, 30.5, 1.5) + tondo(17.5, 24, 1.5) + tondo(30.5, 24, 1.5),
-            '#FFD84D',
-            { w: 1.1 },
-          ),
+          P(tondo(24, 17.5, 1.5) + tondo(24, 30.5, 1.5) + tondo(17.5, 24, 1.5) + tondo(30.5, 24, 1.5), '#FFD84D', {
+            w: 1.1,
+          }),
           P(tondo(24, 24, 2.4), '#FFD84D', { w: 1.3 }),
         ],
         'gira-svelta',

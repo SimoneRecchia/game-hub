@@ -55,7 +55,7 @@ export default function AnagrammiLibera() {
 
   if (!v) {
     return (
-      <Pagina titolo="Anagrammi" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina titolo="Anagrammi" gioco="anagrammi" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <InterruttoreContro value={contro} onChange={setContro} />
         <Sezione titolo="Partita">
           <Opzioni>

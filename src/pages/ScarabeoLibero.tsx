@@ -110,6 +110,7 @@ export default function ScarabeoLibero() {
       <Pagina
         key="scelta"
         titolo="Scarabeo"
+        gioco="scarabeo"
         indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
         azioni={
           <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>

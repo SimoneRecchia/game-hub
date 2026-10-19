@@ -32,6 +32,7 @@ export default function SudokuLibero() {
       <Pagina
         key="scelta"
         titolo="Sudoku"
+        gioco="sudoku"
         indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
         azioni={
           <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>

@@ -254,8 +254,19 @@
   color: var(--label-secondary);
 }
 
+/* In cima alla sala di un gioco il vetrino grande, e sotto il titolo, tutto al centro: come la copertina di un album. */
+.pagina__testa:has(> .copertina--eroe) {
+  align-items: center;
+  padding-top: var(--sp-3);
+  text-align: center;
+}
+
+.pagina__testa:has(> .copertina--eroe) .pagina__sopra {
+  align-self: center;
+}
+
 .pagina__testa > .copertina--eroe {
-  margin-bottom: var(--sp-4);
+  margin-bottom: var(--sp-5);
 }
 
 .pagina__sentinella {

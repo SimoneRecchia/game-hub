@@ -8,25 +8,13 @@ import { Sezione } from '@/components/Elementi'
 import { IconChevronRight } from '@/components/Icons'
 import { Vetrina } from '@/components/Vetrina'
 import { useAmiciOnline } from '@/games/amici/amici'
-import { CATEGORIE_LIBERE, GIOCHI, giocoTavoloDi, type Gioco } from '@/games/catalog'
+import { CATEGORIE_LIBERE, COLORE_FAMIGLIA, GIOCHI, giocoTavoloDi, type Gioco } from '@/games/catalog'
 import { NOMI_AL_TAVOLO } from '@/games/tavolo/nomi'
 import { formatGameDate } from '@/lib/format'
 import { usePresenza } from '@/lib/presenza'
 import { gameDate } from '@shared/daily'
 import type { AmicoOnline, GiocatoreBreve, GiocoDaTavolo } from '@shared/types'
 import './Libere.css'
-
-/** Il colore dell'etichetta di ogni famiglia, accanto al suo nome: pastello, con l'inchiostro sopra. */
-const COLORE_FAMIGLIA: Record<string, string> = {
-  Enigmistica: '#c9f1d5',
-  Parole: '#ffe2a8',
-  Cultura: '#ffd0e0',
-  Memoria: '#c8f4f8',
-  Strategia: '#d2e1ff',
-  'Da tavolo': '#ffd9cf',
-  'In gruppo': '#e6d6ff',
-  Disegno: '#ffd6ef',
-}
 
 /** Di quanti gradi e' storto ogni adesivo, a mano. */
 const STORTI = [-6, 5, -4, 6, -5, 4, -6, 5, -3, 6]

@@ -51,6 +51,7 @@ export default function CruciverbaLibero() {
   return (
     <Pagina
       titolo="Cruciverba"
+      gioco="cruciverba"
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
