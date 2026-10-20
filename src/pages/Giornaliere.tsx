@@ -4,6 +4,7 @@ import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { AvvisoATutti } from '@/components/AvvisoATutti'
 import { Biglietto } from '@/components/Biglietto'
+import { Sheet } from '@/components/Sheet'
 import { Sezione } from '@/components/Elementi'
 import { IconChevronRight, IconClock } from '@/components/Icons'
 import { IconaGioco } from '@/components/IconaGioco'
@@ -42,6 +43,8 @@ export default function Giornaliere() {
   const daFare = stati ? GIOCHI.filter((g) => stati[g.id].fase !== 'fatta') : GIOCHI
   const finita = stati !== null && daFare.length === 0
   const nuovi = useTimbriNuovi(oggi?.date ?? null, stati)
+  const [riepilogo, setRiepilogo] = useState<GiocoClassificato | null>(null)
+  const aperto = riepilogo && stati ? stati[riepilogo] : null
 
   return (
     <Vetrina
@@ -51,7 +54,7 @@ export default function Giornaliere() {
       classifica={ROTTE.classifica()}
     >
       <AvvisoATutti annuncio={oggi?.annuncio} />
-      <Giornata io={player.id} oggi={oggi ?? null} stati={stati} nuovi={nuovi} />
+      <Giornata io={player.id} oggi={oggi ?? null} stati={stati} nuovi={nuovi} onRiepilogo={setRiepilogo} />
 
       {finita ? (
         <Finita punti={oggi?.generale.punti ?? 0} />
@@ -66,7 +69,65 @@ export default function Giornaliere() {
           </ul>
         </Sezione>
       )}
+
+      <Sheet open={aperto !== null} onClose={() => setRiepilogo(null)} title="Riepilogo">
+        {riepilogo && aperto && <Riepilogo gioco={riepilogo} stato={aperto} onChiudi={() => setRiepilogo(null)} />}
+      </Sheet>
     </Vetrina>
+  )
+}
+
+/**
+ * Il riepilogo di una classificata fatta, dal suo timbro: com'e' andata, i
+ * punti, e da li' la partita per intero o la classifica. Si resta nelle
+ * Giornaliere: il timbro e' un ricordo, non un'uscita.
+ */
+function Riepilogo({ gioco, stato, onChiudi }: { gioco: GiocoClassificato; stato: StatoOggi; onChiudi: () => void }) {
+  const i = GIOCHI.findIndex((g) => g.id === gioco)
+  const nome = GIOCHI[i]?.nome ?? gioco
+  return (
+    <div className="riepilogo">
+      <div className="riepilogo__testa">
+        <span className="album album--carta" aria-hidden="true">
+          <IconaGioco gioco={gioco} lato={40} giro={STORTI[i]} />
+          <span className="album__n">{numero(i)}</span>
+        </span>
+        <span className="riepilogo__chi">
+          <span className="riepilogo__nome">{nome}</span>
+          <span className="riepilogo__quando">Fatta oggi</span>
+        </span>
+        {stato.punti !== null && (
+          <span className="riepilogo__punti u-tabnum" aria-label={`${stato.punti} punti`}>
+            +{stato.punti}
+          </span>
+        )}
+      </div>
+      <dl className="riepilogo__righe">
+        <div className="riepilogo__riga">
+          <dt>Com'è andata</dt>
+          <dd>{stato.titolo}</dd>
+        </div>
+        {stato.dettaglio && (
+          <div className="riepilogo__riga">
+            <dt>Nel dettaglio</dt>
+            <dd>{stato.dettaglio}</dd>
+          </div>
+        )}
+      </dl>
+      <div className="riepilogo__tasti">
+        <Collegamento to={stato.a} className="finita__tasto riepilogo__tasto" onClick={onChiudi}>
+          Rivedi la partita
+        </Collegamento>
+        <Collegamento
+          to={ROTTE.classifica(gioco)}
+          stato={{ da: 'Giornaliere' }}
+          className="finita__tasto riepilogo__tasto is-carta"
+          onClick={onChiudi}
+        >
+          Classifica
+        </Collegamento>
+      </div>
+    </div>
   )
 }
 
@@ -79,11 +140,13 @@ function Giornata({
   oggi,
   stati,
   nuovi,
+  onRiepilogo,
 }: {
   io: string
   oggi: OggiRisposta | null
   stati: Record<GiocoClassificato, StatoOggi> | null
   nuovi: Set<string>
+  onRiepilogo: (gioco: GiocoClassificato) => void
 }) {
   const fatte = stati ? GIOCHI.filter((g) => stati[g.id].fase === 'fatta').length : 0
   const generale = oggi?.generale ?? null
@@ -128,15 +191,16 @@ function Giornata({
               return (
                 <li key={g.id}>
                   {fatta && stato ? (
-                    <Collegamento
-                      to={stato.a}
+                    <button
+                      type="button"
                       className={`album timbro${nuovi.has(g.id) ? ' is-nuovo' : ''}`}
                       aria-label={`${g.nome}: ${stato.titolo}. Il riepilogo`}
                       style={{ '--n': i } as CSSProperties}
+                      onClick={() => onRiepilogo(g.id)}
                     >
                       <IconaGioco gioco={g.id} lato={30} giro={STORTI[i]} />
                       <span className="album__n">{numero(i)}</span>
-                    </Collegamento>
+                    </button>
                   ) : (
                     <span className="album" aria-label={`${g.nome}: da fare`}>
                       <IconaGioco gioco={g.id} lato={24} linea />

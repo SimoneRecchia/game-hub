@@ -3178,7 +3178,9 @@ alto, l'eroe e le carte. Il carattere sta nel fondale della scheda (`--fondo`:
 pesca e rosa le Giornaliere, menta e azzurro le Libere, la sala viola la
 Fortuna) e nell'eroe. Quello delle Giornaliere e' un biglietto dentellato
 (`Biglietto`) con il podio di oggi e i timbri: uno per classificata fatta, che
-riporta alla partita, e il posto vuoto dell'album per quelle da fare; i timbri
+apre il suo riepilogo in un foglio (com'e' andata, i punti, e da li' la partita o
+la classifica: si resta nelle Giornaliere), e il posto vuoto dell'album per
+quelle da fare; i timbri
 nuovi da quando si e' guardata la pagina arrivano col colpo del timbro (il
 ricordo sta nel `localStorage`). Sotto, le carte delle sole classificate da
 giocare, e quando non ne resta nessuna la carta di fine giornata. Quello delle
