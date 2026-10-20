@@ -1,5 +1,5 @@
 import type { GiocoDelTavoliere } from '@/games/tavolo/tipi'
-import { GrigliaTris } from './Griglia'
+import { GrigliaTris, SegnoTris } from './Griglia'
 
 /**
  * Il tris come lo vedono le schermate dei tavolieri: la sala, la partita con
@@ -17,4 +17,6 @@ export const TRIS: GiocoDelTavoliere = {
   // Nove caselle al piu': la griglia e' gia' la storia.
   storia: null,
   avviso: () => null,
+  Segno: SegnoTris,
+  sotto: null,
 }

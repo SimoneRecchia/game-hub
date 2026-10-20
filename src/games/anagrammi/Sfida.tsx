@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import type { PropsPartitaSfida } from '@/games/sfide/PaginaSfida'
 import { PUNTI_FINITA_ANAGRAMMI } from '@shared/anagrammi'
-import { PartitaAnagrammi, Riepilogo, type ComandiAnagrammi } from './Partita'
+import { CartaFine, PartitaAnagrammi, type ComandiAnagrammi } from './Partita'
 import { useAnagrammiLiberi } from './useAnagrammiLiberi'
 import './Anagrammi.css'
 
@@ -51,10 +51,7 @@ export function PartitaSfidaAnagrammi({ seme, impostazioni, fine, onAvanza, onFi
       vista={v}
       comandi={comandi}
       fine={
-        <>
-          {fine}
-          <Riepilogo parole={v.parole} />
-        </>
+        <CartaFine parole={v.parole} sopra={<div className="ana-fine-sfida">{fine}</div>} />
       }
     />
   )

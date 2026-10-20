@@ -11,13 +11,17 @@
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-template-rows: repeat(8, minmax(0, 1fr));
+  box-sizing: border-box;
   width: min(100cqw, var(--campo-alto, 100cqh), 560px);
   aspect-ratio: 1;
   overflow: hidden;
-  border-radius: 6px;
+  /* Il filo d'inchiostro e l'ombra secca, come le carte: il bordo e' dentro la misura. */
+  border: 2px solid var(--ink);
+  border-radius: 14px;
+  background: var(--scacchi-chiara);
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.08),
-    0 6px 18px -8px var(--shadow-tint, rgba(0, 0, 0, 0.3));
+    0 5px 0 var(--ink),
+    0 14px 26px -12px rgba(18, 12, 43, 0.45);
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
@@ -48,41 +52,59 @@
   z-index: 3;
 }
 
-/* L'ultima mossa, da dove e verso dove: un velo giallo, come su tutte le scacchiere. */
-.scc__casella.is-ultima::before,
-.scc__casella.is-scelta::before {
+/* L'ultima mossa, da dove e verso dove: un velo giallo, come su tutte le scacchiere. Si accende sfumando. */
+.scc__casella::before,
+.scc__casella::after {
   content: '';
   position: absolute;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.scc__casella::before {
   inset: 0;
-  background: rgba(247, 209, 80, 0.42);
+  background: rgba(247, 209, 80, 0.46);
+  transition: opacity 0.2s;
+}
+
+.scc__casella.is-ultima::before {
+  opacity: 1;
 }
 
 .scc__casella.is-scelta::before {
-  background: rgba(247, 209, 80, 0.62);
+  opacity: 1;
+  background: rgba(247, 209, 80, 0.75);
 }
 
-/* Dove si puo' andare: un punto sulle vuote, un anello dove si prende. */
-.scc__casella.is-meta::after {
-  content: '';
-  position: absolute;
+/* Dove si puo' andare: un punto sulle vuote, un anello dove si prende. Spuntano con una molla. */
+.scc__casella::after {
   width: 30%;
   height: 30%;
   border-radius: 50%;
-  background: rgba(20, 28, 48, 0.26);
+  background: rgba(20, 28, 48, 0.3);
+  transform: scale(0.3);
+  transition:
+    opacity 0.15s,
+    transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.scc__casella.is-meta::after {
+  opacity: 1;
+  transform: none;
 }
 
 .scc__casella.is-presa::after {
-  content: '';
-  position: absolute;
-  inset: 3%;
-  border-radius: 50%;
-  background: radial-gradient(circle closest-side, transparent 80%, rgba(20, 28, 48, 0.28) 82%);
+  width: 90%;
+  height: 90%;
+  background: radial-gradient(circle closest-side, transparent 76%, rgba(20, 28, 48, 0.36) 79%);
+  opacity: 1;
+  transform: none;
 }
 
 /* Il re sotto scacco: un alone rosso sotto il pezzo. In matto, piu' forte. */
 .scc__casella.is-scacco,
 .scc__casella.is-matto {
-  background-image: radial-gradient(circle, rgba(232, 48, 48, 0.85) 0%, rgba(232, 48, 48, 0.45) 42%, transparent 72%);
+  background-image: radial-gradient(circle, #ff5c6b 0, rgba(255, 92, 107, 0.7) 34%, rgba(255, 92, 107, 0) 72%);
 }
 
 .scc__casella.is-matto {
@@ -97,7 +119,17 @@
   padding: 5%;
   box-sizing: border-box;
   pointer-events: none;
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
+  filter: drop-shadow(0 2px 0 rgba(18, 12, 43, 0.32));
+  transition:
+    transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.3),
+    filter 0.2s;
+}
+
+/* Il pezzo scelto si alza dalla casella, come preso fra le dita. */
+.scc__casella.is-scelta .scc__pezzo {
+  z-index: 3;
+  transform: translateY(-6%) scale(1.12);
+  filter: drop-shadow(0 6px 2px rgba(18, 12, 43, 0.35));
 }
 
 /* Il pezzo appena mosso arriva dalla sua casella, sopra le altre. */
@@ -118,7 +150,7 @@
   position: absolute;
   z-index: 1;
   font-size: clamp(8px, 2.2cqw, 12px);
-  font-weight: 700;
+  font-weight: 900;
   line-height: 1;
   pointer-events: none;
 }
@@ -133,14 +165,21 @@
   bottom: 4%;
 }
 
+/*
+ * Le coordinate si leggono: d'inchiostro sulle chiare, e sulle scure
+ * d'inchiostro in chiaro e crema in scuro. Il colore dell'altra casella, come
+ * sulle scacchiere delle app, faceva due a uno.
+ */
 .scc__casella.is-chiara .scc__traversa,
-.scc__casella.is-chiara .scc__colonna {
-  color: var(--scacchi-scura);
+.scc__casella.is-chiara .scc__colonna,
+.scc__casella.is-scura .scc__traversa,
+.scc__casella.is-scura .scc__colonna {
+  color: #2a1f5c;
 }
 
 .scc__casella.is-scura .scc__traversa,
 .scc__casella.is-scura .scc__colonna {
-  color: var(--scacchi-chiara);
+  color: light-dark(#2a1f5c, #fff);
 }
 
 /* La promozione: quattro pezzi grandi, in fila. */
@@ -156,13 +195,22 @@
   align-items: center;
   gap: 4px;
   padding: var(--sp-2) 0;
-  border: 0;
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
-  color: var(--label);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--scacchi-chiara);
+  box-shadow: var(--ombra-tasto);
+  color: #2a1f5c;
   font-size: var(--text-footnote);
-  font-weight: 600;
+  font-weight: 900;
   cursor: pointer;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.scc-promo__pezzo:active {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
 }
 
 .scc-promo__pezzo img {
@@ -170,8 +218,44 @@
   aspect-ratio: 1;
 }
 
+/* I pezzi presi, nella riga del giocatore: piccoli, in fila, e il vantaggio accanto. */
+.scc-presi {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.scc-presi__pezzo {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.scc-presi__pezzo img {
+  width: 19px;
+  height: 19px;
+  margin-right: -2px;
+  filter: drop-shadow(0 1px 0 rgba(18, 12, 43, 0.3));
+}
+
+.scc-presi__vantaggio {
+  margin-left: 3px;
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--label);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .scc__pezzo.is-scivola {
     animation: none;
+  }
+
+  .scc__pezzo,
+  .scc__casella::before,
+  .scc__casella::after {
+    transition: none;
   }
 }

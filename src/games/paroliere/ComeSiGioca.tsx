@@ -1,3 +1,4 @@
+import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
 import { LETTERE_MINIME, PUNTI_GIOCATA_PAROLIERE, TEMPO_PAROLIERE_MS } from '@shared/paroliere'
 import { TETTI } from '@shared/punti'
@@ -36,6 +37,9 @@ export function ComeSiGiocaParoliere({ open, onClose }: { open: boolean; onClose
           </ul>
         </section>
         <p className="cru-aiuto__nota">Il gioco è il Boggle, che in Italia si chiama Paroliere.</p>
+        <Button size="lg" fullWidth onClick={onClose}>
+          Ho capito
+        </Button>
       </div>
     </Sheet>
   )

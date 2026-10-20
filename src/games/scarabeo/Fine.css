@@ -1,0 +1,218 @@
+/*
+ * Il risultato dello Scarabeo: sopra il tabellone velato, al centro, chiaro in
+ * tutti e due i temi e con l'inchiostro sopra. Arriva saltando, l'adesivo
+ * galleggia, il timbro si abbatte. Solo transform e opacity.
+ */
+.scr-risultato {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: max(20px, var(--safe-top)) 20px max(20px, var(--safe-bottom));
+}
+
+.scr-risultato__velo {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: var(--velo);
+  cursor: default;
+  animation: scr-risultato-velo 300ms ease-out both;
+}
+
+@keyframes scr-risultato-velo {
+  from {
+    opacity: 0;
+  }
+}
+
+.scr-risultato__carta {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 380px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 22px 18px 14px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fff1c9, #ffe2b8);
+  box-shadow:
+    0 6px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.65);
+  color: #2a1f5c;
+  text-align: center;
+  scrollbar-width: none;
+  animation: scr-risultato-compare 500ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.scr-risultato__carta:focus {
+  outline: none;
+}
+
+@keyframes scr-risultato-compare {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+}
+
+.scr-risultato__icona {
+  display: grid;
+  animation: scr-risultato-galleggia 4.2s ease-in-out infinite;
+}
+
+@keyframes scr-risultato-galleggia {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.scr-risultato__titolo {
+  margin: 4px 0 0;
+  font-family: var(--font-rounded);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.05;
+  color: #2a1f5c;
+}
+
+.scr-risultato__testo {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #4e4479;
+}
+
+.scr-risultato__righe {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 4px 0 2px;
+}
+
+.scr-risultato__riga {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: 5px 12px;
+  border: 2px solid rgba(42, 31, 92, 0.18);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+  font-size: 14px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.scr-risultato__riga span {
+  min-width: 0;
+}
+
+.scr-risultato__riga b {
+  flex: none;
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  font-weight: 400;
+}
+
+/* Il timbro con i punti in classifica: si abbatte sulla carta. */
+.scr-risultato__timbro {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-top: 2px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 50%;
+  background: #ffc24d;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 3px 0 #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 22px;
+  color: #2a1f5c;
+  animation: scr-risultato-timbra 700ms 250ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+@keyframes scr-risultato-timbra {
+  0% {
+    opacity: 0;
+    transform: scale(1.9) rotate(-24deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.88) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.06) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.scr-risultato__azioni {
+  width: 100%;
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: 6px;
+}
+
+.scr-risultato__azioni > * {
+  flex: 1;
+  min-width: 0;
+}
+
+/* I tasti stanno sulla carta chiara anche nel tema scuro: carta e inchiostro fissi. */
+.scr-risultato__azioni .scr-tasto {
+  flex: 1;
+  min-width: 0;
+  height: 50px;
+  border-color: #2a1f5c;
+  background: #fffbf2;
+  color: #2a1f5c;
+  box-shadow:
+    0 4px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  font-size: 1.125rem;
+}
+
+.scr-risultato__azioni .scr-tasto--giallo {
+  background: #ffc93c;
+}
+
+.scr-risultato__azioni .scr-tasto:active:not(:disabled) {
+  box-shadow:
+    0 1px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+}
+
+.scr-risultato__guarda {
+  padding: 6px;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  font-weight: 900;
+  color: #4e4479;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scr-risultato__velo,
+  .scr-risultato__carta,
+  .scr-risultato__icona,
+  .scr-risultato__timbro {
+    animation: none;
+  }
+}

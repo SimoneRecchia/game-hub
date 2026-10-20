@@ -57,33 +57,30 @@ export default function Catena() {
   )
 }
 
-/** La partita finita: i punti, e quando arriva la prossima. */
+/** La partita finita: com'e' andata, dove andare, e quando arriva la prossima. */
 function FineGiornata({ stato }: { stato: CatenaStato }) {
   const restano = useCountdown(stato.msToNextPuzzle)
   const errori = stato.voci.reduce((n, v) => n + v.errori, 0)
   return (
     <>
-      <div className="cat-totale">
-        <p className="cat-totale__valore u-tabnum">{stato.punti} punti</p>
-        <p className="cat-totale__dettaglio">
-          {errori === 0 ? 'Nessun errore' : errori === 1 ? 'Un errore' : `${errori} errori`}
-          {stato.jollyRestanti < 2 ? ` · ${2 - stato.jollyRestanti === 1 ? 'un jolly' : 'due jolly'}` : ''}
-          {stato.indovinata ? '' : ' · parola finale non indovinata'}
-        </p>
-      </div>
-      <div className="cat-link">
-        <Collegamento to={ROTTE.classifica('catena')} className="cat-link__voce">
+      <p className="cat-fine__nota">
+        {errori === 0 ? 'Nessun errore' : errori === 1 ? 'Un errore' : `${errori} errori`}
+        {stato.jollyRestanti < 2 ? ` · ${2 - stato.jollyRestanti === 1 ? 'un jolly' : 'due jolly'}` : ''}
+        {' · '}la prossima fra <span className="u-tabnum">{formatCountdown(restano)}</span>
+      </p>
+      <div className="cat-fine__bottoni">
+        <Collegamento to={ROTTE.classifica('catena')} className="cat-fine__bottone">
           <IconTrophy size={18} />
           Classifica
         </Collegamento>
-        <Collegamento to={ROTTE.libera('catena')} className="cat-link__voce">
+        <Collegamento to={ROTTE.libera('catena')} className="cat-fine__bottone is-menta">
           <IconShuffle size={18} />
-          Un’altra, a caso
+          Un’altra
         </Collegamento>
       </div>
-      <p className="cat-piede">
-        La prossima fra <span className="u-tabnum">{formatCountdown(restano)}</span>
-      </p>
+      <Collegamento to={ROTTE.home} className="cat-fine__bottone is-giallo">
+        Torna alle Giornaliere
+      </Collegamento>
     </>
   )
 }

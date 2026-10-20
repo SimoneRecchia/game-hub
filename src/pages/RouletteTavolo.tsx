@@ -19,6 +19,7 @@ import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { esciFraPoco } from '@/games/blackjack/uscita'
 import { InvitoPuntata, PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { centroDi, incassaMonete, volaFiche } from '@/games/fortuna/voli'
@@ -186,6 +187,7 @@ const somma = (a: PuntateRL, chiave: string, v: number): PuntateRL => ({ ...a, [
  * mentre il feltro della sala si allarga nel tavolo.
  */
 export default function RouletteTavolo() {
+  useSala()
   const { id = '' } = useParams()
   const nuovo = id === TAVOLO_NUOVO
   /** Il saldo che la sala sapeva gia': il tabellone c'e' dal primo disegno, e il passaggio non lo vede arrivare. */
@@ -644,7 +646,7 @@ export default function RouletteTavolo() {
   if (errore) {
     return (
       <Pagina titolo="Roulette" indietro={indietro} intera>
-        <div className="rl-errore">
+        <div className={`rl-errore ${SALA}`}>
           <p>{errore}</p>
           <Button onClick={() => vai(ROTTE.roulette, { direzione: 'tavolo', replace: true })}>Alla sala</Button>
         </div>
@@ -688,7 +690,10 @@ export default function RouletteTavolo() {
         </BottoneBarra>
       }
     >
-      <div className={`rl is-${scena}${grande ? ' is-grande' : ''}${misurata ? ' is-misurata' : ''}`} style={zoom}>
+      <div
+        className={`rl ${SALA} is-${scena}${grande ? ' is-grande' : ''}${misurata ? ' is-misurata' : ''}`}
+        style={zoom}
+      >
         <span className="rl-feltro" aria-hidden="true" />
         <div className="rl__dentro" ref={radice}>
         {(vista || saldoDellaSala !== null) && (
@@ -697,6 +702,8 @@ export default function RouletteTavolo() {
             puntata={totaleSulPanno || null}
             saldoRef={saldoRef}
             scarso={senzaSaldo}
+            riga
+            etichetta={scena === 'lancio' || scena === 'annuncio' ? 'In gioco' : 'Puntata'}
           />
         )}
 

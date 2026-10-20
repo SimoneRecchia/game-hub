@@ -1,4 +1,4 @@
-import type { ComponentType } from 'react'
+import type { ComponentType, ReactNode } from 'react'
 import type { GiocoTavoliere, MotivoTavoliere, Parte } from '@shared/tavolo'
 
 /**
@@ -49,6 +49,22 @@ export interface GiocoDelTavoliere {
   storia: ((mosse: readonly string[]) => string[]) | null
   /** Una riga su chi ha il tratto, quando c'e' qualcosa da sapere: "Scacco", "Devi prendere". */
   avviso: (posizione: string, mio: boolean) => string | null
+  /**
+   * Dove l'avviso: nella pillola della riga di chi ha il tratto, se e' corto
+   * ("Scacco!", "Devi prendere"), o nel piede, accanto al passo, se e' una
+   * frase (nel go: "Ha passato: se passi anche tu, si conta").
+   */
+  avvisoNelPiede?: boolean
+  /** Sotto la riga del nome di ogni giocatore: i pezzi presi, le pedine, i dischi che restano. */
+  dettaglio?: (posizione: string, parte: Parte) => ReactNode
+  /** Il segno della parte accanto al nome, se non e' un disco del suo colore: la croce e il cerchio del tris. */
+  Segno?: ComponentType<{ parte: Parte }>
+  /**
+   * Che cosa c'e' sotto il tavoliere mentre si gioca: le ultime mosse e la
+   * resa (scacchi e dama), il passo (go), o niente — la resa sta allora nella
+   * barra.
+   */
+  sotto: 'mosse' | 'passo' | null
   /** La mossa per passare, nei giochi dove si passa: nel go, "passo". */
   passo?: string
   /**

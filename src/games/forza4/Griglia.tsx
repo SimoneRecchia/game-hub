@@ -333,9 +333,11 @@ export function Griglia({ posizione, mia, attivo, ultima, n, finita, onMossa }: 
             key={d}
             className={`f4__mano is-${colore(d)}${giocando && tratto === d ? ' is-qui' : ''}${
               d !== mia && pensaAdesso ? ' is-pensa' : ''
-            }`}
+            }${d === mia ? ' is-mia' : ''}`}
             style={mano(d)}
-          />
+          >
+            <Guanto />
+          </span>
         ))}
       </div>
       <div
@@ -471,5 +473,19 @@ export function Griglia({ posizione, mia, attivo, ultima, n, finita, onMossa }: 
         })}
       </div>
     </div>
+  )
+}
+
+/** Il guanto che tiene il disco: il polsino in alto, il palmo e quattro dita sul bordo del disco. */
+function Guanto() {
+  return (
+    <svg className="f4__guanto" viewBox="0 0 46 56" aria-hidden="true">
+      <rect className="f4__polsino" x="14" y="0" width="18" height="7" rx="3" />
+      <path className="f4__pelle" d="M11 21C11 12 16 6 23 6S35 12 35 21Z" />
+      <rect className="f4__pelle" x="10.5" y="14" width="6.4" height="12" rx="3.2" />
+      <rect className="f4__pelle" x="16.6" y="13" width="6.4" height="13" rx="3.2" />
+      <rect className="f4__pelle" x="22.8" y="13" width="6.4" height="13" rx="3.2" />
+      <rect className="f4__pelle" x="29" y="14" width="6.4" height="12" rx="3.2" />
+    </svg>
   )
 }

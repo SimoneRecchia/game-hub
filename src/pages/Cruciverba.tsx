@@ -4,14 +4,13 @@ import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
-import { FoglioAiuti, VoceAiuto } from '@/components/Aiuti'
+import { FoglioAiuti } from '@/components/Aiuti'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { Sheet } from '@/components/Sheet'
 import {
-  IconChevronLeft,
-  IconChevronRight,
   IconClock,
   IconInfo,
+  IconList,
   IconPeople,
   IconShuffle,
   IconTrophy,
@@ -20,7 +19,11 @@ import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { api } from '@/lib/api'
 import { useToast } from '@/components/Toast'
 import { ComeSiGiocaCruciverba } from '@/games/cruciverba/ComeSiGioca'
-import { adesivoCompletato, adesivoControllo } from '@/games/cruciverba/adesivi'
+import { ADESIVO_COMPLETATO_MS, adesivoCompletato, adesivoControllo } from '@/games/cruciverba/adesivi'
+import { AiutoVale, AiutoVoce } from '@/games/cruciverba/Aiuti'
+import { BottoneFine, CartaFine } from '@/games/cruciverba/CartaFine'
+import { Segno, SEGNI } from '@/games/cruciverba/segni'
+import { BarraDefinizione } from '@/games/cruciverba/BarraDefinizione'
 import { ElencoDefinizioni } from '@/games/cruciverba/ElencoDefinizioni'
 import { Griglia } from '@/games/cruciverba/Griglia'
 import { Tastiera } from '@/games/cruciverba/Tastiera'
@@ -32,12 +35,19 @@ import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown, formatCronometro, inPunti, pluralize } from '@/lib/format'
 import { caselleDaPagare } from '@shared/aiuti'
-import { NOMI_LIVELLI_CRUCIVERBA, VUOTA, caselleBianche, costiCruciverba, numeriDelleCaselle } from '@shared/cruciverba'
+import {
+  NOMI_LIVELLI_CRUCIVERBA,
+  VUOTA,
+  costiCruciverba,
+  numeriDelleCaselle,
+  puntiDelTempoCruciverba,
+} from '@shared/cruciverba'
 import { isGameLetter } from '@shared/wordle'
 import type { CruciverbaState, DefinizioneCruciverba } from '@shared/types'
 import './Cruciverba.css'
 
-const NOMI_DIREZIONE = { o: 'orizzontale', v: 'verticale' } as const
+/** Il fondo chiaro della carta della fine, e il colore del timbro. */
+const FONDO_FINE = 'linear-gradient(180deg, #ecf2ff, #ffe1ec)'
 
 /** Il conto intero, e quanto fa a lettera: scritto solo per lettera, sembrava il prezzo di una lettera sola. */
 function prezzoDellaParola(svelata: number, lettere: number): string {
@@ -92,15 +102,10 @@ export default function Cruciverba() {
     [stato?.definizioni],
   )
   const parola = useMemo(() => new Set(g.corrente?.caselle ?? []), [g.corrente])
-  const bianche = stato ? caselleBianche(stato.schema) : 0
   const costi = useMemo(() => (stato ? costiCruciverba(stato.schema) : null), [stato?.schema])
   // Quel che svelerebbe la parola, come lo conta il server: le sue lettere non ancora svelate.
   const daSvelare = g.corrente ? caselleDaPagare(g.corrente.caselle, g.svelate).length : 0
   const letteraSvelata = g.selezione !== null && g.svelate.has(g.selezione.casella)
-  const scritte = useMemo(
-    () => [...g.lettere].filter((l) => l !== VUOTA && l !== '#').length,
-    [g.lettere],
-  )
   const fogliAperti = aiuto || elenco || aiuti || compagniaAperta
 
   // La tastiera vera. Quando un foglio e' aperto le lettere non devono finire
@@ -170,15 +175,21 @@ export default function Cruciverba() {
     if (festa) accoda(adesivoCompletato(puntiRef.current))
   }, [accoda, festa])
 
+  // La carta della fine arriva dopo l'adesivo del completamento, e resta finché non la si chiude.
+  const [cartaFine, setCartaFine] = useState(false)
+  useEffect(() => {
+    if (!festa) return
+    const t = window.setTimeout(() => setCartaFine(true), ADESIVO_COMPLETATO_MS)
+    return () => window.clearTimeout(t)
+  }, [festa])
+  const altro = useUnAltroSchema(stato)
+
+  const nomeLivello = stato ? NOMI_LIVELLI_CRUCIVERBA[stato.livello ?? 'facile'] : ''
+  const corrente = g.corrente
+
   return (
     <Pagina
-      titolo={
-        stato
-          ? libera
-            ? `Schema libero n. ${stato.puzzleNumber}`
-            : `Cruciverba #${stato.puzzleNumber}`
-          : 'Cruciverba'
-      }
+      titolo={libera ? 'Schema libero' : 'Cruciverba'}
       intera
       larga
       indietro={
@@ -210,38 +221,46 @@ export default function Cruciverba() {
         ) : (
           <>
             <div className="cru__principale">
-              <div className="cru__stato">
-                <span className="cru__tempo u-tabnum" aria-label="Tempo di gioco">
-                  <IconClock size={14} />
-                  {formatCronometro(g.tempoMs)}
-                </span>
-                {/* Un messaggio prende il posto di punti e caselle, nella stessa riga:
-                    prima era una pillola sopra la griglia, e copriva le lettere. */}
-                {g.messaggio ? (
-                  <span key={g.messaggio} className="cru__avviso" aria-live="polite">
-                    {g.messaggio}
+              <div className="cru__riga">
+                <div className="cru__stato">
+                  <span className="cru__tempo u-tabnum" aria-label={`Tempo di gioco ${formatCronometro(g.tempoMs)}`}>
+                    <IconClock size={17} />
+                    {formatCronometro(g.tempoMs)}
                   </span>
-                ) : (
-                  <>
-                    <span className="cru__punti u-tabnum">
-                      {g.punti} <span className="cru__punti-label">punti</span>
+                  {/* Un messaggio prende il posto del livello e dei punti, nella stessa riga:
+                      prima era una pillola sopra la griglia, e copriva le lettere. */}
+                  {g.messaggio ? (
+                    <span key={g.messaggio} className="cru__avviso" aria-live="polite">
+                      {g.messaggio}
                     </span>
-                    <span className="cru__avanzamento u-tabnum" aria-label={`${scritte} caselle scritte su ${bianche}`}>
-                      <span className="cru__avanzamento-barra" aria-hidden="true">
-                        <span style={{ transform: `scaleX(${bianche > 0 ? scritte / bianche : 0})` }} />
+                  ) : (
+                    <>
+                      <span className="cru__livello">{nomeLivello}</span>
+                      <span className="cru__valore u-tabnum">
+                        {g.finita ? 'Punti' : 'Vale'} <strong>{g.punti}</strong>
                       </span>
-                      {scritte}/{bianche}
-                    </span>
-                  </>
-                )}
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="cru__strumento"
+                  onClick={() => setElenco(true)}
+                  aria-label="Tutte le definizioni"
+                  title="Tutte le definizioni"
+                >
+                  <IconList size={22} />
+                </button>
                 {!g.finita && (
                   <button
                     type="button"
-                    className="cru__aiuti"
+                    className="cru__strumento is-aiuti"
                     onClick={() => setAiuti(true)}
                     disabled={g.inviando}
+                    aria-label="Aiuti"
+                    title="Aiuti"
                   >
-                    Aiuti
+                    <Segno d={SEGNI.salvagente} size={22} spessore={2.3} />
                   </button>
                 )}
               </div>
@@ -257,49 +276,28 @@ export default function Cruciverba() {
                   parola={g.finita ? NESSUNA : parola}
                   svelate={g.svelate}
                   segnalate={g.segnalate}
+                  onda={festa}
                   onTocca={g.tocca}
                 />
               </div>
 
               {g.finita ? (
-                <Fine stato={stato} libera={libera} onElenco={() => setElenco(true)} />
+                <Esito
+                  stato={stato}
+                  libera={libera}
+                  onRiepilogo={() => setCartaFine(true)}
+                  onElenco={() => setElenco(true)}
+                  altro={altro}
+                />
               ) : (
                 <>
-                  {g.corrente && (
-                    <div className="cbarra">
-                      <button
-                        type="button"
-                        className="cbarra__freccia"
-                        onClick={() => vaiAllaDefinizione(-1)}
-                        aria-label="Definizione precedente"
-                      >
-                        <IconChevronLeft size={20} />
-                      </button>
-                      <button
-                        type="button"
-                        className="cbarra__testo"
-                        onClick={() => setElenco(true)}
-                        aria-label="Tutte le definizioni"
-                      >
-                        <span className="cbarra__dove">
-                          {g.corrente.numero} {NOMI_DIREZIONE[g.corrente.direzione]}
-                        </span>
-                        <span className="cbarra__definizione">
-                          {g.corrente.testo}
-                          {g.corrente.nota && (
-                            <span className="cbarra__nota">{g.corrente.nota}</span>
-                          )}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="cbarra__freccia"
-                        onClick={() => vaiAllaDefinizione(1)}
-                        aria-label="Definizione successiva"
-                      >
-                        <IconChevronRight size={20} />
-                      </button>
-                    </div>
+                  {corrente && (
+                    <BarraDefinizione
+                      definizione={corrente}
+                      onPrecedente={() => vaiAllaDefinizione(-1)}
+                      onSuccessiva={() => vaiAllaDefinizione(1)}
+                      onElenco={() => setElenco(true)}
+                    />
                   )}
                   {/* I suggerimenti di chi gioca in compagnia: toccarne uno scrive la parola, che si
                       salva come le altre. Quel che resta nella griglia lo decide l'host. */}
@@ -332,7 +330,7 @@ export default function Cruciverba() {
                 definizioni={stato.definizioni}
                 lettere={g.lettere}
                 soluzione={stato.soluzione}
-                corrente={g.corrente?.chiave ?? null}
+                corrente={corrente?.chiave ?? null}
                 onScegli={scegli}
               />
             </aside>
@@ -363,67 +361,78 @@ export default function Cruciverba() {
             definizioni={stato.definizioni}
             lettere={g.lettere}
             soluzione={stato.soluzione}
-            corrente={g.corrente?.chiave ?? null}
+            corrente={corrente?.chiave ?? null}
             onScegli={scegli}
           />
         )}
       </Sheet>
 
-      <FoglioAiuti
-        open={aiuti}
-        onClose={() => setAiuti(false)}
-        nota={
-          <>
-            Adesso il cruciverba vale <strong>{g.punti} punti</strong>.
-          </>
-        }
-      >
-        <VoceAiuto
+      <FoglioAiuti open={aiuti} onClose={() => setAiuti(false)}>
+        <AiutoVale>
+          Adesso vale <strong className="u-tabnum">{g.punti}</strong> punti
+        </AiutoVale>
+        <AiutoVoce
+          icona={<Segno d={SEGNI.lente} />}
+          colore={COLORE_AIUTI}
           nome="Controlla la parola"
           costo={costi ? `${inPunti(costi.controllo)}, più ${costi.errore} per lettera sbagliata` : undefined}
           onClick={() => aiutoScelto(() => g.controlla('parola'))}
-          disabled={!g.corrente}
+          disabled={!corrente}
         />
-        <VoceAiuto
+        <AiutoVoce
+          icona={<Segno d={SEGNI.griglia} />}
+          colore={COLORE_AIUTI}
           nome="Controlla tutto lo schema"
           costo={costi ? `${inPunti(costi.controlloSchema)}, più ${costi.errore} per lettera sbagliata` : undefined}
           onClick={() => aiutoScelto(() => g.controlla('tutto'))}
         />
-        <VoceAiuto
+        <AiutoVoce
+          icona={<Segno d={SEGNI.occhio} />}
+          colore={COLORE_AIUTI}
           nome="Svela la lettera"
           costo={costi && !letteraSvelata ? inPunti(costi.svelata) : undefined}
           onClick={() => aiutoScelto(() => g.svela('lettera'))}
           disabled={!g.selezione || letteraSvelata}
         />
-        <VoceAiuto
+        <AiutoVoce
+          icona={<Segno d={SEGNI.parola} />}
+          colore={COLORE_AIUTI}
           nome="Svela la parola"
           costo={costi && daSvelare > 0 ? prezzoDellaParola(costi.svelata, daSvelare) : undefined}
           onClick={() => aiutoScelto(() => g.svela('parola'))}
-          disabled={!g.corrente || daSvelare === 0}
+          disabled={!corrente || daSvelare === 0}
         />
       </FoglioAiuti>
+
+      {stato && g.finita && (
+        <CartaDelCruciverba
+          aperta={cartaFine}
+          stato={stato}
+          libera={libera}
+          altro={altro}
+          onChiudi={() => setCartaFine(false)}
+          onElenco={() => {
+            setCartaFine(false)
+            setElenco(true)
+          }}
+        />
+      )}
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
   )
 }
 
-/** Cruciverba finito: i punti, il tempo, cosa e' costato, e cosa fare adesso. */
-function Fine({ stato, libera, onElenco }: { stato: CruciverbaState; libera: boolean; onElenco: () => void }) {
-  const restano = useCountdown(stato.msToNextPuzzle)
+/** Il fondo dell'icona degli aiuti: l'azzurro chiaro del cruciverba. */
+const COLORE_AIUTI = '#d2e1ff'
+
+/** Un altro schema libero dello stesso livello, dalla fine di uno schema libero. */
+function useUnAltroSchema(stato: CruciverbaState | null) {
   const { vai } = useNavigazione()
   const toast = useToast()
   const [cercando, setCercando] = useState(false)
-  const svelate = stato.svelate.length
-  const controlli = stato.controlli + stato.controlliSchema
-  const aiuti = [
-    svelate > 0 && `${svelate} ${pluralize(svelate, 'lettera svelata', 'lettere svelate')}`,
-    controlli > 0 && `${controlli} ${pluralize(controlli, 'controllo', 'controlli')}`,
-    stato.errori > 0 &&
-      `${stato.errori} ${pluralize(stato.errori, 'errore segnalato', 'errori segnalati')}`,
-  ].filter(Boolean)
-
-  const unAltro = async () => {
+  const apri = async () => {
+    if (!stato) return
     setCercando(true)
     try {
       const nuovo = await api<CruciverbaState>('/cruciverba/libera', {
@@ -437,23 +446,120 @@ function Fine({ stato, libera, onElenco }: { stato: CruciverbaState; libera: boo
       setCercando(false)
     }
   }
+  return { apri, cercando }
+}
 
+type UnAltro = ReturnType<typeof useUnAltroSchema>
+
+/** Gli aiuti di uno schema finito, in parole: "2 lettere svelate · 1 controllo". */
+function aiutiDi(stato: CruciverbaState): string[] {
+  const svelate = stato.svelate.length
+  const controlli = stato.controlli + stato.controlliSchema
+  return [
+    svelate > 0 && `${svelate} ${pluralize(svelate, 'lettera svelata', 'lettere svelate')}`,
+    controlli > 0 && `${controlli} ${pluralize(controlli, 'controllo', 'controlli')}`,
+    stato.errori > 0 && `${stato.errori} ${pluralize(stato.errori, 'errore segnalato', 'errori segnalati')}`,
+  ].filter((a): a is string => Boolean(a))
+}
+
+/**
+ * La carta della fine, sopra lo schema appena completato: il timbro con i
+ * punti, il conto del tempo e degli aiuti, e dove andare.
+ */
+function CartaDelCruciverba({
+  aperta,
+  stato,
+  libera,
+  altro,
+  onChiudi,
+  onElenco,
+}: {
+  aperta: boolean
+  stato: CruciverbaState
+  libera: boolean
+  altro: UnAltro
+  onChiudi: () => void
+  onElenco: () => void
+}) {
+  const { vai } = useNavigazione()
+  const costi = costiCruciverba(stato.schema)
+  const tempo = formatCronometro(stato.tempoMs)
+  const pulito = aiutiDi(stato).length === 0
   return (
-    <div className="cru__fine">
-      <p className="cru__fine-titolo">Completato</p>
-      <p className="cru__fine-punti u-tabnum">{stato.punti} punti</p>
-      <p className="cru__fine-dettaglio u-tabnum">
-        {libera && stato.livello && `${NOMI_LIVELLI_CRUCIVERBA[stato.livello]} · `}
-        in {formatCronometro(stato.tempoMs)}
-        {aiuti.length > 0 ? ` · ${aiuti.join(' · ')}` : ' · senza aiuti'}
-      </p>
-      <div className="cru__fine-azioni">
+    <CartaFine
+      aperta={aperta}
+      onChiudi={onChiudi}
+      gioco="cruciverba"
+      colore="var(--cruciverba-tinta)"
+      fondo={FONDO_FINE}
+      titolo="Completato!"
+      testo={`${libera && stato.livello ? `${NOMI_LIVELLI_CRUCIVERBA[stato.livello]} · ` : ''}in ${tempo} · ${
+        pulito ? 'senza aiuti' : 'con gli aiuti'
+      }`}
+      timbro={`+${stato.punti}`}
+      righe={[
+        { nome: 'Il tempo', valore: `${tempo} · ${puntiDelTempoCruciverba(stato.tempoMs, costi)} punti` },
+        { nome: 'Gli aiuti', valore: stato.spesi > 0 ? `−${stato.spesi}` : 'nessuno' },
+      ]}
+    >
+      <BottoneFine largo onClick={onElenco}>
+        Le definizioni e le voci
+      </BottoneFine>
+      {libera ? (
+        <>
+          <BottoneFine onClick={() => vai(ROTTE.libere, { direzione: 'indietro' })}>Esci</BottoneFine>
+          <BottoneFine tono="pieno" onClick={() => void altro.apri()} disabled={altro.cercando}>
+            Un altro schema
+          </BottoneFine>
+        </>
+      ) : (
+        <BottoneFine tono="giallo" largo onClick={() => vai(ROTTE.home, { direzione: 'indietro' })}>
+          Torna alle Giornaliere
+        </BottoneFine>
+      )}
+    </CartaFine>
+  )
+}
+
+/** Cruciverba finito, sotto lo schema: i punti nel timbro, il tempo e gli aiuti, e cosa fare adesso. */
+function Esito({
+  stato,
+  libera,
+  altro,
+  onRiepilogo,
+  onElenco,
+}: {
+  stato: CruciverbaState
+  libera: boolean
+  altro: UnAltro
+  onRiepilogo: () => void
+  onElenco: () => void
+}) {
+  const restano = useCountdown(stato.msToNextPuzzle)
+  const aiuti = aiutiDi(stato)
+  return (
+    <div className="cru-esito">
+      <div className="cru-esito__testa">
+        <button type="button" className="cru-esito__timbro u-tabnum" onClick={onRiepilogo} aria-label="Il riepilogo">
+          {stato.punti}
+          <small>punti</small>
+        </button>
+        <div className="cru-esito__testo">
+          <p className="cru-esito__titolo">Completato</p>
+          <p className="cru-esito__dettaglio u-tabnum">
+            {libera && stato.livello && `${NOMI_LIVELLI_CRUCIVERBA[stato.livello]} · `}
+            in {formatCronometro(stato.tempoMs)}
+            {aiuti.length > 0 ? ` · ${aiuti.join(' · ')}` : ' · senza aiuti'}
+          </p>
+        </div>
+      </div>
+      <div className="cru-esito__azioni">
         {libera ? (
-          <Button onClick={() => void unAltro()} loading={cercando}>
+          <Button onClick={() => void altro.apri()} loading={altro.cercando}>
             <IconShuffle size={17} /> Un altro schema
           </Button>
         ) : (
-          <Collegamento to={ROTTE.classifica('cruciverba')} className="cru__fine-link">
+          <Collegamento to={ROTTE.classifica('cruciverba')} className="cru-esito__link">
             <IconTrophy size={18} />
             Classifica
           </Collegamento>
@@ -462,7 +568,7 @@ function Fine({ stato, libera, onElenco }: { stato: CruciverbaState; libera: boo
           Definizioni e fonti
         </Button>
       </div>
-      <p className="cru__fine-attesa">
+      <p className="cru-esito__attesa">
         {libera ? (
           'Gli schemi liberi non contano per la classifica.'
         ) : (

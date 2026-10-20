@@ -7,9 +7,8 @@ import { Button } from '@/components/Button'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconPeople } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
-import { Scheda } from '@/components/Scheda'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
-import { Tentativi } from '@/games/wordle/fine'
+import { Piede } from '@/games/wordle/Piede'
 import { Board } from '@/games/wordle/Board'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { ApiFetchError, api } from '@/lib/api'
@@ -173,13 +172,8 @@ export default function WordleLiberaInsieme() {
               <span>La partita libera di {host.displayName}</span>
             </div>
 
-            <Scheda
-              className="wordle__tavola"
-              titolo={`La parola di ${host.displayName}`}
-              icona={<Avatar nickname={host.nickname} color={host.avatarColor} size={26} />}
-              destra={<Tentativi guesses={partita.guesses} maxAttempts={partita.maxAttempts} status={partita.status} />}
-            >
-              <div className="insieme__board">
+            <section className="wordle__tavola" aria-label={`La parola di ${host.displayName}`}>
+              <div className="wordle__board">
                 <Board
                   guesses={partita.guesses}
                   draft=""
@@ -189,15 +183,19 @@ export default function WordleLiberaInsieme() {
                   winningRow={partita.status === 'won' ? partita.guesses.length - 1 : null}
                   shakingRow={null}
                 />
+                <Piede
+                  state={partita}
+                  message={null}
+                  testo={
+                    partita.status === 'won'
+                      ? `${host.displayName} ha indovinato: ${partita.answer?.toUpperCase()}`
+                      : partita.status === 'lost'
+                        ? `La parola era ${partita.answer?.toUpperCase()}`
+                        : `${host.displayName} sta giocando`
+                  }
+                />
               </div>
-              <p className="wordle__piede" aria-live="polite">
-                {partita.status === 'won'
-                  ? `${host.displayName} ha indovinato: ${partita.answer?.toUpperCase()}`
-                  : partita.status === 'lost'
-                    ? `La parola era ${partita.answer?.toUpperCase()}`
-                    : `${host.displayName} sta giocando`}
-              </p>
-            </Scheda>
+            </section>
 
             {!chiusa && (
               <div className="insieme__proposta">

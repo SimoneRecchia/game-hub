@@ -12,12 +12,19 @@
   -webkit-user-select: none;
 }
 
+/* Il legno con il filo d'inchiostro e l'ombra secca, come le carte; uguale nei due temi, come il goban vero. */
 .gob__tavola {
   display: block;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  box-shadow: 0 8px 20px -8px var(--shadow-tint, rgba(0, 0, 0, 0.35));
+  max-width: none;
+  border: var(--filo) solid var(--ink);
+  border-radius: 18px;
+  background: #e8b27a;
+  box-shadow:
+    0 5px 0 var(--ink),
+    0 14px 26px -12px rgba(18, 12, 43, 0.45);
 }
 
 .gob.is-attiva .gob__tavola,
@@ -26,64 +33,67 @@
 }
 
 .gob__legno {
-  fill: var(--go-legno);
+  fill: #e8b27a;
 }
 
 .gob__linee line,
 .gob__bordo {
   fill: none;
-  stroke: var(--go-linea);
-  stroke-width: 0.35;
+  stroke: #5a3a1e;
+  stroke-width: 0.4;
 }
 
 .gob__bordo {
-  stroke-width: 0.6;
+  stroke-width: 0.75;
 }
 
 .gob__hoshi {
-  fill: var(--go-linea);
+  fill: #5a3a1e;
 }
 
 .gob__coordinate text {
-  fill: var(--go-linea);
-  opacity: 0.7;
+  fill: #5a3a1e;
   font-size: 3.2px;
-  font-weight: 700;
-  font-family: var(--font-rounded, system-ui);
+  font-weight: 900;
+  font-family: var(--font-text, system-ui);
 }
 
 .gob--19 .gob__coordinate text {
   font-size: 4.2px;
 }
 
+/* Le pietre: il filo d'inchiostro, l'ombra secca spostata in basso, e la luce del gradiente. */
 .gob__ombra {
-  fill: rgba(0, 0, 0, 0.28);
+  fill: rgba(29, 21, 48, 0.38);
 }
 
+.gob__faccia {
+  stroke: #1d1530;
+  stroke-width: 0.45;
+}
+
+/* La pietra appena posata cade sul legno e si assesta. */
 .gob__pietra.is-nuova {
   transform-box: fill-box;
   transform-origin: center;
-  animation: gob-posa 180ms var(--ease-out, ease-out) both;
+  animation: gob-posa 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
 @keyframes gob-posa {
-  from {
-    transform: scale(1.18);
-    opacity: 0.6;
+  0% {
+    transform: scale(1.35) translateY(-6%);
+    opacity: 0.4;
+  }
+  60% {
+    transform: scale(0.94);
   }
 }
 
+/* L'ultima pietra: un anello giallo, come la casella dell'ultima mossa sulle altre scacchiere. */
 .gob__ultima {
   fill: none;
-  stroke-width: 0.7;
-}
-
-.gob__pietra.is-nero .gob__ultima {
-  stroke: #fff;
-}
-
-.gob__pietra.is-bianco .gob__ultima {
-  stroke: #111;
+  stroke: #ffc93c;
+  stroke-width: 0.8;
 }
 
 /* Nel conteggio: le pietre morte si spengono, e il territorio ha il colore di chi lo ha. */
@@ -127,56 +137,98 @@
 
 /* ---------- Il conteggio, nel piede ---------- */
 
+/* Una carta sotto il goban: chi e' avanti, i punti di ciascuno, e accetta o riprendi. */
 .gob-conto {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  gap: 6px;
+  box-sizing: border-box;
   width: min(100%, 560px);
-  text-align: center;
+  padding: 10px 12px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow:
+    0 4px 0 var(--ink),
+    inset 0 3px 0 var(--carta-luce);
+  animation: gob-arriva 0.32s var(--ease-out) both;
 }
 
 .gob-conto__titolo {
   margin: 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.1;
 }
 
 .gob-conto__punti {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
   margin: 0;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.gob-conto__punti span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gob-conto__punti b {
+  font-family: var(--font-rounded);
+  font-size: 20px;
+  font-weight: 400;
 }
 
 .gob-conto__parte {
-  width: 11px;
-  height: 11px;
-  margin-left: 6px;
+  flex: none;
+  box-sizing: border-box;
+  width: 18px;
+  height: 18px;
+  border: 1.6px solid #1d1530;
   border-radius: 50%;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  box-shadow: 1px 2px 0 rgba(0, 0, 0, 0.3);
 }
 
 .gob-conto__parte.is-nero {
-  background: #1d1d20;
+  background: radial-gradient(circle at 35% 30%, #6a6a72 0, #1d1d20 55%, #0b0b0c 100%);
 }
 
 .gob-conto__parte.is-bianco {
-  background: #f5f4f0;
+  background: radial-gradient(circle at 35% 30%, #fff 0, #ecebe6 70%, #c9c7bf 100%);
 }
 
 .gob-conto__nota {
   margin: 0;
-  font-size: var(--text-footnote);
+  font-size: 12.5px;
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
 .gob-conto__azioni {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--sp-2);
-  margin-top: var(--sp-2);
+  gap: 10px;
+}
+
+.gob-conto__azioni .btn {
+  flex: 1;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+@keyframes gob-arriva {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gob-conto {
+    animation: none;
+  }
 }

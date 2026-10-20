@@ -1,10 +1,46 @@
 /*
  * La pagina di Crazy Time: il tabellone in cima, il palco con le scene — la
  * ruota, quella del quiz, la moneta — e sotto il pannello di quel che si fa
- * adesso. Il palco e' scuro in tutti e due i temi, come una sala da gioco, e
- * prende lo spazio che c'e'; quando lo schermo e' piu' largo che alto il
- * pannello va di lato. Finché dura la fortuna il palco e' verde e oro.
+ * adesso. La pagina e' la sala, scura in tutti e due i temi (Sala.css), con il
+ * viola che si apre attorno alla ruota e due luci che passano piano; il palco
+ * non ha un fondo suo, e prende lo spazio che c'e'. Finché dura la fortuna la
+ * sala si fa verde e oro. Quando lo schermo e' piu' largo che alto il pannello
+ * va di lato.
  */
+.pagina:has(.ct) {
+  position: relative;
+  isolation: isolate;
+  --fondo: radial-gradient(120% 70% at 50% 40%, #4a2496 0%, #2a1260 45%, #0b0418 100%);
+  --macchia-1: transparent;
+  --macchia-2: transparent;
+  --macchia-3: transparent;
+  /* Il bottone delle regole e' giallo, come nel mockup: l'unica cosa chiara in cima. */
+  --tondo: var(--giallo);
+  --ink-tondo: #120c2b;
+}
+
+/* La sala verde della fortuna: un fondo sopra quello viola, che si accende e si spegne piano. */
+.pagina:has(.ct)::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 18px 18px, rgba(255, 216, 77, 0.16) 1.4px, transparent 1.6px) 0 0 / 18px 18px,
+    radial-gradient(120% 70% at 50% 40%, #1b8f5e 0%, #0f6b45 45%, #021a10 100%);
+  opacity: 0;
+  transition: opacity 900ms var(--ease-in-out);
+  pointer-events: none;
+}
+
+.pagina:has(.ct-palco.is-fortunata)::before {
+  opacity: 1;
+}
+
+body:has(.ct) {
+  background: #0b0418;
+}
+
 .ct {
   flex: 1;
   min-height: 0;
@@ -44,44 +80,11 @@
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--r-xl);
-  background:
-    radial-gradient(120% 70% at 50% -12%, rgba(255, 205, 110, 0.24), transparent 60%),
-    radial-gradient(circle at 50% 55%, var(--ct-palco-1), var(--ct-palco-2) 76%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 214, 120, 0.25),
-    inset 0 -60px 90px rgba(0, 0, 0, 0.45),
-    var(--shadow-md);
 }
 
-/*
- * La fortuna: un fondo verde e oro sopra quello viola, che si accende e si
- * spegne piano. L'insegna di Crazy Time lascia il posto al nastro della ruota
- * fortunata (Fortuna.css).
- */
+/* La fortuna la dice la sala intera, che si fa verde: il palco non ha piu' un fondo suo. */
 .ct-palco__fortuna {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background:
-    radial-gradient(120% 70% at 50% -12%, rgba(255, 226, 120, 0.42), transparent 60%),
-    radial-gradient(90% 60% at 50% 110%, rgba(255, 210, 90, 0.22), transparent 70%),
-    radial-gradient(circle at 50% 55%, var(--ct-palco-fortuna-1), var(--ct-palco-fortuna-2) 78%);
-  opacity: 0;
-  transition: opacity 900ms var(--ease-in-out);
-  pointer-events: none;
-}
-
-.ct-palco.is-fortunata .ct-palco__fortuna {
-  opacity: 1;
-}
-
-.ct-palco.is-fortunata {
-  box-shadow:
-    inset 0 0 0 1px rgba(150, 255, 190, 0.45),
-    inset 0 -60px 90px rgba(0, 0, 0, 0.45),
-    0 0 26px rgba(80, 230, 150, 0.3),
-    var(--shadow-md);
-  transition: box-shadow 900ms var(--ease-in-out);
+  display: none;
 }
 
 .ct-palco.is-fortunata .ct-palco__insegna {
@@ -108,26 +111,64 @@
   }
 }
 
-/* I raggi dietro la ruota, che girano piano: il palco di una sala, senza dire niente. */
-.ct-palco__luce {
+/*
+ * Le luci della sala: una rosa in alto e una azzurra in basso, sfumate, che
+ * vanno e vengono piano di lato. Sono sfumature e non macchie sfocate: un
+ * `filter: blur` grande quanto il palco si rifarebbe a ogni fotogramma.
+ */
+/* Ogni luce si spegne prima dei bordi del palco anche quando si sposta: un bordo tagliato si vedrebbe. */
+.ct-palco__luce,
+.ct-palco__luce::after {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 0;
-  width: max(150cqw, 150cqh);
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: repeating-conic-gradient(rgba(255, 214, 120, 0.09) 0 6deg, transparent 6deg 16deg);
-  mask: radial-gradient(closest-side, #000 25%, transparent 72%);
-  -webkit-mask: radial-gradient(closest-side, #000 25%, transparent 72%);
-  transform: translate(-50%, -50%);
-  animation: ct-luce 70s linear infinite;
+  left: -5%;
+  width: 110%;
+  height: 32%;
   pointer-events: none;
 }
 
-@keyframes ct-luce {
-  to {
-    transform: translate(-50%, -50%) rotate(1turn);
+.ct-palco__luce {
+  top: 10%;
+  z-index: 0;
+  background: radial-gradient(closest-side, rgba(255, 79, 163, 0.34), transparent 74%);
+  animation: ct-luce-a 9s var(--ease-in-out) infinite;
+}
+
+.ct-palco__luce::after {
+  content: '';
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(closest-side, rgba(77, 141, 247, 0.32), transparent 74%);
+  animation: ct-luce-b 11s var(--ease-in-out) infinite;
+}
+
+.ct-palco.is-fortunata .ct-palco__luce {
+  background: radial-gradient(closest-side, rgba(143, 245, 191, 0.3), transparent 74%);
+}
+
+.ct-palco.is-fortunata .ct-palco__luce::after {
+  background: radial-gradient(closest-side, rgba(255, 210, 63, 0.26), transparent 74%);
+}
+
+@keyframes ct-luce-a {
+  0%,
+  100% {
+    transform: translateX(-7%);
+  }
+  50% {
+    transform: translateX(7%);
+  }
+}
+
+/* La seconda luce e' figlia della prima: scende di un palco e mezzo, e va dall'altra parte. */
+@keyframes ct-luce-b {
+  0%,
+  100% {
+    transform: translate(4%, 150%);
+  }
+  50% {
+    transform: translate(-16%, 150%);
   }
 }
 
@@ -285,15 +326,17 @@
   margin: 0;
   padding: 7px 18px;
   border-radius: var(--r-pill);
+  border: var(--filo) solid #120c2b;
   background: var(--colore);
   color: #fff;
   font-family: var(--font-rounded);
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 400;
   white-space: nowrap;
+  text-shadow: 0 2px 0 rgba(18, 12, 43, 0.55);
   box-shadow:
-    0 0 0 2px var(--ct-oro),
-    0 8px 20px rgba(0, 0, 0, 0.4);
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.3);
   animation: ct-cartello 640ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 120ms both;
 }
 
@@ -390,12 +433,15 @@
 .ct-rivela__palio {
   position: relative;
   padding: 6px 18px;
+  border: var(--filo) solid #120c2b;
   border-radius: var(--r-pill);
-  background: rgba(10, 4, 24, 0.85);
-  box-shadow: 0 0 0 2px var(--ct-oro);
-  color: #fff;
+  background: #1b1238;
+  box-shadow:
+    inset 0 0 0 2px var(--ct-ambra),
+    0 4px 0 #120c2b;
+  color: #fff6e0;
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 900;
   animation: ct-sale 480ms var(--ease-out) 420ms both;
 }
 
@@ -408,6 +454,7 @@
 
 /* ─────────────────────────────  Il pannello  ───────────────────────────── */
 
+/* Sotto la ruota: prima la riga di quel che si fa, poi il vassoio delle fiches, come nel mockup. */
 .ct-pannello {
   flex: none;
   display: flex;
@@ -415,14 +462,20 @@
   justify-content: center;
   gap: var(--sp-3);
   width: min(100%, 440px);
-  min-height: 150px;
+  min-height: 132px;
   margin-inline: auto;
+}
+
+.ct-pannello > .ct-suggerimento,
+.ct-pannello > .ct-invito {
+  order: -1;
 }
 
 .ct-nota {
   margin: 0;
-  font-size: var(--text-callout);
-  color: var(--label-secondary);
+  font-size: 15px;
+  font-weight: 800;
+  color: #e4dcff;
   text-align: center;
 }
 
@@ -433,14 +486,17 @@
   justify-content: center;
   gap: 8px;
   margin: 0;
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  color: var(--label-secondary);
+  font-size: 15px;
+  font-weight: 900;
+  color: #fff6e0;
+  text-align: center;
+  text-shadow: 0 2px 0 #120c2b;
 }
 
 .ct-mano {
   flex: none;
-  color: var(--brand);
+  color: #ffe27a;
+  filter: drop-shadow(0 2px 0 #120c2b);
   animation: ct-mano 1.8s var(--ease-in-out) infinite;
 }
 
@@ -455,7 +511,7 @@
 }
 
 .ct-suggerimento.is-debole {
-  color: var(--label);
+  color: #ffe27a;
   animation: ct-trema 420ms var(--ease-out);
 }
 
@@ -482,15 +538,18 @@
 .ct-indicazione__titolo {
   margin: 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
-  color: var(--label);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.1;
+  color: #fff6e0;
+  text-shadow: 0 2px 0 #120c2b;
 }
 
 .ct-indicazione__testo {
   margin: 0 0 var(--sp-1);
-  font-size: var(--text-subhead);
-  color: var(--label-secondary);
+  font-size: 15px;
+  font-weight: 800;
+  color: #e4dcff;
 }
 
 .ct-lati {
@@ -500,22 +559,25 @@
   gap: 8px;
 }
 
+/* I due lati della moneta: pillole a colori pieni con il filo, come le etichette dell'album. */
 .ct-lato {
   display: inline-flex;
   align-items: center;
-  padding: 6px 14px;
+  padding: 4px 12px;
+  border: 2px solid #120c2b;
   border-radius: var(--r-pill);
+  box-shadow: 0 2px 0 #120c2b;
   color: #fff;
   font-size: var(--text-footnote);
-  font-weight: 700;
+  font-weight: 900;
 }
 
 .ct-lato.is-blu {
-  background: var(--ct-blu);
+  background: #2563eb;
 }
 
 .ct-lato.is-rosso {
-  background: var(--ct-rosso);
+  background: #c8283c;
 }
 
 /* ─────────────────────────────  La domanda  ───────────────────────────── */
@@ -524,7 +586,7 @@
   flex: 1;
   min-height: 200px;
   border-radius: var(--r-xl);
-  background: var(--fill-quaternary);
+  background: rgba(255, 255, 255, 0.06);
   animation: ct-pulsa 1.4s var(--ease-in-out) infinite;
 }
 
@@ -549,9 +611,10 @@
 .ct-pronti__palio {
   margin: 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
-  color: var(--label);
+  font-size: 26px;
+  font-weight: 400;
+  color: #fff6e0;
+  text-shadow: 0 2px 0 #120c2b;
 }
 
 /* ─────────────────────────────  Le regole  ───────────────────────────── */
@@ -628,11 +691,13 @@
   }
 
   .ct-tabellone {
+    min-height: 46px;
     padding: 4px 14px;
   }
 
-  .ct-tabellone__saldo {
-    font-size: 20px;
+  .ct-tabellone__saldo,
+  .ct-tabellone__puntata {
+    font-size: 21px;
   }
 
   .ct-pannello {
@@ -654,6 +719,7 @@
   .ct,
   .ct-palco.is-scosso,
   .ct-palco__luce,
+  .ct-palco__luce::after,
   .ct-palco__insegna,
   .ct-palco__scintille,
   .ct-palco__scintille::after,
@@ -668,7 +734,8 @@
   }
 
   .ct-scena,
-  .ct-scena.is-attiva {
+  .ct-scena.is-attiva,
+  .pagina:has(.ct)::before {
     transition: none;
   }
 }

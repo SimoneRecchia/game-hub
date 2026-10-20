@@ -46,6 +46,7 @@ import { Moneta } from '@/games/ruota/Moneta'
 import { Pachinko, type FasePachinko } from '@/games/ruota/Pachinko'
 import { RuotaFisica, type Meta, type Mozzo } from '@/games/ruota/RuotaFisica'
 import { CHIAMA_FICHES, InvitoPuntata, PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { COLORE_FICHE, inFiches } from '@/games/fortuna/fiches'
@@ -177,6 +178,7 @@ const quizDi = (giro: GiroRuota | null): Quiz | null => (giro?.sfida?.tipo === '
  * pagina riaperta dice in che scena si era.
  */
 export default function RuotaPagina() {
+  useSala()
   const toast = useToast()
   const dopo = useDopo()
   const [stato, setStato] = useState<RuotaStato | null>(null)
@@ -892,12 +894,13 @@ export default function RuotaPagina() {
         </Suspense>
       )}
       {/* Durante la domanda il palco resta, nascosto: tornando, il tabellone e le ruote sono quelli di prima. */}
-      <div className="ct" hidden={inDomanda}>
+      <div className={`ct ${SALA}`} hidden={inDomanda}>
         {stato && (
           <Tabellone
             saldo={conto?.saldo ?? saldo}
             puntata={inSfida && giro ? giro.puntata : scelta}
             saldoRef={saldoRef}
+            puntataRef={puntataRef}
             scarso={!puoGirare && !inSfida && !girando}
           />
         )}
@@ -1144,7 +1147,6 @@ export default function RuotaPagina() {
                   minima={PUNTATA_MINIMA}
                   tetto={saldo}
                   attiva={!girando && !inviando}
-                  valoreRef={puntataRef}
                   rigaRef={ficheRef}
                   rigaClasse={!puntataPronta && !girando ? CHIAMA_FICHES : ''}
                   onAggiungi={aggiungiFiche}

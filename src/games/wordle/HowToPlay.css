@@ -1,3 +1,7 @@
+/*
+ * Le regole del Wordle, nel foglio: gli esempi con le caselle vere, la scala
+ * dei punti su una striscia di carta, e quel che c'e' da sapere a righe.
+ */
 .howto {
   display: flex;
   flex-direction: column;
@@ -5,13 +9,16 @@
 }
 
 .howto__text {
-  color: var(--label-secondary);
+  margin: 0;
+  color: var(--label);
   font-size: var(--text-callout);
+  font-weight: 800;
   line-height: 1.45;
 }
 
 .howto__text strong,
 .howto__list strong {
+  font-weight: 900;
   color: var(--label);
 }
 
@@ -19,6 +26,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .howto__example {
@@ -29,18 +39,20 @@
 
 .howto__row {
   display: grid;
-  grid-template-columns: repeat(5, 40px);
-  gap: 4px;
+  grid-template-columns: repeat(5, 42px);
+  gap: 5px;
 }
 
 /* Nelle caselle di esempio la lettera non deve scalare col viewport. */
 .howto__row .tile {
-  font-size: 1.25rem;
+  font-size: 1.375rem;
   aspect-ratio: 1;
 }
 
 .howto__caption {
-  font-size: var(--text-footnote);
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
@@ -48,41 +60,34 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  padding-top: var(--sp-4);
-  border-top: 0.5px solid var(--separator);
 }
 
 .howto__notes-title {
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
-  color: var(--label-secondary);
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: var(--text-title-3);
+  font-weight: 400;
+  color: var(--label);
 }
 
+/* Quel che c'e' da sapere: una riga per cosa, su una striscia di carta tinta. */
 .howto__list {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
-  font-size: var(--text-footnote);
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-subhead);
+  font-weight: 700;
   color: var(--label-secondary);
-  line-height: 1.45;
+  line-height: 1.4;
 }
 
 .howto__list li {
-  padding-left: var(--sp-4);
-  position: relative;
-}
-
-.howto__list li::before {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 8px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--label-tertiary);
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
 }
 
 /* ---------- Come si contano i punti ---------- */
@@ -101,30 +106,29 @@
  */
 .howto__tabella-scroll {
   overflow-x: auto;
-  margin: 0 calc(-1 * var(--sp-1));
-  padding: 0 var(--sp-1);
+  border-radius: 16px;
+  background: var(--surface-2);
   -webkit-overflow-scrolling: touch;
 }
 
 .howto__tabella {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-footnote);
   font-variant-numeric: tabular-nums;
 }
 
 .howto__tabella th,
 .howto__tabella td {
-  padding: var(--sp-1) var(--sp-2);
+  padding: 7px 8px;
   text-align: right;
   white-space: nowrap;
 }
 
 .howto__tabella thead th {
   font-size: var(--text-caption-1);
-  font-weight: 600;
-  color: var(--label-tertiary);
-  border-bottom: 1px solid var(--separator);
+  font-weight: 900;
+  color: var(--label-secondary);
+  border-bottom: 2px dashed var(--separator);
 }
 
 /* La prima colonna resta ferma mentre le altre scorrono. */
@@ -132,46 +136,41 @@
 .howto__tabella thead th:first-child {
   position: sticky;
   left: 0;
+  padding-left: 14px;
   text-align: left;
-  font-weight: 600;
-  background: var(--bg-elevated);
+  background: var(--surface-2);
 }
 
 .howto__tabella th[scope='row'] {
-  color: var(--label-secondary);
   font-size: var(--text-caption-1);
+  font-weight: 900;
+  color: var(--label-secondary);
 }
 
 .howto__tabella td {
+  font-family: var(--font-rounded);
+  font-size: var(--text-callout);
   color: var(--label);
-  font-weight: 600;
+}
+
+.howto__tabella td:last-child,
+.howto__tabella thead th:last-child {
+  padding-right: 14px;
 }
 
 .howto__th-persa,
 .howto__td-persa {
-  color: var(--label-tertiary);
-  border-left: 1px solid var(--separator);
+  border-left: 2px dashed var(--separator);
 }
 
-/*
- * La riga della somma: e' il punto della tabella.
- *
- * Senza vederla accanto alla prima riga, "le quattro insieme valgono quanto la
- * prima" resta un'affermazione da credere.
- */
-.howto__somma {
-  border-top: 1px solid var(--separator);
-}
-
-.howto__somma th[scope='row'],
-.howto__somma td {
-  color: var(--brand);
-  font-weight: 700;
+.howto__td-persa {
+  color: var(--label-secondary);
 }
 
 .howto__nota {
   margin: 0;
-  font-size: var(--text-caption-1);
+  font-size: var(--text-footnote);
+  font-weight: 700;
   color: var(--label-secondary);
   line-height: 1.45;
 }

@@ -16,6 +16,8 @@ interface Props {
   segnalate: ReadonlySet<number>
   /** Le lettere proposte da chi guarda in compagnia, che nella griglia dell'host non ci sono. */
   proposte?: ReadonlySet<number>
+  /** Lo schema appena completato: un'onda in diagonale lo attraversa. */
+  onda?: boolean
   onTocca: (casella: number) => void
 }
 
@@ -38,17 +40,21 @@ export const Griglia = memo(function Griglia({
   svelate,
   segnalate,
   proposte,
+  onda = false,
   onTocca,
 }: Props) {
   return (
     <div
-      className="cgriglia"
+      className={`cgriglia${onda ? ' is-finita' : ''}`}
       role="grid"
       aria-label={`Cruciverba ${righe} per ${colonne}`}
       style={{ '--colonne': colonne, '--righe': righe } as React.CSSProperties}
     >
       {[...schema].map((casella, k) => {
-        if (casella === NERA) return <div key={k} className="ccella is-nera" aria-hidden="true" />
+        if (casella === NERA) {
+          const onde = onda ? ({ '--onda': Math.floor(k / colonne) + (k % colonne) + 2 } as React.CSSProperties) : undefined
+          return <div key={k} className="ccella is-nera" style={onde} aria-hidden="true" />
+        }
         const lettera = lettere[k] === VUOTA ? '' : lettere[k]
         const numero = numeri.get(k)
         const classi = [
@@ -69,6 +75,7 @@ export const Griglia = memo(function Griglia({
             type="button"
             role="gridcell"
             className={classi}
+            style={onda ? ({ '--onda': r + c } as React.CSSProperties) : undefined}
             onClick={() => onTocca(k)}
             aria-label={`Riga ${r}, colonna ${c}${numero ? `, numero ${numero}` : ''}${
               lettera ? `, ${lettera.toUpperCase()}` : ', vuota'
@@ -76,7 +83,12 @@ export const Griglia = memo(function Griglia({
             aria-selected={attiva === k}
           >
             {numero !== undefined && <span className="ccella__numero">{numero}</span>}
-            <span className="ccella__lettera">{lettera.toUpperCase()}</span>
+            {/* La chiave e' la lettera: una lettera nuova nasce, e nascendo salta dentro la casella. */}
+            {lettera && (
+              <span key={lettera} className="ccella__lettera">
+                {lettera.toUpperCase()}
+              </span>
+            )}
           </button>
         )
       })}

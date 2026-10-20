@@ -135,6 +135,10 @@ export function ComeSiGiocaScarabeo({ open, onClose }: { open: boolean; onClose:
             </li>
           </ul>
         </section>
+
+        <button type="button" className="scr-tasto scr-tasto--largo scr-tasto--giallo" onClick={onClose}>
+          Ho capito
+        </button>
       </div>
     </Sheet>
   )

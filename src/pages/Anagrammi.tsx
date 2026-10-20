@@ -6,7 +6,7 @@ import { Coriandoli, useFesta, Vuoto } from '@/components/Elementi'
 import { IconInfo, IconShuffle, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { ComeSiGiocaAnagrammi } from '@/games/anagrammi/ComeSiGioca'
-import { PartitaAnagrammi, Riepilogo, type ComandiAnagrammi } from '@/games/anagrammi/Partita'
+import { CartaFine, PartitaAnagrammi, rigaFine, titoloFine, type ComandiAnagrammi } from '@/games/anagrammi/Partita'
 import { useAnagrammiDelGiorno } from '@/games/anagrammi/useAnagrammiDelGiorno'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown } from '@/lib/format'
@@ -77,16 +77,16 @@ export default function Anagrammi() {
 /** La giornata finita: i punti, le parole, e quando arriva la prossima. */
 function FineGiornata({ stato }: { stato: AnagrammiStato }) {
   const restano = useCountdown(stato.msToNextPuzzle)
-  const trovate = stato.parole.filter((p) => p.esito === 'trovata').length
   return (
-    <>
-      <div className="ana-totale">
-        <p className="ana-totale__valore u-tabnum">{stato.punti} punti</p>
-        <p className="ana-totale__dettaglio u-tabnum">
-          {trovate} {trovate === 1 ? 'parola trovata' : 'parole trovate'} su {stato.parole.length}
-        </p>
-      </div>
-      <Riepilogo parole={stato.parole} />
+    <CartaFine
+      titolo={titoloFine(stato.parole)}
+      riga={rigaFine(stato.parole)}
+      parole={stato.parole}
+      punti={`+${stato.punti}`}
+    >
+      <Collegamento to={ROTTE.home} direzione="indietro" className="ana-tasto ana-tasto--giallo">
+        Torna alle Giornaliere
+      </Collegamento>
       <div className="ana-azioni">
         <Collegamento to={ROTTE.classifica('anagrammi')} className="ana-link">
           <IconTrophy size={18} />
@@ -100,6 +100,6 @@ function FineGiornata({ stato }: { stato: AnagrammiStato }) {
       <p className="ana-piede">
         Le prossime fra <span className="u-tabnum">{formatCountdown(restano)}</span>
       </p>
-    </>
+    </CartaFine>
   )
 }

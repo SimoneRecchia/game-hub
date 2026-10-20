@@ -9,7 +9,7 @@ const casella = (b: number, i: number) => (Math.floor(b / 3) * 3 + Math.floor(i 
  * La griglia del sudoku: nove riquadri di nove caselle, con il filo sottile
  * fra le caselle e quello spesso fra i riquadri, come sulla carta.
  *
- * La casella scelta e' indaco come ogni selezione dell'app; la sua riga, la sua
+ * La casella scelta e' indaco pieno come ogni selezione dell'app; la sua riga, la sua
  * colonna e il suo riquadro appena velati, e le altre caselle con la stessa
  * cifra un po' di piu': e' quel che si guarda per capire dove una cifra puo'
  * ancora stare. I doppioni si segnano subito, perché si vedono a occhio; gli
@@ -36,7 +36,7 @@ export function Griglia({
   doppioni: ReadonlySet<number>
   /** Le unità appena completate: un'onda le attraversa. */
   completate: ReadonlySet<number>
-  /** A partita finita: le caselle giuste si colorano in onda. */
+  /** Lo schema appena risolto: un'onda lo attraversa in diagonale. */
   soluzione: string | null
   onTocca: (k: number) => void
 }) {
@@ -96,7 +96,9 @@ export function Griglia({
                 onClick={() => onTocca(k)}
               >
                 {d !== VUOTA ? (
-                  <span className="sud-casella__cifra">{d}</span>
+                  <span key={d} className="sud-casella__cifra">
+                    {d}
+                  </span>
                 ) : note[k] ? (
                   <span className="sud-casella__note" aria-hidden="true">
                     {Array.from({ length: 9 }, (_, n) => (

@@ -1,9 +1,11 @@
 import { Damiera } from '@/games/dama/Damiera'
 import { Griglia, attesaFine as attesaFineForza4 } from '@/games/forza4/Griglia'
 import { Goban } from '@/games/go/Goban'
+import { presiDi } from '@/games/scacchi/Presi'
 import { Scacchiera } from '@/games/scacchi/Scacchiera'
 import { TRIS } from '@/games/tris/descrizione'
 import * as dama from '@shared/dama'
+import * as forza4 from '@shared/forza4'
 import * as go from '@shared/go'
 import * as scacchi from '@shared/scacchi'
 import type { GiocoTavoliere } from '@shared/tavolo'
@@ -25,6 +27,14 @@ const FORZA4: GiocoDelTavoliere = {
   // Le colonne una dopo l'altra non dicono niente: la griglia e' gia' la storia.
   storia: null,
   avviso: () => null,
+  // I dischi che restano in mano: ventuno a testa.
+  dettaglio(posizione, parte) {
+    const p = forza4.leggi(posizione)
+    if (!p) return null
+    const restano = forza4.CASELLE / 2 - p.caselle.filter((d) => d === parte).length
+    return restano === 1 ? 'Un disco' : `${restano} dischi`
+  },
+  sotto: null,
   attesaFine: attesaFineForza4,
 }
 
@@ -52,6 +62,8 @@ const SCACCHI: GiocoDelTavoliere = {
     const p = scacchi.daFen(posizione)
     return p && scacchi.sottoScacco(p) ? 'Scacco!' : null
   },
+  dettaglio: presiDi,
+  sotto: 'mosse',
 }
 
 const DAMA: GiocoDelTavoliere = {
@@ -70,6 +82,16 @@ const DAMA: GiocoDelTavoliere = {
     const legali = p ? dama.mosseLegali(p) : []
     return legali.length > 0 && legali[0].prese.length > 0 ? 'Devi prendere' : null
   },
+  // Le pedine che restano, e le dame.
+  dettaglio(posizione, parte) {
+    const p = dama.leggi(posizione)
+    if (!p) return null
+    const { pedine, dame } = dama.contaPezzi(p)[parte === 0 ? 'bianco' : 'nero']
+    const scritte = [pedine === 1 ? 'Una pedina' : `${pedine} pedine`]
+    if (dame > 0) scritte.push(dame === 1 ? 'una dama' : `${dame} dame`)
+    return scritte.join(' · ')
+  },
+  sotto: 'mosse',
 }
 
 const GO: GiocoDelTavoliere = {
@@ -87,6 +109,15 @@ const GO: GiocoDelTavoliere = {
     if (!p || p.passi !== 1) return null
     return mio ? 'Ha passato: se passi anche tu, si conta' : 'Hai passato'
   },
+  avvisoNelPiede: true,
+  // Le pietre prese finora: nel conteggio ad area non contano, ma si guardano.
+  dettaglio(posizione, parte) {
+    const p = go.leggi(posizione)
+    if (!p) return null
+    const prese = p.prigionieri[parte === 0 ? 'nero' : 'bianco']
+    return prese === 0 ? null : prese === 1 ? 'Una presa' : `${prese} prese`
+  },
+  sotto: 'passo',
   passo: 'passo',
 }
 

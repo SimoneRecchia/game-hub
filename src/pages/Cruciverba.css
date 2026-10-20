@@ -17,82 +17,82 @@
   flex: 1;
   min-width: 0;
   min-height: 0;
-  gap: var(--sp-2);
+  gap: 12px;
 }
 
 /* ---------- Riga di stato ---------- */
 
 /*
- * La plancia del cruciverba, nello stile delle schede della battaglia: una
- * capsula sola con il tempo, i punti, quanto manca e gli aiuti.
+ * In cima, come nell'album: una carta con il tempo, il livello e quanto vale
+ * adesso, e accanto due tasti, le definizioni e gli aiuti.
  */
-.cru__stato {
+.cru__riga {
   flex: none;
   display: flex;
-  align-items: center;
-  gap: var(--sp-3);
+  align-items: stretch;
+  gap: 8px;
   width: min(100%, 640px);
-  height: 44px;
   margin-inline: auto;
-  padding: 0 6px 0 var(--sp-3);
-  border-radius: var(--r-pill);
+  padding-bottom: 4px;
+}
+
+.cru__stato {
+  container: cru-stato / inline-size;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 44px;
+  padding: 0 11px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: var(--ombra-album);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .cru__tempo {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family: var(--font-rounded);
-  font-size: var(--text-headline);
-  font-weight: 800;
-  color: var(--label);
-  min-width: 4.2em;
+  min-width: 3.6em;
 }
 
-.cru__tempo svg {
-  color: var(--cruciverba-2);
+.cru__livello {
+  flex: none;
+  padding: 1px 9px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--cruciverba-carta-2);
+  color: #2a1f5c;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
-.cru__punti {
-  font-size: var(--text-footnote);
-  font-weight: 800;
-  color: var(--label);
-}
-
-.cru__punti-label {
-  font-weight: 600;
-  color: var(--label-secondary);
-}
-
-.cru__avanzamento {
+.cru__valore {
   margin-left: auto;
   display: inline-flex;
-  align-items: center;
+  align-items: baseline;
   gap: 6px;
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-  color: var(--label-secondary);
+  white-space: nowrap;
 }
 
-/* Quanto dello schema e' scritto: una barretta che si riempie. */
-.cru__avanzamento-barra {
-  position: relative;
-  width: 44px;
-  height: 6px;
-  border-radius: var(--r-pill);
-  background: var(--fill-tertiary);
-  overflow: hidden;
+.cru__valore strong {
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1;
 }
 
-.cru__avanzamento-barra span {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--cruciverba-1), var(--cruciverba-2));
-  transform-origin: left center;
-  transition: transform var(--dur-slow) var(--ease-out);
+/* Una carta stretta — un telefono da 320 punti — lascia il livello: il valore resta. */
+@container cru-stato (max-width: 200px) {
+  .cru__livello {
+    display: none;
+  }
 }
 
 .cru__avviso {
@@ -101,9 +101,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  color: var(--label);
+  font-size: 13px;
   animation: cru-avviso var(--dur-base) var(--ease-spring);
 }
 
@@ -114,38 +112,58 @@
   }
 }
 
-.cru__aiuti {
-  height: 32px;
-  padding: 0 var(--sp-3);
-  border: none;
-  border-radius: var(--r-pill);
-  background: var(--brand-soft);
-  color: var(--brand);
-  font-size: var(--text-footnote);
-  font-weight: 600;
+/* I due tasti accanto: carta per le definizioni, l'azzurro del gioco per gli aiuti. */
+.cru__strumento {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 44px;
+  padding: 0;
+  border: var(--filo) solid var(--ink);
+  border-radius: 15px;
+  background: var(--surface);
+  color: var(--label);
+  box-shadow: var(--ombra-tasto);
   cursor: pointer;
+  transition:
+    transform 100ms var(--ease-out),
+    box-shadow 100ms var(--ease-out);
 }
 
-.cru__aiuti:disabled {
-  opacity: 0.5;
+.cru__strumento.is-aiuti {
+  background: var(--cruciverba-tinta);
+  color: #2a1f5c;
+}
+
+.cru__strumento:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
+}
+
+.cru__strumento:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 /* ---------- Griglia ---------- */
 
+/* Lo schema sta in alto, sotto la riga di stato, come nell'album: lo spazio che avanza resta sopra la definizione. */
 .cru__campo {
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
 /*
  * La griglia si misura anche sull'altezza che resta: `100cqh` e' l'altezza di
- * questa fascia, e un cruciverba 10x10 largo quanto lo schermo di un iPhone SE
- * non ci starebbe sopra la tastiera. Dentro @supports perché senza container
- * query resta la larghezza piena, che e' il comportamento di ripiego giusto.
+ * questa fascia, meno l'ombra sotto il vassoio, e un cruciverba 10x10 largo
+ * quanto lo schermo di un iPhone SE non ci starebbe sopra la tastiera. Dentro
+ * @supports perché senza container query resta la larghezza piena, che e' il
+ * comportamento di ripiego giusto.
  */
 @supports (width: 1cqh) {
   .cru__campo {
@@ -153,7 +171,7 @@
   }
 
   .cru__campo .cgriglia {
-    width: min(100cqw, 640px, 100cqh * var(--colonne) / var(--righe));
+    width: min(100cqw, 640px, (100cqh - 6px) * var(--colonne) / var(--righe));
   }
 }
 
@@ -165,57 +183,99 @@
 /* ---------- Definizione corrente ---------- */
 
 /*
- * La definizione in corso, nel colore della parola che si sta scrivendo. Senza
- * le righe del quaderno: a passo fisso, non combaciavano con quelle del testo e
- * sembravano cancellature.
+ * La definizione in corso fra due frecce, su un biglietto lilla col filo:
+ * sempre alta uguale (tre righe al piu'), cosi' la tastiera non salta. Il
+ * biglietto e' chiaro in tutti e due i temi, con l'inchiostro sopra.
  */
 .cbarra {
   flex: none;
   display: flex;
   align-items: stretch;
-  gap: var(--sp-1);
+  gap: 6px;
   width: min(100%, 640px);
+  height: 78px;
   margin-inline: auto;
-  border-radius: var(--r-md);
-  background-color: var(--cruci-parola);
-  box-shadow: inset 3px 0 0 var(--brand);
+  padding-bottom: 4px;
 }
 
 .cbarra__freccia {
   flex: none;
   display: grid;
   place-items: center;
-  width: 36px;
-  border: none;
-  background: none;
-  color: var(--brand);
+  width: 42px;
+  padding: 0;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--label);
+  box-shadow: var(--ombra-tasto);
   cursor: pointer;
+  transition:
+    transform 100ms var(--ease-out),
+    box-shadow 100ms var(--ease-out);
+}
+
+.cbarra__freccia:active {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
 }
 
 .cbarra__testo {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 1px;
-  /* Due righe sempre riservate: una definizione corta non deve far saltare
-     la tastiera in su, e una lunga non deve spingerla fuori. */
-  min-height: calc(2 * 1.3em + var(--sp-4) + 1.2em);
-  padding: var(--sp-2) 0;
-  border: none;
-  background: none;
-  color: var(--label);
+  padding: 0 12px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: #dcd8ff;
+  color: #2a1f5c;
+  box-shadow: 0 4px 0 var(--ink);
   text-align: left;
   cursor: pointer;
+  transition:
+    transform 100ms var(--ease-out),
+    box-shadow 100ms var(--ease-out);
+}
+
+.cbarra__testo:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+/* A ogni definizione nuova il testo nasce di nuovo (la chiave e' la definizione), e sale al suo posto. */
+.cbarra__dentro {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  animation: cru-def 250ms ease-out both;
+}
+
+@keyframes cru-def {
+  from {
+    opacity: 0.4;
+    transform: translateY(6px);
+  }
 }
 
 .cbarra__dove {
-  font-size: var(--text-caption-2);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--brand);
+  color: #4e4479;
+}
+
+.cbarra__dove-testo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cbarra__definizione {
@@ -223,79 +283,174 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: var(--text-subhead);
-  line-height: 1.3;
+  font-size: 13.5px;
+  font-weight: 800;
+  line-height: 1.2;
+  padding-bottom: 1px;
 }
+
+.cbarra__nota {
+  flex: none;
+  padding: 0 7px;
+  border: 1.5px solid currentColor;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 15px;
+  letter-spacing: 0;
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+/* ---------- Tastiera ---------- */
 
 .ctastiera {
   flex: none;
-  padding-bottom: var(--sp-1);
 }
 
-.ctastiera .key--azione {
-  font-size: var(--text-title-3);
+/* Il tasto della direzione: azzurro, con la freccia e sotto la direzione di adesso. */
+.ctastiera .key--azione,
+.ctastiera .key--azione:not(.is-pronta) {
+  background-color: var(--cruciverba-tinta);
+  color: #2a1f5c;
+}
+
+.ctastiera .key--azione:active:not(:disabled) {
+  background-color: #5a86f5;
+}
+
+.ctastiera__dir {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-family: var(--font-text);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 /* ---------- Cruciverba finito ---------- */
 
-.cru__fine {
+/*
+ * Sotto lo schema, al posto della tastiera: il timbro con i punti (toccato
+ * riapre la carta della fine), com'e' andata, e cosa fare adesso.
+ */
+.cru-esito {
   flex: none;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  width: min(100%, 520px);
+  margin: 0 auto;
+  padding: 14px 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  animation: cru-esito 500ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes cru-esito {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+}
+
+.cru-esito__testa {
+  display: flex;
   align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-3) 0 var(--sp-2);
-  text-align: center;
+  gap: 14px;
 }
 
-.cru__fine-titolo {
-  margin: 0;
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--brand);
+.cru-esito__timbro {
+  flex: none;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: var(--filo) solid var(--ink);
+  border-radius: 50%;
+  background: var(--cruciverba-tinta);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 3px 0 var(--ink);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 21px;
+  line-height: 0.95;
+  transform: rotate(-6deg);
+  cursor: pointer;
 }
 
-.cru__fine-punti {
+.cru-esito__timbro small {
+  font-family: var(--font-text);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.cru-esito__testo {
+  min-width: 0;
+}
+
+.cru-esito__titolo {
   margin: 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-1);
-  font-weight: 700;
-  letter-spacing: var(--tracking-tight);
+  font-size: 24px;
+  line-height: 1.1;
   color: var(--label);
 }
 
-.cru__fine-dettaglio {
-  margin: 0;
-  font-size: var(--text-footnote);
+.cru-esito__dettaglio {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
   color: var(--label-secondary);
 }
 
-.cru__fine-azioni {
+.cru-esito__azioni {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-2);
-  margin-top: var(--sp-2);
+  gap: 8px;
 }
 
-.cru__fine-link {
+.cru-esito__azioni > * {
+  flex: 1 1 auto;
+}
+
+.cru-esito__link {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-  color: var(--brand);
-  font-size: var(--text-subhead);
-  font-weight: 600;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 14px;
+  background: var(--giallo);
+  color: #2a1f5c;
+  box-shadow: var(--ombra-tasto);
+  font-family: var(--font-rounded);
+  font-size: 16px;
   text-decoration: none;
 }
 
-.cru__fine-attesa {
-  margin: var(--sp-2) 0 0;
-  font-size: var(--text-caption-1);
-  color: var(--label-tertiary);
+.cru-esito__link:active {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
+}
+
+.cru-esito__attesa {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--label-secondary);
 }
 
 /* ---------- Attesa e ripieghi ---------- */
@@ -303,6 +458,7 @@
 .cru-guasto {
   margin: 0;
   font-size: var(--text-footnote);
+  font-weight: 800;
   color: var(--red);
 }
 
@@ -311,7 +467,8 @@
   min-height: 0;
   width: min(100%, 520px);
   margin-inline: auto;
-  border-radius: var(--r-md);
+  border: 2px dashed var(--ink-tenue);
+  border-radius: 16px;
   background: var(--fill-quaternary);
   animation: cru-pulsa 1.4s var(--ease-in-out) infinite;
 }
@@ -329,7 +486,23 @@
   align-items: center;
   gap: var(--sp-4);
   text-align: center;
+  font-weight: 800;
   color: var(--label-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cru__avviso,
+  .cbarra__dentro,
+  .cru-esito,
+  .cru__attesa {
+    animation: none;
+  }
+
+  .cru__strumento,
+  .cbarra__freccia,
+  .cbarra__testo {
+    transition: none;
+  }
 }
 
 /*
@@ -348,7 +521,7 @@
     flex: none;
     width: 360px;
     overflow-y: auto;
-    padding-right: var(--sp-2);
+    padding: 4px 8px 12px 2px;
   }
 
   .ctastiera {

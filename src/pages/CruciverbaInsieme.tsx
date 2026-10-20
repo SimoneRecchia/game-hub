@@ -5,11 +5,12 @@ import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, useFesta } from '@/components/Elementi'
-import { IconChevronLeft, IconChevronRight, IconInfo, IconPeople } from '@/components/Icons'
+import { IconInfo, IconPeople } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { etichettaCruciverba } from '@/games/compagnia/etichette'
+import { BarraDefinizione } from '@/games/cruciverba/BarraDefinizione'
 import { ComeSiGiocaCruciverba } from '@/games/cruciverba/ComeSiGioca'
 import { ElencoDefinizioni } from '@/games/cruciverba/ElencoDefinizioni'
 import { Griglia } from '@/games/cruciverba/Griglia'
@@ -26,7 +27,6 @@ import type { CruciverbaState, DefinizioneCruciverba, VistaCompagnia } from '@sh
 import './Cruciverba.css'
 import './WordleInsieme.css'
 
-const NOMI_DIREZIONE = { o: 'orizzontale', v: 'verticale' } as const
 const NESSUNA: ReadonlySet<number> = new Set()
 const DURATA_MESSAGGIO_MS = 2_000
 
@@ -353,16 +353,26 @@ export default function CruciverbaInsieme() {
                   svelate={svelate}
                   segnalate={NESSUNA}
                   proposte={proposte}
+                  onda={festa}
                   onTocca={tocca}
                 />
               </div>
 
               {finita ? (
-                <div className="cru__fine">
-                  <p className="cru__fine-titolo">Completato da {vista.host.displayName}</p>
-                  <p className="cru__fine-punti u-tabnum">{stato.punti} punti</p>
-                  <p className="cru__fine-dettaglio u-tabnum">in {formatCronometro(stato.tempoMs)}</p>
-                  <div className="cru__fine-azioni">
+                <div className="cru-esito">
+                  <div className="cru-esito__testa">
+                    <span className="cru-esito__timbro u-tabnum" aria-hidden="true">
+                      {stato.punti}
+                      <small>punti</small>
+                    </span>
+                    <div className="cru-esito__testo">
+                      <p className="cru-esito__titolo">Completato da {vista.host.displayName}</p>
+                      <p className="cru-esito__dettaglio u-tabnum">
+                        {stato.punti} punti, in {formatCronometro(stato.tempoMs)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="cru-esito__azioni">
                     {!libera && (
                       <Button variant="tinted" onClick={() => vai(ROTTE.classifica('cruciverba'))}>
                         Classifica
@@ -376,38 +386,12 @@ export default function CruciverbaInsieme() {
               ) : (
                 <>
                   {corrente && (
-                    <div className="cbarra">
-                      <button
-                        type="button"
-                        className="cbarra__freccia"
-                        onClick={() => vaiAllaDefinizione(-1)}
-                        aria-label="Definizione precedente"
-                      >
-                        <IconChevronLeft size={20} />
-                      </button>
-                      <button
-                        type="button"
-                        className="cbarra__testo"
-                        onClick={() => setElenco(true)}
-                        aria-label="Tutte le definizioni"
-                      >
-                        <span className="cbarra__dove">
-                          {corrente.numero} {NOMI_DIREZIONE[corrente.direzione]}
-                        </span>
-                        <span className="cbarra__definizione">
-                          {corrente.testo}
-                          {corrente.nota && <span className="cbarra__nota">{corrente.nota}</span>}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="cbarra__freccia"
-                        onClick={() => vaiAllaDefinizione(1)}
-                        aria-label="Definizione successiva"
-                      >
-                        <IconChevronRight size={20} />
-                      </button>
-                    </div>
+                    <BarraDefinizione
+                      definizione={corrente}
+                      onPrecedente={() => vaiAllaDefinizione(-1)}
+                      onSuccessiva={() => vaiAllaDefinizione(1)}
+                      onElenco={() => setElenco(true)}
+                    />
                   )}
                   <Suggerimenti
                     suggerimenti={vista.suggerimenti}

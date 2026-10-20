@@ -8,6 +8,7 @@ import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
 import { finitaLUscita } from '@/games/blackjack/uscita'
 import { PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { ComeSiGiocaRoulette } from '@/games/roulette/ComeSiGioca'
 import { RuotaRoulette } from '@/games/roulette/Ruota'
 import { api } from '@/lib/api'
@@ -27,6 +28,7 @@ const SALA_POLL_MS = 5_000
  * dei casinò fra un giro e l'altro.
  */
 export default function Roulette() {
+  useSala()
   const { vai } = useNavigazione()
   const [sala, setSala] = useState<SalaRoulette | null>(null)
   const [regole, setRegole] = useState(false)
@@ -69,7 +71,7 @@ export default function Roulette() {
         </BottoneBarra>
       }
     >
-      <section className="rl-sala entra" aria-label="Il tuo tavolo">
+      <section className={`rl-sala entra ${SALA}`} aria-label="Il tuo tavolo">
         <span className="rl-feltro" aria-hidden="true">
           <span className="rl-sala__luce" />
         </span>

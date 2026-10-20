@@ -8,11 +8,11 @@
      mentre la griglia si adatta allo spazio disponibile. */
   aspect-ratio: 5 / 6;
   /*
-   * Il tetto e' un limite estetico, per il desktop: senza, su uno schermo largo
-   * la griglia diventerebbe enorme. Era 350, che su un telefono da 390 lasciava
-   * spazio inutilizzato ai lati e caselle piu' piccole del necessario.
+   * Il tetto e' un limite estetico: la griglia del prototipo e' larga tre
+   * quarti di un telefono, e lascia respirare la pagina attorno. Senza, su uno
+   * schermo largo diventerebbe enorme.
    */
-  width: min(100%, 400px);
+  width: min(100%, 340px);
   max-height: 100%;
   margin: 0 auto;
 }
@@ -25,7 +25,8 @@
  * Le unita' di container query risolvono il problema, perché sono l'unico modo
  * per riportare l'altezza disponibile dentro un calcolo di larghezza. Il lato
  * del riquadro diventa il minore fra: larghezza disponibile, tetto estetico e
- * altezza disponibile convertita in larghezza (5 colonne su 6 righe = 83,34%).
+ * altezza disponibile convertita in larghezza (5 colonne su 6 righe = 83,34%),
+ * tolta la riga che sta sotto la griglia (`--board-piede`).
  * In @supports così un browser che non le conosce resta sulla regola sopra.
  */
 @supports (width: 1cqh) {
@@ -41,7 +42,7 @@
    * unita' di container non dipendono da chi sta dentro.
    */
   .board {
-    width: min(100cqw, 400px, 83.34cqh);
+    width: min(100cqw, 340px, calc((100cqh - var(--board-piede, 0px)) * 0.8334));
   }
 }
 

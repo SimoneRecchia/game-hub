@@ -7,9 +7,9 @@ import { Adesivo } from '@/components/Adesivo'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconChart, IconInfo, IconPeople } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
-import { Scheda } from '@/components/Scheda'
 import { Board } from '@/games/wordle/Board'
-import { IconaWordle, Tentativi, adesivoFine, notaWordle } from '@/games/wordle/fine'
+import { adesivoFine } from '@/games/wordle/fine'
+import { Piede } from '@/games/wordle/Piede'
 import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { ResultSheet } from '@/games/wordle/ResultSheet'
@@ -110,20 +110,8 @@ export default function Wordle() {
               </div>
             )}
 
-            <Scheda
-              className="wordle__tavola"
-              titolo="La parola del giorno"
-              icona={<IconaWordle />}
-              destra={
-                game.state && (
-                  <Tentativi
-                    guesses={game.state.guesses}
-                    maxAttempts={game.state.maxAttempts}
-                    status={game.state.status}
-                  />
-                )
-              }
-            >
+            {/* La griglia sta sulla pagina, come nel gioco su carta: sotto, la riga del momento. */}
+            <section className="wordle__tavola" aria-label="La parola del giorno">
               <div className="wordle__board">
                 <Board
                   guesses={game.state?.guesses ?? []}
@@ -134,19 +122,9 @@ export default function Wordle() {
                   winningRow={game.winningRow}
                   shakingRow={game.shakingRow}
                 />
+                <Piede state={game.state} message={game.message} revealing={game.revealing} />
               </div>
-              {/* I messaggi stanno qui, sotto la griglia: prima erano una pillola che la copriva. */}
-              <p className={`wordle__piede${game.message ? ' is-messaggio' : ''}`} aria-live="polite">
-                {game.message ??
-                  (game.state
-                    ? notaWordle(
-                        game.revealing === null ? game.state.guesses : game.state.guesses.slice(0, game.revealing),
-                        game.revealing === null ? game.state.status : 'playing',
-                        game.state.answer,
-                      )
-                    : ' ')}
-              </p>
-            </Scheda>
+            </section>
 
             {/* I suggerimenti degli invitati: toccarne uno riempie la riga,
                 non la invia. La parola la decide sempre l'host. */}

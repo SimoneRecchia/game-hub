@@ -11,9 +11,10 @@ import { Sheet } from '@/components/Sheet'
 import { contaPunti } from '@/games/go/conteggio'
 import { PiedeConteggio } from '@/games/go/PiedeConteggio'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
-import { adesivoFine, testoFine, useFineVista, type Chi, type PuntiFine } from '@/games/tavolo/fine'
+import { ADESIVO_FINE_MS, adesivoFine, testoFine, useFineVista, type Chi, type PuntiFine } from '@/games/tavolo/fine'
 import { giocoDelTavoliere } from '@/games/tavolo/giochi'
-import { ElencoMosse, Fine, Tavola, Turno } from '@/games/tavolo/Tavola'
+import { ElencoMosse, Fine, PiedePasso, SottoTavola, Tavola } from '@/games/tavolo/Tavola'
+import { leggiConti } from '@/games/tavolo/locale'
 import { useTavoloComputer } from '@/games/tavolo/useTavoloComputer'
 import { useAuth } from '@/lib/auth'
 import type { GiocoTavoliere } from '@shared/tavolo'
@@ -55,7 +56,7 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
   const { adesivo, accoda } = useCodaAdesivi()
   const attesaFine = p.esito ? (descrizione.attesaFine?.(p.esito.motivo) ?? ATTESA_FINE_MS) : ATTESA_FINE_MS
   const festa = useFesta(!finita, finita && vincitore === 'io', attesaFine)
-  const fineVista = useFineVista(finita, attesaFine)
+  const fine = useFineVista(finita, attesaFine)
   const eraInCorso = useRef(false)
   const esitoRef = useRef(p.esito)
   esitoRef.current = p.esito
@@ -77,16 +78,35 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
 
   const storia = useMemo(() => (descrizione.storia ? descrizione.storia(p.mosse) : null), [descrizione, p.mosse])
 
+  // Il conto del livello, a partita finita: la partita appena chiusa e' gia' dentro.
+  const conti = useMemo(() => (finita ? leggiConti(gioco)[p.livello] : null), [finita, gioco, p.livello])
+  const chiediResa = () => setResa(true)
+
   const piede = finita ? (
-    fineVista &&
+    fine.vista &&
     (() => {
       const { titolo, riga } = testoFine(p.esito!.motivo, vincitore, 'il computer', puntiFine)
       return (
-        <Fine titolo={titolo} riga={`${riga} · ${NOMI_LIVELLI[p.livello]}`}>
-          <Button onClick={() => g.nuova()}>
-            <IconRefresh size={17} /> Gioca ancora
+        <Fine
+          gioco={gioco}
+          esito={vincitore === 'io' ? 'vinta' : vincitore === null ? 'patta' : 'persa'}
+          titolo={titolo}
+          riga={`${riga ? `${riga} · ` : ''}${NOMI_LIVELLI[p.livello]}`}
+          conto={
+            conti
+              ? [
+                  { etichetta: 'Tu', valore: conti.vinte },
+                  { etichetta: 'Computer', valore: conti.perse },
+                  { etichetta: 'Patte', valore: conti.patte },
+                ]
+              : undefined
+          }
+          ritardo={fine.dalVivo ? ADESIVO_FINE_MS : 0}
+        >
+          <Button size="lg" fullWidth onClick={() => g.nuova()}>
+            <IconRefresh size={18} /> Gioca ancora
           </Button>
-          <Button variant="tinted" onClick={() => vai(ROTTE.tavolo(gioco))}>
+          <Button size="lg" fullWidth variant="tinted" onClick={() => vai(ROTTE.tavolo(gioco))}>
             Cambia livello
           </Button>
         </Fine>
@@ -109,14 +129,19 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
         Riprova
       </Button>
     </div>
-  ) : (
-    <Turno
-      mio={mioTurno}
-      testo={mioTurno ? 'Tocca a te' : 'Il computer pensa…'}
-      avviso={descrizione.avviso(p.posizione, mioTurno)}
-      onPassa={descrizione.passo && mioTurno ? () => g.muovi(descrizione.passo!) : undefined}
+  ) : descrizione.sotto === 'mosse' ? (
+    <SottoTavola
+      storia={storia ?? []}
+      onMosse={() => setElenco(true)}
+      resa={{ etichetta: 'Abbandona', onClick: chiediResa }}
     />
-  )
+  ) : descrizione.sotto === 'passo' ? (
+    <PiedePasso
+      avviso={descrizione.avviso(p.posizione, mioTurno)}
+      puoi={mioTurno}
+      onPassa={() => descrizione.passo && g.muovi(descrizione.passo)}
+    />
+  ) : null
 
   // Il conteggio sul goban: mentre si conta, e a partita finita ai punti, con le pietre che si sono contate morte.
   const morte = fermo ? g.morte : p.esito?.motivo === 'punti' ? (p.morte ?? null) : null
@@ -132,13 +157,14 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
           <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
             <IconInfo size={21} />
           </BottoneBarra>
-          {storia && p.mosse.length > 0 && (
+          {/* Scacchi e dama hanno le mosse e la resa sotto la scacchiera; gli altri qui. */}
+          {storia && p.mosse.length > 0 && (descrizione.sotto !== 'mosse' || finita) && (
             <BottoneBarra etichetta="Le mosse" onClick={() => setElenco(true)}>
               <IconList size={20} />
             </BottoneBarra>
           )}
-          {!finita && (
-            <BottoneBarra etichetta="Abbandona" onClick={() => setResa(true)}>
+          {!finita && descrizione.sotto !== 'mosse' && (
+            <BottoneBarra etichetta="Abbandona" onClick={chiediResa}>
               <IconFlag size={19} />
             </BottoneBarra>
           )}
@@ -154,18 +180,19 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
         finita={finita}
         io={{
           nome: player?.displayName ?? 'Tu',
-          avatar: <Avatar nickname={player?.nickname ?? '?'} color={player?.avatarColor} size={36} />,
+          avatar: <Avatar nickname={player?.nickname ?? '?'} color={player?.avatarColor} size={42} />,
         }}
         altro={{
           nome: 'Computer',
           avatar: (
-            <span className={`tav-computer tav-computer--${gioco}`} aria-hidden="true">
-              <IconComputer size={20} />
+            <span className="tav-computer" aria-hidden="true">
+              <IconComputer size={24} />
             </span>
           ),
-          nota: NOMI_LIVELLI[p.livello],
+          nota: `Livello ${NOMI_LIVELLI[p.livello].toLowerCase()}`,
         }}
         turno={finita || fermo ? null : mioTurno ? 'io' : 'altro'}
+        vincitore={finita ? (vincitore === 'io' ? 'io' : vincitore === null ? 'patta' : 'altro') : null}
         onMossa={g.muovi}
         tempo={
           g.scadenza !== null && g.tempoMs !== null

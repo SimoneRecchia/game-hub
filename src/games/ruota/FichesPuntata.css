@@ -1,156 +1,119 @@
 /*
- * La puntata di Crazy Time: la carta con il titolo e il numero, e sotto le
- * fiches che si toccano, con il tasto che le riporta indietro. Le fiches sono
- * quelle del blackjack e della roulette (`bj-fiche`), grandi da toccare.
+ * La puntata di Crazy Time: un vassoio scuro con il filo d'oro tenue, le
+ * fiches da toccare e il tasto color crema che le riporta indietro, come nel
+ * mockup. Le fiches sono quelle di tutta la Fortuna (`bj-fiche`), grandi da
+ * toccare. Mentre la ruota gira il vassoio si spegne, ma si legge.
  */
 .ct-fiches {
   container-type: inline-size;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 10px 14px 14px;
-  border-radius: var(--r-xl);
-  background: var(--surface);
-  box-shadow: var(--ombra-album);
-}
-
-.ct-fiches__testa {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  min-height: 36px;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 24px;
+  background: rgba(18, 12, 43, 0.55);
+  box-shadow: inset 0 0 0 2px rgba(255, 216, 77, 0.25);
+  transition: opacity var(--dur-base) var(--ease-out);
 }
 
-.ct-fiches__titolo {
-  font-size: var(--text-body);
-  font-weight: 600;
-  color: var(--label);
-}
-
-.ct-fiches__stato {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.ct-fiches__minima {
-  font-size: var(--text-subhead);
-  color: var(--label-secondary);
-}
-
-.ct-fiches__valore {
-  min-width: 2ch;
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
-  line-height: 1;
-  text-align: right;
-  color: var(--label);
-}
-
-.ct-fiches__valore.is-sotto {
-  color: var(--label-secondary);
-}
-
-/* Se proprio non ci sta, Azzera va a capo, a destra: mai fuori dalla carta. */
-.ct-fiches__riga {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-3);
+.ct-fiches.is-spente {
+  opacity: 0.6;
 }
 
 .ct-fiches__gettoni {
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
 
-/* Una fiche da toccare: si abbassa sul tavolo come premuta, e il dito ha i suoi 44 punti. */
+/* Una fiche da toccare: scende sulla sua ombra come un tasto, e il dito ha i suoi 44 punti. */
 .ct-fiches__fiche {
-  --bj-fiche-lato: 46px;
-  border: 0;
+  --bj-fiche-lato: 52px;
   padding: 0;
   cursor: pointer;
-  transition:
-    transform var(--dur-fast) var(--ease-spring),
-    opacity var(--dur-fast) var(--ease-out);
+  transition: transform 0.1s var(--ease-out);
 }
 
 .ct-fiches__fiche:active:not(:disabled) {
-  transform: translateY(2px) scale(0.95);
+  transform: translateY(3px);
 }
 
+/* Una fiche che il saldo non copre si spegne, ma il suo numero si legge ancora. */
 .ct-fiches__fiche:disabled {
-  opacity: 0.4;
+  opacity: 0.6;
   cursor: default;
 }
 
 .ct-fiches__fiche:focus-visible,
 .ct-fiches__azzera:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 3px solid #ffd84d;
   outline-offset: 3px;
 }
 
 .ct-fiches__azzera {
-  margin-left: auto;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--fill-tertiary);
-  color: var(--label);
-  font: inherit;
-  font-size: var(--text-subhead);
-  font-weight: 600;
+  flex: none;
+  min-height: 46px;
+  padding: 0 14px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 14px;
+  background: #fffbf2;
+  box-shadow:
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: #120c2b;
+  font-family: var(--font-rounded);
+  font-size: 16px;
+  font-weight: 400;
   cursor: pointer;
+  transition: transform 0.1s var(--ease-out);
+}
+
+.ct-fiches__azzera:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
 }
 
 .ct-fiches__azzera:disabled {
-  opacity: 0.4;
+  background: #c9c3dd;
   cursor: default;
 }
 
-@media (max-width: 360px) {
-  .ct-fiches__gettoni {
-    gap: 6px;
-  }
-
-  .ct-fiches__fiche {
-    --bj-fiche-lato: 42px;
-  }
-}
-
 /*
- * Una carta stretta — il telefono da 320, o il pannello di lato con il
- * telefono di traverso —: le fiches si avvicinano e Azzera si stringe, e la
+ * Un vassoio stretto — il telefono da 320, o il pannello di lato con il
+ * telefono di traverso —: le fiches si avvicinano e rimpiccioliscono, e la
  * riga ci sta. Prima Azzera usciva dalla carta.
  */
-@container (max-width: 340px) {
-  .ct-fiches__riga {
+@container (max-width: 350px) {
+  .ct-fiches__gettoni {
     gap: 8px;
   }
 
-  .ct-fiches__gettoni {
-    gap: 6px;
-  }
-
   .ct-fiches__fiche {
-    --bj-fiche-lato: 42px;
+    --bj-fiche-lato: 46px;
   }
 
   .ct-fiches__azzera {
-    padding: 0 12px;
+    padding: 0 10px;
+    font-size: 15px;
   }
 }
 
 @container (max-width: 300px) {
   .ct-fiches__gettoni {
-    gap: 5px;
+    gap: 6px;
   }
 
   .ct-fiches__fiche {
     --bj-fiche-lato: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-fiches,
+  .ct-fiches__fiche,
+  .ct-fiches__azzera {
+    transition: none;
   }
 }

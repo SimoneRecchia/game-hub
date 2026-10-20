@@ -7,7 +7,7 @@ import { IconInfo, IconRefresh } from '@/components/Icons'
 import { Opzioni, Scelte } from '@/components/Opzioni'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { ComeSiGiocaAnagrammi } from '@/games/anagrammi/ComeSiGioca'
-import { PartitaAnagrammi, Riepilogo, type ComandiAnagrammi } from '@/games/anagrammi/Partita'
+import { CartaFine, PartitaAnagrammi, rigaFine, titoloFine, type ComandiAnagrammi } from '@/games/anagrammi/Partita'
 import {
   LIVELLI_ANAGRAMMI,
   LUNGHEZZE_LIBERE,
@@ -103,24 +103,22 @@ export default function AnagrammiLibera() {
         vista={v}
         comandi={comandi}
         fine={
-          <>
-            <div className="ana-totale">
-              <p className="ana-totale__valore u-tabnum">{g.punti} punti</p>
-              <p className="ana-totale__dettaglio">
-                {g.livello ? NOMI_LIVELLI_ANAGRAMMI[g.livello] : ''} · non conta per la classifica
-              </p>
-            </div>
-            <Riepilogo parole={v.parole} />
-            <div className="ana-azioni">
-              <button type="button" className="ana-link" onClick={() => g.livello && comincia(g.livello)}>
+          <CartaFine
+            titolo={titoloFine(v.parole)}
+            riga={`${rigaFine(v.parole)} · ${g.livello ? NOMI_LIVELLI_ANAGRAMMI[g.livello] : ''}`}
+            parole={v.parole}
+            punti={String(g.punti)}
+          >
+            <div className="ana-fila-tasti">
+              <button type="button" className="ana-tasto ana-tasto--carta" onClick={g.ricomincia}>
+                Esci
+              </button>
+              <button type="button" className="ana-tasto" onClick={() => g.livello && comincia(g.livello)}>
                 <IconRefresh size={18} />
-                Ancora
-              </button>
-              <button type="button" className="ana-link" onClick={g.ricomincia}>
-                Cambia difficoltà
+                Gioca ancora
               </button>
             </div>
-          </>
+          </CartaFine>
         }
       />
       <ComeSiGiocaAnagrammi open={regole} onClose={() => setRegole(false)} />

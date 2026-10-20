@@ -2,13 +2,16 @@ import type { CSSProperties } from 'react'
 import { GETTONI_BJ } from '@shared/blackjack'
 import './Fiches.css'
 
-/** Il colore di una fiche, per taglio, come ai tavoli veri. */
+/**
+ * Il colore di una fiche, per taglio, come ai tavoli veri: gli stessi di Crazy
+ * Time e della slot, abbastanza scuri da reggere il numero color crema.
+ */
 export const COLORE_FICHE: Record<number, string> = {
-  10: 'var(--bj-fiche-10)',
-  25: 'var(--bj-fiche-25)',
-  50: 'var(--bj-fiche-50)',
-  100: 'var(--bj-fiche-100)',
-  500: 'var(--bj-fiche-500)',
+  10: '#2563eb',
+  25: '#118048',
+  50: '#d62839',
+  100: '#23262d',
+  500: '#7c3aed',
 }
 
 /**

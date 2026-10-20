@@ -4,28 +4,40 @@
  *
  * Il campo e' un contenitore `size`: prende l'altezza che resta sopra il
  * piede, e il tavoliere si misura su quella con `cqw` e `--campo-alto` (che e'
- * `cqh` meno le due righe dei giocatori), senza scorrere. Le righe dei
- * giocatori sono larghe quanto il tavoliere: non entrano nel calcolo della
- * larghezza (`width: 0` e `min-width: 100%`), la prendono.
+ * `cqh` meno le due righe dei giocatori, i loro spazi e l'ombra del
+ * tavoliere), senza scorrere. Le righe dei giocatori sono larghe quanto il
+ * tavoliere: non entrano nel calcolo della larghezza (`width: 0` e
+ * `min-width: 100%`), la prendono.
+ *
+ * Il campo non e' piu' alto di quel che serve al tavoliere largo quanto la
+ * tavola (`--proporzione` e' l'altezza del tavoliere sulla sua larghezza): il
+ * resto lo divide la tavola sopra e sotto, e il piede resta attaccato alla
+ * riga di chi gioca invece di cadere in fondo allo schermo.
  *
  * Sul telefono di traverso la pagina scorre e l'altezza non e' definita: li'
  * il campo torna `normal` (la stessa trappola della griglia del Wordle).
  */
 .tav {
-  --riga-g: 48px;
-  --spazio-g: 8px;
+  --riga-g: 58px;
+  --spazio-g: 12px;
+  --gruppo-extra: calc(2 * var(--riga-g) + 2 * var(--spazio-g) + 8px);
+  position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   flex: 1;
   min-height: 0;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
   width: 100%;
+  container-type: inline-size;
 }
 
 .tav__campo {
-  --campo-alto: calc(100cqh - 2 * var(--riga-g) - 2 * var(--spazio-g));
-  flex: 1;
+  /* Le due righe, i loro spazi, e sotto il tavoliere la sua ombra secca. */
+  --campo-alto: calc(100cqh - var(--gruppo-extra));
+  flex: 1 1 auto;
   min-height: 0;
+  max-height: calc(100cqw * var(--proporzione, 1) + var(--gruppo-extra) + 6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -44,11 +56,18 @@
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
-  min-height: 44px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding-bottom: 4px;
+}
+
+.tav__piede:empty {
+  display: none;
 }
 
 /* ---------- I giocatori ---------- */
 
+/* Una carta per giocatore, con il filo e l'ombra secca; quella di chi deve muovere si alza, con l'anello giallo. */
 .tav-g {
   display: flex;
   align-items: center;
@@ -57,17 +76,25 @@
   width: 0;
   min-width: 100%;
   height: var(--riga-g);
-  padding: 5px 12px 5px 5px;
-  border-radius: 16px;
+  padding: 6px 10px 6px 6px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow:
+    0 4px 0 var(--ink),
+    inset 0 3px 0 var(--carta-luce);
+  color: var(--label);
   transition:
-    background-color 0.25s,
-    box-shadow 0.25s;
+    transform 0.25s var(--ease-out),
+    box-shadow 0.25s var(--ease-out);
 }
 
-/* Di chi e' il turno: la riga si accende dell'indaco dell'interfaccia. */
 .tav-g.is-turno {
-  background: color-mix(in srgb, var(--brand) 10%, transparent);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--brand) 45%, transparent);
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 0 var(--ink),
+    0 0 0 4px var(--giallo),
+    inset 0 3px 0 var(--carta-luce);
 }
 
 .tav-g__avatar {
@@ -77,37 +104,52 @@
 }
 
 .tav-g__testo {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
 .tav-g__nome {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  font-family: var(--font-rounded);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.tav-g__chi {
   overflow: hidden;
-  font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tav-g__parte {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  overflow: hidden;
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
-  white-space: nowrap;
-}
-
+/* Il colore della parte accanto al nome: il pezzo, il disco, la pietra. */
 .tav-g__segno {
   flex: none;
-  width: 11px;
-  height: 11px;
+  box-sizing: border-box;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
   border-radius: 50%;
   background: var(--segno);
-  box-shadow:
-    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
-    0 0 0 1px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 1.5px 0 var(--ink);
+}
+
+.tav-g__dettaglio {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 18px;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--label-secondary);
+  white-space: nowrap;
 }
 
 .tav-g__nota {
@@ -115,25 +157,199 @@
   text-overflow: ellipsis;
 }
 
+.tav-g .pillola {
+  max-width: 46%;
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 2px 0 var(--ink);
+}
+
+/* L'altro ci pensa: tre puntini che saltano, dentro la pillola. */
+.tav-g__puntini {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 3px;
+}
+
+.tav-g__puntini span {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: tav-puntino 1s ease-in-out infinite;
+}
+
+.tav-g__puntini span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.tav-g__puntini span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes tav-puntino {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+/* Il computer, al posto dell'avatar: una faccina gialla con il robot, come le faccine degli amici. */
+.tav-computer {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 42px;
+  height: 42px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 50%;
+  background: var(--giallo);
+  box-shadow: 0 3px 0 var(--ink);
+  color: var(--ink);
+}
+
 /* ---------- Il piede ---------- */
 
-.tav-turno {
+/* Scacchi e dama: le ultime mosse in una carta, e la resa accanto, come il foglio della partita al tavolo. */
+.tav-sotto {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.tav-sotto__mosse,
+.tav-sotto__resa {
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  min-height: 32px;
+  height: 50px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--ombra-tasto);
+  color: var(--label);
+  cursor: pointer;
+  transition:
+    transform 0.1s var(--ease-out),
+    box-shadow 0.1s var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.tav-turno .pillola {
-  max-width: none;
+.tav-sotto__mosse:active,
+.tav-sotto__resa:active {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
 }
 
-.tav-turno__avviso {
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  color: var(--red);
+.tav-sotto__mosse {
+  flex: 1;
+  min-width: 0;
+  gap: 10px;
+  padding: 0 10px 0 14px;
+  text-align: left;
+}
+
+.tav-sotto__mosse > svg {
+  flex: none;
+  color: var(--label-secondary);
+}
+
+.tav-sotto__titolo {
+  flex: none;
+  font-family: var(--font-rounded);
+  font-size: 16px;
+}
+
+/* Le ultime mosse, l'ultima in fondo e accesa: quelle prima sfumano verso il titolo. */
+.tav-sotto__elenco {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 18px);
+  mask-image: linear-gradient(90deg, transparent, #000 18px);
+}
+
+.tav-sotto__mossa {
+  display: inline-flex;
+  flex: none;
+  align-items: baseline;
+  gap: 2px;
+  padding: 3px 7px;
+  border-radius: 9px;
+  background: var(--fill-tertiary);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.tav-sotto__n {
+  font-size: 10.5px;
+  color: var(--label-secondary);
+}
+
+.tav-sotto__mossa.is-ultima {
+  background: #ffe27a;
+  box-shadow: inset 0 0 0 2px var(--ink);
+  color: #2a1f5c;
+  animation: tav-pop 0.3s var(--ease-out);
+}
+
+.tav-sotto__mossa.is-ultima .tav-sotto__n {
+  color: #4e4479;
+}
+
+.tav-sotto__vuoto {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+.tav-sotto__resa {
+  flex: none;
+  gap: 6px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+@keyframes tav-pop {
+  50% {
+    transform: scale(1.12);
+  }
+}
+
+/* Il go: quel che e' appena successo, e il passo sempre al suo posto. */
+.tav-passo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.tav-passo__avviso {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+  color: var(--label-secondary);
+}
+
+.tav-passo .btn {
+  flex: none;
+  font-family: var(--font-rounded);
+  font-weight: 400;
+  font-size: 18px;
 }
 
 /* Una domanda che aspetta risposta: la patta proposta, l'altro che non muove piu'. */
@@ -143,12 +359,17 @@
   justify-content: center;
   flex-wrap: wrap;
   gap: var(--sp-2);
+  box-sizing: border-box;
   width: min(100%, 520px);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
-  font-size: var(--text-subheadline);
+  padding: 10px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--ink);
+  font-size: var(--text-subhead);
+  font-weight: 800;
   text-align: center;
+  animation: tav-arriva 0.32s var(--ease-out) both;
 }
 
 .tav-domanda__azioni {
@@ -156,51 +377,258 @@
   gap: var(--sp-2);
 }
 
+@keyframes tav-arriva {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 .tav-errore {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
   font-size: var(--text-footnote);
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
-.tav-fine {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-1);
-  width: min(100%, 560px);
-  text-align: center;
-}
-
-.tav-fine__titolo {
-  margin: 0;
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
-}
-
-.tav-fine__riga,
 .tav-fine__nota {
   margin: 0;
   font-size: var(--text-footnote);
+  font-weight: 800;
   color: var(--label-secondary);
+}
+
+/* ---------- La fine ---------- */
+
+/*
+ * La carta del risultato: sopra tutto, su un velo d'inchiostro, come nel
+ * prototipo. E' chiara in tutti e due i temi (`color-scheme: light`: i token
+ * dentro si girano da soli), con un poco del colore del gioco in fondo.
+ */
+.tav-fine {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: max(20px, var(--safe-top)) 20px max(20px, var(--safe-bottom));
+  animation: tav-svela 0.3s ease-out both;
+}
+
+.tav-fine__velo {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(42, 31, 92, 0.42);
+  cursor: pointer;
+}
+
+.tav-fine__carta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: min(100%, 380px);
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 22px 18px 14px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fff1c9, color-mix(in srgb, var(--tinta, #c9b8ff) 42%, #fffbf2));
+  box-shadow:
+    0 5px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.65);
+  color: #2a1f5c;
+  color-scheme: light;
+  text-align: center;
+  outline: none;
+  animation: tav-compare 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.tav-fine__icona {
+  display: grid;
+  transform: rotate(-6deg);
+  animation: tav-galleggia 4.2s ease-in-out infinite;
+}
+
+.tav-fine__titolo {
+  margin: 4px 0 0;
+  font-family: var(--font-rounded);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.tav-fine__riga {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: #4e4479;
+}
+
+.tav-fine__conto {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tav-fine__conto li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  border: 2px solid #2a1f5c;
+  border-radius: 999px;
+  background: #fffdf5;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.tav-fine__conto b {
+  display: grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #ffe27a;
+  box-shadow: inset 0 0 0 2px #2a1f5c;
+  font-family: var(--font-rounded);
+  font-weight: 400;
+}
+
+.tav-fine.is-persa .tav-fine__conto b {
+  background: #ffd1d6;
+}
+
+.tav-fine.is-patta .tav-fine__conto b {
+  background: #d6e4ff;
+}
+
+.tav-fine .tav-fine__nota {
+  color: #4e4479;
 }
 
 .tav-fine__azioni {
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.tav-fine__guarda {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: #4e4479;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.tav-fine__guarda:focus-visible {
+  outline: 3px solid var(--brand);
+}
+
+@keyframes tav-svela {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes tav-compare {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+}
+
+@keyframes tav-galleggia {
+  50% {
+    transform: rotate(-6deg) translateY(-7px);
+  }
+}
+
+/* La fine fatta da parte: una riga nel piede, che riapre la carta, e le stesse azioni. */
+.tav-fine-riga {
+  display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--sp-2);
-  margin-top: var(--sp-2);
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 8px 8px 14px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 4px 0 var(--ink);
+  animation: tav-arriva 0.32s var(--ease-out) both;
+}
+
+.tav-fine-riga__esito {
+  display: flex;
+  flex: 1 1 140px;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--label);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tav-fine-riga__titolo {
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.tav-fine-riga__riga {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--label-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tav-fine-riga__azioni {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+}
+
+.tav-fine-riga__azioni .btn {
+  flex: 1;
+  width: auto;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
+  font-size: 1rem;
 }
 
 /* ---------- L'elenco delle mosse ---------- */
 
-/* Le coppie scendono in colonna, come sul foglio di una partita, e le colonne si affiancano dove c'e' posto. */
+/* Le coppie in due colonne, ognuna su un fondo tenue, come il foglio di una partita. */
 .tav-mosse {
-  columns: 150px auto;
-  column-gap: var(--sp-5);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -209,22 +637,24 @@
 
 .tav-mosse__riga {
   display: grid;
-  grid-template-columns: 2.4em 1fr 1fr;
-  gap: var(--sp-2);
-  padding: 3px 0;
-  break-inside: avoid;
+  grid-template-columns: 30px repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: var(--fill-tertiary);
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .tav-mosse__n {
-  color: var(--label-tertiary);
-}
-
-.tav-mosse__mossa {
-  font-weight: 600;
+  font-size: 12px;
+  color: var(--label-secondary);
 }
 
 .tav-mosse__vuoto {
   margin: 0;
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
@@ -238,12 +668,31 @@
 
 .tav-foglio__testo {
   margin: 0 0 var(--sp-2);
+  font-weight: 700;
   color: var(--label-secondary);
 }
 
 .tav-attesa {
   flex: 1;
   min-height: 240px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tav-g,
+  .tav-sotto__mosse,
+  .tav-sotto__resa {
+    transition: none;
+  }
+
+  .tav-g__puntini span,
+  .tav-sotto__mossa.is-ultima,
+  .tav-domanda,
+  .tav-fine,
+  .tav-fine__carta,
+  .tav-fine__icona,
+  .tav-fine-riga {
+    animation: none;
+  }
 }
 
 /*
@@ -261,7 +710,7 @@
     grid-template-rows: auto auto 1fr;
     align-content: center;
     justify-content: center;
-    gap: var(--sp-2) var(--sp-5);
+    gap: var(--sp-3) var(--sp-5);
   }
 
   .tav__campo,
@@ -270,7 +719,7 @@
   }
 
   .tav__campo {
-    --campo-alto: calc(100svh - 84px - var(--safe-top) - var(--safe-bottom));
+    --campo-alto: calc(100svh - 92px - var(--safe-top) - var(--safe-bottom));
   }
 
   .tav__gruppo > :not(.tav-g) {
@@ -293,41 +742,11 @@
     grid-column: 2;
     grid-row: 3;
     align-self: start;
+    width: 100%;
   }
 }
 
-/* Il computer, al posto dell'avatar: nel colore del gioco. */
-.tav-computer {
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: linear-gradient(160deg, var(--c1, var(--brand)), var(--c2, var(--brand)));
-  color: #fff;
-}
-
-.tav-computer--scacchi {
-  --c1: var(--scacchi-1);
-  --c2: var(--scacchi-2);
-}
-
-.tav-computer--dama {
-  --c1: var(--dama-1);
-  --c2: var(--dama-2);
-}
-
-.tav-computer--forza4 {
-  --c1: var(--forza4-1);
-  --c2: var(--forza4-2);
-}
-
-.tav-computer--go {
-  --c1: var(--go-1);
-  --c2: var(--go-2);
-}
-
-.tav-computer--tris {
-  --c1: var(--tris-1);
-  --c2: var(--tris-2);
+/* Il Forza 4 e' piu' alto che largo: la fascia della mano e il piede, oltre alla griglia. */
+.tav--forza4 {
+  --proporzione: 1.05;
 }

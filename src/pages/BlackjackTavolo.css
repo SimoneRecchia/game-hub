@@ -12,11 +12,17 @@
  * cerchio della puntata.
  */
 .bj {
+  /*
+   * Il bordo e' di legno, come nel mockup, e le scritte del panno si leggono:
+   * la pagina e' una sala scura (Sala.css), e il tavolo ha il filo d'inchiostro.
+   */
+  --bj-bordo: #6e3e1c;
+  --bj-scritta-chiara: #fff6d6;
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
   animation: bj-entra 460ms var(--ease-out) both;
 }
 
@@ -49,12 +55,14 @@
   isolation: isolate;
   border-radius: 26px 26px 50% 50% / 26px 26px 20% 20%;
   background:
-    radial-gradient(62% 46% at 50% 40%, rgba(255, 255, 255, 0.13), transparent 70%),
+    radial-gradient(62% 46% at 50% 40%, rgba(255, 255, 255, 0.05), transparent 70%),
     repeating-radial-gradient(circle at 50% 30%, rgba(0, 0, 0, 0.03) 0 1px, transparent 1px 3px),
-    radial-gradient(120% 95% at 50% 22%, var(--bj-panno-1), var(--bj-panno-2) 64%, var(--bj-panno-3));
+    radial-gradient(120% 95% at 50% 22%, #1a7e4e, #136640 62%, #0a472c);
+  /* Il filo d'inchiostro e l'ombra secca fuori dal bordo: un bordo vero cambierebbe le misure del contenitore. */
   box-shadow:
-    inset 0 22px 50px rgba(0, 0, 0, 0.28),
-    var(--shadow-md);
+    inset 0 22px 50px rgba(0, 0, 0, 0.24),
+    0 0 0 var(--filo) #120c2b,
+    0 5px 0 var(--filo) #120c2b;
 }
 
 /* Il bordo imbottito, di pelle scura con il filo d'oro, sopra a tutto. */
@@ -66,9 +74,9 @@
   pointer-events: none;
   box-shadow:
     inset 0 0 0 9px var(--bj-bordo),
-    inset 0 0 0 10px rgba(255, 255, 255, 0.1),
-    inset 0 0 0 11.5px rgba(242, 210, 122, 0.55),
-    inset 0 0 0 13px rgba(0, 0, 0, 0.25),
+    inset 0 2px 0 9px #8a5228,
+    inset 0 0 0 11.5px #2a170a,
+    inset 0 0 0 13px rgba(232, 193, 90, 0.45),
     inset 0 16px 24px rgba(0, 0, 0, 0.2);
 }
 
@@ -202,13 +210,17 @@
   transform: translateX(-50%);
 }
 
+/* Le scritte hanno sotto un filo del verde scuro del panno, come stampate: si leggono anche sulla luce. */
 .bj-scritte__grande {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 19px;
   font-weight: 700;
   letter-spacing: 2.5px;
-  fill: var(--bj-scritta);
-  opacity: 0.92;
+  fill: #fff6e0;
+  paint-order: stroke;
+  stroke: rgba(4, 48, 24, 0.55);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
 }
 
 .bj-scritte__piccola {
@@ -217,6 +229,10 @@
   font-weight: 700;
   letter-spacing: 3px;
   fill: var(--bj-scritta-chiara);
+  paint-order: stroke;
+  stroke: rgba(4, 48, 24, 0.6);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
 }
 
 .bj-scritte__filo {
@@ -235,8 +251,11 @@
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 2px;
-  fill: var(--bj-scritta);
-  opacity: 0.92;
+  fill: #ffe27a;
+  paint-order: stroke;
+  stroke: rgba(4, 48, 24, 0.6);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
 }
 
 .bj-scritte__bordo {
@@ -292,10 +311,11 @@
 
 .bj-banco__nome {
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--bj-scritta-chiara);
+  text-shadow: 0 1px 0 rgba(4, 48, 24, 0.7);
 }
 
 /* ─────────────────────────────  Le mani  ───────────────────────────── */
@@ -338,15 +358,14 @@
   z-index: 20;
   min-width: 30px;
   padding: 3px 8px;
+  border: 2px solid #120c2b;
   border-radius: var(--r-pill);
-  background: rgba(5, 22, 13, 0.9);
-  box-shadow:
-    0 0 0 1.5px rgba(242, 210, 122, 0.75),
-    0 3px 8px rgba(0, 0, 0, 0.35);
-  color: #fff;
+  background: #fffbf2;
+  box-shadow: 0 2px 0 #120c2b;
+  color: #120c2b;
   font-family: var(--font-rounded);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1.15;
   text-align: center;
   white-space: nowrap;
@@ -360,19 +379,15 @@
 }
 
 .bj-mano__totale.is-ventuno {
-  color: var(--bj-scritta);
+  background: var(--menta);
 }
 
 .bj-mano__totale.is-bj {
-  background: linear-gradient(160deg, #fff2b8, #e9b93a 55%, #a8741a);
-  color: #3d2300;
+  background: var(--giallo);
 }
 
 .bj-mano__totale.is-oltre {
-  background: linear-gradient(160deg, #ff6b6b, #b5162b);
-  box-shadow:
-    0 0 0 1.5px #fff,
-    0 3px 8px rgba(0, 0, 0, 0.35);
+  background: #ff7083;
 }
 
 .bj-mano:has(.bj-mano__totale.is-oltre) .bj-mano__carte {
@@ -403,18 +418,16 @@
   left: 50%;
   top: 46%;
   z-index: 21;
-  padding: 4px 12px;
-  border-radius: 8px;
-  background: rgba(30, 33, 40, 0.92);
-  box-shadow:
-    0 0 0 2px #fff,
-    0 6px 16px rgba(0, 0, 0, 0.4);
-  color: #fff;
+  padding: 3px 12px;
+  border: 2px solid #120c2b;
+  border-radius: 10px;
+  background: #3a2e6e;
+  box-shadow: 0 3px 0 #120c2b;
+  color: #fff6e0;
   font-family: var(--font-rounded);
-  font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   transform: translate(-50%, -50%) rotate(-8deg);
   animation: bj-esito 0.55s var(--ease-spring) backwards;
@@ -427,15 +440,19 @@
   }
 }
 
-.bj-mano__esito.is-vinta,
+.bj-mano__esito.is-vinta {
+  background: var(--menta);
+  color: #120c2b;
+}
+
 .bj-mano__esito.is-blackjack {
-  background: linear-gradient(160deg, #fff2b8, #e9b93a 55%, #a8741a);
-  color: #3d2300;
+  background: var(--giallo);
+  color: #120c2b;
 }
 
 .bj-mano__esito.is-persa,
 .bj-mano__esito.is-sballata {
-  background: linear-gradient(160deg, #ff6b6b, #b5162b);
+  background: #3a2e6e;
 }
 
 .bj-mano.is-persa .bj-mano__carte,
@@ -834,7 +851,8 @@
   font-size: 11px;
   font-weight: 700;
   line-height: 1.25;
-  color: rgba(255, 255, 255, 0.92);
+  color: #fff6e0;
+  text-shadow: 0 1px 0 rgba(4, 48, 24, 0.8);
   text-overflow: ellipsis;
   white-space: nowrap;
   transform: translateX(-50%);
@@ -867,7 +885,7 @@
 }
 
 .bj-altro.is-libero {
-  opacity: 0.55;
+  opacity: 0.75;
 }
 
 .bj-altro__cerchio {
@@ -1011,57 +1029,65 @@
   transform: translateY(2px) scale(0.95);
 }
 
+/* Una fiche che il saldo non copre si spegne, ma il suo numero si legge. */
 .bj-gettone:disabled {
-  opacity: 0.3;
-  filter: grayscale(0.5);
+  opacity: 0.6;
   cursor: default;
 }
 
-.bj-tasto {
-  min-width: 64px;
-  min-height: 46px;
-  padding: 0 var(--sp-4);
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--fill-secondary);
-  color: var(--label);
-  font: inherit;
-  font-weight: 800;
+/*
+ * I tasti dei comandi sono quelli dell'album: il filo d'inchiostro, l'ombra
+ * secca, la scritta in Lilita. Annulla e ×2 color crema, il tasto che fa
+ * partire le carte menta, come il bottone pieno dell'app.
+ */
+.bj-tasto,
+.bj-distribuisci {
+  min-height: 52px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 16px;
+  box-shadow:
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: #120c2b;
+  font-family: var(--font-rounded);
+  font-size: 17px;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    transform 0.12s var(--ease-out),
+    box-shadow 0.12s var(--ease-out);
 }
 
-.bj-tasto:disabled {
-  opacity: 0.4;
+.bj-tasto {
+  min-width: 60px;
+  padding: 0 var(--sp-4);
+  background: #fffbf2;
 }
 
 .bj-distribuisci {
   flex: 1;
   max-width: 280px;
-  min-height: 50px;
   padding: 0 var(--sp-5);
-  border: 0;
-  border-radius: var(--r-pill);
-  background: linear-gradient(180deg, #ffe58a, var(--bj-scritta) 55%, #c9962a);
-  color: #3d2300;
-  font-family: var(--font-rounded);
-  font-size: 17px;
-  font-weight: 900;
-  box-shadow:
-    0 4px 0 #8a6416,
-    0 8px 18px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out);
+  background: var(--menta);
+  font-size: 19px;
 }
 
+.bj-tasto:active:not(:disabled),
 .bj-distribuisci:active:not(:disabled) {
   transform: translateY(3px);
   box-shadow:
-    0 1px 0 #8a6416,
-    0 3px 8px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    0 1px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
 }
 
+/* Spenti con un colore e non con la trasparenza, come i bottoni dell'app: la scritta si legge. */
+.bj-tasto:disabled,
 .bj-distribuisci:disabled {
-  opacity: 0.5;
+  background: #4a447a;
+  border-color: #2a2457;
+  box-shadow: 0 2px 0 #2a2457;
+  color: #c4bfe0;
+  cursor: default;
 }
 
 .bj-comandi__mosse {
@@ -1072,72 +1098,72 @@
 .bj-mosse {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--sp-2);
+  gap: 10px;
 }
 
+/* Le quattro mosse: tessere a colori pieni con il filo, il segno sopra e il nome sotto, come nel mockup. */
 .bj-mossa {
   display: grid;
   justify-items: center;
-  gap: 5px;
-  padding: 4px 0;
-  border: 0;
-  background: none;
-  color: var(--label);
+  align-content: center;
+  gap: 2px;
+  min-height: 76px;
+  padding: 6px 2px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 18px;
+  box-shadow:
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: #120c2b;
   font: inherit;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
+  transition:
+    transform 0.12s var(--ease-out),
+    box-shadow 0.12s var(--ease-out);
+}
+
+.bj-mossa:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
 }
 
 .bj-mossa__segno {
   display: grid;
   place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  color: #fff;
+  width: 30px;
+  height: 30px;
   font-family: var(--font-rounded);
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1;
-  box-shadow:
-    0 4px 0 rgba(0, 0, 0, 0.28),
-    0 8px 14px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out);
 }
 
-.bj-mossa:active:not(:disabled) .bj-mossa__segno {
-  transform: translateY(3px);
-  box-shadow:
-    0 1px 0 rgba(0, 0, 0, 0.28),
-    0 3px 6px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+.bj-mossa.is-carta {
+  background: var(--menta);
 }
 
-.bj-mossa.is-carta .bj-mossa__segno {
-  background: linear-gradient(180deg, #4bdc86, #149247);
+.bj-mossa.is-stai {
+  background: var(--giallo);
 }
 
-.bj-mossa.is-stai .bj-mossa__segno {
-  background: linear-gradient(180deg, #ff7676, #c3222f);
+.bj-mossa.is-raddoppia {
+  background: var(--cielo);
 }
 
-.bj-mossa.is-raddoppia .bj-mossa__segno {
-  background: linear-gradient(180deg, #ffd25e, #d98a0b);
-  font-size: 20px;
-}
-
-.bj-mossa.is-dividi .bj-mossa__segno {
-  background: linear-gradient(180deg, #7aa7ff, #3b5ee0);
+.bj-mossa.is-dividi {
+  background: var(--rosa);
 }
 
 /* Lo split: due carte che si separano. */
 .bj-mossa__icona {
-  width: 58%;
-  height: 58%;
-  fill: rgba(255, 255, 255, 0.22);
-  stroke: #fff;
+  width: 100%;
+  height: 100%;
+  fill: rgba(255, 255, 255, 0.55);
+  stroke: #120c2b;
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -1162,18 +1188,17 @@
   gap: 10px;
   justify-self: center;
   width: min(100%, 320px);
-  min-height: 44px;
+  min-height: 48px;
   padding: 0 7px 0 14px;
-  border: 0;
+  border: var(--filo) solid #120c2b;
   border-radius: var(--r-pill);
-  background: linear-gradient(180deg, var(--bj-panno-1), var(--bj-panno-2));
+  background: linear-gradient(180deg, #1f8f57, #157046);
   box-shadow:
-    inset 0 0 0 1.5px rgba(242, 210, 122, 0.75),
-    0 3px 0 var(--bj-panno-3),
-    0 6px 14px rgba(0, 0, 0, 0.2);
-  color: #fff;
+    inset 0 0 0 1.5px rgba(255, 226, 122, 0.75),
+    0 4px 0 #120c2b;
+  color: #fff6e0;
   font: inherit;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
   animation: bj-offerta-entra 0.45s var(--ease-spring) backwards;
   transition: transform 0.12s var(--ease-out), box-shadow 0.12s var(--ease-out);
@@ -1187,15 +1212,17 @@
 }
 
 .bj-offerta:active:not(:disabled) {
-  transform: translateY(2px);
+  transform: translateY(3px);
   box-shadow:
-    inset 0 0 0 1.5px rgba(242, 210, 122, 0.75),
-    0 1px 0 var(--bj-panno-3),
-    0 3px 8px rgba(0, 0, 0, 0.2);
+    inset 0 0 0 1.5px rgba(255, 226, 122, 0.75),
+    0 1px 0 #120c2b;
 }
 
 .bj-offerta:disabled {
-  opacity: 0.45;
+  background: #4a447a;
+  border-color: #2a2457;
+  box-shadow: 0 2px 0 #2a2457;
+  color: #c4bfe0;
   cursor: default;
 }
 
@@ -1223,9 +1250,18 @@
   text-align: center;
 }
 
+/* Una mossa che non si puo' fare si vede spenta, ma si legge. */
 .bj-mossa:disabled {
-  opacity: 0.28;
+  background: #4a447a;
+  border-color: #2a2457;
+  box-shadow: 0 2px 0 #2a2457;
+  color: #c4bfe0;
   cursor: default;
+}
+
+.bj-mossa:disabled .bj-mossa__icona {
+  fill: transparent;
+  stroke: #c4bfe0;
 }
 
 .bj-stato {
@@ -1234,9 +1270,11 @@
   align-content: center;
   gap: 6px;
   min-height: 46px;
-  color: var(--label);
-  font-weight: 700;
+  color: #fff6e0;
+  font-size: 15px;
+  font-weight: 900;
   text-align: center;
+  text-shadow: 0 2px 0 #120c2b;
 }
 
 .bj-stato__chi {
@@ -1248,16 +1286,17 @@
 .bj-stato__barra {
   overflow: hidden;
   width: min(72%, 280px);
-  height: 5px;
-  border-radius: 3px;
-  background: var(--fill-tertiary);
+  height: 8px;
+  border: 2px solid #120c2b;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .bj-stato__pieno {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--bj-panno-1);
+  background: linear-gradient(90deg, #ffb02e, #ffd84d);
   transform-origin: left center;
   transition: transform 0.22s linear;
 }
@@ -1282,9 +1321,13 @@
     --bj-fiche-lato: 42px;
   }
 
+  .bj-mossa {
+    min-height: 64px;
+  }
+
   .bj-mossa__segno {
-    width: 48px;
-    height: 48px;
+    width: 26px;
+    height: 26px;
     font-size: 21px;
   }
 

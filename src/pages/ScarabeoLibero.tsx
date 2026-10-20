@@ -1,17 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
-import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
 import { Coriandoli, Vuoto, useFesta } from '@/components/Elementi'
 import { SegmentedControl } from '@/components/SegmentedControl'
-import { IconComputer, IconInfo, IconList, IconPeople, IconRefresh } from '@/components/Icons'
+import { IconComputer, IconInfo, IconPeople, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
-import { IconaScheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { Campo, ElencoMosse, Tabellino } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
+import { FineScarabeo } from '@/games/scarabeo/Fine'
 import {
   ADESIVO_FINE_SCARABEO_MS,
   ADESIVO_MOSSA_MS,
@@ -19,7 +18,6 @@ import {
   adesivoFineScarabeo,
   adesivoMossa,
 } from '@/games/scarabeo/adesivi'
-import { nelSacchetto } from '@/games/scarabeo/turni'
 import { InvitaAmico, PartitaAperta, useSalaTavolo } from '@/games/tavolo/SalaAmico'
 import { SceltaTempo, useTempoMossa } from '@/games/tavolo/Tempo'
 import { useScarabeoLibero, type ScarabeoLiberoController } from '@/games/scarabeo/useScarabeoLibero'
@@ -27,7 +25,6 @@ import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { etichettaScarabeo } from '@/games/compagnia/etichette'
 import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
-import { usePlayer } from '@/lib/auth'
 import { LIVELLI, type Livello, type StatoLibera } from '@shared/scarabeo-computer'
 import './Scarabeo.css'
 
@@ -69,7 +66,6 @@ export default function ScarabeoLibero() {
   const dentro = compagnia.compagnia?.ospiti.filter((o) => o.stato === 'dentro').length ?? 0
   const festa = useFesta(stato ? !stato.finita : null, risultato && finita && stato?.esito === 'vinta')
 
-  const io = usePlayer()
   const { adesivo, accoda } = useCodaAdesivi()
 
   // Le mosse al centro: tutte le mie, e quelle del computer che fanno male.
@@ -138,9 +134,6 @@ export default function ScarabeoLibero() {
           <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setCompagniaAperta(true)} badge={dentro}>
             <IconPeople size={21} />
           </BottoneBarra>
-          <BottoneBarra etichetta="Le mosse" onClick={() => setStoria(true)}>
-            <IconList size={20} />
-          </BottoneBarra>
           <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
             <IconInfo size={21} />
           </BottoneBarra>
@@ -163,19 +156,20 @@ export default function ScarabeoLibero() {
           c={g}
           sconosciute={g.sconosciute}
           bloccato={finita || stato.turno !== 'io' || g.pensa}
-          attesa={g.pensa ? 'Il computer pensa…' : null}
+          attesa={g.pensa ? 'Pensa…' : null}
           restanti={stato.restanti}
           evidenziate={g.ultimaDelComputer}
+          ultime={{
+            voci: stato.giocate.map((m) => ({ ...m, autore: m.mia ? 'Tu' : 'Computer' })),
+            aiuto:
+              'Tocca una casella, poi le tessere: la freccia dice da che parte si scrive. Si gioca fino in fondo al sacchetto.',
+            onApri: () => setStoria(true),
+          }}
           testa={
             <>
               <Tabellino
-                iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
-                iconaAltro={
-                  <IconaScheda>
-                    <IconComputer size={12} />
-                  </IconaScheda>
-                }
                 avviso={g.messaggio}
+                attesa={g.pensa ? 'Il computer pensa' : null}
                 posa={g.anteprima}
                 sconosciute={g.sconosciute}
                 io={stato.mieiPunti}
@@ -183,8 +177,18 @@ export default function ScarabeoLibero() {
                 nomeAltro="Computer"
                 notaAltro={NOMI[livello].toLowerCase()}
                 turno={turno}
-                sotto={finita ? 'Partita finita' : nelSacchetto(stato.restanti)}
+                stato={finita ? 'Partita finita' : `Sacchetto ${stato.restanti}`}
+                sotto={
+                  finita
+                    ? `${stato.mieiPunti} a ${stato.puntiComputer}`
+                    : stato.giocate.length === 0
+                      ? 'La prima parola passa dalla stella'
+                      : turno === 'io'
+                        ? 'Tocca a te'
+                        : 'Tocca al computer'
+                }
                 onApri={() => setStoria(true)}
+                onRisultato={finita ? () => setRisultato(true) : undefined}
               />
               {/* Le pose suggerite da chi guarda: toccarne una la mette sul tabellone, e giocarla resta a te. */}
               {!finita && stato.turno === 'io' && (
@@ -264,51 +268,50 @@ export default function ScarabeoLibero() {
         </Button>
       </Sheet>
 
-      <Sheet open={risultato && finita} onClose={() => setRisultato(false)} title={titoloEsito(stato.esito)}>
-        <div className="scr-esito">
-          <div className="scr-esito__punteggi">
-            <span className={`scr-esito__lato${stato.esito === 'vinta' ? ' is-vincitore' : ''}`}>
-              <span className="scr-esito__nome">Tu</span>
-              <span className="scr-esito__valore u-tabnum">{stato.mieiPunti}</span>
-            </span>
-            <span className="scr-esito__vs">contro</span>
-            <span className={`scr-esito__lato${stato.esito === 'persa' ? ' is-vincitore' : ''}`}>
-              <span className="scr-esito__nome">Computer</span>
-              <span className="scr-esito__valore u-tabnum">{stato.puntiComputer}</span>
-            </span>
-          </div>
-          {notaDellaFine(stato) && <p className="scr-esito__nota">{notaDellaFine(stato)}</p>}
-          {g.statistiche && (
-            <p className="scr-esito__statistiche">
-              Al livello {NOMI[livello].toLowerCase()} ne hai vinte{' '}
-              <strong>{g.statistiche.perLivello[livello].vinte}</strong> su{' '}
-              {g.statistiche.perLivello[livello].giocate}. La tua migliore: {g.statistiche.migliore} punti.
-            </p>
-          )}
-          <p className="scr-esito__nota">Le partite libere non contano per la classifica.</p>
-          <Button
-            size="lg"
-            fullWidth
-            onClick={() => {
-              setRisultato(false)
-              g.nuova(livello)
-            }}
-          >
-            <IconRefresh size={18} /> Un’altra partita
-          </Button>
-          <Button
-            size="lg"
-            fullWidth
-            variant="plain"
-            onClick={() => {
-              setRisultato(false)
-              g.abbandona()
-            }}
-          >
-            Cambia livello
-          </Button>
-        </div>
-      </Sheet>
+      <FineScarabeo
+        aperta={risultato && finita}
+        onChiudi={() => setRisultato(false)}
+        titolo={titoloEsito(stato.esito)}
+        testo={
+          <>
+            {stato.mieiPunti} a {stato.puntiComputer}
+            {notaDellaFine(stato) && <> · {notaDellaFine(stato)}</>}
+          </>
+        }
+        righe={[
+          { nome: 'I tuoi punti', valore: stato.mieiPunti },
+          { nome: 'Il computer', valore: stato.puntiComputer },
+          ...(stato.fine === 'chiusa' || stato.fine === 'ferma'
+            ? [
+                {
+                  nome: 'Tessere rimaste',
+                  valore: `${conSegno(stato.aggiustamento.mio)} · ${conSegno(stato.aggiustamento.computer)}`,
+                },
+              ]
+            : []),
+        ]}
+      >
+        <button
+          type="button"
+          className="scr-tasto"
+          onClick={() => {
+            setRisultato(false)
+            g.abbandona()
+          }}
+        >
+          Esci
+        </button>
+        <button
+          type="button"
+          className="scr-tasto scr-tasto--giallo"
+          onClick={() => {
+            setRisultato(false)
+            g.nuova(livello)
+          }}
+        >
+          Gioca ancora
+        </button>
+      </FineScarabeo>
 
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
@@ -328,6 +331,11 @@ function notaDellaFine(stato: StatoLibera): string | null {
     return `Sei turni senza parole: ognuno perde le sue tessere (tu ${mio}, il computer ${computer}).`
   }
   return null
+}
+
+/** Un aggiustamento con il suo segno: +12, −8, 0. */
+function conSegno(n: number): string {
+  return n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0'
 }
 
 function titoloEsito(esito: 'vinta' | 'persa' | 'pari' | null): string {
@@ -408,11 +416,14 @@ function SceltaLivello({ g }: { g: ScarabeoLiberoController }) {
 /** Sotto il tabellone, a partita finita. */
 function FineLibera({ g, onRisultato }: { g: ScarabeoLiberoController; onRisultato: () => void }) {
   const stato = g.stato!
+  const livello = g.partita!.livello
+  const conti = g.statistiche?.perLivello[livello]
   return (
     <div className="scr-fine">
       <p className="scr-fine__titolo">{titoloEsito(stato.esito)}</p>
       <p className="scr-fine__nota">
         {stato.mieiPunti} contro {stato.puntiComputer}
+        {conti && conti.giocate > 0 && ` · al livello ${NOMI[livello].toLowerCase()} ne hai vinte ${conti.vinte} su ${conti.giocate}`}
       </p>
       <div className="scr-fine__azioni">
         <Button variant="tinted" onClick={onRisultato}>

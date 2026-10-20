@@ -56,19 +56,16 @@ export default function CatenaLibera() {
         comandi={g.comandi}
         fine={
           <>
-            <div className="cat-totale">
-              <p className="cat-totale__valore u-tabnum">{v.punti} punti</p>
-              <p className="cat-totale__dettaglio u-tabnum">
-                {g.conti.indovinate} indovinate su {g.conti.partite} · non conta per la classifica
-              </p>
-            </div>
-            <div className="cat-link">
-              <button type="button" className="cat-link__voce" onClick={() => ultime && comincia(ultime)}>
-                <IconRefresh size={18} />
-                Un’altra
+            <p className="cat-fine__nota u-tabnum">
+              {g.conti.indovinate} indovinate su {g.conti.partite} · non conta per la classifica
+            </p>
+            <div className="cat-fine__bottoni">
+              <button type="button" className="cat-fine__bottone" onClick={g.ricomincia}>
+                Opzioni
               </button>
-              <button type="button" className="cat-link__voce" onClick={g.ricomincia}>
-                Cambia le opzioni
+              <button type="button" className="cat-fine__bottone is-menta" onClick={() => ultime && comincia(ultime)}>
+                <IconRefresh size={18} />
+                Gioca ancora
               </button>
             </div>
           </>

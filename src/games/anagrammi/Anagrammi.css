@@ -1,487 +1,761 @@
 /*
- * Gli Anagrammi: in cima la fila delle cinque parole, poi la parola aperta —
- * il tempo, la parola che si compone sugli alloggi della tavoletta, le lettere
- * da usare sotto — o, fra una parola e l'altra, il bottone che apre la
- * prossima. Le misure sono in unita' del contenitore: nove lettere ci stanno
- * su un telefono stretto, cinque non diventano enormi su un computer.
+ * Gli Anagrammi, come nel prototipo: in cima le cinque tappe, e sotto una
+ * carta per momento — la parola che viene, a tessere coperte; la parola
+ * aperta, con l'anello del tempo, il leggio delle lettere e i quattro
+ * comandi; com'e' andata; la fine. Le tessere sono pezzi del gioco: crema e
+ * arancio con l'inchiostro sopra, uguali nei due temi.
+ *
+ * Le misure delle tessere sono in unita' del contenitore: nove lettere ci
+ * stanno su un telefono stretto, cinque non diventano enormi su un computer.
  */
 .ana {
   container: ana / inline-size;
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--sp-5);
+  align-items: center;
   width: 100%;
-  max-width: 560px;
+  max-width: 480px;
   min-height: 0;
   margin: 0 auto;
-  padding-top: var(--sp-2);
+  padding-top: 6px;
+  /* Le tessere: il lato si misura sul contenitore, tolti il leggio e gli spazi. */
+  --gap: 6px;
+  /* Il grigio di una parola persa: un pezzo del gioco, chiaro nei due temi, con l'inchiostro sopra. */
+  --ana-persa: #c9c3dd;
 }
 
-/* ---------- La fila delle parole ---------- */
+/* ---------- Le tappe ---------- */
 
-.ana-fila {
+.ana-tappe {
+  flex: none;
   display: flex;
   justify-content: center;
   gap: 10px;
   margin: 0;
-  padding: 0 0 var(--sp-3);
+  padding: 0 0 4px;
   list-style: none;
 }
 
-.ana-fila__parola {
+.ana-tappa {
   position: relative;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: var(--fill-quaternary);
-  box-shadow: inset 0 0 0 1.5px var(--separator);
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: var(--filo) solid var(--ink);
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--ink);
   color: var(--label-secondary);
   font-family: var(--font-rounded);
-  font-size: var(--text-subhead);
-  font-weight: 800;
+  font-size: 1.1875rem;
+  line-height: 1;
   transition:
     background-color var(--dur-base) var(--ease-out),
-    transform var(--dur-base) var(--ease-spring);
+    color var(--dur-base) var(--ease-out);
 }
 
-.ana-fila__parola.is-aperta {
-  box-shadow: inset 0 0 0 2px var(--anagrammi-1);
-  color: var(--anagrammi-2);
+.ana-tappa svg {
+  stroke-width: 3.2;
 }
 
-.ana-fila__parola.is-trovata {
+.ana-tappa.is-attuale {
+  background: var(--giallo);
+  color: var(--ink);
+  animation: ana-tappa 1.8s var(--ease-in-out) infinite;
+}
+
+.ana-tappa.is-trovata {
   background: var(--tile-correct);
-  box-shadow: var(--edge-light), 0 2px 0 var(--shadow-tint);
-  color: var(--tile-text-on-correct);
-  animation: ana-salta 520ms var(--ease-bounce);
+  color: var(--ink);
+  animation: ana-tappa-fatta 520ms var(--ease-bounce);
 }
 
-.ana-fila__parola.is-persa,
-.ana-fila__parola.is-passata {
-  background: var(--fill-tertiary);
-  box-shadow: none;
-  color: var(--label-secondary);
-  text-decoration: line-through;
+.ana-tappa.is-persa {
+  background: var(--ana-persa);
+  color: var(--ink);
 }
 
-.ana-fila__punti {
+.ana-tappa__punti {
   position: absolute;
-  bottom: -17px;
-  color: var(--label-secondary);
-  font-size: var(--text-caption-2);
-  font-weight: 700;
-}
-
-/* ---------- Il tempo ---------- */
-
-.ana-tempo {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  overflow: hidden;
-  height: 36px;
-  padding: 0 var(--sp-4);
+  right: -7px;
+  top: -9px;
+  padding: 0 5px;
   border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-  font-weight: 700;
+  border: 2px solid var(--ink);
+  background: #fffbf2;
+  color: #2a1f5c;
+  font-family: var(--font-text);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 15px;
 }
 
-.ana-tempo__barra {
-  position: absolute;
-  inset: 0;
-  background: color-mix(in srgb, var(--anagrammi-1) 26%, transparent);
-  transform: scaleX(var(--quota, 1));
-  transform-origin: left center;
-  transition: transform 250ms linear;
+/* ---------- Le carte ---------- */
+
+.ana-carta {
+  width: 100%;
+  border-radius: 28px;
+  border: var(--filo) solid var(--ink);
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
 }
 
-.ana-tempo.is-urgente .ana-tempo__barra {
-  background: color-mix(in srgb, var(--red) 24%, transparent);
+.ana-carta__riga {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  color: var(--label-secondary);
 }
 
-.ana-tempo.is-urgente .ana-tempo__testo {
-  color: var(--red);
+/* L'etichetta delle lettere e del numero della parola: arancio chiaro col filo. */
+.ana-pillola {
+  flex: none;
+  padding: 1px 10px;
+  border-radius: var(--r-pill);
+  border: 2px solid var(--ink);
+  background: #ffc08f;
+  color: #2a1f5c;
+  font-size: 0.8125rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
-.ana-tempo__testo,
-.ana-tempo__vale {
-  position: relative;
+/* Il bottone arancio degli Anagrammi: un tasto disegnato, come i bottoni dell'app. */
+.ana-tasto {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-height: 52px;
+  margin-top: 4px;
+  padding: 0 var(--sp-4);
+  border: var(--filo) solid var(--ink);
+  border-radius: 18px;
+  background: var(--anagrammi-tinta);
+  box-shadow: var(--ombra-tasto);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 1.1875rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.ana-tempo__vale {
-  color: var(--anagrammi-2);
+.ana-tasto:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
 }
 
-/* ---------- Le lettere ---------- */
+.ana-tasto:disabled {
+  cursor: progress;
+}
 
-.ana-lettere {
-  --gap: 7px;
-  --lato: min(56px, calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n)));
+.ana-tasto--giallo {
+  background: var(--giallo);
+}
+
+.ana-tasto--carta {
+  flex: none;
+  width: auto;
+  padding: 0 18px;
+  background: #fffbf2;
+}
+
+.ana-tasto--apri {
+  min-height: 54px;
+  font-size: 1.25rem;
+  animation: ana-respira 2.4s var(--ease-in-out) infinite;
+}
+
+.ana-fila-tasti {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.ana-fila-tasti > .ana-tasto {
+  margin-top: 0;
+}
+
+/* ---------- Prima di aprire una parola ---------- */
+
+.ana-pronta {
+  margin-top: 26px;
+  padding: 22px 18px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-5);
+  gap: 10px;
+  text-align: center;
+  animation: ana-su 400ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-.ana-lettere__parola,
-.ana-lettere__vassoio {
-  display: flex;
-  gap: var(--gap);
-}
-
-.ana-casella,
-.ana-posto {
-  display: grid;
-  place-items: center;
-  width: var(--lato);
-  height: var(--lato);
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: min(14px, 24%);
-  background: none;
-  color: inherit;
-  -webkit-tap-highlight-color: transparent;
-}
-
-/* Gli alloggi della parola: incavati nella tavoletta, come le caselle vuote del Wordle. */
-.ana-casella {
-  background: var(--slot);
-  box-shadow:
-    inset 0 2px 4px var(--slot-ombra),
-    inset 0 -1px 0 var(--slot-orlo);
-}
-
-.ana-posto.is-vuoto {
-  box-shadow: inset 0 0 0 1.5px var(--tile-empty-border);
-}
-
-.ana-tessera {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background-color: var(--surface);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 60%);
-  box-shadow: var(--ombra-album);
-  color: var(--label);
+.ana-pronta__titolo {
+  margin: 2px 0 0;
   font-family: var(--font-rounded);
-  font-size: calc(var(--lato) * 0.5);
-  font-weight: 800;
-  line-height: 1;
-  user-select: none;
-  transition:
-    transform var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out),
-    background-color var(--dur-base) var(--ease-out);
+  font-size: 1.875rem;
+  font-weight: 400;
+  line-height: 1.1;
 }
 
-/* Premuta scende, come un tasto, invece di rimpicciolirsi. */
-.ana-posto:not(:disabled):active .ana-tessera,
-.ana-casella:not(:disabled):active .ana-tessera {
-  transform: translateY(2px);
-  box-shadow: var(--edge-light), 0 0 0 var(--shadow-tint);
-}
-
-@media (hover: hover) {
-  .ana-posto:not(:disabled):hover .ana-tessera {
-    transform: translateY(-2px);
-  }
-}
-
-.ana-tessera--posta {
-  animation: ana-posa 200ms var(--ease-bounce);
-}
-
-.ana-lettere.is-sbagliata .ana-lettere__parola {
-  animation: ana-trema 480ms var(--ease-out);
-}
-
-.ana-lettere.is-sbagliata .ana-tessera--posta {
-  background-color: color-mix(in srgb, var(--red) 16%, var(--surface));
-  color: var(--red);
-}
-
-.ana-lettere.is-giusta .ana-tessera--posta,
-.ana-lettere.is-trovata .ana-tessera--posta {
-  background-color: var(--tile-correct);
-  color: var(--tile-text-on-correct);
-  animation: ana-salta 520ms calc(var(--i, 0) * 55ms) var(--ease-bounce) both;
-}
-
-.ana-lettere.is-persa .ana-tessera--posta {
-  background-color: var(--tile-absent);
-  color: var(--tile-text-on-absent);
-}
-
-.ana-lettere__vassoio {
-  animation: ana-arriva 380ms var(--ease-spring) both;
-}
-
-/* Rimescolare fa saltare le tessere: due classi che si alternano, perché l'animazione riparta. */
-.ana-lettere__vassoio.is-mescolato .ana-tessera {
-  animation: ana-mescola 360ms var(--ease-out);
-}
-
-.ana-lettere__vassoio.is-rimescolato .ana-tessera {
-  animation: ana-rimescola 360ms var(--ease-out);
-}
-
-.ana-lettere__comandi {
+/* Le tessere coperte, a righe arancio, che dondolano a turno. */
+.ana-dorsi {
   display: flex;
   justify-content: center;
-  gap: var(--sp-3);
-}
-
-.ana-comando {
-  display: inline-flex;
-  align-items: center;
   gap: 6px;
-  min-height: 40px;
-  padding: 0 var(--sp-4);
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--fill-tertiary);
-  color: var(--label);
-  font: inherit;
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  cursor: pointer;
+  margin: 6px 0 4px;
 }
 
-.ana-comando:disabled {
-  opacity: 0.45;
-  cursor: default;
+.ana-dorso {
+  width: min(30px, calc((100cqw - 80px) / 9));
+  height: 38px;
+  border-radius: 9px;
+  border: var(--filo) solid var(--ink);
+  background: repeating-linear-gradient(45deg, #ff9a62 0 6px, #ffb585 6px 12px);
+  box-shadow: 0 3px 0 var(--ink);
+  animation: ana-dondola 2.4s var(--ease-in-out) infinite;
 }
 
 /* ---------- La parola aperta ---------- */
 
 .ana-aperta {
   display: flex;
-  flex: 1;
   flex-direction: column;
-  gap: var(--sp-6);
+  align-items: center;
+  width: 100%;
 }
 
-/* Il tempo e le lettere a meta' dello schermo, l'aiuto e "Passo" in fondo, sotto il pollice. */
-.ana-aperta__centro {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-6);
-  margin-block: auto;
-}
-
-/* Con il mouse il pollice non c'entra: tutto insieme, a meta'. */
-@media (hover: hover) and (pointer: fine) {
-  .ana-aperta {
-    justify-content: center;
-    padding-bottom: var(--sp-8);
-  }
-
-  .ana-aperta__centro {
-    margin-block: 0;
-  }
-}
-
-.ana-aperta__piede {
+.ana-quadro {
+  width: 100%;
+  margin-top: 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--sp-3);
+  gap: 12px;
+  animation: ana-su 350ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-.ana-aiuto,
-.ana-passo {
-  display: inline-flex;
+/* L'anello del tempo: un cerchio che si svuota, rosso e che batte negli ultimi dieci secondi. */
+.ana-anello {
+  position: relative;
   flex: none;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0 var(--sp-4);
-  border: 0;
-  border-radius: var(--r-pill);
-  font: inherit;
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  cursor: pointer;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  border: var(--filo) solid var(--ink);
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--ink);
 }
 
-.ana-aiuto {
-  background: color-mix(in srgb, var(--anagrammi-1) 14%, transparent);
-  color: var(--anagrammi-2);
+.ana-anello svg {
+  position: absolute;
+  inset: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  transform: rotate(-90deg);
 }
 
-.ana-aiuto__costo {
-  padding: 1px 7px;
-  border-radius: var(--r-pill);
-  background: var(--anagrammi-2);
-  color: #fff;
-  font-size: var(--text-caption-1);
+.ana-anello__traccia {
+  fill: none;
+  stroke: var(--fill-tertiary);
+  stroke-width: 6;
 }
 
-.ana-passo {
-  margin-left: auto;
-  background: none;
+.ana-anello__corre {
+  fill: none;
+  stroke: var(--anagrammi-tinta);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 250ms linear,
+    stroke var(--dur-base) var(--ease-out);
+}
+
+.ana-anello > span {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-rounded);
+  font-size: 1.3125rem;
+  color: var(--label);
+}
+
+.ana-anello.is-urgente {
+  animation: ana-batte 1s var(--ease-in-out) infinite;
+}
+
+.ana-anello.is-urgente .ana-anello__corre {
+  stroke: var(--roulette-tinta);
+}
+
+.ana-vale {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ana-vale__sopra {
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--label-secondary);
 }
 
-.ana-aiuto:disabled,
-.ana-passo:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-.ana-definizione {
-  display: flex;
-  flex: 1;
-  gap: var(--sp-2);
-  margin: 0;
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  box-shadow: var(--ombra-album);
-  font-size: var(--text-subhead);
-  line-height: 1.4;
-  animation: ana-posa 260ms var(--ease-out);
-}
-
-.ana-definizione svg {
-  flex: none;
-  margin-top: 2px;
-  color: var(--anagrammi-2);
-}
-
-/* ---------- Fra una parola e l'altra ---------- */
-
-.ana-pausa {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-1);
-  margin-block: auto;
-  padding-bottom: var(--sp-8);
-  text-align: center;
-}
-
-/* La parola che viene, a tessere coperte: un'onda le fa respirare finché non la si apre. */
-.ana-coperte {
-  --gap: 7px;
-  --lato: min(48px, calc((100cqw - (var(--n) - 1) * var(--gap)) / var(--n)));
-  display: flex;
-  gap: var(--gap);
-  margin-bottom: var(--sp-4);
-}
-
-.ana-coperta {
-  display: grid;
-  place-items: center;
-  width: var(--lato);
-  height: var(--lato);
-  border-radius: min(12px, 24%);
-  background-color: var(--anagrammi-1);
-  background-image:
-    linear-gradient(160deg, rgba(255, 255, 255, 0.3), transparent 55%),
-    linear-gradient(180deg, var(--anagrammi-1), var(--anagrammi-2));
-  box-shadow:
-    var(--edge-light),
-    0 2px 0 var(--shadow-tint),
-    0 4px 10px var(--shadow-tint-soft);
-  animation: ana-respira 2.6s var(--ease-in-out) calc(var(--i, 0) * 140ms) infinite;
-}
-
-.ana-coperta::after {
-  content: '?';
-  color: rgba(255, 255, 255, 0.86);
+.ana-vale b {
   font-family: var(--font-rounded);
-  font-size: calc(var(--lato) * 0.46);
-  font-weight: 800;
+  font-size: 1.625rem;
+  font-weight: 400;
   line-height: 1;
 }
 
-.ana-pausa__titolo {
-  margin: 0;
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
+/* La definizione: una carta che si gira quando la si chiede; prima, il suo posto tratteggiato. */
+.ana-definizione {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 62px;
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-radius: 18px;
+  border: var(--filo) solid var(--ink);
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
+  font-size: var(--text-subhead);
   font-weight: 800;
+  line-height: 1.3;
+  animation: ana-apri 350ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-.ana-pausa__riga {
-  margin: 0 0 var(--sp-4);
+.ana-definizione.is-chiusa {
+  justify-content: center;
+  border-style: dashed;
+  border-color: var(--ink-tenue);
+  background: transparent;
+  box-shadow: none;
   color: var(--label-secondary);
+  text-align: center;
+  animation: ana-su 350ms 60ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-.ana-esito {
+/* ---------- Le lettere ---------- */
+
+.ana-lettere {
+  --lato: min(52px, calc((100cqw - 26px - (var(--n) - 1) * var(--gap)) / var(--n)));
+  --alto: calc(var(--lato) * 1.12);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-3);
-  margin-bottom: var(--sp-5);
+  width: 100%;
 }
 
-.ana-esito__riga {
+.ana-risposta {
+  display: flex;
+  justify-content: center;
+  gap: var(--gap);
+  margin-top: 22px;
+}
+
+/* Gli alloggi della parola: tratteggiati e vuoti, poi una tessera arancio chiaro che ci si posa. */
+.ana-slot {
+  display: grid;
+  place-items: center;
+  width: var(--lato);
+  height: var(--alto);
   margin: 0;
-  color: var(--label-secondary);
-  font-weight: 600;
+  padding: 0;
+  border: var(--filo) dashed var(--tile-empty-border);
+  border-radius: min(12px, 24%);
+  background: var(--slot);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.56);
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.ana-esito.is-trovata .ana-esito__riga {
-  color: var(--tile-correct);
+.ana-slot.is-piena {
+  border-style: solid;
+  border-color: var(--ink);
+  background: #ffd8ba;
+  box-shadow:
+    0 3px 0 var(--ink),
+    inset 0 3px 0 rgba(255, 255, 255, 0.55);
+  animation: ana-posa 220ms cubic-bezier(0.2, 0.9, 0.3, 1.5);
+}
+
+.ana-lettere.is-sbagliata .ana-risposta {
+  animation: ana-trema 420ms var(--ease-out);
+}
+
+.ana-lettere.is-sbagliata .ana-slot.is-piena {
+  background: #ffc7c0;
+}
+
+.ana-lettere.is-giusta .ana-slot.is-piena {
+  background: var(--tile-correct);
+  animation: ana-salta 450ms calc(var(--i, 0) * 60ms) var(--ease-out) both;
+}
+
+.ana-messaggio {
+  min-height: 20px;
+  margin: 12px 0 0;
+  font-size: var(--text-subhead);
+  font-weight: 900;
+  color: var(--label-secondary);
+  text-align: center;
+}
+
+.ana-messaggio.is-errore {
+  color: var(--label);
+}
+
+/* Il leggio: un vassoio incavato, con le tessere crema che ci cadono dentro. */
+.ana-leggio {
+  display: flex;
+  justify-content: center;
+  gap: var(--gap);
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px 10px 16px;
+  border-radius: 24px;
+  border: var(--filo) solid color-mix(in srgb, var(--ink) 18%, transparent);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.ana-tessera {
+  display: grid;
+  place-items: center;
+  width: var(--lato);
+  height: var(--alto);
+  margin: 0;
+  padding: 0;
+  border: var(--filo) solid var(--ink);
+  border-radius: min(12px, 24%);
+  background: #fff3e6;
+  box-shadow:
+    0 4px 0 var(--ink),
+    inset 0 3px 0 rgba(255, 255, 255, 0.8);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--lato) * 0.56);
+  line-height: 1;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 120ms var(--ease-out),
+    box-shadow 120ms var(--ease-out);
+  animation: ana-arriva 500ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+  animation-delay: calc(var(--k, 0) * 60ms);
+}
+
+.ana-tessera:not(:disabled):active {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 var(--ink),
+    inset 0 3px 0 rgba(255, 255, 255, 0.8);
+}
+
+@media (hover: hover) {
+  .ana-tessera:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+}
+
+.ana-tessera.is-usata {
+  border-style: dashed;
+  border-color: var(--ink-tenue);
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+/* Rimescolare fa saltare le tessere: due classi che si alternano, perché l'animazione riparta. */
+.ana-leggio.is-mescolato .ana-tessera:not(.is-usata) {
+  animation: ana-mescola-a 450ms var(--ease-out) both;
+}
+
+.ana-leggio.is-rimescolato .ana-tessera:not(.is-usata) {
+  animation: ana-mescola-b 450ms var(--ease-out) both;
+}
+
+/* I quattro comandi: tasti di carta, con l'icona sopra il nome. */
+.ana-comandi {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+  padding-bottom: 4px;
+  animation: ana-su 350ms 180ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.ana-comando {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  height: 58px;
+  padding: 0 4px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--ombra-tasto);
+  color: var(--label);
+  font: inherit;
+  font-size: 0.71875rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.ana-comando svg {
+  flex: none;
+}
+
+.ana-comando:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
+}
+
+/* Spento con un colore e non con la trasparenza, come i bottoni dell'app: si legge lo stesso. */
+.ana-comando:disabled {
+  border-color: var(--ink-tenue);
+  background: light-dark(#e6e2f0, #4a447a);
+  box-shadow: 0 2px 0 var(--ink-tenue);
+  color: var(--label-secondary);
+  cursor: default;
+}
+
+/* ---------- La parola chiusa ---------- */
+
+.ana-esito {
+  margin-top: 22px;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  animation: ana-su 400ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.ana-esito .ana-pillola--esito {
+  background: var(--tile-correct);
+}
+
+.ana-esito:not(.is-trovata) .ana-pillola--esito {
+  background: var(--ana-persa);
+}
+
+/* La parola, girata lettera per lettera nel colore dell'esito. */
+.ana-parola {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.ana-parola > span {
+  flex: 0 1 32px;
+  min-width: 0;
+  height: 38px;
+  border-radius: 9px;
+  border: var(--filo) solid var(--ink);
+  display: grid;
+  place-items: center;
+  background: var(--tile-correct);
+  box-shadow: 0 3px 0 var(--ink);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 1.25rem;
+  line-height: 1;
+  animation: ana-gira 500ms var(--ease-in-out) both;
+}
+
+.ana-esito:not(.is-trovata) .ana-parola > span {
+  background: var(--ana-persa);
+}
+
+.ana-esito__punti {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 900;
+}
+
+/* La definizione del Wikizionario, con la sua fonte: la licenza chiede di citarla. */
+.ana-citazione {
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.ana-citazione small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--label-secondary);
 }
 
 /* ---------- La fine ---------- */
 
 /*
- * La fine scorre da sola sotto la fila: su un telefono basso cinque parole con
- * le definizioni non ci stanno. Si allarga di qualche punto e rientra dello
- * stesso tanto, perché il ritaglio non tagli l'ombra delle carte.
+ * La fine scorre da sola sotto le tappe: su un telefono basso cinque parole
+ * con la carta non ci stanno. Si allarga di qualche punto e rientra dello
+ * stesso tanto, perché il ritaglio non tagli l'ombra della carta.
  */
 .ana-fine {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--sp-4);
+  width: calc(100% + 24px);
   min-height: 0;
   margin-inline: -12px;
-  padding: 4px 12px var(--sp-4);
+  padding: 18px 12px var(--sp-4);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
-/* Dentro una colonna che scorre nessuno si stringe: la carta del riepilogo ritaglia, e si taglierebbe. */
 .ana-fine > * {
   flex: none;
 }
 
-.ana-totale {
+/* La carta della fine: chiara e calda in tutti e due i temi, con l'inchiostro sopra. */
+.ana-carta-fine {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-1);
+  gap: 8px;
+  padding: 22px 16px 16px;
+  background: linear-gradient(180deg, #fff1c9, #ffd9c2);
+  color: #2a1f5c;
   text-align: center;
+  animation: ana-compare 500ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
-.ana-totale__valore {
-  margin: 0;
+.ana-carta-fine__icona {
+  display: grid;
+  animation: ana-galleggia 4.2s var(--ease-in-out) infinite;
+}
+
+.ana-carta-fine__titolo {
+  margin: 2px 0 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-1);
-  font-weight: 800;
-  letter-spacing: var(--tracking-tight);
+  font-size: 1.875rem;
+  font-weight: 400;
+  line-height: 1.1;
 }
 
-.ana-totale__dettaglio,
-.ana-piede {
+.ana-carta-fine__riga {
   margin: 0;
-  color: var(--label-secondary);
-  font-size: var(--text-footnote);
-  text-align: center;
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  color: #4e4479;
+}
+
+.ana-carta-fine__punti {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  margin: 4px 0;
+  border-radius: 50%;
+  border: var(--filo) solid #2a1f5c;
+  background: var(--anagrammi-tinta);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 3px 0 #2a1f5c;
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 1.375rem;
+  animation: ana-timbra 700ms 300ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.ana-riepilogo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ana-riepilogo__riga {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto 32px;
+  align-items: center;
+  column-gap: 8px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  text-align: left;
+  animation: ana-su 360ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+/* Le lettere della parola in una faccina col filo, verde se trovata. */
+.ana-riepilogo__n {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #2a1f5c;
+  background: var(--tile-correct);
+  font-family: var(--font-rounded);
+  font-size: 0.75rem;
+}
+
+.ana-riepilogo__riga:not(.is-trovata) .ana-riepilogo__n {
+  background: var(--ana-persa);
+}
+
+.ana-riepilogo__parola {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-rounded);
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+}
+
+.ana-riepilogo__conto {
+  font-weight: 900;
+  text-align: right;
+}
+
+.ana-riepilogo__nota {
+  grid-column: 2 / -1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #4e4479;
 }
 
 .ana-azioni {
@@ -489,6 +763,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--sp-2);
+  margin-top: 2px;
 }
 
 .ana-link {
@@ -497,174 +772,288 @@
   gap: var(--sp-2);
   min-height: 40px;
   padding: 0 var(--sp-4);
-  border: 0;
   border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-  color: var(--brand);
+  border: 2px solid #2a1f5c;
+  background: rgba(255, 255, 255, 0.6);
+  color: #2a1f5c;
   font: inherit;
   font-size: var(--text-subhead);
-  font-weight: 600;
+  font-weight: 900;
   text-decoration: none;
   cursor: pointer;
 }
 
-.ana-riepilogo {
-  overflow: hidden;
+.ana-piede {
   margin: 0;
-  padding: 0;
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: var(--ombra-album);
-  list-style: none;
-}
-
-.ana-riepilogo__riga {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: baseline;
-  column-gap: var(--sp-3);
-  row-gap: 3px;
-  padding: var(--sp-3) var(--sp-4);
-}
-
-/* Le lettere com'erano, e la parola: su un telefono stretto la parola va sotto. */
-.ana-riepilogo__cosa {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: var(--sp-2);
-  min-width: 0;
-}
-
-.ana-riepilogo__freccia {
-  color: var(--label-tertiary);
-  font-size: var(--text-footnote);
-}
-
-.ana-riepilogo__riga + .ana-riepilogo__riga {
-  border-top: 0.5px solid var(--separator);
-}
-
-.ana-riepilogo__lettere {
   color: var(--label-secondary);
-  font-family: var(--font-mono);
-  font-size: var(--text-caption-1);
-  letter-spacing: 0.12em;
-}
-
-.ana-riepilogo__parola {
-  font-family: var(--font-rounded);
+  font-size: var(--text-footnote);
   font-weight: 800;
-  letter-spacing: 0.05em;
+  text-align: center;
 }
 
-.ana-riepilogo__riga.is-persa .ana-riepilogo__parola,
-.ana-riepilogo__riga.is-passata .ana-riepilogo__parola {
-  color: var(--label-secondary);
+.ana-carta-fine .ana-piede {
+  color: #4e4479;
 }
 
-.ana-riepilogo__conto {
-  color: var(--tile-correct);
-  font-weight: 700;
-}
-
-.ana-riepilogo__riga.is-persa .ana-riepilogo__conto,
-.ana-riepilogo__riga.is-passata .ana-riepilogo__conto {
-  color: var(--label-secondary);
-  font-weight: 600;
-}
-
-.ana-riepilogo__definizione {
-  grid-column: 1 / -1;
-  color: var(--label-secondary);
-  font-size: var(--text-footnote);
-  line-height: 1.35;
+/* Nella sfida chi ha vinto sta in cima alla carta, con i suoi colori. */
+.ana-fine-sfida {
+  width: 100%;
+  text-align: left;
 }
 
 .ana-attesa {
   flex: 1;
+  width: 100%;
   min-height: 240px;
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
+  margin-top: 26px;
+  border-radius: 28px;
+  border: var(--filo) dashed var(--ink-tenue);
   animation: ana-pulsa 1.4s var(--ease-in-out) infinite;
 }
 
-@keyframes ana-arriva {
+/* ---------- L'adesivo del momento ---------- */
+
+/* Con l'inchiostro sopra e il filo, come gli adesivi dell'album: l'arancio non regge la scritta bianca. */
+.adesivo.ana-adesivo.is-vivace .adesivo__carta {
+  border: 3px solid #2a1f5c;
+  box-shadow: 0 6px 0 #2a1f5c;
+  color: #2a1f5c;
+}
+
+.adesivo.ana-adesivo.is-bordato .adesivo__carta {
+  border: 3px solid var(--roulette-tinta);
+  background: #fffbf2;
+  box-shadow: 0 6px 0 var(--roulette-tinta);
+  color: #2a1f5c;
+}
+
+.adesivo.ana-adesivo .adesivo__titolo {
+  font-weight: 400;
+}
+
+.adesivo.ana-adesivo .adesivo__sotto {
+  font-weight: 900;
+  opacity: 1;
+}
+
+/* ---------- I movimenti ---------- */
+
+@keyframes ana-tappa {
+  0%,
+  100% {
+    transform: translateY(-3px) scale(1.1);
+  }
+  50% {
+    transform: translateY(-7px) scale(1.1);
+  }
+}
+
+@keyframes ana-tappa-fatta {
+  40% {
+    transform: translateY(-9px) scale(1.08);
+  }
+}
+
+@keyframes ana-su {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.96);
+    transform: translateY(30px);
   }
 }
 
-@keyframes ana-mescola {
-  35% {
-    transform: translateY(-8px) rotate(-8deg);
-  }
-  70% {
-    transform: translateY(1px) rotate(5deg);
+@keyframes ana-compare {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.8);
   }
 }
 
-@keyframes ana-rimescola {
-  35% {
-    transform: translateY(-8px) rotate(8deg);
+@keyframes ana-dondola {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-4deg);
   }
-  70% {
-    transform: translateY(1px) rotate(-5deg);
+  50% {
+    transform: translateY(-6px) rotate(4deg);
   }
 }
 
 @keyframes ana-respira {
-  0%,
-  60%,
-  100% {
-    transform: none;
+  50% {
+    transform: scale(1.04);
   }
-  25% {
-    transform: translateY(-5px);
+}
+
+@keyframes ana-batte {
+  0%,
+  30%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.09);
+  }
+}
+
+@keyframes ana-apri {
+  from {
+    opacity: 0;
+    transform: rotateX(70deg);
   }
 }
 
 @keyframes ana-posa {
   from {
-    opacity: 0.4;
-    transform: scale(0.72);
+    transform: translateY(-14px) scale(0.7);
+  }
+}
+
+@keyframes ana-trema {
+  20% {
+    transform: translateX(-9px);
+  }
+  40% {
+    transform: translateX(9px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(5px);
   }
 }
 
 @keyframes ana-salta {
   40% {
-    transform: translateY(-9px) scale(1.06);
+    transform: translateY(-14px);
+  }
+  70% {
+    transform: translateY(2px);
   }
 }
 
-@keyframes ana-trema {
-  15%,
-  55% {
-    transform: translateX(-7px);
+@keyframes ana-gira {
+  50% {
+    transform: rotateX(90deg);
   }
-  35%,
+}
+
+@keyframes ana-arriva {
+  from {
+    opacity: 0;
+    transform: translateY(-60px) rotate(-30deg);
+  }
+}
+
+@keyframes ana-mescola-a {
+  35% {
+    transform: translateY(-18px) rotate(20deg);
+  }
+  70% {
+    transform: translateY(3px) rotate(-6deg);
+  }
+}
+
+@keyframes ana-mescola-b {
+  35% {
+    transform: translateY(-18px) rotate(-20deg);
+  }
+  70% {
+    transform: translateY(3px) rotate(6deg);
+  }
+}
+
+@keyframes ana-galleggia {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes ana-timbra {
+  0% {
+    opacity: 0;
+    transform: scale(1.9) rotate(-24deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.88) rotate(5deg);
+  }
   75% {
-    transform: translateX(7px);
+    transform: scale(1.06) rotate(-2deg);
   }
 }
 
 @keyframes ana-pulsa {
   50% {
-    opacity: 0.5;
+    opacity: 0.55;
+  }
+}
+
+/* Su un telefono basso gli spazi si stringono: la parola aperta deve stare nello schermo. */
+@media (max-height: 700px) {
+  .ana-quadro {
+    margin-top: 10px;
+  }
+
+  .ana-anello {
+    width: 58px;
+    height: 58px;
+  }
+
+  .ana-definizione {
+    min-height: 52px;
+    margin-top: 10px;
+  }
+
+  .ana-risposta {
+    margin-top: 14px;
+  }
+
+  .ana-messaggio {
+    margin-top: 8px;
+  }
+
+  .ana-comandi {
+    margin-top: 12px;
+  }
+
+  .ana-comando {
+    height: 52px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ana-tessera--posta,
-  .ana-lettere.is-sbagliata .ana-lettere__parola,
-  .ana-lettere.is-giusta .ana-tessera--posta,
-  .ana-lettere.is-trovata .ana-tessera--posta,
-  .ana-fila__parola.is-trovata,
+  .ana-tappa.is-attuale,
+  .ana-tappa.is-trovata,
+  .ana-pronta,
+  .ana-dorso,
+  .ana-tasto--apri,
+  .ana-quadro,
+  .ana-anello.is-urgente,
   .ana-definizione,
-  .ana-lettere__vassoio,
-  .ana-lettere__vassoio .ana-tessera,
-  .ana-coperta {
+  .ana-definizione.is-chiusa,
+  .ana-slot.is-piena,
+  .ana-lettere.is-sbagliata .ana-risposta,
+  .ana-lettere.is-giusta .ana-slot.is-piena,
+  .ana-tessera,
+  .ana-leggio.is-mescolato .ana-tessera:not(.is-usata),
+  .ana-leggio.is-rimescolato .ana-tessera:not(.is-usata),
+  .ana-comandi,
+  .ana-esito,
+  .ana-parola > span,
+  .ana-carta-fine,
+  .ana-carta-fine__icona,
+  .ana-carta-fine__punti,
+  .ana-riepilogo__riga,
+  .ana-attesa {
     animation: none;
+  }
+
+  .ana-tappa.is-attuale {
+    transform: translateY(-3px) scale(1.1);
+  }
+
+  .ana-anello__corre {
+    transition: none;
   }
 }

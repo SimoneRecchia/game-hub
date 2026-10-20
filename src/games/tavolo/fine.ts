@@ -108,13 +108,15 @@ export function adesivoFine(
 }
 
 /**
- * Vero quando il piede puo' dire com'e' finita: subito per una partita gia'
- * finita quando la si apre, dopo `attesa` per una che si e' vista finire. Cosi'
- * il risultato non arriva prima della mossa che l'ha deciso, e arriva con
- * l'adesivo.
+ * Quando il piede puo' dire com'e' finita (`vista`): subito per una partita
+ * gia' finita quando la si apre, dopo `attesa` per una che si e' vista finire.
+ * Cosi' il risultato non arriva prima della mossa che l'ha deciso, e arriva
+ * con l'adesivo. `dalVivo` dice se la fine si e' vista arrivare: la carta del
+ * risultato allora aspetta che l'adesivo se ne sia andato.
  */
-export function useFineVista(finita: boolean, attesa: number): boolean {
+export function useFineVista(finita: boolean, attesa: number): { vista: boolean; dalVivo: boolean } {
   const [vista, setVista] = useState(finita)
+  const [dalVivo, setDalVivo] = useState(false)
   const vistaInCorso = useRef(!finita)
   const attesaRef = useRef(attesa)
   attesaRef.current = attesa
@@ -122,14 +124,18 @@ export function useFineVista(finita: boolean, attesa: number): boolean {
     if (!finita) {
       vistaInCorso.current = true
       setVista(false)
+      setDalVivo(false)
       return
     }
     if (!vistaInCorso.current) {
       setVista(true)
       return
     }
-    const t = window.setTimeout(() => setVista(true), attesaRef.current)
+    const t = window.setTimeout(() => {
+      setDalVivo(true)
+      setVista(true)
+    }, attesaRef.current)
     return () => window.clearTimeout(t)
   }, [finita])
-  return vista
+  return { vista, dalVivo }
 }

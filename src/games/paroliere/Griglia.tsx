@@ -168,8 +168,13 @@ export function Griglia({ facce, lato, stato, attiva, evidenzia, digitata, onCam
         viewBox={`0 0 ${lato * 100} ${lato * 100}`}
         aria-hidden="true"
       >
-        {filo.length > 1 && <polyline points={filo.map(centro).join(' ')} />}
-        {filo.length > 0 && <circle className="par-griglia__capo" r="14" cx={(filo[0] % lato) * 100 + 50} cy={Math.floor(filo[0] / lato) * 100 + 50} />}
+        {filo.length > 1 && (
+          <>
+            <polyline className="par-griglia__filo-sotto" points={filo.map(centro).join(' ')} />
+            <polyline className="par-griglia__filo-sopra" points={filo.map(centro).join(' ')} />
+          </>
+        )}
+        {filo.length > 0 && <circle className="par-griglia__capo" r="11" cx={(filo[0] % lato) * 100 + 50} cy={Math.floor(filo[0] / lato) * 100 + 50} />}
       </svg>
       {facce.map((f, i) => {
         const nellaTracciata = tracciata.indexOf(i)

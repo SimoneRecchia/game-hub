@@ -6,6 +6,7 @@ import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { CHIAMA_FICHES, PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { COLORE_FICHE, FICHES, inFiches } from '@/games/fortuna/fiches'
@@ -108,6 +109,7 @@ function domandaDi(g: GiroSlot): VincitaRulli | null {
  * momento non arriva.
  */
 export default function SlotPagina() {
+  useSala()
   const { vai } = useNavigazione()
   const toast = useToast()
   const dopo = useDopo()
@@ -469,7 +471,7 @@ export default function SlotPagina() {
   if (errore) {
     return (
       <Pagina titolo="Slot" indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }} intera>
-        <div className="slot-errore">
+        <div className={`slot-errore ${SALA}`}>
           <p>{errore}</p>
           <Button onClick={() => vai(ROTTE.fortuna)}>Torna alla Fortuna</Button>
         </div>
@@ -517,7 +519,7 @@ export default function SlotPagina() {
           )}
         </Suspense>
       )}
-      <div className="slot" hidden={!!inDomanda}>
+      <div className={`slot ${SALA}`} hidden={!!inDomanda}>
         {quanto && (
           <Tabellone
             saldo={quanto.saldo}
@@ -620,9 +622,6 @@ export default function SlotPagina() {
                     Azzera
                   </button>
                 </div>
-                <button type="button" className="slot-gira" disabled={!puoGiocare} onClick={() => void tira()}>
-                  <span className="slot-gira__testo">Gira</span>
-                </button>
               </div>
             </div>
             <Pancia />
@@ -639,7 +638,17 @@ export default function SlotPagina() {
             <Intermezzo dati={intermezzo} onMezzo={() => setFase('domanda')} onFine={() => setIntermezzo(null)} />
           )}
         </div>
-        {senzaSaldo && <PochiPunti servono={PUNTATA_MINIMA_SLOT} saldo={saldo} className="slot-pochi" />}
+        {senzaSaldo ? (
+          <PochiPunti servono={PUNTATA_MINIMA_SLOT} saldo={saldo} className="slot-pochi" />
+        ) : (
+          // Gira, per chi non vuole tirare la leva: sotto il mobile, grande, come nel mockup.
+          <div className="slot-comandi">
+            <Button size="lg" fullWidth disabled={!puoGiocare} onClick={() => void tira()} className="slot-gira">
+              Gira
+            </Button>
+            <p className="slot-comandi__nota">{puoGiocare ? 'Tira la leva, o tocca Gira' : '\u00a0'}</p>
+          </div>
+        )}
       </div>
       {festa && <FestaSlot dati={festa} onFine={fineFesta} />}
       <ComeSiGiocaSlot open={regole} onClose={() => setRegole(false)} categorie={categorie} />

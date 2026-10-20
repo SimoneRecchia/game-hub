@@ -40,6 +40,7 @@ import {
 } from '@/games/blackjack/Tavolo'
 import { esciFraPoco } from '@/games/blackjack/uscita'
 import { CHIAMA_FICHES, PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { centroDi, incassaMonete, puntaFiches, spostaFiches, volaFiche } from '@/games/fortuna/voli'
@@ -152,6 +153,7 @@ function useOra(attivo: boolean): number {
  * mani in corso stanno e si pagano lo stesso.
  */
 export default function BlackjackTavolo() {
+  useSala()
   const { id = '' } = useParams()
   const { vai } = useNavigazione()
   const toast = useToast()
@@ -560,7 +562,7 @@ export default function BlackjackTavolo() {
   if (errore) {
     return (
       <Pagina titolo="Blackjack" indietro={indietro} intera>
-        <div className="bj-errore">
+        <div className={`bj-errore ${SALA}`}>
           <p>{errore}</p>
           <Button onClick={() => vai(ROTTE.blackjack)}>Alla sala</Button>
         </div>
@@ -606,9 +608,16 @@ export default function BlackjackTavolo() {
       }
     >
       <DefinizioniCarte />
-      <div className="bj">
+      <div className={`bj ${SALA}`}>
         {vista && (
-          <Tabellone saldo={conto ?? saldo} puntata={puntataMostrata} saldoRef={saldoRef} scarso={senzaSaldo} />
+          <Tabellone
+            saldo={conto ?? saldo}
+            puntata={puntataMostrata}
+            saldoRef={saldoRef}
+            scarso={senzaSaldo}
+            riga
+            etichetta={puntataServer > 0 ? 'In gioco' : 'Puntata'}
+          />
         )}
         <SabotContext.Provider value={sabotRef}>
           <div className={`bj-tavolo is-${fase}${chiuso ? ' is-chiuso' : ''}`} ref={tavoloRef}>

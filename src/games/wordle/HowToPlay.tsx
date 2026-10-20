@@ -1,3 +1,4 @@
+import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
 import { Tile } from './Tile'
 import './HowToPlay.css'
@@ -68,6 +69,10 @@ export function HowToPlay({ open, onClose }: { open: boolean; onClose: () => voi
             <li>Niente accenti, niente J K W X Y.</li>
           </ul>
         </div>
+
+        <Button size="lg" fullWidth onClick={onClose}>
+          Ho capito
+        </Button>
       </div>
     </Sheet>
   )

@@ -6,7 +6,7 @@ import '@/games/blackjack/Fiches.css'
 export const COLORE_FICHE_RL: Record<number, string> = {
   1: '#5d6b7d',
   5: '#d42a2a',
-  25: '#17964a',
+  25: '#118048',
   100: '#22252c',
   500: '#7b3aed',
 }

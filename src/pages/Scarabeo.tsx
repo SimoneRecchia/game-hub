@@ -2,23 +2,27 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
-import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { Coriandoli, Numero, Vuoto, useFesta } from '@/components/Elementi'
-import { IconComputer, IconInfo, IconList, IconPeople, IconTrophy } from '@/components/Icons'
+import { IconComputer, IconInfo, IconPeople, IconTrophy } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
-import { IconaScheda } from '@/components/Scheda'
 import { Sheet } from '@/components/Sheet'
 import { Campo, ElencoMosse, Tabellino } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
-import { MOSSA_DEL_COMPUTER_DA_ADESIVO, adesivoFineScarabeo, adesivoMossa } from '@/games/scarabeo/adesivi'
+import { FineScarabeo } from '@/games/scarabeo/Fine'
+import {
+  ADESIVO_FINE_SCARABEO_MS,
+  ADESIVO_MOSSA_MS,
+  MOSSA_DEL_COMPUTER_DA_ADESIVO,
+  adesivoFineScarabeo,
+  adesivoMossa,
+} from '@/games/scarabeo/adesivi'
 import { useScarabeo } from '@/games/scarabeo/useScarabeo'
 import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
 import { etichettaScarabeo } from '@/games/compagnia/etichette'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { useCountdown } from '@/games/wordle/useCountdown'
-import { usePlayer } from '@/lib/auth'
 import { formatCountdown } from '@/lib/format'
 import { TETTI } from '@shared/punti'
 import type { ScarabeoState } from '@shared/types'
@@ -39,6 +43,8 @@ export default function Scarabeo() {
   const [aiuto, setAiuto] = useState(false)
   const [storia, setStoria] = useState(false)
   const [delComputer, setDelComputer] = useState(false)
+  const [risultato, setRisultato] = useState(false)
+  const [daAprire, setDaAprire] = useState(false)
   const [compagniaAperta, setCompagniaAperta] = useState(false)
   const { vai } = useNavigazione()
 
@@ -59,7 +65,6 @@ export default function Scarabeo() {
   }, [inCompagnia, vai])
   // Battere il computer e' la vittoria della classificata: la festa e' per quella.
   const festa = useFesta(stato ? !finita : null, finita && vinta)
-  const io = usePlayer()
 
   // La mossa appena giocata al centro dello schermo — le mie, e quelle del computer che fanno male — e
   // poi, se era l'ultima, come e' finita.
@@ -72,11 +77,22 @@ export default function Scarabeo() {
   const eraInCorso = useRef<boolean | null>(null)
   useEffect(() => {
     if (!stato) return
-    if (eraInCorso.current === true && finita && stato.punti > 0) {
-      accoda(adesivoFineScarabeo(0, vinta, stato.punti, altro))
-    }
+    const vistaFinire = eraInCorso.current === true && finita
     eraInCorso.current = !finita
+    if (!vistaFinire) return
+    // Prima l'adesivo della fine, poi il risultato: la carta non copre l'ultima mossa.
+    if (stato.punti > 0) accoda(adesivoFineScarabeo(0, vinta, stato.punti, altro))
+    setDaAprire(true)
   }, [accoda, altro, finita, stato, vinta])
+  // Un effetto a parte: lo stato si rilegge anche dopo la fine, e il tempo non deve ripartire per questo.
+  useEffect(() => {
+    if (!daAprire) return
+    const t = window.setTimeout(() => {
+      setDaAprire(false)
+      setRisultato(true)
+    }, ADESIVO_FINE_SCARABEO_MS + ADESIVO_MOSSA_MS)
+    return () => window.clearTimeout(t)
+  }, [daAprire])
 
   return (
     <Pagina
@@ -90,9 +106,6 @@ export default function Scarabeo() {
               <IconPeople size={21} />
             </BottoneBarra>
           )}
-          <BottoneBarra etichetta="Le tue mosse" onClick={() => setStoria(true)}>
-            <IconList size={20} />
-          </BottoneBarra>
           <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
             <IconInfo size={21} />
           </BottoneBarra>
@@ -116,20 +129,22 @@ export default function Scarabeo() {
           c={g}
           sconosciute={g.sconosciute}
           bloccato={finita || g.inviando}
-          attesa={g.pensa ? 'Il computer pensa…' : null}
+          attesa={g.pensa ? 'Pensa…' : null}
           restanti={stato.restanti}
           cambiabili={!stato.gemelli}
           evidenziate={g.ultimaDelComputer}
+          ultime={{
+            voci: aTurni ? stato.mosse.map((m) => ({ ...m, autore: m.mia ? 'Tu' : 'Computer' })) : stato.mosse,
+            aiuto: aTurni
+              ? 'Tocca una casella, poi le tessere: la freccia dice da che parte si scrive. Cinque mosse a testa, e a ogni turno otto tessere nuove.'
+              : 'Tocca una casella, poi le tessere: la freccia dice da che parte si scrive.',
+            onApri: () => setStoria(true),
+          }}
           testa={
             <>
               <Tabellino
-                iconaIo={<Avatar nickname={io.nickname} color={io.avatarColor} size={20} />}
-                iconaAltro={
-                  <IconaScheda>
-                    <IconComputer size={12} />
-                  </IconaScheda>
-                }
                 avviso={g.messaggio}
+                attesa={g.pensa ? 'Il computer pensa' : null}
                 posa={g.anteprima}
                 sconosciute={g.sconosciute}
                 io={stato.punti}
@@ -137,14 +152,21 @@ export default function Scarabeo() {
                 nomeAltro="Computer"
                 notaAltro={aTurni ? undefined : 'stesse tessere'}
                 turno={aTurni && !finita ? (g.pensa ? 'altro' : 'io') : undefined}
-                sotto={
+                stato={
                   finita
                     ? 'Giornata chiusa'
-                    : `Mossa ${Math.min(stato.mosseUsate + 1, stato.mosseTotali)} di ${stato.mosseTotali} · ` +
-                      (aTurni ? `traguardo ${stato.computer.punti}` : `${stato.restanti} nel sacchetto`)
+                    : `Mossa ${Math.min(stato.mosseUsate + 1, stato.mosseTotali)} di ${stato.mosseTotali}`
                 }
-                avanzamento={stato.computer.punti > 0 ? stato.punti / stato.computer.punti : 0}
+                sotto={
+                  stato.mosseUsate === 0 && !finita
+                    ? 'La prima parola passa dalla stella'
+                    : aTurni
+                      ? `Traguardo ${stato.computer.punti}`
+                      : `${stato.restanti} nel sacchetto`
+                }
+                avanzamento={stato.mosseUsate > 0 && stato.computer.punti > 0 ? stato.punti / stato.computer.punti : undefined}
                 onApri={() => setStoria(true)}
+                onRisultato={finita ? () => setRisultato(true) : undefined}
               />
               {/* Le pose suggerite da chi gioca in compagnia: toccarne una la mette sul tabellone,
                   e giocarla resta all'host. */}
@@ -233,6 +255,42 @@ export default function Scarabeo() {
           <ElencoMosse mosse={stato.computer.mosse} totale={stato.computer.punti} vuoto="Il computer non ha mosso." />
         )}
       </Sheet>
+
+      {stato && finita && (
+        <FineScarabeo
+          aperta={risultato}
+          onChiudi={() => setRisultato(false)}
+          titolo={
+            aTurni && stato.punti >= stato.computer.punti && stato.punti > 0
+              ? 'Traguardo battuto!'
+              : vinta
+                ? 'Hai battuto il computer!'
+                : 'Giornata finita'
+          }
+          testo={`${stato.punti} punti su un traguardo di ${stato.computer.punti}`}
+          righe={
+            aTurni
+              ? [
+                  { nome: 'I tuoi punti', valore: stato.punti },
+                  { nome: 'Il computer del giorno', valore: altro },
+                  { nome: 'Il traguardo', valore: stato.computer.punti },
+                ]
+              : [
+                  { nome: 'I tuoi punti', valore: stato.punti },
+                  { nome: 'Il computer, con le tue tessere', valore: stato.computer.punti },
+                ]
+          }
+          timbro={`+${stato.puntiClassifica}`}
+        >
+          <button
+            type="button"
+            className="scr-tasto scr-tasto--giallo"
+            onClick={() => vai(ROTTE.home, { direzione: 'indietro' })}
+          >
+            Torna alle Giornaliere
+          </button>
+        </FineScarabeo>
+      )}
 
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}

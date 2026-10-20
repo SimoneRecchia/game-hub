@@ -6,67 +6,34 @@
   min-height: 0;
 }
 
-.insieme__banner {
-  flex: none;
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
-  text-align: center;
-  line-height: 1.35;
-}
-
-/*
- * Il messaggio si sovrappone invece di occupare una riga.
- *
- * Nella partita normale lo spazio e' riservato per non far saltare la griglia,
- * ma qui la cornice e' già molta e il messaggio compare raramente: come
- * sovrapposizione non sposta nulla e restituisce 26 px alla griglia, che su
- * uno schermo basso sono tre punti di lato per ogni casella.
- */
-.insieme__board {
-  position: relative;
-  flex: 1;
-  min-height: 0;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-@supports (width: 1cqh) {
-  .insieme__board {
-    container-type: size;
-  }
-
-  .insieme__board .board {
-    width: min(100cqw, 400px, 83.34cqh);
-  }
-}
-
 /* La riga del suggerimento: fuori dalla griglia dell'host, per non far
-   sembrare che sia un tentativo già giocato. */
+   sembrare che sia un tentativo già giocato. Una carta col filo, come le
+   caselle, con le caselline a destra. */
 .insieme__proposta {
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--r-md);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: inset 0 0 0 0.5px var(--separator);
+  box-shadow: var(--ombra-album);
+  margin-bottom: 4px;
 }
 
 .insieme__proposta-etichetta {
-  font-size: var(--text-caption-1);
-  color: var(--label-secondary);
   flex: 1;
   min-width: 0;
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  color: var(--label-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .insieme__proposta-etichetta.is-avviso {
-  font-weight: 700;
+  font-weight: 900;
   color: var(--label);
   animation: insieme-avviso var(--dur-base) var(--ease-spring);
 }
@@ -84,23 +51,35 @@
   flex: none;
 }
 
+/* Le caselline del suggerimento: vuote tratteggiate, piene col filo, come quelle della griglia. */
 .insieme__casella {
   display: grid;
   place-items: center;
   width: 30px;
   height: 34px;
-  border-radius: var(--r-xs);
-  border: 1.5px dashed var(--tile-empty-border);
+  border-radius: 8px;
+  border: 2px dashed var(--tile-empty-border);
+  background: var(--slot);
+  color: var(--label);
   font-family: var(--font-rounded);
   font-size: var(--text-callout);
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0;
 }
 
 .insieme__casella:not(:empty) {
   border-style: solid;
-  border-color: var(--brand);
-  color: var(--brand);
+  border-color: var(--ink);
+  background: var(--lilla);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--ink);
+  animation: insieme-casella 200ms var(--ease-bounce);
+}
+
+@keyframes insieme-casella {
+  from {
+    transform: scale(0.8);
+  }
 }
 
 .insieme__fallback {
@@ -113,25 +92,56 @@
   text-align: center;
   color: var(--label-secondary);
   font-size: var(--text-subhead);
+  font-weight: 800;
+}
+
+/*
+ * Che cosa vale la partita per chi guarda: un'etichetta di biglietto, col filo,
+ * perché e' l'informazione che rende accettabile l'invito.
+ */
+.insieme__assist {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: center;
+  max-width: 100%;
+  padding: 4px var(--sp-3);
+  border-radius: 12px;
+  background: var(--biglietto);
+  box-shadow: inset 0 0 0 2px var(--ink), 0 2px 0 var(--ink);
+  color: var(--ink);
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: center;
+  transform: rotate(-1deg);
+}
+
+.insieme__assist strong {
+  font-weight: 900;
+}
+
+.insieme__assist svg {
+  flex: none;
+}
+
+/* Chi e' qui solo per dare una mano: la sua giornata e' già spesa altrove. */
+.insieme__assist.is-spettatore {
+  background: var(--surface);
+  color: var(--label-secondary);
+  transform: none;
 }
 
 /*
  * Schermi bassi (iPhone SE, telefono in orizzontale): la cornice si stringe
- * per lasciare spazio alla griglia. Senza questo, banner e riga del
- * suggerimento su due righe ciascuno mangiavano l'altezza e la griglia si
- * schiacciava.
+ * per lasciare spazio alla griglia. Senza questo, la riga del suggerimento su
+ * due righe mangiava l'altezza e la griglia si schiacciava.
  */
 @media (max-height: 700px) {
   .insieme {
     gap: var(--sp-1);
-  }
-
-  .insieme__banner {
-    padding: 3px var(--sp-3);
-    font-size: var(--text-caption-1);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   /* L'etichetta si capisce dal contesto: le caselle vanno al centro. */
@@ -154,6 +164,13 @@
     width: 26px;
     height: 28px;
   }
+
+  .insieme__assist {
+    padding: 2px var(--sp-2);
+    font-size: var(--text-caption-2);
+    white-space: nowrap;
+    overflow: hidden;
+  }
 }
 
 /* Vedi Pagina.css: in orizzontale la pagina scorre e la griglia resta
@@ -164,60 +181,9 @@
   }
 }
 
-/*
- * In orizzontale la pagina scorre, quindi l'altezza dell'area non e' piu'
- * definita — e senza un'altezza definita `container-type: size` fa risolvere
- * `cqh` a zero, che collassava la griglia a caselle da quattro pixel.
- * Qui il vincolo torna a essere la larghezza, che e' sempre definita.
- */
-@media (orientation: landscape) and (max-height: 560px) {
-  .insieme__board {
-    container-type: normal;
-    min-height: 264px;
+@media (prefers-reduced-motion: reduce) {
+  .insieme__proposta-etichetta.is-avviso,
+  .insieme__casella:not(:empty) {
+    animation: none;
   }
-
-  .insieme__board .board {
-    width: min(100%, 300px);
-  }
-}
-
-/*
- * Quanto ha reso l'aiuto.
- *
- * Sta sopra la griglia e occupa una riga, quindi c'e' solo quando c'e' un
- * numero da mostrare: la griglia si dimensiona su quel che resta in altezza, e
- * una riga vuota le costerebbe due punti di lato per casella.
- */
-.insieme__assist {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: var(--sp-1) var(--sp-3);
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-  color: var(--brand);
-  font-size: var(--text-caption-1);
-  line-height: 1.3;
-  text-align: center;
-}
-
-.insieme__assist svg {
-  flex: none;
-}
-
-@media (max-height: 700px) {
-  .insieme__assist {
-    padding: 2px var(--sp-2);
-    font-size: var(--text-caption-2);
-    white-space: nowrap;
-    overflow: hidden;
-  }
-}
-
-/* Chi e' qui solo per dare una mano: la sua giornata e' già spesa altrove. */
-.insieme__assist.is-spettatore {
-  background: var(--fill-quaternary);
-  color: var(--label-secondary);
 }

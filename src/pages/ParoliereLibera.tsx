@@ -89,22 +89,23 @@ export default function ParoliereLibera() {
         vista={v}
         comandi={g.comandi}
         subito
+        punti={String(v.punteggio)}
         fine={
           <>
-            <div className="par-totale">
-              <p className="par-totale__valore u-tabnum">{v.punteggio} punti</p>
-              <p className="par-totale__dettaglio u-tabnum">
-                {v.punteggio > 0 && v.punteggio >= record ? 'Il tuo record' : `Record ${record}`} · non conta per la
-                classifica
-              </p>
-            </div>
-            <div className="par-azioni">
-              <button type="button" className="par-link" onClick={() => g.lato && comincia(String(g.lato) as LatoLibero)}>
-                <IconRefresh size={18} />
-                Un’altra
+            <p className="par-piede-fine u-tabnum">
+              {v.punteggio > 0 && v.punteggio >= record ? 'Il tuo record!' : `Il tuo record: ${record}`}
+            </p>
+            <div className="par-fila-tasti">
+              <button type="button" className="par-tasto par-tasto--carta" onClick={g.ricomincia}>
+                Esci
               </button>
-              <button type="button" className="par-link" onClick={g.ricomincia}>
-                Cambia griglia
+              <button
+                type="button"
+                className="par-tasto par-tasto--verde"
+                onClick={() => g.lato && comincia(String(g.lato) as LatoLibero)}
+              >
+                <IconRefresh size={18} />
+                Gioca ancora
               </button>
             </div>
           </>

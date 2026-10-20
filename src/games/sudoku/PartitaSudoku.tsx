@@ -1,16 +1,22 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
-import { FoglioAiuti, VoceAiuto } from '@/components/Aiuti'
+import { FoglioAiuti } from '@/components/Aiuti'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconClock } from '@/components/Icons'
+import { AiutoVale, AiutoVoce } from '@/games/cruciverba/Aiuti'
+import { SEGNI, Segno } from '@/games/cruciverba/segni'
 import { formatCronometro, inPunti } from '@/lib/format'
 import { suona } from '@/lib/suoni'
+import { PUNTI_COMPLETO } from '@shared/cruciverba'
 import { NOMI_LIVELLI, VUOTA } from '@shared/sudoku'
-import { adesivoControllo, adesivoRisolto } from './adesivi'
+import { ADESIVO_RISOLTO_MS, adesivoControllo, adesivoRisolto } from './adesivi'
 import { Griglia } from './Griglia'
 import { Tastierino } from './Tastierino'
 import type { SudokuInCorso } from './tipi'
 import './Sudoku.css'
+
+/** Il fondo dell'icona degli aiuti: il lilla chiaro del sudoku. */
+const COLORE_AIUTI = '#e0cfff'
 
 /**
  * La partita, uguale per la classificata e per la libera: in cima il tempo, il
@@ -25,10 +31,16 @@ export function PartitaSudoku({
   orologio,
   senzaAiuti = false,
   chiusa = false,
+  aiutata,
+  carta,
 }: {
   p: SudokuInCorso
   fine: ReactNode
   dettaglioRisolto: string
+  /** Nella libera, al posto dei punti: se la partita e' stata aiutata, che non fa record. */
+  aiutata?: boolean
+  /** La carta della fine, sopra la griglia appena risolta: arriva dopo l'adesivo, e si chiude. */
+  carta?: (aperta: boolean, chiudi: () => void) => ReactNode
   /** Al posto del tempo di gioco: il tempo che resta di una sfida. */
   orologio?: { ms: number; etichetta: string }
   /** Nelle sfide fra amici gli aiuti non ci sono. */
@@ -96,6 +108,14 @@ export function PartitaSudoku({
     if (festa) accoda(adesivoRisolto(dettaglioRef.current))
   }, [accoda, festa])
 
+  // La carta della fine arriva dopo l'adesivo dello schema risolto, e resta finché non la si chiude.
+  const [cartaAperta, setCartaAperta] = useState(false)
+  useEffect(() => {
+    if (!festa) return
+    const t = window.setTimeout(() => setCartaAperta(true), ADESIVO_RISOLTO_MS)
+    return () => window.clearTimeout(t)
+  }, [festa])
+
   const aiuto = (fai: () => void) => {
     setAiuti(false)
     fai()
@@ -118,7 +138,7 @@ export function PartitaSudoku({
             segnalate={p.segnalate}
             doppioni={e.doppioni}
             completate={e.completate}
-            soluzione={p.finita ? p.soluzione : null}
+            soluzione={festa ? p.soluzione : null}
             onTocca={e.seleziona}
           />
         )}
@@ -128,7 +148,7 @@ export function PartitaSudoku({
       <div className="sud__lato">
         <div className="sud__stato">
           <span className="sud__tempo u-tabnum" aria-label={orologio?.etichetta ?? 'Tempo di gioco'}>
-            <IconClock size={14} />
+            <IconClock size={17} />
             {formatCronometro(orologio?.ms ?? p.tempoMs)}
           </span>
           {p.messaggio ? (
@@ -138,17 +158,27 @@ export function PartitaSudoku({
           ) : (
             <>
               {p.livello && <span className="sud__livello">{NOMI_LIVELLI[p.livello]}</span>}
-              {p.punti !== null && (
-                <span className="sud__punti u-tabnum">
-                  {p.punti} <span className="sud__punti-label">punti</span>
+              {p.punti !== null ? (
+                <span className="sud__valore u-tabnum">
+                  {p.finita ? 'Punti' : 'Vale'} <strong>{p.punti}</strong>
+                  <span className="sud__barretta" aria-hidden="true">
+                    <span style={{ transform: `scaleX(${Math.min(1, p.punti / PUNTI_COMPLETO)})` }} />
+                  </span>
+                </span>
+              ) : aiutata !== undefined ? (
+                <span className="sud__valore">
+                  <span className={`sud__pulizia${aiutata ? ' is-aiutata' : ''}`}>
+                    {aiutata ? 'Aiutata' : 'Senza aiuti'}
+                  </span>
+                </span>
+              ) : (
+                <span className="sud__valore u-tabnum" aria-label={`${scritte} caselle scritte su ${vuote}`}>
+                  <span className="sud__barretta" aria-hidden="true">
+                    <span style={{ transform: `scaleX(${vuote > 0 ? scritte / vuote : 0})` }} />
+                  </span>
+                  {scritte}/{vuote}
                 </span>
               )}
-              <span className="sud__avanzamento u-tabnum" aria-label={`${scritte} caselle scritte su ${vuote}`}>
-                <span className="sud__avanzamento-barra" aria-hidden="true">
-                  <span style={{ transform: `scaleX(${vuote > 0 ? scritte / vuote : 0})` }} />
-                </span>
-                {scritte}/{vuote}
-              </span>
             </>
           )}
         </div>
@@ -169,18 +199,19 @@ export function PartitaSudoku({
         )}
       </div>
 
-      <FoglioAiuti
-        open={aiuti}
-        onClose={() => setAiuti(false)}
-        nota={
-          p.punti !== null && (
+      <FoglioAiuti open={aiuti} onClose={() => setAiuti(false)}>
+        <AiutoVale>
+          {p.punti !== null ? (
             <>
-              Adesso il sudoku vale <strong>{p.punti} punti</strong>.
+              Adesso vale <strong className="u-tabnum">{p.punti}</strong> punti
             </>
-          )
-        }
-      >
-        <VoceAiuto
+          ) : (
+            'Gratis: la partita diventa aiutata'
+          )}
+        </AiutoVale>
+        <AiutoVoce
+          icona={<Segno d={SEGNI.lente} />}
+          colore={COLORE_AIUTI}
           nome="Controlla la casella"
           costo={
             p.aiuti ? `${inPunti(p.aiuti.controllo)}, ${p.aiuti.controllo + p.aiuti.errore} se è sbagliata` : undefined
@@ -188,7 +219,9 @@ export function PartitaSudoku({
           onClick={() => aiuto(() => p.controlla('casella'))}
           disabled={!conCifra || p.inviando}
         />
-        <VoceAiuto
+        <AiutoVoce
+          icona={<Segno d={SEGNI.griglia} />}
+          colore={COLORE_AIUTI}
           nome="Controlla tutto lo schema"
           costo={
             p.aiuti ? `${inPunti(p.aiuti.controlloSchema)}, più ${p.aiuti.errore} per cifra sbagliata` : undefined
@@ -196,13 +229,16 @@ export function PartitaSudoku({
           onClick={() => aiuto(() => p.controlla('tutto'))}
           disabled={p.inviando}
         />
-        <VoceAiuto
+        <AiutoVoce
+          icona={<Segno d={SEGNI.occhio} />}
+          colore={COLORE_AIUTI}
           nome="Svela la casella"
           costo={p.aiuti ? inPunti(p.aiuti.svelata) : undefined}
           onClick={() => aiuto(p.svela)}
           disabled={!daScrivere || p.inviando}
         />
       </FoglioAiuti>
+      {p.finita && carta?.(cartaAperta, () => setCartaAperta(false))}
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </div>

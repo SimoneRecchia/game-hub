@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Button } from '@/components/Button'
+import { IconaGioco } from '@/components/IconaGioco'
 import { TastieraGioco, useTastieraFisica } from '@/components/TastieraGioco'
 import { suona } from '@/lib/suoni'
 import { ERRORE_GHIGLIOTTINA, normalizzaGhigliottina } from '@shared/ghigliottina'
@@ -47,30 +47,40 @@ export interface ComandiGhigliottina {
 /**
  * I momenti della partita, come in studio: l'entrata, una coppia da
  * scegliere, l'attesa col rullo di tamburo, l'esito (la lama, se e' sbagliata),
- * le cinque parole che si accendono, il minuto, la busta, il verdetto, la fine.
+ * le cinque parole che salgono, il minuto, la busta, il verdetto, la fine.
  */
 type Fase = 'intro' | 'coppia' | 'attesa' | 'esito' | 'cinque' | 'finale' | 'busta' | 'verdetto' | 'fine'
 
 const ridotto = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-/** I tempi della scena, in millisecondi; senza animazioni bastano pochi istanti. */
+/**
+ * I tempi della scena, in millisecondi; senza animazioni bastano pochi istanti.
+ * Il rullo, l'esito e l'uscita della coppia stanno nel preambolo che il server
+ * lascia alla coppia dopo (`preamboloCoppia`): 2,8 secondi dopo una giusta, 4
+ * dopo una sbagliata.
+ */
 function tempi() {
   const r = ridotto()
   return {
     /** Il rullo di tamburo fra la scelta e l'esito. */
     attesa: r ? 200 : 1400,
-    /** La parola giusta che si accende, e vola nella colonna. */
-    giusta: r ? 300 : 1100,
+    /** La parola giusta che si accende, con la sua espressione. */
+    giusta: r ? 300 : 1000,
     /** La lama che cala, il montepremi tagliato, e la lama che risale. */
-    sbagliata: r ? 500 : 2300,
-    /** Le cinque parole che si accendono una dopo l'altra, prima del minuto. */
+    sbagliata: r ? 500 : 2200,
+    /** La coppia vista che se ne va, prima della prossima. */
+    uscita: r ? 0 : 380,
+    /** Le cinque parole che salgono una dopo l'altra, prima del minuto. */
     cinque: r ? 300 : 2600,
-    /** La busta che arriva e si apre. */
+    /** La busta che arriva e trema. */
     busta: r ? 300 : 2700,
     /** Le lettere della parola vincente che si girano, prima della fine. */
     verdetto: r ? 600 : 3400,
   }
 }
+
+/** Quanto resta sul palco un adesivo: "Giusta!", "−10", "Indovinata!". */
+const DURATA_ADESIVO_MS = 1_400
 
 const aspetta = (ms: number) => new Promise<void>((risolvi) => window.setTimeout(risolvi, ms))
 
@@ -84,15 +94,15 @@ function faseDi(v: VistaGhigliottina): Fase {
 
 /**
  * Fa scivolare dal posto di prima a quello nuovo gli elementi che cambiano
- * posto quando cambia `chiave` (FLIP): le cinque parole che salgono sopra la
- * tastiera, la ghigliottina che si fa piccola. `sposta` li porta per il centro,
- * `scala` li rimpicciolisce anche, dall'alto: la ghigliottina ha le sue
- * proporzioni, e scalata resta lei. I posti si misurano a ogni disegno, cosi'
- * quelli di prima sono quelli che si vedevano davvero.
+ * posto quando cambia `chiave` (FLIP): la ghigliottina che si fa piccola per
+ * lasciare posto alle cinque parole. `sposta` li porta per il centro, `scala`
+ * li rimpicciolisce anche, dall'alto: la ghigliottina ha le sue proporzioni, e
+ * scalata resta lei. I posti si misurano a ogni disegno, cosi' quelli di prima
+ * sono quelli che si vedevano davvero.
  */
 function useScivola(
   contenitore: { current: HTMLElement | null },
-  selettori: { sposta: string; scala: string },
+  selettori: { sposta?: string; scala: string },
   chiave: unknown,
 ) {
   const posti = useRef(new Map<Element, DOMRect>())
@@ -100,7 +110,7 @@ function useScivola(
   useLayoutEffect(() => {
     const el = contenitore.current
     if (!el) return
-    const sposta = [...el.querySelectorAll(selettori.sposta)]
+    const sposta = selettori.sposta ? [...el.querySelectorAll(selettori.sposta)] : []
     const scala = [...el.querySelectorAll(selettori.scala)]
     if (ultima.current !== chiave && !ridotto()) {
       const anima = (e: Element, ritardo: number, trasforma: (p: DOMRect, d: DOMRect) => string | null) => {
@@ -116,7 +126,6 @@ function useScivola(
           fill: 'backwards',
         })
       }
-      // Una parola dopo l'altra, come se salissero in fila.
       sposta.forEach((e, i) =>
         anima(e, i * 45, (p, d) => {
           const dx = p.left + p.width / 2 - (d.left + d.width / 2)
@@ -127,7 +136,7 @@ function useScivola(
       scala.forEach((e) =>
         anima(e, 0, (p, d) => {
           const s = p.height / Math.max(1, d.height)
-          if (Math.abs(s - 1) < 0.01) return null
+          if (Math.abs(s - 1) < 0.01 && Math.abs(p.top - d.top) < 1) return null
           const dx = p.left + p.width / 2 - (d.left + d.width / 2)
           return `translate(${dx}px, ${p.top - d.top}px) scale(${s})`
         }),
@@ -138,12 +147,19 @@ function useScivola(
   })
 }
 
+interface AdesivoPalco {
+  testo: string
+  tono: 'vivace' | 'bordato'
+  /** Cambia a ogni adesivo: fa ripartire l'animazione. */
+  n: number
+}
+
 /**
- * La Ghigliottina in scena: la lama sopra il montepremi, la coppia di parole,
- * la colonna delle cinque parole giuste. La scena va un passo dietro allo
- * stato vero (`vista`): la scelta va subito al server, ma si vede com'e' andata
- * solo dopo il rullo di tamburo, e la coppia dopo solo quando la parola giusta
- * e' volata al suo posto.
+ * La Ghigliottina in scena: il palco con le cinque lampade, la lama sopra il
+ * montepremi, e sotto la coppia di parole, il minuto o la busta. La scena va
+ * un passo dietro allo stato vero (`vista`): la scelta va subito al server, ma
+ * si vede com'e' andata solo dopo il rullo di tamburo, e la coppia dopo solo
+ * quando quella vista se n'e' andata.
  */
 export function PartitaGhigliottina({
   vista,
@@ -162,6 +178,8 @@ export function PartitaGhigliottina({
   const [scelta, setScelta] = useState<0 | 1 | null>(null)
   /** La coppia di adesso si e' chiusa per il tempo, non per una scelta. */
   const [scaduta, setScaduta] = useState(false)
+  /** La coppia vista se ne va, prima che arrivi la prossima. */
+  const [uscita, setUscita] = useState(false)
   const [lama, setLama] = useState<PosizioneLama>(vista.finita && vista.indovinata === false ? 'giu' : 'alta')
   const [colpi, setColpi] = useState(0)
   /**
@@ -170,17 +188,30 @@ export function PartitaGhigliottina({
    * l'animazione.
    */
   const [taglio, setTaglio] = useState<Taglio | null>(null)
-  /** La coppia appena scelta, con l'esito, mentre la parola giusta vola nella colonna. */
+  /** La coppia appena scelta, con l'esito, mentre la giusta si accende. */
   const [esito, setEsito] = useState<{ coppia: CoppiaGhigliottinaVista; indice: number } | null>(null)
+  const [adesivo, setAdesivo] = useState<AdesivoPalco | null>(null)
   const montata = useRef(true)
   const inVolo = useRef(false)
   const scena = useRef<HTMLDivElement>(null)
-  useEffect(
-    () => () => {
+  // Rimessa a vero a ogni montaggio: in sviluppo React monta, smonta e rimonta, e restava falsa.
+  useEffect(() => {
+    montata.current = true
+    return () => {
       montata.current = false
-    },
-    [],
-  )
+    }
+  }, [])
+
+  // L'adesivo sul palco se ne va da solo.
+  const attacca = useCallback((testo: string, tono: AdesivoPalco['tono']) => {
+    setAdesivo((a) => ({ testo, tono, n: (a?.n ?? 0) + 1 }))
+  }, [])
+  const nAdesivo = adesivo?.n
+  useEffect(() => {
+    if (nAdesivo === undefined) return
+    const t = window.setTimeout(() => setAdesivo(null), DURATA_ADESIVO_MS)
+    return () => window.clearTimeout(t)
+  }, [nAdesivo])
 
   // Il tempo finito: il server ha chiuso la partita, e la vista arriva finita.
   useEffect(() => {
@@ -189,10 +220,11 @@ export function PartitaGhigliottina({
       setFase('verdetto')
       setLama('giu')
       setTaglio({ prima: mostrata.montepremi, dopo: vista.punti, n: Date.now(), tutto: true })
+      attacca('Tempo!', 'bordato')
       suona('lama')
       suona('sconfitta', { ritardo: 0.5 })
     }
-  }, [fase, vista, mostrata.montepremi])
+  }, [fase, vista, mostrata.montepremi, attacca])
 
   // Uno stato arrivato da fuori — una scrittura rifiutata e riletta, un tempo finito applicato dal server —
   // prende il posto di quello mostrato mentre si sceglie.
@@ -226,7 +258,7 @@ export function PartitaGhigliottina({
     void comincia()
   }, [comincia, fase, subito])
 
-  // Le cinque parole si accendono, poi parte il minuto.
+  // Le cinque parole salgono sul palco, una dopo l'altra, poi parte il minuto.
   useEffect(() => {
     if (fase !== 'cinque') return
     let fermo = false
@@ -246,7 +278,7 @@ export function PartitaGhigliottina({
     }
   }, [fase, comandi])
 
-  // Il verdetto: le lettere si girano, e poi la fine con le spiegazioni.
+  // Il verdetto: le lettere si girano, e poi la fine con le espressioni.
   useEffect(() => {
     if (fase !== 'verdetto') return
     const timer = window.setTimeout(() => setFase('fine'), tempi().verdetto)
@@ -258,8 +290,9 @@ export function PartitaGhigliottina({
 
   /**
    * Una scelta, o il tempo della coppia finito (`null`): il rullo, poi la
-   * parola giusta che si accende; se era sbagliata, o se il tempo e' finito,
-   * cala la lama e il montepremi si spacca, con quello sceso gia' sotto.
+   * parola giusta che si accende con la sua espressione; se era sbagliata, o
+   * se il tempo e' finito, cala la lama e il montepremi si spacca, con quello
+   * sceso gia' sotto. Poi la coppia se ne va, e arriva la prossima.
    */
   const scegli = useCallback(
     async (i: 0 | 1 | null) => {
@@ -286,6 +319,7 @@ export function PartitaGhigliottina({
         setEsito({ coppia: scelta, indice: k })
         setFase('esito')
         if (giusta) {
+          attacca('Giusta!', 'vivace')
           suona('giusto')
           await aspetta(t.giusta)
         } else {
@@ -296,6 +330,7 @@ export function PartitaGhigliottina({
             () => {
               if (!montata.current) return
               setTaglio({ prima: mostrata.montepremi, dopo: dopo.montepremi, n: Date.now(), tutto: false })
+              attacca(i === null ? 'Tempo!' : `−${ERRORE_GHIGLIOTTINA}`, 'bordato')
             },
             ridotto() ? 0 : 200,
           )
@@ -303,6 +338,12 @@ export function PartitaGhigliottina({
           await aspetta(t.sbagliata)
         }
         if (!montata.current) return
+        if (t.uscita > 0) {
+          setUscita(true)
+          await aspetta(t.uscita)
+          if (!montata.current) return
+        }
+        setUscita(false)
         setEsito(null)
         setScelta(null)
         setScaduta(false)
@@ -314,7 +355,7 @@ export function PartitaGhigliottina({
         inVolo.current = false
       }
     },
-    [fase, k, comandi, mostrata.montepremi],
+    [fase, k, comandi, mostrata.montepremi, attacca],
   )
 
   const rispondi = useCallback(
@@ -332,29 +373,34 @@ export function PartitaGhigliottina({
       suona('busta')
       setMostrata(dopo)
       setFase('verdetto')
+      // L'adesivo aspetta che le lettere si siano girate.
+      const lettere = normalizzaGhigliottina(dopo.soluzione ?? '').length
+      const dopoLeLettere = ridotto() ? 0 : 500 + lettere * 180 + 450
       if (dopo.indovinata) {
-        suona('vittoria', { ritardo: 0.9 })
+        window.setTimeout(() => montata.current && attacca('Indovinata!', 'vivace'), dopoLeLettere)
+        suona('vittoria', { ritardo: dopoLeLettere / 1000 })
       } else {
         window.setTimeout(
           () => {
             if (!montata.current) return
             setLama('giu')
             setTaglio({ prima: dopo.montepremi, dopo: dopo.punti, n: Date.now(), tutto: true })
+            attacca('Peccato', 'bordato')
             suona('lama')
             suona('sconfitta', { ritardo: 0.4 })
           },
-          ridotto() ? 0 : 1300,
+          Math.max(ridotto() ? 0 : 1300, dopoLeLettere),
         )
       }
     },
-    [fase, comandi],
+    [fase, comandi, attacca],
   )
 
   const indovinata = mostrata.finita && mostrata.indovinata === true
   const valore = fase === 'fine' || fase === 'verdetto' ? mostrata.punti : mostrata.montepremi
-  // Mentre si scrive la parola vincente le cinque parole salgono sopra la tastiera, e la ghigliottina si fa piccola.
-  const compatta = fase === 'finale' || fase === 'busta' || fase === 'verdetto'
-  useScivola(scena, { sposta: '.ghi-slot', scala: '.ghi-palco__macchina' }, compatta)
+  // Dalle cinque parole in poi la ghigliottina si fa piccola, e le parole salgono sul palco sopra di lei.
+  const compatta = fase === 'cinque' || fase === 'finale' || fase === 'busta' || fase === 'verdetto' || fase === 'fine'
+  useScivola(scena, { scala: '.ghi-palco__macchina' }, compatta)
 
   return (
     <div
@@ -364,42 +410,53 @@ export function PartitaGhigliottina({
         `${indovinata && (fase === 'verdetto' || fase === 'fine') ? ' is-vinta' : ''}`
       }
     >
-      <div className="ghi-palco">
-        <div className="ghi-palco__luci" aria-hidden="true" />
-        <div className="ghi-palco__macchina">
-          <Lama posizione={lama} colpi={colpi} />
-          <Montepremi valore={valore} taglio={taglio} vinto={indovinata && fase !== 'verdetto'} />
+      <section className={`ghi-palco${fase === 'attesa' ? ' is-tamburo' : ''}`} aria-label="Il palco">
+        <span className="ghi-palco__luci" aria-hidden="true">
+          <span className="ghi-fascio ghi-fascio--sx" />
+          <span className="ghi-fascio ghi-fascio--dx" />
+        </span>
+        <Lampade
+          coppie={esito ? mostrata.coppie.map((c, i) => (i === esito.indice ? esito.coppia : c)) : mostrata.coppie}
+          totale={mostrata.totaleCoppie}
+          corrente={fase === 'coppia' || fase === 'attesa' || fase === 'esito' ? k : null}
+        />
+        <div className="ghi-palco__scena">
+          <div className="ghi-palco__macchina">
+            <Lama posizione={lama} colpi={colpi} />
+            <Montepremi valore={valore} taglio={taglio} vinto={indovinata && fase !== 'verdetto'} />
+          </div>
         </div>
-      </div>
-
-      <Colonna
-        coppie={mostrata.coppie}
-        totale={mostrata.totaleCoppie}
-        accese={fase === 'cinque' || fase === 'finale' || fase === 'busta'}
-        mostraSpiegazioni={fase === 'fine'}
-        soluzione={mostrata.soluzione}
-      />
+        {compatta && <Parole coppie={mostrata.coppie} ferme={fase !== 'cinque'} />}
+        {adesivo && (
+          <div
+            key={adesivo.n}
+            className={`ghi-adesivo is-${adesivo.tono}`}
+            style={{ '--durata': `${DURATA_ADESIVO_MS}ms` } as CSSProperties}
+            aria-hidden="true"
+          >
+            <span>{adesivo.testo}</span>
+          </div>
+        )}
+      </section>
 
       <div className="ghi-centro">
         {fase === 'intro' && (
-          <div className="ghi-intro">
-            <p className="ghi-intro__testo">
-              In ogni coppia una sola parola porta alla parola vincente: hai pochi secondi per sceglierla. Ogni
-              errore toglie {ERRORE_GHIGLIOTTINA} punti al montepremi.
-            </p>
-            <Button size="lg" onClick={() => void comincia()}>
-              Comincia
-            </Button>
-          </div>
+          <Presentazione
+            tempoSceltaMs={mostrata.tempoSceltaMs}
+            tempoFinaleMs={mostrata.tempoFinaleMs}
+            onComincia={() => void comincia()}
+          />
         )}
 
         {coppia && (fase === 'coppia' || fase === 'attesa' || fase === 'esito') && (
           <Coppia
             key={k}
             numero={(k ?? 0) + 1}
+            totale={mostrata.totaleCoppie}
             coppia={esito?.coppia ?? coppia}
             scelta={scelta}
             scaduta={scaduta}
+            uscita={uscita}
             fase={fase}
             orologio={mostrata.orologioCoppia}
             tempoMs={mostrata.tempoSceltaMs}
@@ -409,33 +466,34 @@ export function PartitaGhigliottina({
 
         {fase === 'cinque' && (
           <p className="ghi-annuncio" role="status">
-            Le cinque parole. {durataFinale(mostrata.tempoFinaleMs)} per la parola vincente!
+            Le cinque parole!
+            <span className="ghi-annuncio__sotto">{durataFinale(mostrata.tempoFinaleMs)} per la parola vincente</span>
           </p>
         )}
 
-        {(fase === 'finale' || fase === 'busta') && (
+        {fase === 'finale' && (
           <Finale
             scadenza={mostrata.scadenza}
             tempoMs={mostrata.tempoFinaleMs}
-            inviata={fase === 'busta'}
             onRispondi={rispondi}
             onScade={comandi.scade}
           />
         )}
 
-        {(fase === 'verdetto' || fase === 'fine') && mostrata.soluzione && (
-          <Verdetto
-            soluzione={mostrata.soluzione}
+        {(fase === 'busta' || fase === 'verdetto') && (
+          <Busta
+            soluzione={fase === 'verdetto' ? mostrata.soluzione : null}
             risposta={mostrata.risposta}
             indovinata={indovinata}
-            punti={mostrata.punti}
-            subito={fase === 'fine'}
           />
         )}
       </div>
 
-      {fase === 'busta' && <Busta />}
-      {fase === 'fine' && <div className="ghi-fine">{fine}</div>}
+      {fase === 'fine' && (
+        <Fine coppie={mostrata.coppie} soluzione={mostrata.soluzione} indovinata={indovinata} punti={mostrata.punti}>
+          {fine}
+        </Fine>
+      )}
     </div>
   )
 }
@@ -445,8 +503,80 @@ function durataFinale(ms: number): string {
   const s = Math.round(ms / 1000)
   if (s === 60) return 'Un minuto'
   if (s === 90) return 'Un minuto e mezzo'
+  if (s === 120) return 'Due minuti'
   if (s % 60 === 0) return `${s / 60} minuti`
   return `${s} secondi`
+}
+
+/* ─────────────────────────────  La presentazione  ───────────────────────────── */
+
+/** Prima di cominciare: le tre regole in una carta, e Comincia. */
+function Presentazione({
+  tempoSceltaMs,
+  tempoFinaleMs,
+  onComincia,
+}: {
+  tempoSceltaMs: number
+  tempoFinaleMs: number
+  onComincia: () => void
+}) {
+  return (
+    <div className="ghi-pronta">
+      <ul className="ghi-pronta__carta">
+        <li className="ghi-pronta__riga">
+          <span className="ghi-punto is-rosa" aria-hidden="true" />
+          Cinque coppie: in ognuna scegli la parola legata alla vincente
+        </li>
+        <li className="ghi-pronta__riga">
+          <span className="ghi-punto is-giallo" aria-hidden="true" />
+          {Math.round(tempoSceltaMs / 1000)} secondi a coppia, {Math.round(tempoFinaleMs / 1000)} per la vincente
+        </li>
+        <li className="ghi-pronta__riga">
+          <span className="ghi-punto is-rosso" aria-hidden="true" />
+          Ogni errore: la lama toglie {ERRORE_GHIGLIOTTINA} punti
+        </li>
+      </ul>
+      <button type="button" className="ghi-comincia" onClick={onComincia}>
+        Comincia
+      </button>
+    </div>
+  )
+}
+
+/* ─────────────────────────────  Le lampade  ───────────────────────────── */
+
+/**
+ * Le cinque lampade in cima al palco, una per coppia: lampeggia quella di
+ * adesso, durante il rullo piu' in fretta, e una coppia scelta resta verde o
+ * rossa, da quando se ne vede l'esito.
+ */
+function Lampade({
+  coppie,
+  totale,
+  corrente,
+}: {
+  coppie: CoppiaGhigliottinaVista[]
+  totale: number
+  corrente: number | null
+}) {
+  const fatte = coppie.filter((c) => c.giusta !== null).length
+  return (
+    <ol className="ghi-lampade" aria-label={`${fatte} coppie su ${totale}`}>
+      {Array.from({ length: totale }, (_, i) => {
+        const c = coppie[i]
+        const nota = c && c.giusta !== null ? c : null
+        const sbagliata = nota !== null && (nota.scaduta || (nota.scelta !== null && nota.scelta !== nota.giusta))
+        const stato = nota ? (sbagliata ? 'is-sbagliata' : 'is-giusta') : corrente === i ? 'is-attuale' : ''
+        return (
+          <li
+            key={i}
+            className={`ghi-lampada ${stato}`}
+            aria-label={nota ? (sbagliata ? 'sbagliata' : 'giusta') : corrente === i ? 'adesso' : 'da giocare'}
+          />
+        )
+      })}
+    </ol>
+  )
 }
 
 /* ─────────────────────────────  Il montepremi  ───────────────────────────── */
@@ -521,7 +651,32 @@ function Montepremi({ valore, taglio, vinto }: { valore: number; taglio: Taglio 
   )
 }
 
-/* ─────────────────────────────  La colonna  ───────────────────────────── */
+/* ─────────────────────────────  Le cinque parole  ───────────────────────────── */
+
+/**
+ * Le cinque parole giuste, sul palco sopra la ghigliottina, in due file:
+ * salgono una dopo l'altra prima del minuto, e restano li' mentre si scrive.
+ * Una coppia sbagliata ha il suo segno rosso.
+ */
+function Parole({ coppie, ferme }: { coppie: CoppiaGhigliottinaVista[]; ferme: boolean }) {
+  return (
+    <ol className={`ghi-parole${ferme ? ' is-ferme' : ''}`} aria-label="Le cinque parole">
+      {coppie.map((c, i) => {
+        if (c.giusta === null) return null
+        const sbagliata = c.scaduta || (c.scelta !== null && c.scelta !== c.giusta)
+        return (
+          <li
+            key={i}
+            className={`ghi-parola${sbagliata ? ' is-tagliata' : ''}`}
+            style={{ '--i': i } as CSSProperties}
+          >
+            {c.parole[c.giusta].toUpperCase()}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
 
 /** Le parti di un'espressione: la parola della coppia, la parola vincente e il resto. */
 function partiDi(espressione: string, parola: string, soluzione: string | null): Array<{ testo: string; tipo: string }> {
@@ -558,84 +713,33 @@ function partiDi(espressione: string, parola: string, soluzione: string | null):
   return parti
 }
 
-/**
- * Le cinque parole giuste, una sotto l'altra come in studio: vuote finché la
- * coppia non e' scelta. Un segno rosso dice dove la lama e' calata. Alla fine
- * ogni parola ha accanto la sua espressione.
- */
-function Colonna({
-  coppie,
-  totale,
-  accese,
-  mostraSpiegazioni,
-  soluzione,
-}: {
-  coppie: CoppiaGhigliottinaVista[]
-  totale: number
-  accese: boolean
-  mostraSpiegazioni: boolean
-  soluzione: string | null
-}) {
-  return (
-    <ol className={`ghi-colonna${accese ? ' is-accesa' : ''}${mostraSpiegazioni ? ' is-spiegata' : ''}`}>
-      {Array.from({ length: totale }, (_, i) => {
-        const c = coppie[i]
-        const nota = c && c.giusta !== null ? c : null
-        const parola = nota ? nota.parole[nota.giusta!] : null
-        const sbagliata = nota !== null && (nota.scaduta || (nota.scelta !== null && nota.scelta !== nota.giusta))
-        return (
-          <li
-            key={i}
-            className={`ghi-slot${parola ? ' is-piena' : ''}${sbagliata ? ' is-tagliata' : ''}`}
-            style={{ '--i': i } as CSSProperties}
-          >
-            <span className="ghi-slot__n">{i + 1}</span>
-            <span className="ghi-slot__parola">{parola ?? ''}</span>
-            {sbagliata && (
-              <span className="ghi-slot__taglio" aria-label={nota?.scaduta ? 'tempo finito' : 'scelta sbagliata'} />
-            )}
-            {mostraSpiegazioni && nota?.spiegazione && parola && (
-              <span className="ghi-slot__spiegazione">
-                {partiDi(nota.spiegazione, parola, soluzione).map((p, j) =>
-                  p.tipo === 'testo' ? (
-                    <span key={j}>{p.testo}</span>
-                  ) : (
-                    <strong key={j} className={`is-${p.tipo}`}>
-                      {p.testo}
-                    </strong>
-                  ),
-                )}
-              </span>
-            )}
-          </li>
-        )
-      })}
-    </ol>
-  )
-}
-
 /* ─────────────────────────────  La coppia  ───────────────────────────── */
 
 /**
- * Le due parole della coppia, che entrano in scena da due parti. Toccata una,
- * l'altra si spegne e parte il rullo; poi la giusta si accende di verde, e se
- * era l'altra quella toccata diventa rossa e trema.
+ * Le due parole della coppia, due tessere che entrano dal basso. Toccata una,
+ * l'altra si spegne e parte il rullo; poi la giusta si accende di verde con la
+ * sua espressione, e se era l'altra quella toccata diventa rossa e trema.
+ * Finito l'esito la coppia scivola via, e arriva la prossima.
  */
 function Coppia({
   numero,
+  totale,
   coppia,
   scelta,
   scaduta,
+  uscita,
   fase,
   orologio,
   tempoMs,
   onScegli,
 }: {
   numero: number
+  totale: number
   coppia: CoppiaGhigliottinaVista
   scelta: 0 | 1 | null
   /** Il tempo e' finito senza una scelta. */
   scaduta: boolean
+  uscita: boolean
   fase: Fase
   orologio: { inizio: number; scadenza: number } | null
   tempoMs: number
@@ -643,14 +747,26 @@ function Coppia({
   onScegli: (i: 0 | 1 | null) => void
 }) {
   const libera = fase === 'coppia'
+  const titolo =
+    scaduta && (fase === 'attesa' || fase === 'esito')
+      ? 'Tempo scaduto!'
+      : fase === 'attesa'
+        ? 'Vediamo…'
+        : fase === 'esito'
+          ? scelta === coppia.giusta
+            ? 'Giusta!'
+            : 'Sbagliata!'
+          : `Coppia ${numero} di ${totale}`
   return (
     <div
-      className={`ghi-coppia is-${fase}${scaduta ? ' is-scaduta' : ''}`}
+      className={`ghi-coppia is-${fase}${scaduta ? ' is-scaduta' : ''}${uscita ? ' is-uscita' : ''}`}
       role="group"
-      aria-label={`Coppia ${numero} di 5`}
+      aria-label={`Coppia ${numero} di ${totale}`}
     >
-      <div className="ghi-coppia__testa">
-        <p className="ghi-coppia__titolo">Coppia {numero}</p>
+      <div className="ghi-testa">
+        <p className="ghi-testa__titolo" role="status">
+          {titolo}
+        </p>
         {orologio && (
           <Clessidra
             orologio={orologio}
@@ -665,48 +781,84 @@ function Coppia({
         {coppia.parole.map((parola, i) => {
           const giusta = fase === 'esito' && coppia.giusta === i
           const sbagliata = fase === 'esito' && scelta === i && coppia.giusta !== i
+          const spenta =
+            (fase === 'attesa' && scelta !== i) || (fase === 'esito' && !giusta && !sbagliata)
           return (
             <button
               key={i}
               type="button"
               className={
-                `ghi-parola is-${i === 0 ? 'prima' : 'seconda'}` +
-                (scelta === i ? ' is-scelta' : scelta !== null ? ' is-altra' : '') +
+                'ghi-tessera' +
+                (fase === 'attesa' && scelta === i ? ' is-attesa' : '') +
                 (giusta ? ' is-giusta' : '') +
-                (sbagliata ? ' is-sbagliata' : '')
+                (sbagliata ? ' is-sbagliata' : '') +
+                (spenta ? ' is-spenta' : '')
               }
+              style={{ '--i': i } as CSSProperties}
               disabled={!libera}
               aria-pressed={scelta === i}
               onClick={() => onScegli(i as 0 | 1)}
             >
-              <span className="ghi-parola__testo">{parola}</span>
+              <span className="ghi-tessera__testo">{parola}</span>
+              {giusta && coppia.spiegazione && <span className="ghi-tessera__spiega">{coppia.spiegazione}</span>}
             </button>
           )
         })}
       </div>
-      <p className="ghi-coppia__stato" role="status">
-        {scaduta && (fase === 'attesa' || fase === 'esito')
-          ? 'Tempo scaduto!'
-          : fase === 'attesa'
-            ? 'Vediamo…'
-            : fase === 'esito'
-              ? scelta === coppia.giusta
-                ? 'Giusta!'
-                : 'Sbagliata!'
-              : ''}
-      </p>
     </div>
   )
 }
 
-const RAGGIO_COPPIA = 15
-const GIRO_COPPIA = 2 * Math.PI * RAGGIO_COPPIA
+const RAGGIO_ANELLO = 18
+const GIRO_ANELLO = 2 * Math.PI * RAGGIO_ANELLO
+
+/** Un anello che si svuota, con i secondi dentro: il tempo di una coppia e quello della vincente. */
+function Anello({
+  resta,
+  tempoMs,
+  secondi,
+  urgente,
+  acceso = true,
+  grande = false,
+  etichetta,
+}: {
+  resta: number
+  tempoMs: number
+  secondi: number
+  urgente: boolean
+  acceso?: boolean
+  grande?: boolean
+  etichetta: string
+}) {
+  return (
+    <span
+      className={`ghi-tempo${grande ? ' ghi-tempo--grande' : ''}${acceso ? ' is-acceso' : ''}${urgente ? ' is-poco' : ''}`}
+      role="timer"
+      aria-label={etichetta}
+    >
+      <svg viewBox="0 0 44 44" aria-hidden="true">
+        <circle className="ghi-tempo__fondo" cx="22" cy="22" r={RAGGIO_ANELLO} />
+        <circle
+          className="ghi-tempo__anello"
+          cx="22"
+          cy="22"
+          r={RAGGIO_ANELLO}
+          strokeDasharray={GIRO_ANELLO}
+          strokeDashoffset={GIRO_ANELLO * (1 - resta / tempoMs)}
+        />
+      </svg>
+      <span className="ghi-tempo__n u-tabnum" aria-hidden="true">
+        {secondi}
+      </span>
+    </span>
+  )
+}
 
 /**
- * Il tempo della coppia: un anello accanto al titolo che si svuota, con i
- * secondi dentro. Prima che parta — la coppia sta entrando — e' pieno; negli
- * ultimi cinque secondi diventa rosso, batte e si sente. Finisce una volta
- * sola, e solo mentre si sceglie: una scelta gia' in viaggio decide da sola.
+ * Il tempo della coppia, accanto al titolo. Prima che parta — la coppia sta
+ * entrando — e' pieno; negli ultimi cinque secondi diventa rosso, batte e si
+ * sente. Finisce una volta sola, e solo mentre si sceglie: una scelta gia' in
+ * viaggio decide da sola.
  */
 function Clessidra({
   orologio,
@@ -726,7 +878,7 @@ function Clessidra({
   const accesa = adesso >= orologio.inizio
   const resta = Math.max(0, Math.min(tempoMs, orologio.scadenza - adesso))
   const secondi = Math.ceil(resta / 1000)
-  const urgente = accesa && secondi <= 5
+  const urgente = accesa && !ferma && secondi <= 5
 
   useEffect(() => {
     if (ferma) return
@@ -748,33 +900,18 @@ function Clessidra({
   }, [accesa, attiva, ferma, onScade, resta, secondi])
 
   return (
-    <span
-      className={`ghi-clessidra${accesa ? ' is-accesa' : ''}${urgente ? ' is-urgente' : ''}`}
-      role="timer"
-      aria-label={`${secondi} secondi per scegliere`}
-    >
-      <svg viewBox="0 0 36 36" aria-hidden="true">
-        <circle className="ghi-clessidra__fondo" cx="18" cy="18" r={RAGGIO_COPPIA} />
-        <circle
-          className="ghi-clessidra__anello"
-          cx="18"
-          cy="18"
-          r={RAGGIO_COPPIA}
-          strokeDasharray={GIRO_COPPIA}
-          strokeDashoffset={GIRO_COPPIA * (1 - resta / tempoMs)}
-        />
-      </svg>
-      <span className="ghi-clessidra__secondi u-tabnum" aria-hidden="true">
-        {secondi}
-      </span>
-    </span>
+    <Anello
+      resta={resta}
+      tempoMs={tempoMs}
+      secondi={secondi}
+      urgente={urgente}
+      acceso={accesa}
+      etichetta={`${secondi} secondi per scegliere`}
+    />
   )
 }
 
 /* ─────────────────────────────  Il minuto  ───────────────────────────── */
-
-const RAGGIO = 26
-const GIRO = 2 * Math.PI * RAGGIO
 
 /** Quante lettere si scrivono al piu': la parola vincente non e' mai cosi' lunga. */
 const MASSIMO_RISPOSTA = 16
@@ -782,18 +919,16 @@ const MASSIMO_RISPOSTA = 16
 /**
  * Il tempo della parola vincente: l'anello che si svuota, la parola che si
  * compone a ogni tasto, e la tastiera del gioco, come nella Catena. Le cinque
- * parole intanto sono salite sopra, piccole, e si leggono ancora.
+ * parole intanto sono salite sul palco, e si leggono ancora.
  */
 function Finale({
   scadenza,
   tempoMs,
-  inviata,
   onRispondi,
   onScade,
 }: {
   scadenza: number | null
   tempoMs: number
-  inviata: boolean
   onRispondi: (parola: string) => void
   onScade: () => void
 }) {
@@ -802,18 +937,16 @@ function Finale({
   const scaduto = useRef(false)
   const resta = scadenza === null ? tempoMs : Math.max(0, scadenza - adesso)
   const secondi = Math.ceil(resta / 1000)
-  const libera = !inviata && resta > 0
+  const libera = resta > 0
 
   useEffect(() => {
-    if (inviata) return
     const t = window.setInterval(() => setAdesso(Date.now()), 200)
     return () => window.clearInterval(t)
-  }, [inviata])
+  }, [])
 
   // Gli ultimi dieci secondi si sentono, e allo zero il tempo e' finito.
   const ultimoTic = useRef<number | null>(null)
   useEffect(() => {
-    if (inviata) return
     if (secondi <= 10 && secondi > 0 && ultimoTic.current !== secondi) {
       ultimoTic.current = secondi
       suona('tic')
@@ -823,7 +956,7 @@ function Finale({
       suona('scaduto')
       onScade()
     }
-  }, [secondi, resta, inviata, onScade])
+  }, [secondi, resta, onScade])
 
   const scrivi = useCallback(
     (l: string) => {
@@ -839,44 +972,39 @@ function Finale({
   const invia = useCallback(() => {
     if (libera && testo.length > 0) onRispondi(testo)
   }, [libera, onRispondi, testo])
-  useTastieraFisica(!inviata, { onLettera: scrivi, onCancella: cancella, onInvio: invia })
+  useTastieraFisica(true, { onLettera: scrivi, onCancella: cancella, onInvio: invia })
 
   const lettere = [...testo.toUpperCase()]
   return (
-    <div className={`ghi-finale${secondi <= 10 ? ' is-urgente' : ''}${inviata ? ' is-inviata' : ''}`}>
-      <div className="ghi-finale__riga">
-        <div className="ghi-finale__tempo" role="timer" aria-label={`${secondi} secondi`}>
-          <svg viewBox="0 0 60 60" aria-hidden="true">
-            <circle className="ghi-finale__fondo" cx="30" cy="30" r={RAGGIO} />
-            <circle
-              className="ghi-finale__anello"
-              cx="30"
-              cy="30"
-              r={RAGGIO}
-              strokeDasharray={GIRO}
-              strokeDashoffset={GIRO * (1 - resta / tempoMs)}
-            />
-          </svg>
-          <span className="ghi-finale__secondi u-tabnum">{secondi}</span>
-        </div>
-        <p
-          className="ghi-finale__parola"
-          role="img"
-          aria-label={testo ? `Hai scritto ${testo.toUpperCase()}` : 'Scrivi la parola vincente'}
-          style={{ '--n': Math.max(lettere.length + 1, 8) } as CSSProperties}
-        >
-          {lettere.length === 0 && <span className="ghi-finale__invito">La parola vincente</span>}
-          {lettere.map((l, i) => (
-            <span key={i} className="ghi-finale__lettera" aria-hidden="true">
-              {l}
-            </span>
-          ))}
-          {libera && lettere.length < MASSIMO_RISPOSTA && <span className="ghi-finale__cursore" aria-hidden="true" />}
-        </p>
+    <div className="ghi-finale">
+      <div className="ghi-testa">
+        <p className="ghi-testa__titolo">La parola vincente</p>
+        <button type="button" className="ghi-nonso" disabled={!libera} onClick={() => onRispondi('')}>
+          Non lo so
+        </button>
+        <Anello
+          resta={resta}
+          tempoMs={tempoMs}
+          secondi={secondi}
+          urgente={secondi <= 10}
+          grande
+          etichetta={`${secondi} secondi`}
+        />
       </div>
-      <button type="button" className="ghi-finale__nonso" disabled={!libera} onClick={() => onRispondi('')}>
-        Non lo so
-      </button>
+      <p
+        className={`ghi-riga${lettere.length === 0 ? ' is-vuota' : ''}`}
+        role="img"
+        aria-label={testo ? `Hai scritto ${testo.toUpperCase()}` : 'Scrivi la parola vincente'}
+        style={{ '--n': Math.max(lettere.length + 1, 9) } as CSSProperties}
+      >
+        {lettere.length === 0 && <span className="ghi-riga__invito">Scrivi la vincente</span>}
+        {lettere.map((l, i) => (
+          <span key={i} className="ghi-riga__lettera" aria-hidden="true">
+            {l}
+          </span>
+        ))}
+        {libera && lettere.length < MASSIMO_RISPOSTA && <span className="ghi-cursore" aria-hidden="true" />}
+      </p>
       <TastieraGioco
         className="ghi-tastiera"
         disabled={!libera}
@@ -892,56 +1020,116 @@ function Finale({
 
 /* ─────────────────────────────  La busta  ───────────────────────────── */
 
-/** La busta della parola vincente, che arriva tremando e si apre: il conduttore che legge. */
-function Busta() {
+/**
+ * La busta della parola vincente: arriva col sigillo e trema mentre il
+ * conduttore la apre; poi dice quel che si era scritto e la parola vincente,
+ * una lettera alla volta, come le caselle che si girano: verdi se e' quella
+ * scritta, d'oro se no.
+ */
+function Busta({
+  soluzione,
+  risposta,
+  indovinata,
+}: {
+  soluzione: string | null
+  risposta: string | null
+  indovinata: boolean
+}) {
+  const lettere = soluzione ? [...normalizzaGhigliottina(soluzione).toUpperCase()] : []
+  const scritta = risposta ? normalizzaGhigliottina(risposta).toUpperCase() : ''
   return (
-    <div className="ghi-busta" aria-hidden="true">
-      <div className="ghi-busta__carta">
-        <span className="ghi-busta__lembo" />
-        <span className="ghi-busta__sigillo">?</span>
-      </div>
-      <p className="ghi-busta__testo">La parola vincente è…</p>
+    <div className={`ghi-busta${soluzione ? ' is-aperta' : ''}`}>
+      {soluzione ? (
+        <>
+          <p className="ghi-busta__scritta">{scritta ? `Hai scritto ${scritta}` : 'Nessuna risposta'}</p>
+          <p className="ghi-busta__lettere" aria-label={`La parola vincente è ${soluzione.toUpperCase()}`}>
+            {lettere.map((l, i) => (
+              <span
+                key={i}
+                className={`ghi-busta__lettera${indovinata ? ' is-giusta' : ''}`}
+                style={{ '--i': i } as CSSProperties}
+                aria-hidden="true"
+              >
+                {l}
+              </span>
+            ))}
+          </p>
+        </>
+      ) : (
+        <>
+          <span className="ghi-busta__sigillo" aria-hidden="true">
+            ?
+          </span>
+          <p className="ghi-busta__scritta" role="status">
+            La parola vincente è…
+          </p>
+        </>
+      )}
     </div>
   )
 }
 
-/* ─────────────────────────────  Il verdetto  ───────────────────────────── */
+/* ─────────────────────────────  La fine  ───────────────────────────── */
 
 /**
- * La parola vincente, una lettera alla volta, come le caselle che si girano:
- * verdi se e' quella scritta, oro se no; e sotto quel che si era scritto.
+ * La fine, su una carta sopra la scena: la parola vincente, le cinque
+ * espressioni con la parola e la vincente in evidenza, i punti nel timbro, e
+ * sotto quel che aggiunge la pagina (la prossima, un'altra, la sfida).
  */
-function Verdetto({
+function Fine({
+  coppie,
   soluzione,
-  risposta,
   indovinata,
   punti,
-  subito,
+  children,
 }: {
-  soluzione: string
-  risposta: string | null
+  coppie: CoppiaGhigliottinaVista[]
+  soluzione: string | null
   indovinata: boolean
   punti: number
-  subito: boolean
+  children: ReactNode
 }) {
-  const lettere = [...soluzione.toUpperCase()]
   return (
-    <div className={`ghi-verdetto${indovinata ? ' is-giusta' : ' is-sbagliata'}${subito ? ' is-subito' : ''}`}>
-      <p className="ghi-verdetto__titolo">La parola vincente</p>
-      <p className="ghi-verdetto__parola" aria-label={soluzione}>
-        {lettere.map((l, i) => (
-          <span key={i} className="ghi-verdetto__lettera" style={{ '--i': i } as CSSProperties} aria-hidden="true">
-            {l}
-          </span>
-        ))}
-      </p>
-      <p className="ghi-verdetto__esito" style={{ '--n': lettere.length } as CSSProperties}>
-        {indovinata
-          ? `Indovinata! ${punti} punti`
-          : risposta
-            ? `Hai scritto «${risposta.toUpperCase()}»: ${punti} punti`
-            : `Nessuna risposta: ${punti} punti`}
-      </p>
+    <div className="ghi-velo">
+      <section className="ghi-fine" aria-label="Fine partita">
+        <span className="ghi-fine__icona">
+          <IconaGioco gioco="ghigliottina" lato={64} giro={-6} />
+        </span>
+        <h2 className="ghi-fine__titolo">{indovinata ? 'Indovinata!' : 'Peccato!'}</h2>
+        {soluzione && <p className="ghi-fine__riga">La parola vincente era {soluzione.toUpperCase()}</p>}
+        <ul className="ghi-espressioni" aria-label="Le espressioni">
+          {coppie.map((c, i) => {
+            if (c.giusta === null) return null
+            const parola = c.parole[c.giusta]
+            const sbagliata = c.scaduta || (c.scelta !== null && c.scelta !== c.giusta)
+            return (
+              <li key={i} className={`ghi-espressione${sbagliata ? ' is-tagliata' : ''}`}>
+                <span className="ghi-espressione__parola">
+                  {sbagliata && <span className="ghi-espressione__taglio" aria-label="sbagliata" />}
+                  {parola.toUpperCase()}
+                </span>
+                <span className="ghi-espressione__frase">
+                  {c.spiegazione &&
+                    partiDi(c.spiegazione, parola, soluzione).map((p, j) =>
+                      p.tipo === 'testo' ? (
+                        <span key={j}>{p.testo}</span>
+                      ) : (
+                        <strong key={j} className={`is-${p.tipo}`}>
+                          {p.testo}
+                        </strong>
+                      ),
+                    )}
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+        <span className={`ghi-fine__timbro u-tabnum${indovinata ? ' is-vinta' : ''}`}>
+          {punti}
+          <span className="u-visually-hidden"> punti</span>
+        </span>
+        <div className="ghi-fine__piede">{children}</div>
+      </section>
     </div>
   )
 }

@@ -1,11 +1,13 @@
-import { IconAiuto, IconAnnulla, IconBackspace, IconMatita } from '@/components/Icons'
+import { IconAnnulla, IconBackspace, IconMatita } from '@/components/Icons'
+import { SEGNI, Segno } from '@/games/cruciverba/segni'
 import './Tastierino.css'
 
 /**
  * Sotto la griglia: gli strumenti — annulla, cancella, note, aiuti — e le nove
- * cifre. Una cifra scritta nove volte si spegne: non serve piu'. Con le note
- * accese le cifre diventano piccole e grigie, come a matita, e il bottone delle
- * note resta acceso: si vede sempre in che modo si scrive.
+ * cifre, tasti disegnati come quelli della tastiera dei giochi, con sotto
+ * quante ne mancano. Una cifra scritta nove volte si spegne: non serve piu'.
+ * Con le note accese le cifre diventano piccole e grigie, come a matita, e il
+ * tasto delle note resta acceso, lilla: si vede sempre in che modo si scrive.
  */
 export function Tastierino({
   conteggi,
@@ -52,14 +54,15 @@ export function Tastierino({
           <span className="sud-strumento__nome">Note</span>
         </button>
         <button type="button" className="sud-strumento" onClick={onAiuti} disabled={!onAiuti} aria-label="Aiuti">
-          <IconAiuto size={22} />
+          <Segno d={SEGNI.salvagente} size={22} spessore={2.2} />
           <span className="sud-strumento__nome">Aiuti</span>
         </button>
       </div>
       <div className="sud-cifre" role="group" aria-label={modoNote ? 'Note' : 'Cifre'}>
         {Array.from({ length: 9 }, (_, i) => {
           const d = i + 1
-          const finita = conteggi[d] >= 9
+          const resto = Math.max(0, 9 - conteggi[d])
+          const finita = resto === 0
           return (
             <button
               key={d}
@@ -67,9 +70,14 @@ export function Tastierino({
               className={`sud-cifra${finita ? ' is-finita' : ''}`}
               onClick={() => onCifra(d)}
               disabled={finita && !modoNote}
-              aria-label={modoNote ? `Nota ${d}` : `${d}`}
+              aria-label={modoNote ? `Nota ${d}` : `${d}, ne mancano ${resto}`}
             >
-              {d}
+              <span className="sud-cifra__cifra">{d}</span>
+              {!finita && (
+                <span key={resto} className="sud-cifra__resto" aria-hidden="true">
+                  {resto}
+                </span>
+              )}
             </button>
           )
         })}

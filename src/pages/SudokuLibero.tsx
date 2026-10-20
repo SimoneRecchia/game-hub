@@ -8,6 +8,7 @@ import { IconFlag, IconInfo, IconRefresh } from '@/components/Icons'
 import { Opzioni, Scelte } from '@/components/Opzioni'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Sheet } from '@/components/Sheet'
+import { BottoneFine, CartaFine } from '@/games/cruciverba/CartaFine'
 import { ComeSiGiocaSudoku } from '@/games/sudoku/ComeSiGioca'
 import { FineSudoku } from '@/games/sudoku/Fine'
 import { PartitaSudoku } from '@/games/sudoku/PartitaSudoku'
@@ -74,6 +75,8 @@ export default function SudokuLibero() {
           p={g.gioco}
           fine={<Fine g={g} />}
           dettaglioRisolto={g.record ? `Record: ${formatCronometro(p.tempoMs)}` : `In ${formatCronometro(p.tempoMs)}`}
+          aiutata={p.aiutata}
+          carta={(aperta, chiudi) => <Carta g={g} aperta={aperta} onChiudi={chiudi} />}
         />
       )}
 
@@ -150,6 +153,36 @@ function SceltaLivello({ g }: { g: SudokuLiberoController }) {
   )
 }
 
+/** Il fondo chiaro della carta della fine del sudoku, come nella classificata. */
+const FONDO_FINE = 'linear-gradient(180deg, #f4edff, #ffe1ec)'
+
+/** La carta della fine, sopra lo schema appena risolto: il tempo nel timbro, e il record. */
+function Carta({ g, aperta, onChiudi }: { g: SudokuLiberoController; aperta: boolean; onChiudi: () => void }) {
+  const p = g.partita!
+  const record = g.conti[p.livello].record
+  return (
+    <CartaFine
+      aperta={aperta}
+      onChiudi={onChiudi}
+      gioco="sudoku"
+      colore="var(--sudoku-tinta)"
+      fondo={FONDO_FINE}
+      titolo={g.record ? 'Nuovo record!' : 'Risolto!'}
+      testo={`${NOMI_LIVELLI[p.livello]} · ${p.aiutata ? 'aiutata' : 'senza aiuti'}`}
+      timbro={formatCronometro(p.tempoMs)}
+      righe={[
+        { nome: 'Il tempo', valore: formatCronometro(p.tempoMs) },
+        { nome: 'Record', valore: record !== null ? formatCronometro(record) : 'nessuno' },
+      ]}
+    >
+      <BottoneFine onClick={g.lascia}>Esci</BottoneFine>
+      <BottoneFine tono="pieno" onClick={() => g.nuova(p.livello)}>
+        Gioca ancora
+      </BottoneFine>
+    </CartaFine>
+  )
+}
+
 /** Sotto la griglia, a schema risolto. */
 function Fine({ g }: { g: SudokuLiberoController }) {
   const p = g.partita!
@@ -158,6 +191,7 @@ function Fine({ g }: { g: SudokuLiberoController }) {
     <FineSudoku
       titolo="Risolto"
       valore={formatCronometro(p.tempoMs)}
+      timbro={formatCronometro(p.tempoMs)}
       dettaglio={`${NOMI_LIVELLI[p.livello]}${nota ? ` · ${nota}` : ''}`}
       azioni={
         <>

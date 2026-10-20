@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, type CSSProperties } from 'react'
 import { suona } from '@/lib/suoni'
 import { CASELLE, FILE, LATO, leggi, type Segno } from '@shared/tris'
 import type { PropsTavoliere } from '@/games/tavolo/tipi'
+import type { Parte } from '@shared/tavolo'
 import './Griglia.css'
 
 /**
@@ -70,6 +71,7 @@ export function GrigliaTris({ posizione, mia, attivo, ultima, n, finita, onMossa
   const p = useMemo(() => leggi(posizione), [posizione])
   const fatte = useMemo(() => (p && finita ? fileFatte(p.caselle) : []), [p, finita])
   const inFila = useMemo(() => new Set(fatte.flatMap((f) => f.caselle)), [fatte])
+  const ordineInFila = useMemo(() => new Map(fatte.flatMap((f) => f.caselle.map((k, i) => [k, i] as const))), [fatte])
 
   // L'ultimo segno si traccia solo se l'ho visto arrivare: riaprendo la partita e' gia' li'.
   const primoN = useRef(n)
@@ -97,25 +99,35 @@ export function GrigliaTris({ posizione, mia, attivo, ultima, n, finita, onMossa
           if (s === null) return null
           const traccia = k === nuovo
           const classi = `${traccia ? ' is-nuovo' : ''}${inFila.has(k) ? ' is-fila' : ''}`
+          // Nella fila, il posto della casella: i segni saltano uno dopo l'altro.
+          const stile = { '--f': ordineInFila.get(k) ?? 0 } as CSSProperties
           return s === 0 ? (
-            <g key={traccia ? `${k}-${n}` : k} className={`tris__segno tris__segno--croce${classi}`}>
+            <g key={traccia ? `${k}-${n}` : k} className={`tris__segno tris__segno--croce${classi}`} style={stile}>
+              {tratti(k).map((d, i) => (
+                <path
+                  key={`o${i}`}
+                  className="tris__ombra"
+                  d={d}
+                  pathLength={1}
+                  style={{ '--i': i } as CSSProperties}
+                />
+              ))}
               {tratti(k).map((d, i) => (
                 <path key={i} d={d} pathLength={1} style={{ '--i': i } as CSSProperties} />
               ))}
             </g>
           ) : (
-            <g key={traccia ? `${k}-${n}` : k} className={`tris__segno tris__segno--cerchio${classi}`}>
+            <g key={traccia ? `${k}-${n}` : k} className={`tris__segno tris__segno--cerchio${classi}`} style={stile}>
+              <path className="tris__ombra" d={cerchio(k)} pathLength={1} />
               <path d={cerchio(k)} pathLength={1} />
             </g>
           )
         })}
         {fatte.map((f) => (
-          <path
-            key={f.d}
-            className={`tris__fila tris__fila--${f.segno === 0 ? 'croce' : 'cerchio'}`}
-            d={f.d}
-            pathLength={1}
-          />
+          <g key={f.d}>
+            <path className="tris__fila-fondo" d={f.d} pathLength={1} />
+            <path className={`tris__fila tris__fila--${f.segno === 0 ? 'croce' : 'cerchio'}`} d={f.d} pathLength={1} />
+          </g>
         ))}
       </svg>
       <div className="tris__caselle" role="group" aria-label="Le caselle">
@@ -135,5 +147,16 @@ export function GrigliaTris({ posizione, mia, attivo, ultima, n, finita, onMossa
         })}
       </div>
     </div>
+  )
+}
+
+/** Il segno di una parte, accanto al nome nella riga del giocatore: la croce blu o il cerchio rosso. */
+export function SegnoTris({ parte }: { parte: Parte }) {
+  return (
+    <span className={`tris-segnetto tris-segnetto--${parte === 0 ? 'croce' : 'cerchio'}`} aria-hidden="true">
+      <svg viewBox="0 0 24 24">
+        {parte === 0 ? <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" /> : <circle cx="12" cy="12" r="6.2" />}
+      </svg>
+    </span>
   )
 }

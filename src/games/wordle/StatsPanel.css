@@ -1,12 +1,17 @@
+/*
+ * Le statistiche del Wordle: quattro numeri in caselle d'album, e la
+ * distribuzione dei tentativi a barre col filo, che crescono quando si apre.
+ * Le mostrano il riepilogo della partita e "I tuoi numeri" della classifica.
+ */
 .stats {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
 }
 
 .stats__figures {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--sp-2);
 }
 
@@ -16,19 +21,21 @@
   align-items: center;
   gap: 2px;
   padding: var(--sp-3) var(--sp-1);
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
+  border-radius: 16px;
+  background: var(--surface-2);
 }
 
 .stats__figure-value {
   font-family: var(--font-rounded);
   font-size: var(--text-title-2);
-  font-weight: 700;
-  letter-spacing: var(--tracking-tight);
+  font-weight: 400;
+  line-height: 1.1;
+  color: var(--label);
 }
 
 .stats__figure-label {
   font-size: var(--text-caption-2);
+  font-weight: 800;
   color: var(--label-secondary);
   text-align: center;
 }
@@ -44,36 +51,50 @@
   justify-content: space-between;
   gap: var(--sp-4);
   flex-wrap: wrap;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
 }
 
 .stats__title {
-  font-size: var(--text-footnote);
-  font-weight: 600;
+  margin: 0;
+  font-size: var(--text-caption-1);
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: 0.12em;
   color: var(--label-secondary);
 }
 
 .stats__empty {
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: 14px;
+  border: 2px dashed var(--ink-tenue);
   font-size: var(--text-subhead);
-  color: var(--label-tertiary);
+  font-weight: 800;
+  color: var(--label-secondary);
+  text-align: center;
 }
 
 .stats__bars {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .stats__bar-row {
   display: grid;
-  grid-template-columns: 14px 1fr;
+  grid-template-columns: 16px 1fr;
   align-items: center;
   gap: var(--sp-2);
 }
 
 .stats__bar-label {
-  font-size: var(--text-footnote);
+  font-family: var(--font-rounded);
+  font-size: var(--text-subhead);
   color: var(--label-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -82,31 +103,58 @@
   display: block;
 }
 
+/* La barra cresce da sinistra quando il foglio si apre: solo transform, la larghezza e' gia' quella vera. */
 .stats__bar {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  min-width: 22px;
-  padding: 2px var(--sp-2);
-  border-radius: var(--r-xs);
+  min-width: 26px;
+  height: 24px;
+  padding: 0 var(--sp-2);
+  border-radius: 8px;
+  border: 2px solid var(--ink);
   background: var(--tile-absent);
-  color: var(--tile-text-on-absent);
+  color: var(--ink);
   font-size: var(--text-caption-1);
-  font-weight: 600;
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
-  transition: width var(--dur-slow) var(--ease-out);
+  transform-origin: left center;
+  animation: stats-cresce 520ms var(--ease-out) both;
 }
+
+.stats__bar-row:nth-child(2) .stats__bar { animation-delay: 40ms; }
+.stats__bar-row:nth-child(3) .stats__bar { animation-delay: 80ms; }
+.stats__bar-row:nth-child(4) .stats__bar { animation-delay: 120ms; }
+.stats__bar-row:nth-child(5) .stats__bar { animation-delay: 160ms; }
+.stats__bar-row:nth-child(6) .stats__bar { animation-delay: 200ms; }
 
 .stats__bar.is-current {
   background: var(--tile-correct);
+  box-shadow: 0 2px 0 var(--ink);
 }
 
 .stats__meta {
   font-size: var(--text-footnote);
+  font-weight: 700;
   color: var(--label-secondary);
 }
 
 .stats__meta strong {
+  font-family: var(--font-rounded);
+  font-weight: 400;
+  font-size: var(--text-callout);
   color: var(--label);
   font-variant-numeric: tabular-nums;
+}
+
+@keyframes stats-cresce {
+  from {
+    transform: scaleX(0.15);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats__bar {
+    animation: none;
+  }
 }

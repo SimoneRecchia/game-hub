@@ -1,7 +1,8 @@
 /*
- * La sala del blackjack: una carta di panno verde con il ventaglio di carte e
- * le fiches, il saldo e il tavolo. Il verde e' lo stesso nei due temi, come il
- * tavolo.
+ * La sala del blackjack: una carta di panno verde con il bordo di legno e il
+ * filo d'inchiostro, come il tavolo, con il ventaglio di carte e le fiches, il
+ * saldo e il tavolo. La pagina e' una sala scura in tutti e due i temi
+ * (Sala.css).
  */
 .bj-sala {
   position: relative;
@@ -14,14 +15,15 @@
   padding: var(--sp-6) var(--sp-5) var(--sp-5);
   border-radius: 28px;
   background:
-    radial-gradient(90% 70% at 50% 30%, rgba(255, 255, 255, 0.16), transparent 70%),
-    radial-gradient(circle at 50% 45%, var(--bj-panno-1), var(--bj-panno-2) 70%, var(--bj-panno-3));
+    radial-gradient(90% 70% at 50% 30%, rgba(255, 255, 255, 0.14), transparent 70%),
+    radial-gradient(circle at 50% 45%, #1f8f57, #157046 62%, #0c4f31);
   box-shadow:
-    inset 0 0 0 2px rgba(242, 210, 122, 0.5),
-    inset 0 0 0 9px var(--bj-bordo),
-    inset 0 0 0 10px rgba(255, 255, 255, 0.08),
-    0 14px 32px rgba(4, 30, 16, 0.35);
-  color: #fff;
+    inset 0 0 0 var(--filo) #120c2b,
+    inset 0 0 0 11px #6e3e1c,
+    inset 0 0 0 13px #2a170a,
+    inset 0 0 0 14.5px rgba(232, 193, 90, 0.45),
+    0 5px 0 #120c2b;
+  color: #fff6e0;
 }
 
 .bj-sala__luce {
@@ -65,7 +67,9 @@
   width: 100%;
   height: 100%;
   border-radius: 7px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 0 0 2px #120c2b,
+    0 4px 0 2px #120c2b;
 }
 
 .bj-sala__carta.is-1 {
@@ -124,33 +128,30 @@
   width: 100%;
 }
 
+/* Il tavolo nuovo: il bottone pieno dell'app, giallo come la sala della Fortuna. */
 .bj-sala__testo .btn {
   width: min(100%, 320px);
-  background: linear-gradient(180deg, #ffe58a, var(--bj-scritta) 55%, #c9962a);
-  color: #3d2300;
-  font-family: var(--font-rounded);
-  font-weight: 900;
-  box-shadow:
-    0 4px 0 #8a6416,
-    0 10px 22px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--giallo);
+  color: #120c2b;
 }
 
 .bj-sala__saldo {
   margin: 0;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #fff6d6;
+  color: #ffe27a;
+  text-shadow: 0 1px 0 rgba(4, 48, 24, 0.8);
 }
 
 .bj-sala__saldo strong {
   margin-left: 6px;
   font-family: var(--font-rounded);
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 400;
   letter-spacing: 0;
-  color: #fff;
+  color: #fff6e0;
 }
 
 /* Il saldo che non basta (Avvisi.css): prima del bottone, largo quanto lui o poco di piu'. */
@@ -160,9 +161,8 @@
 
 /* Senza saldo il tavolo nuovo si fa da parte: l'oro e' per le giornaliere, nell'avviso. */
 .bj-sala__testo .btn.is-secondario {
-  background: rgb(255 255 255 / 0.12);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.28);
+  background: #fffbf2;
+  color: #120c2b;
 }
 
 @media (prefers-reduced-motion: reduce) {

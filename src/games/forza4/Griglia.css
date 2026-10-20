@@ -12,6 +12,14 @@
 .f4 {
   --tuo: var(--f4-rosso);
   --suo: var(--f4-giallo);
+  /*
+   * La plastica blu del prototipo, con il filo d'inchiostro: uguale nei due
+   * temi, come il gioco vero. I token della cornice si ridefiniscono qui, e
+   * gradienti, piede e stecca li seguono.
+   */
+  --f4-cornice: #4f7cec;
+  --f4-cornice-chiara: #7ea6ff;
+  --f4-cornice-scura: #2f55c6;
   position: relative;
   width: min(100cqw, var(--campo-alto, 100cqh) * 70 / 73.5, 520px);
   touch-action: manipulation;
@@ -128,12 +136,14 @@
   --disco-bordo: var(--f4-giallo-scuro);
 }
 
-/* Il disco come quelli veri: il bordo rilevato, la faccia con due scanalature, e la luce in alto a sinistra. */
+/* Il disco come quelli veri: il bordo rilevato, la faccia con due scanalature, la luce, e il filo d'inchiostro. */
 .f4__disco::before,
 .f4__mano::before {
   content: '';
-  width: 78%;
+  box-sizing: border-box;
+  width: 80%;
   aspect-ratio: 1;
+  border: 2px solid #2a1f5c;
   border-radius: 50%;
   background:
     radial-gradient(
@@ -311,8 +321,13 @@
   height: 100%;
   overflow: visible;
   pointer-events: none;
-  /* Lo spessore della plastica: sotto la cornice, e dentro ogni foro, in alto. */
-  filter: drop-shadow(0 2.5px 0 var(--f4-cornice-scura));
+  /* Lo spessore della plastica: sotto la cornice, e dentro ogni foro, in alto, l'ombra secca d'inchiostro. */
+  filter: drop-shadow(0 3px 0 rgba(18, 12, 43, 0.55));
+}
+
+.f4__faccia {
+  stroke: #2a1f5c;
+  stroke-width: 0.5;
 }
 
 .f4__plastica-alta {
@@ -344,13 +359,76 @@
 }
 
 .f4__gamba {
-  fill: var(--f4-cornice-scura);
+  fill: var(--f4-cornice);
+  stroke: #2a1f5c;
+  stroke-width: 0.5;
 }
 
 /* La stecca del fondo: a una partita nuova scorre di lato, e i dischi cadono. */
 .f4__barra {
-  fill: color-mix(in srgb, var(--f4-cornice-scura) 72%, #000);
+  fill: var(--f4-cornice-scura);
+  stroke: #2a1f5c;
+  stroke-width: 0.5;
   transform-box: fill-box;
+}
+
+/*
+ * Il guanto che tiene il disco, come nel prototipo: bianco il mio, azzurrino
+ * quello dell'altro. Le dita stringono il bordo in alto del disco; il polsino
+ * esce un poco sopra la fascia.
+ */
+.f4__guanto {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  max-width: none;
+  overflow: visible;
+  transform: translateY(-17%);
+  pointer-events: none;
+}
+
+.f4__guanto path,
+.f4__guanto rect {
+  stroke: #2a1f5c;
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.f4__guanto .f4__polsino {
+  fill: #d2e1ff;
+}
+
+.f4__guanto .f4__pelle {
+  fill: #e6ecf7;
+}
+
+.f4__mano.is-mia .f4__polsino {
+  fill: #e9e4ff;
+}
+
+.f4__mano.is-mia .f4__pelle {
+  fill: #fff;
+}
+
+/* Il guanto ondeggia con il disco, e quello dell'altro, che ci pensa, un po' piu' in fretta. */
+.f4__mano.is-qui .f4__guanto {
+  animation: f4-ondeggia-guanto 1.7s ease-in-out infinite;
+}
+
+.f4__mano.is-pensa .f4__guanto {
+  animation-duration: 1.15s;
+}
+
+@keyframes f4-ondeggia-guanto {
+  0%,
+  100% {
+    transform: translateY(-17%);
+  }
+  50% {
+    transform: translateY(-21%);
+  }
 }
 
 .f4.is-svuota .f4__barra {

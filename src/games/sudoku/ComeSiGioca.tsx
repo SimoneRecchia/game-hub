@@ -18,7 +18,7 @@ export function ComeSiGiocaSudoku({
 }) {
   return (
     <Sheet open={open} onClose={onClose} title="Come si gioca">
-      <div className="cru-aiuto">
+      <div className="cru-aiuto is-sudoku">
         <p className="cru-aiuto__lede">
           Metti le cifre da 1 a 9 in modo che ogni riga, ogni colonna e ogni riquadro le abbia tutte, una volta sola.
         </p>
@@ -26,13 +26,21 @@ export function ComeSiGiocaSudoku({
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">Scrivere</h3>
           <ol className="cru-aiuto__passi">
-            <li>Tocca una casella, poi una cifra. La stessa cifra una seconda volta la toglie.</li>
             <li>
-              <strong>Note</strong>: le cifre diventano piccole, per segnare dove una cifra può ancora stare. Si puliscono da
-              sole quando scrivi la cifra accanto.
+              <span>Tocca una casella, poi una cifra. La stessa cifra una seconda volta la toglie.</span>
             </li>
-            <li>Due cifre uguali che si vedono diventano rosse.</li>
-            <li>Da tastiera: le cifre, le frecce, Canc per cancellare, N per le note.</li>
+            <li>
+              <span>
+                <strong>Note</strong>: le cifre diventano piccole, per segnare dove una cifra può ancora stare. Si
+                puliscono da sole quando scrivi la cifra accanto.
+              </span>
+            </li>
+            <li>
+              <span>Due cifre uguali che si vedono diventano rosse.</span>
+            </li>
+            <li>
+              <span>Da tastiera: le cifre, le frecce, Canc per cancellare, N per le note.</span>
+            </li>
           </ol>
         </section>
 
@@ -84,6 +92,9 @@ export function ComeSiGiocaSudoku({
             </li>
           </ul>
         </section>
+        <button type="button" className="cru-aiuto__capito" onClick={onClose}>
+          Ho capito
+        </button>
       </div>
     </Sheet>
   )

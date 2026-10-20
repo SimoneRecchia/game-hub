@@ -1,7 +1,8 @@
-import { useCallback, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { CodicePosa, EsitoPosa } from '@shared/scarabeo'
-import { Button } from '@/components/Button'
-import { IconShuffle } from '@/components/Icons'
+import { JOLLY } from '@shared/scarabeo'
+import { IconAnnulla, IconShuffle } from '@/components/Icons'
+import { Sheet } from '@/components/Sheet'
 import { Leggio, ScegliJolly } from './Leggio'
 import { Tabellone } from './Tabellone'
 import type { Composizione } from './useComposizione'
@@ -26,6 +27,11 @@ interface Props {
   evidenziate?: ReadonlySet<number>
   /** Chi guarda in compagnia compone e suggerisce: niente cambio e niente passo, e il bottone lo dice. */
   suggerisci?: boolean
+  /**
+   * Sotto i comandi, dove c'e' posto: le ultime mosse, o come si gioca finché
+   * non ce n'e' nessuna. Toccata, apre l'elenco intero.
+   */
+  ultime?: { voci: readonly VoceMossa[]; aiuto: string; onApri?: () => void }
   onGioca: () => void
   onPassa: () => void
   onCambia: (tessere: string[]) => void
@@ -39,6 +45,11 @@ interface Props {
  * gioca) e cosa succede quando si preme "Gioca". Il tabellone prende lo spazio
  * che resta, così leggio e bottoni stanno sempre sotto il pollice anche su un
  * telefono basso: sono le due cose che si toccano a ogni mossa.
+ *
+ * I comandi sono una riga sola, come nell'album: riprendere le tessere,
+ * mischiarle, passare o cambiarle, e giocare. Passare e cambiare chiedono
+ * conferma in un foglio: costano un turno, e un bottone accanto a "Gioca" si
+ * preme per sbaglio.
  */
 export function Campo({
   c,
@@ -51,53 +62,55 @@ export function Campo({
   cambiabili = true,
   evidenziate,
   suggerisci = false,
+  ultime,
   onGioca,
   onPassa,
   onCambia,
 }: Props) {
-  const [cambio, setCambio] = useState(false)
+  const [foglio, setFoglio] = useState<'cambio' | 'passa' | null>(null)
   const [selezione, setSelezione] = useState<Set<number>>(new Set())
+  const [mescolata, setMescolata] = useState(0)
 
-  const esciDalCambio = useCallback(() => {
-    setCambio(false)
+  const chiudiFoglio = useCallback(() => {
+    setFoglio(null)
     setSelezione(new Set())
   }, [])
 
-  const tocca = useCallback(
-    (indice: number) => {
-      if (!cambio) {
-        c.usaTessera(indice)
-        return
-      }
-      setSelezione((prima) => {
-        const dopo = new Set(prima)
-        if (dopo.has(indice)) dopo.delete(indice)
-        else dopo.add(indice)
-        return dopo
-      })
-    },
-    [c, cambio],
-  )
+  // Il leggio mischiato si scuote: le tessere cambiano posto, e si deve vedere.
+  useEffect(() => {
+    if (!mescolata) return
+    const t = window.setTimeout(() => setMescolata(0), 420)
+    return () => window.clearTimeout(t)
+  }, [mescolata])
+
+  const scegli = (indice: number) =>
+    setSelezione((prima) => {
+      const dopo = new Set(prima)
+      if (dopo.has(indice)) dopo.delete(indice)
+      else dopo.add(indice)
+      return dopo
+    })
 
   const confermaCambio = () => {
     const tessere = [...selezione].map((i) => c.mano[i])
-    esciDalCambio()
+    chiudiFoglio()
     onCambia(tessere)
   }
 
   const anteprima = c.anteprima
   const sbagliata = (sconosciute?.length ?? 0) > 0
-  const nonEsiste = sconosciute?.length === 1 ? 'non esiste' : 'non esistono'
+  const valida = !!anteprima?.ok && !sbagliata
   const verbo = suggerisci ? 'Suggerisci' : 'Gioca'
   const etichetta = attesa
     ? attesa
     : sbagliata
-      ? `${sconosciute!.map((p) => p.toUpperCase()).join(', ')} ${nonEsiste}`
-      : anteprima && !anteprima.ok
-        ? 'Posa non valida'
-        : anteprima?.ok
-          ? `${verbo} · +${anteprima.punti}${anteprima.scarabeo ? ' scarabeo!' : ''}`
-          : verbo
+      ? sconosciute!.length === 1
+        ? 'Non esiste'
+        : 'Non esistono'
+      : valida
+        ? `${anteprima!.scarabeo ? 'Scarabeo' : verbo} · ${anteprima!.punti}`
+        : verbo
+  const giocaSpento = c.sospese.length === 0 || bloccato || foglio !== null
 
   return (
     <div className="scr">
@@ -120,79 +133,233 @@ export function Campo({
           <Leggio
             mano={c.mano}
             impegnate={c.impegnate}
-            cambio={cambio}
-            selezione={selezione}
+            cambio={false}
+            selezione={NESSUNA}
+            mescolata={mescolata}
             bloccato={bloccato}
-            onUsa={tocca}
+            onUsa={c.usaTessera}
             onSposta={c.sposta}
             onPosa={c.posaSu}
           />
 
-          {cambio ? (
-            <div className="scr__comandi">
-              <Button variant="plain" onClick={esciDalCambio}>
-                Annulla
-              </Button>
-              <Button variant="tinted" disabled={selezione.size === 0 || bloccato} onClick={confermaCambio}>
-                {selezione.size > 0 ? `Cambia ${selezione.size}` : 'Scegli le tessere'}
-              </Button>
-            </div>
-          ) : c.sospese.length > 0 ? (
-            <div className="scr__comandi">
-              <Button variant="plain" onClick={c.annulla}>
-                Rimetti in mano
-              </Button>
-            </div>
-          ) : (
-            <div className="scr__comandi">
-              <Button variant="plain" onClick={c.mischia} disabled={bloccato} aria-label="Mischia il leggio">
-                <IconShuffle size={17} /> Mischia
-              </Button>
-              {!suggerisci && (
-                <>
-                  {cambiabili && (
-                    <Button
-                      variant="plain"
-                      onClick={() => setCambio(true)}
-                      disabled={bloccato || restanti === 0 || c.mano.length === 0}
-                    >
-                      Cambia
-                    </Button>
-                  )}
-                  <Button variant="plain" onClick={onPassa} disabled={bloccato}>
-                    Passa
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          <div className="scr__gioca">
-            <Button
-              size="lg"
-              fullWidth
-              variant={sbagliata ? 'destructive' : 'filled'}
-              onClick={onGioca}
-              disabled={c.sospese.length === 0 || bloccato || cambio}
-              loading={!!attesa}
+          <div className="scr__comandi">
+            <button
+              type="button"
+              className="scr-tasto scr-tasto--tondo"
+              onClick={c.annulla}
+              disabled={c.sospese.length === 0}
+              aria-label="Rimetti in mano"
             >
-              {etichetta}
-            </Button>
+              <IconAnnulla size={23} />
+            </button>
+            <button
+              type="button"
+              className="scr-tasto scr-tasto--tondo"
+              onClick={() => {
+                c.mischia()
+                setMescolata((n) => n + 1)
+              }}
+              disabled={bloccato || c.sospese.length > 0 || c.mano.length < 2}
+              aria-label="Mischia il leggio"
+            >
+              <IconShuffle size={23} />
+            </button>
+            {!suggerisci &&
+              (cambiabili ? (
+                <button
+                  type="button"
+                  className="scr-tasto"
+                  onClick={() => {
+                    c.annulla()
+                    setFoglio('cambio')
+                  }}
+                  disabled={bloccato}
+                >
+                  <IconaCambia /> Cambia
+                </button>
+              ) : (
+                <button type="button" className="scr-tasto" onClick={() => setFoglio('passa')} disabled={bloccato}>
+                  <IconaPassa /> Passa
+                </button>
+              ))}
+            <button
+              type="button"
+              className={`scr-tasto scr-tasto--gioca${valida && !giocaSpento ? ' is-pronto' : ''}${
+                sbagliata ? ' is-sbagliata' : ''
+              }`}
+              onClick={onGioca}
+              disabled={giocaSpento}
+              aria-busy={!!attesa || undefined}
+            >
+              {attesa && <span className="scr-tasto__attesa" aria-hidden="true" />}
+              <span className="scr-tasto__testo">{etichetta}</span>
+            </button>
           </div>
+
+          {ultime && <UltimeMosse {...ultime} />}
         </div>
       )}
 
       <ScegliJolly aperto={c.jollyAperto !== null} onScegli={c.scegliJolly} onChiudi={c.chiudiJolly} />
+
+      <Sheet open={foglio === 'cambio'} onClose={chiudiFoglio} title="Cambia le tessere">
+        <p className="scr-conferma__lede">
+          {restanti > 0
+            ? `Scegli le tessere da rimettere nel sacchetto: ne restano ${restanti}.`
+            : 'Il sacchetto è vuoto: puoi solo passare.'}
+        </p>
+        <div className="scr-cambio" role="group" aria-label="Le tessere da cambiare">
+          {c.mano.map((t, i) => (
+            <button
+              type="button"
+              key={`${t}-${i}`}
+              className={`tessera scr-cambio__tessera${selezione.has(i) ? ' is-scelta' : ''}`}
+              aria-pressed={selezione.has(i)}
+              aria-label={t === JOLLY ? 'Jolly' : t.toUpperCase()}
+              disabled={restanti === 0}
+              onClick={() => scegli(i)}
+            >
+              <span className="tessera__lettera">
+                {t === JOLLY ? (
+                  <svg className="tessera__stella" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="m12 2.8 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8Z" />
+                  </svg>
+                ) : (
+                  t.toUpperCase()
+                )}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="scr-conferma__azioni">
+          <button
+            type="button"
+            className="scr-tasto scr-tasto--largo scr-tasto--giallo"
+            disabled={selezione.size === 0 || restanti === 0 || bloccato}
+            onClick={confermaCambio}
+          >
+            {selezione.size === 0
+              ? 'Scegli le tessere'
+              : selezione.size === 1
+                ? 'Cambia una tessera'
+                : `Cambia ${selezione.size} tessere`}
+          </button>
+          <button
+            type="button"
+            className="scr-tasto scr-tasto--largo"
+            disabled={bloccato}
+            onClick={() => {
+              chiudiFoglio()
+              onPassa()
+            }}
+          >
+            Passa il turno
+          </button>
+        </div>
+      </Sheet>
+
+      <Sheet open={foglio === 'passa'} onClose={chiudiFoglio} title="Passi il turno?">
+        <p className="scr-conferma__lede">La mossa conta, e il turno passa all’altro.</p>
+        <div className="scr-conferma__azioni">
+          <button
+            type="button"
+            className="scr-tasto scr-tasto--largo scr-tasto--giallo"
+            disabled={bloccato}
+            onClick={() => {
+              chiudiFoglio()
+              c.annulla()
+              onPassa()
+            }}
+          >
+            Passa
+          </button>
+          <button type="button" className="scr-tasto scr-tasto--largo" onClick={chiudiFoglio}>
+            Gioco ancora
+          </button>
+        </div>
+      </Sheet>
     </div>
   )
 }
 
+const NESSUNA: Set<number> = new Set()
+
+/** Passare: il triangolo che salta fino alla sbarra, come il tasto "avanti" di un lettore. */
+function IconaPassa() {
+  return (
+    <svg className="scr-tasto__icona" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 6.5v11l8-5.5Z" />
+      <path d="M17.5 6.5v11" />
+    </svg>
+  )
+}
+
+/** Cambiare: due frecce che si scambiano il posto. */
+function IconaCambia() {
+  return (
+    <svg className="scr-tasto__icona" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4.5 9h14M15 5.5 18.5 9 15 12.5" />
+      <path d="M19.5 15h-14M9 11.5 5.5 15 9 18.5" />
+    </svg>
+  )
+}
+
 /**
- * Il punteggio sopra il tabellone: due lati, uno per chi gioca.
+ * Le ultime tre mosse sotto i comandi, l'ultima in cima: chi l'ha fatta, le
+ * parole, i punti. Prima della prima mossa, come si gioca in due righe.
+ */
+function UltimeMosse({ voci, aiuto, onApri }: { voci: readonly VoceMossa[]; aiuto: string; onApri?: () => void }) {
+  const ultime = voci.slice(-3).reverse()
+  const contenuto = (
+    <>
+      <span className="scr-ultime__titolo">{ultime.length ? 'Le ultime mosse' : 'Come si gioca'}</span>
+      {ultime.length === 0 ? (
+        <span className="scr-ultime__aiuto">{aiuto}</span>
+      ) : (
+        ultime.map((m) => {
+          const altro = m.mia === false
+          return (
+            <span key={m.numero} className="scr-ultime__voce">
+              <span className={`scr-ultime__chi${altro ? ' is-altro' : ''}`} role="img" aria-label={m.autore ?? 'Tu'}>
+                <span aria-hidden="true">{(m.autore ?? 'Tu').slice(0, 1).toUpperCase()}</span>
+              </span>
+              <span className="scr-ultime__parole">
+                {m.tipo === 'posa'
+                  ? m.parole.map((p) => p.toUpperCase()).join(' · ') || 'Una parola'
+                  : m.tipo === 'passo'
+                    ? altro
+                      ? 'Ha passato'
+                      : 'Hai passato'
+                    : altro
+                      ? 'Ha cambiato le tessere'
+                      : 'Hai cambiato le tessere'}
+              </span>
+              <span className="scr-ultime__punti u-tabnum">{m.punti > 0 ? `+${m.punti}` : '—'}</span>
+            </span>
+          )
+        })
+      )}
+    </>
+  )
+  return onApri ? (
+    <button type="button" className="scr-ultime" onClick={onApri} aria-label="Tutte le mosse">
+      {contenuto}
+    </button>
+  ) : (
+    <section className="scr-ultime" aria-label="Le ultime mosse">
+      {contenuto}
+    </section>
+  )
+}
+
+/**
+ * Il punteggio sopra il tabellone: due lati, uno per chi gioca, e in mezzo
+ * quel che legge il gioco.
  *
- * Nella classificata il lato destro e' il computer come traguardo — ha giocato
- * le stesse tessere, prima di tutti — nella libera e' l'avversario vero, e il
- * lato di chi deve muovere si accende.
+ * Nella classificata il lato destro e' il computer del giorno, nella libera
+ * l'avversario vero, e il lato di chi deve muovere si accende di giallo. In
+ * mezzo, sopra, a che punto si e' ("Mossa 2 di 5", "Sacchetto 85"); sotto, la
+ * posa in corso con le sue parole, o perché non va, o il messaggio del momento.
  */
 export function Tabellino({
   io,
@@ -201,12 +368,15 @@ export function Tabellino({
   nomeAltro,
   notaAltro,
   turno,
+  stato,
   sotto,
+  attesa = null,
   avviso = null,
   posa = null,
   sconosciute = null,
   avanzamento,
   onApri,
+  onRisultato,
   iconaIo,
   iconaAltro,
 }: {
@@ -215,12 +385,16 @@ export function Tabellino({
   /** Chi gioca a sinistra: "Tu", o l'host per chi guarda in compagnia. */
   nomeIo?: string
   nomeAltro: string
-  /** L'avatar di chi gioca e l'icona dell'avversario, accanto ai nomi. */
+  /** L'avatar di chi gioca e dell'avversario, accanto ai nomi, nelle partite fra persone. */
   iconaIo?: ReactNode
   iconaAltro?: ReactNode
   notaAltro?: string
   turno?: 'io' | 'altro' | null
+  /** In cima alla riga di mezzo, in maiuscoletto: "Mossa 2 di 5", "Sacchetto 85". */
+  stato?: string
   sotto: ReactNode
+  /** Si aspetta qualcuno: la frase con i puntini che saltano, al posto della riga di mezzo. */
+  attesa?: string | null
   /**
    * Un messaggio del momento — la posa non valida, la mossa del computer — al
    * posto della riga di mezzo. Prima era una pillola sopra il tabellone, e
@@ -237,40 +411,60 @@ export function Tabellino({
   /** Da 0 a 1: quanto manca a pareggiare il traguardo. */
   avanzamento?: number
   onApri?: () => void
+  /** A partita finita: il bottone che riapre il risultato. */
+  onRisultato?: () => void
 }) {
-  const mezzo = avviso ? null : posa ? <RigaDellaPosa esito={posa} sconosciute={sconosciute} /> : null
+  const mezzo = avviso ? (
+    <span key={avviso} className="scr-tab__riga scr-tab__riga--avviso" aria-live="polite">
+      {avviso}
+    </span>
+  ) : posa ? (
+    <RigaDellaPosa esito={posa} sconosciute={sconosciute} />
+  ) : attesa ? (
+    <span key={attesa} className="scr-tab__riga" role="status">
+      {attesa}
+      <span className="scr-tab__puntini" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
+    </span>
+  ) : onRisultato ? null : (
+    <span className="scr-tab__riga">{sotto}</span>
+  )
   return (
-    <button type="button" className="scr-tab" onClick={onApri} aria-label="Le mosse della partita">
+    <div className="scr-tab">
+      {onApri && <button type="button" className="scr-tab__apri" onClick={onApri} aria-label="Le mosse della partita" />}
       <span className={`scr-tab__lato${turno === 'io' ? ' is-turno' : ''}`}>
         <span className="scr-tab__nome">
           {iconaIo}
-          {nomeIo}
+          <span className="scr-tab__chi">{nomeIo}</span>
         </span>
         <span className="scr-tab__punti u-tabnum">{io}</span>
       </span>
       <span className="scr-tab__mezzo">
-        {avviso ? (
-          <span key={avviso} className="scr-tab__avviso" aria-live="polite">
-            {avviso}
-          </span>
-        ) : (
-          (mezzo ?? <span className="scr-tab__sotto">{sotto}</span>)
+        {stato && <span className="scr-tab__stato">{stato}</span>}
+        {mezzo}
+        {onRisultato && !avviso && !posa && (
+          <button type="button" className="scr-tab__risultato" onClick={onRisultato}>
+            Il risultato
+          </button>
         )}
-        {avanzamento !== undefined && !avviso && !mezzo && (
+        {avanzamento !== undefined && !avviso && !posa && !attesa && !onRisultato && (
           <span className="scr-tab__barra" aria-hidden="true">
             <span className="scr-tab__pieno" style={{ transform: `scaleX(${Math.min(1, Math.max(0, avanzamento))})` }} />
           </span>
         )}
       </span>
-      <span className={`scr-tab__lato scr-tab__lato--altro${turno === 'altro' ? ' is-turno' : ''}`}>
+      <span className={`scr-tab__lato${turno === 'altro' ? ' is-turno' : ''}`}>
         <span className="scr-tab__nome">
-          {nomeAltro}
           {iconaAltro}
+          <span className="scr-tab__chi">{nomeAltro}</span>
         </span>
         <span className="scr-tab__punti u-tabnum">{altro}</span>
         {notaAltro && <span className="scr-tab__nota">{notaAltro}</span>}
       </span>
-    </button>
+    </div>
   )
 }
 
@@ -287,7 +481,7 @@ const PERCHE_NO: Partial<Record<CodicePosa, string>> = {
 function RigaDellaPosa({ esito, sconosciute }: { esito: EsitoPosa; sconosciute: readonly string[] | null }) {
   if (!esito.ok) {
     return (
-      <span className="scr-tab__avviso scr-tab__avviso--no" aria-live="polite">
+      <span className="scr-tab__riga scr-tab__riga--no" aria-live="polite">
         {PERCHE_NO[esito.codice] ?? esito.errore}
       </span>
     )
@@ -299,7 +493,7 @@ function RigaDellaPosa({ esito, sconosciute }: { esito: EsitoPosa; sconosciute: 
           key={`${p.parola}-${p.celle[0].r}-${p.celle[0].c}-${i}`}
           className={`scr-tab__parola${sconosciute?.includes(p.parola) ? ' is-sconosciuta' : ''}`}
         >
-          {p.parola.toUpperCase()} <span className="u-tabnum">{p.punti}</span>
+          {p.parola.toUpperCase()} <b className="u-tabnum">{p.punti}</b>
         </span>
       ))}
     </span>

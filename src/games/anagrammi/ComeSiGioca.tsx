@@ -1,3 +1,4 @@
+import { Button } from '@/components/Button'
 import { Sheet } from '@/components/Sheet'
 import {
   BONUS_ANAGRAMMI,
@@ -47,6 +48,9 @@ export function ComeSiGiocaAnagrammi({ open, onClose }: { open: boolean; onClose
           </a>
           , con licenza CC BY-SA.
         </p>
+        <Button size="lg" fullWidth onClick={onClose}>
+          Ho capito
+        </Button>
       </div>
     </Sheet>
   )

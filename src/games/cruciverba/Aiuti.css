@@ -1,0 +1,99 @@
+/*
+ * Il foglio degli aiuti: il valore di adesso in una riga del foglio, e gli
+ * aiuti come tasti di carta col filo, che premuti scendono. Uno spento e' del
+ * grigio dei tasti assenti, con l'inchiostro pieno: si legge, ma non si preme.
+ */
+.aiuto-vale {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  margin: 0 0 6px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--fill-quaternary);
+  color: var(--label);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.aiuto-vale strong {
+  font-family: var(--font-rounded);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.aiuto-voce {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 4px;
+  padding: 10px 14px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--label);
+  box-shadow:
+    0 3px 0 var(--ink),
+    inset 0 3px 0 var(--carta-luce);
+  font-size: 15px;
+  font-weight: 900;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 100ms var(--ease-out),
+    box-shadow 100ms var(--ease-out);
+}
+
+.aiuto-voce:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    0 1px 0 var(--ink),
+    inset 0 3px 0 var(--carta-luce);
+}
+
+.aiuto-voce:disabled {
+  background: #d9d3ea;
+  background: light-dark(#d9d3ea, #aaa4c9);
+  color: #2a1f5c;
+  box-shadow: 0 2px 0 var(--ink);
+  cursor: default;
+}
+
+.aiuto-voce__icona {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--aiuto-colore);
+  color: #2a1f5c;
+}
+
+.aiuto-voce__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.aiuto-voce__costo {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+.aiuto-voce:disabled .aiuto-voce__costo {
+  color: #2a1f5c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aiuto-voce {
+    transition: none;
+  }
+}

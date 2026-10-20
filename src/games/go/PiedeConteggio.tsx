@@ -54,8 +54,12 @@ export function PiedeConteggio({
         {avanti} di {punti(scarto)} {scarto === 1 ? 'punto' : 'punti'}
       </p>
       <p className="gob-conto__punti u-tabnum">
-        <span className="gob-conto__parte is-nero" aria-hidden="true" /> Nero {punti(conto.nero)}
-        <span className="gob-conto__parte is-bianco" aria-hidden="true" /> Bianco {punti(conto.bianco)}
+        <span>
+          <span className="gob-conto__parte is-nero" aria-hidden="true" /> Nero <b>{punti(conto.nero)}</b>
+        </span>
+        <span>
+          Bianco <b>{punti(conto.bianco)}</b> <span className="gob-conto__parte is-bianco" aria-hidden="true" />
+        </span>
       </p>
       <p className="gob-conto__nota">
         {correggibile
@@ -67,11 +71,11 @@ export function PiedeConteggio({
           : 'Le pietre spente sono morte per il computer.'}
       </p>
       <div className="gob-conto__azioni">
-        <Button onClick={onAccetta} disabled={inviando || accettato === 'io'}>
-          {correggibile ? 'Accetto il conteggio' : 'Conferma'}
-        </Button>
         <Button variant="tinted" onClick={onRiprendi} disabled={inviando}>
-          Riprendi a giocare
+          Riprendi
+        </Button>
+        <Button onClick={onAccetta} disabled={inviando || accettato === 'io'}>
+          {correggibile ? 'Accetto' : 'Conferma'}
         </Button>
       </div>
     </div>

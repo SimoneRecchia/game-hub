@@ -11,6 +11,7 @@ import { TavoliDegliAmici } from '@/games/blackjack/Amici'
 import { ComeSiGiocaBlackjack } from '@/games/blackjack/ComeSiGioca'
 import { Fiche } from '@/games/blackjack/Fiches'
 import { PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { finitaLUscita } from '@/games/blackjack/uscita'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
@@ -27,6 +28,7 @@ const SALA_POLL_MS = 5_000
  * seduto da qualche parte ci torna.
  */
 export default function Blackjack() {
+  useSala()
   const { vai } = useNavigazione()
   const toast = useToast()
   const [sala, setSala] = useState<SalaBlackjack | null>(null)
@@ -78,7 +80,7 @@ export default function Blackjack() {
       }
     >
       <DefinizioniCarte />
-      <section className="bj-sala entra" aria-label="Il tuo tavolo">
+      <section className={`bj-sala entra ${SALA}`} aria-label="Il tuo tavolo">
         <span className="bj-sala__luce" aria-hidden="true" />
         <div className="bj-sala__ventaglio" aria-hidden="true">
           <span className="bj-sala__carta is-1">

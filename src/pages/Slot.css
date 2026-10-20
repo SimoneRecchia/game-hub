@@ -26,6 +26,24 @@
   initial-value: 300px;
 }
 
+/*
+ * La pagina e' la sala (Sala.css), con il viola che si apre attorno al
+ * mobile, come nel mockup: la sala non ha piu' un fondo suo.
+ */
+.pagina:has(.slot) {
+  --fondo: radial-gradient(120% 70% at 50% 45%, #5a1e6e 0%, #2a1260 45%, #0b0418 100%);
+  --macchia-1: transparent;
+  --macchia-2: transparent;
+  --macchia-3: transparent;
+  /* Il bottone delle regole e' giallo, come nel mockup: l'unica cosa chiara in cima. */
+  --tondo: var(--giallo);
+  --ink-tondo: #120c2b;
+}
+
+body:has(.slot) {
+  background: #0b0418;
+}
+
 .slot {
   flex: 1;
   min-height: 0;
@@ -68,20 +86,16 @@
   flex: 1;
   min-height: 300px;
   container-type: size;
-  overflow: hidden;
+  /*
+   * Le luci, il faro, il riverbero e il pavimento escono dalla sala: senza un
+   * fondo suo, un bordo tagliato si vedrebbe. Li taglia lo schermo, che e' la
+   * pagina intera (`pagina--intera` non scorre).
+   */
+  overflow: visible;
   isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--r-xl);
-  background:
-    radial-gradient(110% 60% at 50% -10%, rgba(255, 79, 163, 0.26), transparent 62%),
-    radial-gradient(70% 50% at 50% 105%, rgba(255, 140, 60, 0.16), transparent 70%),
-    radial-gradient(circle at 50% 55%, #2a0f4d, #08020f 78%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 214, 120, 0.22),
-    inset 0 -60px 90px rgba(0, 0, 0, 0.5),
-    var(--shadow-md);
 }
 
 /* Il faro: un cono di luce calda che scende dall'alto sul mobile. */
@@ -138,9 +152,7 @@
 
 @keyframes slot-sala-jackpot {
   50% {
-    background:
-      radial-gradient(110% 60% at 50% -10%, rgba(255, 214, 90, 0.55), transparent 62%),
-      radial-gradient(circle at 50% 60%, #4a1d00, #08020f 78%);
+    background: radial-gradient(70% 50% at 50% 30%, rgba(255, 214, 90, 0.4), transparent 70%);
   }
 }
 
@@ -200,28 +212,14 @@
    * che sale dal fondo.
    */
   background:
-    linear-gradient(112deg, transparent 30%, rgba(255, 255, 255, 0.07) 36%, transparent 44%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 20%, transparent 66%, rgba(0, 0, 0, 0.4)),
-    linear-gradient(
-      90deg,
-      #2a0309 0%,
-      var(--lacca-3) 2.5%,
-      var(--lacca-1) 7%,
-      #ff6f86 9%,
-      var(--lacca-1) 12%,
-      var(--lacca-2) 30%,
-      var(--lacca-2) 70%,
-      var(--lacca-1) 88%,
-      #ff6f86 91%,
-      var(--lacca-1) 93%,
-      var(--lacca-3) 97.5%,
-      #2a0309 100%
-    );
+    radial-gradient(90% 26% at 50% 0%, rgba(255, 255, 255, 0.24), transparent 70%),
+    linear-gradient(180deg, #e0213f 0%, #b3122e 46%, #7a0a1f 100%);
   box-shadow:
-    inset 0 0 0 calc(var(--u) * 1) var(--oro-2),
-    inset 0 0 0 calc(var(--u) * 1.8) var(--oro-3),
-    0 calc(var(--u) * 6) calc(var(--u) * 12) rgba(0, 0, 0, 0.6),
-    0 0 calc(var(--u) * 20) rgba(255, 79, 163, 0.16);
+    inset 0 0 0 calc(var(--u) * 1) #120c2b,
+    inset 0 0 0 calc(var(--u) * 2.3) #f4c430,
+    inset 0 0 0 calc(var(--u) * 3) #a2650e,
+    0 calc(var(--u) * 3.3) 0 #120c2b,
+    0 calc(var(--u) * 6) calc(var(--u) * 14) rgba(0, 0, 0, 0.55);
 }
 
 /* Il riverbero dell'insegna sul muro dietro il mobile: si accende con le luci. */
@@ -355,8 +353,8 @@
     0 calc(100% - var(--u) * 1)
   );
   background:
-    linear-gradient(90deg, rgba(255, 120, 140, 0.45), transparent 26%),
-    linear-gradient(180deg, #4a0412, #33020c 64%, #12020a 82%, #241e26);
+    linear-gradient(90deg, rgba(255, 120, 140, 0.35), transparent 26%, transparent 70%, #120c2b 70%),
+    linear-gradient(180deg, #7a0a1f, #4a0412 64%, #2a0209 100%);
 }
 
 /* ─────────────────────────────  L'insegna  ───────────────────────────── */
@@ -370,10 +368,11 @@
     radial-gradient(60% 60% at 50% 20%, rgba(255, 255, 255, 0.14), transparent 70%),
     linear-gradient(180deg, #3a0d5e, #12031f);
   box-shadow:
-    inset 0 0 0 calc(var(--u) * 0.8) var(--oro-2),
-    inset 0 0 0 calc(var(--u) * 1.5) var(--oro-3),
+    inset 0 0 0 calc(var(--u) * 1) #f4c430,
+    inset 0 0 0 calc(var(--u) * 1.6) #a2650e,
     inset 0 calc(var(--u) * -3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55),
-    0 calc(var(--u) * 1.3) calc(var(--u) * 2.6) rgba(0, 0, 0, 0.45);
+    0 0 0 calc(var(--u) * 1) #120c2b,
+    0 calc(var(--u) * 1.6) 0 calc(var(--u) * 1) #120c2b;
 }
 
 .slot-insegna__disegno {
@@ -612,10 +611,10 @@
   gap: calc(var(--u) * 1.3);
   padding: calc(var(--u) * 1);
   border-radius: calc(var(--u) * 2.6);
-  background: linear-gradient(180deg, #160424, #2a0b44);
+  background: linear-gradient(180deg, #1b1238, #2a1f5c);
   box-shadow:
-    inset 0 0 0 1px rgba(240, 194, 74, 0.55),
-    inset 0 calc(var(--u) * 0.7) calc(var(--u) * 1.6) rgba(0, 0, 0, 0.6);
+    inset 0 0 0 calc(var(--u) * 0.8) #120c2b,
+    inset 0 0 0 calc(var(--u) * 1.3) rgba(255, 201, 60, 0.6);
 }
 
 .slot-tabella__voce {
@@ -639,25 +638,26 @@
 
 .slot-tabella__valore {
   font-family: var(--font-rounded);
-  font-size: calc(var(--u) * 4.3);
-  font-weight: 900;
-  color: var(--ct-oro);
+  font-size: calc(var(--u) * 4.6);
+  font-weight: 400;
+  color: #ffe27a;
+  text-shadow: 0 1px 0 #120c2b;
 }
 
 /* ─────────────────────────────  Il vetro e i rulli  ───────────────────────────── */
 
-/* La cornice di cromo, e dentro la finestra incassata: i rulli stanno piu' indietro del fronte. */
+/* La cornice d'oro con il filo d'inchiostro, e dentro la finestra incassata: i rulli stanno piu' indietro del fronte. */
 .slot-vetro {
   position: relative;
   display: flex;
   min-height: 0;
-  padding: calc(var(--u) * 2.2);
-  border-radius: calc(var(--u) * 4);
-  background: linear-gradient(180deg, #f2f4f8, #8f96a3 30%, #d9dde4 52%, #6d7380 78%, #e8ebf0);
+  padding: calc(var(--u) * 2);
+  border-radius: calc(var(--u) * 5);
+  background: #f4c430;
   box-shadow:
-    inset 0 0 0 calc(var(--u) * 0.5) rgba(0, 0, 0, 0.35),
-    inset 0 calc(var(--u) * 0.4) 0 rgba(255, 255, 255, 0.7),
-    0 calc(var(--u) * 1) calc(var(--u) * 2.6) rgba(0, 0, 0, 0.5);
+    0 0 0 calc(var(--u) * 1) #120c2b,
+    inset 0 0 0 calc(var(--u) * 0.8) #a2650e,
+    inset 0 calc(var(--u) * 0.6) 0 calc(var(--u) * 0.8) #fff3b0;
 }
 
 .slot-rulli {
@@ -669,13 +669,15 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: calc(var(--u) * 1.3);
   padding: calc(var(--u) * 1);
-  border-radius: calc(var(--u) * 2.3);
-  background: #140b14;
-  box-shadow: inset 0 calc(var(--u) * 1.6) calc(var(--u) * 3.3) rgba(0, 0, 0, 0.9);
+  border-radius: calc(var(--u) * 3.3);
+  background: #2a1f5c;
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 0.8) #120c2b,
+    inset 0 calc(var(--u) * 2) calc(var(--u) * 4) rgba(0, 0, 0, 0.6);
 }
 
 .slot-rulli.is-attesa {
-  background: #140b14;
+  background: #2a1f5c;
 }
 
 .slot-rullo {
@@ -683,8 +685,9 @@
   overflow: hidden;
   min-height: 0;
   height: 100%;
-  border-radius: calc(var(--u) * 1.6);
-  background: linear-gradient(180deg, #d8cfb8, #fffaf0 40%, #fffaf0 60%, #d8cfb8);
+  border-radius: calc(var(--u) * 2.6);
+  background: linear-gradient(180deg, #d9d2ee 0%, #fffbf2 22%, #fffbf2 78%, #d9d2ee 100%);
+  box-shadow: inset 0 0 0 calc(var(--u) * 0.7) #120c2b;
   transition: box-shadow 200ms var(--ease-out);
 }
 
@@ -697,18 +700,18 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
+  border-radius: inherit;
   background:
     linear-gradient(
       180deg,
-      rgba(0, 0, 0, 0.75),
-      rgba(0, 0, 0, 0.24) 20%,
-      transparent 38%,
-      transparent 62%,
-      rgba(0, 0, 0, 0.24) 80%,
-      rgba(0, 0, 0, 0.75)
-    ),
-    linear-gradient(180deg, transparent 44%, rgba(255, 255, 255, 0.22) 50%, transparent 56%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.28), transparent 14%, transparent 86%, rgba(0, 0, 0, 0.28));
+      rgba(42, 31, 92, 0.42),
+      rgba(42, 31, 92, 0.1) 18%,
+      transparent 34%,
+      transparent 66%,
+      rgba(42, 31, 92, 0.1) 82%,
+      rgba(42, 31, 92, 0.42)
+    );
+  box-shadow: inset 0 0 0 calc(var(--u) * 0.7) #120c2b;
 }
 
 /* La striscia: tre giri dei simboli del rullo, le caselle che dice `--celle` (Rulli.tsx), e il rullo ne mostra tre. */
@@ -738,9 +741,12 @@
 }
 
 @keyframes slot-suspense {
+  from {
+    box-shadow: 0 0 0 calc(var(--u) * 0.9) #ffd84d;
+  }
   to {
     box-shadow:
-      0 0 0 calc(var(--u) * 0.7) #f4c430,
+      0 0 0 calc(var(--u) * 1.2) #ff4fa3,
       0 0 calc(var(--u) * 5) rgba(255, 214, 90, 0.9);
   }
 }
@@ -1027,10 +1033,11 @@
   left: calc(var(--u) * 1.6);
   right: calc(var(--u) * 1.6);
   top: 50%;
-  height: calc(var(--u) * 0.7);
+  height: calc(var(--u) * 1);
   border-radius: 2px;
-  background: rgba(227, 19, 47, 0.75);
-  box-shadow: 0 0 calc(var(--u) * 1.3) rgba(227, 19, 47, 0.8);
+  background: #ff5c7a;
+  box-shadow: 0 0 0 1px #120c2b;
+  opacity: 0.85;
   transform: translateY(-50%);
   pointer-events: none;
 }
@@ -1432,63 +1439,56 @@
 
 /* ─────────────────────────────  Il display  ───────────────────────────── */
 
+/* Due riquadri scuri con il filo, come nel mockup: la puntata, stretta, e la vincita, larga. */
 .slot-display {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
-  align-items: center;
+  grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
   gap: calc(var(--u) * 2);
-  padding: 0 calc(var(--u) * 2.3);
-  border-radius: calc(var(--u) * 2.6);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 40%),
-    linear-gradient(180deg, #050307, #170b10);
-  box-shadow:
-    inset 0 0 0 1px rgba(240, 194, 74, 0.5),
-    inset 0 calc(var(--u) * 0.7) calc(var(--u) * 1.6) rgba(0, 0, 0, 0.8),
-    0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-.slot-display::before {
-  content: '';
-  grid-column: 2;
-  grid-row: 1;
-  align-self: stretch;
-  margin: calc(var(--u) * 1.6) 0;
-  background: rgba(240, 194, 74, 0.35);
 }
 
 .slot-display__voce {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: center;
   min-width: 0;
-}
-
-.slot-display__voce.is-vincita {
-  grid-column: 3;
+  padding: 0 calc(var(--u) * 3);
+  border-radius: calc(var(--u) * 3.3);
+  background: #160b08;
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 0.8) #120c2b,
+    inset 0 0 0 calc(var(--u) * 1.5) #3a2a12,
+    inset 0 calc(var(--u) * 1.3) calc(var(--u) * 3.3) rgba(0, 0, 0, 0.8);
 }
 
 .slot-display__etichetta {
-  font-size: calc(var(--u) * 2.7);
-  font-weight: 800;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: calc(var(--u) * 3);
+  font-weight: 900;
   letter-spacing: 0.14em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
-  color: rgba(255, 214, 90, 0.75);
+  white-space: nowrap;
+  color: #c7a96a;
 }
 
 .slot-display__cifre {
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: calc(var(--u) * 6);
-  font-weight: 800;
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--u) * 6.4);
+  font-weight: 400;
   line-height: 1.05;
-  color: #ff3b3b;
-  text-shadow:
-    0 0 calc(var(--u) * 1.3) rgba(255, 59, 59, 0.9),
-    0 0 calc(var(--u) * 3.3) rgba(255, 59, 59, 0.5);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #ffd84d;
+  text-shadow: 0 0 calc(var(--u) * 2.6) rgba(255, 216, 77, 0.7);
 }
 
+/* La vincita spenta: il trattino d'oro tenue, che si legge ma non chiama. */
 .slot-display__voce.is-vincita .slot-display__cifre {
-  color: rgba(125, 255, 154, 0.35);
+  color: #c7a96a;
   text-shadow: none;
 }
 
@@ -1510,8 +1510,6 @@
 /* La puntata che cambia, quando arriva la fiche: le cifre scattano, come su un display vero. */
 .slot-display__voce.is-puntata {
   position: relative;
-  align-self: stretch;
-  justify-content: center;
 }
 
 .slot-display__voce.is-puntata .slot-display__cifre {
@@ -1535,16 +1533,16 @@
 
 .slot-display__max {
   position: absolute;
-  right: 0;
-  bottom: calc(var(--u) * 1.4);
+  right: calc(var(--u) * 1.6);
+  bottom: calc(var(--u) * 1.6);
   padding: 0 calc(var(--u) * 0.7);
   border-radius: calc(var(--u) * 0.7);
   box-shadow:
     inset 0 0 0 1px rgba(255, 176, 46, 0.6),
     0 0 calc(var(--u) * 1.2) rgba(255, 176, 46, 0.35);
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: calc(var(--u) * 2.7);
-  font-weight: 800;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--u) * 2.8);
+  font-weight: 400;
   line-height: 1.35;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1560,18 +1558,12 @@
 }
 
 /* A puntata zero, al posto della vincita: l'invito a mettere le fiches, che lampeggia come "insert coin". */
-.slot-display__voce.is-invito {
-  align-self: stretch;
-  justify-content: center;
-}
-
 .slot-display__invito {
-  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
-  font-size: calc(var(--u) * 3.1);
-  font-weight: 800;
-  line-height: 1.15;
-  letter-spacing: 0.04em;
-  text-align: center;
+  font-family: var(--font-rounded);
+  font-size: calc(var(--u) * 4.6);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ct-ambra);
   text-shadow: 0 0 calc(var(--u) * 1) color-mix(in srgb, var(--ct-ambra) 85%, transparent);
@@ -1609,24 +1601,24 @@
   justify-content: space-between;
   gap: calc(var(--u) * 2.6);
   height: 100%;
-  padding: 0 calc(var(--u) * 6.6);
-  border-radius: calc(var(--u) * 3.3) calc(var(--u) * 3.3) calc(var(--u) * 2) calc(var(--u) * 2);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.14), transparent 30%),
-    linear-gradient(180deg, #2b2f38, #0e0f13);
+  padding: 0 calc(var(--u) * 4);
+  border-radius: calc(var(--u) * 5);
+  background: linear-gradient(180deg, #5a0a1a, #3a0612);
   box-shadow:
-    inset 0 0 0 calc(var(--u) * 0.7) var(--oro-2),
-    inset 0 calc(var(--u) * 1) 0 rgba(255, 255, 255, 0.12),
-    0 calc(var(--u) * 2) 0 #6b4a0c,
-    0 calc(var(--u) * 3.3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55);
-  transform: rotateX(22deg);
+    inset 0 0 0 calc(var(--u) * 0.8) #120c2b,
+    inset 0 calc(var(--u) * 1.8) 0 rgba(255, 255, 255, 0.12),
+    0 calc(var(--u) * 2) 0 #120c2b,
+    0 calc(var(--u) * 3.3) calc(var(--u) * 5) rgba(0, 0, 0, 0.45);
+  transform: rotateX(18deg);
   transform-origin: 50% 0;
 }
 
 /* Le fiches e, accanto, il tasto che azzera la puntata. */
 .slot-banco__fiches {
   display: flex;
+  flex: 1;
   align-items: center;
+  justify-content: center;
   gap: calc(var(--u) * 2.2);
   min-width: 0;
 }
@@ -1636,166 +1628,103 @@
   gap: calc(var(--u) * 1.6);
 }
 
-/* Un gettone da casinò: il disco nel suo colore, l'orlo a tacche bianche, il valore in mezzo. */
+/*
+ * Un gettone da casinò, come le fiches di tutta la Fortuna (Fiches.css): il
+ * disco nel suo colore con l'orlo a spicchi color crema, il filo d'inchiostro,
+ * l'anello tratteggiato e il valore in Lilita.
+ */
 .slot-gettone {
-  --fiche: #2f6fe8;
+  --fiche: #2563eb;
+  --orlo: color-mix(in srgb, var(--fiche) 66%, #000);
   position: relative;
   display: grid;
   place-items: center;
-  width: calc(var(--u) * 10.6);
+  width: calc(var(--u) * 13.4);
   aspect-ratio: 1;
-  border: 0;
+  padding: 0;
+  border: calc(var(--u) * 0.8) solid #120c2b;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.3), transparent 60%),
-    radial-gradient(circle, var(--fiche) 0 52%, transparent 53%),
-    repeating-conic-gradient(#fff 0 14deg, var(--fiche) 14deg 45deg);
+    radial-gradient(circle closest-side, var(--fiche) 0 64%, transparent 65%),
+    repeating-conic-gradient(from -10deg, var(--fiche) 0 40deg, #fffbf2 40deg 60deg);
   box-shadow:
-    inset 0 0 0 1.5px rgba(0, 0, 0, 0.3),
-    0 calc(var(--u) * 1.2) 0 color-mix(in srgb, var(--fiche) 55%, #000),
-    0 calc(var(--u) * 2) calc(var(--u) * 2) rgba(0, 0, 0, 0.45);
-  color: #fff;
+    0 calc(var(--u) * 1.2) 0 var(--orlo),
+    0 calc(var(--u) * 1.2) 0 calc(var(--u) * 0.8) #120c2b;
+  color: #fffbf2;
   font-family: var(--font-rounded);
-  font-size: calc(var(--u) * 4);
-  font-weight: 900;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  font-size: calc(var(--u) * 4.3);
+  font-weight: 400;
+  text-shadow: 0 1px 0 rgba(18, 12, 43, 0.55);
   cursor: pointer;
-  transition:
-    transform var(--dur-fast) var(--ease-spring),
-    box-shadow var(--dur-fast) var(--ease-out);
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .slot-gettone::after {
   content: '';
   position: absolute;
-  inset: 18%;
+  inset: 15%;
   border-radius: 50%;
-  border: 1.5px dashed rgba(255, 255, 255, 0.75);
+  border: calc(var(--u) * 0.6) dashed rgba(255, 251, 242, 0.9);
 }
 
-/* Le fiches si sommano: ogni tocco ne posa una, e il gettone si abbassa sul banco come premuto. */
+.slot-gettone span {
+  position: relative;
+  z-index: 1;
+}
+
+/* Le fiches si sommano: ogni tocco ne posa una, e il gettone scende sulla sua ombra come un tasto. */
 .slot-gettone:active:not(:disabled) {
-  transform: translateY(calc(var(--u) * 0.9)) scale(0.96);
-  box-shadow:
-    inset 0 0 0 1.5px rgba(0, 0, 0, 0.3),
-    0 calc(var(--u) * 0.4) 0 color-mix(in srgb, var(--fiche) 55%, #000),
-    0 calc(var(--u) * 0.8) calc(var(--u) * 1.2) rgba(0, 0, 0, 0.45);
+  transform: translateY(calc(var(--u) * 1));
 }
 
+/* Spento si vede spento, ma il suo numero si legge ancora. */
 .slot-gettone:disabled {
-  opacity: 0.4;
+  opacity: 0.6;
   cursor: default;
 }
 
-/*
- * Azzera: un tasto del banco come quelli delle slot vere, una placca d'ambra
- * illuminata da dietro, con la scritta scura, nella sua cornice di cromo. Il
- * tasto e' piccolo come gli altri del mobile; il tocco ha un margine in piu'.
- */
+/* Azzera: un tasto color crema con il filo, come nel mockup. Il tocco ha un margine in piu'. */
 .slot-azzera {
   position: relative;
   flex: none;
-  height: calc(var(--u) * 7.4);
-  padding: 0 calc(var(--u) * 2.2);
-  border: 0;
-  border-radius: calc(var(--u) * 1.6);
-  background: linear-gradient(180deg, #fff8dc, #ffd56b 55%, #e8a417);
+  height: calc(var(--u) * 12);
+  padding: 0 calc(var(--u) * 3);
+  border: calc(var(--u) * 0.8) solid #120c2b;
+  border-radius: calc(var(--u) * 4);
+  background: #fffbf2;
   box-shadow:
-    inset 0 calc(var(--u) * 0.4) 0 rgba(255, 255, 255, 0.8),
-    inset 0 calc(var(--u) * -0.5) calc(var(--u) * 0.8) rgba(140, 80, 0, 0.45),
-    0 0 0 calc(var(--u) * 0.6) #2b2f38,
-    0 0 0 calc(var(--u) * 1) #9aa1ad,
-    0 calc(var(--u) * 1.2) 0 calc(var(--u) * 0.6) #1a1c22,
-    0 0 calc(var(--u) * 3) rgba(255, 200, 80, 0.55);
-  color: #3a2200;
+    0 calc(var(--u) * 1.2) 0 #120c2b,
+    inset 0 calc(var(--u) * 1) 0 rgba(255, 255, 255, 0.5);
+  color: #120c2b;
   font-family: var(--font-rounded);
-  font-size: calc(var(--u) * 3.2);
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: calc(var(--u) * 4.5);
+  font-weight: 400;
   cursor: pointer;
-  transition:
-    transform var(--dur-fast) var(--ease-out),
-    filter var(--dur-fast) var(--ease-out);
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .slot-azzera::after {
   content: '';
   position: absolute;
-  inset: calc(var(--u) * -2.6) calc(var(--u) * -1.6);
+  inset: calc(var(--u) * -1.6) calc(var(--u) * -1.2);
 }
 
 .slot-azzera:active:not(:disabled) {
-  transform: translateY(calc(var(--u) * 0.8));
+  transform: translateY(calc(var(--u) * 1));
+  box-shadow:
+    0 calc(var(--u) * 0.3) 0 #120c2b,
+    inset 0 calc(var(--u) * 1) 0 rgba(255, 255, 255, 0.5);
 }
 
 .slot-azzera:disabled {
-  filter: grayscale(0.9) brightness(0.5);
+  background: #c9c3dd;
   cursor: default;
 }
 
 .slot-gettone:focus-visible,
-.slot-azzera:focus-visible,
-.slot-gira:focus-visible {
-  outline: 3px solid var(--ct-oro-chiaro);
+.slot-azzera:focus-visible {
+  outline: 3px solid #ffd84d;
   outline-offset: 2px;
-}
-
-/* Il bottone: una cupola rossa nel suo anello di cromo, che scende quando la si preme. */
-.slot-gira {
-  flex: none;
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: calc(var(--u) * 18);
-  aspect-ratio: 1;
-  border: 0;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.75), transparent 34%),
-    radial-gradient(circle at 50% 55%, #ff5a72, #e3132f 50%, #7d0012 92%);
-  box-shadow:
-    inset 0 calc(var(--u) * -1.3) calc(var(--u) * 2.3) rgba(0, 0, 0, 0.35),
-    0 0 0 calc(var(--u) * 1) #e8ebf0,
-    0 0 0 calc(var(--u) * 1.5) #6d7380,
-    0 calc(var(--u) * 2) 0 calc(var(--u) * 1.5) #3c4048,
-    0 calc(var(--u) * 3.3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font-family: var(--font-rounded);
-  font-size: calc(var(--u) * 4.3);
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-  cursor: pointer;
-  transition:
-    transform var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out);
-}
-
-.slot-gira:not(:disabled) {
-  animation: slot-gira-respira 1.8s var(--ease-in-out) infinite;
-}
-
-.slot-gira:active:not(:disabled) {
-  transform: translateY(calc(var(--u) * 1.5));
-  box-shadow:
-    inset 0 calc(var(--u) * -0.7) calc(var(--u) * 1.6) rgba(0, 0, 0, 0.4),
-    0 0 0 calc(var(--u) * 1) #e8ebf0,
-    0 0 0 calc(var(--u) * 1.5) #6d7380,
-    0 calc(var(--u) * 0.5) 0 calc(var(--u) * 1.5) #3c4048,
-    0 calc(var(--u) * 1.3) calc(var(--u) * 2.6) rgba(0, 0, 0, 0.55);
-}
-
-.slot-gira:disabled {
-  filter: grayscale(0.7) brightness(0.7);
-  cursor: default;
-}
-
-@keyframes slot-gira-respira {
-  50% {
-    filter: brightness(1.15) drop-shadow(0 0 calc(var(--u) * 4) rgba(255, 79, 120, 0.85));
-  }
 }
 
 /* ─────────────────────────────  La pancia  ───────────────────────────── */
@@ -1817,11 +1746,12 @@
   height: 100%;
   container-type: size;
   overflow: hidden;
-  border-radius: calc(var(--u) * 3);
+  border-radius: calc(var(--u) * 5);
   background: radial-gradient(120% 140% at 50% 120%, #5a1a8a, #1a0530 60%, #0b0214);
   box-shadow:
-    inset 0 0 0 calc(var(--u) * 0.6) var(--oro-2),
-    inset 0 0 0 calc(var(--u) * 1.1) var(--oro-3),
+    0 0 0 calc(var(--u) * 0.8) #120c2b,
+    inset 0 0 0 calc(var(--u) * 0.9) #f4c430,
+    inset 0 0 0 calc(var(--u) * 1.4) #a2650e,
     inset 0 calc(var(--u) * 1.5) calc(var(--u) * 3) rgba(0, 0, 0, 0.6);
 }
 
@@ -1860,12 +1790,12 @@
   position: relative;
   overflow: hidden;
   margin: calc(var(--u) * 1) calc(var(--u) * 3.3) calc(var(--u) * 1);
-  clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%);
-  border-radius: 0 0 calc(var(--u) * 5) calc(var(--u) * 5);
-  background:
-    linear-gradient(180deg, #050304, #1d1f25 40%, #3c4048 75%, #9aa1ad),
-    #000;
-  box-shadow: inset 0 calc(var(--u) * 2) calc(var(--u) * 2.6) rgba(0, 0, 0, 0.95);
+  border-radius: calc(var(--u) * 4) calc(var(--u) * 4) calc(var(--u) * 8.6) calc(var(--u) * 8.6);
+  background: linear-gradient(180deg, #160b08, #3a2a12);
+  box-shadow:
+    inset 0 0 0 calc(var(--u) * 0.8) #120c2b,
+    inset 0 calc(var(--u) * 2.6) calc(var(--u) * 4) rgba(0, 0, 0, 0.8),
+    0 0 0 calc(var(--u) * 0.7) #a2650e;
 }
 
 .slot-vassoio__moneta {
@@ -1875,10 +1805,8 @@
   width: calc(var(--u) * 5.6);
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(circle at 34% 30%, #fff6c8, var(--ct-oro) 48%, var(--ct-oro-scuro));
-  box-shadow:
-    inset 0 0 0 1.5px rgba(120, 70, 0, 0.45),
-    0 0 6px rgba(255, 214, 90, 0.6);
+  border: calc(var(--u) * 0.6) solid #a2650e;
+  background: radial-gradient(circle at 35% 30%, #fff3b0, #f4c430 55%, #c8890f);
   animation: slot-moneta-cade 520ms calc(var(--i) * 45ms) var(--ease-bounce) both;
 }
 
@@ -1898,10 +1826,9 @@
 
 /* Lo zoccolo: il fondo scuro del mobile, con il filo di cromo, che poggia sul pavimento. */
 .slot-zoccolo {
-  border-radius: 0 0 calc(var(--u) * 4) calc(var(--u) * 4);
-  background:
-    linear-gradient(180deg, #e8ebf0, #6d7380 calc(var(--u) * 1), #2a0309 calc(var(--u) * 1.2), #12020a);
-  box-shadow: inset 0 calc(var(--u) * -1) calc(var(--u) * 1.6) rgba(0, 0, 0, 0.6);
+  margin: 0 calc(var(--u) * 1) calc(var(--u) * 1);
+  border-radius: 0 0 calc(var(--u) * 3) calc(var(--u) * 3);
+  background: linear-gradient(180deg, #4a0412, #2a0209);
 }
 
 /* ─────────────────────────────  La leva  ───────────────────────────── */
@@ -1947,17 +1874,25 @@
     overflow: hidden;
   }
 
+  /* Il tabellone, e sotto Gira o l'avviso del saldo, in colonna a sinistra; la sala alta quanto lo schermo. */
   .slot {
-    flex-direction: row;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: start;
   }
 
-  .slot .ct-tabellone {
-    flex: 0 0 168px;
+  .slot > .ct-tabellone {
+    grid-column: 1;
+    grid-row: 1;
     flex-direction: column;
     align-items: flex-start;
     justify-content: center;
-    gap: var(--sp-4);
+    gap: var(--sp-2);
+  }
+
+  .slot .ct-tabellone__filo {
+    display: none;
   }
 
   .slot .ct-tabellone__voce.is-destra {
@@ -1965,31 +1900,17 @@
     text-align: left;
   }
 
-  .slot-sala {
+  .slot > .slot-sala {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: stretch;
     min-height: 0;
   }
 
-  /* Con l'avviso del saldo: il tabellone e l'avviso in colonna a sinistra, la sala alta quanto lo schermo. */
-  .slot:has(> .slot-pochi) {
-    display: grid;
-    grid-template-columns: 200px minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .slot:has(> .slot-pochi) > .ct-tabellone {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .slot:has(> .slot-pochi) > .slot-sala {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-
-  .slot > .slot-pochi {
+  .slot > .slot-pochi,
+  .slot > .slot-comandi {
     grid-column: 1;
     grid-row: 2;
-    align-self: start;
   }
 }
 
@@ -2000,11 +1921,30 @@
   flex: none;
 }
 
+/* Gira, sotto il mobile, e la riga di quel che si puo' fare: come nel mockup. */
+.slot-comandi {
+  flex: none;
+  display: grid;
+  gap: var(--sp-2);
+  width: min(100%, 440px);
+  margin-inline: auto;
+}
+
+.slot-comandi__nota {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.3;
+  text-align: center;
+  color: #fff6e0;
+  text-shadow: 0 2px 0 #120c2b;
+}
+
 .slot-attesa {
   flex: 1;
   min-height: 200px;
   border-radius: var(--r-xl);
-  background: var(--fill-quaternary);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .slot-errore {
@@ -2031,24 +1971,28 @@
   place-items: center;
   width: 84px;
   aspect-ratio: 1;
+  border: 3px solid #120c2b;
   border-radius: 50%;
   background: var(--colore);
   box-shadow:
     inset 0 0 0 3px #f4c430,
-    0 10px 24px color-mix(in srgb, var(--colore) 45%, transparent);
+    0 5px 0 #120c2b;
   color: #fff;
 }
 
 .slot-pronti__titolo {
   margin: 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 900;
+  font-size: 26px;
+  font-weight: 400;
+  color: #fff6e0;
+  text-shadow: 0 2px 0 #120c2b;
 }
 
 .slot-pronti__palio {
   margin: 0;
-  color: var(--label-secondary);
+  font-weight: 800;
+  color: #e4dcff;
 }
 
 /* Le regole: i premi con i loro simboli. */
@@ -2103,7 +2047,6 @@
   .slot-rivela,
   .slot-display__cifre,
   .slot-display__invito,
-  .slot-gira,
   .slot-pancia__raggi,
   .slot-lustro::before,
   .slot-vassoio__moneta {

@@ -1,12 +1,18 @@
+/*
+ * Le regole dello Scarabeo, nel foglio: i titoli in Lilita, i punti elenco
+ * gialli con il filo, la legenda dei premi con le stesse caselle del
+ * tabellone, e in fondo "Ho capito".
+ */
 .scr-aiuto {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-6);
+  gap: var(--sp-5);
 }
 
 .scr-aiuto__lede {
-  margin: 0;
+  margin: -4px 0 0;
   font-size: var(--text-subhead);
+  font-weight: 800;
   line-height: 1.45;
   color: var(--label-secondary);
 }
@@ -19,101 +25,136 @@
 
 .scr-aiuto__titolo {
   margin: 0;
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--label-tertiary);
+  font-family: var(--font-rounded);
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--label);
 }
 
-/*
- * Niente `display: flex` qui: un contenitore flex fa sparire i numeri e i
- * punti elenco, e "tocca, poi tocca, poi tocca" e' una sequenza — i numeri
- * sono l'informazione.
- */
-.scr-aiuto__passi,
+/* I passi sono una sequenza: i numeri restano, in un tondo giallo con il filo. */
+.scr-aiuto__passi {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: passo;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.scr-aiuto__passi li {
+  counter-increment: passo;
+  position: relative;
+  padding-left: 30px;
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--label);
+}
+
+.scr-aiuto__passi li::before {
+  content: counter(passo);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--giallo);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 11px;
+  line-height: 1;
+}
+
 .scr-aiuto__elenco {
   margin: 0;
-  padding-left: var(--sp-5);
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.scr-aiuto__elenco li {
+  position: relative;
+  padding-left: 19px;
   font-size: var(--text-subhead);
+  font-weight: 800;
   line-height: 1.4;
-  color: var(--label-secondary);
+  color: var(--label);
 }
 
-.scr-aiuto__passi li + li,
-.scr-aiuto__elenco li + li {
-  margin-top: var(--sp-2);
-}
-
-.scr-aiuto__passi li::marker,
-.scr-aiuto__elenco li::marker {
-  color: var(--label-tertiary);
+.scr-aiuto__elenco li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: #ffc24d;
 }
 
 .scr-aiuto__nota {
   margin: var(--sp-1) 0 0;
   font-size: var(--text-footnote);
+  font-weight: 800;
   line-height: 1.4;
   color: var(--label-secondary);
 }
 
-/* ---------- Legenda dei premi ---------- */
+/* ---------- Legenda dei premi: le caselle del tabellone, due per riga ---------- */
 
 .scr-aiuto__premi {
-  /* Gli stessi colori del tabellone, dalla stessa formula: una palette sola. */
-  --premio-tp: color-mix(in srgb, var(--red) 26%, var(--surface));
-  --premio-dp: color-mix(in srgb, var(--pink) 15%, var(--surface));
-  --premio-tl: color-mix(in srgb, var(--blue) 26%, var(--surface));
-  --premio-dl: color-mix(in srgb, var(--blue) 12%, var(--surface));
-
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .scr-aiuto__premi li {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-1) 0;
-  font-size: var(--text-subhead);
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 900;
 }
 
 .scr-aiuto__premio {
   flex: none;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--r-xs);
-  box-shadow: inset 0 0 0 1px var(--separator);
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--ink);
+  border-radius: 5px;
 }
 
 .scr-aiuto__premio--tp {
-  background: var(--premio-tp);
+  background: var(--scr-tp);
 }
 .scr-aiuto__premio--dp {
-  background: var(--premio-dp);
+  background: var(--scr-dp);
 }
 .scr-aiuto__premio--tl {
-  background: var(--premio-tl);
+  background: var(--scr-tl);
 }
 .scr-aiuto__premio--dl {
-  background: var(--premio-dl);
+  background: var(--scr-dl);
 }
 
 .scr-aiuto__premio-nome {
-  flex: 1;
+  min-width: 0;
   color: var(--label);
 }
 
-.scr-aiuto__premio-quante {
-  color: var(--label-tertiary);
-  font-size: var(--text-footnote);
-}
-
-/* ---------- Valori delle lettere ---------- */
+/* ---------- Valori delle lettere: un tondo per gradino ---------- */
 
 .scr-aiuto__valori {
   list-style: none;
@@ -121,26 +162,38 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-1);
 }
 
 .scr-aiuto__valori li {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--sp-3);
+  padding: 6px 0;
+  border-top: 2px dashed var(--separator);
+}
+
+.scr-aiuto__valori li:first-child {
+  border-top: 0;
 }
 
 .scr-aiuto__valore {
   flex: none;
-  width: 26px;
-  text-align: center;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: linear-gradient(180deg, var(--scr-tessera), var(--scr-tessera-2));
+  box-shadow: 0 2px 0 var(--ink);
   font-family: var(--font-rounded);
-  font-weight: 700;
-  color: var(--label);
+  font-size: 1rem;
+  color: #2a1f5c;
 }
 
 .scr-aiuto__lettere {
   font-size: var(--text-subhead);
-  color: var(--label-secondary);
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  color: var(--label);
+  letter-spacing: 0.06em;
 }

@@ -3,12 +3,14 @@
  * Le durate sono frazioni di `--durata`, che mette l'adesivo.
  */
 
-/* Le lettere della parola sono tessere del gioco, non caselle bianche. */
-.adesivo__lettere.is-legno span {
-  background-color: var(--tessera);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.28), rgba(0, 0, 0, 0.08));
-  color: var(--tessera-ink);
-  box-shadow: 0 2px 0 rgba(90, 50, 10, 0.35);
+/* Le lettere della parola sono tessere del gioco, chiare anche nel tema scuro, con il filo e l'ombra secca. */
+.adesivo__lettere.is-legno span,
+.adesivo.is-bordato .adesivo__lettere.is-legno span {
+  background: linear-gradient(180deg, #f7e4bc, #ebcf97);
+  color: #2a1f5c;
+  box-shadow:
+    0 2px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.7);
 }
 
 /* Parole lunghe: le tessere si stringono invece di uscire dalla carta. */

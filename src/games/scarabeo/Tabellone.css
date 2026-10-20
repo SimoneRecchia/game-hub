@@ -1,58 +1,110 @@
 /*
- * Il tabellone.
+ * Il tabellone, nell'album: una cornice di legno con il filo d'inchiostro e
+ * l'ombra secca, e sopra le caselle.
  *
- * I colori stanno in `tokens.css` (`--premio-*`, `--tessera`), come ogni altro
- * colore del progetto. Le due famiglie dicono due cose diverse — **caldo =
- * moltiplica la parola**, **freddo = moltiplica la lettera** — e la saturazione
- * dice se e' tripla o doppia.
+ * I colori dei pezzi sono del gioco e non dell'interfaccia, come le caselle del
+ * Wordle: stanno qui, con il loro valore scuro. Le due famiglie dei premi dicono
+ * due cose — **caldo = moltiplica la parola**, **freddo = moltiplica la
+ * lettera** — e la saturazione dice se e' tripla o doppia. Le tessere restano
+ * chiare anche nel tema scuro, con l'inchiostro sopra: sono un oggetto di
+ * legno, come le cose colorate dell'album.
  */
-.tabellone {
-  display: grid;
-  grid-template-columns: repeat(15, 1fr);
-  gap: 1px;
-  padding: 2px;
-  /* Il fondo che si vede fra le caselle: sono le linee del tabellone. */
-  background: var(--separator-opaque);
-  border-radius: var(--r-md);
-  /*
-   * La cornice di legno: due anelli d'ombra, che seguono l'angolo e stanno
-   * fuori dal tabellone — per questo la misura qui sotto toglie i 10 punti che
-   * aggiungono.
-   */
+:root {
+  --scr-tp: #f2a699;
+  --scr-tp: light-dark(#f2a699, #8a3e38);
+  --scr-dp: #f8cfdc;
+  --scr-dp: light-dark(#f8cfdc, #6a3450);
+  --scr-tl: #94baee;
+  --scr-tl: light-dark(#94baee, #2f5287);
+  --scr-dl: #d3e2f8;
+  --scr-dl: light-dark(#d3e2f8, #243a5c);
+  --scr-cella: #fff9ee;
+  --scr-cella: light-dark(#fff9ee, #322d5e);
+  --scr-linee: rgba(42, 31, 92, 0.2);
+  --scr-linee: light-dark(rgba(42, 31, 92, 0.2), rgba(8, 5, 24, 0.55));
+  /* Le sigle dei premi: sui premi chiari l'inchiostro, sugli scuri la carta. */
+  --scr-premio-ink: rgba(42, 31, 92, 0.8);
+  --scr-premio-ink: light-dark(rgba(42, 31, 92, 0.8), rgba(255, 246, 224, 0.8));
+  --scr-legno-1: #d9a56c;
+  --scr-legno-1: light-dark(#d9a56c, #9a6a40);
+  --scr-legno-2: #a8703f;
+  --scr-legno-2: light-dark(#a8703f, #64422a);
+  --scr-legno-3: #7a4e2a;
+  --scr-legno-3: light-dark(#7a4e2a, #3e2716);
+  --scr-tessera: #f7e4bc;
+  --scr-tessera-2: #ebcf97;
+  --scr-tessera-ink: #2a1f5c;
+  /* L'indaco della posa in corso: la freccia, la tessera ancora in mano, il jolly. */
+  --scr-indaco: #5b4bff;
+  --scr-indaco: light-dark(#5b4bff, #8c80ff);
+  --scr-indaco-tinta: #e6e1ff;
+  --scr-indaco-tinta: light-dark(#e6e1ff, #dcd6ff);
+}
+
+/*
+ * La cornice: il legno con la venatura, il filo e l'ombra secca. La misura la
+ * decide Scarabeo.css, che sa quanto spazio resta; qui la griglia la riempie.
+ */
+.scr-tavola {
+  position: relative;
+  box-sizing: border-box;
+  width: min(100%, 430px);
+  padding: 6px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 17px;
+  background: linear-gradient(155deg, var(--scr-legno-1), var(--scr-legno-2) 80%);
   box-shadow:
-    0 0 0 4px var(--legno-1),
-    0 0 0 5px var(--legno-2),
-    0 6px 18px var(--shadow-tint);
-  margin: 5px;
-  /*
-   * Larghezza piena fin dove ci sta. La misura vera e' quella nel blocco
-   * @supports qui sotto, che tiene conto anche dell'altezza: su un iPhone SE il
-   * tabellone largo 288 non entrava nei 240 punti che restavano, e l'ultima riga
-   * finiva tagliata.
-   */
-  width: min(100%, 420px);
-  aspect-ratio: 1;
+    0 5px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -3px 0 var(--scr-legno-3);
+  user-select: none;
+}
+
+/* La venatura del legno: righe chiare e scure appena accennate. */
+.scr-tavola::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+  background: repeating-linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 0 9px,
+    rgba(255, 255, 255, 0.07) 9px 11px,
+    rgba(0, 0, 0, 0) 11px 23px,
+    rgba(0, 0, 0, 0.06) 23px 24px
+  );
+  pointer-events: none;
+}
+
+.tabellone {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(15, minmax(0, 1fr));
+  gap: 1px;
+  padding: 1px;
+  /* Il fondo che si vede fra le caselle: sono le linee del tabellone. */
+  background: var(--scr-linee);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1.5px var(--ink);
   /*
    * Le lettere in proporzione al tabellone, non al viewport: la stessa ragione
    * per cui la griglia del Wordle usa le unita' di container query. Qui basta
    * `inline-size`, che non ha bisogno di un'altezza definita.
    */
   container-type: inline-size;
-  user-select: none;
 }
 
 .cella {
+  position: relative;
   aspect-ratio: 1;
   display: grid;
   place-items: center;
   padding: 0;
   border: none;
   border-radius: 2px;
-  background: var(--surface);
-  color: var(--label);
-  font-family: var(--font-rounded);
-  font-weight: 700;
-  font-size: 4.1cqw;
+  background: var(--scr-cella);
+  color: var(--scr-premio-ink);
+  font-family: var(--font-text);
   line-height: 1;
   cursor: pointer;
   transition:
@@ -61,170 +113,238 @@
 }
 
 .cella--tp {
-  background: var(--premio-tp);
+  background: var(--scr-tp);
 }
-.cella--dp {
-  background: var(--premio-dp);
+.cella--dp,
+.cella--centro {
+  background: var(--scr-dp);
 }
 .cella--tl {
-  background: var(--premio-tl);
+  background: var(--scr-tl);
 }
 .cella--dl {
-  background: var(--premio-dl);
+  background: var(--scr-dl);
 }
-.cella--centro {
-  background: var(--premio-dp);
+
+/* La sigla del premio, stampata piccola: 3P, 2L. */
+.cella__premio {
+  font-size: 2cqw;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  pointer-events: none;
 }
 
 .cella__stella {
-  font-size: 5cqw;
-  color: var(--label-tertiary);
+  width: 72%;
+  height: 72%;
+  fill: var(--scr-premio-ink);
+  pointer-events: none;
 }
 
 /*
- * Una tessera sul tabellone.
- *
- * Tono caldo di legno, la stessa ricetta di profondita' di caselle e tasti del
- * Wordle: filo di luce in alto, velatura verticale, ombra secca. E' quel che fa
- * sembrare una tessera un oggetto appoggiato sopra il tabellone invece di una
- * casella colorata.
+ * Una tessera sul tabellone: un pezzo di legno chiaro appoggiato sulla
+ * casella, con il filo d'inchiostro, il filo di luce in alto e l'ombra secca.
+ * Sta sopra la casella e non al suo posto, cosi' si anima da sola.
  */
-.cella--tessera,
-.cella--sospesa {
-  background-color: var(--tessera);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(0, 0, 0, 0.08));
-  color: var(--tessera-ink);
-  box-shadow: var(--edge-light), 0 1px 0 var(--shadow-tint);
-}
-
-/*
- * Appena posata e non ancora giocata: si può ancora riprendere toccandola.
- *
- * Deve leggersi a colpo d'occhio come "questa e' ancora in mano", non come una
- * tessera dello stesso tipo delle altre: quindi l'anello dell'accento, il fondo
- * tinto e un'ombra che la solleva sopra il tabellone.
- */
-.cella--sospesa {
-  background-color: color-mix(in srgb, var(--brand) 16%, var(--tessera));
-  color: var(--brand-strong);
-  box-shadow:
-    var(--edge-light),
-    0 0 0 2px var(--brand),
-    0 2px 6px var(--brand-soft);
+.cella__tessera {
+  position: absolute;
+  inset: 0.5px;
   z-index: 1;
+  display: grid;
+  place-items: center;
+  border: 1.2px solid var(--ink);
+  border-radius: 4px;
+  background: linear-gradient(180deg, var(--scr-tessera), var(--scr-tessera-2));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 1.5px 0 var(--ink);
+  color: var(--scr-tessera-ink);
+  pointer-events: none;
 }
 
-/* Un jolly: vale zero, e si vede da un angolo smussato di colore. */
-.cella--jolly .cella__lettera {
-  color: var(--brand);
+.cella__lettera {
+  font-family: var(--font-rounded);
+  font-size: 4.1cqw;
+  font-weight: 400;
+  line-height: 1;
+  transform: translateY(-0.5px);
+}
+
+/* Il valore nell'angolo, come sulla tessera di legno. */
+.cella__valore {
+  position: absolute;
+  right: 0.45cqw;
+  bottom: 0.15cqw;
+  font-size: 1.75cqw;
+  font-weight: 900;
+  line-height: 1;
+}
+
+/* Un jolly: vale zero, e la lettera e' in corsivo, nell'indaco della posa. */
+.cella__tessera.is-jolly .cella__lettera {
+  color: var(--scr-indaco);
   font-style: italic;
 }
 
 /*
+ * Appena posata e non ancora giocata: si puo' ancora riprendere toccandola.
+ * Deve leggersi a colpo d'occhio come "questa e' ancora in mano": il fondo
+ * indaco tenue, l'anello e un'ombra piu' alta. Arriva con un piccolo salto.
+ */
+.cella__tessera.is-sospesa {
+  z-index: 2;
+  background: linear-gradient(180deg, #f1eeff, #dcd5ff);
+  box-shadow:
+    0 0 0 1.5px var(--scr-indaco),
+    0 2.5px 0 var(--ink);
+  animation: scr-posa 260ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+@keyframes scr-posa {
+  from {
+    opacity: 0.2;
+    transform: scale(1.45);
+  }
+}
+
+/*
+ * La posa forma una parola che non esiste: rossa, prima di premere "Gioca".
+ * La tessera resta leggibile, e la riga sopra il tabellone dice quale parola
+ * non va.
+ */
+.cella__tessera.is-sospesa.is-sbagliata {
+  background: linear-gradient(180deg, #ffe7ea, #ffc9d0);
+  box-shadow:
+    0 0 0 1.5px #d9304a,
+    0 2.5px 0 var(--ink);
+  color: #a3172f;
+}
+
+/*
+ * L'ultima mossa dell'altro: le sue tessere cadono dall'alto e restano accese
+ * un paio di secondi. Senza, sul tabellone pieno non si capirebbe dove ha
+ * giocato.
+ */
+.cella__tessera.is-evidenziata {
+  z-index: 2;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    0 1.5px 0 var(--ink),
+    0 0 0 2px #ffb020;
+  animation: scr-cade 420ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+@keyframes scr-cade {
+  0% {
+    opacity: 0;
+    transform: translateY(-34px) rotate(-18deg) scale(1.5);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
  * Il cursore: la casella velata di indaco, e una freccia che dice **da che
- * parte si scrive**. Due tocchi sulla stessa casella la girano. Prima era un
- * filo sul lato della casella, e chi non lo notava scriveva nel verso sbagliato.
+ * parte si scrive** e spinge in quella direzione. Due tocchi sulla stessa
+ * casella la girano. Prima era un filo sul lato della casella, e chi non lo
+ * notava scriveva nel verso sbagliato.
  */
 .cella--cursore-oriz,
 .cella--cursore-vert {
-  background: color-mix(in srgb, var(--brand) 16%, var(--surface));
-  box-shadow: inset 0 0 0 1.5px var(--brand);
-}
-
-.cella {
-  position: relative;
+  background: var(--scr-indaco-tinta);
+  box-shadow: inset 0 0 0 1.5px var(--scr-indaco);
 }
 
 .cella__freccia {
-  width: 72%;
-  height: 72%;
+  width: 78%;
+  height: 78%;
   fill: none;
-  stroke: var(--brand);
-  stroke-width: 2.4;
+  stroke: #5b4bff;
+  stroke-width: 2.6;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: transform var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+  animation: scr-spinge 1s ease-in-out infinite;
 }
 
 .cella--cursore-vert .cella__freccia {
+  animation-name: scr-spinge-giu;
   transform: rotate(90deg);
+}
+
+@keyframes scr-spinge {
+  0%,
+  100% {
+    transform: translateX(-1px);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes scr-spinge-giu {
+  0%,
+  100% {
+    transform: rotate(90deg) translateX(-1px);
+  }
+  50% {
+    transform: rotate(90deg) translateX(2px);
+  }
 }
 
 /* La casella dove cadrebbe la tessera che si sta trascinando dal leggio. */
 .cella--bersaglio {
-  background: color-mix(in srgb, var(--brand) 30%, var(--surface));
-  box-shadow: inset 0 0 0 2px var(--brand);
-}
-
-/*
- * Schermi larghi: il tabellone resta quadrato e centrato, e le caselle
- * guadagnano un angolo appena piu' morbido perché a 28 punti si vede.
- */
-@media (min-width: 560px) {
-  .cella {
-    border-radius: 3px;
-  }
+  background: var(--scr-indaco-tinta);
+  box-shadow: inset 0 0 0 2px var(--scr-indaco);
 }
 
 /*
  * Le quattro caselle d'angolo seguono la curva del tabellone. Con gli angoli
  * dritti uscivano dal bordo arrotondato: il tabellone era morbido e le caselle
- * sopra no. Il raggio e' quello del tabellone meno il suo bordo, così la curva
+ * sopra no. Il raggio e' quello della griglia meno il suo bordo, così la curva
  * della casella e quella del tabellone restano parallele.
  */
 .tabellone > .cella:nth-child(1) {
-  border-top-left-radius: calc(var(--r-md) - 2px);
+  border-top-left-radius: 9px;
 }
 
 .tabellone > .cella:nth-child(15) {
-  border-top-right-radius: calc(var(--r-md) - 2px);
+  border-top-right-radius: 9px;
 }
 
 .tabellone > .cella:nth-child(211) {
-  border-bottom-left-radius: calc(var(--r-md) - 2px);
+  border-bottom-left-radius: 9px;
 }
 
 .tabellone > .cella:nth-child(225) {
-  border-bottom-right-radius: calc(var(--r-md) - 2px);
+  border-bottom-right-radius: 9px;
 }
 
-/*
- * La posa forma una parola che non esiste: rosso, prima di premere "Gioca".
- * L'anello cambia colore e basta — la tessera resta leggibile, e il bottone
- * dice quale parola non va.
- */
-.cella--sospesa.cella--sbagliata {
-  background-color: color-mix(in srgb, var(--red) 14%, var(--tessera));
-  color: var(--red);
-  box-shadow:
-    var(--edge-light),
-    0 0 0 2px var(--red),
-    0 2px 6px color-mix(in srgb, var(--red) 30%, transparent);
+.tabellone > .cella:nth-child(1) .cella__tessera {
+  border-top-left-radius: 8px;
 }
 
-/*
- * L'ultima mossa del computer: le sue tessere arrivano dall'alto e restano
- * accese un paio di secondi. Senza, sul tabellone pieno non si capirebbe dove
- * ha giocato.
- */
-.cella--evidenziata {
-  z-index: 2;
-  animation: cella-arriva 420ms var(--ease-spring) both;
-  box-shadow:
-    var(--edge-light),
-    0 0 0 2px var(--orange),
-    0 2px 8px color-mix(in srgb, var(--orange) 40%, transparent);
+.tabellone > .cella:nth-child(15) .cella__tessera {
+  border-top-right-radius: 8px;
 }
 
-@keyframes cella-arriva {
-  from {
-    transform: translateY(-40%) scale(1.25);
-    opacity: 0;
-  }
+.tabellone > .cella:nth-child(211) .cella__tessera {
+  border-bottom-left-radius: 8px;
+}
+
+.tabellone > .cella:nth-child(225) .cella__tessera {
+  border-bottom-right-radius: 8px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cella--evidenziata {
+  .cella__tessera.is-sospesa,
+  .cella__tessera.is-evidenziata,
+  .cella__freccia {
     animation: none;
   }
 }

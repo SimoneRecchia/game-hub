@@ -46,29 +46,16 @@
   padding: var(--rl-bordo) var(--rl-bordo) 0;
 }
 
-/* Il tabellone sul feltro: una riga sola, scura, con il filo d'oro. */
+/* Il tabellone sul feltro: la riga sola dei tavoli (Tabellone.css), un po' piu' bassa. */
 .rl__dentro > .ct-tabellone {
   position: relative;
   z-index: 6;
-  flex: none;
-  padding: 5px 14px;
-  border-radius: 14px;
-  background: rgb(0 0 0 / 0.28);
-  box-shadow: inset 0 0 0 1px rgb(242 210 122 / 0.42);
+  min-height: 46px;
 }
 
-.rl__dentro > .ct-tabellone .ct-tabellone__voce {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 8px;
-}
-
-.rl__dentro > .ct-tabellone .ct-tabellone__saldo {
-  font-size: 21px;
-}
-
+.rl__dentro > .ct-tabellone .ct-tabellone__saldo,
 .rl__dentro > .ct-tabellone .ct-tabellone__puntata {
-  font-size: 19px;
+  font-size: 22px;
 }
 
 .rl-errore {
@@ -141,12 +128,13 @@
   z-index: 3;
   translate: -50% 0;
   padding: 6px 16px;
+  border: var(--filo) solid #120c2b;
   border-radius: 999px;
-  background: rgb(10 6 4 / 0.78);
+  background: #1b1238;
   box-shadow:
-    inset 0 0 0 1px rgb(242 210 122 / 0.6),
-    0 8px 22px rgb(0 0 0 / 0.4);
-  color: #ffe3a0;
+    inset 0 0 0 1.5px rgb(255 201 60 / 0.6),
+    0 4px 0 #120c2b;
+  color: #ffe27a;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 19px;
   font-style: italic;
@@ -191,16 +179,15 @@
   place-items: center;
   width: 108px;
   aspect-ratio: 1;
+  border: 3px solid #120c2b;
   border-radius: 50%;
   background: var(--tinta);
   box-shadow:
-    0 0 0 4px #f2d27a,
-    0 0 0 7px rgb(60 30 4 / 0.9),
-    0 0 0 8px rgb(242 210 122 / 0.5),
-    0 16px 34px rgb(0 0 0 / 0.55),
+    0 0 0 4px #ffd84d,
+    0 0 0 7px #120c2b,
+    0 7px 0 7px #120c2b,
     0 0 46px rgb(255 214 120 / 0.55),
-    inset 0 -8px 16px rgb(0 0 0 / 0.35),
-    inset 0 6px 10px rgb(255 255 255 / 0.25);
+    inset 0 5px 0 rgb(255 255 255 / 0.25);
 }
 
 .rl-annuncio.is-rosso {
@@ -219,9 +206,9 @@
   color: #fff;
   font-family: var(--font-rounded);
   font-size: 54px;
-  font-weight: 900;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 3px 6px rgb(0 0 0 / 0.5);
+  text-shadow: 0 3px 0 #120c2b;
 }
 
 .rl-annuncio__targa {
@@ -229,16 +216,17 @@
   justify-items: center;
   margin-top: 12px;
   padding: 6px 18px 7px;
+  border: var(--filo) solid #120c2b;
   border-radius: 16px;
-  background: rgb(12 8 5 / 0.82);
+  background: #1b1238;
   box-shadow:
-    inset 0 0 0 1px rgb(242 210 122 / 0.55),
-    0 10px 24px rgb(0 0 0 / 0.45);
+    inset 0 0 0 1.5px rgb(255 201 60 / 0.6),
+    0 4px 0 #120c2b;
   animation: rl-targa 0.5s cubic-bezier(0.3, 1.4, 0.45, 1) 0.18s both;
 }
 
 .rl-annuncio__nome {
-  color: #ffe3a0;
+  color: #ffe27a;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 23px;
   font-style: italic;
@@ -247,9 +235,9 @@
 }
 
 .rl-annuncio__sotto {
-  color: rgb(255 255 255 / 0.85);
+  color: #e4dcff;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 /* I raggi dietro il numero, che girano piano: il momento in cui tutti guardano la ruota. */
@@ -303,16 +291,17 @@
   margin: 0;
   padding: 7px 4px;
   overflow: hidden;
+  border: 2px solid #120c2b;
   border-radius: 12px;
-  background: linear-gradient(180deg, #17120e, #0b0807);
+  background: #160b08;
   box-shadow:
-    inset 0 0 0 1px rgb(242 210 122 / 0.35),
+    inset 0 0 0 1.5px rgb(255 201 60 / 0.35),
     inset 0 0 12px rgb(0 0 0 / 0.8),
-    0 6px 14px rgb(0 0 0 / 0.3);
+    0 3px 0 #120c2b;
   list-style: none;
   font-family: var(--font-rounded);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
@@ -348,7 +337,7 @@
 
 .rl-storia__vuota {
   grid-column: 1 / -1;
-  color: rgb(255 255 255 / 0.4);
+  color: #c7a96a;
 }
 
 @keyframes rl-storia {
@@ -377,16 +366,19 @@
   gap: 5px;
   min-width: 0;
   padding: 2px 8px 2px 2px;
+  border: 2px solid #120c2b;
   border-radius: 999px;
-  background: rgb(0 0 0 / 0.28);
-  box-shadow: inset 0 0 0 1.5px var(--posto);
-  color: #fff;
+  background: #1b1238;
+  box-shadow:
+    inset 0 0 0 1.5px var(--posto),
+    0 2px 0 #120c2b;
+  color: #fff6e0;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .rl-giocatore.is-assente {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .rl-giocatore__nome {
@@ -400,9 +392,9 @@
   padding: 0 6px;
   border-radius: 999px;
   background: var(--posto);
-  color: #111;
+  color: #120c2b;
   font-family: var(--font-rounded);
-  font-weight: 900;
+  font-weight: 400;
 }
 
 .rl-giocatore__conto.is-vinto {
@@ -411,7 +403,7 @@
 
 .rl-giocatore__conto.is-perso {
   background: rgb(255 255 255 / 0.18);
-  color: rgb(255 255 255 / 0.8);
+  color: #fff6e0;
 }
 
 /* ---- Il panno ---- */
@@ -457,7 +449,7 @@
 
 /* Senza saldo il panno non si tocca, e lo si vede. */
 .rl-panno-posto.is-spento > .rl-panno {
-  opacity: 0.45;
+  opacity: 0.55;
 }
 
 /*
@@ -479,9 +471,10 @@
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.12), transparent 26%),
     repeating-linear-gradient(91deg, rgb(0 0 0 / 0.07) 0 2px, transparent 2px 9px),
-    linear-gradient(180deg, #6e3617, #4a210b 62%, #3a1806);
+    linear-gradient(180deg, #8a5228, #6e3e1c 62%, #6e3e1c);
   box-shadow:
-    0 -1.5px 0 rgb(242 210 122 / 0.5),
+    0 -2px 0 #2a170a,
+    0 -3.5px 0 rgb(232 193 90 / 0.45),
     0 -10px 20px rgb(0 0 0 / 0.22);
 }
 
@@ -498,23 +491,25 @@
   align-content: center;
   gap: 5px;
   min-height: 26px;
-  color: #f6ecd2;
+  color: #fff6e0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 900;
   text-align: center;
+  text-shadow: 0 1.5px 0 #2a170a;
 }
 
 .rl-stato__paga {
-  color: #f2d27a;
+  color: #ffe27a;
   font-family: var(--font-rounded);
-  font-weight: 900;
+  font-weight: 400;
 }
 
 .rl-stato__barra {
   overflow: hidden;
   width: min(72%, 280px);
-  height: 5px;
-  border-radius: 3px;
+  height: 8px;
+  border: 2px solid #120c2b;
+  border-radius: 6px;
   background: rgb(0 0 0 / 0.35);
 }
 
@@ -522,7 +517,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: #17964a;
+  background: linear-gradient(90deg, #ffb02e, #ffd84d);
   transform-origin: left center;
   transition: transform 0.25s linear;
 }
@@ -551,23 +546,30 @@
     opacity 0.2s;
 }
 
+/* La fiche scelta si alza, con l'anello giallo dell'album, come nel mockup. */
 .rl-gettone.is-scelto {
   transform: translateY(-6px) scale(1.08);
-  filter: drop-shadow(0 0 8px rgb(255 214 107 / 0.95));
+}
+
+.rl-gettone.is-scelto > .bj-fiche {
+  box-shadow:
+    0 calc(var(--d) * 0.075) 0 var(--fiche-orlo),
+    0 calc(var(--d) * 0.075) 0 var(--fiche-filo) #120c2b,
+    0 0 0 5px #ffd84d;
 }
 
 .rl-gettone:active:not(:disabled) {
   transform: translateY(1px) scale(0.95);
 }
 
+/* Una fiche che il saldo non copre si spegne, ma il suo numero si legge. */
 .rl-gettone:disabled {
-  opacity: 0.3;
-  filter: grayscale(0.6);
+  opacity: 0.6;
   cursor: default;
 }
 
 .rl-gettone:focus-visible {
-  outline: 2px solid var(--brand);
+  outline: 3px solid #ffd84d;
   outline-offset: 3px;
 }
 
@@ -576,55 +578,62 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  border: 0;
+  border: var(--filo) solid #120c2b;
   border-radius: 50%;
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.14), rgb(0 0 0 / 0.2)), #2c1408;
+  background: #f0e2cc;
   box-shadow:
-    inset 0 0 0 1px rgb(242 210 122 / 0.45),
-    0 2px 0 rgb(0 0 0 / 0.4);
-  color: #f6ecd2;
+    0 3px 0 #120c2b,
+    inset 0 2px 0 rgb(255 255 255 / 0.6);
+  color: #120c2b;
   transition: transform 0.12s var(--ease-out);
 }
 
 .rl-tasto--testo {
   font-family: var(--font-rounded);
   font-size: 17px;
-  font-weight: 900;
+  font-weight: 400;
 }
 
 .rl-tasto:active:not(:disabled) {
-  transform: translateY(2px);
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 #120c2b,
+    inset 0 2px 0 rgb(255 255 255 / 0.6);
 }
 
+/* Spento si vede spento, sul legno: il segno resta leggibile. */
 .rl-tasto:disabled {
-  opacity: 0.38;
+  background: #b08a64;
+  border-color: #3a1e0a;
+  box-shadow: 0 2px 0 #3a1e0a;
+  color: #3a1e0a;
 }
 
 .rl-tasto:focus-visible,
 .rl-lancia:focus-visible {
-  outline: 2px solid #f2d27a;
+  outline: 3px solid #ffd84d;
   outline-offset: 2px;
 }
 
+/* Il lancio: il tasto pieno dell'app, menta, con la scritta in Lilita. */
 .rl-lancia {
   flex: 1;
   max-width: 260px;
-  min-height: 48px;
+  min-height: 50px;
   padding: 0 var(--sp-5);
-  border: 0;
-  border-radius: var(--r-pill);
-  background: linear-gradient(180deg, #ffe58a, #f2d27a 55%, #c9962a);
-  color: #3d2300;
+  border: var(--filo) solid #120c2b;
+  border-radius: 16px;
+  background: var(--menta);
+  color: #120c2b;
   font-family: var(--font-rounded);
-  font-size: 17px;
-  font-weight: 900;
+  font-size: 19px;
+  font-weight: 400;
   box-shadow:
-    0 4px 0 #8a6416,
-    0 8px 18px rgb(0 0 0 / 0.22),
-    inset 0 1px 0 rgb(255 255 255 / 0.7);
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.5);
   transition:
     transform 0.12s var(--ease-out),
     box-shadow 0.12s var(--ease-out);
@@ -633,13 +642,16 @@
 .rl-lancia:active:not(:disabled) {
   transform: translateY(3px);
   box-shadow:
-    0 1px 0 #8a6416,
-    0 3px 8px rgb(0 0 0 / 0.22),
-    inset 0 1px 0 rgb(255 255 255 / 0.7);
+    0 1px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.5);
 }
 
+/* Spento, sul legno: il colore del legno chiaro, e la scritta si legge. */
 .rl-lancia:disabled {
-  opacity: 0.5;
+  background: #b08a64;
+  border-color: #3a1e0a;
+  box-shadow: 0 2px 0 #3a1e0a;
+  color: #2a1406;
 }
 
 /* ---- Le misure ---- */
@@ -659,7 +671,7 @@
   }
 
   .rl-lancia {
-    min-height: 40px;
+    min-height: 42px;
   }
 
   .rl-stato {

@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Button } from '@/components/Button'
+import { IconaGioco } from '@/components/IconaGioco'
 import { TastieraGioco, useTastieraFisica } from '@/components/TastieraGioco'
 import { suona } from '@/lib/suoni'
 import {
   DA_INDOVINARE_CATENA,
   ERRORE_CATENA,
   NASCOSTE_CATENA,
-  SECONDO_ERRORE_CATENA,
   PASSO_FINALE,
   normalizzaCatena,
   type EsitoMossaCatena,
@@ -95,6 +94,19 @@ function tempi() {
 
 const aspetta = (ms: number) => new Promise<void>((risolvi) => window.setTimeout(risolvi, ms))
 
+/** Quanto resta sul palco un adesivo: "Giusta!", "−10", "Jolly!". */
+const DURATA_ADESIVO_MS = 1_300
+
+/** Quanto cade la parola sbagliata sotto il riquadro. */
+const DURATA_CADUTA_MS = 1_400
+
+interface AdesivoPalco {
+  testo: string
+  tono: 'vivace' | 'bordato'
+  /** Cambia a ogni adesivo: fa ripartire l'animazione. */
+  n: number
+}
+
 /** La fase da cui riprende una partita riaperta. */
 function faseDi(v: VistaCatena): Fase {
   if (v.finita) return 'fine'
@@ -151,14 +163,35 @@ export function PartitaCatena({
   const [entra, setEntra] = useState(false)
   /** Il terzo elemento regalato si scopre a meta' dell'annuncio. */
   const [terzoCoperto, setTerzoCoperto] = useState(false)
+  /** Il momento che conta, sul palco: se ne va da solo. */
+  const [adesivo, setAdesivo] = useState<AdesivoPalco | null>(null)
+  /** La parola sbagliata, barrata, che cade sotto il riquadro. */
+  const [caduta, setCaduta] = useState<{ testo: string; n: number } | null>(null)
   const montata = useRef(true)
   const inVolo = useRef(false)
-  useEffect(
-    () => () => {
+  // Rimessa a vero a ogni montaggio: in sviluppo React monta, smonta e rimonta, e restava falsa.
+  useEffect(() => {
+    montata.current = true
+    return () => {
       montata.current = false
-    },
-    [],
-  )
+    }
+  }, [])
+
+  const attacca = useCallback((testo: string, tono: AdesivoPalco['tono']) => {
+    setAdesivo((a) => ({ testo, tono, n: (a?.n ?? 0) + 1 }))
+  }, [])
+  const nAdesivo = adesivo?.n
+  useEffect(() => {
+    if (nAdesivo === undefined) return
+    const t = window.setTimeout(() => setAdesivo(null), DURATA_ADESIVO_MS)
+    return () => window.clearTimeout(t)
+  }, [nAdesivo])
+  const nCaduta = caduta?.n
+  useEffect(() => {
+    if (nCaduta === undefined) return
+    const t = window.setTimeout(() => setCaduta(null), DURATA_CADUTA_MS)
+    return () => window.clearTimeout(t)
+  }, [nCaduta])
 
   const corrente = correnteDi(mostrata)
   const spazio = spazioDi(corrente)
@@ -183,6 +216,7 @@ export function PartitaCatena({
       setMostrata(vista)
       setStato('Tempo scaduto!')
       setFase('verdetto')
+      attacca('Tempo!', 'bordato')
       suona('scaduto')
       suona('sconfitta', { ritardo: 0.5 })
       return
@@ -193,7 +227,7 @@ export function PartitaCatena({
       setScritte('')
       setFase(faseDi(vista) === 'intro' ? fase : faseDi(vista))
     }
-  }, [vista, mostrata.chiave, fase])
+  }, [vista, mostrata.chiave, fase, attacca])
 
   // Comincia: la prima coppia arriva dal server, e cade al suo posto, una maglia dopo l'altra.
   const comincia = useCallback(async () => {
@@ -298,6 +332,7 @@ export function PartitaCatena({
       setFase('esito')
       if (e === 'giusta') {
         setStato('Giusta!')
+        attacca('Giusta!', 'vivace')
         suona('giusto')
         setMostrata(dopo)
         setScritte('')
@@ -305,6 +340,8 @@ export function PartitaCatena({
         await aspetta(t.giusta)
       } else {
         setStato(e === 'rivelata' ? 'Sbagliata! Ecco la parola' : 'Sbagliata! Una lettera in più')
+        attacca(`−${Math.max(0, prima.montepremi - dopo.montepremi)}`, 'bordato')
+        setCaduta((c) => ({ testo: parola.toUpperCase(), n: (c?.n ?? 0) + 1 }))
         suona('sbagliato')
         await aspetta(t.sbagliata)
         if (!montata.current) return
@@ -323,7 +360,7 @@ export function PartitaCatena({
     } finally {
       inVolo.current = false
     }
-  }, [fase, corrente, scritte, mostrata, comandi, mostra, scendi])
+  }, [fase, corrente, scritte, mostrata, comandi, mostra, scendi, attacca])
 
   /** Il minuto della parola e' finito: la miccia si spegne, la parola si mostra, e la catena scende. */
   const scadeParola = useCallback(async () => {
@@ -346,6 +383,7 @@ export function PartitaCatena({
       setEsito('scaduta')
       setFase('esito')
       setStato('Tempo scaduto! Ecco la parola')
+      attacca('Tempo!', 'bordato')
       setScritte('')
       mostra(dopo, prima)
       suona('svela', { ritardo: 0.2 })
@@ -358,7 +396,7 @@ export function PartitaCatena({
     } finally {
       inVolo.current = false
     }
-  }, [fase, mostrata, comandi, mostra, scendi])
+  }, [fase, mostrata, comandi, mostra, scendi, attacca])
 
   const jolly = useCallback(async () => {
     if ((fase !== 'gioco' && fase !== 'finale') || !mostrata.jollyUsabile) return
@@ -373,6 +411,7 @@ export function PartitaCatena({
         setScritte('')
         mostra(r.vista, prima)
         setStato('Jolly! Una lettera in più')
+        attacca('Jolly!', 'vivace')
         suona('magia')
         window.setTimeout(() => montata.current && setStato(''), 1600)
         setFase(r.vista.finita ? 'fine' : torna)
@@ -380,7 +419,7 @@ export function PartitaCatena({
     } finally {
       inVolo.current = false
     }
-  }, [fase, mostrata, comandi, mostra])
+  }, [fase, mostrata, comandi, mostra, attacca])
 
   const compra = useCallback(async () => {
     if (fase !== 'finale' || !mostrata.compraUsabile) return
@@ -393,6 +432,7 @@ export function PartitaCatena({
       if (r) {
         mostra(r.vista, prima, true)
         setStato('Ecco il terzo elemento')
+        attacca('÷2', 'bordato')
         suona('svela', { ritardo: 0.3 })
         window.setTimeout(() => montata.current && setStato(''), 1600)
         setFase(r.vista.finita ? 'fine' : 'finale')
@@ -400,7 +440,7 @@ export function PartitaCatena({
     } finally {
       inVolo.current = false
     }
-  }, [fase, mostrata, comandi, mostra])
+  }, [fase, mostrata, comandi, mostra, attacca])
 
   const rispondi = useCallback(
     async (testo: string | null) => {
@@ -423,6 +463,15 @@ export function PartitaCatena({
         setScritte('')
         setMostrata(dopo)
         setFase('verdetto')
+        // L'adesivo aspetta che le lettere della parola finale si siano girate.
+        const voceFinale = dopo.voci.find((x) => x.posto === NASCOSTE_CATENA[PASSO_FINALE])
+        const lettere = voceFinale?.parola ? normalizzaCatena(voceFinale.parola).length : 6
+        const dopoLeLettere = ridotto() ? 0 : 300 + lettere * 75 + 500
+        window.setTimeout(() => {
+          if (!montata.current) return
+          if (dopo.indovinata) attacca('Indovinata!', 'vivace')
+          else attacca(testo === null ? 'Tempo!' : 'Peccato', 'bordato')
+        }, dopoLeLettere)
         if (dopo.indovinata) {
           setStato(`Catena completata! ${dopo.punti} punti`)
           suona('vittoria', { ritardo: 0.6 })
@@ -442,7 +491,7 @@ export function PartitaCatena({
         inVolo.current = false
       }
     },
-    [fase, corrente, comandi, mostrata.montepremi],
+    [fase, corrente, comandi, mostrata.montepremi, attacca],
   )
 
   const scrivi = useCallback(
@@ -468,6 +517,7 @@ export function PartitaCatena({
   const libera = fase === 'gioco' || fase === 'finale'
   const indovinata = mostrata.finita && mostrata.indovinata === true
   const valore = fase === 'fine' || fase === 'verdetto' ? mostrata.punti : mostrata.montepremi
+  const giocando = fase !== 'intro' && fase !== 'fine'
 
   return (
     <div
@@ -476,18 +526,20 @@ export function PartitaCatena({
         `${indovinata && (fase === 'verdetto' || fase === 'fine') ? ' is-vinta' : ''}`
       }
     >
-      <div className="cat-luci" aria-hidden="true" />
       <header className="cat-testa">
         <Montepremi valore={valore} taglio={taglio} vinto={indovinata && fase === 'fine'} />
-        {fase === 'finale' || fase === 'busta' ? (
+        <Maglie
+          voci={mostrata.voci}
+          passo={fase === 'fine' || fase === 'verdetto' ? DA_INDOVINARE_CATENA : passoVisto}
+          finita={fase === 'fine' || fase === 'verdetto'}
+          indovinata={indovinata}
+          attiva={giocando}
+        />
+        {finale && (fase === 'finale' || fase === 'busta') ? (
           <Minuto finale={mostrata.finale} tempoMs={mostrata.tempoFinaleMs} fermo={fase === 'busta'} onScade={comandi.scade} />
-        ) : (
-          <Maglie voci={mostrata.voci} passo={fase === 'fine' || fase === 'verdetto' ? DA_INDOVINARE_CATENA : passoVisto} />
-        )}
-        <Jolly restanti={mostrata.jollyRestanti} />
-        {!finale && mostrata.parola && fase !== 'intro' && fase !== 'fine' && (
+        ) : !finale && mostrata.parola && giocando ? (
           <Miccia
-            // Una parola nuova ha la sua miccia, intera.
+            // Una parola nuova ha il suo tempo, intero.
             key={`${mostrata.passo}-${mostrata.parola.inizio}`}
             orologio={mostrata.parola}
             tempoMs={mostrata.tempoParolaMs}
@@ -495,82 +547,95 @@ export function PartitaCatena({
             ferma={fase === 'scorre' || fase === 'esito'}
             onScade={() => void scadeParola()}
           />
+        ) : (
+          <Anello resta={0} tempoMs={1} testo="" spento etichetta="Tempo fermo" />
         )}
       </header>
 
-      {fase === 'fine' ? (
-        <div className="cat-fine">
-          {fine}
-          <CatenaIntera voci={mostrata.voci} />
-        </div>
-      ) : (
-        <>
-          <Binario
-            voci={mostrata.voci}
-            passo={passoVisto}
-            fase={fase}
-            esito={esito}
-            scritte={scritte}
-            terzoCoperto={terzoCoperto}
-          />
-          {fase === 'intro' && (
-            <div className="cat-intro">
-              <p className="cat-intro__titolo">La Catena</p>
-              <p className="cat-intro__testo">
-                Ogni parola si lega a quella dopo. Trovane cinque, un minuto ciascuna: un errore toglie {ERRORE_CATENA}{' '}
-                punti al montepremi, il secondo sulla stessa parola {SECONDO_ERRORE_CATENA}.
-              </p>
-              <Button size="lg" onClick={() => void comincia()}>
-                Comincia
-              </Button>
-            </div>
-          )}
-          {fase === 'preambolo' && (
-            <div className="cat-nastro" role="status">
-              <span className="cat-nastro__testo">La parola finale</span>
-              {mostrata.terzo === 'regalato' && (
-                <span className="cat-nastro__sotto">Con due jolly, il terzo elemento è in regalo</span>
-              )}
-            </div>
-          )}
+      <section className="cat-palco" aria-label="La catena">
+        <span className="cat-palco__luci" aria-hidden="true" />
+        <Binario
+          voci={mostrata.voci}
+          passo={passoVisto}
+          fase={fase}
+          esito={esito}
+          scritte={scritte}
+          terzoCoperto={terzoCoperto}
+          caduta={caduta}
+        />
+        {fase === 'intro' && <Presentazione tempoParolaMs={mostrata.tempoParolaMs} tempoFinaleMs={mostrata.tempoFinaleMs} />}
+        {fase === 'preambolo' && (
+          <div className="cat-nastro" role="status">
+            <span className="cat-nastro__testo">La parola finale</span>
+            {mostrata.terzo === 'regalato' && (
+              <span className="cat-nastro__sotto">Con due jolly, il terzo elemento è in regalo</span>
+            )}
+          </div>
+        )}
+        {adesivo && (
+          <div
+            key={adesivo.n}
+            className={`cat-adesivo is-${adesivo.tono}`}
+            style={{ '--durata': `${DURATA_ADESIVO_MS}ms` } as CSSProperties}
+            aria-hidden="true"
+          >
+            <span>{adesivo.testo}</span>
+          </div>
+        )}
+      </section>
 
-          <div className="cat-comandi">
-            <p className={`cat-stato${esito ? ` is-${esito}` : ''}`} role="status">
-              {stato}
-            </p>
-            <div className="cat-azioni">
-              {finale && fase !== 'verdetto' && (
+      <p className="u-visually-hidden" role="status">
+        {stato}
+      </p>
+
+      <div className="cat-azioni">
+        {fase === 'intro' ? (
+          <button key="comincia" type="button" className="cat-comincia" onClick={() => void comincia()}>
+            Comincia
+          </button>
+        ) : finale ? (
+          fase !== 'verdetto' &&
+          fase !== 'fine' && (
+            <>
+              <button key="nonso" type="button" className="cat-azione is-nonso" disabled={!libera} onClick={() => void rispondi(null)}>
+                Non lo so
+              </button>
+              {mostrata.compraUsabile && (
                 <button
+                  key="compra"
                   type="button"
-                  className="cat-azione"
-                  disabled={!libera}
-                  onClick={() => void rispondi(null)}
+                  className="cat-azione is-compra"
+                  disabled={fase !== 'finale'}
+                  onClick={() => void compra()}
                 >
-                  Non lo so
-                </button>
-              )}
-              {finale && mostrata.compraUsabile && (
-                <button type="button" className="cat-azione is-compra" disabled={fase !== 'finale'} onClick={() => void compra()}>
                   Terzo<span className="cat-azione__lungo"> elemento</span>{' '}
                   <span className="cat-azione__costo">÷2</span>
                 </button>
               )}
-              {/* Nella finale i jolly non si usano: quel che resta e' gia' nel terzo elemento in regalo. */}
-              {!finale && (
-                <button
-                  type="button"
-                  className="cat-azione is-jolly"
-                  disabled={!libera || !mostrata.jollyUsabile}
-                  onClick={() => void jolly()}
-                >
-                  Jolly <span className="cat-azione__costo u-tabnum">{mostrata.jollyRestanti}</span>
-                </button>
-              )}
-            </div>
-          </div>
+            </>
+          )
+        ) : (
+          // Nella finale i jolly non si usano: quel che resta e' gia' nel terzo elemento in regalo.
+          <button
+            key="jolly"
+            type="button"
+            className="cat-azione is-jolly"
+            disabled={!libera || !mostrata.jollyUsabile}
+            onClick={() => void jolly()}
+            aria-label={`Jolly: ne restano ${mostrata.jollyRestanti}`}
+          >
+            <Jolly restanti={mostrata.jollyRestanti} />
+            <span>
+              Jolly · <span className="u-tabnum">{mostrata.jollyRestanti}</span>
+            </span>
+          </button>
+        )}
+      </div>
 
+      <div className="cat-sotto">
+        {fase !== 'intro' && fase !== 'fine' && (
           <TastieraGioco
-            className="cat-tastiera"
+            className={`cat-tastiera${fase === 'verdetto' ? ' is-via' : ''}`}
             disabled={!libera}
             pronta={scritte.length > 0}
             invio={finale ? 'Invia' : 'Prova'}
@@ -578,18 +643,107 @@ export function PartitaCatena({
             onCancella={cancella}
             onInvio={invia}
           />
-        </>
+        )}
+      </div>
+
+      {fase === 'fine' && (
+        <Fine voci={mostrata.voci} indovinata={indovinata} punti={mostrata.punti}>
+          {fine}
+        </Fine>
       )}
     </div>
   )
 }
 
+/* ─────────────────────────────  La presentazione  ───────────────────────────── */
+
+/** Prima di cominciare: una catena d'esempio che dondola, e le tre regole. */
+function Presentazione({ tempoParolaMs, tempoFinaleMs }: { tempoParolaMs: number; tempoFinaleMs: number }) {
+  return (
+    <div className="cat-pronta">
+      <div className="cat-pronta__catena" aria-hidden="true">
+        <span className="cat-targa is-piccola">SPIRITO</span>
+        <span className="cat-maglietta" />
+        <span className="cat-targa is-esempio">LIBERO</span>
+        <span className="cat-maglietta" />
+        <span className="cat-targa is-piccola">TIRO</span>
+      </div>
+      <ul className="cat-pronta__righe">
+        <li className="cat-pronta__riga">
+          <span className="cat-punto is-cielo" aria-hidden="true" />
+          Ogni parola si lega a quella dopo
+        </li>
+        <li className="cat-pronta__riga">
+          <span className="cat-punto is-giallo" aria-hidden="true" />
+          {Math.round(tempoParolaMs / 1000)} secondi a parola, {Math.round(tempoFinaleMs / 1000)} per la finale
+        </li>
+        <li className="cat-pronta__riga">
+          <span className="cat-punto is-rosso" aria-hidden="true" />
+          Un errore: {ERRORE_CATENA} punti e un’altra lettera
+        </li>
+      </ul>
+    </div>
+  )
+}
+
+/* ─────────────────────────────  La fine  ───────────────────────────── */
+
+/**
+ * La fine, su una carta sopra la scena: la parola finale, la catena intera
+ * come dieci espressioni (quelle della finale in evidenza), i punti nel timbro,
+ * e sotto quel che aggiunge la pagina.
+ */
+function Fine({
+  voci,
+  indovinata,
+  punti,
+  children,
+}: {
+  voci: VoceCatena[]
+  indovinata: boolean
+  punti: number
+  children: ReactNode
+}) {
+  const postoFinale = NASCOSTE_CATENA[PASSO_FINALE]
+  const parolaFinale = voci.find((v) => v.posto === postoFinale)?.parola ?? null
+  return (
+    <div className="cat-velo">
+      <section className="cat-fine" aria-label="Fine partita">
+        <span className="cat-fine__icona">
+          <IconaGioco gioco="catena" lato={60} giro={-6} />
+        </span>
+        <h2 className="cat-fine__titolo">{indovinata ? 'Indovinata!' : 'Peccato!'}</h2>
+        {parolaFinale && <p className="cat-fine__riga">La finale era {parolaFinale.toUpperCase()}</p>}
+        <ol className="cat-espressioni" aria-label="Le espressioni della catena">
+          {voci.map((v, i) =>
+            v.espressione && i < voci.length - 1 ? (
+              <li
+                key={v.posto}
+                className={`cat-espressione${i === postoFinale - 1 || i === postoFinale ? ' is-finale' : ''}`}
+                style={{ '--i': i } as CSSProperties}
+              >
+                {v.espressione}
+              </li>
+            ) : null,
+          )}
+        </ol>
+        <span className={`cat-fine__timbro u-tabnum${indovinata ? ' is-vinta' : ''}`}>
+          {punti}
+          <span className="u-visually-hidden"> punti</span>
+        </span>
+        <div className="cat-fine__piede">{children}</div>
+      </section>
+    </div>
+  )
+}
+
+
 /* ─────────────────────────────  La catena  ───────────────────────────── */
 
 /**
- * La catena, una parola sotto l'altra con una maglia fra due: scorre in su
- * finché la coppia di adesso e' al centro. Quelle sopra si fanno piccole e si
- * spengono; quelle sotto non ci sono ancora.
+ * La catena, una targa sotto l'altra con una maglia fra due: scorre in su
+ * finché la coppia di adesso e' in fondo al palco. Quelle sopra si fanno
+ * piccole; quelle sotto non ci sono ancora.
  */
 function Binario({
   voci,
@@ -598,6 +752,7 @@ function Binario({
   esito,
   scritte,
   terzoCoperto,
+  caduta,
 }: {
   voci: VoceCatena[]
   passo: number
@@ -605,42 +760,44 @@ function Binario({
   esito: EsitoMossaCatena | null
   scritte: string
   terzoCoperto: boolean
+  caduta: { testo: string; n: number } | null
 }) {
   const primo = 2 * passo
   const ultimo = primo + 2
   return (
-    <div className="cat-palco">
-      <ol className="cat-binario" style={{ '--p': passo } as CSSProperties} aria-label="La catena">
-        {voci.map((v, i) => {
-          const dove = i < primo ? 'sopra' : i <= ultimo ? 'qui' : 'sotto'
-          const nota = (x: VoceCatena | undefined) => !!x && x.tipo !== 'nascosta' && !(x.tipo === 'terzo' && !x.parola)
-          const chiusa = nota(v) && nota(voci[i + 1])
-          return (
-            <li
-              key={v.posto}
-              className={`cat-anello is-${dove}`}
-              style={{ '--i': i, '--j': i - primo } as CSSProperties}
-            >
-              <div className="cat-anello__riga">
-                <Riga
-                  voce={v}
-                  attiva={dove === 'qui' && v.tipo === 'nascosta'}
-                  fase={fase}
-                  esito={dove === 'qui' ? esito : null}
-                  scritte={scritte}
-                  coperta={v.tipo === 'terzo' && terzoCoperto}
-                />
-              </div>
-              {i < voci.length - 1 && <Giunto chiusa={chiusa} dopo={i >= ultimo} />}
-            </li>
-          )
-        })}
-      </ol>
-    </div>
+    <ol className="cat-binario" style={{ '--p': passo } as CSSProperties} aria-label="La catena">
+      {voci.map((v, i) => {
+        const dove = i < primo ? 'sopra' : i <= ultimo ? 'qui' : 'sotto'
+        const nota = (x: VoceCatena | undefined) => !!x && x.tipo !== 'nascosta' && !(x.tipo === 'terzo' && !x.parola)
+        const chiusa = nota(v) && nota(voci[i + 1])
+        const attiva = dove === 'qui' && v.tipo === 'nascosta'
+        return (
+          <li key={v.posto} className={`cat-anello is-${dove}`} style={{ '--i': i, '--j': i - primo } as CSSProperties}>
+            <div className="cat-anello__riga">
+              <Riga
+                voce={v}
+                attiva={attiva}
+                fase={fase}
+                esito={dove === 'qui' ? esito : null}
+                scritte={scritte}
+                coperta={v.tipo === 'terzo' && terzoCoperto}
+                finale={v.posto === NASCOSTE_CATENA[PASSO_FINALE]}
+              />
+              {attiva && caduta && (
+                <span key={caduta.n} className="cat-caduta" aria-hidden="true">
+                  {caduta.testo}
+                </span>
+              )}
+            </div>
+            {i < voci.length - 1 && <Giunto chiusa={chiusa} dopo={i >= ultimo} />}
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
-/** Una parola della catena: un pannello per quelle che si vedono, le caselle per quella da indovinare. */
+/** Una parola della catena: una targa per quelle che si vedono, le caselle per quelle trovate o mostrate. */
 function Riga({
   voce,
   attiva,
@@ -648,6 +805,7 @@ function Riga({
   esito,
   scritte,
   coperta,
+  finale,
 }: {
   voce: VoceCatena
   attiva: boolean
@@ -655,26 +813,25 @@ function Riga({
   esito: EsitoMossaCatena | null
   scritte: string
   coperta: boolean
+  finale: boolean
 }) {
   if (voce.tipo === 'data' || (voce.tipo === 'terzo' && voce.parola && !coperta)) {
     return (
-      <div className={`cat-pannello is-${voce.tipo}`}>
-        <span className="cat-pannello__testo">{voce.parola}</span>
+      <div className={`cat-targa is-${voce.tipo}`}>
+        <span className="cat-targa__testo">{voce.parola}</span>
       </div>
     )
   }
   if (voce.tipo === 'terzo') {
     return (
-      <div className="cat-pannello is-chiuso" aria-label="Il terzo elemento, coperto">
-        <span className="cat-pannello__lucchetto" aria-hidden="true">
-          ?
-        </span>
+      <div className="cat-targa is-chiusa" aria-label="Il terzo elemento, coperto">
+        <span className="cat-targa__testo">Terzo elemento</span>
       </div>
     )
   }
   const tipo = voce.tipo
   const classi =
-    `${attiva ? ' is-attiva' : ''}${esito && attiva ? ` esito-${esito}` : ''}` +
+    `${attiva ? ' is-attiva' : ''}${finale ? ' is-finale' : ''}${esito && attiva ? ` esito-${esito}` : ''}` +
     `${fase === 'attesa' && attiva ? ' is-attesa' : ''}${fase === 'busta' && attiva ? ' is-busta' : ''}`
   if (!voce.parola) return <Scrittura voce={voce} attiva={attiva} classi={classi} scritte={scritte} />
   // Una parola trovata, o mostrata, ha tutte le sue caselle, che si girano una dopo l'altra.
@@ -683,7 +840,7 @@ function Riga({
   const misura = Math.max(lettere.length, 9)
   return (
     <div
-      className={`cat-caselle is-${tipo}${classi}`}
+      className={`cat-targa cat-caselle is-${tipo}${classi}`}
       style={{ '--n': misura } as CSSProperties}
       role="img"
       aria-label={voce.parola}
@@ -698,11 +855,12 @@ function Riga({
 }
 
 /**
- * La parola da indovinare: un riquadro con le lettere che si vedono, d'oro, e
- * accanto la riga su cui si scrive, con il cursore. La riga e' larga quanto il
- * riquadro e non dice quanto e' lunga la parola: con una casella per lettera,
- * una lettera data e la casella vuota sembravano una parola di due. Nella
- * finale l'ultima lettera chiude la riga dall'altra parte, e si scrive in mezzo.
+ * La parola da indovinare: un riquadro bianco bordato d'oro, che respira, con
+ * le lettere che si vedono in tessere d'oro e accanto quel che si scrive, con
+ * il cursore. Quanto e' lunga la parola non lo dice niente: con una casella per
+ * lettera, una lettera data e la casella vuota sembravano una parola di due.
+ * Nella finale l'ultima lettera chiude la riga dall'altra parte, e si scrive in
+ * mezzo.
  */
 function Scrittura({
   voce,
@@ -730,7 +888,7 @@ function Scrittura({
     >
       <span className="cat-scrivi__date" aria-hidden="true">
         {[...voce.lettere].map((l, i) => (
-          // Una lettera che si scopre e' una tessera nuova: montata, si gira.
+          // Una lettera che si scopre e' una tessera nuova: montata, salta fuori.
           <span key={i} className="cat-scrivi__data">
             {l}
           </span>
@@ -756,37 +914,20 @@ function Scrittura({
 }
 
 /**
- * La maglia fra due parole: aperta finché una delle due manca, poi si chiude con
- * un lampo. Quella sotto la coppia di adesso non si vede ancora: la catena va
- * avanti, ma non si sa per quanto.
+ * La maglia fra due parole: due anelli aperti finché una delle due manca, poi
+ * si chiudono con un lampo. Quella sotto la coppia di adesso non si vede
+ * ancora: la catena va avanti, ma non si sa per quanto.
  */
 function Giunto({ chiusa, dopo }: { chiusa: boolean; dopo: boolean }) {
   return (
     <span className={`cat-giunto${chiusa ? ' is-chiusa' : ''}${dopo ? ' is-dopo' : ''}`} aria-hidden="true">
       <svg viewBox="0 0 24 40">
-        <rect className="cat-giunto__sopra" x="5" y="2" width="14" height="22" rx="7" />
-        <rect className="cat-giunto__sotto" x="5" y="16" width="14" height="22" rx="7" />
+        <rect className="cat-giunto__filo" x="5" y="2" width="14" height="22" rx="7" />
+        <rect className="cat-giunto__filo cat-giunto__sotto" x="5" y="16" width="14" height="22" rx="7" />
+        <rect className="cat-giunto__metallo" x="5" y="2" width="14" height="22" rx="7" />
+        <rect className="cat-giunto__metallo cat-giunto__sotto" x="5" y="16" width="14" height="22" rx="7" />
       </svg>
     </span>
-  )
-}
-
-/** La catena intera, a partita finita: ogni parola, e fra due l'espressione che le lega. */
-function CatenaIntera({ voci }: { voci: VoceCatena[] }) {
-  return (
-    <ol className="cat-intera" aria-label="La catena">
-      {voci.map((v, i) => (
-        <li key={v.posto} className={`cat-intera__voce is-${v.tipo}`} style={{ '--i': i } as CSSProperties}>
-          <span className="cat-intera__parola">{v.parola}</span>
-          {v.espressione && i < voci.length - 1 && (
-            <span className="cat-intera__espressione">
-              <span className="cat-intera__maglia" aria-hidden="true" />
-              {v.espressione}
-            </span>
-          )}
-        </li>
-      ))}
-    </ol>
   )
 }
 
@@ -824,13 +965,38 @@ function Montepremi({ valore, taglio, vinto }: { valore: number; taglio: Taglio 
   )
 }
 
-/** Le cinque parole da indovinare: verdi quelle trovate, arancio quelle mostrate, la quinta e' la finale. */
-function Maglie({ voci, passo }: { voci: VoceCatena[]; passo: number }) {
+/**
+ * Le cinque parole da indovinare, cinque lampade: lampeggia quella di adesso,
+ * verdi quelle trovate, rosse quelle mostrate; a partita finita la quinta dice
+ * com'e' andata la finale.
+ */
+function Maglie({
+  voci,
+  passo,
+  finita,
+  indovinata,
+  attiva,
+}: {
+  voci: VoceCatena[]
+  passo: number
+  finita: boolean
+  indovinata: boolean
+  attiva: boolean
+}) {
   const nascoste = NASCOSTE_CATENA.map((posto) => voci[posto] ?? null)
   return (
     <ol className="cat-maglie" aria-label={`Parola ${Math.min(passo + 1, DA_INDOVINARE_CATENA)} di ${DA_INDOVINARE_CATENA}`}>
       {nascoste.map((v, i) => {
-        const stato = i < passo && v && v.tipo !== 'nascosta' ? v.tipo : i === passo ? 'corrente' : 'dopo'
+        const stato =
+          i === PASSO_FINALE && finita
+            ? indovinata
+              ? 'giusta'
+              : 'rivelata'
+            : i < passo && v && v.tipo !== 'nascosta'
+              ? v.tipo
+              : i === passo && attiva
+                ? 'corrente'
+                : 'dopo'
         return (
           <li key={i} className={`cat-maglia is-${stato}${i === PASSO_FINALE ? ' is-finale' : ''}`}>
             <span className="u-visually-hidden">{stato === 'giusta' ? 'trovata' : stato === 'rivelata' ? 'mostrata' : ''}</span>
@@ -841,23 +1007,65 @@ function Maglie({ voci, passo }: { voci: VoceCatena[]; passo: number }) {
   )
 }
 
-/** I due jolly: monete d'oro, che si girano e si spengono quando si usano. */
+/** I due jolly: gettoni con la stella, che si spengono quando si usano. */
 function Jolly({ restanti }: { restanti: number }) {
   return (
-    <div className="cat-jolly" aria-label={`${restanti} jolly`}>
+    <span className="cat-gettoni" aria-hidden="true">
       {[0, 1].map((i) => (
-        <span key={i} className={`cat-jolly__moneta${i >= restanti ? ' is-usato' : ''}`} aria-hidden="true">
-          J
+        <span key={i} className={`cat-gettone${i >= restanti ? ' is-usato' : ''}`}>
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3.2l2.6 5.5 6 .8-4.4 4.1 1.1 5.9L12 16.6l-5.3 2.9 1.1-5.9-4.4-4.1 6-.8z" />
+          </svg>
         </span>
       ))}
+    </span>
+  )
+}
+
+const RAGGIO = 18
+const GIRO = 2 * Math.PI * RAGGIO
+
+/** Il tempo in testata: un anello che si svuota, con i secondi dentro. */
+function Anello({
+  resta,
+  tempoMs,
+  testo,
+  urgente = false,
+  spento = false,
+  etichetta,
+}: {
+  resta: number
+  tempoMs: number
+  testo: string
+  urgente?: boolean
+  spento?: boolean
+  etichetta: string
+}) {
+  return (
+    <div
+      className={`cat-tempo${urgente ? ' is-urgente' : ''}${spento ? ' is-spento' : ''}`}
+      role="timer"
+      aria-label={etichetta}
+    >
+      <svg viewBox="0 0 44 44" aria-hidden="true">
+        <circle className="cat-tempo__fondo" cx="22" cy="22" r={RAGGIO} />
+        <circle
+          className="cat-tempo__anello"
+          cx="22"
+          cy="22"
+          r={RAGGIO}
+          strokeDasharray={GIRO}
+          strokeDashoffset={GIRO * (1 - resta / tempoMs)}
+        />
+      </svg>
+      <span className="cat-tempo__n u-tabnum" aria-hidden="true">
+        {testo}
+      </span>
     </div>
   )
 }
 
-const RAGGIO = 17
-const GIRO = 2 * Math.PI * RAGGIO
-
-/** Il minuto della parola finale: l'anello che si svuota, e gli ultimi dieci secondi che si sentono. */
+/** Il tempo della parola finale: l'anello che si svuota, e gli ultimi dieci secondi che si sentono. */
 function Minuto({
   finale,
   tempoMs,
@@ -894,30 +1102,16 @@ function Minuto({
   }, [secondi, resta, fermo, onScade])
 
   return (
-    <div className={`cat-minuto${secondi <= 10 ? ' is-urgente' : ''}`} role="timer" aria-label={`${secondi} secondi`}>
-      <svg viewBox="0 0 40 40" aria-hidden="true">
-        <circle className="cat-minuto__fondo" cx="20" cy="20" r={RAGGIO} />
-        <circle
-          className="cat-minuto__anello"
-          cx="20"
-          cy="20"
-          r={RAGGIO}
-          strokeDasharray={GIRO}
-          strokeDashoffset={GIRO * (1 - resta / tempoMs)}
-        />
-      </svg>
-      <span className="cat-minuto__secondi u-tabnum">{secondi}</span>
-    </div>
+    <Anello resta={resta} tempoMs={tempoMs} testo={String(secondi)} urgente={secondi <= 10} etichetta={`${secondi} secondi`} />
   )
 }
 
 /**
- * Il minuto di una parola della catena: una miccia accesa lungo la testata, che
- * si consuma da destra verso sinistra con la scintilla in punta, e i secondi in
- * fondo. Prima che parta — la scena sta portando la parola — e' intera e spenta;
- * negli ultimi dieci secondi si fa rossa, la scintilla corre e si sentono.
- * Finisce una volta sola, e solo mentre si gioca: se in quel momento una parola
- * sta andando al server, decide lui.
+ * Il tempo di una parola della catena, la miccia della scena: un anello che si
+ * consuma. Prima che parta — la scena sta portando la parola — e' intero;
+ * negli ultimi dieci secondi si fa rosso, e gli ultimi cinque si sentono.
+ * Finisce una volta sola, e solo mentre si gioca: se in quel momento una
+ * parola sta andando al server, decide lui.
  */
 function Miccia({
   orologio,
@@ -937,7 +1131,7 @@ function Miccia({
   const accesa = adesso >= orologio.inizio
   const resta = Math.max(0, Math.min(tempoMs, orologio.scadenza - adesso))
   const secondi = Math.ceil(resta / 1000)
-  const urgente = accesa && secondi <= 10
+  const urgente = accesa && !ferma && secondi <= 10
 
   useEffect(() => {
     if (ferma) return
@@ -959,19 +1153,12 @@ function Miccia({
   }, [accesa, attiva, ferma, onScade, resta, secondi])
 
   return (
-    <div
-      className={`cat-miccia${accesa ? ' is-accesa' : ''}${urgente ? ' is-urgente' : ''}${ferma ? ' is-ferma' : ''}`}
-      role="timer"
-      aria-label={`${secondi} secondi per questa parola`}
-      style={{ '--resta': resta / tempoMs } as CSSProperties}
-    >
-      <span className="cat-miccia__corda" aria-hidden="true">
-        <span className="cat-miccia__brucia" />
-        <span className="cat-miccia__scintilla" />
-      </span>
-      <span className="cat-miccia__secondi u-tabnum" aria-hidden="true">
-        {secondi}
-      </span>
-    </div>
+    <Anello
+      resta={resta}
+      tempoMs={tempoMs}
+      testo={String(secondi)}
+      urgente={urgente}
+      etichetta={`${secondi} secondi per questa parola`}
+    />
   )
 }

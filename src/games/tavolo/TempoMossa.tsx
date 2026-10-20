@@ -31,20 +31,26 @@ export function useRestante(scadenza: number | null, onScaduto?: () => void): nu
   return scadenza === null ? null : Math.max(0, scadenza - adesso)
 }
 
+/** La circonferenza dell'anello, nel suo disegno di 44: il tratto pieno, e quanto ne resta. */
+const GIRO = 2 * Math.PI * 18
+
 /**
- * Il tempo della mossa: una barra che si svuota e i secondi che restano. Negli
- * ultimi tre si fa rossa, e se il tempo e' mio ogni secondo batte.
+ * Il tempo della mossa: una barra che si svuota e i secondi che restano, o
+ * (`forma="anello"`, nelle righe dei tavolieri) un anello attorno ai secondi.
+ * Negli ultimi tre si fa rosso, e se il tempo e' mio ogni secondo batte.
  */
 export function TempoMossa({
   scadenza,
   totaleMs,
   mio,
   onScaduto,
+  forma = 'barra',
 }: {
   scadenza: number
   totaleMs: number
   mio: boolean
   onScaduto?: () => void
+  forma?: 'barra' | 'anello'
 }) {
   const restante = useRestante(scadenza, onScaduto) ?? 0
   const secondi = Math.ceil(restante / 1_000)
@@ -57,12 +63,38 @@ export function TempoMossa({
     if (mio && secondi > 0 && secondi <= 3) suona('tic')
   }, [mio, secondi])
 
+  const quota = Math.min(1, restante / totaleMs)
+  if (forma === 'anello') {
+    return (
+      <span
+        className={`tempo-anello${poco ? ' is-poco' : ''}`}
+        role="timer"
+        aria-label={`${secondi} ${secondi === 1 ? 'secondo' : 'secondi'}`}
+      >
+        <svg viewBox="0 0 44 44" aria-hidden="true">
+          <circle className="tempo-anello__fondo" cx="22" cy="22" r="18" />
+          <circle
+            className="tempo-anello__tempo"
+            cx="22"
+            cy="22"
+            r="18"
+            strokeDasharray={GIRO}
+            strokeDashoffset={GIRO * (1 - quota)}
+          />
+        </svg>
+        <span className="tempo-anello__secondi u-tabnum" aria-hidden="true">
+          {secondi}
+        </span>
+      </span>
+    )
+  }
+
   return (
     <span
       className={`tempo-mossa${poco ? ' is-poco' : ''}`}
       role="timer"
       aria-label={`${secondi} ${secondi === 1 ? 'secondo' : 'secondi'}`}
-      style={{ '--quota': Math.min(1, restante / totaleMs) } as CSSProperties}
+      style={{ '--quota': quota } as CSSProperties}
     >
       <span className="tempo-mossa__pista" aria-hidden="true">
         <span className="tempo-mossa__barra" />

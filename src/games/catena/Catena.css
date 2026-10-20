@@ -1,159 +1,91 @@
 /*
- * La Catena: lo studio blu di Reazione a catena, scuro in tutti e due i temi.
- * In cima il montepremi, le cinque maglie e i jolly; in mezzo la catena, una
- * parola sotto l'altra, che scorre in su a ogni parola trovata; in fondo la
- * tastiera del gioco. Le misure della catena seguono il palco, che e' un
- * contenitore: su un telefono basso le parole si fanno piccole, e il resto ci
- * sta.
+ * La Catena: in cima, sulla pagina, il montepremi, le cinque lampade delle
+ * parole e il tempo; sotto il palco, lo studio blu di Reazione a catena, scuro
+ * in tutti e due i temi, con la catena di targhe legate dagli anelli che sale a
+ * ogni parola; poi i jolly e la tastiera. Le misure seguono l'altezza della
+ * scena (`cqh`): il palco prende quel che resta, e la tastiera ha il suo posto
+ * anche quando non c'e', cosi' la catena non salta.
  */
 .cat {
-  /* La tastiera del palco: tasti blu su un vassoio piu' scuro, e l'invio d'oro. */
-  --key-fondo: rgba(4, 12, 48, 0.42);
-  --key-bg: #2b4192;
-  --key-bg-active: #3550ad;
-  --key-servizio: #1a2a68;
-  --key-servizio-active: #22357c;
-  --key-ink: #fff;
-  --key-ombra: rgba(0, 4, 24, 0.6);
-  --key-azione: var(--cat-oro);
-  --key-azione-ink: #241200;
-  container-type: inline-size;
+  /* L'invio della tastiera nel colore del gioco, con l'inchiostro sopra. */
+  --key-azione: var(--catena-tinta);
+  --key-azione-ink: #2a1f5c;
+  --cat-ink: #0b1b4a;
+  --cat-tasto: clamp(40px, 6.2cqh, 50px);
+  container: cat / size;
   position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: 12px;
   width: 100%;
-  max-width: 620px;
+  max-width: 560px;
   min-height: 0;
   margin: 0 auto;
-  padding: var(--sp-3) var(--sp-3) var(--sp-3);
-  overflow: hidden;
-  border-radius: 28px;
-  background:
-    radial-gradient(100% 50% at 50% 0%, color-mix(in srgb, var(--cat-luce) 30%, transparent), transparent 70%),
-    linear-gradient(180deg, var(--cat-palco-1), var(--cat-palco-2));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 18px 40px -22px rgba(0, 10, 60, 0.75);
-  color: #fff;
-  color-scheme: dark;
-  isolation: isolate;
 }
 
-/*
- * I fasci di luce dello studio. Girano dentro una cornice che li taglia: piu'
- * larghi della scena, fuori da una cornice loro la farebbero scorrere di lato
- * (vedi la nota della Ghigliottina in CLAUDE.md).
- */
-.cat-luci {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.cat-luci::before {
-  position: absolute;
-  inset: -30% -30% 30%;
-  background:
-    conic-gradient(from 160deg at 20% 0%, transparent 0deg, rgba(90, 162, 255, 0.2) 12deg, transparent 26deg),
-    conic-gradient(from 176deg at 80% 0%, transparent 0deg, rgba(255, 200, 61, 0.14) 12deg, transparent 26deg);
-  content: '';
-  filter: blur(6px);
-  animation: cat-luci 10s ease-in-out infinite alternate;
-}
-
-.cat.is-vinta .cat-luci::before {
-  background:
-    conic-gradient(from 160deg at 20% 0%, transparent 0deg, rgba(255, 200, 61, 0.36) 12deg, transparent 26deg),
-    conic-gradient(from 176deg at 80% 0%, transparent 0deg, rgba(61, 220, 132, 0.28) 12deg, transparent 26deg);
-}
-
-@keyframes cat-luci {
-  from {
-    transform: rotate(-5deg);
-  }
-  to {
-    transform: rotate(5deg);
-  }
-}
-
-/* Alla fine la scena si legge tutta: scorre, con le espressioni e i punti. */
-.cat.is-fine {
-  overflow-y: auto;
-  overscroll-behavior: contain;
-}
-
-/* ---------- La testata ---------- */
+/* ---------- La testata: il montepremi, le cinque lampade, il tempo ---------- */
 
 .cat-testa {
-  display: grid;
+  display: flex;
   flex: none;
-  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: var(--sp-2);
-  min-height: 52px;
-}
-
-.cat-testa > :nth-child(2) {
-  justify-self: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 50px;
 }
 
 .cat-montepremi {
   position: relative;
-  display: grid;
-  justify-self: start;
-  justify-items: center;
-  min-width: 76px;
-  padding: 4px 12px 5px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--cat-oro), var(--cat-oro-2));
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 94px;
+  height: 48px;
+  box-sizing: border-box;
+  border: var(--filo) solid var(--ink);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #ffe58a, #f2b33d);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    0 0 0 1.5px rgba(0, 0, 0, 0.25),
-    0 6px 16px -6px rgba(255, 170, 30, 0.6);
-  color: #2a1700;
+    0 3px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.6);
+  color: #2a1f5c;
 }
 
 .cat-montepremi__etichetta {
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: 8.5px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  line-height: 1;
   text-transform: uppercase;
-  opacity: 0.75;
 }
 
 .cat-montepremi__valore {
   font-family: var(--font-rounded);
-  font-size: 1.55rem;
-  font-weight: 900;
+  font-size: 24px;
   line-height: 1;
-  animation: cat-valore 520ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  animation: cat-valore 0.3s ease-out;
 }
 
 @keyframes cat-valore {
-  from {
-    transform: translateY(-60%) scale(0.6);
-    opacity: 0;
+  50% {
+    transform: scale(1.2);
   }
 }
 
 .cat-montepremi.is-vinto {
-  animation: cat-vinto 1.6s ease-in-out infinite alternate;
+  animation: cat-vinto 1.1s ease-in-out infinite;
 }
 
 @keyframes cat-vinto {
-  to {
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.6),
-      0 0 0 1.5px rgba(0, 0, 0, 0.25),
-      0 0 26px 4px rgba(255, 200, 61, 0.75);
+  50% {
+    transform: scale(1.08);
   }
 }
 
-/* Il dimezzamento: il valore di prima vola via rosso, e il ÷2 salta fuori. */
+/* Il colpo: il valore di prima vola via, e quel che si e' perso salta fuori sull'angolo. */
 .cat-montepremi__taglio {
   position: absolute;
   inset: 0;
@@ -162,22 +94,19 @@
 
 .cat-montepremi__prima {
   position: absolute;
-  bottom: 5px;
-  left: 50%;
-  color: var(--cat-sbagliata);
+  bottom: 4px;
+  left: calc(50% - 1.2ch);
+  color: #e5383b;
   font-family: var(--font-rounded);
-  font-size: 1.55rem;
-  font-weight: 900;
+  font-size: 24px;
   line-height: 1;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-  transform: translateX(-50%);
-  animation: cat-vola 900ms cubic-bezier(0.3, 0.6, 0.4, 1) both;
+  animation: cat-vola 0.9s cubic-bezier(0.3, 0.6, 0.4, 1) both;
 }
 
 @keyframes cat-vola {
   to {
-    transform: translate(40%, 90%) rotate(18deg) scale(0.7);
     opacity: 0;
+    transform: translate(40%, 90%) rotate(18deg) scale(0.7);
   }
 }
 
@@ -187,11 +116,11 @@
 
 @keyframes cat-cade-tutto {
   20% {
-    transform: translateX(-50%) rotate(-8deg);
+    transform: rotate(-8deg);
   }
   to {
-    transform: translate(-50%, 260%) rotate(40deg);
     opacity: 0;
+    transform: translateY(260%) rotate(40deg);
   }
 }
 
@@ -199,14 +128,14 @@
   position: absolute;
   top: -10px;
   right: -12px;
-  padding: 2px 7px;
-  border-radius: var(--r-pill);
-  background: var(--cat-sbagliata);
-  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.45);
+  padding: 1px 7px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: #ff5c6b;
+  box-shadow: 0 2px 0 var(--ink);
   color: #fff;
   font-family: var(--font-rounded);
-  font-size: 0.85rem;
-  font-weight: 900;
+  font-size: 14px;
   animation: cat-meta 1.4s cubic-bezier(0.2, 1.5, 0.4, 1) both;
 }
 
@@ -219,221 +148,72 @@
   }
   40%,
   80% {
-    transform: scale(1) rotate(0);
     opacity: 1;
+    transform: none;
   }
   to {
-    transform: scale(0.8);
     opacity: 0;
+    transform: scale(0.8);
   }
 }
 
-/* Le cinque maglie: le parole da indovinare, intrecciate come una catena. */
+/* Le cinque lampade: le parole da indovinare. */
 .cat-maglie {
   display: flex;
-  align-items: center;
+  gap: 7px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .cat-maglia {
-  width: 24px;
-  height: 15px;
-  margin-left: -5px;
-  border: 3px solid rgba(255, 255, 255, 0.22);
-  border-radius: 999px;
-  transition:
-    border-color 400ms ease,
-    box-shadow 400ms ease;
-}
-
-.cat-maglia:first-child {
-  margin-left: 0;
-}
-
-/* Una maglia si e' intrecciata con quella prima: sta un filo piu' su, a turno. */
-.cat-maglia:nth-child(even) {
-  transform: translateY(-2px);
-}
-
-.cat-maglia.is-finale {
-  width: 30px;
-  height: 19px;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: var(--filo) solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface);
+  transition: background-color 0.3s;
 }
 
 .cat-maglia.is-corrente {
-  border-color: #fff;
-  animation: cat-respira 1.4s ease-in-out infinite alternate;
-}
-
-@keyframes cat-respira {
-  to {
-    box-shadow: 0 0 12px 1px rgba(255, 255, 255, 0.55);
-  }
+  background: #ffe07a;
+  animation: cat-lampeggia 1s ease-in-out infinite;
 }
 
 .cat-maglia.is-giusta {
-  border-color: var(--cat-giusta);
-  box-shadow: 0 0 10px rgba(61, 220, 132, 0.5);
-  animation: cat-scatta 520ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  background: #5edb84;
+  animation: cat-lampada 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
 }
 
 .cat-maglia.is-rivelata {
-  border-color: var(--cat-rivelata);
-  animation: cat-scatta 520ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  background: #ff7a7a;
+  animation: cat-lampada 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
 }
 
-@keyframes cat-scatta {
+@keyframes cat-lampeggia {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes cat-lampada {
   from {
     transform: scale(1.5);
   }
 }
 
-/* I due jolly: monete d'oro. Usate, si girano e si spengono. */
-.cat-jolly {
-  display: flex;
-  justify-self: end;
-  gap: 6px;
-}
-
-.cat-jolly__moneta {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fff3c4, var(--cat-oro) 45%, var(--cat-oro-2));
-  box-shadow:
-    inset 0 -2px 0 rgba(0, 0, 0, 0.2),
-    0 0 0 2px rgba(120, 70, 0, 0.45),
-    0 4px 10px -3px rgba(255, 170, 30, 0.7);
-  color: #4a2a00;
-  font-family: var(--font-rounded);
-  font-size: 1rem;
-  font-weight: 900;
-  transition:
-    transform 700ms cubic-bezier(0.3, 1.3, 0.5, 1),
-    opacity 700ms ease,
-    filter 700ms ease;
-}
-
-.cat-jolly__moneta.is-usato {
-  filter: grayscale(1) brightness(0.6);
-  opacity: 0.35;
-  /* Un giro intero: la moneta torna dritta, spenta. */
-  transform: rotateY(360deg) scale(0.85);
-}
-
-/*
- * Il minuto di una parola: una miccia lungo tutta la testata, sotto il
- * montepremi e le maglie. La corda si consuma da destra (--resta, da 1 a 0) e
- * la scintilla sta sulla punta che brucia; prima che parta e' intera e spenta.
- */
-.cat-miccia {
-  display: flex;
-  grid-column: 1 / -1;
-  align-items: center;
-  gap: 8px;
-  height: 18px;
-}
-
-.cat-miccia__corda {
-  position: relative;
-  flex: 1;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.45);
-}
-
-.cat-miccia__brucia {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: calc(var(--resta) * 100%);
-  border-radius: inherit;
-  background: repeating-linear-gradient(
-      -55deg,
-      rgba(0, 0, 0, 0.16) 0 4px,
-      transparent 4px 8px
-    ),
-    linear-gradient(90deg, var(--cat-oro-2), var(--cat-oro));
-  box-shadow: 0 0 10px -2px rgba(255, 200, 61, 0.7);
-  transition:
-    width 120ms linear,
-    filter 300ms ease;
-}
-
-.cat-miccia:not(.is-accesa) .cat-miccia__brucia {
-  filter: saturate(0.4) brightness(0.8);
-  box-shadow: none;
-}
-
-/* La scintilla: un punto di luce che sfrigola sulla punta della corda. */
-.cat-miccia__scintilla {
-  position: absolute;
-  top: 50%;
-  left: calc(var(--resta) * 100%);
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: radial-gradient(circle, #fff 0 18%, #ffe08a 30%, rgba(255, 150, 40, 0.75) 52%, transparent 72%);
-  opacity: 0;
-  transform: translate(-50%, -50%);
-  transition: left 120ms linear;
-  pointer-events: none;
-}
-
-.cat-miccia.is-accesa .cat-miccia__scintilla {
-  opacity: 1;
-  animation: cat-sfrigola 180ms steps(2) infinite;
-}
-
-.cat-miccia.is-ferma .cat-miccia__scintilla {
-  animation: none;
-}
-
-@keyframes cat-sfrigola {
-  50% {
-    transform: translate(-50%, -50%) scale(1.35) rotate(40deg);
-    filter: brightness(1.4);
-  }
-}
-
-.cat-miccia__secondi {
-  min-width: 2ch;
-  color: rgba(255, 255, 255, 0.8);
-  font-family: var(--font-rounded);
-  font-size: var(--text-footnote);
-  font-weight: 900;
-  text-align: right;
-}
-
-/* Gli ultimi dieci secondi: la corda si fa rossa, la scintilla corre, i secondi battono. */
-.cat-miccia.is-urgente .cat-miccia__brucia {
-  background: linear-gradient(90deg, #c2262c, var(--cat-sbagliata));
-  box-shadow: 0 0 12px -1px rgba(255, 90, 95, 0.85);
-}
-
-.cat-miccia.is-urgente .cat-miccia__scintilla {
-  animation-duration: 90ms;
-}
-
-.cat-miccia.is-urgente .cat-miccia__secondi {
-  color: #ff8a8d;
-  animation: cat-batte 1s ease-in-out infinite;
-}
-
-/* Il minuto della parola finale: l'anello che si svuota. */
-.cat-minuto {
+/* Il tempo: un anello che si svuota, con i secondi dentro. */
+.cat-tempo {
   position: relative;
   display: grid;
+  flex: none;
   place-items: center;
-  width: 50px;
-  height: 50px;
+  width: 48px;
+  height: 48px;
 }
 
-.cat-minuto svg {
+.cat-tempo svg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -441,65 +221,134 @@
   transform: rotate(-90deg);
 }
 
-.cat-minuto__fondo {
-  fill: rgba(0, 0, 0, 0.25);
-  stroke: rgba(255, 255, 255, 0.14);
-  stroke-width: 4;
+.cat-tempo__fondo {
+  fill: var(--surface);
+  stroke: var(--ink-tenue);
+  stroke-width: 5;
 }
 
-.cat-minuto__anello {
+.cat-tempo__anello {
   fill: none;
-  stroke: var(--cat-oro);
+  stroke: var(--catena-tinta);
+  stroke-width: 5;
   stroke-linecap: round;
-  stroke-width: 4;
   transition:
-    stroke-dashoffset 200ms linear,
+    stroke-dashoffset 120ms linear,
     stroke 300ms ease;
 }
 
-.cat-minuto__secondi {
+.cat-tempo__n {
+  position: relative;
+  color: var(--label);
   font-family: var(--font-rounded);
-  font-size: 1.15rem;
-  font-weight: 900;
+  font-size: 17px;
+  line-height: 1;
 }
 
-.cat-minuto.is-urgente .cat-minuto__anello {
-  stroke: var(--cat-sbagliata);
+.cat-tempo.is-urgente .cat-tempo__anello {
+  stroke: #ff4d5e;
 }
 
-.cat-minuto.is-urgente {
-  animation: cat-batte 1s ease-in-out infinite;
+.cat-tempo.is-urgente .cat-tempo__n {
+  color: var(--colpito, #e5383b);
+  animation: cat-trema-n 0.5s ease-in-out infinite;
 }
 
-@keyframes cat-batte {
-  50% {
-    transform: scale(1.1);
+.cat-tempo.is-spento .cat-tempo__anello {
+  stroke: transparent;
+}
+
+@keyframes cat-trema-n {
+  25% {
+    transform: rotate(-8deg);
+  }
+  75% {
+    transform: rotate(8deg);
   }
 }
 
-/* ---------- La catena ---------- */
+/* ---------- Il palco: lo studio blu, in tutti e due i temi ---------- */
 
 .cat-palco {
-  container-type: size;
+  container: cat-palco / size;
   position: relative;
   flex: 1;
   min-height: 0;
-  /* Le parole passate salgono e si spengono contro il bordo alto. */
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 100%);
-  mask-image: linear-gradient(180deg, transparent 0, #000 22%, #000 100%);
+  overflow: hidden;
+  border: var(--filo) solid var(--cat-ink);
+  border-radius: 26px;
+  background: radial-gradient(ellipse at 50% 0%, #3c8bf0 0%, #1a47a6 48%, #0f2a6b 100%);
+  box-shadow: 0 5px 0 var(--cat-ink);
+  color: #eaf2ff;
+  color-scheme: dark;
 }
 
-.cat-binario {
-  /* Una riga e la maglia sotto di lei: la coppia di adesso, tre righe e due maglie, sta al centro. */
-  --riga: clamp(34px, 18cqh, 66px);
-  --giunto: calc(var(--riga) * 0.42);
+/* Il riflesso che passa sul palco, e la fila di luci in cima. */
+.cat-palco__luci {
   position: absolute;
-  inset: 0 0 auto;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 24px;
+  pointer-events: none;
+}
+
+.cat-palco__luci::before {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 90px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0));
+  content: '';
+  transform: translateX(-140px) rotate(14deg);
+  animation: cat-riflesso 5s ease-in-out infinite;
+}
+
+.cat-palco__luci::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 46px;
+  background: repeating-linear-gradient(90deg, rgba(255, 224, 122, 0.5) 0 6px, transparent 6px 22px);
+  content: '';
+  opacity: 0.35;
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent);
+  mask-image: linear-gradient(180deg, #000, transparent);
+}
+
+.cat.is-vinta .cat-palco__luci::after {
+  opacity: 0.8;
+}
+
+@keyframes cat-riflesso {
+  0%,
+  30% {
+    transform: translateX(-140px) rotate(14deg);
+  }
+  70%,
+  100% {
+    transform: translateX(calc(100cqw + 60px)) rotate(14deg);
+  }
+}
+
+/*
+ * La catena: una riga e la maglia sotto di lei. La coppia di adesso — tre
+ * righe e due maglie — sta in fondo al palco; quelle passate salgono, piccole.
+ */
+.cat-binario {
+  --riga: clamp(40px, 15cqh, 64px);
+  --giunto: calc(var(--riga) * 0.38);
+  position: absolute;
+  top: 0;
+  right: 14px;
+  left: 14px;
+  z-index: 1;
   margin: 0;
   padding: 0;
   list-style: none;
   transform: translateY(
-    calc((100cqh - 3 * var(--riga) - 2 * var(--giunto)) / 2 - var(--p) * 2 * (var(--riga) + var(--giunto)))
+    calc(100cqh - 18px - 3 * var(--riga) - 2 * var(--giunto) - var(--p) * 2 * (var(--riga) + var(--giunto)))
   );
   transition: transform 800ms cubic-bezier(0.22, 0.9, 0.24, 1);
 }
@@ -514,11 +363,11 @@
   align-items: center;
   transition:
     opacity 600ms ease,
-    transform 600ms cubic-bezier(0.22, 0.9, 0.24, 1),
-    filter 600ms ease;
+    transform 600ms cubic-bezier(0.22, 0.9, 0.24, 1);
 }
 
 .cat-anello__riga {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -527,9 +376,8 @@
 }
 
 .cat-anello.is-sopra {
-  filter: saturate(0.5);
-  opacity: 0.42;
-  transform: scale(0.82);
+  opacity: 0.62;
+  transform: scale(0.86);
 }
 
 .cat-anello.is-sotto {
@@ -538,266 +386,262 @@
   transform: translateY(18px);
 }
 
-/* L'entrata: le parole della prima coppia cadono una dopo l'altra. */
+/* L'entrata: le parole della prima coppia arrivano dal basso, una dopo l'altra. */
 .cat.is-entra .cat-anello.is-qui {
-  animation: cat-cade 560ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
+  animation: cat-arriva 560ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
   animation-delay: calc(var(--j) * 260ms + 120ms);
 }
 
-@keyframes cat-cade {
+@keyframes cat-arriva {
   from {
     opacity: 0;
-    transform: translateY(-60px) scale(0.9);
+    transform: translateY(70px) scale(0.9);
   }
 }
 
-/* Una parola che si vede: il pannello blu dello studio. */
-.cat-pannello {
-  box-sizing: border-box;
-  min-width: min(66cqw, 300px);
-  max-width: calc(100cqw - 16px);
+/* Una parola che si vede: la targa crema col filo dello studio. */
+.cat-targa {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  width: 100%;
   height: calc(var(--riga) * 0.84);
-  padding: 0 1.1em;
-  border: 1.5px solid rgba(120, 170, 255, 0.5);
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--cat-pannello), var(--cat-pannello-2));
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: var(--filo) solid var(--cat-ink);
+  border-radius: 16px;
+  background: #fff6e0;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 6px 16px -8px rgba(0, 0, 0, 0.7),
-    0 0 18px -6px rgba(90, 162, 255, 0.55);
+    0 4px 0 var(--cat-ink),
+    inset 0 2px 0 #fff;
+  color: #12204f;
 }
 
-.cat-pannello__testo {
+.cat-targa__testo {
   overflow: hidden;
   font-family: var(--font-rounded);
-  font-size: calc(var(--riga) * 0.36);
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-size: min(calc(var(--riga) * 0.4), 25px);
+  line-height: 1;
+  letter-spacing: 0.05em;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-/* Il terzo elemento: d'oro, perché e' un premio o e' costato. */
-.cat-pannello.is-terzo {
-  border-color: var(--cat-oro);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 0 22px -4px rgba(255, 200, 61, 0.7);
-  animation: cat-gira-pannello 700ms cubic-bezier(0.2, 1.2, 0.4, 1) both;
-}
-
-.cat-pannello.is-chiuso {
-  border: 2px dashed rgba(255, 200, 61, 0.6);
-  background: rgba(0, 0, 0, 0.22);
+/* Il terzo elemento della finale: un posto tratteggiato finché non si compra, poi una targa gialla. */
+.cat-targa.is-chiusa {
+  border-style: dashed;
+  border-color: #9fb7e8;
+  background: rgba(255, 255, 255, 0.1);
   box-shadow: none;
+  color: #dbe7ff;
 }
 
-.cat-pannello__lucchetto {
-  color: var(--cat-oro);
-  font-family: var(--font-rounded);
-  font-size: calc(var(--riga) * 0.42);
+.cat-targa.is-chiusa .cat-targa__testo {
+  font-family: var(--font-text);
+  font-size: 15px;
   font-weight: 900;
-  animation: cat-respira-testo 1.6s ease-in-out infinite alternate;
+  letter-spacing: 0.06em;
 }
 
-@keyframes cat-respira-testo {
-  to {
-    opacity: 0.45;
-  }
+.cat-targa.is-terzo {
+  background: #ffe07a;
+  animation: cat-scopre 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
-@keyframes cat-gira-pannello {
+@keyframes cat-scopre {
   from {
     opacity: 0;
-    transform: rotateX(90deg);
+    transform: translateY(20px) scale(0.8);
   }
 }
 
-/* Una parola trovata o mostrata: una casella per lettera, come il tabellone dello studio. */
+/* Una parola trovata, o mostrata: le sue lettere in caselle, verdi o rosa, che si girano una dopo l'altra. */
 .cat-caselle {
-  --lato: min(calc(var(--riga) * 0.8), calc((100cqw - 20px) / var(--n) - 5px));
-  display: flex;
-  gap: 5px;
+  --lato: min(calc(var(--riga) * 0.62), calc((100cqw - 64px) / var(--n) - 4px));
+  gap: 3px;
+  perspective: 400px;
 }
 
 .cat-casella {
   display: grid;
   flex: none;
   place-items: center;
-  width: var(--lato);
-  height: calc(var(--lato) * 1.08);
+  width: calc(var(--lato) * 0.76);
+  height: var(--lato);
+  box-sizing: border-box;
+  border: 2px solid var(--cat-ink);
   border-radius: calc(var(--lato) * 0.18);
-  background: linear-gradient(180deg, #0f1c5a, #0a1442);
-  box-shadow:
-    inset 0 2px 6px rgba(0, 0, 0, 0.55),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 1.5px rgba(120, 170, 255, 0.28);
-  color: #fff;
+  background: #fff;
+  color: #12204f;
   font-family: var(--font-rounded);
   font-size: calc(var(--lato) * 0.58);
-  font-weight: 900;
   line-height: 1;
+}
+
+.cat-caselle.is-giusta .cat-casella {
+  background: #5edb84;
+}
+
+.cat-caselle.is-rivelata .cat-casella {
+  background: #ff9a9a;
+}
+
+.cat-anello.is-qui .cat-caselle .cat-casella {
+  animation: cat-gira 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation-delay: calc(var(--k) * 60ms);
 }
 
 @keyframes cat-gira {
   from {
-    transform: rotateX(-90deg);
-    filter: brightness(1.8);
+    transform: rotateY(90deg);
   }
 }
 
+/* La parola mostrata dopo l'errore trema ancora. */
+.cat-caselle.esito-rivelata,
+.cat-caselle.esito-scaduta {
+  animation: cat-trema 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
 /*
- * La parola da indovinare: un riquadro incassato, sempre della stessa misura,
- * con le lettere che si vedono a sinistra, tessere d'oro, e la riga su cui si
- * scrive. Quanto e' lunga la parola non lo dice niente: la riga arriva in fondo
- * al riquadro, o all'ultima lettera nella finale. Le lettere scritte stanno
- * sulla riga, grandi finché ci stanno: oltre otto si stringono (`--n`).
+ * La parola da indovinare: un riquadro bianco bordato d'oro, sempre della
+ * stessa misura, con le lettere che si vedono in tessere d'oro e quel che si
+ * scrive accanto. Le lettere scritte restano grandi finché ci stanno: oltre
+ * otto si stringono (`--n`).
  */
 .cat-scrivi {
-  --largo: min(calc(100cqw - 16px), 340px);
-  --tessera: calc(var(--riga) * 0.56);
-  --spazio: calc(var(--largo) - 48px - var(--date) * (var(--tessera) * 0.86 + 4px));
-  --corpo: min(calc(var(--riga) * 0.42), calc(var(--spazio) / (var(--n) * 0.8 + 0.6)));
-  box-sizing: border-box;
+  --tessera: min(calc(var(--riga) * 0.66), 42px);
+  --spazio: calc(100cqw - 28px - 32px - var(--date) * (var(--tessera) * 0.72 + 4px));
+  --corpo: min(calc(var(--riga) * 0.44), 27px, calc(var(--spazio) / (var(--n) * 0.72 + 0.6)));
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: var(--largo);
-  height: calc(var(--riga) * 0.84);
-  padding: 0 16px 0 12px;
-  border-radius: 16px;
-  background:
-    radial-gradient(120% 90% at 50% 0%, rgba(90, 162, 255, 0.14), transparent 70%),
-    linear-gradient(180deg, #08113f, #0e1c5f);
+  gap: 4px;
+  width: 100%;
+  height: var(--riga);
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 3px solid var(--giallo);
+  border-radius: 18px;
+  background: #fff;
   box-shadow:
-    inset 0 3px 9px rgba(0, 0, 0, 0.6),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 1.5px rgba(120, 170, 255, 0.32);
-  transition: box-shadow 300ms ease;
+    0 0 0 var(--filo) var(--cat-ink),
+    0 5px 0 var(--filo) var(--cat-ink);
+  color: #12204f;
 }
 
-.cat-scrivi.is-attiva {
-  box-shadow:
-    inset 0 3px 9px rgba(0, 0, 0, 0.6),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.08),
-    0 0 0 1.5px rgba(150, 195, 255, 0.75),
-    0 0 24px -6px rgba(90, 162, 255, 0.85);
+.cat-scrivi.is-finale {
+  border-color: #ff5c9a;
 }
 
-/* Le lettere che si vedono, vicine come l'inizio di una parola: d'oro, e si girano quando arrivano. */
+/* L'alone che respira attorno al riquadro di adesso. */
+.cat-scrivi.is-attiva::after {
+  position: absolute;
+  inset: -9px;
+  border: 3px solid rgba(255, 224, 122, 0.9);
+  border-radius: 24px;
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  animation: cat-alone 1.8s ease-in-out infinite;
+}
+
+.cat-scrivi.is-finale.is-attiva::after {
+  border-color: rgba(255, 92, 154, 0.9);
+}
+
+@keyframes cat-alone {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.85;
+    transform: none;
+  }
+}
+
 .cat-scrivi__date {
   display: flex;
   flex: none;
-  gap: 4px;
+  gap: 3px;
 }
 
 .cat-scrivi__data {
   display: grid;
   flex: none;
   place-items: center;
-  width: calc(var(--tessera) * 0.86);
+  width: calc(var(--tessera) * 0.72);
   height: var(--tessera);
-  border-radius: calc(var(--tessera) * 0.2);
-  background: linear-gradient(180deg, #ffe08a, var(--cat-oro) 45%, var(--cat-oro-2));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    0 0 0 1.5px rgba(120, 70, 0, 0.5),
-    0 0 16px -4px rgba(255, 200, 61, 0.8);
-  color: #1b1f66;
+  box-sizing: border-box;
+  border: 2px solid #8a5a00;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffe58a, #f2b33d);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.6);
+  color: #12204f;
   font-family: var(--font-rounded);
-  font-size: calc(var(--tessera) * 0.62);
-  font-weight: 900;
+  font-size: calc(var(--tessera) * 0.58);
   line-height: 1;
 }
 
+/* Una lettera che si scopre salta fuori, girando. */
 .cat-anello.is-qui .cat-scrivi__data {
-  animation: cat-gira 560ms cubic-bezier(0.3, 1.3, 0.5, 1) both;
+  animation: cat-nuova 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
 }
 
-/* La riga: le lettere ci stanno sopra, e il cursore dopo l'ultima. */
+@keyframes cat-nuova {
+  0% {
+    transform: scale(0) rotate(-30deg);
+  }
+  70% {
+    transform: scale(1.25) rotate(6deg);
+  }
+}
+
 .cat-scrivi__riga {
-  --filo: calc(var(--riga) * 0.15);
-  position: relative;
   display: flex;
   flex: 1;
-  align-items: flex-end;
-  align-self: stretch;
+  align-items: center;
   min-width: 0;
-  padding: 0 2px calc(var(--filo) + 5px);
-}
-
-/* Il filo, con la luce che ci corre sopra quando tocca a te. */
-.cat-scrivi__riga::after {
-  position: absolute;
-  right: 0;
-  bottom: var(--filo);
-  left: 0;
-  height: 2px;
-  border-radius: 1px;
-  background: linear-gradient(90deg, transparent, #fff, transparent) no-repeat -45% 0 / 30% 100%,
-    rgba(255, 255, 255, 0.3);
-  content: '';
-}
-
-.cat-scrivi.is-attiva .cat-scrivi__riga::after {
-  animation: cat-filo 2.6s ease-in-out infinite;
-}
-
-@keyframes cat-filo {
-  60%,
-  100% {
-    background-position:
-      145% 0,
-      0 0;
-  }
+  overflow: hidden;
+  padding-left: 2px;
 }
 
 .cat-scrivi__lettera {
-  color: #fff;
   font-family: var(--font-rounded);
   font-size: var(--corpo);
-  font-weight: 900;
+  line-height: 1;
   letter-spacing: 0.04em;
-  line-height: 0.8;
-  text-shadow: 0 0 14px rgba(150, 195, 255, 0.6);
-  animation: cat-scrivi 260ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
+  animation: cat-scrivi 0.14s ease-out;
 }
 
 @keyframes cat-scrivi {
-  from {
-    opacity: 0;
-    transform: translateY(-45%) scale(1.35);
+  50% {
+    transform: scale(1.18);
   }
 }
 
-/* Il cursore: dove va la prossima lettera, d'oro, che lampeggia piano. */
 .cat-scrivi__cursore {
   flex: none;
   width: 3px;
-  height: calc(var(--corpo) * 0.86);
-  margin-left: 3px;
+  height: calc(var(--corpo) * 1.1);
+  margin-left: 2px;
   border-radius: 2px;
-  background: var(--cat-oro);
-  box-shadow: 0 0 10px rgba(255, 200, 61, 0.9);
-  animation: cat-cursore 1.1s ease-in-out infinite;
+  background: #1a9db0;
+  animation: cat-cursore 1s steps(1) infinite;
 }
 
 @keyframes cat-cursore {
-  0%,
-  45% {
-    opacity: 1;
-  }
-  55%,
-  95% {
-    opacity: 0.12;
+  50% {
+    opacity: 0;
   }
 }
 
-/* L'attesa: le lettere scritte pulsano, una dopo l'altra, e il riquadro si accende. */
+/* L'attesa: le lettere scritte pulsano, una dopo l'altra. */
 .cat-scrivi.is-attesa .cat-scrivi__lettera {
   animation: cat-pulsa 600ms ease-in-out infinite alternate;
   animation-delay: calc(var(--k) * 60ms);
@@ -812,9 +656,9 @@
   animation: none;
 }
 
-/* La busta della finale: il riquadro si fa d'oro e respira. */
+/* La busta della finale: il riquadro respira. */
 .cat-scrivi.is-busta {
-  animation: cat-busta-riga 900ms ease-in-out infinite alternate;
+  animation: cat-respira 0.9s ease-in-out infinite alternate;
 }
 
 .cat-scrivi.is-busta .cat-scrivi__lettera {
@@ -822,45 +666,37 @@
   animation-delay: calc(var(--k) * 90ms);
 }
 
-@keyframes cat-busta-riga {
+@keyframes cat-respira {
   to {
-    box-shadow:
-      inset 0 3px 9px rgba(0, 0, 0, 0.5),
-      0 0 0 2px var(--cat-oro),
-      0 0 26px rgba(255, 200, 61, 0.7);
+    transform: scale(1.03);
   }
 }
 
-/* L'errore: le lettere scritte si fanno rosse e cadono dalla riga, e il riquadro trema. */
+@keyframes cat-pulsa {
+  to {
+    transform: translateY(-4px);
+  }
+}
+
+/* L'errore: il riquadro si fa rosso e trema, e le lettere scritte si spengono. */
 .cat-scrivi.esito-sbagliata,
 .cat-scrivi.esito-rivelata,
 .cat-scrivi.esito-scaduta {
-  box-shadow:
-    inset 0 3px 9px rgba(0, 0, 0, 0.6),
-    0 0 0 1.5px var(--cat-sbagliata),
-    0 0 24px -6px rgba(255, 90, 95, 0.8);
+  border-color: #ff5c6b;
   animation: cat-trema 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 .cat-scrivi.esito-sbagliata .cat-scrivi__lettera,
 .cat-scrivi.esito-rivelata .cat-scrivi__lettera,
 .cat-scrivi.esito-scaduta .cat-scrivi__lettera {
-  color: #ff8b8f;
-  text-shadow: 0 0 14px rgba(255, 90, 95, 0.9);
-  animation: cat-cade-lettera 700ms 260ms cubic-bezier(0.5, 0, 0.8, 0.4) both;
+  animation: cat-spegne 0.5s 0.2s ease-in both;
 }
 
-@keyframes cat-pulsa {
+@keyframes cat-spegne {
   to {
-    transform: translateY(-4px);
-    filter: brightness(1.35);
+    opacity: 0;
+    transform: translateY(6px);
   }
-}
-
-/* La parola mostrata dopo l'errore trema ancora. */
-.cat-caselle.esito-rivelata,
-.cat-caselle.esito-scaduta {
-  animation: cat-trema 480ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
 
 @keyframes cat-trema {
@@ -883,44 +719,55 @@
   }
 }
 
-@keyframes cat-cade-lettera {
-  to {
+/* La parola sbagliata, barrata, che cade sotto il riquadro. */
+.cat-caduta {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: calc(50% - 60px);
+  z-index: 4;
+  width: 120px;
+  overflow: hidden;
+  padding: 2px 10px;
+  box-sizing: border-box;
+  border: var(--filo) solid #e5383b;
+  border-radius: 10px;
+  background: #fffbf2;
+  color: #d0262a;
+  font-family: var(--font-rounded);
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  text-align: center;
+  text-decoration: line-through;
+  text-decoration-thickness: 2.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: cat-cade 1.4s ease-in both;
+}
+
+@keyframes cat-cade {
+  0% {
     opacity: 0;
-    transform: translateY(26px) rotate(14deg);
+    transform: translateY(-14px) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: none;
+  }
+  55% {
+    opacity: 1;
+    transform: rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(80px) rotate(14deg);
   }
 }
 
-/* La parola trovata: verde, una lettera dopo l'altra. */
-.cat-caselle.is-giusta .cat-casella {
-  background: linear-gradient(180deg, #7af0ad, var(--cat-giusta) 50%, #1fa860);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    0 0 16px -4px rgba(61, 220, 132, 0.8);
-  color: #062d17;
-}
-
-/* La parola mostrata dopo due errori: arancio. */
-.cat-caselle.is-rivelata .cat-casella {
-  background: linear-gradient(180deg, #ffc58a, var(--cat-rivelata) 50%, #d8640c);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 14px -4px rgba(255, 154, 60, 0.8);
-  color: #3a1600;
-}
-
-.cat-anello.is-qui .cat-caselle.is-giusta .cat-casella,
-.cat-anello.is-qui .cat-caselle.is-rivelata .cat-casella {
-  animation: cat-gira 520ms cubic-bezier(0.3, 1.3, 0.5, 1) both;
-  animation-delay: calc(var(--k) * 75ms);
-}
-
-/* Le parole passate, nella catena che sale: piu' piccole, senza ombre. */
-.cat-anello.is-sopra .cat-casella {
-  box-shadow: none;
-}
-
-/* La maglia fra due parole: aperta, poi intrecciata e d'oro. */
+/* La maglia fra due parole: due anelli d'acciaio col filo, aperti, poi chiusi e d'oro. */
 .cat-giunto {
+  position: relative;
+  z-index: 2;
   display: grid;
   place-items: center;
   height: var(--giunto);
@@ -929,17 +776,25 @@
 
 .cat-giunto svg {
   width: auto;
-  height: 100%;
+  height: calc(100% + 14px);
   overflow: visible;
 }
 
 .cat-giunto rect {
   fill: none;
-  stroke: rgba(255, 255, 255, 0.24);
-  stroke-width: 3.2;
   transition:
     stroke 400ms ease,
     transform 500ms cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+
+.cat-giunto__filo {
+  stroke: var(--cat-ink);
+  stroke-width: 6.5;
+}
+
+.cat-giunto__metallo {
+  stroke: #d7deea;
+  stroke-width: 3.2;
 }
 
 .cat-giunto__sotto {
@@ -950,8 +805,8 @@
   opacity: 0;
 }
 
-.cat-giunto.is-chiusa rect {
-  stroke: var(--cat-oro);
+.cat-giunto.is-chiusa .cat-giunto__metallo {
+  stroke: var(--giallo);
 }
 
 .cat-giunto.is-chiusa .cat-giunto__sotto {
@@ -959,115 +814,188 @@
 }
 
 .cat-giunto.is-chiusa svg {
-  filter: drop-shadow(0 0 4px rgba(255, 200, 61, 0.7));
   animation: cat-scatta 560ms cubic-bezier(0.2, 1.6, 0.4, 1) both;
 }
 
-/* ---------- Presentazione e annunci ---------- */
+@keyframes cat-scatta {
+  40% {
+    transform: scale(1.25);
+  }
+}
 
-.cat-intro {
+/* ---------- Prima di cominciare: una catena d'esempio che dondola, e le regole ---------- */
+
+.cat-pronta {
   position: absolute;
   inset: 0;
-  z-index: 3;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: var(--sp-4);
-  padding: var(--sp-6);
-  background: radial-gradient(70% 60% at 50% 45%, rgba(19, 39, 122, 0.85), rgba(5, 10, 46, 0.96));
-  text-align: center;
-  animation: cat-appare 500ms ease-out both;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: 20px;
+  animation: cat-entra 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
-.cat-intro__titolo {
-  margin: 0;
-  background: linear-gradient(180deg, #fff3c4, var(--cat-oro) 55%, var(--cat-oro-2));
-  background-clip: text;
-  color: transparent;
+.cat-pronta__catena {
+  --riga: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(230px, 70cqw);
+  transform-origin: 50% 0;
+  animation: cat-dondola 4s ease-in-out infinite;
+}
+
+.cat-pronta__catena .cat-targa {
+  height: 48px;
   font-family: var(--font-rounded);
-  font-size: clamp(2.2rem, 12cqw, 3.4rem);
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  filter: drop-shadow(0 4px 14px rgba(255, 170, 30, 0.45));
-  animation: cat-titolo 900ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+  font-size: 23px;
+  letter-spacing: 0.05em;
 }
 
-@keyframes cat-titolo {
-  from {
-    opacity: 0;
-    transform: scale(0.6) rotate(-6deg);
-  }
+.cat-pronta__catena .cat-targa.is-piccola {
+  height: 36px;
+  font-size: 17px;
+  opacity: 0.7;
+  transform: scale(0.94);
 }
 
-.cat-intro__testo {
-  max-width: 30ch;
+.cat-pronta__catena .cat-targa.is-esempio {
+  background: #ffe07a;
+}
+
+/* Un anello fra due targhe d'esempio. */
+.cat-maglietta {
+  position: relative;
+  z-index: 2;
+  display: block;
+  width: 16px;
+  height: 26px;
+  margin: -8px auto;
+  box-sizing: border-box;
+  border: 4px solid #d7deea;
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1.5px var(--cat-ink),
+    inset 0 0 0 1.5px var(--cat-ink);
+}
+
+.cat-pronta__righe {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
   margin: 0;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: var(--text-callout);
-  line-height: 1.4;
+  padding: 0;
+  list-style: none;
 }
 
-@keyframes cat-appare {
-  from {
-    opacity: 0;
+.cat-pronta__riga {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #eaf2ff;
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.cat-punto {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--cat-ink);
+  border-radius: 50%;
+}
+
+.cat-punto.is-cielo {
+  background: var(--catena-tinta);
+}
+
+.cat-punto.is-giallo {
+  background: var(--giallo);
+}
+
+.cat-punto.is-rosso {
+  background: #ff7a7a;
+}
+
+@keyframes cat-dondola {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  50% {
+    transform: rotate(2deg);
   }
 }
 
-/* "La parola finale": il nastro d'oro che attraversa lo studio. */
+@keyframes cat-entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* ---------- L'annuncio della parola finale ---------- */
+
 .cat-nastro {
   position: absolute;
-  top: 34%;
+  top: 30%;
   right: 0;
   left: 0;
   z-index: 3;
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 8px;
   pointer-events: none;
 }
 
 .cat-nastro__testo {
   width: 100%;
-  padding: 12px 0;
-  background: linear-gradient(90deg, transparent, var(--cat-oro-2) 12%, var(--cat-oro) 50%, var(--cat-oro-2) 88%, transparent);
-  box-shadow: 0 0 40px rgba(255, 200, 61, 0.5);
-  color: #241200;
+  box-sizing: border-box;
+  padding: 10px 0;
+  border-block: var(--filo) solid var(--cat-ink);
+  background: #ff8fbf;
+  box-shadow: 0 4px 0 var(--cat-ink);
+  color: #2a1f5c;
   font-family: var(--font-rounded);
-  font-size: clamp(1.4rem, 8cqw, 2.1rem);
-  font-weight: 900;
-  letter-spacing: 0.06em;
+  font-size: clamp(24px, 8cqw, 32px);
+  letter-spacing: 0.04em;
   text-align: center;
   text-transform: uppercase;
+  transform-origin: 0 50%;
   animation: cat-nastro 4.4s cubic-bezier(0.3, 0.8, 0.3, 1) both;
 }
 
 .cat-nastro__sotto {
   padding: 4px 12px;
-  border-radius: var(--r-pill);
-  background: rgba(5, 10, 46, 0.85);
-  color: var(--cat-oro);
-  font-size: var(--text-footnote);
-  font-weight: 700;
+  border: 2px solid var(--cat-ink);
+  border-radius: 999px;
+  background: #fff6e0;
+  color: #12204f;
+  font-size: 13px;
+  font-weight: 900;
   animation: cat-nastro-sotto 4.4s ease both;
 }
 
 @keyframes cat-nastro {
   0% {
-    clip-path: inset(0 100% 0 0);
-    transform: scaleY(0.4);
+    transform: scaleX(0);
   }
   14% {
-    clip-path: inset(0 0 0 0);
-    transform: scaleY(1.15);
+    transform: scaleX(1) scaleY(1.15);
   }
   20%,
   78% {
-    clip-path: inset(0 0 0 0);
-    transform: scaleY(1);
+    opacity: 1;
+    transform: none;
   }
   100% {
-    clip-path: inset(0 0 0 100%);
-    transform: scaleY(1);
+    opacity: 0;
+    transform: translateX(30%);
   }
 }
 
@@ -1087,250 +1015,468 @@
   }
 }
 
-/* ---------- I comandi e la tastiera ---------- */
+/* ---------- L'adesivo: salta fuori sul palco e se ne va da solo ---------- */
 
-.cat-comandi {
+.cat-adesivo {
+  position: absolute;
+  top: 18%;
+  right: 0;
+  left: 0;
+  z-index: 6;
   display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--sp-2);
-  min-height: 40px;
+  justify-content: center;
+  pointer-events: none;
 }
 
-.cat-stato {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: var(--text-subhead);
-  font-weight: 700;
-  text-overflow: ellipsis;
+.cat-adesivo span {
+  padding: 6px 22px;
+  border: 3px solid #2a1f5c;
+  border-radius: 18px;
+  font-family: var(--font-rounded);
+  font-size: clamp(26px, 9cqw, 34px);
+  line-height: 1.1;
   white-space: nowrap;
+  opacity: 0;
+  animation-duration: var(--durata);
+  animation-fill-mode: forwards;
 }
 
-.cat-stato.is-giusta {
-  color: var(--cat-giusta);
+.cat-adesivo.is-vivace span {
+  background: #5edb84;
+  box-shadow: 0 5px 0 #2a1f5c;
+  color: #2a1f5c;
+  animation-name: cat-adesivo-vivace;
 }
 
-.cat-stato.is-sbagliata,
-.cat-stato.is-rivelata,
-.cat-stato.is-scaduta {
-  color: #ff8a8d;
+.cat-adesivo.is-bordato span {
+  border-color: #e5383b;
+  background: #fffbf2;
+  box-shadow: 0 5px 0 #e5383b;
+  color: #d0262a;
+  animation-name: cat-adesivo-bordato;
 }
+
+@keyframes cat-adesivo-vivace {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-24deg);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.12) rotate(-5deg);
+  }
+  30% {
+    transform: rotate(-6deg);
+  }
+  72% {
+    opacity: 1;
+    transform: rotate(-6deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-36px) rotate(-6deg) scale(0.9);
+  }
+}
+
+@keyframes cat-adesivo-bordato {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(5deg);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.05) rotate(4deg);
+  }
+  22% {
+    transform: translateX(-6px) rotate(4deg);
+  }
+  29% {
+    transform: translateX(6px) rotate(4deg);
+  }
+  36% {
+    transform: translateX(-3px) rotate(4deg);
+  }
+  43%,
+  72% {
+    opacity: 1;
+    transform: rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(24px) rotate(4deg);
+  }
+}
+
+/* ---------- Le azioni: Comincia, il jolly, il terzo elemento ---------- */
 
 .cat-azioni {
   display: flex;
   flex: none;
-  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 56px;
+}
+
+.cat-comincia {
+  width: 100%;
+  height: 56px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 18px;
+  background: var(--catena-tinta);
+  box-shadow: var(--ombra-tasto);
+  color: #2a1f5c;
+  cursor: pointer;
+  font-family: var(--font-rounded);
+  font-size: 21px;
+  animation: cat-respira-tasto 2.4s ease-in-out infinite;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.cat-comincia:active {
+  box-shadow: var(--ombra-tasto-giu);
+  transform: translateY(3px);
+  animation: none;
+}
+
+@keyframes cat-respira-tasto {
+  50% {
+    transform: scale(1.03);
+  }
 }
 
 .cat-azione {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  gap: 8px;
+  height: 46px;
+  padding: 0 18px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: #ffe07a;
+  box-shadow: var(--ombra-tasto);
+  color: #2a1f5c;
   cursor: pointer;
-  font: inherit;
-  font-size: var(--text-footnote);
-  font-weight: 800;
+  font-family: var(--font-rounded);
+  font-size: 17px;
+  white-space: nowrap;
   transition:
-    transform 90ms ease,
-    opacity 200ms ease;
+    transform 0.1s,
+    box-shadow 0.1s,
+    opacity 0.2s;
 }
 
 .cat-azione:active:not(:disabled) {
-  transform: translateY(1px);
+  box-shadow: var(--ombra-tasto-giu);
+  transform: translateY(3px);
 }
 
+/* Spento si vede spento ma si legge: il fondo si fa grigio, la scritta resta d'inchiostro. */
 .cat-azione:disabled {
+  background: #e3dff0;
+  box-shadow: 0 2px 0 var(--ink);
   cursor: default;
-  opacity: 0.38;
+  transform: translateY(2px);
 }
 
-.cat-azione.is-jolly {
-  border-color: rgba(255, 200, 61, 0.55);
-  color: var(--cat-oro);
-}
-
-.cat-azione.is-compra {
-  border-color: rgba(255, 154, 60, 0.6);
-  color: #ffc58a;
+.cat-azione.is-nonso {
+  background: var(--surface);
+  color: var(--label);
 }
 
 .cat-azione__costo {
-  display: grid;
-  place-items: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  border-radius: var(--r-pill);
-  background: var(--cat-oro);
-  color: #241200;
-  font-size: 0.72rem;
+  padding: 0 6px;
+  border: 2px solid #2a1f5c;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 15px;
 }
 
-/* Su un telefono stretto il terzo elemento si chiama solo "Terzo". */
-@container (max-width: 400px) {
+@container cat (max-width: 360px) {
   .cat-azione__lungo {
     display: none;
   }
 
   .cat-azione {
-    padding: 0 10px;
+    padding: 0 12px;
   }
 }
 
-.cat-azione.is-compra .cat-azione__costo {
-  background: #ffc58a;
-  color: #3a1600;
+.cat-gettoni {
+  display: flex;
+  gap: 3px;
 }
 
-.cat-tastiera {
+.cat-gettone {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 2px solid #2a1f5c;
+  border-radius: 50%;
+  background: #ff5c9a;
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.cat-gettone svg {
+  width: 13px;
+  height: 13px;
+  fill: #fff;
+}
+
+.cat-gettone.is-usato {
+  background: #c9c3dd;
+  transform: rotateY(180deg);
+}
+
+/* ---------- La tastiera: ha il suo posto anche quando non c'e' ---------- */
+
+.cat-sotto {
   flex: none;
+  height: calc(3 * var(--cat-tasto) + 43px);
 }
 
 .cat .keyboard {
-  --tasto-alto: clamp(42px, 6.4vh, 54px);
+  --tasto-alto: var(--cat-tasto);
 }
 
-.cat-tastiera .key--azione {
-  font-weight: 800;
+.cat-tastiera {
+  animation: cat-tastiera-su 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.05) both;
 }
 
-/* ---------- La fine ---------- */
+.cat-tastiera.is-via {
+  pointer-events: none;
+  animation: cat-tastiera-giu 0.45s cubic-bezier(0.5, 0, 0.8, 0.4) both;
+}
 
+@keyframes cat-tastiera-su {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}
+
+@keyframes cat-tastiera-giu {
+  to {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+}
+
+/* ---------- La fine: una carta sopra la scena ---------- */
+
+.cat-velo {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 0 12px;
+  border-radius: 26px;
+  background: var(--velo);
+  animation: cat-appare 0.3s ease-out both;
+  scrollbar-width: none;
+}
+
+@keyframes cat-appare {
+  from {
+    opacity: 0;
+  }
+}
+
+/* La carta della fine e' chiara in tutti e due i temi, come un biglietto: i token dentro seguono. */
 .cat-fine {
-  display: grid;
-  gap: var(--sp-4);
-  padding: var(--sp-2) 0 var(--sp-3);
-}
-
-.cat-intera {
-  display: grid;
-  justify-items: center;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.cat-intera__voce {
-  display: grid;
-  justify-items: center;
-  animation: cat-cade 520ms cubic-bezier(0.2, 1.2, 0.4, 1) both;
-  animation-delay: calc(var(--i) * 90ms);
-}
-
-.cat-intera__parola {
-  min-width: min(56cqw, 240px);
-  padding: 7px 16px;
-  border: 1.5px solid rgba(120, 170, 255, 0.45);
-  border-radius: 12px;
-  background: linear-gradient(180deg, var(--cat-pannello), var(--cat-pannello-2));
-  font-family: var(--font-rounded);
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.cat-intera__voce.is-giusta .cat-intera__parola {
-  border-color: transparent;
-  background: linear-gradient(180deg, #7af0ad, var(--cat-giusta));
-  color: #062d17;
-}
-
-.cat-intera__voce.is-rivelata .cat-intera__parola {
-  border-color: transparent;
-  background: linear-gradient(180deg, #ffc58a, var(--cat-rivelata));
-  color: #3a1600;
-}
-
-.cat-intera__voce.is-terzo .cat-intera__parola {
-  border-color: var(--cat-oro);
-}
-
-.cat-intera__espressione {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 5px 0;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: var(--text-footnote);
-  font-style: italic;
-}
-
-.cat-intera__maglia {
-  width: 9px;
-  height: 14px;
-  border: 2px solid var(--cat-oro);
-  border-radius: 999px;
-  opacity: 0.8;
-}
-
-.cat-totale {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
+  gap: 7px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 18px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fff1c9, #d6f6fa);
+  box-shadow: var(--ombra-carta);
+  color: #2a1f5c;
+  color-scheme: light;
   text-align: center;
+  animation: cat-compare 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
-.cat-totale__valore {
-  margin: 0;
+@keyframes cat-compare {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+}
+
+.cat-fine__icona {
+  display: grid;
+  animation: cat-galleggia 4.2s ease-in-out infinite;
+}
+
+@keyframes cat-galleggia {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.cat-fine__titolo {
+  margin: 2px 0 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-1);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.cat-fine__riga {
+  margin: 0;
+  color: #4e4479;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.cat-espressioni {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 2px 0 0;
+  padding: 8px 12px 8px 30px;
+  border: 2px dashed rgba(42, 31, 92, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #4e4479;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: left;
+}
+
+.cat-espressione {
+  animation: cat-entra 0.4s calc(0.2s + var(--i) * 50ms) ease-out both;
+}
+
+.cat-espressione.is-finale {
+  color: #2a1f5c;
   font-weight: 900;
 }
 
-.cat-totale__dettaglio,
-.cat-piede {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: var(--text-footnote);
-  text-align: center;
+.cat-fine__timbro {
+  display: grid;
+  place-items: center;
+  width: 70px;
+  height: 70px;
+  box-sizing: border-box;
+  margin-top: 4px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 50%;
+  background: var(--giallo);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 3px 0 #2a1f5c;
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 23px;
+  animation: cat-timbra 0.7s 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
-.cat-link {
+.cat-fine__timbro.is-vinta {
+  background: #5edb84;
+}
+
+@keyframes cat-timbra {
+  0% {
+    opacity: 0;
+    transform: scale(1.9) rotate(-24deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.88) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.06) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cat-fine__piede {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--sp-3);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
 }
 
-.cat-link__voce {
+.cat-fine__nota {
+  margin: 0;
+  color: #4e4479;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.cat-fine__bottoni {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cat-fine__bottone {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  min-height: 44px;
-  padding: 0 var(--sp-4);
-  border: 0;
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  min-height: 50px;
+  padding: 0 10px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 16px;
+  background: #fffbf2;
+  box-shadow:
+    0 4px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: #2a1f5c;
   cursor: pointer;
-  font: inherit;
-  font-weight: 700;
+  font-family: var(--font-rounded);
+  font-size: 17px;
   text-decoration: none;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
 }
 
-.cat-link__voce:active {
-  transform: translateY(1px);
+.cat-fine__bottone:active {
+  box-shadow:
+    0 1px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  transform: translateY(3px);
+}
+
+.cat-fine__bottone.is-giallo {
+  background: var(--giallo);
+}
+
+.cat-fine__bottone.is-menta {
+  background: var(--menta);
 }
 
 /* Prima che la partita arrivi: lo studio con le luci spente, che respira. */
 .cat-attesa {
-  flex: 1;
   width: 100%;
-  max-width: 620px;
-  min-height: 0;
-  margin: 0 auto;
-  border-radius: 28px;
-  background: linear-gradient(180deg, var(--cat-palco-1), var(--cat-palco-2));
+  max-width: 560px;
+  height: clamp(220px, 50dvh, 400px);
+  margin: 62px auto 0;
+  border: var(--filo) solid #0b1b4a;
+  border-radius: 26px;
+  background: radial-gradient(ellipse at 50% 0%, #3c8bf0 0%, #1a47a6 48%, #0f2a6b 100%);
+  box-shadow: 0 5px 0 #0b1b4a;
   animation: cat-attesa 1.2s ease-in-out infinite alternate;
 }
 
@@ -1340,92 +1486,82 @@
   }
 }
 
-/* ---------- Telefono di traverso: la catena a sinistra, la tastiera a destra ---------- */
+/* ---------- Telefono di traverso: la pagina scorre, e il palco ha la sua altezza ---------- */
 
-@media (orientation: landscape) and (max-height: 520px) {
+@media (orientation: landscape) and (max-height: 560px) {
   .cat {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr) auto;
-    column-gap: var(--sp-4);
-    max-width: 900px;
-  }
-
-  .cat-testa {
-    grid-column: 1;
-    grid-row: 1;
+    --cat-tasto: 40px;
+    container-type: normal;
   }
 
   .cat-palco {
-    grid-column: 1;
-    grid-row: 2 / span 2;
-  }
-
-  .cat-comandi {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .cat-tastiera {
-    grid-column: 2;
-    grid-row: 2 / span 2;
-    align-self: end;
-  }
-
-  .cat .keyboard {
-    --tasto-alto: clamp(38px, 12vh, 48px);
-  }
-
-  .cat-fine {
-    grid-column: 1 / span 2;
-    grid-row: 2 / span 2;
+    flex: none;
+    height: 300px;
   }
 }
 
-/*
- * Su un telefono stretto il montepremi e le monete si fanno piccoli, e le
- * maglie ci stanno in mezzo. In fondo al foglio: una regola dentro @container
- * non pesa di piu' delle altre, e quelle scritte dopo vincerebbero.
- */
-@container (max-width: 360px) {
-  .cat-montepremi {
-    min-width: 0;
-    padding: 3px 9px 4px;
-  }
-
-  .cat-montepremi__etichetta {
-    font-size: 0.52rem;
-    letter-spacing: 0.04em;
-  }
-
-  .cat-montepremi__valore,
-  .cat-montepremi__prima {
-    font-size: 1.3rem;
-  }
-
-  .cat-jolly__moneta {
-    width: 27px;
-    height: 27px;
-    font-size: 0.85rem;
-  }
-
-  .cat-maglia {
-    width: 20px;
-    height: 13px;
-  }
-
-  .cat-maglia.is-finale {
-    width: 25px;
-    height: 16px;
-  }
-}
-
-/* Senza animazioni la catena si sposta di colpo, e le parole compaiono e basta. */
 @media (prefers-reduced-motion: reduce) {
   .cat-binario,
   .cat-anello,
-  .cat-jolly__moneta,
-  .cat-giunto rect {
+  .cat-giunto rect,
+  .cat-gettone {
     transition: none;
+  }
+
+  .cat-montepremi__valore,
+  .cat-montepremi.is-vinto,
+  .cat-montepremi__prima,
+  .cat-montepremi__meta,
+  .cat-maglia,
+  .cat-tempo.is-urgente .cat-tempo__n,
+  .cat-palco__luci::before,
+  .cat.is-entra .cat-anello.is-qui,
+  .cat-targa.is-terzo,
+  .cat-anello.is-qui .cat-caselle .cat-casella,
+  .cat-caselle.esito-rivelata,
+  .cat-caselle.esito-scaduta,
+  .cat-scrivi,
+  .cat-scrivi::after,
+  .cat-scrivi__data,
+  .cat-anello.is-qui .cat-scrivi__data,
+  .cat-scrivi__lettera,
+  .cat-scrivi__cursore,
+  .cat-giunto.is-chiusa svg,
+  .cat-pronta,
+  .cat-pronta__catena,
+  .cat-nastro__testo,
+  .cat-nastro__sotto,
+  .cat-comincia,
+  .cat-tastiera,
+  .cat-velo,
+  .cat-fine,
+  .cat-fine__icona,
+  .cat-espressione,
+  .cat-fine__timbro {
+    animation: none;
+  }
+
+  .cat-caduta {
+    display: none;
+  }
+
+  .cat-tastiera.is-via {
+    animation: none;
+    opacity: 0;
+  }
+
+  /* L'adesivo compare e se ne va, senza muoversi. */
+  .cat-adesivo span {
+    animation: cat-adesivo-fermo var(--durata) steps(1, end) forwards;
+  }
+
+  @keyframes cat-adesivo-fermo {
+    0%,
+    85% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
   }
 }
