@@ -35,6 +35,48 @@
   color: var(--label-secondary);
 }
 
+/* Sotto il nome, com'e' andata oggi: due etichette pastello col filo. */
+.profilo-testa__etichette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.profilo-testa__etichetta {
+  padding: 1px 9px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--giallo);
+  color: var(--ink);
+  font-size: var(--text-caption-1);
+  font-weight: 900;
+}
+
+.profilo-testa__etichetta.is-punti {
+  background: var(--rosa);
+}
+
+/* Su ogni amico il tasto per invitarlo: porta al suo profilo, dove si sceglie il gioco. */
+.profilo-amici__invita {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--giallo);
+  box-shadow: 0 2px 0 var(--ink);
+  color: var(--ink);
+  font-family: var(--font-rounded);
+  font-size: 0.9375rem;
+}
+
+.profilo__nessuno {
+  padding: 0 var(--sp-1);
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  color: var(--label-secondary);
+}
+
 /* Gli amici online: una riga ciascuno, con il punto verde sull'avatar, che non vuole il quadratino colorato. */
 .riga__icona:has(.profilo-amici__avatar) {
   width: auto;

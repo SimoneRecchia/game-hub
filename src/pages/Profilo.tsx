@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 import { CODE_LENGTH, CODE_TTL_MINUTES, NICKNAME_MAX, NICKNAME_OGNI_GIORNI, NICKNAME_PATTERN } from '@shared/config'
-import type { CodiceMandato, Player } from '@shared/types'
+import type { CodiceMandato, OggiRisposta, Player } from '@shared/types'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
@@ -60,6 +60,9 @@ export default function Profilo() {
   const [busy, setBusy] = useState(false)
   // Il pannello di amministrazione: la riga c'e' solo per chi ne ha il ruolo, e lo chiede solo il profilo.
   const { dati: admin } = useDati<AdminIo>('/admin/io')
+  // La giornata, per le etichette sotto il nome: e' la stessa risposta delle Giornaliere, di solito gia' in memoria.
+  const { dati: oggi } = useDati<OggiRisposta>('/oggi', { fresco: 15_000 })
+  const generale = oggi?.generale ?? null
 
   return (
     <Pagina titolo="Profilo" indietro={{ a: ROTTE.home, etichetta: da }}>
@@ -70,6 +73,12 @@ export default function Profilo() {
           <p className="profilo-testa__da">
             @{player.nickname} · nel gruppo dal {formatGameDate(player.createdAt.slice(0, 10))}
           </p>
+          {generale && generale.punti > 0 && (
+            <p className="profilo-testa__etichette">
+              {generale.posizione && <span className="profilo-testa__etichetta">{generale.posizione}º oggi</span>}
+              <span className="profilo-testa__etichetta is-punti">{generale.punti} punti oggi</span>
+            </p>
+          )}
         </div>
       </section>
 
@@ -84,32 +93,40 @@ export default function Profilo() {
         </Elenco>
       </Sezione>
 
-      <Sezione titolo="Persone">
+      <Sezione
+        titolo="Amici online"
+        conto={amici && amici.length > 0 ? `${amici.length} adesso` : undefined}
+        stile={{ '--conto': '#c9f1d5' } as CSSProperties}
+      >
         {amici === null ? (
           <div className="profilo-amici__attesa scheletro" aria-hidden="true" />
         ) : (
-          <Elenco>
-            {amici.map((a) => (
-              <Riga
-                key={a.playerId}
-                icona={
-                  <span className="profilo-amici__avatar">
-                    <Avatar nickname={a.nickname} color={a.avatarColor} size={34} />
-                    <span className="profilo-amici__online" aria-hidden="true" />
-                  </span>
-                }
-                titolo={a.displayName}
-                sotto={DOVE[a.attivita]}
-                a={ROTTE.amico(a.nickname)}
-              />
-            ))}
-            <Riga
-              icona={<IconPeople size={18} />}
-              titolo="Cerca una persona"
-              sotto={amici.length === 0 ? 'Nessuno è online adesso' : undefined}
-              onClick={() => setPersone(true)}
-            />
-          </Elenco>
+          <>
+            {amici.length > 0 && (
+              <Elenco>
+                {amici.map((a) => (
+                  <Riga
+                    key={a.playerId}
+                    icona={
+                      <span className="profilo-amici__avatar">
+                        <Avatar nickname={a.nickname} color={a.avatarColor} size={34} />
+                        <span className="profilo-amici__online" aria-hidden="true" />
+                      </span>
+                    }
+                    titolo={a.displayName}
+                    sotto={DOVE[a.attivita]}
+                    valore={<span className="profilo-amici__invita">Invita</span>}
+                    a={ROTTE.amico(a.nickname)}
+                  />
+                ))}
+              </Elenco>
+            )}
+            {amici.length === 0 && <p className="profilo__nessuno">Nessuno è online adesso</p>}
+            <Button size="lg" fullWidth onClick={() => setPersone(true)}>
+              <IconPeople size={20} />
+              Cerca una persona
+            </Button>
+          </>
         )}
       </Sezione>
 

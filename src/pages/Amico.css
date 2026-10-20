@@ -8,11 +8,17 @@
 .amico-testa {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  border: var(--filo) solid var(--ink);
+  border-radius: 26px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  margin-bottom: 5px;
   text-align: center;
 }
 
