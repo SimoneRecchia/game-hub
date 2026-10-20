@@ -37,15 +37,20 @@
   min-width: 200px;
   max-width: min(84vw, 320px);
   padding: var(--sp-3) var(--sp-6) var(--sp-4);
+  border: var(--filo) solid var(--ink);
   border-radius: 30px;
   text-align: center;
-  box-shadow: var(--shadow-lg);
+  /* Un adesivo vero: il margine bianco ritagliato attorno, e sotto l'ombra secca. */
+  box-shadow:
+    0 0 0 5px #fff,
+    0 9px 0 5px rgba(18, 12, 43, 0.32);
 }
 
 /* Vivace: nel colore del gioco, salta fuori un po' storto. */
 .adesivo.is-vivace .adesivo__carta {
-  background: var(--adesivo-colore, linear-gradient(155deg, #7b6cff, var(--brand) 75%));
+  background: var(--adesivo-colore, linear-gradient(155deg, #8a7bff, #4f46e5 75%));
   color: #fff;
+  text-shadow: 0 2px 0 rgba(18, 12, 43, 0.55);
   animation:
     adesivo-salta calc(var(--durata) * 0.4) var(--ease-out) both,
     adesivo-via calc(var(--durata) * 0.22) ease-in calc(var(--durata) * 0.78) forwards;
@@ -55,7 +60,6 @@
 .adesivo.is-bordato .adesivo__carta {
   background: var(--surface);
   color: var(--label);
-  box-shadow: var(--ombra-album);
   animation:
     adesivo-trema calc(var(--durata) * 0.4) var(--ease-out) both,
     adesivo-via calc(var(--durata) * 0.22) ease-in calc(var(--durata) * 0.78) forwards;
@@ -116,9 +120,9 @@
   margin: 0;
   font-family: var(--font-rounded);
   font-size: 2.125rem;
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1.05;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
 }
 
 .adesivo__sotto {
@@ -150,21 +154,22 @@
   place-items: center;
   width: 30px;
   height: 34px;
+  border: 2px solid var(--ink);
   border-radius: 8px;
-  background: #fff;
-  color: #10131a;
+  background: #fffbf2;
+  color: var(--ink);
   font-family: var(--font-rounded);
   font-size: 1.125rem;
-  font-weight: 800;
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+  font-weight: 400;
+  text-shadow: none;
+  box-shadow: 0 2px 0 var(--ink);
   animation: adesivo-lettera calc(var(--durata) * 0.24) var(--ease-bounce) both;
   animation-delay: calc(var(--durata) * 0.18 + var(--i) * 60ms);
 }
 
 .adesivo.is-bordato .adesivo__lettere span {
-  background: var(--fill-tertiary);
+  background: var(--surface-2);
   color: var(--label);
-  box-shadow: none;
 }
 
 @keyframes adesivo-lettera {
