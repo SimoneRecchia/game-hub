@@ -6,10 +6,13 @@
   justify-content: center;
   padding: calc(var(--safe-top) + var(--sp-8)) max(var(--sp-4), var(--safe-left))
     calc(var(--safe-bottom) + var(--sp-8)) max(var(--sp-4), var(--safe-right));
-  /* Un alone tenue dietro la card, come le schermate di setup di iOS. */
+  /* Il fondale dell'album, come le schede (Pagina.css): i puntini, tre macchie e la sfumatura delle Giornaliere. */
   background:
-    radial-gradient(80% 55% at 50% -10%, color-mix(in srgb, var(--brand) 16%, transparent), transparent 70%),
-    var(--bg);
+    radial-gradient(circle at 18px 18px, var(--puntini) 1.4px, transparent 1.6px) 0 0 / 18px 18px,
+    radial-gradient(260px 260px at 108% 22%, var(--macchia-1), transparent 70%),
+    radial-gradient(300px 300px at -16% 70%, var(--macchia-2), transparent 70%),
+    var(--fondo-giornaliere);
+  background-repeat: repeat, no-repeat, no-repeat, no-repeat;
 }
 
 .welcome__theme {
@@ -37,9 +40,10 @@
 .welcome__title {
   font-family: var(--font-rounded);
   font-size: var(--text-hero);
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1;
   letter-spacing: var(--tracking-display);
+  text-shadow: 0 3px 0 light-dark(transparent, var(--ink));
   animation: welcome-sale 600ms var(--ease-push) 160ms both;
 }
 

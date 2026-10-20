@@ -4,10 +4,10 @@
   height: var(--marchio);
   /* Gli angoli dell'icona: 114 su 512. */
   border-radius: 22.27%;
+  /* Il filo d'inchiostro e l'ombra secca degli adesivi: fatti d'ombra, cosi' il disegno resta quello dell'icona. */
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.28),
-    0 10px 28px var(--shadow-tint),
-    0 2px 8px var(--shadow-tint-soft);
+    0 0 0 3px var(--ink),
+    0 6px 0 3px var(--ink);
 }
 
 .marchio svg {

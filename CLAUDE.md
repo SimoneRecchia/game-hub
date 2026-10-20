@@ -3093,7 +3093,7 @@ l'anello dell'avatar ci finiva sopra.
 **Fra le schede il cambio e' immediato, e una schermata ritrovata non
 rientra.** Al cambio di scheda c'era una dissolvenza, e a meta' si vedeva il
 fondo vuoto: sembrava che la pagina si ricaricasse. Ora e' come nella tab bar
-di iOS, la lente scivola e la pagina c'e'. Altre tre cose davano la stessa
+di iOS, la bolla della scheda scivola e la pagina c'e'. Altre tre cose davano la stessa
 impressione. L'entrata della pagina per i browser senza View Transitions
 (`pagina-entra`) valeva con `html:not([data-transizione])`, e quando una
 transizione finiva e l'attributo se ne andava ripartiva: ogni pagina, appena
@@ -3141,7 +3141,7 @@ d'azzardo. Si chiamavano Arena e Salotto, e `/salotto` porta ancora alle Libere.
 Il profilo e la classifica non sono schede: il profilo si apre dall'avatar in
 alto a destra di ogni scheda, la classifica dal trofeo accanto e dall'eroe delle
 Giornaliere e della Fortuna, che portano alla loro. Mentre si guardano il
-profilo e gli amici nessuna scheda e' accesa, e la lente si spegne dov'era
+profilo e gli amici nessuna scheda e' accesa, e la bolla si spegne dov'era
 (`Shell.tsx`). Quale scheda e' accesa lo decide prima `delGiorno`:
 `/quiz/classificata` sta anche sotto `/quiz`, che e' delle Libere. La freccia
 indietro del profilo e delle classifiche dice da dove si e' venuti: lo porta lo
@@ -3172,27 +3172,30 @@ barra laterale. Il quadrifoglio pieno ha le foglie staccate e senza tratto:
 col tratto si toccavano al centro, e diventava una macchia.
 
 **Le tre schede hanno la stessa forma, e ognuna il suo carattere.** `Vetrina`
-(`src/components/`) e' la pagina di tutte e tre: il titolo grande con la data,
-i bottoni in alto, l'eroe e le carte. Il carattere sta in `Vetrina.css`: la
-luce in cima alla pagina nel colore della scheda (`--giornaliere`, `--libere`,
-`--fortuna`, che dicono dove si e' e non che cosa si e' scelto), il movimento
-dell'eroe — le righe e il lampo dei riflettori di una gara, le bolle di una
-lampada, le lampadine di un'insegna — e le tessere delle Libere, che
-galleggiano. Le carte delle classificate sono quelle di prima: una striscia
-nel colore del gioco sul lato c'e' stata per un giorno, e sapeva di gia'
-visto. L'eroe delle Giornaliere e' la giornata: il posto nella generale di
-oggi, i punti, il podio e un anello per gioco. Il podio arriva con
-`/api/oggi` (`generale.podio`), che la generale la calcola comunque: nessuna
-richiesta in piu' per la schermata che si apre di piu'. Che si riapre anche a
-ogni cambio di scheda, e per quindici secondi la risposta in memoria vale senza
-richiederla (`fresco` di `useDati`, `OGGI_FRESCO_MS`): ogni gioco, quando cambia
-qualcosa, la dimentica (`dimentica('/oggi')`), e un gioco nuovo deve farlo
-anche lui. I movimenti dell'eroe sono solo `transform` e `opacity`, perché il
-telefono li fa senza ridisegnare: le righe scorrono di un multiplo esatto del
-loro passo, e il ritorno non si vede.
+(`src/components/`) e' la pagina di tutte e tre: le lucine appese in cima,
+l'etichetta storta con la data, il titolo grande, il trofeo e la faccina in
+alto, l'eroe e le carte. Il carattere sta nel fondale della scheda (`--fondo`:
+pesca e rosa le Giornaliere, menta e azzurro le Libere, la sala viola la
+Fortuna) e nell'eroe. Quello delle Giornaliere e' un biglietto dentellato
+(`Biglietto`) con il podio di oggi e i timbri: uno per classificata fatta, che
+riporta alla partita, e il posto vuoto dell'album per quelle da fare; i timbri
+nuovi da quando si e' guardata la pagina arrivano col colpo del timbro (il
+ricordo sta nel `localStorage`). Sotto, le carte delle sole classificate da
+giocare, e quando non ne resta nessuna la carta di fine giornata. Quello delle
+Libere e' una ruota panoramica con gli amici online nelle cabine, che si
+toccano per aprirne il profilo; le partite in corso sono biglietti. Quello
+della Fortuna e' il saldo su un biglietto d'oro con le fiches. Il podio arriva
+con `/api/oggi` (`generale.podio`), che la generale la calcola comunque:
+nessuna richiesta in piu' per la schermata che si apre di piu'. Che si riapre
+anche a ogni cambio di scheda, e per quindici secondi la risposta in memoria
+vale senza richiederla (`fresco` di `useDati`, `OGGI_FRESCO_MS`): ogni gioco,
+quando cambia qualcosa, la dimentica (`dimentica('/oggi')`), e un gioco nuovo
+deve farlo anche lui. I movimenti delle schede sono solo `transform` e
+`opacity`, perché il telefono li fa senza ridisegnare.
 
 **La Fortuna e' scura in tutti e due i temi.** `Vetrina.css` mette
-`color-scheme: dark` sulla sua pagina e ne ridefinisce `--bg` e `--vetro-barra`:
+`color-scheme: dark` sulla sua pagina, il viola della sala con i puntini d'oro,
+e ne ridefinisce `--bg` e `--vetro-barra`:
 tutti i token sono `light-dark()`, quindi dentro la pagina si girano da soli,
 senza una palette scritta due volte. La tab bar, che sta fuori dalla pagina, si
 gira con `body:has(.vetrina--fortuna)`, e `Vetrina` cambia il `theme-color`
@@ -3448,12 +3451,24 @@ delle righe e sulle decorazioni, mentre etichette, conti e titoletti
 ("Online", "record 80%", i gruppi della barra laterale) usano
 `--label-secondary`, che fa 5:1.
 
-**Profondita' con tre livelli, non con le ombre grandi.** Caselle e tasti usano
-`--edge-light` (filo di luce in alto), una velatura verticale in
-`background-image`, e `--shadow-key` — un'ombra secca senza sfocatura. E' quel
-che fa sembrare un tasto un oggetto; premendo **scende** invece di
+**L'aspetto e' un album di adesivi.** Dal 19 ottobre 2026, dai mockup che
+l'utente ha scelto: carte crema e tasti a colori pieni con il filo
+d'inchiostro (`--ink`, `--filo`) e l'ombra secca sotto (`--ombra-carta`,
+`--ombra-tasto`), i titoli e i numeri in Lilita One e il testo in Nunito,
+serviti dal sito (`src/styles/fonts.css`, `public/fonts/`, licenza OFL), i
+fondali a sfumatura con le macchie e i puntini. L'inchiostro e' scuro in tutti
+e due i temi, e i colori pieni — il giallo dei tasti, il verde delle caselle,
+le etichette pastello — vogliono sopra l'inchiostro anche in scuro. Le carte
+che i giochi misurano punto per punto hanno il filo fatto d'ombra
+(`--ombra-album`): un bordo vero cambierebbe le misure. Ogni gioco ha il suo
+adesivo (`IconaGioco`, un disegno su una griglia di 48 con il bordo bianco
+ritagliato fatto dallo stesso disegno ripetuto sotto, non da cinque filtri), e
+la copertina e' il vetrino che lo contiene (`Copertina`); i giochi della
+Fortuna hanno i loro disegni che si muovono (`IconaFortuna`, solo `transform`
+e `opacity`). Un tasto premuto **scende** sulla sua ombra invece di
 rimpicciolirsi, perché lo `scale` fa sembrare il tasto un'immagine che si
-allontana.
+allontana. Uno spento si fa grigio, non trasparente: velato sul fondo a
+colori non si leggeva.
 
 I keyframes delle caselle usano `background-color` e non `background`: la
 velatura sta in `background-image` e sostituirla in blocco la cancellerebbe.
@@ -3673,10 +3688,9 @@ caselle a ogni movimento. Le tessere gia' posate ricordano il loro posto sul
 leggio (`sposta` lo aggiorna), e l'ordine scelto resta anche ricaricando la
 pagina, per l'ultima partita sola (`scarabeo-leggio` nel `localStorage`).
 
-**Oro, argento e bronzo sono token, e i gradini del podio anche** (`--oro`,
-`--gradino-oro`, ...). Mescolati con `color-mix` al fondo scuro i metalli
-diventavano verde oliva e grigio sporco; ora in chiaro il gradino e' tinto del
-suo metallo, in scuro e' di vetro, e il filo di metallo in cima dice qual e'.
+**Oro, argento e bronzo sono token** (`--oro`, `--argento`, `--bronzo`): gli
+anelli e i numeri dei primi tre. I gradini dei podi sono pieni del loro metallo
+in tutti e due i temi, col filo d'inchiostro, come nei mockup.
 
 **I colori dello Scarabeo sono token scritti a mano, non mescole.** `--tessera`,
 `--tessera-ink` e i quattro `--premio-*` stanno in `tokens.css` come tutto il
@@ -3798,10 +3812,11 @@ cambiata anche lì.
 ## Cose che sembrano sbagliate e non lo sono
 
 **Le classi CSS sono di tutta l'app.** Ogni foglio di stile finisce nello stesso
-CSS, quindi un nome comune collide: le tessere delle Libere si chiamano
+CSS, quindi un nome comune collide: le tessere delle Libere si chiamavano
 `libere-tessera` perché `.tessera` e' quella del leggio dello Scarabeo, e con
 lo stesso nome prendevano il suo legno. Un nome nuovo va cercato prima nel
-resto del CSS.
+resto del CSS; i disegni della Fortuna, che portano nomi comuni come strato e
+colonna, hanno tutti il prefisso `ifo-`.
 
 `solutions.ts` e `guesses.ts` sono **generati** (`npm run words:build`) e
 versionati di proposito: così il build non dipende dalla rete e la parola del
