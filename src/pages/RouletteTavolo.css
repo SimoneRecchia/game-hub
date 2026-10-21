@@ -1,14 +1,15 @@
 /*
- * Il tavolo della roulette: un feltro solo (Feltro.css), con in cima il
- * tabellone, poi il palco — la ruota e il tabellone dei numeri usciti —, chi
- * altro c'e', il panno stampato sul feltro e in fondo la sponda di legno con le
- * fiches e i comandi. Il tavolo e' un contenitore (`rl`): tutto si misura sulla
- * sua altezza, cosi' sta nello schermo senza scorrere.
+ * Il tavolo della roulette, come nel mockup: la pagina e' tutta feltro
+ * (Feltro.css), e dall'alto il tabellone, i numeri usciti, chi altro c'e', il
+ * panno in piedi che prende l'altezza che resta, e in fondo la sponda di legno
+ * da bordo a bordo con la riga, le fiches, i tasti tondi e il bottone largo.
+ * Il tavolo e' un contenitore (`rl`): tutto si misura sulla sua altezza, cosi'
+ * sta nello schermo senza scorrere.
  *
- * La ruota e' disegnata grande (`--grande-w`) e rimpicciolita sul palco
- * (`--piccola`): quando la biglia parte si fa grande sopra il panno, che si
- * vela, e torna al suo posto quando il numero e' annunciato. Le misure le
- * scrive RouletteTavolo.tsx, dallo spazio che c'e'.
+ * La ruota non sta sul tavolo: e' nascosta in fondo, e quando si lancia il
+ * panno si vela e lei sale e si fa grande in mezzo (`.rl-lancio`); annunciato
+ * il numero, torna giu'. E' disegnata sempre grande e rimpicciolita, perché
+ * ingrandita da piccola verrebbe sfocata.
  */
 
 .rl {
@@ -18,44 +19,38 @@
   display: flex;
   container: rl / size;
   isolation: isolate;
-  border-radius: 26px;
-  color: #f6ecd2;
+  color: #fff6e0;
 }
 
-/* Sul telefono il tavolo arriva quasi ai bordi: ogni punto in piu' e' panno. */
-@media (max-width: 599px) {
-  .pagina--intera:has(.rl) .pagina__corpo {
-    padding-inline: max(8px, var(--safe-left)) max(8px, var(--safe-right));
-  }
+/* La sponda va da bordo a bordo, e arriva in fondo allo schermo: il corpo non ha margini. */
+.pagina--intera:has(.rl) .pagina__corpo {
+  padding: 0;
 }
 
-/*
- * Il contenitore non si interroga da solo: la disposizione la prende questo,
- * che sta dentro. `--rl-bordo` e' quanto il contenuto sta lontano dal bordo
- * del feltro, sponda compresa.
- */
 .rl__dentro {
-  --rl-palco-h: clamp(96px, 19cqh, 172px);
-  --rl-bordo: 14px;
   position: relative;
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  padding: var(--rl-bordo) var(--rl-bordo) 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'tab'
+    'usciti'
+    'altri'
+    'panno'
+    'sponda';
+  width: 100%;
+  max-width: 600px;
+  margin-inline: auto;
 }
 
-/* Il tabellone sul feltro: la riga sola dei tavoli (Tabellone.css), un po' piu' bassa. */
+/* Il tabellone sul feltro: la riga sola dei tavoli (Tabellone.css), a tutta larghezza come nel mockup. */
 .rl__dentro > .ct-tabellone {
+  grid-area: tab;
   position: relative;
   z-index: 6;
-  min-height: 46px;
-}
-
-.rl__dentro > .ct-tabellone .ct-tabellone__saldo,
-.rl__dentro > .ct-tabellone .ct-tabellone__puntata {
-  font-size: 22px;
+  margin: 4px 20px 0;
 }
 
 .rl-errore {
@@ -63,286 +58,87 @@
   justify-items: center;
   gap: var(--sp-4);
   margin: auto;
+  padding: var(--sp-4);
+  color: #fff6e0;
   text-align: center;
 }
 
-/* ---- Il palco ---- */
+/* ---- I numeri usciti ---- */
 
-.rl-palco {
-  position: relative;
-  z-index: 6;
-  flex: none;
-  height: var(--rl-palco-h);
+.rl-usciti {
+  grid-area: usciti;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--sp-3);
+  gap: 9px;
+  height: 28px;
+  margin: 8px 16px 6px;
+  overflow: hidden;
 }
 
-.rl-palco__ruota {
-  position: relative;
-  height: 100%;
-  aspect-ratio: 1 / 0.7;
+.rl-usciti__nome {
+  flex: none;
+  color: #d9f5e6;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-.rl-palco__grande {
-  position: absolute;
-  pointer-events: none;
-  left: 0;
-  top: 0;
-  width: var(--grande-w, 100%);
-  transform-origin: 0 0;
-  transform: scale(var(--piccola, 1));
+.rl-usciti__fila {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  margin: 0;
+  padding: 0 2px;
+  list-style: none;
 }
 
-/* Dopo la prima misura (`is-misurata`): prima, la ruota rimpicciolirebbe dal suo disegno grande. */
-.rl.is-misurata .rl-palco__grande {
-  transition: transform 0.8s cubic-bezier(0.6, 0, 0.25, 1);
-}
-
-.rl.is-grande .rl-palco__grande {
-  transform: translate(var(--zoom-x, 0), var(--zoom-y, 0)) scale(1);
-}
-
-/* Il velo sul panno mentre la biglia gira: il tavolo si fa buio attorno alla ruota. */
-.rl-velo {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  border-radius: 26px;
-  background: radial-gradient(70% 45% at 50% 48%, rgb(255 214 140 / 0.1), transparent 70%), rgb(6 10 8 / 0.8);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.6s ease;
-}
-
-.rl.is-grande .rl-velo {
-  opacity: 1;
-}
-
-/* "Rien ne va plus": la voce del croupier, scritta, sopra la ruota che parte. */
-.rl-nvp {
-  position: absolute;
-  left: 50%;
-  top: 2%;
-  z-index: 3;
-  translate: -50% 0;
-  padding: 6px 16px;
-  border: var(--filo) solid #120c2b;
-  border-radius: 999px;
-  background: #1b1238;
-  box-shadow:
-    inset 0 0 0 1.5px rgb(255 201 60 / 0.6),
-    0 4px 0 #120c2b;
-  color: #ffe27a;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 19px;
-  font-style: italic;
-  white-space: nowrap;
-  animation: rl-nvp 1.5s ease both;
-}
-
-@keyframes rl-nvp {
-  0% {
-    opacity: 0;
-    translate: -50% -10px;
-    letter-spacing: 0.3em;
-  }
-  18%,
-  78% {
-    opacity: 1;
-    translate: -50% 0;
-    letter-spacing: 0.04em;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-/* ---- L'annuncio del numero ---- */
-
-.rl-annuncio {
-  position: absolute;
-  left: 50%;
-  top: 40%;
-  z-index: 4;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  translate: -50% -50%;
-  animation: rl-annuncio 0.55s cubic-bezier(0.3, 1.5, 0.45, 1) both;
-  pointer-events: none;
-}
-
-.rl-annuncio__disco {
+.rl-uscito {
+  flex: none;
   display: grid;
   place-items: center;
-  width: 108px;
-  aspect-ratio: 1;
-  border: 3px solid #120c2b;
-  border-radius: 50%;
-  background: var(--tinta);
-  box-shadow:
-    0 0 0 4px #ffd84d,
-    0 0 0 7px #120c2b,
-    0 7px 0 7px #120c2b,
-    0 0 46px rgb(255 214 120 / 0.55),
-    inset 0 5px 0 rgb(255 255 255 / 0.25);
-}
-
-.rl-annuncio.is-rosso {
-  --tinta: radial-gradient(circle at 40% 32%, #ff5a5f, #c8102e 55%, #7c0a1a);
-}
-
-.rl-annuncio.is-nero {
-  --tinta: radial-gradient(circle at 40% 32%, #4a4d55, #16171b 60%, #050506);
-}
-
-.rl-annuncio.is-verde {
-  --tinta: radial-gradient(circle at 40% 32%, #3ad07b, #0b8a42 58%, #05502a);
-}
-
-.rl-annuncio__cifra {
-  color: #fff;
-  font-family: var(--font-rounded);
-  font-size: 54px;
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 3px 0 #120c2b;
-}
-
-.rl-annuncio__targa {
-  display: grid;
-  justify-items: center;
-  margin-top: 12px;
-  padding: 6px 18px 7px;
-  border: var(--filo) solid #120c2b;
-  border-radius: 16px;
-  background: #1b1238;
-  box-shadow:
-    inset 0 0 0 1.5px rgb(255 201 60 / 0.6),
-    0 4px 0 #120c2b;
-  animation: rl-targa 0.5s cubic-bezier(0.3, 1.4, 0.45, 1) 0.18s both;
-}
-
-.rl-annuncio__nome {
-  color: #ffe27a;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: 23px;
-  font-style: italic;
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.rl-annuncio__sotto {
-  color: #e4dcff;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-/* I raggi dietro il numero, che girano piano: il momento in cui tutti guardano la ruota. */
-.rl-annuncio__raggi {
-  position: absolute;
-  left: 50%;
-  top: 54px;
-  z-index: -1;
-  width: 300px;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: repeating-conic-gradient(rgb(255 226 150 / 0.32) 0 9deg, transparent 9deg 22deg);
-  mask: radial-gradient(closest-side, #000 25%, transparent);
-  animation: rl-raggi 6s linear infinite;
-}
-
-@keyframes rl-raggi {
-  to {
-    rotate: 1turn;
-  }
-}
-
-@keyframes rl-targa {
-  from {
-    opacity: 0;
-    translate: 0 -8px;
-  }
-}
-
-@keyframes rl-annuncio {
-  from {
-    opacity: 0;
-    scale: 0.4;
-  }
-}
-
-/* ---- Il tabellone dei numeri usciti ---- */
-
-.rl-storia {
-  flex: none;
-  align-self: center;
-  display: grid;
-  grid-template-columns: repeat(3, 15px);
-  grid-auto-rows: min-content;
-  align-content: start;
-  justify-content: center;
-  gap: 2px 1px;
-  width: 58px;
-  max-height: 92%;
-  margin: 0;
-  padding: 7px 4px;
-  overflow: hidden;
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
   border: 2px solid #120c2b;
-  border-radius: 12px;
-  background: #160b08;
-  box-shadow:
-    inset 0 0 0 1.5px rgb(255 201 60 / 0.35),
-    inset 0 0 12px rgb(0 0 0 / 0.8),
-    0 3px 0 #120c2b;
-  list-style: none;
+  border-radius: 50%;
+  color: #fff6e0;
   font-family: var(--font-rounded);
   font-size: 12px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
-  text-align: center;
 }
 
-.rl-storia__numero {
-  grid-column: 3;
-  line-height: 1.25;
+.rl-uscito.is-ultimo {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  box-shadow: 0 0 0 2px #ffe27a;
+  animation: rl-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
 }
 
-.rl-storia__numero.is-rosso {
-  grid-column: 1;
-  color: #ff5b5b;
-  text-shadow: 0 0 6px rgb(255 70 70 / 0.6);
+.rl-uscito.is-rosso {
+  background: #c8102e;
 }
 
-.rl-storia__numero.is-nero {
-  color: #e9e9ee;
-  text-shadow: 0 0 6px rgb(255 255 255 / 0.35);
+.rl-uscito.is-nero {
+  background: #1b1530;
 }
 
-.rl-storia__numero.is-verde {
-  grid-column: 2;
-  color: #3ee08a;
-  text-shadow: 0 0 6px rgb(60 220 130 / 0.6);
+.rl-uscito.is-verde {
+  background: #12a150;
 }
 
-.rl-storia__numero.is-ultimo {
-  grid-column: 1 / -1;
-  margin-bottom: 3px;
-  font-size: 20px;
-  animation: rl-storia 0.6s cubic-bezier(0.3, 1.5, 0.45, 1) both;
+.rl-usciti__vuota {
+  color: #d9f5e6;
+  font-size: 12px;
+  font-weight: 800;
 }
 
-.rl-storia__vuota {
-  grid-column: 1 / -1;
-  color: #c7a96a;
-}
-
-@keyframes rl-storia {
+@keyframes rl-pop {
   from {
-    scale: 1.6;
+    transform: scale(0.3);
     opacity: 0;
   }
 }
@@ -350,11 +146,11 @@
 /* ---- Chi altro c'e' ---- */
 
 .rl-giocatori {
-  flex: none;
+  grid-area: altri;
   display: flex;
   justify-content: center;
   gap: var(--sp-2);
-  margin: 0;
+  margin: 0 14px 8px;
   padding: 0;
   overflow: hidden;
   list-style: none;
@@ -409,12 +205,13 @@
 /* ---- Il panno ---- */
 
 .rl-panno-posto {
+  grid-area: panno;
   position: relative;
   z-index: 1;
-  flex: 1;
   min-height: 0;
   display: flex;
   justify-content: center;
+  margin: 0 14px 8px;
   container-type: size;
 }
 
@@ -427,12 +224,12 @@
 .rl-panno-posto.is-invito > .rl-panno::after {
   content: '';
   position: absolute;
-  inset: -3px;
-  border-radius: 13px;
+  inset: -6px;
+  border-radius: 14px;
   box-shadow:
-    0 0 0 1.5px var(--ct-oro),
-    0 0 20px color-mix(in srgb, var(--ct-oro) 45%, transparent);
-  opacity: 0.15;
+    0 0 0 2px #ffe27a,
+    0 0 20px rgb(255 226 122 / 0.45);
+  opacity: 0.1;
   pointer-events: none;
   animation: rl-panno-invito 2.4s var(--ease-in-out) infinite;
 }
@@ -440,10 +237,10 @@
 @keyframes rl-panno-invito {
   0%,
   100% {
-    opacity: 0.15;
+    opacity: 0.1;
   }
   62% {
-    opacity: 0.9;
+    opacity: 0.85;
   }
 }
 
@@ -452,59 +249,156 @@
   opacity: 0.55;
 }
 
-/*
- * ---- La sponda ----
- *
- * I comandi stanno sul legno in fondo al tavolo, che si unisce alla sponda del
- * feltro: arriva fino al suo legno (8px dal bordo, in Feltro.css) da tre lati.
- */
+/* ---- Il lancio: il panno si vela, e la ruota sale dal fondo ---- */
 
-.rl-comandi {
+.rl-lancio {
+  grid-column: 1;
+  grid-row: 2 / 5;
   position: relative;
-  z-index: 1;
-  flex: none;
-  display: grid;
-  gap: 6px;
-  margin: 2px calc(8px - var(--rl-bordo)) 8px;
-  padding: 8px 10px 10px;
-  border-radius: 4px 4px 18px 18px;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.12), transparent 26%),
-    repeating-linear-gradient(91deg, rgb(0 0 0 / 0.07) 0 2px, transparent 2px 9px),
-    linear-gradient(180deg, #8a5228, #6e3e1c 62%, #6e3e1c);
-  box-shadow:
-    0 -2px 0 #2a170a,
-    0 -3.5px 0 rgb(232 193 90 / 0.45),
-    0 -10px 20px rgb(0 0 0 / 0.22);
+  z-index: 5;
+  container-type: size;
+  background: radial-gradient(circle at 50% 45%, rgb(8 30 18 / 0.4), rgb(8 20 14 / 0.82));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-out;
 }
 
-.rl-comandi__riga {
+.rl.is-grande .rl-lancio {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.rl-lancio__ruota {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: min(86cqw, 120cqh, 480px);
+  translate: -50% -50%;
+  transform: translateY(46cqh) scale(0.25);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 0.45s cubic-bezier(0.5, 0, 0.75, 0.4),
+    opacity 0.35s ease-in 0.1s,
+    visibility 0s linear 0.45s;
+}
+
+.rl.is-grande .rl-lancio__ruota {
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    transform 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.15),
+    opacity 0.2s ease-out,
+    visibility 0s;
+}
+
+/* L'annuncio del croupier: la carta crema del mockup, storta, con il numero sul suo colore. */
+.rl-annuncio {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  z-index: 3;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 8px;
+  min-width: 220px;
+  max-width: 88cqw;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  border: 3px solid #120c2b;
+  border-radius: 24px;
+  background: #fffbf2;
+  box-shadow: 0 6px 0 #120c2b;
+  color: #120c2b;
+  translate: -50% -50%;
+  rotate: -3deg;
+  animation: rl-annuncio 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
-.rl-stato {
+.rl-annuncio__numero {
   display: grid;
-  justify-items: center;
-  align-content: center;
-  gap: 5px;
-  min-height: 26px;
+  place-items: center;
+  width: 78px;
+  height: 78px;
+  box-sizing: border-box;
+  border: 3px solid #120c2b;
+  border-radius: 50%;
+  box-shadow:
+    0 4px 0 #120c2b,
+    inset 0 4px 0 rgb(255 255 255 / 0.25);
   color: #fff6e0;
-  font-size: 15px;
-  font-weight: 900;
-  text-align: center;
-  text-shadow: 0 1.5px 0 #2a170a;
-}
-
-.rl-stato__paga {
-  color: #ffe27a;
   font-family: var(--font-rounded);
+  font-size: 40px;
   font-weight: 400;
 }
 
-.rl-stato__barra {
+.rl-annuncio__numero.is-rosso {
+  background: #c8102e;
+}
+
+.rl-annuncio__numero.is-nero {
+  background: #1b1530;
+}
+
+.rl-annuncio__numero.is-verde {
+  background: #12a150;
+}
+
+.rl-annuncio__testo {
+  font-size: 16px;
+  font-weight: 900;
+  text-align: center;
+}
+
+@keyframes rl-annuncio {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* ---- La sponda di legno, con i comandi ---- */
+
+.rl-sponda {
+  grid-area: sponda;
+  position: relative;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 7px 14px calc(14px + var(--safe-bottom));
+  border-top: 3px solid #2a170a;
+  background: linear-gradient(180deg, #8a4b22, #5a2e12);
+  box-shadow: inset 0 3px 0 rgb(255 255 255 / 0.16);
+}
+
+.rl-riga {
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  min-height: 18px;
+  color: #fff6e0;
+  font-size: 14px;
+  font-weight: 900;
+  text-align: center;
+  text-shadow: 0 1px 0 #120c2b;
+}
+
+.rl-riga__testo {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rl-riga.is-oro {
+  color: #ffe27a;
+}
+
+.rl-riga__barra {
   overflow: hidden;
   width: min(72%, 280px);
   height: 8px;
@@ -513,7 +407,7 @@
   background: rgb(0 0 0 / 0.35);
 }
 
-.rl-stato__pieno {
+.rl-riga__pieno {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -522,49 +416,54 @@
   transition: transform 0.25s linear;
 }
 
-.rl-stato__pieno.is-poco {
+.rl-riga__pieno.is-poco {
   background: #e5484d;
+}
+
+.rl-attrezzi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .rl-gettoni {
   display: flex;
-  justify-content: center;
-  gap: clamp(6px, 2.6vw, 14px);
-  padding-top: 4px;
+  gap: 6px;
 }
 
 .rl-gettone {
-  --bj-fiche-lato: clamp(40px, 11.5vw, 52px);
+  --bj-fiche-lato: 46px;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 52px;
   padding: 0;
   border: 0;
   border-radius: 50%;
   background: none;
   cursor: pointer;
-  transition:
-    transform 0.18s var(--ease-out),
-    filter 0.2s,
-    opacity 0.2s;
+  transition: transform 0.15s var(--ease-out);
 }
 
-/* La fiche scelta si alza, con l'anello giallo dell'album, come nel mockup. */
+/* La fiche scelta si alza, con l'anello giallo del mockup. */
 .rl-gettone.is-scelto {
-  transform: translateY(-6px) scale(1.08);
+  transform: translateY(-5px);
 }
 
 .rl-gettone.is-scelto > .bj-fiche {
-  box-shadow:
-    0 calc(var(--d) * 0.075) 0 var(--fiche-orlo),
-    0 calc(var(--d) * 0.075) 0 var(--fiche-filo) #120c2b,
-    0 0 0 5px #ffd84d;
+  outline: 3px solid #ffe27a;
+  outline-offset: 2px;
 }
 
 .rl-gettone:active:not(:disabled) {
   transform: translateY(1px) scale(0.95);
 }
 
-/* Una fiche che il saldo non copre si spegne, ma il suo numero si legge. */
+/* Una fiche che il saldo non copre, o mentre la biglia gira, si spegne; il suo numero si legge. */
 .rl-gettone:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
+  filter: saturate(0.5);
   cursor: default;
 }
 
@@ -573,43 +472,50 @@
   outline-offset: 3px;
 }
 
+.rl-tondi {
+  display: flex;
+  gap: 7px;
+}
+
 /* I tasti tondi della sponda: annulla, togli tutto, ripeti o raddoppia. */
 .rl-tasto {
   flex: none;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   padding: 0;
   border: var(--filo) solid #120c2b;
   border-radius: 50%;
-  background: #f0e2cc;
+  background: #fffbf2;
   box-shadow:
-    0 3px 0 #120c2b,
-    inset 0 2px 0 rgb(255 255 255 / 0.6);
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.5);
   color: #120c2b;
-  transition: transform 0.12s var(--ease-out);
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
 }
 
 .rl-tasto--testo {
   font-family: var(--font-rounded);
-  font-size: 17px;
+  font-size: 12.5px;
   font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 .rl-tasto:active:not(:disabled) {
   transform: translateY(3px);
   box-shadow:
-    0 0 0 #120c2b,
-    inset 0 2px 0 rgb(255 255 255 / 0.6);
+    0 1px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.5);
 }
 
-/* Spento si vede spento, sul legno: il segno resta leggibile. */
+/* Spento si vede spento, sul legno: il grigio lilla del mockup, e il segno resta leggibile. */
 .rl-tasto:disabled {
-  background: #b08a64;
-  border-color: #3a1e0a;
-  box-shadow: 0 2px 0 #3a1e0a;
-  color: #3a1e0a;
+  background: #8e88ae;
+  box-shadow: 0 2px 0 #120c2b;
+  cursor: default;
 }
 
 .rl-tasto:focus-visible,
@@ -618,132 +524,198 @@
   outline-offset: 2px;
 }
 
-/* Il lancio: il tasto pieno dell'app, menta, con la scritta in Lilita. */
+/* Il bottone largo: grigio finché non c'e' niente da mandare, poi verde, e respira. */
 .rl-lancia {
-  flex: 1;
-  max-width: 260px;
-  min-height: 50px;
-  padding: 0 var(--sp-5);
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--sp-4);
   border: var(--filo) solid #120c2b;
   border-radius: 16px;
-  background: var(--menta);
+  background: #8e88ae;
+  box-shadow: 0 2px 0 #120c2b;
   color: #120c2b;
   font-family: var(--font-rounded);
   font-size: 19px;
   font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.rl-lancia.is-pronto {
+  background: #34d17a;
   box-shadow:
     0 4px 0 #120c2b,
     inset 0 3px 0 rgb(255 255 255 / 0.5);
-  transition:
-    transform 0.12s var(--ease-out),
-    box-shadow 0.12s var(--ease-out);
+  animation: rl-respira 2.4s ease-in-out infinite;
 }
 
-.rl-lancia:active:not(:disabled) {
+.rl-lancia.is-pronto:active:not(:disabled) {
+  animation: none;
   transform: translateY(3px);
   box-shadow:
     0 1px 0 #120c2b,
     inset 0 3px 0 rgb(255 255 255 / 0.5);
 }
 
-/* Spento, sul legno: il colore del legno chiaro, e la scritta si legge. */
 .rl-lancia:disabled {
-  background: #b08a64;
-  border-color: #3a1e0a;
-  box-shadow: 0 2px 0 #3a1e0a;
-  color: #2a1406;
+  cursor: default;
+}
+
+@keyframes rl-respira {
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.rl-sponda__siedi {
+  display: grid;
+  gap: 7px;
+  padding-top: 4px;
 }
 
 /* ---- Le misure ---- */
 
-@container rl (max-height: 600px) {
-  .rl__dentro {
-    --rl-palco-h: clamp(78px, 15cqh, 120px);
+@container rl (max-width: 380px) {
+  .rl-gettoni {
+    gap: 4px;
   }
 
   .rl-gettone {
-    --bj-fiche-lato: clamp(36px, 10vw, 44px);
+    --bj-fiche-lato: 40px;
+    width: 44px;
+    height: 46px;
+  }
+
+  .rl-tondi {
+    gap: 5px;
   }
 
   .rl-tasto {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+@container rl (max-width: 340px) {
+  .rl-sponda {
+    padding-inline: 10px;
+  }
+
+  .rl-gettone {
+    --bj-fiche-lato: 36px;
     width: 40px;
-    height: 40px;
+  }
+
+  .rl-tasto {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+@container rl (max-height: 600px) {
+  .rl-usciti {
+    margin-block: 6px 4px;
+  }
+
+  .rl-sponda {
+    gap: 5px;
+    padding-top: 5px;
+    padding-bottom: calc(8px + var(--safe-bottom));
+  }
+
+  .rl-gettone {
+    --bj-fiche-lato: 38px;
+    width: 42px;
+    height: 44px;
+  }
+
+  .rl-tasto {
+    width: 36px;
+    height: 36px;
   }
 
   .rl-lancia {
-    min-height: 42px;
-  }
-
-  .rl-stato {
-    min-height: 22px;
-    font-size: 14px;
+    min-height: 40px;
+    font-size: 17px;
   }
 }
 
 /*
- * Largo — il computer, o il telefono di traverso —: la ruota a sinistra,
- * grande, il panno a destra, e la sponda con i comandi lungo tutto il tavolo,
- * su una riga.
+ * Sul computer il tavolo e' quello del telefono, in mezzo al feltro: la
+ * sponda non arriva ai bordi, ed e' una tavola di legno con gli angoli tondi.
  */
-@container rl (min-aspect-ratio: 23 / 20) {
+@container rl (min-width: 620px) {
+  /* Il velo del lancio va oltre il tavolo, e sfuma verso i lati del feltro. */
+  .rl-lancio {
+    margin-inline: calc((100% - 100cqw) / 2);
+    mask-image:
+      linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent),
+      linear-gradient(180deg, transparent, #000 6%, #000 94%, transparent);
+    mask-composite: intersect;
+  }
+
+  .rl-sponda {
+    margin-bottom: calc(var(--sp-3) + var(--safe-bottom));
+    padding-bottom: 14px;
+    border: 3px solid #2a170a;
+    border-radius: 20px;
+    box-shadow:
+      inset 0 3px 0 rgb(255 255 255 / 0.16),
+      0 4px 0 #120c2b;
+  }
+}
+
+/*
+ * Il telefono di traverso, dove l'altezza non basta al panno in piedi: il
+ * panno a destra, alto quanto il tavolo, e a sinistra il tabellone, i numeri
+ * usciti e la sponda. La ruota, al lancio, sale sopra il panno.
+ */
+@container rl (min-aspect-ratio: 23 / 20) and (max-height: 640px) {
   .rl__dentro {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
-    grid-template-rows: auto minmax(0, 1fr) auto auto;
-    column-gap: var(--sp-5);
+    max-width: none;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'tab panno'
+      'usciti panno'
+      'altri panno'
+      '. panno'
+      'sponda panno';
+    column-gap: var(--sp-4);
+    padding: 0 var(--sp-4) calc(var(--sp-3) + var(--safe-bottom));
   }
 
-  .rl__dentro > .ct-tabellone {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .rl-palco {
-    --rl-palco-h: min(48cqh, 27cqw);
-    grid-column: 1;
-    grid-row: 2;
-    align-self: center;
+  .rl__dentro > .ct-tabellone,
+  .rl-usciti,
+  .rl-giocatori {
+    margin-inline: 0;
   }
 
   .rl-giocatori {
-    grid-column: 1;
-    grid-row: 3;
+    justify-content: flex-start;
   }
 
   .rl-panno-posto {
+    margin: 4px 0 0;
+  }
+
+  .rl-lancio {
     grid-column: 2;
-    grid-row: 1 / span 3;
+    grid-row: 1 / -1;
+    border-radius: 14px;
   }
 
-  .rl-comandi {
-    grid-column: 1 / -1;
-    grid-row: 4;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: center;
-    column-gap: var(--sp-4);
-    padding-inline: 18px;
-  }
-
-  .rl-comandi .rl-stato {
-    justify-items: start;
-    text-align: left;
-  }
-
-  .rl-comandi > .ct-invito {
-    justify-self: start;
-  }
-
-  /* L'avviso del saldo prende tutta la sponda. */
-  .rl-comandi > .ct-pochi {
-    grid-column: 1 / -1;
-  }
-
-  .rl-comandi .rl-gettoni {
-    padding-top: 0;
-  }
-
-  .rl-comandi .rl-lancia {
-    min-width: 160px;
+  .rl-sponda {
+    padding: 10px 16px 14px;
+    border: 3px solid #2a170a;
+    border-radius: 20px;
+    box-shadow:
+      inset 0 3px 0 rgb(255 255 255 / 0.16),
+      0 4px 0 #120c2b;
   }
 }
 
@@ -754,28 +726,21 @@
   }
 }
 
-/* L'invito sulla sponda e' alto quanto la riga di stato che sostituisce: le fiches non saltano. */
-.rl-comandi > .ct-invito {
-  min-height: 26px;
-  padding-block: 2px;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .rl-panno-posto.is-invito > .rl-panno::after {
     animation: none;
     opacity: 0.6;
   }
 
-  .rl-nvp,
+  .rl-uscito.is-ultimo,
   .rl-annuncio,
-  .rl-annuncio__targa,
-  .rl-annuncio__raggi,
-  .rl-storia__numero.is-ultimo {
+  .rl-lancia.is-pronto {
     animation: none;
   }
 
-  .rl-palco__grande,
-  .rl-velo {
+  .rl-lancio,
+  .rl-lancio__ruota,
+  .rl.is-grande .rl-lancio__ruota {
     transition: none;
   }
 }

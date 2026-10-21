@@ -1514,41 +1514,39 @@ all'altezza della pista, e la biglia restava sospesa sopra le caselle. Disegnato
 dopo la conca, uno strato piu' basso ne copre il pendio davanti e lo lascia
 vedere in fondo, che e' come si vede una conca da sopra. Finché corre veloce ha la scia, due copie di un
 attimo prima, e la sua ombra e' sfumata dal suo sfondo e non da un `filter`, che
-si rifarebbe a ogni fotogramma. La ruota e' disegnata grande e rimpicciolita
-sul palco (`--piccola`): quando la biglia parte si fa grande sopra il panno, che
-si vela, e torna al suo posto dopo l'annuncio del numero. Disegnata piccola e
-ingrandita, a pieno schermo sarebbe sfocata. Il passaggio fra il palco e il
-centro si accende solo dopo la prima misura (`is-misurata`): la pagina legge le
-misure appena montata, e il browser, che a quel punto non aveva ancora
-`--piccola`, partiva dalla ruota grande e la faceva rimpicciolire sotto gli
-occhi — proprio mentre si arrivava al tavolo. La ruota si misura e si disegna
-la prima volta prima che la pagina si veda (`useLayoutEffect`): misurata dopo,
-compariva per un fotogramma con le misure di partenza, senza il fianco e con il
-cilindro fermo a zero, e nel passaggio dalla sala al tavolo era lo scatto che si
-vedeva. Il tabellone dei numeri usciti non
+si rifarebbe a ogni fotogramma. Dal mockup dell'album (21 ottobre 2026) la ruota
+non sta piu' su un palco sopra il panno: durante le puntate non si vede, e al
+lancio sale dal fondo del tavolo e si fa grande in mezzo al panno, che si vela;
+poi arriva la carta del croupier con il numero, e la ruota torna giu'. La ruota
+si misura e si disegna la prima volta prima che la pagina si veda
+(`useLayoutEffect`): misurata dopo, compariva per un fotogramma con le misure
+di partenza, senza il fianco e con il cilindro fermo a zero. La riga dei numeri
+usciti (USCITI) non
 dice il numero mentre la biglia gira: il server lo mette nella storia al
 lancio, e sarebbe la soluzione.
 
 **Dalla sala al tavolo il feltro e' uno solo.** La sala e il tavolo della
-roulette hanno lo stesso feltro (`src/games/roulette/Feltro.css`), un livello
-vuoto sotto il contenuto: toccando "Tavolo nuovo" la View Transition lo allarga
-dalla carta della sala fino al tavolo, la ruota sale al suo posto sul palco, la
-scritta della sala se ne va e il panno arriva quando il feltro e' quasi grande;
-tornando, il contrario. Della ruota si vede solo quella d'arrivo, che e' viva:
-in dissolvenza le due ruote, una ferma e una che girava, si vedevano insieme con
-le caselle sfalsate. E' la direzione `tavolo` di `useNavigazione`, che usa
-anche la freccia indietro del tavolo (`indietro.direzione`), e i nomi delle View
-Transitions ci sono solo durante il passaggio (`html[data-transizione='tavolo']`):
-fuori, ogni navigazione fotografa la pagina intera, e un test lo controlla. Al
-tavolo nuovo si va subito, senza aspettare il server: l'indirizzo e'
-`TAVOLO_NUOVO`, la pagina apre il tavolo mentre il feltro si allarga e poi mette
-al suo posto l'indirizzo vero, senza rileggerlo. Aspettare la risposta prima di
-partire era il piccolo scatto fra il tocco e il passaggio. La sala porta il
-saldo nello stato della navigazione, e il tabellone c'e' dal primo disegno, senza
-contare da zero (`da` di `Numero`). Il panno e' stampato sul feltro, senza un
-fondo suo, e i comandi stanno sulla sponda di legno in fondo, che si unisce a
-quella del feltro: le fiches, e i tasti tondi per annullare, togliere tutto e
-ripetere o raddoppiare.
+roulette sono tutti di feltro, come nel mockup: il feltro e' un livello fisso a
+tutta pagina (`src/games/roulette/Feltro.css`) e la pagina sopra e'
+trasparente; `useFeltro` (`feltro.ts`) tinge di verde la zona dell'orologio
+(`theme-color`) finché la pagina e' aperta. Toccando "Tavolo nuovo" la ruota
+della sala scende verso la sponda e svanisce, e il tavolo arriva; tornando, il
+contrario. La ruota della sala e' larga al piu' trecento punti: piu' larga, con
+i suoi strati in prospettiva, Chrome annullava la View Transition ("Transition
+was aborted because of invalid state"). E' la direzione `tavolo` di
+`useNavigazione`, che usa anche la freccia indietro del tavolo
+(`indietro.direzione`), e i nomi delle View Transitions ci sono solo durante il
+passaggio (`html[data-transizione='tavolo']`): fuori, ogni navigazione
+fotografa la pagina intera, e un test lo controlla. Al tavolo nuovo si va
+subito, senza aspettare il server: l'indirizzo e' `TAVOLO_NUOVO`, la pagina apre
+il tavolo e poi mette al suo posto l'indirizzo vero, senza rileggerlo. La sala
+porta il saldo nello stato della navigazione, e il tabellone c'e' dal primo
+disegno, senza contare da zero (`da` di `Numero`). Il tavolo e' quello del
+mockup: il tabellone, la riga dei numeri usciti, il panno in piedi che prende
+l'altezza, e in fondo la sponda di legno con la riga che dice che cosa succede,
+le fiches da 1, 5, 10 e 25 (le stesse della Fortuna), i tasti tondi per
+annullare, togliere tutto e ripetere o raddoppiare, e il bottone largo che
+lancia.
 
 **Il panno si tocca dove si posa la fiche.** Sul telefono il panno sta in
 piedi, lo zero in cima, e le puntate interne si scelgono dal punto toccato

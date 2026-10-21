@@ -1,15 +1,16 @@
 import type { CSSProperties } from 'react'
-import { GETTONI_RL } from '@shared/roulette'
+import { COLORE_FICHE, FICHES } from '@/games/fortuna/fiches'
 import '@/games/blackjack/Fiches.css'
 
-/** Il colore di una fiche della roulette, per taglio: il grigio dell'uno, poi rosso, verde, nero e viola. */
-export const COLORE_FICHE_RL: Record<number, string> = {
-  1: '#5d6b7d',
-  5: '#d42a2a',
-  25: '#118048',
-  100: '#22252c',
-  500: '#7b3aed',
-}
+/**
+ * Le fiches della roulette sono quelle della slot e di Crazy Time: uno, cinque,
+ * dieci e venticinque, blu, rossa, verde e nera. Si posano una alla volta sul
+ * panno, e sulla stessa puntata si sommano, quindi bastano a qualunque cifra.
+ */
+export const GETTONI_RL = FICHES
+
+/** Il colore di una fiche della roulette, per taglio. */
+export const COLORE_FICHE_RL = COLORE_FICHE
 
 /** Il colore del taglio piu' grande che sta in un importo: una fiche sola porta un importo qualunque. */
 export function coloreRL(importo: number): string {

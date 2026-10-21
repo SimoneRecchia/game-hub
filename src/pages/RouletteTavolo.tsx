@@ -1,30 +1,22 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi, type DatiAdesivo } from '@/components/Adesivo'
 import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
-import { IconAnnulla, IconCestino, IconInfo, IconRefresh } from '@/components/Icons'
+import { IconAnnulla, IconCestino, IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { esciFraPoco } from '@/games/blackjack/uscita'
-import { InvitoPuntata, PochiPunti } from '@/games/fortuna/Avvisi'
-import { SALA, useSala } from '@/games/fortuna/sala'
+import { PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { centroDi, incassaMonete, volaFiche } from '@/games/fortuna/voli'
 import { ComeSiGiocaRoulette } from '@/games/roulette/ComeSiGioca'
-import { COLORE_FICHE_RL, FicheRL } from '@/games/roulette/Fiches'
+import { COLORE_FICHE_RL, FicheRL, GETTONI_RL } from '@/games/roulette/Fiches'
+import { useFeltro } from '@/games/roulette/feltro'
 import { Panno, type FicheAltrui } from '@/games/roulette/Panno'
 import { TAVOLO_NUOVO } from '@/games/roulette/nuovo'
 import { RuotaRoulette, type LancioRuota } from '@/games/roulette/Ruota'
@@ -34,7 +26,6 @@ import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
 import {
-  GETTONI_RL,
   PUNTATA_MINIMA_RL,
   PUNTATE,
   coloreDi,
@@ -57,11 +48,8 @@ const COLORI_POSTI = ['#4f8cff', '#ff9f1c', '#c77dff', '#2ec4b6', '#ff5d8f', '#f
 const ANNUNCIO_MS = 1_700
 /** Quanto restano le fiches dell'esito sul panno, se nessuno punta, prima di sparire. */
 const ESITO_MS = 6_500
-/** Quanto si vede "Rien ne va plus" al lancio. */
+/** Una pagina che vede il lancio entro questo tempo lo racconta da capo, con "Rien ne va plus". */
 const NVP_MS = 1_500
-
-/** Da quanto e' piu' larga che alta il tavolo si mette di traverso, con la ruota accanto al panno (RouletteTavolo.css). */
-const LARGO = 1.15
 
 const POLL_ATTESA_MS = 1_500
 const POLL_CALMO_MS = 4_000
@@ -122,7 +110,7 @@ const oro = (titolo: string, sotto?: string): Omit<DatiAdesivo, 'id'> => ({
 })
 
 const bordato = (titolo: string, sotto?: string): Omit<DatiAdesivo, 'id'> => ({
-  durata: 1_900,
+  durata: 1_800,
   tono: 'bordato',
   titolo,
   sotto,
@@ -156,9 +144,9 @@ function useOra(attivo: boolean): number {
 function leggiTaglio(): number {
   try {
     const v = Number(localStorage.getItem('roulette-taglio'))
-    return GETTONI_RL.includes(v) ? v : 5
+    return GETTONI_RL.includes(v) ? v : 10
   } catch {
-    return 5
+    return 10
   }
 }
 
@@ -187,7 +175,7 @@ const somma = (a: PuntateRL, chiave: string, v: number): PuntateRL => ({ ...a, [
  * mentre il feltro della sala si allarga nel tavolo.
  */
 export default function RouletteTavolo() {
-  useSala()
+  useFeltro()
   const { id = '' } = useParams()
   const nuovo = id === TAVOLO_NUOVO
   /** Il saldo che la sala sapeva gia': il tabellone c'e' dal primo disegno, e il passaggio non lo vede arrivare. */
@@ -219,14 +207,11 @@ export default function RouletteTavolo() {
   const [inviando, setInviando] = useState(false)
   const inCorso = useRef(false)
   const [regole, setRegole] = useState(false)
-  const [nvp, setNvp] = useState<number | null>(null)
   const [festa, setFesta] = useState<DatiFestaRuota | null>(null)
   /** La puntata sotto il dito, mentre la si sceglie: la dice la riga di stato. */
   const [anteprima, setAnteprima] = useState<string | null>(null)
   const [pioggia, setPioggia] = useState(0)
 
-  const radice = useRef<HTMLDivElement>(null)
-  const palcoRuota = useRef<HTMLDivElement>(null)
   const pannoRef = useRef<HTMLDivElement>(null)
   const saldoRef = useRef<HTMLSpanElement>(null)
   const fichesRef = useRef<HTMLDivElement>(null)
@@ -247,10 +232,7 @@ export default function RouletteTavolo() {
         pulitoRef.current = nuova.giro
         setPulito(nuova.giro)
       } else {
-        if (nuova.lancio.faMs < NVP_MS) {
-          setNvp(Date.now())
-          suona('nienteVaPiu')
-        }
+        if (nuova.lancio.faMs < NVP_MS) suona('nienteVaPiu')
         if (mio && mio.delta !== null) {
           const vincita = mio.delta + totaleDi(mio.puntate)
           if (vincita > 0) setConto(nuova.saldo - vincita)
@@ -277,7 +259,7 @@ export default function RouletteTavolo() {
       if (!mio || delta === null || totale === 0) libera()
       else if (delta + totale === 0) {
         libera()
-        dopo(ANNUNCIO_MS + 1_300, () => accoda(bordato('Vince il banco', `${delta}`)))
+        dopo(ANNUNCIO_MS + 1_300, () => accoda(bordato('Niente, stavolta', `Esce il ${numero}`)))
       } else {
         // Torna qualcosa: i conti sul panno, poi le monete dalla vincita al saldo, e la festa se e' grande.
         const vinte = vincenti(mio.puntate, numero)
@@ -289,7 +271,7 @@ export default function RouletteTavolo() {
           const quante = Math.min(24, 6 + Math.round(Math.sqrt(delta + totale) * 1.2))
           if (da && a) void incassaMonete(da, a, quante, libera)
           else libera()
-          if (delta <= 0) accoda(bordato('Quasi', `Tornano ${delta + totale}`))
+          if (delta <= 0) accoda(oro('Torna qualcosa', `+${delta + totale}`))
           else if (gradino !== null) {
             setFesta({
               chiave: Date.now(),
@@ -494,52 +476,6 @@ export default function RouletteTavolo() {
     )
   }, [vista, scena])
 
-  // La ruota e' disegnata grande e rimpicciolita sul palco: mentre la biglia gira si fa grande sopra il panno.
-  // Quanto, e dove, lo dice lo spazio che c'e'; le misure sono quelle del layout, senza le trasformazioni.
-  const [zoom, setZoom] = useState<CSSProperties>({})
-  // La ruota si muove fra il palco e il centro solo dopo la prima misura: prima di quella il browser la vedeva grande
-  // (`--piccola` non c'era ancora), e la faceva rimpicciolire sotto gli occhi, proprio mentre si arrivava al tavolo.
-  const [misurata, setMisurata] = useState(false)
-  const pronta = vista !== null
-  useLayoutEffect(() => {
-    const radiceEl = radice.current
-    const piccola = palcoRuota.current
-    if (!radiceEl || !piccola) return
-    const misura = () => {
-      let x = 0
-      let y = 0
-      for (let el: HTMLElement | null = piccola; el && el !== radiceEl; el = el.offsetParent as HTMLElement | null) {
-        x += el.offsetLeft
-        y += el.offsetTop
-      }
-      const larga = radiceEl.clientWidth
-      const alta = radiceEl.clientHeight
-      const sotto = alta - y
-      // Di traverso la ruota e' gia' grande, nella sua colonna: non copre il panno.
-      const largo = larga / alta >= LARGO
-      const grande = largo
-        ? piccola.offsetWidth
-        : Math.max(piccola.offsetWidth, Math.min(larga * 0.96, (sotto * 0.62) / 0.7, 560))
-      const sinistra = largo ? x : (larga - grande) / 2
-      const sopra = largo ? y : y + Math.max(0, (sotto - grande * 0.7) * 0.32)
-      setZoom({
-        '--grande-w': `${grande.toFixed(1)}px`,
-        '--piccola': (piccola.offsetWidth / grande).toFixed(4),
-        '--zoom-x': `${(sinistra - x).toFixed(1)}px`,
-        '--zoom-y': `${(sopra - y).toFixed(1)}px`,
-      } as CSSProperties)
-    }
-    misura()
-    const dopoLaMisura = requestAnimationFrame(() => setMisurata(true))
-    const osserva = new ResizeObserver(misura)
-    osserva.observe(radiceEl)
-    osserva.observe(piccola)
-    return () => {
-      cancelAnimationFrame(dopoLaMisura)
-      osserva.disconnect()
-    }
-  }, [pronta])
-
   /* ───────────────────────────────────  Le puntate  ─────────────────────────────────── */
 
   const scegliTaglio = (v: number) => {
@@ -640,12 +576,15 @@ export default function RouletteTavolo() {
     if (nuova) applica(nuova)
   }
 
+
   /* ──────────────────────────────────  La pagina  ────────────────────────────────── */
 
   const indietro = { a: ROTTE.roulette, etichetta: 'Roulette', direzione: 'tavolo' as const }
+  const sotto = 'Il pieno paga 35 a 1'
   if (errore) {
     return (
-      <Pagina titolo="Roulette" indietro={indietro} intera>
+      <Pagina titolo="Roulette" sotto={sotto} indietro={indietro} intera>
+        <span className={`rl-feltro ${SALA}`} aria-hidden="true" />
         <div className={`rl-errore ${SALA}`}>
           <p>{errore}</p>
           <Button onClick={() => vai(ROTTE.roulette, { direzione: 'tavolo', replace: true })}>Alla sala</Button>
@@ -657,11 +596,8 @@ export default function RouletteTavolo() {
   const libero = vista ? vista.posti.some((p) => p === null) : false
   const tempoPuntate =
     vista?.fase === 'puntate' && tempo !== null ? { resta: tempo, tutto: PUNTATE_RL_MS } : null
-  const ultimoNumero = vista?.storia[0] ?? null
-  const nvpVisibile = nvp !== null && Date.now() - nvp < NVP_MS + 200
   const annuncioNumero = scena === 'annuncio' ? (vista?.lancio?.numero ?? null) : null
-  const verbo = altri ? (totaleDi(mandate) > 0 ? 'Cambia' : 'Punta') : 'Lancia'
-  /** Il panno e' vuoto e si aspetta una puntata: l'invito sulla sponda, e il panno che si accende piano. */
+  /** Il panno e' vuoto e si aspetta una puntata: il bottone lo dice, e il filo del panno si accende piano. */
   const invito =
     !!vista &&
     !!mio &&
@@ -678,10 +614,27 @@ export default function RouletteTavolo() {
     bozza !== null &&
     cambiata &&
     (totaleDi(bozza) >= PUNTATA_MINIMA_RL || totaleDi(mandate) > 0)
+  const totaleBozza = totaleDi(bozza ?? {})
+  const scritta = puoLanciare
+    ? totaleBozza === 0
+      ? 'Ritira le puntate'
+      : `${altri ? (totaleDi(mandate) > 0 ? 'Cambia' : 'Punta') : 'Gioca'} ${cifra(totaleBozza)}`
+    : scena === 'lancio'
+      ? 'Rien ne va plus'
+      : scena === 'puntate' && totaleDi(mandate) > 0 && !cambiata
+        ? `Puntato ${cifra(totaleDi(mandate))}`
+        : 'Tocca il panno per puntare'
+  /** Com'e' andata, a numero annunciato: la riga della sponda lo dice in oro, o che il banco raccoglie. */
+  const esito =
+    scena === 'esito' && mio && mio.delta !== null && totaleDi(mio.puntate) > 0
+      ? mio.delta + totaleDi(mio.puntate)
+      : null
+  const vuoto = totaleSulPanno === 0 || scena === 'esito'
 
   return (
     <Pagina
       titolo="Roulette"
+      sotto={sotto}
       indietro={indietro}
       intera
       azioni={
@@ -690,94 +643,86 @@ export default function RouletteTavolo() {
         </BottoneBarra>
       }
     >
-      <div
-        className={`rl ${SALA} is-${scena}${grande ? ' is-grande' : ''}${misurata ? ' is-misurata' : ''}`}
-        style={zoom}
-      >
-        <span className="rl-feltro" aria-hidden="true" />
-        <div className="rl__dentro" ref={radice}>
-        {(vista || saldoDellaSala !== null) && (
-          <Tabellone
-            saldo={conto ?? (vista ? saldo : (saldoDellaSala ?? 0))}
-            puntata={totaleSulPanno || null}
-            saldoRef={saldoRef}
-            scarso={senzaSaldo}
-            riga
-            etichetta={scena === 'lancio' || scena === 'annuncio' ? 'In gioco' : 'Puntata'}
-          />
-        )}
+      <span className={`rl-feltro ${SALA}`} aria-hidden="true" />
+      <div className={`rl ${SALA} is-${scena}${grande ? ' is-grande' : ''}${altri ? ' con-altri' : ''}`}>
+        <div className="rl__dentro">
+          {(vista || saldoDellaSala !== null) && (
+            <Tabellone
+              saldo={conto ?? (vista ? saldo : (saldoDellaSala ?? 0))}
+              puntata={vista ? (scena === 'esito' ? 0 : totaleSulPanno) : null}
+              saldoRef={saldoRef}
+              scarso={senzaSaldo}
+              riga
+              etichetta={scena === 'lancio' || scena === 'annuncio' || scena === 'esito' ? 'In gioco' : 'Puntata'}
+            />
+          )}
 
-        <div className="rl-palco">
-          <div className="rl-palco__ruota" ref={palcoRuota}>
-            <div className="rl-palco__grande">
-              <RuotaRoulette lancio={lancio} ultimo={ultimoNumero} onFerma={onFerma} />
-              {annuncioNumero !== null && <Annuncio numero={annuncioNumero} />}
-              {nvpVisibile && scena === 'lancio' && (
-                <span className="rl-nvp" key={nvp}>
-                  Rien ne va plus
-                </span>
+          <Usciti numeri={scena === 'lancio' ? (vista?.storia.slice(1) ?? []) : (vista?.storia ?? [])} />
+
+          {vista && altri && (
+            <ul className="rl-giocatori" aria-label="Al tavolo">
+              {vista.posti.map((p, k) =>
+                p && k !== vista.mio ? (
+                  <li
+                    key={p.giocatore.playerId}
+                    className={`rl-giocatore${p.presente ? '' : ' is-assente'}`}
+                    style={{ '--posto': COLORI_POSTI[k] } as CSSProperties}
+                  >
+                    <Avatar nickname={p.giocatore.nickname} color={p.giocatore.avatarColor} size={24} />
+                    <span className="rl-giocatore__nome">{p.giocatore.displayName}</span>
+                    {scena === 'esito' && p.delta !== null ? (
+                      <span className={`rl-giocatore__conto${p.delta > 0 ? ' is-vinto' : ' is-perso'}`}>
+                        {p.delta > 0 ? `+${p.delta}` : p.delta}
+                      </span>
+                    ) : (
+                      totaleDi(p.puntate) > 0 &&
+                      scena !== 'pronto' && <span className="rl-giocatore__conto u-tabnum">{totaleDi(p.puntate)}</span>
+                    )}
+                  </li>
+                ) : null,
               )}
-            </div>
+            </ul>
+          )}
+
+          <div className={`rl-panno-posto${invito ? ' is-invito' : ''}${senzaSaldo ? ' is-spento' : ''}`} ref={pannoRef}>
+            <Panno
+              mie={sulPanno}
+              altrui={altrui}
+              numero={numeroMostrato}
+              attivo={puoPuntare && !senzaSaldo}
+              onPosa={posa}
+              onAnteprima={setAnteprima}
+            />
           </div>
-          <Storia numeri={scena === 'lancio' ? (vista?.storia.slice(1) ?? []) : (vista?.storia ?? [])} />
-        </div>
 
-        {vista && altri && (
-          <ul className="rl-giocatori" aria-label="Al tavolo">
-            {vista.posti.map((p, k) =>
-              p && k !== vista.mio ? (
-                <li
-                  key={p.giocatore.playerId}
-                  className={`rl-giocatore${p.presente ? '' : ' is-assente'}`}
-                  style={{ '--posto': COLORI_POSTI[k] } as CSSProperties}
-                >
-                  <Avatar nickname={p.giocatore.nickname} color={p.giocatore.avatarColor} size={26} />
-                  <span className="rl-giocatore__nome">{p.giocatore.displayName}</span>
-                  {scena === 'esito' && p.delta !== null ? (
-                    <span className={`rl-giocatore__conto${p.delta > 0 ? ' is-vinto' : ' is-perso'}`}>
-                      {p.delta > 0 ? `+${p.delta}` : p.delta}
-                    </span>
-                  ) : (
-                    totaleDi(p.puntate) > 0 &&
-                    scena !== 'pronto' && <span className="rl-giocatore__conto u-tabnum">{totaleDi(p.puntate)}</span>
-                  )}
-                </li>
-              ) : null,
-            )}
-          </ul>
-        )}
-
-        <div className={`rl-panno-posto${invito ? ' is-invito' : ''}${senzaSaldo ? ' is-spento' : ''}`} ref={pannoRef}>
-          <Panno
-            mie={sulPanno}
-            altrui={altrui}
-            numero={numeroMostrato}
-            attivo={puoPuntare && !senzaSaldo}
-            onPosa={posa}
-            onAnteprima={setAnteprima}
-          />
-        </div>
-
-        <div className="rl-comandi">
-          {!vista ? (
-            <Riga>Apro il tavolo…</Riga>
-          ) : !mio ? (
-            <div className="rl-comandi__riga">
-              {libero ? (
-                <Button size="lg" onClick={() => void siedi()} disabled={inviando}>
-                  Siediti
-                </Button>
-              ) : (
-                <Riga>Il tavolo è pieno</Riga>
-              )}
+          {/*
+           * Il lancio: il panno si vela e la ruota sale dal fondo e si fa grande in mezzo, come nel mockup; quando
+           * la biglia si ferma il croupier annuncia il numero sulla sua carta, e la ruota torna giu'.
+           */}
+          <div className="rl-lancio" aria-hidden={!grande}>
+            <div className="rl-lancio__ruota">
+              <RuotaRoulette lancio={lancio} ultimo={vista?.storia[0] ?? null} onFerma={onFerma} />
             </div>
-          ) : senzaSaldo ? (
-            <PochiPunti servono={PUNTATA_MINIMA_RL} saldo={disponibile} />
-          ) : (
-            <>
-              {invito && !tempoPuntate ? (
-                <InvitoPuntata>Tocca il panno per puntare</InvitoPuntata>
-              ) : (
+            {annuncioNumero !== null && <Annuncio numero={annuncioNumero} />}
+          </div>
+
+          <div className="rl-sponda">
+            {!vista ? (
+              <Riga>Apro il tavolo…</Riga>
+            ) : !mio ? (
+              <div className="rl-sponda__siedi">
+                {libero ? (
+                  <button type="button" className="rl-lancia is-pronto" onClick={() => void siedi()} disabled={inviando}>
+                    Siediti
+                  </button>
+                ) : (
+                  <Riga>Il tavolo è pieno</Riga>
+                )}
+              </div>
+            ) : senzaSaldo ? (
+              <PochiPunti servono={PUNTATA_MINIMA_RL} saldo={disponibile} />
+            ) : (
+              <>
                 <StatoTavolo
                   anteprima={anteprima}
                   scena={scena}
@@ -785,79 +730,81 @@ export default function RouletteTavolo() {
                   mandate={totaleDi(mandate)}
                   cambiata={cambiata}
                   numero={vista.lancio?.numero ?? null}
+                  esito={esito}
+                  puntate={bozza ?? {}}
                 />
-              )}
-              <div className="rl-gettoni" role="radiogroup" aria-label="La fiche" ref={fichesRef}>
-                {GETTONI_RL.map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    role="radio"
-                    aria-checked={fiche === v}
-                    data-taglio={v}
-                    className={`rl-gettone${fiche === v ? ' is-scelto' : ''}`}
-                    disabled={v > disponibile}
-                    aria-label={`Fiche da ${v}`}
-                    onClick={() => scegliTaglio(v)}
-                  >
-                    <FicheRL importo={v} />
-                  </button>
-                ))}
-              </div>
-              <div className="rl-comandi__riga">
+                <div className="rl-attrezzi">
+                  <div className="rl-gettoni" role="radiogroup" aria-label="La fiche" ref={fichesRef}>
+                    {GETTONI_RL.map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        role="radio"
+                        aria-checked={fiche === v}
+                        data-taglio={v}
+                        className={`rl-gettone${fiche === v ? ' is-scelto' : ''}`}
+                        disabled={v > disponibile || scena === 'lancio' || scena === 'annuncio'}
+                        aria-label={`Fiche da ${v}`}
+                        onClick={() => scegliTaglio(v)}
+                      >
+                        <FicheRL importo={v} />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="rl-tondi">
+                    <button
+                      type="button"
+                      className="rl-tasto"
+                      aria-label="Annulla l’ultima fiche"
+                      onClick={annulla}
+                      disabled={!puoPuntare || mosse.length === 0 || !bozza}
+                    >
+                      <IconAnnulla size={20} />
+                    </button>
+                    <button
+                      type="button"
+                      className="rl-tasto"
+                      aria-label="Togli tutte le fiches"
+                      onClick={azzera}
+                      disabled={!puoPuntare || totaleSulPanno === 0 || scena === 'esito'}
+                    >
+                      <IconCestino size={20} />
+                    </button>
+                    {/* Sul panno vuoto le puntate dell'ultimo giro, su quello pieno il doppio. */}
+                    {vuoto ? (
+                      <button
+                        type="button"
+                        className="rl-tasto rl-tasto--testo"
+                        aria-label="Ripeti le ultime puntate"
+                        onClick={ripeti}
+                        disabled={!puoPuntare || totaleDi(ultime) === 0 || totaleDi(ultime) > disponibile}
+                      >
+                        Ripeti
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="rl-tasto rl-tasto--testo"
+                        aria-label="Raddoppia le puntate"
+                        onClick={raddoppia}
+                        disabled={!puoPuntare || totaleSulPanno * 2 > disponibile}
+                      >
+                        ×2
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <button
                   type="button"
-                  className="rl-tasto"
-                  aria-label="Annulla l’ultima fiche"
-                  onClick={annulla}
-                  disabled={!puoPuntare || mosse.length === 0 || !bozza}
-                >
-                  <IconAnnulla size={20} />
-                </button>
-                <button
-                  type="button"
-                  className="rl-tasto"
-                  aria-label="Togli tutte le fiches"
-                  onClick={azzera}
-                  disabled={!puoPuntare || totaleSulPanno === 0 || scena === 'esito'}
-                >
-                  <IconCestino size={20} />
-                </button>
-                {/* Sul panno vuoto le puntate dell'ultimo giro, su quello pieno il doppio. */}
-                {totaleSulPanno === 0 && totaleDi(ultime) > 0 ? (
-                  <button
-                    type="button"
-                    className="rl-tasto"
-                    aria-label="Ripeti le ultime puntate"
-                    onClick={ripeti}
-                    disabled={!puoPuntare || totaleDi(ultime) > disponibile}
-                  >
-                    <IconRefresh size={20} />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="rl-tasto rl-tasto--testo"
-                    aria-label="Raddoppia le puntate"
-                    onClick={raddoppia}
-                    disabled={!puoPuntare || totaleSulPanno === 0 || totaleSulPanno * 2 > disponibile}
-                  >
-                    ×2
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="rl-lancia"
+                  className={`rl-lancia${puoLanciare ? ' is-pronto' : ''}`}
                   disabled={!puoLanciare}
                   onClick={() => void lancia()}
                 >
-                  {verbo}
+                  {scritta}
                 </button>
-              </div>
-            </>
-          )}
-        </div>
-        <span className="rl-velo" aria-hidden="true" />
+              </>
+            )}
+          </div>
         </div>
       </div>
       <Adesivo adesivo={adesivo} />
@@ -868,21 +815,32 @@ export default function RouletteTavolo() {
   )
 }
 
+/** Un numero di punti con il punto delle migliaia, come sul tabellone. */
+const cifra = (n: number) => n.toLocaleString('it-IT')
+
 /**
- * Una riga di stato sopra le fiches, con la barra del tempo quando corre. Il
- * conto alla rovescia si vede e non si legge: un lettore di schermo lo
+ * La riga sulla sponda, sopra le fiches, con la barra del tempo quando corre.
+ * Il conto alla rovescia si vede e non si legge: un lettore di schermo lo
  * ripeterebbe a ogni secondo.
  */
-function Riga({ children, tempo }: { children: ReactNode; tempo?: { resta: number; tutto: number } | null }) {
+function Riga({
+  children,
+  tempo,
+  oro = false,
+}: {
+  children: ReactNode
+  tempo?: { resta: number; tutto: number } | null
+  oro?: boolean
+}) {
   return (
-    <div className="rl-stato">
-      <span className="rl-stato__testo" aria-live={tempo ? 'off' : 'polite'}>
+    <div className={`rl-riga${oro ? ' is-oro' : ''}`}>
+      <span className="rl-riga__testo" aria-live={tempo ? 'off' : 'polite'}>
         {children}
       </span>
       {tempo && (
-        <span className="rl-stato__barra" aria-hidden="true">
+        <span className="rl-riga__barra" aria-hidden="true">
           <span
-            className={`rl-stato__pieno${tempo.resta < 5_000 ? ' is-poco' : ''}`}
+            className={`rl-riga__pieno${tempo.resta < 5_000 ? ' is-poco' : ''}`}
             style={{ transform: `scaleX(${Math.max(0, Math.min(1, tempo.resta / tempo.tutto))})` }}
           />
         </span>
@@ -891,7 +849,7 @@ function Riga({ children, tempo }: { children: ReactNode; tempo?: { resta: numbe
   )
 }
 
-/** La riga sopra le fiches: che cosa succede adesso. */
+/** La riga sulla sponda: che cosa succede adesso, come la dice il mockup. */
 function StatoTavolo({
   anteprima,
   scena,
@@ -899,6 +857,8 @@ function StatoTavolo({
   mandate,
   cambiata,
   numero,
+  esito,
+  puntate,
 }: {
   anteprima: string | null
   scena: string
@@ -906,56 +866,61 @@ function StatoTavolo({
   mandate: number
   cambiata: boolean
   numero: number | null
+  /** Quanto e' tornato dall'ultimo giro, a numero annunciato; null se non si era puntato. */
+  esito: number | null
+  /** Le puntate che si stanno componendo. */
+  puntate: PuntateRL
 }) {
   if (anteprima) {
     return (
-      <Riga>
-        {nomeDi(anteprima)} · <span className="rl-stato__paga">{pagaDi(anteprima)} a 1</span>
+      <Riga oro>
+        {nomeDi(anteprima)} · paga {pagaDi(anteprima)} a 1
       </Riga>
     )
   }
-  if (scena === 'lancio') return <Riga>La biglia gira…</Riga>
-  if (scena === 'annuncio' || scena === 'esito') {
+  if (scena === 'lancio') return <Riga oro>Rien ne va plus</Riga>
+  if (scena === 'annuncio' || (scena === 'esito' && esito === null)) {
     return <Riga>{numero === null ? ' ' : `${NOMI_NUMERI[numero]}, ${annuncioDi(numero)}`}</Riga>
   }
+  if (scena === 'esito' && esito !== null) {
+    return <Riga oro={esito > 0}>{esito > 0 ? `Vinci ${cifra(esito)}` : 'Il banco raccoglie'}</Riga>
+  }
+  const quante = Object.keys(puntate).length
+  const tot = totaleDi(puntate)
   if (tempo) {
     const s = Math.ceil(tempo.resta / 1000)
     return <Riga tempo={tempo}>{mandate > 0 && !cambiata ? `Puntato · la biglia fra ${s} s` : `Punta entro ${s} s`}</Riga>
   }
   if (mandate > 0 && !cambiata) return <Riga>Puntato · aspetto gli altri</Riga>
+  if (tot > 0) return <Riga>{`${quante === 1 ? 'Una puntata' : `${quante} puntate`} · ${cifra(tot)} sul panno`}</Riga>
   return <Riga>Scegli una fiche e toccala sul panno</Riga>
 }
 
-/** Il numero uscito, grande, come lo annuncia il croupier: la cifra sul suo colore, e come si dice. */
+/** Il numero uscito, come lo annuncia il croupier: la carta del mockup, con la cifra sul suo colore e come si dice. */
 function Annuncio({ numero }: { numero: number }) {
   return (
-    <div className={`rl-annuncio is-${coloreDi(numero)}`} role="status">
-      <span className="rl-annuncio__raggi" aria-hidden="true" />
-      <span className="rl-annuncio__disco">
-        <span className="rl-annuncio__cifra">{numero}</span>
-      </span>
-      <span className="rl-annuncio__targa">
-        <span className="rl-annuncio__nome">{NOMI_NUMERI[numero]}</span>
-        <span className="rl-annuncio__sotto">{annuncioDi(numero)}</span>
+    <div className="rl-annuncio" role="status">
+      <span className={`rl-annuncio__numero is-${coloreDi(numero)}`}>{numero}</span>
+      <span className="rl-annuncio__testo">
+        {numero === 0 ? 'Zero' : `${NOMI_NUMERI[numero]}, ${annuncioDi(numero)}`}
       </span>
     </div>
   )
 }
 
-/**
- * Il tabellone dei numeri usciti, come quelli luminosi accanto ai tavoli: il
- * piu' recente in cima e grande, i rossi a sinistra, i neri a destra, lo zero
- * in mezzo.
- */
-function Storia({ numeri }: { numeri: readonly number[] }) {
+/** I numeri usciti, in fila sotto il tabellone: l'ultimo per primo, piu' grande e con l'anello d'oro. */
+function Usciti({ numeri }: { numeri: readonly number[] }) {
   return (
-    <ol className="rl-storia" aria-label="Gli ultimi numeri usciti">
-      {numeri.length === 0 && <li className="rl-storia__vuota">–</li>}
-      {numeri.slice(0, 9).map((n, i) => (
-        <li key={`${numeri.length - i}:${n}`} className={`rl-storia__numero is-${coloreDi(n)}${i === 0 ? ' is-ultimo' : ''}`}>
-          {n}
-        </li>
-      ))}
-    </ol>
+    <div className="rl-usciti">
+      <span className="rl-usciti__nome">Usciti</span>
+      <ol className="rl-usciti__fila" aria-label="Gli ultimi numeri usciti">
+        {numeri.length === 0 && <li className="rl-usciti__vuota">nessuno, per ora</li>}
+        {numeri.slice(0, 12).map((n, i) => (
+          <li key={`${numeri.length - i}:${n}`} className={`rl-uscito is-${coloreDi(n)}${i === 0 ? ' is-ultimo' : ''}`}>
+            {n}
+          </li>
+        ))}
+      </ol>
+    </div>
   )
 }
