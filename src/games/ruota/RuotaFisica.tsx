@@ -41,7 +41,8 @@ export interface Meta {
 export interface Mozzo {
   testo: string
   sotto?: string
-  tono?: 'piu' | 'meno'
+  /** Una vincita: il numero si fa verde. Quando non torna niente il mozzo torna alla puntata, e non ha tono. */
+  tono?: 'piu'
 }
 
 interface Props {
@@ -63,8 +64,11 @@ interface Props {
   onDebole?: () => void
   /** Cambia quando l'esito non arriva: la ruota rallenta e si ferma dove capita. */
   annulla?: number
-  /** Le luci: in attesa si accendono a turno, a una vincita fanno festa, al banco si spengono. */
-  luci: 'attesa' | 'vinto' | 'perso'
+  /**
+   * Le luci: in attesa si accendono a turno, a una vincita fanno festa; quando
+   * non torna niente (`calma`) respirano piano, lilla, e tornano al turno.
+   */
+  luci: 'attesa' | 'vinto' | 'calma'
   lampade: number
   /** Quanto dura almeno la frenata, in millisecondi. */
   durataMinima: number
@@ -88,7 +92,7 @@ const ARCO_INVITO = `A${RAGGIO_INVITO} ${RAGGIO_INVITO} 0 0 1 ${FINE_X.toFixed(1
 const INVITO = `M${INIZIO_X.toFixed(1)} ${INIZIO_Y.toFixed(1)}${ARCO_INVITO}`
 const PUNTA_INVITO = `translate(${FINE_X.toFixed(1)} ${FINE_Y.toFixed(1)}) rotate(70)`
 
-/** La forma della lancetta: una goccia d'oro con la pietra rossa, che punta giu' verso gli spicchi. */
+/** La forma della lancetta: una goccia rossa con il perno d'oro, che punta giu' verso gli spicchi. */
 const LANCETTA = 'M0 22 C-4 14 -11 3 -11 -5 C-11 -12 -6 -16 0 -16 C6 -16 11 -12 11 -5 C11 3 4 14 0 22 Z'
 
 /**
@@ -354,8 +358,9 @@ export function RuotaFisica(props: Props) {
             <stop offset="100%" stopColor="var(--ct-oro-scuro)" />
           </radialGradient>
           <linearGradient id={`${id}-lancetta`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="var(--ct-oro-chiaro)" />
-            <stop offset="100%" stopColor="var(--ct-oro-scuro)" />
+            <stop offset="0%" stopColor="#ff8a95" />
+            <stop offset="55%" stopColor="#ff5c6b" />
+            <stop offset="100%" stopColor="#d63446" />
           </linearGradient>
         </defs>
         <ellipse className="ct-ruota__ombra" cx={0} cy={CORNICE - 2} rx={CORNICE * 0.82} ry={9} />

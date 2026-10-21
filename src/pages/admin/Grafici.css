@@ -116,9 +116,7 @@
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-sm);
   background: var(--bg-elevated);
-  box-shadow:
-    0 0 0 0.5px var(--separator),
-    var(--shadow-md);
+  box-shadow: var(--ombra-album);
   transform: translate(-50%, -100%);
   pointer-events: none;
 }

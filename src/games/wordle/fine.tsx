@@ -1,11 +1,10 @@
 import type { CSSProperties } from 'react'
 import { LettereAdesivo, type DatiAdesivo } from '@/components/Adesivo'
-import { IconaScheda, Pillola } from '@/components/Scheda'
 import type { EvaluatedGuess, WordleStatus } from '@shared/types'
 
 /**
- * Quel che il Wordle dice di se' mentre si gioca e quando finisce: i tentativi
- * nella testata, la riga sotto la griglia, l'adesivo della fine.
+ * Quel che il Wordle dice di se' mentre si gioca e quando finisce: la riga
+ * sotto la griglia, i tentativi in piccolo del riepilogo, l'adesivo della fine.
  */
 
 /** Il titolo di una vittoria, secondo i tentativi: al primo colpo e' un'altra cosa che al sesto. */
@@ -36,7 +35,8 @@ export function adesivoFine(finale: FinaleWordle, id: number): DatiAdesivo {
       titolo: TITOLI_VITTORIA[Math.min(finale.tentativi, 6) - 1],
       // Al primo colpo il titolo dice gia' tutto.
       sotto: finale.tentativi === 1 ? undefined : `In ${finale.tentativi} tentativi`,
-      colore: 'linear-gradient(155deg, var(--wordle-1), var(--wordle-2) 80%)',
+      colore: 'linear-gradient(180deg, #9cf0b4, var(--wordle-tinta))',
+      classe: 'wordle-adesivo',
       durata: ADESIVO_FINE_MS,
       disegno: <Stelle />,
       piede: finale.parola ? <LettereAdesivo parola={finale.parola} /> : undefined,
@@ -48,7 +48,8 @@ export function adesivoFine(finale: FinaleWordle, id: number): DatiAdesivo {
     tono: 'bordato',
     titolo: 'Peccato!',
     sotto: 'La parola era',
-    colore: 'var(--brand)',
+    colore: 'var(--roulette-tinta)',
+    classe: 'wordle-adesivo',
     durata: ADESIVO_FINE_MS,
     piede: finale.parola ? <LettereAdesivo parola={finale.parola} /> : undefined,
     suono: 'sconfitta',
@@ -83,41 +84,45 @@ function Stelle() {
 }
 
 /**
- * I tentativi nella testata: sei caselline, piene quelle usate, quella in corso
- * che respira. A partita chiusa diventano l'esito.
+ * La riga sotto la griglia, quella che si vede: a che tentativo si e', e a
+ * partita chiusa com'e' finita. Com'e' andato l'ultimo tentativo lo dice
+ * `notaWordle`, a chi legge lo schermo.
  */
-export function Tentativi({
-  guesses,
-  maxAttempts,
-  status,
-}: {
-  guesses: readonly EvaluatedGuess[]
-  maxAttempts: number
-  status: WordleStatus
-}) {
-  if (status === 'won') {
-    return (
-      <Pillola tono="buona">{guesses.length === 1 ? 'Al primo tentativo' : `In ${guesses.length} tentativi`}</Pillola>
-    )
-  }
-  if (status === 'lost') return <Pillola tono="cattiva">Non indovinata</Pillola>
+export function piedeWordle(
+  guesses: readonly EvaluatedGuess[],
+  status: WordleStatus,
+  answer: string | null,
+  maxAttempts: number,
+): string {
+  if (status === 'won') return guesses.length === 1 ? 'Indovinata al primo tentativo!' : `Indovinata in ${guesses.length} tentativi`
+  if (status === 'lost') return answer ? `La parola era ${answer.toUpperCase()}` : 'Non indovinata'
+  return `Tentativo ${Math.min(guesses.length + 1, maxAttempts)} di ${maxAttempts}`
+}
+
+/**
+ * I tentativi in piccolo, coi loro colori: il riepilogo della partita. Le
+ * lettere ci sono, perché la partita si riconosce dalle parole provate.
+ */
+export function MiniGriglia({ guesses }: { guesses: readonly EvaluatedGuess[] }) {
+  if (guesses.length === 0) return null
+  const nomi = { correct: 'al posto giusto', present: 'da spostare', absent: 'non c’è' } as const
   return (
-    <span className="tentativi" aria-label={`Tentativo ${guesses.length + 1} di ${maxAttempts}`}>
-      {Array.from({ length: maxAttempts }, (_, i) => {
-        const riga = guesses[i]
-        const stato = riga
-          ? riga.pattern.includes('correct')
-            ? 'vicina'
-            : 'usata'
-          : i === guesses.length
-            ? 'corrente'
-            : 'libera'
-        return <span key={i} className={`tentativi__casella is-${stato}`} />
-      })}
-      <span className="tentativi__conto u-tabnum" aria-hidden="true">
-        {Math.min(guesses.length + 1, maxAttempts)}/{maxAttempts}
-      </span>
-    </span>
+    <div className="mini-griglia" role="img" aria-label={`I tentativi: ${guesses.map((g) => g.word.toUpperCase()).join(', ')}`}>
+      {guesses.map((g, r) => (
+        <div key={r} className="mini-griglia__riga" aria-hidden="true">
+          {[...g.word].map((l, i) => (
+            <span
+              key={i}
+              className={`mini-griglia__casella is-${g.pattern[i]}`}
+              style={{ '--i': r * 5 + i } as CSSProperties}
+              title={`${l.toUpperCase()} ${nomi[g.pattern[i]]}`}
+            >
+              {l.toUpperCase()}
+            </span>
+          ))}
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -138,13 +143,4 @@ export function notaWordle(guesses: readonly EvaluatedGuess[], status: WordleSta
     Boolean,
   )
   return `${ultima.word.toUpperCase()}: ${parti.join(', ')}`
-}
-
-/** L'icona del Wordle nelle testate: una casella verde con la W. */
-export function IconaWordle() {
-  return (
-    <IconaScheda colore="linear-gradient(150deg, var(--wordle-1), var(--wordle-2))">
-      <span className="wordle-icona">W</span>
-    </IconaScheda>
-  )
 }

@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
-import { Button } from '@/components/Button'
 import { Numero, Sezione } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { DefinizioniCarte, DorsoCarta, FacciaCarta } from '@/games/blackjack/Carta'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
+import { Panno } from '@/games/blackjack/Tavolo'
 import { ComeSiGiocaBlackjack } from '@/games/blackjack/ComeSiGioca'
 import { Fiche } from '@/games/blackjack/Fiches'
 import { PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { finitaLUscita } from '@/games/blackjack/uscita'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
@@ -27,6 +28,7 @@ const SALA_POLL_MS = 5_000
  * seduto da qualche parte ci torna.
  */
 export default function Blackjack() {
+  useSala()
   const { vai } = useNavigazione()
   const toast = useToast()
   const [sala, setSala] = useState<SalaBlackjack | null>(null)
@@ -70,6 +72,7 @@ export default function Blackjack() {
   return (
     <Pagina
       titolo="Blackjack"
+      sotto="Paga 1 a 1"
       indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
@@ -78,47 +81,50 @@ export default function Blackjack() {
       }
     >
       <DefinizioniCarte />
-      <section className="bj-sala entra" aria-label="Il tuo tavolo">
-        <span className="bj-sala__luce" aria-hidden="true" />
-        <div className="bj-sala__ventaglio" aria-hidden="true">
-          <span className="bj-sala__carta is-1">
-            <DorsoCarta />
-          </span>
-          <span className="bj-sala__carta is-2">
-            <FacciaCarta carta="Ap" />
-          </span>
-          <span className="bj-sala__carta is-3">
-            <FacciaCarta carta="Kc" />
-          </span>
-          <span className="bj-sala__fiche is-1">
-            <Fiche valore={100} />
-          </span>
-          <span className="bj-sala__fiche is-2">
-            <Fiche valore={25} />
-          </span>
+      {/* Il tavolo vuoto che aspetta: lo stesso panno del tavolo, con le carte del banco e il saldo. */}
+      <section className={`bj-sala entra ${SALA}`} aria-label="Il tuo tavolo">
+        <div className="bj-sala__tavolo">
+          <Panno sala />
+          <div className="bj-sala__ventaglio" aria-hidden="true">
+            <span className="bj-sala__carta is-1">
+              <DorsoCarta />
+            </span>
+            <span className="bj-sala__carta is-2">
+              <FacciaCarta carta="Ap" />
+            </span>
+            <span className="bj-sala__carta is-3">
+              <FacciaCarta carta="Kc" />
+            </span>
+          </div>
+          <div className="bj-sala__testo">
+            <p className="bj-sala__saldo">
+              <span className="bj-sala__etichetta">Saldo</span>
+              <strong className="u-tabnum">{sala ? <Numero valore={sala.saldo} /> : '…'}</strong>
+            </p>
+            <span className="bj-sala__fiches" aria-hidden="true">
+              {[1, 5, 10, 25].map((v, i) => (
+                <span key={v} className="bj-sala__fiche" style={{ '--i': i } as CSSProperties}>
+                  <Fiche valore={v} />
+                </span>
+              ))}
+            </span>
+            {sala?.mioTavolo ? (
+              <button type="button" className="bj-sala__vai" onClick={() => vai(ROTTE.tavoloBJ(sala.mioTavolo!))}>
+                Torna al tavolo
+              </button>
+            ) : (
+              <button
+                type="button"
+                className={`bj-sala__vai${pochi ? ' is-secondario' : ''}`}
+                onClick={() => void apri()}
+                disabled={apro || !sala}
+              >
+                Tavolo nuovo
+              </button>
+            )}
+          </div>
         </div>
-        <div className="bj-sala__testo">
-          <p className="bj-sala__saldo">
-            Saldo{' '}
-            <strong className="u-tabnum">{sala ? <Numero valore={sala.saldo} /> : '…'}</strong>
-          </p>
-          {pochi && <PochiPunti servono={PUNTATA_MINIMA_BJ} saldo={sala.saldo} className="bj-sala__pochi" />}
-          {sala?.mioTavolo ? (
-            <Button size="lg" onClick={() => vai(ROTTE.tavoloBJ(sala.mioTavolo!))}>
-              Torna al tavolo
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              className={pochi ? 'is-secondario' : ''}
-              onClick={() => void apri()}
-              disabled={apro || !sala}
-            >
-              Tavolo nuovo
-            </Button>
-          )}
-
-        </div>
+        {pochi && <PochiPunti servono={PUNTATA_MINIMA_BJ} saldo={sala.saldo} className="bj-sala__pochi" />}
       </section>
 
       {sala && sala.tavoli.length > 0 && (

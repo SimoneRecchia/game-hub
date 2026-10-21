@@ -1,50 +1,35 @@
 import type { CSSProperties } from 'react'
-import { GETTONI_BJ } from '@shared/blackjack'
+import { COLORE_FICHE as COLORI_FORTUNA, FICHES } from '@/games/fortuna/fiches'
 import './Fiches.css'
 
-/** Il colore di una fiche, per taglio, come ai tavoli veri. */
-export const COLORE_FICHE: Record<number, string> = {
-  10: 'var(--bj-fiche-10)',
-  25: 'var(--bj-fiche-25)',
-  50: 'var(--bj-fiche-50)',
-  100: 'var(--bj-fiche-100)',
-  500: 'var(--bj-fiche-500)',
-}
+/**
+ * Le fiches del tavolo sono quelle della slot e di Crazy Time: uno, cinque,
+ * dieci e venticinque, con i loro colori. Si toccano quante volte si vuole, e
+ * la puntata e' la loro somma.
+ */
+export const GETTONI: readonly number[] = FICHES
+export const COLORE_FICHE: Readonly<Record<number, string>> = COLORI_FORTUNA
 
 /**
  * Le fiches di un importo, dalla piu' grande: il minimo numero di pezzi, come
- * li conta il croupier. Con i tagli del tavolo il 30 sono tre da dieci, non un
- * venticinque e un resto. Un importo che i tagli non fanno (non succede: si
- * punta con le fiches) resta con le fiches che ci stanno.
+ * li conta il croupier. Con uno, cinque, dieci e venticinque basta prendere
+ * ogni volta la piu' grande che ci sta.
  */
 export function scomponi(importo: number): number[] {
-  const unita = 5
-  const tagli = [...GETTONI_BJ].sort((a, b) => b - a)
-  const n = Math.floor(importo / unita)
-  if (n <= 0) return []
-  // Il minimo di pezzi per ogni importo, a passi di cinque.
-  const pezzi = new Array<number>(n + 1).fill(Infinity)
-  const ultimo = new Array<number>(n + 1).fill(0)
-  pezzi[0] = 0
-  for (let i = 1; i <= n; i += 1) {
-    for (const t of tagli) {
-      const k = t / unita
-      if (k <= i && pezzi[i - k] + 1 < pezzi[i]) {
-        pezzi[i] = pezzi[i - k] + 1
-        ultimo[i] = t
-      }
+  const pezzi: number[] = []
+  let resto = Math.max(0, Math.floor(importo))
+  for (const t of [...GETTONI].sort((a, b) => b - a)) {
+    while (resto >= t) {
+      pezzi.push(t)
+      resto -= t
     }
   }
-  let i = n
-  while (i > 0 && pezzi[i] === Infinity) i -= 1
-  const fiches: number[] = []
-  for (; i > 0; i -= ultimo[i] / unita) fiches.push(ultimo[i])
-  return fiches.sort((a, b) => b - a)
+  return pezzi
 }
 
 /** Il colore del taglio piu' grande che sta in un importo: per una fiche sola che porta un importo qualunque. */
 export function coloreFiche(importo: number): string {
-  const taglio = [...GETTONI_BJ].reverse().find((t) => t <= importo) ?? GETTONI_BJ[0]
+  const taglio = [...GETTONI].reverse().find((t) => t <= importo) ?? GETTONI[0]
   return COLORE_FICHE[taglio]
 }
 
@@ -60,7 +45,7 @@ export function Fiche({
   return (
     <span
       className={`bj-fiche ${className}`}
-      style={{ '--fiche': COLORE_FICHE[valore] ?? COLORE_FICHE[10], ...style } as CSSProperties}
+      style={{ '--fiche': COLORE_FICHE[valore] ?? coloreFiche(valore), ...style } as CSSProperties}
     >
       <span className="bj-fiche__valore">{valore >= 1000 ? `${valore / 1000}K` : valore}</span>
     </span>

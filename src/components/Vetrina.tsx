@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { usePlayer } from '@/lib/auth'
@@ -9,8 +9,25 @@ import './Vetrina.css'
 
 export type SchedaVetrina = 'giornaliere' | 'libere' | 'fortuna'
 
-/** Il colore della barra di stato di iOS sulla Fortuna, che e' scura in tutti e due i temi: quello del suo fondo. */
-const FONDO_FORTUNA = '#0d0716'
+/**
+ * Il colore della barra di stato di iOS: quello in cima al fondale della
+ * scheda. La Fortuna e' scura in tutti e due i temi; le Giornaliere hanno
+ * quello di sempre (`theme.ts`).
+ */
+const CIMA: Record<SchedaVetrina, { chiaro: string; scuro: string } | null> = {
+  giornaliere: null,
+  libere: { chiaro: '#ddf7ec', scuro: '#2a2e55' },
+  fortuna: { chiaro: '#3a1e7a', scuro: '#3a1e7a' },
+}
+
+/** Il filo delle lucine: un arco su un riquadro di 390 per 60, le lampadine sui suoi punti. */
+const LUCI = ['#FF5C9A', '#FFC93C', '#4FD0E0', '#5EDB84', '#FF9A62', '#B48CFF']
+const LAMPADINE = Array.from({ length: 12 }, (_, i) => {
+  const t = (i + 0.5) / 12
+  const x = (1 - t) ** 2 * -10 + 2 * (1 - t) * t * 195 + t ** 2 * 400
+  const y = (1 - t) ** 2 * 6 + 2 * (1 - t) * t * 64 + t ** 2 * 6
+  return { x: (x / 390) * 100, y: y - 4, luce: LUCI[i % LUCI.length], ritardo: (i * 0.37) % 2.4 }
+})
 
 /**
  * La pagina di una scheda: le Libere, le Giornaliere, la Fortuna. Hanno la
@@ -38,13 +55,19 @@ export function Vetrina({
 }) {
   const player = usePlayer()
 
-  // Sulla Fortuna Safari tinge la zona dell'orologio di scuro, come la pagina; uscendo torna com'era. Le
-  // meta sono due, una per schema, finché il tema non si cambia dal profilo (`theme.ts` le fa una sola).
+  // Safari tinge la zona dell'orologio del colore in cima alla pagina; uscendo torna com'era. Le meta sono
+  // due, una per schema, finché il tema non si cambia dal profilo (`theme.ts` le fa una sola).
   useEffect(() => {
-    if (scheda !== 'fortuna') return
+    const cima = CIMA[scheda]
+    if (!cima) return
     const meta = [...document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')]
     const prima = meta.map((m) => m.content)
-    for (const m of meta) m.content = FONDO_FORTUNA
+    const tema = document.documentElement.dataset.theme
+    const scuro = tema === 'dark' || (tema !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    for (const m of meta) {
+      const sua = m.media.includes('dark') ? true : m.media.includes('light') ? false : scuro
+      m.content = sua ? cima.scuro : cima.chiaro
+    }
     return () => {
       meta.forEach((m, i) => {
         m.content = prima[i]
@@ -66,16 +89,32 @@ export function Vetrina({
               className="bottone-barra vetrina__trofeo"
               aria-label="Classifica"
             >
-              <IconTrophy size={20} />
+              <IconTrophy size={22} />
             </Collegamento>
           )}
           <Collegamento to={ROTTE.profilo} stato={{ da: titolo }} className="vetrina__io" aria-label="Il tuo profilo">
-            <Avatar nickname={player.nickname} color={player.avatarColor} size={36} />
+            <Avatar nickname={player.nickname} color={player.avatarColor} size={44} />
           </Collegamento>
         </>
       }
     >
-      <div className={`vetrina vetrina--${scheda}`}>{children}</div>
+      <div className={`vetrina vetrina--${scheda}`}>
+        <div className="lucine" aria-hidden="true">
+          <svg className="lucine__filo" viewBox="0 0 390 60" preserveAspectRatio="none">
+            <path d="M-10 6 Q195 64 400 6" vectorEffect="non-scaling-stroke" />
+          </svg>
+          {LAMPADINE.map((l, i) => (
+            <span
+              key={i}
+              className="lucine__lampadina"
+              style={{ left: `${l.x}%`, top: l.y, '--luce': l.luce, '--ritardo': `${l.ritardo}s` } as CSSProperties}
+            >
+              <span className="lucine__vetro" />
+            </span>
+          ))}
+        </div>
+        {children}
+      </div>
     </Pagina>
   )
 }

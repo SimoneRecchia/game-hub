@@ -135,6 +135,7 @@ export default function NomiCoseLibera() {
       <Pagina
         key="scelta"
         titolo="Nomi, cose e città"
+        gioco="nomi"
         indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
         azioni={info}
       >
@@ -178,6 +179,7 @@ export default function NomiCoseLibera() {
     <Pagina
       key="partita"
       titolo="Nomi, cose e città"
+      sotto="Libera"
       intera
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={info}
@@ -214,7 +216,7 @@ export default function NomiCoseLibera() {
             />
           }
           azione={
-            <Button size="lg" fullWidth onClick={g.dicoStop}>
+            <Button size="lg" fullWidth className="nomi-stop" onClick={g.dicoStop}>
               <IconTimbro size={20} /> Stop!
             </Button>
           }

@@ -16,11 +16,20 @@
  *     Ogni dichiarazione ha sopra il valore chiaro nudo: i browser che non
  *     conoscono `light-dark()` scartano la seconda riga e restano sul tema
  *     chiaro invece di perdere il colore.
- *  2. **Fondali profondi, non neri.** Il fondo scuro e' un blu-nero, e le
+ *  2. **Fondali profondi, non neri.** Il fondo scuro e' un viola notte, e le
  *     superfici salgono di luminosita': una card sopra una card si distingue.
  *  3. **Il colore vuole dire una cosa sola.** Il verde e' "lettera giusta", e
  *     quindi non e' anche il colore dei pulsanti; l'accento dell'interfaccia e'
  *     un indaco. I colori dei giochi stanno solo sulle loro copertine.
+ *
+ * Dal 19 ottobre 2026 l'aspetto e' quello di un album di adesivi: le carte e i
+ * tasti hanno il filo d'inchiostro (`--ink`) e l'ombra secca sotto, come un
+ * oggetto disegnato; i titoli sono in Lilita One e il testo in Nunito
+ * (fonts.css); i fondali sono sfumature calde in chiaro e un viola notte in
+ * scuro (`--fondo-*`), con le macchie di colore e i puntini. L'inchiostro e'
+ * scuro anche nel tema scuro: e' il contorno degli oggetti, non il testo, e i
+ * colori pieni che contorna — il giallo dei bottoni, il verde delle caselle —
+ * vogliono sopra una scritta scura in tutti e due i temi.
  */
 
 :root {
@@ -28,10 +37,11 @@
 
   /* ---- Tipografia ---- */
   --font-text:
-    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display',
-    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    'Nunito', ui-rounded, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  /* I titoli, i numeri e le lettere dei giochi: Lilita One ha un peso solo. */
   --font-rounded:
-    ui-rounded, -apple-system, BlinkMacSystemFont, 'SF Pro Rounded',
+    'Lilita One', 'Nunito', ui-rounded, -apple-system, BlinkMacSystemFont,
     'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
   /* Le risposte di Nomi, cose e città, scritte a mano: il carattere a mano
@@ -57,19 +67,23 @@
   --text-caption-1: 0.75rem;     /* 12 */
   --text-caption-2: 0.6875rem;   /* 11 */
 
-  --tracking-tight: -0.022em;
-  --tracking-normal: -0.01em;
+  /* Lilita One e Nunito sono gia' strette: stringerle ancora le impasterebbe. */
+  --tracking-tight: 0.005em;
+  --tracking-normal: 0;
   --tracking-wide: 0.06em;
   /* Per i numeri grandi: piu' strette stanno insieme come un logo. */
-  --tracking-display: -0.035em;
+  --tracking-display: -0.01em;
 
   /* ---- Accento dell'interfaccia ---- */
   --brand: #4f46e5;
-  --brand: light-dark(#4f46e5, #8b85ff);
+  --brand: light-dark(#4f46e5, #b4aeff);
   --brand-strong: #3730c4;
-  --brand-strong: light-dark(#3730c4, #a5a0ff);
+  --brand-strong: light-dark(#3730c4, #bdb8ff);
+  /* La scritta sopra l'accento: bianca sull'indaco scuro del chiaro, d'inchiostro su quello chiaro dello scuro. */
+  --brand-ink: #ffffff;
+  --brand-ink: light-dark(#ffffff, #120c2b);
   --brand-soft: rgba(79, 70, 229, 0.12);
-  --brand-soft: light-dark(rgba(79, 70, 229, 0.12), rgba(139, 133, 255, 0.18));
+  --brand-soft: light-dark(rgba(79, 70, 229, 0.12), rgba(180, 174, 255, 0.16));
   --accent: #f59e0b;
   --accent: light-dark(#f59e0b, #fbbf24);
 
@@ -98,69 +112,129 @@
   --mint: light-dark(#0d9488, #2dd4bf);
 
   /* ---- Superfici ----
-     Il chiaro ha una punta di blu invece del grigio neutro; lo scuro sale per
-     gradini di luminosita', così una card sopra una card si distingue. */
-  --bg: #f4f5f9;
-  --bg: light-dark(#f4f5f9, #0b0c11);
-  --bg-elevated: #ffffff;
-  --bg-elevated: light-dark(#ffffff, #16181f);
-  --surface: #ffffff;
-  --surface: light-dark(#ffffff, #16181f);
-  --surface-2: #eef0f6;
-  --surface-2: light-dark(#eef0f6, #1e2029);
-  --surface-3: #e2e5ee;
-  --surface-3: light-dark(#e2e5ee, #282b36);
+     Il chiaro e' carta calda, lo scuro un viola notte; le carte salgono di un
+     gradino sul fondo, e i fogli (`--bg-elevated`) sono carta anche loro. */
+  --bg: #fff0ea;
+  --bg: light-dark(#fff0ea, #26224c);
+  --bg-elevated: #fffbf2;
+  --bg-elevated: light-dark(#fffbf2, #2a2160);
+  --surface: #fffbf2;
+  --surface: light-dark(#fffbf2, #35315f);
+  --surface-2: #f5edfa;
+  --surface-2: light-dark(#f5edfa, #3e3970);
+  --surface-3: #ebe2f6;
+  --surface-3: light-dark(#ebe2f6, #474180);
 
-  --fill-quaternary: rgba(60, 64, 82, 0.06);
-  --fill-quaternary: light-dark(rgba(60, 64, 82, 0.06), rgba(160, 168, 200, 0.1));
-  --fill-tertiary: rgba(60, 64, 82, 0.1);
-  --fill-tertiary: light-dark(rgba(60, 64, 82, 0.1), rgba(160, 168, 200, 0.16));
-  --fill-secondary: rgba(60, 64, 82, 0.15);
-  --fill-secondary: light-dark(rgba(60, 64, 82, 0.15), rgba(160, 168, 200, 0.24));
-  --separator: rgba(60, 64, 82, 0.12);
-  --separator: light-dark(rgba(60, 64, 82, 0.12), rgba(160, 168, 200, 0.18));
-  --separator-opaque: #d4d8e4;
-  --separator-opaque: light-dark(#d4d8e4, #2c2f3a);
+  --fill-quaternary: rgba(42, 31, 92, 0.06);
+  --fill-quaternary: light-dark(rgba(42, 31, 92, 0.06), rgba(228, 220, 255, 0.08));
+  --fill-tertiary: rgba(42, 31, 92, 0.1);
+  --fill-tertiary: light-dark(rgba(42, 31, 92, 0.1), rgba(228, 220, 255, 0.13));
+  --fill-secondary: rgba(42, 31, 92, 0.15);
+  --fill-secondary: light-dark(rgba(42, 31, 92, 0.15), rgba(228, 220, 255, 0.2));
+  --separator: rgba(42, 31, 92, 0.14);
+  --separator: light-dark(rgba(42, 31, 92, 0.14), rgba(255, 255, 255, 0.12));
+  --separator-opaque: #e4dcee;
+  --separator-opaque: light-dark(#e4dcee, #4a447a);
 
-  /* ---- Testo ---- */
-  --label: #0d0f17;
-  --label: light-dark(#0d0f17, #f5f6fa);
-  --label-secondary: rgba(13, 15, 23, 0.6);
-  --label-secondary: light-dark(rgba(13, 15, 23, 0.6), rgba(245, 246, 250, 0.62));
-  --label-tertiary: rgba(13, 15, 23, 0.36);
-  --label-tertiary: light-dark(rgba(13, 15, 23, 0.36), rgba(245, 246, 250, 0.38));
-  --label-quaternary: rgba(13, 15, 23, 0.18);
-  --label-quaternary: light-dark(rgba(13, 15, 23, 0.18), rgba(245, 246, 250, 0.2));
-  --label-inverted: #ffffff;
-  --label-inverted: light-dark(#ffffff, #0b0c11);
+  /* ---- Testo ----
+     Il secondario fa 8:1 sulla carta in chiaro e 7:1 in scuro; il terziario e'
+     per le frecce e le decorazioni, non per le parole (vedi CLAUDE.md). */
+  --label: #2a1f5c;
+  --label: light-dark(#2a1f5c, #fff6e0);
+  --label-secondary: #4e4479;
+  --label-secondary: light-dark(#4e4479, #c4bfe0);
+  --label-tertiary: #8a82a6;
+  --label-tertiary: light-dark(#8a82a6, #968fc0);
+  --label-quaternary: rgba(42, 31, 92, 0.22);
+  --label-quaternary: light-dark(rgba(42, 31, 92, 0.22), rgba(255, 246, 224, 0.24));
+  --label-inverted: #fffbf2;
+  --label-inverted: light-dark(#fffbf2, #120c2b);
 
   /* ---- Materiali (glass) ----
      Le barre galleggiano sopra il contenuto: la tab bar e' una capsula staccata
      dal bordo, la barra in alto si fa vetro solo quando sotto scorre qualcosa.
      Il bordo sottile chiaro in alto e' quel che fa sembrare vetro un
      rettangolo semitrasparente. */
-  --material-thick: rgba(255, 255, 255, 0.84);
-  --material-thick: light-dark(rgba(255, 255, 255, 0.84), rgba(22, 24, 31, 0.86));
-  --material-regular: rgba(246, 247, 251, 0.74);
-  --material-regular: light-dark(rgba(246, 247, 251, 0.74), rgba(22, 24, 31, 0.76));
-  --material-thin: rgba(255, 255, 255, 0.56);
-  --material-thin: light-dark(rgba(255, 255, 255, 0.56), rgba(30, 32, 41, 0.62));
+  --material-thick: rgba(255, 251, 242, 0.88);
+  --material-thick: light-dark(rgba(255, 251, 242, 0.88), rgba(42, 33, 96, 0.88));
+  --material-regular: rgba(255, 250, 242, 0.78);
+  --material-regular: light-dark(rgba(255, 250, 242, 0.78), rgba(38, 34, 76, 0.8));
+  --material-thin: rgba(255, 251, 242, 0.6);
+  --material-thin: light-dark(rgba(255, 251, 242, 0.6), rgba(53, 49, 95, 0.62));
   --blur: saturate(180%) blur(20px);
-  --glass: rgba(255, 255, 255, 0.7);
-  --glass: light-dark(rgba(255, 255, 255, 0.7), rgba(28, 30, 40, 0.66));
-  --glass-strong: rgba(255, 255, 255, 0.86);
-  --glass-strong: light-dark(rgba(255, 255, 255, 0.86), rgba(32, 34, 46, 0.86));
+  --glass: rgba(255, 250, 242, 0.8);
+  --glass: light-dark(rgba(255, 250, 242, 0.8), rgba(40, 26, 92, 0.82));
+  --glass-strong: rgba(255, 250, 242, 0.9);
+  --glass-strong: light-dark(rgba(255, 250, 242, 0.9), rgba(40, 26, 92, 0.88));
   /* Il vetro della tab bar sopra il fondo della pagina, gia' mescolato: la capsula piena delle transizioni. */
-  --glass-pieno: #fcfcfd;
-  --glass-pieno: light-dark(#fcfcfd, #161820);
+  --glass-pieno: #fff8ef;
+  --glass-pieno: light-dark(#fff8ef, #2b2259);
   /* La barra in cima alle schermate: il colore della pagina (--bg), velato. */
-  --vetro-barra: rgba(244, 245, 249, 0.9);
-  --vetro-barra: light-dark(rgba(244, 245, 249, 0.9), rgba(11, 12, 17, 0.86));
-  --glass-edge: rgba(255, 255, 255, 0.9);
-  --glass-edge: light-dark(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.12));
-  --glass-line: rgba(20, 24, 40, 0.08);
-  --glass-line: light-dark(rgba(20, 24, 40, 0.08), rgba(255, 255, 255, 0.06));
-  --glass-blur: saturate(190%) blur(24px);
+  --vetro-barra: rgba(255, 240, 234, 0.88);
+  --vetro-barra: light-dark(rgba(255, 240, 234, 0.88), rgba(38, 34, 76, 0.86));
+  --glass-edge: rgba(255, 255, 255, 0.95);
+  --glass-edge: light-dark(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.18));
+  --glass-line: rgba(42, 31, 92, 0.1);
+  --glass-line: light-dark(rgba(42, 31, 92, 0.1), rgba(255, 255, 255, 0.08));
+  --glass-blur: saturate(170%) blur(20px);
+
+  /* ---- L'album di adesivi ----
+     L'inchiostro dei contorni e delle ombre secche: scuro in tutti e due i temi
+     (vedi in cima). Una carta ha il filo e l'ombra che la stacca dal fondo; un
+     tasto anche, e premuto scende sull'ombra invece di rimpicciolirsi. */
+  --ink: #2a1f5c;
+  --ink: light-dark(#2a1f5c, #120c2b);
+  --ink-tenue: rgba(42, 31, 92, 0.3);
+  --ink-tenue: light-dark(rgba(42, 31, 92, 0.3), rgba(196, 191, 224, 0.3));
+  --filo: 2.5px;
+  --carta-luce: rgba(255, 255, 255, 0.65);
+  --carta-luce: light-dark(rgba(255, 255, 255, 0.65), rgba(255, 255, 255, 0.08));
+  --ombra-carta: 0 5px 0 var(--ink), inset 0 3px 0 var(--carta-luce);
+  /* La carta col filo fatto d'ombra: per le carte che i giochi misurano punto per punto, dove un bordo vero spostava tutto. */
+  --ombra-album: inset 0 0 0 var(--filo) var(--ink), 0 4px 0 var(--ink);
+  --ombra-tasto: 0 4px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  --ombra-tasto-giu: 0 1px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  /* I colori pieni dei tasti e delle etichette: sopra ci va sempre l'inchiostro. */
+  --giallo: #ffc93c;
+  --menta: #6fe6b8;
+  --rosa: #ff8fbf;
+  --cielo: #6ec1ff;
+  --lilla: #c9b8ff;
+  --pesca: #ffb48a;
+  --biglietto: #fff1c9;
+  --biglietto: light-dark(#fff1c9, #ffe9a8);
+  /* I fondali: una sfumatura per scheda, con tre macchie di colore e i puntini. */
+  --fondo-giornaliere: linear-gradient(180deg, #ffe9d6 0%, #ffe1ec 46%, #e7e1ff 100%);
+  --fondo-giornaliere: linear-gradient(
+    180deg,
+    light-dark(#ffe9d6, #2c2a56) 0%,
+    light-dark(#ffe1ec, #26224c) 46%,
+    light-dark(#e7e1ff, #1f1c40) 100%
+  );
+  --fondo-libere: linear-gradient(180deg, #ddf7ec 0%, #e3f0ff 44%, #f1e4ff 100%);
+  --fondo-libere: linear-gradient(
+    180deg,
+    light-dark(#ddf7ec, #2a2e55) 0%,
+    light-dark(#e3f0ff, #26224c) 44%,
+    light-dark(#f1e4ff, #1f1c40) 100%
+  );
+  --fondo-pagina: linear-gradient(180deg, #e9e4ff 0%, #ffe6ef 55%, #fff1de 100%);
+  --fondo-pagina: linear-gradient(
+    180deg,
+    light-dark(#e9e4ff, #2e2a58) 0%,
+    light-dark(#ffe6ef, #26224c) 55%,
+    light-dark(#fff1de, #1f1c40) 100%
+  );
+  --macchia-1: rgba(255, 194, 218, 0.8);
+  --macchia-1: light-dark(rgba(255, 194, 218, 0.8), rgba(122, 46, 140, 0.32));
+  --macchia-2: rgba(191, 240, 218, 0.8);
+  --macchia-2: light-dark(rgba(191, 240, 218, 0.8), rgba(30, 111, 122, 0.3));
+  --macchia-3: rgba(255, 224, 138, 0.7);
+  --macchia-3: light-dark(rgba(255, 224, 138, 0.7), rgba(19, 112, 122, 0.26));
+  --puntini: rgba(42, 31, 92, 0.08);
+  --puntini: light-dark(rgba(42, 31, 92, 0.08), rgba(255, 216, 77, 0.1));
+  --velo: rgba(42, 31, 92, 0.4);
+  --velo: light-dark(rgba(42, 31, 92, 0.4), rgba(8, 5, 24, 0.6));
 
   /* ---- Ombre ----
      Tinte di blu-viola invece di nero puro: un'ombra grigia su un fondo
@@ -170,10 +244,10 @@
      e usato su un box-shadow intero il valore diventa invalido e l'ombra
      sparisce del tutto. Verificato: dava `none` in entrambi i temi. Quindi la
      geometria resta fuori e cambia solo la tinta. */
-  --shadow-tint: rgba(24, 26, 48, 0.07);
-  --shadow-tint: light-dark(rgba(24, 26, 48, 0.07), rgba(0, 0, 0, 0.5));
-  --shadow-tint-soft: rgba(24, 26, 48, 0.05);
-  --shadow-tint-soft: light-dark(rgba(24, 26, 48, 0.05), rgba(0, 0, 0, 0.34));
+  --shadow-tint: rgba(42, 31, 92, 0.1);
+  --shadow-tint: light-dark(rgba(42, 31, 92, 0.1), rgba(8, 5, 24, 0.55));
+  --shadow-tint-soft: rgba(42, 31, 92, 0.06);
+  --shadow-tint-soft: light-dark(rgba(42, 31, 92, 0.06), rgba(8, 5, 24, 0.36));
 
   --shadow-sm: 0 1px 2px var(--shadow-tint-soft), 0 1px 3px var(--shadow-tint);
   --shadow-md: 0 2px 8px var(--shadow-tint-soft), 0 10px 28px var(--shadow-tint);
@@ -292,6 +366,77 @@
   --scarabocchi-1: #5ab8ff;
   --scarabocchi-2: #4361ee;
 
+  /* Le tinte degli adesivi e dei vetrini: piu' chiare e piu' allegre dei colori delle copertine, come nell'album. */
+  --wordle-tinta: #5edb84;
+  --cruciverba-tinta: #6e97ff;
+  --scarabeo-tinta: #ffc24d;
+  --sudoku-tinta: #b48cff;
+  --quiz-tinta: #ff86ae;
+  --ghigliottina-tinta: #e58bf0;
+  --anagrammi-tinta: #ff9a62;
+  --catena-tinta: #4fd0e0;
+  --nomi-tinta: #f7c531;
+  --paroliere-tinta: #8bd94a;
+  --battaglia-tinta: #5aa9f0;
+  --scacchi-tinta: #98a3ba;
+  --dama-tinta: #ff7b7e;
+  --forza4-tinta: #5c8cf5;
+  --go-tinta: #e8b27a;
+  --tris-tinta: #ff7bb8;
+  --sequenze-tinta: #4adbe6;
+  --indovina-tinta: #ff8a7a;
+  --lupus-tinta: #8c80da;
+  --scarabocchi-tinta: #ff8fd0;
+  --ruota-tinta: #ff6fa8;
+  --slot-tinta: #ff6fb5;
+  --blackjack-tinta: #4cc27e;
+  --roulette-tinta: #f2575a;
+  --superenalotto-tinta: #ffc93c;
+  --fortuna-tinta: #5edb84;
+  --generale-tinta: #ffd24a;
+
+  /* Le carte delle classificate da giocare: due toni pastello, piu' carichi in scuro, con l'inchiostro sopra. */
+  --wordle-carta-1: #eafaef;
+  --wordle-carta-1: light-dark(#eafaef, #ddf7e5);
+  --wordle-carta-2: #c9f1d5;
+  --wordle-carta-2: light-dark(#c9f1d5, #b2ebc4);
+  --cruciverba-carta-1: #ecf2ff;
+  --cruciverba-carta-1: light-dark(#ecf2ff, #e2ecff);
+  --cruciverba-carta-2: #d2e1ff;
+  --cruciverba-carta-2: light-dark(#d2e1ff, #bfd4ff);
+  --scarabeo-carta-1: #fff5de;
+  --scarabeo-carta-1: light-dark(#fff5de, #fff0cc);
+  --scarabeo-carta-2: #ffe2a8;
+  --scarabeo-carta-2: light-dark(#ffe2a8, #ffd98a);
+  --sudoku-carta-1: #f4edff;
+  --sudoku-carta-1: light-dark(#f4edff, #ede2ff);
+  --sudoku-carta-2: #e0cfff;
+  --sudoku-carta-2: light-dark(#e0cfff, #d3bdff);
+  --quiz-carta-1: #ffeef4;
+  --quiz-carta-1: light-dark(#ffeef4, #ffe2ec);
+  --quiz-carta-2: #ffd0e0;
+  --quiz-carta-2: light-dark(#ffd0e0, #ffbcd3);
+  --ghigliottina-carta-1: #fbeefe;
+  --ghigliottina-carta-1: light-dark(#fbeefe, #f8e3fd);
+  --ghigliottina-carta-2: #f0cffa;
+  --ghigliottina-carta-2: light-dark(#f0cffa, #ebbdf8);
+  --anagrammi-carta-1: #fff1e8;
+  --anagrammi-carta-1: light-dark(#fff1e8, #ffe8da);
+  --anagrammi-carta-2: #ffd7bf;
+  --anagrammi-carta-2: light-dark(#ffd7bf, #ffc7a5);
+  --catena-carta-1: #edf1ff;
+  --catena-carta-1: light-dark(#edf1ff, #e3eaff);
+  --catena-carta-2: #cfdcff;
+  --catena-carta-2: light-dark(#cfdcff, #bdcfff);
+  --nomi-carta-1: #fff8db;
+  --nomi-carta-1: light-dark(#fff8db, #fff4c7);
+  --nomi-carta-2: #ffec9e;
+  --nomi-carta-2: light-dark(#ffec9e, #ffe47a);
+  --paroliere-carta-1: #f0fae8;
+  --paroliere-carta-1: light-dark(#f0fae8, #e6f7da);
+  --paroliere-carta-2: #d3f0be;
+  --paroliere-carta-2: light-dark(#d3f0be, #c2eba6);
+
   /* ---- Le tre schede ----
      Ognuna ha il suo colore, per l'icona accesa nella barra, la lente sotto e
      la luce in cima alla pagina: le Giornaliere l'indaco della generale,
@@ -308,6 +453,14 @@
   --libere: light-dark(#e2593c, #ff9f7f);
   --fortuna: #0f9a5c;
   --fortuna: light-dark(#0f9a5c, #48dd8f);
+  /* La bolla della scheda accesa nella barra in basso, e l'icona che ci sta dentro. */
+  --bolla-libere: linear-gradient(180deg, #8bf0cb, #22c39a);
+  --bolla-libere-ink: #2a1f5c;
+  --bolla-giornaliere: linear-gradient(180deg, #8a7bff, #4f46e5);
+  --bolla-giornaliere: linear-gradient(180deg, light-dark(#8a7bff, #9a8bff), light-dark(#4f46e5, #5b4bf0));
+  --bolla-giornaliere-ink: #ffffff;
+  --bolla-fortuna: linear-gradient(180deg, #7deba8, #2fc26e);
+  --bolla-fortuna-ink: #2a1f5c;
 
   /* ---- Crazy Time da casinò ----
      Il palco e' scuro in tutti e due i temi, come una sala, e i suoi colori
@@ -530,41 +683,32 @@
      16% spariva, e le caselle vuote diventavano macchie bianche invece di una
      griglia. Il gioco vero il bordo lo fa vedere. */
   /* L'alloggio vuoto del Wordle: un incavo nella tavoletta, dove la lettera si posa. */
-  --slot: #e6e9f1;
-  --slot: light-dark(#e6e9f1, #12141b);
+  --slot: #fffbf2;
+  --slot: light-dark(#fffbf2, #3a3566);
   --slot-ombra: rgba(24, 32, 64, 0.14);
   --slot-ombra: light-dark(rgba(24, 32, 64, 0.14), rgba(0, 0, 0, 0.55));
   /* L'orlo in basso dell'alloggio, che prende la luce: al buio e' quel che fa vedere la griglia vuota. */
   --slot-orlo: rgba(255, 255, 255, 0.85);
   --slot-orlo: light-dark(rgba(255, 255, 255, 0.85), rgba(190, 200, 235, 0.16));
-  --tile-empty-border: rgba(60, 64, 82, 0.26);
-  --tile-empty-border: light-dark(rgba(60, 64, 82, 0.26), rgba(160, 168, 200, 0.26));
-  --tile-active-border: rgba(60, 64, 82, 0.4);
-  --tile-active-border: light-dark(rgba(60, 64, 82, 0.4), rgba(160, 168, 200, 0.5));
-  --tile-correct: #1c8047;
-  --tile-correct: light-dark(#1c8047, #178a4b);
-  --tile-present: #dfa42b;
-  --tile-present: light-dark(#dfa42b, #efb63c);
-  --tile-absent: #7c8090;
-  --tile-absent: light-dark(#7c8090, #45495a);
+  --tile-empty-border: rgba(42, 31, 92, 0.3);
+  --tile-empty-border: light-dark(rgba(42, 31, 92, 0.3), rgba(196, 191, 224, 0.32));
+  --tile-active-border: #2a1f5c;
+  --tile-active-border: light-dark(#2a1f5c, #120c2b);
+  --tile-correct: #5edb84;
+  --tile-present: #ffc93c;
+  --tile-absent: #c9c3dd;
+  --tile-absent: light-dark(#c9c3dd, #9a94b8);
 
   /*
-   * Il colore della lettera sopra la casella piena, per stato.
-   *
-   * Non e' un vezzo: misurando il contrasto, il bianco sul giallo dava 2.21 in
-   * chiaro e 1.84 in scuro, sotto il minimo di 3:1 anche per testo grande — e il
-   * verde in scuro 2.35. Il gioco vero ha lo stesso difetto (bianco su #c9b458
-   * fa ~2.3) e saturando i colori l'avevo peggiorato.
-   *
-   * Un giallo abbastanza scuro da reggere il bianco non e' piu' giallo, e'
-   * marrone. Quindi sul giallo la lettera e' scura (8.6:1) e sul verde e' bianca
-   * con il verde abbassato quanto serve (5.0:1 in chiaro, 4.4:1 in scuro). Ogni
-   * stato prende il colore che legge meglio, invece di una regola unica che ne
-   * sacrifica uno.
+   * Il colore della lettera sopra la casella piena: l'inchiostro su tutti e tre
+   * gli stati, come gli adesivi. Il verde e il giallo dell'album sono chiari, e
+   * l'inchiostro ci fa sopra 7:1 e 9:1; il grigio scuro delle assenti in scuro
+   * 4,4:1, per lettere grandi. Prima la lettera era bianca sul verde scuro, e
+   * scura sul giallo: ogni stato prendeva il suo, con i colori di allora.
    */
-  --tile-text-on-correct: #ffffff;
-  --tile-text-on-present: #17130a;
-  --tile-text-on-absent: #ffffff;
+  --tile-text-on-correct: #2a1f5c;
+  --tile-text-on-present: #2a1f5c;
+  --tile-text-on-absent: #2a1f5c;
 
   /*
    * La tastiera dei giochi di parole, come quella dei telefoni: le lettere
@@ -573,28 +717,25 @@
    * dell'app quando c'e' qualcosa da mandare. La Catena e la Ghigliottina li
    * ridefiniscono per il loro palco.
    */
-  --key-fondo: #d5d8e1;
-  --key-fondo: light-dark(#d5d8e1, #1b1d26);
-  --key-bg: #ffffff;
-  --key-bg: light-dark(#ffffff, #4b4f60);
-  --key-bg-active: #e4e7ee;
-  --key-bg-active: light-dark(#e4e7ee, #5c6175);
-  --key-servizio: #adb3c2;
-  --key-servizio: light-dark(#adb3c2, #2e313d);
-  --key-servizio-active: #969dae;
-  --key-servizio-active: light-dark(#969dae, #3b3f4d);
-  --key-ink: #0d0f17;
-  --key-ink: light-dark(#0d0f17, #f5f6fa);
-  --key-ombra: rgba(40, 44, 62, 0.32);
-  --key-ombra: light-dark(rgba(40, 44, 62, 0.32), rgba(0, 0, 0, 0.55));
-  --key-azione: #4f46e5;
-  --key-azione: light-dark(#4f46e5, #5b53ee);
-  --key-azione-ink: #ffffff;
+  --key-fondo: #e6defa;
+  --key-fondo: light-dark(#e6defa, #1b1740);
+  --key-bg: #fffdf7;
+  --key-bg: light-dark(#fffdf7, #fff6e0);
+  --key-bg-active: #efe8fb;
+  --key-bg-active: light-dark(#efe8fb, #ebe0c4);
+  --key-servizio: #d9d0f0;
+  --key-servizio: light-dark(#d9d0f0, #c9bef0);
+  --key-servizio-active: #c9bef0;
+  --key-servizio-active: light-dark(#c9bef0, #b3a6e3);
+  --key-ink: #2a1f5c;
+  --key-ombra: #2a1f5c;
+  --key-ombra: light-dark(#2a1f5c, #120c2b);
+  --key-azione: #ffc93c;
+  --key-azione-ink: #2a1f5c;
   /* Una lettera gia' provata e assente: in scuro piu' cupa dei tasti, non solo grigia come loro. */
-  --key-assente: #7c8090;
-  --key-assente: light-dark(#7c8090, #25272f);
-  --key-assente-ink: #ffffff;
-  --key-assente-ink: light-dark(#ffffff, rgba(245, 246, 250, 0.42));
+  --key-assente: #c9c3dd;
+  --key-assente: light-dark(#c9c3dd, #9a94b8);
+  --key-assente-ink: #2a1f5c;
 
   /* I colori dei grafici del pannello di amministrazione: vedi src/pages/admin/Grafici.css. */
   --adm-serie-1: #2a78d6;

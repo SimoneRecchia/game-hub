@@ -1,3 +1,8 @@
+/*
+ * I suggerimenti di chi guarda, sopra la tastiera: etichette col filo, come
+ * quelle dell'album, che scorrono di lato da sole senza far scorrere la pagina.
+ * La usano anche il cruciverba e lo Scarabeo in compagnia.
+ */
 .suggerimenti {
   flex: none;
   min-width: 0;
@@ -7,8 +12,9 @@
   display: flex;
   gap: var(--sp-2);
   overflow-x: auto;
-  /* La striscia scorre da sola invece di far scorrere la pagina. */
-  padding: 2px var(--sp-1) var(--sp-1);
+  /* Il margine sotto lascia posto all'ombra secca delle etichette. */
+  padding: 3px var(--sp-1) 6px;
+  scroll-padding-inline: var(--sp-1);
   scrollbar-width: none;
   scroll-snap-type: x proximity;
 }
@@ -21,28 +27,32 @@
   display: inline-flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 5px var(--sp-3) 5px 5px;
+  padding: 4px var(--sp-3) 4px 4px;
   border-radius: var(--r-pill);
   background: var(--surface);
-  box-shadow: var(--shadow-sm), inset 0 0 0 0.5px var(--separator);
+  box-shadow: inset 0 0 0 2px var(--ink), 0 3px 0 var(--ink);
+  color: var(--label);
   white-space: nowrap;
   scroll-snap-align: start;
   transition:
     transform var(--dur-fast) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out);
-  animation: suggerimento-in var(--dur-base) var(--ease-spring);
+    box-shadow var(--dur-fast) var(--ease-out);
+  animation: suggerimento-in 360ms var(--ease-spring) both;
 }
 
+/* Premuto scende sull'ombra, come i tasti. */
 .suggerimento:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: translateY(2px);
+  box-shadow: inset 0 0 0 2px var(--ink), 0 1px 0 var(--ink);
 }
 
 .suggerimento:disabled {
-  opacity: 0.5;
+  cursor: default;
 }
 
 .suggerimento__nome {
   font-size: var(--text-caption-1);
+  font-weight: 800;
   color: var(--label-secondary);
   max-width: 9ch;
   overflow: hidden;
@@ -51,29 +61,42 @@
 
 .suggerimento__parola {
   font-family: var(--font-rounded);
-  font-size: var(--text-footnote);
-  font-weight: 700;
+  font-size: var(--text-subhead);
+  font-weight: 400;
   letter-spacing: 0.04em;
 }
 
-/* Già giocata dall'host: resta visibile ma smette di chiedere attenzione. */
+/* Già giocata dall'host: resta, tratteggiata e barrata, e smette di chiedere attenzione. */
 .suggerimento.is-usato {
-  opacity: 0.5;
+  background: transparent;
+  box-shadow: inset 0 0 0 2px var(--ink-tenue);
+  animation: none;
 }
 
 .suggerimento.is-usato .suggerimento__parola {
+  color: var(--label-secondary);
   text-decoration: line-through;
 }
 
 @keyframes suggerimento-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.94);
+    transform: translateY(8px) scale(0.9) rotate(-3deg);
   }
 }
 
 /* Dove va la parola, o quanto vale la posa: nel cruciverba e nello Scarabeo in compagnia. */
 .suggerimento__nota {
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--giallo);
+  color: var(--ink);
   font-size: var(--text-caption-2);
-  color: var(--label-secondary);
+  font-weight: 900;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .suggerimento {
+    animation: none;
+  }
 }

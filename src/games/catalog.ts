@@ -221,6 +221,18 @@ export const CATEGORIE_LIBERE: readonly CategoriaLibere[] = [
   { nome: 'Disegno', giochi: ['scarabocchi'] },
 ]
 
+/** Il colore dell'etichetta di ogni famiglia: pastello, con l'inchiostro sopra, nelle Libere e nelle sale dei giochi. */
+export const COLORE_FAMIGLIA: Record<string, string> = {
+  Enigmistica: '#c9f1d5',
+  Parole: '#ffe2a8',
+  Cultura: '#ffd0e0',
+  Memoria: '#c8f4f8',
+  Strategia: '#d2e1ff',
+  'Da tavolo': '#ffd9cf',
+  'In gruppo': '#e6d6ff',
+  Disegno: '#ffd6ef',
+}
+
 /** Una famiglia di giochi nelle Libere: il nome e i giochi, nell'ordine in cui si mostrano. */
 export interface CategoriaLibere {
   nome: string

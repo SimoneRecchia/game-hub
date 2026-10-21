@@ -2,12 +2,13 @@ import type { CSSProperties } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
+import { Biglietto } from '@/components/Biglietto'
 import { Copertina } from '@/components/Copertina'
 import { Sezione } from '@/components/Elementi'
 import { IconChevronRight } from '@/components/Icons'
 import { Vetrina } from '@/components/Vetrina'
-import { DOVE_BREVE, useAmiciOnline } from '@/games/amici/amici'
-import { CATEGORIE_LIBERE, GIOCHI, giocoTavoloDi, type Gioco } from '@/games/catalog'
+import { useAmiciOnline } from '@/games/amici/amici'
+import { CATEGORIE_LIBERE, COLORE_FAMIGLIA, GIOCHI, giocoTavoloDi, type Gioco } from '@/games/catalog'
 import { NOMI_AL_TAVOLO } from '@/games/tavolo/nomi'
 import { formatGameDate } from '@/lib/format'
 import { usePresenza } from '@/lib/presenza'
@@ -15,13 +16,16 @@ import { gameDate } from '@shared/daily'
 import type { AmicoOnline, GiocatoreBreve, GiocoDaTavolo } from '@shared/types'
 import './Libere.css'
 
+/** Di quanti gradi e' storto ogni adesivo, a mano. */
+const STORTI = [-6, 5, -4, 6, -5, 4, -6, 5, -3, 6]
+
 /**
- * Le famiglie dei giochi, con le tessere: un gioco classificato porta alla sua
- * libera, uno da tavolo alla sua sala.
+ * Le famiglie dei giochi: un gioco classificato porta alla sua libera, uno da
+ * tavolo alla sua sala.
  */
 const FAMIGLIE = CATEGORIE_LIBERE.map((c, k) => ({
   nome: c.nome,
-  // Le tessere entrano una dopo l'altra, anche da una famiglia alla seguente.
+  // Le righe entrano una dopo l'altra, anche da una famiglia alla seguente.
   prima: CATEGORIE_LIBERE.slice(0, k).reduce((n, x) => n + x.giochi.length, 0),
   giochi: c.giochi.map((id) => {
     const classificato = GIOCHI.find((g) => g.id === id)
@@ -33,14 +37,15 @@ const FAMIGLIE = CATEGORIE_LIBERE.map((c, k) => ({
   }),
 }))
 
-/** Quanti amici si vedono nell'eroe: gli altri stanno in un tondo con il numero, che porta al profilo. */
-const IN_VISTA = 4
+/** Le cabine della ruota panoramica: gli amici che ci salgono, gli altri nel conto. */
+const CABINE = 5
 
 /**
  * Le Libere: le partite che non contano, quando si vuole e con chi c'e'. In
- * cima chi e' online, che si tocca per aprirne il profilo e invitarlo a
- * giocare; sotto le partite in corso con gli amici, e i giochi divisi per
- * famiglia (`CATEGORIE_LIBERE`), le libere dei classificati con i giochi da tavolo.
+ * cima la ruota panoramica con gli amici online, che si toccano per aprirne il
+ * profilo e invitarli a giocare; sotto le partite in corso con gli amici, come
+ * biglietti, e i giochi divisi per famiglia (`CATEGORIE_LIBERE`), le libere
+ * dei classificati con i giochi da tavolo.
  */
 export default function Libere() {
   const amici = useAmiciOnline()
@@ -48,7 +53,7 @@ export default function Libere() {
   const inCorso = partiteInCorso(presenza)
 
   return (
-    <Vetrina scheda="libere" titolo="Libere" sopra={formatGameDate(gameDate())}>
+    <Vetrina scheda="libere" titolo="Libere" sopra={formatGameDate(gameDate())} classifica={ROTTE.classifica()}>
       <ChiCe amici={amici} />
 
       {inCorso.length > 0 && (
@@ -56,18 +61,7 @@ export default function Libere() {
           <ul className="libere__in-corso">
             {inCorso.map((p, i) => (
               <li key={p.a} className="entra" style={{ '--n': i + 1 } as CSSProperties}>
-                <Collegamento to={p.a} className="in-corso">
-                  <Copertina gioco={p.gioco} formato="icona" />
-                  <span className="in-corso__testo">
-                    <span className="in-corso__nome">{p.nome}</span>
-                    <span className="in-corso__con">{p.avversario ? `con ${p.avversario.displayName}` : p.sotto}</span>
-                  </span>
-                  {p.tuoTurno && <span className="in-corso__turno">Tocca a te</span>}
-                  {p.avversario && (
-                    <Avatar nickname={p.avversario.nickname} color={p.avversario.avatarColor} size={30} />
-                  )}
-                  <IconChevronRight size={18} className="in-corso__freccia" />
-                </Collegamento>
+                <BigliettoPartita partita={p} i={i} />
               </li>
             ))}
           </ul>
@@ -76,11 +70,17 @@ export default function Libere() {
 
       <div className="libere__famiglie">
         {FAMIGLIE.map((f) => (
-          <Sezione key={f.nome} titolo={f.nome}>
-            <ul className="libere__tessere">
+          <Sezione
+            key={f.nome}
+            titolo={f.nome}
+            conto={f.giochi.length === 1 ? '1 gioco' : `${f.giochi.length} giochi`}
+            className="libere__famiglia"
+            stile={{ '--conto': COLORE_FAMIGLIA[f.nome] } as CSSProperties}
+          >
+            <ul className="libere__giochi">
               {f.giochi.map((l, i) => (
                 <li key={l.id} className="entra" style={{ '--n': f.prima + i + 2 } as CSSProperties}>
-                  <Tessera id={l.id} nome={l.nome} motto={l.motto} a={l.a} />
+                  <RigaGioco id={l.id} nome={l.nome} motto={l.motto} a={l.a} giro={STORTI[(f.prima + i) % 10]} />
                 </li>
               ))}
             </ul>
@@ -91,78 +91,149 @@ export default function Libere() {
   )
 }
 
-/**
- * Una tessera: la copertina e il nome, come le icone di un telefono, che
- * galleggiano un poco. Sul computer diventa una riga, con il motto del gioco:
- * i giochi stanno gia' nel menu a sinistra, e qui si dice che cosa sono.
- */
-function Tessera({ id, nome, motto, a }: { id: Gioco['id'] | GiocoDaTavolo; nome: string; motto: string; a: string }) {
+/** Un gioco della famiglia: il vetrino con l'adesivo, il nome, il motto e la freccia. */
+function RigaGioco({
+  id,
+  nome,
+  motto,
+  a,
+  giro,
+}: {
+  id: Gioco['id'] | GiocoDaTavolo
+  nome: string
+  motto: string
+  a: string
+  giro: number
+}) {
   return (
-    <Collegamento
-      to={a}
-      className="libere-tessera"
-      style={{ '--c1': `var(--${id}-1)`, '--c2': `var(--${id}-2)` } as CSSProperties}
-    >
-      <Copertina gioco={id} formato="icona" />
-      <span className="libere-tessera__testo">
-        <span className="libere-tessera__nome">{nome}</span>
-        <span className="libere-tessera__motto">{motto}</span>
+    <Collegamento to={a} className="libere-gioco" style={{ '--giro': `${giro}deg` } as CSSProperties}>
+      <Copertina gioco={id} formato="icona" className="libere-gioco__vetrino" />
+      <span className="libere-gioco__testo">
+        <span className="libere-gioco__nome">{nome}</span>
+        <span className="libere-gioco__motto">{motto}</span>
       </span>
-      <IconChevronRight size={16} className="libere-tessera__freccia" />
+      <IconChevronRight size={20} className="libere-gioco__freccia" />
     </Collegamento>
   )
 }
 
-/** Chi c'e': gli amici online, con quel che fanno. Toccandone uno se ne apre il profilo. */
-function ChiCe({ amici }: { amici: AmicoOnline[] | null }) {
-  const visti = amici?.slice(0, IN_VISTA) ?? []
-  const altri = amici ? amici.length - visti.length : 0
+/** Il numero di una partita sul biglietto: dall'indirizzo, sempre lo stesso per la stessa partita. */
+function numeroDi(a: string): string {
+  let h = 7
+  for (let i = 0; i < a.length; i += 1) h = (h * 31 + a.charCodeAt(i)) % 10_000
+  return String(h).padStart(4, '0')
+}
+
+/** Una partita in corso: un biglietto nel colore del gioco, e sul talloncino di chi e' il turno. */
+function BigliettoPartita({ partita: p, i }: { partita: PartitaInCorso; i: number }) {
+  const talloncino = p.tuoTurno ? ['Tocca', 'a te'] : p.avversario ? ['Tocca', `a ${p.avversario.displayName}`] : ['Apri', '']
   return (
-    <section className="eroe eroe--libere chi-ce" aria-label="Chi c'è">
-      <span className="eroe__testa">
-        <span className="eroe__occhiello">Chi c'è</span>
-        {amici && amici.length > 0 && (
-          <span className="eroe__capsula">
-            <span className="chi-ce__punto" aria-hidden="true" />
-            {amici.length === 1 ? '1 online' : `${amici.length} online`}
+    <Collegamento
+      to={p.a}
+      className={`partita-biglietto${p.tuoTurno ? ' is-turno' : ''}`}
+      style={{ '--giro': `${i % 2 ? 1 : -1}deg`, '--ritardo': `${i * 0.6}s` } as CSSProperties}
+    >
+      <Biglietto colore={`color-mix(in srgb, var(--${p.gioco}-tinta) 42%, #fff)`}>
+        <span className="partita-biglietto__dentro">
+          <span className="partita-biglietto__gioco">
+            <Copertina gioco={p.gioco} formato="icona" className="partita-biglietto__vetrino" />
+            <span className="partita-biglietto__testi">
+              <span className="partita-biglietto__numero">Partita N° {numeroDi(p.a)}</span>
+              <span className="partita-biglietto__titolo">
+                {p.nome}
+                {p.avversario ? ` con ${p.avversario.displayName}` : ''}
+              </span>
+              {p.sotto && <span className="partita-biglietto__sotto">{p.sotto}</span>}
+            </span>
           </span>
+          <span className="partita-biglietto__talloncino">
+            <span>{talloncino[0]}</span>
+            {talloncino[1] && <span className="partita-biglietto__chi">{talloncino[1]}</span>}
+          </span>
+        </span>
+      </Biglietto>
+    </Collegamento>
+  )
+}
+
+/** Dove sta la cabina numero `i` sulla ruota: in cerchio, la prima in cima. */
+function postoCabina(i: number) {
+  const a = (i / CABINE) * 2 * Math.PI
+  return { left: `${50 + 41 * Math.sin(a)}%`, top: `${50 - 41 * Math.cos(a)}%` }
+}
+
+/**
+ * Chi c'e': una ruota panoramica che gira piano, con gli amici online nelle
+ * cabine — toccandone uno se ne apre il profilo — e accanto quanti sono e il
+ * tasto per invitarli. Le cabine girano con la ruota e le faccine restano
+ * dritte, girando al contrario.
+ */
+function ChiCe({ amici }: { amici: AmicoOnline[] | null }) {
+  const saliti = amici?.slice(0, CABINE) ?? []
+  const altri = amici ? amici.length - saliti.length : 0
+  const nomi = saliti.slice(0, 4).map((a) => a.displayName)
+  const quanti = amici?.length ?? 0
+  return (
+    <section className="eroe chi-ce" aria-label="Chi c'è">
+      <div className="chi-ce__ruota" aria-hidden={amici === null}>
+        <svg className="chi-ce__sostegno" viewBox="0 0 184 206" aria-hidden="true">
+          <path d="M92 92L52 206M92 92l40 114M64 176h56" />
+        </svg>
+        <div className="chi-ce__giro">
+          <svg className="chi-ce__raggi" viewBox="0 0 156 156" aria-hidden="true">
+            <circle className="chi-ce__cerchio" cx="78" cy="78" r="64" />
+            <circle className="chi-ce__mozzo-anello" cx="78" cy="78" r="26" />
+            <path d="M78 14v128M14 78h128M32.7 32.7l90.6 90.6M123.3 32.7l-90.6 90.6" />
+            <circle className="chi-ce__mozzo" cx="78" cy="78" r="7" />
+          </svg>
+          <ul className="chi-ce__amici">
+            {Array.from({ length: CABINE }, (_, i) => {
+              const a = saliti[i]
+              return (
+                <li key={a?.playerId ?? `vuota-${i}`} style={{ ...postoCabina(i), '--n': i } as CSSProperties}>
+                  <span className="chi-ce__dritta">
+                    {a ? (
+                      <Collegamento
+                        to={ROTTE.amico(a.nickname)}
+                        stato={{ da: 'Libere' }}
+                        className="chi-ce__cabina"
+                        aria-label={`${a.displayName}, il profilo`}
+                      >
+                        <Avatar nickname={a.nickname} color={a.avatarColor} size={36} />
+                      </Collegamento>
+                    ) : (
+                      <span className="chi-ce__cabina is-vuota" aria-hidden="true" />
+                    )}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      </div>
+      <div className="chi-ce__testi">
+        {amici === null ? (
+          <>
+            <span className="chi-ce__titolo scheletro" />
+            <span className="chi-ce__nomi scheletro" />
+          </>
+        ) : (
+          <>
+            <h2 className="chi-ce__titolo">
+              {quanti === 0 ? 'Nessuno online' : quanti === 1 ? '1 amico online' : `${quanti} amici online`}
+            </h2>
+            <p className="chi-ce__nomi">
+              {quanti === 0
+                ? 'Gioca da solo, o cerca qualcuno da sfidare'
+                : nomi.join(', ') + (quanti > nomi.length ? ` e ${quanti === nomi.length + 1 ? 'un altro' : `altri ${quanti - nomi.length}`}` : '')}
+            </p>
+          </>
         )}
-      </span>
-      {amici === null ? (
-        <span className="chi-ce__amici" aria-hidden="true">
-          {[0, 1, 2].map((i) => (
-            <span key={i} className="chi-ce__vuoto" />
-          ))}
-        </span>
-      ) : amici.length === 0 ? (
-        <span className="chi-ce__nessuno">
-          <span className="chi-ce__titolo">Nessuno online</span>
-          <span className="chi-ce__sotto">Gioca da solo, o invita qualcuno da un gioco</span>
-        </span>
-      ) : (
-        <ul className="chi-ce__amici">
-          {visti.map((a, i) => (
-            <li key={a.playerId} style={{ '--n': i } as CSSProperties}>
-              <Collegamento to={ROTTE.amico(a.nickname)} stato={{ da: 'Libere' }} className="chi-ce__amico">
-                <span className="chi-ce__avatar">
-                  <Avatar nickname={a.nickname} color={a.avatarColor} size={52} />
-                  <span className="chi-ce__online" aria-hidden="true" />
-                </span>
-                <span className="chi-ce__nome">{a.displayName}</span>
-                <span className="chi-ce__dove">{DOVE_BREVE[a.attivita]}</span>
-              </Collegamento>
-            </li>
-          ))}
-          {altri > 0 && (
-            <li>
-              <Collegamento to={ROTTE.profilo} stato={{ da: 'Libere' }} className="chi-ce__amico">
-                <span className="chi-ce__altri u-tabnum">+{altri}</span>
-                <span className="chi-ce__nome">Altri</span>
-              </Collegamento>
-            </li>
-          )}
-        </ul>
-      )}
+        <Collegamento to={ROTTE.profilo} stato={{ da: 'Libere' }} className="chi-ce__invita">
+          {quanti === 0 ? 'Cerca una persona' : 'Invita a giocare'}
+        </Collegamento>
+        {altri > 0 && <span className="u-visually-hidden">e altri {altri} online</span>}
+      </div>
     </section>
   )
 }

@@ -26,12 +26,15 @@
   place-items: center;
   width: 100%;
   height: 100%;
+  box-sizing: border-box;
+  border: 3px solid #2a1f5c;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 28%, #ffe27a, var(--nomi-1) 48%, var(--nomi-2));
+  /* Il gettone dell'album: giallo pieno, con il filo d'inchiostro e l'ombra secca. */
+  background: radial-gradient(circle at 38% 30%, #fff4b8 0, #f7c531 55%, #d99a10);
   box-shadow:
-    inset 0 3px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -5px 0 rgba(120, 70, 0, 0.2),
-    0 14px 34px color-mix(in srgb, var(--nomi-2) 34%, transparent);
+    0 7px 0 #2a1f5c,
+    inset 0 4px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -8px 0 rgba(0, 0, 0, 0.12);
   transform: rotate(-4deg);
 }
 
@@ -62,10 +65,10 @@
   margin: -0.65em 0 0 -0.65em;
   font-family: var(--font-rounded);
   font-size: calc(var(--lato) * 0.074);
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1.3em;
   text-align: center;
-  color: rgba(61, 40, 0, 0.5);
+  color: #7a5a08;
   transform: rotate(calc(var(--i) * 360deg / var(--n))) translateY(calc(var(--lato) * -0.405));
 }
 
@@ -78,8 +81,7 @@
   height: 0;
   margin-left: -5px;
   border: 5px solid transparent;
-  border-top: 7px solid #3d2800;
-  opacity: 0.75;
+  border-top: 7px solid #2a1f5c;
   transition: opacity 0.35s var(--ease-out);
 }
 
@@ -89,11 +91,12 @@
   height: 52%;
   overflow: hidden;
   border-radius: 16%;
-  background: var(--nomi-foglio);
+  /* La finestra di carta, chiara in tutti e due i temi, con il filo d'inchiostro. */
+  background: #fffdf6;
   box-shadow:
-    inset 0 3px 7px rgba(0, 0, 0, 0.28),
-    inset 0 -2px 0 rgba(255, 255, 255, 0.35),
-    0 0 0 3px rgba(120, 70, 0, 0.22);
+    inset 0 8px 10px -6px rgba(0, 0, 0, 0.35),
+    inset 0 -8px 10px -6px rgba(0, 0, 0, 0.35),
+    0 0 0 3px #2a1f5c;
   transition:
     background-color 0.3s var(--ease-out),
     box-shadow 0.3s var(--ease-out),
@@ -127,9 +130,9 @@
   place-items: center;
   font-family: var(--font-rounded);
   font-size: calc(var(--lato) * 0.36);
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1;
-  color: var(--nomi-grafite);
+  color: #2a1f5c;
   transition: color 0.3s var(--ease-out);
 }
 
@@ -143,12 +146,12 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: var(--nomi-foglio);
+  background: #fffdf6;
   font-family: var(--font-rounded);
   font-size: calc(var(--lato) * 0.36);
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1;
-  color: var(--nomi-ink);
+  color: #2a1f5c;
   animation: nomi-faccia 460ms var(--ease-bounce) both;
 }
 
@@ -188,7 +191,7 @@
 }
 
 .nomi-rullo.is-arrivato .nomi-rullo__striscia span {
-  color: #3d2800;
+  color: #2a1f5c;
 }
 
 .nomi-rullo.is-arrivato .nomi-rullo__tondo {
@@ -336,7 +339,7 @@
   align-items: center;
   gap: 8px;
   font-size: var(--text-subhead);
-  font-weight: 700;
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
@@ -345,8 +348,8 @@
   min-height: 1.3em;
   font-family: var(--font-rounded);
   font-size: var(--text-title-3);
-  font-weight: 800;
-  color: var(--nomi-ink);
+  font-weight: 400;
+  color: var(--label);
 }
 
 /* ---------- La lettera che vola sul foglio ---------- */

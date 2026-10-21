@@ -406,6 +406,7 @@ function Menu() {
   return (
     <Pagina
       titolo="Quiz"
+      gioco="quiz"
       sotto={
         statistiche.domande > 0
           ? `${statistiche.partite} ${statistiche.partite === 1 ? 'partita' : 'partite'} · ${formatPercent(

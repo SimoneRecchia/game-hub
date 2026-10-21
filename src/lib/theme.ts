@@ -4,6 +4,10 @@ export type ThemePreference = 'auto' | 'light' | 'dark'
 
 const STORAGE_KEY = 'gh.theme'
 
+/** Il colore in cima alla pagina che si apre per prima, le Giornaliere: Safari ci tinge la zona dell'orologio. */
+export const FONDO_CHIARO = '#ffe9d6'
+export const FONDO_SCURO = '#2c2a56'
+
 function read(): ThemePreference {
   try {
     const value = localStorage.getItem(STORAGE_KEY)
@@ -28,7 +32,7 @@ function apply(preference: ThemePreference) {
   }
   const meta = document.createElement('meta')
   meta.name = 'theme-color'
-  meta.content = dark ? '#0b0c11' : '#f4f5f9'
+  meta.content = dark ? FONDO_SCURO : FONDO_CHIARO
   document.head.appendChild(meta)
 }
 

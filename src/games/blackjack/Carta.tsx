@@ -5,10 +5,10 @@ import { VOLO_CARTA_MS, type ArrivoCarta } from './piano'
 import './Carta.css'
 
 /**
- * Le carte del blackjack: disegnate in SVG, con i semi, i punti al loro posto
- * come sulle carte francesi, le figure in un riquadro e il dorso con il
- * quadrifoglio della Fortuna. I semi sono simboli definiti una volta per
- * pagina (`DefinizioniCarte`): ogni carta li usa con `<use>`.
+ * Le carte del blackjack: disegnate in SVG come nel mockup, il valore
+ * nell'angolo e il seme grande in mezzo, con il dorso a strisce rosa. I semi
+ * sono simboli definiti una volta per pagina (`DefinizioniCarte`): ogni carta
+ * li usa con `<use>`.
  *
  * Una carta nuova vola dal sabot al suo posto girandosi a meta' strada
  * (`arrivo`); quella nata da uno split scivola dalla mano accanto. Il volo
@@ -30,7 +30,7 @@ export function nomeCarta(c: Carta): string {
   return `${NOMI_VALORI[c[0]] ?? nomeValore(c[0])} di ${NOMI_SEMI[c[1]]}`
 }
 
-/** I semi, il dorso e le figure: una volta per pagina. */
+/** I semi e la trama del dorso: una volta per pagina. */
 export function DefinizioniCarte() {
   return (
     <svg className="bj-definizioni" width="0" height="0" aria-hidden="true">
@@ -50,174 +50,67 @@ export function DefinizioniCarte() {
         <symbol id="bj-seme-p" viewBox="0 0 100 100">
           <path d="M50 4c10 17 40 32 40 55 0 15-12 23-24 20-6-1.5-10-5-12-9 1 11 5 18 14 24H32c9-6 13-13 14-24-2 4-6 7.5-12 9-12 3-24-5-24-20C10 36 40 21 50 4z" />
         </symbol>
-        <pattern id="bj-trama" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-          <rect width="10" height="10" fill="var(--bj-dorso-1)" />
-          <rect width="5" height="5" fill="var(--bj-dorso-2)" />
-          <rect x="5" y="5" width="5" height="5" fill="var(--bj-dorso-2)" />
+        <pattern id="bj-trama" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <rect width="16" height="16" fill="#e04482" />
+          <rect width="8" height="16" fill="#c2185b" />
         </pattern>
-        <linearGradient id="bj-figura" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fff8e6" />
-          <stop offset="1" stopColor="#f1dfb4" />
-        </linearGradient>
-        <linearGradient id="bj-oro" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#fff2b8" />
-          <stop offset="0.5" stopColor="#e9b93a" />
-          <stop offset="1" stopColor="#a8741a" />
-        </linearGradient>
       </defs>
     </svg>
   )
 }
 
-/** Un seme centrato in (x, y), largo `lato`; capovolto nella meta' bassa della carta. */
-function Seme({ s, x, y, lato, giu = false }: { s: string; x: number; y: number; lato: number; giu?: boolean }) {
-  return (
-    <use
-      href={`#bj-seme-${s}`}
-      x={x - lato / 2}
-      y={y - lato / 2}
-      width={lato}
-      height={lato}
-      transform={giu ? `rotate(180 ${x} ${y})` : undefined}
-    />
-  )
+/** Un seme centrato in (x, y), largo `lato`. */
+function Seme({ s, x, y, lato }: { s: string; x: number; y: number; lato: number }) {
+  return <use href={`#bj-seme-${s}`} x={x - lato / 2} y={y - lato / 2} width={lato} height={lato} />
 }
 
-/** I punti delle carte da 2 a 10, al loro posto come sulle carte francesi. */
-const A = 33
-const B = 50
-const C = 67
-const PUNTI: Record<string, Array<[number, number]>> = {
-  '2': [[B, 32], [B, 108]],
-  '3': [[B, 32], [B, 70], [B, 108]],
-  '4': [[A, 32], [C, 32], [A, 108], [C, 108]],
-  '5': [[A, 32], [C, 32], [B, 70], [A, 108], [C, 108]],
-  '6': [[A, 32], [C, 32], [A, 70], [C, 70], [A, 108], [C, 108]],
-  '7': [[A, 32], [C, 32], [B, 51], [A, 70], [C, 70], [A, 108], [C, 108]],
-  '8': [[A, 32], [C, 32], [B, 51], [A, 70], [C, 70], [B, 89], [A, 108], [C, 108]],
-  '9': [[A, 32], [C, 32], [A, 57], [C, 57], [B, 70], [A, 83], [C, 83], [A, 108], [C, 108]],
-  T: [[A, 32], [C, 32], [B, 45], [A, 57], [C, 57], [A, 83], [C, 83], [B, 95], [A, 108], [C, 108]],
-}
-
-/** L'angolo: il valore e il seme, che si leggono anche con le carte una sopra l'altra. */
-function Indice({ v, s }: { v: string; s: string }) {
-  const dieci = v === 'T'
-  return (
-    <g>
-      <text
-        x={dieci ? 13 : 12.5}
-        y={25}
-        className="bj-faccia__valore"
-        textAnchor="middle"
-        textLength={dieci ? 19 : undefined}
-        lengthAdjust="spacingAndGlyphs"
-      >
-        {nomeValore(v)}
-      </text>
-      <Seme s={s} x={12.5} y={36} lato={13} />
-    </g>
-  )
-}
-
-/** Il centro di una figura: il riquadro, la lettera grande e il suo segno, la corona o la piuma. */
-function Figura({ v, s }: { v: string; s: string }) {
-  return (
-    <g>
-      <rect
-        x={23}
-        y={20}
-        width={54}
-        height={100}
-        rx={5}
-        fill="url(#bj-figura)"
-        stroke="currentColor"
-        strokeWidth={1.6}
-      />
-      <rect x={26.5} y={23.5} width={47} height={93} rx={3} fill="none" stroke="url(#bj-oro)" strokeWidth={1.4} />
-      {v === 'J' ? (
-        // La piuma del fante.
-        <path
-          d="M50 30c7 5 9 13 4 22-2-6-5-9-9-10 4-3 5-7 5-12z"
-          fill="url(#bj-oro)"
-          stroke="currentColor"
-          strokeWidth={0.8}
-        />
-      ) : (
-        // La corona: quella del re ha cinque punte, quella della donna tre.
-        <path
-          d={
-            v === 'K'
-              ? 'M36 50l-2-16 8 8 4-11 4 11 4-11 4 11 8-8-2 16z'
-              : 'M39 50l-2-14 7 6 6-11 6 11 7-6-2 14z'
-          }
-          fill="url(#bj-oro)"
-          stroke="currentColor"
-          strokeWidth={0.8}
-        />
-      )}
-      <text x={50} y={89} className="bj-faccia__figura" textAnchor="middle">
-        {v === 'J' ? 'J' : v === 'Q' ? 'Q' : 'K'}
-      </text>
-      <Seme s={s} x={50} y={104} lato={13} />
-    </g>
-  )
-}
-
-/** La faccia di una carta. */
+/**
+ * La faccia di una carta, come nel mockup: il valore in Lilita nell'angolo con
+ * il seme piccolo sotto, il seme grande in mezzo, e il valore capovolto
+ * nell'angolo opposto. Si legge anche piccola e con le carte una sopra l'altra,
+ * dove dei punti al loro posto si vedrebbe solo l'angolo.
+ */
 export const FacciaCarta = memo(function FacciaCarta({ carta }: { carta: Carta }) {
   const v = carta[0]
   const s = carta[1]
-  const figura = v === 'J' || v === 'Q' || v === 'K'
+  const valore = nomeValore(v)
+  const largo = valore.length > 1
   return (
     <svg className={`bj-faccia${ROSSI.has(s) ? ' is-rossa' : ''}`} viewBox="0 0 100 140" aria-hidden="true">
-      <rect x={0.75} y={0.75} width={98.5} height={138.5} rx={9} className="bj-faccia__fondo" />
+      <rect x={0} y={0} width={100} height={140} rx={12} className="bj-faccia__fondo" />
       <g fill="currentColor">
-        <Indice v={v} s={s} />
-        <g transform="rotate(180 50 70)">
-          <Indice v={v} s={s} />
-        </g>
-        {v === 'A' ? (
-          <>
-            {s === 'p' && <circle cx={50} cy={70} r={27} fill="none" stroke="url(#bj-oro)" strokeWidth={2} />}
-            <Seme s={s} x={50} y={70} lato={s === 'p' ? 40 : 34} />
-          </>
-        ) : figura ? (
-          <Figura v={v} s={s} />
-        ) : (
-          PUNTI[v].map(([x, y], i) => <Seme key={i} s={s} x={x} y={y} lato={17} giu={y > 70} />)
-        )}
+        <text
+          x={largo ? 6 : 8}
+          y={36}
+          className="bj-faccia__valore"
+          textLength={largo ? 38 : undefined}
+          lengthAdjust="spacingAndGlyphs"
+        >
+          {valore}
+        </text>
+        <Seme s={s} x={largo ? 25 : 20} y={52} lato={22} />
+        <Seme s={s} x={56} y={84} lato={50} />
+        <text
+          x={largo ? 6 : 8}
+          y={36}
+          className="bj-faccia__valore"
+          textLength={largo ? 38 : undefined}
+          lengthAdjust="spacingAndGlyphs"
+          transform="rotate(180 50 70)"
+        >
+          {valore}
+        </text>
       </g>
     </svg>
   )
 })
 
-/** Il dorso: la trama rossa, l'orlo bianco e il quadrifoglio d'oro in mezzo. */
+/** Il dorso: le strisce rosa, con l'orlo color crema. */
 export const DorsoCarta = memo(function DorsoCarta() {
   return (
     <svg className="bj-dorso" viewBox="0 0 100 140" aria-hidden="true">
-      <rect x={0.75} y={0.75} width={98.5} height={138.5} rx={9} fill="#fbfaf6" />
-      <rect x={7} y={7} width={86} height={126} rx={5.5} fill="url(#bj-trama)" />
-      <rect
-        x={10}
-        y={10}
-        width={80}
-        height={120}
-        rx={4}
-        fill="none"
-        stroke="rgba(255,255,255,0.55)"
-        strokeWidth={1.2}
-      />
-      <g transform="translate(50 70)">
-        <circle r={17} fill="var(--bj-dorso-1)" stroke="url(#bj-oro)" strokeWidth={2} />
-        {[0, 90, 180, 270].map((a) => (
-          <path
-            key={a}
-            d="M0 0c-2-4-8-6-9.5-2.5S-6 4 0 0zM0 0c4-2 6-8 2.5-9.5S-4 -6 0 0z"
-            transform={`rotate(${a})`}
-            fill="url(#bj-oro)"
-          />
-        ))}
-      </g>
+      <rect x={0} y={0} width={100} height={140} rx={12} fill="#fffdf7" />
+      <rect x={7} y={7} width={86} height={126} rx={7} fill="url(#bj-trama)" />
     </svg>
   )
 })

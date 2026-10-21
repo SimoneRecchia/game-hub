@@ -1,7 +1,9 @@
 /*
  * Il tabellone dei giochi della Fortuna: il saldo, comune a tutti, e la
- * puntata. Scuro con il filo d'oro, come il palco di Crazy Time, in tutti e
- * due i temi.
+ * puntata. Una targa scura con il filo d'inchiostro e quello d'ambra dentro,
+ * come nei mockup della sala, in tutti e due i temi: le etichette piccole in
+ * maiuscolo, i numeri grandi in Lilita. Sopra il panno dei tavoli sta su una
+ * riga sola (`is-riga`), con l'etichetta accanto al numero.
  */
 .ct-tabellone {
   position: relative;
@@ -10,20 +12,22 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-3);
-  padding: 8px 16px;
-  border-radius: var(--r-lg);
-  background: linear-gradient(180deg, #26133f, #120822);
+  min-height: 56px;
+  padding: 7px 16px;
+  border-radius: 18px;
+  background: #1b1238;
   box-shadow:
-    inset 0 0 0 1.5px rgba(244, 196, 48, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    var(--shadow-sm);
-  color: #fff;
+    inset 0 0 0 var(--filo) #120c2b,
+    inset 0 0 0 calc(var(--filo) + 2px) var(--ct-ambra),
+    0 4px 0 #120c2b;
+  color: #fff6e0;
 }
 
 .ct-tabellone__voce {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  line-height: 1;
 }
 
 .ct-tabellone__voce.is-destra {
@@ -31,24 +35,96 @@
   text-align: right;
 }
 
+/* Il filo fra le due voci, d'ambra tenue. */
+.ct-tabellone__filo {
+  flex: none;
+  align-self: stretch;
+  width: 2px;
+  margin: 4px 0;
+  border-radius: 1px;
+  background: rgba(255, 176, 46, 0.35);
+}
+
 .ct-tabellone__etichetta {
-  font-size: 11px;
-  font-weight: 800;
+  font-size: 10.5px;
+  font-weight: 900;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--ct-oro);
+  color: #e4dcff;
 }
 
-.ct-tabellone__saldo {
+.ct-tabellone__saldo,
+.ct-tabellone__puntata {
   position: relative;
+  margin-top: 3px;
   font-family: var(--font-rounded);
-  font-size: 26px;
-  font-weight: 900;
-  line-height: 1.1;
-  text-shadow: 0 0 14px rgba(255, 214, 90, 0.5);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1;
+  color: #ffe27a;
+  text-shadow: 0 2px 0 #120c2b;
 }
 
-/* Il tabellone si accende quando il saldo cambia: rosso per la puntata pagata, d'oro per la vincita. */
+.ct-tabellone__cifra {
+  display: inline-block;
+  animation: ct-puntata 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+@keyframes ct-puntata {
+  40% {
+    transform: translateY(-5px) scale(1.12);
+  }
+}
+
+/* Su una riga: etichetta d'oro accanto al numero color crema, come ai tavoli dei mockup. */
+.ct-tabellone.is-riga {
+  min-height: 50px;
+  padding: 0 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #24165a, #1a0f44);
+  box-shadow:
+    inset 0 0 0 var(--filo) #120c2b,
+    inset 0 0 0 calc(var(--filo) + 1.5px) rgba(255, 201, 60, 0.6),
+    0 4px 0 #120c2b;
+}
+
+.ct-tabellone.is-riga .ct-tabellone__voce {
+  flex: 1;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ct-tabellone.is-riga .ct-tabellone__voce.is-destra {
+  justify-content: flex-end;
+}
+
+.ct-tabellone.is-riga .ct-tabellone__filo {
+  align-self: center;
+  height: 26px;
+  margin: 0;
+  background: rgba(255, 201, 60, 0.35);
+}
+
+.ct-tabellone.is-riga .ct-tabellone__etichetta {
+  letter-spacing: 0.14em;
+  color: #ffd84d;
+  white-space: nowrap;
+}
+
+.ct-tabellone.is-riga .ct-tabellone__saldo,
+.ct-tabellone.is-riga .ct-tabellone__puntata {
+  margin: 0;
+  font-size: 24px;
+  color: #fff6e0;
+  text-shadow: none;
+}
+
+/*
+ * Il tabellone si accende quando il saldo cambia: d'oro per la vincita che
+ * arriva, e lilla, piu' tenue, per la puntata che parte. Non rosso: pagare la
+ * puntata e' giocare, non perdere.
+ */
 .ct-tabellone__lampo {
   position: absolute;
   inset: 0;
@@ -59,13 +135,13 @@
 
 .ct-tabellone__lampo.is-paga {
   box-shadow:
-    inset 0 0 0 2px var(--ct-meno),
-    0 0 22px color-mix(in srgb, var(--ct-meno) 70%, transparent);
+    inset 0 0 0 calc(var(--filo) + 2px) #c9b8ff,
+    0 0 16px rgb(201 184 255 / 0.45);
 }
 
 .ct-tabellone__lampo.is-incassa {
   box-shadow:
-    inset 0 0 0 2px var(--ct-oro-chiaro),
+    inset 0 0 0 calc(var(--filo) + 2px) var(--ct-oro-chiaro),
     0 0 30px color-mix(in srgb, var(--ct-oro) 80%, transparent);
 }
 
@@ -81,48 +157,29 @@
   }
 }
 
-.ct-tabellone__puntata {
-  font-family: var(--font-rounded);
-  font-size: 22px;
-  font-weight: 900;
-  line-height: 1.1;
-  color: #fff;
-  animation: ct-puntata 0.32s var(--ease-out);
-}
-
-@keyframes ct-puntata {
-  from {
-    transform: scale(1.2);
-    color: var(--ct-oro-chiaro);
-  }
-}
-
 /*
- * Il saldo che non basta: il numero e la sua etichetta d'ambra, e il filo
- * anche. Il filo sta in uno strato suo, perché la roulette ridisegna quello
- * del tabellone sul feltro.
+ * Il saldo che non basta: il filo della targa si fa d'ambra, come l'avviso che
+ * dice dove farne (`PochiPunti`), e il numero e la sua etichetta anche. Senza
+ * alone ne' fondo bruciato: e' un'indicazione, non un allarme. Il filo sta in
+ * uno strato suo, perché i tavoli ridisegnano le ombre del tabellone sul panno.
  */
 .ct-tabellone.is-scarso::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ct-ambra) 80%, transparent);
+  box-shadow: inset 0 0 0 calc(var(--filo) + 2px) var(--ct-ambra);
   pointer-events: none;
 }
 
-.ct-tabellone.is-scarso .ct-tabellone__voce:not(.is-destra) .ct-tabellone__etichetta {
-  color: var(--ct-ambra);
-}
-
+.ct-tabellone.is-scarso .ct-tabellone__voce:not(.is-destra) .ct-tabellone__etichetta,
 .ct-tabellone.is-scarso .ct-tabellone__saldo {
   color: var(--ct-ambra);
-  text-shadow: 0 0 14px color-mix(in srgb, var(--ct-ambra) 55%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .ct-tabellone__lampo,
-  .ct-tabellone__puntata {
+  .ct-tabellone__cifra {
     animation: none;
   }
 }

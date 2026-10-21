@@ -271,13 +271,13 @@
 .slot-festa__titolo {
   width: 100%;
   overflow: visible;
-  filter: drop-shadow(0 0 22px var(--bagliore)) drop-shadow(0 10px 24px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 0 22px var(--bagliore));
 }
 
 .slot-festa__titolo text {
   font-family: var(--font-rounded);
   font-size: 104px;
-  font-weight: 900;
+  font-weight: 400;
   letter-spacing: 2px;
   text-anchor: middle;
 }
@@ -287,17 +287,45 @@
   font-size: 92px;
 }
 
+/*
+ * Le lettere a colore pieno, come nel mockup, ognuno nel suo gradino: d'oro il
+ * BIG WIN, azzurro il SUPER, lilla il MEGA, rosso il JACKPOT; sotto due passi
+ * piu' scuri fanno lo spessore.
+ */
+.slot-festa {
+  --lettere: #ffd23f;
+  --spessore-1: #a2650e;
+  --spessore-2: #5a3204;
+}
+
+.slot-festa.is-super {
+  --lettere: #7de6f0;
+  --spessore-1: #1b5e8c;
+  --spessore-2: #0b2a40;
+}
+
+.slot-festa.is-mega {
+  --lettere: #e3b5ff;
+  --spessore-1: #6c2a9a;
+  --spessore-2: #2e0f44;
+}
+
+.slot-festa.is-jackpot {
+  --lettere: #ff2e4d;
+  --spessore-1: #8f1528;
+  --spessore-2: #3a0612;
+}
+
 .slot-festa__spessore {
-  fill: #7a3c00;
-  stroke: #3a1a00;
-  stroke-width: 3;
+  fill: var(--spessore-1);
+}
+
+.slot-festa__spessore.is-fondo {
+  fill: var(--spessore-2);
 }
 
 .slot-festa__lettere {
-  fill: url(#slot-festa-oro);
-  stroke: #fff;
-  stroke-width: 3;
-  paint-order: stroke;
+  fill: var(--lettere);
 }
 
 /* La luce che passa sopra le lettere: la stessa scritta, riempita solo dalla striscia chiara. */
@@ -313,26 +341,25 @@
 
 @keyframes slot-festa-lampeggia {
   50% {
-    filter: brightness(1.35) saturate(1.3);
+    fill: #fff6d2;
   }
 }
 
 /* Il numero: grande, d'oro, che cresce un filo a ogni salto. */
+/* Il numero: grande, verde come i punti che arrivano, con l'ombra d'inchiostro; cresce un filo a ogni salto. */
 .slot-festa__numero {
+  color: #5ef09a;
   font-family: var(--font-rounded);
   font-size: clamp(54px, min(15vw, 22vh), 104px);
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1;
-  background: linear-gradient(180deg, #ffffff, #ffe066 45%, #f4a90c);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 4px 0 #7a3c00) drop-shadow(0 0 18px rgba(255, 214, 90, 0.8));
+  text-shadow:
+    0 4px 0 #120c2b,
+    0 0 18px rgba(94, 240, 154, 0.45);
 }
 
 .slot-festa.is-jackpot .slot-festa__numero {
   font-size: clamp(60px, min(18vw, 24vh), 124px);
-  filter: drop-shadow(0 3px 0 #a14f00) drop-shadow(0 3px 0 #6b3000) drop-shadow(0 0 24px rgba(255, 140, 40, 0.9));
 }
 
 .slot-festa.is-finita .slot-festa__numero {
@@ -347,15 +374,12 @@
 
 .slot-festa__sotto {
   margin-top: 6px;
-  padding: 6px 16px;
-  border-radius: var(--r-pill);
-  background: rgba(0, 0, 0, 0.45);
-  box-shadow: inset 0 0 0 1px rgba(255, 214, 90, 0.5);
-  color: #ffe9a8;
+  color: #fff6d2;
   font-family: var(--font-rounded);
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+  font-size: 26px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-shadow: 0 3px 0 #120c2b;
 }
 
 /* ────────────  Il jackpot  ──────────── */

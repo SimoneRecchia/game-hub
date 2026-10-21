@@ -55,9 +55,9 @@ function maiuscola(testo: string): string {
  * Il titolo in alto: l'avversario. Le classificate dei giorni in cui la
  * battaglia ne aveva una erano contro il computer, e si vedono cosi'.
  */
-function titoloDi(v: VistaBattaglia | null): string {
-  if (!v) return 'Battaglia navale'
-  if (v.modalita === 'amici') return `Contro ${v.avversario.displayName}`
+function controChi(v: VistaBattaglia | null): string | undefined {
+  if (!v) return undefined
+  if (v.modalita === 'amici') return `Con ${v.avversario.displayName}`
   return 'Contro il computer'
 }
 
@@ -104,7 +104,8 @@ export default function BattagliaPartita() {
 
   return (
     <Pagina
-      titolo={titoloDi(v)}
+      titolo="Battaglia navale"
+      sotto={controChi(v)}
       intera
       larga
       indietro={{ a: ROTTE.battaglia, etichetta: 'Battaglia' }}
@@ -284,11 +285,11 @@ function Disposizione({
         ))}
       </div>
       <div className="bat-disposizione__comandi">
-        <Button variant="plain" onClick={ruota} disabled={!scelta}>
+        <Button variant="tinted" onClick={ruota} disabled={!scelta}>
           Ruota
         </Button>
         <Button
-          variant="plain"
+          variant="tinted"
           onClick={() => {
             setNavi(disponiACaso())
             setScelta(null)
@@ -617,16 +618,27 @@ function Fine({ vista, ricarica }: { vista: VistaBattaglia; ricarica: () => Prom
             {messaggioRivincita(r, nome)}
           </p>
         )}
-        {serie && (
-          <p className="bat-fine__serie u-tabnum">
-            Serie: tu <strong>{serie.io}</strong>, {nome} <strong>{serie.lui}</strong>
-          </p>
-        )}
-        {vista.colpiMiei.length > 0 && (
-          <p className="bat-fine__conto u-tabnum">
-            {vista.colpiMiei.length === 1 ? 'Un colpo sparato' : `${vista.colpiMiei.length} colpi sparati`}, {aSegno} a
-            segno ({Math.round((aSegno / vista.colpiMiei.length) * 100)}%)
-          </p>
+        {(vista.colpiMiei.length > 0 || serie) && (
+          <ul className="bat-fine__dati u-tabnum" aria-label="Com'è andata">
+            {vista.colpiMiei.length > 0 && (
+              <li>
+                {vista.colpiMiei.length === 1 ? 'Colpo' : 'Colpi'} <b>{vista.colpiMiei.length}</b>
+              </li>
+            )}
+            {vista.colpiMiei.length > 0 && (
+              <li>
+                A segno <b>{Math.round((aSegno / vista.colpiMiei.length) * 100)}%</b>
+              </li>
+            )}
+            {serie && (
+              <li>
+                Tu e {nome}{' '}
+                <b>
+                  {serie.io}–{serie.lui}
+                </b>
+              </li>
+            )}
+          </ul>
         )}
       </header>
 

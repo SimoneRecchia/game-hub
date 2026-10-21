@@ -1,35 +1,51 @@
 /*
- * Il feltro della roulette, lo stesso nella sala e al tavolo: il verde con la
- * trama, la luce che scende dall'alto e la sponda di legno con i fili d'oro.
- * E' un livello vuoto sotto il contenuto (`.rl-feltro`), perché e' lui, da
- * solo, a passare dalla sala al tavolo. I colori sono gli stessi nei due temi.
+ * Il feltro della roulette, lo stesso nella sala e al tavolo: la pagina e'
+ * tutta tavolo, da cima a fondo, come nel mockup — il verde che si scurisce
+ * verso i bordi, con la trama fitta —, e non una carta in una sala viola. Il
+ * feltro e' un livello fisso sotto tutto (`.rl-feltro`), lo stesso nelle due
+ * pagine; la pagina e' trasparente, e sotto c'e' lo stesso verde anche nel
+ * fondo del documento, che e' quello che si vede mentre una pagina passa
+ * all'altra. I colori sono gli stessi nei due temi.
  */
+.pagina:has(.rl-feltro) {
+  --bg: #14713f;
+  --vetro-barra: rgb(16 96 54 / 0.88);
+  --puntini: transparent;
+  --macchia-1: transparent;
+  --macchia-2: transparent;
+  --macchia-3: transparent;
+  --fondo: transparent;
+}
+
+/* Le scritte tenui sotto il titolo, verde chiaro sul feltro come nel mockup: il lilla dell'album non si leggeva. */
+.pagina:has(.rl-feltro) .pagina__sottotitolo,
+.pagina:has(.rl-feltro) .pagina__sotto {
+  color: #d9f5e6;
+}
+
+html body:has(.rl-feltro) {
+  background: radial-gradient(120% 80% at 50% 38%, #1e9a5c 0%, #12703f 55%, #0b4a2a 100%) fixed #12703f;
+}
+
 .rl-feltro {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: -1;
-  overflow: hidden;
-  border-radius: inherit;
   background:
-    radial-gradient(90% 55% at 50% 18%, rgb(255 255 255 / 0.13), transparent 70%),
-    repeating-radial-gradient(circle at 30% 40%, rgb(0 0 0 / 0.03) 0 1px, transparent 1px 3px),
-    radial-gradient(130% 90% at 50% 35%, #12804a, #0a5530 62%, #063a20);
-  box-shadow:
-    inset 0 0 0 1.5px rgb(242 210 122 / 0.6),
-    inset 0 0 0 8px #4a210b,
-    inset 0 0 0 9.5px rgb(242 210 122 / 0.32),
-    inset 0 0 30px 12px rgb(0 0 0 / 0.32),
-    0 14px 32px rgb(4 30 16 / 0.3);
+    radial-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1.4px) 0 0 / 6px 6px,
+    radial-gradient(120% 80% at 50% 38%, #1e9a5c 0%, #12703f 55%, #0b4a2a 100%);
   pointer-events: none;
 }
 
 /*
  * Il passaggio fra la sala e il tavolo (la direzione `tavolo` in
- * navigazione.tsx). Il feltro della sala si allarga nel tavolo e la ruota sale
- * al suo posto; la scritta della sala se ne va, e il tavolo — il panno, le
- * fiches — arriva quando il feltro e' quasi grande. Tornando, il contrario. I
- * nomi ci sono solo durante il passaggio: fuori, ogni altra navigazione
- * fotografa la pagina intera.
+ * navigazione.tsx). Il feltro resta fermo: e' lo stesso. La ruota della sala
+ * scende e si fa piccola verso il fondo del tavolo, da dove la ruota del
+ * tavolo sale quando si lancia (RouletteTavolo.css), e svanisce; tornando,
+ * cresce da li' al suo posto nella sala. La scritta della sala se ne va, e il
+ * tavolo — il tabellone, il panno, la sponda — arriva quando la ruota e' quasi
+ * scesa. I nomi ci sono solo durante il passaggio: fuori, ogni altra
+ * navigazione fotografa la pagina intera.
  */
 html[data-transizione='tavolo'] .rl-feltro {
   view-transition-name: rl-feltro;
@@ -39,7 +55,7 @@ html[data-transizione='tavolo'] .rl-sala__ruota {
   view-transition-name: rl-ruota;
 }
 
-html[data-transizione='tavolo'] .rl-palco__ruota {
+html[data-transizione='tavolo'] .rl-lancio__ruota {
   view-transition-name: rl-ruota;
 }
 
@@ -57,8 +73,9 @@ html[data-transizione='tavolo']::view-transition-group(rl-ruota) {
   animation-timing-function: cubic-bezier(0.32, 0.8, 0.24, 1);
 }
 
+/* Il feltro sta sotto la pagina, come fuori dal passaggio: sopra coprirebbe la barra. */
 html[data-transizione='tavolo']::view-transition-group(rl-feltro) {
-  z-index: 1;
+  z-index: -1;
 }
 
 html[data-transizione='tavolo']::view-transition-group(rl-sala),
@@ -75,7 +92,6 @@ html[data-transizione='tavolo']::view-transition-group(laterale) {
   z-index: 4;
 }
 
-/* Il feltro e' uno: quello d'arrivo parte dal posto di quello di prima, e si allarga o si stringe. */
 html[data-transizione='tavolo']::view-transition-old(rl-feltro) {
   animation: none;
   opacity: 0;
@@ -87,18 +103,18 @@ html[data-transizione='tavolo']::view-transition-new(rl-feltro) {
 }
 
 /*
- * Anche la ruota e' una: si vede solo quella d'arrivo, che e' viva e gira dal
- * punto dove era quella di prima (il cilindro e' lo stesso, in Ruota.tsx). In
- * dissolvenza si vedevano due ruote, una ferma e una che girava, con le caselle
- * sfalsate.
+ * La ruota e' una sola, e al tavolo, finché non si lancia, e' nascosta in
+ * fondo. Andando, si vede quella della sala che scende e si fa piccola, e
+ * svanisce alla fine; tornando, quella della sala compare subito, mentre sale
+ * al suo posto. Le regole valgono nei due versi, e la ruota nascosta del
+ * tavolo e' trasparente in tutti e due.
  */
 html[data-transizione='tavolo']::view-transition-old(rl-ruota) {
-  animation: none;
-  opacity: 0;
+  animation: vt-svanisce 200ms ease-in 340ms both;
 }
 
 html[data-transizione='tavolo']::view-transition-new(rl-ruota) {
-  animation: none;
+  animation: vt-compare 220ms ease-out both;
 }
 
 html[data-transizione='tavolo']::view-transition-old(rl-sala),

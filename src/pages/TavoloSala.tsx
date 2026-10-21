@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
-import { Copertina } from '@/components/Copertina'
 import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
 import { Riga } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
@@ -102,7 +101,7 @@ export default function TavoloSala({ gioco }: { gioco: GiocoTavoliere }) {
     <Pagina
       titolo={catalogo.nome}
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      eroe={<Copertina gioco={gioco} formato="eroe" />}
+      gioco={gioco}
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />

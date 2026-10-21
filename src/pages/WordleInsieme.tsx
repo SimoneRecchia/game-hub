@@ -7,8 +7,7 @@ import { Button } from '@/components/Button'
 import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconPeople } from '@/components/Icons'
 import { Pagina } from '@/components/Pagina'
-import { Scheda } from '@/components/Scheda'
-import { Tentativi } from '@/games/wordle/fine'
+import { Piede } from '@/games/wordle/Piede'
 import { Board } from '@/games/wordle/Board'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { SuggestionStrip } from '@/games/wordle/coop/SuggestionStrip'
@@ -208,13 +207,8 @@ export default function WordleInsieme() {
               )}
             </div>
 
-            <Scheda
-              className="wordle__tavola"
-              titolo={`La parola di ${view.hostName}`}
-              icona={<Avatar nickname={view.hostName} color={view.hostAvatarColor} size={26} />}
-              destra={<Tentativi guesses={view.guesses} maxAttempts={view.maxAttempts} status={view.status} />}
-            >
-              <div className="insieme__board">
+            <section className="wordle__tavola" aria-label={`La parola di ${view.hostName}`}>
+              <div className="wordle__board">
                 <Board
                   guesses={view.guesses}
                   draft=""
@@ -224,18 +218,21 @@ export default function WordleInsieme() {
                   winningRow={view.status === 'won' ? view.guesses.length - 1 : null}
                   shakingRow={null}
                 />
+                <Piede
+                  state={view}
+                  message={null}
+                  testo={
+                    !view.active
+                      ? `${view.hostName} ha chiuso la partita condivisa`
+                      : view.status === 'won'
+                        ? `${view.hostName} ha indovinato: ${view.answer?.toUpperCase()}`
+                        : view.status === 'lost'
+                          ? `La parola era ${view.answer?.toUpperCase()}`
+                          : `${view.hostName} sta giocando`
+                  }
+                />
               </div>
-              {/* Com'e' andata, o che cosa si puo' fare: la riga che prima era un riquadro sopra. */}
-              <p className="wordle__piede" aria-live="polite">
-                {!view.active
-                  ? `${view.hostName} ha chiuso la partita condivisa`
-                  : view.status === 'won'
-                    ? `${view.hostName} ha indovinato: ${view.answer?.toUpperCase()}`
-                    : view.status === 'lost'
-                      ? `La parola era ${view.answer?.toUpperCase()}`
-                      : `${view.hostName} sta giocando`}
-              </p>
-            </Scheda>
+            </section>
 
             {/* La riga del suggerimento sta fuori dalla griglia dell'host: non
                 è un tentativo, e mescolarla confonderebbe le due cose. */}

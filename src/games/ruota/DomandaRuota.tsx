@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Button } from '@/components/Button'
-import { IconCheck, IconClock, IconClose } from '@/components/Icons'
-import { IconaScheda, Pillola, Scheda } from '@/components/Scheda'
+import { IconCheck, IconClock, IconRefresh } from '@/components/Icons'
+import { Pillola } from '@/components/Scheda'
 import { useIndiceQuiz } from '@/games/quiz/dati'
 import {
   CartaDomanda,
@@ -18,7 +18,7 @@ import { scriviMoltiplicatore } from '@shared/ruota'
 import type { CategoriaQuiz } from '@shared/quiz'
 import type { DomandaQuiz } from '@shared/quiz-domande'
 import type { RispostaQuiz } from '@shared/types'
-import { coloreDelMoltiplicatore, coloreDellaCategoria, iconaDellaCategoria } from './disegni'
+import { coloreDellaCategoria, iconaDellaCategoria } from './disegni'
 import './DomandaRuota.css'
 
 /** Una domanda di un gioco della Fortuna: quella di uno spicchio di Crazy Time, o della tripla della slot. */
@@ -96,70 +96,70 @@ export default function DomandaRuota({
   const rivela = !!fatta && (geografia || !!scheda)
   return (
     <div className="quiz ruota-quiz">
-      <Scheda
-        className="quiz__tabellone"
-        titolo={NOMI_CATEGORIE[categoria]}
-        icona={
-          <IconaScheda colore={coloreDellaCategoria(categoria)}>
-            <Icona size={15} />
-          </IconaScheda>
-        }
-        destra={<Tempo fatta={fatta} scadenza={aperta ? scadenza : null} />}
-      >
-        <div className="quiz-progresso">
-          {sfida.moltiplicatore !== null && sfida.vincita !== null && (
-            <p className="ct-quiz__palio">
-              <span
-                className="ct-quiz__moltiplicatore"
-                style={{ '--colore': coloreDelMoltiplicatore(sfida.moltiplicatore) } as CSSProperties}
-              >
-                {scriviMoltiplicatore(sfida.moltiplicatore)}
-              </span>
-              In palio <span className="u-tabnum">{sfida.vincita}</span> punti
-            </p>
-          )}
-          {sfida.limiteMs !== null && (
-            <Miccia
-              key={aperta ? 'va' : 'ferma'}
-              scadenza={scadenza}
-              ferma={!aperta || inviando}
-              limiteMs={sfida.limiteMs}
-            />
-          )}
-        </div>
-      </Scheda>
-      <CartaDomanda
-        d={d}
-        categoria={categoria}
-        esito={esito}
-        rivela={rivela}
-        cartina={
-          fatta && geografia ? (
-            <CartinaDellaPartita c={CONTESTO} ix={ix} d={d} scelta={null} fatta={fatta} guarda />
-          ) : null
-        }
-        scheda={scheda}
-      />
-      <Opzioni
-        d={d}
-        esito={fatta}
-        inviando={inviando}
-        esclusi={NESSUNO}
-        compatte={rivela}
-        onScegli={(id) => onRispondi(id)}
-      />
-      {fatta && (
+      {/* La testata del mockup: la categoria in una capsula, il moltiplicatore d'oro, i secondi; sotto, la miccia. */}
+      <div className="ct-domanda__testa">
+        <span className="ct-domanda__cat" style={{ '--colore': coloreDellaCategoria(categoria) } as CSSProperties}>
+          <Icona size={15} />
+          {NOMI_CATEGORIE[categoria]}
+        </span>
+        {sfida.moltiplicatore !== null && (
+          <span className="ct-domanda__molt">{scriviMoltiplicatore(sfida.moltiplicatore)}</span>
+        )}
+        <span className="ct-domanda__tempo">
+          <Tempo fatta={fatta} scadenza={aperta ? scadenza : null} />
+        </span>
+      </div>
+      {sfida.limiteMs !== null && (
+        <Miccia key={aperta ? 'va' : 'ferma'} scadenza={scadenza} ferma={!aperta || inviando} limiteMs={sfida.limiteMs} />
+      )}
+      {/* La carta della domanda tiene anche le risposte, come nel mockup. */}
+      <div className={`ct-domanda__carta${rivela ? ' is-rivela' : ''}${esito}`}>
+        <CartaDomanda
+          d={d}
+          categoria={categoria}
+          esito={esito}
+          rivela={rivela}
+          cartina={
+            fatta && geografia ? (
+              <CartinaDellaPartita c={CONTESTO} ix={ix} d={d} scelta={null} fatta={fatta} guarda />
+            ) : null
+          }
+          scheda={scheda}
+        />
+        <Opzioni
+          d={d}
+          esito={fatta}
+          inviando={inviando}
+          esclusi={NESSUNO}
+          compatte={rivela}
+          onScegli={(id) => onRispondi(id)}
+        />
+      </div>
+      {fatta ? (
         <div className="quiz-avanti">
           <Button size="lg" fullWidth onClick={onTorna} className="quiz-avanti__bottone">
             {torna}
           </Button>
         </div>
+      ) : (
+        sfida.vincita !== null && (
+          <p className="ct-domanda__riga">
+            In palio <span className="u-tabnum">{sfida.vincita}</span> punti, se rispondi giusto
+          </p>
+        )
       )}
     </div>
   )
 }
 
-/** I secondi che restano, e a risposta data com'e' andata: la capsula della testata del quiz. */
+/**
+ * I secondi che restano, e a risposta data com'e' andata: la capsula della
+ * testata del quiz. Una risposta giusta ha la spunta verde; quando non lo e',
+ * o il tempo e' finito, la capsula e' neutra e piccola — la carta dice gia'
+ * qual era la giusta, e nei giochi della Fortuna un esito a vuoto non si
+ * sottolinea. Solo l'icona, con il testo per chi legge lo schermo: la
+ * capsula sta accanto al moltiplicatore, e con "Sbagliata" scritto lo copriva.
+ */
 function Tempo({ fatta, scadenza }: { fatta: Fatta | null; scadenza: number | null }) {
   const [adesso, setAdesso] = useState(() => performance.now())
   useEffect(() => {
@@ -176,12 +176,18 @@ function Tempo({ fatta, scadenza }: { fatta: Fatta | null; scadenza: number | nu
   if (fatta) {
     const { giusta, scelta } = fatta.risposta
     return (
-      <Pillola
-        tono={giusta ? 'buona' : 'cattiva'}
-        icona={giusta ? <IconCheck size={13} /> : scelta === null ? <IconClock size={13} /> : <IconClose size={13} />}
-      >
-        {giusta ? 'Giusta' : scelta === null ? 'Tempo scaduto' : 'Sbagliata'}
-      </Pillola>
+      <span className={`ct-domanda__verdetto${giusta ? ' is-giusta' : ''}`}>
+        <Pillola
+          tono={giusta ? 'buona' : 'neutra'}
+          icona={
+            giusta ? <IconCheck size={13} /> : scelta === null ? <IconClock size={13} /> : <IconRefresh size={13} />
+          }
+        >
+          <span className="u-visually-hidden">
+            {giusta ? 'Giusta' : scelta === null ? 'Tempo finito' : 'Era un’altra'}
+          </span>
+        </Pillola>
+      </span>
     )
   }
   const poco = scadenza !== null && secondi <= ULTIMI_SECONDI

@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { LATO, premioDi, type Casella, type Posa } from '@shared/scarabeo'
+import { LATO, VALORI, premioDi, type Casella, type Posa } from '@shared/scarabeo'
 import type { Cursore } from './useComposizione'
 import './Tabellone.css'
 
@@ -30,25 +30,28 @@ export function Tabellone({ tabellone, sospese, cursore, bloccato, onTocca, evid
   const inSospeso = new Set(sospese.map((p) => p.r * LATO + p.c))
 
   return (
-    <div className="tabellone" role="grid" aria-label="Tabellone dello Scarabeo">
-      {tabellone.map((casella, i) => {
-        const r = Math.floor(i / LATO)
-        const c = i % LATO
-        return (
-          <Cella
-            key={i}
-            r={r}
-            c={c}
-            casella={casella}
-            sospesa={inSospeso.has(i)}
-            sbagliata={sbagliata && inSospeso.has(i)}
-            evidenziata={evidenziate?.has(i) ?? false}
-            cursore={cursore !== null && cursore.r === r && cursore.c === c ? cursore.oriz : null}
-            bloccato={bloccato}
-            onTocca={onTocca}
-          />
-        )
-      })}
+    // La cornice di legno sta attorno alla griglia, con il filo e l'ombra secca degli oggetti dell'album.
+    <div className="scr-tavola">
+      <div className="tabellone" role="grid" aria-label="Tabellone dello Scarabeo">
+        {tabellone.map((casella, i) => {
+          const r = Math.floor(i / LATO)
+          const c = i % LATO
+          return (
+            <Cella
+              key={i}
+              r={r}
+              c={c}
+              casella={casella}
+              sospesa={inSospeso.has(i)}
+              sbagliata={sbagliata && inSospeso.has(i)}
+              evidenziata={evidenziate?.has(i) ?? false}
+              cursore={cursore !== null && cursore.r === r && cursore.c === c ? cursore.oriz : null}
+              bloccato={bloccato}
+              onTocca={onTocca}
+            />
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -79,12 +82,15 @@ const Cella = memo(function Cella({
 }: CellaProps) {
   const premio = premioDi(r, c)
   const classi = ['cella']
-  if (premio && !casella) classi.push(`cella--${premio}`)
+  if (premio) classi.push(`cella--${premio}`)
   if (casella) classi.push(sospesa ? 'cella--sospesa' : 'cella--tessera')
-  if (casella?.jolly) classi.push('cella--jolly')
-  if (sbagliata) classi.push('cella--sbagliata')
-  if (evidenziata && casella) classi.push('cella--evidenziata')
   if (cursore !== null) classi.push(cursore ? 'cella--cursore-oriz' : 'cella--cursore-vert')
+  // La tessera e' un pezzo appoggiato sulla casella: si anima da sola, posata, arrivata o rifiutata.
+  const tessera = ['cella__tessera']
+  if (sospesa) tessera.push('is-sospesa')
+  if (casella?.jolly) tessera.push('is-jolly')
+  if (sbagliata) tessera.push('is-sbagliata')
+  if (evidenziata && casella) tessera.push('is-evidenziata')
 
   const nome = casella
     ? `${casella.lettera.toUpperCase()}${casella.jolly ? ' (jolly)' : ''} in ${r + 1},${c + 1}`
@@ -104,20 +110,31 @@ const Cella = memo(function Cella({
       onClick={bloccato ? undefined : () => onTocca(r, c)}
     >
       {casella ? (
-        <span className="cella__lettera">{casella.lettera.toUpperCase()}</span>
+        <span className={tessera.join(' ')} aria-hidden="true">
+          <span className="cella__lettera">{casella.lettera.toUpperCase()}</span>
+          <span className="cella__valore">{casella.jolly ? 0 : VALORI[casella.lettera]}</span>
+        </span>
       ) : cursore !== null ? (
         // Da che parte si scrive. Sulla casella centrale prende il posto della stella.
         <svg className="cella__freccia" viewBox="0 0 16 16" aria-hidden="true">
           <path d="M3 8h9.5M8.5 3.5 13 8l-4.5 4.5" />
         </svg>
       ) : premio === 'centro' ? (
-        <span className="cella__stella" aria-hidden="true">
-          ★
+        <svg className="cella__stella" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m12 2.8 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8Z" />
+        </svg>
+      ) : premio ? (
+        // Il premio scritto sulla casella, come sul tabellone vero: il colore dice la famiglia, la scritta quanto.
+        <span className="cella__premio" aria-hidden="true">
+          {SIGLE[premio]}
         </span>
       ) : null}
     </button>
   )
 })
+
+/** Le sigle stampate sulle caselle premio: P la parola, L la lettera. */
+const SIGLE: Record<string, string> = { tp: '3P', dp: '2P', tl: '3L', dl: '2L' }
 
 const NOMI: Record<string, string> = {
   tp: 'parola tripla',

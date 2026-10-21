@@ -34,7 +34,7 @@ export function nomeVariante(gioco: GiocoAlTavolo, variante: string | null | und
 /** Il colore del segno di ogni parte, accanto al nome: il disco, il pezzo. */
 export const SEGNI: Record<GiocoTavoliere, readonly [string, string]> = {
   scacchi: ['#f6f6f4', '#2b2b2e'],
-  dama: ['#f6efe2', '#2e2723'],
+  dama: ['#fff8e8', '#3a3358'],
   forza4: ['var(--f4-rosso)', 'var(--f4-giallo)'],
   // Nel go comincia il Nero.
   go: ['#232326', '#f5f4f0'],

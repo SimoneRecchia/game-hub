@@ -35,7 +35,7 @@ export default function GhigliottinaLibera() {
 
   if (!v) {
     return (
-      <Pagina titolo="Ghigliottina" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina titolo="Ghigliottina" gioco="ghigliottina" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <SceltaFinale
           gioco="ghigliottina"
           titoloPasso="Tempo per coppia"
@@ -50,26 +50,23 @@ export default function GhigliottinaLibera() {
   }
 
   return (
-    <Pagina key="partita" titolo="Ghigliottina" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina key="partita" titolo="Ghigliottina" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
       <PartitaGhigliottina
         key={g.numero}
         vista={v}
         comandi={g.comandi}
         fine={
           <>
-            <div className="ghi-totale">
-              <p className="ghi-totale__valore u-tabnum">{v.punti} punti</p>
-              <p className="ghi-totale__dettaglio u-tabnum">
-                {g.conti.indovinate} indovinate su {g.conti.partite} · non conta per la classifica
-              </p>
-            </div>
-            <div className="ghi-azioni">
-              <button type="button" className="ghi-link" onClick={() => ultime && comincia(ultime)}>
-                <IconRefresh size={18} />
-                Un’altra
+            <p className="ghi-fine__nota u-tabnum">
+              {g.conti.indovinate} indovinate su {g.conti.partite} · non conta per la classifica
+            </p>
+            <div className="ghi-fine__bottoni">
+              <button type="button" className="ghi-fine__bottone" onClick={g.ricomincia}>
+                Opzioni
               </button>
-              <button type="button" className="ghi-link" onClick={g.ricomincia}>
-                Cambia le opzioni
+              <button type="button" className="ghi-fine__bottone is-menta" onClick={() => ultime && comincia(ultime)}>
+                <IconRefresh size={18} />
+                Gioca ancora
               </button>
             </div>
           </>

@@ -3,16 +3,17 @@ import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
 import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
-import { Coriandoli, Tacche, useFesta } from '@/components/Elementi'
+import { Coriandoli, useFesta } from '@/components/Elementi'
 import { IconInfo, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
+import { BottoneFine, CartaFine } from '@/games/cruciverba/CartaFine'
 import { SegmentedControl } from '@/components/SegmentedControl'
 import { Sheet } from '@/components/Sheet'
 import { SalaSfida, type GiocoSfida } from '@/games/amici/SalaSfida'
 import { ComeSiGiocaSequenze } from '@/games/sequenze/ComeSiGioca'
 import { leggiContiSequenze } from '@/games/sequenze/conti'
-import { Pallini, Tavola } from '@/games/sequenze/Tavola'
-import { useProva, type Prova } from '@/games/sequenze/useProva'
+import { MessaggioProva, Pallini, Tavola } from '@/games/sequenze/Tavola'
+import { useProva } from '@/games/sequenze/useProva'
 import { NOMI_LIVELLI_SEQUENZE, useSequenzeLibere } from '@/games/sequenze/useSequenzeLibere'
 import { LIVELLI_ORDINATI, LIVELLI_SEQUENZE, livelloSequenzeValido, type LivelloSequenze } from '@shared/sequenze'
 import '@/games/sequenze/Sequenze.css'
@@ -75,7 +76,7 @@ export default function SequenzeLibera() {
       titolo: 'Record!',
       sotto: `${fine.arrivata} cubetti`,
       colore: 'linear-gradient(160deg, var(--sequenze-1), var(--sequenze-2))',
-      durata: 1_800,
+      durata: ADESIVO_RECORD_MS,
       suono: 'vittoria',
     })
   }, [accoda, fine])
@@ -96,7 +97,7 @@ export default function SequenzeLibera() {
 
   if (!l) {
     return (
-      <Pagina key="scelta" titolo="Sequenze" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina key="scelta" titolo="Sequenze" gioco="sequenze" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <div className="seq-scelte">
           <SegmentedControl
             ariaLabel="Con chi"
@@ -129,16 +130,29 @@ export default function SequenzeLibera() {
   }
 
   const lunghezza = g.aperta?.sequenza.length ?? null
+  const indietro = LIVELLI_SEQUENZE[l].indietro
   return (
-    <Pagina key="partita" titolo="Sequenze" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina key="partita" titolo="Sequenze" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
       <div className="seq">
-        <div className="seq-testa">
-          <p className="seq-livello">
-            <Tacche piene={LIVELLI_ORDINATI.indexOf(l) + 1} colore="var(--sequenze-1)" />
-            <span>{NOMI_LIVELLI_SEQUENZE[l]}</span>
-          </p>
-        </div>
-        <div className="seq-campo">
+        <section className="seq-conto" aria-label="Come sta andando">
+          <span className="seq-voce">
+            <span className="seq-etichetta">{NOMI_LIVELLI_SEQUENZE[l]}</span>
+            <span key={lunghezza ?? 0} className="seq-numero u-tabnum">
+              {lunghezza ?? g.fine?.arrivata ?? '–'}
+            </span>
+          </span>
+          {lunghezza !== null ? (
+            <Pallini quanti={lunghezza} toccati={prova.tocchi.length} errore={prova.errore !== null} />
+          ) : (
+            <span />
+          )}
+          <span className="seq-voce is-destra">
+            <span className="seq-etichetta">Record</span>
+            <span className="seq-numero u-tabnum">{record(l)}</span>
+          </span>
+        </section>
+        {/* La tavola e, subito sotto, che cosa fare: stanno insieme in alto, come nell'album. */}
+        <div className={`seq-campo is-con-sotto${g.fine ? ' is-fine' : ''}`}>
           <Tavola
             fase={prova.fase}
             acceso={prova.acceso}
@@ -146,32 +160,101 @@ export default function SequenzeLibera() {
             errore={prova.errore}
             onTocca={prova.tocca}
           />
-        </div>
-        {g.fine ? (
-          <div className="seq-piede" aria-live="polite">
-            <p className="seq-stato">
-              {g.fine.arrivata === 0 ? 'Nessuna sequenza' : `Fino a ${g.fine.arrivata} cubetti`}
-            </p>
-            <p className="seq-sotto">{g.fine.record ? 'Il tuo record' : `Record: ${record(l)} cubetti`}</p>
-            <div className="seq-azioni">
-              <Button size="lg" onClick={() => g.comincia(l)}>
-                <IconRefresh size={18} /> Un’altra
-              </Button>
-              <Button size="lg" variant="tinted" onClick={g.scegli}>
-                Cambia difficoltà
-              </Button>
+          {g.fine ? (
+            <div className="seq-piede" aria-live="polite">
+              <p className="seq-messaggio">
+                {g.fine.arrivata === 0 ? 'Nessuna sequenza' : `Fino a ${g.fine.arrivata} cubetti`}
+              </p>
+              <div className="seq-azioni">
+                <Button size="lg" onClick={() => g.comincia(l)}>
+                  <IconRefresh size={18} /> Un’altra
+                </Button>
+                <Button size="lg" variant="tinted" onClick={g.scegli}>
+                  Cambia difficoltà
+                </Button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <PiedeLibero prova={prova} lunghezza={lunghezza} indietro={LIVELLI_SEQUENZE[l].indietro} />
-        )}
+          ) : (
+            <MessaggioProva prova={prova} indietro={indietro} attesa={lunghezza === null} />
+          )}
+        </div>
       </div>
+      {g.fine && (
+        <CartaDelleSequenze
+          livello={l}
+          arrivata={g.fine.arrivata}
+          nuovoRecord={g.fine.record}
+          giuste={g.giuste}
+          onEsci={g.scegli}
+          onAncora={() => g.comincia(l)}
+        />
+      )}
       <ComeSiGiocaSequenze open={regole} onClose={() => setRegole(false)} />
       <Adesivo adesivo={adesivo} />
       {festa && <Coriandoli />}
     </Pagina>
   )
 }
+
+/** La carta della fine: arriva dopo la sequenza sbagliata, o dopo l'adesivo del record, e si chiude. */
+function CartaDelleSequenze({
+  livello,
+  arrivata,
+  nuovoRecord,
+  giuste,
+  onEsci,
+  onAncora,
+}: {
+  livello: LivelloSequenze
+  arrivata: number
+  nuovoRecord: boolean
+  giuste: number
+  onEsci: () => void
+  onAncora: () => void
+}) {
+  const [aperta, setAperta] = useState(false)
+  useEffect(() => {
+    const t = window.setTimeout(() => setAperta(true), nuovoRecord ? ADESIVO_RECORD_MS : DOPO_LA_FINE_MS)
+    return () => window.clearTimeout(t)
+  }, [nuovoRecord])
+  const indietro = LIVELLI_SEQUENZE[livello].indietro
+  return (
+    <CartaFine
+      aperta={aperta}
+      onChiudi={() => setAperta(false)}
+      gioco="sequenze"
+      colore="var(--sequenze-tinta)"
+      fondo="linear-gradient(180deg, #ddfafc, #fff1c9)"
+      titolo={nuovoRecord ? 'Nuovo record!' : 'Sbagliata!'}
+      testo={
+        arrivata === 0
+          ? 'Nessuna sequenza ripetuta: riprova'
+          : `Hai ripetuto una sequenza di ${arrivata} cubetti${indietro ? ' al contrario' : ''}`
+      }
+      timbro={
+        <>
+          {arrivata}
+          <small>cubetti</small>
+        </>
+      }
+      righe={[
+        { nome: 'Difficoltà', valore: NOMI_LIVELLI_SEQUENZE[livello] },
+        { nome: 'Sequenze giuste', valore: giuste },
+        { nome: 'Record', valore: `${record(livello)} cubetti` },
+      ]}
+    >
+      <BottoneFine onClick={onEsci}>Esci</BottoneFine>
+      <BottoneFine tono="pieno" onClick={onAncora}>
+        Gioca ancora
+      </BottoneFine>
+    </CartaFine>
+  )
+}
+
+/** Quanto dura l'adesivo del record, prima della carta della fine. */
+const ADESIVO_RECORD_MS = 1_800
+/** Quanto resta in vista la tavola sbagliata, prima della carta della fine. */
+const DOPO_LA_FINE_MS = 700
 
 function record(l: LivelloSequenze): number {
   return leggiContiSequenze().record[l]
@@ -198,28 +281,5 @@ function SceltaLivello({ amico, onGioca }: { amico: boolean; onGioca: (livello: 
       colore="var(--sequenze-1)"
       etichetta={amico ? 'Sfida un amico' : 'Comincia'}
     />
-  )
-}
-
-function PiedeLibero({ prova, lunghezza, indietro }: { prova: Prova; lunghezza: number | null; indietro: boolean }) {
-  if (lunghezza === null) return <div className="seq-piede" />
-  const testo =
-    prova.fase === 'guarda'
-      ? 'Guarda'
-      : prova.fase === 'tocca'
-        ? indietro
-          ? 'Al contrario'
-          : 'Tocca a te'
-        : prova.fase === 'giusta'
-          ? 'Giusta!'
-          : prova.fase === 'sbagliata'
-            ? 'Sbagliata'
-            : ''
-  return (
-    <div className="seq-piede" aria-live="polite">
-      <p className={`seq-stato is-${prova.fase}`}>{testo}</p>
-      <Pallini quanti={lunghezza} toccati={prova.tocchi.length} errore={prova.errore !== null} />
-      <p className="seq-sotto u-tabnum">{lunghezza} cubetti</p>
-    </div>
   )
 }

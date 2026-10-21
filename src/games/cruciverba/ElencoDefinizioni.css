@@ -1,14 +1,20 @@
+/*
+ * Le definizioni, come righe del foglio: ognuna su una striscia tonda, il
+ * numero in grande, quella in corso nel lilla della parola con il filo indaco.
+ */
 .celenco {
+  --celenco-riga: #f2ecff;
+  --celenco-riga: light-dark(#f2ecff, rgba(255, 255, 255, 0.09));
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: 16px;
 }
 
 .celenco__titolo {
-  margin: 0 0 var(--sp-2);
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--label-secondary);
 }
@@ -21,48 +27,56 @@
   padding: 0;
 }
 
-.celenco__voce {
-  border-bottom: 1px solid var(--separator);
-}
-
-.celenco__voce:last-child {
-  border-bottom: none;
+.celenco__voce + .celenco__voce {
+  margin-top: 6px;
 }
 
 .celenco__riga {
   display: flex;
-  align-items: baseline;
-  gap: var(--sp-3);
+  align-items: flex-start;
+  gap: 10px;
   width: 100%;
-  padding: var(--sp-2) var(--sp-2);
+  padding: 8px 12px;
   border: none;
-  border-radius: var(--r-xs);
-  background: none;
+  border-radius: 13px;
+  background: var(--celenco-riga);
   color: var(--label);
-  font-size: var(--text-subhead);
-  line-height: 1.35;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.3;
   text-align: left;
   cursor: pointer;
+  transition: transform 100ms var(--ease-out);
 }
 
-.celenco__riga:hover {
-  background: var(--fill-quaternary);
+.celenco__riga:active {
+  transform: scale(0.98);
 }
 
 .celenco__riga.is-corrente {
-  background: var(--cruci-parola);
+  background: #dcd8ff;
+  color: #2a1f5c;
+  box-shadow: inset 0 0 0 2px #6e62f5;
+}
+
+.celenco__riga.is-corrente .celenco__numero {
+  color: #2a1f5c;
 }
 
 /* Le parole gia' scritte si fanno da parte: resta da guardare quel che manca. */
 .celenco__riga.is-scritta {
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
+  font-weight: 700;
 }
 
 .celenco__numero {
   flex: none;
-  min-width: 1.6em;
-  font-weight: 700;
-  color: var(--label-secondary);
+  min-width: 1.5em;
+  font-family: var(--font-rounded);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--label);
 }
 
 .celenco__testo {
@@ -70,35 +84,42 @@
   min-width: 0;
 }
 
-.celenco__nota,
-.cbarra__nota {
-  margin-left: 0.45em;
-  padding: 0 0.45em;
+.celenco__nota {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 0 7px;
+  border: 1.5px solid currentColor;
   border-radius: var(--r-pill);
-  background: var(--fill-tertiary);
-  color: var(--label-secondary);
-  font-size: 0.82em;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 16px;
+  vertical-align: 1px;
+  text-transform: lowercase;
   white-space: nowrap;
 }
 
 .celenco__risposta {
   display: block;
-  margin-top: 2px;
+  margin-top: 3px;
   font-family: var(--font-rounded);
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 400;
   letter-spacing: 0.08em;
   color: var(--label);
 }
 
 .celenco__fonte {
   display: inline-block;
-  margin: 0 0 var(--sp-2) calc(1.6em + var(--sp-3) + var(--sp-2));
-  font-size: var(--text-caption-1);
+  margin: 4px 0 2px calc(1.5em + 22px);
+  font-size: 12.5px;
+  font-weight: 800;
   color: var(--brand);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
-.celenco__fonte:hover {
-  text-decoration: underline;
+@media (prefers-reduced-motion: reduce) {
+  .celenco__riga {
+    transition: none;
+  }
 }

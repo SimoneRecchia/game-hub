@@ -169,8 +169,8 @@ export function Goban({ posizione, mia, attivo, ultima, n, conteggio, onMossa }:
               key={nuova ? `${k}-${n}` : k}
               className={`gob__pietra is-${chi}${morta ? ' is-morta' : ''}${nuova ? ' is-nuova' : ''}`}
             >
-              <circle cx={x + 0.4} cy={y + 0.6} r={4.7} className="gob__ombra" />
-              <circle cx={x} cy={y} r={4.7} fill={`url(#${id}-${chi})`} />
+              <circle cx={x + 0.5} cy={y + 0.8} r={4.7} className="gob__ombra" />
+              <circle cx={x} cy={y} r={4.6} className="gob__faccia" fill={`url(#${id}-${chi})`} />
               {k === ultimoPunto && !conteggio && <circle cx={x} cy={y} r={1.7} className="gob__ultima" />}
             </g>
           )

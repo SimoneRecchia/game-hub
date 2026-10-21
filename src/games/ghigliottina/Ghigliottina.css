@@ -1,107 +1,224 @@
 /*
- * La Ghigliottina: uno studio televisivo scuro in tutti e due i temi, con le
- * luci viola che si muovono. In cima la ghigliottina, con il montepremi nella
- * lunetta; sotto la colonna delle cinque parole; in fondo la coppia da
- * scegliere, il minuto, o la parola vincente. Le misure seguono l'altezza:
- * su un telefono basso la ghigliottina si fa piccola, e il resto ci sta.
+ * La Ghigliottina: in cima il palco, uno studio televisivo scuro in tutti e due
+ * i temi, con le luci che si muovono, le cinque lampade delle coppie e la
+ * ghigliottina con il montepremi nella lunetta; sotto, sulla pagina, la coppia
+ * da scegliere, il minuto con la tastiera o la busta. Le misure seguono
+ * l'altezza della scena (`cqh`): su un telefono basso il palco si fa piu'
+ * piccolo, e il resto ci sta.
  */
 .ghi {
-  /* La tastiera dello studio: tasti viola su un vassoio piu' scuro, e l'invio d'oro. */
-  --key-fondo: rgba(14, 4, 36, 0.42);
-  --key-bg: #44298a;
-  --key-bg-active: #5333a3;
-  --key-servizio: #2a1658;
-  --key-servizio-active: #36206e;
-  --key-ink: #fff;
-  --key-ombra: rgba(8, 0, 24, 0.6);
-  --key-azione: var(--ghi-oro);
-  --key-azione-ink: #241200;
-  container-type: inline-size;
+  /* L'invio della tastiera nel colore del gioco, con l'inchiostro sopra. */
+  --key-azione: var(--ghigliottina-tinta);
+  --key-azione-ink: #2a1f5c;
+  --ghi-ink: #120c2b;
+  /* Quel che serve sotto il palco mentre si scrive: il titolo col tempo, la riga e la tastiera. */
+  --ghi-sotto-finale: 350px;
+  container: ghi / size;
   position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: 14px;
   width: 100%;
-  max-width: 620px;
+  max-width: 560px;
   min-height: 0;
   margin: 0 auto;
-  padding: var(--sp-3) var(--sp-4) var(--sp-4);
-  overflow: hidden;
-  border-radius: 28px;
-  background:
-    radial-gradient(90% 55% at 50% 0%, color-mix(in srgb, var(--ghi-luce) 34%, transparent), transparent 70%),
-    linear-gradient(180deg, var(--ghi-palco-1), var(--ghi-palco-2));
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 18px 40px -22px rgba(20, 0, 60, 0.7);
-  color: #fff;
-  color-scheme: dark;
-  isolation: isolate;
-}
-
-/* Alla fine la scena si legge tutta: scorre, con le spiegazioni e i punti. */
-.ghi.is-fine {
-  overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 /* ---------- Il palco ---------- */
 
 .ghi-palco {
+  container: ghi-palco / size;
   position: relative;
-  display: flex;
   flex: none;
-  justify-content: center;
-  height: clamp(132px, 27dvh, 236px);
+  height: clamp(170px, 44cqh, 300px);
+  border: var(--filo) solid var(--ghi-ink);
+  border-radius: 26px;
+  background: radial-gradient(ellipse at 50% 0%, #5a46c4 0%, #2a1f78 48%, #150f45 100%);
+  box-shadow: 0 5px 0 var(--ghi-ink);
+  color: #fff6e0;
+  color-scheme: dark;
+}
+
+/* Mentre si scrive il palco lascia sotto il posto per la tastiera, e la ghigliottina si fa piccola. */
+.ghi.is-compatta .ghi-palco {
+  height: clamp(170px, calc(100cqh - var(--ghi-sotto-finale)), 300px);
+}
+
+/* La luce sul pavimento dello studio. */
+.ghi-palco::after {
+  position: absolute;
+  right: 8%;
+  bottom: 10px;
+  left: 8%;
+  height: 14%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgba(255, 216, 77, 0.28), rgba(255, 216, 77, 0) 70%);
+  content: '';
+  pointer-events: none;
 }
 
 /*
  * Due fasci di luce che si incrociano sopra la ghigliottina, lenti come in
- * studio. I fasci girano dentro una cornice che arriva al bordo dello studio e
- * li taglia: un figlio piu' largo di `.ghi` lo farebbe scorrere di lato quando
- * una parola prende il fuoco, anche con `overflow: hidden`, e la scena restava
- * spostata a sinistra.
+ * studio. Girano dentro una cornice che li taglia: un figlio piu' largo della
+ * scena la farebbe scorrere di lato quando una parola prende il fuoco.
  */
 .ghi-palco__luci {
   position: absolute;
-  inset: calc(var(--sp-3) * -1) calc(var(--sp-4) * -1) 0;
-  z-index: -1;
+  inset: 0;
   overflow: hidden;
+  border-radius: 24px;
   pointer-events: none;
 }
 
-.ghi-palco__luci::before {
+.ghi-fascio {
   position: absolute;
-  inset: -40% -30% 0;
-  background:
-    conic-gradient(from 160deg at 18% 0%, transparent 0deg, rgba(190, 150, 255, 0.22) 12deg, transparent 26deg),
-    conic-gradient(from 176deg at 82% 0%, transparent 0deg, rgba(120, 160, 255, 0.2) 12deg, transparent 26deg);
-  content: '';
-  filter: blur(6px);
-  animation: ghi-luci 9s ease-in-out infinite alternate;
+  top: -10%;
+  width: 34%;
+  height: 130%;
+  background: linear-gradient(180deg, rgba(255, 240, 200, 0.42), rgba(255, 240, 200, 0) 80%);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  mix-blend-mode: screen;
 }
 
-.ghi.is-vinta .ghi-palco__luci::before {
-  background:
-    conic-gradient(from 160deg at 18% 0%, transparent 0deg, rgba(255, 210, 90, 0.34) 12deg, transparent 26deg),
-    conic-gradient(from 176deg at 82% 0%, transparent 0deg, rgba(255, 210, 90, 0.3) 12deg, transparent 26deg);
+.ghi-fascio--sx {
+  left: -3%;
+  animation: ghi-luce-sx 6s ease-in-out infinite;
 }
 
-@keyframes ghi-luci {
+.ghi-fascio--dx {
+  right: -3%;
+  animation: ghi-luce-dx 6s ease-in-out infinite;
+}
+
+.ghi-palco.is-tamburo .ghi-fascio {
+  animation-duration: 0.5s;
+}
+
+.ghi.is-vinta .ghi-fascio {
+  background: linear-gradient(180deg, rgba(255, 216, 77, 0.6), rgba(255, 216, 77, 0) 80%);
+}
+
+@keyframes ghi-luce-sx {
+  0%,
+  100% {
+    transform: rotate(-24deg);
+  }
+  50% {
+    transform: rotate(-8deg);
+  }
+}
+
+@keyframes ghi-luce-dx {
+  0%,
+  100% {
+    transform: rotate(22deg);
+  }
+  50% {
+    transform: rotate(6deg);
+  }
+}
+
+/* Le cinque lampade delle coppie, in cima: se ne vanno quando arrivano le cinque parole. */
+.ghi-lampade {
+  position: absolute;
+  top: 4cqh;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition: opacity 0.4s;
+}
+
+.ghi.is-compatta .ghi-lampade {
+  opacity: 0;
+}
+
+.ghi-lampada {
+  width: 16px;
+  height: 16px;
+  border: var(--filo) solid var(--ghi-ink);
+  border-radius: 50%;
+  background: #3a2e8a;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25);
+  transition: background-color 0.25s;
+}
+
+.ghi-lampada.is-attuale {
+  background: #ffe07a;
+  box-shadow:
+    0 0 12px #ffe07a,
+    inset 0 2px 0 rgba(255, 255, 255, 0.6);
+  animation: ghi-lampeggia 1s ease-in-out infinite;
+}
+
+.ghi-palco.is-tamburo .ghi-lampada.is-attuale {
+  animation-duration: 0.18s;
+}
+
+.ghi-lampada.is-giusta {
+  background: #5edb84;
+  box-shadow: 0 0 10px rgba(94, 219, 132, 0.8);
+  animation: ghi-lampada 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+.ghi-lampada.is-sbagliata {
+  background: #ff5c6b;
+  box-shadow: 0 0 10px rgba(255, 92, 107, 0.8);
+  animation: ghi-lampada 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+}
+
+@keyframes ghi-lampeggia {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes ghi-lampada {
   from {
-    transform: rotate(-4deg);
+    transform: scale(1.5);
   }
-  to {
-    transform: rotate(4deg);
-  }
+}
+
+/*
+ * La ghigliottina sta in una cornice che ritaglia: la corda sale fino al
+ * soffitto del palco, non oltre. La macchina si misura sull'altezza del palco;
+ * quando si fa piccola scivola al posto nuovo (useScivola), quindi niente
+ * `transform` suo: lo userebbe l'animazione.
+ */
+.ghi-palco__scena {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: 24px;
+  pointer-events: none;
 }
 
 .ghi-palco__macchina {
   container: ghi-macchina / inline-size;
-  position: relative;
-  height: 100%;
-  aspect-ratio: 120 / 150;
+  position: absolute;
+  top: 13cqh;
+  left: calc(50% - 25cqh);
+  width: 50cqh;
+  height: 63cqh;
+  transform-origin: top center;
+}
+
+.ghi.is-compatta .ghi-palco__macchina {
+  top: calc(6cqh + 86px);
+  left: calc(50% - min(18cqh, (88cqh - 86px) * 0.4));
+  width: min(36cqh, (88cqh - 86px) * 0.8);
+  height: min(45cqh, 88cqh - 86px);
 }
 
 /* ---------- La lama ---------- */
@@ -112,29 +229,26 @@
   width: 100%;
   height: 100%;
   overflow: visible;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.45));
 }
 
 .ghi-lama__corda {
-  stroke: #c9a46a;
-  stroke-width: 1.6;
-  stroke-dasharray: 2 1.2;
+  stroke: #c9a27a;
+  stroke-width: 2.4;
 }
 
 .ghi-lama__filo {
   fill: none;
   stroke: #fff;
-  stroke-width: 1.2;
+  stroke-width: 1.6;
   stroke-linecap: round;
-  opacity: 0.85;
-  animation: ghi-filo 3.2s ease-in-out infinite;
+  animation: ghi-filo 2.4s ease-in-out infinite;
 }
 
 @keyframes ghi-filo {
   0%,
   70%,
   100% {
-    opacity: 0.35;
+    opacity: 0.5;
   }
   80% {
     opacity: 1;
@@ -156,7 +270,7 @@
   transition: transform 190ms cubic-bezier(0.6, 0, 1, 0.5);
 }
 
-/* Il colpo fa tremare la ghigliottina e il montepremi. */
+/* Il colpo fa tremare il montepremi e il palco. */
 .ghi-lama.is-cala + .ghi-montepremi,
 .ghi-lama.is-giu + .ghi-montepremi {
   animation: ghi-scossa 420ms 170ms ease-out;
@@ -170,16 +284,16 @@
 @keyframes ghi-scossa {
   0%,
   100% {
-    transform: translateX(-50%);
+    transform: none;
   }
   20% {
-    transform: translateX(calc(-50% - 4px)) translateY(2px);
+    transform: translate(-4px, 2px);
   }
   45% {
-    transform: translateX(calc(-50% + 3px));
+    transform: translateX(3px);
   }
   70% {
-    transform: translateX(calc(-50% - 2px));
+    transform: translateX(-2px);
   }
 }
 
@@ -201,64 +315,55 @@
 .ghi-montepremi {
   position: absolute;
   bottom: 3%;
-  left: 50%;
+  left: 17%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 66%;
-  height: 24%;
-  border-radius: 9cqw;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 46%),
-    linear-gradient(180deg, var(--ghi-oro), var(--ghi-oro-2));
+  height: 25%;
+  box-sizing: border-box;
+  border: 2px solid var(--ghi-ink);
+  border-radius: 8cqw;
+  background: linear-gradient(180deg, #ffe58a, #f2b33d);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-    0 0 0 2px rgba(70, 30, 0, 0.35),
-    0 8px 18px -6px rgba(0, 0, 0, 0.6);
-  color: #3b2200;
-  transform: translateX(-50%);
+    0 3px 0 var(--ghi-ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.6);
+  color: #2a1f5c;
 }
 
 .ghi-montepremi.is-vinto {
-  animation: ghi-oro 1.6s ease-in-out infinite;
+  animation: ghi-vinto 1.1s ease-in-out infinite;
 }
 
-@keyframes ghi-oro {
+@keyframes ghi-vinto {
   0%,
   100% {
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-      0 0 0 2px rgba(70, 30, 0, 0.35),
-      0 0 14px 2px rgba(255, 210, 90, 0.45);
+    transform: scale(1);
   }
   50% {
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.5),
-      0 0 0 2px rgba(70, 30, 0, 0.35),
-      0 0 30px 8px rgba(255, 210, 90, 0.7);
+    transform: scale(1.06);
   }
 }
 
 .ghi-montepremi__etichetta {
-  font-size: 6.5cqw;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-size: 6.4cqw;
+  font-weight: 900;
+  letter-spacing: 0.14em;
   line-height: 1;
   text-transform: uppercase;
-  opacity: 0.75;
 }
 
 .ghi-montepremi__valore {
   font-family: var(--font-rounded);
-  font-size: 19cqw;
-  font-weight: 900;
+  font-size: 18cqw;
+  font-weight: 400;
   line-height: 1;
 }
 
 /*
- * Il montepremi dimezzato c'e' gia' sotto i pezzi che cadono: salta fuori
- * mentre la targa si spacca, cosi' si legge subito quanto vale adesso.
+ * Il montepremi sceso c'e' gia' sotto i pezzi che cadono: salta fuori mentre
+ * la targa si spacca, cosi' si legge subito quanto vale adesso.
  */
 .ghi-montepremi__valore.is-nuovo {
   animation: ghi-valore-nuovo 640ms 120ms cubic-bezier(0.3, 1.5, 0.45, 1) both;
@@ -268,22 +373,20 @@
   0% {
     opacity: 0;
     transform: scale(0.4);
-    text-shadow: 0 0 0 rgba(255, 255, 255, 0);
   }
   55% {
     opacity: 1;
-    text-shadow: 0 0 14px rgba(255, 255, 255, 0.9);
+    transform: scale(1.25);
   }
   100% {
     transform: none;
-    text-shadow: none;
   }
 }
 
 /* La targa spaccata: due copie con il numero di prima, la meta' destra cade e la sinistra si inclina. */
 .ghi-montepremi__pezzi {
   position: absolute;
-  inset: 0;
+  inset: -2px;
   pointer-events: none;
 }
 
@@ -293,13 +396,12 @@
   display: grid;
   place-items: center;
   padding-top: 5cqw;
-  border-radius: inherit;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 46%),
-    linear-gradient(180deg, var(--ghi-oro), var(--ghi-oro-2));
+  border: 2px solid var(--ghi-ink);
+  border-radius: 8cqw;
+  background: linear-gradient(180deg, #ffe58a, #f2b33d);
+  color: #2a1f5c;
   font-family: var(--font-rounded);
-  font-size: 19cqw;
-  font-weight: 900;
+  font-size: 18cqw;
   line-height: 1;
 }
 
@@ -385,542 +487,491 @@
   }
 }
 
-/* ---------- La colonna delle cinque parole ---------- */
+/* ---------- Le cinque parole, sul palco sopra la ghigliottina ---------- */
 
-.ghi-colonna {
-  display: grid;
-  flex: none;
-  gap: 6px;
+.ghi-parole {
+  position: absolute;
+  top: 6cqh;
+  right: 12px;
+  left: 12px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
+  pointer-events: none;
 }
 
-.ghi-slot {
+.ghi-parola {
   position: relative;
-  display: grid;
-  grid-template-columns: 26px 1fr auto;
-  align-items: center;
-  gap: 10px;
-  min-height: clamp(30px, 4.8dvh, 42px);
-  padding: 0 12px 0 6px;
+  padding: 5px 12px;
+  border: var(--filo) solid var(--ghi-ink);
   border-radius: 12px;
-  background: linear-gradient(180deg, var(--ghi-schermo), var(--ghi-schermo-2));
-  box-shadow:
-    inset 0 0 0 1px rgba(185, 140, 255, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.ghi-slot:not(.is-piena) {
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: inset 0 0 0 1.5px rgba(185, 140, 255, 0.25);
-  border: 0;
-}
-
-.ghi-slot__n {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+  background: #fff1c9;
+  box-shadow: 0 3px 0 var(--ghi-ink);
+  color: #2a1f5c;
   font-family: var(--font-rounded);
-  font-size: var(--text-caption-1);
-  font-weight: 800;
-}
-
-.ghi-slot__parola {
-  overflow: hidden;
-  font-family: var(--font-rounded);
-  font-size: clamp(15px, 2.3dvh, 19px);
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
+  font-size: clamp(14px, 4.6cqw, 18px);
+  line-height: 1.1;
+  letter-spacing: 0.03em;
   white-space: nowrap;
+  animation: ghi-sale 0.7s calc(250ms + var(--i) * 280ms) cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-.ghi-slot.is-piena .ghi-slot__parola {
-  animation: ghi-entra 620ms var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
-}
-
-.ghi.is-fine .ghi-slot.is-piena .ghi-slot__parola,
-.ghi.is-verdetto .ghi-slot.is-piena .ghi-slot__parola {
+/* Riaperta a minuto in corso, o dopo, le parole ci sono gia'. */
+.ghi-parole.is-ferme .ghi-parola {
   animation: none;
 }
 
-@keyframes ghi-entra {
-  0% {
-    opacity: 0;
-    color: var(--ghi-oro);
-    transform: translateY(14px) scale(1.25);
-  }
-  60% {
-    opacity: 1;
-    color: var(--ghi-oro);
-  }
-  100% {
-    transform: none;
-  }
-}
-
-/* Dove la lama e' calata: un taglio rosso in fondo alla riga. */
-.ghi-slot__taglio {
-  width: 16px;
-  height: 16px;
+/* Una coppia sbagliata: il segno rosso della lama sull'angolo. */
+.ghi-parola.is-tagliata::after {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 14px;
+  height: 14px;
+  box-sizing: border-box;
+  border: 2px solid var(--ghi-ink);
   border-radius: 50%;
   background:
-    linear-gradient(135deg, transparent 44%, #fff 44%, #fff 56%, transparent 56%),
-    var(--ghi-sbagliata);
-  box-shadow: 0 0 10px rgba(255, 90, 95, 0.5);
+    linear-gradient(135deg, transparent 42%, #fff 42%, #fff 58%, transparent 58%),
+    #ff5c6b;
+  content: '';
 }
 
-/* Le cinque parole, una dopo l'altra, si accendono prima del minuto. */
-.ghi-colonna.is-accesa .ghi-slot.is-piena {
-  animation: ghi-accendi 700ms calc(var(--i) * 280ms + 250ms) ease-out both;
-}
-
-.ghi.is-finale .ghi-colonna.is-accesa .ghi-slot.is-piena,
-.ghi.is-busta .ghi-colonna.is-accesa .ghi-slot.is-piena {
-  animation: none;
-  box-shadow:
-    inset 0 0 0 1.5px rgba(255, 210, 90, 0.55),
-    0 0 14px -2px rgba(255, 210, 90, 0.35);
-}
-
-@keyframes ghi-accendi {
-  0% {
-    transform: scale(1);
-  }
-  40% {
-    transform: scale(1.04);
-    box-shadow:
-      inset 0 0 0 2px var(--ghi-oro),
-      0 0 26px 2px rgba(255, 210, 90, 0.6);
-  }
-  100% {
-    transform: none;
-    box-shadow:
-      inset 0 0 0 1.5px rgba(255, 210, 90, 0.55),
-      0 0 14px -2px rgba(255, 210, 90, 0.35);
-  }
-}
-
-/* Alla fine ogni parola ha la sua espressione, con la parola e la parola vincente in evidenza. */
-.ghi-colonna.is-spiegata .ghi-slot {
-  grid-template-columns: 26px 1fr auto;
-  grid-template-areas:
-    'n parola taglio'
-    'n spiegazione taglio';
-  row-gap: 1px;
-  padding-block: 7px;
-}
-
-.ghi-colonna.is-spiegata .ghi-slot__n {
-  grid-area: n;
-}
-
-.ghi-colonna.is-spiegata .ghi-slot__parola {
-  grid-area: parola;
-}
-
-.ghi-colonna.is-spiegata .ghi-slot__taglio {
-  grid-area: taglio;
-}
-
-.ghi-slot__spiegazione {
-  grid-area: spiegazione;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: var(--text-footnote);
-  line-height: 1.3;
-  animation: ghi-spiega 500ms calc(var(--i) * 120ms) ease-out both;
-}
-
-.ghi-slot__spiegazione .is-parola {
-  color: #fff;
-  font-weight: 800;
-}
-
-.ghi-slot__spiegazione .is-soluzione {
-  color: var(--ghi-oro);
-  font-weight: 800;
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 2px;
-}
-
-@keyframes ghi-spiega {
+@keyframes ghi-sale {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(70cqh) scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
-/* ---------- In mezzo: l'entrata, la coppia, il minuto, il verdetto ---------- */
+/* ---------- L'adesivo: salta fuori sopra la ghigliottina e se ne va da solo ---------- */
+
+.ghi-adesivo {
+  position: absolute;
+  top: 26%;
+  right: 0;
+  left: 0;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.ghi-adesivo span {
+  padding: 6px 22px;
+  border: 3px solid #2a1f5c;
+  border-radius: 18px;
+  font-family: var(--font-rounded);
+  font-size: clamp(26px, 9cqw, 34px);
+  line-height: 1.1;
+  white-space: nowrap;
+  opacity: 0;
+  animation-duration: var(--durata);
+  animation-fill-mode: forwards;
+}
+
+.ghi-adesivo.is-vivace span {
+  background: #5edb84;
+  box-shadow: 0 5px 0 #2a1f5c;
+  color: #2a1f5c;
+  animation-name: ghi-adesivo-vivace;
+}
+
+.ghi-adesivo.is-bordato span {
+  border-color: #e5383b;
+  background: #fffbf2;
+  box-shadow: 0 5px 0 #e5383b;
+  color: #d0262a;
+  animation-name: ghi-adesivo-bordato;
+}
+
+@keyframes ghi-adesivo-vivace {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-24deg);
+  }
+  18% {
+    opacity: 1;
+    transform: scale(1.12) rotate(-5deg);
+  }
+  30% {
+    transform: rotate(-6deg);
+  }
+  72% {
+    opacity: 1;
+    transform: rotate(-6deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-36px) rotate(-6deg) scale(0.9);
+  }
+}
+
+@keyframes ghi-adesivo-bordato {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(5deg);
+  }
+  15% {
+    opacity: 1;
+    transform: scale(1.05) rotate(4deg);
+  }
+  22% {
+    transform: translateX(-6px) rotate(4deg);
+  }
+  29% {
+    transform: translateX(6px) rotate(4deg);
+  }
+  36% {
+    transform: translateX(-3px) rotate(4deg);
+  }
+  43%,
+  72% {
+    opacity: 1;
+    transform: rotate(4deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(24px) rotate(4deg);
+  }
+}
+
+/* ---------- Sotto il palco ---------- */
 
 .ghi-centro {
+  container: ghi-centro / inline-size;
+  position: relative;
+  z-index: 2;
   display: flex;
   flex: 1;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
   min-height: 0;
 }
 
-.ghi.is-fine .ghi-centro {
-  flex: none;
+/* Il titolo di quel che succede, e accanto il suo tempo. */
+.ghi-testa {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 46px;
 }
 
-.ghi-intro {
-  display: grid;
-  justify-items: center;
-  gap: var(--sp-4);
-  text-align: center;
-  animation: ghi-spiega 600ms ease-out both;
-}
-
-.ghi-intro__testo {
-  max-width: 34ch;
+.ghi-testa__titolo {
+  flex: 1;
+  min-width: 0;
   margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: var(--text-subhead);
-  line-height: 1.4;
-}
-
-.ghi-annuncio {
-  margin: 0;
-  color: var(--ghi-oro);
+  color: var(--label);
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 900;
-  text-align: center;
-  text-shadow: 0 0 18px rgba(255, 210, 90, 0.55);
-  animation: ghi-annuncio 1.1s ease-in-out infinite alternate;
+  font-size: min(22px, 5.8cqw);
+  line-height: 1;
 }
 
-@keyframes ghi-annuncio {
-  from {
-    transform: scale(0.97);
+/* ---------- Prima di cominciare ---------- */
+
+.ghi-pronta {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: ghi-entra 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.ghi-pronta__carta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 14px 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
+  list-style: none;
+}
+
+.ghi-pronta__riga {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.ghi-punto {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+}
+
+.ghi-punto.is-rosa {
+  background: var(--ghigliottina-tinta);
+}
+
+.ghi-punto.is-giallo {
+  background: var(--giallo);
+}
+
+.ghi-punto.is-rosso {
+  background: #ff7a7a;
+}
+
+.ghi-comincia {
+  width: 100%;
+  height: 56px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 18px;
+  background: var(--ghigliottina-tinta);
+  box-shadow: var(--ombra-tasto);
+  color: #2a1f5c;
+  cursor: pointer;
+  font-family: var(--font-rounded);
+  font-size: 21px;
+  animation: ghi-respira 2.4s ease-in-out infinite;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+.ghi-comincia:active {
+  box-shadow: var(--ombra-tasto-giu);
+  transform: translateY(3px);
+  animation: none;
+}
+
+@keyframes ghi-respira {
+  0%,
+  100% {
+    transform: scale(1);
   }
-  to {
+  50% {
     transform: scale(1.03);
+  }
+}
+
+@keyframes ghi-entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
   }
 }
 
 /* ---------- La coppia ---------- */
 
 .ghi-coppia {
-  display: grid;
-  gap: var(--sp-3);
-}
-
-/* Il titolo della coppia e, accanto, il suo tempo. */
-.ghi-coppia__testa {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-3);
+  flex-direction: column;
+  gap: 12px;
 }
 
-.ghi-clessidra {
-  position: relative;
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 34px;
-  height: 34px;
+.ghi-coppia.is-esito .ghi-testa__titolo {
+  animation: ghi-titolo 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4);
 }
 
-.ghi-clessidra svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.ghi-clessidra__fondo {
-  fill: rgba(0, 0, 0, 0.25);
-  stroke: rgba(255, 255, 255, 0.12);
-  stroke-width: 3.5;
-}
-
-.ghi-clessidra__anello {
-  fill: none;
-  stroke: rgba(255, 210, 90, 0.45);
-  stroke-linecap: round;
-  stroke-width: 3.5;
-  transition:
-    stroke-dashoffset 120ms linear,
-    stroke 300ms ease;
-}
-
-.ghi-clessidra.is-accesa .ghi-clessidra__anello {
-  stroke: var(--ghi-oro);
-}
-
-.ghi-clessidra__secondi {
-  position: relative;
-  font-family: var(--font-rounded);
-  font-size: var(--text-footnote);
-  font-weight: 900;
-}
-
-.ghi-clessidra.is-urgente .ghi-clessidra__anello {
-  stroke: var(--ghi-sbagliata);
-}
-
-.ghi-clessidra.is-urgente {
-  animation: ghi-batte 1s ease-in-out infinite;
-}
-
-/*
- * Il tempo finito: tutte e due le parole si spengono, poi la giusta si accende
- * come dopo una scelta sbagliata, quando la lama ha gia' colpito; l'altra resta
- * spenta.
- */
-.ghi-coppia.is-scaduta.is-attesa .ghi-parola {
-  filter: grayscale(0.6) brightness(0.75);
-}
-
-.ghi-coppia.is-scaduta.is-esito .ghi-parola:not(.is-giusta) {
-  opacity: 0.4;
-  transform: scale(0.97);
-}
-
-.ghi-coppia.is-esito.is-scaduta .ghi-parola.is-giusta {
-  animation: ghi-giusta-dopo 2.3s ease-in-out forwards;
-}
-
-.ghi-coppia__titolo,
-.ghi-coppia__stato {
-  min-height: 1.3em;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-align: center;
-  text-transform: uppercase;
-}
-
-.ghi-coppia.is-esito .ghi-coppia__stato {
-  color: #fff;
-  font-size: var(--text-subhead);
-  animation: ghi-entra 500ms ease-out;
+@keyframes ghi-titolo {
+  from {
+    transform: scale(1.25);
+  }
 }
 
 .ghi-coppia__parole {
-  display: grid;
-  gap: var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-@container (min-width: 520px) {
+@container ghi-centro (min-width: 520px) {
   .ghi-coppia__parole {
-    grid-template-columns: 1fr 1fr;
+    flex-direction: row;
+  }
+
+  .ghi-tessera {
+    flex: 1;
   }
 }
 
-.ghi-parola {
-  position: relative;
-  min-height: clamp(54px, 8.5dvh, 74px);
-  padding: 0 var(--sp-4);
-  border: 0;
-  border-radius: 18px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 55%),
-    linear-gradient(180deg, var(--ghi-schermo), var(--ghi-schermo-2));
-  box-shadow:
-    inset 0 0 0 2px rgba(185, 140, 255, 0.55),
-    0 0 22px -6px rgba(185, 140, 255, 0.6);
-  color: #fff;
-  cursor: pointer;
-  font: inherit;
-  transition:
-    transform 260ms var(--ease-spring, ease),
-    opacity 260ms ease,
-    box-shadow 260ms ease,
-    background-color 260ms ease;
-  -webkit-tap-highlight-color: transparent;
+/* La coppia vista se ne va prima che arrivi la prossima: scivola a sinistra e si spegne. */
+.ghi-coppia.is-uscita .ghi-coppia__parole {
+  animation: ghi-esce 0.38s cubic-bezier(0.5, 0, 0.75, 0.4) both;
+  pointer-events: none;
 }
 
-.ghi-parola:disabled {
+@keyframes ghi-esce {
+  to {
+    opacity: 0;
+    transform: translateX(-46px) scale(0.96);
+  }
+}
+
+.ghi-tessera {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  min-height: clamp(56px, 8.5cqh, 66px);
+  padding: 8px 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.25s,
+    opacity 0.25s,
+    transform 0.12s,
+    box-shadow 0.12s;
+}
+
+/* Le due parole entrano dal basso, una appena dopo l'altra. */
+.ghi-coppia.is-coppia .ghi-tessera {
+  animation: ghi-tessera-entra 0.5s calc(var(--i) * 80ms) cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+@keyframes ghi-tessera-entra {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.92);
+  }
+}
+
+.ghi-tessera:not(:disabled):active {
+  box-shadow: 0 2px 0 var(--ink);
+  transform: translateY(3px);
+}
+
+.ghi-tessera:disabled {
   cursor: default;
 }
 
-.ghi-parola:not(:disabled):active {
-  transform: translateY(2px) scale(0.99);
-}
-
-.ghi-parola:focus-visible {
-  outline: 3px solid var(--ghi-oro);
+.ghi-tessera:focus-visible {
+  outline: 3px solid var(--brand);
   outline-offset: 3px;
 }
 
-.ghi-parola__testo {
+.ghi-tessera__testo {
   font-family: var(--font-rounded);
-  font-size: clamp(19px, 3dvh, 26px);
-  font-weight: 900;
-  letter-spacing: 0.12em;
+  font-size: clamp(22px, 7cqw, 27px);
+  line-height: 1;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-/* Le due parole entrano in scena da due parti, una appena dopo l'altra. */
-.ghi-coppia.is-coppia .ghi-parola.is-prima {
-  animation: ghi-da-sinistra 560ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+.ghi-tessera__spiega {
+  font-size: 12.5px;
+  font-weight: 900;
+  animation: ghi-appare 0.3s 0.2s both;
 }
 
-.ghi-coppia.is-coppia .ghi-parola.is-seconda {
-  animation: ghi-da-destra 560ms 110ms cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+/* L'attesa: la parola scelta si fa gialla e pulsa col rullo, l'altra si spegne. */
+.ghi-tessera.is-attesa {
+  background: #ffe07a;
+  color: #2a1f5c;
+  animation: ghi-attesa 0.55s ease-in-out infinite;
 }
 
-@keyframes ghi-da-sinistra {
-  from {
-    opacity: 0;
-    transform: translateX(-60%) skewX(8deg);
+.ghi-tessera.is-giusta {
+  background: var(--tile-correct);
+  color: #2a1f5c;
+  animation: ghi-giusta 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+.ghi-tessera.is-sbagliata {
+  background: #ff8a8a;
+  color: #2a1f5c;
+  animation: ghi-no 0.5s 0.25s ease-in-out both;
+}
+
+/* Se la scelta era sbagliata, o il tempo e' finito, la giusta aspetta che la lama abbia colpito. */
+.ghi-coppia.is-esito:has(.is-sbagliata) .ghi-tessera.is-giusta,
+.ghi-coppia.is-esito.is-scaduta .ghi-tessera.is-giusta {
+  animation: ghi-giusta 0.5s 0.8s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+.ghi-tessera.is-spenta {
+  opacity: 0.6;
+}
+
+@keyframes ghi-attesa {
+  0%,
+  100% {
+    transform: scale(1);
   }
-}
-
-@keyframes ghi-da-destra {
-  from {
-    opacity: 0;
-    transform: translateX(60%) skewX(-8deg);
+  50% {
+    transform: scale(1.03);
   }
-}
-
-/* L'attesa: la parola scelta brilla d'oro e pulsa, l'altra si spegne. */
-.ghi-parola.is-scelta {
-  box-shadow:
-    inset 0 0 0 3px var(--ghi-oro),
-    0 0 30px -4px rgba(255, 210, 90, 0.75);
-  transform: scale(1.03);
-}
-
-.ghi-coppia.is-attesa .ghi-parola.is-scelta {
-  animation: ghi-pulsa 460ms ease-in-out infinite alternate;
-}
-
-.ghi-parola.is-altra {
-  opacity: 0.4;
-  transform: scale(0.97);
-}
-
-@keyframes ghi-pulsa {
-  from {
-    box-shadow:
-      inset 0 0 0 3px var(--ghi-oro),
-      0 0 18px -6px rgba(255, 210, 90, 0.6);
-  }
-  to {
-    box-shadow:
-      inset 0 0 0 3px #fff3c4,
-      0 0 38px 0 rgba(255, 210, 90, 0.9);
-  }
-}
-
-/* L'esito: la giusta si accende di verde e sale verso la colonna; la sbagliata trema, rossa. */
-.ghi-parola.is-giusta {
-  opacity: 1;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent 55%),
-    linear-gradient(180deg, #2fcf78, #128a4b);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.4),
-    0 0 34px -2px rgba(61, 220, 132, 0.8);
-  animation: ghi-giusta 1.1s ease-in-out forwards;
-}
-
-.ghi-parola.is-sbagliata {
-  opacity: 1;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.16), transparent 55%),
-    linear-gradient(180deg, #ff5a5f, #a8192c);
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 255, 255, 0.35),
-    0 0 30px -4px rgba(255, 90, 95, 0.8);
-  animation: ghi-trema 420ms ease-in-out;
-}
-
-/* Se la scelta era sbagliata, la giusta aspetta che la lama abbia colpito prima di accendersi. */
-.ghi-coppia.is-esito:has(.is-sbagliata) .ghi-parola.is-giusta {
-  animation: ghi-giusta-dopo 2.3s ease-in-out forwards;
 }
 
 @keyframes ghi-giusta {
   0% {
-    transform: scale(1.03);
-  }
-  25% {
-    transform: scale(1.08);
-  }
-  65% {
-    opacity: 1;
     transform: scale(1);
   }
+  45% {
+    transform: scale(1.06) rotate(-1deg);
+  }
   100% {
-    opacity: 0;
-    transform: translateY(-70px) scale(0.6);
+    transform: scale(1);
   }
 }
 
-@keyframes ghi-giusta-dopo {
-  0%,
-  35% {
-    opacity: 0.4;
-    background: linear-gradient(180deg, var(--ghi-schermo), var(--ghi-schermo-2));
-    transform: scale(0.97);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.06);
-  }
-  80% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-80px) scale(0.6);
-  }
-}
-
-@keyframes ghi-trema {
+@keyframes ghi-no {
   0%,
   100% {
     transform: none;
   }
   20% {
-    transform: translateX(-8px) rotate(-1deg);
+    transform: translateX(-9px);
   }
   40% {
-    transform: translateX(7px) rotate(1deg);
+    transform: translateX(8px);
   }
   60% {
     transform: translateX(-5px);
   }
   80% {
-    transform: translateX(3px);
+    transform: translateX(4px);
   }
 }
 
-/* ---------- Il minuto ---------- */
-
-.ghi-finale {
-  display: grid;
-  gap: var(--sp-3);
-  animation: ghi-spiega 500ms ease-out both;
+@keyframes ghi-appare {
+  from {
+    opacity: 0;
+  }
 }
 
-.ghi-finale__tempo {
+/* ---------- Il tempo: un anello che si svuota ---------- */
+
+.ghi-tempo {
   position: relative;
   display: grid;
+  flex: none;
   place-items: center;
-  width: clamp(58px, 9dvh, 78px);
-  aspect-ratio: 1;
+  width: 46px;
+  height: 46px;
 }
 
-.ghi-finale__tempo svg {
+.ghi-tempo--grande {
+  width: 52px;
+  height: 52px;
+}
+
+.ghi-tempo svg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -928,116 +979,168 @@
   transform: rotate(-90deg);
 }
 
-.ghi-finale__fondo {
-  fill: rgba(0, 0, 0, 0.25);
-  stroke: rgba(255, 255, 255, 0.12);
+.ghi-tempo__fondo {
+  fill: var(--surface);
+  stroke: var(--ink-tenue);
   stroke-width: 5;
 }
 
-.ghi-finale__anello {
+.ghi-tempo__anello {
   fill: none;
-  stroke: var(--ghi-oro);
-  stroke-linecap: round;
+  stroke: var(--ghigliottina-tinta);
   stroke-width: 5;
-  transition: stroke-dashoffset 220ms linear;
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 120ms linear,
+    stroke 300ms ease;
 }
 
-.ghi-finale__secondi {
+.ghi-tempo:not(.is-acceso) .ghi-tempo__anello {
+  opacity: 0.6;
+}
+
+.ghi-tempo__n {
   position: relative;
+  color: var(--label);
   font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 900;
+  font-size: 17px;
+  line-height: 1;
 }
 
-.ghi-finale.is-urgente .ghi-finale__anello {
-  stroke: var(--ghi-sbagliata);
+.ghi-tempo.is-poco .ghi-tempo__anello {
+  stroke: #ff4d5e;
 }
 
-.ghi-finale.is-urgente .ghi-finale__tempo {
-  animation: ghi-batte 1s ease-in-out infinite;
+.ghi-tempo.is-poco .ghi-tempo__n {
+  color: var(--colpito, #e5383b);
+  animation: ghi-trema 0.5s ease-in-out infinite;
 }
 
-@keyframes ghi-batte {
+@keyframes ghi-trema {
   0%,
   100% {
-    transform: scale(1);
+    transform: rotate(0);
   }
-  15% {
-    transform: scale(1.1);
+  25% {
+    transform: rotate(-8deg);
   }
+  75% {
+    transform: rotate(8deg);
+  }
+}
+
+/* ---------- Le cinque parole che salgono, e il minuto ---------- */
+
+.ghi-annuncio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 12px 0 0;
+  color: var(--label);
+  font-family: var(--font-rounded);
+  font-size: 26px;
+  line-height: 1.1;
+  text-align: center;
+  animation: ghi-entra 0.4s ease-out both;
+}
+
+.ghi-annuncio__sotto {
+  color: var(--label-secondary);
+  font-family: var(--font-text);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.ghi-finale {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  animation: ghi-entra 0.4s ease-out both;
+}
+
+.ghi-nonso {
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 2px 0 var(--ink);
+  color: var(--label);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ghi-nonso:active:not(:disabled) {
+  box-shadow: none;
+  transform: translateY(2px);
+}
+
+.ghi-nonso:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 /*
- * La parola vincente si scrive con la tastiera del gioco: il tempo a sinistra,
- * la parola che si compone a ogni tasto, "Non lo so" a destra. La parola non
- * ha caselle vuote: chi gioca non sa quanto e' lunga, e la vede crescere.
+ * La parola vincente si compone a ogni tasto: nessuna casella vuota, perché
+ * chi gioca non sa quanto e' lunga, e la vede crescere.
  */
-.ghi-finale {
-  justify-items: stretch;
-  width: 100%;
-}
-
-.ghi-finale__riga {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--sp-3);
-}
-
-.ghi-finale__parola {
-  --lato: min(34px, calc((100cqw - 124px) / var(--n) - 4px));
+.ghi-riga {
+  --lato: min(30px, calc((100cqw - 40px) / var(--n) * 1.25));
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: calc(var(--lato) * 1.15 + 16px);
+  gap: 2px;
+  height: 62px;
+  box-sizing: border-box;
   margin: 0;
-  padding: 8px 6px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, var(--ghi-schermo), var(--ghi-schermo-2));
-  box-shadow:
-    inset 0 0 0 2px rgba(255, 210, 90, 0.7),
-    0 0 26px -8px rgba(255, 210, 90, 0.6);
+  padding: 0 12px;
+  overflow: hidden;
+  border: var(--filo) solid var(--ink);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 4px 0 var(--ink);
+  color: var(--label);
 }
 
-.ghi-finale__invito {
-  color: rgba(255, 255, 255, 0.4);
-  font-size: var(--text-footnote);
-  font-weight: 700;
+.ghi-riga__invito {
+  color: var(--label-secondary);
+  font-size: 15px;
+  font-weight: 800;
 }
 
-.ghi-finale__lettera {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: var(--lato);
-  height: calc(var(--lato) * 1.15);
-  border-radius: calc(var(--lato) * 0.2);
-  background: linear-gradient(180deg, #fff3c4, var(--ghi-oro) 55%, var(--ghi-oro-2));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-  color: #2a1500;
+.ghi-riga__lettera {
   font-family: var(--font-rounded);
-  font-size: calc(var(--lato) * 0.6);
-  font-weight: 900;
+  font-size: var(--lato);
   line-height: 1;
-  animation: ghi-tasto 180ms cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  animation: ghi-tasto 0.14s ease-out;
 }
 
 @keyframes ghi-tasto {
-  from {
-    transform: translateY(-6px) scale(1.25);
-    filter: brightness(1.4);
+  50% {
+    transform: scale(1.18);
   }
 }
 
-/* Il cursore: dove va la lettera dopo, che respira. */
-.ghi-finale__cursore {
+.ghi-cursore {
   flex: none;
   width: 3px;
-  height: calc(var(--lato) * 0.9);
+  height: 32px;
+  margin-left: 3px;
   border-radius: 2px;
-  background: var(--ghi-oro);
-  animation: ghi-cursore 1s steps(2, jump-none) infinite;
+  background: var(--ghigliottina-tinta);
+  animation: ghi-cursore 1s steps(1) infinite;
+}
+
+.ghi-riga.is-vuota .ghi-cursore {
+  order: -1;
+  margin: 0 6px 0 0;
 }
 
 @keyframes ghi-cursore {
@@ -1046,377 +1149,375 @@
   }
 }
 
-.ghi-finale__nonso {
-  justify-self: end;
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.ghi-finale__nonso:disabled {
-  cursor: default;
-  opacity: 0.4;
-}
-
-.ghi-finale.is-inviata .ghi-finale__parola {
-  animation: ghi-busta-parola 900ms ease-in-out infinite alternate;
-}
-
-@keyframes ghi-busta-parola {
-  to {
-    box-shadow:
-      inset 0 0 0 3px var(--ghi-oro),
-      0 0 34px -4px rgba(255, 210, 90, 0.85);
-  }
-}
-
-.ghi-finale .ghi-finale__tempo {
-  width: 52px;
-}
-
-.ghi-finale .ghi-finale__secondi {
-  font-size: var(--text-headline);
-}
-
-/* La tastiera sta sul palco scuro: tasti di vetro, l'invio d'oro quando c'e' una parola. */
 .ghi-tastiera {
-  margin-top: var(--sp-1);
+  margin-top: auto;
 }
 
 .ghi .keyboard {
-  --tasto-alto: clamp(40px, 6.2dvh, 52px);
+  --tasto-alto: clamp(40px, 6.4cqh, 50px);
 }
 
-.ghi-tastiera .key--azione {
-  font-weight: 800;
-}
-
-/*
- * Mentre si scrive la parola vincente la scena si stringe: la ghigliottina si
- * fa piccola, le cinque parole salgono sotto di lei in due file, e la tastiera
- * prende il fondo. Le parole scivolano dal loro posto al nuovo (useScivola).
- */
-.ghi.is-compatta {
-  gap: var(--sp-2);
-}
-
-.ghi.is-compatta .ghi-palco {
-  height: clamp(84px, 19dvh, 168px);
-}
-
-.ghi-palco__macchina {
-  transform-origin: top center;
-}
-
-.ghi.is-compatta .ghi-colonna {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-}
-
-.ghi.is-compatta .ghi-slot {
-  grid-template-columns: auto auto;
-  gap: 6px;
-  min-height: clamp(30px, 4.4dvh, 38px);
-  padding: 0 14px;
-  border-radius: 999px;
-}
-
-.ghi.is-compatta .ghi-slot__n {
-  display: none;
-}
-
-.ghi.is-compatta .ghi-slot__parola {
-  font-size: clamp(13px, 2.1dvh, 17px);
-  letter-spacing: 0.08em;
-}
-
-.ghi.is-compatta .ghi-slot__taglio {
-  width: 12px;
-  height: 12px;
-}
-
-.ghi.is-finale .ghi-centro,
-.ghi.is-busta .ghi-centro {
-  justify-content: flex-end;
-}
-
-/* ---------- La busta ---------- */
+/* ---------- La busta con la parola vincente ---------- */
 
 .ghi-busta {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: var(--sp-4);
-  background: rgba(8, 4, 24, 0.72);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  animation: ghi-velo 300ms ease-out both;
-}
-
-@keyframes ghi-velo {
-  from {
-    opacity: 0;
-  }
-}
-
-.ghi-busta__carta {
   position: relative;
-  width: 168px;
-  height: 112px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #fffaf0, #efe2c4);
-  box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.7);
-  perspective: 400px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-top: -34px;
+  padding: 30px 14px 18px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fff6db, #ffe7a8);
+  box-shadow: 0 5px 0 var(--ink);
+  color: #2a1f5c;
   animation:
-    ghi-busta-arriva 700ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both,
-    ghi-busta-trema 110ms 900ms linear 12 alternate;
+    ghi-busta-arriva 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.3) both,
+    ghi-busta-trema 110ms 0.9s linear 12 alternate;
 }
 
-/* Le pieghe della busta: i due triangoli di sotto. */
-.ghi-busta__carta::after {
+/* Il lembo della busta, in cima. */
+.ghi-busta::before {
+  position: absolute;
+  top: -2.5px;
+  left: 50%;
+  width: 120px;
+  height: 26px;
+  margin-left: -60px;
+  box-sizing: border-box;
+  border: var(--filo) solid var(--ink);
+  border-top: 0;
+  border-radius: 0 0 60px 60px;
+  background: #f2c55a;
   content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background:
-    linear-gradient(148deg, transparent 49%, rgba(140, 110, 60, 0.25) 50%, transparent 51%),
-    linear-gradient(-148deg, transparent 49%, rgba(140, 110, 60, 0.25) 50%, transparent 51%);
 }
 
-.ghi-busta__lembo {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 1;
-  height: 62%;
-  background: linear-gradient(180deg, #f6ead0, #e3d2ad);
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
-  transform-origin: top center;
-  animation: ghi-lembo 500ms 2.15s ease-in forwards;
+.ghi-busta.is-aperta {
+  animation: none;
 }
 
 .ghi-busta__sigillo {
-  position: absolute;
-  top: 44%;
-  left: 50%;
-  z-index: 2;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
+  border: var(--filo) solid #2a1f5c;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ff8a8a, #b3122c);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  background: #ff5c6b;
+  box-shadow: 0 3px 0 #2a1f5c;
   color: #fff;
   font-family: var(--font-rounded);
-  font-weight: 900;
-  transform: translate(-50%, -50%);
-  animation: ghi-sigillo 400ms 2s ease-in forwards;
+  font-size: 22px;
 }
 
-.ghi-busta__testo {
+.ghi-busta__scritta {
   margin: 0;
-  color: var(--ghi-oro);
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
+  font-size: 14px;
   font-weight: 900;
-  text-shadow: 0 0 16px rgba(255, 210, 90, 0.5);
-  animation: ghi-spiega 600ms 300ms ease-out both;
 }
 
-@keyframes ghi-busta-arriva {
-  from {
-    opacity: 0;
-    transform: translateY(-140px) rotate(-14deg) scale(0.8);
-  }
-}
-
-@keyframes ghi-busta-trema {
-  from {
-    transform: rotate(-1.6deg);
-  }
-  to {
-    transform: rotate(1.6deg);
-  }
-}
-
-@keyframes ghi-lembo {
-  to {
-    transform: rotateX(180deg);
-    filter: brightness(0.85);
-  }
-}
-
-@keyframes ghi-sigillo {
-  to {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1.6);
-  }
-}
-
-/* ---------- Il verdetto ---------- */
-
-.ghi-verdetto {
-  display: grid;
-  justify-items: center;
-  gap: var(--sp-2);
-  text-align: center;
-}
-
-.ghi-verdetto__titolo {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.ghi-verdetto__parola {
+.ghi-busta__lettere {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 5px;
   margin: 0;
-  perspective: 600px;
+  perspective: 400px;
 }
 
-.ghi-verdetto__lettera {
+.ghi-busta__lettera {
   display: grid;
   place-items: center;
-  width: clamp(30px, 9cqw, 44px);
-  aspect-ratio: 1;
-  border-radius: 9px;
-  background: linear-gradient(180deg, var(--ghi-oro), var(--ghi-oro-2));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 3px 0 rgba(0, 0, 0, 0.35);
-  color: #3b2200;
+  width: 32px;
+  height: 42px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 8px;
+  background: #ffe07a;
+  box-shadow: 0 3px 0 #2a1f5c;
   font-family: var(--font-rounded);
-  font-size: clamp(18px, 5.4cqw, 26px);
-  font-weight: 900;
-  animation: ghi-lettera 520ms calc(var(--i) * 120ms + 150ms) cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  font-size: 24px;
+  animation: ghi-gira 0.45s calc(500ms + var(--i) * 180ms) cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  backface-visibility: hidden;
 }
 
-.ghi-verdetto.is-giusta .ghi-verdetto__lettera {
-  background: linear-gradient(180deg, #4ce894, #149a52);
-  color: #fff;
+.ghi-busta__lettera.is-giusta {
+  background: #5edb84;
 }
 
-@keyframes ghi-lettera {
+@keyframes ghi-busta-arriva {
   from {
     opacity: 0;
-    transform: rotateX(90deg) translateY(-10px);
+    transform: translateY(14px) scale(0.6);
   }
 }
 
-.ghi-verdetto__esito {
-  margin: var(--sp-2) 0 0;
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 900;
-  animation: ghi-esito 600ms calc(var(--n) * 120ms + 450ms) cubic-bezier(0.3, 1.4, 0.5, 1) both;
-}
-
-.ghi-verdetto.is-giusta .ghi-verdetto__esito {
-  color: var(--ghi-oro);
-  text-shadow: 0 0 18px rgba(255, 210, 90, 0.55);
-}
-
-.ghi-verdetto.is-sbagliata .ghi-verdetto__esito {
-  color: #ffb3b5;
-  font-size: var(--text-headline);
-}
-
-@keyframes ghi-esito {
+@keyframes ghi-busta-trema {
   from {
-    opacity: 0;
-    transform: scale(0.6);
+    transform: rotate(-1.4deg);
+  }
+  to {
+    transform: rotate(1.4deg);
   }
 }
 
-.ghi-verdetto.is-subito .ghi-verdetto__lettera,
-.ghi-verdetto.is-subito .ghi-verdetto__esito {
-  animation: none;
+@keyframes ghi-gira {
+  from {
+    transform: rotateX(90deg);
+  }
 }
 
-/* ---------- La fine ---------- */
+/* ---------- La fine: una carta sopra la scena ---------- */
 
+.ghi-velo {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 0 12px;
+  border-radius: 26px;
+  background: var(--velo);
+  animation: ghi-appare 0.3s ease-out both;
+  scrollbar-width: none;
+}
+
+/* La carta della fine e' chiara in tutti e due i temi, come un biglietto: i token dentro seguono. */
 .ghi-fine {
-  display: grid;
-  gap: var(--sp-4);
-  padding-top: var(--sp-2);
-  animation: ghi-spiega 500ms ease-out both;
-}
-
-.ghi-totale {
-  display: grid;
-  justify-items: center;
-  gap: 2px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 20px 18px 18px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fff1c9, #f8d9ff);
+  box-shadow: var(--ombra-carta);
+  color: #2a1f5c;
+  color-scheme: light;
   text-align: center;
+  animation: ghi-compare 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
-.ghi-totale__valore {
-  margin: 0;
+@keyframes ghi-compare {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+}
+
+.ghi-fine__icona {
+  display: grid;
+  animation: ghi-galleggia 4.2s ease-in-out infinite;
+}
+
+@keyframes ghi-galleggia {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.ghi-fine__titolo {
+  margin: 2px 0 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-1);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.ghi-fine__riga {
+  margin: 0;
+  color: #4e4479;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.ghi-espressioni {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 0;
+  padding: 8px 10px;
+  border: 2px dashed rgba(42, 31, 92, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  list-style: none;
+}
+
+.ghi-espressione {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  animation: ghi-entra 0.4s calc(0.2s + var(--n, 0) * 80ms) ease-out both;
+}
+
+.ghi-espressione__parola {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  width: 36%;
+  overflow: hidden;
+  font-family: var(--font-rounded);
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghi-espressione__taglio {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  box-sizing: border-box;
+  border: 2px solid #2a1f5c;
+  border-radius: 50%;
+  background: #ff5c6b;
+}
+
+.ghi-espressione__frase {
+  min-width: 0;
+  color: #4e4479;
+}
+
+.ghi-espressione__frase .is-parola {
+  color: #2a1f5c;
   font-weight: 900;
 }
 
-.ghi-totale__dettaglio,
-.ghi-piede {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: var(--text-footnote);
-  text-align: center;
+.ghi-espressione__frase .is-soluzione {
+  color: #2a1f5c;
+  font-weight: 900;
+  text-decoration: underline;
+  text-decoration-color: var(--ghigliottina-tinta);
+  text-decoration-thickness: 3px;
+  text-underline-offset: 2px;
 }
 
-.ghi-azioni {
+.ghi-fine__timbro {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  box-sizing: border-box;
+  margin-top: 4px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 50%;
+  background: var(--giallo);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 3px 0 #2a1f5c;
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 24px;
+  animation: ghi-timbra 0.7s 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.ghi-fine__timbro.is-vinta {
+  background: #5edb84;
+}
+
+@keyframes ghi-timbra {
+  0% {
+    opacity: 0;
+    transform: scale(1.9) rotate(-24deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.88) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.06) rotate(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ghi-fine__piede {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--sp-3);
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  margin-top: 6px;
 }
 
-.ghi-link {
+/* I bottoni della fine, che passano le pagine: tasti pieni col filo, uno o due per riga. */
+.ghi-fine__bottoni {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.ghi-fine__bottone {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  min-height: 44px;
-  padding: 0 var(--sp-4);
-  border: 0;
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  min-height: 50px;
+  padding: 0 10px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 16px;
+  background: #fffbf2;
+  box-shadow:
+    0 4px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: #2a1f5c;
   cursor: pointer;
-  font: inherit;
-  font-weight: 700;
+  font-family: var(--font-rounded);
+  font-size: 17px;
   text-decoration: none;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
 }
 
-.ghi-link:active {
-  transform: translateY(1px);
+.ghi-fine__bottone:active {
+  box-shadow:
+    0 1px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  transform: translateY(3px);
+}
+
+.ghi-fine__bottone.is-giallo {
+  background: var(--giallo);
+}
+
+.ghi-fine__bottone.is-menta {
+  background: var(--menta);
+}
+
+.ghi-fine__nota {
+  margin: 0;
+  color: #4e4479;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 /* Prima che la partita arrivi: lo studio con le luci spente, che respira. */
 .ghi-attesa {
-  flex: 1;
   width: 100%;
-  max-width: 620px;
-  min-height: 0;
+  max-width: 560px;
+  height: clamp(170px, 40dvh, 300px);
   margin: 0 auto;
-  border-radius: 28px;
-  background: linear-gradient(180deg, var(--ghi-palco-1), var(--ghi-palco-2));
+  border: var(--filo) solid #120c2b;
+  border-radius: 26px;
+  background: radial-gradient(ellipse at 50% 0%, #5a46c4 0%, #2a1f78 48%, #150f45 100%);
+  box-shadow: 0 5px 0 #120c2b;
   animation: ghi-attesa 1.2s ease-in-out infinite alternate;
 }
 
@@ -1426,26 +1527,67 @@
   }
 }
 
-/* ---------- Telefono di traverso: la ghigliottina a sinistra, il resto a destra ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .ghi-fascio,
+  .ghi-lampada,
+  .ghi-lama__filo,
+  .ghi-montepremi.is-vinto,
+  .ghi-parola,
+  .ghi-adesivo span,
+  .ghi-pronta,
+  .ghi-comincia,
+  .ghi-coppia .ghi-tessera,
+  .ghi-tessera__spiega,
+  .ghi-tempo.is-poco .ghi-tempo__n,
+  .ghi-annuncio,
+  .ghi-finale,
+  .ghi-riga__lettera,
+  .ghi-cursore,
+  .ghi-busta,
+  .ghi-busta__lettera,
+  .ghi-velo,
+  .ghi-fine,
+  .ghi-fine__icona,
+  .ghi-espressione,
+  .ghi-fine__timbro {
+    animation: none;
+  }
+
+  /* L'adesivo compare e se ne va, senza muoversi. */
+  .ghi-adesivo span {
+    animation: ghi-adesivo-fermo var(--durata) steps(1, end) forwards;
+  }
+
+  @keyframes ghi-adesivo-fermo {
+    0%,
+    85% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+/* ---------- Telefono di traverso: il palco a sinistra, il resto a destra ---------- */
 
 @media (orientation: landscape) and (max-height: 560px) {
   .ghi {
+    container-type: normal;
     display: grid;
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-    grid-template-rows: auto 1fr auto;
-    align-content: start;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: start;
     max-width: 900px;
-    overflow: visible;
   }
 
-  .ghi-palco {
-    grid-row: 1 / span 3;
+  .ghi-palco,
+  .ghi.is-compatta .ghi-palco {
+    position: sticky;
+    top: 0;
     height: min(78dvh, 300px);
   }
 
-  .ghi-colonna,
-  .ghi-centro,
-  .ghi-fine {
-    grid-column: 2;
+  .ghi .keyboard {
+    --tasto-alto: 40px;
   }
 }

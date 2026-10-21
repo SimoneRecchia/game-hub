@@ -1,24 +1,292 @@
-/* La domanda di un gioco della Fortuna: il quiz, con quel che c'e' in palio sotto il titolo. */
+/*
+ * La domanda di un gioco della Fortuna, come nel mockup: in cima la categoria
+ * in una capsula e il moltiplicatore d'oro, sotto la miccia gialla, e una carta
+ * sola con la domanda e le risposte color crema, con la lettera nel tondo.
+ * Le parti sono quelle del quiz (la carta, le risposte, la miccia), vestite qui
+ * dentro `.ruota-quiz`: la sala e' scura in tutti e due i temi.
+ */
 
-.ct-quiz__palio {
+.ruota-quiz {
+  gap: 12px;
+  padding-top: 10px;
+}
+
+.ct-domanda__testa {
+  position: relative;
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 0;
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
+  justify-content: center;
+  gap: 12px;
+  min-height: 40px;
+  padding-inline: 70px;
 }
 
-.ct-quiz__palio .u-tabnum {
-  font-weight: 700;
-  color: var(--label);
-}
-
-.ct-quiz__moltiplicatore {
-  padding: 1px 9px;
+.ct-domanda__cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 16px;
+  border: 2.5px solid var(--ink);
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--colore) 22%, var(--surface));
-  box-shadow: inset 0 0 0 1.5px var(--colore);
-  color: var(--label);
-  font-weight: 800;
+  background: var(--colore);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    0 3px 0 var(--ink);
+  color: var(--ink);
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.1;
+  white-space: nowrap;
+  animation: ct-domanda-entra 420ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.ct-domanda__molt {
+  flex: none;
+  color: #ffd23f;
+  font-family: var(--font-rounded);
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 3px 0 var(--ct-oro-scuro);
+  animation: ct-domanda-entra 420ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 90ms both;
+}
+
+/* I secondi stanno a destra, fuori dal centro: la capsula e il moltiplicatore restano in mezzo. */
+.ct-domanda__tempo {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* La pillola si misura sul suo contenitore, che qui e' grande quanto lei: senza tetto, se no si stringe. */
+.ct-domanda__tempo .pillola {
+  max-width: none;
+}
+
+/* A risposta data la capsula e' solo l'icona: tonda, e un poco piu' grande. */
+.ct-domanda__verdetto .pillola {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+}
+
+/* Neutra: lilla con l'inchiostro, come il biglietto del giro dopo. */
+.ct-domanda__verdetto:not(.is-giusta) .pillola {
+  background: #c9b8ff;
+  color: #2a1f5c;
+}
+
+@keyframes ct-domanda-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.8);
+  }
+}
+
+/* La miccia: una barra gialla con il filo d'inchiostro. */
+.ruota-quiz > .quiz-miccia {
+  flex: none;
+  height: 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.ruota-quiz > .quiz-miccia .quiz-miccia__fuoco {
+  background: linear-gradient(90deg, #ffb02e, #ffd84d);
+}
+
+/* La carta: la domanda in alto, a sinistra, e le risposte sotto, tutte in fila. */
+.ct-domanda__carta {
+  position: relative;
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 18px 16px 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 24px;
+  background: #35315f;
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.08),
+    0 5px 0 var(--ink);
+  animation: quiz-carta-entra 480ms var(--ease-spring) both;
+}
+
+/* Con la cartina o la scheda che insegnano, la carta prende lo spazio che resta. */
+.ct-domanda__carta.is-rivela {
+  flex: 1 1 0;
+}
+
+.ct-domanda__carta.is-giusta {
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.08),
+    0 5px 0 var(--ink),
+    0 0 0 4px #5edb84;
+}
+
+/* Una risposta che non era quella: l'anello lilla, non rosso. La giusta, verde, dice gia' tutto. */
+.ct-domanda__carta.is-sbagliata {
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.08),
+    0 5px 0 var(--ink),
+    0 0 0 4px #c9b8ff;
+}
+
+.ct-domanda__carta .quiz-carta {
+  flex: 0 1 auto;
+  align-items: stretch;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  animation: none;
+}
+
+.ct-domanda__carta.is-rivela .quiz-carta {
+  flex: 1 1 0;
+}
+
+.ct-domanda__carta .quiz-carta__emblema {
+  display: none;
+}
+
+.ct-domanda__carta .quiz-carta__testo {
+  max-width: none;
+  color: #fff6e0;
+  font-family: var(--font-text);
+  font-size: clamp(1.125rem, 5cqw, 1.25rem);
+  font-weight: 900;
+  line-height: 1.28;
+  letter-spacing: 0;
+  text-align: left;
+}
+
+/* Le risposte: una sotto l'altra, tasti crema con il filo e l'ombra secca, che premuti scendono. */
+.ct-domanda__carta .quiz-opzioni:not(.is-bandiere) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.ct-domanda__carta .quiz-opzione {
+  min-height: 54px;
+  padding: 8px 12px;
+  gap: 12px;
+  border: 2.5px solid var(--ink);
+  border-radius: 16px;
+  background-color: #fffbf2;
+  background-image: none;
+  box-shadow: 0 4px 0 var(--ink);
+  color: #2a1f5c;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.ct-domanda__carta .quiz-opzione:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--ink);
+}
+
+@media (hover: hover) {
+  .ct-domanda__carta .quiz-opzione:hover:not(:disabled) {
+    box-shadow:
+      0 4px 0 var(--ink),
+      0 0 0 3px #ffd84d;
+  }
+}
+
+.ct-domanda__carta .quiz-opzione__lettera {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #2a1f5c;
+  background: none;
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.ct-domanda__carta .quiz-opzione.is-scelta {
+  box-shadow:
+    0 4px 0 var(--ink),
+    0 0 0 3px #ffd84d;
+}
+
+.ct-domanda__carta .quiz-opzione.is-scelta .quiz-opzione__lettera {
+  background: #ffd84d;
+  color: #2a1f5c;
+}
+
+.ct-domanda__carta .quiz-opzione.is-giusta {
+  background-color: #5edb84;
+  color: #2a1f5c;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.ct-domanda__carta .quiz-opzione.is-sbagliata {
+  background-color: #c9b8ff;
+  color: #2a1f5c;
+  box-shadow: 0 4px 0 var(--ink);
+}
+
+.ct-domanda__carta .quiz-opzione.is-giusta .quiz-opzione__lettera,
+.ct-domanda__carta .quiz-opzione.is-sbagliata .quiz-opzione__lettera {
+  background: rgba(255, 255, 255, 0.45);
+  color: #2a1f5c;
+}
+
+/*
+ * La risposta scelta che non era quella: lilla, con la sua lettera e non con
+ * la croce del quiz. La lettera la conta il CSS, perché la carta e' del quiz.
+ */
+.ct-domanda__carta .quiz-opzioni {
+  counter-reset: ct-opzione;
+}
+
+.ct-domanda__carta .quiz-opzione {
+  counter-increment: ct-opzione;
+}
+
+.ct-domanda__carta .quiz-opzione.is-sbagliata .quiz-opzione__lettera:not(.is-bandiera) svg {
+  display: none;
+}
+
+.ct-domanda__carta .quiz-opzione.is-sbagliata .quiz-opzione__lettera:not(.is-bandiera)::after {
+  content: counter(ct-opzione, upper-alpha);
+}
+
+/* Le altre si fanno grigie, non trasparenti: si leggono ancora. */
+.ct-domanda__carta .quiz-opzione.is-spenta {
+  opacity: 1;
+  background-color: #9a96b4;
+  color: #2a1f5c;
+}
+
+.ct-domanda__riga {
+  flex: none;
+  margin: 0;
+  color: #fff6e0;
+  font-size: 15px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.ct-domanda__riga .u-tabnum {
+  color: #ffd23f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ct-domanda__cat,
+  .ct-domanda__molt,
+  .ct-domanda__carta {
+    animation: none;
+  }
 }

@@ -22,17 +22,14 @@
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: 11px var(--sp-5);
-  border-radius: var(--r-pill);
-  background: rgba(18, 19, 26, 0.92);
-  color: #fff;
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.28),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+  padding: 10px var(--sp-5);
+  border: var(--filo) solid #120c2b;
+  border-radius: 16px;
+  background: #2a1f5c;
+  color: #fff6e0;
+  box-shadow: 0 4px 0 #120c2b;
   font-size: var(--text-subhead);
-  font-weight: 600;
+  font-weight: 800;
   text-align: center;
   animation: toast-in 420ms var(--ease-spring);
 }
@@ -40,10 +37,10 @@
 .toast::before {
   content: '';
   flex: none;
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: #8b85ff;
+  background: #a29cff;
 }
 
 .toast--success::before {

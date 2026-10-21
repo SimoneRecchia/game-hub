@@ -1,410 +1,431 @@
-/* ─────────────────────────  Chi c'e'  ───────────────────────── */
+/* ─────────────────────────  La ruota panoramica  ───────────────────────── */
 
-/* L'eroe delle Libere (Vetrina.css): gli amici online, in fila, con quel che fanno. */
+/*
+ * L'eroe delle Libere: una carta con il cielo, la ruota panoramica a sinistra,
+ * con gli amici online nelle cabine, e a destra quanti sono e il tasto per
+ * invitarli. La ruota gira piano; le cabine girano con lei, e dentro ognuna la
+ * faccina gira al contrario, cosi' resta dritta.
+ */
 .chi-ce {
-  min-height: 176px;
+  overflow: hidden;
+  display: flex;
+  min-height: 206px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 26px;
+  background: linear-gradient(180deg, #cfefff, #ffe6f1);
+  background: linear-gradient(180deg, light-dark(#cfefff, #2c3c86), light-dark(#ffe6f1, #4a2a7a));
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
 }
 
-.chi-ce__punto {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #4ade80;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
-  animation: chi-ce-respira 2.4s var(--ease-in-out) infinite;
+/* Le stelle, solo di notte. */
+.chi-ce::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(light-dark(transparent, rgba(255, 246, 224, 0.65)) 1px, transparent 1.4px),
+    radial-gradient(light-dark(transparent, rgba(255, 226, 122, 0.5)) 1px, transparent 1.4px);
+  background-size:
+    37px 31px,
+    53px 47px;
+  background-position:
+    4px 6px,
+    21px 17px;
+  pointer-events: none;
 }
 
-@keyframes chi-ce-respira {
-  50% {
-    box-shadow: 0 0 0 5px rgba(74, 222, 128, 0.25);
-  }
+.chi-ce__ruota {
+  position: relative;
+  flex: none;
+  width: 184px;
+  align-self: stretch;
+  min-height: 206px;
+}
+
+.chi-ce__sostegno,
+.chi-ce__raggi {
+  position: absolute;
+  max-width: none;
+  overflow: visible;
+  fill: none;
+  stroke: light-dark(var(--ink), #c9bef0);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chi-ce__sostegno {
+  left: 0;
+  bottom: 0;
+  width: 184px;
+  height: 206px;
+  stroke-width: 3;
+}
+
+.chi-ce__giro {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  width: 156px;
+  height: 156px;
+  animation: chi-ce-gira 40s linear infinite;
+}
+
+.chi-ce__raggi {
+  inset: 0;
+  width: 156px;
+  height: 156px;
+  stroke-width: 2.5;
+}
+
+.chi-ce__cerchio {
+  stroke: light-dark(var(--ink), #ffe27a);
+  stroke-width: 3;
+  fill: rgba(255, 255, 255, 0.18);
+}
+
+.chi-ce__mozzo-anello {
+  stroke: #ff7ab6;
+}
+
+.chi-ce__mozzo {
+  fill: var(--giallo);
+  stroke: var(--ink);
 }
 
 .chi-ce__amici {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: var(--sp-2);
-  margin: auto 0 0;
-  padding: 0;
-  list-style: none;
+  position: absolute;
+  inset: 0;
 }
 
 .chi-ce__amici > li {
-  min-width: 0;
-  animation: chi-ce-arriva 560ms var(--ease-spring) both;
-  animation-delay: calc(160ms + var(--n, 0) * 70ms);
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
+  animation: chi-ce-sale 520ms var(--ease-bounce) both;
+  animation-delay: calc(200ms + var(--n) * 90ms);
 }
 
-@keyframes chi-ce-arriva {
+@keyframes chi-ce-sale {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.85);
+    transform: scale(0.4);
   }
 }
 
+/* Una scheda ritrovata ha le cabine gia' al loro posto (vedi `.pagina--ferma` in base.css). */
 .pagina--ferma .chi-ce__amici > li {
   animation: none;
 }
 
-.chi-ce__amico {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  padding: var(--sp-2) 2px;
-  border-radius: var(--r-lg);
-  color: #fff;
-  transition:
-    transform var(--dur-base) var(--ease-spring),
-    background-color var(--dur-fast) var(--ease-out);
+.chi-ce__dritta {
+  display: block;
+  width: 38px;
+  height: 38px;
+  animation: chi-ce-gira 40s linear infinite reverse;
 }
 
-.chi-ce__amico:active {
-  transform: scale(0.92);
+.chi-ce__cabina {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
 }
 
-@media (hover: hover) {
-  .chi-ce__amico:hover {
-    background: rgba(255, 255, 255, 0.14);
+.chi-ce__cabina .avatar {
+  border-radius: 12px 12px 18px 18px;
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.chi-ce__cabina.is-vuota {
+  width: 32px;
+  height: 32px;
+  margin: 3px;
+  border: 2.5px dashed light-dark(rgba(42, 31, 92, 0.4), rgba(201, 190, 240, 0.5));
+  border-radius: 10px 10px 16px 16px;
+}
+
+@keyframes chi-ce-gira {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-.chi-ce__avatar {
+.chi-ce__testi {
   position: relative;
-  display: inline-grid;
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.55),
-    0 8px 18px rgba(120, 30, 60, 0.3);
-}
-
-.chi-ce__online {
-  position: absolute;
-  right: 0;
-  bottom: 1px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 2.5px #fff;
-}
-
-.chi-ce__nome {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--text-footnote);
-  font-weight: 800;
-}
-
-.chi-ce__dove {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--text-caption-2);
-  font-weight: 600;
-  opacity: 0.85;
-}
-
-.chi-ce__altri {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.24);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.4);
-  font-family: var(--font-rounded);
-  font-size: var(--text-headline);
-  font-weight: 800;
-}
-
-.chi-ce__vuoto {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
-  justify-self: center;
-}
-
-.chi-ce__nessuno {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-top: auto;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 16px 16px 0;
 }
 
 .chi-ce__titolo {
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
-  letter-spacing: var(--tracking-tight);
+  font-size: 1.5625rem;
+  line-height: 1;
+  text-shadow: 0 2px 0 light-dark(transparent, var(--ink));
 }
 
-.chi-ce__sotto {
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  opacity: 0.9;
+.chi-ce__titolo.scheletro {
+  height: 50px;
+}
+
+.chi-ce__nomi {
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+.chi-ce__nomi.scheletro {
+  height: 16px;
+}
+
+.chi-ce__invita {
+  display: grid;
+  place-items: center;
+  height: 46px;
+  margin-top: 6px;
+  padding: 0 12px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 15px;
+  background: var(--giallo);
+  box-shadow: var(--ombra-tasto);
+  color: var(--ink);
+  font-family: var(--font-rounded);
+  font-size: 1.0625rem;
+  text-align: center;
+  animation: chi-ce-respira 2.6s ease-in-out infinite;
+  transition: box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.chi-ce__invita:active {
+  animation: none;
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
+}
+
+@keyframes chi-ce-respira {
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+/* Su un telefono stretto la ruota si rimpicciolisce, e il testo ha il suo posto. */
+@media (max-width: 360px) {
+  .chi-ce__ruota {
+    width: 150px;
+  }
+
+  .chi-ce__ruota > * {
+    transform: scale(0.82);
+    transform-origin: 0 100%;
+  }
 }
 
 /* ─────────────────────────  Le partite in corso  ───────────────────────── */
 
 .libere__in-corso {
-  display: grid;
-  gap: var(--sp-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.in-corso {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  min-height: 64px;
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: 22px;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  color: var(--label);
-  transition: transform var(--dur-base) var(--ease-spring);
-}
-
-.in-corso:active {
-  transform: scale(0.98);
-}
-
-.in-corso .copertina {
-  --lato: 40px;
-  flex: none;
-}
-
-.in-corso__testo {
-  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 14px;
+  padding: 0 2px 4px;
+}
+
+/* Un biglietto che ondeggia appena, storto di un grado. */
+.partita-biglietto {
+  display: block;
+  color: var(--ink);
+  transform: rotate(var(--giro));
+  animation: partita-ondeggia 5s ease-in-out infinite;
+  animation-delay: var(--ritardo);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.partita-biglietto:active {
+  animation: none;
+  transform: rotate(var(--giro)) translateY(3px);
+}
+
+@keyframes partita-ondeggia {
+  50% {
+    transform: rotate(calc(var(--giro) * -0.6));
+  }
+}
+
+.partita-biglietto .biglietto__carta {
+  padding: 6px 12px;
+}
+
+.partita-biglietto__dentro {
+  display: flex;
+  align-items: stretch;
+  min-height: 58px;
+  border: 1.5px dashed rgba(42, 31, 92, 0.4);
+  border-radius: 6px;
+}
+
+.partita-biglietto__gioco {
+  flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
 }
 
-.in-corso__nome {
-  font-weight: 700;
+.partita-biglietto__vetrino {
+  --lato: 46px;
 }
 
-.in-corso__con {
+.partita-biglietto__testi {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.partita-biglietto__numero {
+  font-size: 0.625rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(42, 31, 92, 0.72);
+}
+
+.partita-biglietto__titolo {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--text-footnote);
-  color: var(--label-secondary);
+  font-family: var(--font-rounded);
+  font-size: 1.125rem;
+  line-height: 1.1;
 }
 
-.in-corso__turno {
-  padding: 3px 9px;
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--libere) 15%, transparent);
-  color: var(--libere);
+.partita-biglietto__sotto {
   font-size: var(--text-caption-1);
   font-weight: 800;
-  white-space: nowrap;
+  color: #4e4479;
 }
 
-.in-corso__freccia {
+.partita-biglietto__talloncino {
   flex: none;
-  color: var(--label-tertiary);
-}
-
-/* ─────────────────────────  Le tessere  ───────────────────────── */
-
-/*
- * Le libere e i giochi da tavolo, una tessera ciascuno: la copertina e il
- * nome, su un fondo appena tinto del colore del gioco. Tre per riga sul
- * telefono, di piu' dove c'e' posto; le colonne sono `minmax(0, 1fr)`, perché
- * "Battaglia navale" non allarghi la sua. Sotto il dito o il puntatore la
- * copertina galleggia un poco: nelle Libere si gioca senza fretta.
- */
-.libere__tessere {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-@media (min-width: 560px) {
-  .libere__tessere {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-
-.libere-tessera {
-  position: relative;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-2);
-  height: 100%;
-  padding: var(--sp-4) var(--sp-2) var(--sp-3);
-  border-radius: 26px;
-  background:
-    radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--c1) 18%, transparent), transparent 70%),
-    var(--surface);
-  box-shadow:
-    var(--shadow-sm),
-    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 20%, transparent);
-  color: var(--label);
+  justify-content: center;
+  width: 82px;
+  padding: 4px;
+  border-left: 2px dashed rgba(42, 31, 92, 0.45);
+  font-family: var(--font-rounded);
+  font-size: 1rem;
+  line-height: 1.05;
   text-align: center;
-  transition:
-    transform var(--dur-base) var(--ease-spring),
-    box-shadow var(--dur-base) var(--ease-out);
 }
 
-.libere-tessera:active {
-  transform: scale(0.95);
+.partita-biglietto__chi {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.libere-tessera .copertina {
-  --lato: 54px;
-  flex: none;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--c2) 26%, transparent);
-  transition: transform var(--dur-slow) var(--ease-spring);
+.partita-biglietto.is-turno .partita-biglietto__talloncino {
+  animation: chi-ce-respira 1.8s ease-in-out infinite;
 }
 
-@media (hover: hover) {
-  .libere-tessera:hover {
-    transform: translateY(-3px);
-    box-shadow:
-      var(--shadow-md),
-      inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 30%, transparent);
-  }
+/* ─────────────────────────────  Le famiglie  ───────────────────────────── */
 
-  .libere-tessera:hover .copertina {
-    transform: translateY(-3px) rotate(-4deg) scale(1.05);
-  }
-}
-
-.libere-tessera__nome {
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  line-height: 1.25;
-  text-wrap: balance;
-  overflow-wrap: anywhere;
-}
-
-/* Il motto e la freccia sono del computer: sul telefono la tessera e' l'icona col nome. */
-.libere-tessera__motto,
-.libere-tessera__freccia {
-  display: none;
-}
-
-.libere-tessera__testo {
-  display: contents;
-}
-
-/* Le famiglie, una sotto l'altra con lo spazio delle sezioni della pagina. */
 .libere__famiglie {
   display: flex;
   flex-direction: column;
   gap: var(--sp-6);
 }
 
-/*
- * Sul computer i giochi sono gia' nel menu a sinistra: qui le famiglie stanno
- * affiancate, ognuna in una carta, e ogni gioco e' una riga con il suo motto,
- * come gli elenchi delle Impostazioni.
- */
+.libere__giochi {
+  padding: 2px 12px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  margin-bottom: 5px;
+}
+
+.libere__giochi > li + li {
+  border-top: 2px dashed var(--separator);
+}
+
+.libere-gioco {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 0;
+  color: var(--label);
+}
+
+.libere-gioco__vetrino {
+  --lato: 54px;
+  transform: rotate(calc(var(--giro) * 0.4));
+  transition: transform var(--dur-base) var(--ease-bounce);
+}
+
+.libere-gioco:active .libere-gioco__vetrino {
+  transform: scale(0.92) rotate(var(--giro));
+}
+
+@media (hover: hover) {
+  .libere-gioco:hover .libere-gioco__vetrino {
+    transform: translateY(-2px) rotate(var(--giro));
+  }
+}
+
+.libere-gioco__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.libere-gioco__nome {
+  font-family: var(--font-rounded);
+  font-size: 1.125rem;
+  line-height: 1.05;
+}
+
+.libere-gioco__motto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+.libere-gioco__freccia {
+  flex: none;
+  color: var(--label-tertiary);
+  stroke-width: 2.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chi-ce__giro,
+  .chi-ce__dritta,
+  .chi-ce__invita,
+  .partita-biglietto,
+  .partita-biglietto.is-turno .partita-biglietto__talloncino {
+    animation: none !important;
+  }
+}
+
+/* Sul computer le famiglie stanno affiancate, due per riga: i giochi sono gia' nel menu a sinistra. */
 @media (min-width: 900px) {
   .libere__famiglie {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--sp-6) var(--sp-5);
     align-items: start;
-  }
-
-  .libere__tessere {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-    overflow: hidden;
-    border-radius: var(--r-lg);
-    background: var(--surface);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .libere__tessere > li + li .libere-tessera::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: calc(var(--sp-4) + 44px + var(--sp-3));
-    right: 0;
-    border-top: 0.5px solid var(--separator);
-  }
-
-  .libere-tessera {
-    overflow: visible;
-    flex-direction: row;
-    gap: var(--sp-3);
-    padding: var(--sp-3) var(--sp-4);
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-    text-align: left;
-  }
-
-  .libere-tessera .copertina {
-    --lato: 44px;
-    box-shadow: 0 6px 14px color-mix(in srgb, var(--c2) 22%, transparent);
-  }
-
-  .libere-tessera__testo {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    min-width: 0;
-    gap: 1px;
-  }
-
-  .libere-tessera__nome {
-    font-size: var(--text-body);
-    font-weight: 600;
-  }
-
-  .libere-tessera__motto {
-    display: block;
-    overflow: hidden;
-    color: var(--label-secondary);
-    font-size: var(--text-footnote);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .libere-tessera__freccia {
-    display: block;
-    flex: none;
-    color: var(--label-tertiary);
-  }
-
-  .libere-tessera:active {
-    transform: none;
-    background: var(--fill-tertiary);
-  }
-}
-
-@media (min-width: 900px) and (hover: hover) {
-  .libere-tessera:hover {
-    transform: none;
-    background: var(--fill-quaternary);
-    box-shadow: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chi-ce__punto,
-  .chi-ce__amici > li {
-    animation: none;
+    gap: var(--sp-6) var(--sp-5);
   }
 }

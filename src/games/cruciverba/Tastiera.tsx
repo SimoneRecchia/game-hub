@@ -1,4 +1,5 @@
 import { TastieraLettere } from '@/components/TastieraGioco'
+import { SEGNI, Segno } from './segni'
 import type { Direzione } from './useCruciverba'
 
 /**
@@ -9,7 +10,8 @@ import type { Direzione } from './useCruciverba'
  * da inviare — la griglia si salva da sola — mentre passare da orizzontale a
  * verticale e' il gesto che si fa di continuo, e toccare due volte la stessa
  * casella non e' ovvio a chi non lo sa. Sta dove sta l'invio, in basso a
- * destra, del grigio dei tasti di servizio.
+ * destra, nell'azzurro del gioco: la freccia e sotto la direzione in cui si
+ * scrive adesso.
  */
 interface Props {
   direzione: Direzione
@@ -27,7 +29,12 @@ export function Tastiera({ direzione, disabled, onLettera, onCancella, onDirezio
       onLettera={onLettera}
       onCancella={onCancella}
       azione={{
-        etichetta: <span aria-hidden="true">{direzione === 'o' ? '↕' : '↔'}</span>,
+        etichetta: (
+          <span className="ctastiera__dir" aria-hidden="true">
+            <Segno d={direzione === 'o' ? SEGNI.orizzontale : SEGNI.verticale} size={22} spessore={2.6} />
+            <span>{direzione === 'o' ? 'Orizzontale' : 'Verticale'}</span>
+          </span>
+        ),
         aria: direzione === 'o' ? 'Scrivi in verticale' : 'Scrivi in orizzontale',
         onClick: onDirezione,
         pronta: false,

@@ -5,6 +5,7 @@ import App from './App'
 import { TransizioniProvider } from './app/navigazione'
 import { AuthProvider } from './lib/auth'
 import { ToastProvider } from './components/Toast'
+import './styles/fonts.css'
 import './styles/tokens.css'
 import './styles/base.css'
 

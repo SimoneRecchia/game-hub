@@ -1,15 +1,20 @@
 /*
- * Le Sequenze: in cima come sta andando — i cinque turni della classificata,
- * il livello della libera, i due giocatori della sfida —, in mezzo la tavola,
- * sotto che cosa fare. La tavola prende l'altezza che resta: la fascia in
- * mezzo e' un contenitore, e la tavola si misura sul suo lato piu' corto, in
- * proporzione (cento per centoventi, come in shared/sequenze.ts).
+ * Le Sequenze, come nell'album: in cima una carta con il conto — il livello,
+ * i pallini dei tocchi e il record, o i due giocatori della sfida —, in mezzo
+ * una tavola di legno con nove cubetti crema sparsi, sotto che cosa fare. La
+ * tavola prende l'altezza che resta: la fascia in mezzo e' un contenitore, e la
+ * tavola si misura sul suo lato piu' corto, in proporzione (cento per
+ * centoventi, come in shared/sequenze.ts).
  */
 .seq {
+  --seq: #4adbe6;
+  --seq-scuro: #1ba9b6;
+  --seq-ok: #5edb84;
+  --seq-ko: #ff5c6b;
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--sp-3);
+  gap: 14px;
   width: 100%;
   max-width: 560px;
   min-height: 0;
@@ -26,48 +31,181 @@
   min-height: 0;
 }
 
-/* ---------- La tavola ---------- */
+/* Con sotto che cosa fare: la tavola in alto e la riga subito dopo, nello spazio che le si lascia (`--seq-sotto`). */
+.seq-campo.is-con-sotto {
+  --seq-sotto: 44px;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.seq-campo.is-fine {
+  --seq-sotto: 150px;
+}
+
+/* ---------- Il conto in cima ---------- */
+
+.seq-conto {
+  flex: none;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 360px);
+  margin: 0 auto;
+  padding: 8px 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
+}
+
+.seq-voce {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1;
+}
+
+.seq-voce.is-destra {
+  align-items: flex-end;
+}
+
+.seq-etichetta {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--label-secondary);
+  white-space: nowrap;
+}
+
+/* Il numero: a ogni livello nuovo nasce di nuovo (la sua chiave e' la lunghezza) e sale al suo posto. */
+.seq-numero {
+  font-family: var(--font-rounded);
+  font-size: 34px;
+  line-height: 1.05;
+  animation: seq-sale 450ms cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
+}
+
+@keyframes seq-sale {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.6);
+  }
+}
+
+.seq-pallini {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 5px;
+  min-height: 12px;
+}
+
+.seq-pallino {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: transparent;
+  transition:
+    background-color 120ms var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+
+.seq-pallino.is-pieno {
+  background: var(--seq);
+  transform: scale(1.12);
+}
+
+.seq-pallino.is-sbagliato {
+  background: var(--seq-ko);
+  transform: scale(1.12);
+}
+
+/* ---------- La tavola di legno ---------- */
 
 .seq-tavola {
   position: relative;
   flex: none;
-  width: min(100cqw, 100cqh * 100 / 120, 470px);
+  width: min(100cqw, (100cqh - 8px - var(--seq-sotto, 0px)) * 100 / 120, 470px);
   aspect-ratio: 100 / 120;
-  border-radius: 7% / 5.8%;
-  background:
-    radial-gradient(120% 70% at 30% 0%, rgba(255, 255, 255, 0.09), transparent 60%),
-    linear-gradient(165deg, var(--seq-tavola-1), var(--seq-tavola-2));
+  border: 3px solid var(--ink);
+  border-radius: 28px;
+  background: linear-gradient(172deg, #edbb7c 0%, #d79a5a 48%, #c2804a 100%);
+  background: linear-gradient(
+    172deg,
+    light-dark(#edbb7c, #c99159) 0%,
+    light-dark(#d79a5a, #a86c38) 50%,
+    light-dark(#c2804a, #8c5428) 100%
+  );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 10px 30px -12px var(--shadow-tint);
+    0 6px 0 var(--ink),
+    inset 0 3px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -12px 26px rgba(90, 40, 10, 0.22);
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
-  transition: box-shadow var(--dur-base) var(--ease-out);
+  transition: box-shadow 250ms var(--ease-out);
 }
 
-/* Mentre si guarda la tavola e' un poco piu' scura attorno ai cubetti: la luce si vede meglio. */
+/* Le venature del legno: righe appena storte e due nodi. */
+.seq-venature {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.55;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(94deg, transparent 0 17px, rgba(110, 55, 15, 0.18) 18px 19px, transparent 20px 37px),
+    radial-gradient(ellipse 40px 10px at 72% 30%, rgba(110, 55, 15, 0.22), transparent 70%),
+    radial-gradient(ellipse 30px 8px at 24% 76%, rgba(110, 55, 15, 0.2), transparent 70%);
+}
+
+/* Mentre si guarda, la tavola si scurisce attorno: la luce si vede meglio. */
 .seq-tavola.is-guarda {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 40px rgba(0, 0, 0, 0.35),
-    0 10px 30px -12px var(--shadow-tint);
+    0 6px 0 var(--ink),
+    inset 0 3px 0 rgba(255, 255, 255, 0.4),
+    inset 0 0 60px rgba(40, 15, 0, 0.45);
 }
 
-/* Quando tocca a chi gioca, un filo dell'acqua del gioco attorno alla tavola. */
+/* Quando tocca a chi gioca, un filo del colore del gioco attorno alla tavola. */
 .seq-tavola.is-tocca {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    inset 0 0 0 2px rgba(111, 243, 255, 0.35),
-    0 10px 30px -12px var(--shadow-tint);
+    0 6px 0 var(--ink),
+    inset 0 3px 0 rgba(255, 255, 255, 0.4),
+    0 0 0 4px var(--seq),
+    0 0 26px 6px rgba(74, 219, 230, 0.45);
 }
 
+.seq-tavola.is-sbagliata {
+  animation: seq-tavola-trema 400ms ease-out;
+}
+
+@keyframes seq-tavola-trema {
+  20% {
+    transform: translateX(-7px) rotate(-0.6deg);
+  }
+  40% {
+    transform: translateX(7px) rotate(0.6deg);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+/* Un cubetto: il bottone sta al suo posto, girato a mano; la faccia si alza, si accende, scende. */
 .seq-cubetto {
   position: absolute;
   padding: 0;
   border: 0;
-  border-radius: 20%;
+  border-radius: 22%;
   background: transparent;
   cursor: default;
   transform: rotate(var(--r));
@@ -79,152 +217,204 @@
 }
 
 .seq-cubetto:focus-visible {
-  outline: 3px solid var(--seq-acceso);
+  outline: 3px solid #8a7bff;
   outline-offset: 3px;
 }
 
-/*
- * La faccia del cubetto: vetro scuro con il filo di luce in alto e l'ombra
- * secca sotto, come i tasti del Wordle. Premuto scende, non rimpicciolisce.
- */
 .seq-cubetto__faccia {
   position: absolute;
   inset: 0;
+  border: var(--filo) solid var(--ink);
   border-radius: inherit;
-  background: linear-gradient(160deg, var(--seq-cubetto), var(--seq-cubetto-2));
+  background: linear-gradient(160deg, #fffbf2 0%, #f3e6cc 100%);
   box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.16),
-    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
-    0 4px 0 rgba(0, 0, 0, 0.42),
-    0 9px 14px -4px rgba(0, 0, 0, 0.45);
+    inset 0 3px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -3px 0 rgba(120, 80, 30, 0.16),
+    0 5px 0 var(--ink),
+    0 10px 12px -4px rgba(60, 25, 5, 0.5);
   transition:
-    background 120ms var(--ease-out),
-    box-shadow 120ms var(--ease-out),
-    transform 120ms var(--ease-out);
+    transform 120ms ease-out,
+    background 120ms,
+    box-shadow 120ms;
 }
 
-.seq-cubetto.is-acceso .seq-cubetto__faccia,
-.seq-cubetto.is-toccato .seq-cubetto__faccia {
-  background: radial-gradient(circle at 50% 38%, #ffffff 0, var(--seq-acceso) 42%, var(--sequenze-1) 100%);
-  box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.7),
-    0 0 0 2px rgba(255, 255, 255, 0.5),
-    0 0 26px 8px rgba(111, 243, 255, 0.55),
-    0 4px 0 rgba(0, 40, 60, 0.5);
-  transition-duration: 40ms;
+/* Il riflesso in alto, come su una tessera lucida. */
+.seq-cubetto__faccia::after {
+  content: '';
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: 12%;
+  height: 26%;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0));
+  pointer-events: none;
 }
 
-.seq-cubetto.is-toccato .seq-cubetto__faccia {
-  transform: translateY(3px);
+.seq-cubetto.is-acceso .seq-cubetto__faccia {
+  transform: translateY(-8px) scale(1.08);
+  background: radial-gradient(circle at 50% 38%, #fff 0, #a6f3f8 32%, var(--seq) 62%, var(--seq-scuro) 100%);
   box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.7),
-    0 0 0 2px rgba(255, 255, 255, 0.45),
-    0 0 18px 4px rgba(111, 243, 255, 0.45),
-    0 1px 0 rgba(0, 40, 60, 0.5);
+    inset 0 3px 0 rgba(255, 255, 255, 0.9),
+    0 13px 0 -1px var(--ink),
+    0 0 0 3px rgba(255, 255, 255, 0.7),
+    0 0 30px 10px rgba(74, 219, 230, 0.65);
+  transition-duration: 60ms;
+}
+
+/* Toccato: scende sulla sua ombra, acceso del colore del gioco (la chiave lo fa ripartire a ogni tocco). */
+.seq-cubetto.is-toccato .seq-cubetto__faccia {
+  animation: seq-premi 240ms ease-out;
+}
+
+@keyframes seq-premi {
+  0% {
+    transform: translateY(4px);
+    background: var(--seq);
+    box-shadow:
+      inset 0 3px 0 rgba(255, 255, 255, 0.6),
+      0 1px 0 var(--ink),
+      0 0 22px 6px rgba(74, 219, 230, 0.55);
+  }
 }
 
 .seq-cubetto.is-giusto .seq-cubetto__faccia {
-  background: radial-gradient(circle at 50% 38%, #e9ffef 0, var(--seq-giusto) 55%, #1f9f4a 100%);
+  background: radial-gradient(circle at 50% 38%, #f0fff4 0, var(--seq-ok) 60%, #2fae58 100%);
   box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.6),
-    0 0 22px 5px rgba(61, 220, 110, 0.45),
-    0 4px 0 rgba(0, 50, 20, 0.5);
-  animation: seq-salta 420ms var(--ease-bounce);
+    inset 0 3px 0 rgba(255, 255, 255, 0.7),
+    0 5px 0 var(--ink),
+    0 0 22px 6px rgba(94, 219, 132, 0.55);
+  animation: seq-salta 450ms cubic-bezier(0.2, 0.9, 0.3, 1.5);
 }
 
 .seq-cubetto.is-sbagliato .seq-cubetto__faccia {
-  background: radial-gradient(circle at 50% 38%, #ffe4e1 0, var(--seq-sbagliato) 55%, #c4271d 100%);
+  background: radial-gradient(circle at 50% 38%, #fff0ee 0, var(--seq-ko) 60%, #d63a45 100%);
   box-shadow:
-    inset 0 1.5px 0 rgba(255, 255, 255, 0.5),
-    0 0 22px 5px rgba(255, 90, 78, 0.45),
-    0 4px 0 rgba(60, 0, 0, 0.5);
-  animation: seq-trema 380ms var(--ease-out);
+    inset 0 3px 0 rgba(255, 255, 255, 0.6),
+    0 5px 0 var(--ink),
+    0 0 22px 6px rgba(255, 92, 107, 0.5);
+  animation: seq-scuoti 380ms ease-out;
 }
 
-/* Quello che andava toccato: bordato, e pulsa, cosi' si vede dov'era. */
+/* Quello che andava toccato: bordato e pulsa, cosi' si vede dov'era. */
 .seq-cubetto.is-atteso .seq-cubetto__faccia {
   box-shadow:
-    inset 0 0 0 3px var(--seq-acceso),
-    0 0 16px 2px rgba(111, 243, 255, 0.35),
-    0 4px 0 rgba(0, 0, 0, 0.42);
-  animation: seq-pulsa 900ms var(--ease-out) 2;
+    inset 0 0 0 4px var(--seq),
+    0 5px 0 var(--ink),
+    0 0 18px 4px rgba(74, 219, 230, 0.5);
+  animation: seq-pulsa 900ms ease-in-out 2;
 }
 
 @keyframes seq-salta {
   40% {
-    transform: translateY(-6%) scale(1.06);
+    transform: translateY(-12px) scale(1.06);
+  }
+  70% {
+    transform: translateY(2px);
   }
 }
 
-@keyframes seq-trema {
-  20%,
-  60% {
-    transform: translateX(-5%);
+@keyframes seq-scuoti {
+  20% {
+    transform: translateX(-5px) rotate(-5deg);
   }
-  40%,
+  40% {
+    transform: translateX(5px) rotate(5deg);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
   80% {
-    transform: translateX(5%);
+    transform: translateX(2px);
   }
 }
 
 @keyframes seq-pulsa {
   50% {
-    transform: scale(1.08);
+    transform: scale(1.1);
   }
 }
 
-/* ---------- In cima: i turni ---------- */
-
-.seq-turni {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.seq-turno {
+/* L'adesivo di una sequenza giusta: salta fuori sopra la tavola, storto, e se ne va. */
+.seq-bravo {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: var(--fill-quaternary);
-  box-shadow: inset 0 0 0 1.5px var(--separator);
-  color: var(--label-secondary);
+  pointer-events: none;
+}
+
+.seq-bravo__carta {
+  padding: 10px 22px 8px;
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  background: var(--seq);
+  box-shadow:
+    0 5px 0 var(--ink),
+    inset 0 3px 0 rgba(255, 255, 255, 0.55);
+  color: #1b1440;
   font-family: var(--font-rounded);
-  font-size: var(--text-headline);
-  font-weight: 800;
+  font-size: 34px;
   line-height: 1;
+  animation: seq-bravo 900ms both;
 }
 
-.seq-turno__sotto {
-  display: block;
-  margin-top: 1px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  opacity: 0.8;
+.seq-bravo__carta.is-b {
+  --giro: 5deg;
 }
 
-.seq-turno.is-corrente {
-  box-shadow: inset 0 0 0 2px var(--sequenze-1);
-  color: var(--label);
-}
-
-.seq-turno.is-chiuso {
-  background: linear-gradient(160deg, var(--sequenze-1), var(--sequenze-2));
-  box-shadow: var(--edge-light), var(--shadow-key);
-  color: #fff;
-  animation: seq-salta 520ms var(--ease-bounce);
-}
-
-.seq-turno.is-nove {
-  background: linear-gradient(160deg, var(--oro), var(--sequenze-2));
+@keyframes seq-bravo {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(calc(var(--giro, -6deg) * -2.6));
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1.14) rotate(calc(var(--giro, -6deg) / 2));
+  }
+  34%,
+  78% {
+    opacity: 1;
+    transform: scale(1) rotate(var(--giro, -6deg));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.9) rotate(var(--giro, -6deg));
+  }
 }
 
 /* ---------- Sotto: che cosa fare ---------- */
+
+.seq-messaggio {
+  flex: none;
+  min-height: 24px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 900;
+  text-align: center;
+  color: var(--label-secondary);
+}
+
+.seq-messaggio.is-tocca,
+.seq-messaggio.is-guarda,
+.seq-messaggio.is-giusta {
+  color: var(--label);
+}
+
+.seq-messaggio.is-sbagliata {
+  color: var(--red);
+}
+
+.seq-messaggio.is-guarda {
+  animation: seq-respira 1.4s ease-in-out infinite;
+}
+
+@keyframes seq-respira {
+  50% {
+    opacity: 0.7;
+  }
+}
 
 .seq-piede {
   display: flex;
@@ -232,8 +422,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-2);
-  min-height: 104px;
+  gap: 10px;
+  min-height: 60px;
   text-align: center;
 }
 
@@ -241,139 +431,14 @@
   margin: 0;
   color: var(--label);
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
-}
-
-.seq-stato.is-guarda {
-  color: var(--label-secondary);
-}
-
-.seq-stato.is-giusta {
-  color: var(--tile-correct);
-}
-
-.seq-stato.is-sbagliata {
-  color: var(--seq-sbagliato);
+  font-size: 22px;
 }
 
 .seq-sotto {
   margin: 0;
   color: var(--label-secondary);
-  font-size: var(--text-subhead);
-}
-
-.seq-pallini {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  max-width: 280px;
-  min-height: 10px;
-}
-
-.seq-pallino {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--fill-tertiary);
-  transition:
-    background-color 80ms var(--ease-out),
-    transform 160ms var(--ease-spring);
-}
-
-.seq-pallino.is-pieno {
-  background: var(--sequenze-1);
-  transform: scale(1.15);
-}
-
-.seq-pallino.is-sbagliato {
-  background: var(--seq-sbagliato);
-  transform: scale(1.15);
-}
-
-/* ---------- La giornata finita, e la fine della libera ---------- */
-
-.seq-fine {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-  width: 100%;
-  max-width: 560px;
-  margin: 0 auto;
-  padding-bottom: var(--sp-4);
-  overflow-y: auto;
-}
-
-.seq-totale {
-  text-align: center;
-}
-
-.seq-totale__valore {
-  margin: 0;
-  font-family: var(--font-rounded);
-  font-size: var(--text-large-title);
+  font-size: 15px;
   font-weight: 800;
-}
-
-.seq-totale__dettaglio {
-  margin: 4px 0 0;
-  color: var(--label-secondary);
-  font-size: var(--text-subhead);
-}
-
-.seq-riepilogo {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.seq-riepilogo__riga {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: 10px 14px;
-  border-radius: var(--r-md);
-  background: var(--bg-elevated);
-  box-shadow: var(--shadow-sm);
-}
-
-.seq-riepilogo__riga.is-vince {
-  box-shadow:
-    inset 0 0 0 2px var(--sequenze-1),
-    var(--shadow-sm);
-}
-
-.seq-riepilogo__nome {
-  color: var(--label-secondary);
-  font-size: var(--text-subhead);
-  font-weight: 600;
-}
-
-.seq-barra {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 3px;
-}
-
-.seq-barra__tacca {
-  height: 8px;
-  border-radius: 4px;
-  background: var(--fill-tertiary);
-}
-
-.seq-barra__tacca.is-piena {
-  background: linear-gradient(90deg, var(--sequenze-1), var(--sequenze-2));
-}
-
-.seq-riepilogo__valore {
-  min-width: 4.5em;
-  font-family: var(--font-rounded);
-  font-weight: 800;
-  text-align: right;
 }
 
 .seq-azioni {
@@ -383,50 +448,7 @@
   gap: var(--sp-3);
 }
 
-.seq-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 16px;
-  border-radius: 999px;
-  background: var(--fill-quaternary);
-  color: var(--brand);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.seq-piede-fine {
-  margin: 0;
-  color: var(--label-secondary);
-  font-size: var(--text-footnote);
-  text-align: center;
-}
-
-/* ---------- La libera ---------- */
-
-.seq-livello {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-3);
-  color: var(--label-secondary);
-  font-size: var(--text-subhead);
-  font-weight: 600;
-}
-
-.seq-livello__valore {
-  color: var(--label);
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
-}
-
-.seq-record {
-  margin: 0;
-  color: var(--label-secondary);
-  font-size: var(--text-subhead);
-  text-align: center;
-}
+/* ---------- La sala ---------- */
 
 .seq-scelte {
   display: grid;
@@ -435,11 +457,23 @@
 
 /* ---------- La sfida ---------- */
 
+.seq-testa {
+  flex: none;
+  width: min(100%, 420px);
+  margin: 0 auto;
+}
+
+/* Io e l'altro nella carta del conto, con in mezzo la difficolta' della sfida. */
 .seq-duello {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--sp-3);
+  padding: 8px 12px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
 }
 
 .seq-duellante {
@@ -463,47 +497,131 @@
 .seq-duellante__nome {
   overflow: hidden;
   color: var(--label-secondary);
-  font-size: var(--text-footnote);
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .seq-duellante__conto {
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--label);
 }
 
 .seq-duellante.is-finito .seq-duellante__conto {
   color: var(--label-secondary);
 }
 
-/* In mezzo la difficolta' della sfida: le tacche sopra il nome, come nella libera. */
 .seq-duello__contro {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
   color: var(--label-secondary);
-  font-size: var(--text-caption-1, 12px);
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 900;
   white-space: nowrap;
 }
 
+/* Il tre-due-uno: un cubetto grande del colore del gioco che salta a ogni secondo. */
 .seq-via {
   display: grid;
   place-items: center;
-  width: min(60cqw, 220px);
+  width: min(60cqw, 60cqh, 220px);
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: linear-gradient(160deg, var(--sequenze-1), var(--sequenze-2));
-  box-shadow: var(--edge-light), 0 12px 30px -10px var(--shadow-tint);
-  color: #fff;
+  border: 3px solid var(--ink);
+  border-radius: 28%;
+  background: radial-gradient(circle at 50% 38%, #fff 0, #a6f3f8 30%, var(--seq) 62%, var(--seq-scuro) 100%);
+  box-shadow:
+    0 8px 0 var(--ink),
+    inset 0 4px 0 rgba(255, 255, 255, 0.7);
+  color: #1b1440;
   font-family: var(--font-rounded);
-  font-size: min(30cqw, 110px);
+  font-size: min(30cqw, 30cqh, 110px);
+  animation: seq-salta 900ms cubic-bezier(0.2, 0.9, 0.3, 1.5) infinite;
+}
+
+/* La fine della sfida: chi ha vinto, le due righe, la rivincita. */
+.seq-fine {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding-bottom: var(--sp-4);
+  overflow-y: auto;
+}
+
+.seq-totale {
+  text-align: center;
+}
+
+.seq-totale__valore {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 40px;
+  line-height: 1.05;
+  color: var(--label);
+}
+
+.seq-totale__dettaglio {
+  margin: 4px 0 0;
+  color: var(--label-secondary);
+  font-size: 15px;
   font-weight: 800;
-  animation: seq-salta 900ms var(--ease-bounce) infinite;
+}
+
+.seq-riepilogo {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seq-riepilogo__riga {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 10px 14px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 3px 0 var(--ink);
+}
+
+.seq-riepilogo__riga.is-vince {
+  background: var(--seq);
+  color: #1b1440;
+}
+
+.seq-riepilogo__nome {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--label);
+}
+
+.seq-riepilogo__riga.is-vince .seq-riepilogo__nome {
+  color: #1b1440;
+}
+
+.seq-riepilogo__valore {
+  min-width: 4.5em;
+  font-family: var(--font-rounded);
+  font-size: 18px;
+  text-align: right;
+}
+
+.seq-piede-fine {
+  margin: 0;
+  color: var(--label-secondary);
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  text-align: center;
 }
 
 /* ---------- Di traverso ---------- */
@@ -533,19 +651,36 @@
     grid-column: 1;
   }
 
-  .seq-testa {
+  .seq-testa,
+  .seq-conto {
     grid-column: 2;
     align-self: end;
   }
 
-  .seq-piede {
+  .seq-piede,
+  .seq-messaggio {
     grid-column: 2;
     align-self: start;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .seq-numero,
+  .seq-tavola.is-sbagliata,
+  .seq-cubetto .seq-cubetto__faccia,
+  .seq-bravo__carta,
+  .seq-messaggio.is-guarda,
   .seq-via {
-    animation: none;
+    animation: none !important;
+  }
+
+  .seq-cubetto__faccia,
+  .seq-pallino,
+  .seq-tavola {
+    transition: none;
+  }
+
+  .seq-cubetto.is-acceso .seq-cubetto__faccia {
+    transform: none;
   }
 }

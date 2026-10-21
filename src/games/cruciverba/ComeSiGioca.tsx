@@ -25,13 +25,20 @@ export function ComeSiGiocaCruciverba({
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">Scrivere</h3>
           <ol className="cru-aiuto__passi">
-            <li>Tocca una casella per vedere la sua definizione.</li>
             <li>
-              <strong>Toccala di nuovo</strong>, o usa il tasto <span aria-hidden="true">↕</span>, per
-              cambiare direzione.
+              <span>Tocca una casella per vedere la sua definizione.</span>
             </li>
-            <li>Tocca la definizione per vederle tutte.</li>
-            <li>Da tastiera: frecce per spostarti, Tab per la parola successiva, spazio per cambiare direzione.</li>
+            <li>
+              <span>
+                <strong>Toccala di nuovo</strong>, o usa il tasto azzurro in basso a destra, per cambiare direzione.
+              </span>
+            </li>
+            <li>
+              <span>Tocca la definizione per vederle tutte.</span>
+            </li>
+            <li>
+              <span>Da tastiera: frecce per spostarti, Tab per la parola successiva, spazio per cambiare direzione.</span>
+            </li>
           </ol>
         </section>
 
@@ -116,6 +123,9 @@ export function ComeSiGiocaCruciverba({
           </a>
           .
         </p>
+        <button type="button" className="cru-aiuto__capito" onClick={onClose}>
+          Ho capito
+        </button>
       </div>
     </Sheet>
   )

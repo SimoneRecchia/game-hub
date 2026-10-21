@@ -65,3 +65,71 @@
     animation: none;
   }
 }
+
+/*
+ * L'anello, nelle righe dei tavolieri: i secondi in mezzo, e attorno il tempo
+ * che si svuota, verde, e rosso negli ultimi tre. Il tratto segue il giro
+ * dell'orologio con una transizione lunga quanto un giro.
+ */
+.tempo-anello {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+}
+
+.tempo-anello svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  transform: rotate(-90deg);
+}
+
+.tempo-anello circle {
+  fill: none;
+  stroke-width: 5;
+}
+
+.tempo-anello__fondo {
+  stroke: var(--fill-tertiary);
+}
+
+.tempo-anello__tempo {
+  stroke: #3fc46d;
+  stroke-linecap: round;
+  transition:
+    stroke-dashoffset 0.1s linear,
+    stroke 0.2s;
+}
+
+.tempo-anello.is-poco .tempo-anello__tempo {
+  stroke: #ff5c6b;
+}
+
+.tempo-anello__secondi {
+  position: relative;
+  font-family: var(--font-rounded);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--label);
+}
+
+.tempo-anello.is-poco .tempo-anello__secondi {
+  color: var(--red);
+  animation: tempo-mossa-batte 1s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tempo-anello.is-poco .tempo-anello__secondi {
+    animation: none;
+  }
+
+  .tempo-anello__tempo {
+    transition: none;
+  }
+}

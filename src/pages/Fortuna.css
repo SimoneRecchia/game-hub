@@ -1,65 +1,125 @@
 /*
- * La scheda della Fortuna, scura in tutti e due i temi: e' la sala (Vetrina.css).
- * Il saldo e' un'insegna con le lampadine tutt'intorno; i giochi sono carte nel
- * colore del loro gioco, piene, con una luce che le attraversa: qui si entra
- * per giocare, e le carte lo dicono.
+ * La scheda della Fortuna: la sala, scura in tutti e due i temi (Vetrina.css).
+ * In cima il saldo su un biglietto d'oro con le fiches; sotto le carte dei
+ * giochi, a colori pieni, ognuna col suo disegno che si muove, e un poco
+ * storte, come appoggiate sul panno.
  */
 
-/* Il saldo e' l'eroe della Fortuna (Vetrina.css): il numero d'oro e il quadrifoglio che dondola. */
+/* ─────────────────────────────  Il saldo  ───────────────────────────── */
+
 .saldo-fortuna {
-  min-height: 168px;
+  display: block;
+  color: #120c2b;
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.saldo-fortuna:active {
+  transform: translateY(3px);
+}
+
+.saldo-fortuna .biglietto {
+  --ink: #120c2b;
+}
+
+.saldo-fortuna__dentro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 124px;
+  padding: 0 18px 0 24px;
+}
+
+.saldo-fortuna__conto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .saldo-fortuna__etichetta {
-  color: var(--ct-oro);
-  opacity: 1;
-}
-
-.saldo-fortuna__riga {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--sp-3);
-  margin-top: auto;
+  font-size: var(--text-footnote);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .saldo-fortuna__numero {
+  overflow: hidden;
   font-family: var(--font-rounded);
-  font-size: 52px;
-  font-weight: 900;
-  line-height: 1.05;
-  background: linear-gradient(180deg, #fff8d6, var(--ct-oro) 60%, #e0a21a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 0 16px rgba(255, 214, 90, 0.4));
+  font-size: clamp(2.5rem, 15vw, 3.75rem);
+  line-height: 0.95;
+  white-space: nowrap;
+}
+
+.saldo-fortuna__numero .scheletro {
+  display: block;
+  width: 60%;
+  height: 0.8em;
 }
 
 .saldo-fortuna__unita {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: var(--text-subhead);
+  font-weight: 900;
 }
 
-.saldo-fortuna__icona {
-  --lato: 58px;
+/* Le fiches, oltre la linea tratteggiata: tre, che saltano piano una dopo l'altra. */
+.saldo-fortuna__fiches {
+  position: relative;
   flex: none;
+  align-self: stretch;
+  width: 104px;
+  margin: 14px 0;
+  padding-left: 12px;
+  border-left: 3px dashed rgba(18, 12, 43, 0.35);
+}
+
+.fiche-saldo {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-left: 12px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle closest-side, var(--c) 0 64%, transparent 65%),
+    repeating-conic-gradient(from -10deg, var(--c) 0 40deg, #fffbf2 40deg 60deg);
   box-shadow:
-    0 0 22px rgba(52, 209, 122, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
-  animation: fortuna-quadrifoglio 6s var(--ease-in-out) infinite;
+    0 4px 0 var(--b),
+    0 4px 0 2.5px #120c2b;
+  transform: rotate(var(--giro));
+  animation: fiche-saltella 2.6s ease-in-out infinite;
 }
 
-@keyframes fortuna-quadrifoglio {
+.fiche-saldo::before {
+  content: '';
+  position: absolute;
+  inset: 9px;
+  border: 2px dashed rgba(255, 251, 242, 0.9);
+  border-radius: 50%;
+}
+
+.fiche-saldo > span {
+  position: relative;
+  color: #fffbf2;
+  font-family: var(--font-rounded);
+  font-size: 0.9375rem;
+  text-shadow: 0 1.5px 0 rgba(18, 12, 43, 0.55);
+}
+
+@keyframes fiche-saltella {
   0%,
+  55%,
   100% {
-    transform: rotate(-6deg);
+    transform: rotate(var(--giro)) translateY(0);
   }
-  50% {
-    transform: rotate(6deg) scale(1.04);
+  25% {
+    transform: rotate(var(--giro)) translateY(-6px);
   }
 }
 
-/* Senza punti per nessun gioco: l'avviso del saldo (Avvisi.css), attaccato all'insegna. */
+/* Senza punti per nessun gioco: l'avviso del saldo (Avvisi.css), attaccato al biglietto. */
 .fortuna-vuoto {
   margin-top: calc(var(--sp-3) - var(--sp-6));
 }
@@ -68,178 +128,152 @@
 
 .fortuna__giochi {
   display: grid;
-  gap: var(--sp-3);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 6px 4px 8px 0;
 }
 
-@media (min-width: 640px) {
-  .fortuna__giochi {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-.fortuna-carta {
-  position: relative;
-  overflow: hidden;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  column-gap: var(--sp-4);
-  row-gap: var(--sp-3);
-  min-height: 132px;
-  padding: var(--sp-4);
-  border-radius: 28px;
-  background:
-    radial-gradient(130% 120% at 100% 0%, rgba(255, 255, 255, 0.22), transparent 55%),
-    linear-gradient(145deg, var(--c1), var(--c2));
-  box-shadow:
-    0 12px 26px color-mix(in srgb, var(--c2) 35%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  color: #fff;
-  transition: transform var(--dur-base) var(--ease-spring);
-}
-
-.fortuna-carta:active {
-  transform: scale(0.975);
-}
-
-/* La luce che attraversa la carta ogni tanto, come il riflesso su un'insegna. */
-.fortuna-carta__luce {
-  position: absolute;
-  inset: -40% auto -40% -30%;
-  width: 40%;
-  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.28), transparent);
-  transform: translateX(-120%) rotate(12deg);
-  animation: fortuna-riflesso 5.5s var(--ease-in-out) infinite;
-  pointer-events: none;
-}
-
-.fortuna-carta--slot .fortuna-carta__luce {
-  animation-delay: 1.2s;
-}
-
-.fortuna-carta--blackjack .fortuna-carta__luce {
-  animation-delay: 2.4s;
-}
-
-.fortuna-carta--roulette .fortuna-carta__luce {
-  animation-delay: 3.6s;
-}
-
-@keyframes fortuna-riflesso {
-  0%,
-  60% {
-    transform: translateX(-120%) rotate(12deg);
-  }
-  100% {
-    transform: translateX(420%) rotate(12deg);
-  }
-}
-
-.fortuna-carta__icona {
-  --lato: 72px;
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.25),
-    0 10px 20px rgba(0, 0, 0, 0.25);
-}
-
-.fortuna-carta__testo {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.fortuna-carta__nome {
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 900;
-  letter-spacing: var(--tracking-tight);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-}
-
-.fortuna-carta__stato {
-  font-size: var(--text-subhead);
-  font-weight: 800;
-}
-
-.fortuna-carta__dettaglio {
-  font-size: var(--text-footnote);
-  color: rgba(255, 255, 255, 0.86);
+.fortuna__gioco--ruota {
+  grid-column: span 2;
 }
 
 /*
- * Il saldo non basta per questo gioco: la carta si spegne verso il fondo della
- * sala, la luce non la attraversa, e al posto del bottone c'e' quanto manca,
- * con la barra d'ambra di quanto si ha.
+ * La carta di un gioco: colore pieno, il filo e l'ombra secca di traverso,
+ * come una carta appoggiata. Il disegno sta in un angolo e sborda dal bordo di
+ * sopra; quello di Crazy Time e' una ruota grande, tagliata dal bordo destro.
+ */
+.fortuna-carta {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 136px;
+  padding: 12px 14px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 22px;
+  background: var(--fondo);
+  box-shadow:
+    4px 4px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: #120c2b;
+  text-align: left;
+  transform: rotate(var(--giro));
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    filter var(--dur-base) var(--ease-out);
+}
+
+.fortuna-carta--ruota {
+  height: 122px;
+}
+
+.fortuna-carta:active {
+  transform: rotate(var(--giro)) translate(3px, 3px);
+  box-shadow:
+    1px 1px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+}
+
+.fortuna-carta__disegno {
+  position: absolute;
+  pointer-events: none;
+}
+
+.fortuna-carta__nome {
+  position: relative;
+  font-family: var(--font-rounded);
+  font-size: 1.3125rem;
+  line-height: 1.05;
+}
+
+.fortuna-carta--ruota .fortuna-carta__nome {
+  font-size: 1.625rem;
+}
+
+.fortuna-carta__riga {
+  position: relative;
+  max-width: 100%;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.fortuna-carta--ruota .fortuna-carta__riga {
+  max-width: 180px;
+  font-size: var(--text-footnote);
+}
+
+.fortuna-carta__riga.scheletro {
+  height: 14px;
+  width: 70%;
+}
+
+/* Una partita lasciata a meta': un'etichetta in alto, che dice di riprenderla. */
+.fortuna-carta__segno {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 1px 9px;
+  border: 2px solid #120c2b;
+  border-radius: var(--r-pill);
+  background: #fffbf2;
+  font-size: var(--text-caption-1);
+  font-weight: 900;
+  animation: fortuna-segno 1.8s ease-in-out infinite;
+}
+
+.fortuna-carta--slot .fortuna-carta__segno,
+.fortuna-carta--superenalotto .fortuna-carta__segno {
+  left: auto;
+}
+
+@keyframes fortuna-segno {
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/*
+ * Il saldo non basta: la carta si spegne verso il fondo della sala, e al posto
+ * della riga dice quanto manca. Spenta con il colore, non con la trasparenza:
+ * la scritta deve restare leggibile.
  */
 .fortuna-carta.is-chiusa {
-  background:
-    radial-gradient(130% 120% at 100% 0%, rgba(255, 255, 255, 0.1), transparent 55%),
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--c1) 48%, var(--bg)),
-      color-mix(in srgb, var(--c2) 48%, var(--bg))
-    );
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
-}
-
-.fortuna-carta.is-chiusa .fortuna-carta__luce {
-  display: none;
-}
-
-.fortuna-carta.is-chiusa .fortuna-carta__icona {
-  opacity: 0.7;
-  filter: saturate(0.5);
+  filter: saturate(0.4) brightness(0.86);
 }
 
 .fortuna-carta__manca {
-  grid-column: 2;
-  justify-self: start;
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 32px;
-  padding: 0 14px 0 12px;
+  align-self: flex-start;
+  gap: 5px;
+  margin-top: 3px;
+  padding: 2px 9px;
+  border: 2px solid #120c2b;
   border-radius: var(--r-pill);
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--ct-ambra) 40%, transparent) var(--pieno),
-    rgba(0, 0, 0, 0.3) var(--pieno)
-  );
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ct-ambra) 75%, transparent);
-  color: #fff;
-  font-size: var(--text-footnote);
-  font-weight: 800;
-}
-
-.fortuna-carta__manca svg {
-  color: var(--ct-ambra);
-}
-
-.fortuna-carta__bottone {
-  grid-column: 2;
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 var(--sp-4);
-  border-radius: var(--r-pill);
-  background: #fff;
-  color: var(--c2);
-  font-size: var(--text-subhead);
-  font-weight: 800;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+  background: #fffbf2;
+  font-size: 0.6875rem;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .saldo-fortuna__icona,
-  .fortuna-carta__luce {
+  .fiche-saldo,
+  .fortuna-carta__segno {
     animation: none;
+  }
+}
+
+/* Sul computer la sala si allarga: Crazy Time su due colonne, gli altri uno accanto all'altro. */
+@media (min-width: 900px) {
+  .fortuna__giochi {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .fortuna__gioco--ruota {
+    grid-column: span 4;
   }
 }

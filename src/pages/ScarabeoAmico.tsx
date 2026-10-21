@@ -19,7 +19,7 @@ import {
   type MossaAppena,
 } from '@/games/scarabeo/adesivi'
 import { preparaComputer } from '@/games/scarabeo/computer'
-import { ILLUMINATA_MS, annuncioDi, nelSacchetto, parolaDi } from '@/games/scarabeo/turni'
+import { ILLUMINATA_MS, annuncioDi, parolaDi } from '@/games/scarabeo/turni'
 import { useComposizione } from '@/games/scarabeo/useComposizione'
 import { nonNelDizionario, tessereCambiate, useParoleSconosciute } from '@/games/scarabeo/useScarabeo'
 import { useScarabeoAmico, type PartitaScarabeoAmico } from '@/games/scarabeo/useScarabeoAmico'
@@ -229,9 +229,14 @@ function Partita({ g, v, s }: { g: PartitaScarabeoAmico; v: VistaTavolo; s: Vist
           c={composizione}
           sconosciute={sconosciute}
           bloccato={!inCorso || !v.tuoTurno || g.inviando}
-          attesa={inCorso && !v.tuoTurno ? `Tocca a ${nome}` : null}
+          attesa={inCorso && !v.tuoTurno ? 'Aspetta…' : null}
           restanti={s.restanti}
           evidenziate={illuminate}
+          ultime={{
+            voci: elenco,
+            aiuto: `Tocca una casella, poi le tessere: la freccia dice da che parte si scrive. Si gioca a turni con ${nome}, fino in fondo al sacchetto.`,
+            onApri: () => setStoria(true),
+          }}
           testa={
             <>
               <Tabellino
@@ -247,7 +252,15 @@ function Partita({ g, v, s }: { g: PartitaScarabeoAmico; v: VistaTavolo; s: Vist
                 nomeAltro={nome}
                 notaAltro={v.avversario && !v.avversario.online && inCorso ? 'non è online' : undefined}
                 turno={inCorso ? (v.tuoTurno ? 'io' : 'altro') : null}
-                sotto={finita ? 'Partita finita' : nelSacchetto(s.restanti)}
+                stato={finita ? 'Partita finita' : `Sacchetto ${s.restanti}`}
+                attesa={inCorso && !v.tuoTurno ? `Tocca a ${nome}` : null}
+                sotto={
+                  finita
+                    ? `${s.punti.io} a ${s.punti.altro}`
+                    : s.mosse.length === 0
+                      ? 'La prima parola passa dalla stella'
+                      : 'Tocca a te'
+                }
                 onApri={() => setStoria(true)}
               />
               {inCorso && v.tempo && g.scadenza !== null && (

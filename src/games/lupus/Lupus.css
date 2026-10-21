@@ -146,7 +146,7 @@ body:has(.lupus--notte) {
   border-radius: 50%;
   background: var(--surface);
   color: var(--label-secondary);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-testa__icona.is-notte {
@@ -250,9 +250,12 @@ body:has(.lupus--notte) {
   display: grid;
   place-items: center;
   border-radius: 30%;
+  border: var(--filo) solid var(--ink);
   background: var(--ruolo);
   color: var(--lupus-inchiostro);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 3px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35);
 }
 
 .lupus-badge svg {
@@ -309,27 +312,39 @@ body:has(.lupus--notte) {
   padding: 22px 16px 16px;
   border-radius: 28px;
   text-align: center;
+  border: 3px solid var(--ink);
   background:
     radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--ruolo) 40%, transparent), transparent 62%),
     var(--surface);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--ruolo) 45%, transparent),
-    var(--shadow-md);
-  animation: lupus-carta 520ms var(--ease-push) both;
+    0 6px 0 var(--ink),
+    inset 0 3px 0 var(--carta-luce);
+  /* La carta si gira dal dorso, come quando la si scopre al tavolo. */
+  animation: lupus-carta 0.8s cubic-bezier(0.3, 0.7, 0.3, 1.15) both;
 }
 
 @keyframes lupus-carta {
   from {
     opacity: 0;
-    transform: translateY(18px) scale(0.96) rotateY(40deg);
+    transform: perspective(900px) translateY(18px) rotateY(110deg) scale(0.9);
+  }
+  40% {
+    opacity: 1;
   }
 }
 
 .lupus-carta .lupus-badge {
   border-radius: 34%;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    0 14px 34px color-mix(in srgb, var(--ruolo) 45%, transparent);
+    0 4px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.35);
+  animation: lupus-badge 0.5s 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+@keyframes lupus-badge {
+  from {
+    transform: scale(0) rotate(-20deg);
+  }
 }
 
 .lupus-carta__nome {
@@ -382,7 +397,7 @@ body:has(.lupus--notte) {
   padding: var(--sp-2) var(--sp-3);
   border-radius: var(--r-md);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   text-align: left;
 }
 
@@ -423,9 +438,7 @@ body:has(.lupus--notte) {
   padding: 7px var(--sp-3);
   border-radius: var(--r-md);
   background: var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   color: var(--label);
   text-align: left;
   transition:
@@ -439,10 +452,11 @@ body:has(.lupus--notte) {
 }
 
 .lupus-tessera.is-scelto {
-  background: color-mix(in srgb, var(--brand) 12%, var(--surface));
+  background: color-mix(in srgb, var(--giallo) 22%, var(--surface));
   box-shadow:
-    0 0 0 2px var(--brand),
-    0 6px 20px color-mix(in srgb, var(--brand) 20%, transparent);
+    var(--ombra-album),
+    0 0 0 4px var(--giallo);
+  transform: translateY(-2px);
 }
 
 .lupus-tessera.is-morto {
@@ -561,7 +575,7 @@ body:has(.lupus--notte) {
   padding: var(--sp-3);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-striscia__testa {
@@ -612,7 +626,7 @@ body:has(.lupus--notte) {
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-md);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
   font-size: var(--text-subhead);
   line-height: 1.45;
 }
@@ -724,7 +738,7 @@ body:has(.lupus--notte) {
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-svelato {
@@ -748,7 +762,7 @@ body:has(.lupus--notte) {
   padding: var(--sp-3);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-orologio__anello {
@@ -808,7 +822,7 @@ body:has(.lupus--notte) {
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-conteggio__voce {
@@ -1136,7 +1150,7 @@ body:has(.lupus--notte) {
   overflow: hidden;
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-serie__riga {
@@ -1235,9 +1249,7 @@ body:has(.lupus--notte) {
   overflow: hidden;
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-impostazione {
@@ -1463,7 +1475,7 @@ body:has(.lupus--notte) {
   overflow: hidden;
   border-radius: var(--r-xl);
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-nomi__riga {
@@ -1573,9 +1585,7 @@ body:has(.lupus--notte) {
   background:
     radial-gradient(90% 80% at 50% 0%, color-mix(in srgb, var(--lupus-1) 22%, transparent), transparent 70%),
     var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .lupus-codice__lettere {
@@ -1640,6 +1650,12 @@ body:has(.lupus--notte) {
   .lupus-conteggio__barra span,
   .lupus-attesa,
   .lupus-segno-vivo::after {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lupus-carta .lupus-badge {
     animation: none;
   }
 }

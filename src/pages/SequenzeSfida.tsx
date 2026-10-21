@@ -8,7 +8,7 @@ import { Coriandoli, useFesta, Vuoto } from '@/components/Elementi'
 import { IconInfo, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { ComeSiGiocaSequenze } from '@/games/sequenze/ComeSiGioca'
-import { Pallini, Tavola } from '@/games/sequenze/Tavola'
+import { MessaggioProva, Pallini, Tavola } from '@/games/sequenze/Tavola'
 import { useProva } from '@/games/sequenze/useProva'
 import { useSfidaSequenze, type SfidaSequenze } from '@/games/sequenze/useSfidaSequenze'
 import { useRestante } from '@/games/tavolo/TempoMossa'
@@ -130,25 +130,12 @@ function Sfida({ id }: { id: string }) {
               </>
             ) : g.aperta ? (
               <>
-                <p className={`seq-stato is-${prova.fase}`}>
-                  {prova.fase === 'guarda'
-                    ? 'Guarda'
-                    : prova.fase === 'tocca'
-                      ? difficolta.indietro
-                        ? 'Al contrario'
-                        : 'Tocca a te'
-                      : prova.fase === 'giusta'
-                        ? 'Giusta!'
-                        : prova.fase === 'sbagliata'
-                          ? 'Sbagliata'
-                          : ''}
-                </p>
                 <Pallini
                   quanti={g.aperta.sequenza.length}
                   toccati={prova.tocchi.length}
                   errore={prova.errore !== null}
                 />
-                <p className="seq-sotto u-tabnum">{g.aperta.sequenza.length} cubetti</p>
+                <MessaggioProva prova={prova} indietro={difficolta.indietro} attesa={false} />
               </>
             ) : (
               <p className="seq-sotto">Arriva la sequenza…</p>

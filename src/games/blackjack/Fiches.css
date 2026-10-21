@@ -1,48 +1,51 @@
 /*
- * Le fiches del blackjack: il disco nel colore del taglio, l'orlo a tacche
- * bianche, l'anello tratteggiato e il valore in mezzo. Lo spessore e' un'ombra
- * secca sotto il disco, come per i tasti: e' quel che fa sembrare una pila una
- * pila.
+ * Le fiches di tutti i giochi della Fortuna: il disco nel colore del taglio
+ * con l'orlo a spicchi color crema, il filo d'inchiostro, l'anello tratteggiato
+ * e il valore in mezzo, in Lilita. Lo spessore e' un'ombra secca sotto il
+ * disco, del suo colore scurito e bordata d'inchiostro, come i tasti: e' quel
+ * che fa sembrare una pila una pila. Il filo si assottiglia sulle fiches
+ * piccole del panno.
  */
 .bj-fiche {
   --d: var(--bj-fiche-lato, 36px);
+  --fiche-orlo: color-mix(in srgb, var(--fiche) 66%, #000);
+  --fiche-filo: clamp(1.5px, calc(var(--d) * 0.05), 2.5px);
   position: relative;
   display: grid;
   place-items: center;
   flex: none;
   width: var(--d);
   height: var(--d);
+  border: var(--fiche-filo) solid #120c2b;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.28), transparent 60%),
-    radial-gradient(circle, var(--fiche) 0 53%, transparent 54%),
-    repeating-conic-gradient(#fff 0 11deg, var(--fiche) 11deg 45deg);
+    radial-gradient(circle closest-side, var(--fiche) 0 64%, transparent 65%),
+    repeating-conic-gradient(from -10deg, var(--fiche) 0 40deg, #fffbf2 40deg 60deg);
   box-shadow:
-    inset 0 0 0 calc(var(--d) * 0.035) rgba(0, 0, 0, 0.28),
-    0 calc(var(--d) * 0.07) 0 color-mix(in srgb, var(--fiche) 55%, #000),
-    0 calc(var(--d) * 0.1) calc(var(--d) * 0.14) rgba(0, 0, 0, 0.35);
-  color: #fff;
+    0 calc(var(--d) * 0.075) 0 var(--fiche-orlo),
+    0 calc(var(--d) * 0.075) 0 var(--fiche-filo) #120c2b;
+  color: #fffbf2;
   font-family: var(--font-rounded);
   font-size: calc(var(--d) * 0.3);
-  font-weight: 900;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 1.5px 0 rgba(18, 12, 43, 0.55);
 }
 
 .bj-fiche::after {
   content: '';
   position: absolute;
-  inset: 20%;
+  inset: 15%;
   border-radius: 50%;
-  border: calc(var(--d) * 0.035) dashed rgba(255, 255, 255, 0.75);
+  border: max(1px, calc(var(--d) * 0.04)) dashed rgba(255, 251, 242, 0.9);
   pointer-events: none;
 }
 
 .bj-fiche__valore {
   position: relative;
   z-index: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 /* La pila: i pezzi uno sull'altro, ognuno un po' piu' su. */
@@ -78,14 +81,15 @@
 .bj-pila__targhetta {
   min-width: 2.4em;
   padding: 1px 7px;
+  border: 2px solid #120c2b;
   border-radius: 999px;
-  background: rgba(8, 20, 12, 0.72);
-  box-shadow: inset 0 0 0 1px rgba(242, 210, 122, 0.45);
-  color: var(--bj-scritta);
+  background: #fffbf2;
+  box-shadow: 0 2px 0 #120c2b;
+  color: #120c2b;
   font-family: var(--font-rounded);
   font-size: 12px;
-  font-weight: 800;
-  line-height: 1.5;
+  font-weight: 400;
+  line-height: 1.4;
   text-align: center;
 }
 

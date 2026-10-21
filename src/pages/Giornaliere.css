@@ -1,101 +1,118 @@
-/* ─────────────────────────  La giornata  ───────────────────────── */
+/* ─────────────────────────  Il biglietto della giornata  ───────────────────────── */
 
 /*
- * La carta della giornata e' l'eroe delle Giornaliere (Vetrina.css): qui
- * c'e' il suo contenuto, il posto grande a sinistra e il podio a destra, gli
- * anelli sotto. Sta in un contenitore perché anelli e podio si misurano sulla
- * larghezza della carta: su un telefono piccolo gli anelli di tutti i giochi,
- * da quaranta punti, non ci starebbero.
+ * L'eroe delle Giornaliere (vedi `.eroe` in Vetrina.css): un biglietto giallo,
+ * storto di un grado, con dentro il podio di oggi e i timbri. Sta in un
+ * contenitore perché i timbri si misurano sulla sua larghezza.
  */
 .giornata {
   container-type: inline-size;
+  padding: 0 2px 6px;
 }
 
-.giornata__corpo {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--sp-3);
+.giornata__biglietto {
+  transform: rotate(-1deg);
 }
 
-.giornata__numeri {
+.giornata__biglietto .biglietto__carta {
+  padding: 8px 14px;
+}
+
+.giornata__dentro {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+  gap: 9px;
+  padding: 10px 12px 12px;
+  border: 1.5px dashed rgba(42, 31, 92, 0.4);
+  border-radius: 8px;
 }
 
-.giornata__numero {
-  font-family: var(--font-rounded);
-  font-size: min(var(--text-hero), 17cqw);
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: var(--tracking-display);
-  text-shadow: 0 4px 18px rgba(20, 10, 80, 0.35);
-}
-
-.giornata__su {
-  font-size: var(--text-title-3);
-  font-weight: 700;
-  letter-spacing: var(--tracking-tight);
-  opacity: 0.85;
-}
-
-.giornata__punti {
-  min-height: 1.4em;
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  opacity: 0.92;
-}
-
-.giornata__anelli {
-  --spazio: 6px;
+.giornata__testa {
   display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+
+.giornata__occhiello {
+  font-size: 0.6875rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #6b4a00;
+}
+
+.giornata__tutti {
+  display: inline-flex;
   align-items: center;
-  gap: var(--spazio);
-  margin-top: auto;
+  gap: 2px;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-weight: 900;
 }
 
-.giornata__anelli .anello {
-  --lato: min(38px, calc((76cqw - (var(--giochi, 6) - 1) * var(--spazio)) / var(--giochi, 6)));
-  color: #fff;
-  padding: 3px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  width: var(--lato) !important;
-  height: var(--lato) !important;
+.giornata__tutti svg {
+  stroke-width: 3;
 }
 
-.giornata__anelli .anello svg {
-  inset: 3px;
-  width: calc(100% - 6px);
-  height: calc(100% - 6px);
-}
-
-.giornata__fatte {
-  margin-left: auto;
-  font-family: var(--font-rounded);
-  font-size: var(--text-subhead);
+.giornata__io {
+  margin-top: 4px;
+  text-align: center;
+  font-size: var(--text-footnote);
   font-weight: 800;
-  opacity: 0.9;
+  color: #4e4479;
 }
 
-/* ─────────────────────────  Il podio piccolo  ───────────────────────── */
+.giornata__taglio {
+  margin-top: 2px;
+  border-top: 2px dashed rgba(42, 31, 92, 0.3);
+}
+
+.giornata__titolo {
+  font-family: var(--font-rounded);
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.giornata__nota {
+  text-align: center;
+  font-size: var(--text-caption-1);
+  font-weight: 800;
+  color: #6b6191;
+}
+
+/* ─────────────────────────────  Il podio  ───────────────────────────── */
 
 .podietto {
-  flex: none;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  padding: 18px 6px 0;
+}
+
+/* La linea del pavimento, sotto i gradini. */
+.podietto::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ink);
 }
 
 .podietto__posto {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  animation: podietto-sale 700ms var(--ease-spring) both;
-  animation-delay: calc(240ms + var(--n) * 90ms);
+  gap: 3px;
+  min-width: 0;
+  animation: podietto-sale 560ms var(--ease-bounce) both;
+  animation-delay: calc(200ms + (2 - var(--n)) * 110ms);
 }
 
 @keyframes podietto-sale {
@@ -105,179 +122,554 @@
   }
 }
 
+/* Una scheda ritrovata ha il podio gia' in piedi (vedi `.pagina--ferma` in base.css). */
 .pagina--ferma .podietto__posto {
   animation: none;
 }
 
-.podietto__posto.is-io .avatar {
-  box-shadow:
-    0 0 0 2px #fff,
-    0 0 16px rgba(255, 255, 255, 0.8);
+.pagina--ferma .podietto__faccina {
+  animation: none;
+}
+
+.podietto__faccina {
+  position: relative;
+  display: grid;
+  animation: podietto-saltella 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--n) * 0.4s);
+}
+
+@keyframes podietto-saltella {
+  0%,
+  70%,
+  100% {
+    transform: none;
+  }
+  80% {
+    transform: translateY(-5px);
+  }
+  90% {
+    transform: translateY(0);
+  }
 }
 
 .podietto__vuoto {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3);
-}
-
-.podietto__posto--1 .podietto__vuoto {
+  display: grid;
+  place-items: center;
   width: 40px;
   height: 40px;
+  border: 2.5px dashed rgba(42, 31, 92, 0.4);
+  border-radius: 50%;
+  color: rgba(42, 31, 92, 0.5);
+  font-family: var(--font-rounded);
+  font-size: 1.0625rem;
 }
 
-/* I gradini: d'oro, d'argento e di bronzo, di vetro sopra il blu. */
+.podietto__corona {
+  position: absolute;
+  left: 8px;
+  top: -20px;
+  width: 24px;
+  height: 22px;
+  fill: #ffd24a;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  transform-origin: 50% 100%;
+  animation: podietto-corona 2.8s ease-in-out infinite;
+}
+
+@keyframes podietto-corona {
+  50% {
+    transform: rotate(-12deg);
+  }
+}
+
+.podietto__nome {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-rounded);
+  font-size: 0.9375rem;
+  line-height: 1;
+}
+
+.podietto__punti {
+  min-height: 1em;
+  font-size: var(--text-caption-1);
+  font-weight: 900;
+  line-height: 1;
+  color: #5b5174;
+}
+
 .podietto__gradino {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 22px;
-  border-radius: 8px 8px 3px 3px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12));
-  box-shadow: inset 0 1.5px 0 var(--gradino);
+  width: 100%;
+  margin-top: 3px;
+  border: var(--filo) solid var(--ink);
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+  box-shadow: inset 0 3px 0 rgba(255, 255, 255, 0.55);
   font-family: var(--font-rounded);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.podietto__posto--1 .podietto__gradino {
+  height: 46px;
+  background: #ffd24a;
+}
+
+.podietto__posto--2 .podietto__gradino {
+  height: 34px;
+  background: #dce1ec;
+}
+
+.podietto__posto--3 .podietto__gradino {
+  height: 26px;
+  background: #efae72;
+}
+
+.podietto__posto.is-io .podietto__nome {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+/* ─────────────────────────────  I timbri  ───────────────────────────── */
+
+.timbri {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px 6px;
+  justify-items: center;
+}
+
+/* Il posto dell'album: carta crema, il bordo tratteggiato e il numero in basso, come in un album di figurine. */
+.album {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: min(46px, 16cqw);
+  aspect-ratio: 1;
+  border: 2px dashed rgba(42, 31, 92, 0.42);
+  border-radius: 12px;
+  background: #fff7ea;
+  box-shadow: inset 0 2px 6px rgba(42, 31, 92, 0.14);
+  color: var(--ink);
+}
+
+.album__n {
+  position: absolute;
+  right: 5px;
+  bottom: 2px;
+  font-size: 0.53rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: rgba(42, 31, 92, 0.78);
+}
+
+.timbro {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+.timbro:active {
+  transform: scale(0.92) rotate(-3deg);
+}
+
+@media (hover: hover) {
+  .timbro:hover {
+    transform: translateY(-2px) rotate(-3deg);
+  }
+}
+
+/* Il timbro appena guadagnato arriva dall'alto e si stampa, con un'onda. */
+.timbro.is-nuovo .icona-gioco {
+  animation: timbro-stampa 620ms var(--ease-out) both;
+  animation-delay: calc(400ms + var(--n) * 90ms);
+}
+
+.timbro.is-nuovo::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 3px solid var(--giallo);
+  border-radius: 14px;
+  opacity: 0;
+  animation: timbro-onda 700ms var(--ease-out) both;
+  animation-delay: calc(640ms + var(--n) * 90ms);
+}
+
+@keyframes timbro-stampa {
+  0% {
+    opacity: 0;
+    transform: scale(2.2) rotate(-24deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.88) rotate(4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes timbro-onda {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/* ─────────────────────────  Le carte da giocare  ───────────────────────── */
+
+.giornaliere__carte {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 5px;
+}
+
+/*
+ * La carta di una classificata: carta pastello nel colore del gioco, con
+ * l'inchiostro sopra in tutti e due i temi. Premuta scende sull'ombra.
+ */
+.carta-oggi {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 12px 9px 9px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 22px;
+  background: linear-gradient(180deg, var(--carta-1), var(--carta-2));
+  box-shadow: 0 5px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.65);
+  color: var(--ink);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.carta-oggi:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.65);
+}
+
+.album--carta {
+  width: 58px;
+  border-radius: 15px;
+}
+
+.carta-oggi__testo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.carta-oggi__nome {
+  font-family: var(--font-rounded);
+  font-size: 1.1875rem;
+  line-height: 1.05;
+}
+
+.carta-oggi__motto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  color: #3b3170;
+}
+
+.carta-oggi__motto.scheletro {
+  height: 13px;
+  width: 70%;
+}
+
+/* La partita in corso: una barra a strisce, come un nastro di cantiere azzurro. */
+.carta-oggi__barra {
+  display: block;
+  height: 12px;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: 99px;
+  background: #fff;
+}
+
+.carta-oggi__barra > span {
+  display: block;
+  height: 100%;
+  border-right: 2px solid var(--ink);
+  background: repeating-linear-gradient(-45deg, #4d8df7 0 6px, #7faeff 6px 12px);
+  animation: carta-barra 1.2s linear infinite;
+  background-size: 17px 100%;
+}
+
+@keyframes carta-barra {
+  to {
+    background-position: 17px 0;
+  }
+}
+
+.carta-oggi__tasto {
+  flex: none;
+  padding: 7px 14px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 14px;
+  background: var(--giallo);
+  box-shadow: 0 3px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: var(--ink);
+  font-family: var(--font-rounded);
+  font-size: 1.0625rem;
+  line-height: 1.1;
+}
+
+/* Il tasto della prima carta respira: e' la prossima cosa da fare. */
+.giornaliere__carte > li:first-child .carta-oggi:not(.is-non-pronta) .carta-oggi__tasto {
+  animation: carta-respira 2.4s ease-in-out infinite;
+}
+
+@keyframes carta-respira {
+  50% {
+    transform: scale(1.07);
+  }
+}
+
+.carta-oggi__tasto.is-corso {
+  padding: 7px 12px;
+  background: #4d8df7;
+  color: #fff;
+  text-shadow: 0 2px 0 var(--ink);
+}
+
+.carta-oggi__tasto.is-spento {
+  border-color: rgba(42, 31, 92, 0.35);
+  background: #e6e2f0;
+  box-shadow: none;
+  color: #4e4479;
+}
+
+/* ─────────────────────────  Fine giornata  ───────────────────────── */
+
+.finita {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 28px;
+  background: linear-gradient(180deg, #fff1c9, #ffd9ec);
+  box-shadow: var(--ombra-carta);
+  color: var(--ink);
+}
+
+.finita__coriandolo {
+  position: absolute;
+  width: 10px;
+  height: 14px;
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  transform: rotate(var(--r));
+  animation: finita-coriandolo 3.6s ease-in-out infinite alternate;
+}
+
+@keyframes finita-coriandolo {
+  to {
+    transform: rotate(var(--r)) translateY(8px) rotate(30deg);
+  }
+}
+
+.finita__testa {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.finita__testi {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.finita__titolo {
+  font-size: 1.625rem;
+  line-height: 1;
+}
+
+.finita__punti {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #4e4479;
+}
+
+.finita__prossime {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 2px;
+  padding: 3px 10px;
+  border: 2px dashed rgba(42, 31, 92, 0.35);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.75);
   font-size: var(--text-caption-1);
   font-weight: 900;
 }
 
-.podietto__posto--1 .podietto__gradino {
-  --gradino: var(--oro, #f4c430);
-  width: 46px;
-  height: 34px;
-}
-
-.podietto__posto--2 .podietto__gradino {
-  --gradino: var(--argento, #c9d1dc);
-}
-
-.podietto__posto--3 .podietto__gradino {
-  --gradino: var(--bronzo, #d08a4e);
-  height: 16px;
-}
-
-/* ─────────────────────────  Le carte delle classificate  ───────────────────────── */
-
-.giornaliere__carte {
-  display: grid;
-  gap: var(--sp-3);
-}
-
-@media (min-width: 640px) {
-  .giornaliere__carte {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.carta {
+.finita__tasti {
   position: relative;
+  display: flex;
+  gap: 10px;
+}
+
+.finita__tasto {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: 1fr auto;
-  column-gap: var(--sp-4);
-  row-gap: var(--sp-3);
-  height: 100%;
-  min-height: 150px;
-  padding: var(--sp-4);
-  border-radius: 28px;
-  background:
-    radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--c1) 16%, transparent), transparent 60%),
-    var(--surface);
-  box-shadow:
-    var(--shadow-sm),
-    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 22%, transparent);
-  color: var(--label);
-  transition: transform var(--dur-base) var(--ease-spring);
+  place-items: center;
+  height: 46px;
+  padding: 0 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: var(--giallo);
+  box-shadow: var(--ombra-tasto);
+  color: var(--ink);
+  font-family: var(--font-rounded);
+  font-size: 1.0625rem;
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
 }
 
-/* Tutta la carta e' il collegamento alla partita: si preme tutta. */
-.carta:active {
-  transform: scale(0.975);
+.finita__tasto:active {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
 }
 
-.carta__icona {
-  --lato: 62px;
-  grid-row: 1 / 3;
-  box-shadow:
-    0 8px 18px color-mix(in srgb, var(--c2) 30%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+.finita__tasto--libere {
+  flex: 1;
+  background: var(--menta);
 }
 
-.carta__testo {
+/* ─────────────────────────  Il riepilogo di un timbro  ───────────────────────── */
+
+.riepilogo {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--sp-4);
+}
+
+.riepilogo__testa {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.riepilogo__chi {
+  flex: 1;
   min-width: 0;
-  padding-top: 2px;
+  display: flex;
+  flex-direction: column;
 }
 
-.carta__nome {
-  margin: 0;
+.riepilogo__nome {
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 800;
-  letter-spacing: var(--tracking-tight);
+  font-size: 1.625rem;
+  line-height: 1.05;
 }
 
-.carta__stato {
-  font-size: var(--text-subhead);
-  font-weight: 700;
-  color: color-mix(in srgb, var(--c2) 78%, var(--label));
-}
-
-.carta__dettaglio {
+.riepilogo__quando {
   font-size: var(--text-footnote);
-  line-height: 1.35;
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
-.carta__azione {
-  grid-column: 2;
+/* I punti in un bollo verde che si stampa sul foglio. */
+.riepilogo__punti {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 50%;
+  background: #5edb84;
+  box-shadow: 0 4px 0 var(--ink), inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: var(--ink);
+  font-family: var(--font-rounded);
+  font-size: 1.375rem;
+  animation: timbro-stampa 560ms var(--ease-out) 200ms both;
+}
+
+.riepilogo__righe {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.riepilogo__riga {
+  display: flex;
   justify-content: space-between;
-  gap: var(--sp-3);
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
 }
 
-.carta__azione .anello {
-  color: var(--label);
-}
-
-.carta__bottone {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 var(--sp-4);
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--c2) 88%, #000);
-  color: #fff;
+.riepilogo__riga dt {
   font-size: var(--text-subhead);
-  font-weight: 700;
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--c2) 28%, transparent);
+  font-weight: 800;
+  color: var(--label-secondary);
 }
 
-.carta__bottone.is-rivedi {
-  background: var(--fill-tertiary);
-  color: var(--label);
-  box-shadow: none;
+.riepilogo__riga dd {
+  margin: 0;
+  font-weight: 900;
+  text-align: right;
 }
 
-.scheletro--riga {
-  height: 0.95em;
-  width: 58%;
-  border-radius: 6px;
+.riepilogo__tasti {
+  display: flex;
+  gap: 10px;
 }
 
-.scheletro--riga-corta {
-  height: 0.8em;
-  width: 82%;
-  border-radius: 6px;
+.riepilogo__tasto {
+  flex: 1;
+}
+
+.riepilogo__tasto.is-carta {
+  flex: none;
+  background: var(--surface);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .podietto__posto {
-    animation: none;
+  .riepilogo__punti,
+  .podietto__faccina,
+  .podietto__corona,
+  .carta-oggi__barra > span,
+  .carta-oggi__tasto,
+  .finita__coriandolo {
+    animation: none !important;
+  }
+}
+
+/* Su schermi larghi le carte vanno su due colonne. */
+@media (min-width: 640px) {
+  .giornaliere__carte {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

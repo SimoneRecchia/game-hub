@@ -8,11 +8,17 @@
 .amico-testa {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  border: var(--filo) solid var(--ink);
+  border-radius: 26px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  margin-bottom: 5px;
   text-align: center;
 }
 
@@ -45,9 +51,7 @@
   position: relative;
   display: inline-grid;
   border-radius: 50%;
-  box-shadow:
-    0 0 0 4px var(--bg),
-    0 12px 30px var(--shadow-tint);
+  box-shadow: var(--ombra-tasto);
   animation: amico-arriva 560ms var(--ease-spring) both;
 }
 
@@ -66,11 +70,11 @@
   position: absolute;
   right: 4px;
   bottom: 4px;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
+  border: var(--filo) solid var(--ink);
   border-radius: 50%;
-  background: #22c55e;
-  box-shadow: 0 0 0 4px var(--bg);
+  background: #5edb84;
 }
 
 .amico-testa__chi {
@@ -80,18 +84,18 @@
 
 .amico-stato {
   min-height: 1.6em;
-  padding: 3px 12px;
+  padding: 2px 12px;
+  border: 2px solid var(--ink);
   border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-  color: var(--label-secondary);
+  background: var(--surface-2);
+  color: var(--label);
   font-size: var(--text-footnote);
-  font-weight: 700;
+  font-weight: 900;
 }
 
 .amico-testa.is-online .amico-stato {
-  background: rgba(34, 197, 94, 0.14);
-  color: #15803d;
-  color: light-dark(#15803d, #4ade80);
+  background: #c9f1d5;
+  color: var(--ink);
 }
 
 /* ─────────────────────────  I giochi  ───────────────────────── */
@@ -131,9 +135,7 @@
   background:
     radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--c1) 18%, transparent), transparent 70%),
     var(--surface);
-  box-shadow:
-    var(--shadow-sm),
-    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 22%, transparent);
+  box-shadow: var(--ombra-album);
   color: var(--label);
   text-align: center;
   cursor: pointer;
@@ -166,7 +168,6 @@
 .amico-gioco .copertina {
   --lato: 50px;
   flex: none;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--c2) 26%, transparent);
 }
 
 .amico-gioco__nome {
@@ -179,8 +180,8 @@
 .amico-gioco__azione {
   margin-top: auto;
   font-size: var(--text-caption-1);
-  font-weight: 800;
-  color: color-mix(in srgb, var(--c2) 80%, var(--label));
+  font-weight: 900;
+  color: var(--label-secondary);
 }
 
 .amico-gioco.is-invio .amico-gioco__azione {
@@ -255,15 +256,12 @@
   background:
     radial-gradient(120% 140% at 0% 50%, color-mix(in srgb, var(--c1) 26%, transparent), transparent 70%),
     var(--surface);
-  box-shadow:
-    var(--shadow-sm),
-    inset 0 0 0 0.5px color-mix(in srgb, var(--c1) 30%, transparent);
+  box-shadow: var(--ombra-album);
 }
 
 .amico-preferito .copertina {
   --lato: 44px;
   flex: none;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--c2) 30%, transparent);
 }
 
 .amico-preferito__testo {
@@ -275,10 +273,10 @@
 
 .amico-preferito__sopra {
   font-size: var(--text-caption-1);
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 900;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--c2) 70%, var(--label-secondary));
+  color: var(--label-secondary);
 }
 
 .amico-preferito__nome {
@@ -323,12 +321,12 @@
   padding: var(--sp-3) var(--sp-3) var(--sp-3);
   border-radius: var(--r-lg);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .amico-posto dt {
   font-size: var(--text-caption-1);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
@@ -342,7 +340,7 @@
 .amico-posto__rank {
   font-family: var(--font-rounded);
   font-size: var(--text-title-1);
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1.1;
   letter-spacing: var(--tracking-tight);
   color: var(--label);
@@ -361,7 +359,7 @@
   overflow: hidden;
   border-radius: var(--r-xl);
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-album);
 }
 
 .amico-punti__testa,
@@ -536,6 +534,7 @@
   background: var(--surface);
   color: var(--label-secondary);
   text-align: center;
+  box-shadow: var(--ombra-album);
 }
 
 .amico-attesa {

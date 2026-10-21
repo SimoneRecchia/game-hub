@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { IconBackspace, IconShuffle } from '@/components/Icons'
 import { suona } from '@/lib/suoni'
 
@@ -16,8 +16,8 @@ interface Props {
   attivo: boolean
   /** Una parola fatta con tutte le lettere: chi gioca dice se e' giusta (null se la risposta non e' arrivata). */
   onProva: (parola: string) => Promise<EsitoProva | null>
-  /** A parola chiusa, la parola e com'e' finita: le lettere vanno al loro posto. */
-  chiusa?: { parola: string; trovata: boolean } | null
+  /** Gli altri comandi, dopo "Mescola" e "Cancella": la definizione, "Passo". */
+  altri?: ReactNode
 }
 
 /** Quanto trema la riga di una parola sbagliata prima che le lettere tornino sotto. */
@@ -26,14 +26,14 @@ const TREMA_MS = 480
 const tessereDi = (lettere: string): Tessera[] => [...lettere].map((lettera, id) => ({ id, lettera }))
 
 /**
- * Le lettere di una parola: sotto quelle da usare, sopra la parola che si
- * compone. Una lettera si tocca per metterla nella parola, e una lettera della
- * parola si tocca per rimetterla sotto; dalla tastiera si scrive, con il tasto
- * per cancellare e lo spazio per rimescolare. Quando le lettere sono tutte
- * sopra la parola si prova da sola: se non e' giusta la riga trema e le lettere
- * tornano sotto.
+ * Le lettere di una parola: sotto, nel leggio, quelle da usare; sopra, negli
+ * alloggi tratteggiati, la parola che si compone. Una lettera si tocca per
+ * metterla nella parola, e una lettera della parola si tocca per rimetterla
+ * nel leggio; dalla tastiera si scrive, con il tasto per cancellare e lo
+ * spazio per rimescolare. Quando le lettere sono tutte sopra la parola si
+ * prova da sola: se non e' giusta la riga trema e le lettere tornano giu'.
  */
-export function Lettere({ lettere, attivo, onProva, chiusa = null }: Props) {
+export function Lettere({ lettere, attivo, onProva, altri }: Props) {
   const [vassoio, setVassoio] = useState<Tessera[]>(() => tessereDi(lettere))
   const [poste, setPoste] = useState<number[]>([])
   const [esito, setEsito] = useState<EsitoProva | 'prova' | null>(null)
@@ -52,7 +52,7 @@ export function Lettere({ lettere, attivo, onProva, chiusa = null }: Props) {
     setGiri(0)
   }, [lettere])
 
-  const libera = esito === null && attivo && !chiusa
+  const libera = esito === null && attivo
   const perId = (id: number) => vassoio.find((t) => t.id === id)!
 
   const prova = useCallback((ids: number[]) => {
@@ -138,70 +138,71 @@ export function Lettere({ lettere, attivo, onProva, chiusa = null }: Props) {
   }, [libera, metti, mescola, togli, vassoio])
 
   const n = lettere.length
-  // A parola chiusa la riga di sopra ha la parola, nel suo ordine.
-  const sopra = chiusa ? [...chiusa.parola] : poste.map((id) => perId(id).lettera)
-  const fine = chiusa ? (chiusa.trovata ? ' is-trovata' : ' is-persa') : ''
+  const sopra = poste.map((id) => perId(id).lettera)
+  const messaggio =
+    esito === 'sbagliata' ? 'Non è una parola: riprova' : poste.length === 0 ? 'Tocca le lettere nell’ordine giusto' : ''
   return (
-    <div
-      className={`ana-lettere${esito ? ` is-${esito}` : ''}${fine}`}
-      style={{ '--n': n } as CSSProperties}
-    >
-      <div className="ana-lettere__parola" aria-label="La parola" aria-live="polite">
+    <div className={`ana-lettere${esito ? ` is-${esito}` : ''}`} style={{ '--n': n } as CSSProperties}>
+      <div className="ana-risposta" aria-label="La tua parola" aria-live="polite">
         {Array.from({ length: n }, (_, i) => {
           const lettera = sopra[i]
-          const id = chiusa ? null : poste[i]
+          const id = poste[i]
           return (
             <button
               key={i}
               type="button"
-              className={`ana-casella${lettera ? ' is-piena' : ''}`}
+              className={`ana-slot${lettera ? ' is-piena' : ''}`}
               style={{ '--i': i } as CSSProperties}
-              disabled={!libera || id === undefined || id === null}
-              onClick={() => id !== undefined && id !== null && togli(id)}
+              disabled={!libera || id === undefined}
+              onClick={() => id !== undefined && togli(id)}
               aria-label={lettera ? `${lettera.toUpperCase()}, togli` : 'Vuota'}
             >
-              {lettera ? <span className="ana-tessera ana-tessera--posta">{lettera.toUpperCase()}</span> : null}
+              {lettera ? lettera.toUpperCase() : null}
             </button>
           )
         })}
       </div>
 
-      {!chiusa && (
-        <>
-          <div className={`ana-lettere__vassoio${giri === 0 ? '' : giri % 2 ? ' is-mescolato' : ' is-rimescolato'}`}>
-            {vassoio.map((t) => {
-              const usata = poste.includes(t.id)
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`ana-posto${usata ? ' is-vuoto' : ''}`}
-                  disabled={!libera || usata}
-                  onClick={() => metti(t.id)}
-                  aria-label={usata ? 'Già usata' : t.lettera.toUpperCase()}
-                >
-                  {!usata && <span className="ana-tessera">{t.lettera.toUpperCase()}</span>}
-                </button>
-              )
-            })}
-          </div>
-          <div className="ana-lettere__comandi">
-            <button type="button" className="ana-comando" onClick={mescola} disabled={!libera}>
-              <IconShuffle size={18} />
-              Mescola
-            </button>
+      <p className={`ana-messaggio${esito === 'sbagliata' ? ' is-errore' : ''}`}>{messaggio}</p>
+
+      <div
+        className={`ana-leggio${giri === 0 ? '' : giri % 2 ? ' is-mescolato' : ' is-rimescolato'}`}
+        aria-label="Le lettere"
+      >
+        {vassoio.map((t, k) => {
+          const usata = poste.includes(t.id)
+          return (
             <button
+              key={t.id}
               type="button"
-              className="ana-comando"
-              onClick={() => setPoste([])}
-              disabled={!libera || poste.length === 0}
+              className={`ana-tessera${usata ? ' is-usata' : ''}`}
+              style={{ '--k': k } as CSSProperties}
+              disabled={!libera || usata}
+              onClick={() => metti(t.id)}
+              aria-label={usata ? 'Già usata' : t.lettera.toUpperCase()}
             >
-              <IconBackspace size={18} />
-              Cancella
+              {usata ? '' : t.lettera.toUpperCase()}
             </button>
-          </div>
-        </>
-      )}
+          )
+        })}
+      </div>
+
+      <div className="ana-comandi">
+        <button type="button" className="ana-comando" onClick={mescola} disabled={!libera}>
+          <IconShuffle size={22} />
+          Mescola
+        </button>
+        <button
+          type="button"
+          className="ana-comando"
+          onClick={() => setPoste([])}
+          disabled={!libera || poste.length === 0}
+        >
+          <IconBackspace size={22} />
+          Cancella
+        </button>
+        {altri}
+      </div>
     </div>
   )
 }

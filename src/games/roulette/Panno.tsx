@@ -13,10 +13,10 @@ export interface FicheAltrui {
 
 const NOMI_SEMPLICI: Record<string, string> = {
   manque: '1–18',
-  pari: 'PARI',
+  pari: 'Pari',
   rosso: '',
   nero: '',
-  dispari: 'DISPARI',
+  dispari: 'Dispari',
   passe: '19–36',
 }
 
@@ -29,8 +29,8 @@ const NOMI_SEMPLICI: Record<string, string> = {
  * ogni numero e' un bottone, e Invio ci mette un pieno.
  *
  * A giro lanciato (`numero`) si accendono il numero e le caselle che vincono,
- * il dolly si posa sul numero, le fiches perse vanno via e accanto a quelle
- * vinte il croupier mette la vincita.
+ * il dolly si posa sul numero, le altre fiches scivolano via piano e sopra quelle
+ * vinte compare quel che tornano, puntata compresa.
  */
 export function Panno({
   mie,
@@ -120,16 +120,13 @@ export function Panno({
 
   return (
     <div className={`rl-panno${attivo ? ' is-attivo' : ''}${numero !== null ? ' is-esito' : ''}`}>
-      <span className="rl-panno__angolo" aria-hidden="true">
-        <span>Min 1</span>
-      </span>
       {SEMPLICI.map((chiave, k) =>
         esterna(
           chiave,
           chiave === 'rosso' || chiave === 'nero' ? (
             <span className={`rl-rombo is-${chiave}`} aria-hidden="true" />
           ) : (
-            <span className="rl-casella__scritta">{NOMI_SEMPLICI[chiave]}</span>
+            <span className="rl-casella__scritta is-in-piedi">{NOMI_SEMPLICI[chiave]}</span>
           ),
           'rl-casella--semplice',
           { gridColumn: 1, gridRow: `${2 + k * 2} / span 2` },
@@ -144,7 +141,7 @@ export function Panno({
         ),
       )}
       {[1, 2, 3].map((c) =>
-        esterna(`colonna${c}`, <span className="rl-casella__scritta">2:1</span>, 'rl-casella--colonna', {
+        esterna(`colonna${c}`, <span className="rl-casella__scritta">2 a 1</span>, 'rl-casella--colonna', {
           gridColumn: 2 + c,
           gridRow: 14,
         }),
@@ -191,7 +188,7 @@ export function Panno({
         {altrui.map((a, i) =>
           Object.entries(a.puntate).map(([chiave, quanto]) => {
             const p = postoDi(chiave)
-            const esito = numero === null ? '' : vincono.has(chiave) ? ' is-vinta' : ' is-persa'
+            const esito = numero === null ? '' : vincono.has(chiave) ? ' is-vinta' : ' is-via'
             return (
               <FicheRL
                 key={`${a.id}:${chiave}`}
@@ -206,7 +203,7 @@ export function Panno({
         {Object.entries(mie).map(([chiave, quanto]) => {
           const p = postoDi(chiave)
           const vinta = numero !== null && vincono.has(chiave)
-          const esito = numero === null ? '' : vinta ? ' is-vinta' : ' is-persa'
+          const esito = numero === null ? '' : vinta ? ' is-vinta' : ' is-via'
           return (
             <span
               key={chiave}
@@ -214,7 +211,7 @@ export function Panno({
               style={{ '--x': `${p.x}%`, '--y': `${p.y}%` } as CSSProperties}
             >
               <FicheRL importo={quanto} key={quanto} className="rl-fiche__disco" />
-              {vinta && <FicheRL importo={quanto * pagaDi(chiave)} className="rl-fiche__paga" />}
+              {vinta && <span className="rl-fiche__paga u-tabnum">+{(quanto * (pagaDi(chiave) + 1)).toLocaleString('it-IT')}</span>}
             </span>
           )
         })}
@@ -230,7 +227,8 @@ export function Panno({
             key={numero}
             style={{ '--x': `${postoDi(String(numero)).x}%`, '--y': `${postoDi(String(numero)).y}%` } as CSSProperties}
           >
-            <span className="rl-dolly__corona" />
+            <span className="rl-dolly__testa" />
+            <span className="rl-dolly__base" />
           </span>
         )}
       </div>

@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
+import type { DatiAdesivo } from '@/components/Adesivo'
 import { IconGiornaliere } from '@/components/Icons'
 import './Avvisi.css'
+// L'adesivo del giro dopo si veste con gli altri adesivi della Fortuna, in voli.css.
+import './voli.css'
 
 /**
  * Il saldo non basta per puntare: lo si dice dove si punterebbe, con quanto
@@ -10,7 +13,8 @@ import './Avvisi.css'
  * sono il saldo. E' lo stesso avviso in tutti i giochi della Fortuna, una
  * targa scura con il filo d'ambra come il tabellone, in tutti e due i temi:
  * un gioco che non si puo' giocare non deve sembrare fermo, ne' rotto.
- * L'anello dice a che punto si e', e il numero dentro e' il saldo.
+ * L'anello dice a che punto si e', e il numero dentro e' il saldo. Dice che
+ * cosa serve e dove trovarlo, mai che cosa manca come un rimprovero.
  *
  * Il testo e' una regione `status`: chi legge lo schermo lo sente quando
  * compare, senza il link, che si raggiunge come gli altri.
@@ -56,7 +60,7 @@ export function PochiPunti({
           <span className="ct-pochi__titolo">
             {titolo ?? (servono === 1 ? 'Serve 1 punto' : `Servono ${servono} punti`)}
           </span>
-          <span className="ct-pochi__sotto">{testo ?? (ha === 0 ? 'Il saldo è a zero' : `Ne hai ${ha}`)}</span>
+          <span className="ct-pochi__sotto">{testo ?? (ha === 0 ? 'Si fanno con le giornaliere' : `Ne hai ${ha}`)}</span>
         </span>
         <Collegamento to={ROTTE.home} direzione="scheda" className="ct-pochi__vai">
           <IconGiornaliere size={19} />
@@ -86,3 +90,18 @@ export function InvitoPuntata({ children, className = '' }: { children: ReactNod
 /** La classe della fila di fiches che aspetta il primo tocco (Avvisi.css). */
 export const CHIAMA_FICHES = 'ct-chiama'
 
+/**
+ * Un giro che non ha ridato niente: il biglietto lilla del giro dopo
+ * (`ct-adesivo-ritenta`, in voli.css con gli altri adesivi della Fortuna), che
+ * entra piano e non trema, senza suono — le fiches che tornano al banco hanno
+ * gia' il loro. Dice una parola gentile che invita al giro dopo ("Al prossimo
+ * giro"), mai che cosa si e' perso: la puntata si e' pagata quando si e'
+ * giocato, e da li' in poi si racconta solo quel che torna.
+ */
+export const adesivoRitenta = (titolo: string, sotto?: string, durata = 1_700): Omit<DatiAdesivo, 'id'> => ({
+  durata,
+  tono: 'vivace',
+  titolo,
+  sotto,
+  classe: 'ct-adesivo-ritenta',
+})

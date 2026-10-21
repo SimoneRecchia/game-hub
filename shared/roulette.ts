@@ -22,8 +22,6 @@
 
 export const NOME_ROULETTE = 'Roulette'
 export const PUNTATA_MINIMA_RL = 1
-/** Le fiches della puntata, dalla piu' piccola: si sommano. */
-export const GETTONI_RL: readonly number[] = [1, 5, 25, 100, 500]
 
 /** L'ordine dei numeri sulla ruota europea, in senso orario dallo zero. */
 export const RUOTA_ROULETTE: readonly number[] = [

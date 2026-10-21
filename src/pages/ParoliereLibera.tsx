@@ -47,7 +47,7 @@ export default function ParoliereLibera() {
 
   if (!v) {
     return (
-      <Pagina titolo="Paroliere" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina titolo="Paroliere" gioco="paroliere" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <InterruttoreContro value={contro} onChange={setContro} />
         <Sezione titolo="Partita">
           <Opzioni>
@@ -83,28 +83,31 @@ export default function ParoliereLibera() {
 
   const record = g.lato ? g.conti.migliore[g.lato] : 0
   return (
-    <Pagina key="partita" titolo="Paroliere" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina key="partita" titolo="Paroliere" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
       <PartitaParoliere
         key={g.numero}
         vista={v}
         comandi={g.comandi}
         subito
+        punti={String(v.punteggio)}
         fine={
           <>
-            <div className="par-totale">
-              <p className="par-totale__valore u-tabnum">{v.punteggio} punti</p>
-              <p className="par-totale__dettaglio u-tabnum">
-                {v.punteggio > 0 && v.punteggio >= record ? 'Il tuo record' : `Record ${record}`} · non conta per la
-                classifica
+            {(record > 0 || v.punteggio > 0) && (
+              <p className="par-piede-fine u-tabnum">
+                {v.punteggio > 0 && v.punteggio >= record ? 'Il tuo record!' : `Il tuo record: ${record}`}
               </p>
-            </div>
-            <div className="par-azioni">
-              <button type="button" className="par-link" onClick={() => g.lato && comincia(String(g.lato) as LatoLibero)}>
-                <IconRefresh size={18} />
-                Un’altra
+            )}
+            <div className="par-fila-tasti">
+              <button type="button" className="par-tasto par-tasto--carta" onClick={g.ricomincia}>
+                Esci
               </button>
-              <button type="button" className="par-link" onClick={g.ricomincia}>
-                Cambia griglia
+              <button
+                type="button"
+                className="par-tasto par-tasto--verde"
+                onClick={() => g.lato && comincia(String(g.lato) as LatoLibero)}
+              >
+                <IconRefresh size={18} />
+                Gioca ancora
               </button>
             </div>
           </>

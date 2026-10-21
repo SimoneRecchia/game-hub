@@ -11,6 +11,12 @@
  * su un timbro vero. Vale per tutti e due i toni, quindi i selettori ne
  * nominano uno.
  */
+/* Il timbro sta sulla carta del foglio, chiara anche nel tema scuro: dentro vale lo schema chiaro. */
+.adesivo.nomi-timbro {
+  color-scheme: light;
+  --nomi-foglio: #fff8e2;
+}
+
 .adesivo.nomi-timbro.is-vivace .adesivo__carta,
 .adesivo.nomi-timbro.is-bordato .adesivo__carta {
   position: relative;

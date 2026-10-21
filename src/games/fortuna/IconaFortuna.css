@@ -1,0 +1,433 @@
+/*
+ * Il disegno grande di un gioco della Fortuna (IconaFortuna.tsx): strati su una
+ * griglia di 48, uno sopra l'altro. Si muovono solo transform e opacity, e lo
+ * strato che si muove ha il suo will-change: si disegna una volta, con la sua
+ * ombra, e poi il telefono lo sposta e basta.
+ */
+.ifo-icona {
+  position: relative;
+  display: block;
+  flex: none;
+  pointer-events: none;
+}
+
+.ifo-piano,
+.ifo-strato,
+.ifo-spessore {
+  position: absolute;
+  inset: 0;
+}
+
+.ifo-strato {
+  display: grid;
+}
+
+/* I disegni sbordano dal loro quadrato quanto vuole il tratto. */
+.ifo-strato > svg,
+.ifo-spessore > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  overflow: visible;
+}
+
+.ifo-strato > svg {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- I rulli della slot ---------- */
+
+/* La finestra della slot: x da 9 a 37 e y da 15 a 30, sulla griglia di 48. */
+.ifo-rulli {
+  position: absolute;
+  left: 18.75%;
+  top: 31.25%;
+  width: 58.333%;
+  height: 31.25%;
+  display: flex;
+  overflow: hidden;
+}
+
+.ifo-colonna {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Dieci caselle, una per finestra: ferma, la seconda, che e' un 7 su tutti e tre i rulli. */
+.ifo-striscia {
+  display: flex;
+  flex-direction: column;
+  height: 1000%;
+  transform: translateY(-10%);
+}
+
+.ifo-cella {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+
+.ifo-sette {
+  font-family: var(--font-rounded);
+  font-size: var(--ifo-sette);
+  font-weight: 400;
+  line-height: 1;
+  color: #e5383b;
+  -webkit-text-stroke: 1px #2a1f5c;
+  paint-order: stroke fill;
+}
+
+.ifo-bar {
+  font-family: var(--font-rounded);
+  font-size: var(--ifo-bar);
+  font-weight: 400;
+  line-height: 1;
+  padding: 1px 2px;
+  border-radius: 2px;
+  background: #2a1f5c;
+  color: #ffd84d;
+  letter-spacing: 0.02em;
+}
+
+.ifo-simbolo {
+  width: var(--ifo-simbolo);
+  height: var(--ifo-simbolo);
+}
+
+/* ---------- I movimenti ---------- */
+
+/* Crazy Time: le lampadine a turno, la ruota che parte e si ferma, la lancetta che scatta sui pioli. */
+.ifo-luci-a {
+  animation: ifo-luci 0.9s steps(1) infinite;
+  will-change: opacity;
+}
+
+/* Mezzo giro indietro, cosi' le due meta' si alternano da subito. */
+.ifo-luci-b {
+  animation: ifo-luci 0.9s steps(1) -0.45s infinite;
+  will-change: opacity;
+}
+
+.ifo-gira-ferma {
+  animation: ifo-gira-ferma 5s infinite;
+  will-change: transform;
+}
+
+.ifo-tic {
+  animation: ifo-tic 5s infinite;
+  will-change: transform;
+}
+
+.ifo-premio {
+  animation: ifo-premio 5s infinite;
+  will-change: transform;
+}
+
+/* La slot: la leva, poi i rulli uno dopo l'altro, le lampadine che lampeggiano e le scintille del 7. */
+.ifo-tira {
+  animation: ifo-tira 4.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.ifo-rullo-1 {
+  animation: ifo-rullo-1 4.2s infinite;
+  will-change: transform;
+}
+
+.ifo-rullo-2 {
+  animation: ifo-rullo-2 4.2s infinite;
+  will-change: transform;
+}
+
+.ifo-rullo-3 {
+  animation: ifo-rullo-3 4.2s infinite;
+  will-change: transform;
+}
+
+.ifo-lampeggia {
+  animation: ifo-lampeggia 4.2s infinite;
+  will-change: opacity;
+}
+
+.ifo-scintilla {
+  animation: ifo-scintilla 4.2s infinite;
+  will-change: opacity;
+}
+
+/* Il blackjack: le carte, storte, galleggiano. Ferme restano storte. */
+.ifo-galleggia {
+  transform: rotate(var(--ifo-r, 0deg));
+  animation: ifo-galleggia 4.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* La roulette: il piatto gira, la pallina gli corre contro. */
+.ifo-gira-svelta {
+  animation: ifo-gira 7s linear infinite;
+  will-change: transform;
+}
+
+.ifo-orbita {
+  animation: ifo-contro 2.6s linear infinite;
+  will-change: transform;
+}
+
+/* Il SuperEnalotto: le palline saltano una dopo l'altra. */
+.ifo-saltella {
+  animation: ifo-saltella 2.4s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes ifo-luci {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Due giri e mezzo: la ruota ha i colori ogni mezzo giro, e si ferma com'era partita. */
+@keyframes ifo-gira-ferma {
+  0%,
+  10% {
+    transform: rotate(0deg);
+    animation-timing-function: cubic-bezier(0.12, 0.62, 0.22, 1);
+  }
+  74%,
+  100% {
+    transform: rotate(900deg);
+  }
+}
+
+/* La lancetta scatta a ogni piolo, sempre piu' di rado e sempre meno, finche' la ruota non si ferma. */
+@keyframes ifo-tic {
+  0%,
+  10% {
+    transform: rotate(0);
+  }
+  13% {
+    transform: rotate(-16deg);
+  }
+  16% {
+    transform: rotate(0);
+  }
+  19% {
+    transform: rotate(-16deg);
+  }
+  22% {
+    transform: rotate(0);
+  }
+  25% {
+    transform: rotate(-15deg);
+  }
+  28% {
+    transform: rotate(0);
+  }
+  32% {
+    transform: rotate(-14deg);
+  }
+  36% {
+    transform: rotate(0);
+  }
+  41% {
+    transform: rotate(-12deg);
+  }
+  46% {
+    transform: rotate(0);
+  }
+  53% {
+    transform: rotate(-10deg);
+  }
+  60% {
+    transform: rotate(0);
+  }
+  68% {
+    transform: rotate(-7deg);
+  }
+  75%,
+  100% {
+    transform: rotate(0);
+  }
+}
+
+/* Il mozzo si gonfia quando la ruota si ferma. */
+@keyframes ifo-premio {
+  0%,
+  74% {
+    transform: scale(1);
+  }
+  80% {
+    transform: scale(1.3);
+  }
+  86%,
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes ifo-tira {
+  0%,
+  6% {
+    transform: rotate(0);
+  }
+  12% {
+    transform: rotate(34deg);
+  }
+  17% {
+    transform: rotate(-6deg);
+  }
+  21%,
+  100% {
+    transform: rotate(0);
+  }
+}
+
+/* Ogni rullo corre dall'ultima casella alla seconda, passa un filo oltre e torna: il primo, poi gli altri. */
+@keyframes ifo-rullo-1 {
+  0%,
+  20% {
+    transform: translateY(-90%);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 1);
+  }
+  46% {
+    transform: translateY(-8.4%);
+    animation-timing-function: ease-in-out;
+  }
+  50%,
+  100% {
+    transform: translateY(-10%);
+  }
+}
+
+@keyframes ifo-rullo-2 {
+  0%,
+  20% {
+    transform: translateY(-90%);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 1);
+  }
+  56% {
+    transform: translateY(-8.4%);
+    animation-timing-function: ease-in-out;
+  }
+  60%,
+  100% {
+    transform: translateY(-10%);
+  }
+}
+
+@keyframes ifo-rullo-3 {
+  0%,
+  20% {
+    transform: translateY(-90%);
+    animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 1);
+  }
+  66% {
+    transform: translateY(-8.4%);
+    animation-timing-function: ease-in-out;
+  }
+  70%,
+  100% {
+    transform: translateY(-10%);
+  }
+}
+
+@keyframes ifo-lampeggia {
+  0%,
+  70% {
+    opacity: 0.7;
+  }
+  72%,
+  76%,
+  80%,
+  84%,
+  88% {
+    opacity: 1;
+  }
+  74%,
+  78%,
+  82%,
+  86% {
+    opacity: 0.15;
+  }
+  92%,
+  100% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes ifo-scintilla {
+  0%,
+  70% {
+    opacity: 0;
+  }
+  75%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes ifo-galleggia {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--ifo-r, 0deg));
+  }
+  50% {
+    transform: translateY(-7px) rotate(var(--ifo-r, 0deg));
+  }
+}
+
+@keyframes ifo-gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes ifo-contro {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes ifo-saltella {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Ferma: ogni strato nella posa in cui il suo movimento riparte, i rulli sul 7, le scintille spente. */
+.ifo-icona--ferma .ifo-strato,
+.ifo-icona--ferma .ifo-striscia {
+  animation: none;
+  will-change: auto;
+}
+
+.ifo-icona--ferma .ifo-scintilla {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ifo-icona .ifo-strato,
+  .ifo-icona .ifo-striscia {
+    animation: none;
+    will-change: auto;
+  }
+
+  .ifo-icona .ifo-scintilla {
+    opacity: 0;
+  }
+}

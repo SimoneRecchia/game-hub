@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Button } from '@/components/Button'
+import { IconaGioco } from '@/components/IconaGioco'
 import { Numero } from '@/components/Elementi'
 import { suona } from '@/lib/suoni'
 import { LETTERE } from '@shared/dawg'
@@ -129,12 +129,15 @@ export function PartitaParoliere({
   vista,
   comandi,
   fine,
+  punti: puntiFine,
   subito = false,
 }: {
   vista: VistaParoliere
   comandi: ComandiParoliere
-  /** Sotto i conti, a partita finita: i punti in classifica, i bottoni. */
+  /** In fondo alla carta dei conti, a partita finita: i bottoni, o chi ha vinto la sfida. */
   fine: ReactNode
+  /** Il bollino della carta dei conti: i punti in classifica, o quelli sulla griglia. */
+  punti?: string
   /** La clessidra si gira da sola: nella libera, dove si e' appena scelto di giocare. */
   subito?: boolean
 }) {
@@ -388,10 +391,18 @@ export function PartitaParoliere({
   const quota = vista.traguardo ? Math.min(1, vista.punteggio / vista.traguardo) : null
   const urgente = scena === 'gioca' && vista.scadenza !== null && secondi <= URGENTE_S
 
+  const vassoio = useRef<HTMLDivElement>(null)
+  const mostraStrada = useCallback((s: StradaEvidente | null) => {
+    setMostrata(s)
+    // La strada si accende sui dadi, che nei conti stanno sotto la carta: ci si va.
+    if (s) vassoio.current?.scrollIntoView({ behavior: ridotto() ? 'auto' : 'smooth', block: 'nearest' })
+  }, [])
+
+  const righeParole = `${vista.trovate.length} ${vista.trovate.length === 1 ? 'parola' : 'parole'}`
   return (
     <div className={`par is-${scena}${urgente ? ' is-urgente' : ''}`}>
-      <div className="par-testa">
-        <div className="par-tempo">
+      <div className="par-quadro">
+        <div className={`par-tempo${urgente ? ' is-urgente' : ''}`}>
           <Clessidra
             restante={restante / vista.tempoMs}
             corre={scena === 'gioca' && vista.scadenza !== null}
@@ -403,57 +414,58 @@ export function PartitaParoliere({
           </span>
         </div>
         {/* Il numero conta fotogramma per fotogramma: lo annuncia gia' la riga della parola, con i suoi punti. */}
-        <div className="par-punteggio">
-          <span className="par-punteggio__valore">
-            <Numero valore={vista.punteggio} durata={500} />
-          </span>
-          <span className="par-punteggio__etichetta">{vista.punteggio === 1 ? 'punto' : 'punti'}</span>
-          {punti.map((p) => (
-            <span
-              key={p.chiave}
-              className="par-punteggio__piu"
-              onAnimationEnd={() => setPunti((q) => q.filter((x) => x.chiave !== p.chiave))}
-            >
-              +{p.valore}
-            </span>
-          ))}
-        </div>
         <div className="par-conto">
-          <span className="par-conto__valore u-tabnum">{vista.trovate.length}</span>
-          <span className="par-conto__etichetta">{vista.trovate.length === 1 ? 'parola' : 'parole'}</span>
+          <span className="par-conto__riga u-tabnum">
+            {righeParole}
+            {vista.traguardo !== null && ` · traguardo ${vista.traguardo}`}
+          </span>
+          <span className="par-conto__punti">
+            <Numero valore={vista.punteggio} durata={500} /> {vista.punteggio === 1 ? 'punto' : 'punti'}
+            {punti.map((p) => (
+              <span
+                key={p.chiave}
+                className="par-conto__piu"
+                onAnimationEnd={() => setPunti((q) => q.filter((x) => x.chiave !== p.chiave))}
+              >
+                +{p.valore}
+              </span>
+            ))}
+          </span>
+          {quota !== null && (
+            <span className={`par-barra${quota >= 1 ? ' is-piena' : ''}`} aria-hidden="true">
+              <i style={{ '--quota': quota } as CSSProperties} />
+            </span>
+          )}
         </div>
       </div>
 
-      {quota !== null && (
-        <div className="par-traguardo" aria-label={`Traguardo: ${vista.traguardo} punti`}>
-          <div className="par-traguardo__pista">
-            <div
-              className={`par-traguardo__barra${quota >= 1 ? ' is-pieno' : ''}`}
-              style={{ '--quota': quota } as CSSProperties}
-            />
-          </div>
-          <span className="par-traguardo__testo u-tabnum">
-            {quota >= 1 ? 'Traguardo!' : `Traguardo ${vista.traguardo}`}
-          </span>
-        </div>
-      )}
-
-      {scena !== 'fine' && (
+      {scena === 'fine' ? (
+        <Conti
+          vista={vista}
+          titolo={timbro}
+          punti={puntiFine}
+          mostrata={mostrata}
+          onMostra={mostraStrada}
+          fine={fine}
+        />
+      ) : (
         <RigaParola
           tracciata={tracciata.length > 0 ? parolaDi(tracciata) : digitata}
           digitataSbagliata={digitata.length > 0 && tracciata.length === 0 && stradaDigitata === null}
           ultima={ultima}
           suggerimento={
             scena === 'chiusa'
-              ? null
-              : scena === 'gioca' && vista.trovate.length === 0 && !ultima
-                ? 'Scorri sulle lettere vicine'
-                : null
+              ? 'I dadi sono sotto la cupola'
+              : scena === 'scuote'
+                ? 'Si tirano i dadi…'
+                : scena === 'gioca' && vista.trovate.length === 0 && !ultima
+                  ? 'Scorri sulle lettere vicine'
+                  : null
           }
         />
       )}
 
-      <div className="par-vassoio">
+      <div className="par-vassoio" ref={vassoio}>
         <Griglia
           facce={facce}
           lato={vista.lato}
@@ -466,7 +478,7 @@ export function PartitaParoliere({
         />
         {cupola && (
           <div className={`par-cupola${cupola === 'via' ? ' is-via' : ''}`} aria-hidden="true">
-            <span className="par-cupola__nome">Paroliere</span>
+            <span className="par-cupola__segno">?</span>
           </div>
         )}
         {scena === 'tempo' && (
@@ -477,24 +489,28 @@ export function PartitaParoliere({
       </div>
 
       {scena === 'chiusa' || scena === 'scuote' ? (
-        <div className="par-via">
-          <Button size="lg" fullWidth loading={scena === 'scuote'} onClick={() => void gira()}>
-            Gira la clessidra
-          </Button>
-        </div>
-      ) : scena === 'fine' ? (
-        <Conti vista={vista} mostrata={mostrata} onMostra={setMostrata} fine={fine} />
-      ) : (
+        <section className="par-carta par-via">
+          <p className="par-via__riga">Una griglia al giorno, la stessa per tutti.</p>
+          <button
+            type="button"
+            className="par-tasto par-tasto--verde par-tasto--respira"
+            onClick={() => void gira()}
+            disabled={scena === 'scuote'}
+          >
+            Comincia
+          </button>
+        </section>
+      ) : scena === 'fine' ? null : (
         <>
           <Trovate trovate={vista.trovate} />
           <div className="par-piede">
             <button
               type="button"
-              className={`par-basta${conferma ? ' is-conferma' : ''}`}
+              className={`par-tasto par-basta${conferma ? ' is-conferma' : ''}`}
               onClick={basta}
               disabled={scena !== 'gioca'}
             >
-              {conferma ? 'Tocca ancora per finire' : 'Basta'}
+              {conferma ? 'Tocca ancora per finire' : 'Ho finito'}
             </button>
           </div>
         </>
@@ -519,13 +535,7 @@ function RigaParola({
     const lettere = tracciata.length
     return (
       <div className={`par-parola is-traccia${digitataSbagliata ? ' is-fuori' : ''}`}>
-        <span className="par-parola__lettere">
-          {[...tracciata.toUpperCase()].map((l, i) => (
-            <span key={i} className="par-parola__lettera">
-              {l}
-            </span>
-          ))}
-        </span>
+        <b className="par-parola__testo">{tracciata.toUpperCase()}</b>
         {lettere >= LETTERE_MINIME && !digitataSbagliata && (
           <span className="par-parola__valore u-tabnum">+{puntiParola(lettere)}</span>
         )}
@@ -536,10 +546,12 @@ function RigaParola({
     const tono = TONI[ultima.esito]
     return (
       <div key={ultima.chiave} className={`par-parola is-esito is-${tono}`} role="status">
-        <span className="par-parola__testo">{ultima.parola.toUpperCase()}</span>
-        <span className="par-parola__messaggio">
-          {ultima.esito === 'attesa' ? '' : ultima.esito === 'nuova' ? `+${ultima.valore}` : MESSAGGI[ultima.esito]}
-        </span>
+        <b className="par-parola__testo">{ultima.parola.toUpperCase()}</b>
+        {ultima.esito !== 'attesa' && (
+          <span className="par-parola__esito u-tabnum">
+            {ultima.esito === 'nuova' ? `+${ultima.valore}` : MESSAGGI[ultima.esito]}
+          </span>
+        )}
       </div>
     )
   }
@@ -550,7 +562,7 @@ function RigaParola({
   )
 }
 
-/** Le parole trovate durante la partita, dall'ultima: la nuova entra con un salto. */
+/** Le parole trovate durante la partita, dall'ultima: etichette col filo, e la nuova entra con un salto. */
 function Trovate({ trovate }: { trovate: string[] }) {
   // Quelle che c'erano gia' aprendo la pagina non saltano.
   const viste = useRef(new Set(trovate))
@@ -561,7 +573,7 @@ function Trovate({ trovate }: { trovate: string[] }) {
         return (
           <li key={p} className={`par-trovata${nuova ? ' is-nuova' : ''}${puntiParola(p.length) >= 5 ? ' is-lunga' : ''}`}>
             {p.toUpperCase()}
-            <span className="par-trovata__punti">{puntiParola(p.length)}</span>
+            <small className="par-trovata__punti">+{puntiParola(p.length)}</small>
           </li>
         )
       })}
@@ -569,27 +581,45 @@ function Trovate({ trovate }: { trovate: string[] }) {
   )
 }
 
+/** Quante parole della griglia si vedono prima di "Tutte": tre o quattro righe, come nel prototipo. */
+const PAROLE_IN_VISTA = 12
+
 /**
- * I conti a partita finita: il punteggio, il traguardo, e le parole — le mie,
- * e tutte quelle comuni che la griglia aveva, con quelle trovate accese.
- * Toccandone una si accende la sua strada sui dadi.
+ * La carta dei conti a partita finita, come nel prototipo: l'adesivo del
+ * gioco, com'e' andata, la barra del traguardo, i punti nel bollino, e le
+ * parole — le mie rare e tutte quelle comuni che la griglia aveva, con quelle
+ * trovate accese. Toccandone una si accende la sua strada sui dadi, sotto.
  */
 function Conti({
   vista,
+  titolo,
+  punti,
   mostrata,
   onMostra,
   fine,
 }: {
   vista: VistaParoliere
+  titolo: string
+  punti?: string
   mostrata: StradaEvidente | null
   onMostra: (s: StradaEvidente | null) => void
   fine: ReactNode
 }) {
+  const [tutte, setTutte] = useState(false)
   const trovate = useMemo(() => new Set(vista.trovate), [vista.trovate])
   const comuni = vista.comuni ?? []
   const prese = comuni.filter((p) => trovate.has(p)).length
   // Le mie parole che non sono fra le comuni: rare, ma valgono lo stesso.
   const rare = ordinaParole(vista.trovate.filter((p) => !comuni.includes(p)))
+  const quota = vista.traguardo ? Math.min(1, vista.punteggio / vista.traguardo) : null
+  const n = vista.trovate.length
+  const riga =
+    `${n} ${n === 1 ? 'parola' : 'parole'} · ${vista.punteggio} ${vista.punteggio === 1 ? 'punto' : 'punti'}` +
+    (vista.traguardo !== null
+      ? quota !== null && quota >= 1
+        ? ', traguardo raggiunto'
+        : `, il traguardo era ${vista.traguardo}`
+      : ' sulla griglia')
   const mostra = (p: string) => {
     const strada = vista.griglia ? stradaDi(vista.griglia, p) : null
     if (!strada) return
@@ -605,30 +635,49 @@ function Conti({
         aria-label={`${p}, ${puntiParola(p.length)} ${puntiParola(p.length) === 1 ? 'punto' : 'punti'}${presa ? ', trovata' : ''}`}
       >
         {p.toUpperCase()}
-        <span className="par-voce__punti">{puntiParola(p.length)}</span>
+        <small className="par-voce__punti">{puntiParola(p.length)}</small>
       </button>
     </li>
   )
+  // Prima quelle trovate: chiusa, la carta mostra almeno le proprie.
+  const ordinate = [...comuni.filter((p) => trovate.has(p)), ...comuni.filter((p) => !trovate.has(p))]
+  const visibili = tutte ? ordinate : ordinate.slice(0, PAROLE_IN_VISTA)
   return (
-    <div className="par-conti">
-      <div className="par-esito">{fine}</div>
+    <section className="par-carta par-conti" aria-label="Com’è andata">
+      <span className="par-conti__icona">
+        <IconaGioco gioco="paroliere" lato={64} giro={-6} />
+      </span>
+      <h2 className="par-conti__titolo">{quota !== null && quota >= 1 ? 'Traguardo!' : titolo}</h2>
+      <p className="par-conti__riga u-tabnum">{riga}</p>
+      {quota !== null && (
+        <span className={`par-barra par-barra--grande${quota >= 1 ? ' is-piena' : ''}`} aria-hidden="true">
+          <i style={{ '--quota': quota } as CSSProperties} />
+        </span>
+      )}
+      {punti && <span className="par-conti__punti u-tabnum">{punti}</span>}
       {rare.length > 0 && (
         <section className="par-elenco">
-          <h2 className="par-elenco__titolo">Le tue parole rare</h2>
+          <h3 className="par-elenco__titolo">Le tue parole rare</h3>
           <ul className="par-voci">{rare.map((p) => parola(p, true))}</ul>
         </section>
       )}
       {comuni.length > 0 && (
         <section className="par-elenco">
-          <h2 className="par-elenco__titolo">
-            Le parole della griglia{' '}
+          <h3 className="par-elenco__titolo">
+            Le parole che c’erano{' '}
             <span className="u-tabnum">
               · {prese} su {comuni.length}
             </span>
-          </h2>
-          <ul className="par-voci">{comuni.map((p) => parola(p, trovate.has(p)))}</ul>
+          </h3>
+          <ul className="par-voci">{visibili.map((p) => parola(p, trovate.has(p)))}</ul>
+          {comuni.length > PAROLE_IN_VISTA && (
+            <button type="button" className="par-tutte" onClick={() => setTutte((t) => !t)} aria-expanded={tutte}>
+              {tutte ? 'Meno parole' : `Tutte le ${comuni.length} parole`}
+            </button>
+          )}
         </section>
       )}
-    </div>
+      <div className="par-esito">{fine}</div>
+    </section>
   )
 }

@@ -1,111 +1,322 @@
+/*
+ * Il riepilogo della partita, come nell'album: in testa l'adesivo del gioco
+ * nel suo posto tratteggiato, com'e' andata e il bollino dei punti; sotto i
+ * tentativi in piccolo, le righe dei dati e i bottoni.
+ */
 .result {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  gap: var(--sp-4);
 }
 
-.result__lede {
-  text-align: center;
-  color: var(--label-secondary);
-  font-size: var(--text-callout);
+/*
+ * Il titolo del foglio si legge nella testa, accanto all'adesivo: quello del
+ * foglio resta a chi legge lo schermo, che cosi' sente il dialogo col suo nome.
+ */
+.sheet__panel:has(.result__testa) .sheet__title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
-.result__lede strong {
-  color: var(--label);
-}
-
-.result__answer {
-  font-family: var(--font-rounded);
-  letter-spacing: 0.08em;
-  color: var(--tile-correct);
-}
-
-.result__score {
+.result__testa {
   display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: var(--sp-2);
-  padding: var(--sp-4) 0;
-  border-radius: var(--r-lg);
-  background: linear-gradient(
-    150deg,
-    color-mix(in srgb, var(--tile-correct) 18%, transparent),
-    color-mix(in srgb, var(--tile-correct) 6%, transparent)
-  );
+  align-items: center;
+  gap: 12px;
 }
 
-.result__score-value {
-  font-family: var(--font-rounded);
-  font-size: 2.75rem;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: var(--tracking-tight);
-  color: var(--tile-correct);
+/* Il posto dell'adesivo, tratteggiato come quelli dell'album. */
+.result__album {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 17px;
+  border: 2px dashed var(--ink-tenue);
+  background: var(--surface-2);
+  box-shadow: inset 0 2px 6px var(--fill-tertiary);
 }
 
-.result__score-label {
-  font-size: var(--text-subhead);
+.result__album .icona-gioco {
+  animation: result-galleggia 4.2s var(--ease-in-out) infinite;
+}
+
+.result__titoli {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.result__sopra {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   color: var(--label-secondary);
 }
 
-.result__countdown {
+.result__titolo {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 1.625rem;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.result__sotto {
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+/* I punti in un bollino verde che dondola, con l'inchiostro sopra in tutti e due i temi. */
+.result__punti {
+  --r: 8deg;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  border: var(--filo) solid var(--ink);
+  background: var(--wordle-tinta);
+  color: var(--ink);
+  font-family: var(--font-rounded);
+  font-size: 1.3125rem;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 3px 0 var(--ink);
+  animation:
+    result-timbra 700ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both,
+    result-ondeggia 5s var(--ease-in-out) 700ms infinite;
+}
+
+.result__punti.is-persa {
+  background: var(--tile-absent);
+}
+
+/* La parola che era, su tessere d'oro che saltellano una dopo l'altra. */
+.result__soluzione {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: var(--sp-3);
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
+  gap: 6px;
 }
 
-.result__countdown-label {
+.result__soluzione-titolo {
   font-size: var(--text-caption-1);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   color: var(--label-secondary);
 }
 
-.result__countdown-value {
+.result__soluzione-lettere {
+  display: flex;
+  gap: 5px;
+}
+
+.result__soluzione-lettere > span {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 40px;
+  border-radius: 9px;
+  border: 2px solid var(--ink);
+  background: linear-gradient(180deg, #ffe27a, var(--giallo));
+  color: var(--ink);
   font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 600;
-  letter-spacing: var(--tracking-tight);
+  font-size: 1.25rem;
+  box-shadow: 0 2px 0 var(--ink);
+  animation: result-saltella 2.4s var(--ease-in-out) infinite;
+}
+
+/* Le righe dei dati: un nome e un numero, su una striscia di carta tinta. */
+.result__dati {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.result__dato {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.result__dato dt {
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+.result__dato dd {
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 1.0625rem;
+  color: var(--label);
 }
 
 .result__actions {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
 }
 
-.result__link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  min-height: 44px;
-  font-size: var(--text-headline);
-  font-weight: 600;
-  color: var(--brand);
-  border-radius: var(--r-md);
+.result__fila {
+  display: flex;
+  gap: 10px;
 }
 
-.result__link:hover {
-  background: var(--fill-quaternary);
+.result__fila > :first-child {
+  flex: 1;
+  min-width: 0;
 }
 
-/* Il totale della giornata, quando non coincide col punteggio di questa parola. */
-.result__score-day {
-  font-size: var(--text-caption-1);
-  color: var(--label-tertiary);
-  font-weight: 600;
+.btn.result__classifica {
+  background: var(--giallo);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.btn.result__classifica:hover {
+  background: color-mix(in srgb, var(--giallo) 88%, #fff);
 }
 
 /* Quando restano parole, il countdown a domani non e' l'informazione utile. */
 .result__rimaste {
   margin: 0;
   padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
+  border-radius: 14px;
+  border: 2px dashed var(--ink-tenue);
   font-size: var(--text-footnote);
+  font-weight: 800;
   color: var(--label-secondary);
   text-align: center;
+}
+
+.result__lede {
+  margin: 0;
+  text-align: center;
+  color: var(--label-secondary);
+  font-size: var(--text-callout);
+  font-weight: 700;
+}
+
+/* ---------- I tentativi in piccolo ---------- */
+
+.mini-griglia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.mini-griglia__riga {
+  display: flex;
+  gap: 5px;
+}
+
+.mini-griglia__casella {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  border: 2px solid var(--ink);
+  background: var(--tile-absent);
+  color: var(--ink);
+  font-family: var(--font-rounded);
+  font-size: 1.1875rem;
+  line-height: 1;
+  animation: result-casella 420ms var(--ease-bounce) both;
+  animation-delay: calc(var(--i) * 28ms);
+}
+
+.mini-griglia__casella.is-correct {
+  background: var(--tile-correct);
+}
+
+.mini-griglia__casella.is-present {
+  background: var(--tile-present);
+}
+
+@keyframes result-galleggia {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes result-timbra {
+  0% {
+    opacity: 0;
+    transform: scale(1.9) rotate(-24deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.88) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.06) rotate(-2deg);
+  }
+  100% {
+    transform: rotate(var(--r));
+  }
+}
+
+@keyframes result-ondeggia {
+  0%,
+  100% {
+    transform: rotate(var(--r)) translateY(0);
+  }
+  50% {
+    transform: rotate(calc(var(--r) * -1)) translateY(-2px);
+  }
+}
+
+@keyframes result-saltella {
+  0%,
+  55%,
+  100% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes result-casella {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .result__album .icona-gioco,
+  .result__punti,
+  .result__soluzione-lettere > span,
+  .mini-griglia__casella {
+    animation: none;
+  }
+
+  .result__punti {
+    transform: rotate(var(--r));
+  }
 }

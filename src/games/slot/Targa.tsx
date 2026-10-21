@@ -36,9 +36,9 @@ export const DURATA_TARGA: Record<MomentoMobile, number> = { targhetta: 1_250, t
 /** Quanto e' larga, in centesimi del mobile. */
 const LARGA: Record<MomentoMobile, number> = { targhetta: 64, targa: 80, palco: 92 }
 
-/** Il disegno: la targa, e la fascia d'oro dove stanno le lampadine. */
+/** Il disegno: la targa, e dentro l'orlo la fascia dove stanno le lampadine. */
 const LATO = { w: 320, h: 104 }
-const FASCIA = { x: 8.5, y: 8.5, w: 303, h: 87, r: 19.5 }
+const FASCIA = { x: 15, y: 15, w: 290, h: 70, r: 12 }
 const LAMPADINE = 30
 /** Il passo fra due lampadine lungo la fascia: il perimetro di un rettangolo dagli angoli tondi, diviso per quante. */
 const PASSO = (2 * (FASCIA.w + FASCIA.h) - 2 * (4 - Math.PI) * FASCIA.r) / LAMPADINE
@@ -153,12 +153,17 @@ export function Targa({ dati }: { dati: DatiTarga }) {
     return monete(c, posto, momento)
   }, [momento])
 
-  const testo = `Vinci ${dati.vincita}!`.toUpperCase()
+  const testo = `+${dati.vincita.toLocaleString('it-IT')}`
   const stile = {
     '--durata': `${DURATA_TARGA[momento]}ms`,
     '--larga': LARGA[momento],
     '--passo': `${PASSO.toFixed(3)}px`,
   } as CSSProperties
+  /*
+   * La targa del mockup: un cartello giallo pieno, con il filo d'inchiostro,
+   * l'anello nel colore della vincita e l'ombra secca sotto; dentro l'orlo le
+   * lampadine, e la luce che passa una volta.
+   */
   return (
     <>
       {momento === 'palco' && <span className="slot-targa__raggi" style={stile} aria-hidden="true" />}
@@ -166,34 +171,23 @@ export function Targa({ dati }: { dati: DatiTarga }) {
       <div className={`slot-targa is-${momento}`} style={stile} ref={piastra} aria-hidden="true">
         <svg className="slot-targa__disegno" viewBox={`0 0 ${LATO.w} ${LATO.h}`}>
           <defs>
-            <linearGradient id={`${id}-oro`} x1="0" y1="0" x2="0.25" y2="1">
-              <stop offset="0" stopColor="#fff6c2" />
-              <stop offset="0.3" stopColor="#f4c430" />
-              <stop offset="0.52" stopColor="#a8700f" />
-              <stop offset="0.7" stopColor="#ffe58a" />
-              <stop offset="1" stopColor="#8a5206" />
-            </linearGradient>
-            <radialGradient id={`${id}-lacca`} cx="50%" cy="22%" r="90%">
-              <stop offset="0" stopColor="#ff5a72" />
-              <stop offset="0.45" stopColor="#c8102e" />
-              <stop offset="1" stopColor="#4a0412" />
-            </radialGradient>
-            <linearGradient id={`${id}-lettere`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#fffbe0" />
-              <stop offset="0.45" stopColor="#ffd84a" />
-              <stop offset="0.72" stopColor="#e89a10" />
-              <stop offset="1" stopColor="#fff0a0" />
+            <linearGradient id={`${id}-giallo`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#fff3b0" />
+              <stop offset="1" stopColor="#f4c430" />
             </linearGradient>
             <linearGradient id={`${id}-luce`} x1="0" y1="0" x2="1" y2="0">
               <stop offset="0" stopColor="#fff" stopOpacity="0" />
-              <stop offset="0.5" stopColor="#fff" stopOpacity="0.7" />
+              <stop offset="0.5" stopColor="#fff" stopOpacity="0.75" />
               <stop offset="1" stopColor="#fff" stopOpacity="0" />
             </linearGradient>
             <clipPath id={`${id}-forma`}>
-              <rect x={3} y={3} width={314} height={98} rx={24} />
+              <rect x={8} y={7} width={304} height={84} rx={18} />
             </clipPath>
           </defs>
-          <rect x={3} y={3} width={314} height={98} rx={24} fill={`url(#${id}-oro)`} stroke="#6b3d04" strokeWidth={2} />
+          <rect x={2} y={9} width={316} height={92} rx={23} className="slot-targa__ombra" />
+          <rect x={2} y={2} width={316} height={94} rx={23} className="slot-targa__anello" />
+          <rect x={6.5} y={5.5} width={307} height={87} rx={19} fill={`url(#${id}-giallo)`} className="slot-targa__piastra" />
+          <rect x={10} y={8.5} width={300} height={10} rx={5} fill="#fff" opacity={0.45} />
           <rect
             className="slot-targa__spente"
             x={FASCIA.x}
@@ -212,26 +206,10 @@ export function Targa({ dati }: { dati: DatiTarga }) {
             rx={FASCIA.r}
             strokeDasharray={`0 ${(PASSO * 3).toFixed(3)}`}
           />
-          <rect
-            x={14}
-            y={14}
-            width={292}
-            height={76}
-            rx={14}
-            fill={`url(#${id}-lacca)`}
-            stroke="#3d000c"
-            strokeWidth={2}
-          />
-          <rect x={20} y={17} width={280} height={26} rx={11} fill="#fff" opacity={0.13} />
-          <text x={160} y={39} className="slot-targa__nome">
-            {dati.nome.toUpperCase()}
+          <text x={160} y={52} className="slot-targa__nome">
+            {dati.nome}
           </text>
-          {[5, 3.5, 2].map((d) => (
-            <text key={d} x={160} y={78 + d} className="slot-targa__spessore">
-              {testo}
-            </text>
-          ))}
-          <text x={160} y={78} className="slot-targa__importo" fill={`url(#${id}-lettere)`}>
+          <text x={160} y={76} className="slot-targa__importo">
             {testo}
           </text>
           <g clipPath={`url(#${id}-forma)`}>

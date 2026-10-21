@@ -5,12 +5,15 @@
  */
 export const FICHES: readonly number[] = [1, 5, 10, 25]
 
-/** I colori dei casino': blu da uno, rossa da cinque, arancione da dieci, verde da venticinque. */
+/**
+ * I colori dei casino': blu da uno, rossa da cinque, verde da dieci, nera da
+ * venticinque. Abbastanza scuri da reggere il numero color crema (4,5:1).
+ */
 export const COLORE_FICHE: Readonly<Record<number, string>> = {
-  1: '#2f6fe8',
-  5: '#e3132f',
-  10: '#ef7a12',
-  25: '#1f9d55',
+  1: '#2563eb',
+  5: '#d62839',
+  10: '#118048',
+  25: '#2a2440',
 }
 
 /** Una puntata in fiches, dalle piu' grandi: la pila che torna indietro quando la si azzera. */

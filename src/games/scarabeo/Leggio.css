@@ -1,103 +1,160 @@
 /*
  * Il leggio e le sue tessere.
  *
- * Otto tessere in fila su un telefono largo 358 punti fanno 40 punti di lato:
- * sotto il bersaglio dei 44 delle linee guida, ma non di molto, e con quattro
+ * Otto tessere in fila su un telefono largo 358 punti fanno 38 punti di lato:
+ * sotto il bersaglio dei 44 delle linee guida, ma non di molto, e con cinque
  * punti di spazio fra una e l'altra il dito non sbaglia. Andare a capo su due
  * righe costerebbe altezza al tabellone, che e' la cosa che va guardata.
  */
 .leggio {
+  position: relative;
   flex: none;
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: var(--sp-1);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 5px;
   width: min(100%, 430px);
   margin-inline: auto;
   /*
-   * Il leggio di legno: le tessere ci stanno sopra, e il bordo in basso fa lo
-   * spessore della mensola.
+   * Il leggio di legno, con il filo e l'ombra secca: le tessere ci stanno
+   * sopra, e la scanalatura in basso fa lo spessore della mensola.
    */
-  padding: 6px 6px 9px;
-  border-radius: 14px;
-  background: linear-gradient(180deg, var(--legno-1), var(--legno-2));
+  padding: 8px 8px 13px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: linear-gradient(180deg, var(--scr-legno-1), var(--scr-legno-2));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -3px 0 rgba(0, 0, 0, 0.18),
-    0 4px 12px var(--shadow-tint-soft);
+    0 4px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.3);
+}
+
+.leggio::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 4px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--scr-legno-3);
+  opacity: 0.85;
+  pointer-events: none;
 }
 
 /*
- * Una tessera: la ricetta di profondita' del progetto — filo di luce, velatura
- * verticale, ombra secca — sopra un tono caldo di legno. Premendo **scende**
- * invece di rimpicciolirsi, come i tasti del Wordle.
+ * Una tessera: legno chiaro con il filo d'inchiostro, il filo di luce e
+ * l'ombra secca. Premuta **scende** sull'ombra invece di rimpicciolirsi, come
+ * i tasti dell'album.
  */
 .tessera {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 10 / 11;
   display: grid;
   place-items: center;
   padding: 0;
-  border: none;
-  border-radius: var(--r-sm);
-  background-color: var(--tessera);
-  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(0, 0, 0, 0.08));
-  color: var(--tessera-ink);
+  border: 2px solid var(--ink);
+  border-radius: 9px;
+  background: linear-gradient(180deg, var(--scr-tessera), var(--scr-tessera-2));
+  color: var(--scr-tessera-ink);
   box-shadow:
-    var(--edge-light),
-    var(--shadow-key),
-    0 3px 8px var(--shadow-tint-soft);
+    0 3px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.75);
   cursor: pointer;
   transition:
-    transform var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out),
-    opacity var(--dur-fast) var(--ease-out);
+    transform 150ms cubic-bezier(0.2, 0.9, 0.3, 1.3),
+    box-shadow 150ms var(--ease-out);
 }
 
 .tessera:active:not(:disabled) {
   transform: translateY(2px);
-  box-shadow: var(--edge-light), 0 1px 4px var(--shadow-tint-soft);
+  box-shadow:
+    0 1px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.75);
 }
 
 .tessera__lettera {
   font-family: var(--font-rounded);
-  font-size: var(--text-title-3);
-  font-weight: 700;
+  font-size: 1.3rem;
+  font-weight: 400;
   line-height: 1;
-  letter-spacing: 0;
+}
+
+.tessera__stella {
+  display: block;
+  width: 20px;
+  height: 20px;
+  fill: #5b4bff;
+  stroke: var(--ink);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
 }
 
 /* Il valore nell'angolo, come sulla tessera di legno. */
 .tessera__valore {
   position: absolute;
   right: 3px;
-  bottom: 1px;
-  font-size: var(--text-caption-2);
-  font-weight: 600;
-  color: color-mix(in srgb, var(--tessera-ink) 55%, transparent);
+  bottom: 2px;
+  font-family: var(--font-text);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-/* Già sul tabellone: resta al suo posto, spenta. */
+/*
+ * Gia' sul tabellone: al suo posto resta l'incavo vuoto del leggio,
+ * tratteggiato. Le altre non scivolano: chi sta scrivendo "quantile"
+ * toccherebbe la tessera sbagliata al terzo tocco.
+ */
 .tessera.is-usata {
-  opacity: 0.32;
+  background: rgba(0, 0, 0, 0.12);
+  border: 2px dashed rgba(42, 31, 92, 0.45);
   box-shadow: none;
-  background-image: none;
+  cursor: default;
 }
 
-/* Scelta per il cambio. */
+.tessera.is-usata > * {
+  visibility: hidden;
+}
+
+/* Scelta per il cambio: si alza e prende l'anello indaco. */
 .tessera.is-scelta {
+  transform: translateY(-5px);
   box-shadow:
-    var(--edge-light),
-    var(--shadow-key),
-    0 0 0 2.5px var(--brand);
-}
-
-.tessera--jolly .tessera__lettera {
-  color: var(--brand);
+    0 0 0 3px var(--scr-indaco),
+    0 7px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.75);
 }
 
 .tessera:disabled {
   cursor: default;
+}
+
+/*
+ * Le tessere nuove arrivano dal basso, un po' storte, una dopo l'altra (il
+ * ritardo lo mette Leggio.tsx). Due nomi uguali che si alternano: una classe
+ * che resta la stessa non fa ripartire l'animazione.
+ */
+.tessera.is-pescata-a {
+  animation: scr-pesca-a 450ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.tessera.is-pescata-b {
+  animation: scr-pesca-b 450ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+@keyframes scr-pesca-a {
+  from {
+    opacity: 0;
+    transform: translateY(26px) rotate(8deg);
+  }
+}
+
+@keyframes scr-pesca-b {
+  from {
+    opacity: 0;
+    transform: translateY(26px) rotate(-8deg);
+  }
 }
 
 /*
@@ -120,10 +177,11 @@
   z-index: 2;
   cursor: grabbing;
   transition: none;
+  animation: none;
   box-shadow:
-    var(--edge-light),
-    var(--shadow-key),
-    0 10px 22px var(--shadow-tint);
+    0 0 0 3px var(--scr-indaco),
+    0 9px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.75);
 }
 
 /* Lasciata: arriva al posto nuovo; la durata e' POSA_MS in Leggio.tsx. */
@@ -131,36 +189,88 @@
   transition: transform 140ms var(--ease-out);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tessera.is-presa.is-posando {
-    transition: none;
-  }
-}
-
 .leggio__vuoto {
   grid-column: 1 / -1;
-  margin: 0;
-  padding: var(--sp-3) 0;
+  justify-self: center;
+  margin: var(--sp-1) 0;
+  padding: 4px 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: #fff8e8;
   text-align: center;
   font-size: var(--text-footnote);
-  color: var(--label-secondary);
+  font-weight: 800;
+  color: #2a1f5c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tessera.is-presa.is-posando,
+  .tessera {
+    transition: none;
+  }
+
+  .tessera.is-pescata-a,
+  .tessera.is-pescata-b {
+    animation: none;
+  }
 }
 
 /* ---------- Scelta della lettera del jolly ---------- */
 
 .jolly__lede {
-  margin: 0 0 var(--sp-4);
+  margin: -4px 0 var(--sp-3);
   font-size: var(--text-subhead);
+  font-weight: 800;
   color: var(--label-secondary);
 }
 
 .jolly__griglia {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: var(--sp-2);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 7px;
 }
 
 /* Nella scelta del jolly non c'e' un valore da mostrare: vale zero comunque. */
+.tessera--scelta-jolly {
+  aspect-ratio: auto;
+  height: 44px;
+  border-width: var(--filo);
+  border-radius: 11px;
+}
+
 .tessera--scelta-jolly .tessera__lettera {
-  font-size: var(--text-headline);
+  font-size: 1.25rem;
+}
+
+/* Il leggio mischiato: ogni tessera salta e torna giu', un po' storta. */
+.tessera.is-mescolata-a {
+  animation: scr-mescola-a 380ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.tessera.is-mescolata-b {
+  animation: scr-mescola-b 380ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.tessera.is-mescolata-a:nth-child(even),
+.tessera.is-mescolata-b:nth-child(even) {
+  animation-delay: 50ms;
+}
+
+@keyframes scr-mescola-a {
+  40% {
+    transform: translateY(-9px) rotate(-7deg);
+  }
+}
+
+@keyframes scr-mescola-b {
+  40% {
+    transform: translateY(-9px) rotate(7deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tessera.is-mescolata-a,
+  .tessera.is-mescolata-b {
+    animation: none;
+  }
 }

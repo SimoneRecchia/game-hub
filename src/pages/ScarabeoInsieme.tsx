@@ -14,7 +14,6 @@ import { etichettaScarabeo } from '@/games/compagnia/etichette'
 import { Campo, ElencoMosse, Tabellino, type VoceMossa } from '@/games/scarabeo/Campo'
 import { ComeSiGiocaScarabeo } from '@/games/scarabeo/ComeSiGioca'
 import { preparaComputer } from '@/games/scarabeo/computer'
-import { nelSacchetto } from '@/games/scarabeo/turni'
 import { useComposizione } from '@/games/scarabeo/useComposizione'
 import { nonNelDizionario, useParoleSconosciute } from '@/games/scarabeo/useScarabeo'
 import { ApiFetchError, api } from '@/lib/api'
@@ -300,17 +299,22 @@ export default function ScarabeoInsieme() {
                 nomeAltro="Computer"
                 notaAltro={tavola.aTurni ? undefined : 'stesse tessere'}
                 turno={tavola.aTurni && !finita ? (tavola.tocca ? 'io' : 'altro') : null}
-                sotto={
+                stato={
                   finita
                     ? libera
                       ? 'Partita finita'
                       : 'Giornata chiusa'
-                    : !tavola.tocca
-                      ? 'Tocca al computer'
-                      : tavola.mosseTotali === null
-                        ? nelSacchetto(tavola.restanti)
-                        : `Mossa ${Math.min(tavola.mosseUsate + 1, tavola.mosseTotali)} di ${tavola.mosseTotali}` +
-                          (tavola.traguardo !== null ? ` · traguardo ${tavola.traguardo}` : '')
+                    : tavola.mosseTotali === null
+                      ? `Sacchetto ${tavola.restanti}`
+                      : `Mossa ${Math.min(tavola.mosseUsate + 1, tavola.mosseTotali)} di ${tavola.mosseTotali}`
+                }
+                attesa={!finita && !tavola.tocca ? 'Il computer pensa' : null}
+                sotto={
+                  finita
+                    ? `${tavola.punti} a ${tavola.altro}`
+                    : tavola.traguardo !== null
+                      ? `Traguardo ${tavola.traguardo}`
+                      : `Suggerisci a ${host.displayName}`
                 }
                 avanzamento={
                   libera ? undefined : traguardoDi(tavola) > 0 ? tavola.punti / traguardoDi(tavola) : 0

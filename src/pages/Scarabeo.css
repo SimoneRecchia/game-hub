@@ -1,88 +1,114 @@
 /*
- * Lo Scarabeo: una schermata, quattro fasce.
+ * Lo Scarabeo: una schermata, cinque fasce.
  *
- * Riga di stato, tabellone, leggio, comandi. Il tabellone e' l'unica fascia
- * elastica **e l'unica che scorre**: su un telefono basso il leggio e i bottoni
- * devono restare sotto il pollice, perché sono quel che si tocca a ogni mossa,
- * mentre del tabellone basta vedere la parte dove si sta giocando.
+ * Il punteggio, il tabellone, il leggio, i comandi e, dove c'e' posto, le
+ * ultime mosse. Il tabellone e' l'unica fascia elastica: su un telefono basso
+ * il leggio e i bottoni devono restare sotto il pollice, perché sono quel che
+ * si tocca a ogni mossa, e le ultime mosse se ne vanno prima di lui.
  */
 .scr {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
 }
 
 /* ---------- Il punteggio ---------- */
 
 /*
- * Due lati, uno per chi gioca, e in mezzo a che punto si e'. Si tocca e apre
- * le mosse: le parole fatte sono la cosa che si vuole rivedere, e non meritano
- * spazio fisso in una schermata dove l'altezza serve al tabellone.
+ * Due lati, uno per chi gioca, e in mezzo a che punto si e' e quel che legge il
+ * gioco. Si tocca e apre le mosse: un bottone grande quanto la carta, sotto i
+ * numeri, perché "Il risultato" e' un bottone anche lui e due bottoni non
+ * stanno uno dentro l'altro.
  */
 .scr-tab {
+  position: relative;
   flex: none;
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: var(--sp-2);
-  width: min(100%, 420px);
+  grid-template-columns: 84px minmax(0, 1fr) 84px;
+  align-items: stretch;
+  gap: 6px;
+  width: min(100%, 430px);
+  min-height: 66px;
   margin-inline: auto;
-  padding: var(--sp-1);
-  border-radius: var(--r-lg);
+  padding: 5px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
-  color: inherit;
-  text-align: left;
-  transition: transform var(--dur-fast) var(--ease-out);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
 }
 
-.scr-tab:active {
-  transform: scale(0.985);
+.scr-tab__apri {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 17px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.scr-tab__lato,
+.scr-tab__mezzo {
+  position: relative;
+  pointer-events: none;
 }
 
 .scr-tab__lato {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
   min-width: 0;
-  padding: var(--sp-1) var(--sp-3);
-  border-radius: calc(var(--r-lg) - 4px);
-  transition: background-color var(--dur-base) var(--ease-out);
+  padding: 2px 4px;
+  border-radius: 15px;
+  transition: background-color 250ms var(--ease-out);
 }
 
-.scr-tab__lato--altro {
-  align-items: flex-end;
-  text-align: right;
-}
-
-/* Chi deve muovere: il suo lato si accende. */
+/* Chi deve muovere: il suo lato si accende di giallo, con il filo. */
 .scr-tab__lato.is-turno {
-  background: var(--brand-soft);
+  background: #ffe7a3;
+  box-shadow: inset 0 0 0 2px var(--ink);
+  color: #2a1f5c;
 }
 
 .scr-tab__nome {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: var(--text-caption-1);
-  font-weight: 700;
+  justify-content: center;
+  gap: 4px;
+  max-width: 100%;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--label-secondary);
 }
 
-.scr-tab__nome .scheda__icona {
-  width: 20px;
-  height: 20px;
+.scr-tab__lato.is-turno .scr-tab__nome {
+  color: #2a1f5c;
+}
+
+.scr-tab__chi {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scr-tab__nome .avatar {
+  flex: none;
 }
 
 .scr-tab__punti {
   font-family: var(--font-rounded);
-  font-size: var(--text-title-2);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: var(--tracking-tight);
-  color: var(--label);
+  font-size: 27px;
+  font-weight: 400;
+  line-height: 1;
 }
 
 .scr-tab__nota {
@@ -90,8 +116,13 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--text-caption-2);
-  color: var(--label-tertiary);
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--label-secondary);
+}
+
+.scr-tab__lato.is-turno .scr-tab__nota {
+  color: #4e4479;
 }
 
 .scr-tab__mezzo {
@@ -99,97 +130,188 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 132px;
-  /* L'altezza dei lati: un messaggio lungo va a capo dentro, non allarga il tabellino. */
-  min-height: 48px;
-}
-
-.scr-tab__avviso {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-  line-height: 1.25;
-  color: var(--label);
+  gap: 3px;
+  min-width: 0;
   text-align: center;
-  animation: scr-avviso var(--dur-base) var(--ease-spring);
 }
 
-/* La posa che non va: il perché, nel rosso del bottone. */
-.scr-tab__avviso--no {
-  color: var(--red);
-}
-
-/*
- * Le parole che forma la posa in corso, ognuna con i suoi punti: la prima e'
- * quella con tutte le tessere, poi quelle che nascono di traverso. Vanno a capo
- * dentro la riga di mezzo, fino a tre righe.
- */
-.scr-tab__parole {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 2px 8px;
-  max-height: calc(3 * 1.25em);
+.scr-tab__stato {
+  max-width: 100%;
   overflow: hidden;
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-  line-height: 1.25;
-  color: var(--label);
-  animation: scr-avviso var(--dur-base) var(--ease-spring);
-}
-
-.scr-tab__parola {
+  text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.scr-tab__parola .u-tabnum {
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--label-secondary);
 }
 
-.scr-tab__parola.is-sconosciuta {
-  color: var(--red);
-  text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
+.scr-tab__riga {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 12.5px;
+  font-weight: 900;
+  line-height: 1.2;
+  color: var(--label);
+  animation: scr-riga 240ms var(--ease-spring);
 }
 
-.scr-tab__parola.is-sconosciuta .u-tabnum {
-  color: inherit;
+/* Il messaggio del momento trema un attimo: una mossa rifiutata si deve notare. */
+.scr-tab__riga--avviso {
+  animation: scr-riga-scuoti 450ms ease-in-out;
 }
 
-@keyframes scr-avviso {
+/* La posa che non va: il perché, in rosso. */
+.scr-tab__riga--no {
+  color: #c4203d;
+  color: light-dark(#c4203d, #ff8a9a);
+}
+
+@keyframes scr-riga {
   from {
     opacity: 0;
     transform: scale(0.92);
   }
 }
 
-.scr-tab__sotto {
-  font-size: var(--text-caption-1);
-  font-weight: 600;
-  line-height: 1.25;
-  color: var(--label-secondary);
-  text-align: center;
+@keyframes scr-riga-scuoti {
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
 }
 
+/* Si aspetta: i tre puntini che saltano. */
+.scr-tab__puntini {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.scr-tab__puntini i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: scr-puntino 1s ease-in-out infinite;
+}
+
+.scr-tab__puntini i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.scr-tab__puntini i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes scr-puntino {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
+
+/*
+ * Le parole che forma la posa in corso, ognuna su una sua etichetta con i
+ * punti: la prima e' quella con tutte le tessere, poi quelle che nascono di
+ * traverso. Vanno a capo dentro la riga di mezzo, fino a due righe.
+ */
+.scr-tab__parole {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 3px 4px;
+  max-height: 44px;
+  overflow: hidden;
+  animation: scr-riga 240ms var(--ease-spring);
+}
+
+.scr-tab__parola {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 1px 6px;
+  border: 1.5px solid var(--ink);
+  border-radius: 7px;
+  background: #e6e1ff;
+  color: #2a1f5c;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.scr-tab__parola b {
+  font-size: 10px;
+  font-weight: 900;
+  color: #4e4479;
+}
+
+.scr-tab__parola.is-sconosciuta {
+  background: #ffe1e5;
+  color: #a3172f;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.scr-tab__parola.is-sconosciuta b {
+  color: inherit;
+}
+
+/* A partita finita, il bottone che riapre il risultato. */
+.scr-tab__risultato {
+  pointer-events: auto;
+  height: 28px;
+  padding: 0 12px;
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: var(--giallo);
+  box-shadow: 0 2px 0 var(--ink);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.scr-tab__risultato:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+/* Quanto manca al traguardo: una barretta di legno. */
 .scr-tab__barra {
   position: relative;
   width: 88px;
-  height: 5px;
+  height: 7px;
+  border: 1.5px solid var(--ink);
   border-radius: var(--r-pill);
-  background: var(--fill-tertiary);
+  background: var(--surface-3);
   overflow: hidden;
 }
 
 .scr-tab__pieno {
   position: absolute;
   inset: 0;
-  border-radius: inherit;
-  background: var(--brand);
+  background: var(--giallo);
   transform-origin: left center;
   transition: transform var(--dur-slow) var(--ease-out);
 }
@@ -200,14 +322,13 @@
   flex: 1;
   min-height: 0;
   min-width: 0;
-  /* Centrato: su un telefono alto avanzano tre centimetri, e metterli tutti
-     sotto al tabellone lo incollava all'intestazione. Flex e non grid: dentro
-     una traccia `auto` la larghezza in percentuale del tabellone era
-     circolare, e Safari lo lasciava uscire dallo schermo. */
+  /* Centrato: su un telefono alto avanza spazio, e metterlo tutto sotto al
+     tabellone lo incollava al punteggio. Flex e non grid: dentro una traccia
+     `auto` la larghezza in percentuale del tabellone era circolare, e Safari
+     lo lasciava uscire dallo schermo. */
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--sp-1) 0;
 }
 
 /*
@@ -218,16 +339,15 @@
  * tabellone largo 288 ci finiva tagliato. Sta dentro @supports perché e'
  * l'unica cosa che i browser senza container query non possono fare, e senza il
  * blocco resterebbero con la larghezza piena — che e' il comportamento di prima,
- * non un errore.
+ * non un errore. I 6 punti sono l'ombra secca sotto la cornice, che sta fuori.
  */
 @supports (width: 1cqh) {
   .scr__campo {
     container-type: size;
   }
 
-  /* Meno 10 punti per lato: la cornice di legno sta fuori dal tabellone. */
-  .tabellone {
-    width: min(100cqw - 10px, 420px, 100cqh - 10px);
+  .scr-tavola {
+    width: min(100cqw, 430px, 100cqh - 6px);
   }
 }
 
@@ -237,156 +357,349 @@
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
+  gap: var(--sp-3);
 }
 
 .scr__comandi {
   flex: none;
   display: flex;
-  justify-content: center;
   gap: var(--sp-2);
-  width: min(100%, 420px);
+  width: min(100%, 430px);
   margin-inline: auto;
 }
 
-.scr__comandi .btn {
-  flex: 1;
+/*
+ * I tasti dell'album: il filo d'inchiostro, l'ombra secca e la luce dentro.
+ * Premuti scendono sull'ombra.
+ */
+.scr-tasto {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 50px;
+  padding: 0 14px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--ombra-tasto);
+  color: var(--label);
+  font-family: var(--font-rounded);
+  font-size: 1rem;
+  font-weight: 400;
+  white-space: nowrap;
+  transition:
+    transform 100ms var(--ease-out),
+    box-shadow 100ms var(--ease-out);
 }
 
-.scr__gioca {
+.scr-tasto:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
+}
+
+.scr-tasto__icona {
   flex: none;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.scr-tasto--tondo {
+  width: 50px;
+  padding: 0;
+}
+
+.scr-tasto--gioca {
+  flex: 1;
+  min-width: 0;
+  background: var(--giallo);
+  color: #2a1f5c;
+  font-size: 1.25rem;
+}
+
+.scr-tasto__testo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* La posa vale: il tasto respira, e chiede di essere premuto. */
+.scr-tasto--gioca.is-pronto {
+  animation: scr-respira 2.4s ease-in-out infinite;
+}
+
+@keyframes scr-respira {
+  50% {
+    transform: scale(1.04);
+  }
+}
+
+/* Una parola che non esiste: il tasto si fa rosa, e dice che non va. */
+.scr-tasto--gioca.is-sbagliata {
+  background: #ffb3a8;
+}
+
+.scr-tasto--giallo {
+  background: var(--giallo);
+  color: #2a1f5c;
+}
+
+.scr-tasto--largo {
+  width: 100%;
+  font-size: 1.125rem;
+}
+
+/* Spento con un colore e non con la trasparenza: la scritta si legge sempre. */
+.scr-tasto:disabled {
+  background: #e6e2f0;
+  background: light-dark(#e6e2f0, #4a447a);
+  border-color: var(--ink-tenue);
+  box-shadow: 0 2px 0 var(--ink-tenue);
+  color: var(--label-secondary);
+  cursor: default;
+  animation: none;
+}
+
+/* Si aspetta l'altro: il giro che gira, accanto alla frase. */
+.scr-tasto__attesa {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: scr-gira 640ms linear infinite;
+}
+
+@keyframes scr-gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Le ultime mosse ---------- */
+
+.scr-ultime {
+  flex: none;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  align-items: stretch;
-  gap: var(--sp-1);
-  width: min(100%, 420px);
+  gap: 2px;
+  width: min(100%, 430px);
+  min-height: 96px;
   margin-inline: auto;
-  padding-bottom: var(--sp-1);
+  padding: 8px 12px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
+  text-align: left;
+  font: inherit;
 }
 
-/* ---------- Partita chiusa ---------- */
+button.scr-ultime:active {
+  transform: translateY(2px);
+}
+
+.scr-ultime__titolo {
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--label-secondary);
+}
+
+.scr-ultime__aiuto {
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--label-secondary);
+}
+
+.scr-ultime__voce {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  font-size: 13.5px;
+  font-weight: 900;
+  animation: scr-voce 300ms var(--ease-out) both;
+}
+
+.scr-ultime__voce + .scr-ultime__voce {
+  animation: none;
+}
+
+@keyframes scr-voce {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.scr-ultime__chi {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--cielo);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.scr-ultime__chi.is-altro {
+  background: var(--pesca);
+}
+
+.scr-ultime__parole {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.scr-ultime__punti {
+  flex: none;
+  font-family: var(--font-rounded);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+/* Un telefono basso: il tabellone prima delle ultime mosse, che restano nel foglio delle mosse. */
+@media (max-height: 719px) {
+  .scr-ultime {
+    display: none;
+  }
+}
+
+/* ---------- I fogli del cambio e del passo ---------- */
+
+.scr-conferma__lede {
+  margin: -4px 0 var(--sp-3);
+  font-size: var(--text-subhead);
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--label-secondary);
+}
+
+.scr-cambio {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 6px;
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+
+.scr-cambio__tessera {
+  aspect-ratio: auto;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.scr-cambio__tessera:disabled {
+  opacity: 0.6;
+}
+
+.scr-conferma__azioni {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* ---------- Partita chiusa, sotto il tabellone ---------- */
 
 .scr-fine {
   flex: none;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--sp-1);
-  width: min(100%, 420px);
+  gap: 4px;
+  width: min(100%, 430px);
   margin-inline: auto;
-  padding: var(--sp-3) 0 var(--sp-1);
+  padding: var(--sp-3) var(--sp-4);
+  border: var(--filo) solid var(--ink);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
   text-align: center;
-  animation: scr-sale var(--dur-slow) var(--ease-spring) both;
+  animation: scr-sale 420ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
 @keyframes scr-sale {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(14px) scale(0.9);
   }
 }
 
 .scr-fine__titolo {
-  font-size: var(--text-headline);
-  font-weight: 700;
+  margin: 0;
+  font-family: var(--font-rounded);
+  font-size: 1.375rem;
+  font-weight: 400;
+  line-height: 1.1;
   color: var(--label);
 }
 
 .scr-fine__punti {
+  margin: 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-large-title);
-  font-weight: 800;
+  font-size: 2.125rem;
+  font-weight: 400;
   line-height: 1.05;
-  letter-spacing: var(--tracking-tight);
   color: var(--label);
 }
 
 .scr-fine__su {
-  font-size: var(--text-title-3);
-  font-weight: 700;
-  color: var(--label-tertiary);
+  font-size: 1.25rem;
+  color: var(--label-secondary);
 }
 
 .scr-fine__nota {
+  margin: 0;
   font-size: var(--text-footnote);
+  font-weight: 800;
+  line-height: 1.35;
   color: var(--label-secondary);
 }
 
 .scr-fine__azioni {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: var(--sp-2);
   margin-top: var(--sp-2);
 }
 
 .scr-fine__attesa {
+  margin: 0;
   font-size: var(--text-caption-1);
-  color: var(--label-tertiary);
-}
-
-/* ---------- Il risultato di una partita libera ---------- */
-
-.scr-esito {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.scr-esito__punteggi {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  background: var(--fill-quaternary);
-}
-
-.scr-esito__lato {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  opacity: 0.6;
-}
-
-.scr-esito__lato.is-vincitore {
-  opacity: 1;
-}
-
-.scr-esito__nome {
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  color: var(--label-secondary);
-}
-
-.scr-esito__valore {
-  font-family: var(--font-rounded);
-  font-size: var(--text-title-1);
   font-weight: 800;
-  color: var(--label);
-}
-
-.scr-esito__vs {
-  font-size: var(--text-caption-1);
-  color: var(--label-tertiary);
-}
-
-.scr-esito__statistiche,
-.scr-esito__nota {
-  font-size: var(--text-subhead);
-  line-height: 1.4;
   color: var(--label-secondary);
-}
-
-.scr-esito__nota {
-  font-size: var(--text-footnote);
-  color: var(--label-tertiary);
 }
 
 /* ---------- La scelta del livello ---------- */
 
 .livelli__guasto {
   font-size: var(--text-footnote);
+  font-weight: 800;
   color: var(--red);
 }
 
@@ -395,9 +708,10 @@
 .scr__attesa {
   flex: 1;
   min-height: 0;
-  width: min(100%, 420px);
+  width: min(100%, 430px);
   margin-inline: auto;
-  border-radius: var(--r-md);
+  border: 2px dashed var(--ink-tenue);
+  border-radius: 20px;
   background: var(--fill-quaternary);
   animation: scr-pulsa 1.4s var(--ease-in-out) infinite;
 }
@@ -418,7 +732,7 @@
   color: var(--label-secondary);
 }
 
-/* ---------- Cronologia ---------- */
+/* ---------- Le mosse, nel foglio ---------- */
 
 .scr-storia {
   list-style: none;
@@ -432,9 +746,10 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
-  padding: var(--sp-3) 0;
-  border-bottom: 1px solid var(--separator);
+  padding: 10px 0;
+  border-bottom: 2px dashed var(--separator);
   font-size: var(--text-subhead);
+  font-weight: 800;
 }
 
 .scr-storia__riga:last-child {
@@ -442,55 +757,56 @@
 }
 
 .scr-storia__riga--totale {
-  font-weight: 700;
+  font-weight: 900;
   color: var(--label);
 }
 
 .scr-storia__numero {
   flex: none;
-  width: 22px;
-  color: var(--label-tertiary);
-  font-size: var(--text-footnote);
+  min-width: 24px;
+  font-family: var(--font-rounded);
+  font-weight: 400;
+  color: var(--label-secondary);
 }
 
 .scr-storia__parole {
   flex: 1;
+  min-width: 0;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 2px var(--sp-2);
   color: var(--label);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
 .scr-storia__scarabeo {
-  padding: 1px var(--sp-2);
+  padding: 1px 8px;
+  border: 1.5px solid var(--ink);
   border-radius: var(--r-pill);
-  background: var(--brand-soft);
-  color: var(--brand);
+  background: var(--giallo);
+  color: #2a1f5c;
   font-size: var(--text-caption-2);
-  font-weight: 700;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: var(--tracking-wide);
+  letter-spacing: 0.06em;
 }
 
 .scr-storia__punti {
   flex: none;
   font-family: var(--font-rounded);
-  font-weight: 700;
+  font-size: 1.125rem;
+  font-weight: 400;
   color: var(--label);
 }
 
-/* Le mosse dell'altro, nelle partite a due: un filo piu' spente. */
-.scr-storia__riga.is-altro .scr-storia__testo {
-  color: var(--label-secondary);
-}
-
+/* Le mosse dell'altro, nelle partite a due: chi l'ha fatta lo dice l'etichetta. */
 .scr-storia__autore {
   flex: none;
   min-width: 68px;
   font-size: var(--text-caption-1);
-  font-weight: 600;
-  color: var(--label-tertiary);
+  font-weight: 900;
+  color: var(--label-secondary);
 }
 
 .scr-storia__testo {
@@ -499,16 +815,46 @@
 }
 
 .scr-storia__lede {
-  margin-bottom: var(--sp-3);
+  margin: 0 0 var(--sp-3);
   font-size: var(--text-subhead);
+  font-weight: 800;
   line-height: 1.4;
   color: var(--label-secondary);
 }
 
 .scr-storia__vuota {
   margin: 0;
+  font-weight: 800;
   color: var(--label-secondary);
   font-size: var(--text-subhead);
+}
+
+/* La chiusura anticipata, in fondo al foglio delle mosse. */
+.scr-storia__chiudi {
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 2px dashed var(--separator);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.scr-storia__chiudi-nota {
+  margin: 0;
+  font-size: var(--text-footnote);
+  font-weight: 800;
+  line-height: 1.4;
+  color: var(--label-secondary);
+}
+
+/* ---------- Il risultato di una partita libera, nella carta ---------- */
+
+.scr-esito__statistiche {
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #4e4479;
 }
 
 /*
@@ -527,24 +873,24 @@
     container-type: normal;
   }
 
-  .tabellone {
-    width: min(100% - 10px, 360px);
+  .scr-tavola {
+    width: min(100%, 380px);
   }
 }
 
-/* La chiusura anticipata, in fondo al foglio delle mosse. */
-.scr-storia__chiudi {
-  margin-top: var(--sp-5);
-  padding-top: var(--sp-4);
-  border-top: 1px solid var(--separator);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
+@media (prefers-reduced-motion: reduce) {
+  .scr-tab__riga,
+  .scr-tab__riga--avviso,
+  .scr-tab__parole,
+  .scr-tab__puntini i,
+  .scr-tasto--gioca.is-pronto,
+  .scr-ultime__voce,
+  .scr-fine,
+  .scr__attesa {
+    animation: none;
+  }
 
-.scr-storia__chiudi-nota {
-  margin: 0;
-  font-size: var(--text-footnote);
-  line-height: 1.4;
-  color: var(--label-secondary);
+  .scr-tasto__attesa {
+    animation-duration: 2s;
+  }
 }

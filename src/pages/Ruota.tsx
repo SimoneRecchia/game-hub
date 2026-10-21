@@ -46,10 +46,11 @@ import { Moneta } from '@/games/ruota/Moneta'
 import { Pachinko, type FasePachinko } from '@/games/ruota/Pachinko'
 import { RuotaFisica, type Meta, type Mozzo } from '@/games/ruota/RuotaFisica'
 import { CHIAMA_FICHES, InvitoPuntata, PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { COLORE_FICHE, inFiches } from '@/games/fortuna/fiches'
-import { centroDi, incassaMonete, perdiFiches, puntaFiches, spostaFiches, volaFiche, type Punto } from '@/games/fortuna/voli'
+import { centroDi, incassaMonete, puntaFiches, ritiraFiches, spostaFiches, volaFiche, type Punto } from '@/games/fortuna/voli'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
@@ -73,7 +74,7 @@ import './Ruota.css'
 const DomandaRuota = lazy(() => import('@/games/ruota/DomandaRuota'))
 
 type NomeScena = 'ruota' | 'quiz' | 'moneta' | 'pachinko' | 'cashhunt' | 'domanda'
-type Luci = 'attesa' | 'vinto' | 'perso'
+type Luci = 'attesa' | 'vinto' | 'calma'
 type Quiz = Extract<SfidaRuotaVista, { tipo: 'domanda' }>
 
 /**
@@ -160,9 +161,11 @@ const quizDi = (giro: GiroRuota | null): Quiz | null => (giro?.sfida?.tipo === '
 /**
  * Crazy Time: si punta, si trascina la ruota e la si lascia andare. La puntata
  * si paga al lancio, e si vede: le fiches volano dal saldo alla ruota, e il
- * saldo scende. Il banco se la tiene, e le fiches scivolano via; lo split ne
- * restituisce la meta', raccontata come una vincita; il triplo la restituisce
- * per tre, con la festa; il quiz porta alla ruota del quiz e poi alla domanda;
+ * saldo scende. Al banco non torna niente, e lo si dice piano: le fiches
+ * scivolano via e un biglietto lilla invita al giro dopo, senza rosso e senza
+ * segno meno; lo split ne restituisce la meta', raccontata come una vincita;
+ * il triplo la restituisce per tre, con la festa; il quiz porta alla ruota del
+ * quiz e poi alla domanda;
  * la moneta alla moneta da lanciare, il Pachinko al tabellone con la pallina, il
  * Cash Hunt al muro delle caselle. La fortuna fa saltare fuori il quadrifoglio,
  * e la ruota si trasforma sul posto nella ruota fortunata, con i premi che
@@ -177,6 +180,7 @@ const quizDi = (giro: GiroRuota | null): Quiz | null => (giro?.sfida?.tipo === '
  * pagina riaperta dice in che scena si era.
  */
 export default function RuotaPagina() {
+  useSala()
   const toast = useToast()
   const dopo = useDopo()
   const [stato, setStato] = useState<RuotaStato | null>(null)
@@ -225,10 +229,8 @@ export default function RuotaPagina() {
   /** Il numero della puntata, dove arrivano le fiches, e la loro riga, dove tornano. */
   const puntataRef = useRef<HTMLSpanElement>(null)
   const ficheRef = useRef<HTMLDivElement>(null)
-  // Com'e' finita la domanda, da raccontare sulla ruota quando si torna: le monete al saldo, o le fiches al banco.
-  const daRaccontare = useRef<{ vinto: boolean; moltiplicatore: number; puntata: number; vincita: number } | null>(
-    null,
-  )
+  // Com'e' finita la domanda, da raccontare sulla ruota quando si torna: le monete al saldo, o le fiches che scivolano via.
+  const daRaccontare = useRef<{ vinto: boolean; moltiplicatore: number; vincita: number } | null>(null)
   // Lo stato di adesso, per chi lo legge a ruota ferma o a moneta caduta: arrivano dopo il disegno.
   const ultimo = useRef(stato)
   useEffect(() => {
@@ -372,14 +374,14 @@ export default function RuotaPagina() {
 
   /**
    * L'esito di un minigioco: la vincita con le monete, la meta' del ×0,5
-   * raccontata come una vincita, o il banco. Le vincite grandi hanno la festa,
-   * dopo.
+   * raccontata come una vincita, o — quando non torna niente — il biglietto
+   * del giro dopo. Le vincite grandi hanno la festa, dopo.
    */
   const annuncia = (g: GiroRuota) => {
     const palio = palioDi(g)
     const torna = tornatoDa(g)
     if (!palio || torna <= 0) {
-      accoda(adesivoBanco(g.puntata))
+      accoda(adesivoRitenta(g))
       return
     }
     if (palio.moltiplicatore >= FESTA_MINIGIOCO) return
@@ -387,7 +389,7 @@ export default function RuotaPagina() {
       accoda(adesivoMezzo(torna, g.puntata, palio.moltiplicatore))
       return
     }
-    accoda(adesivoVincita(torna, g.puntata, palio.moltiplicatore))
+    accoda(adesivoVincita(torna, g.puntata, palio.moltiplicatore, !!g.sfida && 'fortunata' in g.sfida && g.sfida.fortunata))
     setPioggia((p) => p + 1)
     dopo(PIOGGIA_MS, () => setPioggia(0))
   }
@@ -516,15 +518,16 @@ export default function RuotaPagina() {
     }
     const fortunata = g.fortunata !== null
     const s = spicchioDi(g)
-    // Con un punto sul tavolo la meta' dello split e' zero: e' il banco, e si racconta come lui.
+    // Con un punto sul tavolo la meta' dello split e' zero: e' il banco, e si racconta come lui. Piano: le luci
+    // respirano, le fiches scivolano via, e il biglietto invita al giro dopo.
     if (s.tipo === 'banco' || (s.tipo === 'split' && tornatoDa(g) === 0)) {
       setConto(null)
       setEsito(true)
-      setLuci('perso')
-      accoda(adesivoBanco(g.puntata))
+      setLuci('calma')
+      accoda(adesivoRitenta(g))
       const mozzo = centroDelMozzo()
-      if (mozzo) perdiFiches(mozzo, g.puntata)
-      dopo(1_700, () => setLuci('attesa'))
+      if (mozzo) ritiraFiches(mozzo)
+      dopo(1_600, () => setLuci('attesa'))
       if (fortunata) dopo(FORTUNA_IN_VISTA_MS, tornaNormale)
       return
     }
@@ -541,7 +544,7 @@ export default function RuotaPagina() {
       // Il ×1,5 della ruota fortunata: un premio piccolo, con l'adesivo e la pioggia, senza la festa.
       setEsito(true)
       setLuci('vinto')
-      accoda(adesivoVincita(tornatoDa(g), g.puntata, s.moltiplicatore))
+      accoda(adesivoVincita(tornatoDa(g), g.puntata, s.moltiplicatore, true))
       setPioggia((p) => p + 1)
       dopo(PIOGGIA_MS, () => setPioggia(0))
       incassa(s.moltiplicatore, centroDelMozzo())
@@ -589,7 +592,7 @@ export default function RuotaPagina() {
         setIntermezzo({
           chiave: Date.now(),
           titolo: fortunata ? 'Moneta fortunata' : 'Moneta',
-          sotto: 'Blu vinci, rosso vince il banco',
+          sotto: 'Esce blu, e vinci',
           colore: 'var(--ct-moneta)',
           icona: <MonetaPiccola />,
           verso: 'moneta',
@@ -695,12 +698,7 @@ export default function RuotaPagina() {
     // Il tabellone e' nascosto dalla domanda: la vincita la si vede arrivare tornando alla ruota.
     const vinto = g.delta > 0 && !!palio
     if (vinto) setConto({ saldo: nuovo.saldo - palio.vincita, netto: nuovo.netto - palio.vincita, giri: nuovo.giri })
-    daRaccontare.current = {
-      vinto,
-      moltiplicatore: palio?.moltiplicatore ?? 1,
-      puntata: g.puntata,
-      vincita: palio?.vincita ?? 0,
-    }
+    daRaccontare.current = { vinto, moltiplicatore: palio?.moltiplicatore ?? 1, vincita: palio?.vincita ?? 0 }
     aggiorna(nuovo)
     annuncia(g)
   }
@@ -718,7 +716,7 @@ export default function RuotaPagina() {
     }
     dopo(RITORNO_MS, () => {
       const mozzo = centroDelMozzo()
-      const { vinto, moltiplicatore, puntata: p, vincita } = racconto
+      const { vinto, moltiplicatore, vincita } = racconto
       if (vinto && moltiplicatore >= FESTA_MINIGIOCO) {
         festeggia({ moltiplicatore, vincita, sotto: 'Domanda giusta', fortunata }, () => {
           incassa(moltiplicatore, centroDelMozzo())
@@ -727,7 +725,7 @@ export default function RuotaPagina() {
         return
       }
       if (vinto) incassa(moltiplicatore, mozzo)
-      else if (mozzo) perdiFiches(mozzo, p)
+      else if (mozzo) ritiraFiches(mozzo)
       if (fortunata) dopo(FORTUNA_IN_VISTA_MS, tornaNormale)
     })
   }
@@ -769,7 +767,7 @@ export default function RuotaPagina() {
     if (g.delta > 0 && palio) incassa(palio.moltiplicatore, moneta)
     else {
       setConto(null)
-      if (moneta) perdiFiches(moneta, g.puntata)
+      if (moneta) ritiraFiches(moneta)
     }
     dopo(MONETA_IN_VISTA_MS, allaRuota)
   }
@@ -823,16 +821,14 @@ export default function RuotaPagina() {
   const palio = palioDi(giro)
   const fortunata = modo === 'fortunata' || modo === 'magia'
   // Sul mozzo: la puntata, poi la puntata in gioco, poi quel che e' tornato — anche la meta' dello split, che si
-  // dice vinta come le altre vincite — o quel che si e' perso.
+  // dice vinta come le altre vincite. Quando non torna niente il mozzo non lo conta: torna alla puntata, pronto.
   const mozzo: Mozzo =
     inGioco !== null
       ? { testo: String(inGioco), sotto: 'in gioco' }
       : fortunaDaGirare && giro
         ? { testo: String(giro.puntata), sotto: 'in gioco' }
-        : esito && giro?.stato === 'fatto'
-          ? tornatoDa(giro) > 0
-            ? { testo: conSegno(tornatoDa(giro)), sotto: 'vinti', tono: 'piu' }
-            : { testo: conSegno(-giro.puntata), sotto: 'persi', tono: 'meno' }
+        : esito && giro?.stato === 'fatto' && tornatoDa(giro) > 0
+          ? { testo: conSegno(tornatoDa(giro)), sotto: 'vinti', tono: 'piu' }
           : puoGirare
             ? { testo: String(scelta), sotto: 'puntata' }
             : { testo: String(saldo), sotto: 'saldo' }
@@ -866,6 +862,7 @@ export default function RuotaPagina() {
   return (
     <Pagina
       titolo={NOME_CRAZY_TIME}
+      sotto="Fortuna"
       intera
       indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }}
       azioni={
@@ -892,27 +889,23 @@ export default function RuotaPagina() {
         </Suspense>
       )}
       {/* Durante la domanda il palco resta, nascosto: tornando, il tabellone e le ruote sono quelli di prima. */}
-      <div className="ct" hidden={inDomanda}>
+      <div className={`ct ${SALA}`} hidden={inDomanda}>
         {stato && (
           <Tabellone
             saldo={conto?.saldo ?? saldo}
             puntata={inSfida && giro ? giro.puntata : scelta}
             saldoRef={saldoRef}
+            puntataRef={puntataRef}
             scarso={!puoGirare && !inSfida && !girando}
           />
         )}
         <div className="ct-corpo">
           <div
-            className={`ct-palco is-${scena}${luci === 'perso' ? ' is-scosso' : ''}${
-              palcoFortunato ? ' is-fortunata' : ''
-            }`}
+            className={`ct-palco is-${scena}${palcoFortunato ? ' is-fortunata' : ''}`}
           >
             <span className="ct-palco__fortuna" aria-hidden="true" />
             <span className="ct-palco__luce" aria-hidden="true" />
             <span className="ct-palco__scintille" aria-hidden="true" />
-            <span className="ct-palco__insegna" aria-hidden="true">
-              Crazy <span>Time</span>
-            </span>
             {stato && palcoFortunato && (
               <NastroFortuna testo={NASTRI[scena]} tabellone={scena === 'pachinko' || scena === 'cashhunt'} />
             )}
@@ -1059,7 +1052,7 @@ export default function RuotaPagina() {
                   sfida.uscito && monetaCaduta
                     ? sfida.uscito === 'blu'
                       ? `Blu: vinci ${sfida.vincita}!`
-                      : 'Rosso: vince il banco'
+                      : 'Rosso: al prossimo giro'
                     : sfida.fortunata
                       ? 'Tocca la moneta fortunata'
                       : 'Tocca la moneta'
@@ -1069,7 +1062,7 @@ export default function RuotaPagina() {
                   <span className="ct-lato is-blu">
                     Blu {scriviMoltiplicatore(sfida.moltiplicatore)} · vinci {sfida.vincita}
                   </span>
-                  <span className="ct-lato is-rosso">Rosso · banco</span>
+                  <span className="ct-lato is-rosso">Rosso · ritenta</span>
                 </span>
               </Indicazione>
             ) : scena === 'pachinko' && sfida?.tipo === 'pachinko' && giro ? (
@@ -1144,7 +1137,6 @@ export default function RuotaPagina() {
                   minima={PUNTATA_MINIMA}
                   tetto={saldo}
                   attiva={!girando && !inviando}
-                  valoreRef={puntataRef}
                   rigaRef={ficheRef}
                   rigaClasse={!puntataPronta && !girando ? CHIAMA_FICHES : ''}
                   onAggiungi={aggiungiFiche}
@@ -1158,7 +1150,7 @@ export default function RuotaPagina() {
                       ? `${inGioco} punti in gioco`
                       : debole
                         ? 'Più forte: trascinala e lasciala andare'
-                        : 'Trascina la ruota per girarla'}
+                        : 'Trascina la ruota e lasciala andare'}
                   </p>
                 ) : (
                   <InvitoPuntata>Tocca una fiche per puntare</InvitoPuntata>
@@ -1324,13 +1316,19 @@ function ManoCheTrascina() {
 
 /* ─────────────────────────────  Gli adesivi  ───────────────────────────── */
 
-function adesivoVincita(vincita: number, puntata: number, moltiplicatore: number): Omit<DatiAdesivo, 'id'> {
+function adesivoVincita(
+  vincita: number,
+  puntata: number,
+  moltiplicatore: number,
+  fortunata = false,
+): Omit<DatiAdesivo, 'id'> {
   return {
     durata: ADESIVO_MS + 400,
     tono: 'vivace',
     titolo: `Vinci ${vincita}!`,
     sotto: `${puntata} ${scriviMoltiplicatore(moltiplicatore)}`,
-    classe: 'ct-adesivo-vincita',
+    // Quel che porta la fortuna e' verde, come il palco.
+    classe: fortunata ? 'ct-adesivo-verde' : 'ct-adesivo-vincita',
     suono: 'vincita',
   }
 }
@@ -1347,11 +1345,11 @@ function adesivoSplit(vincita: number): Omit<DatiAdesivo, 'id'> {
     titolo: 'Split',
     sotto: `Vinci ${vincita}`,
     disegno: (
-      <svg className="ct-adesivo-split" width="54" height="54" viewBox="-12 -12 24 24" aria-hidden="true">
+      <svg className="ct-split-moneta" width="54" height="54" viewBox="-12 -12 24 24" aria-hidden="true">
         <IconaSplit lato={23} />
       </svg>
     ),
-    classe: 'ct-adesivo-vincita',
+    classe: 'ct-adesivo-split',
     suono: 'split',
   }
 }
@@ -1368,13 +1366,22 @@ function adesivoMezzo(vincita: number, puntata: number, moltiplicatore: number):
   }
 }
 
-function adesivoBanco(puntata: number): Omit<DatiAdesivo, 'id'> {
+/**
+ * Quando non torna niente — il banco, il rosso della moneta, la domanda
+ * sbagliata — un biglietto lilla che invita al giro dopo: niente rosso, niente
+ * segno meno, niente tremito. La puntata era gia' scesa dal saldo al lancio, e
+ * non c'e' altro da dire. Corto, perché la ruota torni pronta presto.
+ */
+function adesivoRitenta(g: GiroRuota): Omit<DatiAdesivo, 'id'> {
+  const s = g.sfida
+  const domanda = s?.tipo === 'domanda'
   return {
-    durata: ADESIVO_MS,
-    tono: 'bordato',
-    titolo: 'Vince il banco',
-    sotto: `${conSegno(-puntata)} punti`,
-    colore: 'var(--ct-rosso)',
-    suono: 'banco',
+    durata: 1_700,
+    tono: 'vivace',
+    titolo: domanda ? 'Stavolta no' : s?.tipo === 'moneta' ? 'Rosso' : 'Al prossimo giro',
+    sotto: domanda || s?.tipo === 'moneta' ? 'Al prossimo giro' : undefined,
+    classe: 'ct-adesivo-ritenta',
+    // Un suono piccolo e pari solo per la domanda: altrove bastano le fiches che scivolano via.
+    suono: domanda ? 'pareggio' : undefined,
   }
 }

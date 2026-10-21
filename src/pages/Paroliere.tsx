@@ -27,7 +27,8 @@ export default function Paroliere() {
 
   return (
     <Pagina
-      titolo={s ? `Paroliere #${s.puzzleNumber}` : 'Paroliere'}
+      titolo="Paroliere"
+      sotto={s ? `N° ${s.puzzleNumber} · la griglia di oggi` : 'La griglia di oggi'}
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
@@ -51,7 +52,12 @@ export default function Paroliere() {
       ) : !s || !g.vista ? (
         <div className="par-attesa" aria-hidden="true" />
       ) : (
-        <PartitaParoliere vista={g.vista} comandi={g.comandi} fine={<FineGiornata stato={s} />} />
+        <PartitaParoliere
+          vista={g.vista}
+          comandi={g.comandi}
+          punti={`+${s.punti}`}
+          fine={<FineGiornata stato={s} />}
+        />
       )}
       <ComeSiGiocaParoliere open={regole} onClose={() => setRegole(false)} />
       {festa && <Coriandoli />}
@@ -59,19 +65,14 @@ export default function Paroliere() {
   )
 }
 
-/** La partita finita: i punti in classifica, e quando arriva la prossima griglia. */
+/** La partita finita: per tornare alle Giornaliere, e quando arriva la prossima griglia. */
 function FineGiornata({ stato }: { stato: ParoliereStato }) {
   const restano = useCountdown(stato.msToNextPuzzle)
   return (
     <>
-      <div className="par-totale">
-        <p className="par-totale__valore u-tabnum">{stato.punti} punti</p>
-        <p className="par-totale__dettaglio u-tabnum">
-          {stato.punteggio >= stato.traguardo
-            ? 'Traguardo raggiunto'
-            : `${stato.punteggio} sulla griglia, il traguardo era ${stato.traguardo}`}
-        </p>
-      </div>
+      <Collegamento to={ROTTE.home} direzione="indietro" className="par-tasto par-tasto--giallo">
+        Torna alle Giornaliere
+      </Collegamento>
       <div className="par-azioni">
         <Collegamento to={ROTTE.classifica('paroliere')} className="par-link">
           <IconTrophy size={18} />

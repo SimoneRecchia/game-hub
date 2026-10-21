@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi, type DatiAdesivo } from '@/components/Adesivo'
-import { Avatar } from '@/components/Avatar'
 import { Button } from '@/components/Button'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { DefinizioniCarte, PostoCarta, SabotContext } from '@/games/blackjack/Carta'
 import { ComeSiGiocaBlackjack } from '@/games/blackjack/ComeSiGioca'
-import { COLORE_FICHE, Fiche, PilaFiches, coloreFiche, scomponi } from '@/games/blackjack/Fiches'
+import { COLORE_FICHE, Fiche, GETTONI, PilaFiches, coloreFiche, scomponi } from '@/games/blackjack/Fiches'
 import { Mano } from '@/games/blackjack/Mano'
 import {
   carteDi,
@@ -24,22 +23,22 @@ import { raccogliCarte } from '@/games/blackjack/raccolta'
 import {
   AnelloTempo,
   BarraTempo,
+  Panno,
   PostoAltro,
   PostoAssicurazione,
   PostoLibero,
   Rastrelliera,
   Sabot,
   Scarti,
-  Scritte,
-  SegnoAssicurazione,
-  Stato,
   chiaviMano,
   esitiDelPosto,
+  tornatoDi,
   type CarteInGioco,
   type LatoPosto,
 } from '@/games/blackjack/Tavolo'
 import { esciFraPoco } from '@/games/blackjack/uscita'
-import { CHIAMA_FICHES, PochiPunti } from '@/games/fortuna/Avvisi'
+import { CHIAMA_FICHES, PochiPunti, adesivoRitenta } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { centroDi, incassaMonete, puntaFiches, spostaFiches, volaFiche } from '@/games/fortuna/voli'
@@ -48,10 +47,10 @@ import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { suona } from '@/lib/suoni'
 import {
-  GETTONI_BJ,
   PUNTATA_MINIMA_BJ,
   costoAssicurazione,
   deltaAssicurazione,
+  deltaMano,
   eBlackjack,
   mossePossibili,
   sballata,
@@ -72,25 +71,34 @@ const POLL_DA_SOLI_MS = 5_000
 
 const ADESIVO_MS = 2_200
 
-/** Lo split: due carte che si separano. */
-const SEGNO_SPLIT = (
+/** I segni delle mosse, come nel mockup: la carta in piu', la mano aperta che si ferma, le due carte che si separano. */
+const segno = (d: string) => (
   <svg className="bj-mossa__icona" viewBox="0 0 24 24" aria-hidden="true">
-    <rect x="5.4" y="5.5" width="5.4" height="13" rx="1.4" />
-    <rect x="13.2" y="5.5" width="5.4" height="13" rx="1.4" />
-    <path d="M3.5 12H.9m1.5-1.8L.9 12l1.5 1.8M20.5 12h2.6m-1.5-1.8 1.5 1.8-1.5 1.8" fill="none" />
+    <path d={d} />
   </svg>
 )
 
 /**
- * Le mosse, come si chiamano ai tavoli italiani, con il segno che hanno ai
- * tavoli delle app. Ci sono sempre tutte, spente quando non si possono fare:
- * lo split si vede anche quando non c'e' una coppia.
+ * Le mosse, come si chiamano ai tavoli italiani, nell'ordine del mockup. Ci
+ * sono sempre tutte, spente quando non si possono fare: lo split si vede anche
+ * quando non c'e' una coppia, e durante il turno degli altri si vedono tutte
+ * spente, pronte.
  */
 const MOSSE: Array<{ azione: AzioneBJ; nome: string; segno: ReactNode }> = [
-  { azione: 'dividi', nome: 'Split', segno: SEGNO_SPLIT },
+  {
+    azione: 'carta',
+    nome: 'Carta',
+    segno: segno('M7 3.5h8a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-13a2 2 0 0 1 2-2z M11 9v6 M8 12h6'),
+  },
+  {
+    azione: 'stai',
+    nome: 'Stai',
+    segno: segno(
+      'M8.5 12.5V6a1.5 1.5 0 0 1 3 0v5 M11.5 10.5V4.5a1.5 1.5 0 0 1 3 0v6 M14.5 10.5V6a1.5 1.5 0 0 1 3 0v7.5c0 4-2.6 7-6.2 7-2.6 0-4.3-1.4-5.6-3.7L3.9 13.6a1.5 1.5 0 0 1 2.6-1.5l2 3',
+    ),
+  },
   { azione: 'raddoppia', nome: 'Raddoppia', segno: '×2' },
-  { azione: 'carta', nome: 'Carta', segno: '+' },
-  { azione: 'stai', nome: 'Stai', segno: '−' },
+  { azione: 'dividi', nome: 'Split', segno: segno('M3.5 8l5.5-2 3 8.5-5.5 2z M20.5 8L15 6l-3 8.5 5.5 2z M12 3v3') },
 ]
 
 const oro = (titolo: string, sotto?: string, suono: DatiAdesivo['suono'] = 'vincita'): Omit<DatiAdesivo, 'id'> => ({
@@ -99,15 +107,6 @@ const oro = (titolo: string, sotto?: string, suono: DatiAdesivo['suono'] = 'vinc
   titolo,
   sotto,
   classe: 'ct-adesivo-vincita',
-  suono,
-})
-
-const bordato = (titolo: string, sotto?: string, suono?: DatiAdesivo['suono']): Omit<DatiAdesivo, 'id'> => ({
-  durata: ADESIVO_MS,
-  tono: 'bordato',
-  titolo,
-  sotto,
-  colore: 'var(--bj-panno-2)',
   suono,
 })
 
@@ -152,6 +151,7 @@ function useOra(attivo: boolean): number {
  * mani in corso stanno e si pagano lo stesso.
  */
 export default function BlackjackTavolo() {
+  useSala()
   const { id = '' } = useParams()
   const { vai } = useNavigazione()
   const toast = useToast()
@@ -185,11 +185,15 @@ export default function BlackjackTavolo() {
   const inVolo = useRef(false)
   const [regole, setRegole] = useState(false)
   const [pioggia, setPioggia] = useState(0)
+  /** Com'e' andato il mio ultimo giro, nella riga sopra i comandi finché non si tocca una fiche. */
+  const [esitoTesto, setEsitoTesto] = useState<{ testo: string; oro: boolean } | null>(null)
+  /** Il giro per cui la puntata di prima e' gia' tornata sul cerchio: una volta sola, Azzera la toglie. */
+  const ripetuta = useRef<number | null>(null)
 
   const tavoloRef = useRef<HTMLDivElement>(null)
   const sabotRef = useRef<HTMLSpanElement>(null)
-  const scartiRef = useRef<HTMLDivElement>(null)
-  const rastrellieraRef = useRef<HTMLDivElement>(null)
+  const scartiRef = useRef<HTMLSpanElement>(null)
+  const rastrellieraRef = useRef<HTMLSpanElement>(null)
   const cerchioRef = useRef<HTMLDivElement>(null)
   const assicurazioneRef = useRef<HTMLDivElement>(null)
   const saldoRef = useRef<HTMLSpanElement>(null)
@@ -219,10 +223,6 @@ export default function BlackjackTavolo() {
       const assicurato = mio && mio.puntata > 0 ? mio.assicurazione : 0
       const daAssicurazione = deltaAssicurazione(assicurato, v.banco)
       if (vive && totaleBanco > 21) accoda(oro('Il banco sballa!', `${totaleBanco}`, 'vincita'))
-      // A chi si era assicurato il blackjack del banco lo racconta l'assicurazione che paga.
-      else if (vive && eBlackjack(v.banco) && daAssicurazione <= 0) {
-        accoda(bordato('Blackjack del banco', undefined, 'banco'))
-      }
       if (daAssicurazione > 0) accoda(oro('L’assicurazione paga', `+${daAssicurazione}`))
       const finePulizia = () => {
         const fine = (resta(v, ricevuta.current, Date.now()) ?? 0) + 100
@@ -235,8 +235,11 @@ export default function BlackjackTavolo() {
         finePulizia()
         return
       }
-      // Le mani e l'assicurazione si pagano ognuna dal suo posto: il delta del giro e' la loro somma.
+      setEsitoTesto(testoEsito(tornatoDi(mio)))
+      // Le mani e l'assicurazione si pagano ognuna dal suo posto: il delta del giro e' la loro somma. Si racconta
+      // solo quel che torna: la puntata si e' pagata quando si e' giocato.
       const delta = mio.delta - daAssicurazione
+      const tornaMani = Math.max(0, mio.puntata + delta)
       const cerchio = centroDi(cerchioRef.current)
       const centroAss = centroDi(assicurazioneRef.current)
       const rastrelliera = centroDi(rastrellieraRef.current)
@@ -252,7 +255,7 @@ export default function BlackjackTavolo() {
       }
       if (delta > 0) {
         const bj = mio.mani.length === 1 && eBlackjack(mio.mani[0].carte)
-        accoda(oro(bj ? 'Blackjack!' : `Vinci ${delta}!`, bj ? `+${delta}` : undefined))
+        accoda(oro(bj ? 'Blackjack!' : `Vinci ${tornaMani}!`, bj ? `Vinci ${tornaMani}` : undefined))
         // La pioggia per i momenti grandi: il blackjack, e le vincite con un raddoppio o uno split.
         if (bj || mio.mani.some((m) => m.raddoppiata || m.divisa)) {
           setPioggia((p) => p + 1)
@@ -269,15 +272,25 @@ export default function BlackjackTavolo() {
             } else libera()
           })
         })
-      } else if (delta < 0) {
-        if (!tutteSballate) accoda(bordato('Vince il banco', `${delta}`, 'banco'))
+      } else if (tornaMani > 0) {
+        // Il pari, o le mani di uno split che ridanno meno della puntata: quel che torna e' una vincita, come lo
+        // split di Crazy Time, e torna al saldo in fiches; il resto scivola piano al banco.
+        const una = mio.mani.length === 1
+        const pari = una && delta === 0
+        accoda(oro(pari ? 'Pari' : `Vinci ${tornaMani}`, pari ? `Vinci ${tornaMani}` : undefined, 'pareggio'))
+        setPila('via')
+        const tornano = scomponi(tornaMani).map((x) => COLORE_FICHE[x])
+        const torna = cerchio && saldo ? spostaFiches(cerchio, saldo, tornano, 150) : Promise.resolve()
+        void torna.then(libera)
+        if (delta < 0 && cerchio && rastrelliera) {
+          void spostaFiches(cerchio, rastrelliera, scomponi(-delta).map((x) => COLORE_FICHE[x]), 300)
+        }
+      } else {
+        // Non torna niente: le fiches scivolano al banco e la mano dopo e' gia' li'. Le mani oltre il 21 l'hanno
+        // gia' detto quando e' arrivata la carta; l'assicurazione pagata ha il suo adesivo.
+        if (!tutteSballate && daAssicurazione <= 0) accoda(adesivoRitenta('Alla prossima mano'))
         setPila('via')
         if (cerchio && rastrelliera) void spostaFiches(cerchio, rastrelliera, colori, 150)
-      } else {
-        accoda(bordato('Pari', 'La puntata torna', 'pareggio'))
-        setPila('via')
-        const torna = cerchio && saldo ? spostaFiches(cerchio, saldo, colori, 150) : Promise.resolve()
-        void torna.then(libera)
       }
       if (assicurato > 0) {
         if (daAssicurazione > 0) {
@@ -299,7 +312,7 @@ export default function BlackjackTavolo() {
           if (centroAss && rastrelliera) void spostaFiches(centroAss, rastrelliera, [coloreFiche(assicurato)], 150)
         }
       }
-      if (delta < 0 && daAssicurazione <= 0) libera()
+      if (tornaMani === 0 && daAssicurazione <= 0) libera()
       finePulizia()
     },
     [accoda, dopo, pulisci],
@@ -339,7 +352,8 @@ export default function BlackjackTavolo() {
           if (!arrivo) return
           const quando = arrivo.ritardo + VOLO_CARTA_MS
           const totale = `${totaleDi(m.carte).totale}`
-          if (sballata(m.carte)) dopo(quando, () => accoda(bordato('Sballato', totale, 'sballato')))
+          // Oltre il 21 si dice come un fatto del gioco, non come una sconfitta.
+          if (sballata(m.carte)) dopo(quando, () => accoda(adesivoRitenta('Oltre 21', totale, 1_600)))
           else if (eBlackjack(m.carte, m.divisa)) dopo(quando, () => accoda(oro('Blackjack!', undefined, 'blackjack')))
         })
       }
@@ -490,11 +504,21 @@ export default function BlackjackTavolo() {
 
   /* ───────────────────────────────────  Le mosse  ─────────────────────────────────── */
 
+  // La puntata di prima torna sul cerchio a ogni giro nuovo, come al tavolo: "Nuovo giro" la rigioca, "Azzera" la
+  // toglie. Una volta per giro, e solo se il saldo la copre.
+  useEffect(() => {
+    if (!devoPuntare || senzaSaldo || ripetuta.current === giroMostrato) return
+    ripetuta.current = giroMostrato
+    const importo = ultima.reduce((s, v) => s + v, 0)
+    if (importo >= PUNTATA_MINIMA_BJ && importo <= saldo) setFiches((f) => (f.length === 0 ? ultima : f))
+  }, [devoPuntare, senzaSaldo, giroMostrato, ultima, saldo])
+
   const posaFiche = (valore: number, bottone: HTMLElement) => {
     if (!devoPuntare || sommaFiches + inVoloFiches.current + valore > saldo) {
       suona('assente', { volume: 0.6 })
       return
     }
+    setEsitoTesto(null)
     inVoloFiches.current += valore
     const da = centroDi(bottone)
     const a = centroDi(cerchioRef.current)
@@ -506,10 +530,15 @@ export default function BlackjackTavolo() {
     else posa()
   }
 
-  const togliFiche = () => {
+  /** Azzera: la pila torna al saldo, in fiches. */
+  const azzera = () => {
     if (fiches.length === 0) return
-    suona('fiche', { volume: 0.4 })
-    setFiches((f) => f.slice(0, -1))
+    setEsitoTesto(null)
+    const da = centroDi(cerchioRef.current)
+    const a = centroDi(saldoRef.current)
+    if (da && a) void spostaFiches(da, a, fiches.map((v) => COLORE_FICHE[v]))
+    else suona('fiche', { volume: 0.4 })
+    setFiches([])
   }
 
   const punta = async (pezzi: number[]) => {
@@ -518,6 +547,7 @@ export default function BlackjackTavolo() {
     if (!v || importo < PUNTATA_MINIMA_BJ || importo > saldo) return
     setUltima(pezzi)
     setFiches(pezzi)
+    setEsitoTesto(null)
     const nuova = await chiedi(`/blackjack/tavolo/${id}/punta`, { giro: giroMostrato, puntata: importo })
     if (nuova) {
       setFiches([])
@@ -557,13 +587,20 @@ export default function BlackjackTavolo() {
   /* ──────────────────────────────────  La pagina  ────────────────────────────────── */
 
   const indietro = { a: ROTTE.blackjack, etichetta: 'Blackjack' }
+  const sotto = 'Paga 1 a 1'
+  const info = (
+    <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
+      <IconInfo size={21} />
+    </BottoneBarra>
+  )
   if (errore) {
     return (
-      <Pagina titolo="Blackjack" indietro={indietro} intera>
-        <div className="bj-errore">
+      <Pagina titolo="Blackjack" sotto={sotto} indietro={indietro} intera azioni={info}>
+        <div className={`bj-errore ${SALA}`}>
           <p>{errore}</p>
           <Button onClick={() => vai(ROTTE.blackjack)}>Alla sala</Button>
         </div>
+        <ComeSiGiocaBlackjack open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )
   }
@@ -577,9 +614,10 @@ export default function BlackjackTavolo() {
     vista?.aTempo && vista.fase === 'puntate' && tempo !== null ? { resta: tempo, tutto: PUNTATE_MS } : null
   const banco = vista && !pulita ? vista.banco : []
   const chiaviBanco = banco.map((_, i) => chiaveBanco(vista!.giro, i))
+  const mioTurno = mosse.length > 0 && !!manoDiTurno
   const classeCerchio = [
     'bj-mio__cerchio',
-    devoPuntare && !senzaSaldo && 'is-puntata',
+    devoPuntare && !senzaSaldo && pilaVuota(fiches) && 'is-puntata',
     tempoTurno && manoDiTurno && 'is-turno',
   ]
     .filter(Boolean)
@@ -592,33 +630,73 @@ export default function BlackjackTavolo() {
       : puntataServer > 0
         ? scomponi(pila === 'vinta' ? puntataServer + Math.max(0, (mio?.delta ?? 0) - deltaAss) : puntataServer)
         : fiches
-  const esitoAss = chiuso && mio?.delta !== null && assicurazione > 0 ? (deltaAss > 0 ? 'pagata' : 'persa') : null
+  const importoPila = pilaMia.reduce((t, v) => t + v, 0)
+  // L'assicurazione dice solo quando paga: quando non paga la sua fiche scivola al banco, e basta.
+  const esitoAss = chiuso && mio?.delta !== null && assicurazione > 0 && deltaAss > 0 ? 'pagata' : null
+
+  /** La riga sopra i comandi: che cosa succede, o che cosa tocca fare. */
+  const riga = ((): { testo: string; oro?: boolean } => {
+    if (!vista) return { testo: 'Apro il tavolo…' }
+    if (!mio) {
+      const chi = vista.fase === 'gioco' && vista.turno ? vista.posti[vista.turno.posto] : null
+      if (chi) return { testo: `Tocca a ${chi.giocatore.displayName}` }
+      return { testo: libero ? 'Siediti per giocare' : 'Il tavolo è pieno' }
+    }
+    if (devoPuntare) {
+      if (senzaSaldo) return { testo: '' }
+      if (tempoPuntate) return { testo: `Punta entro ${Math.ceil(tempoPuntate.resta / 1000)} secondi`, oro: true }
+      if (esitoTesto) return esitoTesto
+      return sommaFiches > 0
+        ? { testo: `Puntata ${sommaFiches} · ${altri ? 'punta' : 'distribuisci'}` }
+        : { testo: 'Tocca le fiches per puntare' }
+    }
+    if (fase === 'puntate') {
+      return {
+        testo: tempoPuntate ? `Le carte fra ${Math.ceil(tempoPuntate.resta / 1000)} secondi` : 'Si aspettano le puntate',
+      }
+    }
+    if (mioTurno) {
+      if (offerta) return { testo: 'Il banco mostra un asso', oro: true }
+      const quale = mani.length > 1 ? `Mano ${vista.turno!.mano + 1} di ${mani.length} · ` : ''
+      return { testo: `Tocca a te · ${quale}${totaleDi(manoDiTurno!.carte).totale}`, oro: true }
+    }
+    if (vista.fase === 'gioco') {
+      if (arrivando) return { testo: 'Carte!' }
+      const chi = vista.turno && vista.turno.posto !== vista.mio ? vista.posti[vista.turno.posto] : null
+      if (chi) return { testo: `Tocca a ${chi.giocatore.displayName}` }
+      return { testo: puntataServer > 0 ? 'Carte!' : 'Guardi questo giro' }
+    }
+    if (!chiuso) return { testo: 'Il banco pesca…' }
+    if (puntataServer > 0 && mio.delta !== null) return testoEsito(tornatoDi(mio))
+    return { testo: 'Guardi questo giro' }
+  })()
+  const tempoRiga = tempoPuntate ?? tempoTurno
 
   return (
-    <Pagina
-      titolo="Blackjack"
-      indietro={indietro}
-      intera
-      azioni={
-        <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
-          <IconInfo size={21} />
-        </BottoneBarra>
-      }
-    >
+    <Pagina titolo="Blackjack" sotto={sotto} indietro={indietro} intera azioni={info}>
       <DefinizioniCarte />
-      <div className="bj">
+      <div className={`bj ${SALA}`}>
         {vista && (
-          <Tabellone saldo={conto ?? saldo} puntata={puntataMostrata} saldoRef={saldoRef} scarso={senzaSaldo} />
+          <Tabellone
+            saldo={conto ?? saldo}
+            puntata={puntataMostrata}
+            saldoRef={saldoRef}
+            scarso={senzaSaldo}
+            riga
+            etichetta={puntataServer > 0 ? 'In gioco' : 'Puntata'}
+          />
         )}
-        <SabotContext.Provider value={sabotRef}>
-          <div className={`bj-tavolo is-${fase}${chiuso ? ' is-chiuso' : ''}`} ref={tavoloRef}>
-            <span className="bj-tavolo__luce" aria-hidden="true" />
-            <Scarti ref={scartiRef} />
-            <Rastrelliera ref={rastrellieraRef} />
-            <Sabot ref={sabotRef} />
+        <div className="bj-campo">
+          <SabotContext.Provider value={sabotRef}>
+            <div className={`bj-tavolo is-${fase}${chiuso ? ' is-chiuso' : ''}`} ref={tavoloRef}>
+              <Panno offerta={offerta} />
+              <span className="bj-tavolo__luce" aria-hidden="true" />
+              <Scarti ref={scartiRef} />
+              <Rastrelliera ref={rastrellieraRef} />
+              <Sabot ref={sabotRef} />
 
-            <div className="bj-banco">
-              <div className="bj-banco__carte">
+              <span className="bj-banco__nome">Banco</span>
+              <div className="bj-banco">
                 {vista && banco.length > 0 && (
                   <Mano
                     carte={banco}
@@ -631,53 +709,49 @@ export default function BlackjackTavolo() {
                 )}
                 {vista?.fase === 'gioco' && banco.length === 1 && <PostoCarta className="bj-banco__posto" />}
               </div>
-              <span className="bj-banco__nome">Banco</span>
-            </div>
 
-            <Scritte offerta={offerta} />
-
-            {vista &&
-              altriPosti(vista.mio).map((k, i) => {
-                const p = vista.posti[k]
-                const lato = LATI[i]
-                if (!p || (pulita && p.via)) return <PostoLibero key={k} lato={lato} arco={i} />
-                const visto = pulita ? { ...p, puntata: 0, mani: [], delta: null } : p
-                return (
-                  <PostoAltro
-                    key={k}
-                    posto={visto}
-                    indice={k}
-                    lato={lato}
-                    arco={i}
-                    turno={pulita ? null : vista.turno}
-                    banco={vista.banco}
-                    chiuso={chiuso}
-                    carte={carte}
-                    tempo={vista.turno?.posto === k && tempoTurno && !pulita ? tempoTurno : null}
-                  />
-                )
-              })}
-
-            <div className={`bj-mio${mani.length > 1 ? ` is-mani-${Math.min(4, mani.length)}` : ''}`}>
-              <div className="bj-mio__mani">
-                {vista &&
-                  mio &&
-                  mani.map((m, o) => (
-                    <Mano
-                      key={m.id ?? o}
-                      carte={m.carte}
-                      chiavi={chiaviMano(vista.giro, vista.mio!, m.id ?? o, m.carte.length)}
-                      arrivi={arrivi.current}
-                      inArrivo={inArrivo}
-                      onAtterra={onAtterra}
-                      divisa={m.divisa}
-                      esito={esitiMiei[o]}
-                      attiva={vista.turno?.posto === vista.mio && vista.turno.mano === o && mani.length > 1}
-                      className="bj-mano--mia"
+              {vista &&
+                altriPosti(vista.mio).map((k, i) => {
+                  const p = vista.posti[k]
+                  const lato = LATI[i]
+                  if (!p || (pulita && p.via)) return <PostoLibero key={k} lato={lato} arco={i} />
+                  const visto = pulita ? { ...p, puntata: 0, mani: [], delta: null } : p
+                  return (
+                    <PostoAltro
+                      key={k}
+                      posto={visto}
+                      indice={k}
+                      lato={lato}
+                      arco={i}
+                      turno={pulita ? null : vista.turno}
+                      banco={vista.banco}
+                      chiuso={chiuso}
+                      carte={carte}
+                      tempo={vista.turno?.posto === k && tempoTurno && !pulita ? tempoTurno : null}
                     />
-                  ))}
-              </div>
-              <div className="bj-mio__puntate">
+                  )
+                })}
+
+              <div className={`bj-mio${mani.length > 1 ? ` is-mani-${Math.min(4, mani.length)}` : ''}`}>
+                <div className="bj-mio__mani">
+                  {vista &&
+                    mio &&
+                    mani.map((m, o) => (
+                      <Mano
+                        key={m.id ?? o}
+                        carte={m.carte}
+                        chiavi={chiaviMano(vista.giro, vista.mio!, m.id ?? o, m.carte.length)}
+                        arrivi={arrivi.current}
+                        inArrivo={inArrivo}
+                        onAtterra={onAtterra}
+                        divisa={m.divisa}
+                        esito={esitiMiei[o]}
+                        conto={esitiMiei[o] ? m.puntata + deltaMano(m, vista.banco) : null}
+                        attiva={mioTurno && vista.turno!.mano === o}
+                        className={`bj-mano--mia${mani.length > 2 ? ' bj-mano--piccola' : ''}`}
+                      />
+                    ))}
+                </div>
                 <PostoAssicurazione
                   ref={assicurazioneRef}
                   importo={assicurazione}
@@ -686,31 +760,36 @@ export default function BlackjackTavolo() {
                   pila={pilaAss}
                 />
                 <div className={classeCerchio} ref={cerchioRef}>
-                  <PilaFiches pezzi={pilaMia} className={pila === 'vinta' ? 'is-vinta' : ''} />
-                  {pilaMia.length === 0 && devoPuntare && !senzaSaldo && (
-                    <span className="bj-mio__invito">Punta qui</span>
+                  <PilaFiches
+                    key={pilaMia.length % 2}
+                    pezzi={pilaMia}
+                    massimo={6}
+                    targhetta={false}
+                    className={pila === 'vinta' ? 'is-vinta' : ''}
+                  />
+                  {importoPila > 0 && (
+                    <span className="bj-mio__cifra u-tabnum" style={{ '--alto': Math.min(6, pilaMia.length) - 1 } as CSSProperties}>
+                      {importoPila}
+                    </span>
                   )}
                   {tempoTurno && manoDiTurno && <AnelloTempo {...tempoTurno} />}
                 </div>
               </div>
             </div>
-            <span className="bj-tavolo__bordo" aria-hidden="true" />
-          </div>
-        </SabotContext.Provider>
+          </SabotContext.Provider>
+        </div>
 
-        <div className="bj-comandi">
-          {!vista ? (
-            <Stato>Apro il tavolo…</Stato>
-          ) : !mio ? (
-            <div className="bj-comandi__riga">
-              {libero ? (
-                <Button size="lg" onClick={() => void siedi()} disabled={inviando}>
-                  Siediti
-                </Button>
-              ) : (
-                <Stato>Il tavolo è pieno</Stato>
-              )}
-            </div>
+        <div className="bj-pannello">
+          <p className={`bj-riga${riga.oro ? ' is-oro' : ''}`} aria-live={tempoRiga ? 'off' : 'polite'}>
+            {riga.testo || ' '}
+          </p>
+          {tempoRiga && <BarraTempo {...tempoRiga} />}
+          {!vista ? null : !mio ? (
+            libero && (
+              <button type="button" className="bj-via is-pronto" onClick={() => void siedi()} disabled={inviando}>
+                Siediti
+              </button>
+            )
           ) : devoPuntare ? (
             senzaSaldo ? (
               <PochiPunti servono={PUNTATA_MINIMA_BJ} saldo={saldo} />
@@ -718,46 +797,30 @@ export default function BlackjackTavolo() {
               <Puntate
                 fiches={fiches}
                 saldo={saldo}
-                ultima={ultima}
                 inviando={inviando}
-                tempo={tempoPuntate}
-                altri={altri}
+                verbo={altri ? 'Punta' : ultima.length > 0 ? 'Nuovo giro' : 'Distribuisci'}
                 onPosa={posaFiche}
-                onTogli={togliFiche}
-                onRaddoppia={() => sommaFiches * 2 <= saldo && setFiches((f) => [...f, ...f])}
+                onAzzera={azzera}
                 onPunta={(pezzi) => void punta(pezzi)}
               />
             )
-          ) : fase === 'puntate' ? (
-            <Stato tempo={tempoPuntate}>
-              {tempoPuntate
-                ? `Le carte fra ${Math.ceil(tempoPuntate.resta / 1000)} secondi`
-                : 'Si aspettano le puntate'}
-            </Stato>
-          ) : mosse.length > 0 && manoDiTurno ? (
-            <div className="bj-comandi__mosse">
-              {/* L'assicurazione, quando c'e', prende il posto di "Tocca a te": il tempo resta, sotto. */}
-              {offerta ? (
-                <div className="bj-comandi__offerta">
-                  <button
-                    type="button"
-                    className="bj-offerta"
-                    disabled={saldo < costo || inviando}
-                    onClick={() => void muovi('assicurazione')}
-                  >
-                    <SegnoAssicurazione className="bj-offerta__segno" />
-                    <span className="bj-offerta__nome">Assicurazione</span>
-                    <span className="bj-offerta__costo u-tabnum">{costo}</span>
-                  </button>
-                  {tempoTurno && <BarraTempo {...tempoTurno} />}
-                </div>
-              ) : (
-                tempoTurno && <Stato tempo={tempoTurno}>Tocca a te</Stato>
+          ) : fase !== 'puntate' && puntataServer > 0 ? (
+            <>
+              {offerta && (
+                <button
+                  type="button"
+                  className="bj-assicura"
+                  disabled={saldo < costo || inviando}
+                  onClick={() => void muovi('assicurazione')}
+                >
+                  Assicurazione · <span className="u-tabnum">{costo}</span>
+                </button>
               )}
               <div className="bj-mosse" role="group" aria-label="La tua mossa">
                 {MOSSE.map(({ azione, nome, segno }) => {
                   const costa = azione === 'raddoppia' || azione === 'dividi'
-                  const puo = mosse.includes(azione) && (!costa || saldo >= manoDiTurno.puntata)
+                  const puo =
+                    mioTurno && mosse.includes(azione) && (!costa || saldo >= (manoDiTurno?.puntata ?? Infinity))
                   return (
                     <button
                       key={azione}
@@ -774,10 +837,8 @@ export default function BlackjackTavolo() {
                   )
                 })}
               </div>
-            </div>
-          ) : (
-            <StatoDelGiro vista={vista} chiuso={chiuso} arrivando={arrivando} tempo={tempoTurno} />
-          )}
+            </>
+          ) : null}
         </div>
       </div>
       <Adesivo adesivo={adesivo} />
@@ -787,107 +848,63 @@ export default function BlackjackTavolo() {
   )
 }
 
-/** I comandi della puntata: le fiches da posare, e il bottone che distribuisce. */
+const pilaVuota = (f: readonly number[]) => f.length === 0
+
+/**
+ * Com'e' andato il giro, nella riga sopra i comandi: quel che e' tornato, d'oro
+ * — anche la puntata di una mano pari, che si dice vinta come lo split di Crazy
+ * Time —, o l'invito alla mano dopo, se non e' tornato niente.
+ */
+const testoEsito = (tornato: number) =>
+  tornato > 0 ? { testo: `Vinci ${tornato}`, oro: true } : { testo: 'Alla prossima mano', oro: false }
+
+/** I comandi della puntata: le fiches da posare, Azzera, e il bottone che distribuisce. */
 function Puntate({
   fiches,
   saldo,
-  ultima,
   inviando,
-  tempo,
-  altri,
+  verbo,
   onPosa,
-  onTogli,
-  onRaddoppia,
+  onAzzera,
   onPunta,
 }: {
   fiches: number[]
   saldo: number
-  ultima: number[]
   inviando: boolean
-  tempo: { resta: number; tutto: number } | null
-  altri: boolean
+  /** Il nome del bottone quando la puntata c'e': Distribuisci, Nuovo giro, o Punta se si aspettano gli altri. */
+  verbo: string
   onPosa: (valore: number, bottone: HTMLElement) => void
-  onTogli: () => void
-  onRaddoppia: () => void
+  onAzzera: () => void
   onPunta: (pezzi: number[]) => void
 }) {
   const somma = fiches.reduce((s, v) => s + v, 0)
-  const ripeti = ultima.reduce((s, v) => s + v, 0)
-  const ripetibile = somma === 0 && ripeti >= PUNTATA_MINIMA_BJ && ripeti <= saldo
-  const verbo = altri ? 'Punta' : 'Distribuisci'
-  // Senza fiches sul cerchio, e senza una puntata da ripetere, le carte non partono: le fiches si fanno toccare.
-  const chiama = somma === 0 && !ripetibile && !inviando
+  const pronto = somma >= PUNTATA_MINIMA_BJ && somma <= saldo && !inviando
+  // Senza fiches sul cerchio le carte non partono: le fiches si fanno toccare.
+  const chiama = somma === 0 && !inviando
   return (
-    <div className="bj-puntate">
-      {tempo && <Stato tempo={tempo}>Punta entro {Math.ceil(tempo.resta / 1000)} secondi</Stato>}
+    <>
       <div className={`bj-gettoni${chiama ? ` ${CHIAMA_FICHES}` : ''}`} role="group" aria-label="Le fiches">
-        {GETTONI_BJ.map((v) => (
+        {GETTONI.map((v) => (
           <button
             key={v}
             type="button"
             className="bj-gettone"
             disabled={somma + v > saldo || inviando}
-            aria-label={`Fiche da ${v}`}
+            aria-label={`Aggiungi ${v}`}
             onClick={(e) => onPosa(v, e.currentTarget)}
           >
             <Fiche valore={v} />
           </button>
         ))}
       </div>
-      <div className="bj-comandi__riga">
-        <button type="button" className="bj-tasto" onClick={onTogli} disabled={somma === 0 || inviando}>
-          Annulla
+      <div className="bj-comandi">
+        <button type="button" className="bj-azzera" onClick={onAzzera} disabled={somma === 0 || inviando}>
+          Azzera
         </button>
-        <button type="button" className="bj-tasto" onClick={onRaddoppia} disabled={somma === 0 || somma * 2 > saldo}>
-          ×2
+        <button type="button" className={`bj-via${pronto ? ' is-pronto' : ''}`} disabled={!pronto} onClick={() => onPunta(fiches)}>
+          {somma === 0 ? 'Tocca una fiche' : somma < PUNTATA_MINIMA_BJ ? `Da ${PUNTATA_MINIMA_BJ} in su` : verbo}
         </button>
-        {ripetibile ? (
-          <button type="button" className="bj-distribuisci" disabled={inviando} onClick={() => onPunta(ultima)}>
-            Ripeti <span className="u-tabnum">{ripeti}</span>
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="bj-distribuisci"
-            disabled={somma < PUNTATA_MINIMA_BJ || inviando}
-            onClick={() => onPunta(fiches)}
-          >
-            {somma === 0 ? 'Tocca una fiche' : somma < PUNTATA_MINIMA_BJ ? `Minimo ${PUNTATA_MINIMA_BJ}` : verbo}
-          </button>
-        )}
       </div>
-    </div>
+    </>
   )
-}
-
-/** Quel che succede quando non tocca a me: di chi e' il turno, il banco che gioca, gli esiti. */
-function StatoDelGiro({
-  vista,
-  chiuso,
-  arrivando,
-  tempo,
-}: {
-  vista: VistaTavoloBJ
-  chiuso: boolean
-  arrivando: boolean
-  tempo: { resta: number; tutto: number } | null
-}) {
-  const mio = vista.mio !== null ? vista.posti[vista.mio] : null
-  if (vista.fase === 'gioco' && vista.turno && vista.turno.posto !== vista.mio) {
-    const chi = vista.posti[vista.turno.posto]
-    return (
-      <Stato tempo={tempo}>
-        {chi && (
-          <span className="bj-stato__chi">
-            <Avatar nickname={chi.giocatore.nickname} color={chi.giocatore.avatarColor} size={22} />
-            Tocca a {chi.giocatore.displayName}
-          </span>
-        )}
-      </Stato>
-    )
-  }
-  if (vista.fase === 'gioco' && arrivando) return <Stato>Si distribuisce</Stato>
-  if (vista.fase === 'fine' && !chiuso) return <Stato>Gioca il banco</Stato>
-  if (mio && mio.puntata === 0) return <Stato>Guardi questo giro</Stato>
-  return <Stato>{' '}</Stato>
 }

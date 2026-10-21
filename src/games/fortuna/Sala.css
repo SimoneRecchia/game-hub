@@ -1,0 +1,27 @@
+/*
+ * Le pagine dei giochi della Fortuna sono una sala, come la scheda: viola
+ * scuro con i puntini d'oro, in tutti e due i temi. `color-scheme: dark` sulla
+ * pagina gira i token da soli — la carta, l'inchiostro, le scritte —, e il
+ * fondo lo scrive la sala. La classe la porta l'elemento piu' esterno di ogni
+ * gioco (`SALA` in sala.ts), anche quello dell'errore.
+ */
+.pagina:has(.sala-fortuna) {
+  color-scheme: dark;
+  --bg: #3a1e7a;
+  --vetro-barra: rgba(58, 30, 122, 0.86);
+  --puntini: rgba(255, 216, 77, 0.16);
+  --macchia-1: rgba(255, 79, 163, 0.18);
+  --macchia-2: rgba(52, 209, 122, 0.12);
+  --macchia-3: rgba(122, 31, 184, 0.4);
+  --fondo: linear-gradient(180deg, #3a1e7a, #2c1660 70%, #22104d);
+  color: var(--label);
+}
+
+body:has(.sala-fortuna) {
+  background: #2c1660;
+}
+
+body:has(.sala-fortuna) .tabbar,
+body:has(.sala-fortuna) .laterale {
+  color-scheme: dark;
+}

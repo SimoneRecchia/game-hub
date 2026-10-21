@@ -1,62 +1,47 @@
 /*
- * La sala del blackjack: una carta di panno verde con il ventaglio di carte e
- * le fiches, il saldo e il tavolo. Il verde e' lo stesso nei due temi, come il
- * tavolo.
+ * La sala del blackjack: il tavolo che aspetta, con lo stesso panno del tavolo
+ * (Panno.css) — il legno, le scritte lungo l'arco, la rastrelliera, il sabot —,
+ * le carte del banco a ventaglio, il saldo e il bottone. Sotto, i tavoli degli
+ * amici. La pagina e' una sala scura in tutti e due i temi (Sala.css).
+ *
+ * Come al tavolo, quel che sta sul panno si misura in `--u`, un
+ * trecentosettantaquattresimo della sua larghezza.
  */
 .bj-sala {
-  position: relative;
-  overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  justify-items: center;
   gap: var(--sp-4);
   margin-bottom: var(--sp-5);
-  padding: var(--sp-6) var(--sp-5) var(--sp-5);
-  border-radius: 28px;
-  background:
-    radial-gradient(90% 70% at 50% 30%, rgba(255, 255, 255, 0.16), transparent 70%),
-    radial-gradient(circle at 50% 45%, var(--bj-panno-1), var(--bj-panno-2) 70%, var(--bj-panno-3));
-  box-shadow:
-    inset 0 0 0 2px rgba(242, 210, 122, 0.5),
-    inset 0 0 0 9px var(--bj-bordo),
-    inset 0 0 0 10px rgba(255, 255, 255, 0.08),
-    0 14px 32px rgba(4, 30, 16, 0.35);
-  color: #fff;
 }
 
-.bj-sala__luce {
-  position: absolute;
-  inset: -50% auto -50% -30%;
-  width: 40%;
-  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.16), transparent);
-  transform: translateX(-120%) rotate(12deg);
-  animation: bj-sala-riflesso 6s var(--ease-in-out) infinite;
-  pointer-events: none;
-}
-
-@keyframes bj-sala-riflesso {
-  0%,
-  55% {
-    transform: translateX(-120%) rotate(12deg);
-  }
-  100% {
-    transform: translateX(420%) rotate(12deg);
-  }
-}
-
-.bj-sala__ventaglio {
-  --bj-carta: 74px;
+.bj-sala__tavolo {
+  --u: calc(100cqw / 374);
   position: relative;
-  width: 210px;
-  height: 128px;
+  width: calc(100% - 18px);
+  max-width: 440px;
+  aspect-ratio: 374 / 472;
+  margin: 9px auto 14px;
+  container-type: inline-size;
+  color: #fff6e0;
+}
+
+/* Le carte del banco, aperte a ventaglio sotto la rastrelliera. */
+.bj-sala__ventaglio {
+  position: absolute;
+  top: calc(30 * var(--u));
+  left: 50%;
+  width: calc(170 * var(--u));
+  height: calc(94 * var(--u));
+  transform: translateX(-50%);
 }
 
 .bj-sala__carta {
+  --bj-carta: calc(52 * var(--u));
   position: absolute;
   left: 50%;
-  bottom: 4px;
+  bottom: 0;
   width: var(--bj-carta);
   height: calc(var(--bj-carta) * 1.4);
+  transform: translateX(-50%) rotate(var(--giro));
   transform-origin: 50% 120%;
   animation: bj-sala-apri 0.9s var(--ease-spring) backwards;
 }
@@ -64,109 +49,141 @@
 .bj-sala__carta > svg {
   width: 100%;
   height: 100%;
-  border-radius: 7px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35);
+  border-radius: calc(var(--bj-carta) * 0.12);
+  box-shadow:
+    0 0 0 2px #120c2b,
+    0 3px 0 2px #120c2b;
 }
 
 .bj-sala__carta.is-1 {
   --giro: -16deg;
-  transform: translateX(-50%) rotate(var(--giro));
+}
+
+/* Il dorso da solo, senza la carta che gira: al tavolo e' la faccia nascosta, qui si vede. */
+.bj-sala__carta > .bj-dorso {
+  transform: none;
 }
 
 .bj-sala__carta.is-2 {
   --giro: 0deg;
-  transform: translateX(-50%) rotate(var(--giro)) translateY(-6px);
+  bottom: calc(6 * var(--u));
   animation-delay: 0.08s;
 }
 
 .bj-sala__carta.is-3 {
   --giro: 16deg;
-  transform: translateX(-50%) rotate(var(--giro));
   animation-delay: 0.16s;
 }
 
 @keyframes bj-sala-apri {
   from {
-    transform: translateX(-50%) rotate(0deg) translateY(10px);
     opacity: 0;
+    transform: translateX(-50%) rotate(0deg) translateY(10px);
   }
 }
 
-.bj-sala__fiche {
-  --bj-fiche-lato: 40px;
+/* Il saldo e il bottone, nella mezzaluna sotto le scritte, dove al tavolo stanno i giocatori. */
+.bj-sala__testo {
   position: absolute;
-  bottom: -4px;
-  animation: bj-sala-fiche 0.6s var(--ease-spring) 0.4s backwards;
+  top: calc(276 * var(--u));
+  left: calc(56 * var(--u));
+  right: calc(56 * var(--u));
+  display: grid;
+  justify-items: center;
+  gap: calc(12 * var(--u));
 }
 
-.bj-sala__fiche.is-1 {
-  left: 6px;
-  transform: rotate(-12deg);
+.bj-sala__saldo {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
 }
 
-.bj-sala__fiche.is-2 {
-  right: 6px;
-  transform: rotate(14deg);
-  animation-delay: 0.5s;
+.bj-sala__etichetta {
+  color: #ffd84d;
+  font-size: max(10px, calc(11 * var(--u)));
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 0 rgba(4, 48, 24, 0.8);
+}
+
+.bj-sala__saldo strong {
+  color: #fff6e0;
+  font-family: var(--font-rounded);
+  font-size: max(20px, calc(28 * var(--u)));
+  font-weight: 400;
+  line-height: 1;
+  text-shadow: 0 2px 0 #120c2b;
+}
+
+/* Le quattro fiches del tavolo in fila, che cadono una dopo l'altra. */
+.bj-sala__fiches {
+  display: flex;
+  gap: calc(10 * var(--u));
+}
+
+.bj-sala__fiche {
+  --bj-fiche-lato: calc(34 * var(--u));
+  animation: bj-sala-fiche 0.5s var(--ease-spring) backwards;
+  animation-delay: calc(0.35s + var(--i) * 0.08s);
 }
 
 @keyframes bj-sala-fiche {
   from {
-    transform: translateY(-30px) scale(1.2);
     opacity: 0;
+    transform: translateY(-24px) scale(1.2);
   }
 }
 
-.bj-sala__testo {
-  display: grid;
-  justify-items: center;
-  gap: var(--sp-3);
+/* Il bottone: un tasto dell'album, verde come "Distribuisci" al tavolo. */
+.bj-sala__vai {
   width: 100%;
-}
-
-.bj-sala__testo .btn {
-  width: min(100%, 320px);
-  background: linear-gradient(180deg, #ffe58a, var(--bj-scritta) 55%, #c9962a);
-  color: #3d2300;
-  font-family: var(--font-rounded);
-  font-weight: 900;
+  height: max(46px, calc(52 * var(--u)));
+  border: var(--filo) solid #120c2b;
+  border-radius: 16px;
+  background: #34d17a;
   box-shadow:
-    0 4px 0 #8a6416,
-    0 10px 22px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-
-.bj-sala__saldo {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--bj-scritta);
-}
-
-.bj-sala__saldo strong {
-  margin-left: 6px;
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  color: #120c2b;
   font-family: var(--font-rounded);
-  font-size: 24px;
-  letter-spacing: 0;
-  color: #fff;
+  font-size: 19px;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    transform 0.12s var(--ease-out),
+    box-shadow 0.12s var(--ease-out);
 }
 
-/* Il saldo che non basta (Avvisi.css): prima del bottone, largo quanto lui o poco di piu'. */
+.bj-sala__vai:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #120c2b,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+}
+
+.bj-sala__vai:disabled {
+  background: #4a447a;
+  border-color: #2a2457;
+  box-shadow: 0 2px 0 #2a2457;
+  color: #c4bfe0;
+  cursor: default;
+}
+
+/* Senza saldo il tavolo nuovo si fa da parte (ci si siede a guardare): il verde e' per le giornaliere, nell'avviso. */
+.bj-sala__vai.is-secondario:not(:disabled) {
+  background: #fffbf2;
+}
+
+/* Il saldo che non basta (Avvisi.css): sotto il tavolo, largo quanto lui. */
 .bj-sala__pochi {
-  width: min(100%, 420px);
-}
-
-/* Senza saldo il tavolo nuovo si fa da parte: l'oro e' per le giornaliere, nell'avviso. */
-.bj-sala__testo .btn.is-secondario {
-  background: rgb(255 255 255 / 0.12);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.28);
+  width: min(100%, 440px);
+  margin: 0 auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bj-sala__luce,
   .bj-sala__carta,
   .bj-sala__fiche {
     animation: none;

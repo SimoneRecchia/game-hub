@@ -5,17 +5,25 @@
  * nell'elenco si scrivono con quelli ("22-18").
  */
 .dam {
+  /* La cornice di legno, piu' scura delle case, con il filo d'inchiostro fuori. */
+  --dam-cornice: #6b3f1f;
+  --dam-cornice: light-dark(#6b3f1f, #4a2a12);
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
   grid-template-rows: repeat(8, minmax(0, 1fr));
+  box-sizing: border-box;
   width: min(100cqw, var(--campo-alto, 100cqh), 560px);
   aspect-ratio: 1;
-  overflow: hidden;
-  border-radius: 6px;
+  padding: clamp(5px, 2.2cqw, 9px);
+  border: 2px solid var(--ink);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.12)),
+    var(--dam-cornice);
   box-shadow:
-    0 0 0 4px var(--dama-scura),
-    0 0 0 5px rgba(0, 0, 0, 0.15),
-    0 8px 20px -8px var(--shadow-tint, rgba(0, 0, 0, 0.35));
+    0 5px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.22),
+    0 14px 26px -12px rgba(18, 12, 43, 0.45);
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
@@ -49,101 +57,133 @@
 }
 
 /* L'ultima mossa: la partenza e l'arrivo, e piu' leggere le tappe di una presa. */
-.dam__casella.is-ultima::before,
-.dam__casella.is-tappa::before,
-.dam__casella.is-scelta::before {
+.dam__casella::before,
+.dam__casella::after {
   content: '';
   position: absolute;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.dam__casella::before {
   inset: 0;
-  background: rgba(247, 209, 80, 0.4);
+  background: rgba(247, 209, 80, 0.42);
+  transition: opacity 0.2s;
+}
+
+.dam__casella.is-ultima::before {
+  opacity: 1;
 }
 
 .dam__casella.is-tappa::before {
+  opacity: 1;
   background: rgba(247, 209, 80, 0.22);
 }
 
 .dam__casella.is-scelta::before {
-  background: rgba(247, 209, 80, 0.6);
+  opacity: 1;
+  background: rgba(247, 209, 80, 0.72);
 }
 
-/* Dove si puo' andare adesso. */
-.dam__casella.is-meta::after {
-  content: '';
-  position: absolute;
+/* Dove si puo' andare adesso: un punto crema con il filo, che spunta. */
+.dam__casella::after {
   width: 30%;
   height: 30%;
   border-radius: 50%;
-  background: rgba(255, 244, 214, 0.55);
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 248, 232, 0.6);
+  box-shadow: 0 0 0 2px rgba(42, 31, 92, 0.35);
+  transform: scale(0.3);
+  transition:
+    opacity 0.15s,
+    transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.4);
 }
 
+.dam__casella.is-meta::after {
+  opacity: 1;
+  transform: none;
+}
+
+/* I numeri della notazione: crema sulle scure, abbastanza pieni da leggersi. */
 .dam__numero {
   position: absolute;
   top: 4%;
   left: 6%;
   z-index: 1;
   font-size: clamp(7px, 1.9cqw, 11px);
-  font-weight: 700;
+  font-weight: 900;
   line-height: 1;
-  color: rgba(255, 244, 222, 0.5);
+  color: #fff8e8;
   pointer-events: none;
 }
 
+/* Le pedine: dischi con il filo d'inchiostro e l'ombra secca, due anelli incisi e la luce in alto. */
 .dam__pezzo {
   position: relative;
   z-index: 1;
   display: grid;
   place-items: center;
-  width: 78%;
-  height: 78%;
+  box-sizing: border-box;
+  width: 80%;
+  height: 80%;
+  border: 2px solid #2a1f5c;
   border-radius: 50%;
   pointer-events: none;
   background:
-    radial-gradient(circle at 50% 50%, transparent 38%, var(--anello) 40%, transparent 44%),
-    radial-gradient(circle at 50% 50%, transparent 58%, var(--anello) 60%, transparent 64%),
-    radial-gradient(circle at 35% 28%, var(--luce), transparent 55%),
+    radial-gradient(circle at 50% 50%, transparent 36%, var(--anello) 38%, transparent 43%),
+    radial-gradient(circle at 50% 50%, transparent 64%, var(--anello) 66%, transparent 71%),
     var(--disco);
   box-shadow:
-    inset 0 -3px 0 var(--bordo),
-    0 2px 3px rgba(0, 0, 0, 0.35);
+    0 3px 0 #2a1f5c,
+    inset 0 2px 0 var(--luce);
+  transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.3);
 }
 
 .dam__pezzo.is-bianco {
-  --disco: #f4ede0;
-  --luce: rgba(255, 255, 255, 0.9);
-  --anello: rgba(120, 96, 64, 0.28);
-  --bordo: #cbbfa9;
+  --disco: radial-gradient(circle at 40% 32%, #fff 0, #fff6e0 45%, #eadcb8 100%);
+  --luce: rgba(255, 255, 255, 0.55);
+  --anello: rgba(42, 31, 92, 0.26);
 }
 
 .dam__pezzo.is-nero {
-  --disco: #2f2925;
-  --luce: rgba(255, 255, 255, 0.16);
-  --anello: rgba(255, 255, 255, 0.12);
-  --bordo: #15110f;
+  --disco: radial-gradient(circle at 40% 32%, #6c6496 0, #3a3358 50%, #211c3a 100%);
+  --luce: rgba(255, 255, 255, 0.22);
+  --anello: rgba(255, 255, 255, 0.2);
 }
 
-/* La dama: la corona d'oro al centro. */
+/* La pedina scelta si alza dalla casella. */
+.dam__casella.is-scelta[aria-pressed='true'] .dam__pezzo {
+  z-index: 3;
+  transform: translateY(-8%) scale(1.12);
+}
+
+/* La dama: la corona d'oro al centro, e quando arriva salta fuori. */
 .dam__corona {
-  width: 46%;
-  height: 46%;
-  fill: #e0a82e;
-  stroke: #9a6a10;
-  stroke-width: 1.2;
+  width: 52%;
+  height: 52%;
+  fill: #ffd24a;
+  stroke: #2a1f5c;
+  stroke-width: 1.8;
   stroke-linejoin: round;
-  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.25));
+  animation: dam-corona 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
 }
 
-/* Le pedine che devono prendere: un anello che pulsa, finché non se ne sceglie una. */
+@keyframes dam-corona {
+  0% {
+    transform: scale(0.2) rotate(-30deg);
+  }
+  55% {
+    transform: scale(1.4) rotate(8deg);
+  }
+}
+
+/* Le pedine che devono prendere: respirano, finché non se ne sceglie una. */
 .dam__casella.is-deve .dam__pezzo {
-  animation: dam-deve 1.3s ease-in-out infinite;
+  animation: dam-deve 1s ease-in-out infinite;
 }
 
 @keyframes dam-deve {
   50% {
-    box-shadow:
-      inset 0 -3px 0 var(--bordo),
-      0 0 0 3px rgba(247, 209, 80, 0.95),
-      0 0 12px 3px rgba(247, 209, 80, 0.6);
+    transform: scale(1.13);
   }
 }
 
@@ -161,7 +201,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .dam__pezzo.is-scivola,
-  .dam__casella.is-deve .dam__pezzo {
+  .dam__casella.is-deve .dam__pezzo,
+  .dam__corona {
     animation: none;
+  }
+
+  .dam__pezzo,
+  .dam__casella::before,
+  .dam__casella::after {
+    transition: none;
   }
 }

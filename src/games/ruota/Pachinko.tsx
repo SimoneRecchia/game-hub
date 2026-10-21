@@ -236,6 +236,8 @@ export function Pachinko({
             <stop offset="1" stopColor="#7d8aa3" />
           </radialGradient>
         </defs>
+        {/* L'ombra secca d'inchiostro sotto il tabellone, come sotto ogni carta dell'album. */}
+        <rect className="ct-pachinko__ombra" x={-50} y={-3} width={100} height={114} rx={10} />
         <rect className="ct-pachinko__fondo" x={-49} y={-4} width={98} height={113} rx={9} />
         <path className="ct-pachinko__imbuto" d="M-9 -4L-3.6 9.4H3.6L9 -4" />
         {PIOLI.map((p) => {
@@ -299,7 +301,7 @@ export function Pachinko({
         <g ref={lato} className="ct-pachinko__lato" style={{ transform: `translateX(${ferma.x}px)` }}>
           <g ref={alto} className="ct-pachinko__alto" style={{ transform: `translateY(${ferma.y}px)` }}>
             <g className="ct-pachinko__pallina">
-              <circle r={RAGGIO_PALLINA} fill="url(#ct-pachinko-pallina)" />
+              <circle r={RAGGIO_PALLINA} fill="url(#ct-pachinko-pallina)" className="ct-pachinko__palla" />
               <circle className="ct-pachinko__luce" cx={-0.9} cy={-1} r={0.8} />
             </g>
           </g>

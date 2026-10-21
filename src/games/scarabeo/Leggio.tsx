@@ -12,6 +12,8 @@ interface Props {
   /** Modo cambio: toccare una tessera la seleziona invece di posarla. */
   cambio: boolean
   selezione: Set<number>
+  /** Il leggio appena mischiato: le tessere si scuotono (un numero che cambia a ogni mischiata, 0 se no). */
+  mescolata?: number
   bloccato: boolean
   onUsa: (indice: number) => void
   /** Sposta una tessera del leggio: trascinandola, o con Alt e le frecce. */
@@ -57,7 +59,7 @@ interface Presa {
  * casella dove la si lascia. Il tocco e il trascinamento si distinguono da
  * quanto si muove il dito (`SOGLIA`).
  */
-export function Leggio({ mano, impegnate, cambio, selezione, bloccato, onUsa, onSposta, onPosa }: Props) {
+export function Leggio({ mano, impegnate, cambio, selezione, mescolata = 0, bloccato, onUsa, onSposta, onPosa }: Props) {
   const [presa, setPresa] = useState<Presa | null>(null)
   const riga = useRef<HTMLDivElement>(null)
   // Dopo un trascinamento il browser manda comunque il click: quello non deve posare la tessera.
@@ -65,6 +67,7 @@ export function Leggio({ mano, impegnate, cambio, selezione, bloccato, onUsa, on
   const timer = useRef<number | null>(null)
   const [fuoco, setFuoco] = useState<number | null>(null)
   const spostabile = !!onSposta && !cambio && mano.length > 1
+  const pescata = usePescata(mano)
 
   useEffect(
     () => () => {
@@ -200,7 +203,7 @@ export function Leggio({ mano, impegnate, cambio, selezione, bloccato, onUsa, on
         const scelta = selezione.has(i)
         const jolly = tessera === JOLLY
         const presaQui = presa?.attiva && presa.da === i
-        let stile: CSSProperties | undefined
+        let stile: CSSProperties | undefined = pescata ? { animationDelay: `${i * 45}ms` } : undefined
         if (presaQui) {
           stile = {
             transform: presa.posando
@@ -216,7 +219,9 @@ export function Leggio({ mano, impegnate, cambio, selezione, bloccato, onUsa, on
             key={`${tessera}-${i}`}
             className={`tessera${usata ? ' is-usata' : ''}${scelta ? ' is-scelta' : ''}${
               jolly ? ' tessera--jolly' : ''
-            }${presaQui ? ` is-presa${presa.posando ? ' is-posando' : ''}` : ''}`}
+            }${presaQui ? ` is-presa${presa.posando ? ' is-posando' : ''}` : ''}${
+              pescata && !usata ? ` is-pescata-${pescata % 2 ? 'a' : 'b'}` : ''
+            }${mescolata && !pescata && !usata ? ` is-mescolata-${mescolata % 2 ? 'a' : 'b'}` : ''}`}
             style={stile}
             // Mentre si aspetta non si posa niente, ma le tessere si possono riordinare lo stesso.
             disabled={usata && !cambio}
@@ -236,7 +241,15 @@ export function Leggio({ mano, impegnate, cambio, selezione, bloccato, onUsa, on
               if (!bloccato) onUsa(i)
             }}
           >
-            <span className="tessera__lettera">{jolly ? '★' : tessera.toUpperCase()}</span>
+            <span className="tessera__lettera">
+              {jolly ? (
+                <svg className="tessera__stella" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="m12 2.8 2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8Z" />
+                </svg>
+              ) : (
+                tessera.toUpperCase()
+              )}
+            </span>
             <span className="tessera__valore" aria-hidden="true">
               {jolly ? 0 : VALORI[tessera]}
             </span>
@@ -246,6 +259,30 @@ export function Leggio({ mano, impegnate, cambio, selezione, bloccato, onUsa, on
       {mano.length === 0 && <p className="leggio__vuoto">Sacchetto e leggio vuoti.</p>}
     </div>
   )
+}
+
+/** Quanto dura l'arrivo delle tessere nuove, con il ritardo dell'ultima (come in Leggio.css). */
+const PESCA_MS = 450 + 8 * 45
+
+/**
+ * Le tessere nuove arrivano sul leggio dal basso, una dopo l'altra: quando le
+ * lettere cambiano, non quando cambiano solo di posto — mischiare o spostare
+ * una tessera non e' una pesca. Il numero alterna due animazioni uguali, perché
+ * una classe che resta la stessa non fa ripartire l'animazione.
+ */
+function usePescata(mano: string[]): number {
+  const lettere = [...mano].sort().join('')
+  const prima = useRef<string | null>(null)
+  const [pescata, setPescata] = useState(0)
+  useEffect(() => {
+    if (prima.current === lettere) return
+    prima.current = lettere
+    if (!lettere) return
+    setPescata((n) => n + 1)
+    const t = window.setTimeout(() => setPescata(0), PESCA_MS)
+    return () => window.clearTimeout(t)
+  }, [lettere])
+  return pescata
 }
 
 /** La casella libera del tabellone sotto il dito, da 0 a 224; null se li' non c'e', o e' occupata. */

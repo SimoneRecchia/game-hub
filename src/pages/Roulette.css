@@ -1,93 +1,100 @@
 /*
- * La sala della roulette: il feltro del tavolo (Feltro.css), e la ruota vera
- * che gira piano in mezzo. Toccando "Tavolo nuovo" il feltro si allarga nel
- * tavolo e la ruota sale al suo posto.
+ * La sala della roulette: la pagina e' il feltro del tavolo (Feltro.css), con
+ * la ruota vera che gira piano in mezzo, il saldo sulla targa del tabellone e
+ * il bottone verde del tavolo, come il "Gioca" del mockup. Toccando "Tavolo
+ * nuovo" la ruota scende verso il fondo del tavolo, da dove risale quando si
+ * lancia.
  */
 .rl-sala {
   position: relative;
-  isolation: isolate;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   gap: var(--sp-4);
-  margin-bottom: var(--sp-5);
-  padding: var(--sp-5) var(--sp-5) var(--sp-5);
-  border-radius: 28px;
-  color: #fff;
+  margin-top: calc(var(--sp-2) * -1);
+  color: #fff6e0;
 }
 
-.rl-sala__luce {
-  position: absolute;
-  inset: -50% auto -50% -30%;
-  width: 40%;
-  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.14), transparent);
-  transform: translateX(-120%) rotate(12deg);
-  animation: rl-sala-riflesso 6s var(--ease-in-out) infinite;
-  pointer-events: none;
-}
-
+/*
+ * Non piu' grande di 300 punti: con la ruota piu' larga Chrome non riesce a
+ * fotografare gli strati in prospettiva, e il passaggio al tavolo salta.
+ */
 .rl-sala__ruota {
   width: min(86%, 300px);
-  margin-top: var(--sp-2);
   animation: rl-sala-arriva 0.9s var(--ease-spring) backwards;
 }
 
 .rl-sala__testo {
   display: grid;
   justify-items: center;
-  gap: var(--sp-3);
-  width: 100%;
-}
-
-.rl-sala__testo .btn {
-  width: min(100%, 320px);
-  background: linear-gradient(180deg, #ffe58a, #f2d27a 55%, #c9962a);
-  color: #3d2300;
-  font-family: var(--font-rounded);
-  font-weight: 900;
-  box-shadow:
-    0 4px 0 #8a6416,
-    0 10px 22px rgb(0 0 0 / 0.3),
-    inset 0 1px 0 rgb(255 255 255 / 0.7);
-}
-
-.rl-sala__saldo {
-  margin: 0;
-  color: #f2d27a;
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.rl-sala__saldo strong {
-  margin-left: 6px;
-  color: #fff;
-  font-family: var(--font-rounded);
-  font-size: 24px;
-  letter-spacing: 0;
-}
-
-/* Il saldo che non basta (Avvisi.css): prima del bottone, largo quanto lui o poco di piu'. */
-.rl-sala__pochi {
+  gap: var(--sp-4);
   width: min(100%, 420px);
 }
 
-/* Senza saldo il tavolo nuovo si fa da parte: l'oro e' per le giornaliere, nell'avviso. */
-.rl-sala__testo .btn.is-secondario {
-  background: rgb(255 255 255 / 0.12);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.28);
+/* Il saldo sulla targa dei tavoli (Tabellone.css), da solo e al centro. */
+.ct-tabellone.rl-sala__saldo {
+  justify-content: center;
+  width: 100%;
 }
 
-@keyframes rl-sala-riflesso {
-  0%,
-  55% {
-    transform: translateX(-120%) rotate(12deg);
-  }
-  100% {
-    transform: translateX(420%) rotate(12deg);
-  }
+.ct-tabellone.rl-sala__saldo .ct-tabellone__voce {
+  flex: none;
+}
+
+.ct-tabellone.rl-sala__saldo .ct-tabellone__saldo {
+  font-size: 26px;
+}
+
+/* Il saldo che non basta (Avvisi.css): prima del bottone, largo quanto lui. */
+.rl-sala__pochi {
+  width: 100%;
+}
+
+/* Il bottone del tavolo: il "Gioca" verde del mockup, pieno, con il filo d'inchiostro. */
+.rl-sala__vai {
+  width: 100%;
+  min-height: 54px;
+  padding: 0 var(--sp-5);
+  border: var(--filo) solid #120c2b;
+  border-radius: 18px;
+  background: #34d17a;
+  box-shadow:
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.5);
+  color: #120c2b;
+  font-family: var(--font-rounded);
+  font-size: 20px;
+  font-weight: 400;
+  transition:
+    transform 0.12s var(--ease-out),
+    box-shadow 0.12s var(--ease-out);
+}
+
+.rl-sala__vai:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.5);
+}
+
+.rl-sala__vai:focus-visible {
+  outline: 3px solid #ffd84d;
+  outline-offset: 3px;
+}
+
+/* Senza saldo ci si siede solo a guardare: il verde e' per le giornaliere, nell'avviso. */
+.rl-sala__vai.is-secondario,
+.rl-sala__vai:disabled {
+  background: #fffbf2;
+}
+
+.rl-sala__vai:disabled {
+  background: #8e88ae;
+}
+
+.rl-sala__amici {
+  width: min(100%, 420px);
+  margin-inline: auto;
 }
 
 @keyframes rl-sala-arriva {
@@ -97,13 +104,12 @@
   }
 }
 
-/* Tornando dal tavolo la ruota e' gia' arrivata: scende al suo posto con il passaggio. */
+/* Tornando dal tavolo la ruota e' gia' arrivata: sale al suo posto con il passaggio. */
 .pagina--ferma .rl-sala__ruota {
   animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rl-sala__luce,
   .rl-sala__ruota {
     animation: none;
   }

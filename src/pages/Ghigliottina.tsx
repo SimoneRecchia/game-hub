@@ -26,7 +26,8 @@ export default function Ghigliottina() {
 
   return (
     <Pagina
-      titolo={s ? `Ghigliottina #${s.puzzleNumber}` : 'Ghigliottina'}
+      titolo="Ghigliottina"
+      sotto={s ? `N° ${s.puzzleNumber} · la ghigliottina di oggi` : 'La ghigliottina di oggi'}
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
@@ -58,32 +59,29 @@ export default function Ghigliottina() {
   )
 }
 
-/** La partita finita: i punti, e quando arriva la prossima. */
+/** La partita finita: com'e' andata, dove andare, e quando arriva la prossima. */
 function FineGiornata({ stato }: { stato: GhigliottinaStato }) {
   const restano = useCountdown(stato.msToNextPuzzle)
   const sbagliate = stato.coppie.filter((c) => c.scelta !== null && c.scelta !== c.giusta).length
   return (
     <>
-      <div className="ghi-totale">
-        <p className="ghi-totale__valore u-tabnum">{stato.punti} punti</p>
-        <p className="ghi-totale__dettaglio">
-          {sbagliate === 0 ? 'Nessuna scelta sbagliata' : sbagliate === 1 ? 'Una scelta sbagliata' : `${sbagliate} scelte sbagliate`}
-          {stato.indovinata ? '' : ' · parola vincente non indovinata'}
-        </p>
-      </div>
-      <div className="ghi-azioni">
-        <Collegamento to={ROTTE.classifica('ghigliottina')} className="ghi-link">
+      <p className="ghi-fine__nota">
+        {sbagliate === 0 ? 'Nessuna coppia sbagliata' : sbagliate === 1 ? 'Una coppia sbagliata' : `${sbagliate} coppie sbagliate`}
+        {' · '}la prossima fra <span className="u-tabnum">{formatCountdown(restano)}</span>
+      </p>
+      <div className="ghi-fine__bottoni">
+        <Collegamento to={ROTTE.classifica('ghigliottina')} className="ghi-fine__bottone">
           <IconTrophy size={18} />
           Classifica
         </Collegamento>
-        <Collegamento to={ROTTE.libera('ghigliottina')} className="ghi-link">
+        <Collegamento to={ROTTE.libera('ghigliottina')} className="ghi-fine__bottone is-menta">
           <IconShuffle size={18} />
-          Un’altra, a caso
+          Un’altra
         </Collegamento>
       </div>
-      <p className="ghi-piede">
-        La prossima fra <span className="u-tabnum">{formatCountdown(restano)}</span>
-      </p>
+      <Collegamento to={ROTTE.home} className="ghi-fine__bottone is-giallo">
+        Torna alle Giornaliere
+      </Collegamento>
     </>
   )
 }

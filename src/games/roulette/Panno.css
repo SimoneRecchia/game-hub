@@ -1,16 +1,18 @@
 /*
- * Il panno della roulette, stampato sul feltro del tavolo (Feltro.css): i fili
- * color crema, i numeri sulle loro caselle rosse e nere, lo zero verde in cima.
- * Il verde e' quello del tavolo, sotto: il panno non ha un fondo suo. La
- * griglia ha le colonne di panno.ts (`COLONNE`) e quattordici righe; le fiches
- * stanno in uno strato sopra, a percentuali della griglia, e si misurano sul
- * panno, che e' un contenitore.
+ * Il panno della roulette, stampato sul feltro (Feltro.css) come nel mockup:
+ * il bordo color crema tutt'attorno, i fili crema fra le caselle, i numeri
+ * sulle loro caselle rosse e blu notte, lo zero verde con la cima tonda, e a
+ * sinistra le dozzine e le chances semplici scritte in piedi. Il verde e'
+ * quello del tavolo, sotto: il panno non ha un fondo suo. La griglia ha le
+ * colonne di panno.ts (`COLONNE`) e quattordici righe; le fiches stanno in uno
+ * strato sopra, a percentuali della griglia, e si misurano sul panno, che e'
+ * un contenitore.
  */
 
 .rl-panno {
-  --filo: rgb(244 232 200 / 0.78);
+  --filo-panno: rgb(255 246 224 / 0.78);
   --cella: calc(100cqh / 14);
-  --bj-fiche-lato: min(calc(100cqw / 4.6 * 0.46), calc(var(--cella) * 0.84), 30px);
+  --bj-fiche-lato: min(calc(100cqw / 4.6 * 0.46), calc(var(--cella) * 0.82), 30px);
   container-type: size;
   position: relative;
   display: grid;
@@ -19,23 +21,12 @@
   gap: 0;
   padding: 0;
   border-radius: 10px;
-  box-shadow: inset 0 0 0 1.5px var(--filo);
+  box-shadow:
+    0 0 0 2.5px #fff6e0,
+    0 0 0 5px rgb(18 12 43 / 0.35);
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-}
-
-.rl-panno__angolo {
-  grid-column: 1 / span 2;
-  grid-row: 1;
-  display: grid;
-  place-items: center;
-  color: rgb(244 232 200 / 0.55);
-  font-family: var(--font-rounded);
-  font-size: min(11px, calc(var(--cella) * 0.36));
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 /* ---- Le caselle esterne ---- */
@@ -50,10 +41,11 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  box-shadow: inset 0 0 0 0.75px var(--filo);
-  color: #f6ecd2;
+  box-shadow: inset 0 0 0 1px var(--filo-panno);
+  color: #fff6e0;
   font-family: var(--font-rounded);
-  font-weight: 800;
+  font-weight: 400;
+  text-shadow: 0 1px 0 rgb(4 40 20 / 0.75);
   cursor: pointer;
   transition: background-color 0.18s ease;
   -webkit-tap-highlight-color: transparent;
@@ -64,45 +56,44 @@
 }
 
 .rl-casella__scritta {
-  font-size: min(12px, calc(100cqw / 4.6 * 0.15), calc(var(--cella) * 0.42));
-  letter-spacing: 0.04em;
+  font-size: min(15px, calc(100cqw / 4.6 * 0.2), calc(var(--cella) * 0.44));
+  white-space: nowrap;
 }
 
+/* Le scritte di sinistra stanno in piedi, e si leggono dal basso, come nel mockup. */
 .rl-casella__scritta.is-in-piedi {
   writing-mode: vertical-rl;
   rotate: 180deg;
-  font-size: min(14px, calc(var(--cella) * 0.5));
+  font-size: min(14px, calc(var(--cella) * 0.42), calc(100cqw / 4.6 * 0.18));
 }
 
 .rl-casella.is-anteprima,
 .rl-panno.is-attivo .rl-casella:active {
-  background: rgb(255 255 255 / 0.14);
+  background: rgb(255 226 122 / 0.18);
 }
 
 .rl-casella.is-vince {
-  background: rgb(255 214 102 / 0.2);
+  z-index: 1;
+  background: rgb(255 226 122 / 0.22);
   box-shadow:
-    inset 0 0 0 0.75px var(--filo),
-    inset 0 0 14px rgb(255 214 102 / 0.55);
-  animation: rl-vince 1.1s ease-in-out 0.8s 3 both;
+    inset 0 0 0 3px #ffe27a,
+    0 0 14px rgb(255 226 122 / 0.7);
 }
 
 .rl-rombo {
-  width: min(22px, calc(var(--cella) * 0.75));
+  width: min(20px, calc(var(--cella) * 0.58));
   aspect-ratio: 1;
   rotate: 45deg;
-  border-radius: 3px;
-  box-shadow:
-    0 0 0 1.5px rgb(244 232 200 / 0.9),
-    0 2px 4px rgb(0 0 0 / 0.4);
+  box-sizing: border-box;
+  border: 2px solid #fff6e0;
 }
 
 .rl-rombo.is-rosso {
-  background: linear-gradient(135deg, #f04a4a, #a8101e);
+  background: #c8102e;
 }
 
 .rl-rombo.is-nero {
-  background: linear-gradient(135deg, #3a3d44, #0b0b0d);
+  background: #1b1530;
 }
 
 /* ---- I numeri ---- */
@@ -126,69 +117,70 @@
   border: 0;
   border-radius: 0;
   background: transparent;
-  box-shadow: inset 0 0 0 0.75px var(--filo);
-  color: #fff;
+  color: #fff6e0;
   font-family: var(--font-rounded);
-  font-weight: 900;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Il numero sta su un ovale del suo colore, come sui panni veri: le righe restano del feltro. */
+/* La casella del numero, piena del suo colore; i fili crema li disegna lei, sopra. */
 .rl-numero::before {
   content: '';
   position: absolute;
-  inset: 13% 16%;
-  border-radius: 999px;
+  inset: 0;
   background: var(--tinta);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.25),
-    inset 0 -2px 3px rgb(0 0 0 / 0.3),
-    0 1px 2px rgb(0 0 0 / 0.35);
-  transition: transform 0.15s ease;
+  box-shadow: inset 0 0 0 1px var(--filo-panno);
+  transition: filter 0.15s ease;
 }
 
 .rl-numero.is-rosso {
-  --tinta: linear-gradient(180deg, #e8323c, #b0101e);
+  --tinta: #b91530;
 }
 
 .rl-numero.is-nero {
-  --tinta: linear-gradient(180deg, #34373e, #111215);
+  --tinta: #1f1a3a;
 }
 
 .rl-numero.is-zero {
-  --tinta: linear-gradient(180deg, #19b35c, #0a7a3a);
+  --tinta: #12a150;
   grid-column: 1 / -1;
   grid-row: 1;
 }
 
 .rl-numero.is-zero::before {
-  inset: 13% 30%;
+  border-radius: 40px 40px 0 0;
 }
 
 .rl-numero__cifra {
   position: relative;
-  font-size: min(17px, calc(var(--cella) * 0.5), calc(100cqw / 4.4 * 0.27));
-  text-shadow: 0 1px 1px rgb(0 0 0 / 0.45);
+  text-shadow: 0 1px 0 rgb(18 12 43 / 0.55);
+  font-size: min(18px, calc(var(--cella) * 0.52), calc(100cqw / 4.4 * 0.28));
+}
+
+.rl-numero.is-zero .rl-numero__cifra {
+  font-size: min(22px, calc(var(--cella) * 0.62));
 }
 
 .rl-numero.is-coperto::before {
-  transform: scale(1.08);
-  box-shadow:
-    0 0 0 2px #ffe08a,
-    0 0 12px rgb(255 224 138 / 0.7);
+  filter: brightness(1.3);
+  box-shadow: inset 0 0 0 3px #ffe27a;
+}
+
+.rl-numero.is-uscito {
+  z-index: 1;
 }
 
 .rl-numero.is-uscito::before {
   box-shadow:
-    0 0 0 2.5px #ffd66b,
-    0 0 18px 4px rgb(255 214 107 / 0.8);
-  animation: rl-uscito 0.9s ease-in-out 0.5s infinite alternate;
+    inset 0 0 0 3px #ffe27a,
+    0 0 14px rgb(255 226 122 / 0.7);
+  animation: rl-uscito 1s ease-in-out infinite;
 }
 
 .rl-numero:focus-visible {
-  outline: 2px solid #ffe08a;
+  outline: 2px solid #ffe27a;
   outline-offset: -3px;
 }
 
@@ -214,7 +206,7 @@
 
 .rl-fiche__disco {
   grid-area: 1 / 1;
-  animation: rl-posa 0.28s cubic-bezier(0.3, 1.5, 0.5, 1);
+  animation: rl-posa 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4);
 }
 
 .rl-panno__fiches .rl-fiche--altrui {
@@ -232,102 +224,114 @@
   z-index: 3;
 }
 
-/* L'esito: le perse vanno al croupier, le vinte si accendono e il croupier ci mette accanto la vincita. */
-.rl-panno.is-esito .rl-fiche.is-persa {
-  animation: rl-persa 0.7s cubic-bezier(0.5, 0, 0.8, 0.4) 1.25s forwards;
+/*
+ * L'esito: le vinte pulsano e sopra arriva quel che tornano; le altre se ne
+ * vanno piano, salendo un poco verso la ruota e spegnendosi, senza cadere.
+ */
+.rl-panno.is-esito .rl-fiche.is-via {
+  animation: rl-via 0.9s var(--ease-out) 1.25s forwards;
+}
+
+.rl-fiche--mia.is-vinta {
+  z-index: 3;
 }
 
 .rl-fiche--mia.is-vinta .rl-fiche__disco {
-  animation: rl-vinta 0.6s ease-in-out 0.9s 3 alternate;
+  animation: rl-vinta 0.9s ease-in-out 0.9s 3;
 }
 
+/* La vincita: l'etichetta gialla del mockup, sopra la fiche. */
 .rl-fiche__paga {
   grid-area: 1 / 1;
-  translate: 46% -34%;
-  animation: rl-paga 0.55s cubic-bezier(0.25, 1.3, 0.45, 1) 1.7s backwards;
+  justify-self: center;
+  z-index: 1;
+  padding: 1px 6px;
+  border: 2px solid #120c2b;
+  border-radius: 8px;
+  background: #ffd84d;
+  color: #120c2b;
+  font-family: var(--font-rounded);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+  white-space: nowrap;
+  translate: 0 -105%;
+  animation: rl-paga 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.4) 1.7s backwards;
 }
 
+/* Il dolly sul numero uscito: la testa e la base di vetro, come nel mockup. */
 .rl-dolly {
   position: absolute;
   left: var(--x);
   top: var(--y);
   z-index: 4;
-  width: calc(var(--bj-fiche-lato) * 0.9);
-  aspect-ratio: 1;
-  translate: -50% -78%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 36% 30%, #fff 0 14%, rgb(255 255 255 / 0.55) 30%, rgb(190 215 255 / 0.28) 62%, rgb(150 180 230 / 0.45)),
-    rgb(255 255 255 / 0.15);
-  box-shadow:
-    0 0 0 2px #e9c463,
-    0 3px 0 #a4801f,
-    0 6px 10px rgb(0 0 0 / 0.45),
-    0 0 16px rgb(255 230 160 / 0.6);
-  animation: rl-dolly 0.65s cubic-bezier(0.3, 1.45, 0.45, 1) 0.35s backwards;
+  width: 22px;
+  height: 30px;
+  translate: -50% -100%;
+  animation: rl-dolly 0.5s cubic-bezier(0.3, 1.3, 0.5, 1) 0.35s backwards;
 }
 
-.rl-dolly__corona {
+.rl-dolly__testa {
   position: absolute;
-  left: 50%;
-  top: -42%;
-  width: 70%;
-  height: 46%;
-  translate: -50% 0;
-  background: linear-gradient(180deg, #fff3c2, #e3ad35 55%, #9a6f15);
-  clip-path: polygon(0 100%, 0 30%, 20% 60%, 35% 10%, 50% 55%, 65% 10%, 80% 60%, 100% 30%, 100% 100%);
-  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.4));
+  left: 3px;
+  top: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 2px solid #120c2b;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #dde6ff 60%, #a9b7e6);
+}
+
+.rl-dolly__base {
+  position: absolute;
+  left: 0;
+  top: 13px;
+  width: 22px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 2px solid #120c2b;
+  border-radius: 5px 5px 9px 9px;
+  background: linear-gradient(180deg, #f2f5ff, #b8c4ee);
 }
 
 @keyframes rl-posa {
   from {
-    scale: 1.35;
-    opacity: 0.4;
+    transform: translateY(-18px) scale(1.4);
+    opacity: 0;
   }
 }
 
-@keyframes rl-persa {
+@keyframes rl-via {
   to {
-    translate: -50% calc(-50% - 40cqh);
-    scale: 0.5;
+    transform: translateY(-12px) scale(0.8);
     opacity: 0;
   }
 }
 
 @keyframes rl-vinta {
-  to {
-    filter: drop-shadow(0 0 8px #ffe08a) brightness(1.2);
-    scale: 1.12;
+  50% {
+    transform: scale(1.15);
   }
 }
 
 @keyframes rl-paga {
   from {
-    translate: 46% calc(-34% - 30cqh);
+    transform: translateY(20px) scale(0.4);
     opacity: 0;
-    scale: 0.7;
   }
 }
 
 @keyframes rl-dolly {
   from {
-    translate: -50% -300%;
+    transform: translateY(-60px);
     opacity: 0;
-    scale: 1.5;
   }
 }
 
 @keyframes rl-uscito {
-  to {
-    box-shadow:
-      0 0 0 3px #fff2c0,
-      0 0 26px 8px rgb(255 214 107 / 0.95);
-  }
-}
-
-@keyframes rl-vince {
   50% {
-    background: rgb(255 214 102 / 0.42);
+    opacity: 0.7;
   }
 }
 
@@ -336,13 +340,12 @@
   .rl-fiche__paga,
   .rl-dolly,
   .rl-numero.is-uscito::before,
-  .rl-casella.is-vince,
   .rl-fiche--mia.is-vinta .rl-fiche__disco {
     animation: none;
   }
 
-  .rl-panno.is-esito .rl-fiche.is-persa {
+  .rl-panno.is-esito .rl-fiche.is-via {
     animation: none;
-    opacity: 0.25;
+    opacity: 0.35;
   }
 }

@@ -1,0 +1,233 @@
+/*
+ * La carta della fine: sopra il gioco velato, al centro, chiara in tutti e due
+ * i temi e con l'inchiostro sopra. Arriva saltando, l'adesivo galleggia, il
+ * timbro si abbatte. Solo transform e opacity.
+ */
+.fine-carta {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: max(20px, var(--safe-top)) 20px max(20px, var(--safe-bottom));
+}
+
+.fine-carta__velo {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: var(--velo);
+  cursor: default;
+  animation: fine-velo 300ms ease-out both;
+}
+
+@keyframes fine-velo {
+  from {
+    opacity: 0;
+  }
+}
+
+.fine-carta__carta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 380px;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 20px 18px 18px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 28px;
+  background: var(--fine-fondo);
+  box-shadow:
+    0 6px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.65);
+  color: #2a1f5c;
+  text-align: center;
+  scrollbar-width: none;
+  animation: fine-compare 500ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.fine-carta__carta:focus {
+  outline: none;
+}
+
+@keyframes fine-compare {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+}
+
+.fine-carta__icona {
+  display: grid;
+  animation: fine-galleggia 4.2s ease-in-out infinite;
+}
+
+@keyframes fine-galleggia {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+.fine-carta__titolo {
+  margin: 2px 0 0;
+  font-family: var(--font-rounded);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.05;
+}
+
+.fine-carta__testo {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: #4e4479;
+}
+
+/* Il timbro: un tondo pieno del colore del gioco, che si abbatte sulla carta. */
+.fine-carta__timbro {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  width: 76px;
+  height: 76px;
+  margin: 2px 0;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 50%;
+  background: var(--fine-colore);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 3px 0 #2a1f5c;
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 26px;
+  line-height: 1;
+  animation: fine-timbra 700ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 200ms both;
+}
+
+/* Sotto il numero, la sua unita': "cubetti". */
+.fine-carta__timbro small {
+  font-family: var(--font-text);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+@keyframes fine-timbra {
+  0% {
+    opacity: 0;
+    transform: scale(1.9) rotate(-24deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.88) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.06) rotate(-2deg);
+  }
+}
+
+.fine-carta__righe {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.fine-carta__riga {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+  font-size: 14px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.fine-carta__riga > :last-child {
+  flex: none;
+  font-family: var(--font-rounded);
+  font-weight: 400;
+  font-size: 16px;
+}
+
+.fine-carta__bottoni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.fine-carta__bottone {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 50px;
+  padding: 0 18px;
+  border: var(--filo) solid #2a1f5c;
+  border-radius: 16px;
+  background: #fffbf2;
+  color: #2a1f5c;
+  box-shadow:
+    0 4px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+  font-family: var(--font-rounded);
+  font-size: 17px;
+  font-weight: 400;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 100ms var(--ease-out),
+    box-shadow 100ms var(--ease-out);
+}
+
+.fine-carta__bottone.is-largo {
+  flex-basis: 100%;
+}
+
+.fine-carta__bottone.is-pieno {
+  flex-grow: 3;
+  background: var(--fine-colore);
+}
+
+.fine-carta__bottone.is-giallo {
+  background: var(--giallo);
+}
+
+.fine-carta__bottone:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #2a1f5c,
+    inset 0 3px 0 rgba(255, 255, 255, 0.5);
+}
+
+.fine-carta__bottone:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.fine-carta__bottone:focus-visible {
+  outline: 3px solid #8a7bff;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fine-carta__velo,
+  .fine-carta__carta,
+  .fine-carta__icona,
+  .fine-carta__timbro {
+    animation: none;
+  }
+
+  .fine-carta__bottone {
+    transition: none;
+  }
+}

@@ -6,7 +6,7 @@ import '@/games/cruciverba/ComeSiGioca.css'
 export function ComeSiGiocaSequenze({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
     <Sheet open={open} onClose={onClose} title="Come si gioca">
-      <div className="cru-aiuto">
+      <div className="cru-aiuto is-sequenze">
         <p className="cru-aiuto__lede">
           Alcuni cubetti si accendono, uno alla volta: toccali nello stesso ordine.
         </p>
@@ -27,6 +27,9 @@ export function ComeSiGiocaSequenze({ open, onClose }: { open: boolean; onClose:
             <li>Con un amico, al livello che scegli, vince chi arriva più lontano. Non conta per la classifica.</li>
           </ul>
         </section>
+        <button type="button" className="cru-aiuto__capito" onClick={onClose}>
+          Ho capito
+        </button>
       </div>
     </Sheet>
   )

@@ -139,7 +139,8 @@ function StanzaDi({ codice }: { codice: string }) {
     )
   }
   return (
-    <Pagina titolo={NOMI_MODI_SCARABOCCHI[p.modo]} intera indietro={indietroSala} azioni={info}>
+    // In partita il titolo e' il gioco, come nel mockup: il nome del modo, lungo, si scontrava con la freccia.
+    <Pagina titolo="Scarabocchi" intera indietro={{ ...indietroSala, etichetta: 'Stanza' }} azioni={info}>
       {p.modo === 'indovina' ? (
         <PartitaIndovina v={vista} pv={p} s={s} volti={volti} />
       ) : (

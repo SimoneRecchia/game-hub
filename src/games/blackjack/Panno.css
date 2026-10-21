@@ -1,0 +1,169 @@
+/*
+ * Il panno del blackjack (Panno in Tavolo.tsx), come nel mockup: il feltro
+ * verde a mezzaluna con il bordo di legno e il filo d'inchiostro, i fili e le
+ * scritte lungo l'arco, la rastrelliera, il sabot e gli scarti. Lo usano il
+ * tavolo e la sala.
+ */
+.bj-panno {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  overflow: visible;
+}
+
+.bj-panno__ombra {
+  fill: #120c2b;
+  stroke: #120c2b;
+  stroke-width: 22;
+  stroke-linejoin: round;
+  transform: translateY(5px);
+}
+
+.bj-panno__bordo {
+  fill: #4a2810;
+  stroke: #6e3e1c;
+  stroke-width: 18;
+  stroke-linejoin: round;
+}
+
+.bj-panno__feltro {
+  stroke: #2a170a;
+  stroke-width: 2.5;
+}
+
+.bj-panno__oro {
+  fill: none;
+  stroke: #e8c15a;
+  stroke-width: 1.4;
+  opacity: 0.45;
+}
+
+.bj-panno__filo {
+  fill: none;
+  stroke: rgba(255, 246, 224, 0.5);
+  stroke-width: 1.4;
+}
+
+.bj-panno__filo.is-oro {
+  stroke: #e8c15a;
+  stroke-width: 1.6;
+}
+
+/*
+ * La linea dell'assicurazione: una fascia lungo l'arco, fra i due fili d'oro.
+ * Ferma e' un solco un po' piu' scuro del feltro, perché la scritta d'oro si
+ * legga (sul giallo tenue del mockup restava sotto il 3:1); quando il banco la
+ * offre si accende d'oro, e la scritta si fa d'inchiostro.
+ */
+.bj-panno__linea {
+  fill: none;
+  stroke: rgba(4, 40, 20, 0.24);
+  stroke-width: 21;
+}
+
+.bj-panno.is-offerta .bj-panno__linea {
+  stroke: rgba(255, 216, 77, 0.72);
+  animation: bj-pulsa 1.2s ease-in-out infinite;
+}
+
+.bj-panno.is-offerta .bj-panno__scritta.is-linea {
+  fill: #120c2b;
+  stroke: none;
+}
+
+@keyframes bj-pulsa {
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Le scritte del panno hanno sotto un filo del verde scuro, come stampate: si leggono anche sulla luce. */
+.bj-panno__scritta {
+  font-family: var(--font-rounded);
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 2.6px;
+  fill: #fff6e0;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: rgba(4, 48, 24, 0.55);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+}
+
+.bj-panno__scritta.is-linea {
+  font-size: 10.5px;
+  letter-spacing: 2px;
+  fill: #ffe27a;
+}
+
+.bj-panno__scritta.is-piccola {
+  font-size: 9px;
+  letter-spacing: 2.2px;
+  fill: #fff6e0;
+}
+
+.bj-panno__rastrelliera > rect:first-child {
+  fill: #2a170a;
+  stroke: #120c2b;
+  stroke-width: 2;
+}
+
+.bj-panno__rastrelliera > .is-1 {
+  fill: #e63946;
+}
+
+.bj-panno__rastrelliera > .is-2 {
+  fill: #1fa463;
+}
+
+.bj-panno__rastrelliera > .is-3 {
+  fill: #4d8df7;
+}
+
+.bj-panno__rastrelliera > .is-4 {
+  fill: #2a2440;
+  stroke: #fffbf2;
+  stroke-width: 1;
+}
+
+.bj-panno__scatola {
+  fill: #2a170a;
+  stroke: #120c2b;
+  stroke-width: 2.5;
+}
+
+.bj-panno__scatola.is-vuota {
+  fill: rgba(18, 12, 43, 0.35);
+  stroke: rgba(255, 246, 224, 0.35);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.bj-panno__carta {
+  fill: #c2185b;
+  stroke: #fffdf7;
+  stroke-width: 2.5;
+}
+
+.bj-panno__righe {
+  fill: none;
+  stroke: #e04482;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.bj-panno__cerchio {
+  fill: rgba(18, 12, 43, 0.18);
+  stroke: #e8c15a;
+  stroke-width: 2;
+  stroke-dasharray: 3 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bj-panno.is-offerta .bj-panno__linea {
+    animation: none;
+  }
+}

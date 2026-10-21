@@ -13,9 +13,9 @@ import { giocoTavoloDi } from '@/games/catalog'
 import { cambiaGruppo, contaPunti } from '@/games/go/conteggio'
 import { PiedeConteggio } from '@/games/go/PiedeConteggio'
 import { ComeSiGiocaTavoliere } from '@/games/tavolo/ComeSiGioca'
-import { adesivoFine, testoFine, useFineVista } from '@/games/tavolo/fine'
+import { ADESIVO_FINE_MS, adesivoFine, testoFine, useFineVista } from '@/games/tavolo/fine'
 import { giocoDelTavoliere } from '@/games/tavolo/giochi'
-import { ElencoMosse, Fine, Tavola, Turno } from '@/games/tavolo/Tavola'
+import { ElencoMosse, Fine, PiedePasso, SottoTavola, Tavola } from '@/games/tavolo/Tavola'
 import { useTavolo, type PartitaConAmico } from '@/games/tavolo/useTavolo'
 import { useAuth } from '@/lib/auth'
 import type { GiocoTavoliere } from '@shared/tavolo'
@@ -73,7 +73,7 @@ function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: G
   const inCorso = v.stato === 'in_corso'
   const attesaFine = v.motivo ? (descrizione.attesaFine?.(v.motivo) ?? ATTESA_FINE_MS) : ATTESA_FINE_MS
   const festa = useFesta(inCorso, v.stato === 'finita' && v.vincitore === 'io', attesaFine)
-  const fineVista = useFineVista(v.stato === 'finita', attesaFine)
+  const fine = useFineVista(v.stato === 'finita', attesaFine)
   const eraInCorso = useRef(false)
   const vRef = useRef(v)
   vRef.current = v
@@ -113,7 +113,7 @@ function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: G
 
   const piede =
     v.stato === 'finita' ? (
-      fineVista && <FinePartita g={g} v={v} />
+      fine.vista && <FinePartita g={g} v={v} gioco={gioco} ritardo={fine.dalVivo ? ADESIVO_FINE_MS : 0} />
     ) : conteggio ? (
       <>
         <PiedeConteggio
@@ -131,12 +131,19 @@ function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: G
       </>
     ) : (
       <>
-        <Turno
-          mio={v.tuoTurno}
-          testo={v.tuoTurno ? 'Tocca a te' : `Tocca a ${nome}`}
-          avviso={descrizione.avviso(v.posizione, v.tuoTurno)}
-          onPassa={descrizione.passo && v.tuoTurno && !g.inviando ? () => g.muovi(descrizione.passo!) : undefined}
-        />
+        {descrizione.sotto === 'mosse' ? (
+          <SottoTavola
+            storia={storia ?? []}
+            onMosse={() => setElenco(true)}
+            resa={{ etichetta: regoleDi(v.gioco).patta ? 'Patta o resa' : 'Abbandona', onClick: () => setResa(true) }}
+          />
+        ) : descrizione.sotto === 'passo' ? (
+          <PiedePasso
+            avviso={descrizione.avviso(v.posizione, v.tuoTurno)}
+            puoi={v.tuoTurno && !g.inviando}
+            onPassa={() => descrizione.passo && g.muovi(descrizione.passo)}
+          />
+        ) : null}
         {v.patta === 'avversario' && (
           <div className="tav-domanda" role="alert">
             <span>{nome} propone la patta.</span>
@@ -159,7 +166,8 @@ function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: G
   const soloInvito = v.stato === 'invito' || v.stato === 'rifiutata' || v.stato === 'annullata'
   return (
     <Pagina
-      titolo={v.avversario ? `Con ${v.avversario.displayName}` : descrizione.nome}
+      titolo={descrizione.nome}
+      sotto={v.avversario ? `Con ${v.avversario.displayName}` : undefined}
       intera
       indietro={{ a: ROTTE.tavolo(v.gioco), etichetta: descrizione.nome }}
       azioni={
@@ -167,12 +175,13 @@ function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: G
           <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
             <IconInfo size={21} />
           </BottoneBarra>
-          {storia && v.mosse.length > 0 && (
+          {/* Scacchi e dama hanno le mosse e la resa sotto la scacchiera; gli altri qui. */}
+          {storia && v.mosse.length > 0 && (descrizione.sotto !== 'mosse' || !inCorso || conteggio) && (
             <BottoneBarra etichetta="Le mosse" onClick={() => setElenco(true)}>
               <IconList size={20} />
             </BottoneBarra>
           )}
-          {inCorso && (
+          {inCorso && (descrizione.sotto !== 'mosse' || conteggio) && (
             <BottoneBarra
               etichetta={regoleDi(v.gioco).patta ? 'Patta o abbandona' : 'Abbandona'}
               onClick={() => setResa(true)}
@@ -195,14 +204,17 @@ function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: G
           finita={v.stato === 'finita'}
           io={{
             nome: player?.displayName ?? 'Tu',
-            avatar: <Avatar nickname={player?.nickname ?? '?'} color={player?.avatarColor} size={36} />,
+            avatar: <Avatar nickname={player?.nickname ?? '?'} color={player?.avatarColor} size={42} />,
           }}
           altro={{
             nome,
-            avatar: <Avatar nickname={v.avversario?.nickname ?? '?'} color={v.avversario?.avatarColor} size={36} />,
+            avatar: <Avatar nickname={v.avversario?.nickname ?? '?'} color={v.avversario?.avatarColor} size={42} />,
             nota: v.avversario && !v.avversario.online && inCorso ? 'non è online' : undefined,
           }}
           turno={inCorso && !conteggio ? (v.tuoTurno ? 'io' : 'altro') : null}
+          vincitore={
+            v.stato === 'finita' ? (v.vincitore === 'io' ? 'io' : v.vincitore === null ? 'patta' : 'altro') : null
+          }
           onMossa={g.muovi}
           tempo={
             inCorso && v.tempo && g.scadenza !== null
@@ -277,7 +289,17 @@ function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: G
   )
 }
 
-function FinePartita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
+function FinePartita({
+  g,
+  v,
+  gioco,
+  ritardo,
+}: {
+  g: PartitaConAmico
+  v: VistaTavolo
+  gioco: GiocoTavoliere
+  ritardo: number
+}) {
   const { vai } = useNavigazione()
   const [chiedendo, setChiedendo] = useState(false)
   const r = v.rivincita
@@ -301,22 +323,23 @@ function FinePartita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
   const partite = v.serie.partite + 1
   const io = v.serie.io + (v.vincitore === 'io' ? 1 : 0)
   const lui = v.serie.avversario + (v.vincitore === 'avversario' ? 1 : 0)
+  const patte = Math.max(0, partite - io - lui)
   return (
     <Fine
+      gioco={gioco}
+      esito={v.vincitore === 'io' ? 'vinta' : v.vincitore === null ? 'patta' : 'persa'}
       titolo={titolo}
-      riga={
-        <>
-          {riga}
-          {partite > 1 && (
-            <>
-              {riga ? ' · ' : ''}
-              <span className="u-tabnum">
-                {io} a {lui}
-              </span>
-            </>
-          )}
-        </>
+      riga={riga}
+      conto={
+        partite > 1
+          ? [
+              { etichetta: 'Tu', valore: io },
+              { etichetta: nome, valore: lui },
+              ...(patte > 0 ? [{ etichetta: 'Patte', valore: patte }] : []),
+            ]
+          : undefined
       }
+      ritardo={ritardo}
       note={
         <>
           {sua && <p className="tav-fine__nota">{nome} vuole la rivincita.</p>}
@@ -328,10 +351,16 @@ function FinePartita({ g, v }: { g: PartitaConAmico; v: VistaTavolo }) {
         </>
       }
     >
-      <Button onClick={() => void ancora()} loading={chiedendo} disabled={attesaMia || !v.avversario?.online}>
-        <IconRefresh size={17} /> {sua ? 'Accetta la rivincita' : 'Gioca ancora'}
+      <Button
+        size="lg"
+        fullWidth
+        onClick={() => void ancora()}
+        loading={chiedendo}
+        disabled={attesaMia || !v.avversario?.online}
+      >
+        <IconRefresh size={18} /> {sua ? 'Accetta la rivincita' : 'Gioca ancora'}
       </Button>
-      <Button variant="tinted" onClick={() => vai(ROTTE.tavolo(v.gioco))}>
+      <Button size="lg" fullWidth variant="tinted" onClick={() => vai(ROTTE.tavolo(v.gioco))}>
         Esci
       </Button>
     </Fine>

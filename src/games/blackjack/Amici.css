@@ -16,12 +16,13 @@
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--r-lg);
   background:
-    radial-gradient(120% 140% at 0% 0%, rgba(255, 255, 255, 0.14), transparent 60%),
-    linear-gradient(150deg, var(--bj-panno-1), var(--bj-panno-2));
+    radial-gradient(120% 140% at 0% 0%, rgba(255, 255, 255, 0.12), transparent 60%),
+    linear-gradient(150deg, #1f8f57, #157046);
   box-shadow:
-    inset 0 0 0 1.5px rgba(242, 210, 122, 0.45),
-    var(--shadow-sm);
-  color: #fff;
+    inset 0 0 0 var(--filo) #120c2b,
+    inset 0 0 0 calc(var(--filo) + 1.5px) rgba(232, 193, 90, 0.5),
+    0 4px 0 #120c2b;
+  color: #fff6e0;
 }
 
 .fortuna-tavolo__volti {
@@ -33,7 +34,7 @@
 }
 
 .fortuna-tavolo__volti > .avatar {
-  box-shadow: 0 0 0 2px var(--bj-panno-2);
+  box-shadow: 0 0 0 2px #157046;
 }
 
 .fortuna-tavolo__testo {
@@ -50,22 +51,38 @@
 
 .fortuna-tavolo__posti {
   font-size: var(--text-footnote);
-  color: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+  color: #fff6e0;
 }
 
+/* Siediti: il tasto giallo della sala, con il filo e l'ombra secca. */
 .fortuna-tavolo__siedi {
-  min-height: 40px;
+  min-height: 42px;
   padding: 0 var(--sp-4);
-  border: 0;
-  border-radius: var(--r-pill);
-  background: linear-gradient(180deg, #fff6d6, var(--bj-scritta));
-  color: #3d2300;
-  font: inherit;
-  font-weight: 800;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  border: 2px solid #120c2b;
+  border-radius: 14px;
+  background: var(--giallo);
+  box-shadow:
+    0 3px 0 #120c2b,
+    inset 0 2px 0 rgba(255, 255, 255, 0.5);
+  color: #120c2b;
+  font-family: var(--font-rounded);
+  font-size: 16px;
+  font-weight: 400;
+  transition: transform 0.12s var(--ease-out);
+}
+
+.fortuna-tavolo__siedi:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 0 0 #120c2b,
+    inset 0 2px 0 rgba(255, 255, 255, 0.5);
 }
 
 .fortuna-tavolo__siedi:disabled {
-  opacity: 0.5;
+  background: #4a447a;
+  border-color: #2a2457;
+  box-shadow: none;
+  color: #c4bfe0;
 }
 

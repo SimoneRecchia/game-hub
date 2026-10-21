@@ -1,18 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import { DURATA_DIRETTA_MS, PALLINE_MS } from '@shared/superenalotto'
 import { inLettere } from '../palline'
+import { BOCCA, MISTE, POSTI_X, RAGGIO_PALLINA, ROTAIA, SFERA, SULLA_ROTAIA, TUBO, viaggioDi } from '../studio'
 import {
   APERTURA_MS,
   ARRIVO_MS,
   ATTESA_MS,
-  REGIA,
   RIEPILOGO_MS,
+  RISUCCHIO_MS,
   SOFFIO,
+  TUBO_MS,
   VETRINA_MS,
   arrivata,
   inEstrazione,
   inVetrina,
-  staccoDi,
+  momentoDi,
 } from '../tempi'
 
 describe('i tempi della diretta', () => {
@@ -27,8 +29,15 @@ describe('i tempi della diretta', () => {
     expect(SOFFIO.a).toBeLessThanOrEqual(RIEPILOGO_MS)
   })
 
-  it('le scritte e l’urna dicono la stessa cosa allo stesso momento', () => {
-    const [t0] = PALLINE_MS
+  it('il viaggio va con il suono `estratto`: il colpo alla bocca a 0,65 s, il tubo fino a 2,7, la rotaia', () => {
+    // Se cambiano, va rifatto `estratto` in src/lib/suoni.ts, che ha questi numeri scritti.
+    expect(RISUCCHIO_MS).toBe(650)
+    expect(RISUCCHIO_MS + TUBO_MS).toBe(2700)
+    expect(ARRIVO_MS).toBe(3500)
+  })
+
+  it('le scritte e lo studio dicono la stessa cosa allo stesso momento', () => {
+    const [t0, t1] = PALLINE_MS
     expect(inEstrazione(t0 - ATTESA_MS - 1)).toBe(-1)
     expect(inEstrazione(t0 - ATTESA_MS)).toBe(0)
     expect(inEstrazione(t0 + ARRIVO_MS - 1)).toBe(0)
@@ -37,23 +46,56 @@ describe('i tempi della diretta', () => {
     expect(inEstrazione(t0 + ARRIVO_MS)).toBe(-1)
     expect(inVetrina(t0 + ARRIVO_MS)).toBe(0)
     expect(inVetrina(t0 + ARRIVO_MS + VETRINA_MS)).toBe(-1)
+
+    expect(momentoDi(-60_000)).toEqual({ tipo: 'conto' })
+    expect(momentoDi(0)).toEqual({ tipo: 'apertura' })
+    expect(momentoDi(APERTURA_MS)).toEqual({ tipo: 'mescola' })
+    expect(momentoDi(t0 - ATTESA_MS)).toEqual({ tipo: 'attesa', pallina: 0 })
+    expect(momentoDi(t0 + ARRIVO_MS)).toEqual({ tipo: 'annuncio', pallina: 0 })
+    // Il sottopancia resta fino all'attesa della prossima, poi tocca a lei.
+    expect(momentoDi(t1 - ATTESA_MS - 1)).toEqual({ tipo: 'annuncio', pallina: 0 })
+    expect(momentoDi(t1 - ATTESA_MS)).toEqual({ tipo: 'attesa', pallina: 1 })
+    expect(momentoDi(RIEPILOGO_MS - 1)).toEqual({ tipo: 'annuncio', pallina: PALLINE_MS.length - 1 })
+    expect(momentoDi(RIEPILOGO_MS)).toEqual({ tipo: 'riepilogo' })
+    expect(momentoDi(DURATA_DIRETTA_MS + 60_000)).toEqual({ tipo: 'riepilogo' })
+  })
+})
+
+describe('lo studio', () => {
+  it('ogni pallina corre dentro il tubo e si ferma al suo posto, dritta', () => {
+    expect(POSTI_X).toHaveLength(PALLINE_MS.length)
+    POSTI_X.forEach((x, i) => {
+      const tappe = viaggioDi(i)
+      for (let k = 1; k < tappe.length; k += 1) expect(tappe[k].offset).toBeGreaterThan(tappe[k - 1].offset)
+      expect(tappe[0].offset).toBe(0)
+      // Alla fine del risucchio e' alla bocca, alla fine del tubo in fondo al tubo, sopra la rotaia.
+      expect(tappe.find((p) => p.offset === RISUCCHIO_MS / ARRIVO_MS)).toMatchObject({ x: BOCCA.x, y: BOCCA.y })
+      expect(tappe.find((p) => p.offset === (RISUCCHIO_MS + TUBO_MS) / ARRIVO_MS)).toMatchObject({
+        x: TUBO.x,
+        y: SULLA_ROTAIA,
+      })
+      const ultima = tappe[tappe.length - 1]
+      expect(ultima).toMatchObject({ offset: 1, x, y: SULLA_ROTAIA, giro: 0, scala: 1, opacita: 1 })
+      // Sulla rotaia, e i posti non si toccano; quelle gia' posate non stanno dove cade la prossima.
+      expect(x - RAGGIO_PALLINA).toBeGreaterThanOrEqual(ROTAIA.da)
+      if (i < POSTI_X.length - 1) expect(x + RAGGIO_PALLINA).toBeLessThanOrEqual(TUBO.x - RAGGIO_PALLINA)
+      if (i > 0) expect(x - POSTI_X[i - 1]).toBeGreaterThanOrEqual(2 * RAGGIO_PALLINA)
+    })
+    expect(SULLA_ROTAIA + RAGGIO_PALLINA).toBe(ROTAIA.y)
   })
 
-  it('la regia e’ una scaletta in ordine, e un passaggio finisce prima dello stacco dopo', () => {
-    for (let i = 1; i < REGIA.length; i += 1) {
-      const gap = REGIA[i].da - REGIA[i - 1].da
-      expect(gap).toBeGreaterThan(0)
-      // Altrimenti la camera partirebbe da una ripresa a meta' strada, e si vedrebbe un salto.
-      expect(REGIA[i - 1].passaggio).toBeLessThanOrEqual(gap)
+  it('la bocca sta sul bordo della sfera, e le palline dentro, anche nel mucchio', () => {
+    const c = { x: SFERA.x + SFERA.lato / 2, y: SFERA.y + SFERA.lato / 2 }
+    const r = SFERA.lato / 2
+    expect(Math.hypot(BOCCA.x - c.x, BOCCA.y - c.y)).toBeGreaterThan(r - BOCCA.lato)
+    for (const p of MISTE) {
+      for (const [x, y] of [
+        [p.x, p.y],
+        [p.fermaX, p.fermaY],
+      ]) {
+        expect(Math.hypot(x - r, y - r)).toBeLessThan(r)
+      }
     }
-    // Ogni pallina ha la sua bocca, il suo tubo e la sua vetrina; alla fine la rotaia.
-    for (const ripresa of ['bocca', 'inseguimento', 'vetrina'] as const) {
-      expect(REGIA.filter((s) => s.ripresa === ripresa).map((s) => s.pallina)).toEqual(PALLINE_MS.map((_, i) => i))
-    }
-    expect(REGIA[REGIA.length - 1].ripresa).toBe('finale')
-    expect(REGIA[staccoDi(-60_000)].ripresa).toBe('studio')
-    expect(REGIA[staccoDi(PALLINE_MS[1] + ARRIVO_MS + 500)]).toMatchObject({ ripresa: 'vetrina', pallina: 1 })
-    expect(REGIA[staccoDi(DURATA_DIRETTA_MS + 60_000)].ripresa).toBe('finale')
   })
 })
 

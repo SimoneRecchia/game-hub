@@ -21,120 +21,121 @@
 
 /* ---------- Riga di stato ---------- */
 
+/* Una carta come nell'album: il tempo, il livello, e quanto vale adesso con la sua barretta. */
 .sud__stato {
   container: sud-stato / inline-size;
   order: -1;
   flex: none;
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 10px;
   width: min(100%, 560px);
-  height: 44px;
+  height: 46px;
   margin-inline: auto;
-  padding: 0 var(--sp-4) 0 var(--sp-3);
-  border-radius: var(--r-pill);
+  padding: 0 12px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
   background: var(--surface);
-  box-shadow: var(--edge-light), var(--shadow-sm);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .sud__tempo {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-width: 4.2em;
-  font-family: var(--font-rounded);
-  font-size: var(--text-headline);
-  font-weight: 800;
-  color: var(--label);
-}
-
-.sud__tempo svg {
-  color: var(--sudoku-1);
+  min-width: 3.8em;
 }
 
 .sud__livello {
-  padding: 2px var(--sp-2);
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--sudoku-1) 16%, transparent);
-  color: var(--sudoku-ink);
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-}
-
-.sud__punti {
-  font-size: var(--text-footnote);
-  font-weight: 800;
-  color: var(--label);
-}
-
-.sud__punti-label {
-  font-weight: 600;
-  color: var(--label-secondary);
-}
-
-.sud__avanzamento {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-  color: var(--label-tertiary);
-}
-
-/* Quanto dello schema e' scritto: una barretta che si riempie. */
-.sud__avanzamento-barra {
-  position: relative;
-  width: 44px;
-  height: 6px;
-  overflow: hidden;
-  border-radius: var(--r-pill);
-  background: var(--fill-tertiary);
-}
-
-.sud__avanzamento-barra span {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--sudoku-1), var(--sudoku-2));
-  transform-origin: left center;
-  transition: transform var(--dur-slow) var(--ease-out);
-}
-
-/*
- * Una capsula stretta — un telefono da 320 punti, o di lato alla griglia — non
- * ha posto per tutto: prima se ne va la barretta (il conto resta), poi il
- * livello. I punti restano sempre su una riga.
- */
-.sud__punti,
-.sud__livello,
-.sud__avanzamento {
   flex: none;
+  padding: 1px 10px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: var(--sudoku-carta-2);
+  color: #2a1f5c;
+  font-size: 12.5px;
   white-space: nowrap;
 }
 
-@container sud-stato (max-width: 340px) {
-  .sud__avanzamento-barra {
+.sud__valore {
+  flex: none;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.sud__valore strong {
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+/* Quanto vale adesso, o quanto e' scritto: una barretta col filo che si svuota, o si riempie. */
+.sud__barretta {
+  position: relative;
+  width: 58px;
+  height: 11px;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--fill-tertiary);
+}
+
+.sud__barretta span {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c3a3ff, #8b5cf6);
+  transform-origin: left center;
+  transition: transform 600ms var(--ease-out);
+}
+
+/* Nella libera, al posto dei punti: senza aiuti (verde) o aiutata (pesca), che non fa record. */
+.sud__pulizia {
+  padding: 2px 10px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: #c9f1d5;
+  color: #2a1f5c;
+  font-size: 12.5px;
+}
+
+.sud__pulizia.is-aiutata {
+  background: #ffd7bf;
+}
+
+/*
+ * Una carta stretta — un telefono da 320 punti, o di lato alla griglia — non
+ * ha posto per tutto: prima se ne va la barretta, poi il livello. I punti
+ * restano sempre su una riga.
+ */
+@container sud-stato (max-width: 290px) {
+  .sud__barretta {
     display: none;
   }
 }
 
-@container sud-stato (max-width: 270px) {
+@container sud-stato (max-width: 220px) {
   .sud__livello {
     display: none;
   }
 }
 
-/* Un messaggio prende il posto di livello e caselle, nella stessa riga: non copre la griglia. */
+/* Un messaggio prende il posto di livello e valore, nella stessa riga: non copre la griglia. */
 .sud__avviso {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--text-footnote);
-  font-weight: 700;
-  color: var(--label);
+  font-size: 13px;
   animation: sud-avviso var(--dur-base) var(--ease-spring);
 }
 
@@ -147,12 +148,13 @@
 
 /* ---------- Griglia ---------- */
 
+/* La griglia sta in alto, sotto la riga di stato, come nell'album: lo spazio che avanza resta sopra gli strumenti. */
 .sud__campo {
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
 }
 
@@ -167,43 +169,85 @@
   }
 
   .sud__campo .sud-griglia {
-    width: min(100cqw, 100cqh, 560px);
+    width: min(100cqw, 100cqh - 6px, 560px);
   }
 }
 
 /* ---------- Schema finito ---------- */
 
+/*
+ * Sotto la griglia, al posto del tastierino: una carta col timbro (toccato
+ * riapre la carta della fine), com'e' andata, e cosa fare adesso.
+ */
 .sud-fine {
   flex: none;
   display: flex;
   flex-direction: column;
+  gap: 12px;
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding: 14px 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--ombra-carta);
+  color: var(--label);
+  animation: sud-fine-entra 500ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes sud-fine-entra {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.94);
+  }
+}
+
+.sud-fine__testa {
+  display: flex;
   align-items: center;
-  gap: var(--sp-1);
-  padding: var(--sp-2) 0;
-  text-align: center;
+  gap: 14px;
+}
+
+.sud-fine__timbro {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: var(--filo) solid var(--ink);
+  border-radius: 50%;
+  background: var(--sudoku-tinta);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.6),
+    0 3px 0 var(--ink);
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 19px;
+  line-height: 1;
+  transform: rotate(-6deg);
+}
+
+button.sud-fine__timbro {
+  cursor: pointer;
+}
+
+.sud-fine__testo {
+  min-width: 0;
 }
 
 .sud-fine__titolo {
   margin: 0;
-  font-size: var(--text-caption-1);
-  font-weight: 700;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--sudoku-ink);
-}
-
-.sud-fine__valore {
-  margin: 0;
   font-family: var(--font-rounded);
-  font-size: var(--text-title-1);
-  font-weight: 700;
-  letter-spacing: var(--tracking-tight);
-  color: var(--label);
+  font-size: 24px;
+  line-height: 1.1;
 }
 
 .sud-fine__dettaglio {
-  margin: 0;
-  font-size: var(--text-footnote);
+  margin: 2px 0 0;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
   color: var(--label-secondary);
 }
 
@@ -211,34 +255,53 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  margin-top: var(--sp-2);
+  gap: 8px;
+}
+
+.sud-fine__azioni > * {
+  flex: 1 1 auto;
 }
 
 .sud-fine__link {
   display: inline-flex;
   align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-  color: var(--brand);
-  font-size: var(--text-subhead);
-  font-weight: 600;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--label);
+  box-shadow: var(--ombra-tasto);
+  font-family: var(--font-rounded);
+  font-size: 16px;
   text-decoration: none;
 }
 
+.sud-fine__link.is-giallo {
+  background: var(--giallo);
+  color: #2a1f5c;
+}
+
+.sud-fine__link:active {
+  transform: translateY(3px);
+  box-shadow: var(--ombra-tasto-giu);
+}
+
 .sud-fine__piede {
-  margin: var(--sp-2) 0 0;
-  font-size: var(--text-caption-1);
-  color: var(--label-tertiary);
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 800;
+  text-align: center;
+  color: var(--label-secondary);
 }
 
 /* ---------- La scelta del livello, e lasciare uno schema ---------- */
 
 .sud-guasto {
   font-size: var(--text-footnote);
+  font-weight: 800;
   color: var(--red);
 }
 
@@ -265,7 +328,8 @@
 .sud-attesa__griglia {
   width: min(100%, 320px);
   aspect-ratio: 1;
-  border-radius: 12px;
+  border: 2px dashed var(--ink-tenue);
+  border-radius: 18px;
   background: var(--fill-quaternary);
   animation: sud-pulsa 1.4s var(--ease-in-out) infinite;
 }
@@ -303,6 +367,7 @@
 
   .sud__campo {
     flex: none;
+    align-items: center;
     width: min(100cqh, 100cqw - 300px - var(--sp-6), 640px);
   }
 
@@ -336,6 +401,18 @@
 
   .sud-cifra {
     height: clamp(40px, 11dvh, 68px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sud__avviso,
+  .sud-fine,
+  .sud-attesa__griglia {
+    animation: none;
+  }
+
+  .sud__barretta span {
+    transition: none;
   }
 }
 

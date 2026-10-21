@@ -1,3 +1,8 @@
+/*
+ * L'avviso di un invito: chi invita, grande, e che cosa vuol dire accettare.
+ * Lo usano tutti gli inviti dell'app — le sfide, i tavolieri, le stanze — non
+ * solo il Wordle.
+ */
 .avviso {
   display: flex;
   flex-direction: column;
@@ -12,52 +17,65 @@
   text-align: center;
 }
 
+/* La faccina di chi invita salta fuori, un po' storta, come un adesivo. */
+.avviso__testa > :first-child {
+  animation: avviso-salta 600ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
 .avviso__testo {
+  margin: 0;
   color: var(--label-secondary);
   font-size: var(--text-callout);
+  font-weight: 700;
   line-height: 1.45;
   max-width: 32ch;
 }
 
 .avviso__testo strong {
   color: var(--label);
+  font-weight: 900;
 }
 
 /*
- * Che cosa comporta accettare.
- *
- * Era arancione, da avvertimento, quando accettare costava il punteggio della
- * giornata. Ora non costa niente — si prende lo stesso punteggio dell'host —
- * quindi e' un'informazione, non un allarme, e il colore lo dice.
+ * Che cosa comporta accettare: un biglietto col filo. Non e' un allarme — si
+ * prende lo stesso punteggio dell'host — ma e' quel che conta sapere.
  */
 .avviso__insieme {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  padding: var(--sp-4);
-  border-radius: var(--r-lg);
-  background: color-mix(in srgb, var(--brand) 10%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 28%, transparent);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: 18px;
+  background: var(--biglietto);
+  box-shadow: inset 0 0 0 2px var(--ink), 0 3px 0 var(--ink);
   font-size: var(--text-footnote);
-  color: var(--label-secondary);
+  font-weight: 700;
+  color: var(--ink);
   line-height: 1.45;
 }
 
+.avviso__insieme p {
+  margin: 0;
+}
+
 .avviso__insieme-titolo {
-  font-size: var(--text-subhead);
-  font-weight: 600;
-  color: color-mix(in srgb, var(--brand) 82%, var(--label));
+  font-family: var(--font-rounded);
+  font-size: var(--text-headline);
+  font-weight: 400;
+  color: var(--ink);
 }
 
 .avviso__insieme strong {
-  color: var(--label);
+  font-weight: 900;
 }
 
 .avviso__sereno {
+  margin: 0;
   padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--r-md);
-  background: var(--fill-quaternary);
+  border-radius: 16px;
+  border: 2px dashed var(--ink-tenue);
   font-size: var(--text-footnote);
+  font-weight: 800;
   color: var(--label-secondary);
   text-align: center;
 }
@@ -71,7 +89,19 @@
 /* L'unica cosa che accettare costa davvero: i tentativi già spesi. */
 .avviso__insieme-costo {
   padding-top: var(--sp-2);
-  border-top: 0.5px solid color-mix(in srgb, var(--brand) 24%, transparent);
-  color: var(--label);
-  font-weight: 500;
+  border-top: 2px dashed rgba(42, 31, 92, 0.25);
+  font-weight: 900;
+}
+
+@keyframes avviso-salta {
+  from {
+    opacity: 0;
+    transform: scale(0.4) rotate(-14deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avviso__testa > :first-child {
+    animation: none;
+  }
 }

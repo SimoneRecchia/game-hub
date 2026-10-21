@@ -9,15 +9,15 @@
 }
 
 /*
- * La tavoletta: la scheda con la griglia, nello stile delle schede della
- * battaglia. Prende tutta l'altezza che la tastiera lascia; la griglia dentro
- * si misura su quel che resta tolte testata e piede.
+ * La griglia sulla pagina, come nel prototipo: niente carta attorno, le
+ * caselle hanno gia' il loro filo. Prende tutta l'altezza che la tastiera
+ * lascia, e la griglia sta in cima, con la riga del momento subito sotto.
  */
 .wordle__tavola {
   flex: 1;
   min-height: 0;
-  /* Larga quanto la tastiera: su un computer una scheda da parete a parete
-     lascerebbe la griglia sola in mezzo al vuoto. */
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 520px;
   margin-inline: auto;
@@ -25,35 +25,39 @@
 
 /* Flex e non grid per centrare: vedi Board.css sul perché la griglia sforava. */
 .wordle__board {
+  /* Quanto e' alta la riga sotto la griglia: la griglia si misura su quel che resta. */
+  --board-piede: 40px;
   flex: 1;
   min-height: 0;
   min-width: 0;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-top: var(--sp-2);
 }
 
 /*
- * La riga sotto la griglia: com'e' andato l'ultimo tentativo, o il messaggio
- * del momento. Alta sempre uguale, cosi' la griglia non salta.
+ * La riga sotto la griglia: a che tentativo si e', o il messaggio del momento.
+ * Alta sempre uguale, cosi' la griglia non salta.
  */
 .wordle__piede {
   flex: none;
-  height: 18px;
-  margin: 0;
+  max-width: 100%;
+  height: 20px;
+  margin: 14px 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--text-caption-1);
-  font-weight: 600;
-  line-height: 18px;
-  color: var(--label-tertiary);
+  font-size: var(--text-subhead);
+  font-weight: 900;
+  line-height: 20px;
+  color: var(--label-secondary);
   text-align: center;
 }
 
 .wordle__piede.is-messaggio {
   color: var(--label);
-  font-weight: 800;
   animation: wordle-piede var(--dur-base) var(--ease-spring);
 }
 
@@ -64,64 +68,38 @@
   }
 }
 
-.wordle-icona {
-  font-family: var(--font-rounded);
-  font-size: 14px;
+/*
+ * L'adesivo della fine, come quelli dell'album: il filo e l'inchiostro sopra il
+ * verde del Wordle, e le lettere della parola su tessere col filo. Persa, la
+ * carta bordata di rosso, con la parola su tessere d'oro.
+ */
+.adesivo.wordle-adesivo.is-vivace .adesivo__carta {
+  color: #2a1f5c;
+  text-shadow: none;
+}
+
+.adesivo.wordle-adesivo.is-bordato .adesivo__carta {
+  border-color: var(--roulette-tinta);
+  background: #fffbf2;
+  color: #2a1f5c;
+}
+
+.adesivo.wordle-adesivo .adesivo__sotto {
   font-weight: 900;
-  line-height: 1;
+  opacity: 1;
 }
 
-/* I tentativi nella testata: sei caselline e il conto. */
-.tentativi {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  height: 26px;
-  padding: 0 9px;
-  border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-}
-
-.tentativi__casella {
-  width: 9px;
-  height: 9px;
-  border-radius: 2.5px;
-  box-shadow: inset 0 0 0 1.5px var(--tile-empty-border);
-  transition: background-color var(--dur-base) var(--ease-out);
-}
-
-.tentativi__casella.is-usata {
-  background: var(--tile-absent);
-  box-shadow: none;
-}
-
-.tentativi__casella.is-vicina {
-  background: var(--tile-correct);
-  box-shadow: none;
-}
-
-.tentativi__casella.is-corrente {
-  box-shadow: inset 0 0 0 2px var(--brand);
-  animation: tentativi-respira 1.6s var(--ease-in-out) infinite;
-}
-
-@keyframes tentativi-respira {
-  50% {
-    transform: scale(1.25);
-  }
-}
-
-.tentativi__conto {
-  margin-left: 4px;
-  font-size: var(--text-caption-1);
-  font-weight: 800;
-  color: var(--label-secondary);
+.adesivo.wordle-adesivo.is-bordato .adesivo__lettere span {
+  background: var(--giallo);
+  color: #2a1f5c;
 }
 
 /* Le stelle dell'adesivo di vittoria: scoppiano una dopo l'altra. */
 .wordle-stelle__stella {
   fill: #fff6c2;
+  stroke: var(--ink);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
   transform-box: fill-box;
   transform-origin: center;
   animation: wordle-stella calc(var(--durata) * 0.35) var(--ease-bounce) both;
@@ -129,7 +107,7 @@
 }
 
 .wordle-stelle__stella:first-child {
-  fill: #ffe066;
+  fill: var(--giallo);
 }
 
 @keyframes wordle-stella {
@@ -140,21 +118,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tentativi__casella.is-corrente,
   .wordle-stelle__stella,
   .wordle__piede.is-messaggio {
     animation: none;
   }
-}
-
-.wordle__reopen {
-  flex: none;
-  align-self: center;
-  padding: var(--sp-2) var(--sp-4);
-  font-size: var(--text-footnote);
-  font-weight: 600;
-  color: var(--brand);
-  border-radius: var(--r-pill);
 }
 
 .wordle__fallback {
@@ -170,42 +137,25 @@
 .wordle__fallback-text {
   color: var(--label-secondary);
   font-size: var(--text-subhead);
+  font-weight: 800;
   max-width: 30ch;
 }
 
 /* ---------- Partita in compagnia ---------- */
 
-.wordle__invita {
-  position: relative;
-}
-
-.wordle__invita-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: var(--r-pill);
-  background: var(--green);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 16px;
-  text-align: center;
-  box-shadow: 0 0 0 2px var(--material-regular);
-}
-
+/* Chi guarda: un'etichetta col filo, con le faccine una sull'altra. */
 .wordle__spettatori {
   flex: none;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-1) var(--sp-3);
-  border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
   align-self: center;
   max-width: 100%;
+  padding: 3px var(--sp-3) 3px 4px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 2px var(--ink), 0 2px 0 var(--ink);
+  animation: wordle-entra 360ms var(--ease-spring) both;
 }
 
 /* Gli avatar si sovrappongono: cinque nomi non ci starebbero. */
@@ -218,12 +168,9 @@
   margin-left: -7px;
 }
 
-.wordle__spettatori-avatar > * {
-  box-shadow: 0 0 0 1.5px var(--bg);
-}
-
 .wordle__spettatori-testo {
   font-size: var(--text-caption-1);
+  font-weight: 800;
   color: var(--label-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -231,10 +178,8 @@
 }
 
 /*
- * La parola di oggi si sta giocando altrove.
- *
- * Era un avvertimento arancione quando guardare costava il punteggio. Ora e'
- * solo un rimando alla partita giusta, quindi blu e con il bottone che ci porta.
+ * La parola di oggi si sta giocando altrove: un rimando alla partita giusta,
+ * su una carta tratteggiata come i posti vuoti dell'album.
  */
 .wordle__insieme {
   flex: none;
@@ -243,16 +188,31 @@
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-3);
-  border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  border-radius: 18px;
+  border: 2px dashed var(--ink-tenue);
+  background: var(--fill-quaternary);
   text-align: center;
 }
 
 .wordle__insieme-testo {
   margin: 0;
-  font-size: var(--text-caption-1);
+  font-size: var(--text-subhead);
+  font-weight: 800;
   color: var(--label-secondary);
   line-height: 1.35;
+}
+
+@keyframes wordle-entra {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wordle__spettatori {
+    animation: none;
+  }
 }
 
 /* Vedi Pagina.css: in orizzontale la pagina scorre e la griglia resta
@@ -284,19 +244,23 @@
 
 .wordle__fine-libera {
   flex: none;
+  display: flex;
+  gap: var(--sp-3);
   width: min(100%, 420px);
   margin: 0 auto;
   padding-bottom: var(--sp-2);
   animation: entra 420ms var(--ease-push) both;
 }
 
+.wordle__fine-libera > .btn:last-child {
+  flex: 1;
+}
+
+/* I conti delle libere nel riepilogo: tre caselle d'album, col numero grande. */
 .libero-conti {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--sp-2);
-  padding: var(--sp-4);
-  border-radius: var(--r-xl);
-  background: var(--fill-quaternary);
 }
 
 .libero-conti__voce {
@@ -304,15 +268,20 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  padding: var(--sp-3) var(--sp-1);
+  border-radius: 16px;
+  background: var(--surface-2);
 }
 
 .libero-conti__valore {
   font-family: var(--font-rounded);
   font-size: var(--text-title-1);
-  font-weight: 800;
+  font-weight: 400;
+  line-height: 1.1;
 }
 
 .libero-conti__etichetta {
   font-size: var(--text-caption-1);
+  font-weight: 800;
   color: var(--label-secondary);
 }

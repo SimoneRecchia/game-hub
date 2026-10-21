@@ -13,23 +13,33 @@ import './Elementi.css'
 
 export function Sezione({
   titolo,
+  conto,
   azione,
   nota,
   children,
   className = '',
+  stile,
 }: {
   titolo?: string
+  /** Accanto al titolo, in un'etichetta: quanti sono ("6", "4 giochi"). */
+  conto?: ReactNode
   /** A destra del titolo: "Vedi tutto", di solito un link. */
   azione?: ReactNode
   nota?: ReactNode
   children: ReactNode
   className?: string
+  stile?: CSSProperties
 }) {
   return (
-    <section className={`sezione ${className}`}>
+    <section className={`sezione ${className}`} style={stile}>
       {(titolo || azione) && (
         <div className="sezione__testa">
-          {titolo && <h2 className="sezione__titolo">{titolo}</h2>}
+          {titolo && (
+            <h2 className="sezione__titolo">
+              {titolo}
+              {conto !== undefined && conto !== null && <span className="sezione__conto">{conto}</span>}
+            </h2>
+          )}
           {azione && <div className="sezione__azione">{azione}</div>}
         </div>
       )}

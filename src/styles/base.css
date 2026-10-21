@@ -10,6 +10,15 @@ html {
   /* Il fondo sta anche sulla radice: le View Transitions fotografano lei, e un
      fondo solo sul body lascerebbe intravedere il bianco durante lo scorrimento. */
   background: var(--bg);
+  /* La barra delle schede sta sopra il fondo della pagina: quel che prende il fuoco, o che il browser porta in
+     vista, si ferma sopra di lei e non sotto, dove un tocco aprirebbe un'altra scheda. */
+  scroll-padding-bottom: calc(var(--tabbar-spazio) + var(--safe-bottom));
+}
+
+@media (min-width: 900px) {
+  html {
+    scroll-padding-bottom: calc(56px + var(--sp-5) + var(--sp-3));
+  }
 }
 
 body {
@@ -19,8 +28,12 @@ body {
   color: var(--label);
   font-family: var(--font-text);
   font-size: var(--text-body);
+  /* Nunito e' sottile ai pesi bassi: il testo dell'album sta fra il semigrassetto e il nero. */
+  font-weight: 600;
   line-height: 1.4;
   letter-spacing: var(--tracking-normal);
+  /* Lilita One ha un peso solo, gia' pieno: il grassetto finto la sbaverebbe (vedi fonts.css). */
+  font-synthesis: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   /* Su iOS evita il "rubber band" orizzontale e la selezione accidentale
@@ -59,8 +72,9 @@ h1,
 h2,
 h3,
 h4 {
+  font-family: var(--font-rounded);
+  font-weight: 400;
   letter-spacing: var(--tracking-tight);
-  font-weight: 700;
 }
 
 button {
@@ -101,8 +115,8 @@ svg {
 }
 
 :focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: 2px;
+  outline: 3px solid var(--brand);
+  outline-offset: 3px;
   border-radius: var(--r-xs);
 }
 

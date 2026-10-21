@@ -1,17 +1,18 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
+import { Adesivo, useAdesivo } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
-import { Numero } from '@/components/Elementi'
+import { Coriandoli, Numero } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
-import { PochiPunti } from '@/games/fortuna/Avvisi'
+import { PochiPunti, adesivoRitenta } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
-import { giornoEstrazione } from '@/games/stato'
 import { ComeSiGiocaEnalotto } from '@/games/superenalotto/ComeSiGioca'
-import { Pallina } from '@/games/superenalotto/Pallina'
-import { casuali } from '@/games/superenalotto/palline'
+import Diretta from '@/games/superenalotto/Diretta'
+import { casuali, coloreDellaPallina } from '@/games/superenalotto/palline'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { frecceDelGruppo } from '@/lib/gruppo'
@@ -20,7 +21,9 @@ import {
   COSTI,
   ESTRATTI,
   GIOCATE,
+  GIORNI_ESTRAZIONE,
   NUMERI,
+  PRIMO_CONCORSO,
   SCHEDE_MASSIME,
   costoDi,
   presiDi,
@@ -29,16 +32,30 @@ import {
 import type { ConcorsoEnalottoVista, SchedaEnalotto, VistaEnalotto } from '@shared/types'
 import './SuperEnalotto.css'
 
-const Diretta = lazy(() => import('@/games/superenalotto/Diretta'))
-
 /** La diretta si apre da sola un minuto prima, per chi ha la pagina aperta. */
 const PRIMA_DELLA_DIRETTA_MS = 60_000
 
 /** Quanto costa la scheda piu' economica: sotto, non si gioca. */
 const COSTO_MINIMO = Math.min(...GIOCATE.map((g) => COSTI[g]))
 
+/** I risultati di un concorso gia' guardati: la pagina non li ripropone a ogni apertura. */
+const VISTO = 'enalotto-visto'
+
 const dataLunga = (data: string) =>
   new Date(`${data}T12:00:00Z`).toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+
+const punti = (n: number) => n.toLocaleString('it-IT')
+
+/** Il numero del concorso: quante estrazioni ci sono state dal primo, questa compresa. */
+function numeroConcorso(data: string): number {
+  let n = 0
+  const d = new Date(`${PRIMO_CONCORSO}T12:00:00Z`)
+  while (d.toISOString().slice(0, 10) <= data) {
+    if (GIORNI_ESTRAZIONE.includes(d.getUTCDay())) n += 1
+    d.setUTCDate(d.getUTCDate() + 1)
+  }
+  return Math.max(1, n)
+}
 
 function durata(ms: number): string {
   const min = Math.max(0, Math.ceil(ms / 60_000))
@@ -51,10 +68,28 @@ function durata(ms: number): string {
 
 const conto = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.max(0, s) % 60).padStart(2, '0')}`
 
+function leggiVisto(): string | null {
+  try {
+    return localStorage.getItem(VISTO)
+  } catch {
+    return null
+  }
+}
+
+function segnaVisto(data: string) {
+  try {
+    localStorage.setItem(VISTO, data)
+  } catch {
+    /* li ripropone, e basta */
+  }
+}
+
 /**
- * Il SuperEnalotto: il jackpot del concorso aperto, la schedina da segnare,
- * le schede giocate e l'ultima estrazione con i suoi premi. Alle 21:05 dei
- * giorni di estrazione, a chi ha la pagina aperta, si apre la diretta.
+ * Il SuperEnalotto, come nel mockup: in cima il saldo e quel che si e' giocato,
+ * la striscia del jackpot, la schedina di carta, "Gioca la scheda", le cinque
+ * schede del concorso e il bottone dell'estrazione. Fra la chiusura delle 21 e
+ * la fine della diretta, e dopo, la schedina lascia il posto all'estrazione: i
+ * numeri, le proprie schede e i premi.
  *
  * I momenti del concorso arrivano dal server come distanze dalla sua ora
  * (`chiusuraFra`, `inizioFra`, `fineFra`): sommati all'ora del telefono di
@@ -63,6 +98,7 @@ const conto = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.m
  * comincia la diretta (i numeri), e quando finisce (i premi).
  */
 export default function SuperEnalotto() {
+  useSala()
   const { vai } = useNavigazione()
   const toast = useToast()
   const [vista, setVista] = useState<VistaEnalotto | null>(null)
@@ -71,9 +107,14 @@ export default function SuperEnalotto() {
   const [regole, setRegole] = useState(false)
   const [inviando, setInviando] = useState(false)
   const [diretta, setDiretta] = useState<{ replica: boolean; inizio: number } | null>(null)
+  /** I risultati dell'ultima estrazione al posto della schedina: dopo la diretta, o chiesti. */
+  const [risultati, setRisultati] = useState(false)
+  const [nuova, setNuova] = useState<string | null>(null)
   const chiusaDa = useRef<string | null>(null)
   const saldoRef = useRef<HTMLSpanElement>(null)
   const [adesso, setAdesso] = useState(() => Date.now())
+  const { adesivo, mostra } = useAdesivo()
+  const [festa, setFesta] = useState(false)
 
   const prendi = useCallback((v: VistaEnalotto) => {
     setVista(v)
@@ -121,8 +162,11 @@ export default function SuperEnalotto() {
     }
   }, [ultimo, diretta, adesso, inizioUltimo, fineUltimo])
 
-  // Il prossimo concorso si apre a fine diretta: finche' la pagina non ha riletto, i numeri sono quelli di prima.
-  const prossimoFra = vista?.aperto?.chiusuraFra ?? null
+  // Chi aveva schede nell'ultima estrazione, pagata, ne trova i risultati la prima volta che torna.
+  const daVedere = ultimo && ultimo.premi && ultimo.mie.length > 0 ? ultimo.data : null
+  useEffect(() => {
+    if (daVedere && leggiVisto() !== daVedere) setRisultati(true)
+  }, [daVedere])
 
   const gioca = async (numeri: number[]): Promise<boolean> => {
     if (inviando) return false
@@ -130,6 +174,8 @@ export default function SuperEnalotto() {
     try {
       const v = await api<VistaEnalotto>('/superenalotto/schede', { method: 'POST', body: { schede: [numeri] } })
       dimentica('/fortuna')
+      const prima = new Set(vista?.aperto?.mie.map((s) => s.id) ?? [])
+      setNuova(v.aperto?.mie.find((s) => !prima.has(s.id))?.id ?? null)
       prendi(v)
       return true
     } catch (e) {
@@ -141,10 +187,22 @@ export default function SuperEnalotto() {
     }
   }
 
+  const testa = (sotto?: string) => ({
+    titolo: 'SuperEnalotto',
+    sotto,
+    intera: true,
+    indietro: { a: ROTTE.fortuna, etichetta: 'Fortuna' },
+    azioni: (
+      <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
+        <IconInfo size={21} />
+      </BottoneBarra>
+    ),
+  })
+
   if (errore && !vista) {
     return (
-      <Pagina titolo="SuperEnalotto" indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }}>
-        <div className="se-errore">
+      <Pagina {...testa()}>
+        <div className={`se-errore ${SALA}`}>
           <p>{errore}</p>
           <Button onClick={() => vai(ROTTE.fortuna)}>Torna alla Fortuna</Button>
         </div>
@@ -157,119 +215,136 @@ export default function SuperEnalotto() {
   /** Si potrebbe ancora giocare una scheda, ma il saldo non la paga: lo dicono il tabellone e la schedina. */
   const senzaSaldo = !!vista && !!aperto && aperto.mie.length < SCHEDE_MASSIME && vista.saldo < COSTO_MINIMO
   const tempoDi = (fra: number) => arrivata + fra - adesso
+  /** La schedina, o l'estrazione: quella chiusa che aspetta la diretta, o i risultati chiesti. */
+  const estrazione = vista && ultimo && (!aperto || (risultati && ultimo.premi)) ? ultimo : null
+  const mostrato = estrazione ?? aperto
+  const apriDiretta = () => ultimo && setDiretta({ replica: false, inizio: inizioUltimo })
+  /**
+   * La diretta lascia il posto ai risultati: quando la si lascia, o quando
+   * arriva in fondo da sola. In fondo a quella vera, com'e' andata lo dice un
+   * adesivo, come nel mockup; la replica non lo ridice.
+   */
+  const chiudiDiretta = (finita: boolean) => {
+    if (!ultimo || !diretta) return
+    chiusaDa.current = ultimo.data
+    setDiretta(null)
+    // Finita la diretta, i premi: la pagina mostra l'estrazione, non la schedina.
+    if (!diretta.replica) setRisultati(true)
+    if (finita && !diretta.replica && ultimo.mie.length > 0) {
+      const vinto = ultimo.mie.reduce((s, x) => s + (x.vincita ?? 0), 0)
+      const presi = ultimo.estratti ? Math.max(0, ...ultimo.mie.map((x) => presiDi(x.numeri, ultimo.estratti!))) : 0
+      if (vinto > 0) {
+        mostra({
+          tono: 'vivace',
+          titolo: presi >= 4 ? 'Jackpot!' : `${PRESI[presi] ?? presi} numeri!`,
+          sotto: `+${punti(vinto)}`,
+          colore: 'linear-gradient(180deg, #ffe27a, #ffc93c)',
+          durata: 2200,
+        })
+        setFesta(true)
+        window.setTimeout(() => setFesta(false), 3200)
+      } else {
+        // Niente da ritirare: il biglietto del giro dopo, e il jackpot che cresce, che e' una buona notizia.
+        mostra(adesivoRitenta('Al prossimo concorso', 'Il jackpot cresce', 1_900))
+      }
+    }
+    void leggi()
+  }
+  const allaSchedina = () => {
+    if (ultimo) segnaVisto(ultimo.data)
+    setRisultati(false)
+  }
 
   return (
-    <Pagina
-      titolo="SuperEnalotto"
-      indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }}
-      azioni={
-        <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
-          <IconInfo size={21} />
-        </BottoneBarra>
-      }
-    >
-      <div className="se">
+    <Pagina {...testa(mostrato ? `Concorso n° ${numeroConcorso(mostrato.data)}` : undefined)}>
+      <div className={`se ${SALA}${diretta ? ' is-diretta' : ''}`}>
         {vista && (
-          <Tabellone saldo={vista.saldo} puntata={puntato || null} saldoRef={saldoRef} scarso={senzaSaldo} />
-        )}
-
-        <Jackpot vista={vista} tempoDi={tempoDi} onDiretta={() => ultimo && setDiretta({ replica: false, inizio: inizioUltimo })} />
-
-        {aperto && vista && (
-          <Schedina
-            concorso={aperto}
-            oggi={vista.date}
+          <Tabellone
             saldo={vista.saldo}
-            inviando={inviando}
-            onGioca={gioca}
+            puntata={estrazione ? estrazione.mie.reduce((s, x) => s + costoDi(x.numeri), 0) : puntato}
+            saldoRef={saldoRef}
+            scarso={senzaSaldo && !estrazione}
+            riga
+            etichetta="Giocato"
           />
         )}
 
-        {aperto && aperto.mie.length > 0 && (
-          <section className="se-sezione">
-            <h2 className="se-sezione__titolo">
-              Le tue schede <span className="u-tabnum">{aperto.mie.length}/{SCHEDE_MASSIME}</span>
-            </h2>
-            <ul className="se-ricevute">
-              {aperto.mie.map((s, i) => (
-                <Ricevuta key={s.id} scheda={s} indice={i} estratti={null} />
-              ))}
-            </ul>
-          </section>
-        )}
+        {!vista && <div className="se-attesa" aria-hidden="true" />}
 
-        {ultimo && (
-          <Ultima
-            concorso={ultimo}
-            tempoDi={tempoDi}
-            onRivedi={() => setDiretta({ replica: true, inizio: Date.now() + 3000 })}
-            onDiretta={() => setDiretta({ replica: false, inizio: inizioUltimo })}
-          />
-        )}
-        {prossimoFra === null && !ultimo && <p className="se-nota">Il gioco riapre a fine estrazione.</p>}
-      </div>
-
-      {diretta && ultimo && (
-        <Suspense fallback={null}>
+        {vista && diretta && ultimo && (
           <Diretta
             data={ultimo.data}
+            numero={numeroConcorso(ultimo.data)}
             inizio={diretta.inizio}
             estratti={ultimo.estratti}
             mie={ultimo.mie}
             premi={diretta.replica || ultimo.premi ? ultimo.premi : null}
             replica={diretta.replica}
-            onChiudi={() => {
-              chiusaDa.current = ultimo.data
-              setDiretta(null)
-              void leggi()
-            }}
+            onChiudi={chiudiDiretta}
           />
-        </Suspense>
-      )}
+        )}
+
+        {vista && !diretta && estrazione && (
+          <>
+            {!estrazione.premi && <Jackpot concorso={estrazione} oggi={vista.date} />}
+            <Estrazione
+              key={estrazione.data}
+              concorso={estrazione}
+              oggi={vista.date}
+              tempoDi={tempoDi}
+              prossimo={aperto ? numeroConcorso(aperto.data) : null}
+              onDiretta={apriDiretta}
+              onRivedi={() => setDiretta({ replica: true, inizio: Date.now() + 3000 })}
+              onProssimo={allaSchedina}
+            />
+          </>
+        )}
+
+        {vista && !diretta && aperto && !estrazione && (
+          <>
+            <Jackpot concorso={aperto} oggi={vista.date} />
+            <Schedina
+              concorso={aperto}
+              saldo={vista.saldo}
+              inviando={inviando}
+              senzaSaldo={senzaSaldo}
+              onGioca={gioca}
+            />
+            <Foglietti mie={aperto.mie} nuova={nuova} />
+            <button type="button" className="se-vai" disabled>
+              {aperto.mie.length === 0
+                ? 'Gioca una scheda per l’estrazione'
+                : `Estrazione fra ${durata(tempoDi(aperto.inizioFra))}`}
+            </button>
+            {ultimo?.premi && (
+              <button type="button" className="se-ultima" onClick={() => setRisultati(true)}>
+                I numeri di {dataLunga(ultimo.data)}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+
+      <Adesivo adesivo={adesivo} />
+      {festa && <Coriandoli />}
       <ComeSiGiocaEnalotto open={regole} onClose={() => setRegole(false)} />
     </Pagina>
   )
 }
 
-/** In cima: il jackpot, grande, e quando si estrae; o che il gioco e' chiuso, e la diretta. */
-function Jackpot({
-  vista,
-  tempoDi,
-  onDiretta,
-}: {
-  vista: VistaEnalotto | null
-  tempoDi: (fra: number) => number
-  onDiretta: () => void
-}) {
-  const aperto = vista?.aperto ?? null
-  const ultimo = vista?.ultimo ?? null
-  const inDiretta = ultimo && tempoDi(ultimo.inizioFra) <= 0 && tempoDi(ultimo.fineFra) > 0
-  const chiuso = !aperto && ultimo && tempoDi(ultimo.inizioFra) > 0
-  const jackpot = aperto?.jackpot ?? ultimo?.jackpot ?? 0
+/** La striscia del jackpot, in una riga: quanto vale e quando si estrae. */
+function Jackpot({ concorso, oggi }: { concorso: ConcorsoEnalottoVista; oggi: string }) {
+  const primo = useRef(concorso.jackpot)
   return (
-    <section className={`se-jackpot${inDiretta ? ' is-diretta' : ''}`} aria-label="Jackpot">
-      <span className="se-jackpot__brilli" aria-hidden="true" />
+    <section className="se-jackpot" aria-label="Jackpot">
+      <span className="se-jackpot__luci" aria-hidden="true" />
       <span className="se-jackpot__etichetta">Jackpot</span>
       <span className="se-jackpot__cifra u-tabnum">
-        {vista ? <Numero valore={jackpot} /> : <span className="scheletro scheletro--riga-corta" />}
-        <span className="se-jackpot__unita"> {jackpot === 1 ? 'punto' : 'punti'}</span>
+        <Numero valore={concorso.jackpot} da={primo.current} />
       </span>
-      {aperto && vista && (
-        <span className="se-jackpot__quando">
-          Estrazione {giornoEstrazione(aperto.data, vista.date)} alle 21:05 ·{' '}
-          <span className="u-tabnum">si gioca ancora per {durata(tempoDi(aperto.chiusuraFra))}</span>
-        </span>
-      )}
-      {chiuso && ultimo && (
-        <span className="se-jackpot__quando">
-          Gioco chiuso · la diretta comincia fra <span className="u-tabnum">{conto(Math.ceil(tempoDi(ultimo.inizioFra) / 1000))}</span>
-        </span>
-      )}
-      {(inDiretta || chiuso) && (
-        <button type="button" className="se-jackpot__diretta" onClick={onDiretta}>
-          {inDiretta ? 'Guarda la diretta' : 'Apri la diretta'}
-        </button>
-      )}
+      <span className="se-jackpot__quando">
+        {concorso.data === oggi ? 'stasera' : dataLunga(concorso.data)} · alle 21:05
+      </span>
     </section>
   )
 }
@@ -284,11 +359,11 @@ function leggiGiocata(): GiocataEnalotto {
 }
 
 /**
- * La schedina: in cima le due giocate, quattro numeri o il "4+1", poi le
- * novanta caselle stampate in rosso, dieci per riga come sulla schedina vera,
- * che si segnano con una croce di penna blu, e i numeri scelti scritti a mano in
- * fondo. "Casuale" li sceglie a caso, come alla ricevitoria; giocata, la scheda
- * prende il timbro e torna bianca per la prossima.
+ * La schedina di carta: "Schedina" stampato in rosso e le due giocate in una
+ * capsula, quattro numeri o il "4+1"; le novanta caselle stampate in rosso,
+ * dieci per riga come sulla schedina vera, che si segnano con una croce di
+ * penna blu; in fondo quanti numeri mancano, "A caso" e "Cancella". Sotto, il
+ * bottone che la gioca.
  *
  * Una giocata che il saldo non paga non si sceglie: con quindici punti il 4+1
  * e' spento, e la schedina passa ai quattro numeri. Senza i punti per nessuna
@@ -296,21 +371,21 @@ function leggiGiocata(): GiocataEnalotto {
  */
 function Schedina({
   concorso,
-  oggi,
   saldo,
   inviando,
+  senzaSaldo,
   onGioca,
 }: {
   concorso: ConcorsoEnalottoVista
-  oggi: string
   saldo: number
   inviando: boolean
+  senzaSaldo: boolean
   onGioca: (numeri: number[]) => Promise<boolean>
 }) {
   const [segnati, setScelti] = useState<number[]>([])
   const [voluta, setVoluta] = useState<GiocataEnalotto>(leggiGiocata)
-  const [timbro, setTimbro] = useState(0)
   const [scossa, setScossa] = useState(0)
+  const [messaggio, setMessaggio] = useState<string | null>(null)
   const mescola = useRef(0)
   const rimaste = SCHEDE_MASSIME - concorso.mie.length
   /** La giocata scelta, o la piu' ricca che il saldo paga. */
@@ -320,13 +395,19 @@ function Schedina({
   const costo = COSTI[giocata]
   const pochi = saldo < costo
   const puo = rimaste > 0 && !pochi && !inviando
+  const spenta = rimaste <= 0 || pochi
+
+  const metti = (x: number[]) => {
+    setScelti(x)
+    setMessaggio(null)
+  }
 
   const scegliGiocata = (g: GiocataEnalotto) => {
     if (g === giocata) return
     mescola.current += 1
     setVoluta(g)
     // Passando a quattro, il quinto numero segnato se ne va.
-    setScelti((x) => x.slice(0, g))
+    metti(scelti.slice(0, g))
     suona('tocco')
     try {
       localStorage.setItem('enalotto-giocata', String(g))
@@ -338,18 +419,19 @@ function Schedina({
   const tocca = (n: number) => {
     if (!puo) return
     if (scelti.includes(n)) {
-      setScelti(scelti.filter((x) => x !== n))
+      metti(scelti.filter((x) => x !== n))
       suona('tocco')
     } else if (scelti.length < giocata) {
-      setScelti([...scelti, n])
+      metti([...scelti, n])
       suona('tocco', { volume: 1.2 })
     } else {
       setScossa((x) => x + 1)
+      setMessaggio(giocata === 4 ? 'Quattro numeri: togline uno' : 'Cinque numeri: togline uno')
       suona('tetto')
     }
   }
 
-  // La giocata casuale: le croci saltano qua e la' per un attimo, poi si fermano su quattro numeri.
+  // A caso: le croci saltano qua e la' per un attimo, poi si fermano sui numeri della giocata.
   const casuale = () => {
     if (!puo) return
     const giro = ++mescola.current
@@ -359,11 +441,11 @@ function Schedina({
       if (giro !== mescola.current) return
       volte += 1
       if (volte < 7) {
-        setScelti(casuali(giocata))
+        metti(casuali(giocata))
         suona('tocco', { volume: 0.6 })
         window.setTimeout(passo, 70)
       } else {
-        setScelti(finale)
+        metti(finale)
         suona('fiche')
       }
     }
@@ -374,66 +456,44 @@ function Schedina({
     if (scelti.length !== giocata || !puo) return
     mescola.current += 1
     if (await onGioca([...scelti].sort((a, b) => a - b))) {
-      setTimbro((x) => x + 1)
       suona('posa')
-      window.setTimeout(() => setScelti([]), 650)
+      metti([])
     }
   }
 
-  const mano = [...scelti].sort((a, b) => a - b)
-  const breve = new Date(`${concorso.data}T12:00:00Z`).toLocaleDateString('it-IT', {
-    day: 'numeric',
-    month: 'numeric',
-    timeZone: 'UTC',
-  })
+  const mancano = giocata - scelti.length
+  const conta =
+    rimaste <= 0
+      ? 'Cinque schede: si gioca'
+      : (messaggio ??
+        (mancano === 0 ? 'Pronta da giocare' : `Segna ancora ${mancano === 1 ? 'un numero' : `${mancano} numeri`}`))
+  const pronta = puo && mancano === 0
   return (
-    <section className="se-sezione" aria-label="La schedina">
-      <div
-        className={`se-schedina${scossa ? ' is-scossa' : ''}${rimaste > 0 && pochi ? ' is-spenta' : ''}`}
-        key={`s${scossa}`}
+    <>
+      <section
+        className={`se-schedina${spenta ? ' is-spenta' : ''}${scossa ? ` is-scossa-${scossa % 2}` : ''}`}
+        aria-label="La schedina"
       >
         <header className="se-schedina__testa">
-          <span className="se-schedina__marchio">
-            Super<b>Enalotto</b>
-          </span>
-          <span className="se-schedina__concorso">
-            Concorso di {giornoEstrazione(concorso.data, oggi)} · {breve}
-          </span>
-        </header>
-        <div className="se-giocate" role="radiogroup" aria-label="La giocata" onKeyDown={frecceDelGruppo}>
-          {GIOCATE.map((g) => (
-            <button
-              key={g}
-              type="button"
-              role="radio"
-              aria-checked={giocata === g}
-              tabIndex={giocata === g ? 0 : -1}
-              className={`se-giocata${giocata === g ? ' is-scelta' : ''}`}
-              disabled={!puo || COSTI[g] > saldo}
-              onClick={() => scegliGiocata(g)}
-            >
-              <span className="se-giocata__casella" aria-hidden="true">
-                {giocata === g && (
-                  <svg viewBox="0 0 40 40">
-                    <path d="M8 9 L32 32" />
-                    <path d="M31 8 L9 31" />
-                  </svg>
-                )}
-              </span>
-              <span className="se-giocata__nome">{g === 4 ? '4 numeri' : '4+1'}</span>
-              <span className="se-giocata__costo u-tabnum">{COSTI[g]} punti</span>
-            </button>
-          ))}
-        </div>
-        <p className="se-schedina__istruzioni">
-          Segna {giocata} numeri
-          <span className="se-schedina__segni" aria-hidden="true">
-            {Array.from({ length: giocata }, (_, i) => (
-              <span key={i} className={i < scelti.length ? 'is-pieno' : ''} />
+          <span className="se-schedina__marca">Schedina</span>
+          <span className="se-giocate" role="radiogroup" aria-label="La giocata" onKeyDown={frecceDelGruppo}>
+            {GIOCATE.map((g) => (
+              <button
+                key={g}
+                type="button"
+                role="radio"
+                aria-checked={giocata === g}
+                tabIndex={giocata === g ? 0 : -1}
+                className={`se-giocata${giocata === g ? ' is-scelta' : ''}`}
+                disabled={!puo || COSTI[g] > saldo}
+                onClick={() => scegliGiocata(g)}
+              >
+                {g === 4 ? '4 numeri' : '4+1'} · <span className="u-tabnum">{COSTI[g]}</span>
+              </button>
             ))}
           </span>
-        </p>
-        <div className="se-schedina__griglia" role="group" aria-label="I numeri">
+        </header>
+        <div className="se-griglia" role="group" aria-label="I novanta numeri">
           {Array.from({ length: NUMERI }, (_, i) => i + 1).map((n) => {
             const segnato = scelti.includes(n)
             return (
@@ -446,174 +506,227 @@ function Schedina({
                 disabled={!puo}
                 onClick={() => tocca(n)}
               >
-                <span className="se-casella__numero u-tabnum">{n}</span>
-                {segnato && (
-                  <svg className="se-casella__croce" viewBox="0 0 40 40" aria-hidden="true">
-                    <path d="M8 9 L32 32" />
-                    <path d="M31 8 L9 31" />
-                  </svg>
-                )}
+                <span className="se-casella__n u-tabnum">{n}</span>
+                <svg className="se-casella__croce" viewBox="0 0 30 30" aria-hidden="true">
+                  <path className="se-casella__tratto" d="M6 7L24 23" />
+                  <path className="se-casella__tratto is-secondo" d="M24 6L7 24" />
+                </svg>
               </button>
             )
           })}
         </div>
         <div className="se-schedina__piede">
-          <span className="se-schedina__mano" aria-live="polite">
-            {mano.length > 0 ? mano.join(' · ') : 'Nessun numero'}
+          <span className="se-schedina__conta" aria-live="polite">
+            {conta}
           </span>
-          <span className="se-schedina__comandi">
-            <button type="button" className="se-schedina__comando" onClick={casuale} disabled={!puo}>
-              Casuale
-            </button>
-            <button
-              type="button"
-              className="se-schedina__comando"
-              onClick={() => setScelti([])}
-              disabled={!puo || scelti.length === 0}
-            >
-              Cancella
-            </button>
-          </span>
+          <button type="button" className="se-piccolo" onClick={casuale} disabled={!puo}>
+            A caso
+          </button>
+          <button
+            type="button"
+            className="se-piccolo"
+            onClick={() => metti([])}
+            disabled={!puo || scelti.length === 0}
+          >
+            Cancella
+          </button>
         </div>
-        {timbro > 0 && (
-          <span className="se-schedina__timbro" key={timbro} aria-hidden="true">
-            Giocata
-          </span>
-        )}
-      </div>
-      {rimaste > 0 && pochi ? (
-        <PochiPunti servono={COSTO_MINIMO} saldo={saldo} titolo={`Una scheda costa ${COSTO_MINIMO} punti`} />
+      </section>
+      {senzaSaldo ? (
+        <PochiPunti
+          servono={COSTO_MINIMO}
+          saldo={saldo}
+          titolo={`Una scheda costa ${COSTO_MINIMO} punti`}
+          className="se-pochi"
+        />
       ) : (
-        <Button
-          className="se-gioca"
-          disabled={!puo || scelti.length !== giocata}
+        <button
+          type="button"
+          className={`se-gioca${pronta ? ' is-pronta' : ''}`}
+          disabled={!pronta}
           onClick={() => void conferma()}
         >
-          {rimaste <= 0
-            ? `Hai giocato ${SCHEDE_MASSIME} schede`
-            : scelti.length === giocata
-              ? `Gioca la scheda · ${costo} punti`
-              : `Segna ancora ${giocata - scelti.length} ${giocata - scelti.length === 1 ? 'numero' : 'numeri'}`}
-        </Button>
+          {rimaste <= 0 ? `Hai giocato ${SCHEDE_MASSIME} schede` : `Gioca la scheda · ${costo}`}
+        </button>
       )}
-      {rimaste > 0 && concorso.mie.length > 0 && (
-        <p className="se-nota">
-          Puoi giocarne ancora {rimaste} per {giornoEstrazione(concorso.data, oggi)}.
-        </p>
-      )}
-    </section>
+    </>
   )
 }
 
-/** Una scheda giocata, come la ricevuta della ricevitoria: i numeri, e dopo l'estrazione quanti ha preso. */
-function Ricevuta({ scheda, indice, estratti }: { scheda: SchedaEnalotto; indice: number; estratti: number[] | null }) {
-  const presi = estratti ? presiDi(scheda.numeri, estratti) : null
+/** Le cinque schede del concorso: quelle giocate, con il timbro, e i posti tratteggiati delle altre. */
+function Foglietti({ mie, nuova }: { mie: SchedaEnalotto[]; nuova: string | null }) {
+  const due = (n: number) => String(n).padStart(2, '0')
   return (
-    <li
-      className={`se-ricevuta${presi !== null && presi >= 2 ? ' is-vince' : ''}`}
-      style={{ '--i': indice } as CSSProperties}
-    >
-      <span className="se-ricevuta__titolo">
-        Scheda {indice + 1}
-        {scheda.numeri.length > ESTRATTI && <span className="se-ricevuta__giocata">4+1</span>}
-      </span>
-      <span className="se-ricevuta__numeri">
-        {scheda.numeri.map((n) => (
-          <Pallina key={n} n={n} piccola accesa={!!estratti?.includes(n)} />
-        ))}
-      </span>
-      <span className="se-ricevuta__esito">
-        {presi === null
-          ? `${costoDi(scheda.numeri)} punti`
-          : scheda.vincita
-            ? `+${scheda.vincita}`
-            : presi >= 2
-              ? `${presi} numeri`
-              : `${presi}/${ESTRATTI}`}
-      </span>
-    </li>
+    <ol className="se-schede" aria-label="Le schede giocate">
+      {Array.from({ length: SCHEDE_MASSIME }, (_, i) => {
+        const s = mie[i]
+        if (!s) {
+          return (
+            <li key={`vuota-${i}`} className="se-foglietto is-vuoto" aria-hidden="true">
+              {i + 1}
+            </li>
+          )
+        }
+        return (
+          <li
+            key={s.id}
+            className={`se-foglietto${s.id === nuova ? ' is-nuovo' : ''}`}
+            style={{ '--giro': `${[-4, 3, -2, 4, -3][i]}deg` } as CSSProperties}
+            aria-label={`Scheda ${i + 1}: ${s.numeri.join(', ')}`}
+          >
+            <span className="se-foglietto__tipo">{s.numeri.length > ESTRATTI ? '4+1' : 'Quattro'}</span>
+            <span className="se-foglietto__mano">{s.numeri.slice(0, 3).map(due).join(' ')}</span>
+            <span className="se-foglietto__mano">{s.numeri.slice(3).map(due).join(' ')}</span>
+            <span className="se-foglietto__timbro" aria-hidden="true">
+              Giocata
+            </span>
+          </li>
+        )
+      })}
+    </ol>
   )
 }
 
-/** L'ultima estrazione: i numeri, i premi di ogni categoria e le proprie schede. Si puo' rivedere la diretta. */
-function Ultima({
+/** Una pallina estratta, piatta come nel mockup: il colore del suo quarto d'urna e il numero nel tondo. */
+function PallinaPiatta({ n, i }: { n: number | null; i: number }) {
+  return (
+    <span
+      className={`se-ri-pallina${n === null ? ' is-vuota' : ''}`}
+      style={{ '--pallina': n === null ? undefined : coloreDellaPallina(n), '--i': i } as CSSProperties}
+    >
+      <span className="u-tabnum">{n ?? '?'}</span>
+    </span>
+  )
+}
+
+const NOMI_CATEGORIE: Record<number, string> = { 4: 'Quattro numeri', 3: 'Tre numeri', 2: 'Due numeri' }
+const PRESI: Record<number, string> = { 2: 'Due', 3: 'Tre', 4: 'Quattro' }
+
+/**
+ * L'estrazione al posto della schedina: i quattro numeri, le proprie schede con
+ * quel che hanno preso, i premi del concorso e il jackpot che passa. Prima della
+ * diretta i numeri sono punti di domanda, e il bottone apre la diretta.
+ */
+function Estrazione({
   concorso,
+  oggi,
   tempoDi,
-  onRivedi,
+  prossimo,
   onDiretta,
+  onRivedi,
+  onProssimo,
 }: {
   concorso: NonNullable<VistaEnalotto['ultimo']>
+  oggi: string
   tempoDi: (fra: number) => number
-  onRivedi: () => void
+  prossimo: number | null
   onDiretta: () => void
+  onRivedi: () => void
+  onProssimo: () => void
 }) {
   const { estratti, premi } = concorso
   const prima = tempoDi(concorso.inizioFra) > 0
-  const finita = tempoDi(concorso.fineFra) <= 0
-  const vinto = concorso.mie.reduce((s, x) => s + (x.vincita ?? 0), 0)
+  const finita = tempoDi(concorso.fineFra) <= 0 && !!premi
+  const visti = finita ? estratti : null
+  const quando =
+    concorso.data === oggi
+      ? 'stasera'
+      : new Date(`${concorso.data}T12:00:00Z`).toLocaleDateString('it-IT', { weekday: 'long', timeZone: 'UTC' })
   return (
-    <section className="se-sezione">
-      <h2 className="se-sezione__titolo">Estrazione di {dataLunga(concorso.data)}</h2>
-      <div className="se-ultima">
-        {prima || !estratti ? (
-          <div className="se-ultima__attesa">
-            <p>L’estrazione comincia alle 21:05.</p>
-            <Button onClick={onDiretta}>Apri la diretta</Button>
-          </div>
-        ) : !finita || !premi ? (
-          <div className="se-ultima__attesa">
-            <p>L’estrazione è in diretta.</p>
-            <Button onClick={onDiretta}>Guarda la diretta</Button>
-          </div>
+    <div className="se-riepilogo">
+      <section className="se-ri-estratti" aria-label="I numeri estratti">
+        <span className="se-ri-et">{prima ? `L’estrazione di ${quando}` : `I numeri di ${quando}`}</span>
+        <span className="se-ri-palline">
+          {Array.from({ length: ESTRATTI }, (_, i) => (
+            <PallinaPiatta key={i} n={visti?.[i] ?? null} i={i} />
+          ))}
+        </span>
+        {!finita && (
+          <span className="se-ri-quando u-tabnum">
+            {prima
+              ? `Gioco chiuso · la diretta comincia fra ${conto(Math.ceil(tempoDi(concorso.inizioFra) / 1000))}`
+              : 'In diretta adesso'}
+          </span>
+        )}
+      </section>
+
+      <section className="se-ri-carta">
+        <h2 className="se-ri-titolo">Le tue schede</h2>
+        {concorso.mie.length === 0 ? (
+          <p className="se-ri-vuoto">Non hai giocato questo concorso.</p>
         ) : (
-          <>
-            <div className="se-ultima__palline">
-              {estratti.map((n) => (
-                <Pallina key={n} n={n} />
-              ))}
-            </div>
-            <table className="se-premi">
-              <thead>
-                <tr>
-                  <th scope="col">Punti</th>
-                  <th scope="col">Vincitori</th>
-                  <th scope="col">Premio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {premi.map((p) => (
-                  <tr key={p.categoria} className={p.categoria === 4 ? 'is-jackpot' : ''}>
-                    <th scope="row">{p.categoria === 4 ? '4 · Jackpot' : p.categoria}</th>
-                    <td className="u-tabnum">{p.vincitori}</td>
-                    <td className="u-tabnum">{p.vincitori > 0 ? `${p.premio} ${p.premio === 1 ? 'punto' : 'punti'}` : '–'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="se-nota">
-              {premi[0].vincitori > 0
-                ? `Jackpot vinto! Riparte da ${concorso.prossimoJackpot} punti.`
-                : `Nessuno ha fatto 4: il jackpot passa a ${concorso.prossimoJackpot} punti.`}{' '}
-              {concorso.schede} {concorso.schede === 1 ? 'scheda giocata' : 'schede giocate'}.
-            </p>
-            {concorso.mie.length > 0 && (
-              <>
-                <p className={`se-ultima__mio${vinto > 0 ? ' is-vinto' : ''}`}>
-                  {vinto > 0 ? `Hai vinto ${vinto} ${vinto === 1 ? 'punto' : 'punti'}` : 'Le tue schede non hanno vinto'}
-                </p>
-                <ul className="se-ricevute">
-                  {concorso.mie.map((s, i) => (
-                    <Ricevuta key={s.id} scheda={s} indice={i} estratti={estratti} />
+          concorso.mie.map((s) => {
+            const presi = visti ? presiDi(s.numeri, visti) : null
+            const vinta = (s.vincita ?? 0) > 0
+            return (
+              <div key={s.id} className="se-ri-riga">
+                <span className="se-ri-numeri">
+                  {s.numeri.map((n) => (
+                    <span key={n} className={`se-ri-n u-tabnum${visti?.includes(n) ? ' is-preso' : ''}`}>
+                      {n}
+                    </span>
                   ))}
-                </ul>
-              </>
-            )}
-            <Button variant="tinted" onClick={onRivedi}>
+                </span>
+                {/*
+                 * Una scheda dice quel che ha vinto; una che non ha vinto niente non dice niente, e i numeri presi
+                 * si vedono cerchiati. Due numeri con un premio diviso fra tanti, sotto il punto, dicono "Due".
+                 */}
+                {(presi === null || vinta || presi >= 2) && (
+                  <span className={`se-ri-esito${vinta ? ' is-vinta' : ''}`}>
+                    {presi === null
+                      ? `${costoDi(s.numeri)} punti`
+                      : vinta
+                        ? `${PRESI[presi] ?? presi} · +${punti(s.vincita ?? 0)}`
+                        : PRESI[presi]}
+                  </span>
+                )}
+              </div>
+            )
+          })
+        )}
+      </section>
+
+      {finita && premi && (
+        <section className="se-ri-carta">
+          <h2 className="se-ri-titolo">I premi del concorso</h2>
+          {premi.map((p) => (
+            <div key={p.categoria} className="se-ri-riga">
+              <span className="se-ri-cat">{NOMI_CATEGORIE[p.categoria]}</span>
+              <span className="se-ri-vinc">
+                {p.vincitori === 0 ? 'Nessuno' : p.vincitori === 1 ? '1 vincitore' : `${p.vincitori} vincitori`}
+              </span>
+              <span className="se-ri-premio u-tabnum">
+                {p.vincitori === 0 ? 'Al jackpot' : `${punti(p.premio)} a testa`}
+              </span>
+            </div>
+          ))}
+          {concorso.prossimoJackpot !== null && (
+            <p className="se-ri-jackpot">
+              {prossimo ? `Jackpot del concorso n° ${prossimo}: ` : 'Il jackpot passa a '}
+              <span className="u-tabnum">{punti(concorso.prossimoJackpot)}</span>
+            </p>
+          )}
+        </section>
+      )}
+
+      <div className="se-ri-comandi">
+        {finita ? (
+          <>
+            <button type="button" className="se-ri-rivedi" onClick={onRivedi}>
               Rivedi l’estrazione
-            </Button>
+            </button>
+            {prossimo !== null && (
+              <button type="button" className="se-ri-nuovo" onClick={onProssimo}>
+                Concorso n° {prossimo}
+              </button>
+            )}
           </>
+        ) : (
+          <button type="button" className="se-ri-nuovo is-diretta" onClick={onDiretta}>
+            {prima ? 'Apri la diretta' : 'Guarda la diretta'}
+          </button>
         )}
       </div>
-    </section>
+    </div>
   )
 }

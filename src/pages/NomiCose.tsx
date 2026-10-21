@@ -88,6 +88,7 @@ export default function NomiCose() {
   return (
     <Pagina
       titolo="Nomi, cose e città"
+      sotto="La lettera di oggi"
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
@@ -126,7 +127,7 @@ export default function NomiCose() {
           entrata={volo.arrivata}
           nascondiLettera={volo.volo !== null}
           azione={
-            <Button size="lg" fullWidth onClick={g.consegna} disabled={g.occupato}>
+            <Button size="lg" fullWidth className="nomi-stop" onClick={g.consegna} disabled={g.occupato}>
               Consegna
             </Button>
           }

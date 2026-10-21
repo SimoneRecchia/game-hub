@@ -3,7 +3,6 @@ import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Button } from '@/components/Button'
 import { CampoCodice } from '@/components/CampoCodice'
-import { Copertina } from '@/components/Copertina'
 import { Sezione } from '@/components/Elementi'
 import { IconInfo, IconPlus } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
@@ -65,7 +64,7 @@ export default function Scarabocchi() {
     <Pagina
       titolo="Scarabocchi"
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      eroe={<Copertina gioco="scarabocchi" formato="eroe" />}
+      gioco="scarabocchi"
       azioni={
         <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
           <IconInfo size={21} />

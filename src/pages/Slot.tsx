@@ -6,6 +6,7 @@ import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { CHIAMA_FICHES, PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
 import { COLORE_FICHE, FICHES, inFiches } from '@/games/fortuna/fiches'
@@ -17,7 +18,7 @@ import { FestaSlot, type DatiFesta } from '@/games/slot/Festa'
 import { Leva } from '@/games/slot/Leva'
 import { eFesta, momentoDi, type Momento, type MomentoMobile } from '@/games/slot/momenti'
 import { Rulli, type MetaRulli } from '@/games/slot/Rulli'
-import { DefinizioniSlot, Simbolo } from '@/games/slot/simboli'
+import { DefinizioniSlot } from '@/games/slot/simboli'
 import { DURATA_TARGA, Targa, type DatiTarga } from '@/games/slot/Targa'
 import { VINCITE, type VincitaRulli } from '@/games/slot/vincite'
 import { ApiFetchError, api } from '@/lib/api'
@@ -108,6 +109,7 @@ function domandaDi(g: GiroSlot): VincitaRulli | null {
  * momento non arriva.
  */
 export default function SlotPagina() {
+  useSala()
   const { vai } = useNavigazione()
   const toast = useToast()
   const dopo = useDopo()
@@ -132,6 +134,12 @@ export default function SlotPagina() {
   const [intermezzo, setIntermezzo] = useState<DatiIntermezzo | null>(null)
   const [regole, setRegole] = useState(false)
   const [festa, setFesta] = useState<(DatiFesta & { premio: number }) | null>(null)
+  /**
+   * Il giro di prima non ha pagato niente: il display, al posto di "Tira la
+   * leva", invita a rigirare. Nessun altro segno: un giro a vuoto e' la cosa
+   * piu' normale della slot, e non si sottolinea.
+   */
+  const [rigira, setRigira] = useState(false)
   /** La leva arrivata in fondo: il mobile ha un sussulto. */
   const [scossa, setScossa] = useState(false)
   const [inviando, setInviando] = useState(false)
@@ -242,6 +250,7 @@ export default function SlotPagina() {
     }
     const quanto = nuova - scelta
     const volo = voliFiches.current
+    setRigira(false)
     setPuntata(nuova)
     setInVoloFiches((n) => n + quanto)
     const posa = () => {
@@ -264,6 +273,7 @@ export default function SlotPagina() {
     voliFiches.current += 1
     setInVoloFiches(0)
     setPuntata(0)
+    setRigira(false)
     const da = centroDi(puntataRef.current)
     const a = centroDi(gettoniRef.current)
     const pila = inFiches(mostrata).map((v) => COLORE_FICHE[v])
@@ -304,6 +314,7 @@ export default function SlotPagina() {
     setVinta(null)
     setVincita(null)
     setVassoio(0)
+    setRigira(false)
     setLuci('gira')
     setRiposata(false)
     setScossa(true)
@@ -384,6 +395,7 @@ export default function SlotPagina() {
       }
     } else {
       setConto(null)
+      if (!g.tripla) setRigira(true)
     }
     const domanda = domandaDi(g)
     if (domanda && g.tripla) {
@@ -441,8 +453,9 @@ export default function SlotPagina() {
     const nuovo = await chiedi('/slot/risposta', { scelta })
     if (!nuovo?.giro) return
     setStato(nuovo)
+    // Una risposta che non era quella suona pari e piano, non triste: la carta dice gia' qual era la giusta.
     const r = nuovo.giro.risposta
-    if (r) suona(r.giusta ? 'giusto' : 'sbagliato')
+    if (r) suona(r.giusta ? 'giusto' : 'pareggio', { volume: r.giusta ? 1 : 0.7 })
   }
 
   const allaSlot = () => {
@@ -450,6 +463,7 @@ export default function SlotPagina() {
     setFase('pronta')
     setLuci('attesa')
     setVinta(null)
+    if (g?.risposta && !g.risposta.giusta && g.premio === 0) setRigira(true)
     if (g?.risposta?.giusta && g.vincitaDomanda && g.tripla) {
       const vale = g.vincitaDomanda
       const s = ultimo.current
@@ -469,7 +483,7 @@ export default function SlotPagina() {
   if (errore) {
     return (
       <Pagina titolo="Slot" indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }} intera>
-        <div className="slot-errore">
+        <div className={`slot-errore ${SALA}`}>
           <p>{errore}</p>
           <Button onClick={() => vai(ROTTE.fortuna)}>Torna alla Fortuna</Button>
         </div>
@@ -485,6 +499,7 @@ export default function SlotPagina() {
   return (
     <Pagina
       titolo="Slot"
+      sotto={`Tre sette pagano ${PREMI['7']}`}
       indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }}
       intera
       azioni={
@@ -517,7 +532,7 @@ export default function SlotPagina() {
           )}
         </Suspense>
       )}
-      <div className="slot" hidden={!!inDomanda}>
+      <div className={`slot ${SALA}`} hidden={!!inDomanda}>
         {quanto && (
           <Tabellone
             saldo={quanto.saldo}
@@ -539,7 +554,6 @@ export default function SlotPagina() {
             <div className="slot-fronte">
               <span className="slot-fronte__led is-sinistra" aria-hidden="true" />
               <span className="slot-fronte__led is-destra" aria-hidden="true" />
-              <TabellaBreve />
               <div className="slot-vetro" ref={vetroRef}>
                 {stato ? (
                   <Rulli categorie={categorie} inMoto={inMoto} meta={meta} vincita={vinta} onFine={fermati} />
@@ -570,17 +584,19 @@ export default function SlotPagina() {
                   </span>
                 </span>
                 <span className={classeVincita} aria-live="polite" aria-atomic="true">
+                  <span className="slot-display__etichetta">{vinta ? VINCITE[vinta.tipo].nome : 'Vincita'}</span>
                   {senzaSaldo ? (
                     <span className="slot-display__invito is-ferma">{saldo <= 0 ? 'Saldo a zero' : 'Saldo basso'}</span>
                   ) : senzaPuntata ? (
                     <span className="slot-display__invito">Tocca le fiches</span>
+                  ) : vinta || vincita !== null ? (
+                    <span className="slot-display__cifre u-tabnum" key={`${vinta?.tipo}${vincita}`}>
+                      {vincita !== null ? `+${vincita}` : '?'}
+                    </span>
                   ) : (
-                    <>
-                      <span className="slot-display__etichetta">{vinta ? VINCITE[vinta.tipo].nome : 'Vincita'}</span>
-                      <span className="slot-display__cifre u-tabnum" key={`${vinta?.tipo}${vincita}`}>
-                        {vincita ?? (vinta?.tipo === 'Q' ? '?' : '–')}
-                      </span>
-                    </>
+                    <span className={`slot-display__invito${inMoto ? ' is-gira' : ' is-ferma'}`}>
+                      {inMoto ? '· · ·' : rigira ? 'Rigira' : 'Tira la leva'}
+                    </span>
                   )}
                 </span>
               </div>
@@ -620,12 +636,8 @@ export default function SlotPagina() {
                     Azzera
                   </button>
                 </div>
-                <button type="button" className="slot-gira" disabled={!puoGiocare} onClick={() => void tira()}>
-                  <span className="slot-gira__testo">Gira</span>
-                </button>
               </div>
             </div>
-            <Pancia />
             <div className="slot-vassoio" ref={vassoioRef} aria-hidden="true">
               {Array.from({ length: vassoio }, (_, i) => (
                 <span key={i} className="slot-vassoio__moneta" style={{ '--i': i } as CSSProperties} />
@@ -639,7 +651,30 @@ export default function SlotPagina() {
             <Intermezzo dati={intermezzo} onMezzo={() => setFase('domanda')} onFine={() => setIntermezzo(null)} />
           )}
         </div>
-        {senzaSaldo && <PochiPunti servono={PUNTATA_MINIMA_SLOT} saldo={saldo} className="slot-pochi" />}
+        {senzaSaldo ? (
+          <PochiPunti servono={PUNTATA_MINIMA_SLOT} saldo={saldo} className="slot-pochi" />
+        ) : (
+          // Gira, per chi non vuole tirare la leva: sotto il mobile, grande, come nel mockup.
+          <div className="slot-comandi">
+            <button
+              type="button"
+              className={`slot-gira${puoGiocare ? ' is-pronta' : ''}`}
+              disabled={!puoGiocare}
+              onClick={() => void tira()}
+            >
+              Gira
+            </button>
+            <p className="slot-comandi__nota">
+              {inMoto
+                ? 'Girano…'
+                : puoGiocare
+                  ? 'Tira la leva, o tocca Gira'
+                  : senzaPuntata
+                    ? 'Tocca le fiches per puntare'
+                    : '\u00a0'}
+            </p>
+          </div>
+        )}
       </div>
       {festa && <FestaSlot dati={festa} onFine={fineFesta} />}
       <ComeSiGiocaSlot open={regole} onClose={() => setRegole(false)} categorie={categorie} />
@@ -647,113 +682,37 @@ export default function SlotPagina() {
   )
 }
 
-/** Le lampadine dell'insegna: lungo l'arco e sul fondo, ognuna con il suo posto nella corsa. */
+/** Le lampadine dell'insegna: nove sul bordo di sopra e nove su quello di sotto, in giro, ognuna con il suo posto nella corsa. */
 const LAMPADINE = (() => {
   const punti: Array<{ x: number; y: number; i: number }> = []
-  const n = 17
-  for (let k = 0; k < n; k += 1) {
-    const a = Math.PI + (Math.PI * k) / (n - 1)
-    punti.push({ x: 200 + 184 * Math.cos(a), y: 92 + 80 * Math.sin(a), i: k })
-  }
-  for (let k = 1; k < 9; k += 1) punti.push({ x: 16 + (368 * k) / 9, y: 110, i: n + k })
+  for (let k = 0; k < 9; k += 1) punti.push({ x: 24 + k * 44, y: 4, i: k })
+  for (let k = 0; k < 9; k += 1) punti.push({ x: 376 - k * 44, y: 92, i: 9 + k })
   return punti
 })()
 
 /**
- * L'insegna in cima al mobile: un arco laccato con le lampadine che corrono
- * lungo il bordo — a turno in attesa, in corsa mentre i rulli girano, a
- * raffica per una vincita — e la scritta in rilievo, con lo spessore delle
- * lettere disegnato sotto.
+ * L'insegna in cima al mobile, come nel mockup: un riquadro di vetro scuro
+ * nella cornice d'oro, con le lampadine che corrono lungo i bordi — a turno in
+ * attesa, in corsa mentre i rulli girano, a raffica per una vincita — e LUCKY 7
+ * al neon, con il luccichio che ogni tanto ci passa sopra.
  */
 function Insegna({ luci }: { luci: Luci }) {
   return (
     <div className={`slot-insegna is-${luci}`} aria-hidden="true">
-      <svg className="slot-insegna__disegno" viewBox="0 0 400 120" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="slot-insegna-oro" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fffbe0" />
-            <stop offset="0.45" stopColor="#ffd84a" />
-            <stop offset="0.7" stopColor="#e89a10" />
-            <stop offset="1" stopColor="#fff0a0" />
-          </linearGradient>
-          <linearGradient id="slot-insegna-rosso" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#ffb3bd" />
-            <stop offset="0.5" stopColor="#ff2a48" />
-            <stop offset="1" stopColor="#8c0018" />
-          </linearGradient>
-        </defs>
+      <span className="slot-insegna__scritta">LUCKY 7</span>
+      <span className="slot-insegna__luccichio" />
+      <svg className="slot-insegna__disegno" viewBox="0 0 400 96" preserveAspectRatio="none">
         {LAMPADINE.map((p) => (
           <circle
             key={p.i}
             cx={p.x}
             cy={p.y}
-            r={5}
+            r={6}
             className="slot-insegna__lampadina"
             style={{ '--i': p.i } as CSSProperties}
           />
         ))}
       </svg>
-      <svg className="slot-insegna__scritta" viewBox="0 0 400 110">
-        {[7, 5.5, 4, 2.5, 1].map((d) => (
-          <text key={d} x={200} y={78 + d} className="slot-insegna__spessore">
-            SLOT
-          </text>
-        ))}
-        <text x={200} y={78} className="slot-insegna__lettere">
-          SLOT
-        </text>
-        {[52, 348].map((x) => (
-          <g key={x}>
-            {[4, 2].map((d) => (
-              <text key={d} x={x} y={72 + d} className="slot-insegna__spessore is-sette">
-                7
-              </text>
-            ))}
-            <text x={x} y={72} className="slot-insegna__sette">
-              7
-            </text>
-          </g>
-        ))}
-      </svg>
-      <span className="slot-insegna__luccichio" />
-    </div>
-  )
-}
-
-/** I tre premi piu' alti, sul vetro sotto l'insegna, come sui mobili veri: il resto nelle regole. */
-function TabellaBreve() {
-  const premi: Array<['7' | 'R' | 'B', number]> = [
-    ['7', PREMI['7']],
-    ['R', PREMI.R],
-    ['B', PREMI.B],
-  ]
-  return (
-    <div className="slot-tabella" aria-label="I premi piu' alti">
-      {premi.map(([s, x]) => (
-        <span key={s} className="slot-tabella__voce">
-          <span className="slot-tabella__simboli">
-            {[0, 1, 2].map((i) => (
-              <Simbolo key={i} codice={s} />
-            ))}
-          </span>
-          <span className="slot-tabella__valore u-tabnum">×{x}</span>
-        </span>
-      ))}
-    </div>
-  )
-}
-
-/**
- * La pancia del mobile, sotto il banco: il vetro illuminato con i raggi, come
- * sui mobili veri. E' disegno e basta: le regole e le categorie del giorno le
- * dice il foglio della "i".
- */
-function Pancia() {
-  return (
-    <div className="slot-pancia" aria-hidden="true">
-      <div className="slot-pancia__vetro">
-        <span className="slot-pancia__raggi" />
-      </div>
     </div>
   )
 }

@@ -1,1141 +1,772 @@
 /*
- * La diretta dell'estrazione: sopra la tela del 3D, la grafica di una diretta
- * televisiva. La testata con il marchio e il bollino rosso, il conto alla
- * rovescia, il titolo d'oro, i sottopancia in basso (l'attesa e ogni pallina
- * che arriva), il tabellone dei quattro posti e le schede di chi guarda. Scura
- * in tutti e due i temi, come le sale della Fortuna. Si muove solo con
- * `transform` e `opacity`: la tela sotto ridisegna gia' sessanta volte al
- * secondo, e il telefono non deve ridisegnare anche le scritte.
+ * La diretta dell'estrazione, dentro la pagina come nel mockup: uno studio
+ * disegnato piatto, con i fasci di luce, la parete di lampadine in fondo, la
+ * sfera di vetro con le palline, la bocca e il piedistallo d'oro, il tubo che
+ * porta alla rotaia. E' scuro in tutti e due i temi, come la sala: i colori
+ * sono quelli dello studio, scritti qui.
+ *
+ * Il palco ha le misure fisse di `studio.ts` (390 per 590) e la diretta lo
+ * scala con `--k` sullo spazio che c'e'. Tutto quel che si muove si muove con
+ * `transform` e `opacity`, e senza movimento sta fermo.
  */
 
-.se-diretta {
-  --oro: #ffd166;
-  --oro-chiaro: #fff1c2;
-  --oro-pieno: #f2b630;
-  --oro-ombra: rgb(255 190 80 / 0.55);
-  --inchiostro-oro: #2a1a00;
-  --notte: #050a1f;
-  --pannello: rgb(8 16 46 / 0.9);
-  --pannello-fondo: rgb(4 9 28 / 0.88);
-  --filo-oro: rgb(255 209 102 / 0.32);
-  --rosso-diretta: #e5383b;
-  --testo-piano: rgb(255 255 255 / 0.68);
+.se > .se-studio {
+  flex: 1 1 0;
+}
 
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+.se-studio {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 380px;
+  margin: 2px 0 4px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 24px;
   overflow: hidden;
-  color: #fff;
-  background:
-    radial-gradient(60% 45% at 50% 42%, rgb(64 120 255 / 0.32), transparent 70%),
-    radial-gradient(120% 80% at 50% 110%, rgb(255 190 80 / 0.16), transparent 60%),
-    linear-gradient(180deg, #050a1f, #0a1840 55%, #050a1f);
-  animation: se-diretta-entra 0.6s var(--ease-out) both;
-  font-family: var(--font-rounded);
+  background: radial-gradient(ellipse 110% 70% at 40% 30%, #2b1e80 0%, #160e4a 55%, #0a0628 100%);
+  box-shadow: 0 5px 0 #120c2b;
+  color: #fff6e0;
+  animation: se-studio-entra 0.35s ease-out both;
 }
 
-.se-diretta:focus {
-  outline: none;
-}
-
-@keyframes se-diretta-entra {
+@keyframes se-studio-entra {
   from {
     opacity: 0;
+    transform: scale(0.97);
   }
 }
 
-.se-diretta__tela {
+/* ─────────────────────────────  Le luci dello studio  ───────────────────────────── */
+
+.se-studio__fascio {
   position: absolute;
+  top: -40px;
+  width: 180px;
+  height: 620px;
+  background: linear-gradient(180deg, rgb(255 236 170 / 0.3), rgb(255 236 170 / 0) 80%);
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+
+.se-studio__fascio.is-a {
+  left: -30px;
+  transform: rotate(-24deg);
+  animation: se-fascio-a 7s ease-in-out infinite;
+}
+
+.se-studio__fascio.is-b {
+  right: -30px;
+  transform: rotate(22deg);
+  animation: se-fascio-b 8s ease-in-out infinite;
+}
+
+@keyframes se-fascio-a {
+  50% {
+    transform: rotate(-6deg);
+  }
+}
+
+@keyframes se-fascio-b {
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+/* La parete di lampadine in fondo, a puntini, che lampeggia. */
+.se-studio__parete {
+  position: absolute;
+  inset: auto 0 0;
+  height: 170px;
+  background-image: radial-gradient(rgb(140 190 255 / 0.35) 2px, transparent 2.6px);
+  background-size: 16px 16px;
+  -webkit-mask: linear-gradient(180deg, transparent, #000 70%);
+  mask: linear-gradient(180deg, transparent, #000 70%);
+  animation: se-studio-luci 1.2s steps(1) infinite;
+  pointer-events: none;
+}
+
+@keyframes se-studio-luci {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ─────────────────────────────  Il palco  ───────────────────────────── */
+
+.se-studio__scena {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.se-studio__palco {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) scale(var(--k, 1));
+  transform-origin: 50% 50%;
+}
+
+.se-studio__palco > * {
+  position: absolute;
+}
+
+.se-studio__bollino {
+  left: 16px;
+  top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 2px solid #120c2b;
+  border-radius: 8px;
+  background: #e5383b;
+  color: #fff6e0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  box-shadow: 0 3px 0 #120c2b;
+}
+
+.se-studio__bollino.is-replica {
+  background: #5c5480;
+}
+
+.se-studio__punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff6e0;
+  animation: se-studio-luci 1s steps(1) infinite;
+}
+
+.se-studio__oro {
+  right: 16px;
+  top: 6px;
+  color: #ffd84d;
+  font-family: var(--font-rounded);
+  font-size: 20px;
+  line-height: 30px;
+  text-shadow:
+    0 2px 0 #7a4a10,
+    0 0 14px rgb(255 216 77 / 0.45);
+  white-space: nowrap;
+}
+
+/* Il tubo di vetro e la rotaia, disegnati con le misure del viaggio. */
+.se-studio__tubo {
   inset: 0;
   width: 100%;
   height: 100%;
-  display: block;
+  overflow: visible;
 }
 
-/* Il velo: l'angolo buio dell'obiettivo, e il buio sotto le scritte di sopra e di sotto, che si leggono su tutto. */
-.se-diretta__velo {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(130% 95% at 50% 46%, transparent 58%, rgb(0 0 0 / 0.5) 100%),
-    linear-gradient(180deg, rgb(2 4 14 / 0.72), transparent 16%, transparent 64%, rgb(2 4 14 / 0.82) 92%);
-}
-
-/* Il lampo di quando la pallina entra nel tubo: un attimo di luce calda su tutto. */
-.se-diretta__lampo {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: radial-gradient(55% 42% at 50% 40%, rgb(255 238 196 / 0.42), rgb(255 190 90 / 0.1) 55%, transparent 78%);
-  animation: se-lampo 0.5s ease-out both;
-}
-
-@keyframes se-lampo {
-  0% {
-    opacity: 0;
-  }
-  14% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Senza WebGL: i fasci dello studio in CSS e un'urna disegnata, ferma. Le palline si leggono comunque sotto. */
-.se-diretta__fasci {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.se-diretta__fasci::before,
-.se-diretta__fasci::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: -30%;
-  width: 160vmax;
-  height: 160vmax;
-  margin-left: -80vmax;
-  background: repeating-conic-gradient(from 0deg at 50% 50%, rgb(140 180 255 / 0.07) 0 8deg, transparent 8deg 30deg);
-  animation: se-fasci 40s linear infinite;
-}
-
-.se-diretta__fasci::after {
-  animation-direction: reverse;
-  animation-duration: 64s;
-  opacity: 0.6;
-}
-
-@keyframes se-fasci {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.se-diretta__urna2d {
-  position: absolute;
-  left: 50%;
-  top: 38%;
-  width: min(60vw, 46vh);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 30%, rgb(255 255 255 / 0.5), transparent 25%),
-    radial-gradient(circle, rgb(160 200 255 / 0.12), rgb(160 200 255 / 0.3));
-  box-shadow:
-    inset 0 0 40px rgb(160 200 255 / 0.4),
-    0 0 0 3px rgb(242 196 92 / 0.7);
-}
-
-/* ─────────────────────────────  La testata  ───────────────────────────── */
-
-.se-diretta__testa {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: calc(env(safe-area-inset-top) + 10px) max(16px, env(safe-area-inset-right)) 8px
-    max(16px, env(safe-area-inset-left));
-}
-
-.se-diretta__chiudi {
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 0.1);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.16);
-  color: #fff;
-  cursor: pointer;
-}
-
-.se-diretta__chiudi svg {
-  width: 18px;
-  height: 18px;
+.se-studio__vetro {
   fill: none;
-  stroke: currentColor;
-  stroke-width: 2.4;
+  stroke: rgb(200 225 255 / 0.22);
+  stroke-width: 34;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.se-studio__luce {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.35);
+  stroke-width: 3;
   stroke-linecap: round;
 }
 
-.se-diretta__chiudi:focus-visible,
-.se-diretta__fine:focus-visible {
-  outline: 3px solid var(--oro);
-  outline-offset: 3px;
+.se-studio__rotaia {
+  fill: #e8c15a;
+  stroke: #7a4a10;
+  stroke-width: 2;
 }
 
-.se-diretta__marchio {
-  display: grid;
-  flex: 1;
-  min-width: 0;
-  gap: 2px;
-}
-
-.se-diretta__logo {
-  font-size: 20px;
-  white-space: nowrap;
-  font-weight: 800;
-  font-style: italic;
-  line-height: 1.05;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 14px rgb(60 120 255 / 0.8);
-}
-
-.se-diretta__logo b {
-  color: var(--oro);
-  font-weight: 900;
-}
-
-.se-diretta__data {
-  overflow: hidden;
-  color: var(--testo-piano);
-  font-family: var(--font-text);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* Il bollino: rosso, con la luce che pulsa, come quello delle dirette vere; la replica e' un bollino spento. */
-.se-diretta__bollino {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  gap: 7px;
-  padding: 6px 11px 6px 10px;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #f04a4d, #c9272a);
-  font-family: var(--font-text);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 0.18) inset,
-    0 0 20px rgb(229 56 59 / 0.55);
-}
-
-.se-diretta__bollino::before {
-  content: '';
-  width: 7px;
-  height: 7px;
+/* La sfera di vetro, con il riflesso; le palline dentro, che l'aria fa girare. */
+.se-studio__sfera {
+  box-sizing: border-box;
+  border: 3px solid rgb(220 235 255 / 0.65);
   border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 8px #fff;
-  animation: se-pulsa 1.2s ease-in-out infinite;
-}
-
-.se-diretta__bollino.is-replica {
-  background: rgb(255 255 255 / 0.12);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.2);
-}
-
-.se-diretta__bollino.is-replica::before {
-  display: none;
-}
-
-@keyframes se-pulsa {
-  50% {
-    opacity: 0.25;
-  }
-}
-
-/* ─────────────────────────────  Il mezzo: sopra i titoli, sotto i sottopancia  ───────────────────────────── */
-
-.se-diretta__centro {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  padding: 0 max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
-  pointer-events: none;
-}
-
-.se-diretta__centro > * {
-  grid-column: 1;
-  pointer-events: auto;
-}
-
-.se-diretta__occhiello {
-  color: var(--oro);
-  font-family: var(--font-text);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  text-shadow: 0 2px 10px rgb(0 0 0 / 0.6);
-}
-
-/* Il conto alla rovescia: l'ora che manca, e negli ultimi secondi i numeri grandi, uno alla volta. */
-.se-diretta__attesa {
-  position: relative;
-  display: grid;
-  grid-row: 1;
-  align-self: start;
-  justify-self: center;
-  justify-items: center;
-  gap: 6px;
-  margin-top: clamp(12px, 6vh, 56px);
-  text-align: center;
-}
-
-.se-diretta__orologio {
-  font-size: clamp(48px, 15vw, 84px);
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  text-shadow:
-    0 0 28px rgb(110 160 255 / 0.55),
-    0 4px 18px rgb(0 0 0 / 0.6);
-}
-
-.se-diretta__tre {
-  color: var(--oro);
-  font-size: clamp(88px, 30vw, 160px);
-  font-weight: 900;
-  line-height: 1;
-  text-shadow: 0 0 44px var(--oro-ombra);
-  animation: se-tre 1s var(--ease-out) both;
-}
-
-@keyframes se-tre {
-  0% {
-    opacity: 0;
-    transform: scale(1.7);
-  }
-  22% {
-    opacity: 1;
-    transform: none;
-  }
-  78% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.82);
-  }
-}
-
-.se-diretta__fra {
-  color: var(--testo-piano);
-  font-size: 15px;
-  font-weight: 700;
-}
-
-/* Il titolo d'apertura: arriva grande, la luce ci passa sopra, il filo d'oro si apre, e se ne va. */
-.se-diretta__titolo {
-  position: relative;
-  display: grid;
-  grid-row: 1;
-  align-self: start;
-  justify-self: center;
-  justify-items: center;
-  gap: 6px;
-  margin-top: clamp(16px, 7vh, 64px);
-  text-align: center;
-  animation: se-titolo 4.5s ease both;
-}
-
-/* Il buio dietro il titolo e il conto alla rovescia: si leggono anche sopra il vetro e l'oro dell'urna. */
-.se-diretta__titolo::before,
-.se-diretta__attesa::before {
-  content: '';
-  position: absolute;
-  inset: -40% -25%;
-  z-index: -1;
-  background: radial-gradient(closest-side, rgb(2 5 18 / 0.72), rgb(2 5 18 / 0.35) 60%, transparent);
-  pointer-events: none;
-}
-
-.se-diretta__giorno {
-  font-size: clamp(18px, 5.4vw, 28px);
-  font-weight: 800;
-  line-height: 1;
-  text-shadow: 0 2px 14px rgb(0 0 0 / 0.7);
-}
-
-.se-diretta__giorno::first-letter {
-  text-transform: uppercase;
-}
-
-/* L'oro del titolo: il colore e' fermo; la luce e' una finestra che scorre con dentro la stessa scritta, bianca. */
-.se-diretta__dorato {
-  position: relative;
-  display: inline-block;
-  font-size: clamp(36px, 11vw, 72px);
-  font-weight: 900;
-  line-height: 1.05;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  color: transparent;
-  background: linear-gradient(180deg, var(--oro-chiaro), var(--oro) 46%, #e0961a);
-  -webkit-background-clip: text;
-  background-clip: text;
-  filter: drop-shadow(0 4px 20px rgb(255 160 40 / 0.35));
-}
-
-.se-diretta__luccichio {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 34%;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 42% 58%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 42% 58%, transparent);
-  animation: se-finestra 1.6s ease-in-out 0.55s both;
+  background: radial-gradient(
+    circle at 50% 60%,
+    rgb(140 180 255 / 0.18),
+    rgb(40 60 160 / 0.35) 70%,
+    rgb(200 225 255 / 0.45) 100%
+  );
+  box-shadow:
+    inset 0 0 30px rgb(160 200 255 / 0.4),
+    0 0 40px rgb(120 160 255 / 0.25);
 }
 
-.se-diretta__luccichio > span {
+.se-studio__riflesso {
+  position: absolute;
+  left: 34px;
+  top: 22px;
+  width: 80px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at 50% 50%, rgb(255 255 255 / 0.7), rgb(255 255 255 / 0) 70%);
+  transform: rotate(-24deg);
+  pointer-events: none;
+}
+
+/* A urna ferma le palline stanno nel mucchio sul fondo; quando l'aria soffia salgono al loro giro. */
+.se-studio__mista {
+  position: absolute;
+  transform: translate(var(--fx), var(--fy));
+  transition: transform 0.9s cubic-bezier(0.3, 0.7, 0.4, 1.15) var(--ritardo);
+}
+
+.se-studio__sfera.is-mescola .se-studio__mista {
+  transform: none;
+  transition-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.se-studio__gira {
   display: block;
-  width: calc(100% / 0.34);
-  color: #fffaf0;
-  -webkit-text-fill-color: #fffaf0;
-  animation: se-controfinestra 1.6s ease-in-out 0.55s both;
 }
 
-@keyframes se-finestra {
+.se-studio__sfera.is-mescola .is-giro-0 {
+  animation: se-giro-0 1.4s ease-in-out infinite;
+}
+
+.se-studio__sfera.is-mescola .is-giro-1 {
+  animation: se-giro-1 1.7s ease-in-out infinite;
+}
+
+.se-studio__sfera.is-mescola .is-giro-2 {
+  animation: se-giro-2 2.1s ease-in-out infinite;
+}
+
+@keyframes se-giro-0 {
+  25% {
+    transform: translate(18px, -26px) rotate(90deg);
+  }
+  50% {
+    transform: translate(-8px, -42px) rotate(200deg);
+  }
+  75% {
+    transform: translate(-22px, -10px) rotate(290deg);
+  }
+}
+
+@keyframes se-giro-1 {
+  30% {
+    transform: translate(-24px, -30px) rotate(-120deg);
+  }
+  60% {
+    transform: translate(14px, -46px) rotate(-220deg);
+  }
+  85% {
+    transform: translate(20px, -8px) rotate(-320deg);
+  }
+}
+
+@keyframes se-giro-2 {
+  20% {
+    transform: translate(10px, -38px) rotate(80deg);
+  }
+  55% {
+    transform: translate(30px, -18px) rotate(160deg);
+  }
+  80% {
+    transform: translate(-16px, -30px) rotate(300deg);
+  }
+}
+
+.se-studio__piedistallo {
+  width: 110px;
+  height: 78px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #9a6a1c, #f2d27a 45%, #b8862a 70%, #7a4a10);
+  clip-path: polygon(28% 0, 72% 0, 100% 100%, 0 100%);
+}
+
+/* La bocca d'oro: nell'attesa di una pallina si accende e pulsa. */
+.se-studio__bocca {
+  width: 28px;
+  height: 28px;
+  box-sizing: border-box;
+  border: 4px solid #e8c15a;
+  border-radius: 50%;
+  background: rgb(10 6 40 / 0.6);
+  box-shadow: 0 2px 0 #7a4a10;
+}
+
+.se-studio__bocca.is-accesa {
+  border-color: #ffe27a;
+  box-shadow:
+    0 2px 0 #7a4a10,
+    0 0 0 4px rgb(255 216 77 / 0.35),
+    0 0 18px rgb(255 216 77 / 0.7);
+  animation: se-bocca 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes se-bocca {
+  to {
+    transform: scale(1.18);
+  }
+}
+
+/* Il colpo della pallina che esce dalla bocca: una stella di luce, un attimo. */
+.se-studio__lampo {
+  z-index: 4;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from 0deg,
+      transparent 0 8%,
+      rgb(255 236 170 / 0.9) 10% 12%,
+      transparent 14% 33%,
+      rgb(255 236 170 / 0.9) 35% 37%,
+      transparent 39% 58%,
+      rgb(255 236 170 / 0.9) 60% 62%,
+      transparent 64% 83%,
+      rgb(255 236 170 / 0.9) 85% 87%,
+      transparent 89%
+    ),
+    radial-gradient(circle, rgb(255 246 224 / 0.95) 0 18%, rgb(255 216 77 / 0) 52%);
+  -webkit-mask: radial-gradient(circle, #000 30%, transparent 70%);
+  mask: radial-gradient(circle, #000 30%, transparent 70%);
+  pointer-events: none;
+  animation: se-lampo 0.6s ease-out both;
+}
+
+@keyframes se-lampo {
   from {
-    transform: translateX(-100%);
+    opacity: 1;
+    transform: scale(0.3) rotate(0deg);
   }
   to {
-    transform: translateX(calc(100% / 0.34));
+    opacity: 0;
+    transform: scale(1.5) rotate(40deg);
   }
 }
 
-@keyframes se-controfinestra {
-  from {
-    transform: translateX(34%);
-  }
-  to {
-    transform: translateX(-100%);
-  }
+.se-studio__posto {
+  width: 52px;
+  color: rgb(255 246 224 / 0.72);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
 }
 
-.se-diretta__filo {
-  width: min(70vw, 320px);
-  height: 2px;
-  margin-top: 4px;
-  background: linear-gradient(90deg, transparent, var(--oro), transparent);
-  box-shadow: 0 0 12px var(--oro-ombra);
-  animation: se-filo 1.2s var(--ease-out) 0.35s both;
+/* La pallina che esce: il viaggio e' un'animazione di Diretta.tsx, qui c'e' solo dove parte. */
+.se-studio__uscente {
+  left: 0;
+  top: 0;
+  z-index: 3;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  filter: drop-shadow(0 4px 0 rgb(0 0 0 / 0.35));
 }
 
-@keyframes se-filo {
-  from {
-    transform: scaleX(0);
-  }
+/* ─────────────────────────────  Le scritte  ───────────────────────────── */
+
+/* Gli ultimi tre secondi, grandi e d'oro sopra l'urna. */
+.se-studio__tre {
+  left: 0;
+  right: 0;
+  top: 96px;
+  z-index: 5;
+  color: #ffd84d;
+  font-family: var(--font-rounded);
+  font-size: 120px;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+  text-shadow:
+    0 6px 0 #7a4a10,
+    0 0 30px rgb(255 216 77 / 0.6);
+  animation: se-conto 0.9s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
-@keyframes se-titolo {
+@keyframes se-conto {
   0% {
     opacity: 0;
-    transform: scale(1.25);
+    transform: scale(2.4);
   }
-  14%,
-  82% {
+  30% {
     opacity: 1;
-    transform: none;
+    transform: scale(1);
   }
   100% {
     opacity: 0;
-    transform: translateY(-18px);
+    transform: scale(0.8);
   }
 }
 
-/* ─────────────────────────────  I sottopancia  ───────────────────────────── */
-
-.se-diretta__terzo {
-  position: relative;
+/* Prima: quanto manca, su una targa sopra l'urna, perche' le palline sotto non lo coprano. */
+.se-studio__attesa {
+  left: 70px;
+  right: 130px;
+  top: 104px;
+  z-index: 5;
   display: flex;
-  grid-row: 2;
+  flex-direction: column;
   align-items: center;
-  align-self: end;
-  justify-self: center;
-  overflow: hidden;
-  border-radius: 18px;
-  background: linear-gradient(100deg, var(--pannello), var(--pannello-fondo));
-  box-shadow:
-    inset 0 0 0 1px var(--filo-oro),
-    0 18px 44px rgb(0 0 0 / 0.5);
-  animation: se-terzo-entra 0.55s var(--ease-out) both;
-}
-
-/* Il filo d'oro in cima, che si traccia; e la luce che passa sul pannello, una volta. */
-.se-diretta__terzo::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--oro) 30% 70%, transparent);
-  transform-origin: left;
-  animation: se-filo 0.8s var(--ease-out) 0.1s both;
-}
-
-.se-diretta__terzo::after {
-  content: '';
-  position: absolute;
-  top: -30%;
-  bottom: -30%;
-  left: 0;
-  width: 38%;
-  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.18), transparent);
-  pointer-events: none;
-  transform: translateX(-130%) skewX(-18deg);
-  animation: se-passa 1.3s ease-in-out 0.4s both;
-}
-
-@keyframes se-passa {
-  from {
-    transform: translateX(-130%) skewX(-18deg);
-  }
-  to {
-    transform: translateX(330%) skewX(-18deg);
-  }
-}
-
-@keyframes se-terzo-entra {
-  from {
-    opacity: 0;
-    transform: translateY(18px) scale(0.96);
-  }
-}
-
-@keyframes se-terzo-esce {
-  to {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-}
-
-/* L'attesa: le quattro tacche (quelle fatte d'oro, quella di adesso che pulsa) e chi si estrae. */
-.se-diretta__prossima {
-  gap: 12px;
-  padding: 11px 18px 11px 14px;
-  border-radius: 999px;
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.se-diretta__prossima b {
-  font-weight: 800;
-}
-
-.se-diretta__tacche {
-  display: flex;
-  gap: 4px;
-}
-
-.se-diretta__tacche > span {
-  width: 14px;
-  height: 5px;
-  border-radius: 3px;
-  background: rgb(255 255 255 / 0.2);
-}
-
-.se-diretta__tacche > .is-fatta {
-  background: var(--oro);
-}
-
-.se-diretta__tacche > .is-ora {
-  background: var(--oro);
-  box-shadow: 0 0 10px var(--oro-ombra);
-  animation: se-pulsa 0.8s ease-in-out infinite;
-}
-
-/* Una pallina arrivata: la pallina che salta dentro con l'onda, quale estratto, il numero grande e in lettere. */
-.se-diretta__annuncio {
-  gap: 14px;
-  width: min(100%, 440px);
-  padding: 12px 18px 12px 12px;
-  animation:
-    se-terzo-entra 0.55s var(--ease-out) both,
-    se-terzo-esce 0.35s ease-in 2.65s forwards;
-}
-
-.se-diretta__pallina {
-  position: relative;
-  flex: none;
-  --pallina-lato: 64px;
-  animation: se-pallina-entra 0.7s var(--ease-spring) 0.12s both;
-}
-
-.se-diretta__pallina::after {
-  content: '';
-  position: absolute;
-  inset: -6px;
-  border: 2px solid var(--oro);
-  border-radius: 50%;
-  opacity: 0;
-  animation: se-onda 0.9s ease-out 0.3s both;
-}
-
-@keyframes se-pallina-entra {
-  from {
-    opacity: 0;
-    transform: translateX(-24px) rotate(-200deg) scale(0.4);
-  }
-}
-
-@keyframes se-onda {
-  from {
-    opacity: 1;
-    transform: scale(0.7);
-  }
-  to {
-    opacity: 0;
-    transform: scale(1.9);
-  }
-}
-
-.se-diretta__dice {
-  display: grid;
-  flex: 1;
-  min-width: 0;
   gap: 2px;
+  padding: 10px 8px 12px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #2a1a6e, #170d48);
+  box-shadow:
+    inset 0 0 0 2px rgb(255 201 60 / 0.6),
+    0 5px 0 #120c2b;
+  transform: rotate(-2deg);
 }
 
-.se-diretta__ordinale {
-  color: var(--oro);
-  font-family: var(--font-text);
-  font-size: 12px;
-  font-weight: 800;
+.se-studio__fra {
+  color: #fff6e0;
+  font-size: 11px;
+  font-weight: 900;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-.se-diretta__numerone {
+.se-studio__orologio {
+  color: #ffd84d;
+  font-family: var(--font-rounded);
+  font-size: 60px;
+  font-weight: 400;
+  line-height: 1;
+  text-shadow:
+    0 4px 0 #7a4a10,
+    0 0 24px rgb(255 216 77 / 0.5);
+}
+
+/* Il titolo d'apertura: salta fuori sopra l'urna con la sigla, e se ne va quando l'aria comincia a soffiare. */
+.se-studio__apertura {
+  left: 16px;
+  right: 16px;
+  top: 112px;
+  z-index: 5;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  column-gap: 10px;
-  min-width: 0;
-  animation: se-sale 0.5s var(--ease-out) 0.2s both;
-}
-
-.se-diretta__numerone strong {
-  font-size: 46px;
-  font-weight: 900;
-  line-height: 0.95;
-  letter-spacing: -0.02em;
-}
-
-/* Il numero in lettere: accanto al numero, o sotto se non ci sta, ma mai tagliato. */
-.se-diretta__lettere {
-  color: var(--testo-piano);
-  font-size: 16px;
-  font-weight: 700;
-  font-style: italic;
-  line-height: 1.2;
-}
-
-/* Un numero proprio: il pannello diventa d'oro, con l'alone, e il timbro "È tuo!" ci cade sopra. */
-.se-diretta__annuncio.is-tuo {
-  color: var(--inchiostro-oro);
-  background: linear-gradient(100deg, var(--oro-chiaro), var(--oro) 48%, var(--oro-pieno));
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.6),
-    0 0 0 2px rgb(255 209 102 / 0.5),
-    0 0 44px var(--oro-ombra),
-    0 18px 44px rgb(0 0 0 / 0.45);
-}
-
-.se-diretta__annuncio.is-tuo::before {
-  background: linear-gradient(90deg, transparent, #fff 30% 70%, transparent);
-}
-
-.se-diretta__annuncio.is-tuo::after {
-  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.65), transparent);
-}
-
-.se-diretta__annuncio.is-tuo .se-diretta__ordinale {
-  color: #7a4f00;
-}
-
-.se-diretta__annuncio.is-tuo .se-diretta__lettere {
-  color: rgb(42 26 0 / 0.68);
-}
-
-.se-diretta__annuncio.is-tuo .se-diretta__pallina::after {
-  border-color: #fff;
-}
-
-.se-diretta__tuo {
-  flex: none;
-  padding: 7px 12px;
-  border-radius: 10px;
-  background: var(--inchiostro-oro);
-  color: var(--oro);
-  font-size: 16px;
-  font-weight: 900;
-  white-space: nowrap;
-  box-shadow: 0 6px 16px rgb(60 30 0 / 0.35);
-  animation: se-timbro 0.5s var(--ease-spring) 0.45s both;
-  transform: rotate(-6deg);
-}
-
-@keyframes se-timbro {
-  from {
-    opacity: 0;
-    transform: rotate(-16deg) scale(2.2);
-  }
-}
-
-@keyframes se-sale {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-}
-
-/* ─────────────────────────────  Il riepilogo  ───────────────────────────── */
-
-.se-diretta__riepilogo {
-  position: relative;
-  display: grid;
-  grid-row: 2;
-  align-self: end;
-  justify-self: center;
-  justify-items: center;
-  gap: 10px;
-  width: min(100%, 420px);
-  overflow: hidden;
-  padding: 18px 18px 16px;
-  border-radius: 24px;
-  background: linear-gradient(180deg, rgb(14 28 72 / 0.95), rgb(5 10 30 / 0.95));
-  box-shadow:
-    inset 0 0 0 1px rgb(255 209 102 / 0.38),
-    0 24px 60px rgb(0 0 0 / 0.55);
-  text-align: center;
-  animation: se-sale 0.7s var(--ease-out) both;
-  --pallina-lato: clamp(46px, 13vw, 60px);
-}
-
-.se-diretta__riepilogo::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--oro) 30% 70%, transparent);
-  animation: se-filo 0.9s var(--ease-out) 0.15s both;
-}
-
-.se-diretta__riepilogo::after {
-  content: '';
-  position: absolute;
-  top: -20%;
-  bottom: -20%;
-  left: 0;
-  width: 34%;
-  background: linear-gradient(100deg, transparent, rgb(255 255 255 / 0.12), transparent);
-  pointer-events: none;
-  transform: translateX(-130%) skewX(-18deg);
-  animation: se-passa 1.6s ease-in-out 0.9s both;
-}
-
-.se-diretta__combinazione {
-  display: flex;
-  gap: 10px;
-}
-
-.se-diretta__vincente {
-  position: relative;
-  animation: se-vincente 0.6s var(--ease-spring) calc(0.2s + var(--n) * 0.13s) both;
-}
-
-.se-diretta__vincente::after {
-  content: '';
-  position: absolute;
-  inset: -5px;
-  border: 2px solid var(--oro);
-  border-radius: 50%;
-  opacity: 0;
-  animation: se-onda 0.8s ease-out calc(0.35s + var(--n) * 0.13s) both;
-}
-
-@keyframes se-vincente {
-  from {
-    opacity: 0;
-    transform: translateY(16px) scale(0.4);
-  }
-}
-
-.se-diretta__esito {
-  margin: 2px 0 0;
-  font-size: 22px;
-  font-weight: 900;
-  animation: se-sale 0.5s var(--ease-out) 0.8s both;
-}
-
-.se-diretta__esito.is-vinto {
-  color: var(--oro);
-  text-shadow: 0 0 22px var(--oro-ombra);
-}
-
-.se-diretta__premio {
-  margin: 0;
-  color: var(--oro);
-  font-size: 17px;
-  font-weight: 800;
-  animation: se-sale 0.5s var(--ease-out) 0.95s both;
-}
-
-.se-diretta__fine {
-  min-height: 44px;
-  padding: 0 24px;
-  border: 0;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #ffe08a, var(--oro-pieno));
-  color: #3a2600;
-  font: inherit;
-  font-weight: 900;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.6),
-    0 8px 20px rgb(255 170 40 / 0.25);
-  cursor: pointer;
-  animation: se-sale 0.5s var(--ease-out) 1.1s both;
-}
-
-/* ─────────────────────────────  Il piede: il tabellone e le schede  ───────────────────────────── */
-
-.se-diretta__piede {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  gap: 10px;
-  padding: 8px max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 14px)
-    max(16px, env(safe-area-inset-left));
-}
-
-.se-diretta__estratti {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  --pallina-lato: 42px;
-}
-
-.se-diretta__posto {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 38%, rgb(255 255 255 / 0.07), rgb(0 0 0 / 0.3));
-  box-shadow:
-    inset 0 0 0 1.5px var(--filo-oro),
-    inset 0 4px 10px rgb(0 0 0 / 0.55);
-}
-
-/* Il posto che aspetta la sua pallina pulsa; quello che la riceve fa l'onda. */
-.se-diretta__posto::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border: 2px solid var(--oro);
-  border-radius: 50%;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.se-diretta__posto.is-attesa::after {
-  box-shadow: 0 0 16px var(--oro-ombra);
-  animation: se-attesa 1s ease-in-out infinite;
-}
-
-.se-diretta__posto.is-acceso::after {
-  animation: se-onda 0.8s ease-out both;
-}
-
-@keyframes se-attesa {
-  50% {
-    opacity: 1;
-  }
-}
-
-.se-diretta__posto .se-pallina {
-  animation: se-arriva 0.55s var(--ease-spring) both;
-}
-
-@keyframes se-arriva {
-  from {
-    opacity: 0;
-    transform: scale(0.3) rotate(-120deg);
-  }
-}
-
-.se-diretta__vuoto {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 0.16);
-}
-
-.se-diretta__ordine {
-  position: absolute;
-  right: -6px;
-  bottom: -3px;
-  padding: 1px 5px;
-  border-radius: 999px;
-  background: var(--notte);
-  color: var(--oro);
-  font-family: var(--font-text);
-  font-size: 10px;
-  font-weight: 800;
-  box-shadow: inset 0 0 0 1px var(--filo-oro);
-}
-
-.se-diretta__mie {
-  display: grid;
-  gap: 6px;
-  width: min(100%, 380px);
-  margin: 0 auto;
-  padding: 0;
-  list-style: none;
-}
-
-.se-diretta__scheda {
-  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  border-radius: 14px;
-  background: rgb(8 16 44 / 0.78);
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
-}
-
-.se-diretta__scheda.is-vince {
-  background: linear-gradient(90deg, rgb(255 209 102 / 0.26), rgb(255 209 102 / 0.08));
+  padding: 14px 10px 16px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #2a1a6e, #170d48);
   box-shadow:
-    inset 0 0 0 1px rgb(255 209 102 / 0.65),
-    0 0 22px rgb(255 209 102 / 0.2);
+    inset 0 0 0 2px rgb(255 201 60 / 0.6),
+    0 5px 0 #120c2b;
+  text-align: center;
+  animation: se-apertura 4.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-.se-diretta__numero {
-  position: relative;
+@keyframes se-apertura {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-6deg);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1.06) rotate(-2deg);
+  }
+  20%,
+  86% {
+    opacity: 1;
+    transform: rotate(-2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.85) rotate(-2deg);
+  }
+}
+
+.se-studio__giorno {
+  color: #fff6e0;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.se-studio__titolo {
+  color: #ffd84d;
+  font-family: var(--font-rounded);
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1;
+  text-shadow:
+    0 4px 0 #7a4a10,
+    0 0 20px rgb(255 216 77 / 0.5);
+}
+
+/* Il sottopancia: l'attesa, la pallina appena arrivata, il riepilogo. Entra da sinistra, come in televisione. */
+.se-studio__terzo {
+  left: 16px;
+  right: 16px;
+  top: 486px;
+  z-index: 4;
+  box-sizing: border-box;
+  height: 86px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 18px;
+  background: linear-gradient(90deg, rgb(18 12 43 / 0.94), rgb(42 26 110 / 0.92));
+  color: #fff6e0;
+  box-shadow:
+    inset 5px 0 0 #ffd84d,
+    0 6px 0 rgb(0 0 0 / 0.35);
+  animation: se-terzo 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes se-terzo {
+  from {
+    transform: translateX(-110%);
+  }
+}
+
+.se-studio__terzo.is-oro {
+  background: linear-gradient(90deg, #ffe27a, #ffb020);
+  color: #120c2b;
+  box-shadow:
+    inset 5px 0 0 #fff6e0,
+    0 6px 0 rgb(0 0 0 / 0.35);
+}
+
+.se-studio__testi {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.se-studio__ord {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.se-studio__num {
+  overflow: hidden;
+  font-family: var(--font-rounded);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.se-studio__mio {
+  font-size: 12.5px;
+  font-weight: 900;
+}
+
+/* L'attesa: la pallina che ancora non si sa, che trema, e le tacche delle quattro. */
+.se-studio__forse {
+  flex: none;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 30px;
-  border-radius: 9px;
-  background: rgb(255 255 255 / 0.09);
-  color: rgb(255 255 255 / 0.88);
-  font-size: 16px;
-  font-weight: 800;
+  width: 56px;
+  height: 56px;
+  box-sizing: border-box;
+  border: 2.5px dashed rgb(255 246 224 / 0.55);
+  border-radius: 50%;
+  background: rgb(255 246 224 / 0.08);
+  color: #ffd84d;
+  font-family: var(--font-rounded);
+  font-size: 26px;
+  animation: se-forse 0.4s ease-in-out infinite alternate;
 }
 
-.se-diretta__numero.is-preso {
-  background: linear-gradient(180deg, #ffe08a, var(--oro-pieno));
-  color: #3a2600;
-  box-shadow: 0 0 12px rgb(255 209 102 / 0.45);
+@keyframes se-forse {
+  from {
+    transform: rotate(-8deg);
+  }
+  to {
+    transform: rotate(8deg) scale(1.05);
+  }
 }
 
-/* Il numero appena preso salta, con l'onda d'oro attorno. */
-.se-diretta__numero.is-appena {
-  animation: se-preso 0.7s var(--ease-spring) both;
+.se-studio__tacche {
+  flex: none;
+  display: flex;
+  gap: 5px;
 }
 
-.se-diretta__numero.is-appena::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border: 2px solid var(--oro);
-  border-radius: 12px;
-  opacity: 0;
-  animation: se-onda 0.9s ease-out 0.1s both;
+.se-studio__tacche > span {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #120c2b;
+  border-radius: 50%;
+  background: rgb(255 246 224 / 0.2);
+}
+
+.se-studio__tacche > .is-fatta {
+  background: #ffd84d;
+}
+
+.se-studio__tacche > .is-ora {
+  background: #fff6e0;
+  animation: se-studio-luci 0.6s steps(1) infinite;
+}
+
+.se-studio__terzo.is-fine {
+  gap: 8px;
+}
+
+.se-studio__combinazione {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(2, 30px);
+  gap: 4px;
+}
+
+/* ─────────────────────────────  Il piede: le schede e il bottone  ───────────────────────────── */
+
+.se-studio__piede {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px 16px;
+}
+
+.se-studio__schede {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.se-studio__foglio {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  /* Alta quanto le sue righe: cinque numeri su un telefono stretto vanno su tre. */
+  min-height: 56px;
+  padding: 5px 2px 3px;
+  box-sizing: border-box;
+  border: 2px solid #120c2b;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fffbf2, #fff1d9);
+  color: #1b1530;
+  box-shadow: 0 3px 0 #120c2b;
+  transform: rotate(var(--giro, 0deg));
+}
+
+.se-studio__foglio.is-vince {
+  box-shadow:
+    0 0 0 3px #ffd84d,
+    0 3px 0 #120c2b;
+}
+
+.se-studio__foglio.is-vuoto {
+  border: 2px dashed rgb(255 246 224 / 0.25);
+  background: rgb(255 246 224 / 0.05);
+  box-shadow: none;
+  transform: none;
+}
+
+/* Quanti numeri ha preso la scheda: in inchiostro, perché uno zero in rosso sembrerebbe un conto in perdita. */
+.se-studio__presi {
+  color: #4e4479;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  line-height: 1;
+}
+
+.se-studio__mano {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 3px;
+  color: #1f3faf;
+  font-family: var(--font-mano);
+  font-size: clamp(9.5px, 2.9vw, 12.5px);
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Un numero uscito si cerchia d'oro, con un colpo. */
+.se-studio__mano > .is-preso {
+  padding: 0 2px;
+  border-radius: 999px;
+  background: #ffd84d;
+  box-shadow: 0 0 0 1.5px #120c2b;
+  color: #120c2b;
+  animation: se-preso 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
 }
 
 @keyframes se-preso {
-  0% {
-    transform: scale(0.6);
-  }
-  45% {
-    transform: scale(1.3);
-  }
-  100% {
-    transform: scale(1.06);
+  from {
+    transform: scale(1.8);
   }
 }
 
-.se-diretta__conto {
-  margin-left: auto;
-  color: rgb(255 255 255 / 0.7);
-  font-size: 15px;
-  font-weight: 800;
+.se-studio__salta {
+  height: 44px;
+  padding: 0 22px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 999px;
+  background: #fffbf2;
+  color: #120c2b;
+  font-family: var(--font-rounded);
+  font-size: 16px;
+  font-weight: 400;
+  box-shadow:
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.5);
+  cursor: pointer;
 }
 
-.se-diretta__conto b {
-  color: var(--oro);
-  font-weight: 900;
+.se-studio__salta:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #120c2b;
 }
 
-/* ─────────────────────────────  Le misure  ───────────────────────────── */
-
-/* Un telefono stretto: il marchio e il bollino si stringono, e vanno via le tacche dell'attesa, che il tabellone dice
-   gia'. */
-@media (max-width: 359px) {
-  .se-diretta__testa {
-    gap: 10px;
-  }
-
-  .se-diretta__logo {
-    font-size: 17px;
-  }
-
-  .se-diretta__bollino {
-    gap: 6px;
-    padding: 5px 8px;
-    font-size: 11px;
-    letter-spacing: 0.05em;
-  }
-
-  .se-diretta__tacche {
+/* Un telefono basso: le schede lasciano il posto allo studio, che lo dice comunque nel sottopancia. */
+@media (max-height: 640px) {
+  .se-studio__schede {
     display: none;
-  }
-
-  .se-diretta__prossima {
-    font-size: 14px;
-  }
-}
-
-/* Su uno schermo largo i sottopancia stanno in basso a sinistra, come in televisione. */
-@media (min-width: 760px) {
-  .se-diretta__terzo {
-    justify-self: start;
-  }
-
-  .se-diretta__logo {
-    font-size: 22px;
-  }
-}
-
-/* Un telefono di traverso: l'altezza e' poca, quindi il tabellone e le schede vanno su una riga. */
-@media (orientation: landscape) and (max-height: 520px) {
-  .se-diretta__testa {
-    padding-top: calc(env(safe-area-inset-top) + 6px);
-    padding-bottom: 4px;
-  }
-
-  .se-diretta__piede {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: end;
-    gap: 16px;
-    padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
-  }
-
-  .se-diretta__estratti {
-    gap: 8px;
-    --pallina-lato: 34px;
-  }
-
-  .se-diretta__posto {
-    width: 42px;
-    height: 42px;
-  }
-
-  .se-diretta__mie {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
-    width: 100%;
-  }
-
-  .se-diretta__numero {
-    width: 30px;
-    height: 26px;
-    font-size: 14px;
-  }
-
-  .se-diretta__annuncio {
-    padding: 8px 14px 8px 8px;
-  }
-
-  .se-diretta__pallina {
-    --pallina-lato: 48px;
-  }
-
-  .se-diretta__numerone strong {
-    font-size: 36px;
-  }
-
-  /* Il riepilogo di traverso: la combinazione a sinistra, com'e' andata e il bottone a destra. */
-  .se-diretta__riepilogo {
-    grid-template-columns: auto auto;
-    align-items: center;
-    justify-items: start;
-    gap: 4px 20px;
-    width: auto;
-    max-width: 100%;
-    padding: 12px 18px;
-    text-align: left;
-    --pallina-lato: 40px;
-  }
-
-  .se-diretta__riepilogo > .se-diretta__occhiello {
-    grid-column: 1 / -1;
-    justify-self: center;
-  }
-
-  .se-diretta__combinazione {
-    grid-row: 2 / span 3;
-  }
-
-  .se-diretta__esito,
-  .se-diretta__premio,
-  .se-diretta__fine {
-    grid-column: 2;
-  }
-
-  .se-diretta__esito {
-    font-size: 19px;
   }
 }
 
 /*
- * Senza movimento: niente lampi ne' luci che passano, e quel che entra c'e'
- * e basta. I titoli che se ne vanno da soli restano fermi finché ci sono.
+ * Senza movimento lo studio sta fermo: le palline nel mucchio, le luci accese,
+ * le palline estratte che compaiono al loro posto quando arrivano, le scritte
+ * che compaiono senza entrare.
  */
 @media (prefers-reduced-motion: reduce) {
-  .se-diretta__lampo,
-  .se-diretta__luccichio,
-  .se-diretta__terzo::after,
-  .se-diretta__riepilogo::after {
-    display: none;
-  }
-
-  .se-diretta__fasci::before,
-  .se-diretta__fasci::after,
-  .se-diretta__titolo,
-  .se-diretta__tre,
-  .se-diretta__annuncio,
-  .se-diretta__bollino::before,
-  .se-diretta__tacche > .is-ora,
-  .se-diretta__posto.is-attesa::after {
+  .se-studio,
+  .se-studio__fascio,
+  .se-studio__parete,
+  .se-studio__punto,
+  .se-studio__bocca.is-accesa,
+  .se-studio__tre,
+  .se-studio__apertura,
+  .se-studio__terzo,
+  .se-studio__forse,
+  .se-studio__tacche > .is-ora,
+  .se-studio__mano > .is-preso {
     animation: none;
   }
 
-  .se-diretta__posto.is-attesa::after {
-    opacity: 1;
+  .se-studio__mista {
+    transition: none;
   }
 }

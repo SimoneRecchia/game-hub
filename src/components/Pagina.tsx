@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useEntrata, useNavigazione, type Direzione } from '@/app/navigazione'
+import { CATEGORIE_LIBERE, COLORE_FAMIGLIA, GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
+import { Copertina } from './Copertina'
 import { IconChevronLeft } from './Icons'
+import type { SoggettoIcona } from './IconaGioco'
 import './Pagina.css'
 import './BottoneTondo.css'
 
@@ -19,8 +22,14 @@ interface Props {
   sopra?: ReactNode
   /** Sopra al titolo grande: la copertina nella pagina di un gioco. */
   eroe?: ReactNode
-  /** Sotto al titolo grande. */
+  /** Sotto al titolo grande; nelle pagine `intera`, sotto il titolo della barra. */
   sotto?: ReactNode
+  /**
+   * La sala di un gioco: in cima il suo vetrino grande, sopra il titolo la
+   * famiglia nella sua etichetta e sotto il motto, se `eroe`, `sopra` e
+   * `sotto` non dicono altro.
+   */
+  gioco?: SoggettoIcona
   indietro?: Indietro
   /** A destra nella barra: i bottoni tondi della schermata. */
   azioni?: ReactNode
@@ -57,6 +66,7 @@ export function Pagina({
   sopra,
   eroe,
   sotto,
+  gioco,
   indietro,
   azioni,
   sinistra,
@@ -64,6 +74,7 @@ export function Pagina({
   larga = false,
   children,
 }: Props) {
+  const sala = gioco ? salaDi(gioco) : null
   const { indietro: torna } = useNavigazione()
   const entrata = useEntrata()
   const barra = useRef<HTMLElement>(null)
@@ -126,6 +137,8 @@ export function Pagina({
           </div>
           <h1 className="pagina__titolo-barra" aria-hidden={!intera && !scorsa}>
             {titolo}
+            {/* Nelle partite, sotto il titolo, contro chi e a che livello. */}
+            {intera && sotto && <span className="pagina__sottotitolo">{sotto}</span>}
           </h1>
           <div className="pagina__lato pagina__lato--destra">{azioni}</div>
         </div>
@@ -135,10 +148,17 @@ export function Pagina({
       <main className="pagina__corpo">
         {!intera && (
           <div className="pagina__testa">
-            {eroe}
-            {sopra && <p className="pagina__sopra">{sopra}</p>}
+            {eroe ?? (gioco && <Copertina gioco={gioco} formato="eroe" />)}
+            {(sopra ?? sala?.famiglia) && (
+              <p
+                className="pagina__sopra"
+                style={sala?.famiglia && !sopra ? ({ '--etichetta': COLORE_FAMIGLIA[sala.famiglia] } as CSSProperties) : undefined}
+              >
+                {sopra ?? sala?.famiglia}
+              </p>
+            )}
             <h1 className="pagina__titolo">{titolo}</h1>
-            {sotto && <p className="pagina__sotto">{sotto}</p>}
+            {(sotto ?? sala?.motto) && <p className="pagina__sotto">{sotto ?? sala?.motto}</p>}
             <div ref={sentinella} className="pagina__sentinella" aria-hidden="true" />
           </div>
         )}
@@ -166,4 +186,11 @@ export function BottoneBarra({
       {badge !== undefined && badge > 0 && <span className="bottone-barra__badge">{badge}</span>}
     </button>
   )
+}
+
+/** La famiglia e il motto di un gioco, per la testa della sua sala. */
+function salaDi(gioco: SoggettoIcona): { famiglia: string | null; motto: string | null } {
+  const famiglia = CATEGORIE_LIBERE.find((c) => (c.giochi as readonly string[]).includes(gioco))?.nome ?? null
+  const motto = [...GIOCHI, ...GIOCHI_DA_TAVOLO].find((g) => g.id === gioco)?.motto ?? null
+  return { famiglia, motto }
 }

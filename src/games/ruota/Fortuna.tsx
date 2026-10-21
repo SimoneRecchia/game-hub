@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react'
 import { scriviMoltiplicatore } from '@shared/ruota'
 import { Quadrifoglio } from './disegni'
-import { larghezzaStimata } from './geometria'
 import type { PassoDelConto } from './magia'
 import './Fortuna.css'
 
@@ -79,16 +78,8 @@ export function PremioCheSale({ passi }: { passi: readonly PassoDelConto[] }) {
 }
 
 /**
- * Quanto e' lungo il nastro, in em: la scritta stimata per eccesso, con la sua
- * spaziatura, piu' il quadrifoglio e lo stacco. Al neon il foglio di stile lo
- * usa per stringere il carattere quanto serve a starci: "Cash Hunt fortunato"
- * alla misura di "Ruota fortunata" usciva dai due lati del palco.
- */
-const emDelNastro = (testo: string) => larghezzaStimata(testo, 1, 0.04) + 1.5
-
-/**
- * Il nastro della ruota fortunata, finché la fortuna dura: sui palchi alti
- * prende il posto dell'insegna di Crazy Time, sugli altri sta in un angolo.
+ * Il nastro della ruota fortunata, finché la fortuna dura: una targhetta verde
+ * in alto al centro, come nel mockup; sui palchi bassi sta in un angolo.
  * `tabellone` e' il Pachinko o il Cash Hunt, che sui palchi bassi arrivano
  * fino all'angolo.
  */
@@ -96,7 +87,6 @@ export function NastroFortuna({ testo, tabellone = false }: { testo: string; tab
   return (
     <p
       className={`ct-nastro${tabellone ? ' is-tabellone' : ''}`}
-      style={{ '--nastro-em': emDelNastro(testo) } as CSSProperties}
       aria-live="polite"
     >
       <svg className="ct-nastro__icona" viewBox="-9 -9 18 18" aria-hidden="true">

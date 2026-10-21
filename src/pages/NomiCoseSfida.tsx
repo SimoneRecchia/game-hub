@@ -163,7 +163,7 @@ function Sfida({ id }: { id: string }) {
           }
           azione={
             g.scrivibile ? (
-              <Button size="lg" fullWidth onClick={dicoStop} disabled={g.occupato}>
+              <Button size="lg" fullWidth className="nomi-stop" onClick={dicoStop} disabled={g.occupato}>
                 <IconTimbro size={20} /> Stop!
               </Button>
             ) : (

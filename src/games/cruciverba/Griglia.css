@@ -1,104 +1,157 @@
 /*
- * La griglia: caselle bianche su un fondo nero che fa da caselle nere.
+ * La griglia, come nell'album: un vassoio col filo d'inchiostro, e dentro le
+ * caselle, ognuna una tessera con gli angoli appena tondi. Le nere sono
+ * l'inchiostro, rigato a tratteggio; fra le caselle si vede il vassoio, che fa
+ * da filo leggero.
  *
- * Nessun `gap`: le linee fra le caselle sono un filo interno a ognuna, così le
- * nere si toccano senza fughe bianche in mezzo — e' il disegno del cruciverba
- * stampato, dove le nere sono blocchi pieni e non tessere separate.
+ * In scuro le bianche non sono bianche — una griglia chiara in una schermata
+ * scura abbaglia — ma restano piu' chiare del vassoio, e le nere piu' scure di
+ * tutto. La parola e la casella che si scrivono sono indaco: il verde e il
+ * giallo qui direbbero "giusta" e "quasi", come nel Wordle.
  */
 .cgriglia {
   --colonne: 10;
   --righe: 10;
+  --cg-vassoio: #a7a0cc;
+  --cg-vassoio: light-dark(#a7a0cc, #141033);
+  --cg-bianca: #fffbf2;
+  --cg-bianca: light-dark(#fffbf2, #3a3566);
+  --cg-nera: #2a1f5c;
+  --cg-nera: light-dark(#2a1f5c, #0b0820);
+  --cg-parola: #dcd8ff;
+  --cg-parola: light-dark(#dcd8ff, #4e4699);
+  --cg-numero: #4e4479;
+  --cg-numero: light-dark(#4e4479, #e4dcff);
+  --cg-svelata: #c2410c;
+  --cg-svelata: light-dark(#c2410c, #ffb070);
+  --cg-errata: #ffd3d3;
+  --cg-errata: light-dark(#ffd3d3, #6e2b3e);
+  --cg-errata-ink: #c81e2b;
+  --cg-errata-ink: light-dark(#c81e2b, #ffc2c4);
+  --cg-proposta: #4f3fe0;
+  --cg-proposta: light-dark(#4f3fe0, #c4bbff);
   display: grid;
   grid-template-columns: repeat(var(--colonne), minmax(0, 1fr));
   /* Anche le righe in parti uguali: lasciate ad `auto`, una riga con le lettere
      scritte cresceva di qualche punto rispetto a una vuota, e le caselle non
      restavano quadrate. */
   grid-template-rows: repeat(var(--righe), minmax(0, 1fr));
+  gap: 2px;
   aspect-ratio: var(--colonne) / var(--righe);
   width: 100%;
-  border-radius: var(--r-sm);
+  padding: 3px;
   overflow: hidden;
-  background: var(--cruci-nera);
-  box-shadow:
-    0 0 0 1.5px var(--cruci-bordo),
-    var(--shadow-md);
+  border: var(--filo) solid var(--ink);
+  border-radius: 16px;
+  background: var(--cg-vassoio);
+  box-shadow: 0 5px 0 color-mix(in srgb, var(--ink) 45%, transparent);
   /* Le misure interne seguono la larghezza della griglia, non del viewport. */
   container-type: inline-size;
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  animation: cg-entra 450ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+@keyframes cg-entra {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
 }
 
 .ccella {
   position: relative;
   display: grid;
   place-items: center;
+  min-width: 0;
+  min-height: 0;
   padding: 0;
   border: none;
-  border-radius: 0;
-  background: var(--cruci-bianca);
-  box-shadow: inset 0 0 0 0.5px var(--cruci-linea);
+  border-radius: 3px;
+  background-color: var(--cg-bianca);
   color: var(--label);
   font-family: var(--font-rounded);
-  font-weight: 600;
-  /* Cinque ottavi della casella: la lettera piu' larga, la M, ci sta. */
-  font-size: calc(100cqw / var(--colonne) * 0.58);
+  font-weight: 400;
+  /* Poco piu' di meta' della casella: la lettera piu' larga, la M, ci sta. */
+  font-size: calc(100cqw / var(--colonne) * 0.52);
   line-height: 1;
   cursor: pointer;
-  transition: background-color var(--dur-fast) var(--ease-out);
+  transition: background-color 120ms var(--ease-out);
   -webkit-tap-highlight-color: transparent;
 }
 
 .ccella.is-nera {
-  background: var(--cruci-nera);
-  box-shadow: none;
+  background-color: var(--cg-nera);
+  background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0 2px, transparent 2px 6px);
   cursor: default;
 }
 
 .ccella.is-parola {
-  background: var(--cruci-parola);
+  background-color: var(--cg-parola);
 }
 
 .ccella.is-attiva {
-  background: var(--cruci-attiva);
-  color: var(--cruci-attiva-ink);
+  z-index: 1;
+  background-color: #6356f0;
+  color: #fff;
+  box-shadow: 0 0 0 2px var(--ink);
 }
 
 .ccella:focus-visible {
-  outline: 2px solid var(--brand);
-  outline-offset: -2px;
-  z-index: 1;
+  z-index: 2;
+  outline: 3px solid #8a7bff;
+  outline-offset: -3px;
 }
 
 .ccella__numero {
   position: absolute;
-  top: 6%;
+  top: 5%;
   left: 7%;
   font-family: var(--font-text);
-  font-size: calc(100cqw / var(--colonne) * 0.25);
-  font-weight: 600;
+  font-size: calc(100cqw / var(--colonne) * 0.24);
+  font-weight: 900;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: var(--label-secondary);
+  color: var(--cg-numero);
   pointer-events: none;
 }
 
 .ccella.is-attiva .ccella__numero {
   color: inherit;
-  opacity: 0.75;
-}
-
-.ccella__lettera {
-  /* Un filo sotto il centro, per lasciare aria al numero in alto. */
-  transform: translateY(6%);
 }
 
 /*
- * Lettera sbagliata dopo un controllo: rossa e barrata. Il tratto dice
+ * Un filo sotto il centro, per lasciare aria al numero in alto: `translate`, che
+ * l'animazione non tocca. La lettera nasce a ogni tasto (la sua chiave e' la
+ * lettera), e nascendo salta dentro la casella.
+ */
+.ccella__lettera {
+  translate: 0 9%;
+  animation: cg-scrivi 200ms cubic-bezier(0.2, 0.9, 0.3, 1.5) both;
+}
+
+@keyframes cg-scrivi {
+  0% {
+    transform: scale(0.3) rotate(-12deg);
+  }
+  60% {
+    transform: scale(1.18) rotate(3deg);
+  }
+}
+
+/*
+ * Lettera sbagliata dopo un controllo: rossa su rosa, e barrata. Il tratto dice
  * "sbagliata" anche a chi il rosso non lo distingue.
  */
 .ccella.is-errata {
-  color: var(--red);
+  background-color: var(--cg-errata);
+  color: var(--cg-errata-ink);
+}
+
+.ccella.is-attiva.is-errata {
+  background-color: #b4233a;
+  color: #fff;
 }
 
 .ccella.is-errata::after {
@@ -108,40 +161,88 @@
   background: linear-gradient(
     to top right,
     transparent calc(50% - 1px),
-    var(--red) calc(50% - 1px),
-    var(--red) calc(50% + 1px),
+    currentColor calc(50% - 1px),
+    currentColor calc(50% + 1px),
     transparent calc(50% + 1px)
   );
   pointer-events: none;
 }
 
-/* Lettera svelata: l'angolo colorato, come nei cruciverba dei giornali online. */
+/* Lettera svelata: arancio, con l'angolo in basso, come nei cruciverba dei giornali online. */
+.ccella.is-svelata {
+  color: var(--cg-svelata);
+}
+
+.ccella.is-attiva.is-svelata {
+  color: #fff;
+}
+
 .ccella.is-svelata::before {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  width: 26%;
-  height: 26%;
-  background: var(--brand);
-  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  right: 2px;
+  bottom: 2px;
+  width: 22%;
+  height: 22%;
+  background: currentColor;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+  opacity: 0.75;
   pointer-events: none;
 }
 
 /*
  * La lettera che propone chi guarda in compagnia, e che nella griglia
- * dell'host non c'e' ancora: nel colore della scelta, e inclinata come una
- * parola scritta a matita.
+ * dell'host non c'e' ancora: indaco, e inclinata come una parola scritta a
+ * matita.
  */
 .ccella.is-proposta:not(.is-attiva) {
-  color: var(--brand);
+  color: var(--cg-proposta);
 }
 
 .ccella.is-proposta .ccella__lettera {
   font-style: italic;
 }
 
+/* Lo schema completato: un'onda in diagonale, dall'angolo in alto, con un lampo azzurro. */
+.cgriglia.is-finita .ccella {
+  animation: cg-onda 800ms cubic-bezier(0.3, 0.8, 0.3, 1.2) both;
+  animation-delay: calc(var(--onda, 0) * 35ms);
+}
+
+.cgriglia.is-finita .ccella:not(.is-nera)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--cruciverba-tinta);
+  opacity: 0;
+  animation: cg-lampo 1s ease-out both;
+  animation-delay: inherit;
+}
+
+@keyframes cg-onda {
+  35% {
+    transform: scale(0.78);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes cg-lampo {
+  30% {
+    opacity: 0.75;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .cgriglia,
+  .ccella__lettera,
+  .cgriglia.is-finita .ccella,
+  .cgriglia.is-finita .ccella::after {
+    animation: none;
+  }
+
   .ccella {
     transition: none;
   }

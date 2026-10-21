@@ -34,7 +34,7 @@ export default function CatenaLibera() {
 
   if (!v) {
     return (
-      <Pagina titolo="Catena" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+      <Pagina titolo="Catena" gioco="catena" indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
         <SceltaFinale
           gioco="catena"
           titoloPasso="Tempo per parola"
@@ -49,26 +49,23 @@ export default function CatenaLibera() {
   }
 
   return (
-    <Pagina key="partita" titolo="Catena" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina key="partita" titolo="Catena" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
       <PartitaCatena
         key={g.numero}
         vista={v}
         comandi={g.comandi}
         fine={
           <>
-            <div className="cat-totale">
-              <p className="cat-totale__valore u-tabnum">{v.punti} punti</p>
-              <p className="cat-totale__dettaglio u-tabnum">
-                {g.conti.indovinate} indovinate su {g.conti.partite} · non conta per la classifica
-              </p>
-            </div>
-            <div className="cat-link">
-              <button type="button" className="cat-link__voce" onClick={() => ultime && comincia(ultime)}>
-                <IconRefresh size={18} />
-                Un’altra
+            <p className="cat-fine__nota u-tabnum">
+              {g.conti.indovinate} indovinate su {g.conti.partite} · non conta per la classifica
+            </p>
+            <div className="cat-fine__bottoni">
+              <button type="button" className="cat-fine__bottone" onClick={g.ricomincia}>
+                Opzioni
               </button>
-              <button type="button" className="cat-link__voce" onClick={g.ricomincia}>
-                Cambia le opzioni
+              <button type="button" className="cat-fine__bottone is-menta" onClick={() => ultime && comincia(ultime)}>
+                <IconRefresh size={18} />
+                Gioca ancora
               </button>
             </div>
           </>

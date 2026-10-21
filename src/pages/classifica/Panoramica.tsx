@@ -292,16 +292,6 @@ function CartaGioco({
       <header className="cl-carta__testa">
         <Copertina gioco={chiave} formato="icona" />
         <h3 className="cl-carta__titolo">{NOMI_CLASSIFICHE[chiave]}</h3>
-        {me ? (
-          <Posizione anteprima={anteprima} />
-        ) : (
-          gioca && (
-            <Collegamento to={gioca} className="cl-carta__gioca">
-              Gioca
-            </Collegamento>
-          )
-        )}
-        <IconChevronRight size={18} className="cl-carta__freccia" />
       </header>
       {primi.length === 0 ? (
         <p className="cl-carta__vuota">Nessuno ha giocato.</p>
@@ -312,6 +302,19 @@ function CartaGioco({
           ))}
         </ol>
       )}
+      {(me || gioca) && (
+        <footer className="cl-carta__piede">
+          {me ? (
+            <Posizione anteprima={anteprima} />
+          ) : (
+            gioca && (
+              <Collegamento to={gioca} className="cl-carta__gioca">
+                Gioca
+              </Collegamento>
+            )
+          )}
+        </footer>
+      )}
     </article>
   )
 }
@@ -319,13 +322,11 @@ function CartaGioco({
 function Primo({ riga, io, segno }: { riga: RigaAnteprima; io: boolean; segno: boolean }) {
   const medaglia = riga.punti > 0 && riga.rank <= 3 ? (riga.rank as 1 | 2 | 3) : null
   return (
-    <li className={`cl-primo${io ? ' is-io' : ''}`}>
-      <Avatar nickname={riga.nickname} color={riga.avatarColor} size={28} medal={medaglia} />
-      <span className="cl-primo__testo">
-        <span className="cl-primo__nome">{io ? 'Tu' : riga.displayName}</span>
-        <span className="cl-primo__punti u-tabnum">
-          {riga.inCorso && riga.punti === 0 ? 'in corso' : segno ? conSegno(riga.punti) : formatNumber(riga.punti)}
-        </span>
+    <li className={`cl-primo${io ? ' is-io' : ''}${medaglia ? ` cl-primo--${medaglia}` : ''}`}>
+      <span className="cl-primo__rank u-tabnum">{riga.rank}</span>
+      <span className="cl-primo__nome">{io ? 'Tu' : riga.displayName}</span>
+      <span className="cl-primo__punti u-tabnum">
+        {riga.inCorso && riga.punti === 0 ? 'in corso' : segno ? conSegno(riga.punti) : formatNumber(riga.punti)}
       </span>
     </li>
   )

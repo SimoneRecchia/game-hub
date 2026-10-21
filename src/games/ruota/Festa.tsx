@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { createPortal } from 'react-dom'
 import {
   anima,
@@ -70,6 +70,11 @@ export interface DatiFestaRuota {
   /** Al posto del moltiplicatore e del suo nome: il numero e la puntata della roulette ("17", "PIENO"). */
   testo?: string
   nome?: string
+  /**
+   * La festa della roulette, come nel suo mockup: al posto dell'insegna una
+   * carta gialla storta con la puntata e il numero, la vincita e quel che paga.
+   */
+  carta?: boolean
 }
 
 type Fase = 'conta' | 'finita'
@@ -354,7 +359,6 @@ export function FestaRuota({ dati, onFine }: { dati: DatiFestaRuota; onFine: () 
   useEffect(() => {
     fine.current = onFine
   })
-  const id = useId().replace(/:/g, '')
 
   // L'arrivo: la fanfara, lo scossone del decuplo, e le monete che vanno avanti fin quasi alla fine.
   useEffect(() => {
@@ -408,6 +412,7 @@ export function FestaRuota({ dati, onFine }: { dati: DatiFestaRuota; onFine: () 
     `is-${livello}`,
     `is-${fase}`,
     dati.fortunata ? 'is-fortunata' : '',
+    dati.carta ? 'is-carta' : '',
     esce ? 'is-esce' : '',
   ].filter(Boolean)
   return createPortal(
@@ -423,44 +428,37 @@ export function FestaRuota({ dati, onFine }: { dati: DatiFestaRuota; onFine: () 
             <span className="ct-festa__onda" />
             {livello === 'dieci' && <span className="ct-festa__onda is-seconda" />}
           </span>
-          <div className="ct-festa__insegna" style={{ '--lettere': testo.length } as CSSProperties}>
-            <svg className="ct-festa__numero" viewBox="0 0 420 200">
-              <defs>
-                <linearGradient id={`${id}-oro`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#fffbe0" />
-                  <stop offset="0.38" stopColor="#ffe066" />
-                  <stop offset="0.56" stopColor="#f4a90c" />
-                  <stop offset="1" stopColor="#fff1a8" />
-                </linearGradient>
-                <linearGradient id={`${id}-luce`} gradientUnits="userSpaceOnUse" x1={-300} y1={0} x2={-120} y2={0}>
-                  <stop offset="0" stopColor="#fff" stopOpacity="0" />
-                  <stop offset="0.5" stopColor="#fff" stopOpacity="0.9" />
-                  <stop offset="1" stopColor="#fff" stopOpacity="0" />
-                  {!ridotto && (
-                    <>
-                      <animate attributeName="x1" values="-300;720" dur="1.4s" repeatCount="indefinite" />
-                      <animate attributeName="x2" values="-120;900" dur="1.4s" repeatCount="indefinite" />
-                    </>
-                  )}
-                </linearGradient>
-              </defs>
-              {/* Lo spessore: la stessa scritta, piu' scura, un passo sotto l'altra. */}
-              {[14, 11, 8, 5, 2].map((d) => (
-                <text key={d} x={210} y={150 + d} className="ct-festa__spessore">
-                  {testo}
-                </text>
-              ))}
-              <text x={210} y={150} className="ct-festa__cifra" fill={`url(#${id}-oro)`}>
-                {testo}
-              </text>
-              <text x={210} y={150} className="ct-festa__luce" fill={`url(#${id}-luce)`}>
-                {testo}
-              </text>
-            </svg>
-            <span className="ct-festa__nome">{dati.nome ?? nomeDellaFesta(dati.moltiplicatore)}</span>
-          </div>
-          <div className="ct-festa__vincita u-tabnum">+{numero.toLocaleString('it-IT')}</div>
-          {dati.sotto && <div className="ct-festa__sotto">{dati.sotto}</div>}
+          {dati.carta ? (
+            <div className="ct-festa__carta">
+              <span className="ct-festa__carta-nome">
+                {dati.nome ?? nomeDellaFesta(dati.moltiplicatore)} {testo}
+              </span>
+              <span className="ct-festa__carta-cifra u-tabnum">+{numero.toLocaleString('it-IT')}</span>
+              {dati.sotto && <span className="ct-festa__carta-sotto">{dati.sotto}</span>}
+            </div>
+          ) : (
+            <>
+              <div className="ct-festa__insegna" style={{ '--lettere': testo.length } as CSSProperties}>
+                <span className="ct-festa__nome">{dati.nome ?? nomeDellaFesta(dati.moltiplicatore)}</span>
+                <svg className="ct-festa__numero" viewBox="0 0 420 200">
+                  {/* Lo spessore, come nel mockup: due passi piu' scuri sotto la cifra d'oro piena. */}
+                  <text x={210} y={160} className="ct-festa__spessore is-fondo">
+                    {testo}
+                  </text>
+                  <text x={210} y={155} className="ct-festa__spessore">
+                    {testo}
+                  </text>
+                  <text x={210} y={150} className="ct-festa__cifra">
+                    {testo}
+                  </text>
+                </svg>
+                {/* Nell'insegna, come nel mockup: la vincita che conta, e a conto finito l'invito a raccoglierla. */}
+                <span className="ct-festa__vincita u-tabnum">+{numero.toLocaleString('it-IT')}</span>
+                <span className="ct-festa__tocca">{fase === 'finita' ? 'Tocca per raccogliere' : ''}</span>
+              </div>
+              {dati.sotto && <div className="ct-festa__sotto">{dati.sotto}</div>}
+            </>
+          )}
         </div>
       </div>
     </div>,

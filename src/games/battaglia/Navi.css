@@ -24,7 +24,7 @@
   align-items: center;
   gap: 3px;
   font-size: var(--text-caption-2);
-  font-weight: 600;
+  font-weight: 800;
   line-height: 13px;
   color: var(--label-secondary);
   transition: color var(--dur-base) var(--ease-out);
@@ -42,30 +42,19 @@
   gap: 1.5px;
 }
 
+/* Ogni casella e' una tessera col filo d'inchiostro, come le navi del prototipo. */
 .navi__pezzo {
-  width: 8px;
-  height: 8px;
-  border-radius: 1.5px;
+  box-sizing: border-box;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2.5px;
   background: var(--nave);
 }
 
-/* La prua e la poppa si arrotondano, come nel mare. */
-.navi__pezzo:first-child {
-  border-radius: 4px 1.5px 1.5px 4px;
-}
-
-.navi__pezzo:last-child {
-  border-radius: 1.5px 4px 4px 1.5px;
-}
-
-.navi__pezzo:only-child {
-  border-radius: 4px;
-}
-
-/* Una nave nemica ancora da trovare: le caselle ci sono, vuote. */
+/* Una nave nemica ancora da trovare: le caselle ci sono, vuote, di carta. */
 .navi__pezzo.is-ignoto {
-  background: transparent;
-  box-shadow: inset 0 0 0 1.2px var(--label-tertiary);
+  background: var(--surface);
 }
 
 .navi__pezzo.is-colpito {
@@ -77,12 +66,13 @@
 }
 
 .navi__nave.is-affondata {
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
 .navi__nave.is-affondata .navi__nome {
   text-decoration: line-through;
-  text-decoration-thickness: 1.5px;
+  text-decoration-color: var(--colpito);
+  text-decoration-thickness: 2px;
 }
 
 /* Una nave appena affondata si stringe e torna: la si trova con l'occhio. */
@@ -124,8 +114,10 @@
 }
 
 .navi--mini .navi__pezzo {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
+  border-width: 1px;
+  border-radius: 2px;
 }
 
 /* Accanto al mare piccolo: una nave per riga, allineate a sinistra. */
@@ -148,12 +140,12 @@
 
 .navi--colonna .navi__scafo {
   flex: none;
-  width: 46px;
+  width: 52px;
 }
 
 .navi--colonna .navi__pezzo {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -9,11 +9,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: var(--r-lg);
+  border: var(--filo) solid var(--ink);
+  border-radius: 22px;
   background: var(--surface);
-  box-shadow:
-    var(--edge-light),
-    var(--shadow-sm);
+  box-shadow: var(--ombra-carta);
+  margin-bottom: 5px;
 }
 
 .opzione {
@@ -29,11 +29,10 @@
 .opzione + .opzione::before {
   content: '';
   position: absolute;
-  top: 0;
-  right: 0;
-  left: 14px;
-  height: 0.5px;
-  background: var(--separator);
+  top: -1px;
+  right: 12px;
+  left: 12px;
+  border-top: 2px dashed var(--separator);
 }
 
 /* Una riga che apre un foglio: il nome, la scelta a destra con la sua figura, la freccia. */
@@ -109,11 +108,12 @@
 .opzione__titolo {
   margin: 0;
   font-size: var(--text-body);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--label);
 }
 
 .opzione__sotto {
   font-size: var(--text-footnote);
+  font-weight: 700;
   color: var(--label-secondary);
 }

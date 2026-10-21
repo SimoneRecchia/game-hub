@@ -631,7 +631,7 @@ saldo non copre la prima puntata, o la scheda piu' economica del SuperEnalotto,
 c'e' `PochiPunti` (`src/games/fortuna/Avvisi.tsx`), lo stesso in tutti i giochi
 e nelle sale: una targa scura con il filo d'ambra, come il tabellone, che dice
 quanto serve e quanto si ha, con l'anello di quanto manca, e porta alle
-Giornaliere. Il tabellone si tinge d'ambra (`scarso`), ma lo decide il gioco, e
+Giornaliere. Il tabellone tiene un filo d'ambra, senza alone (`scarso`), ma lo decide il gioco, e
 solo mentre si punta: durante un giro il saldo e' gia' sceso della puntata, e non
 e' un problema. Quel che non si puo' fare si vede spento apposta: il panno della
 roulette, la schedina del SuperEnalotto, e il 4+1 quando il saldo paga solo i
@@ -690,8 +690,8 @@ le monete tutte dall'altra, e i banchi erano sette su quindici. La puntata si
 paga al lancio — il giro nasce con `delta = -puntata` — e quel che esce la
 restituisce moltiplicata (`vincitaDi`, per difetto). Il triplo la restituisce
 per tre e lo split a meta', subito, senza minigioco (`pagaSubito`); il quiz
-porta alla ruota del quiz e poi alla domanda, e una risposta sbagliata perde
-tutta la puntata, qualunque sia il moltiplicatore; la moneta porta uno dei
+porta alla ruota del quiz e poi alla domanda, e una risposta sbagliata non
+paga, qualunque sia il moltiplicatore; la moneta porta uno dei
 quattro moltiplicatori di `MOLTIPLICATORI_MONETA`, deciso con il giro, che il
 blu paga e il rosso no; il Pachinko e il Cash Hunt hanno i loro (vedi sotto);
 la fortuna fa girare la ruota fortunata. Nessun esito ridà la puntata com'era,
@@ -713,10 +713,10 @@ segue da sola ogni spicchio e ogni moltiplicatore, e
 `shared/__tests__/ruota.test.ts` la tiene ferma: rifatta a mano, fra il 96,8 e
 il 97,4% per chi sa, sotto la puntata per tutti, e in punti interi a ogni
 puntata fino a duemila. Lo stesso file tiene le disposizioni delle ruote e i
-conti dei minigiochi. Si puo' avere fortuna una volta, e giocando a lungo si
-perde: e' quel che si vuole, perché la ruota insegni che vince il banco. Le
-regole lo dicono in una riga, con la resa, e niente scritte sulla ludopatia:
-e' una scelta, la lezione la da' la ruota.
+conti dei minigiochi. Si puo' avere fortuna una volta, e giocando a lungo il
+saldo scende: la resa resta quella, ma il racconto non lo ripete (vedi "Un giro
+a zero non si racconta come una perdita"). Le regole dicono la resa in positivo,
+"in media torna il 97% di quel che punti", e niente scritte sulla ludopatia.
 
 **Lo split e' una perdita vestita da vincita, di proposito.** Sei spicchi su
 venti restituiscono subito meta' della puntata, per difetto, e si raccontano
@@ -730,6 +730,32 @@ e risale della meta'; il travestimento sta solo nel racconto. Lo stesso vale
 per il ×0,5 del Pachinko e del Cash Hunt. Sulla ruota fortunata lo split
 diventa ×1,5, un premio vero, e resta rosa: si vede che cosa ha portato la
 fortuna.
+
+**Un giro a zero non si racconta come una perdita.** La Fortuna e' un gioco da
+pausa, e chi gioca ha chiesto che non si senta mai di aver perso: si gioca a
+punti, non a soldi. La puntata si paga quando si gioca — al lancio, alla leva,
+alla distribuzione, al "rien ne va plus", all'acquisto della scheda — e da li'
+ogni esito dice solo quel che torna, come lo split: "Vinci N" anche quando N e'
+meno della puntata, e la mano vinta del blackjack dice "Vinci 20" su dieci
+puntati (`tornatoDi` in `src/games/blackjack/Tavolo.tsx`), perché e' quel che
+arriva al saldo. Quando non torna niente — il banco, il rosso della moneta, una
+domanda sbagliata, una mano che non ridà, un giro della roulette senza
+vincite, un concorso senza premi — non c'e' una parola di perdita, ne' un segno
+meno, ne' il rosso, ne' un suono triste, ne' il palco che trema: c'e' il
+biglietto lilla del giro dopo ("Al prossimo giro", "Alla prossima mano", "Al
+prossimo concorso": `adesivoRitenta` in `src/games/fortuna/Avvisi.tsx`, la
+classe `ct-adesivo-ritenta` in `voli.css`), le luci che respirano lilla
+(`calma`), e le fiches che scivolano piano via senza cifre (`ritiraFiches`, che
+ha preso il posto di `perdiFiches`). Il mozzo di Crazy Time torna alla puntata,
+accanto agli altri giocatori si legge solo "+N", la fascia di una mano che non
+ridà non c'e', e oltre il 21 si dice "Oltre 21", in grigio, come un fatto del
+gioco; l'assicurazione dice solo quando paga, e una scheda del SuperEnalotto
+senza premi non scrive niente. La domanda sbagliata si fa lilla con la sua
+lettera e suona pari, la slot dopo un giro a vuoto dice "Rigira", il lampo della
+puntata pagata sul tabellone e' lilla, e gli ultimi secondi dei tempi del
+blackjack e della roulette sono arancioni. Le regole dicono come si vince e
+quanto torna. Restano com'erano le regole del gioco, le rese, i conti del server
+e la classifica della Fortuna, che mette in fila il netto del periodo.
 
 **Il giro salva la disposizione delle ruote** (`disposizione`,
 `DISPOSIZIONE_RUOTA`): i giri di una disposizione di prima contano nel saldo e
@@ -795,7 +821,8 @@ grande, e i posti mai prima di aver scelto: chiunque potrebbe leggere dov'e' il
 ×5. `/ruota/cashhunt` con la casella chiude il giro con il moltiplicatore che
 c'e' sotto, e da li' il muro intero si vede; un'altra scelta ridà la prima, e
 una casella che non c'e' e' un 400. Il muro (`CashHunt`) si vede scoperto, poi
-le caselle si girano, ognuna con il suo simbolo, e si mescolano in tre giri: la
+le caselle si girano, ognuna con il suo simbolo, a linee color crema su una
+delle sei tinte piene del mockup, e si mescolano in tre giri: la
 mescolata si vede soltanto, il muro vero l'ha gia' mescolato il server.
 Toccata una casella, si gira e si fa grande, poi si girano le altre a onde, e
 si vede che cosa c'era. Le caselle sono bottoni con il nome del simbolo, e le
@@ -942,18 +969,18 @@ fotogramma, grande, copriva tutto il conto. Un test
 (`ruota/__tests__/conto.test.ts`) li tiene. Il nastro (`NastroFortuna`) dice
 "Ruota fortunata", "Quiz fortunato", "Moneta fortunata", "Pachinko fortunato"
 o "Cash Hunt fortunato" finché la fortuna dura, e dopo l'esito la ruota torna
-quella di sempre. Al neon, sui palchi alti, il carattere si stringe quanto
-serve a starci, dalla lunghezza stimata della scritta (`--nastro-em`): gli
-ultimi due, alla misura di "Ruota fortunata", uscivano dai lati del palco. Sui
-palchi bassi il nastro sta in un angolo, e davanti al Pachinko e al Cash Hunt
-non c'e' (`is-tabellone`): arrivano fino all'angolo, e copriva il ×5 del muro.
+quella di sempre. Il nastro e' la targhetta verde del mockup, con l'orlo
+d'oro, che dondola: in alto al centro sui palchi alti, in un angolo e un poco
+storto su quelli bassi (sotto i 420 punti). Davanti al Pachinko e al Cash Hunt,
+sui palchi bassi, non c'e' (`is-tabellone`): arrivano fino all'angolo, e
+copriva il ×5 del muro.
 Senza animazioni la ruota diventa fortunata di colpo, con il suono della
 magia; una pagina riaperta a fortuna in corso la trova gia' fortunata.
 
 **Dal triplo c'e' la festa.** `FestaRuota` (`src/games/ruota/Festa.tsx`) prende
 lo schermo come la festa della slot: la sala si spegne, girano i raggi,
-l'insegna con le lampadine porta il moltiplicatore enorme, d'oro e con lo
-spessore, e la vincita conta da zero con le monete che tintinnano sempre piu'
+l'insegna con le lampadine porta il nome, il moltiplicatore enorme, d'oro pieno
+e con lo spessore, e la vincita, che conta da zero con le monete che tintinnano sempre piu'
 alte. Tre gradini (`festaDi`): dal triplo; dal ×5, con i raggi che girano anche
 al contrario, la pioggia di monete e l'onda d'urto; dal ×10, il decuplo della
 ruota fortunata e i ×15 e ×30 del Pachinko, con il terremoto, i fuochi
@@ -983,8 +1010,8 @@ ruota del quiz si ferma, la categoria e il moltiplicatore saltano fuori
 (`Rivelazione`), e poi arriva la domanda. La moneta si lancia toccandola. Mentre
 e' in aria il tabellone resta com'era (`conto`) e il lato si dice quando cade:
 la risposta del server arriva prima, e sarebbe la soluzione. Una vincita ha
-l'adesivo d'oro e la pioggia di monete, o la festa, il banco l'adesivo bordato e
-un sussulto del palco. Dopo un giro il pannello torna alla puntata, che resta
+l'adesivo d'oro e la pioggia di monete, o la festa; il banco il biglietto lilla
+del giro dopo, senza sussulti. Dopo un giro il pannello torna alla puntata, che resta
 quella di prima finché non la si cambia, come al tavolo. Il tabellone in cima
 dice il saldo e la puntata; nella scheda della Fortuna la carta dice quanto si
 puo' puntare, o dove aspetta una sfida aperta ("Ruota fortunata", "Quiz",
@@ -1000,10 +1027,10 @@ con la puntata gia' tolta. Alla ruota fortunata la fiche e' gia' sul mozzo, e il
 saldo non si muove. Quando la ruota si ferma una vincita torna al saldo in
 monete — dal mozzo, dalla moneta caduta sul blu, dalla buca della pallina o
 dalla casella scelta — e il saldo sale quando arriva la prima; anche la meta'
-dello split torna cosi', in poche monete. Al banco le fiches cadono dal mozzo,
-e il mozzo dice quanto si e' vinto o perso. Fino ad allora il tabellone resta
-su quel che si e' visto (`conto`), poi un lampo d'oro o rosso accompagna il
-conto nuovo. Una domanda vinta o persa si racconta cosi' tornando alla ruota
+dello split torna cosi', in poche monete. Quando non torna niente le fiches
+scivolano via piano dal mozzo, e il mozzo torna alla puntata: dice solo quanto
+si e' vinto. Fino ad allora il tabellone resta su quel che si e' visto
+(`conto`), poi un lampo d'oro accompagna il conto nuovo. Una domanda si racconta cosi' tornando alla ruota
 (`RITORNO_MS`). I voli sono elementi del body animati con le Web Animations
 (`src/games/fortuna/voli.ts`, che usa anche la slot), sotto gli adesivi, che
 dicono il momento: passare dallo stato di React ridisegnerebbe la pagina a ogni
@@ -1107,7 +1134,7 @@ al centro del mobile, come all'inizio, il pomo che veniva avanti scappava di
 lato, e la leva girava come la lancetta di un orologio. Oltre `SOGLIA` i rulli
 partono e la leva torna su con una molla; un tocco senza trascinare la tira
 tutta, e Invio e lo spazio anche, perché e' un bottone. Accanto alle fiches
-c'e' "Azzera", e in fondo al banco "Gira", per chi non vuole tirare. Il resto
+c'e' "Azzera", e sotto il mobile il bottone grande "Gira", per chi non vuole tirare. Il resto
 si vede come a Crazy Time: le fiches volano dal saldo al display della puntata
 e il saldo scende alla leva; una vincita accende i simboli che pagano, ognuno a
 modo suo (vedi sotto), il display la segna con il suo nome, le monete cadono
@@ -1141,8 +1168,9 @@ combinazione e' rara, mai meno festa. La targhetta della ciliegia sola, un
 giro su quattro; la targa di due ciliegie e dei limoni, uno su trentadue e uno
 su sessantacinque; il palco delle arance e delle prugne, uno su centoventisette
 e uno su quattrocentoventisette; poi la festa (vedi sotto). I primi tre stanno
-sul mobile (`Targa`): l'adesivo dei giochi fatto insegna da casino', laccata,
-con la foglia d'oro, le lampadine che le corrono attorno e la luce che passa,
+sul mobile (`Targa`): il cartello giallo del mockup, con il filo d'inchiostro,
+l'anello nel colore della vincita, le lampadine che gli corrono attorno e la
+luce che passa,
 davanti all'insegna in cima, dove non copre mai la linea. La targhetta dura
 poco piu' di un secondo, perché la leva deve tornare pronta presto (`TEMPI`);
 la targa e' piu' grande, con le monete che saltano fuori e una luce che passa
@@ -1173,16 +1201,14 @@ la festa le monete vanno al saldo. Una domanda giusta ha la festa del ×20.
 **Il mobile si misura sulla sua larghezza.** `--w` e' quella che ci sta con la
 leva da tutti e due i lati — cosi' il mobile resta al centro e la leva sporge
 nel margine — o quella che lascia l'altezza, e `--u` ne e' il centesimo: le
-parti hanno altezze fisse in centesimi, e la pancia, sotto il banco, prende
-quel che avanza fino a un tetto. La pancia e' un vetro illuminato, con i raggi
-che girano, e non dice niente: c'erano quanto vale la domanda e le categorie
-del giorno, che sono gia' nelle regole e sui punti di domanda. Quando le si sono
-tolte se n'e' andata anche lei, con i rulli allungati al suo posto, e il mobile
-non era piu' quello che piaceva: si toglie quel che informa, non il disegno, e
-non ci si mette altro. `--w` e' registrata con `@property`,
+parti hanno altezze fisse in centesimi. Dal mockup dell'album (21 ottobre 2026)
+il mobile e' quello del mockup: l'insegna LUCKY 7 con le lampadine, i rulli
+alti, il display con la puntata e la vincita, il banco piatto con le fiches e
+sotto il vassoio delle monete. La pancia illuminata di prima, che piaceva, il
+mockup non l'ha: si e' scelto il mockup. `--w` e' registrata con `@property`,
 quindi i figli ereditano una lunghezza vera: non registrata, le unita' del
-contenitore si risolverebbero dove la si usa, e dentro la pancia, che e' un
-contenitore anche lei, varrebbero le sue.
+contenitore si risolverebbero dove la si usa, e dentro un figlio che e' un
+contenitore anche lui varrebbero le sue.
 
 **Il SuperEnalotto e' quello vero, con quattro numeri estratti su novanta.** Le
 regole stanno in `shared/superenalotto.ts`: una scheda di quattro numeri costa
@@ -1237,59 +1263,39 @@ il giorno delle schede nuove e quello dell'estrazione che si paga). Le schede da
 apre l'app perderebbe una vincita che il server sa gia'. Per lo stesso ordine
 dei pagamenti `assicura` guarda solo le schede dopo l'ultimo concorso pagato.
 
-**La diretta e' in 3D vero, con three.js, e arriva a parte.** `Urna`
-(`src/games/superenalotto/urna.ts`) e' uno studio televisivo: la sfera di vetro
-sul piedistallo d'oro, al centro di una pedana di vetro nero che la riflette, le
-novanta palline con il numero dipinto due volte, il tubo, la rotaia, i
-riflettori che si muovono, la parete di luci in fondo e il pulviscolo fuori
-fuoco. Tutto quel che si vede e' una funzione del tempo della diretta — la
-regia, le luci, la pallina che esce, i lampi — tranne le palline nell'urna, che
-hanno una fisica loro (la fontana dal fondo, un giro attorno all'asse, le
-pareti, gli urti) fatta con pochi vettori di lavoro: nel giro di un fotogramma
-non nasce nessun oggetto. I tempi stanno in `tempi.ts`, che leggono l'urna e le
-scritte, e la regia e' una scaletta (`REGIA`): lo studio dall'alto prima
-dell'inizio, la gru che scende con il titolo, l'urna da vicino mentre si
-mescola, e per ogni pallina la bocca nell'attesa (le luci calano, il tamburo),
-il tubo seguito da vicino con la scia che si accende, la vetrina al suo posto
-con il numero verso la camera, poi indietro; alla fine le quattro sulla rotaia.
-La camera segue la scaletta senza ritardo — non ha salti, e un ritardo
-lascerebbe la pallina fuori quadro — e assorbe in un attimo solo i salti veri,
-una finestra ridimensionata o un telefono che si era fermato; il primo
-fotogramma e' gia' quello giusto. Le scritte coprono una parte dello schermo, e
-la diretta dice all'urna quanta (`inquadratura`): la proiezione si centra nel
-campo che resta (`setViewOffset`), e ci scivola quando arriva il riepilogo. Un
-test (`__tests__/diretta.test.ts`) tiene la scaletta in ordine, con ogni
-passaggio finito prima dello stacco dopo, ogni pallina finita prima della
-prossima e il riepilogo prima della fine della diretta, che resta
-`DURATA_DIRETTA_MS` perché il server paga li'. I suoni seguono gli stessi tempi:
-`estratto` in `suoni.ts` ha il colpo alla bocca e il rotolare sulla rotaia dove
-li mette `tempi.ts`, e se cambiano gli uni va rifatto l'altro. Un telefono la
-deve far girare senza scaldarsi: niente ombre, niente post-produzione, e niente
-vernice sul vetro (`clearcoat`), che con la sfera a tutto schermo costerebbe un
-secondo riflesso per pixel. I riflessi vengono da un ambiente calcolato una
-volta, uno studio buio con i pannelli dei riflettori (`studioDaRiflettere` in
-`effetti.ts`); i fasci, i lampi e le scintille sono forme che sommano il colore,
-con materiali scritti a mano; il riflesso sulla pedana e' l'urna disegnata
-capovolta in un pozzo sotto il vetro nero, con le copie disegnate prima del
-vetro, che le scurisce, e le palline riflesse in un disegno solo
-(`InstancedMesh`), senza numeri. Le palline nell'urna hanno una forma sola e
-un'immagine piccola ciascuna (`LATO_FACCIA`); quella che esce cresce nel tubo
-fino alla misura della rotaia (`RB_FUORI`) e prende un'immagine di 512 per 256,
-perché in vetrina riempie mezzo schermo. three.js sta solo nel pezzo della
-diretta (`Diretta`, con `lazy`): la pagina della schedina non lo scarica. Chi ha
-la pagina aperta vede la diretta aprirsi da sola un minuto prima; chi arriva a
-meta' la trova a meta', e dopo la si rivede ("Rivedi l'estrazione"), con lo
-stesso orologio che parte da li'. Senza movimento la camera sta ferma sull'urna
-da lontano, i fasci non girano e i lampi sono deboli; senza WebGL l'urna e'
-disegnata e ferma, e le palline si leggono sotto. Sopra c'e' la grafica di una
-diretta (`Diretta.css`), che si muove solo con `transform` e `opacity`: il
-bollino rosso, il conto alla rovescia con gli ultimi tre secondi grandi, il
-titolo d'oro con la luce che passa, i sottopancia in basso — quello della
-pallina ha il numero anche in lettere (`inLettere`), ed e' d'oro se il numero e'
-di chi guarda — e lo screen reader sente una riga per momento da una regione
-sua, non le scritte che cambiano dieci volte al secondo. La schedina invece e'
-di carta: le caselle stampate in rosso, la croce a penna blu che si traccia, i
-numeri scritti a mano (`--font-mano`) e il timbro "Giocata".
+**La diretta e' uno studio disegnato, dentro la pagina.** Come nel mockup,
+sotto la testa e il tabellone c'e' lo studio piatto: i fasci di luce, la parete
+di lampadine, il bollino della diretta e il titolo d'oro, la sfera di vetro con
+le palline che si mescolano, la bocca e il piedistallo d'oro, il tubo che porta
+alla rotaia con i quattro posti, e sotto le schede di chi guarda, con i numeri
+usciti cerchiati d'oro. Fino al 21 ottobre 2026 era una scena in 3D con
+three.js, realistica, e un telefono la reggeva a fatica; adesso e' un palco di
+390 per 590 punti (`studio.ts`) che la diretta scala sullo spazio che c'e', e il
+disegno e il viaggio delle palline leggono le stesse misure, cosi' la pallina
+corre dentro il tubo che si vede. Tutto e' una funzione del tempo della
+diretta: `momentoDi` (`tempi.ts`) dice che cosa mostra il sottopancia — il
+conto alla rovescia, il titolo, l'attesa di una pallina, l'ultima arrivata
+fino all'attesa della prossima, il riepilogo —, e il viaggio di una pallina e'
+un'animazione sola fatta con le tappe di `viaggioDi`, cominciata da dove la
+diretta e' arrivata: chi apre a meta' trova la pallina a meta' del tubo. Il
+viaggio ha i tempi del suono `estratto` (`suoni.ts`), con il colpo alla bocca a
+fine risucchio, i colpi nel tubo e il rotolare sulla rotaia, e un test li
+tiene: se cambiano gli uni va rifatto l'altro. Chi ha la pagina aperta vede la
+diretta aprirsi da sola un minuto prima; chi arriva a meta' la trova a meta',
+e dopo la si rivede ("Rivedi l'estrazione"), con lo stesso orologio che parte
+da li'. La diretta resta `DURATA_DIRETTA_MS` perché il server paga li': finito
+il riepilogo, e arrivati i premi, lascia il posto da sola ai risultati della
+pagina, con l'adesivo di com'e' andata; la replica, che i premi li sa gia', non
+lo ridice. Finché i premi non ci sono il bottone dice "Esci dalla diretta", e
+non "Vai ai risultati": i risultati avrebbero ancora i punti di domanda. Quanti
+numeri ha preso una scheda lo dice la diretta, non il server: il sottopancia
+della pallina ha il numero anche in lettere (`inLettere`) ed e' d'oro se il
+numero e' di chi guarda, e lo screen reader sente una riga per momento da una
+regione sua. Si muove solo con `transform` e `opacity`, e senza movimento le
+palline stanno nel mucchio e quelle estratte compaiono al loro posto quando
+arrivano. La schedina invece e' di carta: le caselle stampate in rosso, la
+croce a penna blu che si traccia, i numeri scritti a mano (`--font-mano`) e il
+timbro "Giocata".
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
 europee dei casinò italiani, controllate sui regolamenti di Venezia e di
@@ -1405,36 +1411,30 @@ dopo). Il controllo e' di un secondo e mezzo quando si aspetta
 qualcuno, di quattro quando tocca a me, di cinque da soli — solo per vedere chi
 si siede — e subito dopo una scadenza.
 
-**Il tavolo e' una mezzaluna, e io sto in fondo al centro.** Dritto dalla parte
-del banco, con la rastrelliera, il sabot a destra (la sinistra del banco, da
-dove si comincia) e gli scarti a sinistra; curvo dalla parte dei giocatori, con
-il bordo imbottito. Gli altri stanno due per lato, lungo il bordo, nell'ordine
-dei posti da sinistra; il mio posto e' sempre in fondo al centro, con il
-cerchio della puntata, e le mie carte le piu' grandi. Un posto degli altri si
-misura sull'avatar: e' lui a stare nel punto del posto, come il cerchio di un
-posto libero, e il resto gli sta attorno — le carte sopra, il nome sotto, la
-puntata dalla parte del centro (`PostoAltro`). Prima il posto si appendeva
-dall'alto, e con le carte un posto occupato scendeva rispetto a quelli liberi,
-con l'avatar spinto di lato dal nome. I punti stanno nel CSS (`data-posto`),
-perché dipendono dalla forma del panno: in verticale gli esterni stanno sotto
-gli scarti e il sabot e sopra le scritte, e su un panno piu' largo che alto
-(`@container (min-aspect-ratio: 3 / 2)`, il telefono di traverso e il
-computer) si aprono ad arco attorno a me. Tutto si misura sul
-tavolo, che e' un contenitore (`cqw`, `cqh`): le scritte ad arco hanno un tetto
-anche sull'altezza, perché di traverso un arco largo quanto il panno copriva le
-mie carte. Le scritte e i fili sono archi dello stesso centro (`Scritte` in
-`Tavolo.tsx`): erano curve ognuna con la sua, piu' strette quanto piu' in
-basso, e la scritta piccola toccava il filo. I percorsi sono piu' lunghi delle
-scritte, perché un carattere piu' largo non le tagli ai capi, e la fascia
-dell'assicurazione e' misurata sulla sua scritta in Georgia, il piu' largo dei
-tre caratteri del panno (con Times e Noto Serif, che e' quello di Android).
-Sotto le scritte c'e' la linea dell'assicurazione, che si accende
-quando il banco la offre; la fiche dell'assicurazione invece sta in un cerchio
-piu' piccolo a sinistra della puntata, perché sui telefoni bassi la linea passa
-a un dito dalle mie carte. Tre o quattro mani, dopo gli split, vanno su due
-righe, due per riga: in fila sola coprivano i posti degli altri ai lati, e le
-fasce degli esiti si sovrapponevano. Di traverso restano in fila, piu' piccole
-e piu' larghe: li' la larghezza c'e', ed e' l'altezza che manca.
+**Il tavolo e' una mezzaluna, e io sto in fondo al centro.** Dal mockup
+dell'album (21 ottobre 2026) il panno e' il disegno del mockup (`Panno` in
+`Tavolo.tsx`, 374 per 472, `Panno.css`) e tiene le sue proporzioni a ogni
+schermo: tutto si misura in `--u`, un trecentosettantaquattresimo della sua
+larghezza, e banco, carte, posti e cerchi stanno alle coordinate del mockup.
+Dritto dalla parte del banco, con la rastrelliera al centro, il sabot a destra
+(la sinistra del banco, da dove si comincia) e gli scarti a sinistra; curvo
+dalla parte dei giocatori, con il bordo di legno. Le scritte ad arco e la linea
+dell'assicurazione, che si accende d'oro quando il banco la offre, sono in
+Lilita dentro il panno. Il mio posto e' sempre in fondo al centro, con il
+cerchio della puntata e quello piu' piccolo dell'assicurazione accanto, e le
+mie carte le piu' grandi; gli altri stanno ai lati, gli interni dove li mette il
+mockup e gli esterni in alto sotto il sabot e gli scarti, ognuno nel suo
+`data-posto` con le sue coordinate (`--ax`, `--cx`, `--fx`): la faccina nel
+punto del posto, le carte sopra, il nome sotto, la puntata verso il centro. Tre
+o quattro mani, dopo gli split, vanno su due righe, due per riga: in fila sola
+coprivano i posti degli altri ai lati, e le fasce degli esiti si
+sovrapponevano. Sotto il tavolo c'e' un pannello ad altezza fissa, perché il
+tavolo non salti fra un giro e l'altro: la riga che dice che cosa succede
+("Puntata 15 · distribuisci", "Tocca a te · Mano 1 di 2"), poi le fiches da 1,
+5, 10 e 25 (quelle della Fortuna) con Azzera e il bottone verde largo, o
+durante il giro le quattro mosse. La puntata di prima torna da sola sul
+cerchio a ogni giro, e "Nuovo giro" la rigioca: Annulla, ×2 e Ripeti non ci
+sono piu'. La puntata minima resta `PUNTATA_MINIMA_BJ`, dieci.
 
 **Le mosse si chiamano come ai tavoli italiani, e ci sono sempre tutte.**
 Carta, Stai, Raddoppia e Split, spente quando non si possono fare, e
@@ -1473,84 +1473,68 @@ resta in vista `FINE_RL_MS`, e chi punta quando la biglia e' gia' ferma comincia
 il giro dopo per tutti: chi guarda l'ha gia' vista cadere. Chi si alza prima
 del lancio si riprende le fiches.
 
-**La ruota della roulette e' inclinata, e la biglia no.** `RuotaRoulette`
-(`src/games/roulette/Ruota.tsx`) e' fatta di pochi strati piatti, ognuno con la
-sua prospettiva (`TILT`) e la sua altezza (`Z`, in unita' del disegno), centrati
-nello stesso punto: la conca ferma con il bordo di legno, il cilindro che gira
-con le caselle, i separatori e la base del cono, gli anelli del cono uno piu'
-alto dell'altro, la luce ferma sopra, e la torretta con le braccia sospese e la
-loro ombra, che girano. Uno strato piu' alto si disegna sopra quelli piu' bassi,
-che e' quel che si vede da sopra, e girando le braccia scorrono sul cono come
-quelle vere. Per un giorno e' stata un contesto 3D (`preserve-3d`) con una
-trentina di strati, molti grandi quanto la ruota: su Android finiva la memoria
-della scheda grafica, e comparivano quadrati neri anche sul panno. Quel che
-dava la profondita' si disegna: la parete del bordo che si vede in fondo, e il
-cilindro piu' basso della pista, sono falci (`parete`: un cerchio meno lo stesso
-cerchio abbassato), i separatori hanno l'ombra ai due lati e il filo di luce in
-mezzo, perché girano e una luce da una parte sola girerebbe con loro, e
-l'alzata di ogni anello del cono e' un'ombra spostata verso chi guarda. Il
-fianco del mobile e il fusto della torretta sono disegnati sullo schermo con
-`proietta` (`Fianco`, `Fusto`), e combaciano perché i conti sono gli stessi del
-CSS. Il fianco e' una fascia di legno sola, con la luce sull'orlo: le doghe, lo
-zoccolo e le fasce d'oro che aveva, a grandezza di telefono, erano righe fitte
-sotto il bordo che lo sporcavano invece di dargli spessore. Chrome disegna gli strati in prospettiva a un punto per pixel, senza la
-densita' dello schermo, e sul telefono i numeri venivano sgranati: li' ogni
-strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
-(`nitidezza`, al piu' tre, e due per la conca e la luce, che non hanno scritte);
-Safari li disegna gia' nitidi, e ingranditi vorrebbero nove volte la memoria.
-Niente `will-change` sugli strati che girano: fisserebbe la loro risoluzione a
-quella del primo disegno, e la ruota arriva piccola. Il tavolo non ha
-un'entrata sua, e il velo sta dentro il feltro: con un'animazione che restava
-(`both`) e il velo che sporgeva di `100vmax`, il tavolo era lo strato piu'
-grande della pagina. Il cilindro riparte dall'angolo dove l'aveva lasciato
-l'altra ruota, con i giri che avrebbe fatto nel frattempo (`cilindro`): la
-ruota della sala e quella del tavolo sono la stessa. La biglia inclinata
-diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua posizione
-la calcola `proietta` con la stessa prospettiva del CSS. Il suo angolo si conta
-sul cilindro e finisce nella casella del numero qualunque sia la velocita' del
-cilindro; corre sulla pista, scende verso i rombi, rimbalza fra i separatori, e
-i suoni seguono gli stessi momenti. Il cilindro sta piu' in basso della pista
-(`Z.cilindro`), e la biglia ci scende quando lascia il pendio (`fondoA`), con
-l'ombra: quando la ruota e' diventata a strati piatti il cilindro era finito
-all'altezza della pista, e la biglia restava sospesa sopra le caselle. Disegnato
-dopo la conca, uno strato piu' basso ne copre il pendio davanti e lo lascia
-vedere in fondo, che e' come si vede una conca da sopra. Finché corre veloce ha la scia, due copie di un
-attimo prima, e la sua ombra e' sfumata dal suo sfondo e non da un `filter`, che
-si rifarebbe a ogni fotogramma. La ruota e' disegnata grande e rimpicciolita
-sul palco (`--piccola`): quando la biglia parte si fa grande sopra il panno, che
-si vela, e torna al suo posto dopo l'annuncio del numero. Disegnata piccola e
-ingrandita, a pieno schermo sarebbe sfocata. Il passaggio fra il palco e il
-centro si accende solo dopo la prima misura (`is-misurata`): la pagina legge le
-misure appena montata, e il browser, che a quel punto non aveva ancora
-`--piccola`, partiva dalla ruota grande e la faceva rimpicciolire sotto gli
-occhi — proprio mentre si arrivava al tavolo. La ruota si misura e si disegna
-la prima volta prima che la pagina si veda (`useLayoutEffect`): misurata dopo,
-compariva per un fotogramma con le misure di partenza, senza il fianco e con il
-cilindro fermo a zero, e nel passaggio dalla sala al tavolo era lo scatto che si
-vedeva. Il tabellone dei numeri usciti non
-dice il numero mentre la biglia gira: il server lo mette nella storia al
-lancio, e sarebbe la soluzione.
+**La ruota della roulette e' quella del mockup, piatta, e la biglia sta
+sopra.** `RuotaRoulette` (`src/games/roulette/Ruota.tsx`) e' il disegno del
+mockup dell'album, a colori pieni: due strati piatti con la stessa prospettiva
+(`TILT`, 52 gradi), la conca ferma — il bordo di legno, la pista, l'anello d'oro
+e i rombi — e il cilindro che gira, con i numeri chiari sulla fascia rossa e
+nera, le caselle scure dentro, il cono chiaro e la croce d'oro della torretta;
+sotto, il fianco di legno con il filo d'inchiostro, disegnato sullo schermo con
+`proietta` (`Fianco`). Fino al 21 ottobre 2026 era realistica — il cono tornito
+a gradini, le braccia sospese con la loro ombra, i rombi a facce, il legno con
+le venature, una decina di strati a altezze diverse — e chi gioca l'ha voluta
+come nel mockup. Per un giorno, prima ancora, era stata un contesto 3D
+(`preserve-3d`) con una trentina di strati: su Android finiva la memoria della
+scheda grafica, e comparivano quadrati neri anche sul panno, quindi niente
+`preserve-3d`. Chrome disegna gli strati in prospettiva a un punto per pixel,
+senza la densita' dello schermo, e sul telefono i numeri venivano sgranati: li'
+ogni strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
+(`nitidezza`, al piu' tre); Safari li disegna gia' nitidi, e ingranditi
+vorrebbero nove volte la memoria. Niente `will-change` sugli strati che girano:
+fisserebbe la loro risoluzione a quella del primo disegno, e la ruota arriva
+piccola. Il tavolo non ha un'entrata sua, e il velo sta dentro il feltro: con
+un'animazione che restava (`both`) e il velo che sporgeva di `100vmax`, il
+tavolo era lo strato piu' grande della pagina. Il cilindro riparte dall'angolo
+dove l'aveva lasciato l'altra ruota, con i giri che avrebbe fatto nel frattempo
+(`cilindro`): la ruota della sala e quella del tavolo sono la stessa. La biglia
+inclinata diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua
+posizione la calcola `proietta` con la stessa prospettiva del CSS. Il suo
+angolo si conta sul cilindro e finisce nella casella del numero qualunque sia
+la velocita' del cilindro; corre sulla pista, scende verso i rombi, rimbalza
+fra i separatori, e i suoni seguono gli stessi momenti. Finché corre veloce ha
+la scia, due copie di un attimo prima, e la sua ombra e' sfumata dal suo sfondo
+e non da un `filter`, che si rifarebbe a ogni fotogramma. Dal mockup la ruota
+non sta piu' su un palco sopra il panno: durante le puntate non si vede, e al
+lancio sale dal fondo del tavolo e si fa grande in mezzo al panno, che si vela;
+poi arriva la carta del croupier con il numero, e la ruota torna giu'. La ruota
+si misura e si disegna la prima volta prima che la pagina si veda
+(`useLayoutEffect`): misurata dopo, compariva per un fotogramma con le misure
+di partenza, senza il fianco e con il cilindro fermo a zero. La riga dei numeri
+usciti (USCITI) non dice il numero mentre la biglia gira: il server lo mette
+nella storia al lancio, e sarebbe la soluzione.
 
 **Dalla sala al tavolo il feltro e' uno solo.** La sala e il tavolo della
-roulette hanno lo stesso feltro (`src/games/roulette/Feltro.css`), un livello
-vuoto sotto il contenuto: toccando "Tavolo nuovo" la View Transition lo allarga
-dalla carta della sala fino al tavolo, la ruota sale al suo posto sul palco, la
-scritta della sala se ne va e il panno arriva quando il feltro e' quasi grande;
-tornando, il contrario. Della ruota si vede solo quella d'arrivo, che e' viva:
-in dissolvenza le due ruote, una ferma e una che girava, si vedevano insieme con
-le caselle sfalsate. E' la direzione `tavolo` di `useNavigazione`, che usa
-anche la freccia indietro del tavolo (`indietro.direzione`), e i nomi delle View
-Transitions ci sono solo durante il passaggio (`html[data-transizione='tavolo']`):
-fuori, ogni navigazione fotografa la pagina intera, e un test lo controlla. Al
-tavolo nuovo si va subito, senza aspettare il server: l'indirizzo e'
-`TAVOLO_NUOVO`, la pagina apre il tavolo mentre il feltro si allarga e poi mette
-al suo posto l'indirizzo vero, senza rileggerlo. Aspettare la risposta prima di
-partire era il piccolo scatto fra il tocco e il passaggio. La sala porta il
-saldo nello stato della navigazione, e il tabellone c'e' dal primo disegno, senza
-contare da zero (`da` di `Numero`). Il panno e' stampato sul feltro, senza un
-fondo suo, e i comandi stanno sulla sponda di legno in fondo, che si unisce a
-quella del feltro: le fiches, e i tasti tondi per annullare, togliere tutto e
-ripetere o raddoppiare.
+roulette sono tutti di feltro, come nel mockup: il feltro e' un livello fisso a
+tutta pagina (`src/games/roulette/Feltro.css`) e la pagina sopra e'
+trasparente; `useFeltro` (`feltro.ts`) tinge di verde la zona dell'orologio
+(`theme-color`) finché la pagina e' aperta. Toccando "Tavolo nuovo" la ruota
+della sala scende verso la sponda e svanisce, e il tavolo arriva; tornando, il
+contrario. La ruota della sala e' larga al piu' trecento punti: piu' larga, con
+i suoi strati in prospettiva, Chrome annullava la View Transition ("Transition
+was aborted because of invalid state"). E' la direzione `tavolo` di
+`useNavigazione`, che usa anche la freccia indietro del tavolo
+(`indietro.direzione`), e i nomi delle View Transitions ci sono solo durante il
+passaggio (`html[data-transizione='tavolo']`): fuori, ogni navigazione
+fotografa la pagina intera, e un test lo controlla. Al tavolo nuovo si va
+subito, senza aspettare il server: l'indirizzo e' `TAVOLO_NUOVO`, la pagina apre
+il tavolo e poi mette al suo posto l'indirizzo vero, senza rileggerlo. La sala
+porta il saldo nello stato della navigazione, e il tabellone c'e' dal primo
+disegno, senza contare da zero (`da` di `Numero`). Il tavolo e' quello del
+mockup: il tabellone, la riga dei numeri usciti, il panno in piedi che prende
+l'altezza, e in fondo la sponda di legno con la riga che dice che cosa succede,
+le fiches da 1, 5, 10 e 25 (le stesse della Fortuna), i tasti tondi per
+annullare, togliere tutto e ripetere o raddoppiare, e il bottone largo che
+lancia.
 
 **Il panno si tocca dove si posa la fiche.** Sul telefono il panno sta in
 piedi, lo zero in cima, e le puntate interne si scelgono dal punto toccato
@@ -1563,7 +1547,8 @@ Dopo il lancio il croupier annuncia il numero ("Otto, nero, pari e manque"),
 poi sul panno il dolly cala sul numero, le fiches perse vanno via, accanto alle
 vinte arriva la vincita e le monete volano al saldo, che resta fermo fino ad
 allora; un pieno, un cavallo, una terzina, un carré o una sestina vinti hanno
-la festa di Crazy Time, con il numero e il nome della puntata.
+la festa di Crazy Time vestita come nel mockup della roulette (`carta`): una
+carta gialla storta con la puntata e il numero, la vincita e quanto paga.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —
@@ -3075,6 +3060,9 @@ fa a richiesta, quaranta tabelle per volta.
 
 ## Il design
 
+Il design system — token, caratteri, componenti, pattern e regole — sta in
+`docs/design-system.md`: qui sotto c'e' il perché delle scelte.
+
 **Deve sembrare un'app, non un sito.** Ogni schermata e' una `Pagina`
 (`src/components/Pagina.tsx`): titolo grande che scivola nella barra, freccia
 indietro con il nome della schermata di prima, e `intera` per le schermate di
@@ -3093,7 +3081,7 @@ l'anello dell'avatar ci finiva sopra.
 **Fra le schede il cambio e' immediato, e una schermata ritrovata non
 rientra.** Al cambio di scheda c'era una dissolvenza, e a meta' si vedeva il
 fondo vuoto: sembrava che la pagina si ricaricasse. Ora e' come nella tab bar
-di iOS, la lente scivola e la pagina c'e'. Altre tre cose davano la stessa
+di iOS, la bolla della scheda scivola e la pagina c'e'. Altre tre cose davano la stessa
 impressione. L'entrata della pagina per i browser senza View Transitions
 (`pagina-entra`) valeva con `html:not([data-transizione])`, e quando una
 transizione finiva e l'attributo se ne andava ripartiva: ogni pagina, appena
@@ -3141,7 +3129,7 @@ d'azzardo. Si chiamavano Arena e Salotto, e `/salotto` porta ancora alle Libere.
 Il profilo e la classifica non sono schede: il profilo si apre dall'avatar in
 alto a destra di ogni scheda, la classifica dal trofeo accanto e dall'eroe delle
 Giornaliere e della Fortuna, che portano alla loro. Mentre si guardano il
-profilo e gli amici nessuna scheda e' accesa, e la lente si spegne dov'era
+profilo e gli amici nessuna scheda e' accesa, e la bolla si spegne dov'era
 (`Shell.tsx`). Quale scheda e' accesa lo decide prima `delGiorno`:
 `/quiz/classificata` sta anche sotto `/quiz`, che e' delle Libere. La freccia
 indietro del profilo e delle classifiche dice da dove si e' venuti: lo porta lo
@@ -3172,27 +3160,32 @@ barra laterale. Il quadrifoglio pieno ha le foglie staccate e senza tratto:
 col tratto si toccavano al centro, e diventava una macchia.
 
 **Le tre schede hanno la stessa forma, e ognuna il suo carattere.** `Vetrina`
-(`src/components/`) e' la pagina di tutte e tre: il titolo grande con la data,
-i bottoni in alto, l'eroe e le carte. Il carattere sta in `Vetrina.css`: la
-luce in cima alla pagina nel colore della scheda (`--giornaliere`, `--libere`,
-`--fortuna`, che dicono dove si e' e non che cosa si e' scelto), il movimento
-dell'eroe — le righe e il lampo dei riflettori di una gara, le bolle di una
-lampada, le lampadine di un'insegna — e le tessere delle Libere, che
-galleggiano. Le carte delle classificate sono quelle di prima: una striscia
-nel colore del gioco sul lato c'e' stata per un giorno, e sapeva di gia'
-visto. L'eroe delle Giornaliere e' la giornata: il posto nella generale di
-oggi, i punti, il podio e un anello per gioco. Il podio arriva con
-`/api/oggi` (`generale.podio`), che la generale la calcola comunque: nessuna
-richiesta in piu' per la schermata che si apre di piu'. Che si riapre anche a
-ogni cambio di scheda, e per quindici secondi la risposta in memoria vale senza
-richiederla (`fresco` di `useDati`, `OGGI_FRESCO_MS`): ogni gioco, quando cambia
-qualcosa, la dimentica (`dimentica('/oggi')`), e un gioco nuovo deve farlo
-anche lui. I movimenti dell'eroe sono solo `transform` e `opacity`, perché il
-telefono li fa senza ridisegnare: le righe scorrono di un multiplo esatto del
-loro passo, e il ritorno non si vede.
+(`src/components/`) e' la pagina di tutte e tre: le lucine appese in cima,
+l'etichetta storta con la data, il titolo grande, il trofeo e la faccina in
+alto, l'eroe e le carte. Il carattere sta nel fondale della scheda (`--fondo`:
+pesca e rosa le Giornaliere, menta e azzurro le Libere, la sala viola la
+Fortuna) e nell'eroe. Quello delle Giornaliere e' un biglietto dentellato
+(`Biglietto`) con il podio di oggi e i timbri: uno per classificata fatta, che
+apre il suo riepilogo in un foglio (com'e' andata, i punti, e da li' la partita o
+la classifica: si resta nelle Giornaliere), e il posto vuoto dell'album per
+quelle da fare; i timbri
+nuovi da quando si e' guardata la pagina arrivano col colpo del timbro (il
+ricordo sta nel `localStorage`). Sotto, le carte delle sole classificate da
+giocare, e quando non ne resta nessuna la carta di fine giornata. Quello delle
+Libere e' una ruota panoramica con gli amici online nelle cabine, che si
+toccano per aprirne il profilo; le partite in corso sono biglietti. Quello
+della Fortuna e' il saldo su un biglietto d'oro con le fiches. Il podio arriva
+con `/api/oggi` (`generale.podio`), che la generale la calcola comunque:
+nessuna richiesta in piu' per la schermata che si apre di piu'. Che si riapre
+anche a ogni cambio di scheda, e per quindici secondi la risposta in memoria
+vale senza richiederla (`fresco` di `useDati`, `OGGI_FRESCO_MS`): ogni gioco,
+quando cambia qualcosa, la dimentica (`dimentica('/oggi')`), e un gioco nuovo
+deve farlo anche lui. I movimenti delle schede sono solo `transform` e
+`opacity`, perché il telefono li fa senza ridisegnare.
 
 **La Fortuna e' scura in tutti e due i temi.** `Vetrina.css` mette
-`color-scheme: dark` sulla sua pagina e ne ridefinisce `--bg` e `--vetro-barra`:
+`color-scheme: dark` sulla sua pagina, il viola della sala con i puntini d'oro,
+e ne ridefinisce `--bg` e `--vetro-barra`:
 tutti i token sono `light-dark()`, quindi dentro la pagina si girano da soli,
 senza una palette scritta due volte. La tab bar, che sta fuori dalla pagina, si
 gira con `body:has(.vetrina--fortuna)`, e `Vetrina` cambia il `theme-color`
@@ -3448,12 +3441,24 @@ delle righe e sulle decorazioni, mentre etichette, conti e titoletti
 ("Online", "record 80%", i gruppi della barra laterale) usano
 `--label-secondary`, che fa 5:1.
 
-**Profondita' con tre livelli, non con le ombre grandi.** Caselle e tasti usano
-`--edge-light` (filo di luce in alto), una velatura verticale in
-`background-image`, e `--shadow-key` — un'ombra secca senza sfocatura. E' quel
-che fa sembrare un tasto un oggetto; premendo **scende** invece di
+**L'aspetto e' un album di adesivi.** Dal 19 ottobre 2026, dai mockup che
+l'utente ha scelto: carte crema e tasti a colori pieni con il filo
+d'inchiostro (`--ink`, `--filo`) e l'ombra secca sotto (`--ombra-carta`,
+`--ombra-tasto`), i titoli e i numeri in Lilita One e il testo in Nunito,
+serviti dal sito (`src/styles/fonts.css`, `public/fonts/`, licenza OFL), i
+fondali a sfumatura con le macchie e i puntini. L'inchiostro e' scuro in tutti
+e due i temi, e i colori pieni — il giallo dei tasti, il verde delle caselle,
+le etichette pastello — vogliono sopra l'inchiostro anche in scuro. Le carte
+che i giochi misurano punto per punto hanno il filo fatto d'ombra
+(`--ombra-album`): un bordo vero cambierebbe le misure. Ogni gioco ha il suo
+adesivo (`IconaGioco`, un disegno su una griglia di 48 con il bordo bianco
+ritagliato fatto dallo stesso disegno ripetuto sotto, non da cinque filtri), e
+la copertina e' il vetrino che lo contiene (`Copertina`); i giochi della
+Fortuna hanno i loro disegni che si muovono (`IconaFortuna`, solo `transform`
+e `opacity`). Un tasto premuto **scende** sulla sua ombra invece di
 rimpicciolirsi, perché lo `scale` fa sembrare il tasto un'immagine che si
-allontana.
+allontana. Uno spento si fa grigio, non trasparente: velato sul fondo a
+colori non si leggeva.
 
 I keyframes delle caselle usano `background-color` e non `background`: la
 velatura sta in `background-image` e sostituirla in blocco la cancellerebbe.
@@ -3673,10 +3678,9 @@ caselle a ogni movimento. Le tessere gia' posate ricordano il loro posto sul
 leggio (`sposta` lo aggiorna), e l'ordine scelto resta anche ricaricando la
 pagina, per l'ultima partita sola (`scarabeo-leggio` nel `localStorage`).
 
-**Oro, argento e bronzo sono token, e i gradini del podio anche** (`--oro`,
-`--gradino-oro`, ...). Mescolati con `color-mix` al fondo scuro i metalli
-diventavano verde oliva e grigio sporco; ora in chiaro il gradino e' tinto del
-suo metallo, in scuro e' di vetro, e il filo di metallo in cima dice qual e'.
+**Oro, argento e bronzo sono token** (`--oro`, `--argento`, `--bronzo`): gli
+anelli e i numeri dei primi tre. I gradini dei podi sono pieni del loro metallo
+in tutti e due i temi, col filo d'inchiostro, come nei mockup.
 
 **I colori dello Scarabeo sono token scritti a mano, non mescole.** `--tessera`,
 `--tessera-ink` e i quattro `--premio-*` stanno in `tokens.css` come tutto il
@@ -3798,10 +3802,11 @@ cambiata anche lì.
 ## Cose che sembrano sbagliate e non lo sono
 
 **Le classi CSS sono di tutta l'app.** Ogni foglio di stile finisce nello stesso
-CSS, quindi un nome comune collide: le tessere delle Libere si chiamano
+CSS, quindi un nome comune collide: le tessere delle Libere si chiamavano
 `libere-tessera` perché `.tessera` e' quella del leggio dello Scarabeo, e con
 lo stesso nome prendevano il suo legno. Un nome nuovo va cercato prima nel
-resto del CSS.
+resto del CSS; i disegni della Fortuna, che portano nomi comuni come strato e
+colonna, hanno tutti il prefisso `ifo-`.
 
 `solutions.ts` e `guesses.ts` sono **generati** (`npm run words:build`) e
 versionati di proposito: così il build non dipende dalla rete e la parola del
