@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ALTEZZA_TAVOLA, CUBETTI, LARGHEZZA_TAVOLA, LATO_CUBETTO } from '@shared/sequenze'
-import type { ErroreProva, FaseProva } from './useProva'
+import type { ErroreProva, FaseProva, Prova } from './useProva'
 
 interface Props {
   fase: FaseProva
@@ -45,6 +45,7 @@ export function Tavola({ fase, acceso, sequenza, errore, onTocca }: Props) {
   const giusti = fase === 'giusta' && sequenza ? new Set(sequenza) : null
   return (
     <div className={`seq-tavola is-${fase}`} role="group" aria-label="La tavola dei cubetti">
+      <span className="seq-venature" aria-hidden="true" />
       {CUBETTI.map((c, i) => {
         const stato =
           acceso === i
@@ -93,6 +94,14 @@ export function Tavola({ fase, acceso, sequenza, errore, onTocca }: Props) {
           </button>
         )
       })}
+      {/* Una sequenza giusta: l'adesivo salta fuori sopra la tavola e se ne va (la chiave e' la sequenza). */}
+      {fase === 'giusta' && sequenza && (
+        <span className="seq-bravo" aria-hidden="true">
+          <span key={sequenza.length} className={`seq-bravo__carta${sequenza.length % 2 ? ' is-b' : ''}`}>
+            Bravo!
+          </span>
+        </span>
+      )}
     </div>
   )
 }
@@ -108,5 +117,27 @@ export function Pallini({ quanti, toccati, errore }: { quanti: number; toccati: 
         />
       ))}
     </span>
+  )
+}
+
+/** Sotto la tavola, che cosa fare: guardare, toccare, e com'e' andata. */
+export function MessaggioProva({ prova, indietro, attesa }: { prova: Prova; indietro: boolean; attesa: boolean }) {
+  const testo = attesa
+    ? 'Arriva la sequenza…'
+    : prova.fase === 'guarda'
+      ? 'Guarda i cubetti che si accendono'
+      : prova.fase === 'tocca'
+        ? indietro
+          ? 'Al contrario: dall’ultimo al primo'
+          : 'Tocca nello stesso ordine'
+        : prova.fase === 'giusta'
+          ? 'Giusta! Ne arriva una più lunga'
+          : prova.fase === 'sbagliata'
+            ? 'Sbagliata'
+            : ''
+  return (
+    <p className={`seq-messaggio is-${attesa ? 'ferma' : prova.fase}`} role="status">
+      {testo}
+    </p>
   )
 }

@@ -30,6 +30,7 @@ export default function Sudoku() {
   return (
     <Pagina
       titolo="Sudoku"
+      sotto="Lo schema di oggi"
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={

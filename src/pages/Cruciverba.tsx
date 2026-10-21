@@ -189,7 +189,8 @@ export default function Cruciverba() {
 
   return (
     <Pagina
-      titolo={libera ? 'Schema libero' : 'Cruciverba'}
+      titolo="Cruciverba"
+      sotto={libera ? `Libera${nomeLivello ? ` · ${nomeLivello}` : ''}` : 'Lo schema di oggi'}
       intera
       larga
       indietro={

@@ -50,7 +50,8 @@ export default function SudokuLibero() {
   return (
     <Pagina
       key="partita"
-      titolo="Schema libero"
+      titolo="Sudoku"
+      sotto="Libera"
       intera
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={
