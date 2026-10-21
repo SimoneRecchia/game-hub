@@ -30,10 +30,10 @@
   grid-row: 1;
   display: grid;
   place-items: center;
-  color: rgb(244 232 200 / 0.55);
+  color: #e9dcbc;
   font-family: var(--font-rounded);
   font-size: min(11px, calc(var(--cella) * 0.36));
-  font-weight: 800;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -51,9 +51,10 @@
   border-radius: 0;
   background: transparent;
   box-shadow: inset 0 0 0 0.75px var(--filo);
-  color: #f6ecd2;
+  color: #fff6e0;
   font-family: var(--font-rounded);
-  font-weight: 800;
+  font-weight: 400;
+  text-shadow: 0 1px 0 rgb(4 48 24 / 0.7);
   cursor: pointer;
   transition: background-color 0.18s ease;
   -webkit-tap-highlight-color: transparent;
@@ -93,16 +94,16 @@
   rotate: 45deg;
   border-radius: 3px;
   box-shadow:
-    0 0 0 1.5px rgb(244 232 200 / 0.9),
-    0 2px 4px rgb(0 0 0 / 0.4);
+    0 0 0 2px #120c2b,
+    0 0 0 3.5px rgb(244 232 200 / 0.9);
 }
 
 .rl-rombo.is-rosso {
-  background: linear-gradient(135deg, #f04a4a, #a8101e);
+  background: #b91530;
 }
 
 .rl-rombo.is-nero {
-  background: linear-gradient(135deg, #3a3d44, #0b0b0d);
+  background: #1f1a3a;
 }
 
 /* ---- I numeri ---- */
@@ -135,55 +136,62 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Il numero sta su un ovale del suo colore, come sui panni veri: le righe restano del feltro. */
+/*
+ * Il numero riempie la sua casella, rossa o blu notte, come nel mockup: le
+ * righe color crema restano sopra, disegnate dalla casella stessa.
+ */
 .rl-numero::before {
   content: '';
   position: absolute;
-  inset: 13% 16%;
-  border-radius: 999px;
+  inset: 0;
   background: var(--tinta);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.25),
-    inset 0 -2px 3px rgb(0 0 0 / 0.3),
-    0 1px 2px rgb(0 0 0 / 0.35);
-  transition: transform 0.15s ease;
+    inset 0 0 0 0.75px var(--filo),
+    inset 0 2px 0 rgb(255 255 255 / 0.12);
+  transition: filter 0.15s ease;
 }
 
 .rl-numero.is-rosso {
-  --tinta: linear-gradient(180deg, #e8323c, #b0101e);
+  --tinta: #b91530;
 }
 
 .rl-numero.is-nero {
-  --tinta: linear-gradient(180deg, #34373e, #111215);
+  --tinta: #1f1a3a;
 }
 
 .rl-numero.is-zero {
-  --tinta: linear-gradient(180deg, #19b35c, #0a7a3a);
+  --tinta: #12a150;
   grid-column: 1 / -1;
   grid-row: 1;
 }
 
 .rl-numero.is-zero::before {
-  inset: 13% 30%;
+  border-radius: 40px 40px 0 0;
 }
 
 .rl-numero__cifra {
   position: relative;
-  font-size: min(17px, calc(var(--cella) * 0.5), calc(100cqw / 4.4 * 0.27));
-  text-shadow: 0 1px 1px rgb(0 0 0 / 0.45);
+  font-size: min(18px, calc(var(--cella) * 0.52), calc(100cqw / 4.4 * 0.28));
+  font-weight: 400;
+  color: #fff6e0;
+  text-shadow: 0 1px 0 rgb(18 12 43 / 0.55);
 }
 
 .rl-numero.is-coperto::before {
-  transform: scale(1.08);
+  filter: brightness(1.3);
   box-shadow:
-    0 0 0 2px #ffe08a,
-    0 0 12px rgb(255 224 138 / 0.7);
+    inset 0 0 0 3px #ffe27a,
+    inset 0 2px 0 rgb(255 255 255 / 0.12);
+}
+
+.rl-numero.is-uscito {
+  z-index: 1;
 }
 
 .rl-numero.is-uscito::before {
   box-shadow:
-    0 0 0 2.5px #ffd66b,
-    0 0 18px 4px rgb(255 214 107 / 0.8);
+    inset 0 0 0 3px #ffe27a,
+    0 0 14px rgb(255 226 122 / 0.7);
   animation: rl-uscito 0.9s ease-in-out 0.5s infinite alternate;
 }
 
@@ -320,8 +328,8 @@
 @keyframes rl-uscito {
   to {
     box-shadow:
-      0 0 0 3px #fff2c0,
-      0 0 26px 8px rgb(255 214 107 / 0.95);
+      inset 0 0 0 3px #fff2c0,
+      0 0 22px 4px rgb(255 226 122 / 0.95);
   }
 }
 

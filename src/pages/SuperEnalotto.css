@@ -1,6 +1,6 @@
 /*
- * Il SuperEnalotto: in cima il jackpot, blu notte con i brillantini, poi la
- * schedina, che e' di carta come quella della ricevitoria — le caselle
+ * Il SuperEnalotto, nella sala scura della Fortuna (Sala.css): in cima il
+ * jackpot, un biglietto giallo con il filo come nel mockup, poi la schedina, che e' di carta come quella della ricevitoria — le caselle
  * stampate in rosso, la croce a penna blu, i numeri scritti a mano — e le
  * ricevute delle schede giocate. La carta e la penna hanno gli stessi colori
  * nei due temi: sono oggetti, non interfaccia.
@@ -32,15 +32,19 @@
   align-items: baseline;
   justify-content: space-between;
   margin: 0;
-  font-size: var(--text-title-3);
-  font-weight: 700;
+  font-family: var(--font-rounded);
+  font-size: 22px;
+  font-weight: 400;
   color: var(--label);
+  text-shadow: 0 2px 0 #120c2b;
 }
 
 .se-sezione__titolo span {
+  font-family: var(--font-text);
   font-size: var(--text-subhead);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--label-secondary);
+  text-shadow: none;
 }
 
 .se-nota {
@@ -58,15 +62,16 @@
   display: grid;
   justify-items: center;
   gap: 6px;
-  padding: 22px 18px 20px;
-  border-radius: 28px;
+  padding: 18px 18px 16px;
+  border-radius: 22px;
   background:
-    radial-gradient(80% 90% at 50% 0%, rgb(90 150 255 / 0.55), transparent 70%),
-    linear-gradient(160deg, #1a3f9e, #0b1d55 60%, #081436);
+    radial-gradient(80% 90% at 50% 0%, rgb(255 255 255 / 0.45), transparent 70%),
+    #ffc93c;
   box-shadow:
-    inset 0 0 0 1px rgb(255 209 102 / 0.35),
-    0 16px 36px rgb(10 30 90 / 0.35);
-  color: #fff;
+    inset 0 0 0 var(--filo) #120c2b,
+    inset 0 0 0 calc(var(--filo) + 2px) rgb(255 255 255 / 0.5),
+    0 5px 0 #120c2b;
+  color: #120c2b;
   text-align: center;
   isolation: isolate;
 }
@@ -77,12 +82,12 @@
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(2px 2px at 12% 30%, #fff, transparent),
-    radial-gradient(1.5px 1.5px at 28% 70%, #ffd166, transparent),
-    radial-gradient(2px 2px at 72% 22%, #fff, transparent),
-    radial-gradient(1.5px 1.5px at 86% 64%, #ffd166, transparent),
-    radial-gradient(1.5px 1.5px at 50% 88%, #fff, transparent),
-    radial-gradient(2px 2px at 40% 18%, #ffd166, transparent);
+    radial-gradient(2.5px 2.5px at 12% 30%, #fff, transparent),
+    radial-gradient(2px 2px at 28% 70%, #fff8dc, transparent),
+    radial-gradient(2.5px 2.5px at 72% 22%, #fff, transparent),
+    radial-gradient(2px 2px at 86% 64%, #fff8dc, transparent),
+    radial-gradient(2px 2px at 50% 88%, #fff, transparent),
+    radial-gradient(2.5px 2.5px at 40% 18%, #fff8dc, transparent);
   animation: se-brilli 3.2s ease-in-out infinite alternate;
   pointer-events: none;
 }
@@ -97,48 +102,47 @@
 }
 
 .se-jackpot__etichetta {
-  font-size: 13px;
-  font-weight: 800;
+  font-size: 12px;
+  font-weight: 900;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #ffd166;
+  color: #120c2b;
 }
 
 .se-jackpot__cifra {
   font-family: var(--font-rounded);
-  font-size: clamp(44px, 14vw, 64px);
-  font-weight: 900;
+  font-size: clamp(42px, 13vw, 60px);
+  font-weight: 400;
   line-height: 1;
-  letter-spacing: -0.02em;
-  background: linear-gradient(180deg, #fff 30%, #ffe3a3);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  filter: drop-shadow(0 3px 10px rgb(0 0 0 / 0.35));
+  color: #120c2b;
+  text-shadow: 0 3px 0 rgb(255 255 255 / 0.6);
 }
 
 .se-jackpot__unita {
-  font-size: 0.36em;
-  font-weight: 800;
+  font-size: 0.4em;
 }
 
 .se-jackpot__quando {
   font-size: var(--text-subhead);
-  color: rgb(255 255 255 / 0.82);
+  font-weight: 800;
+  color: #3a2e1a;
 }
 
 .se-jackpot__diretta {
-  min-height: 44px;
+  min-height: 46px;
   margin-top: 6px;
   padding: 0 20px;
-  border: 0;
-  border-radius: 999px;
-  background: #e5383b;
-  color: #fff;
-  font: inherit;
-  font-weight: 800;
+  border: var(--filo) solid #120c2b;
+  border-radius: 14px;
+  background: #c8283c;
+  color: #fff8ec;
+  font-family: var(--font-rounded);
+  font-size: 17px;
+  font-weight: 400;
   cursor: pointer;
-  box-shadow: 0 0 22px rgb(229 56 59 / 0.55);
+  box-shadow:
+    0 4px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.3);
 }
 
 .se-jackpot.is-diretta .se-jackpot__diretta {
@@ -148,14 +152,13 @@
 @keyframes se-pulsa {
   50% {
     transform: scale(1.05);
-    box-shadow: 0 0 34px rgb(229 56 59 / 0.85);
   }
 }
 
 /* ─────────────────────────────  La schedina  ───────────────────────────── */
 
 .se-schedina {
-  --inchiostro: #d1235f;
+  --inchiostro: #bd1c55;
   --penna: #1d3fbf;
   position: relative;
   display: grid;
@@ -190,28 +193,28 @@
   justify-content: space-between;
   gap: 10px;
   margin: 0 -16px;
-  padding: 12px 16px;
-  background: linear-gradient(90deg, #1a3f9e, #2f6fe8);
-  color: #fff;
+  padding: 12px 16px 10px;
+  border-bottom: 1.5px dashed rgb(209 35 95 / 0.45);
+  color: var(--inchiostro);
 }
 
+/* Il marchio stampato in rosso, in corsivo, come sulla schedina del mockup. */
 .se-schedina__marchio {
-  font-size: 19px;
-  font-weight: 700;
+  font-family: var(--font-rounded);
+  font-size: 21px;
+  font-weight: 400;
   font-style: italic;
-  letter-spacing: -0.02em;
 }
 
 .se-schedina__marchio b {
-  color: #ffd166;
-  font-weight: 900;
+  color: #1d3fbf;
+  font-weight: 400;
 }
 
 .se-schedina__concorso {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   text-align: right;
-  opacity: 0.9;
 }
 
 .se-schedina__istruzioni {
@@ -267,16 +270,18 @@
 }
 
 .se-giocata.is-scelta {
-  background: rgb(29 63 191 / 0.07);
+  background: rgb(209 35 95 / 0.1);
+  box-shadow: inset 0 0 0 1.5px var(--inchiostro);
 }
 
 .se-giocata:disabled {
   cursor: default;
 }
 
-/* La giocata che il saldo non paga: stampata sbiadita, come una casella che non si puo' segnare. */
+/* La giocata che il saldo non paga: stampata sbiadita e tratteggiata, come una casella che non si puo' segnare: si legge ancora. */
 .se-giocata:disabled:not(.is-scelta) {
-  opacity: 0.45;
+  border-style: dashed;
+  color: #7d5566;
 }
 
 .se-giocata:focus-visible {
@@ -317,15 +322,14 @@
 
 .se-giocata__nome {
   font-family: var(--font-rounded);
-  font-size: 16px;
-  font-weight: 900;
+  font-size: 17px;
+  font-weight: 400;
   line-height: 1.1;
 }
 
 .se-giocata__costo {
   font-size: 12px;
-  font-weight: 700;
-  opacity: 0.8;
+  font-weight: 800;
 }
 
 /* Novanta caselle, dieci per riga come sulla schedina vera. */
@@ -349,7 +353,7 @@
   color: var(--inchiostro);
   font-family: var(--font-rounded);
   font-size: clamp(11px, 3.5vw, 16px);
-  font-weight: 800;
+  font-weight: 400;
   cursor: pointer;
   transition:
     transform var(--dur-fast) var(--ease-spring),
@@ -428,19 +432,24 @@
 
 .se-schedina__comando {
   min-height: 40px;
-  padding: 0 12px;
-  border: 1.5px solid var(--inchiostro);
+  padding: 0 14px;
+  border: 2px solid var(--inchiostro);
   border-radius: 999px;
-  background: transparent;
+  background: #fffdf8;
   color: var(--inchiostro);
-  font: inherit;
-  font-size: 14px;
-  font-weight: 800;
+  font-family: var(--font-rounded);
+  font-size: 15px;
+  font-weight: 400;
   cursor: pointer;
 }
 
+.se-schedina__comando:active:not(:disabled) {
+  transform: translateY(2px);
+}
+
 .se-schedina__comando:disabled {
-  opacity: 0.4;
+  border-color: rgb(209 35 95 / 0.45);
+  color: #b0607c;
   cursor: default;
 }
 
@@ -483,19 +492,24 @@
   }
 }
 
+/* Gioca la scheda: il tasto rosso della ricevitoria, come nel mockup. */
 .se-gioca {
   width: 100%;
 }
 
+.se-gioca:not(:disabled) {
+  background: #c8283c;
+  color: #fff8ec;
+}
+
 /*
  * Senza i punti per una scheda la schedina si spegne — le caselle non si
- * segnano — e al posto del bottone c'e' l'avviso del saldo (Avvisi.css).
+ * segnano, e l'inchiostro si fa grigio, non trasparente: si legge ancora — e
+ * al posto del bottone c'e' l'avviso del saldo (Avvisi.css).
  */
-.se-schedina.is-spenta .se-giocate,
-.se-schedina.is-spenta .se-schedina__istruzioni,
-.se-schedina.is-spenta .se-schedina__griglia,
-.se-schedina.is-spenta .se-schedina__piede {
-  opacity: 0.6;
+.se-schedina.is-spenta {
+  --inchiostro: #7d5566;
+  --penna: #4a5a8a;
 }
 
 /* ─────────────────────────────  Le ricevute  ───────────────────────────── */
@@ -650,7 +664,7 @@
 
 .se-premi tr.is-jackpot th,
 .se-premi tr.is-jackpot td {
-  color: #b07800;
+  color: #ffe27a;
   font-weight: 800;
 }
 

@@ -7,6 +7,7 @@ import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { PochiPunti } from '@/games/fortuna/Avvisi'
+import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { giornoEstrazione } from '@/games/stato'
 import { ComeSiGiocaEnalotto } from '@/games/superenalotto/ComeSiGioca'
@@ -63,6 +64,7 @@ const conto = (s: number) => `${Math.floor(Math.max(0, s) / 60)}:${String(Math.m
  * comincia la diretta (i numeri), e quando finisce (i premi).
  */
 export default function SuperEnalotto() {
+  useSala()
   const { vai } = useNavigazione()
   const toast = useToast()
   const [vista, setVista] = useState<VistaEnalotto | null>(null)
@@ -144,7 +146,7 @@ export default function SuperEnalotto() {
   if (errore && !vista) {
     return (
       <Pagina titolo="SuperEnalotto" indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }}>
-        <div className="se-errore">
+        <div className={`se-errore ${SALA}`}>
           <p>{errore}</p>
           <Button onClick={() => vai(ROTTE.fortuna)}>Torna alla Fortuna</Button>
         </div>
@@ -168,9 +170,16 @@ export default function SuperEnalotto() {
         </BottoneBarra>
       }
     >
-      <div className="se">
+      <div className={`se ${SALA}`}>
         {vista && (
-          <Tabellone saldo={vista.saldo} puntata={puntato || null} saldoRef={saldoRef} scarso={senzaSaldo} />
+          <Tabellone
+            saldo={vista.saldo}
+            puntata={puntato || null}
+            saldoRef={saldoRef}
+            scarso={senzaSaldo}
+            riga
+            etichetta="Giocato"
+          />
         )}
 
         <Jackpot vista={vista} tempoDi={tempoDi} onDiretta={() => ultimo && setDiretta({ replica: false, inizio: inizioUltimo })} />

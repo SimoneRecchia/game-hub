@@ -1107,7 +1107,7 @@ al centro del mobile, come all'inizio, il pomo che veniva avanti scappava di
 lato, e la leva girava come la lancetta di un orologio. Oltre `SOGLIA` i rulli
 partono e la leva torna su con una molla; un tocco senza trascinare la tira
 tutta, e Invio e lo spazio anche, perché e' un bottone. Accanto alle fiches
-c'e' "Azzera", e in fondo al banco "Gira", per chi non vuole tirare. Il resto
+c'e' "Azzera", e sotto il mobile il bottone grande "Gira", per chi non vuole tirare. Il resto
 si vede come a Crazy Time: le fiches volano dal saldo al display della puntata
 e il saldo scende alla leva; una vincita accende i simboli che pagano, ognuno a
 modo suo (vedi sotto), il display la segna con il suo nome, le monete cadono
