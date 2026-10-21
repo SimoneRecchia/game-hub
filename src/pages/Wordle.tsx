@@ -37,7 +37,6 @@ export default function Wordle() {
   const coop = useCoopHost(invitiOpen)
   const attivi = coop.room?.guests.filter((g) => g.status === 'accepted') ?? []
 
-  const title = game.state ? `Wordle #${game.state.puzzleNumber}` : 'Parola del giorno'
   const finished = game.state && game.state.status !== 'playing'
 
   // La festa con l'adesivo di una vittoria appena fatta, non di una riaperta.
@@ -45,7 +44,8 @@ export default function Wordle() {
 
   return (
     <Pagina
-      titolo={title}
+      titolo="Wordle"
+      sotto={game.state ? `N° ${game.state.puzzleNumber} · la parola di oggi` : 'La parola di oggi'}
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={

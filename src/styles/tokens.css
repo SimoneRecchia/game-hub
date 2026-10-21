@@ -697,7 +697,7 @@
   --tile-correct: #5edb84;
   --tile-present: #ffc93c;
   --tile-absent: #c9c3dd;
-  --tile-absent: light-dark(#c9c3dd, #8e88ae);
+  --tile-absent: light-dark(#c9c3dd, #9a94b8);
 
   /*
    * Il colore della lettera sopra la casella piena: l'inchiostro su tutti e tre
@@ -734,7 +734,7 @@
   --key-azione-ink: #2a1f5c;
   /* Una lettera gia' provata e assente: in scuro piu' cupa dei tasti, non solo grigia come loro. */
   --key-assente: #c9c3dd;
-  --key-assente: light-dark(#c9c3dd, #8e88ae);
+  --key-assente: light-dark(#c9c3dd, #9a94b8);
   --key-assente-ink: #2a1f5c;
 
   /* I colori dei grafici del pannello di amministrazione: vedi src/pages/admin/Grafici.css. */

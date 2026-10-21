@@ -95,6 +95,7 @@ export default function AnagrammiLibera() {
     <Pagina
       key="partita"
       titolo="Anagrammi"
+      sotto="Libera"
       intera
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={info}

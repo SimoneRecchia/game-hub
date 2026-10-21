@@ -815,20 +815,14 @@
 
 /* Con l'inchiostro sopra e il filo, come gli adesivi dell'album: l'arancio non regge la scritta bianca. */
 .adesivo.ana-adesivo.is-vivace .adesivo__carta {
-  border: 3px solid #2a1f5c;
-  box-shadow: 0 6px 0 #2a1f5c;
   color: #2a1f5c;
+  text-shadow: none;
 }
 
 .adesivo.ana-adesivo.is-bordato .adesivo__carta {
-  border: 3px solid var(--roulette-tinta);
+  border-color: var(--roulette-tinta);
   background: #fffbf2;
-  box-shadow: 0 6px 0 var(--roulette-tinta);
   color: #2a1f5c;
-}
-
-.adesivo.ana-adesivo .adesivo__titolo {
-  font-weight: 400;
 }
 
 .adesivo.ana-adesivo .adesivo__sotto {

@@ -27,7 +27,8 @@ export default function Paroliere() {
 
   return (
     <Pagina
-      titolo={s ? `Paroliere #${s.puzzleNumber}` : 'Paroliere'}
+      titolo="Paroliere"
+      sotto={s ? `N° ${s.puzzleNumber} · la griglia di oggi` : 'La griglia di oggi'}
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={

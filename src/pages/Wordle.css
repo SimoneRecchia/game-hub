@@ -74,20 +74,14 @@
  * carta bordata di rosso, con la parola su tessere d'oro.
  */
 .adesivo.wordle-adesivo.is-vivace .adesivo__carta {
-  border: 3px solid #2a1f5c;
-  box-shadow: 0 6px 0 #2a1f5c;
   color: #2a1f5c;
+  text-shadow: none;
 }
 
 .adesivo.wordle-adesivo.is-bordato .adesivo__carta {
-  border: 3px solid var(--roulette-tinta);
+  border-color: var(--roulette-tinta);
   background: #fffbf2;
-  box-shadow: 0 6px 0 var(--roulette-tinta);
   color: #2a1f5c;
-}
-
-.adesivo.wordle-adesivo .adesivo__titolo {
-  font-weight: 400;
 }
 
 .adesivo.wordle-adesivo .adesivo__sotto {
@@ -95,16 +89,9 @@
   opacity: 1;
 }
 
-.adesivo.wordle-adesivo .adesivo__lettere span {
-  border: 2px solid #2a1f5c;
-  background: #fffbf2;
-  color: #2a1f5c;
-  font-weight: 400;
-  box-shadow: 0 2px 0 #2a1f5c;
-}
-
 .adesivo.wordle-adesivo.is-bordato .adesivo__lettere span {
   background: var(--giallo);
+  color: #2a1f5c;
 }
 
 /* Le stelle dell'adesivo di vittoria: scoppiano una dopo l'altra. */

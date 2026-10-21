@@ -72,7 +72,8 @@ export default function WordleLibero() {
 
   return (
     <Pagina
-      titolo="Parola libera"
+      titolo="Wordle"
+      sotto="Libera"
       intera
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={

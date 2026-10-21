@@ -30,7 +30,8 @@ export default function Anagrammi() {
 
   return (
     <Pagina
-      titolo={s ? `Anagrammi #${s.puzzleNumber}` : 'Anagrammi'}
+      titolo="Anagrammi"
+      sotto={s ? `N° ${s.puzzleNumber} · le parole di oggi` : 'Le parole di oggi'}
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={

@@ -83,7 +83,7 @@ export default function ParoliereLibera() {
 
   const record = g.lato ? g.conti.migliore[g.lato] : 0
   return (
-    <Pagina key="partita" titolo="Paroliere" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina key="partita" titolo="Paroliere" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
       <PartitaParoliere
         key={g.numero}
         vista={v}
@@ -92,9 +92,11 @@ export default function ParoliereLibera() {
         punti={String(v.punteggio)}
         fine={
           <>
-            <p className="par-piede-fine u-tabnum">
-              {v.punteggio > 0 && v.punteggio >= record ? 'Il tuo record!' : `Il tuo record: ${record}`}
-            </p>
+            {(record > 0 || v.punteggio > 0) && (
+              <p className="par-piede-fine u-tabnum">
+                {v.punteggio > 0 && v.punteggio >= record ? 'Il tuo record!' : `Il tuo record: ${record}`}
+              </p>
+            )}
             <div className="par-fila-tasti">
               <button type="button" className="par-tasto par-tasto--carta" onClick={g.ricomincia}>
                 Esci
