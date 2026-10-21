@@ -1465,59 +1465,45 @@ resta in vista `FINE_RL_MS`, e chi punta quando la biglia e' gia' ferma comincia
 il giro dopo per tutti: chi guarda l'ha gia' vista cadere. Chi si alza prima
 del lancio si riprende le fiches.
 
-**La ruota della roulette e' inclinata, e la biglia no.** `RuotaRoulette`
-(`src/games/roulette/Ruota.tsx`) e' fatta di pochi strati piatti, ognuno con la
-sua prospettiva (`TILT`) e la sua altezza (`Z`, in unita' del disegno), centrati
-nello stesso punto: la conca ferma con il bordo di legno, il cilindro che gira
-con le caselle, i separatori e la base del cono, gli anelli del cono uno piu'
-alto dell'altro, la luce ferma sopra, e la torretta con le braccia sospese e la
-loro ombra, che girano. Uno strato piu' alto si disegna sopra quelli piu' bassi,
-che e' quel che si vede da sopra, e girando le braccia scorrono sul cono come
-quelle vere. Per un giorno e' stata un contesto 3D (`preserve-3d`) con una
-trentina di strati, molti grandi quanto la ruota: su Android finiva la memoria
-della scheda grafica, e comparivano quadrati neri anche sul panno. Quel che
-dava la profondita' si disegna: la parete del bordo che si vede in fondo, e il
-cilindro piu' basso della pista, sono falci (`parete`: un cerchio meno lo stesso
-cerchio abbassato), i separatori hanno l'ombra ai due lati e il filo di luce in
-mezzo, perché girano e una luce da una parte sola girerebbe con loro, e
-l'alzata di ogni anello del cono e' un'ombra spostata verso chi guarda. Il
-fianco del mobile e il fusto della torretta sono disegnati sullo schermo con
-`proietta` (`Fianco`, `Fusto`), e combaciano perché i conti sono gli stessi del
-CSS. Il fianco e' una fascia di legno sola, con la luce sull'orlo: le doghe, lo
-zoccolo e le fasce d'oro che aveva, a grandezza di telefono, erano righe fitte
-sotto il bordo che lo sporcavano invece di dargli spessore. Chrome disegna gli strati in prospettiva a un punto per pixel, senza la
-densita' dello schermo, e sul telefono i numeri venivano sgranati: li' ogni
-strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
-(`nitidezza`, al piu' tre, e due per la conca e la luce, che non hanno scritte);
-Safari li disegna gia' nitidi, e ingranditi vorrebbero nove volte la memoria.
-Niente `will-change` sugli strati che girano: fisserebbe la loro risoluzione a
-quella del primo disegno, e la ruota arriva piccola. Il tavolo non ha
-un'entrata sua, e il velo sta dentro il feltro: con un'animazione che restava
-(`both`) e il velo che sporgeva di `100vmax`, il tavolo era lo strato piu'
-grande della pagina. Il cilindro riparte dall'angolo dove l'aveva lasciato
-l'altra ruota, con i giri che avrebbe fatto nel frattempo (`cilindro`): la
-ruota della sala e quella del tavolo sono la stessa. La biglia inclinata
-diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua posizione
-la calcola `proietta` con la stessa prospettiva del CSS. Il suo angolo si conta
-sul cilindro e finisce nella casella del numero qualunque sia la velocita' del
-cilindro; corre sulla pista, scende verso i rombi, rimbalza fra i separatori, e
-i suoni seguono gli stessi momenti. Il cilindro sta piu' in basso della pista
-(`Z.cilindro`), e la biglia ci scende quando lascia il pendio (`fondoA`), con
-l'ombra: quando la ruota e' diventata a strati piatti il cilindro era finito
-all'altezza della pista, e la biglia restava sospesa sopra le caselle. Disegnato
-dopo la conca, uno strato piu' basso ne copre il pendio davanti e lo lascia
-vedere in fondo, che e' come si vede una conca da sopra. Finché corre veloce ha la scia, due copie di un
-attimo prima, e la sua ombra e' sfumata dal suo sfondo e non da un `filter`, che
-si rifarebbe a ogni fotogramma. Dal mockup dell'album (21 ottobre 2026) la ruota
+**La ruota della roulette e' quella del mockup, piatta, e la biglia sta
+sopra.** `RuotaRoulette` (`src/games/roulette/Ruota.tsx`) e' il disegno del
+mockup dell'album, a colori pieni: due strati piatti con la stessa prospettiva
+(`TILT`, 52 gradi), la conca ferma — il bordo di legno, la pista, l'anello d'oro
+e i rombi — e il cilindro che gira, con i numeri chiari sulla fascia rossa e
+nera, le caselle scure dentro, il cono chiaro e la croce d'oro della torretta;
+sotto, il fianco di legno con il filo d'inchiostro, disegnato sullo schermo con
+`proietta` (`Fianco`). Fino al 21 ottobre 2026 era realistica — il cono tornito
+a gradini, le braccia sospese con la loro ombra, i rombi a facce, il legno con
+le venature, una decina di strati a altezze diverse — e chi gioca l'ha voluta
+come nel mockup. Per un giorno, prima ancora, era stata un contesto 3D
+(`preserve-3d`) con una trentina di strati: su Android finiva la memoria della
+scheda grafica, e comparivano quadrati neri anche sul panno, quindi niente
+`preserve-3d`. Chrome disegna gli strati in prospettiva a un punto per pixel,
+senza la densita' dello schermo, e sul telefono i numeri venivano sgranati: li'
+ogni strato e' grande `--nitido` volte e rimpicciolito nella sua trasformazione
+(`nitidezza`, al piu' tre); Safari li disegna gia' nitidi, e ingranditi
+vorrebbero nove volte la memoria. Niente `will-change` sugli strati che girano:
+fisserebbe la loro risoluzione a quella del primo disegno, e la ruota arriva
+piccola. Il tavolo non ha un'entrata sua, e il velo sta dentro il feltro: con
+un'animazione che restava (`both`) e il velo che sporgeva di `100vmax`, il
+tavolo era lo strato piu' grande della pagina. Il cilindro riparte dall'angolo
+dove l'aveva lasciato l'altra ruota, con i giri che avrebbe fatto nel frattempo
+(`cilindro`): la ruota della sala e quella del tavolo sono la stessa. La biglia
+inclinata diventerebbe un'ellisse, quindi sta sopra il piatto, tonda, e la sua
+posizione la calcola `proietta` con la stessa prospettiva del CSS. Il suo
+angolo si conta sul cilindro e finisce nella casella del numero qualunque sia
+la velocita' del cilindro; corre sulla pista, scende verso i rombi, rimbalza
+fra i separatori, e i suoni seguono gli stessi momenti. Finché corre veloce ha
+la scia, due copie di un attimo prima, e la sua ombra e' sfumata dal suo sfondo
+e non da un `filter`, che si rifarebbe a ogni fotogramma. Dal mockup la ruota
 non sta piu' su un palco sopra il panno: durante le puntate non si vede, e al
 lancio sale dal fondo del tavolo e si fa grande in mezzo al panno, che si vela;
 poi arriva la carta del croupier con il numero, e la ruota torna giu'. La ruota
 si misura e si disegna la prima volta prima che la pagina si veda
 (`useLayoutEffect`): misurata dopo, compariva per un fotogramma con le misure
 di partenza, senza il fianco e con il cilindro fermo a zero. La riga dei numeri
-usciti (USCITI) non
-dice il numero mentre la biglia gira: il server lo mette nella storia al
-lancio, e sarebbe la soluzione.
+usciti (USCITI) non dice il numero mentre la biglia gira: il server lo mette
+nella storia al lancio, e sarebbe la soluzione.
 
 **Dalla sala al tavolo il feltro e' uno solo.** La sala e il tavolo della
 roulette sono tutti di feltro, come nel mockup: il feltro e' un livello fisso a
