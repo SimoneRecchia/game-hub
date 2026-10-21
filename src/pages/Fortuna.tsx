@@ -101,7 +101,8 @@ export default function Fortuna() {
         />
       )}
 
-      <Sezione titolo="I giochi" className="fortuna__sezione">
+      {/* Come nel mockup, i giochi vengono subito sotto il saldo, senza titoletto: il nome lo sente chi legge lo schermo. */}
+      <section className="sezione fortuna__sezione" aria-label="I giochi">
         <ul className="fortuna__giochi">
           {GIOCHI.map((g, i) => (
             <li key={g.id} className={`entra fortuna__gioco--${g.id}`} style={{ '--n': i + 1 } as CSSProperties}>
@@ -109,7 +110,7 @@ export default function Fortuna() {
             </li>
           ))}
         </ul>
-      </Sezione>
+      </section>
 
       {dati && dati.blackjack.tavoli.length > 0 && !dati.blackjack.mioTavolo && (
         <Sezione titolo="Al tavolo del blackjack">
