@@ -10,6 +10,15 @@ html {
   /* Il fondo sta anche sulla radice: le View Transitions fotografano lei, e un
      fondo solo sul body lascerebbe intravedere il bianco durante lo scorrimento. */
   background: var(--bg);
+  /* La barra delle schede sta sopra il fondo della pagina: quel che prende il fuoco, o che il browser porta in
+     vista, si ferma sopra di lei e non sotto, dove un tocco aprirebbe un'altra scheda. */
+  scroll-padding-bottom: calc(var(--tabbar-spazio) + var(--safe-bottom));
+}
+
+@media (min-width: 900px) {
+  html {
+    scroll-padding-bottom: calc(56px + var(--sp-5) + var(--sp-3));
+  }
 }
 
 body {

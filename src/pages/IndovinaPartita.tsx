@@ -113,7 +113,7 @@ export default function IndovinaPartita() {
                   nome={v.personaggi.voci[v.mioSegreto].nome}
                 />
                 <span className="ic-segreto__testo">
-                  <span className="ic-segreto__etichetta">Il tuo personaggio</span>
+                  <span className="ic-segreto__etichetta">La tua carta</span>
                   <span className="ic-segreto__nome">{v.personaggi.voci[v.mioSegreto].nome}</span>
                 </span>
               </button>
@@ -366,7 +366,7 @@ function Turno({ g, v, nome, onIndovina }: { g: PartitaIndovina; v: VistaIndovin
         </Button>
       </form>
       <button type="button" className="ic-chiedi__indovina" onClick={onIndovina} disabled={g.inviando}>
-        Oppure <strong>indovina</strong>
+        È lui! Provo a indovinare
       </button>
     </div>
   )

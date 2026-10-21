@@ -375,9 +375,18 @@
   height: var(--riga);
 }
 
+/* Le parole passate si fanno piccole e si spengono nel fondo, senza trasparenza: si leggono ancora. */
 .cat-anello.is-sopra {
-  opacity: 0.62;
   transform: scale(0.86);
+}
+
+.cat-anello.is-sopra .cat-targa {
+  background: #c9d7f2;
+  box-shadow: 0 3px 0 var(--cat-ink);
+}
+
+.cat-anello.is-sopra .cat-casella {
+  filter: saturate(0.6);
 }
 
 .cat-anello.is-sotto {
@@ -1355,6 +1364,7 @@
   font-weight: 800;
   line-height: 1.3;
   text-align: left;
+  list-style: decimal;
 }
 
 .cat-espressione {

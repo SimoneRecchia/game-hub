@@ -31,6 +31,15 @@
   border-radius: 12px;
   perspective: 600px;
   -webkit-tap-highlight-color: transparent;
+  animation: ic-entra 0.45s calc(var(--i) * 18ms) cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+/* Le carte arrivano sul tabellone una dopo l'altra, come appena tirate su. */
+@keyframes ic-entra {
+  from {
+    opacity: 0;
+    transform: scale(0.6) translateY(10px);
+  }
 }
 
 .ic-carta:focus-visible {
@@ -41,18 +50,22 @@
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
-  transition: transform 380ms var(--ease-spring);
+  transition: transform 0.5s cubic-bezier(0.3, 0.7, 0.3, 1.15);
 }
 
 .ic-carta.is-abbassata .ic-carta__dentro {
-  transform: rotateX(180deg);
+  transform: rotateX(-180deg) scale(0.94);
 }
 
+/* Le facce e il retro hanno il filo d'inchiostro e l'ombra secca, come le figurine. */
 .ic-carta__fronte,
 .ic-carta__retro {
   position: absolute;
   inset: 0;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
   border-radius: 12px;
+  box-shadow: 0 3px 0 var(--ink);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
@@ -61,28 +74,22 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--surface);
-  box-shadow: var(--ombra-album);
+  background: #fffbf2;
 }
 
-/* Il retro: il rosso del gioco con un punto di domanda in rilievo, come la plastica della scatola. */
+/* Il retro: le righe del corallo del gioco, con il punto di domanda, come la plastica della scatola. */
 .ic-carta__retro {
   display: grid;
   place-items: center;
   transform: rotateX(180deg);
-  background:
-    radial-gradient(90% 70% at 30% 20%, rgba(255, 255, 255, 0.25), transparent 60%),
-    linear-gradient(160deg, var(--indovina-1), var(--indovina-2));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  opacity: 0.72;
+  background: repeating-linear-gradient(135deg, #ff8a7a 0 6px, #ffa79b 6px 12px);
 }
 
 .ic-carta__retro::after {
   content: '?';
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(90, 26, 18, 0.5);
   font-family: var(--font-rounded);
-  font-size: calc(var(--lato) * 0.46);
-  font-weight: 800;
+  font-size: calc(var(--lato) * 0.42);
   line-height: 1;
 }
 
@@ -91,7 +98,7 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  background: var(--fill-quaternary);
+  background: #ece6f7;
   -webkit-user-drag: none;
   user-select: none;
 }
@@ -99,10 +106,10 @@
 .ic-faccia--vuota {
   display: grid;
   place-items: center;
-  color: var(--label-secondary);
+  color: #4e4479;
   font-family: var(--font-rounded);
   font-size: calc(var(--lato, 60px) * 0.32);
-  font-weight: 800;
+  font-weight: 400;
 }
 
 .ic-faccia--nome {
@@ -126,9 +133,11 @@
   justify-content: center;
   min-height: 0;
   padding: 0 4px;
-  color: var(--label);
+  border-top: 1.5px solid rgba(42, 31, 92, 0.25);
+  background: #fffbf2;
+  color: #2a1f5c;
   font-size: clamp(10px, calc(var(--lato) * 0.15), 15px);
-  font-weight: 700;
+  font-weight: 900;
   line-height: 1.1;
 }
 
@@ -155,10 +164,10 @@
   place-items: center;
   min-height: 0;
   padding: 10%;
-  color: rgba(22, 27, 45, 0.82);
+  color: #2a1f5c;
   font-family: var(--font-rounded);
   font-size: clamp(10px, min(calc(var(--lato) * 0.21), calc(var(--lato) * 1.08 / var(--parola, 6))), 30px);
-  font-weight: 800;
+  font-weight: 400;
   line-height: 1.1;
   letter-spacing: var(--tracking-tight);
   text-align: center;
@@ -174,9 +183,23 @@
   text-wrap: balance;
 }
 
-/* Si sceglie chi e': le carte ancora in piedi si offrono, quella scelta si alza. */
+/* Si sceglie chi e': le carte ancora in piedi pulsano d'oro, quella scelta si alza. */
 .ic-tabellone.is-scegli .ic-carta:not(.is-abbassata) .ic-carta__fronte {
-  box-shadow: var(--edge-light), var(--shadow-key), 0 0 0 2px color-mix(in srgb, var(--brand) 45%, transparent);
+  animation: ic-pulsa 1.1s ease-in-out infinite;
+}
+
+@keyframes ic-pulsa {
+  0%,
+  100% {
+    box-shadow:
+      0 3px 0 var(--ink),
+      0 0 0 0 rgba(255, 201, 60, 0.9);
+  }
+  50% {
+    box-shadow:
+      0 3px 0 var(--ink),
+      0 0 0 4px rgba(255, 201, 60, 0.9);
+  }
 }
 
 .ic-carta.is-scelta .ic-carta__dentro {
@@ -184,27 +207,49 @@
 }
 
 .ic-tabellone.is-scegli .ic-carta.is-scelta .ic-carta__fronte {
-  box-shadow: var(--edge-light), var(--shadow-md), 0 0 0 3px var(--brand);
+  box-shadow:
+    0 3px 0 var(--ink),
+    0 0 0 4px var(--giallo);
+  animation: none;
 }
 
-/* A partita finita: il personaggio dell'altro, verde se l'ho preso, rosso se no. */
+/* A partita finita: il personaggio dell'altro, verde se l'ho preso, rosso se no, che si gira. */
 .ic-carta.is-rivelata .ic-carta__dentro {
   transform: none;
+  animation: ic-gira 0.9s 0.3s cubic-bezier(0.3, 0.7, 0.3, 1.2) both;
+}
+
+@keyframes ic-gira {
+  from {
+    transform: rotateY(180deg) scale(0.8);
+  }
 }
 
 .ic-carta.is-rivelata .ic-carta__fronte {
-  box-shadow: var(--edge-light), var(--shadow-md), 0 0 0 3px var(--red);
+  border-color: #e5383b;
+  box-shadow:
+    0 3px 0 var(--ink),
+    0 0 0 3px #e5383b;
 }
 
 .ic-carta.is-rivelata.is-vinta .ic-carta__fronte {
-  box-shadow: var(--edge-light), var(--shadow-md), 0 0 0 3px var(--green);
+  border-color: #23a35a;
+  box-shadow:
+    0 3px 0 var(--ink),
+    0 0 0 3px #5edb84;
 }
 
-.ic-carta:active:not(:disabled) .ic-carta__fronte {
-  filter: brightness(0.96);
+.ic-carta:active:not(:disabled) .ic-carta__dentro {
+  translate: 0 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ic-carta,
+  .ic-carta.is-rivelata .ic-carta__dentro,
+  .ic-tabellone.is-scegli .ic-carta:not(.is-abbassata) .ic-carta__fronte {
+    animation: none;
+  }
+
   .ic-carta__dentro {
     transition: none;
   }
