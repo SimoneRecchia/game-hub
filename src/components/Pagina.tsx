@@ -22,7 +22,7 @@ interface Props {
   sopra?: ReactNode
   /** Sopra al titolo grande: la copertina nella pagina di un gioco. */
   eroe?: ReactNode
-  /** Sotto al titolo grande. */
+  /** Sotto al titolo grande; nelle pagine `intera`, sotto il titolo della barra. */
   sotto?: ReactNode
   /**
    * La sala di un gioco: in cima il suo vetrino grande, sopra il titolo la
@@ -137,6 +137,8 @@ export function Pagina({
           </div>
           <h1 className="pagina__titolo-barra" aria-hidden={!intera && !scorsa}>
             {titolo}
+            {/* Nelle partite, sotto il titolo, contro chi e a che livello. */}
+            {intera && sotto && <span className="pagina__sottotitolo">{sotto}</span>}
           </h1>
           <div className="pagina__lato pagina__lato--destra">{azioni}</div>
         </div>

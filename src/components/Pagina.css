@@ -129,6 +129,18 @@
     transform var(--dur-base) var(--ease-out);
 }
 
+.pagina__sottotitolo {
+  display: block;
+  overflow: hidden;
+  margin-top: -1px;
+  color: var(--label-secondary);
+  font-family: var(--font-text);
+  font-size: 0.75rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+}
+
 .pagina__barra.is-scorsa .pagina__titolo-barra,
 .pagina--intera .pagina__titolo-barra {
   opacity: 1;

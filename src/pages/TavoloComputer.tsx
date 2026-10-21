@@ -149,7 +149,8 @@ export default function TavoloComputer({ gioco }: { gioco: GiocoTavoliere }) {
 
   return (
     <Pagina
-      titolo="Contro il computer"
+      titolo={descrizione.nome}
+      sotto={`Contro il computer · ${NOMI_LIVELLI[p.livello]}`}
       intera
       indietro={{ a: ROTTE.tavolo(gioco), etichetta: descrizione.nome }}
       azioni={

@@ -166,7 +166,8 @@ function Partita({ g, v, gioco }: { g: PartitaConAmico; v: VistaTavolo; gioco: G
   const soloInvito = v.stato === 'invito' || v.stato === 'rifiutata' || v.stato === 'annullata'
   return (
     <Pagina
-      titolo={v.avversario ? `Con ${v.avversario.displayName}` : descrizione.nome}
+      titolo={descrizione.nome}
+      sotto={v.avversario ? `Con ${v.avversario.displayName}` : undefined}
       intera
       indietro={{ a: ROTTE.tavolo(v.gioco), etichetta: descrizione.nome }}
       azioni={
