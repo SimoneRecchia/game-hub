@@ -13,6 +13,7 @@
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+  padding: var(--scheda-padding);
   border-radius: 22px;
   background: var(--surface);
   /* Il filo e' un'ombra interna e non un bordo: i giochi contano sulle misure della scheda, punto per punto. */

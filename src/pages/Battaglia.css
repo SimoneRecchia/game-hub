@@ -306,6 +306,10 @@
   gap: 10px;
 }
 
+.bat-campo > .navi {
+  align-self: stretch;
+}
+
 .bat-campo__mare {
   width: var(--lato-nemico);
   align-self: center;
