@@ -4,9 +4,9 @@ import './Tabellone.css'
 
 /**
  * Il tabellone in cima ai giochi della Fortuna: il saldo, che conta quando
- * cambia, e la puntata. Nient'altro: ne' quel che si e' vinto o perso oggi, ne'
- * da dove si e' partiti — al tavolo si guarda quel che si ha davanti. Il saldo
- * e' uno per tutti i giochi. A ogni cambio il tabellone si accende: rosso per
+ * cambia, e la puntata. Nient'altro: ne' com'e' andata oggi, ne' da dove si
+ * e' partiti — al tavolo si guarda quel che si ha davanti. Il saldo
+ * e' uno per tutti i giochi. A ogni cambio il tabellone si accende: lilla per
  * la puntata pagata, d'oro per la vincita che arriva. `saldoRef` e' il numero,
  * da dove partono le fiches e dove arrivano le monete. Quando il saldo non
  * basta per puntare (`scarso`) si tinge d'ambra, come l'avviso che lo dice

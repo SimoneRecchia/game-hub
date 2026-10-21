@@ -24,11 +24,12 @@ export function ComeSiGiocaBlackjack({ open, onClose }: { open: boolean; onClose
               {MANI_MASSIME} mani; gli assi una volta, con una carta.
             </li>
             <li>
-              Il banco prende la seconda carta dopo i giocatori e sta su tutti i 17. Se fa blackjack, prende anche
-              raddoppi e split.
+              Il banco prende la seconda carta dopo i giocatori e sta su tutti i 17. Se fa blackjack, raddoppi e split
+              non pagano.
             </li>
             <li>
-              Il blackjack paga 1 a 1. Contro l’asso del banco c’è l’assicurazione: costa metà puntata e paga 2 a 1.
+              Una mano vinta ti ridà il doppio della puntata, anche il blackjack, che paga 1 a 1; una mano pari ti
+              ridà la puntata. Contro l’asso del banco c’è l’assicurazione: costa metà puntata e paga 2 a 1.
             </li>
           </ul>
         </section>
@@ -39,7 +40,7 @@ export function ComeSiGiocaBlackjack({ open, onClose }: { open: boolean; onClose
               Si punta da {PUNTATA_MINIMA_BJ} punti a tutto il saldo. Fino a {POSTI_BJ} giocatori: con gli amici le
               puntate hanno {PUNTATE_MS / 1000} secondi, e ogni turno {TURNO_MS / 1000}.
             </li>
-            <li>Chi gioca al meglio riceve in media il {resa ?? 97}% di quel che punta: vince il banco.</li>
+            <li>Giocando al meglio, in media ti torna il {resa ?? 97}% di quel che punti.</li>
           </ul>
         </section>
         <Button size="lg" fullWidth onClick={onClose}>

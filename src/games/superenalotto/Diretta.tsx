@@ -176,14 +176,14 @@ export default function Diretta({
     timeZone: 'UTC',
   })
   const esito =
-    mie.length === 0 ? 'Non avevi schede' : migliore >= 2 ? `Hai fatto ${migliore}!` : 'Niente per te, stavolta'
+    mie.length === 0 ? 'Non avevi schede' : migliore >= 2 ? `Hai fatto ${migliore}!` : 'Al prossimo concorso'
   const premio =
     mie.length === 0 || migliore < 2
       ? null
       : vinto !== null && vinto !== undefined
         ? vinto > 0
           ? `Hai vinto ${vinto} ${vinto === 1 ? 'punto' : 'punti'}`
-          : 'Il premio, diviso fra tanti, è di zero punti'
+          : 'Il premio, diviso fra tanti, non arriva a un punto'
         : 'I premi fra un attimo…'
 
   // Quel che sente lo screen reader: una riga per momento.

@@ -236,23 +236,9 @@
   background: #ffd84d;
 }
 
+/* Oltre il 21: un fatto del gioco, in grigio, senza che le carte tremino. */
 .bj-mano__totale.is-oltre {
-  background: #ff6b6b;
-}
-
-.bj-mano:has(.bj-mano__totale.is-oltre) .bj-mano__carte {
-  animation: bj-trema 0.5s var(--ease-out);
-}
-
-@keyframes bj-trema {
-  20%,
-  60% {
-    transform: translateX(-6px) rotate(-1.5deg);
-  }
-  40%,
-  80% {
-    transform: translateX(6px) rotate(1.5deg);
-  }
+  background: #dce1ec;
 }
 
 /* La mano che tocca: il riquadro tratteggiato d'oro attorno, che respira. */
@@ -317,14 +303,15 @@
   color: #120c2b;
 }
 
+/* Il pari ridà la puntata: e' una vincita, verde come le altre. */
 .bj-mano__esito.is-pari {
-  background: #dce1ec;
+  background: #5edb84;
   color: #120c2b;
 }
 
 .bj-mano__esito.is-sballata {
-  background: #e5383b;
-  color: #fff6e0;
+  background: #dce1ec;
+  color: #120c2b;
 }
 
 /* ─────────────────────────────  Il mio posto  ───────────────────────────── */
@@ -510,11 +497,6 @@
 .bj-assicurazione__esito.is-pagata {
   background: #ffd84d;
   color: #120c2b;
-}
-
-.bj-assicurazione__esito.is-persa {
-  background: #3a2e66;
-  color: #fff6e0;
 }
 
 /* Lo scudo dell'assicurazione: il colore lo dicono `--scudo` e `--spunta`, dove lo si usa. */
@@ -769,8 +751,8 @@
 }
 
 /*
- * L'anello del tempo: si consuma attorno a chi deve decidere, rosso negli
- * ultimi secondi. E' piu' largo di quel che circonda, e il `max-width: 100%`
+ * L'anello del tempo: si consuma attorno a chi deve decidere, arancione negli
+ * ultimi secondi — un promemoria, non un allarme. E' piu' largo di quel che circonda, e il `max-width: 100%`
  * che base.css da' alle svg lo stringeva solo in larghezza: l'anello veniva
  * ovale, e girato di un quarto anche spostato di lato.
  */
@@ -799,7 +781,7 @@
 }
 
 .bj-anello.is-poco .bj-anello__tempo {
-  stroke: #ff6b6b;
+  stroke: #ff9f43;
 }
 
 /* ─────────────────────────────  I comandi  ───────────────────────────── */
@@ -849,7 +831,7 @@
 }
 
 .bj-stato__pieno.is-poco {
-  background: #e5484d;
+  background: #ff9f43;
 }
 
 .bj-gettoni {
@@ -1048,36 +1030,6 @@
   background: #4a447a;
 }
 
-/*
- * Gli adesivi del banco, come nel mockup: la carta color crema bordata di
- * rosso, con l'inchiostro sopra, e il pari grigio. Il bordato dell'app prende
- * la carta del tema, che nella sala e' scura, e il titolo nel colore del gioco.
- */
-.adesivo.is-bordato.bj-adesivo-banco .adesivo__carta,
-.adesivo.is-bordato.bj-adesivo-pari .adesivo__carta {
-  border: 4px solid #e8384f;
-  border-radius: 22px;
-  background: #fffbf2;
-  box-shadow:
-    0 0 0 3px #120c2b,
-    0 6px 0 3px #120c2b;
-  color: #b0102c;
-}
-
-.adesivo.is-bordato.bj-adesivo-pari .adesivo__carta {
-  border-color: #120c2b;
-  background: #dce1ec;
-  color: #120c2b;
-}
-
-.adesivo.is-bordato.bj-adesivo-banco .adesivo__titolo {
-  color: #b0102c;
-}
-
-.adesivo.is-bordato.bj-adesivo-pari .adesivo__titolo {
-  color: #120c2b;
-}
-
 /* ─────────────────────────────  Le misure  ───────────────────────────── */
 
 /* Su un telefono basso i comandi si stringono: le fiches e i bottoni un po' piu' piccoli. */
@@ -1159,7 +1111,6 @@
   .bj-mano__totale,
   .bj-mano__esito,
   .bj-mano.is-attiva::before,
-  .bj-mano:has(.bj-mano__totale.is-oltre) .bj-mano__carte,
   .bj-assicurazione.is-offerta,
   .bj-assicurazione__fiche,
   .bj-assicurazione__esito,

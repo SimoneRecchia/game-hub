@@ -1,9 +1,10 @@
 /**
  * Le fiches e le monete che volano: la puntata dal saldo alla ruota quando la
- * si lancia, la vincita dalla ruota al saldo, la puntata persa che scivola al
- * banco. Sono elementi del body, animati con le Web Animations e tolti alla
- * fine: passare dallo stato di React ridisegnerebbe la pagina a ogni
- * fotogramma, e un volo alla pagina dice qualcosa solo quando arriva.
+ * si lancia, la vincita dalla ruota al saldo, la puntata che non torna, che
+ * scivola piano al banco. Sono elementi del body, animati con le Web
+ * Animations e tolti alla fine: passare dallo stato di React ridisegnerebbe la
+ * pagina a ogni fotogramma, e un volo alla pagina dice qualcosa solo quando
+ * arriva.
  *
  * Senza animazioni non vola niente: le funzioni chiamano subito chi aspetta.
  */
@@ -146,30 +147,36 @@ export function incassaMonete(da: Punto, a: Punto, quante: number, arrivo?: () =
 }
 
 /**
- * La puntata persa: le fiches cadono dalla ruota, si fanno rosse e scivolano
- * giu', al banco. Non aspetta nessuno: il saldo era gia' sceso al lancio.
+ * La puntata che non torna: le fiches scivolano piano verso il banco, in
+ * basso, e si spengono strada facendo. Niente rosso e niente cifre: e' un
+ * giro che passa, non una perdita da raccontare. Non aspetta nessuno: il
+ * saldo era gia' sceso al lancio.
  */
-export function perdiFiches(da: Punto, importo: number): void {
-  if (ridotto()) return
-  const quante = 4
+export function ritiraFiches(da: Punto): void {
+  if (ridotto()) {
+    suona('fiche', { volume: 0.45 })
+    return
+  }
+  const quante = 3
   for (let i = 0; i < quante; i += 1) {
-    const el = pezzo('ct-volo--fiche is-persa', i === quante - 1 ? `−${importo}` : '', COLORI_FICHES[i])
-    const verso = i % 2 === 0 ? -1 : 1
-    const fine = { x: da.x + verso * (30 + i * 14), y: da.y + 190 + i * 16 }
+    const el = pezzo('ct-volo--fiche', '', COLORI_FICHES[i + 1])
+    const verso = i - 1
+    const partenza = { x: da.x, y: da.y - i * 3 }
+    const fine = { x: da.x + verso * 18, y: da.y + 120 + i * 6 }
     el.animate(
       [
-        { transform: posto({ x: da.x, y: da.y - i * 3 }, 0.8, 0), opacity: 1 },
-        {
-          transform: posto({ x: da.x + verso * 10, y: da.y - 26 - i * 3 }, 0.86, verso * 30),
-          opacity: 1,
-          offset: 0.25,
-        },
-        { transform: posto(fine, 0.6, verso * 220), opacity: 0 },
+        { transform: posto(partenza, 0.78, 0), opacity: 0.95 },
+        { transform: posto({ x: da.x + verso * 6, y: da.y + 30 }, 0.74, verso * 10), opacity: 0.9, offset: 0.35 },
+        { transform: posto(fine, 0.62, verso * 24), opacity: 0 },
       ],
-      { duration: 900, delay: 120 + i * 60, easing: 'cubic-bezier(0.5, 0, 0.75, 0.4)', fill: 'forwards' },
+      { duration: 820, delay: 80 + i * 70, easing: 'cubic-bezier(0.4, 0, 0.6, 1)', fill: 'forwards' },
     ).finished.then(() => el.remove())
   }
+  suona('fiche', { volume: 0.45, ritardo: 0.35 })
 }
+
+/** Il nome di prima di `ritiraFiches`: fa la stessa uscita leggera, e l'importo non si dice piu'. */
+export const perdiFiches = (da: Punto, _importo?: number): void => ritiraFiches(da)
 
 /**
  * Una fiche sola, da dove la si tocca a dove la si posa: la puntata del
@@ -194,8 +201,8 @@ export function volaFiche(da: Punto, a: Punto, valore: number, colore: string): 
 }
 
 /**
- * Le fiches di una puntata da un posto all'altro, in pila: al banco quando la
- * mano e' persa, dal banco alla puntata quando e' vinta. `colori` sono quelli
+ * Le fiches di una puntata da un posto all'altro, in pila: al banco quando non
+ * torna niente, dal banco alla puntata quando e' vinta. `colori` sono quelli
  * della pila, dal basso.
  */
 export function spostaFiches(da: Punto, a: Punto, colori: readonly string[], ritardo = 0): Promise<void> {

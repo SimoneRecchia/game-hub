@@ -3,12 +3,17 @@ import { eBlackjack, totaleDi, type Carta, type EsitoMano } from '@shared/blackj
 import { CartaBJ } from './Carta'
 import type { ArrivoCarta } from './piano'
 
+/**
+ * La fascia di una mano a giro chiuso. Si dice quel che torna, e la mano che
+ * non ridà niente non ha fascia: le carte se ne vanno con le altre. Oltre il
+ * 21 si dice come un fatto del gioco, in grigio.
+ */
 export const TESTO_ESITO: Record<EsitoMano, string> = {
   blackjack: 'Blackjack',
   vinta: 'Vinta',
   pari: 'Pari',
-  persa: 'Persa',
-  sballata: 'Sballata',
+  persa: '',
+  sballata: 'Oltre 21',
 }
 
 /** Il totale come lo dicono i tavoli: "7/17" finché l'asso puo' contare uno o undici, "BJ" per il blackjack. */
@@ -44,7 +49,7 @@ export function Mano({
   onAtterra: (chiave: string) => void
   divisa?: boolean
   esito?: EsitoMano | null
-  /** Quel che la mano ha vinto, scritto sulla fascia accanto all'esito: solo per le mie, che sono grandi. */
+  /** Quel che la mano ridà, scritto sulla fascia accanto all'esito: solo per le mie, che sono grandi. */
   conto?: number | null
   attiva?: boolean
   className?: string
@@ -78,7 +83,7 @@ export function Mano({
           {testoTotale(arrivate, divisa)}
         </span>
       )}
-      {esito && (
+      {esito && TESTO_ESITO[esito] && (
         <span className={`bj-mano__esito is-${esito}`} key={esito}>
           {TESTO_ESITO[esito]}
           {conto !== null && conto > 0 && ` +${conto}`}

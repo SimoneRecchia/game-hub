@@ -681,8 +681,9 @@
   transform: none;
 }
 
+/* Quanti numeri ha preso la scheda: in inchiostro, perché uno zero in rosso sembrerebbe un conto in perdita. */
 .se-studio__presi {
-  color: #b01e33;
+  color: #4e4479;
   font-size: 9px;
   font-weight: 900;
   letter-spacing: 0.08em;

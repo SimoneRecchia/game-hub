@@ -32,11 +32,12 @@ import {
   Scarti,
   chiaviMano,
   esitiDelPosto,
+  tornatoDi,
   type CarteInGioco,
   type LatoPosto,
 } from '@/games/blackjack/Tavolo'
 import { esciFraPoco } from '@/games/blackjack/uscita'
-import { CHIAMA_FICHES, PochiPunti } from '@/games/fortuna/Avvisi'
+import { CHIAMA_FICHES, PochiPunti, adesivoRitenta } from '@/games/fortuna/Avvisi'
 import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
@@ -106,16 +107,6 @@ const oro = (titolo: string, sotto?: string, suono: DatiAdesivo['suono'] = 'vinc
   titolo,
   sotto,
   classe: 'ct-adesivo-vincita',
-  suono,
-})
-
-/** Le cose brutte, o del banco: la carta color crema bordata di rosso del mockup; il pari grigia. */
-const bordato = (titolo: string, sotto?: string, suono?: DatiAdesivo['suono']): Omit<DatiAdesivo, 'id'> => ({
-  durata: ADESIVO_MS,
-  tono: 'bordato',
-  titolo,
-  sotto,
-  classe: suono === 'pareggio' ? 'bj-adesivo-pari' : 'bj-adesivo-banco',
   suono,
 })
 
@@ -232,10 +223,6 @@ export default function BlackjackTavolo() {
       const assicurato = mio && mio.puntata > 0 ? mio.assicurazione : 0
       const daAssicurazione = deltaAssicurazione(assicurato, v.banco)
       if (vive && totaleBanco > 21) accoda(oro('Il banco sballa!', `${totaleBanco}`, 'vincita'))
-      // A chi si era assicurato il blackjack del banco lo racconta l'assicurazione che paga.
-      else if (vive && eBlackjack(v.banco) && daAssicurazione <= 0) {
-        accoda(bordato('Blackjack del banco', undefined, 'banco'))
-      }
       if (daAssicurazione > 0) accoda(oro('L’assicurazione paga', `+${daAssicurazione}`))
       const finePulizia = () => {
         const fine = (resta(v, ricevuta.current, Date.now()) ?? 0) + 100
@@ -248,9 +235,11 @@ export default function BlackjackTavolo() {
         finePulizia()
         return
       }
-      setEsitoTesto(testoEsito(mio.delta))
-      // Le mani e l'assicurazione si pagano ognuna dal suo posto: il delta del giro e' la loro somma.
+      setEsitoTesto(testoEsito(tornatoDi(mio)))
+      // Le mani e l'assicurazione si pagano ognuna dal suo posto: il delta del giro e' la loro somma. Si racconta
+      // solo quel che torna: la puntata si e' pagata quando si e' giocato.
       const delta = mio.delta - daAssicurazione
+      const tornaMani = Math.max(0, mio.puntata + delta)
       const cerchio = centroDi(cerchioRef.current)
       const centroAss = centroDi(assicurazioneRef.current)
       const rastrelliera = centroDi(rastrellieraRef.current)
@@ -266,7 +255,7 @@ export default function BlackjackTavolo() {
       }
       if (delta > 0) {
         const bj = mio.mani.length === 1 && eBlackjack(mio.mani[0].carte)
-        accoda(oro(bj ? 'Blackjack!' : `Vinci ${delta}!`, bj ? `+${delta}` : undefined))
+        accoda(oro(bj ? 'Blackjack!' : `Vinci ${tornaMani}!`, bj ? `Vinci ${tornaMani}` : undefined))
         // La pioggia per i momenti grandi: il blackjack, e le vincite con un raddoppio o uno split.
         if (bj || mio.mani.some((m) => m.raddoppiata || m.divisa)) {
           setPioggia((p) => p + 1)
@@ -283,15 +272,25 @@ export default function BlackjackTavolo() {
             } else libera()
           })
         })
-      } else if (delta < 0) {
-        if (!tutteSballate) accoda(bordato('Vince il banco', `${delta}`, 'banco'))
+      } else if (tornaMani > 0) {
+        // Il pari, o le mani di uno split che ridanno meno della puntata: quel che torna e' una vincita, come lo
+        // split di Crazy Time, e torna al saldo in fiches; il resto scivola piano al banco.
+        const una = mio.mani.length === 1
+        const pari = una && delta === 0
+        accoda(oro(pari ? 'Pari' : `Vinci ${tornaMani}`, pari ? `Vinci ${tornaMani}` : undefined, 'pareggio'))
+        setPila('via')
+        const tornano = scomponi(tornaMani).map((x) => COLORE_FICHE[x])
+        const torna = cerchio && saldo ? spostaFiches(cerchio, saldo, tornano, 150) : Promise.resolve()
+        void torna.then(libera)
+        if (delta < 0 && cerchio && rastrelliera) {
+          void spostaFiches(cerchio, rastrelliera, scomponi(-delta).map((x) => COLORE_FICHE[x]), 300)
+        }
+      } else {
+        // Non torna niente: le fiches scivolano al banco e la mano dopo e' gia' li'. Le mani oltre il 21 l'hanno
+        // gia' detto quando e' arrivata la carta; l'assicurazione pagata ha il suo adesivo.
+        if (!tutteSballate && daAssicurazione <= 0) accoda(adesivoRitenta('Alla prossima mano'))
         setPila('via')
         if (cerchio && rastrelliera) void spostaFiches(cerchio, rastrelliera, colori, 150)
-      } else {
-        accoda(bordato('Pari', 'La puntata torna', 'pareggio'))
-        setPila('via')
-        const torna = cerchio && saldo ? spostaFiches(cerchio, saldo, colori, 150) : Promise.resolve()
-        void torna.then(libera)
       }
       if (assicurato > 0) {
         if (daAssicurazione > 0) {
@@ -313,7 +312,7 @@ export default function BlackjackTavolo() {
           if (centroAss && rastrelliera) void spostaFiches(centroAss, rastrelliera, [coloreFiche(assicurato)], 150)
         }
       }
-      if (delta < 0 && daAssicurazione <= 0) libera()
+      if (tornaMani === 0 && daAssicurazione <= 0) libera()
       finePulizia()
     },
     [accoda, dopo, pulisci],
@@ -353,7 +352,8 @@ export default function BlackjackTavolo() {
           if (!arrivo) return
           const quando = arrivo.ritardo + VOLO_CARTA_MS
           const totale = `${totaleDi(m.carte).totale}`
-          if (sballata(m.carte)) dopo(quando, () => accoda(bordato('Sballato', totale, 'sballato')))
+          // Oltre il 21 si dice come un fatto del gioco, non come una sconfitta.
+          if (sballata(m.carte)) dopo(quando, () => accoda(adesivoRitenta('Oltre 21', totale, 1_600)))
           else if (eBlackjack(m.carte, m.divisa)) dopo(quando, () => accoda(oro('Blackjack!', undefined, 'blackjack')))
         })
       }
@@ -631,7 +631,8 @@ export default function BlackjackTavolo() {
         ? scomponi(pila === 'vinta' ? puntataServer + Math.max(0, (mio?.delta ?? 0) - deltaAss) : puntataServer)
         : fiches
   const importoPila = pilaMia.reduce((t, v) => t + v, 0)
-  const esitoAss = chiuso && mio?.delta !== null && assicurazione > 0 ? (deltaAss > 0 ? 'pagata' : 'persa') : null
+  // L'assicurazione dice solo quando paga: quando non paga la sua fiche scivola al banco, e basta.
+  const esitoAss = chiuso && mio?.delta !== null && assicurazione > 0 && deltaAss > 0 ? 'pagata' : null
 
   /** La riga sopra i comandi: che cosa succede, o che cosa tocca fare. */
   const riga = ((): { testo: string; oro?: boolean } => {
@@ -666,7 +667,7 @@ export default function BlackjackTavolo() {
       return { testo: puntataServer > 0 ? 'Carte!' : 'Guardi questo giro' }
     }
     if (!chiuso) return { testo: 'Il banco pesca…' }
-    if (puntataServer > 0 && mio.delta !== null) return testoEsito(mio.delta)
+    if (puntataServer > 0 && mio.delta !== null) return testoEsito(tornatoDi(mio))
     return { testo: 'Guardi questo giro' }
   })()
   const tempoRiga = tempoPuntate ?? tempoTurno
@@ -745,7 +746,7 @@ export default function BlackjackTavolo() {
                         onAtterra={onAtterra}
                         divisa={m.divisa}
                         esito={esitiMiei[o]}
-                        conto={esitiMiei[o] ? deltaMano(m, vista.banco) : null}
+                        conto={esitiMiei[o] ? m.puntata + deltaMano(m, vista.banco) : null}
                         attiva={mioTurno && vista.turno!.mano === o}
                         className={`bj-mano--mia${mani.length > 2 ? ' bj-mano--piccola' : ''}`}
                       />
@@ -849,13 +850,13 @@ export default function BlackjackTavolo() {
 
 const pilaVuota = (f: readonly number[]) => f.length === 0
 
-/** Com'e' andato il giro, nella riga sopra i comandi: d'oro se si e' vinto. */
-const testoEsito = (delta: number) =>
-  delta > 0
-    ? { testo: `Vinci ${delta}`, oro: true }
-    : delta < 0
-      ? { testo: `Perdi ${-delta}`, oro: false }
-      : { testo: 'Pari: la puntata torna', oro: false }
+/**
+ * Com'e' andato il giro, nella riga sopra i comandi: quel che e' tornato, d'oro
+ * — anche la puntata di una mano pari, che si dice vinta come lo split di Crazy
+ * Time —, o l'invito alla mano dopo, se non e' tornato niente.
+ */
+const testoEsito = (tornato: number) =>
+  tornato > 0 ? { testo: `Vinci ${tornato}`, oro: true } : { testo: 'Alla prossima mano', oro: false }
 
 /** I comandi della puntata: le fiches da posare, Azzera, e il bottone che distribuisce. */
 function Puntate({

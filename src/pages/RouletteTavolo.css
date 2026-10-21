@@ -197,11 +197,6 @@
   background: #ffd66b;
 }
 
-.rl-giocatore__conto.is-perso {
-  background: rgb(255 255 255 / 0.18);
-  color: #fff6e0;
-}
-
 /* ---- Il panno ---- */
 
 .rl-panno-posto {
@@ -416,8 +411,9 @@
   transition: transform 0.25s linear;
 }
 
+/* Gli ultimi secondi delle puntate: arancione, un promemoria e non un allarme, come al blackjack. */
 .rl-riga__pieno.is-poco {
-  background: #e5484d;
+  background: #ff9f43;
 }
 
 .rl-attrezzi {

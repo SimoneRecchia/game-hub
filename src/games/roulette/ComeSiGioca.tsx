@@ -35,15 +35,16 @@ export function ComeSiGiocaRoulette({ open, onClose }: { open: boolean; onClose:
             ))}
           </ul>
           <p className="cru-aiuto__testo">
-            Tenendo il dito sul panno si accendono i numeri che la puntata copre; lasciando si posa la fiche.
+            Una puntata vinta ti ridà la fiche e quel che paga: un pieno da 1 ne ridà 36. Tenendo il dito sul panno si
+            accendono i numeri che la puntata copre; lasciando si posa la fiche.
           </p>
         </section>
 
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">Lo zero</h3>
           <p className="cru-aiuto__testo">
-            Lo zero non è né rosso né nero, né pari né dispari: quando esce perdono tutte le puntate che non lo
-            comprendono, anche quelle semplici. È la roulette europea, con uno zero solo.
+            Lo zero non è né rosso né nero, né pari né dispari: quando esce pagano solo le puntate che lo comprendono,
+            e quelle semplici no. È la roulette europea, con uno zero solo.
           </p>
         </section>
 
@@ -56,10 +57,10 @@ export function ComeSiGiocaRoulette({ open, onClose }: { open: boolean; onClose:
         </section>
 
         <section className="cru-aiuto__sezione">
-          <h3 className="cru-aiuto__titolo">Vince il banco</h3>
+          <h3 className="cru-aiuto__titolo">Quanto torna</h3>
           <p className="cru-aiuto__testo">
-            Ogni puntata riceve in media il {String(RESA).replace('.', ',')}% di quel che punta, come agli altri
-            giochi della Fortuna: lo zero è del banco.
+            In media ogni puntata ti torna il {String(RESA).replace('.', ',')}% di quel che punti, come agli altri
+            giochi della Fortuna.
           </p>
         </section>
       </div>

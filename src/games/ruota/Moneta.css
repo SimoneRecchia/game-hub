@@ -219,9 +219,9 @@
   text-shadow: 0 calc(var(--lato) * 0.02) 0 var(--ink);
 }
 
-.ct-moneta__banco {
-  font-size: calc(var(--lato) * 0.15);
-  letter-spacing: 0.12em;
+.ct-moneta__ritenta {
+  font-size: calc(var(--lato) * 0.13);
+  letter-spacing: 0.08em;
   line-height: 1;
   text-transform: uppercase;
   font-weight: 400;

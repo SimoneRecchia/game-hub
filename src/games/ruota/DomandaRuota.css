@@ -68,6 +68,21 @@
   max-width: none;
 }
 
+/* A risposta data la capsula e' solo l'icona: tonda, e un poco piu' grande. */
+.ct-domanda__verdetto .pillola {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+}
+
+/* Neutra: lilla con l'inchiostro, come il biglietto del giro dopo. */
+.ct-domanda__verdetto:not(.is-giusta) .pillola {
+  background: #c9b8ff;
+  color: #2a1f5c;
+}
+
 @keyframes ct-domanda-entra {
   from {
     opacity: 0;
@@ -118,11 +133,12 @@
     0 0 0 4px #5edb84;
 }
 
+/* Una risposta che non era quella: l'anello lilla, non rosso. La giusta, verde, dice gia' tutto. */
 .ct-domanda__carta.is-sbagliata {
   box-shadow:
     inset 0 3px 0 rgba(255, 255, 255, 0.08),
     0 5px 0 var(--ink),
-    0 0 0 4px #ff7083;
+    0 0 0 4px #c9b8ff;
 }
 
 .ct-domanda__carta .quiz-carta {
@@ -216,7 +232,7 @@
 }
 
 .ct-domanda__carta .quiz-opzione.is-sbagliata {
-  background-color: #ff7083;
+  background-color: #c9b8ff;
   color: #2a1f5c;
   box-shadow: 0 4px 0 var(--ink);
 }
@@ -225,6 +241,26 @@
 .ct-domanda__carta .quiz-opzione.is-sbagliata .quiz-opzione__lettera {
   background: rgba(255, 255, 255, 0.45);
   color: #2a1f5c;
+}
+
+/*
+ * La risposta scelta che non era quella: lilla, con la sua lettera e non con
+ * la croce del quiz. La lettera la conta il CSS, perché la carta e' del quiz.
+ */
+.ct-domanda__carta .quiz-opzioni {
+  counter-reset: ct-opzione;
+}
+
+.ct-domanda__carta .quiz-opzione {
+  counter-increment: ct-opzione;
+}
+
+.ct-domanda__carta .quiz-opzione.is-sbagliata .quiz-opzione__lettera:not(.is-bandiera) svg {
+  display: none;
+}
+
+.ct-domanda__carta .quiz-opzione.is-sbagliata .quiz-opzione__lettera:not(.is-bandiera)::after {
+  content: counter(ct-opzione, upper-alpha);
 }
 
 /* Le altre si fanno grigie, non trasparenti: si leggono ancora. */

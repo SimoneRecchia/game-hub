@@ -87,26 +87,6 @@ body:has(.ct) {
   display: none;
 }
 
-/* Il banco: il palco ha un sussulto, come un colpo sul tavolo. */
-.ct-palco.is-scosso {
-  animation: ct-scosso 460ms var(--ease-out);
-}
-
-@keyframes ct-scosso {
-  15% {
-    transform: translate(-5px, 2px);
-  }
-  35% {
-    transform: translate(5px, -2px);
-  }
-  55% {
-    transform: translate(-3px, 1px);
-  }
-  75% {
-    transform: translate(2px, 0);
-  }
-}
-
 /*
  * Le luci della sala: una rosa in alto e una azzurra in basso, sfumate, che
  * vanno e vengono piano di lato. Sono sfumature e non macchie sfocate: un
@@ -670,7 +650,6 @@ body:has(.ct) {
 
 @media (prefers-reduced-motion: reduce) {
   .ct,
-  .ct-palco.is-scosso,
   .ct-palco__luce,
   .ct-palco__luce::after,
   .ct-palco__scintille,

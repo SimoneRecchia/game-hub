@@ -241,7 +241,7 @@
  * la scritta deve restare leggibile.
  */
 .fortuna-carta.is-chiusa {
-  filter: saturate(0.35) brightness(0.78);
+  filter: saturate(0.4) brightness(0.86);
 }
 
 .fortuna-carta__manca {

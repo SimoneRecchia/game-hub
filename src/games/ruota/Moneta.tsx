@@ -17,8 +17,9 @@ type Fase = 'ferma' | 'carica' | 'aria' | 'caduta'
 
 /**
  * La moneta del Crazy Time: una faccia blu con il suo moltiplicatore, una rossa
- * del banco. Si lancia toccandola: sale girando su se stessa, ricade, rimbalza
- * e resta sul lato uscito. Quella della ruota fortunata ha l'orlo verde e oro.
+ * che non paga e invita a ritentare. Si lancia toccandola: sale girando su se
+ * stessa, ricade, rimbalza e resta sul lato uscito. Quella della ruota
+ * fortunata ha l'orlo verde e oro.
  *
  * Il lato lo decide il server: al tocco la moneta si carica, come una mano che
  * prende lo slancio, e parte quando arriva la risposta, già sapendo dove
@@ -148,7 +149,7 @@ export function Moneta({
           aria-label={
             fase === 'caduta'
               ? `È uscito il ${faccia}`
-              : `Lancia la moneta: blu ${blu}, rosso vince il banco`
+              : `Lancia la moneta: se esce blu vinci ${blu}`
           }
         >
           {fase === 'ferma' && lanciabile && <span className="ct-moneta__invito" aria-hidden="true" />}
@@ -167,7 +168,7 @@ export function Moneta({
             </span>
             <span className="ct-moneta__faccia is-rosso" aria-hidden="true">
               <span className="ct-moneta__lato">Rosso</span>
-              <span className="ct-moneta__banco">Banco</span>
+              <span className="ct-moneta__ritenta">Ritenta</span>
               <span className="ct-moneta__stelle">★ ★ ★</span>
             </span>
           </div>

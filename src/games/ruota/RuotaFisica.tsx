@@ -41,7 +41,8 @@ export interface Meta {
 export interface Mozzo {
   testo: string
   sotto?: string
-  tono?: 'piu' | 'meno'
+  /** Una vincita: il numero si fa verde. Quando non torna niente il mozzo torna alla puntata, e non ha tono. */
+  tono?: 'piu'
 }
 
 interface Props {
@@ -63,8 +64,11 @@ interface Props {
   onDebole?: () => void
   /** Cambia quando l'esito non arriva: la ruota rallenta e si ferma dove capita. */
   annulla?: number
-  /** Le luci: in attesa si accendono a turno, a una vincita fanno festa, al banco si spengono. */
-  luci: 'attesa' | 'vinto' | 'perso'
+  /**
+   * Le luci: in attesa si accendono a turno, a una vincita fanno festa; quando
+   * non torna niente (`calma`) respirano piano, lilla, e tornano al turno.
+   */
+  luci: 'attesa' | 'vinto' | 'calma'
   lampade: number
   /** Quanto dura almeno la frenata, in millisecondi. */
   durataMinima: number

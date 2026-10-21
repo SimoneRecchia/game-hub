@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Button } from '@/components/Button'
-import { IconCheck, IconClock, IconClose } from '@/components/Icons'
+import { IconCheck, IconClock, IconRefresh } from '@/components/Icons'
 import { Pillola } from '@/components/Scheda'
 import { useIndiceQuiz } from '@/games/quiz/dati'
 import {
@@ -152,7 +152,14 @@ export default function DomandaRuota({
   )
 }
 
-/** I secondi che restano, e a risposta data com'e' andata: la capsula della testata del quiz. */
+/**
+ * I secondi che restano, e a risposta data com'e' andata: la capsula della
+ * testata del quiz. Una risposta giusta ha la spunta verde; quando non lo e',
+ * o il tempo e' finito, la capsula e' neutra e piccola — la carta dice gia'
+ * qual era la giusta, e nei giochi della Fortuna un esito a vuoto non si
+ * sottolinea. Solo l'icona, con il testo per chi legge lo schermo: la
+ * capsula sta accanto al moltiplicatore, e con "Sbagliata" scritto lo copriva.
+ */
 function Tempo({ fatta, scadenza }: { fatta: Fatta | null; scadenza: number | null }) {
   const [adesso, setAdesso] = useState(() => performance.now())
   useEffect(() => {
@@ -169,12 +176,18 @@ function Tempo({ fatta, scadenza }: { fatta: Fatta | null; scadenza: number | nu
   if (fatta) {
     const { giusta, scelta } = fatta.risposta
     return (
-      <Pillola
-        tono={giusta ? 'buona' : 'cattiva'}
-        icona={giusta ? <IconCheck size={13} /> : scelta === null ? <IconClock size={13} /> : <IconClose size={13} />}
-      >
-        {giusta ? 'Giusta' : scelta === null ? 'Tempo scaduto' : 'Sbagliata'}
-      </Pillola>
+      <span className={`ct-domanda__verdetto${giusta ? ' is-giusta' : ''}`}>
+        <Pillola
+          tono={giusta ? 'buona' : 'neutra'}
+          icona={
+            giusta ? <IconCheck size={13} /> : scelta === null ? <IconClock size={13} /> : <IconRefresh size={13} />
+          }
+        >
+          <span className="u-visually-hidden">
+            {giusta ? 'Giusta' : scelta === null ? 'Tempo finito' : 'Era un’altra'}
+          </span>
+        </Pillola>
+      </span>
     )
   }
   const poco = scadenza !== null && secondi <= ULTIMI_SECONDI

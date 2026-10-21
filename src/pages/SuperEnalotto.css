@@ -279,8 +279,7 @@
 }
 
 .se-giocata:disabled:not(.is-scelta) {
-  color: #8a1c2b;
-  opacity: 0.7;
+  color: #6f6577;
 }
 
 .se-griglia {
@@ -315,8 +314,14 @@
   cursor: default;
 }
 
+/*
+ * La schedina che il saldo non paga: la stampa si fa grigia invece di
+ * sbiadire, cosi' si vede spenta ma i numeri si leggono, e il rosso non fa da
+ * allarme accanto all'avviso che dice dove fare i punti.
+ */
 .se-schedina.is-spenta .se-casella {
-  opacity: 0.6;
+  border-color: #c3b9c6;
+  color: #6f6577;
 }
 
 .se-casella__n {

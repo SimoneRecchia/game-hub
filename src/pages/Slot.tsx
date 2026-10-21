@@ -134,6 +134,12 @@ export default function SlotPagina() {
   const [intermezzo, setIntermezzo] = useState<DatiIntermezzo | null>(null)
   const [regole, setRegole] = useState(false)
   const [festa, setFesta] = useState<(DatiFesta & { premio: number }) | null>(null)
+  /**
+   * Il giro di prima non ha pagato niente: il display, al posto di "Tira la
+   * leva", invita a rigirare. Nessun altro segno: un giro a vuoto e' la cosa
+   * piu' normale della slot, e non si sottolinea.
+   */
+  const [rigira, setRigira] = useState(false)
   /** La leva arrivata in fondo: il mobile ha un sussulto. */
   const [scossa, setScossa] = useState(false)
   const [inviando, setInviando] = useState(false)
@@ -244,6 +250,7 @@ export default function SlotPagina() {
     }
     const quanto = nuova - scelta
     const volo = voliFiches.current
+    setRigira(false)
     setPuntata(nuova)
     setInVoloFiches((n) => n + quanto)
     const posa = () => {
@@ -266,6 +273,7 @@ export default function SlotPagina() {
     voliFiches.current += 1
     setInVoloFiches(0)
     setPuntata(0)
+    setRigira(false)
     const da = centroDi(puntataRef.current)
     const a = centroDi(gettoniRef.current)
     const pila = inFiches(mostrata).map((v) => COLORE_FICHE[v])
@@ -306,6 +314,7 @@ export default function SlotPagina() {
     setVinta(null)
     setVincita(null)
     setVassoio(0)
+    setRigira(false)
     setLuci('gira')
     setRiposata(false)
     setScossa(true)
@@ -386,6 +395,7 @@ export default function SlotPagina() {
       }
     } else {
       setConto(null)
+      if (!g.tripla) setRigira(true)
     }
     const domanda = domandaDi(g)
     if (domanda && g.tripla) {
@@ -443,8 +453,9 @@ export default function SlotPagina() {
     const nuovo = await chiedi('/slot/risposta', { scelta })
     if (!nuovo?.giro) return
     setStato(nuovo)
+    // Una risposta che non era quella suona pari e piano, non triste: la carta dice gia' qual era la giusta.
     const r = nuovo.giro.risposta
-    if (r) suona(r.giusta ? 'giusto' : 'sbagliato')
+    if (r) suona(r.giusta ? 'giusto' : 'pareggio', { volume: r.giusta ? 1 : 0.7 })
   }
 
   const allaSlot = () => {
@@ -452,6 +463,7 @@ export default function SlotPagina() {
     setFase('pronta')
     setLuci('attesa')
     setVinta(null)
+    if (g?.risposta && !g.risposta.giusta && g.premio === 0) setRigira(true)
     if (g?.risposta?.giusta && g.vincitaDomanda && g.tripla) {
       const vale = g.vincitaDomanda
       const s = ultimo.current
@@ -583,7 +595,7 @@ export default function SlotPagina() {
                     </span>
                   ) : (
                     <span className={`slot-display__invito${inMoto ? ' is-gira' : ' is-ferma'}`}>
-                      {inMoto ? '· · ·' : 'Tira la leva'}
+                      {inMoto ? '· · ·' : rigira ? 'Rigira' : 'Tira la leva'}
                     </span>
                   )}
                 </span>

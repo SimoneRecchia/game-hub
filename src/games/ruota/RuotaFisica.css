@@ -139,23 +139,24 @@
   }
 }
 
-/* Il banco: un lampo rosso, e poi si spengono. */
-.ct-ruota.is-luci-perso .ct-ruota__lampada {
-  animation: ct-lampada-perso 1.5s ease-out both;
+/* Quando non torna niente: un respiro lilla, piano, e si torna al turno. Niente lampi. */
+.ct-ruota.is-luci-calma .ct-ruota__lampada {
+  animation: ct-lampada-calma 1.6s ease-in-out both;
 }
 
-@keyframes ct-lampada-perso {
-  0% {
-    fill: #ff5a6a;
-    stroke: rgba(255, 80, 100, 0.7);
-  }
+@keyframes ct-lampada-calma {
+  0%,
   100% {
     fill: var(--ct-lampada-spenta);
     stroke: transparent;
   }
+  45% {
+    fill: #d9ccff;
+    stroke: rgba(201, 184, 255, 0.55);
+  }
 }
 
-/* Lo spicchio uscito: una luce che pulsa sopra di lui, bianca per un minigioco, rossa per il banco. */
+/* Lo spicchio uscito: una luce che pulsa sopra di lui, bianca per un premio o un minigioco, appena velata per il banco. */
 .ct-ruota__evidenza {
   pointer-events: none;
   stroke-width: 2.5;
@@ -167,9 +168,10 @@
   stroke: #fff;
 }
 
-.ct-ruota__evidenza.is-perso {
-  fill: rgba(255, 40, 70, 0.22);
-  stroke: #ff5a6a;
+.ct-ruota__evidenza.is-calma {
+  fill: rgba(255, 255, 255, 0.12);
+  stroke: rgba(230, 220, 255, 0.8);
+  animation-duration: 0.9s;
 }
 
 @keyframes ct-evidenza {
@@ -202,10 +204,6 @@
 
 .ct-ruota__mozzo-testo.is-piu {
   fill: var(--ct-piu);
-}
-
-.ct-ruota__mozzo-testo.is-meno {
-  fill: var(--ct-meno);
 }
 
 .ct-ruota__mozzo-sotto {

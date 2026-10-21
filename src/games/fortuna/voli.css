@@ -48,11 +48,6 @@
   border: 1.5px dashed rgba(255, 255, 255, 0.75);
 }
 
-/* Persa, la fiche si fa rossa scivolando al banco. */
-.ct-volo--fiche.is-persa {
-  filter: saturate(0.6) brightness(0.85) drop-shadow(0 0 6px rgba(255, 60, 80, 0.8));
-}
-
 .ct-volo--moneta {
   width: 26px;
   height: 26px;
@@ -68,9 +63,13 @@
  * Gli adesivi della Fortuna, come nel mockup: senza il margine bianco degli
  * altri giochi, con il filo d'inchiostro e l'ombra secca. La vincita d'oro, lo
  * split rosa con l'anello d'oro (e' una vincita, anche se ridà meno della
- * puntata), quel che porta la fortuna verde, e il banco crema bordato di rosso.
+ * puntata), quel che porta la fortuna verde. Quando non torna niente c'e' il
+ * biglietto lilla del giro dopo (`ct-adesivo-ritenta`; `ct-adesivo-banco` e'
+ * il suo nome di prima, e si veste uguale): piu' piccolo, senza rosso, entra
+ * piano e se ne va. I giochi della Fortuna si fanno per non stressarsi, e un
+ * giro andato a vuoto non e' una cosa da far tremare.
  */
-.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde, .ct-adesivo-banco) .adesivo__carta {
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde) .adesivo__carta {
   border: 3px solid var(--ink);
   border-radius: 22px;
   text-shadow: none;
@@ -100,19 +99,11 @@
     0 6px 0 3px var(--ink);
 }
 
-.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-banco .adesivo__carta {
-  border: 4px solid var(--ct-rosso);
-  background: #fffbf2;
-  box-shadow:
-    0 0 0 3px var(--ink),
-    0 6px 0 3px var(--ink);
-}
-
-.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde, .ct-adesivo-banco) .adesivo__titolo {
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde) .adesivo__titolo {
   font-size: 2.25rem;
 }
 
-.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde, .ct-adesivo-banco) .adesivo__sotto {
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde) .adesivo__sotto {
   font-weight: 900;
   opacity: 1;
 }
@@ -129,6 +120,61 @@
   color: #03311d;
 }
 
-.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-banco :is(.adesivo__titolo, .adesivo__sotto) {
-  color: #b0102c;
+
+/* Il giro dopo: il biglietto lilla con l'inchiostro, che scivola dentro appena storto e se ne va. */
+.adesivo:is(.ct-adesivo-ritenta, .ct-adesivo-banco) {
+  background: none;
+}
+
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-ritenta, .ct-adesivo-banco) .adesivo__carta {
+  min-width: 0;
+  padding: 10px 22px 12px;
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #e6dcff, #c9b8ff);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.6),
+    0 5px 0 var(--ink);
+  color: #2a1f5c;
+  text-shadow: none;
+  animation:
+    ct-ritenta-entra calc(var(--durata) * 0.3) var(--ease-out) both,
+    ct-ritenta-via calc(var(--durata) * 0.25) ease-in calc(var(--durata) * 0.75) forwards;
+}
+
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-ritenta, .ct-adesivo-banco) .adesivo__titolo {
+  color: #2a1f5c;
+  font-size: 1.75rem;
+}
+
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-ritenta, .ct-adesivo-banco) .adesivo__sotto {
+  color: #4e4479;
+  font-weight: 800;
+  opacity: 1;
+}
+
+@keyframes ct-ritenta-entra {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.92) rotate(0deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(-2deg);
+  }
+}
+
+@keyframes ct-ritenta-via {
+  to {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96) rotate(-2deg);
+  }
+}
+
+/* Con il movimento ridotto compare e sparisce come gli altri adesivi (Adesivo.css), senza scivolare. */
+@media (prefers-reduced-motion: reduce) {
+  .adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-ritenta, .ct-adesivo-banco) .adesivo__carta {
+    animation: adesivo-alone var(--durata) linear both;
+    transform: rotate(-2deg);
+  }
 }

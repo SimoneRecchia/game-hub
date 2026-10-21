@@ -7,7 +7,7 @@ import { Coriandoli, Numero } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
-import { PochiPunti } from '@/games/fortuna/Avvisi'
+import { PochiPunti, adesivoRitenta } from '@/games/fortuna/Avvisi'
 import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { ComeSiGiocaEnalotto } from '@/games/superenalotto/ComeSiGioca'
@@ -244,7 +244,8 @@ export default function SuperEnalotto() {
         setFesta(true)
         window.setTimeout(() => setFesta(false), 3200)
       } else {
-        mostra({ tono: 'bordato', titolo: 'Niente, stavolta', sotto: 'Il jackpot cresce', colore: '#e5383b', durata: 1900 })
+        // Niente da ritirare: il biglietto del giro dopo, e il jackpot che cresce, che e' una buona notizia.
+        mostra(adesivoRitenta('Al prossimo concorso', 'Il jackpot cresce', 1_900))
       }
     }
     void leggi()
@@ -666,17 +667,19 @@ function Estrazione({
                     </span>
                   ))}
                 </span>
-                <span className={`se-ri-esito${vinta ? ' is-vinta' : ''}`}>
-                  {presi === null
-                    ? `${costoDi(s.numeri)} punti`
-                    : vinta
-                      ? `${PRESI[presi] ?? presi} · +${punti(s.vincita ?? 0)}`
-                      : presi === 0
-                        ? 'Niente'
-                        : presi === 1
-                          ? 'Uno solo'
-                          : `${PRESI[presi]} · 0`}
-                </span>
+                {/*
+                 * Una scheda dice quel che ha vinto; una che non ha vinto niente non dice niente, e i numeri presi
+                 * si vedono cerchiati. Due numeri con un premio diviso fra tanti, sotto il punto, dicono "Due".
+                 */}
+                {(presi === null || vinta || presi >= 2) && (
+                  <span className={`se-ri-esito${vinta ? ' is-vinta' : ''}`}>
+                    {presi === null
+                      ? `${costoDi(s.numeri)} punti`
+                      : vinta
+                        ? `${PRESI[presi] ?? presi} · +${punti(s.vincita ?? 0)}`
+                        : PRESI[presi]}
+                  </span>
+                )}
               </div>
             )
           })

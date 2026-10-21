@@ -224,9 +224,12 @@
   z-index: 3;
 }
 
-/* L'esito: le perse scivolano via, le vinte pulsano, e sopra arriva quel che tornano. */
-.rl-panno.is-esito .rl-fiche.is-persa {
-  animation: rl-persa 0.7s cubic-bezier(0.5, 0, 0.75, 0) 1.25s forwards;
+/*
+ * L'esito: le vinte pulsano e sopra arriva quel che tornano; le altre se ne
+ * vanno piano, salendo un poco verso la ruota e spegnendosi, senza cadere.
+ */
+.rl-panno.is-esito .rl-fiche.is-via {
+  animation: rl-via 0.9s var(--ease-out) 1.25s forwards;
 }
 
 .rl-fiche--mia.is-vinta {
@@ -299,9 +302,9 @@
   }
 }
 
-@keyframes rl-persa {
+@keyframes rl-via {
   to {
-    transform: translate(-30px, 60px) scale(0.5);
+    transform: translateY(-12px) scale(0.8);
     opacity: 0;
   }
 }
@@ -341,7 +344,7 @@
     animation: none;
   }
 
-  .rl-panno.is-esito .rl-fiche.is-persa {
+  .rl-panno.is-esito .rl-fiche.is-via {
     animation: none;
     opacity: 0.35;
   }

@@ -29,7 +29,7 @@ const NOMI_SEMPLICI: Record<string, string> = {
  * ogni numero e' un bottone, e Invio ci mette un pieno.
  *
  * A giro lanciato (`numero`) si accendono il numero e le caselle che vincono,
- * il dolly si posa sul numero, le fiches perse vanno via e sopra quelle
+ * il dolly si posa sul numero, le altre fiches scivolano via piano e sopra quelle
  * vinte compare quel che tornano, puntata compresa.
  */
 export function Panno({
@@ -188,7 +188,7 @@ export function Panno({
         {altrui.map((a, i) =>
           Object.entries(a.puntate).map(([chiave, quanto]) => {
             const p = postoDi(chiave)
-            const esito = numero === null ? '' : vincono.has(chiave) ? ' is-vinta' : ' is-persa'
+            const esito = numero === null ? '' : vincono.has(chiave) ? ' is-vinta' : ' is-via'
             return (
               <FicheRL
                 key={`${a.id}:${chiave}`}
@@ -203,7 +203,7 @@ export function Panno({
         {Object.entries(mie).map(([chiave, quanto]) => {
           const p = postoDi(chiave)
           const vinta = numero !== null && vincono.has(chiave)
-          const esito = numero === null ? '' : vinta ? ' is-vinta' : ' is-persa'
+          const esito = numero === null ? '' : vinta ? ' is-vinta' : ' is-via'
           return (
             <span
               key={chiave}

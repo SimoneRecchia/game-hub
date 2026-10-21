@@ -1,6 +1,5 @@
 import { forwardRef, useId, type CSSProperties, type Ref } from 'react'
 import { Avatar } from '@/components/Avatar'
-import { conSegno } from '@shared/ruota'
 import { esitoMano, type EsitoMano } from '@shared/blackjack'
 import type { PostoVistaBJ } from '@shared/types'
 import { Fiche, coloreFiche } from './Fiches'
@@ -116,7 +115,8 @@ export const PostoAssicurazione = forwardRef(function PostoAssicurazione(
   }: {
     importo: number
     offerta: boolean
-    esito: 'pagata' | 'persa' | null
+    /** Solo quando paga: quando non paga, la fiche scivola al banco senza dire niente. */
+    esito: 'pagata' | null
     /** La fiche a giro chiuso: pagata 2 a 1, o andata via. */
     pila: 'ferma' | 'vinta' | 'via'
   },
@@ -140,7 +140,7 @@ export const PostoAssicurazione = forwardRef(function PostoAssicurazione(
       )}
       {esito && (
         <span className={`bj-assicurazione__esito is-${esito}`} key={esito}>
-          {esito === 'pagata' ? 'Pagata' : 'Persa'}
+          Pagata
         </span>
       )}
     </div>
@@ -172,6 +172,14 @@ export const Scarti = forwardRef(function Scarti(_: unknown, ref: Ref<HTMLSpanEl
 export const chiaviMano = (giro: number, posto: number, id: number, n: number) =>
   Array.from({ length: n }, (_, i) => chiaveCarta(giro, posto, id, i))
 
+/**
+ * Quel che il giro ha ridato a un posto, a giro chiuso: le mani pagate, la
+ * puntata delle mani pari e l'assicurazione pagata. E' quel che si racconta:
+ * la puntata si e' pagata quando si e' giocato, e il netto non si mostra mai.
+ */
+export const tornatoDi = (p: PostoVistaBJ) =>
+  p.delta === null ? 0 : Math.max(0, p.puntata + p.assicurazione + p.delta)
+
 /** L'esito di ogni mano di un posto, a giro chiuso; niente prima. */
 export function esitiDelPosto(p: PostoVistaBJ, banco: readonly string[], chiuso: boolean): (EsitoMano | null)[] {
   return p.mani.map((m) => (chiuso && p.delta !== null ? esitoMano(m, banco) : null))
@@ -185,7 +193,7 @@ export type LatoPosto = 'sinistra' | 'destra'
 
 /**
  * Il posto di un altro giocatore: chi e', le sue mani piccole, la sua puntata
- * in una fiche sul suo cerchio e, a giro chiuso, quel che ha vinto o perso. Il
+ * in una fiche sul suo cerchio e, a giro chiuso, quel che gli e' tornato. Il
  * turno ha l'anello che si consuma con il tempo.
  *
  * Ogni pezzo del posto sta nel suo punto del panno (`data-posto` in
@@ -218,8 +226,9 @@ export function PostoAltro({
 }) {
   const mio = turno?.posto === indice
   const esiti = esitiDelPosto(posto, banco, chiuso)
-  /** Quel che ha vinto o perso: c'e' solo a giro chiuso, quando le mani sono state pagate. */
+  /** C'e' solo a giro chiuso, quando le mani sono state pagate: allora la fiche se ne va. */
   const delta = chiuso ? posto.delta : null
+  const tornato = tornatoDi(posto)
   return (
     <div
       className={`bj-altro is-${lato}${posto.mani.length > 1 ? ' is-divise' : ''}${mio ? ' is-turno' : ''}${
@@ -266,11 +275,7 @@ export function PostoAltro({
             {posto.assicurazione}
           </span>
         )}
-        {delta !== null && (
-          <span className={`bj-altro__delta u-tabnum${delta > 0 ? ' is-piu' : delta < 0 ? ' is-meno' : ''}`}>
-            {delta === 0 ? 'Pari' : conSegno(delta)}
-          </span>
-        )}
+        {delta !== null && tornato > 0 && <span className="bj-altro__delta u-tabnum is-piu">+{tornato}</span>}
       </div>
     </div>
   )

@@ -9,7 +9,7 @@ import { IconAnnulla, IconCestino, IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
 import { esciFraPoco } from '@/games/blackjack/uscita'
-import { PochiPunti } from '@/games/fortuna/Avvisi'
+import { PochiPunti, adesivoRitenta } from '@/games/fortuna/Avvisi'
 import { SALA } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { useDopo } from '@/games/fortuna/useDopo'
@@ -100,6 +100,9 @@ function annuncioDi(n: number): string {
   return `${coloreDi(n)}, ${n % 2 === 0 ? 'pari' : 'dispari'} e ${n <= 18 ? 'manque' : 'passe'}`
 }
 
+/** Il numero con il suo articolo, come si dice: "lo 0", "l'8", "il 17". */
+const conArticolo = (n: number) => `${n === 0 ? 'lo ' : n === 1 || n === 8 || n === 11 ? 'l’' : 'il '}${n}`
+
 const oro = (titolo: string, sotto?: string): Omit<DatiAdesivo, 'id'> => ({
   durata: 2_400,
   tono: 'vivace',
@@ -107,15 +110,6 @@ const oro = (titolo: string, sotto?: string): Omit<DatiAdesivo, 'id'> => ({
   sotto,
   classe: 'ct-adesivo-vincita',
   suono: 'vincita',
-})
-
-const bordato = (titolo: string, sotto?: string): Omit<DatiAdesivo, 'id'> => ({
-  durata: 1_800,
-  tono: 'bordato',
-  titolo,
-  sotto,
-  classe: 'ct-adesivo-banco',
-  suono: 'banco',
 })
 
 /** Il gradino della festa di una vincita interna: dal pieno la festa grande, dalla sestina la piu' piccola. */
@@ -167,7 +161,8 @@ const somma = (a: PuntateRL, chiave: string, v: number): PuntateRL => ({ ...a, [
  * subito, con gli altri quando hanno puntato tutti o il tempo finisce. Il
  * numero lo dice il server con il lancio; qui la ruota si fa grande, la biglia
  * corre e si ferma, il croupier annuncia il numero, e tornati al panno il
- * dolly si posa, le fiches perse vanno via e le vinte si pagano in monete,
+ * dolly si posa, le fiches che non tornano scivolano via piano e le vinte si
+ * pagano in monete,
  * che arrivano al saldo. Il saldo resta fermo (`conto`) finché non arrivano.
  *
  * Chi lascia la pagina si alza dal tavolo: le puntate di un giro non ancora
@@ -256,10 +251,12 @@ export default function RouletteTavolo() {
       const libera = () => setConto(null)
       const totale = mio ? totaleDi(mio.puntate) : 0
       const delta = mio?.delta ?? null
+      // Si racconta quel che torna, mai il netto: la puntata si e' pagata al rien ne va plus.
+      const torna = delta === null ? 0 : delta + totale
       if (!mio || delta === null || totale === 0) libera()
-      else if (delta + totale === 0) {
+      else if (torna === 0) {
         libera()
-        dopo(ANNUNCIO_MS + 1_300, () => accoda(bordato('Niente, stavolta', `Esce il ${numero}`)))
+        dopo(ANNUNCIO_MS + 1_300, () => accoda(adesivoRitenta('Al prossimo giro', `È uscito ${conArticolo(numero)}`)))
       } else {
         // Torna qualcosa: i conti sul panno, poi le monete dalla vincita al saldo, e la festa se e' grande.
         const vinte = vincenti(mio.puntate, numero)
@@ -268,15 +265,16 @@ export default function RouletteTavolo() {
         dopo(ANNUNCIO_MS + 2_300, () => {
           const da = centroDi(pannoRef.current)
           const a = centroDi(saldoRef.current)
-          const quante = Math.min(24, 6 + Math.round(Math.sqrt(delta + totale) * 1.2))
+          const quante = Math.min(24, 6 + Math.round(Math.sqrt(torna) * 1.2))
           if (da && a) void incassaMonete(da, a, quante, libera)
           else libera()
-          if (delta <= 0) accoda(oro('Torna qualcosa', `+${delta + totale}`))
+          // Anche meno della puntata e' una vincita, come lo split di Crazy Time.
+          if (delta <= 0) accoda(oro(`Vinci ${torna}`, annuncioDi(numero)))
           else if (gradino !== null) {
             setFesta({
               chiave: Date.now(),
               moltiplicatore: gradino,
-              vincita: delta,
+              vincita: torna,
               fortunata: false,
               testo: String(numero),
               nome: tipoDi(migliore) === 'carre' ? 'CARRÉ' : tipoDi(migliore).toUpperCase(),
@@ -284,7 +282,7 @@ export default function RouletteTavolo() {
               carta: true,
             })
           } else {
-            accoda(oro(`Vinci ${delta}!`, annuncioDi(numero)))
+            accoda(oro(`Vinci ${torna}!`, annuncioDi(numero)))
             if (delta >= totale) {
               setPioggia((p) => p + 1)
               dopo(PIOGGIA_MS, () => setPioggia(0))
@@ -625,7 +623,7 @@ export default function RouletteTavolo() {
       : scena === 'puntate' && totaleDi(mandate) > 0 && !cambiata
         ? `Puntato ${cifra(totaleDi(mandate))}`
         : 'Tocca il panno per puntare'
-  /** Com'e' andata, a numero annunciato: la riga della sponda lo dice in oro, o che il banco raccoglie. */
+  /** Com'e' andata, a numero annunciato: quel che torna, in oro, o l'invito al giro dopo. */
   const esito =
     scena === 'esito' && mio && mio.delta !== null && totaleDi(mio.puntate) > 0
       ? mio.delta + totaleDi(mio.puntate)
@@ -671,10 +669,11 @@ export default function RouletteTavolo() {
                   >
                     <Avatar nickname={p.giocatore.nickname} color={p.giocatore.avatarColor} size={24} />
                     <span className="rl-giocatore__nome">{p.giocatore.displayName}</span>
+                    {/* A giro chiuso, quel che gli e' tornato; se non gli e' tornato niente, niente. */}
                     {scena === 'esito' && p.delta !== null ? (
-                      <span className={`rl-giocatore__conto${p.delta > 0 ? ' is-vinto' : ' is-perso'}`}>
-                        {p.delta > 0 ? `+${p.delta}` : p.delta}
-                      </span>
+                      p.delta + totaleDi(p.puntate) > 0 && (
+                        <span className="rl-giocatore__conto is-vinto">+{p.delta + totaleDi(p.puntate)}</span>
+                      )
                     ) : (
                       totaleDi(p.puntate) > 0 &&
                       scena !== 'pronto' && <span className="rl-giocatore__conto u-tabnum">{totaleDi(p.puntate)}</span>
@@ -884,7 +883,7 @@ function StatoTavolo({
     return <Riga>{numero === null ? ' ' : `${NOMI_NUMERI[numero]}, ${annuncioDi(numero)}`}</Riga>
   }
   if (scena === 'esito' && esito !== null) {
-    return <Riga oro={esito > 0}>{esito > 0 ? `Vinci ${cifra(esito)}` : 'Il banco raccoglie'}</Riga>
+    return <Riga oro={esito > 0}>{esito > 0 ? `Vinci ${cifra(esito)}` : 'Al prossimo giro'}</Riga>
   }
   const quante = Object.keys(puntate).length
   const tot = totaleDi(puntate)

@@ -62,15 +62,14 @@ export function ComeSiGiocaRuota({ open, onClose }: { open: boolean; onClose: ()
       <div className="cru-aiuto">
         <p className="cru-aiuto__lede">
           Punti quanto vuoi dei punti fatti oggi nelle classificate, da {PUNTATA_MINIMA} a tutti, e giri la ruota
-          trascinandola col dito. La puntata la paghi subito: quel che esce te la restituisce moltiplicata, o se la
-          tiene il banco.
+          trascinandola col dito. La puntata la paghi al lancio, e quel che esce dice quanto ti torna.
         </p>
 
         <section className="cru-aiuto__sezione">
           <h3 className="cru-aiuto__titolo">Gli spicchi</h3>
           <ul className="cru-aiuto__elenco">
             <li>
-              <strong>Banco</strong>: vince il banco, e la puntata è persa.
+              <strong>Banco</strong>: la puntata resta al banco, e si rigira.
             </li>
             <li>
               <strong>Split</strong>: torna metà della puntata, subito.
@@ -80,11 +79,11 @@ export function ComeSiGiocaRuota({ open, onClose }: { open: boolean; onClose: ()
             </li>
             <li>
               <strong>Quiz</strong>: giri la ruota del quiz, che si ferma su una categoria con il suo moltiplicatore, e
-              rispondi. Giusto vinci la puntata per il moltiplicatore, sbagliato la perdi tutta.
+              rispondi: se è giusta vinci la puntata per il moltiplicatore, se no non paga.
             </li>
             <li>
               <strong>Moneta</strong>: il blu porta un moltiplicatore a caso fra {elenco(MOLTIPLICATORI_MONETA)}. Tocchi
-              la moneta e la lanci: blu vinci, rosso vince il banco.
+              la moneta e la lanci: blu vinci, rosso non paga.
             </li>
             <li>
               <strong>Pachinko</strong>: lanci la pallina, che cade fra i pioli in una delle nove buche: vinci la
@@ -199,8 +198,8 @@ export function ComeSiGiocaRuota({ open, onClose }: { open: boolean; onClose: ()
         </section>
 
         <p className="cru-aiuto__nota">
-          Anche rispondendo sempre giusto, in media la ruota restituisce {RESA} punti ogni 100 puntati. Quel che vinci
-          o perdi va nella classifica generale di oggi.
+          Rispondendo sempre giusto, in media torna il {RESA}% di quel che punti. I punti della ruota contano nella
+          classifica generale di oggi.
         </p>
       </div>
     </Sheet>

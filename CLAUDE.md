@@ -631,7 +631,7 @@ saldo non copre la prima puntata, o la scheda piu' economica del SuperEnalotto,
 c'e' `PochiPunti` (`src/games/fortuna/Avvisi.tsx`), lo stesso in tutti i giochi
 e nelle sale: una targa scura con il filo d'ambra, come il tabellone, che dice
 quanto serve e quanto si ha, con l'anello di quanto manca, e porta alle
-Giornaliere. Il tabellone si tinge d'ambra (`scarso`), ma lo decide il gioco, e
+Giornaliere. Il tabellone tiene un filo d'ambra, senza alone (`scarso`), ma lo decide il gioco, e
 solo mentre si punta: durante un giro il saldo e' gia' sceso della puntata, e non
 e' un problema. Quel che non si puo' fare si vede spento apposta: il panno della
 roulette, la schedina del SuperEnalotto, e il 4+1 quando il saldo paga solo i
@@ -690,8 +690,8 @@ le monete tutte dall'altra, e i banchi erano sette su quindici. La puntata si
 paga al lancio — il giro nasce con `delta = -puntata` — e quel che esce la
 restituisce moltiplicata (`vincitaDi`, per difetto). Il triplo la restituisce
 per tre e lo split a meta', subito, senza minigioco (`pagaSubito`); il quiz
-porta alla ruota del quiz e poi alla domanda, e una risposta sbagliata perde
-tutta la puntata, qualunque sia il moltiplicatore; la moneta porta uno dei
+porta alla ruota del quiz e poi alla domanda, e una risposta sbagliata non
+paga, qualunque sia il moltiplicatore; la moneta porta uno dei
 quattro moltiplicatori di `MOLTIPLICATORI_MONETA`, deciso con il giro, che il
 blu paga e il rosso no; il Pachinko e il Cash Hunt hanno i loro (vedi sotto);
 la fortuna fa girare la ruota fortunata. Nessun esito ridà la puntata com'era,
@@ -713,10 +713,10 @@ segue da sola ogni spicchio e ogni moltiplicatore, e
 `shared/__tests__/ruota.test.ts` la tiene ferma: rifatta a mano, fra il 96,8 e
 il 97,4% per chi sa, sotto la puntata per tutti, e in punti interi a ogni
 puntata fino a duemila. Lo stesso file tiene le disposizioni delle ruote e i
-conti dei minigiochi. Si puo' avere fortuna una volta, e giocando a lungo si
-perde: e' quel che si vuole, perché la ruota insegni che vince il banco. Le
-regole lo dicono in una riga, con la resa, e niente scritte sulla ludopatia:
-e' una scelta, la lezione la da' la ruota.
+conti dei minigiochi. Si puo' avere fortuna una volta, e giocando a lungo il
+saldo scende: la resa resta quella, ma il racconto non lo ripete (vedi "Un giro
+a zero non si racconta come una perdita"). Le regole dicono la resa in positivo,
+"in media torna il 97% di quel che punti", e niente scritte sulla ludopatia.
 
 **Lo split e' una perdita vestita da vincita, di proposito.** Sei spicchi su
 venti restituiscono subito meta' della puntata, per difetto, e si raccontano
@@ -730,6 +730,32 @@ e risale della meta'; il travestimento sta solo nel racconto. Lo stesso vale
 per il ×0,5 del Pachinko e del Cash Hunt. Sulla ruota fortunata lo split
 diventa ×1,5, un premio vero, e resta rosa: si vede che cosa ha portato la
 fortuna.
+
+**Un giro a zero non si racconta come una perdita.** La Fortuna e' un gioco da
+pausa, e chi gioca ha chiesto che non si senta mai di aver perso: si gioca a
+punti, non a soldi. La puntata si paga quando si gioca — al lancio, alla leva,
+alla distribuzione, al "rien ne va plus", all'acquisto della scheda — e da li'
+ogni esito dice solo quel che torna, come lo split: "Vinci N" anche quando N e'
+meno della puntata, e la mano vinta del blackjack dice "Vinci 20" su dieci
+puntati (`tornatoDi` in `src/games/blackjack/Tavolo.tsx`), perché e' quel che
+arriva al saldo. Quando non torna niente — il banco, il rosso della moneta, una
+domanda sbagliata, una mano che non ridà, un giro della roulette senza
+vincite, un concorso senza premi — non c'e' una parola di perdita, ne' un segno
+meno, ne' il rosso, ne' un suono triste, ne' il palco che trema: c'e' il
+biglietto lilla del giro dopo ("Al prossimo giro", "Alla prossima mano", "Al
+prossimo concorso": `adesivoRitenta` in `src/games/fortuna/Avvisi.tsx`, la
+classe `ct-adesivo-ritenta` in `voli.css`), le luci che respirano lilla
+(`calma`), e le fiches che scivolano piano via senza cifre (`ritiraFiches`, che
+ha preso il posto di `perdiFiches`). Il mozzo di Crazy Time torna alla puntata,
+accanto agli altri giocatori si legge solo "+N", la fascia di una mano che non
+ridà non c'e', e oltre il 21 si dice "Oltre 21", in grigio, come un fatto del
+gioco; l'assicurazione dice solo quando paga, e una scheda del SuperEnalotto
+senza premi non scrive niente. La domanda sbagliata si fa lilla con la sua
+lettera e suona pari, la slot dopo un giro a vuoto dice "Rigira", il lampo della
+puntata pagata sul tabellone e' lilla, e gli ultimi secondi dei tempi del
+blackjack e della roulette sono arancioni. Le regole dicono come si vince e
+quanto torna. Restano com'erano le regole del gioco, le rese, i conti del server
+e la classifica della Fortuna, che mette in fila il netto del periodo.
 
 **Il giro salva la disposizione delle ruote** (`disposizione`,
 `DISPOSIZIONE_RUOTA`): i giri di una disposizione di prima contano nel saldo e
@@ -984,8 +1010,8 @@ ruota del quiz si ferma, la categoria e il moltiplicatore saltano fuori
 (`Rivelazione`), e poi arriva la domanda. La moneta si lancia toccandola. Mentre
 e' in aria il tabellone resta com'era (`conto`) e il lato si dice quando cade:
 la risposta del server arriva prima, e sarebbe la soluzione. Una vincita ha
-l'adesivo d'oro e la pioggia di monete, o la festa, il banco l'adesivo bordato e
-un sussulto del palco. Dopo un giro il pannello torna alla puntata, che resta
+l'adesivo d'oro e la pioggia di monete, o la festa; il banco il biglietto lilla
+del giro dopo, senza sussulti. Dopo un giro il pannello torna alla puntata, che resta
 quella di prima finché non la si cambia, come al tavolo. Il tabellone in cima
 dice il saldo e la puntata; nella scheda della Fortuna la carta dice quanto si
 puo' puntare, o dove aspetta una sfida aperta ("Ruota fortunata", "Quiz",
@@ -1001,10 +1027,10 @@ con la puntata gia' tolta. Alla ruota fortunata la fiche e' gia' sul mozzo, e il
 saldo non si muove. Quando la ruota si ferma una vincita torna al saldo in
 monete — dal mozzo, dalla moneta caduta sul blu, dalla buca della pallina o
 dalla casella scelta — e il saldo sale quando arriva la prima; anche la meta'
-dello split torna cosi', in poche monete. Al banco le fiches cadono dal mozzo,
-e il mozzo dice quanto si e' vinto o perso. Fino ad allora il tabellone resta
-su quel che si e' visto (`conto`), poi un lampo d'oro o rosso accompagna il
-conto nuovo. Una domanda vinta o persa si racconta cosi' tornando alla ruota
+dello split torna cosi', in poche monete. Quando non torna niente le fiches
+scivolano via piano dal mozzo, e il mozzo torna alla puntata: dice solo quanto
+si e' vinto. Fino ad allora il tabellone resta su quel che si e' visto
+(`conto`), poi un lampo d'oro accompagna il conto nuovo. Una domanda si racconta cosi' tornando alla ruota
 (`RITORNO_MS`). I voli sono elementi del body animati con le Web Animations
 (`src/games/fortuna/voli.ts`, che usa anche la slot), sotto gli adesivi, che
 dicono il momento: passare dallo stato di React ridisegnerebbe la pagina a ogni

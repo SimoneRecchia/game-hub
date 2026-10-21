@@ -57,8 +57,8 @@ const SERVE_PER_TUTTI = Math.min(...Object.values(SERVONO))
  * La scheda della Fortuna: i giochi d'azzardo, che puntano tutti lo stesso
  * saldo — i punti fatti oggi nelle classificate, piu' quel che i giochi hanno
  * gia' dato o tolto. E' una sala da gioco, scura in tutti e due i temi
- * (Vetrina.css). In cima il saldo, e basta: quanto si e' vinto o perso non si
- * dice, e toccandolo si apre la classifica della Fortuna. Sotto una carta per
+ * (Vetrina.css). In cima il saldo, e basta: com'e' andata oggi non si dice, e
+ * toccandolo si apre la classifica della Fortuna. Sotto una carta per
  * gioco, e i tavoli del blackjack e della roulette degli amici online, a cui
  * ci si siede con un tocco.
  *
@@ -95,8 +95,8 @@ export default function Fortuna() {
         <PochiPunti
           servono={SERVE_PER_TUTTI}
           saldo={dati.saldo}
-          titolo={dati.saldo <= 0 ? 'Il saldo è a zero' : undefined}
-          testo="Si punta con i punti delle giornaliere"
+          titolo={dati.saldo <= 0 ? 'Il saldo è ancora vuoto' : undefined}
+          testo="Si riempie con i punti delle giornaliere"
           className="fortuna-vuoto"
         />
       )}
@@ -127,7 +127,8 @@ export default function Fortuna() {
         <div className="cru-aiuto">
           <p className="cru-aiuto__lede">
             Si puntano i punti fatti oggi nelle classificate. Il saldo è uno per tutti i giochi: quel che vinci a uno
-            lo puoi puntare a un altro, e quel che perdi esce dalla classifica generale di oggi.
+            lo puoi puntare a un altro, e il saldo con cui chiudi la giornata è il tuo punteggio di oggi nella
+            classifica generale.
           </p>
           <section className="cru-aiuto__sezione">
             <h3 className="cru-aiuto__titolo">Quanto si punta</h3>
@@ -153,11 +154,11 @@ export default function Fortuna() {
             </ul>
           </section>
           <section className="cru-aiuto__sezione">
-            <h3 className="cru-aiuto__titolo">Vince il banco</h3>
+            <h3 className="cru-aiuto__titolo">Quanto torna</h3>
             <p className="cru-aiuto__testo">
-              In tutti i giochi, chi gioca al meglio riceve in media il {RESA}% di quel che punta: si può avere fortuna
-              una volta, e giocando a lungo si perde. Al {NOME_SUPERENALOTTO} va in premi il {QUOTA_PREMI}% delle
-              giocate, come in quello vero. Domani si riparte dalle classificate di domani.
+              In tutti i giochi, giocando al meglio, in media ti torna il {RESA}% di quel che punti. Al{' '}
+              {NOME_SUPERENALOTTO} va in premi il {QUOTA_PREMI}% delle giocate, come in quello vero. Domani si riparte
+              dalle classificate di domani.
             </p>
           </section>
         </div>

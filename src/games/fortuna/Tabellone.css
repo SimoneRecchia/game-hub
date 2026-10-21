@@ -120,7 +120,11 @@
   text-shadow: none;
 }
 
-/* Il tabellone si accende quando il saldo cambia: rosso per la puntata pagata, d'oro per la vincita. */
+/*
+ * Il tabellone si accende quando il saldo cambia: d'oro per la vincita che
+ * arriva, e lilla, piu' tenue, per la puntata che parte. Non rosso: pagare la
+ * puntata e' giocare, non perdere.
+ */
 .ct-tabellone__lampo {
   position: absolute;
   inset: 0;
@@ -131,8 +135,8 @@
 
 .ct-tabellone__lampo.is-paga {
   box-shadow:
-    inset 0 0 0 calc(var(--filo) + 2px) var(--ct-meno),
-    0 0 22px color-mix(in srgb, var(--ct-meno) 70%, transparent);
+    inset 0 0 0 calc(var(--filo) + 2px) #c9b8ff,
+    0 0 16px rgb(201 184 255 / 0.45);
 }
 
 .ct-tabellone__lampo.is-incassa {
@@ -154,22 +158,17 @@
 }
 
 /*
- * Il saldo che non basta: la targa si tinge d'ambra, con un alone, e il
- * numero e la sua etichetta anche. L'alone sta in uno strato suo, perché i
- * tavoli ridisegnano le ombre del tabellone sul panno.
+ * Il saldo che non basta: il filo della targa si fa d'ambra, come l'avviso che
+ * dice dove farne (`PochiPunti`), e il numero e la sua etichetta anche. Senza
+ * alone ne' fondo bruciato: e' un'indicazione, non un allarme. Il filo sta in
+ * uno strato suo, perché i tavoli ridisegnano le ombre del tabellone sul panno.
  */
-.ct-tabellone.is-scarso {
-  background: linear-gradient(180deg, #4a2a10, #2e1a0a);
-}
-
 .ct-tabellone.is-scarso::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow:
-    inset 0 0 0 calc(var(--filo) + 2px) var(--ct-ambra),
-    0 0 18px rgba(255, 176, 46, 0.55);
+  box-shadow: inset 0 0 0 calc(var(--filo) + 2px) var(--ct-ambra);
   pointer-events: none;
 }
 
