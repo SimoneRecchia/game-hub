@@ -1,8 +1,9 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
+import { Adesivo, useAdesivo } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
-import { Numero } from '@/components/Elementi'
+import { Coriandoli, Numero } from '@/components/Elementi'
 import { IconInfo } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { useToast } from '@/components/Toast'
@@ -10,6 +11,7 @@ import { PochiPunti } from '@/games/fortuna/Avvisi'
 import { SALA, useSala } from '@/games/fortuna/sala'
 import { Tabellone } from '@/games/fortuna/Tabellone'
 import { ComeSiGiocaEnalotto } from '@/games/superenalotto/ComeSiGioca'
+import Diretta from '@/games/superenalotto/Diretta'
 import { casuali, coloreDellaPallina } from '@/games/superenalotto/palline'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
@@ -29,8 +31,6 @@ import {
 } from '@shared/superenalotto'
 import type { ConcorsoEnalottoVista, SchedaEnalotto, VistaEnalotto } from '@shared/types'
 import './SuperEnalotto.css'
-
-const Diretta = lazy(() => import('@/games/superenalotto/Diretta'))
 
 /** La diretta si apre da sola un minuto prima, per chi ha la pagina aperta. */
 const PRIMA_DELLA_DIRETTA_MS = 60_000
@@ -113,6 +113,8 @@ export default function SuperEnalotto() {
   const chiusaDa = useRef<string | null>(null)
   const saldoRef = useRef<HTMLSpanElement>(null)
   const [adesso, setAdesso] = useState(() => Date.now())
+  const { adesivo, mostra } = useAdesivo()
+  const [festa, setFesta] = useState(false)
 
   const prendi = useCallback((v: VistaEnalotto) => {
     setVista(v)
@@ -217,6 +219,36 @@ export default function SuperEnalotto() {
   const estrazione = vista && ultimo && (!aperto || (risultati && ultimo.premi)) ? ultimo : null
   const mostrato = estrazione ?? aperto
   const apriDiretta = () => ultimo && setDiretta({ replica: false, inizio: inizioUltimo })
+  /**
+   * La diretta lascia il posto ai risultati: quando la si lascia, o quando
+   * arriva in fondo da sola. In fondo a quella vera, com'e' andata lo dice un
+   * adesivo, come nel mockup; la replica non lo ridice.
+   */
+  const chiudiDiretta = (finita: boolean) => {
+    if (!ultimo || !diretta) return
+    chiusaDa.current = ultimo.data
+    setDiretta(null)
+    // Finita la diretta, i premi: la pagina mostra l'estrazione, non la schedina.
+    if (!diretta.replica) setRisultati(true)
+    if (finita && !diretta.replica && ultimo.mie.length > 0) {
+      const vinto = ultimo.mie.reduce((s, x) => s + (x.vincita ?? 0), 0)
+      const presi = ultimo.estratti ? Math.max(0, ...ultimo.mie.map((x) => presiDi(x.numeri, ultimo.estratti!))) : 0
+      if (vinto > 0) {
+        mostra({
+          tono: 'vivace',
+          titolo: presi >= 4 ? 'Jackpot!' : `${PRESI[presi] ?? presi} numeri!`,
+          sotto: `+${punti(vinto)}`,
+          colore: 'linear-gradient(180deg, #ffe27a, #ffc93c)',
+          durata: 2200,
+        })
+        setFesta(true)
+        window.setTimeout(() => setFesta(false), 3200)
+      } else {
+        mostra({ tono: 'bordato', titolo: 'Niente, stavolta', sotto: 'Il jackpot cresce', colore: '#e5383b', durata: 1900 })
+      }
+    }
+    void leggi()
+  }
   const allaSchedina = () => {
     if (ultimo) segnaVisto(ultimo.data)
     setRisultati(false)
@@ -224,7 +256,7 @@ export default function SuperEnalotto() {
 
   return (
     <Pagina {...testa(mostrato ? `Concorso n° ${numeroConcorso(mostrato.data)}` : undefined)}>
-      <div className={`se ${SALA}`}>
+      <div className={`se ${SALA}${diretta ? ' is-diretta' : ''}`}>
         {vista && (
           <Tabellone
             saldo={vista.saldo}
@@ -238,7 +270,20 @@ export default function SuperEnalotto() {
 
         {!vista && <div className="se-attesa" aria-hidden="true" />}
 
-        {vista && estrazione && (
+        {vista && diretta && ultimo && (
+          <Diretta
+            data={ultimo.data}
+            numero={numeroConcorso(ultimo.data)}
+            inizio={diretta.inizio}
+            estratti={ultimo.estratti}
+            mie={ultimo.mie}
+            premi={diretta.replica || ultimo.premi ? ultimo.premi : null}
+            replica={diretta.replica}
+            onChiudi={chiudiDiretta}
+          />
+        )}
+
+        {vista && !diretta && estrazione && (
           <>
             {!estrazione.premi && <Jackpot concorso={estrazione} oggi={vista.date} />}
             <Estrazione
@@ -254,7 +299,7 @@ export default function SuperEnalotto() {
           </>
         )}
 
-        {vista && aperto && !estrazione && (
+        {vista && !diretta && aperto && !estrazione && (
           <>
             <Jackpot concorso={aperto} oggi={vista.date} />
             <Schedina
@@ -279,25 +324,8 @@ export default function SuperEnalotto() {
         )}
       </div>
 
-      {diretta && ultimo && (
-        <Suspense fallback={null}>
-          <Diretta
-            data={ultimo.data}
-            inizio={diretta.inizio}
-            estratti={ultimo.estratti}
-            mie={ultimo.mie}
-            premi={diretta.replica || ultimo.premi ? ultimo.premi : null}
-            replica={diretta.replica}
-            onChiudi={() => {
-              chiusaDa.current = ultimo.data
-              setDiretta(null)
-              // Finita la diretta, i premi: la pagina mostra l'estrazione, non la schedina.
-              if (!diretta.replica) setRisultati(true)
-              void leggi()
-            }}
-          />
-        </Suspense>
-      )}
+      <Adesivo adesivo={adesivo} />
+      {festa && <Coriandoli />}
       <ComeSiGiocaEnalotto open={regole} onClose={() => setRegole(false)} />
     </Pagina>
   )

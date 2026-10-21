@@ -1235,59 +1235,39 @@ il giorno delle schede nuove e quello dell'estrazione che si paga). Le schede da
 apre l'app perderebbe una vincita che il server sa gia'. Per lo stesso ordine
 dei pagamenti `assicura` guarda solo le schede dopo l'ultimo concorso pagato.
 
-**La diretta e' in 3D vero, con three.js, e arriva a parte.** `Urna`
-(`src/games/superenalotto/urna.ts`) e' uno studio televisivo: la sfera di vetro
-sul piedistallo d'oro, al centro di una pedana di vetro nero che la riflette, le
-novanta palline con il numero dipinto due volte, il tubo, la rotaia, i
-riflettori che si muovono, la parete di luci in fondo e il pulviscolo fuori
-fuoco. Tutto quel che si vede e' una funzione del tempo della diretta — la
-regia, le luci, la pallina che esce, i lampi — tranne le palline nell'urna, che
-hanno una fisica loro (la fontana dal fondo, un giro attorno all'asse, le
-pareti, gli urti) fatta con pochi vettori di lavoro: nel giro di un fotogramma
-non nasce nessun oggetto. I tempi stanno in `tempi.ts`, che leggono l'urna e le
-scritte, e la regia e' una scaletta (`REGIA`): lo studio dall'alto prima
-dell'inizio, la gru che scende con il titolo, l'urna da vicino mentre si
-mescola, e per ogni pallina la bocca nell'attesa (le luci calano, il tamburo),
-il tubo seguito da vicino con la scia che si accende, la vetrina al suo posto
-con il numero verso la camera, poi indietro; alla fine le quattro sulla rotaia.
-La camera segue la scaletta senza ritardo — non ha salti, e un ritardo
-lascerebbe la pallina fuori quadro — e assorbe in un attimo solo i salti veri,
-una finestra ridimensionata o un telefono che si era fermato; il primo
-fotogramma e' gia' quello giusto. Le scritte coprono una parte dello schermo, e
-la diretta dice all'urna quanta (`inquadratura`): la proiezione si centra nel
-campo che resta (`setViewOffset`), e ci scivola quando arriva il riepilogo. Un
-test (`__tests__/diretta.test.ts`) tiene la scaletta in ordine, con ogni
-passaggio finito prima dello stacco dopo, ogni pallina finita prima della
-prossima e il riepilogo prima della fine della diretta, che resta
-`DURATA_DIRETTA_MS` perché il server paga li'. I suoni seguono gli stessi tempi:
-`estratto` in `suoni.ts` ha il colpo alla bocca e il rotolare sulla rotaia dove
-li mette `tempi.ts`, e se cambiano gli uni va rifatto l'altro. Un telefono la
-deve far girare senza scaldarsi: niente ombre, niente post-produzione, e niente
-vernice sul vetro (`clearcoat`), che con la sfera a tutto schermo costerebbe un
-secondo riflesso per pixel. I riflessi vengono da un ambiente calcolato una
-volta, uno studio buio con i pannelli dei riflettori (`studioDaRiflettere` in
-`effetti.ts`); i fasci, i lampi e le scintille sono forme che sommano il colore,
-con materiali scritti a mano; il riflesso sulla pedana e' l'urna disegnata
-capovolta in un pozzo sotto il vetro nero, con le copie disegnate prima del
-vetro, che le scurisce, e le palline riflesse in un disegno solo
-(`InstancedMesh`), senza numeri. Le palline nell'urna hanno una forma sola e
-un'immagine piccola ciascuna (`LATO_FACCIA`); quella che esce cresce nel tubo
-fino alla misura della rotaia (`RB_FUORI`) e prende un'immagine di 512 per 256,
-perché in vetrina riempie mezzo schermo. three.js sta solo nel pezzo della
-diretta (`Diretta`, con `lazy`): la pagina della schedina non lo scarica. Chi ha
-la pagina aperta vede la diretta aprirsi da sola un minuto prima; chi arriva a
-meta' la trova a meta', e dopo la si rivede ("Rivedi l'estrazione"), con lo
-stesso orologio che parte da li'. Senza movimento la camera sta ferma sull'urna
-da lontano, i fasci non girano e i lampi sono deboli; senza WebGL l'urna e'
-disegnata e ferma, e le palline si leggono sotto. Sopra c'e' la grafica di una
-diretta (`Diretta.css`), che si muove solo con `transform` e `opacity`: il
-bollino rosso, il conto alla rovescia con gli ultimi tre secondi grandi, il
-titolo d'oro con la luce che passa, i sottopancia in basso — quello della
-pallina ha il numero anche in lettere (`inLettere`), ed e' d'oro se il numero e'
-di chi guarda — e lo screen reader sente una riga per momento da una regione
-sua, non le scritte che cambiano dieci volte al secondo. La schedina invece e'
-di carta: le caselle stampate in rosso, la croce a penna blu che si traccia, i
-numeri scritti a mano (`--font-mano`) e il timbro "Giocata".
+**La diretta e' uno studio disegnato, dentro la pagina.** Come nel mockup,
+sotto la testa e il tabellone c'e' lo studio piatto: i fasci di luce, la parete
+di lampadine, il bollino della diretta e il titolo d'oro, la sfera di vetro con
+le palline che si mescolano, la bocca e il piedistallo d'oro, il tubo che porta
+alla rotaia con i quattro posti, e sotto le schede di chi guarda, con i numeri
+usciti cerchiati d'oro. Fino al 21 ottobre 2026 era una scena in 3D con
+three.js, realistica, e un telefono la reggeva a fatica; adesso e' un palco di
+390 per 590 punti (`studio.ts`) che la diretta scala sullo spazio che c'e', e il
+disegno e il viaggio delle palline leggono le stesse misure, cosi' la pallina
+corre dentro il tubo che si vede. Tutto e' una funzione del tempo della
+diretta: `momentoDi` (`tempi.ts`) dice che cosa mostra il sottopancia — il
+conto alla rovescia, il titolo, l'attesa di una pallina, l'ultima arrivata
+fino all'attesa della prossima, il riepilogo —, e il viaggio di una pallina e'
+un'animazione sola fatta con le tappe di `viaggioDi`, cominciata da dove la
+diretta e' arrivata: chi apre a meta' trova la pallina a meta' del tubo. Il
+viaggio ha i tempi del suono `estratto` (`suoni.ts`), con il colpo alla bocca a
+fine risucchio, i colpi nel tubo e il rotolare sulla rotaia, e un test li
+tiene: se cambiano gli uni va rifatto l'altro. Chi ha la pagina aperta vede la
+diretta aprirsi da sola un minuto prima; chi arriva a meta' la trova a meta',
+e dopo la si rivede ("Rivedi l'estrazione"), con lo stesso orologio che parte
+da li'. La diretta resta `DURATA_DIRETTA_MS` perché il server paga li': finito
+il riepilogo, e arrivati i premi, lascia il posto da sola ai risultati della
+pagina, con l'adesivo di com'e' andata; la replica, che i premi li sa gia', non
+lo ridice. Finché i premi non ci sono il bottone dice "Esci dalla diretta", e
+non "Vai ai risultati": i risultati avrebbero ancora i punti di domanda. Quanti
+numeri ha preso una scheda lo dice la diretta, non il server: il sottopancia
+della pallina ha il numero anche in lettere (`inLettere`) ed e' d'oro se il
+numero e' di chi guarda, e lo screen reader sente una riga per momento da una
+regione sua. Si muove solo con `transform` e `opacity`, e senza movimento le
+palline stanno nel mucchio e quelle estratte compaiono al loro posto quando
+arrivano. La schedina invece e' di carta: le caselle stampate in rosso, la
+croce a penna blu che si traccia, i numeri scritti a mano (`--font-mano`) e il
+timbro "Giocata".
 
 **Il blackjack paga 1 a 1, e rende come gli altri.** Le regole sono quelle
 europee dei casinò italiani, controllate sui regolamenti di Venezia e di
