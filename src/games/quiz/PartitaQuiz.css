@@ -107,7 +107,7 @@
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 3px dashed color-mix(in srgb, var(--quiz-1) 55%, transparent);
+  border: 3px dashed var(--ink-tenue);
   animation: quiz-gira 18s linear infinite;
 }
 
@@ -116,12 +116,16 @@
   place-items: center;
   width: 74%;
   aspect-ratio: 1;
-  border-radius: 50%;
-  background: linear-gradient(155deg, var(--quiz-1), var(--quiz-2) 80%);
-  color: #fff;
+  box-sizing: border-box;
+  /* Il vetrino dell'album, con il rosa del quiz. */
+  border: var(--filo) solid var(--ink);
+  border-radius: 30%;
+  background: radial-gradient(circle at 50% 34%, #fff 24%, #ffd0e0);
+  color: #c2266a;
   box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.28),
-    0 12px 30px color-mix(in srgb, var(--quiz-2) 34%, transparent);
+    0 5px 0 var(--ink),
+    inset 0 3px 0 rgba(255, 255, 255, 0.7);
+  transform: rotate(-4deg);
 }
 
 .quiz-intro__icona svg {
@@ -138,11 +142,14 @@
 
 .quiz-intro__sopra {
   margin: 0;
+  padding: 2px 12px;
+  border: 2px solid var(--ink);
+  border-radius: var(--r-pill);
+  background: #ffd0e0;
+  box-shadow: 0 2px 0 var(--ink);
   font-size: var(--text-footnote);
-  font-weight: 800;
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-  color: var(--quiz-lettera-ink);
+  font-weight: 900;
+  color: #2a1f5c;
   animation-delay: 120ms;
 }
 
@@ -1278,6 +1285,10 @@
 }
 
 .quiz-fine__scheda {
+  /* La carta della fine, come nell'album: chiara in tutti e due i temi, con l'inchiostro sopra. */
+  color-scheme: light;
+  background: linear-gradient(180deg, #fff1c9, #ffd9ec);
+  color: #2a1f5c;
   align-items: center;
   gap: clamp(6px, 1.6cqh, 12px);
   padding-bottom: 14px;
@@ -1299,11 +1310,10 @@
   font-size: clamp(3.5rem, 20cqh, 6rem);
   font-weight: 900;
   line-height: 1;
-  letter-spacing: var(--tracking-display);
-  background: linear-gradient(160deg, var(--quiz-1), var(--quiz-2) 80%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-family: var(--font-rounded);
+  font-weight: 400;
+  color: #c2266a;
+  text-shadow: 0 4px 0 #2a1f5c;
   animation: quiz-salta 620ms var(--ease-bounce) 160ms both;
 }
 
@@ -1341,18 +1351,20 @@
   place-items: center;
   width: clamp(18px, 6.4cqw, 24px);
   height: clamp(18px, 6.4cqw, 24px);
+  box-sizing: border-box;
+  border: 2px solid #2a1f5c;
   border-radius: 7px;
-  color: #fff;
-  box-shadow: var(--edge-light), var(--shadow-key);
+  color: #2a1f5c;
+  box-shadow: 0 2px 0 #2a1f5c;
   animation: quiz-opzione-entra 380ms var(--ease-spring) both;
 }
 
 .quiz-fine__caselle li.is-giusta {
-  background: var(--green);
+  background: #5edb84;
 }
 
 .quiz-fine__caselle li.is-sbagliata {
-  background: var(--red);
+  background: #ff7a7a;
 }
 
 .quiz-fine__caselle li.is-ripasso {
@@ -1368,11 +1380,13 @@
 .quiz-fine__rivedi {
   margin-top: 4px;
   padding: 6px 14px;
-  border-radius: var(--r-pill);
-  background: var(--fill-quaternary);
-  color: var(--brand);
-  font-size: var(--text-footnote);
-  font-weight: 700;
+  border: 0;
+  background: none;
+  color: #4e4479;
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .quiz-fine__azioni {
@@ -1649,6 +1663,208 @@
   }
 }
 
+/* ─────────────────────  L'album: tasti, pallini, esiti  ───────────────────── */
+
+/*
+ * Come nell'album di adesivi: le risposte sono tasti di carta con il filo
+ * d'inchiostro, una sotto l'altra quando sono parole, con la lettera in un
+ * quadratino pastello — rosa, giallo, cielo, lilla —; la giusta si fa verde e
+ * la sbagliata rossa, chiare in tutti e due i temi con l'inchiostro sopra.
+ */
+.quiz-opzioni:not(.is-bandiere):not(.is-quadri):not(.is-sei):not(.is-compatte) {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 9px;
+}
+
+.quiz-opzione {
+  border-radius: 18px;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 40%);
+  font-weight: 900;
+}
+
+.quiz-opzione:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    inset 0 0 0 var(--filo) var(--ink),
+    0 1px 0 var(--ink);
+}
+
+@media (hover: hover) {
+  .quiz-opzione:hover:not(:disabled) {
+    box-shadow:
+      var(--ombra-album),
+      0 0 0 3px color-mix(in srgb, var(--quiz-tinta) 60%, transparent);
+  }
+}
+
+.quiz-opzione__lettera {
+  width: 34px;
+  height: 34px;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  border-radius: 11px;
+  background: #ffc2d8;
+  color: #2a1f5c;
+  font-family: var(--font-rounded);
+  font-size: 1.0625rem;
+  font-weight: 400;
+}
+
+.quiz-opzione:nth-child(4n + 2) .quiz-opzione__lettera {
+  background: #ffe08a;
+}
+
+.quiz-opzione:nth-child(4n + 3) .quiz-opzione__lettera {
+  background: #bfdcff;
+}
+
+.quiz-opzione:nth-child(4n + 4) .quiz-opzione__lettera {
+  background: #d9ccff;
+}
+
+.quiz-opzione.is-scelta {
+  box-shadow:
+    var(--ombra-album),
+    0 0 0 4px var(--giallo);
+  animation: quiz-scelta-album 900ms var(--ease-in-out) infinite;
+}
+
+.quiz-opzione.is-scelta .quiz-opzione__lettera {
+  background: var(--giallo);
+  color: #2a1f5c;
+}
+
+@keyframes quiz-scelta-album {
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.quiz-opzione.is-giusta {
+  background-color: #5edb84;
+  color: #2a1f5c;
+  box-shadow: var(--ombra-album);
+  animation: quiz-giusta 560ms var(--ease-bounce);
+}
+
+.quiz-opzione.is-sbagliata {
+  background-color: #ff8a8a;
+  color: #2a1f5c;
+  box-shadow: var(--ombra-album);
+  animation: quiz-trema 440ms var(--ease-in-out);
+}
+
+/* Sulla giusta e sulla sbagliata la lettera diventa il segno: un tondo di carta con la spunta o la croce. */
+.quiz-opzione.is-giusta .quiz-opzione__lettera,
+.quiz-opzione.is-sbagliata .quiz-opzione__lettera {
+  border-radius: 50%;
+  background: #fffbf2;
+  color: #2a1f5c;
+}
+
+/* Le altre si fanno da parte, ma si leggono ancora. */
+.quiz-opzione.is-spenta {
+  opacity: 0.58;
+  transform: scale(0.98);
+}
+
+.quiz-opzione.is-esclusa {
+  opacity: 0.55;
+  box-shadow: inset 0 0 0 2px var(--ink-tenue);
+}
+
+.quiz-opzione__segno {
+  border: 2px solid var(--ink);
+  background: var(--giallo);
+  color: #2a1f5c;
+  box-shadow: none;
+}
+
+/* I pallini delle domande: con il filo, giallo quello di adesso, verdi e rossi quelli fatti. */
+.quiz-progresso__casella {
+  height: 10px;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.quiz-progresso__casella.is-corrente {
+  background: var(--giallo);
+  animation: quiz-pallino-batte 1.2s ease-in-out infinite;
+}
+
+.quiz-progresso__casella.is-giusta {
+  background: #5edb84;
+}
+
+.quiz-progresso__casella.is-sbagliata {
+  background: #ff7a7a;
+}
+
+@keyframes quiz-pallino-batte {
+  50% {
+    transform: scaleX(1.18);
+  }
+}
+
+.quiz-progresso__barra {
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  background: var(--surface);
+}
+
+/* La domanda in Lilita, come i titoli dell'album. */
+.quiz-carta__testo {
+  font-family: var(--font-rounded);
+  font-size: clamp(1.25rem, 6cqw, 1.625rem);
+  font-weight: 400;
+  line-height: 1.16;
+  letter-spacing: 0.005em;
+}
+
+.quiz-carta.is-cartina .quiz-carta__testo {
+  font-size: 1.125rem;
+}
+
+.quiz-carta__emblema {
+  box-sizing: border-box;
+  border: var(--filo) solid var(--ink);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 var(--ink);
+}
+
+/* La carta a risposta data: il filo resta, e attorno l'alone verde o rosso. */
+.quiz-carta.is-giusta {
+  box-shadow:
+    var(--ombra-album),
+    0 0 0 4px #5edb84;
+}
+
+.quiz-carta.is-sbagliata {
+  box-shadow:
+    var(--ombra-album),
+    0 0 0 4px #ff7a7a;
+}
+
+.quiz-conferma__esito {
+  font-family: var(--font-rounded);
+  font-weight: 400;
+}
+
+/* Il tasto che manda avanti e quello che comincia: il rosa del quiz, con l'inchiostro. */
+.btn.quiz-avanti__bottone,
+.quiz-intro > .btn--filled {
+  background: #ff86ae;
+  color: #2a1f5c;
+}
+
+.btn.quiz-avanti__bottone:hover:not(:disabled),
+.quiz-intro > .btn--filled:hover:not(:disabled) {
+  background: #ff97b9;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .quiz__attesa,
   .quiz-intro__disegno,
@@ -1674,6 +1890,8 @@
   .quiz-carta__bandierina,
   .quiz-opzione__lettera.is-bandiera,
   .quiz-avanti,
+  .quiz-opzione.is-scelta,
+  .quiz-progresso__casella.is-corrente,
   .quiz-carta__quadro .quadro,
   .quiz-carta__quadro .quadro.is-carica,
   .quiz-carta__scheda,

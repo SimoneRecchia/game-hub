@@ -215,7 +215,7 @@ export default function NomiCoseLibera() {
             />
           }
           azione={
-            <Button size="lg" fullWidth onClick={g.dicoStop}>
+            <Button size="lg" fullWidth className="nomi-stop" onClick={g.dicoStop}>
               <IconTimbro size={20} /> Stop!
             </Button>
           }

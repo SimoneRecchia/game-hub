@@ -126,7 +126,7 @@ export default function NomiCose() {
           entrata={volo.arrivata}
           nascondiLettera={volo.volo !== null}
           azione={
-            <Button size="lg" fullWidth onClick={g.consegna} disabled={g.occupato}>
+            <Button size="lg" fullWidth className="nomi-stop" onClick={g.consegna} disabled={g.occupato}>
               Consegna
             </Button>
           }

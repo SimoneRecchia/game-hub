@@ -62,24 +62,28 @@
 }
 
 .quiz-materia:active {
-  transform: translateY(2px);
+  transform: translateY(3px);
   box-shadow:
-    var(--edge-light),
-    0 0 0 1px var(--separator);
+    inset 0 0 0 var(--filo) var(--ink),
+    0 1px 0 var(--ink);
 }
 
 .quiz-materia__icona {
   flex: none;
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
-  border-radius: 16px;
-  background: linear-gradient(155deg, var(--m1), var(--m2) 85%);
-  color: #fff;
+  width: 58px;
+  height: 58px;
+  box-sizing: border-box;
+  /* Il vetrino dell'album: carta chiara sfumata nel colore della materia, il filo e l'ombra secca. */
+  border: var(--filo) solid var(--ink);
+  border-radius: 18px;
+  background: radial-gradient(circle at 50% 34%, #fff 24%, color-mix(in srgb, var(--m1) 32%, #fff));
+  color: color-mix(in srgb, var(--m2) 70%, #2a1f5c);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    0 6px 16px color-mix(in srgb, var(--m2) 28%, transparent);
+    0 3px 0 var(--ink),
+    inset 0 2px 0 rgba(255, 255, 255, 0.7);
+  transform: rotate(-3deg);
 }
 
 .quiz-materia__testi {
@@ -91,9 +95,10 @@
 }
 
 .quiz-materia__nome {
-  font-size: var(--text-headline);
-  font-weight: 800;
-  line-height: 1.2;
+  font-family: var(--font-rounded);
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1.15;
 }
 
 .quiz-materia__sotto {
@@ -111,7 +116,7 @@
 
 .quiz-materia__freccia {
   flex: none;
-  color: var(--label-tertiary);
+  color: var(--label-secondary);
 }
 
 /* "Come l'ultima volta": la partita di prima con un tocco, senza passare dalle scelte. */
@@ -210,17 +215,16 @@
 }
 
 .quiz-tessera:active {
-  transform: translateY(2px);
+  transform: translateY(3px);
   box-shadow:
-    var(--edge-light),
-    0 0 0 1px var(--separator);
+    inset 0 0 0 var(--filo) var(--ink),
+    0 1px 0 var(--ink);
 }
 
 .quiz-tessera.is-scelta {
   box-shadow:
-    var(--edge-light),
-    var(--shadow-key),
-    0 0 0 2.5px var(--brand);
+    var(--ombra-album),
+    0 0 0 3px var(--brand);
 }
 
 @keyframes quiz-tessera-entra {
@@ -238,12 +242,14 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: linear-gradient(155deg, var(--m1, var(--quiz-1)), var(--m2, var(--quiz-2)) 80%);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  width: 40px;
+  height: 40px;
+  box-sizing: border-box;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 34%, #fff 24%, color-mix(in srgb, var(--m1, var(--quiz-1)) 32%, #fff));
+  color: color-mix(in srgb, var(--m2, var(--quiz-2)) 70%, #2a1f5c);
+  box-shadow: 0 2px 0 var(--ink);
   transition: transform var(--dur-base) var(--ease-bounce);
 }
 
@@ -282,9 +288,9 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
+  border: 2px solid var(--ink);
   background: var(--brand);
   color: var(--brand-ink);
-  box-shadow: 0 0 0 2px var(--surface);
   animation: quiz-segno 320ms var(--ease-bounce);
 }
 
