@@ -3060,6 +3060,9 @@ fa a richiesta, quaranta tabelle per volta.
 
 ## Il design
 
+Il design system — token, caratteri, componenti, pattern e regole — sta in
+`docs/design-system.md`: qui sotto c'e' il perché delle scelte.
+
 **Deve sembrare un'app, non un sito.** Ogni schermata e' una `Pagina`
 (`src/components/Pagina.tsx`): titolo grande che scivola nella barra, freccia
 indietro con il nome della schermata di prima, e `intera` per le schermate di

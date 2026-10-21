@@ -54,7 +54,7 @@ ha fatti meno in compagnia.
 | | |
 | --- | --- |
 | Front-end | React 19 + TypeScript, build con Vite, View Transitions |
-| Stile | CSS con design token (`light-dark()`), nessun framework |
+| Stile | CSS con design token (`light-dark()`), nessun framework; il design system in [`docs/design-system.md`](docs/design-system.md) |
 | API | Hono su Cloudflare Pages Functions |
 | Dati | Cloudflare D1 (SQLite) |
 | Hosting | Cloudflare Pages, deploy automatico a ogni push su `main` |
