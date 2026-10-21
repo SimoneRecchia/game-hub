@@ -159,10 +159,12 @@
   font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  /* L'orlo d'oro, il solco, e fuori il filo d'inchiostro dell'album. */
   box-shadow:
     inset 0 0 0 calc(var(--lato) * 0.045) var(--ct-oro),
     inset 0 0 0 calc(var(--lato) * 0.062) var(--ct-oro-scuro),
-    inset 0 calc(var(--lato) * -0.05) calc(var(--lato) * 0.1) rgba(0, 0, 0, 0.35);
+    inset 0 0 0 calc(var(--lato) * 0.085) rgba(255, 255, 255, 0.22),
+    0 0 0 3px var(--ink);
   transform: translateZ(var(--spessore));
 }
 
@@ -210,20 +212,21 @@
 
 .ct-moneta__valore {
   font-size: calc(var(--lato) * 0.3);
-  font-weight: 900;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 calc(var(--lato) * 0.014) 0 rgba(0, 0, 0, 0.3);
+  color: #fff6d2;
+  font-weight: 400;
+  text-shadow: 0 calc(var(--lato) * 0.02) 0 var(--ink);
 }
 
 .ct-moneta__banco {
   font-size: calc(var(--lato) * 0.15);
-  font-weight: 900;
   letter-spacing: 0.12em;
   line-height: 1;
   text-transform: uppercase;
-  color: var(--ct-oro-chiaro);
-  text-shadow: 0 calc(var(--lato) * 0.012) 0 rgba(0, 0, 0, 0.35);
+  font-weight: 400;
+  color: #fff6d2;
+  text-shadow: 0 calc(var(--lato) * 0.02) 0 var(--ink);
 }
 
 .ct-moneta__stelle {
@@ -239,7 +242,7 @@
     inset 0 0 0 calc(var(--lato) * 0.045) var(--ct-oro),
     inset 0 0 0 calc(var(--lato) * 0.075) var(--ct-fortuna),
     inset 0 0 0 calc(var(--lato) * 0.088) var(--ct-oro-scuro),
-    inset 0 calc(var(--lato) * -0.05) calc(var(--lato) * 0.1) rgba(0, 0, 0, 0.35);
+    0 0 0 3px var(--ink);
 }
 
 .ct-moneta.is-fortunata .ct-moneta__stelle {

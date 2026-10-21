@@ -64,17 +64,71 @@
     0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* L'adesivo di una vincita: d'oro, con la scritta scura, e un alone che luccica. */
-.adesivo.ct-adesivo-vincita .adesivo__carta {
-  background: linear-gradient(155deg, var(--ct-oro-chiaro), var(--ct-oro) 52%, var(--ct-oro-scuro));
-  color: #3d2300;
-  box-shadow:
-    0 0 0 3px #fff,
-    0 0 44px rgba(255, 210, 80, 0.7),
-    var(--shadow-lg);
+/*
+ * Gli adesivi della Fortuna, come nel mockup: senza il margine bianco degli
+ * altri giochi, con il filo d'inchiostro e l'ombra secca. La vincita d'oro, lo
+ * split rosa con l'anello d'oro (e' una vincita, anche se ridà meno della
+ * puntata), quel che porta la fortuna verde, e il banco crema bordato di rosso.
+ */
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde, .ct-adesivo-banco) .adesivo__carta {
+  border: 3px solid var(--ink);
+  border-radius: 22px;
+  text-shadow: none;
 }
 
-.adesivo.ct-adesivo-vincita .adesivo__titolo,
-.adesivo.ct-adesivo-vincita .adesivo__sotto {
-  color: #3d2300;
+.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-vincita .adesivo__carta {
+  background: linear-gradient(180deg, #ffe680, #f4c430);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.6),
+    0 6px 0 var(--ink),
+    0 0 30px rgba(255, 210, 63, 0.6);
+}
+
+.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-split .adesivo__carta {
+  background: linear-gradient(180deg, #ffd0e4, #ff8fbf);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.6),
+    0 0 0 3px var(--ct-oro),
+    0 6px 0 3px var(--ink);
+}
+
+.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-verde .adesivo__carta {
+  background: linear-gradient(180deg, #b8ffd8, #22c17a);
+  box-shadow:
+    inset 0 3px 0 rgba(255, 255, 255, 0.6),
+    0 0 0 3px var(--ct-m3),
+    0 6px 0 3px var(--ink);
+}
+
+.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-banco .adesivo__carta {
+  border: 4px solid var(--ct-rosso);
+  background: #fffbf2;
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 6px 0 3px var(--ink);
+}
+
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde, .ct-adesivo-banco) .adesivo__titolo {
+  font-size: 2.25rem;
+}
+
+.adesivo:is(.is-vivace, .is-bordato):is(.ct-adesivo-vincita, .ct-adesivo-split, .ct-adesivo-verde, .ct-adesivo-banco) .adesivo__sotto {
+  font-weight: 900;
+  opacity: 1;
+}
+
+.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-vincita :is(.adesivo__titolo, .adesivo__sotto) {
+  color: #3a1e00;
+}
+
+.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-split :is(.adesivo__titolo, .adesivo__sotto) {
+  color: #5a0e33;
+}
+
+.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-verde :is(.adesivo__titolo, .adesivo__sotto) {
+  color: #03311d;
+}
+
+.adesivo:is(.is-vivace, .is-bordato).ct-adesivo-banco :is(.adesivo__titolo, .adesivo__sotto) {
+  color: #b0102c;
 }

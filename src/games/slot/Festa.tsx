@@ -447,12 +447,6 @@ export function FestaSlot({ dati, onFine }: { dati: DatiFesta; onFine: () => voi
           )}
           <svg className="slot-festa__titolo" viewBox="0 0 600 150">
             <defs>
-              <linearGradient id="slot-festa-oro" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#fffbe0" />
-                <stop offset="0.38" stopColor="#ffe066" />
-                <stop offset="0.55" stopColor="#f4a90c" />
-                <stop offset="1" stopColor="#fff1a8" />
-              </linearGradient>
               {/* La luce che passa sulle lettere, da sinistra a destra: piu' in fretta per le piu' grandi. */}
               <linearGradient id="slot-festa-luce" gradientUnits="userSpaceOnUse" x1={-300} y1={0} x2={-120} y2={0}>
                 <stop offset="0" stopColor="#fff" stopOpacity="0" />
@@ -473,8 +467,8 @@ export function FestaSlot({ dati, onFine }: { dati: DatiFesta; onFine: () => voi
                 return (
                   <g key={i} className="slot-festa__lettera" style={{ '--i': i } as CSSProperties}>
                     <circle className="slot-festa__colpo" cx={x} cy={74} r={44} />
-                    {[10, 7, 4].map((d) => (
-                      <text key={d} x={x} y={108 + d} className="slot-festa__spessore">
+                    {[10, 5].map((d) => (
+                      <text key={d} x={x} y={108 + d} className={`slot-festa__spessore${d > 5 ? ' is-fondo' : ''}`}>
                         {l}
                       </text>
                     ))}
@@ -489,9 +483,9 @@ export function FestaSlot({ dati, onFine }: { dati: DatiFesta; onFine: () => voi
               })
             ) : (
               <>
-                {/* Lo spessore delle lettere: la stessa scritta, piu' scura, un passo sotto l'altra. */}
-                {[10, 8, 6, 4, 2].map((d) => (
-                  <text key={d} x={300} y={108 + d} className="slot-festa__spessore">
+                {/* Lo spessore delle lettere, come nel mockup: due passi piu' scuri sotto la scritta piena. */}
+                {[10, 5].map((d) => (
+                  <text key={d} x={300} y={108 + d} className={`slot-festa__spessore${d > 5 ? ' is-fondo' : ''}`}>
                     {titolo}
                   </text>
                 ))}
@@ -504,7 +498,7 @@ export function FestaSlot({ dati, onFine }: { dati: DatiFesta; onFine: () => voi
               </>
             )}
           </svg>
-          <div className="slot-festa__numero u-tabnum">{numero.toLocaleString('it-IT')}</div>
+          <div className="slot-festa__numero u-tabnum">+{numero.toLocaleString('it-IT')}</div>
           {dati.sotto && <div className="slot-festa__sotto">{dati.sotto}</div>}
         </div>
       </div>

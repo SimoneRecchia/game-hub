@@ -389,7 +389,7 @@ export default function RuotaPagina() {
       accoda(adesivoMezzo(torna, g.puntata, palio.moltiplicatore))
       return
     }
-    accoda(adesivoVincita(torna, g.puntata, palio.moltiplicatore))
+    accoda(adesivoVincita(torna, g.puntata, palio.moltiplicatore, !!g.sfida && 'fortunata' in g.sfida && g.sfida.fortunata))
     setPioggia((p) => p + 1)
     dopo(PIOGGIA_MS, () => setPioggia(0))
   }
@@ -543,7 +543,7 @@ export default function RuotaPagina() {
       // Il ×1,5 della ruota fortunata: un premio piccolo, con l'adesivo e la pioggia, senza la festa.
       setEsito(true)
       setLuci('vinto')
-      accoda(adesivoVincita(tornatoDa(g), g.puntata, s.moltiplicatore))
+      accoda(adesivoVincita(tornatoDa(g), g.puntata, s.moltiplicatore, true))
       setPioggia((p) => p + 1)
       dopo(PIOGGIA_MS, () => setPioggia(0))
       incassa(s.moltiplicatore, centroDelMozzo())
@@ -1324,13 +1324,19 @@ function ManoCheTrascina() {
 
 /* ─────────────────────────────  Gli adesivi  ───────────────────────────── */
 
-function adesivoVincita(vincita: number, puntata: number, moltiplicatore: number): Omit<DatiAdesivo, 'id'> {
+function adesivoVincita(
+  vincita: number,
+  puntata: number,
+  moltiplicatore: number,
+  fortunata = false,
+): Omit<DatiAdesivo, 'id'> {
   return {
     durata: ADESIVO_MS + 400,
     tono: 'vivace',
     titolo: `Vinci ${vincita}!`,
     sotto: `${puntata} ${scriviMoltiplicatore(moltiplicatore)}`,
-    classe: 'ct-adesivo-vincita',
+    // Quel che porta la fortuna e' verde, come il palco.
+    classe: fortunata ? 'ct-adesivo-verde' : 'ct-adesivo-vincita',
     suono: 'vincita',
   }
 }
@@ -1347,11 +1353,11 @@ function adesivoSplit(vincita: number): Omit<DatiAdesivo, 'id'> {
     titolo: 'Split',
     sotto: `Vinci ${vincita}`,
     disegno: (
-      <svg className="ct-adesivo-split" width="54" height="54" viewBox="-12 -12 24 24" aria-hidden="true">
+      <svg className="ct-split-moneta" width="54" height="54" viewBox="-12 -12 24 24" aria-hidden="true">
         <IconaSplit lato={23} />
       </svg>
     ),
-    classe: 'ct-adesivo-vincita',
+    classe: 'ct-adesivo-split',
     suono: 'split',
   }
 }
@@ -1374,7 +1380,7 @@ function adesivoBanco(puntata: number): Omit<DatiAdesivo, 'id'> {
     tono: 'bordato',
     titolo: 'Vince il banco',
     sotto: `${conSegno(-puntata)} punti`,
-    colore: 'var(--ct-rosso)',
+    classe: 'ct-adesivo-banco',
     suono: 'banco',
   }
 }

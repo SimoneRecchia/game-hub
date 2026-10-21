@@ -1,7 +1,7 @@
 /*
  * Il Cash Hunt: dodici caselle che si girano come carte. Scoperte hanno il
- * moltiplicatore nel colore di quanto vale; coperte un simbolo su una carta
- * viola con l'orlo d'oro. Sul telefono in piedi il muro ha tre colonne e quattro
+ * moltiplicatore nel colore di quanto vale; coperte un simbolo a linee su una
+ * tinta piena. Sul telefono in piedi il muro ha tre colonne e quattro
  * righe, di traverso quattro colonne e tre righe; le caselle si misurano sul
  * palco, quadrate.
  */
@@ -86,32 +86,38 @@
   backface-visibility: hidden;
 }
 
-/* La faccia del moltiplicatore: scura, con l'orlo e il numero nel colore di quanto vale. */
-.ct-caccia__faccia.is-valore {
-  background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--colore) 45%, #1b0b38), #0c0420 78%);
+/*
+ * Le due facce sono tessere dell'album: a tinta piena, con il filo
+ * d'inchiostro, la luce in alto e l'ombra secca sotto. Quella del
+ * moltiplicatore ha il colore di quanto vale, quella del simbolo una delle sei
+ * tinte dei dorsi, con il simbolo a linee color crema.
+ */
+.ct-caccia__faccia.is-valore,
+.ct-caccia__faccia.is-simbolo {
+  border: 2.5px solid var(--ink);
   box-shadow:
-    inset 0 0 0 2.5px var(--colore),
-    inset 0 0 0 4px rgba(0, 0, 0, 0.35),
-    0 4px 10px rgba(0, 0, 0, 0.45);
+    inset 0 3px 0 rgba(255, 255, 255, 0.35),
+    0 4px 0 var(--ink);
 }
 
-/* La faccia del simbolo: una carta viola con l'orlo d'oro e un riflesso. */
+.ct-caccia__faccia.is-valore {
+  background: var(--colore);
+}
+
 .ct-caccia__faccia.is-simbolo {
-  background:
-    radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.22), transparent 45%),
-    linear-gradient(160deg, #5a33b8, #241062 70%);
-  box-shadow:
-    inset 0 0 0 2.5px var(--ct-oro),
-    inset 0 0 0 4px var(--ct-oro-scuro),
-    0 4px 10px rgba(0, 0, 0, 0.45);
+  background: var(--dorso);
   transform: rotateY(180deg);
 }
 
 .ct-caccia__simbolo {
-  width: 60%;
-  height: 60%;
+  width: 46%;
+  height: 46%;
   overflow: visible;
-  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.4));
+  fill: none;
+  stroke: #fffbf2;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* I moltiplicatori: uno sopra l'altro nella stessa cella, se ne vede uno alla volta. */
@@ -134,32 +140,25 @@
 }
 
 .ct-caccia__numero {
-  color: #fff;
+  color: #fff6d2;
   font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
   font-size: calc(var(--lato) * 0.3);
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1;
-  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
-  text-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.45),
-    0 0 12px color-mix(in srgb, var(--colore) 70%, transparent);
+  text-shadow: 0 2px 0 var(--ink);
 }
 
 /* ─────────────────────────────  La scelta  ───────────────────────────── */
 
-/* Si sceglie: l'orlo d'oro di ogni carta luccica, una dopo l'altra. */
-.ct-caccia.is-scegli .ct-caccia__faccia.is-simbolo {
+/* Si sceglie: le tessere saltellano, una dopo l'altra, come nel mockup. */
+.ct-caccia.is-scegli .ct-caccia__carta {
   animation: ct-caccia-invito 1.8s var(--ease-in-out) calc(var(--k) * -150ms) infinite;
 }
 
 @keyframes ct-caccia-invito {
   50% {
-    box-shadow:
-      inset 0 0 0 2.5px #fff3b0,
-      inset 0 0 0 4px var(--ct-oro),
-      0 0 14px rgba(255, 214, 90, 0.55),
-      0 4px 10px rgba(0, 0, 0, 0.45);
+    transform: rotateY(180deg) translateY(-4px);
   }
 }
 
@@ -174,14 +173,12 @@
 /* La casella toccata aspetta il server, premuta e accesa. */
 .ct-caccia.is-attesa .ct-caccia__tessera.is-scelta {
   transform: scale(0.94);
-  filter: drop-shadow(0 0 10px rgba(255, 226, 120, 0.85));
 }
 
-/* La casella scelta si gira e si fa grande; le altre si scoprono dopo, un po' piu' spente. */
+/* La casella scelta si gira e si fa grande; le altre si scoprono dopo, un poco piu' piccole. */
 .ct-caccia:is(.is-rivela, .is-fine) .ct-caccia__tessera.is-scelta {
   z-index: 2;
-  transform: scale(1.16);
-  filter: drop-shadow(0 0 14px rgba(255, 226, 120, 0.9));
+  transform: scale(1.2);
 }
 
 .ct-caccia.is-rivela .ct-caccia__tessera.is-scelta .ct-caccia__carta {
@@ -189,8 +186,8 @@
 }
 
 .ct-caccia.is-fine .ct-caccia__tessera:not(.is-scelta) {
-  opacity: 0.78;
-  transition: opacity 400ms var(--ease-out) var(--onda);
+  transform: scale(0.94);
+  transition: transform 400ms var(--ease-out) var(--onda);
 }
 
 /* ─────────────────────────────  I premi della fortuna  ───────────────────────────── */
@@ -232,94 +229,8 @@
 
 @keyframes ct-caccia-sale {
   25% {
-    filter: brightness(1.7);
+    transform: scale(1.1);
   }
-}
-
-/* ─────────────────────────────  I simboli  ───────────────────────────── */
-
-.ct-simbolo.is-stella,
-.ct-simbolo.is-campana,
-.ct-simbolo.is-corona {
-  fill: var(--ct-oro);
-  stroke: var(--ct-oro-scuro);
-  stroke-width: 0.8;
-  stroke-linejoin: round;
-}
-
-.ct-simbolo.is-cuore {
-  fill: #ff4d6d;
-  stroke: #8f1528;
-  stroke-width: 0.8;
-}
-
-.ct-simbolo.is-diamante {
-  fill: #8ff3ff;
-  stroke: #1d6f88;
-  stroke-width: 0.8;
-  stroke-linejoin: round;
-}
-
-.ct-simbolo__filo {
-  fill: none;
-  stroke: rgba(20, 90, 120, 0.6);
-  stroke-width: 0.7;
-}
-
-.ct-simbolo__gemma {
-  fill: var(--ct-rosso);
-  stroke: #fff;
-  stroke-width: 0.5;
-}
-
-.ct-simbolo.is-ferro path {
-  fill: none;
-  stroke: #dfe4ee;
-  stroke-width: 4.2;
-  stroke-linecap: round;
-}
-
-.ct-simbolo__chiodo {
-  fill: #59627a;
-}
-
-.ct-simbolo.is-fiche > circle:first-child {
-  fill: var(--ct-rosso);
-  stroke: var(--ct-rosso-2);
-  stroke-width: 0.6;
-}
-
-.ct-simbolo__tacche {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 2.6;
-  stroke-dasharray: 3.2 3.3;
-}
-
-.ct-simbolo__centro {
-  fill: #fff;
-}
-
-.ct-simbolo.is-dado rect {
-  fill: #fff;
-  stroke: #c9cfdc;
-  stroke-width: 0.8;
-}
-
-.ct-simbolo__punto {
-  fill: #1b0f33;
-}
-
-.ct-simbolo.is-sette {
-  fill: var(--ct-rosso);
-  stroke: var(--ct-oro);
-  stroke-width: 1;
-  paint-order: stroke;
-  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
-  font-size: 21px;
-  font-weight: 900;
-  text-anchor: middle;
-  dominant-baseline: central;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -328,6 +239,7 @@
     transition: none !important;
   }
 
+  .ct-caccia .ct-caccia__carta,
   .ct-caccia .ct-caccia__faccia,
   .ct-caccia .ct-caccia__valore,
   .ct-caccia .ct-conto {

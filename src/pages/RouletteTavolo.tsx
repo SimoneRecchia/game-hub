@@ -114,7 +114,7 @@ const bordato = (titolo: string, sotto?: string): Omit<DatiAdesivo, 'id'> => ({
   tono: 'bordato',
   titolo,
   sotto,
-  colore: '#7a1020',
+  classe: 'ct-adesivo-banco',
   suono: 'banco',
 })
 
@@ -280,7 +280,8 @@ export default function RouletteTavolo() {
               fortunata: false,
               testo: String(numero),
               nome: tipoDi(migliore) === 'carre' ? 'CARRÉ' : tipoDi(migliore).toUpperCase(),
-              sotto: `${nomeDi(migliore)} · ${pagaDi(migliore)} a 1`,
+              sotto: `Paga ${pagaDi(migliore)} a 1`,
+              carta: true,
             })
           } else {
             accoda(oro(`Vinci ${delta}!`, annuncioDi(numero)))

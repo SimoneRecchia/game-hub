@@ -1055,23 +1055,26 @@
  */
 .adesivo.is-bordato.bj-adesivo-banco .adesivo__carta,
 .adesivo.is-bordato.bj-adesivo-pari .adesivo__carta {
-  border: 3px solid #e5383b;
+  border: 4px solid #e8384f;
+  border-radius: 22px;
   background: #fffbf2;
   box-shadow:
-    0 0 0 5px #fff,
-    0 9px 0 5px #e5383b;
-  color: #120c2b;
+    0 0 0 3px #120c2b,
+    0 6px 0 3px #120c2b;
+  color: #b0102c;
 }
 
 .adesivo.is-bordato.bj-adesivo-pari .adesivo__carta {
   border-color: #120c2b;
   background: #dce1ec;
-  box-shadow:
-    0 0 0 5px #fff,
-    0 9px 0 5px rgba(18, 12, 43, 0.4);
+  color: #120c2b;
 }
 
-.adesivo.is-bordato:is(.bj-adesivo-banco, .bj-adesivo-pari) .adesivo__titolo {
+.adesivo.is-bordato.bj-adesivo-banco .adesivo__titolo {
+  color: #b0102c;
+}
+
+.adesivo.is-bordato.bj-adesivo-pari .adesivo__titolo {
   color: #120c2b;
 }
 

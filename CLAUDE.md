@@ -795,7 +795,8 @@ grande, e i posti mai prima di aver scelto: chiunque potrebbe leggere dov'e' il
 ×5. `/ruota/cashhunt` con la casella chiude il giro con il moltiplicatore che
 c'e' sotto, e da li' il muro intero si vede; un'altra scelta ridà la prima, e
 una casella che non c'e' e' un 400. Il muro (`CashHunt`) si vede scoperto, poi
-le caselle si girano, ognuna con il suo simbolo, e si mescolano in tre giri: la
+le caselle si girano, ognuna con il suo simbolo, a linee color crema su una
+delle sei tinte piene del mockup, e si mescolano in tre giri: la
 mescolata si vede soltanto, il muro vero l'ha gia' mescolato il server.
 Toccata una casella, si gira e si fa grande, poi si girano le altre a onde, e
 si vede che cosa c'era. Le caselle sono bottoni con il nome del simbolo, e le
@@ -942,18 +943,18 @@ fotogramma, grande, copriva tutto il conto. Un test
 (`ruota/__tests__/conto.test.ts`) li tiene. Il nastro (`NastroFortuna`) dice
 "Ruota fortunata", "Quiz fortunato", "Moneta fortunata", "Pachinko fortunato"
 o "Cash Hunt fortunato" finché la fortuna dura, e dopo l'esito la ruota torna
-quella di sempre. Al neon, sui palchi alti, il carattere si stringe quanto
-serve a starci, dalla lunghezza stimata della scritta (`--nastro-em`): gli
-ultimi due, alla misura di "Ruota fortunata", uscivano dai lati del palco. Sui
-palchi bassi il nastro sta in un angolo, e davanti al Pachinko e al Cash Hunt
-non c'e' (`is-tabellone`): arrivano fino all'angolo, e copriva il ×5 del muro.
+quella di sempre. Il nastro e' la targhetta verde del mockup, con l'orlo
+d'oro, che dondola: in alto al centro sui palchi alti, in un angolo e un poco
+storto su quelli bassi (sotto i 420 punti). Davanti al Pachinko e al Cash Hunt,
+sui palchi bassi, non c'e' (`is-tabellone`): arrivano fino all'angolo, e
+copriva il ×5 del muro.
 Senza animazioni la ruota diventa fortunata di colpo, con il suono della
 magia; una pagina riaperta a fortuna in corso la trova gia' fortunata.
 
 **Dal triplo c'e' la festa.** `FestaRuota` (`src/games/ruota/Festa.tsx`) prende
 lo schermo come la festa della slot: la sala si spegne, girano i raggi,
-l'insegna con le lampadine porta il moltiplicatore enorme, d'oro e con lo
-spessore, e la vincita conta da zero con le monete che tintinnano sempre piu'
+l'insegna con le lampadine porta il nome, il moltiplicatore enorme, d'oro pieno
+e con lo spessore, e la vincita, che conta da zero con le monete che tintinnano sempre piu'
 alte. Tre gradini (`festaDi`): dal triplo; dal ×5, con i raggi che girano anche
 al contrario, la pioggia di monete e l'onda d'urto; dal ×10, il decuplo della
 ruota fortunata e i ×15 e ×30 del Pachinko, con il terremoto, i fuochi
@@ -1141,8 +1142,9 @@ combinazione e' rara, mai meno festa. La targhetta della ciliegia sola, un
 giro su quattro; la targa di due ciliegie e dei limoni, uno su trentadue e uno
 su sessantacinque; il palco delle arance e delle prugne, uno su centoventisette
 e uno su quattrocentoventisette; poi la festa (vedi sotto). I primi tre stanno
-sul mobile (`Targa`): l'adesivo dei giochi fatto insegna da casino', laccata,
-con la foglia d'oro, le lampadine che le corrono attorno e la luce che passa,
+sul mobile (`Targa`): il cartello giallo del mockup, con il filo d'inchiostro,
+l'anello nel colore della vincita, le lampadine che gli corrono attorno e la
+luce che passa,
 davanti all'insegna in cima, dove non copre mai la linea. La targhetta dura
 poco piu' di un secondo, perché la leva deve tornare pronta presto (`TEMPI`);
 la targa e' piu' grande, con le monete che saltano fuori e una luce che passa
@@ -1519,7 +1521,8 @@ Dopo il lancio il croupier annuncia il numero ("Otto, nero, pari e manque"),
 poi sul panno il dolly cala sul numero, le fiches perse vanno via, accanto alle
 vinte arriva la vincita e le monete volano al saldo, che resta fermo fino ad
 allora; un pieno, un cavallo, una terzina, un carré o una sestina vinti hanno
-la festa di Crazy Time, con il numero e il nome della puntata.
+la festa di Crazy Time vestita come nel mockup della roulette (`carta`): una
+carta gialla storta con la puntata e il numero, la vincita e quanto paga.
 
 **I periodi delle classifiche sono di calendario**: il giorno, la settimana da
 lunedì a domenica, il mese dal primo, e sempre. Prima erano finestre mobili —

@@ -5,11 +5,10 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
-  type ReactNode,
 } from 'react'
 import { suona } from '@/lib/suoni'
 import { CASELLE_CASH_HUNT, MURO_CASH_HUNT, scriviMoltiplicatore } from '@shared/ruota'
-import { IconaMoneta, IconaQuiz, Quadrifoglio, coloreDelMoltiplicatore, tempiDelConto } from './disegni'
+import { coloreDelMoltiplicatore, tempiDelConto } from './disegni'
 import { PremioCheSale } from './Fortuna'
 import { AUMENTO_CASH_HUNT } from './magia'
 import './CashHunt.css'
@@ -35,21 +34,33 @@ const TUTTE_MS = 650
 /** Quando il ×5 arriva al ×10, salendo con la fortuna. */
 const FINE_AUMENTO = `${AUMENTO_CASH_HUNT.conto[AUMENTO_CASH_HUNT.conto.length - 1].ms}ms`
 
-/** I simboli delle caselle coperte, con il nome per chi non li vede: uno diverso per casella. */
-const SIMBOLI: ReadonlyArray<{ nome: string; disegno: ReactNode }> = [
-  { nome: 'il quadrifoglio', disegno: <Quadrifoglio lato={18.5} classe="is-verde" /> },
-  { nome: 'la moneta', disegno: <IconaMoneta lato={19} /> },
-  { nome: 'il fumetto', disegno: <IconaQuiz lato={21} /> },
-  { nome: 'la stella', disegno: <Stella /> },
-  { nome: 'il cuore', disegno: <Cuore /> },
-  { nome: 'il diamante', disegno: <Diamante /> },
-  { nome: 'la campana', disegno: <Campana /> },
-  { nome: 'la corona', disegno: <Corona /> },
-  { nome: 'il ferro di cavallo', disegno: <FerroDiCavallo /> },
-  { nome: 'la fiche', disegno: <Fiche /> },
-  { nome: 'il dado', disegno: <Dado /> },
-  { nome: 'il sette', disegno: <Sette /> },
+/** Un cerchio come tracciato, per i simboli disegnati a linee. */
+const tondo = (x: number, y: number, r: number) => `M${x - r} ${y}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0z`
+
+/**
+ * I simboli delle caselle coperte, con il nome per chi non li vede: uno diverso
+ * per casella, a linee color crema su una tessera a tinta piena, come nel mockup.
+ */
+const SIMBOLI: ReadonlyArray<{ nome: string; d: string }> = [
+  { nome: 'la stella', d: 'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.5 2.9 1-6.1L3.1 9.5l6.1-.9z' },
+  { nome: 'il cuore', d: 'M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z' },
+  { nome: 'il rombo', d: 'M12 3l7 9-7 9-7-9z' },
+  { nome: 'la luna', d: 'M15 3a9 9 0 1 0 6 15A7 7 0 0 1 15 3z' },
+  { nome: 'il fulmine', d: 'M13 2L5 14h6l-1 8 8-12h-6z' },
+  { nome: 'la goccia', d: 'M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z' },
+  { nome: 'la foglia', d: 'M5 19C5 9 11 4 20 4c0 9-5 15-15 15z M5 19l7-7' },
+  { nome: 'la corona', d: 'M4 18l-1-10 5 4 4-7 4 7 5-4-1 10z' },
+  { nome: 'la campana', d: 'M12 3a5 5 0 0 1 5 5v5l2 3H5l2-3V8a5 5 0 0 1 5-5z M10 19a2 2 0 0 0 4 0' },
+  { nome: 'la chiave', d: `${tondo(7.5, 12, 3.5)} M11 12h10 M18 12v3 M21 12v2` },
+  { nome: 'la nota', d: 'M9 18V5l10-2v13 M9 18a3 3 0 1 1-3-3 3 3 0 0 1 3 3z M19 16a3 3 0 1 1-3-3 3 3 0 0 1 3 3z' },
+  {
+    nome: 'il sole',
+    d: `${tondo(12, 12, 4)} M12 2v3 M12 19v3 M2 12h3 M19 12h3 M5 5l2 2 M17 17l2 2 M5 19l2-2 M17 7l2-2`,
+  },
 ]
+
+/** Le tinte dei dorsi: sei colori pieni, che girano con i simboli. */
+const DORSI = ['#e2508c', '#6c45d6', '#1b82d6', '#10a2bd', '#6cb52a', '#f3a521']
 
 /** Una permutazione a caso dei posti: la mescolata si vede soltanto, il muro vero l'ha mescolato il server. */
 function rimescola(xs: readonly number[]): number[] {
@@ -339,9 +350,12 @@ export function CashHunt({
                     </>
                   ) : null}
                 </span>
-                <span className="ct-caccia__faccia is-simbolo">
-                  <svg viewBox="-12 -12 24 24" className="ct-caccia__simbolo">
-                    {simbolo.disegno}
+                <span
+                  className="ct-caccia__faccia is-simbolo"
+                  style={{ '--dorso': DORSI[s % DORSI.length] } as CSSProperties}
+                >
+                  <svg viewBox="0 0 24 24" className="ct-caccia__simbolo">
+                    <path d={simbolo.d} />
                   </svg>
                 </span>
               </span>
@@ -360,104 +374,5 @@ function Valore({ m, classe = '', stile }: { m: number; classe?: string; stile?:
     <span className={`ct-caccia__numero ${classe}`} style={stile}>
       {scriviMoltiplicatore(m)}
     </span>
-  )
-}
-
-/* ─────────────────────────────  I simboli  ───────────────────────────── */
-
-/** Una stella a cinque punte, d'oro. */
-function Stella() {
-  const punte = Array.from({ length: 10 }, (_, k) => {
-    const r = k % 2 === 0 ? 10.5 : 4.4
-    const a = (k * Math.PI) / 5 - Math.PI / 2
-    return `${(Math.cos(a) * r).toFixed(2)} ${(Math.sin(a) * r + 0.8).toFixed(2)}`
-  })
-  return <path className="ct-simbolo is-stella" d={`M${punte.join('L')}Z`} />
-}
-
-function Cuore() {
-  return (
-    <path
-      className="ct-simbolo is-cuore"
-      d="M0 9.2C-6.2 4.6-9.8 1-9.8-3c0-3.1 2.4-5.5 5.3-5.5 2 0 3.6 1.1 4.5 2.8.9-1.7 2.5-2.8 4.5-2.8
-        2.9 0 5.3 2.4 5.3 5.5 0 4-3.6 7.6-9.8 12.2z"
-    />
-  )
-}
-
-function Diamante() {
-  return (
-    <g className="ct-simbolo is-diamante">
-      <path d="M-10 -3.2L-5.6 -9H5.6L10 -3.2L0 9.6Z" />
-      <path className="ct-simbolo__filo" d="M-10 -3.2H10M-5.6 -9L-2.4 -3.2L0 9.6L2.4 -3.2L5.6 -9" />
-    </g>
-  )
-}
-
-function Campana() {
-  return (
-    <g className="ct-simbolo is-campana">
-      <path
-        d="M0 -9.6c-1 0-1.7.8-1.7 1.7v.7C-5.6-6-7.4-2.6-7.4 1.2v3.6l-2.3 2.6H9.7L7.4 4.8V1.2
-          c0-3.8-1.8-7.2-5.7-8.4v-.7C1.7-8.8 1-9.6 0-9.6z"
-      />
-      <circle cx={0} cy={9.1} r={2} />
-    </g>
-  )
-}
-
-function Corona() {
-  return (
-    <g className="ct-simbolo is-corona">
-      <path d="M-10 5V-5.4l5.2 4.6L0 -9l4.8 8.2L10 -5.4V5Z" />
-      <rect x={-10} y={5.8} width={20} height={3.2} rx={1} />
-      <circle className="ct-simbolo__gemma" cx={0} cy={1.2} r={1.7} />
-    </g>
-  )
-}
-
-function FerroDiCavallo() {
-  return (
-    <g className="ct-simbolo is-ferro">
-      <path d="M-7 -8.6V0.4a7 7 0 0 0 14 0V-8.6" />
-      {[-7, 7].map((x) => (
-        <circle key={x} className="ct-simbolo__chiodo" cx={x} cy={-4} r={0.9} />
-      ))}
-    </g>
-  )
-}
-
-function Fiche() {
-  return (
-    <g className="ct-simbolo is-fiche">
-      <circle r={10} />
-      <circle className="ct-simbolo__tacche" r={8.3} />
-      <circle className="ct-simbolo__centro" r={5.4} />
-    </g>
-  )
-}
-
-function Dado() {
-  return (
-    <g className="ct-simbolo is-dado">
-      <rect x={-9} y={-9} width={18} height={18} rx={4} />
-      {[
-        [-4.4, -4.4],
-        [4.4, -4.4],
-        [0, 0],
-        [-4.4, 4.4],
-        [4.4, 4.4],
-      ].map(([x, y]) => (
-        <circle key={`${x},${y}`} className="ct-simbolo__punto" cx={x} cy={y} r={1.8} />
-      ))}
-    </g>
-  )
-}
-
-function Sette() {
-  return (
-    <text className="ct-simbolo is-sette" y={1}>
-      7
-    </text>
   )
 }

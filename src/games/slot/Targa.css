@@ -1,5 +1,6 @@
 /*
- * Le targhe delle vincite sul mobile (Targa.tsx): davanti all'insegna, sopra
+ * Le targhe delle vincite sul mobile (Targa.tsx), cartelli gialli dell'album
+ * come nel mockup: davanti all'insegna, sopra
  * la linea, misurate in centesimi del mobile (`--u`) come tutto il resto. Le
  * durate sono frazioni di `--durata`, che dice la pagina: e' lei che sa quando
  * la leva torna pronta.
@@ -12,8 +13,6 @@
   width: calc(var(--u) * var(--larga));
   translate: -50% -50%;
   pointer-events: none;
-  filter: drop-shadow(0 calc(var(--u) * 1.4) calc(var(--u) * 2) rgba(0, 0, 0, 0.6))
-    drop-shadow(0 0 calc(var(--u) * 4) rgba(255, 190, 60, 0.45));
   animation:
     slot-targa-entra calc(var(--durata) * 0.26) var(--ease-out) both,
     slot-targa-via calc(var(--durata) * 0.16) ease-in calc(var(--durata) * 0.84) forwards;
@@ -21,8 +20,6 @@
 
 /* Il palco: la targa cala dall'alto e rimbalza, come un'insegna appesa che arriva in scena. */
 .slot-targa.is-palco {
-  filter: drop-shadow(0 calc(var(--u) * 1.4) calc(var(--u) * 2) rgba(0, 0, 0, 0.6))
-    drop-shadow(0 0 calc(var(--u) * 6) rgba(255, 200, 70, 0.7));
   animation:
     slot-targa-cala calc(var(--durata) * 0.26) var(--ease-out) both,
     slot-targa-via calc(var(--durata) * 0.12) ease-in calc(var(--durata) * 0.88) forwards;
@@ -80,9 +77,21 @@
 }
 
 .slot-targa__disegno text {
-  font-family: var(--font-rounded);
-  font-weight: 900;
   text-anchor: middle;
+}
+
+.slot-targa__ombra {
+  fill: #120c2b;
+}
+
+/* L'anello nel colore della vincita, fuori dal filo d'inchiostro. */
+.slot-targa__anello {
+  fill: var(--vinta, #ff4fa3);
+}
+
+.slot-targa__piastra {
+  stroke: #120c2b;
+  stroke-width: 3;
 }
 
 /*
@@ -94,17 +103,16 @@
 .slot-targa__spente,
 .slot-targa__accese {
   fill: none;
-  stroke-width: 6.5;
+  stroke-width: 5.5;
   stroke-linecap: round;
 }
 
 .slot-targa__spente {
-  stroke: #5c3a0a;
+  stroke: #d99a1c;
 }
 
 .slot-targa__accese {
-  stroke: #fffbe6;
-  filter: drop-shadow(0 0 2px #ffd23f) drop-shadow(0 0 4px rgba(255, 190, 60, 0.9));
+  stroke: #fffbf2;
   animation: slot-targa-corsa 0.42s steps(3) infinite;
 }
 
@@ -122,29 +130,18 @@
   }
 }
 
+/* Il nome della vincita in grande, e quel che paga sotto, scuri sul giallo come nel mockup. */
 .slot-targa__nome {
-  font-size: 17px;
-  letter-spacing: 4px;
-  fill: #ffe9a8;
-  stroke: #5c000f;
-  stroke-width: 3;
-  paint-order: stroke;
-}
-
-.slot-targa__spessore,
-.slot-targa__importo {
-  font-size: 38px;
-  letter-spacing: 1px;
-}
-
-.slot-targa__spessore {
-  fill: #5c000f;
+  fill: #3a1e00;
+  font-family: var(--font-rounded);
+  font-size: 32px;
 }
 
 .slot-targa__importo {
-  stroke: #fff8d6;
-  stroke-width: 1.2;
-  paint-order: stroke;
+  fill: #3a1e00;
+  font-family: var(--font-text);
+  font-size: 19px;
+  font-weight: 900;
 }
 
 /* La luce che passa sulla targa, una volta appena e' arrivata: la foglia d'oro che la prende. */

@@ -1,5 +1,6 @@
 /*
- * Il Pachinko: un tabellone scuro con l'orlo d'oro, i pioli d'oro a triangolo
+ * Il Pachinko: un tabellone verde petrolio con l'orlo azzurro, il filo
+ * d'inchiostro e l'ombra secca sotto, come nel mockup, i pioli color crema a triangolo
  * e in fondo le buche, colorate dal posto: in mezzo l'ardesia del ×0,5, poi
  * l'ambra, il rosa, l'arancio, e ai lati il cremisi del premio piu' grande. Si
  * misura sul palco, come la ruota: largo quanto puo', mai piu' alto dello
@@ -26,46 +27,50 @@
   overflow: visible;
 }
 
+.ct-pachinko__ombra {
+  fill: var(--ink);
+  transform: translateY(1.6px);
+}
+
 .ct-pachinko__fondo {
-  fill: #1c0c40;
-  stroke: var(--ct-oro);
-  stroke-width: 1.4;
-  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
+  fill: #0b3644;
+  stroke: #10a2bd;
+  stroke-width: 1.1;
 }
 
 /* L'imbuto in cima, da dove parte la pallina. */
 .ct-pachinko__imbuto {
-  fill: rgba(255, 214, 120, 0.12);
-  stroke: var(--ct-oro);
+  fill: rgba(16, 162, 189, 0.22);
+  stroke: #10a2bd;
   stroke-width: 1;
   stroke-linejoin: round;
 }
 
 .ct-pachinko__piolo {
-  fill: var(--ct-oro);
-  stroke: rgba(80, 40, 0, 0.6);
-  stroke-width: 0.4;
+  fill: var(--ct-oro-chiaro);
+  stroke: var(--ct-oro-scuro);
+  stroke-width: 0.45;
   transform-box: fill-box;
   transform-origin: 50% 50%;
 }
 
-/* Un piolo toccato dalla pallina: si accende di bianco, si gonfia e torna d'oro. */
+/* Un piolo toccato dalla pallina: si accende di verde, si gonfia, e resta verde come nel mockup. */
 .ct-pachinko__piolo.is-colpito {
   animation: ct-piolo-colpo 380ms var(--ease-out) var(--colpo) both;
 }
 
 @keyframes ct-piolo-colpo {
   0% {
-    fill: var(--ct-oro);
+    fill: var(--ct-oro-chiaro);
     transform: scale(1);
   }
   15% {
     fill: #fff;
     transform: scale(1.9);
-    filter: drop-shadow(0 0 2px #fff6c8);
   }
   100% {
-    fill: var(--ct-oro-chiaro);
+    fill: var(--ct-piu);
+    stroke: #0e6b3a;
     transform: scale(1);
   }
 }
@@ -73,8 +78,8 @@
 /* ─────────────────────────────  Le buche  ───────────────────────────── */
 
 .ct-pachinko__vano {
-  stroke: rgba(255, 255, 255, 0.28);
-  stroke-width: 0.5;
+  stroke: var(--ink);
+  stroke-width: 0.6;
 }
 
 /* Le buche per distanza dal mezzo: la classe e' quanti posti le separano dalla buca di mezzo. */
@@ -99,41 +104,36 @@
 }
 
 .ct-pachinko__testo {
-  fill: #fff;
+  fill: #fff6d2;
   font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
-  font-weight: 900;
+  font-weight: 400;
   letter-spacing: 0;
   text-anchor: middle;
   dominant-baseline: central;
   font-variant-numeric: tabular-nums;
   paint-order: stroke;
-  stroke: rgba(0, 0, 0, 0.45);
-  stroke-width: 0.5px;
-}
-
-/* Sull'ambra la scritta e' scura, come sull'oro del triplo. */
-.ct-pachinko__buca.is-1 .ct-pachinko__testo {
-  fill: #3d2300;
-  stroke: rgba(255, 255, 255, 0.35);
+  stroke: var(--ink);
+  stroke-width: 0.9px;
 }
 
 /* La buca della pallina: si accende e respira, finché la vincita non e' partita. */
 .ct-pachinko__buca.is-uscita .ct-pachinko__vano {
-  stroke: #fff;
-  stroke-width: 1;
+  stroke: #fff6d2;
+  stroke-width: 1.1;
   animation: ct-buca-uscita 0.5s var(--ease-in-out) infinite alternate;
 }
 
 @keyframes ct-buca-uscita {
   to {
-    filter: brightness(1.45) drop-shadow(0 0 3px #fff6c8);
+    opacity: 0.7;
   }
 }
 
 /* ─────────────────────────────  La pallina  ───────────────────────────── */
 
-.ct-pachinko__pallina {
-  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
+.ct-pachinko__palla {
+  stroke: var(--ink);
+  stroke-width: 0.55;
 }
 
 .ct-pachinko__luce {
@@ -151,7 +151,6 @@
   }
   to {
     transform: translateY(0.6px);
-    filter: drop-shadow(0 0 2.5px #fff6c8) drop-shadow(0 1px 1px rgba(0, 0, 0, 0.55));
   }
 }
 
@@ -229,7 +228,7 @@
 
 @keyframes ct-vano-sale {
   25% {
-    filter: brightness(1.8);
+    opacity: 0.6;
   }
 }
 

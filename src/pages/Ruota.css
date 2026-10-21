@@ -268,12 +268,11 @@ body:has(.ct) {
   border-radius: var(--r-pill);
   border: var(--filo) solid #120c2b;
   background: var(--colore);
-  color: #fff;
+  color: #120c2b;
   font-family: var(--font-rounded);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 400;
   white-space: nowrap;
-  text-shadow: 0 2px 0 rgba(18, 12, 43, 0.55);
   box-shadow:
     0 4px 0 #120c2b,
     inset 0 3px 0 rgba(255, 255, 255, 0.3);
@@ -345,14 +344,13 @@ body:has(.ct) {
   position: relative;
   font-family: var(--font-rounded);
   font-size: clamp(64px, 27cqmin, 136px);
-  font-weight: 900;
+  font-weight: 400;
   line-height: 1;
-  color: var(--colore);
-  -webkit-text-stroke: 4px #fff;
-  paint-order: stroke fill;
+  /* D'oro con lo spessore, come nel mockup: il colore del moltiplicatore lo dicono i raggi. */
+  color: #ffd23f;
   text-shadow:
-    0 6px 0 rgba(0, 0, 0, 0.35),
-    0 0 34px rgba(255, 255, 255, 0.55);
+    0 4px 0 var(--ct-oro-scuro),
+    0 8px 0 #120c2b;
   animation: ct-rivela-valore 720ms cubic-bezier(0.2, 0.9, 0.3, 1.45) both;
 }
 
