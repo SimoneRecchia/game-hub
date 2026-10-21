@@ -1,24 +1,22 @@
 /*
  * La slot: il tabellone in cima, e sotto la sala, scura in tutti e due i temi
  * come quella di Crazy Time, con il mobile in mezzo sotto un faro. Il mobile e'
- * quello delle slot di una volta, disegnato perché sembri un oggetto: la lacca
- * rossa con i fianchi tondi, l'insegna ad arco con le lampadine, i rulli
- * d'avorio dietro un vetro curvo, il display a led, il banco dei comandi
- * inclinato verso chi gioca, con le fiches e il bottone, la pancia di vetro
- * illuminata, il vassoio delle monete, lo zoccolo, e sul fianco la leva di
- * cromo.
+ * quello del mockup, disegnato perché sembri un oggetto: la lacca rossa con i
+ * fianchi tondi, l'insegna LUCKY 7 con le lampadine, i rulli d'avorio dietro
+ * il vetro, il display a led della puntata e della vincita, il banco dei
+ * comandi inclinato verso chi gioca, con le fiches e Azzera, il vassoio delle
+ * monete, lo zoccolo, e sul fianco la leva di cromo.
  *
  * Tutto si misura sulla larghezza del mobile (`--w`, e il suo centesimo
  * `--u`): quella che ci sta con la leva da tutti e due i lati, cosi' il mobile
  * resta al centro, o quella che lascia l'altezza. Le parti hanno altezze fisse
- * in centesimi; la pancia prende quel che avanza, fino a un tetto.
+ * in centesimi; i rulli prendono quel che avanza.
  */
 
 /*
  * La larghezza e' una lunghezza vera, calcolata sul mobile e ereditata: senza
  * la registrazione le unita' del contenitore si risolverebbero dove si usa la
- * variabile, e dentro la pancia, che e' un contenitore anche lei, varrebbero
- * le sue.
+ * variabile, e dentro un contenitore che sta nel mobile varrebbero le sue.
  */
 @property --w {
   syntax: '<length>';
@@ -194,16 +192,16 @@ body:has(.slot) {
 
 .slot-macchina {
   /* La larghezza: quella che lascia la leva da tutti e due i lati, o quella che lascia l'altezza. */
-  --w: min((100cqw - 20px) / 1.28, (100cqh - 32px) / 1.68);
+  --w: min((100cqw - 20px) / 1.2, (100cqh - 32px) / 1.76);
   --u: calc(var(--w) / 100);
   position: relative;
   display: grid;
   /* `minmax(0, ...)`: la striscia dei rulli e' alta quaranta rulli, e lasciata al contenuto allargherebbe la riga. */
   grid-template-rows:
-    calc(var(--u) * 30) calc(var(--u) * 100) calc(var(--u) * 20) minmax(0, 1fr) calc(var(--u) * 10)
-    calc(var(--u) * 5);
+    calc(var(--u) * 26) minmax(0, 1fr) calc(var(--u) * 22) calc(var(--u) * 18)
+    calc(var(--u) * 4);
   width: var(--w);
-  height: min(100cqh - 32px, var(--w) * 2.04);
+  height: min(100cqh - 32px, var(--w) * 1.74);
   border-radius: calc(var(--u) * 12) calc(var(--u) * 12) calc(var(--u) * 4) calc(var(--u) * 4);
   /*
    * La lacca, con i fianchi tondi: da ogni lato una fascia d'ombra sul bordo,
@@ -361,18 +359,16 @@ body:has(.slot) {
 
 .slot-insegna {
   position: relative;
-  margin: calc(var(--u) * 2) calc(var(--u) * 3) 0;
-  border-radius: 50% 50% calc(var(--u) * 2) calc(var(--u) * 2) / 100% 100% calc(var(--u) * 2) calc(var(--u) * 2);
-  background:
-    radial-gradient(70% 90% at 50% 100%, rgba(255, 79, 163, 0.5), transparent 70%),
-    radial-gradient(60% 60% at 50% 20%, rgba(255, 255, 255, 0.14), transparent 70%),
-    linear-gradient(180deg, #3a0d5e, #12031f);
+  display: grid;
+  place-items: center;
+  margin: calc(var(--u) * 4.6) calc(var(--u) * 5.3) 0;
+  border-radius: calc(var(--u) * 6.6);
+  background: radial-gradient(circle at 50% 40%, #3a1a78, #16082e 80%);
   box-shadow:
     inset 0 0 0 calc(var(--u) * 1) #f4c430,
-    inset 0 0 0 calc(var(--u) * 1.6) #a2650e,
-    inset 0 calc(var(--u) * -3) calc(var(--u) * 5) rgba(0, 0, 0, 0.55),
+    inset 0 0 calc(var(--u) * 6) rgba(255, 79, 163, 0.5),
     0 0 0 calc(var(--u) * 1) #120c2b,
-    0 calc(var(--u) * 1.6) 0 calc(var(--u) * 1) #120c2b;
+    0 calc(var(--u) * 1.4) 0 calc(var(--u) * 1) #120c2b;
 }
 
 .slot-insegna__disegno {
@@ -452,54 +448,27 @@ body:has(.slot) {
   }
 }
 
+/* LUCKY 7 al neon: l'oro della scritta con l'alone rosa, e lo spessore d'oro scuro sotto. */
 .slot-insegna__scritta {
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: 6%;
-  width: 84%;
-  height: 72%;
-  overflow: visible;
-}
-
-.slot-insegna__scritta text {
+  position: relative;
   font-family: var(--font-rounded);
-  font-weight: 900;
-  text-anchor: middle;
+  font-size: calc(var(--u) * 11.3);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: #ffe27a;
+  text-shadow:
+    0 0 calc(var(--u) * 3.3) #ff4fa3,
+    0 0 1px #fff,
+    0 calc(var(--u) * 1) 0 #a2650e;
+  animation: slot-neon 3s ease-in-out infinite;
 }
 
-.slot-insegna__lettere,
-.slot-insegna__spessore:not(.is-sette) {
-  font-size: 88px;
-  letter-spacing: 6px;
-}
-
-.slot-insegna__lettere {
-  fill: url(#slot-insegna-oro);
-  stroke: #fff8d6;
-  stroke-width: 2;
-  paint-order: stroke;
-  filter: drop-shadow(0 0 8px rgba(255, 79, 163, 0.9));
-}
-
-.slot-insegna__spessore {
-  fill: #7a3c00;
-}
-
-.slot-insegna__sette,
-.slot-insegna__spessore.is-sette {
-  font-size: 58px;
-}
-
-.slot-insegna__sette {
-  fill: url(#slot-insegna-rosso);
-  stroke: #fff;
-  stroke-width: 1.5;
-  paint-order: stroke;
-}
-
-.slot-insegna__spessore.is-sette {
-  fill: #5c000f;
+@keyframes slot-neon {
+  50% {
+    opacity: 0.86;
+  }
 }
 
 /* Il luccichio che passa sulla scritta, ogni tanto: la vernice d'oro che prende la luce. */
@@ -548,10 +517,10 @@ body:has(.slot) {
 .slot-fronte {
   position: relative;
   display: grid;
-  grid-template-rows: calc(var(--u) * 8.5) minmax(0, 1fr) calc(var(--u) * 10.5);
-  gap: calc(var(--u) * 1.6);
+  grid-template-rows: minmax(0, 1fr) calc(var(--u) * 17.3);
+  gap: calc(var(--u) * 3.3);
   min-height: 0;
-  padding: calc(var(--u) * 1.5) calc(var(--u) * 6);
+  padding: calc(var(--u) * 4) calc(var(--u) * 5) calc(var(--u) * 3);
 }
 
 /* Le strisce di led sui fianchi: corrono piano in attesa, veloci mentre girano, d'oro per una vincita. */
@@ -601,47 +570,6 @@ body:has(.slot) {
   to {
     background-position: 0 300%;
   }
-}
-
-/* ─────────────────────────────  I premi sul vetro  ───────────────────────────── */
-
-.slot-tabella {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: calc(var(--u) * 1.3);
-  padding: calc(var(--u) * 1);
-  border-radius: calc(var(--u) * 2.6);
-  background: linear-gradient(180deg, #1b1238, #2a1f5c);
-  box-shadow:
-    inset 0 0 0 calc(var(--u) * 0.8) #120c2b,
-    inset 0 0 0 calc(var(--u) * 1.3) rgba(255, 201, 60, 0.6);
-}
-
-.slot-tabella__voce {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: calc(var(--u) * 1);
-  min-width: 0;
-}
-
-.slot-tabella__simboli {
-  display: flex;
-  height: calc(var(--u) * 5.6);
-}
-
-.slot-tabella__simboli .slot-simbolo {
-  width: calc(var(--u) * 5);
-  height: calc(var(--u) * 5.6);
-  padding: 0;
-}
-
-.slot-tabella__valore {
-  font-family: var(--font-rounded);
-  font-size: calc(var(--u) * 4.6);
-  font-weight: 400;
-  color: #ffe27a;
-  text-shadow: 0 1px 0 #120c2b;
 }
 
 /* ─────────────────────────────  Il vetro e i rulli  ───────────────────────────── */
@@ -1466,7 +1394,7 @@ body:has(.slot) {
   overflow: hidden;
   font-size: calc(var(--u) * 3);
   font-weight: 900;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
@@ -1560,11 +1488,15 @@ body:has(.slot) {
 /* A puntata zero, al posto della vincita: l'invito a mettere le fiches, che lampeggia come "insert coin". */
 .slot-display__invito {
   font-family: var(--font-rounded);
-  font-size: calc(var(--u) * 4.6);
+  max-width: 100%;
+  overflow: hidden;
+  font-size: calc(var(--u) * 6);
   font-weight: 400;
-  line-height: 1.1;
-  letter-spacing: 0.03em;
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
   color: var(--ct-ambra);
   text-shadow: 0 0 calc(var(--u) * 1) color-mix(in srgb, var(--ct-ambra) 85%, transparent);
   animation: slot-invito 1.2s steps(1) infinite;
@@ -1575,6 +1507,11 @@ body:has(.slot) {
   animation: none;
 }
 
+/* Mentre i rulli girano, i puntini corrono svelti. */
+.slot-display__invito.is-gira {
+  animation-duration: 0.4s;
+}
+
 @keyframes slot-invito {
   60% {
     opacity: 0.3;
@@ -1583,34 +1520,25 @@ body:has(.slot) {
 
 /* ─────────────────────────────  Il banco dei comandi  ───────────────────────────── */
 
-/*
- * Il banco esce dal mobile verso chi gioca, inclinato: il piano e' ruotato
- * all'indietro in prospettiva, quindi le fiches e il bottone ci stanno sopra
- * come su un ripiano vero, con il bordo davanti che prende la luce.
- */
+/* Il banco, dentro il mobile come nel mockup: un ripiano scuro con le fiches e Azzera. */
 .slot-banco {
   position: relative;
   min-height: 0;
-  margin: 0 calc(var(--u) * -2);
-  perspective: calc(var(--u) * 150);
+  margin: 0 calc(var(--u) * 5);
 }
 
 .slot-banco__piano {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(var(--u) * 2.6);
+  gap: calc(var(--u) * 1.6);
   height: 100%;
-  padding: 0 calc(var(--u) * 4);
-  border-radius: calc(var(--u) * 5);
+  padding: 0 calc(var(--u) * 2);
+  border-radius: calc(var(--u) * 5.3);
   background: linear-gradient(180deg, #5a0a1a, #3a0612);
   box-shadow:
     inset 0 0 0 calc(var(--u) * 0.8) #120c2b,
-    inset 0 calc(var(--u) * 1.8) 0 rgba(255, 255, 255, 0.12),
-    0 calc(var(--u) * 2) 0 #120c2b,
-    0 calc(var(--u) * 3.3) calc(var(--u) * 5) rgba(0, 0, 0, 0.45);
-  transform: rotateX(18deg);
-  transform-origin: 50% 0;
+    inset 0 calc(var(--u) * 1) 0 calc(var(--u) * 0.8) rgba(255, 255, 255, 0.12);
 }
 
 /* Le fiches e, accanto, il tasto che azzera la puntata. */
@@ -1619,13 +1547,13 @@ body:has(.slot) {
   flex: 1;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--u) * 2.2);
+  gap: calc(var(--u) * 1.6);
   min-width: 0;
 }
 
 .slot-gettoni {
   display: flex;
-  gap: calc(var(--u) * 1.6);
+  gap: calc(var(--u) * 1.7);
 }
 
 /*
@@ -1639,7 +1567,7 @@ body:has(.slot) {
   position: relative;
   display: grid;
   place-items: center;
-  width: calc(var(--u) * 13.4);
+  width: calc(var(--u) * 14.2);
   aspect-ratio: 1;
   padding: 0;
   border: calc(var(--u) * 0.8) solid #120c2b;
@@ -1687,7 +1615,7 @@ body:has(.slot) {
 .slot-azzera {
   position: relative;
   flex: none;
-  height: calc(var(--u) * 12);
+  height: calc(var(--u) * 13.3);
   padding: 0 calc(var(--u) * 3);
   border: calc(var(--u) * 0.8) solid #120c2b;
   border-radius: calc(var(--u) * 4);
@@ -1727,69 +1655,13 @@ body:has(.slot) {
   outline-offset: 2px;
 }
 
-/* ─────────────────────────────  La pancia  ───────────────────────────── */
-
-/*
- * La pancia, sotto il banco: un vetro illuminato nella cornice d'oro, con i
- * raggi che girano — piano in attesa, svelti mentre i rulli girano, d'oro per
- * una vincita. Non dice niente: le regole e le categorie del giorno stanno nel
- * foglio della "i". Prende l'altezza che avanza, e i raggi si misurano su di
- * lei (e' un contenitore).
- */
-.slot-pancia {
-  min-height: 0;
-  padding: calc(var(--u) * 2.4) calc(var(--u) * 6) calc(var(--u) * 1);
-}
-
-.slot-pancia__vetro {
-  position: relative;
-  height: 100%;
-  container-type: size;
-  overflow: hidden;
-  border-radius: calc(var(--u) * 5);
-  background: radial-gradient(120% 140% at 50% 120%, #5a1a8a, #1a0530 60%, #0b0214);
-  box-shadow:
-    0 0 0 calc(var(--u) * 0.8) #120c2b,
-    inset 0 0 0 calc(var(--u) * 0.9) #f4c430,
-    inset 0 0 0 calc(var(--u) * 1.4) #a2650e,
-    inset 0 calc(var(--u) * 1.5) calc(var(--u) * 3) rgba(0, 0, 0, 0.6);
-}
-
-.slot-pancia__raggi {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: max(240cqw, 240cqh);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  background: repeating-conic-gradient(rgba(255, 79, 163, 0.2) 0 8deg, transparent 8deg 20deg);
-  -webkit-mask-image: radial-gradient(closest-side, #000, transparent 70%);
-  mask-image: radial-gradient(closest-side, #000, transparent 70%);
-  animation: slot-raggi 24s linear infinite;
-}
-
-.slot-sala.is-gira .slot-pancia__raggi {
-  animation-duration: 6s;
-}
-
-.slot-sala:is(.is-vinto, .is-palco, .is-jackpot) .slot-pancia__raggi {
-  background: repeating-conic-gradient(rgba(255, 214, 90, 0.32) 0 8deg, transparent 8deg 20deg);
-  animation-duration: 3s;
-}
-
-@keyframes slot-raggi {
-  to {
-    rotate: 360deg;
-  }
-}
-
 /* ─────────────────────────────  Il vassoio e lo zoccolo  ───────────────────────────── */
 
 /* Il vassoio, piu' largo in fondo: lo si guarda dall'alto, e il fondo si vede in prospettiva. */
 .slot-vassoio {
   position: relative;
   overflow: hidden;
-  margin: calc(var(--u) * 1) calc(var(--u) * 3.3) calc(var(--u) * 1);
+  margin: calc(var(--u) * 2) calc(var(--u) * 13.3) calc(var(--u) * 0.6);
   border-radius: calc(var(--u) * 4) calc(var(--u) * 4) calc(var(--u) * 8.6) calc(var(--u) * 8.6);
   background: linear-gradient(180deg, #160b08, #3a2a12);
   box-shadow:
@@ -1930,6 +1802,48 @@ body:has(.slot) {
   margin-inline: auto;
 }
 
+.slot-gira {
+  height: 56px;
+  border: var(--filo) solid #120c2b;
+  border-radius: 18px;
+  background: #8e88ae;
+  color: #120c2b;
+  font-family: var(--font-rounded);
+  font-size: 22px;
+  font-weight: 400;
+  box-shadow: 0 2px 0 #120c2b;
+  transition:
+    transform 0.1s,
+    box-shadow 0.1s;
+}
+
+/* Gira, quando si puo' girare: il verde pieno, che respira. */
+.slot-gira.is-pronta {
+  background: #34d17a;
+  cursor: pointer;
+  box-shadow:
+    0 5px 0 #120c2b,
+    inset 0 3px 0 rgb(255 255 255 / 0.5);
+  animation: slot-respira 2.4s ease-in-out infinite;
+}
+
+.slot-gira.is-pronta:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #120c2b;
+  animation: none;
+}
+
+.slot-gira:focus-visible {
+  outline: 3px solid #ffd84d;
+  outline-offset: 3px;
+}
+
+@keyframes slot-respira {
+  50% {
+    transform: scale(1.025);
+  }
+}
+
 .slot-comandi__nota {
   margin: 0;
   font-size: 15px;
@@ -2047,7 +1961,7 @@ body:has(.slot) {
   .slot-rivela,
   .slot-display__cifre,
   .slot-display__invito,
-  .slot-pancia__raggi,
+  .slot-gira.is-pronta,
   .slot-lustro::before,
   .slot-vassoio__moneta {
     animation: none !important;

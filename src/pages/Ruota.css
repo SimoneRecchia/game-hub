@@ -87,10 +87,6 @@ body:has(.ct) {
   display: none;
 }
 
-.ct-palco.is-fortunata .ct-palco__insegna {
-  visibility: hidden;
-}
-
 /* Il banco: il palco ha un sussulto, come un colpo sul tavolo. */
 .ct-palco.is-scosso {
   animation: ct-scosso 460ms var(--ease-out);
@@ -198,62 +194,6 @@ body:has(.ct) {
     radial-gradient(1.4px 1.4px at 4% 46%, #fff 50%, transparent),
     radial-gradient(1.3px 1.3px at 52% 96%, #ffe8a0 50%, transparent);
   animation-delay: -1.7s;
-}
-
-/*
- * L'insegna al neon in cima al palco, dove la ruota lascia posto: sui telefoni
- * in piedi. Due colori, l'oro e il rosa, e ogni tanto una lettera che sfarfalla.
- */
-.ct-palco__insegna {
-  position: absolute;
-  top: 16px;
-  left: 0;
-  right: 0;
-  z-index: 0;
-  display: none;
-  font-family: var(--font-rounded, ui-rounded, system-ui, sans-serif);
-  font-size: clamp(26px, 9cqw, 42px);
-  font-weight: 900;
-  font-style: italic;
-  letter-spacing: 0.04em;
-  text-align: center;
-  text-transform: uppercase;
-  color: #fff3c4;
-  text-shadow:
-    0 0 4px #fff,
-    0 0 12px var(--ct-oro),
-    0 0 26px var(--ct-oro),
-    0 0 42px rgba(244, 196, 48, 0.6);
-  pointer-events: none;
-  animation: ct-neon 5s steps(1, end) infinite;
-}
-
-.ct-palco__insegna span {
-  color: #ffd6ec;
-  text-shadow:
-    0 0 4px #fff,
-    0 0 12px #ff4fa3,
-    0 0 26px #ff4fa3,
-    0 0 42px rgba(255, 79, 163, 0.6);
-}
-
-@keyframes ct-neon {
-  0%,
-  41%,
-  45%,
-  100% {
-    opacity: 1;
-  }
-  42%,
-  44% {
-    opacity: 0.55;
-  }
-}
-
-@container (min-height: 500px) and (max-aspect-ratio: 3 / 4) {
-  .ct-palco.is-ruota .ct-palco__insegna {
-    display: block;
-  }
 }
 
 @keyframes ct-scintille {
@@ -662,6 +602,21 @@ body:has(.ct) {
   border-top: 0.5px solid var(--separator);
 }
 
+/*
+ * In piedi il palco e' alto quanto la ruota, e la ruota, la riga di quel che
+ * si fa e il vassoio stanno insieme in mezzo, come nel mockup: lasciato
+ * crescere, il palco metteva un vuoto fra la ruota e le fiches.
+ */
+@media (orientation: portrait) {
+  .ct-corpo {
+    justify-content: center;
+  }
+
+  .ct-palco {
+    max-height: calc(min(100vw - 32px, 470px) * 248 / 232 + 30px);
+  }
+}
+
 /* ─────────────────────────────  Di lato  ───────────────────────────── */
 
 /* Piu' largo che alto: il palco a sinistra, alto quanto lo schermo, e il pannello a destra. */
@@ -720,7 +675,6 @@ body:has(.ct) {
   .ct-palco.is-scosso,
   .ct-palco__luce,
   .ct-palco__luce::after,
-  .ct-palco__insegna,
   .ct-palco__scintille,
   .ct-palco__scintille::after,
   .ct-cartello,

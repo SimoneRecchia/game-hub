@@ -9,7 +9,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   padding: 12px 14px;
   border-radius: 24px;
   background: rgba(18, 12, 43, 0.55);
@@ -23,12 +23,12 @@
 
 .ct-fiches__gettoni {
   display: flex;
-  gap: 12px;
+  gap: 10px;
 }
 
 /* Una fiche da toccare: scende sulla sua ombra come un tasto, e il dito ha i suoi 44 punti. */
 .ct-fiches__fiche {
-  --bj-fiche-lato: 52px;
+  --bj-fiche-lato: 50px;
   padding: 0;
   cursor: pointer;
   transition: transform 0.1s var(--ease-out);
@@ -85,7 +85,7 @@
  * telefono di traverso —: le fiches si avvicinano e rimpiccioliscono, e la
  * riga ci sta. Prima Azzera usciva dalla carta.
  */
-@container (max-width: 350px) {
+@container (max-width: 340px) {
   .ct-fiches__gettoni {
     gap: 8px;
   }

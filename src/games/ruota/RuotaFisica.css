@@ -226,15 +226,16 @@
 }
 
 .ct-ruota__lancetta-perno > path {
-  stroke: #6b4300;
-  stroke-width: 0.8;
+  stroke: #120c2b;
+  stroke-width: 1.6;
   stroke-linejoin: round;
 }
 
+/* Il perno d'oro in cima alla goccia rossa, come nel mockup. */
 .ct-ruota__pietra {
-  fill: #e0263f;
-  stroke: #7a0d1c;
-  stroke-width: 0.8;
+  fill: var(--ct-oro-chiaro);
+  stroke: var(--ct-oro-scuro);
+  stroke-width: 1;
 }
 
 .ct-ruota__pietra-luce {

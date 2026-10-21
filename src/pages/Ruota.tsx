@@ -868,6 +868,7 @@ export default function RuotaPagina() {
   return (
     <Pagina
       titolo={NOME_CRAZY_TIME}
+      sotto="Fortuna"
       intera
       indietro={{ a: ROTTE.fortuna, etichetta: 'Fortuna' }}
       azioni={
@@ -913,9 +914,6 @@ export default function RuotaPagina() {
             <span className="ct-palco__fortuna" aria-hidden="true" />
             <span className="ct-palco__luce" aria-hidden="true" />
             <span className="ct-palco__scintille" aria-hidden="true" />
-            <span className="ct-palco__insegna" aria-hidden="true">
-              Crazy <span>Time</span>
-            </span>
             {stato && palcoFortunato && (
               <NastroFortuna testo={NASTRI[scena]} tabellone={scena === 'pachinko' || scena === 'cashhunt'} />
             )}
@@ -1160,7 +1158,7 @@ export default function RuotaPagina() {
                       ? `${inGioco} punti in gioco`
                       : debole
                         ? 'Più forte: trascinala e lasciala andare'
-                        : 'Trascina la ruota per girarla'}
+                        : 'Trascina la ruota e lasciala andare'}
                   </p>
                 ) : (
                   <InvitoPuntata>Tocca una fiche per puntare</InvitoPuntata>
