@@ -49,7 +49,7 @@ export default function CatenaLibera() {
   }
 
   return (
-    <Pagina key="partita" titolo="Catena" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina key="partita" titolo="Catena" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
       <PartitaCatena
         key={g.numero}
         vista={v}

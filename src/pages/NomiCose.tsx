@@ -88,6 +88,7 @@ export default function NomiCose() {
   return (
     <Pagina
       titolo="Nomi, cose e città"
+      sotto="La lettera di oggi"
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={

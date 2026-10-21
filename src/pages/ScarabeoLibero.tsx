@@ -126,7 +126,8 @@ export default function ScarabeoLibero() {
   return (
     <Pagina
       key="partita"
-      titolo="Contro il computer"
+      titolo="Scarabeo"
+      sotto={`Contro il computer · ${NOMI[livello]}`}
       intera
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={

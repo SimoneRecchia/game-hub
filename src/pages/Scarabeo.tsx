@@ -96,7 +96,8 @@ export default function Scarabeo() {
 
   return (
     <Pagina
-      titolo={stato ? `Scarabeo #${stato.puzzleNumber}` : 'Scarabeo'}
+      titolo="Scarabeo"
+      sotto={stato ? `N° ${stato.puzzleNumber} · la partita di oggi` : 'La partita di oggi'}
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={

@@ -281,7 +281,7 @@
 /* La giocata che il saldo non paga: stampata sbiadita e tratteggiata, come una casella che non si puo' segnare: si legge ancora. */
 .se-giocata:disabled:not(.is-scelta) {
   border-style: dashed;
-  color: #7d5566;
+  color: #6e4a5b;
 }
 
 .se-giocata:focus-visible {
@@ -508,7 +508,7 @@
  * al posto del bottone c'e' l'avviso del saldo (Avvisi.css).
  */
 .se-schedina.is-spenta {
-  --inchiostro: #7d5566;
+  --inchiostro: #6e4a5b;
   --penna: #4a5a8a;
 }
 

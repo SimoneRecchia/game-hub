@@ -50,7 +50,7 @@ export default function GhigliottinaLibera() {
   }
 
   return (
-    <Pagina key="partita" titolo="Ghigliottina" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina key="partita" titolo="Ghigliottina" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
       <PartitaGhigliottina
         key={g.numero}
         vista={v}

@@ -26,7 +26,8 @@ export default function Ghigliottina() {
 
   return (
     <Pagina
-      titolo={s ? `Ghigliottina #${s.puzzleNumber}` : 'Ghigliottina'}
+      titolo="Ghigliottina"
+      sotto={s ? `N° ${s.puzzleNumber} · la ghigliottina di oggi` : 'La ghigliottina di oggi'}
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={

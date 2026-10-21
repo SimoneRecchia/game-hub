@@ -179,6 +179,7 @@ export default function NomiCoseLibera() {
     <Pagina
       key="partita"
       titolo="Nomi, cose e città"
+      sotto="Libera"
       intera
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
       azioni={info}

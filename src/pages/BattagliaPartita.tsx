@@ -55,9 +55,9 @@ function maiuscola(testo: string): string {
  * Il titolo in alto: l'avversario. Le classificate dei giorni in cui la
  * battaglia ne aveva una erano contro il computer, e si vedono cosi'.
  */
-function titoloDi(v: VistaBattaglia | null): string {
-  if (!v) return 'Battaglia navale'
-  if (v.modalita === 'amici') return `Contro ${v.avversario.displayName}`
+function controChi(v: VistaBattaglia | null): string | undefined {
+  if (!v) return undefined
+  if (v.modalita === 'amici') return `Con ${v.avversario.displayName}`
   return 'Contro il computer'
 }
 
@@ -104,7 +104,8 @@ export default function BattagliaPartita() {
 
   return (
     <Pagina
-      titolo={titoloDi(v)}
+      titolo="Battaglia navale"
+      sotto={controChi(v)}
       intera
       larga
       indietro={{ a: ROTTE.battaglia, etichetta: 'Battaglia' }}

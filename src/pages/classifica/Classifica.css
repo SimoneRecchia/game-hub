@@ -650,7 +650,9 @@
   font-family: var(--font-rounded);
   font-size: var(--text-headline);
   font-weight: 800;
+  /* In scuro l'indaco sulla sua velatura fa 4,3:1: li' il numero ha il colore del testo. */
   color: var(--brand);
+  color: light-dark(var(--brand), var(--label));
 }
 
 .cl-gen__mia-nome {

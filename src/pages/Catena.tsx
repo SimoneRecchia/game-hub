@@ -25,7 +25,8 @@ export default function Catena() {
 
   return (
     <Pagina
-      titolo={s ? `Catena #${s.puzzleNumber}` : 'Catena'}
+      titolo="Catena"
+      sotto={s ? `N° ${s.puzzleNumber} · la catena di oggi` : 'La catena di oggi'}
       intera
       indietro={{ a: ROTTE.home, etichetta: 'Giornaliere' }}
       azioni={
