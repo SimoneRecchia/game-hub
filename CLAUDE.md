@@ -1403,36 +1403,30 @@ dopo). Il controllo e' di un secondo e mezzo quando si aspetta
 qualcuno, di quattro quando tocca a me, di cinque da soli — solo per vedere chi
 si siede — e subito dopo una scadenza.
 
-**Il tavolo e' una mezzaluna, e io sto in fondo al centro.** Dritto dalla parte
-del banco, con la rastrelliera, il sabot a destra (la sinistra del banco, da
-dove si comincia) e gli scarti a sinistra; curvo dalla parte dei giocatori, con
-il bordo imbottito. Gli altri stanno due per lato, lungo il bordo, nell'ordine
-dei posti da sinistra; il mio posto e' sempre in fondo al centro, con il
-cerchio della puntata, e le mie carte le piu' grandi. Un posto degli altri si
-misura sull'avatar: e' lui a stare nel punto del posto, come il cerchio di un
-posto libero, e il resto gli sta attorno — le carte sopra, il nome sotto, la
-puntata dalla parte del centro (`PostoAltro`). Prima il posto si appendeva
-dall'alto, e con le carte un posto occupato scendeva rispetto a quelli liberi,
-con l'avatar spinto di lato dal nome. I punti stanno nel CSS (`data-posto`),
-perché dipendono dalla forma del panno: in verticale gli esterni stanno sotto
-gli scarti e il sabot e sopra le scritte, e su un panno piu' largo che alto
-(`@container (min-aspect-ratio: 3 / 2)`, il telefono di traverso e il
-computer) si aprono ad arco attorno a me. Tutto si misura sul
-tavolo, che e' un contenitore (`cqw`, `cqh`): le scritte ad arco hanno un tetto
-anche sull'altezza, perché di traverso un arco largo quanto il panno copriva le
-mie carte. Le scritte e i fili sono archi dello stesso centro (`Scritte` in
-`Tavolo.tsx`): erano curve ognuna con la sua, piu' strette quanto piu' in
-basso, e la scritta piccola toccava il filo. I percorsi sono piu' lunghi delle
-scritte, perché un carattere piu' largo non le tagli ai capi, e la fascia
-dell'assicurazione e' misurata sulla sua scritta in Georgia, il piu' largo dei
-tre caratteri del panno (con Times e Noto Serif, che e' quello di Android).
-Sotto le scritte c'e' la linea dell'assicurazione, che si accende
-quando il banco la offre; la fiche dell'assicurazione invece sta in un cerchio
-piu' piccolo a sinistra della puntata, perché sui telefoni bassi la linea passa
-a un dito dalle mie carte. Tre o quattro mani, dopo gli split, vanno su due
-righe, due per riga: in fila sola coprivano i posti degli altri ai lati, e le
-fasce degli esiti si sovrapponevano. Di traverso restano in fila, piu' piccole
-e piu' larghe: li' la larghezza c'e', ed e' l'altezza che manca.
+**Il tavolo e' una mezzaluna, e io sto in fondo al centro.** Dal mockup
+dell'album (21 ottobre 2026) il panno e' il disegno del mockup (`Panno` in
+`Tavolo.tsx`, 374 per 472, `Panno.css`) e tiene le sue proporzioni a ogni
+schermo: tutto si misura in `--u`, un trecentosettantaquattresimo della sua
+larghezza, e banco, carte, posti e cerchi stanno alle coordinate del mockup.
+Dritto dalla parte del banco, con la rastrelliera al centro, il sabot a destra
+(la sinistra del banco, da dove si comincia) e gli scarti a sinistra; curvo
+dalla parte dei giocatori, con il bordo di legno. Le scritte ad arco e la linea
+dell'assicurazione, che si accende d'oro quando il banco la offre, sono in
+Lilita dentro il panno. Il mio posto e' sempre in fondo al centro, con il
+cerchio della puntata e quello piu' piccolo dell'assicurazione accanto, e le
+mie carte le piu' grandi; gli altri stanno ai lati, gli interni dove li mette il
+mockup e gli esterni in alto sotto il sabot e gli scarti, ognuno nel suo
+`data-posto` con le sue coordinate (`--ax`, `--cx`, `--fx`): la faccina nel
+punto del posto, le carte sopra, il nome sotto, la puntata verso il centro. Tre
+o quattro mani, dopo gli split, vanno su due righe, due per riga: in fila sola
+coprivano i posti degli altri ai lati, e le fasce degli esiti si
+sovrapponevano. Sotto il tavolo c'e' un pannello ad altezza fissa, perché il
+tavolo non salti fra un giro e l'altro: la riga che dice che cosa succede
+("Puntata 15 · distribuisci", "Tocca a te · Mano 1 di 2"), poi le fiches da 1,
+5, 10 e 25 (quelle della Fortuna) con Azzera e il bottone verde largo, o
+durante il giro le quattro mosse. La puntata di prima torna da sola sul
+cerchio a ogni giro, e "Nuovo giro" la rigioca: Annulla, ×2 e Ripeti non ci
+sono piu'. La puntata minima resta `PUNTATA_MINIMA_BJ`, dieci.
 
 **Le mosse si chiamano come ai tavoli italiani, e ci sono sempre tutte.**
 Carta, Stai, Raddoppia e Split, spente quando non si possono fare, e

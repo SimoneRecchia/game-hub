@@ -44,8 +44,6 @@ export const MANI_MASSIME = 4
 
 export const NOME_BLACKJACK = 'Blackjack'
 export const PUNTATA_MINIMA_BJ = 10
-/** I gettoni della puntata, dal piu' piccolo: si sommano. */
-export const GETTONI_BJ: readonly number[] = [10, 25, 50, 100, 500]
 
 /** Quanto vale una carta: gli assi uno (o undici, nel totale), le figure dieci. */
 export function punti(c: Carta): number {

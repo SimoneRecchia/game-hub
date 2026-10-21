@@ -20,9 +20,9 @@ export function testoTotale(carte: readonly Carta[], divisa = false): string {
 }
 
 /**
- * Una mano sul panno: le carte a scala, ognuna un po' piu' a destra e piu' su
- * di quella prima, il totale delle carte gia' arrivate e, a giro finito,
- * l'esito. Le carte in volo non contano nel totale: arrivano prima di contare.
+ * Una mano sul panno: le carte a scala, ognuna un po' piu' a destra, il totale
+ * delle carte gia' arrivate in alto a destra e, a giro finito, l'esito su una
+ * fascia storta sopra le carte. Le carte in volo non contano nel totale: arrivano prima di contare.
  */
 export function Mano({
   carte,
@@ -32,6 +32,7 @@ export function Mano({
   onAtterra,
   divisa = false,
   esito = null,
+  conto = null,
   attiva = false,
   className = '',
   style,
@@ -43,6 +44,8 @@ export function Mano({
   onAtterra: (chiave: string) => void
   divisa?: boolean
   esito?: EsitoMano | null
+  /** Quel che la mano ha vinto, scritto sulla fascia accanto all'esito: solo per le mie, che sono grandi. */
+  conto?: number | null
   attiva?: boolean
   className?: string
   style?: CSSProperties
@@ -78,6 +81,7 @@ export function Mano({
       {esito && (
         <span className={`bj-mano__esito is-${esito}`} key={esito}>
           {TESTO_ESITO[esito]}
+          {conto !== null && conto > 0 && ` +${conto}`}
         </span>
       )}
     </div>
