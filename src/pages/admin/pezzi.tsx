@@ -13,7 +13,7 @@ import { Copertina } from '@/components/Copertina'
 import { Etichetta, Vuoto } from '@/components/Elementi'
 import { IconCheck, IconChevronLeft, IconChevronRight, IconClose, IconCopy } from '@/components/Icons'
 import { Sheet } from '@/components/Sheet'
-import { GIOCHI } from '@/games/catalog'
+import { GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
 import { useCopia } from './dati'
 import { numero } from './formato'
 import { IconaAvviso, IconaGiu } from './icone'
@@ -31,14 +31,16 @@ const NOMI_FORTUNA: Record<string, { nome: string; copertina: (typeof GIOCHI_FOR
 
 /** Il nome di un gioco, classificato o della Fortuna: "Nomi, cose e città", "Crazy Time". */
 export function nomeDi(gioco: string): string {
-  return NOMI_FORTUNA[gioco]?.nome ?? classificato(gioco)?.nome ?? gioco
+  return NOMI_FORTUNA[gioco]?.nome ?? classificato(gioco)?.nome ?? GIOCHI_DA_TAVOLO.find((g) => g.id === gioco)?.nome ?? gioco
 }
 
 const classificato = (id: string) => GIOCHI.find((g) => g.id === (id as GiocoClassificato))
 
 /** La copertina piccola di un gioco, se l'app ne ha una; altrimenti un tondo con l'iniziale. */
 export function IconaGioco({ gioco, lato = 24 }: { gioco: string; lato?: number }) {
-  const copertina = NOMI_FORTUNA[gioco]?.copertina ?? (classificato(gioco) ? gioco : null)
+  const copertina =
+    NOMI_FORTUNA[gioco]?.copertina ??
+    (classificato(gioco) || GIOCHI_DA_TAVOLO.some((g) => g.id === gioco) ? gioco : null)
   if (!copertina) {
     return (
       <span className="adm-iniziale" style={{ width: lato, height: lato }} aria-hidden="true">

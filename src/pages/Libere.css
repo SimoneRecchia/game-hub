@@ -339,6 +339,47 @@
   animation: chi-ce-respira 1.8s ease-in-out infinite;
 }
 
+/*
+ * Una libera in sospeso: lo stesso biglietto, e sul suo angolo la crocetta per
+ * lasciarla. Sta fuori dal biglietto, che e' tutto un collegamento: un bottone
+ * dentro un link non si potrebbe toccare da solo.
+ */
+.libere__sospesa {
+  position: relative;
+}
+
+.libere__lascia {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 2px 0 var(--ink);
+  color: var(--ink);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* L'area da toccare e' piu' grande del tondo: 44 punti, come ogni tasto. */
+.libere__lascia::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
+.libere__lascia svg {
+  stroke-width: 2.6;
+}
+
+.libere__lascia:is(:active, [data-premuto]) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
 /* ─────────────────────────────  Le famiglie  ───────────────────────────── */
 
 .libere__famiglie {

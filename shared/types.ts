@@ -1801,7 +1801,6 @@ export type GiocoClassificato =
  */
 export type GiocoDaTavolo = 'battaglia' | 'indovina' | 'lupus' | 'scarabocchi' | 'sequenze' | GiocoTavoliere
 
-/** Una classifica: quella di un gioco, o la generale che le somma. */
 /** Una classifica: la generale, quella di un gioco classificato, o quella di un gioco della Fortuna. */
 export type ChiaveClassifica = GiocoClassificato | 'generale' | GiocoFortuna
 

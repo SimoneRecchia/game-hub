@@ -28,13 +28,20 @@ export const libereRoutes = new Hono<AppEnv>().use('*', requireAuth).post('/sosp
   const io = c.get('player').id
   const adesso = nowIso()
   await c.env.DB.batch([
+    // Prima l'evento, finché la riga dice ancora se la partita era aperta: quel che arriva dopo la fine non conta.
+    c.env.DB.prepare(
+      `INSERT INTO libere_sospese_eventi (sospesa_id, evento, at)
+       SELECT ?1, ?2, ?3 WHERE NOT EXISTS (SELECT 1 FROM libere_sospese WHERE id = ?1 AND stato <> 'aperta')`,
+    ).bind(id, evento, adesso),
     c.env.DB.prepare(
       `INSERT INTO libere_sospese (id, player_id, gioco, stato, riprese, creata_at, toccata_at, chiusa_at)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?7)
        ON CONFLICT (id) DO UPDATE SET
          stato = CASE WHEN libere_sospese.stato = 'aperta' THEN excluded.stato ELSE libere_sospese.stato END,
-         riprese = libere_sospese.riprese + excluded.riprese,
-         toccata_at = excluded.toccata_at,
+         riprese = libere_sospese.riprese
+           + CASE WHEN libere_sospese.stato = 'aperta' THEN excluded.riprese ELSE 0 END,
+         toccata_at = CASE WHEN libere_sospese.stato = 'aperta' THEN excluded.toccata_at
+                           ELSE libere_sospese.toccata_at END,
          chiusa_at = CASE WHEN libere_sospese.stato = 'aperta' THEN excluded.chiusa_at ELSE libere_sospese.chiusa_at END
        WHERE libere_sospese.player_id = excluded.player_id`,
     ).bind(
@@ -45,11 +52,6 @@ export const libereRoutes = new Hono<AppEnv>().use('*', requireAuth).post('/sosp
       evento === 'ripresa' ? 1 : 0,
       adesso,
       STATO[evento] === 'aperta' ? null : adesso,
-    ),
-    c.env.DB.prepare('INSERT INTO libere_sospese_eventi (sospesa_id, evento, at) VALUES (?, ?, ?)').bind(
-      id,
-      evento,
-      adesso,
     ),
   ])
   return c.body(null, 204)

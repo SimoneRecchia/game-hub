@@ -26,9 +26,12 @@ import type {
   GiocoAzzerabile,
   OrdineGiocatori,
   SerieGiorno,
+  AdminGiornoSospese,
+  AdminSospese,
 } from '../../shared/admin'
 import { LIMITI_GRATUITI } from '../../shared/admin'
 import { PRESENZA_ONLINE_MS } from '../../shared/config'
+import { SOSPESA_MS } from '../../shared/sospese'
 import { addDays, dateForPuzzleNumber, gameDate, istanteItaliano, puzzleNumberFor, solutionIndexFor } from '../../shared/daily'
 import type { GiocoClassificato } from '../../shared/types'
 import { SOLUTION_WORDS } from '../../shared/words/solutions'
@@ -423,7 +426,28 @@ export async function statisticheGiochi(db: D1Database, adesso = Date.now()): Pr
       )
       .bind(numero),
   ])
-  const risultati = await db.batch(istruzioni)
+  // Le libere in sospeso che nessuno tocca da tre giorni sono scadute anche se il telefono non l'ha ancora detto:
+  // chi non apre piu' l'app non lo dira' mai. Si segnano qui, prima di contarle.
+  const limite = new Date(adesso - SOSPESA_MS).toISOString()
+  const daQuando = new Date(Date.parse(`${dateForPuzzleNumber(da)}T00:00:00Z`) - 86_400_000).toISOString()
+  const sospese = [
+    db
+      .prepare(`UPDATE libere_sospese SET stato = 'scaduta', chiusa_at = ? WHERE stato = 'aperta' AND toccata_at < ?`)
+      .bind(new Date(adesso).toISOString(), limite),
+    db.prepare(
+      `SELECT stato, COUNT(*) AS n, COALESCE(SUM(riprese), 0) AS riprese FROM libere_sospese GROUP BY stato`,
+    ),
+    db.prepare(`SELECT gioco, COUNT(*) AS n FROM libere_sospese WHERE stato = 'aperta' GROUP BY gioco ORDER BY n DESC`),
+    db
+      .prepare(
+        `SELECT substr(at, 1, 13) AS ora, evento, COUNT(*) AS n FROM libere_sospese_eventi
+          WHERE at >= ? AND evento IN ('inizio', 'ripresa', 'scaduta') GROUP BY ora, evento`,
+      )
+      .bind(daQuando),
+  ]
+  const tutti = await db.batch([...istruzioni, ...sospese])
+  const risultati = tutti.slice(0, istruzioni.length)
+  const [, perStato, perGioco, perOra] = tutti.slice(istruzioni.length)
   const giochi: AdminStatisticheGioco[] = TABELLE_GIOCHI.map((t, i) => {
     const [serie, totale, migliori] = risultati.slice(i * 3, i * 3 + 3)
     const perNumero = new Map(
@@ -450,7 +474,41 @@ export async function statisticheGiochi(db: D1Database, adesso = Date.now()): Pr
       totale: { giocate: tot.giocate, giocatori: tot.giocatori, mediaPunti: arrotonda(tot.media) },
     }
   })
-  return { oggi: numero, giochi }
+  return { oggi: numero, giochi, sospese: contaSospese(perStato.results, perGioco.results, perOra.results, da, numero) }
+}
+
+/** I conti delle libere in sospeso, con i giorni del calendario italiano: gli eventi arrivano per ora UTC. */
+function contaSospese(
+  perStato: unknown[],
+  perGioco: unknown[],
+  perOra: unknown[],
+  da: number,
+  numero: number,
+): AdminSospese {
+  const stati = new Map((perStato as Array<{ stato: string; n: number; riprese: number }>).map((r) => [r.stato, r]))
+  const giorni = new Map<string, AdminGiornoSospese>()
+  for (let n = da; n <= numero; n += 1) {
+    const data = dateForPuzzleNumber(n)
+    giorni.set(data, { data, create: 0, riprese: 0, scadute: 0 })
+  }
+  for (const r of perOra as Array<{ ora: string; evento: string; n: number }>) {
+    const giorno = giorni.get(gameDate(new Date(`${r.ora}:30:00Z`)))
+    if (!giorno) continue
+    if (r.evento === 'inizio') giorno.create += r.n
+    else if (r.evento === 'ripresa') giorno.riprese += r.n
+    else giorno.scadute += r.n
+  }
+  const n = (stato: string) => stati.get(stato)?.n ?? 0
+  return {
+    adesso: n('aperta'),
+    create: [...stati.values()].reduce((t, r) => t + r.n, 0),
+    riprese: [...stati.values()].reduce((t, r) => t + r.riprese, 0),
+    finite: n('finita'),
+    annullate: n('annullata'),
+    scadute: n('scaduta'),
+    perGioco: (perGioco as Array<{ gioco: string; n: number }>).map((r) => ({ gioco: r.gioco, adesso: r.n })),
+    giorni: [...giorni.values()],
+  }
 }
 
 /* ─────────────────────────────  I contenuti  ───────────────────────────── */

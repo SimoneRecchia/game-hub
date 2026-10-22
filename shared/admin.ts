@@ -218,10 +218,34 @@ export interface AdminStatisticheGioco {
   totale: { giocate: number; giocatori: number; mediaPunti: number | null }
 }
 
+/** Un giorno delle libere in sospeso: quante ne sono cominciate, quante se ne sono riprese, quante sono scadute. */
+export interface AdminGiornoSospese {
+  data: string
+  create: number
+  riprese: number
+  scadute: number
+}
+
+/** Le libere in sospeso: quelle di adesso, i conti da sempre e gli ultimi quattordici giorni. */
+export interface AdminSospese {
+  /** Aperte e toccate da meno di tre giorni. */
+  adesso: number
+  /** Da sempre: cominciate, riprese dopo averle lasciate, finite giocando, lasciate apposta, scadute. */
+  create: number
+  riprese: number
+  finite: number
+  annullate: number
+  scadute: number
+  /** Quante sono in sospeso adesso, gioco per gioco. */
+  perGioco: Array<{ gioco: string; adesso: number }>
+  giorni: AdminGiornoSospese[]
+}
+
 /** GET /admin/giochi */
 export interface AdminGiochi {
   oggi: number
   giochi: AdminStatisticheGioco[]
+  sospese: AdminSospese
 }
 
 /** I contenuti che la notte prepara, per gioco. */
