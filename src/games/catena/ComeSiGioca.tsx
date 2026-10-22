@@ -22,7 +22,7 @@ export function ComeSiGiocaCatena({ open, onClose }: { open: boolean; onClose: (
           <ul className="cru-aiuto__elenco">
             <li>
               Fra due parole ce n’è una che sta con tutte e due, come in «spirito <strong>libero</strong>» e «tiro{' '}
-              <strong>libero</strong>»: ne vedi la prima lettera, ma non quanto è lunga. Scrivila e prova; trovata
+              <strong>libero</strong>»: ne vedi le prime due lettere, ma non quanto è lunga. Scrivila e prova; trovata
               quella, si scende alla coppia dopo.
             </li>
             <li>
@@ -40,8 +40,8 @@ export function ComeSiGiocaCatena({ open, onClose }: { open: boolean; onClose: (
           <h3 className="cru-aiuto__titolo">La parola finale</h3>
           <ul className="cru-aiuto__elenco">
             <li>
-              È la {DA_INDOVINARE_CATENA}ª: ne vedi le prime due lettere e l’ultima, e la parola sopra. Quella sotto,
-              il terzo elemento, dimezza il montepremi; se hai ancora tutti e due i jolly è in regalo.
+              È la {DA_INDOVINARE_CATENA}ª: ne vedi solo la prima lettera, e la parola sopra. Quella sotto, il terzo
+              elemento, dimezza il montepremi; se hai ancora tutti e due i jolly è in regalo.
             </li>
             <li>Hai un minuto e mezzo ({Math.round(TEMPO_FINALE_CATENA_MS / 1000)} secondi) e una sola risposta.</li>
           </ul>

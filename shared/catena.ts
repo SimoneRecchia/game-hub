@@ -3,8 +3,8 @@
  * (spirito LIBERO, tiro libero, TIRO da cavallo...), e una su due da indovinare.
  *
  * Si gioca come l'ultima catena di Reazione a catena, su Rai 1. Si vedono due
- * parole e in mezzo la prima lettera di quella che le lega, senza sapere quanto
- * e' lunga; trovata quella, si scende: la terza parola e una nuova, e in mezzo
+ * parole e in mezzo le prime due lettere di quella che le lega, senza sapere
+ * quanto e' lunga; trovata quella, si scende: la terza parola e una nuova, e in mezzo
  * la prossima da indovinare. Ogni parola ha un minuto, che riparte dopo una
  * risposta sbagliata o un jolly. Una risposta sbagliata toglie dieci punti al
  * montepremi e mostra un'altra lettera; una seconda ne toglie sei, mostra la
@@ -12,9 +12,14 @@
  * mostrano una lettera senza costare niente, ma non nella finale.
  *
  * L'ultima parola e' quella decisiva: si vede la parola prima — l'ultima della
- * catena — e della finale le prime due lettere e l'ultima, ma non il terzo
- * elemento, la parola dopo. Comprarlo dimezza il montepremi, come alla
- * televisione; chi arriva con tutti e due i jolly lo ha in regalo. C'e' un
+ * catena — e della finale la prima lettera sola, ma non il terzo elemento, la
+ * parola dopo. Comprarlo dimezza il montepremi, come alla televisione; chi
+ * arriva con tutti e due i jolly lo ha in regalo. Le parole della catena sono
+ * fatte per trovarsi, la finale per farsi pensare: con la parola sopra e una
+ * lettera puo' essere piu' d'una, con il terzo elemento e' una sola
+ * (scripts/build-catena.mjs lo controlla). Fino al 22 ottobre 2026 le lettere
+ * erano al contrario — una delle parole della catena, e della finale le prime
+ * due e l'ultima —, e la finale si indovinava senza comprare niente. C'e' un
  * minuto e mezzo per una risposta sola: giusta vale il montepremi, sbagliata
  * venti.
  *
@@ -190,10 +195,7 @@ export function parolaVoluta(giusta: string, scritta: string, date: { prime: num
 export function parolaRiconosciuta(catena: CatenaDelGiorno, s: Svolgimento, scritta: string): string {
   const corrente = s.parole[s.passo]
   if (!corrente) return normalizzaCatena(scritta)
-  return parolaVoluta(catena.parole[NASCOSTE_CATENA[s.passo]], scritta, {
-    prime: corrente.lettere,
-    ultima: s.passo === PASSO_FINALE,
-  })
+  return parolaVoluta(catena.parole[NASCOSTE_CATENA[s.passo]], scritta, { prime: corrente.lettere, ultima: false })
 }
 
 /** Una catena: le undici parole, e le dieci espressioni che legano ognuna alla successiva. */
@@ -234,15 +236,14 @@ export interface Svolgimento {
   montepremi: number
 }
 
-/** Le lettere che si vedono di una parola appena arrivata: la prima, e per la finale anche la seconda. */
+/** Le lettere che si vedono di una parola appena arrivata: due per quelle della catena, una per la finale. */
 function lettereIniziali(passo: number): number {
-  return passo === PASSO_FINALE ? 2 : 1
+  return passo === PASSO_FINALE ? 1 : 2
 }
 
-/** Le lettere ancora nascoste: della finale si vede anche l'ultima. */
+/** Le lettere ancora nascoste. */
 export function nascosteDi(catena: CatenaDelGiorno, passo: number, lettere: number): number {
-  const parola = normalizzaCatena(catena.parole[NASCOSTE_CATENA[passo]])
-  return parola.length - lettere - (passo === PASSO_FINALE ? 1 : 0)
+  return normalizzaCatena(catena.parole[NASCOSTE_CATENA[passo]]).length - lettere
 }
 
 export function inizio(): Svolgimento {
@@ -364,11 +365,13 @@ export interface VoceCatena {
    * Con le caselle tutte in vista sbagliare sarebbe quasi impossibile.
    */
   lunghezza: number
-  /** L'ultima lettera, per la parola finale. */
-  ultima: string | null
   tipo: 'data' | 'nascosta' | 'giusta' | 'rivelata' | 'terzo'
   errori: number
-  /** L'espressione che la lega alla successiva: a partita finita. */
+  /**
+   * L'espressione che la lega alla successiva, quando si vedono tutte e due:
+   * trovata una parola, o mostrata, si legge perché sta con quella sopra e con
+   * quella sotto. Non dice niente che non sia gia' sul palco.
+   */
   espressione: string | null
 }
 
@@ -376,8 +379,9 @@ export interface VoceCatena {
  * La catena come la vede chi gioca, a un punto della partita: le parole fino
  * alla coppia di adesso, e niente dopo; della parola da indovinare solo le
  * lettere. Nella finale c'e' anche il posto del terzo elemento, vuoto finché
- * non si compra. A partita finita tutto, con le espressioni. Il server la manda
- * cosi', e la soluzione non esce prima del tempo.
+ * non si compra. Fra due parole che si vedono, l'espressione che le lega; a
+ * partita finita tutto. Il server la manda cosi', e la soluzione non esce prima
+ * del tempo.
  */
 export function vistaCatena(
   catena: CatenaDelGiorno,
@@ -388,7 +392,6 @@ export function vistaCatena(
   const voci: VoceCatena[] = []
   for (let posto = 0; posto <= ultimoVisto; posto += 1) {
     const parola = catena.parole[posto]
-    const espressione = fine.finita ? (catena.espressioni[posto] ?? null) : null
     const passo = NASCOSTE_CATENA.indexOf(posto as (typeof NASCOSTE_CATENA)[number])
     if (posto === POSTO_TERZO) {
       const vista = fine.finita || s.terzo !== 'no'
@@ -397,10 +400,9 @@ export function vistaCatena(
         parola: vista ? parola : null,
         lettere: '',
         lunghezza: vista ? normalizzaCatena(parola).length : 0,
-        ultima: null,
         tipo: 'terzo',
         errori: 0,
-        espressione,
+        espressione: null,
       })
       continue
     }
@@ -410,10 +412,9 @@ export function vistaCatena(
         parola,
         lettere: '',
         lunghezza: normalizzaCatena(parola).length,
-        ultima: null,
         tipo: 'data',
         errori: 0,
-        espressione,
+        espressione: null,
       })
       continue
     }
@@ -426,11 +427,14 @@ export function vistaCatena(
       parola: esito ? parola : null,
       lettere: esito ? '' : lettere,
       lunghezza: esito ? normalizzaCatena(parola).length : 0,
-      ultima: finale && !esito ? normalizzaCatena(parola).slice(-1).toUpperCase() : null,
       tipo: esito ?? 'nascosta',
       errori: svolta.errori,
-      espressione,
+      espressione: null,
     })
+  }
+  // Un'espressione si legge quando si vedono le sue due parole.
+  for (let i = 0; i + 1 < voci.length; i += 1) {
+    if (voci[i].parola && voci[i + 1].parola) voci[i].espressione = catena.espressioni[i] ?? null
   }
   return voci
 }

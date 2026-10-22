@@ -106,7 +106,7 @@ describe('la Catena del giorno, dalle API', () => {
     expect((await chiama<OggiRisposta>('GET', '/oggi', io)).dati.catena).toMatchObject({ pronta: false })
   })
 
-  it('guardare non apre niente; Comincia mostra la prima coppia, e della parola solo la prima lettera', async () => {
+  it('guardare non apre niente; Comincia mostra la prima coppia, e della parola solo le prime due lettere', async () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
@@ -119,7 +119,7 @@ describe('la Catena del giorno, dalle API', () => {
     expect(s.iniziata).toBe(true)
     expect(s.voci.map((v) => v.parola)).toEqual(['spirito', null, 'tiro'])
     // Quanto e' lunga la parola non si dice.
-    expect(s.voci[1]).toMatchObject({ lettere: 'L', tipo: 'nascosta', lunghezza: 0 })
+    expect(s.voci[1]).toMatchObject({ lettere: 'LI', tipo: 'nascosta', lunghezza: 0 })
     expect(s).toMatchObject({ passo: 0, montepremi: MONTEPREMI_CATENA, jollyRestanti: 2, finale: null })
     expect(s.parola?.inizioMs).toBeGreaterThan(PREAMBOLO_PAROLA_CATENA_MS - 2_000)
     expect(s.parola?.restanteMs).toBe(TEMPO_PAROLA_CATENA_MS)
@@ -164,7 +164,7 @@ describe('la Catena del giorno, dalle API', () => {
     const io = await giocatore('anna')
     let s = await manda(chiama, io, 'prova', await stato(chiama, io), 'lancio')
     expect(s).toMatchObject({ esito: 'sbagliata', passo: 0, montepremi: MONTEPREMI_CATENA - ERRORE_CATENA })
-    expect(s.voci[1].lettere).toBe('LI')
+    expect(s.voci[1].lettere).toBe('LIB')
     s = await manda(chiama, io, 'prova', s, 'lavoro')
     expect(s).toMatchObject({ esito: 'rivelata', passo: 1, montepremi: MONTEPREMI_CATENA - MOSTRATA })
     expect(s.voci[1]).toMatchObject({ parola: 'libero', tipo: 'rivelata' })
@@ -179,17 +179,17 @@ describe('la Catena del giorno, dalle API', () => {
     const { chiama, giocatore, db } = banco()
     conLaGiornata(db)
     const io = await giocatore('anna')
-    // Il telefono mette la L davanti a quel che si e' scritto: chi scrive LIBERO manda "llibero".
-    let s = await manda(chiama, io, 'prova', await stato(chiama, io), 'llibero')
+    // Il telefono mette LI davanti a quel che si e' scritto: chi scrive LIBERO manda "lilibero".
+    let s = await manda(chiama, io, 'prova', await stato(chiama, io), 'lilibero')
     expect(s).toMatchObject({ esito: 'giusta', passo: 1, montepremi: MONTEPREMI_CATENA })
-    s = await manda(chiama, io, 'prova', s, 'ccavallo')
+    s = await manda(chiama, io, 'prova', s, 'cacavallo')
     s = await manda(chiama, io, 'prova', s, 'sedia')
-    s = await manda(chiama, io, 'prova', s, 'bbattaglia')
+    s = await manda(chiama, io, 'prova', s, 'babattaglia')
     expect(s.passo).toBe(4)
     const mosse = db.sqlite.prepare('SELECT mosse FROM catena_partite WHERE player_id = ?').get(io.id)?.mosse
     expect(JSON.parse(String(mosse))).toEqual(GIUSTE.map((w) => ({ k: 'p', w })))
-    // Nella finale, NA…E: chi scrive anche l'ultima lettera manda "navalee".
-    const fine = await manda(chiama, io, 'rispondi', s, 'navalee')
+    // Nella finale si vede la N: chi scrive NAVALE manda "nnavale".
+    const fine = await manda(chiama, io, 'rispondi', s, 'nnavale')
     expect(fine).toMatchObject({ status: 'done', indovinata: true, risposta: 'navale', punti: MONTEPREMI_CATENA })
   })
 
@@ -221,7 +221,7 @@ describe('la Catena del giorno, dalle API', () => {
     let s = await manda(chiama, io, 'jolly', await stato(chiama, io))
     s = await manda(chiama, io, 'jolly', s)
     expect(s).toMatchObject({ esito: 'jolly', jollyRestanti: 0, jollyUsabile: false, montepremi: MONTEPREMI_CATENA })
-    expect(s.voci[1].lettere).toBe('LIB')
+    expect(s.voci[1].lettere).toBe('LIBE')
     const terzo = await chiama('POST', '/catena/jolly', io, { versione: s.versione })
     expect(terzo.status).toBe(409)
   })
@@ -232,7 +232,7 @@ describe('la Catena del giorno, dalle API', () => {
     const io = await giocatore('anna')
     const s = await catena(chiama, io)
     expect(s).toMatchObject({ passo: 4, terzo: 'regalato', compraUsabile: false, montepremi: MONTEPREMI_CATENA })
-    expect(s.voci[9]).toMatchObject({ lettere: 'NA', ultima: 'E', parola: null })
+    expect(s.voci[9]).toMatchObject({ lettere: 'N', parola: null })
     expect(s.voci[10]).toMatchObject({ tipo: 'terzo', parola: 'base' })
     expect(s.finale?.inizioMs).toBeGreaterThan(PREAMBOLO_FINALE_CATENA_MS - 2_000)
     expect(s.finale?.restanteMs).toBe(TEMPO_FINALE_CATENA_MS)

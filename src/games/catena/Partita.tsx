@@ -123,9 +123,9 @@ const correnteDi = (v: VistaCatena) => v.voci.find((x) => x.tipo === 'nascosta')
  */
 const MASSIMO_LETTERE = 16
 
-/** Le lettere che si possono ancora scrivere: dopo quelle che si vedono, e prima dell'ultima nella finale. */
+/** Le lettere che si possono ancora scrivere, dopo quelle che si vedono. */
 const spazioDi = (voce: VoceCatena | null) =>
-  voce ? Math.max(0, MASSIMO_LETTERE - voce.lettere.length - (voce.ultima ? 1 : 0)) : 0
+  voce ? Math.max(0, MASSIMO_LETTERE - voce.lettere.length) : 0
 
 /**
  * La Catena in scena: in cima il montepremi, le cinque maglie e i jolly; in
@@ -452,7 +452,7 @@ export function PartitaCatena({
     async (testo: string | null) => {
       if (fase !== 'finale' || !corrente) return
       const t = tempi()
-      const parola = testo === null ? '' : corrente.lettere.toLowerCase() + testo + (corrente.ultima ?? '').toLowerCase()
+      const parola = testo === null ? '' : corrente.lettere.toLowerCase() + testo
       inVolo.current = true
       setFase('busta')
       setStato(testo === null ? 'Nessuna risposta…' : 'Vediamo…')
@@ -802,7 +802,7 @@ function Binario({
                 </span>
               )}
             </div>
-            {i < voci.length - 1 && <Giunto chiusa={chiusa} dopo={i >= ultimo} />}
+            {i < voci.length - 1 && <Giunto chiusa={chiusa} dopo={i >= ultimo} espressione={v.espressione} />}
           </li>
         )
       })}
@@ -872,8 +872,6 @@ function Riga({
  * le lettere che si vedono in tessere d'oro e accanto quel che si scrive, con
  * il cursore. Quanto e' lunga la parola non lo dice niente: con una casella per
  * lettera, una lettera data e la casella vuota sembravano una parola di due.
- * Nella finale l'ultima lettera chiude la riga dall'altra parte, e si scrive in
- * mezzo.
  */
 function Scrittura({
   voce,
@@ -886,7 +884,7 @@ function Scrittura({
   classi: string
   scritte: string
 }) {
-  const date = voce.lettere.length + (voce.ultima ? 1 : 0)
+  const date = voce.lettere.length
   const scritto = scritte.toUpperCase()
   return (
     <div
@@ -895,8 +893,7 @@ function Scrittura({
       style={{ '--n': Math.max(scritto.length, 8), '--date': date } as CSSProperties}
       role="img"
       aria-label={
-        `Comincia con ${voce.lettere}${voce.ultima ? `, finisce con ${voce.ultima}` : ''}` +
-        `${scritte ? `; hai scritto ${voce.lettere}${scritto}${voce.ultima ?? ''}` : ''}`
+        `Comincia con ${voce.lettere}${scritte ? `; hai scritto ${voce.lettere}${scritto}` : ''}`
       }
     >
       <span className="cat-scrivi__date" aria-hidden="true">
@@ -913,15 +910,10 @@ function Scrittura({
             {l}
           </span>
         ))}
-        {attiva && voce.lettere.length + scritto.length + (voce.ultima ? 1 : 0) < MASSIMO_LETTERE && (
+        {attiva && voce.lettere.length + scritto.length < MASSIMO_LETTERE && (
           <span className="cat-scrivi__cursore" />
         )}
       </span>
-      {voce.ultima && (
-        <span className="cat-scrivi__data is-ultima" aria-hidden="true">
-          {voce.ultima}
-        </span>
-      )}
     </div>
   )
 }
@@ -929,17 +921,25 @@ function Scrittura({
 /**
  * La maglia fra due parole: due anelli aperti finché una delle due manca, poi
  * si chiudono con un lampo. Quella sotto la coppia di adesso non si vede
- * ancora: la catena va avanti, ma non si sa per quanto.
+ * ancora: la catena va avanti, ma non si sa per quanto. Chiusa, accanto ha il
+ * perché: l'espressione che lega le due parole, che si trovi la parola o che la
+ * mostri il gioco. Sta di lato, fuori dal binario, cosi' la catena non cambia
+ * misura.
  */
-function Giunto({ chiusa, dopo }: { chiusa: boolean; dopo: boolean }) {
+function Giunto({ chiusa, dopo, espressione }: { chiusa: boolean; dopo: boolean; espressione: string | null }) {
   return (
-    <span className={`cat-giunto${chiusa ? ' is-chiusa' : ''}${dopo ? ' is-dopo' : ''}`} aria-hidden="true">
-      <svg viewBox="0 0 24 40">
+    <span className={`cat-giunto${chiusa ? ' is-chiusa' : ''}${dopo ? ' is-dopo' : ''}`}>
+      <svg viewBox="0 0 24 40" aria-hidden="true">
         <rect className="cat-giunto__filo" x="5" y="2" width="14" height="22" rx="7" />
         <rect className="cat-giunto__filo cat-giunto__sotto" x="5" y="16" width="14" height="22" rx="7" />
         <rect className="cat-giunto__metallo" x="5" y="2" width="14" height="22" rx="7" />
         <rect className="cat-giunto__metallo cat-giunto__sotto" x="5" y="16" width="14" height="22" rx="7" />
       </svg>
+      {chiusa && espressione && (
+        <span className="cat-giunto__perche" title={espressione}>
+          {espressione}
+        </span>
+      )}
     </span>
   )
 }

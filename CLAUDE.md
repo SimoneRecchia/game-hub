@@ -2210,15 +2210,16 @@ i tempi che si scelgono.
 
 **La Catena e' l'ultima catena di Reazione a catena, e le catene vengono dalle
 espressioni.** Undici parole, ognuna legata alla successiva da un'espressione
-(spirito LIBERO, tiro libero): si vede una coppia e della parola in mezzo la
-prima lettera, trovata quella si scende alla coppia dopo, e le parole da
+(spirito LIBERO, tiro libero): si vede una coppia e della parola in mezzo le
+prime due lettere, trovata quella si scende alla coppia dopo, e le parole da
 indovinare sono cinque, l'ultima la finale (`shared/catena.ts`). Le catene le
 scrive `npm run catena:build` (`scripts/build-catena.mjs`) da una rete di
 parole: le espressioni scritte a mano della Ghigliottina e quelle di due parole
 del Wikizionario fra parole comuni. Ogni parola da indovinare ha almeno un
 legame scritto a mano — la finale proprio quello con la parola sopra, perché il
 terzo elemento si puo' non vedere —, e con le lettere che se ne vedono e' l'unica
-della rete che sta con le due accanto. Le classificate
+della rete che sta con le due accanto; la finale lo e' con il terzo elemento,
+non per forza senza (vedi sotto). Le classificate
 (`scripts/data/catena-classificate.json`, che legge solo la notte) e le libere
 (`public/dati/catena/libere.json`, con l'impronta in `shared/catena-libere.ts`)
 si scelgono insieme, e un'espressione di una parte non sta nell'altra. La notte
@@ -2242,9 +2243,16 @@ troverebbe ogni parola. Un errore e un jolly fanno ripartire il minuto
 (`riparteIlMinuto`, scritto in `parola_at` dopo `PREAMBOLO_RIPRESA_CATENA_MS`):
 c'e' una lettera nuova, e un minuto per pensarci. I jolly sono due, gratis, non
 si usano nella finale, e ne' un jolly ne' un errore mostrano l'ultima lettera.
-Della finale si vedono le prime due lettere e l'ultima; il terzo elemento
-dimezza il montepremi, come dice il suo bottone (÷2), e chi arriva con tutti e
-due i jolly lo ha in regalo. Il montepremi parte da cento come quello della
+Della finale si vede la prima lettera sola; il terzo elemento dimezza il
+montepremi, come dice il suo bottone (÷2), e chi arriva con tutti e due i jolly
+lo ha in regalo. Fino al 22 ottobre 2026 era al contrario: delle parole della
+catena si vedeva una lettera, e della finale le prime due e l'ultima, e chi
+giocava trovava difficili quelle in mezzo e indovinava la finale senza comprare
+niente. Adesso quelle in mezzo sono fatte per trovarsi, e la finale per farsi
+pensare: con la parola sopra e una lettera puo' essere piu' d'una, con il terzo
+elemento e' una sola, e lo controlla `scripts/build-catena.mjs`. Le regole
+valgono anche per le giornate gia' scritte, perché le lettere si ricavano
+rigiocando le mosse. Il montepremi parte da cento come quello della
 Ghigliottina, e lo conta `montepremiCatena` dagli errori di ogni parola: tutte
 sbagliate due volte lasciano trentasei punti, e dimezzati non
 scendono sotto i venti della finale sbagliata (`FONDO_CATENA`), perché una
@@ -2256,8 +2264,7 @@ niente, e il ÷2 sul bottone non era vero.
 
 **Nella Catena la parola scritta per intero vale.** Della parola da indovinare
 si scrive il resto, e il telefono ci mette ai capi le lettere che si vedono; ma
-capita di riscriverle, la parola intera, o nella finale anche l'ultima lettera,
-che sta gia' in fondo alla riga. `parolaVoluta` prova le lettere date che
+capita di riscriverle, la parola intera. `parolaVoluta` prova le lettere date che
 mancano ai capi di quel che si e' scritto, e se fanno la parola giusta vale la
 parola giusta, senza dire niente: era la tastiera, non la parola, e i giochi
 sono fatti per non stressarsi. Si applica quando la parola arriva — al server
@@ -2266,7 +2273,12 @@ giusta: rigiocare le mosse, con il confronto di sempre (`stessaParola`), da' la
 partita che si e' giocata, anche quelle di prima, in cui "llibero" era un
 errore.
 `vistaCatena` manda solo le parole fino alla coppia di adesso, e di quella da
-indovinare le lettere, non la lunghezza: con le caselle tutte in vista sbagliare
+indovinare le lettere, non la lunghezza; fra due parole che si vedono manda
+l'espressione che le lega, che la parola sia stata trovata o mostrata, e la
+pagina la scrive su un cartellino accanto alla maglia (`Giunto`): chi gioca
+impara perché le due parole stanno insieme, e non c'e' niente che non sia gia'
+sul palco. Il cartellino e' assoluto, perché il binario scorre di misure fisse.
+La lunghezza non si manda perché con le caselle tutte in vista sbagliare
 era quasi impossibile, e la parola ora cresce a ogni tasto. Prima di Comincia
 (`/inizia`, che fa nascere la partita) non si vede nessuna parola. I tempi li
 scrive il server con la mossa che ci porta, dopo il tempo della scena: il minuto
@@ -2281,8 +2293,7 @@ catena non si vedrebbe. La parola da indovinare non ha caselle: e' un riquadro
 sempre della stessa misura (`Scrittura` in `Partita.tsx`), con le lettere che si
 vedono, tessere d'oro, e accanto la riga su cui si scrive, con il cursore. Con
 una casella per lettera, una lettera data e la casella vuota della prossima
-sembravano una parola di due. Nella finale l'ultima lettera chiude la riga
-dall'altra parte, e si scrive in mezzo. Le caselle tornano a parola trovata o
+sembravano una parola di due. Le caselle tornano a parola trovata o
 mostrata, quando la lunghezza non e' piu' un segreto.
 
 **Il Paroliere e' il Boggle, con il dizionario dello Scarabeo.** Sedici dadi in
