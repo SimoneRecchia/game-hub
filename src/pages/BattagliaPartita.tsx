@@ -1,3 +1,4 @@
+import { chiudiSospesa, riprendiSospesa, segnaSospesa, sospesaDi } from '@/games/sospese/registro'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useNavigazione } from '@/app/navigazione'
@@ -98,6 +99,28 @@ export default function BattagliaPartita() {
   }, [persa])
   // L'altro che se ne va: la vittoria a tavolino si sente come qualcuno che esce.
   const abbandonata = v?.stato === 'finita' && v.motivo === 'resa' && v.vincitore === 'io'
+
+  // Contro il computer, la partita con le flotte in mare e' una libera in sospeso: si riprende dalla sala o
+  // dalle Libere, e lasciata da li' la chiude la resa.
+  const controComputer = v?.modalita === 'computer'
+  const colpi = v?.colpiMiei.length ?? 0
+  const vista = useRef(false)
+  useEffect(() => {
+    if (!controComputer || !v) return
+    if (v.stato === 'finita') {
+      chiudiSospesa('battaglia', v.motivo === 'resa' && v.vincitore !== 'io' ? 'annullata' : 'finita')
+      return
+    }
+    if (v.stato !== 'battaglia') return
+    if (!vista.current && sospesaDi('battaglia')) riprendiSospesa('battaglia')
+    vista.current = true
+    segnaSospesa('battaglia', {
+      a: ROTTE.partitaBattaglia(v.id),
+      dettaglio: `Contro il computer · ${colpi} ${colpi === 1 ? 'colpo' : 'colpi'}`,
+      chiudi: `/battaglia/partite/${v.id}/resa`,
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controComputer, v?.id, v?.stato, colpi])
   useEffect(() => {
     if (abbandonata && festa) suona('esce', { ritardo: 0.5 })
   }, [abbandonata, festa])

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { riprendiSospesa, sospesaDi } from '@/games/sospese/registro'
 import { contaPunti, semeDi } from '@/games/go/conteggio'
 import * as go from '@shared/go'
 import { altraParte, type GiocoTavoliere, type LivelloTavoliere, type Parte } from '@shared/tavolo'
@@ -63,6 +64,14 @@ export function useTavoloComputer(gioco: GiocoTavoliere): PartitaControComputer 
   const [tentativo, setTentativo] = useState(0)
   const attuale = useRef(partita)
   attuale.current = partita
+
+  // Una partita ritrovata aprendo la pagina, gia' cominciata, e' una libera ripresa.
+  useEffect(() => {
+    const p = attuale.current
+    if (!p.esito && p.mosse.length > 0 && sospesaDi(p.gioco)) riprendiSospesa(p.gioco)
+    // Solo quando la pagina si apre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Un'altra partita dello stesso posto, se cambia il gioco senza smontare la pagina.
   useEffect(() => {

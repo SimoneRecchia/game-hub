@@ -7,7 +7,10 @@ import type {
   WordleState,
   WordleStatus,
 } from '@shared/types'
+import { MAX_ATTEMPTS } from '@shared/config'
 import { isGameLetter, keyboardStates } from '@shared/wordle'
+import { ROTTE } from '@/app/rotte'
+import { chiudiSospesa, riprendiSospesa, segnaSospesa, sospesaDi } from '@/games/sospese/registro'
 import { ApiFetchError, api } from '@/lib/api'
 import { dimentica } from '@/lib/dati'
 import { haptic } from '@/lib/haptics'
@@ -113,7 +116,10 @@ export function useWordle(): WordleController<WordleState> {
  * `nuova` chiede una parola nuova al server — che conta come persa quella in
  * corso, se era cominciata — e la mette in griglia.
  */
-export function useWordleLibero(): WordleController<WordleLiberaState> & { nuova: () => Promise<void> } {
+export function useWordleLibero(): WordleController<WordleLiberaState> & {
+  nuova: () => Promise<void>
+  lascia: () => Promise<void>
+} {
   const idRef = useRef<string | null>(null)
   const sorgente = useMemo<Sorgente<WordleLiberaState>>(
     () => ({
@@ -136,10 +142,41 @@ export function useWordleLibero(): WordleController<WordleLiberaState> & { nuova
   const { adotta } = partita
   const nuova = useCallback(async () => {
     const stato = await api<WordleLiberaState>('/wordle/libera', { method: 'POST' })
+    // Quella di prima, se era cominciata, il server l'ha chiusa: esce dalle libere in sospeso.
+    chiudiSospesa('wordle', 'annullata')
     idRef.current = stato.id
     adotta(stato)
   }, [adotta])
-  return { ...partita, nuova }
+
+  // La parola in corso nelle libere in sospeso, da quando ha un tentativo: la si riprende da qui o dalle
+  // Libere, e lasciandola da li' la chiude la sua rotta.
+  const id = partita.state?.id
+  const tentativi = partita.state?.guesses.length ?? 0
+  const status = partita.state?.status
+  const vista = useRef(false)
+  useEffect(() => {
+    if (!id || !status) return
+    if (status !== 'playing') {
+      chiudiSospesa('wordle', 'finita')
+      return
+    }
+    if (tentativi === 0) return
+    if (!vista.current && sospesaDi('wordle')) riprendiSospesa('wordle')
+    vista.current = true
+    segnaSospesa('wordle', {
+      a: ROTTE.libera('wordle'),
+      dettaglio: `${tentativi} ${tentativi === 1 ? 'tentativo' : 'tentativi'} su ${MAX_ATTEMPTS}`,
+      chiudi: `/wordle/libera/${id}/lascia`,
+    })
+  }, [id, tentativi, status])
+
+  /** Lascia la parola in corso: cominciata conta come persa, come cambiandola. */
+  const lascia = useCallback(async () => {
+    if (!idRef.current) return
+    await api(`/wordle/libera/${idRef.current}/lascia`, { method: 'POST' })
+    chiudiSospesa('wordle', 'annullata')
+  }, [])
+  return { ...partita, nuova, lascia }
 }
 
 /**

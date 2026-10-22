@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ROTTE } from '@/app/rotte'
+import { chiudiSospesa, riprendiSospesa, segnaSospesa, sospesaDi } from '@/games/sospese/registro'
+import { formatCronometro } from '@/lib/format'
 import { suona } from '@/lib/suoni'
 import {
   NOTE_VUOTE,
@@ -7,9 +10,11 @@ import {
   grigliaPiena,
   noteDaTesto,
   noteInTesto,
+  NOMI_LIVELLI,
   type LivelloSudoku,
 } from '@shared/sudoku'
 import {
+  CHIAVE_SUDOKU_LIBERO,
   contaCominciata,
   contaRisolta,
   generaSchemaLibero,
@@ -24,6 +29,18 @@ import { useEditor } from './useEditor'
 import type { SudokuInCorso } from './tipi'
 
 const DURATA_MESSAGGIO_MS = 2400
+
+/**
+ * Lo schema in corso nelle libere in sospeso: la riga del biglietto e dove si
+ * riprende. Lasciato dalle Libere, se ne va la sua chiave.
+ */
+function segna(p: PartitaSudokuLibera, tempoMs: number) {
+  segnaSospesa('sudoku', {
+    a: ROTTE.libera('sudoku'),
+    dettaglio: `${NOMI_LIVELLI[p.livello]} · ${formatCronometro(tempoMs)}`,
+    chiavi: [CHIAVE_SUDOKU_LIBERO],
+  })
+}
 /** Ogni quanto si salva il tempo, fra una cifra e l'altra: chi chiude la scheda non perde i minuti. */
 const SALVA_TEMPO_MS = 15_000
 
@@ -75,12 +92,28 @@ export function useSudokuLibero({ salva = true }: { salva?: boolean } = {}): Sud
 
   const scrivi = useCallback(
     (p: PartitaSudokuLibera | null) => {
+      const prima = partitaRef.current
       partitaRef.current = p
       setPartita(p)
-      if (salva) salvaPartitaSudoku(p)
+      if (!salva) return
+      salvaPartitaSudoku(p)
+      if (p && !p.finita) segna(p, p.tempoMs)
+      else if (p?.finita && !prima?.finita) chiudiSospesa('sudoku', 'finita')
+      else if (!p && prima && !prima.finita) chiudiSospesa('sudoku', 'annullata')
     },
     [salva],
   )
+
+  // Uno schema ritrovato aprendo la pagina e' una libera ripresa; uno salvato prima che ci fossero le
+  // libere in sospeso entra adesso nel registro.
+  useEffect(() => {
+    const p = partitaRef.current
+    if (!salva || !p || p.finita) return
+    if (sospesaDi('sudoku')) riprendiSospesa('sudoku')
+    else segna(p, p.tempoMs)
+    // Solo quando la pagina si apre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   /** La partita dopo una cifra: chiusa se la griglia e' la soluzione, con i conti aggiornati. */
   const chiudiSeRisolta = useCallback(
@@ -129,7 +162,10 @@ export function useSudokuLibero({ salva = true }: { salva?: boolean } = {}): Sud
     if (!inCorso || !salva) return
     const salvaTempo = () => {
       const p = partitaRef.current
-      if (p && !p.finita) salvaPartitaSudoku({ ...p, tempoMs: tempoRef.current })
+      if (p && !p.finita) {
+        salvaPartitaSudoku({ ...p, tempoMs: tempoRef.current })
+        segna(p, tempoRef.current)
+      }
     }
     const onVisibilita = () => {
       if (document.visibilityState === 'hidden') salvaTempo()

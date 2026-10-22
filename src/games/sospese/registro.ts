@@ -61,7 +61,7 @@ function scrivi(r: Registro): void {
   } catch {
     /* Safari privato nega lo storage: le partite restano in memoria finché la pagina e' aperta */
   }
-  window.dispatchEvent(new Event(CAMBIO))
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(CAMBIO))
 }
 
 function segnala(s: Sospesa, evento: EventoSospesa): void {

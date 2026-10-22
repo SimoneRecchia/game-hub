@@ -334,6 +334,19 @@ export const cruciverbaRoutes = new Hono<AppEnv>()
     )
   })
 
+  /**
+   * Lascia lo schema libero in corso, da dentro o dalle Libere: se ne va, e
+   * lo schema torna fra quelli da aprire. Uno finito resta, con i suoi numeri.
+   */
+  .post('/libera/:id/lascia', async (c) => {
+    await c.env.DB.prepare(
+      `DELETE FROM cruciverba_partite_libere WHERE id = ? AND player_id = ? AND status = 'playing'`,
+    )
+      .bind(c.req.param('id'), c.get('player').id)
+      .run()
+    return c.body(null, 204)
+  })
+
   .get('/libera/:id', async (c) => {
     const { row, schema, identita } = await libera(c)
     return c.json<CruciverbaState>(statoDa(row, schema, identita, msToNextPuzzle()))

@@ -252,6 +252,25 @@ export const wordleRoutes = new Hono<AppEnv>()
     return c.json<WordleLiberaState>(statoLibero(row), 201)
   })
 
+  /**
+   * Lascia la parola in corso, da dentro la partita o dalle Libere. Cominciata
+   * conta come persa, come cambiandola; mai toccata se ne va.
+   */
+  .post('/libera/:id/lascia', async (c) => {
+    const io = c.get('player').id
+    const id = c.req.param('id')
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        `UPDATE wordle_libere SET status = 'lost', finished_at = ?
+          WHERE id = ? AND player_id = ? AND status = 'playing' AND attempts > 0`,
+      ).bind(new Date().toISOString(), id, io),
+      c.env.DB.prepare(
+        `DELETE FROM wordle_libere WHERE id = ? AND player_id = ? AND status = 'playing' AND attempts = 0`,
+      ).bind(id, io),
+    ])
+    return c.body(null, 204)
+  })
+
   .get('/libera/:id', async (c) => {
     const row = await liberaPerId(c.env.DB, c.req.param('id'), c.get('player').id)
     if (!row) fail(404, 'PARTITA_NON_TROVATA', 'Partita non trovata.')
