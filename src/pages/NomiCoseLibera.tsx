@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
 import { Cursore } from '@/components/Cursore'
 import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
-import { Coriandoli, Sezione, Tacche, useFesta } from '@/components/Elementi'
-import { IconComputer, IconInfo, IconRefresh, IconTimbro } from '@/components/Icons'
+import { Coriandoli, Riga, Sezione, Tacche, useFesta } from '@/components/Elementi'
+import { IconComputer, IconInfo, IconPlay, IconRefresh, IconTimbro } from '@/components/Icons'
 import { Opzioni, Scelte } from '@/components/Opzioni'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { Pillola } from '@/components/Scheda'
@@ -21,6 +21,8 @@ import { TIMBRO_MS, movimentoRidotto, tempiCorrezione } from '@/games/nomi/scena
 import { useNomiLibera, type NomiLibera } from '@/games/nomi/useNomiLibera'
 import { useDopo, useLetteraInVolo, useTimbro } from '@/games/nomi/useScena'
 import { SalaAmico } from '@/games/nomi/sfida/SalaAmico'
+import { BottoneLascia, FoglioNuova } from '@/games/sospese/Lascia'
+import { useSospesa } from '@/games/sospese/registro'
 import { CATEGORIE_NOMI, SECONDI_NOMI_LIBERI, secondiNomiValidi } from '@shared/nomi-cose'
 import '@/games/nomi/NomiCose.css'
 
@@ -80,10 +82,25 @@ export default function NomiCoseLibera() {
       /* senza localStorage la scelta non si ricorda */
     }
   }
-  const gioca = (l: LivelloNomi) => {
+  const sospesa = useSospesa('nomi')
+  // Il livello della partita nuova che aspetta di sapere che cosa fare di quella in sospeso.
+  const [daCominciare, setDaCominciare] = useState<LivelloNomi | null>(null)
+  const comincia = (l: LivelloNomi) => {
     setLivello(l)
     g.nuova(l, secondi)
   }
+  const gioca = (l: LivelloNomi) => {
+    if (sospesa) setDaCominciare(l)
+    else comincia(l)
+  }
+  // Dal biglietto delle Libere (`?riprendi=1`) la partita lasciata si riapre da sola, una volta.
+  const ripresa = useRef(false)
+  const { riprendi: riprendiPartita } = g
+  useEffect(() => {
+    if (ripresa.current) return
+    ripresa.current = true
+    if (new URLSearchParams(window.location.search).get('riprendi') === '1') riprendiPartita()
+  }, [riprendiPartita])
   const { adesivo, accoda } = useCodaAdesivi()
   const timbro = useTimbro(accoda)
   const dopo = useDopo()
@@ -104,7 +121,7 @@ export default function NomiCoseLibera() {
   const [vinta, setVinta] = useState(false)
   const { ricomincia } = volo
   useEffect(() => {
-    if (g.fase !== 'carica' && g.fase !== 'scelta') return
+    if (g.fase !== 'carica' && g.fase !== 'scelta' && g.fase !== 'riprende') return
     ricomincia()
     setVinta(false)
     dopo.annulla()
@@ -165,10 +182,34 @@ export default function NomiCoseLibera() {
           </Opzioni>
         </Sezione>
         {contro === 'computer' ? (
-          <SceltaLivello guasto={g.guasto} onGioca={gioca} />
+          <SceltaLivello
+            guasto={g.guasto}
+            onGioca={gioca}
+            sopra={
+              sospesa && (
+                <Riga
+                  icona={<IconPlay size={18} />}
+                  titolo="Riprendi la partita"
+                  sotto={sospesa.dettaglio}
+                  onClick={g.riprendi}
+                />
+              )
+            }
+          />
         ) : (
           <SalaAmico secondi={secondi} />
         )}
+        <FoglioNuova
+          open={daCominciare !== null}
+          onClose={() => setDaCominciare(null)}
+          onRiprendi={g.riprendi}
+          onNuova={() => {
+            const l = daCominciare
+            if (!l) return
+            g.lascia()
+            comincia(l)
+          }}
+        />
         <ComeSiGiocaNomi open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )
@@ -182,9 +223,18 @@ export default function NomiCoseLibera() {
       sotto="Libera"
       intera
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      azioni={info}
+      azioni={
+        <>
+          {info}
+          {g.fase !== 'fine' && <BottoneLascia onLascia={g.lascia} />}
+        </>
+      }
     >
-      {g.fase === 'carica' || g.fase === 'pronta' || !p ? (
+      {g.fase === 'riprende' ? (
+        <Partenza sotto="Si riprende…">
+          <RulloLettera lettera={null} gira={false} />
+        </Partenza>
+      ) : g.fase === 'carica' || g.fase === 'pronta' || !p ? (
         <Partenza
           sopra={
             <>
@@ -233,7 +283,16 @@ export default function NomiCoseLibera() {
 }
 
 /** Prima di cominciare: tre livelli, e la partita parte da Comincia. */
-function SceltaLivello({ guasto, onGioca }: { guasto: string | null; onGioca: (livello: LivelloNomi) => void }) {
+function SceltaLivello({
+  guasto,
+  onGioca,
+  sopra,
+}: {
+  guasto: string | null
+  onGioca: (livello: LivelloNomi) => void
+  /** La partita in sospeso, da riprendere. */
+  sopra?: ReactNode
+}) {
   const [conti] = useState(leggiContiNomi)
   const [livello, scegli] = useLivelloScelto('nomi', LIVELLI_NOMI)
   return (
@@ -243,6 +302,7 @@ function SceltaLivello({ guasto, onGioca }: { guasto: string | null; onGioca: (l
       onScegli={scegli}
       onComincia={() => onGioca(livello)}
       colore="var(--nomi-1)"
+      sopra={sopra}
     >
       {conti.partite > 0 && (
         <p className="nomi-conti u-tabnum">

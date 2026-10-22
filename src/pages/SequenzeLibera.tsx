@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { ROTTE } from '@/app/rotte'
 import { Adesivo, useCodaAdesivi } from '@/components/Adesivo'
 import { Button } from '@/components/Button'
 import { Difficolta, useLivelloScelto } from '@/components/Difficolta'
-import { Coriandoli, useFesta } from '@/components/Elementi'
-import { IconInfo, IconRefresh } from '@/components/Icons'
+import { Coriandoli, Riga, useFesta } from '@/components/Elementi'
+import { IconInfo, IconPlay, IconRefresh } from '@/components/Icons'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { BottoneFine, CartaFine } from '@/games/cruciverba/CartaFine'
 import { SegmentedControl } from '@/components/SegmentedControl'
@@ -14,6 +14,8 @@ import { ComeSiGiocaSequenze } from '@/games/sequenze/ComeSiGioca'
 import { leggiContiSequenze } from '@/games/sequenze/conti'
 import { MessaggioProva, Pallini, Tavola } from '@/games/sequenze/Tavola'
 import { useProva } from '@/games/sequenze/useProva'
+import { BottoneLascia, FoglioNuova } from '@/games/sospese/Lascia'
+import { useSospesa } from '@/games/sospese/registro'
 import { NOMI_LIVELLI_SEQUENZE, useSequenzeLibere } from '@/games/sequenze/useSequenzeLibere'
 import { LIVELLI_ORDINATI, LIVELLI_SEQUENZE, livelloSequenzeValido, type LivelloSequenze } from '@shared/sequenze'
 import '@/games/sequenze/Sequenze.css'
@@ -58,6 +60,17 @@ export default function SequenzeLibera() {
     }
   })
   const { adesivo, accoda } = useCodaAdesivi()
+  const sospesa = useSospesa('sequenze')
+  // Il livello della partita nuova che aspetta di sapere che cosa fare di quella in sospeso.
+  const [daCominciare, setDaCominciare] = useState<LivelloSequenze | null>(null)
+  // Dal biglietto delle Libere (`?riprendi=1`) la partita lasciata si riapre da sola, una volta.
+  const ripresa = useRef(false)
+  const { riprendi } = g
+  useEffect(() => {
+    if (ripresa.current) return
+    ripresa.current = true
+    if (new URLSearchParams(window.location.search).get('riprendi') === '1') riprendi()
+  }, [riprendi])
   const l = g.livello
   const prova = useProva({
     sequenza: g.aperta?.sequenza ?? null,
@@ -111,9 +124,16 @@ export default function SequenzeLibera() {
         </div>
         <SceltaLivello
           amico={con === 'amico'}
+          sopra={
+            con === 'solo' &&
+            sospesa && (
+              <Riga icona={<IconPlay size={18} />} titolo="Riprendi la partita" sotto={sospesa.dettaglio} onClick={g.riprendi} />
+            )
+          }
           onGioca={(livello) => {
             if (con === 'solo') {
-              g.comincia(livello)
+              if (sospesa) setDaCominciare(livello)
+              else g.comincia(livello)
               return
             }
             setLivelloSfida(livello)
@@ -124,6 +144,17 @@ export default function SequenzeLibera() {
           <p className="sfl-foglio__opzioni">{NOMI_LIVELLI_SEQUENZE[livelloSfida]}</p>
           {sfida && <SalaSfida gioco={SFIDA_SEQUENZE} impostazioni={{ livello: livelloSfida }} />}
         </Sheet>
+        <FoglioNuova
+          open={daCominciare !== null}
+          onClose={() => setDaCominciare(null)}
+          onRiprendi={g.riprendi}
+          onNuova={() => {
+            const livello = daCominciare
+            if (!livello) return
+            g.lascia()
+            g.comincia(livello)
+          }}
+        />
         <ComeSiGiocaSequenze open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )
@@ -132,7 +163,19 @@ export default function SequenzeLibera() {
   const lunghezza = g.aperta?.sequenza.length ?? null
   const indietro = LIVELLI_SEQUENZE[l].indietro
   return (
-    <Pagina key="partita" titolo="Sequenze" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina
+      key="partita"
+      titolo="Sequenze"
+      sotto="Libera"
+      intera
+      indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
+      azioni={
+        <>
+          {info}
+          {!g.fine && <BottoneLascia onLascia={g.lascia} />}
+        </>
+      }
+    >
       <div className="seq">
         <section className="seq-conto" aria-label="Come sta andando">
           <span className="seq-voce">
@@ -265,7 +308,16 @@ function record(l: LivelloSequenze): number {
  * amico la stessa scelta apre il foglio della sfida, e l'altro gioca allo
  * stesso livello.
  */
-function SceltaLivello({ amico, onGioca }: { amico: boolean; onGioca: (livello: LivelloSequenze) => void }) {
+function SceltaLivello({
+  amico,
+  onGioca,
+  sopra,
+}: {
+  amico: boolean
+  onGioca: (livello: LivelloSequenze) => void
+  /** La partita in sospeso, da riprendere. */
+  sopra?: ReactNode
+}) {
   const [conti] = useState(leggiContiSequenze)
   const [livello, scegli] = useLivelloScelto('sequenze', LIVELLI_ORDINATI)
   return (
@@ -280,6 +332,7 @@ function SceltaLivello({ amico, onGioca }: { amico: boolean; onGioca: (livello: 
       onComincia={() => onGioca(livello)}
       colore="var(--sequenze-1)"
       etichetta={amico ? 'Sfida un amico' : 'Comincia'}
+      sopra={sopra}
     />
   )
 }
