@@ -208,7 +208,7 @@
     box-shadow 0.1s;
 }
 
-.scc-promo__pezzo:active {
+.scc-promo__pezzo:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

@@ -797,7 +797,7 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.par-tasto:active:not(:disabled) {
+.par-tasto:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }
@@ -1145,7 +1145,7 @@
   cursor: pointer;
 }
 
-.par-link:active {
+.par-link:is(:active, [data-premuto]) {
   transform: translateY(1px);
 }
 

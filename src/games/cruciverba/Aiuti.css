@@ -47,7 +47,7 @@
     box-shadow 100ms var(--ease-out);
 }
 
-.aiuto-voce:active:not(:disabled) {
+.aiuto-voce:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(2px);
   box-shadow:
     0 1px 0 var(--ink),

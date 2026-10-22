@@ -66,7 +66,7 @@
     color var(--dur-base) var(--ease-out);
 }
 
-.key:active:not(:disabled) {
+.key:is(:active, [data-premuto]):not(:disabled) {
   background-color: var(--key-bg-active);
   transform: translateY(2px);
   box-shadow: 0 1px 0 var(--key-ombra);
@@ -81,8 +81,8 @@
   background-color: var(--key-servizio);
 }
 
-.key--servizio:active:not(:disabled),
-.key--azione:active:not(:disabled) {
+.key--servizio:is(:active, [data-premuto]):not(:disabled),
+.key--azione:is(:active, [data-premuto]):not(:disabled) {
   background-color: var(--key-servizio-active);
 }
 
@@ -107,7 +107,7 @@
   color: var(--key-azione-ink);
 }
 
-.key--azione.is-pronta:active:not(:disabled) {
+.key--azione.is-pronta:is(:active, [data-premuto]):not(:disabled) {
   background-color: color-mix(in srgb, var(--key-azione) 82%, #000);
 }
 
@@ -143,23 +143,23 @@
  * tentativi del Wordle.
  */
 @media (hover: none) and (pointer: coarse) {
-  .key--lettera:active:not(:disabled) {
+  .key--lettera:is(:active, [data-premuto]):not(:disabled) {
     background-color: var(--key-bg);
   }
 
-  .key--lettera.is-correct:active:not(:disabled) {
+  .key--lettera.is-correct:is(:active, [data-premuto]):not(:disabled) {
     background-color: var(--tile-correct);
   }
 
-  .key--lettera.is-present:active:not(:disabled) {
+  .key--lettera.is-present:is(:active, [data-premuto]):not(:disabled) {
     background-color: var(--tile-present);
   }
 
-  .key--lettera.is-absent:active:not(:disabled) {
+  .key--lettera.is-absent:is(:active, [data-premuto]):not(:disabled) {
     background-color: var(--key-assente);
   }
 
-  .key--lettera:active:not(:disabled)::after {
+  .key--lettera:is(:active, [data-premuto]):not(:disabled)::after {
     content: attr(data-tasto);
     position: absolute;
     bottom: calc(100% + 5px);
@@ -185,7 +185,7 @@
 /* Con le animazioni ridotte il tasto non si muove: cambia solo la superficie. */
 @media (prefers-reduced-motion: reduce) {
   .key,
-  .key:active:not(:disabled) {
+  .key:is(:active, [data-premuto]):not(:disabled) {
     transform: none;
     transition: background-color var(--dur-base) var(--ease-out);
   }

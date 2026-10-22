@@ -17,7 +17,7 @@ import type { AmiciRisposta, AmicoOnline, Attivita, GiocatoreBreve } from '@shar
 
 /** Chi e' online adesso, riletto ogni `AMICI_POLL_MS` mentre la pagina si vede. Null finché non arriva. */
 export function useAmiciOnline(): AmicoOnline[] | null {
-  const { dati, ricarica } = useDati<AmiciRisposta>('/amici')
+  const { dati, errore, ricarica } = useDati<AmiciRisposta>('/amici')
   useEffect(() => {
     const giro = () => {
       if (document.visibilityState === 'visible') void ricarica()
@@ -29,7 +29,8 @@ export function useAmiciOnline(): AmicoOnline[] | null {
       document.removeEventListener('visibilitychange', giro)
     }
   }, [ricarica])
-  return dati?.online ?? null
+  // Se la lista non arriva, nessuno online: lo scheletro resterebbe li' per sempre.
+  return dati?.online ?? (errore ? [] : null)
 }
 
 /** Dove si trova un amico, in una parola: sotto il suo avatar nelle Libere. */

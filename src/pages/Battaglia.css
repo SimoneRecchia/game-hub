@@ -120,7 +120,7 @@
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.bat-sala__partita:active {
+.bat-sala__partita:is(:active, [data-premuto]) {
   transform: scale(0.98);
 }
 
@@ -416,7 +416,7 @@
   transition: box-shadow var(--dur-base) var(--ease-out);
 }
 
-.bat-mio-ripiegato:active {
+.bat-mio-ripiegato:is(:active, [data-premuto]) {
   transform: scale(0.99);
 }
 
@@ -610,7 +610,7 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.bat-nave:active {
+.bat-nave:is(:active, [data-premuto]) {
   transform: translateY(2px);
   box-shadow: 0 0 0 var(--ink);
 }

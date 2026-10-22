@@ -499,7 +499,7 @@
   backdrop-filter: blur(10px);
 }
 
-.cartina__zoom button:active {
+.cartina__zoom button:is(:active, [data-premuto]) {
   transform: translateY(1px);
 }
 

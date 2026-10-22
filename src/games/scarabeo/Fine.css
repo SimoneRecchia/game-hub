@@ -191,7 +191,7 @@
   background: #ffc93c;
 }
 
-.scr-risultato__azioni .scr-tasto:active:not(:disabled) {
+.scr-risultato__azioni .scr-tasto:is(:active, [data-premuto]):not(:disabled) {
   box-shadow:
     0 1px 0 #2a1f5c,
     inset 0 3px 0 rgba(255, 255, 255, 0.5);

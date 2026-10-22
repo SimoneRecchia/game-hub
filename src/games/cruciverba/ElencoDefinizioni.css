@@ -49,7 +49,7 @@
   transition: transform 100ms var(--ease-out);
 }
 
-.celenco__riga:active {
+.celenco__riga:is(:active, [data-premuto]) {
   transform: scale(0.98);
 }
 

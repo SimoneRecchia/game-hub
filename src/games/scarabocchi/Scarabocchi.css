@@ -130,8 +130,8 @@
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.scr-spessore:active:not(:disabled),
-.scr-attrezzo:active:not(:disabled) {
+.scr-spessore:is(:active, [data-premuto]):not(:disabled),
+.scr-attrezzo:is(:active, [data-premuto]):not(:disabled) {
   box-shadow: 0 1px 0 var(--ink);
   transform: translateY(2px);
 }
@@ -475,7 +475,7 @@
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.scr-scelta:not(:disabled):active {
+.scr-scelta:not(:disabled):is(:active, [data-premuto]) {
   box-shadow: 0 1px 0 #2a1f5c;
   transform: translateY(3px);
 }

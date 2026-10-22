@@ -202,7 +202,7 @@
   background: var(--giallo);
 }
 
-.fine-carta__bottone:active:not(:disabled) {
+.fine-carta__bottone:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow:
     0 1px 0 #2a1f5c,

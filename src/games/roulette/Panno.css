@@ -68,7 +68,7 @@
 }
 
 .rl-casella.is-anteprima,
-.rl-panno.is-attivo .rl-casella:active {
+.rl-panno.is-attivo .rl-casella:is(:active, [data-premuto]) {
   background: rgb(255 226 122 / 0.18);
 }
 

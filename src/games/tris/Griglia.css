@@ -211,7 +211,7 @@
   outline-offset: -4px;
 }
 
-.tris__casella:not(:disabled):active {
+.tris__casella:not(:disabled):is(:active, [data-premuto]) {
   background: rgba(255, 201, 60, 0.18);
 }
 

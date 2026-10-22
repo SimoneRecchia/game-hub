@@ -284,7 +284,7 @@ button.sud-fine__timbro {
   color: #2a1f5c;
 }
 
-.sud-fine__link:active {
+.sud-fine__link:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

@@ -850,7 +850,7 @@
   transition: transform 0.12s var(--ease-out);
 }
 
-.bj-gettone:active:not(:disabled) {
+.bj-gettone:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
 }
 
@@ -887,10 +887,10 @@
     box-shadow 0.12s var(--ease-out);
 }
 
-.bj-azzera:active:not(:disabled),
-.bj-via:active:not(:disabled),
-.bj-assicura:active:not(:disabled),
-.bj-mossa:active:not(:disabled) {
+.bj-azzera:is(:active, [data-premuto]):not(:disabled),
+.bj-via:is(:active, [data-premuto]):not(:disabled),
+.bj-assicura:is(:active, [data-premuto]):not(:disabled),
+.bj-mossa:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow:
     0 1px 0 #120c2b,

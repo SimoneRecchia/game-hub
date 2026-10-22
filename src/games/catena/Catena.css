@@ -1144,7 +1144,7 @@
     box-shadow 0.1s;
 }
 
-.cat-comincia:active {
+.cat-comincia:is(:active, [data-premuto]) {
   box-shadow: var(--ombra-tasto-giu);
   transform: translateY(3px);
   animation: none;
@@ -1177,7 +1177,7 @@
     opacity 0.2s;
 }
 
-.cat-azione:active:not(:disabled) {
+.cat-azione:is(:active, [data-premuto]):not(:disabled) {
   box-shadow: var(--ombra-tasto-giu);
   transform: translateY(3px);
 }
@@ -1462,7 +1462,7 @@
     box-shadow 0.1s;
 }
 
-.cat-fine__bottone:active {
+.cat-fine__bottone:is(:active, [data-premuto]) {
   box-shadow:
     0 1px 0 #2a1f5c,
     inset 0 3px 0 rgba(255, 255, 255, 0.5);

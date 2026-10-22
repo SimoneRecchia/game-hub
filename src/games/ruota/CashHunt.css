@@ -166,7 +166,7 @@
   transform: translateY(-3px);
 }
 
-.ct-caccia.is-scegli .ct-caccia__tessera:active {
+.ct-caccia.is-scegli .ct-caccia__tessera:is(:active, [data-premuto]) {
   transform: scale(0.95);
 }
 

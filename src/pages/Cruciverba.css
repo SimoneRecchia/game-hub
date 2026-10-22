@@ -136,7 +136,7 @@
   color: #2a1f5c;
 }
 
-.cru__strumento:active:not(:disabled) {
+.cru__strumento:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }
@@ -215,7 +215,7 @@
     box-shadow 100ms var(--ease-out);
 }
 
-.cbarra__freccia:active {
+.cbarra__freccia:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }
@@ -237,7 +237,7 @@
     box-shadow 100ms var(--ease-out);
 }
 
-.cbarra__testo:active {
+.cbarra__testo:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--ink);
 }
@@ -315,7 +315,7 @@
   color: #2a1f5c;
 }
 
-.ctastiera .key--azione:active:not(:disabled) {
+.ctastiera .key--azione:is(:active, [data-premuto]):not(:disabled) {
   background-color: #5a86f5;
 }
 
@@ -440,7 +440,7 @@
   text-decoration: none;
 }
 
-.cru-esito__link:active {
+.cru-esito__link:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

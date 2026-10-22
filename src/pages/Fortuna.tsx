@@ -222,12 +222,12 @@ function Saldo({ dati }: { dati: FortunaRisposta | null }) {
 }
 
 /** Il colore di ogni carta, e dove sta la sua icona. La ruota di Crazy Time e' grande e sborda. */
-const CARTE: Record<GiocoFortuna, { fondo: string; lato: number; posto: CSSProperties; giro: number }> = {
-  ruota: { fondo: 'linear-gradient(180deg, #ffc56b, #ffa63d)', lato: 172, posto: { right: -22, top: -16 }, giro: 0 },
-  slot: { fondo: 'linear-gradient(180deg, #ffa6d4, #ff85c3)', lato: 92, posto: { left: 6, top: -8 }, giro: -1.5 },
-  blackjack: { fondo: 'linear-gradient(180deg, #8aebb8, #5fd99a)', lato: 94, posto: { right: -2, top: -6 }, giro: 1.5 },
-  roulette: { fondo: 'linear-gradient(180deg, #ff9a9e, #ff7178)', lato: 124, posto: { right: -14, top: -26 }, giro: 1 },
-  superenalotto: { fondo: 'linear-gradient(180deg, #a9c8ff, #84aeff)', lato: 92, posto: { left: 6, top: -6 }, giro: -1 },
+const CARTE: Record<GiocoFortuna, { fondo: string; alone: string; lato: number; posto: CSSProperties; giro: number }> = {
+  ruota: { fondo: 'linear-gradient(180deg, #ffc56b, #ffa63d)', alone: '#ffb24f', lato: 172, posto: { right: -22, top: -16 }, giro: 0 },
+  slot: { fondo: 'linear-gradient(180deg, #ffa6d4, #ff85c3)', alone: '#ff93ca', lato: 92, posto: { left: 6, top: -8 }, giro: -1.5 },
+  blackjack: { fondo: 'linear-gradient(180deg, #8aebb8, #5fd99a)', alone: '#71e1a7', lato: 94, posto: { right: -2, top: -6 }, giro: 1.5 },
+  roulette: { fondo: 'linear-gradient(180deg, #ff9a9e, #ff7178)', alone: '#ff8288', lato: 124, posto: { right: -14, top: -26 }, giro: 1 },
+  superenalotto: { fondo: 'linear-gradient(180deg, #a9c8ff, #84aeff)', alone: '#94b9ff', lato: 92, posto: { left: 6, top: -6 }, giro: -1 },
 }
 
 /**
@@ -265,7 +265,7 @@ function CartaFortuna({
     <Collegamento
       to={stato?.a ?? a}
       className={`fortuna-carta fortuna-carta--${id}${chiusa ? ' is-chiusa' : ''}${inCorso ? ' is-in-corso' : ''}`}
-      style={{ '--fondo': carta.fondo, '--giro': `${carta.giro}deg` } as CSSProperties}
+      style={{ '--fondo': carta.fondo, '--alone': carta.alone, '--giro': `${carta.giro}deg` } as CSSProperties}
     >
       <span className="fortuna-carta__disegno" style={carta.posto}>
         <IconaFortuna gioco={id} lato={carta.lato} ferma={chiusa} />

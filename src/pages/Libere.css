@@ -68,7 +68,7 @@
   top: 14px;
   width: 156px;
   height: 156px;
-  animation: chi-ce-gira 40s linear infinite;
+  animation: chi-ce-gira 24s linear infinite;
 }
 
 .chi-ce__raggi {
@@ -123,7 +123,7 @@
   display: block;
   width: 38px;
   height: 38px;
-  animation: chi-ce-gira 40s linear infinite reverse;
+  animation: chi-ce-gira 24s linear infinite reverse;
 }
 
 .chi-ce__cabina {
@@ -186,9 +186,10 @@
 .chi-ce__invita {
   display: grid;
   place-items: center;
-  height: 46px;
+  /* Accanto alla ruota il posto e' poco: la scritta va su due righe, dentro il tasto, invece di uscirne. */
+  min-height: 46px;
   margin-top: 6px;
-  padding: 0 12px;
+  padding: 7px 12px;
   border: var(--filo) solid var(--ink);
   border-radius: 15px;
   background: var(--giallo);
@@ -196,12 +197,15 @@
   color: var(--ink);
   font-family: var(--font-rounded);
   font-size: 1.0625rem;
+  line-height: 1.05;
   text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
   animation: chi-ce-respira 2.6s ease-in-out infinite;
   transition: box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.chi-ce__invita:active {
+.chi-ce__invita:is(:active, [data-premuto]) {
   animation: none;
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
@@ -244,7 +248,7 @@
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.partita-biglietto:active {
+.partita-biglietto:is(:active, [data-premuto]) {
   animation: none;
   transform: rotate(var(--giro)) translateY(3px);
 }
@@ -371,7 +375,7 @@
   transition: transform var(--dur-base) var(--ease-bounce);
 }
 
-.libere-gioco:active .libere-gioco__vetrino {
+.libere-gioco:is(:active, [data-premuto]) .libere-gioco__vetrino {
   transform: scale(0.92) rotate(var(--giro));
 }
 

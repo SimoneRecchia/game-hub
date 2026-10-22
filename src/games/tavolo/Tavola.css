@@ -240,8 +240,8 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-.tav-sotto__mosse:active,
-.tav-sotto__resa:active {
+.tav-sotto__mosse:is(:active, [data-premuto]),
+.tav-sotto__resa:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

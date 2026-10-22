@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
@@ -14,6 +14,7 @@ import { statiDiOggi, type StatoOggi } from '@/games/stato'
 import { usePlayer } from '@/lib/auth'
 import { useDati } from '@/lib/dati'
 import { formatGameDate } from '@/lib/format'
+import { suona } from '@/lib/suoni'
 import { gameDate, msToNextPuzzle } from '@shared/daily'
 import type { GiocoClassificato, OggiRisposta } from '@shared/types'
 import './Giornaliere.css'
@@ -145,13 +146,12 @@ function Giornata({
   io: string
   oggi: OggiRisposta | null
   stati: Record<GiocoClassificato, StatoOggi> | null
-  nuovi: Set<string>
+  nuovi: Map<string, number>
   onRiepilogo: (gioco: GiocoClassificato) => void
 }) {
   const fatte = stati ? GIOCHI.filter((g) => stati[g.id].fase === 'fatta').length : 0
   const generale = oggi?.generale ?? null
   const podio = generale?.podio ?? []
-  const sulPodio = podio.some((p) => p.playerId === io)
   return (
     <section aria-label="La tua giornata" className="eroe giornata">
       <Biglietto className="giornata__biglietto">
@@ -166,15 +166,23 @@ function Giornata({
 
           <Podietto podio={podio} io={io} />
 
-          {generale && !sulPodio && (
-            <p className="giornata__io">
-              {generale.posizione
-                ? `Tu sei ${generale.posizione}º su ${generale.giocatori} · ${generale.punti} punti`
-                : fatte === 0
-                  ? 'Gioca la prima classificata e sali in classifica'
-                  : `Tu: ${generale.punti} punti`}
-            </p>
-          )}
+          {/* I propri punti si leggono sempre, anche dal podio: sono quel che si guarda per primo. */}
+          {generale &&
+            (fatte > 0 || generale.punti > 0 ? (
+              <div className="giornata__punti">
+                <span className="giornata__punti-n u-tabnum">{generale.punti}</span>
+                <span className="giornata__punti-testo">
+                  <span className="giornata__punti-cosa">{generale.punti === 1 ? 'punto oggi' : 'punti oggi'}</span>
+                  {generale.posizione && (
+                    <span className="giornata__punti-posto">
+                      {generale.posizione}º su {generale.giocatori}
+                    </span>
+                  )}
+                </span>
+              </div>
+            ) : (
+              <p className="giornata__io">Gioca la prima classificata e sali in classifica</p>
+            ))}
 
           <div className="giornata__taglio" aria-hidden="true" />
 
@@ -195,7 +203,7 @@ function Giornata({
                       type="button"
                       className={`album timbro${nuovi.has(g.id) ? ' is-nuovo' : ''}`}
                       aria-label={`${g.nome}: ${stato.titolo}. Il riepilogo`}
-                      style={{ '--n': i } as CSSProperties}
+                      style={{ '--n': nuovi.get(g.id) ?? 0 } as CSSProperties}
                       onClick={() => onRiepilogo(g.id)}
                     >
                       <IconaGioco gioco={g.id} lato={30} giro={STORTI[i]} />
@@ -364,29 +372,51 @@ const CORIANDOLI = [
  * questa pagina l'ultima volta, oggi. Arrivano col colpo del timbro; le
  * altre sono gia' al loro posto. Il ricordo sta nel telefono, e senza il
  * timbro arriva fermo.
+ *
+ * Il ricordo si legge una volta, quando la pagina si monta, e i nuovi si
+ * contano mentre si disegna: contati in un effetto, il timbro compariva gia'
+ * stampato per un attimo e solo dopo ripartiva, e in sviluppo il secondo giro
+ * dell'effetto rileggeva il ricordo appena scritto e non lo trovava piu'
+ * nuovo. Il valore e' l'ordine d'arrivo di ognuno, per stamparli in fila.
  */
-function useTimbriNuovi(data: string | null, stati: Record<GiocoClassificato, StatoOggi> | null): Set<string> {
-  const [nuovi, setNuovi] = useState<Set<string>>(() => new Set())
+function useTimbriNuovi(data: string | null, stati: Record<GiocoClassificato, StatoOggi> | null): Map<string, number> {
+  const [ricordo] = useState(leggiTimbri)
   const fatte = stati ? GIOCHI.filter((g) => stati[g.id].fase === 'fatta').map((g) => g.id) : null
   const chiave = fatte?.join(',') ?? null
+  const nuovi = useMemo(() => {
+    const ordine = new Map<string, number>()
+    if (!data || !chiave || ricordo === null) return ordine
+    const viste = ricordo?.data === data ? ricordo.viste : []
+    for (const id of chiave.split(',')) if (!viste.includes(id)) ordine.set(id, ordine.size)
+    return ordine
+  }, [data, chiave, ricordo])
   useEffect(() => {
     if (!data || chiave === null) return
-    const fatteOra = chiave ? chiave.split(',') : []
-    let viste: string[] | null = null
     try {
-      const salvato = JSON.parse(localStorage.getItem(CHIAVE_TIMBRI) ?? 'null') as { data: string; viste: string[] } | null
-      viste = salvato?.data === data ? salvato.viste : []
-    } catch {
-      viste = null
-    }
-    if (viste) setNuovi(new Set(fatteOra.filter((id) => !viste.includes(id))))
-    try {
-      localStorage.setItem(CHIAVE_TIMBRI, JSON.stringify({ data, viste: fatteOra }))
+      localStorage.setItem(CHIAVE_TIMBRI, JSON.stringify({ data, viste: chiave ? chiave.split(',') : [] }))
     } catch {
       // Senza il localStorage i timbri arrivano fermi: niente di grave.
     }
   }, [data, chiave])
+  // Il colpo si sente quando il timbro tocca la carta (vedi `timbro-stampa` in Giornaliere.css).
+  useEffect(() => {
+    for (const k of nuovi.values()) suona('posa', { ritardo: (ATTESA_TIMBRO_MS + k * PASSO_TIMBRO_MS + COLPO_TIMBRO_MS) / 1000 })
+  }, [nuovi])
   return nuovi
 }
+
+/** Il ricordo dei timbri visti: `undefined` se non c'e', `null` se il telefono non lo tiene. */
+function leggiTimbri(): { data: string; viste: string[] } | undefined | null {
+  try {
+    return (JSON.parse(localStorage.getItem(CHIAVE_TIMBRI) ?? 'null') as { data: string; viste: string[] } | null) ?? undefined
+  } catch {
+    return null
+  }
+}
+
+/** I tempi della stampa, uguali a quelli di `.timbro.is-nuovo` in Giornaliere.css. */
+const ATTESA_TIMBRO_MS = 650
+const PASSO_TIMBRO_MS = 260
+const COLPO_TIMBRO_MS = 340
 
 const CHIAVE_TIMBRI = 'giornaliere-timbri'

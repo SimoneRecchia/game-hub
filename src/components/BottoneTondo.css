@@ -23,7 +23,7 @@
 }
 
 /* Un tasto premuto scende sulla sua ombra invece di rimpicciolirsi (vedi CLAUDE.md, "Profondita'"). */
-.bottone-barra:active {
+.bottone-barra:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

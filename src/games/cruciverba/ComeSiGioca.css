@@ -118,7 +118,7 @@
     box-shadow 100ms var(--ease-out);
 }
 
-.cru-aiuto__capito:active {
+.cru-aiuto__capito:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

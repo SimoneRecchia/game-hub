@@ -65,7 +65,7 @@
     box-shadow 150ms var(--ease-out);
 }
 
-.tessera:active:not(:disabled) {
+.tessera:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(2px);
   box-shadow:
     0 1px 0 var(--ink),

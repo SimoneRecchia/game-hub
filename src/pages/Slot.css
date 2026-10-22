@@ -1601,7 +1601,7 @@ body:has(.slot) {
 }
 
 /* Le fiches si sommano: ogni tocco ne posa una, e il gettone scende sulla sua ombra come un tasto. */
-.slot-gettone:active:not(:disabled) {
+.slot-gettone:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(calc(var(--u) * 1));
 }
 
@@ -1637,7 +1637,7 @@ body:has(.slot) {
   inset: calc(var(--u) * -1.6) calc(var(--u) * -1.2);
 }
 
-.slot-azzera:active:not(:disabled) {
+.slot-azzera:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(calc(var(--u) * 1));
   box-shadow:
     0 calc(var(--u) * 0.3) 0 #120c2b,
@@ -1719,7 +1719,7 @@ body:has(.slot) {
   filter: drop-shadow(calc(var(--u) * 0.8) calc(var(--u) * 1.6) calc(var(--u) * 1.4) rgba(0, 0, 0, 0.5));
 }
 
-.slot-leva:active {
+.slot-leva:is(:active, [data-premuto]) {
   cursor: grabbing;
 }
 
@@ -1827,7 +1827,7 @@ body:has(.slot) {
   animation: slot-respira 2.4s ease-in-out infinite;
 }
 
-.slot-gira.is-pronta:active {
+.slot-gira.is-pronta:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: 0 2px 0 #120c2b;
   animation: none;

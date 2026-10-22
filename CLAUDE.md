@@ -3272,6 +3272,23 @@ numeri" — le classificate da sempre, le libere e le statistiche del Wordle
 (`classifica/Conti.tsx`) —, che si aprono anche dal foglio della classifica di
 ogni gioco.
 
+**Un tasto si vede premuto appena il dito lo tocca.** Ogni foglio scrive la
+pressione come `:is(:active, [data-premuto])`: Safari non accende `:active`
+senza un ascoltatore di `touchstart`, e Chrome in una pagina che scorre lo
+accende solo dopo un attimo, tanto che un tocco rapido si vedeva solo alzando
+il dito. `installaPremuto` (`src/lib/premuto.ts`) mette l'attributo al
+`pointerdown` e lo toglie al rilascio o quando la pagina comincia a scorrere
+(`pointercancel`). In `base.css` il tasto premuto non ha transizione — scende
+subito, torna su con la sua — e un bottone senza una pressione sua scende di
+due punti da solo, con una regola che non pesa niente (`:where`). Una
+pressione nuova si scrive allo stesso modo.
+
+**Nelle tre schede la barra scorre via con la pagina.** Niente vetro e niente
+titolo piccolo nelle Giornaliere, nelle Libere e nella Fortuna
+(`.pagina:has(.vetrina) .pagina__barra` in `Vetrina.css`): la fascia sfocata
+in cima non piaceva, e il titolo grande e' gia' li'. Le altre schermate tengono
+la barra ferma, con la freccia indietro.
+
 **La barra si fa vetro appena qualcosa le scorre sotto**, e il titolo piccolo
 compare quando il grande e' passato: sono due momenti diversi (`is-velata`,
 `is-scorsa` in `Pagina`). Prima erano uno solo, e finché il titolo grande non

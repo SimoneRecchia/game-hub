@@ -13,6 +13,23 @@
   position: relative;
 }
 
+/*
+ * Nelle schede la barra scorre via con la pagina: niente fascia di vetro in
+ * cima, e niente titolo piccolo, che ripeteva quello grande appena passato.
+ * Il trofeo e l'avatar stanno in cima, come le lucine.
+ */
+.pagina:has(.vetrina) .pagina__barra {
+  position: relative;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.pagina:has(.vetrina) .pagina__barra .pagina__titolo-barra {
+  visibility: hidden;
+}
+
 .pagina:has(.vetrina--giornaliere) {
   --fondo: var(--fondo-giornaliere);
   --etichetta: var(--rosa);
@@ -141,7 +158,7 @@ body:has(.vetrina--fortuna) .laterale {
   box-shadow: var(--ombra-tasto);
 }
 
-.vetrina__io:active {
+.vetrina__io:is(:active, [data-premuto]) {
   transform: translateY(3px);
 }
 

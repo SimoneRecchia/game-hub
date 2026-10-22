@@ -42,7 +42,7 @@
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.ic-segreto:active {
+.ic-segreto:is(:active, [data-premuto]) {
   box-shadow: 0 1px 0 var(--ink);
   transform: translateY(2px);
 }
@@ -406,7 +406,7 @@
   transition: transform 0.1s, box-shadow 0.1s;
 }
 
-.ic-chiedi__indovina:active:not(:disabled) {
+.ic-chiedi__indovina:is(:active, [data-premuto]):not(:disabled) {
   box-shadow: var(--ombra-tasto-giu);
   transform: translateY(3px);
 }
@@ -705,7 +705,7 @@
   text-align: left;
 }
 
-.ic-set:active {
+.ic-set:is(:active, [data-premuto]) {
   transform: scale(0.97);
 }
 

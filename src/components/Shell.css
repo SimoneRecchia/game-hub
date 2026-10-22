@@ -124,11 +124,11 @@ html[data-transizione] .tabbar {
   animation: tabbar-salto 560ms var(--ease-bounce);
 }
 
-.tabbar__voce:active svg {
+.tabbar__voce:is(:active, [data-premuto]) svg {
   transform: scale(0.88);
 }
 
-.tabbar__voce.is-attiva:active svg {
+.tabbar__voce.is-attiva:is(:active, [data-premuto]) svg {
   transform: translateY(-19px) scale(1.16);
 }
 
@@ -205,7 +205,7 @@ html[data-transizione] .tabbar {
   }
 
   .tabbar__voce.is-attiva svg,
-  .tabbar__voce.is-attiva:active svg {
+  .tabbar__voce.is-attiva:is(:active, [data-premuto]) svg {
     transform: none;
     animation: none;
   }

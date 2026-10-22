@@ -144,7 +144,7 @@
     box-shadow var(--dur-base) var(--ease-out);
 }
 
-.amico-gioco:active:not(:disabled) {
+.amico-gioco:is(:active, [data-premuto]):not(:disabled) {
   transform: scale(0.95);
 }
 
@@ -419,7 +419,7 @@
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 
-.amico-riga__corpo--tocca:active {
+.amico-riga__corpo--tocca:is(:active, [data-premuto]) {
   background: var(--fill-quaternary);
 }
 

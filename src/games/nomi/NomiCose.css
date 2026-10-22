@@ -1141,7 +1141,7 @@
   text-decoration: none;
 }
 
-.nomi-fine__link:active {
+.nomi-fine__link:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

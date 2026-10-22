@@ -120,6 +120,28 @@ svg {
   border-radius: var(--r-xs);
 }
 
+/*
+ * Premuto. Ogni foglio scrive la pressione come `:is(:active, [data-premuto])`:
+ * l'attributo lo mette `src/lib/premuto.ts` appena il dito tocca, perché
+ * `:active` sul telefono arrivava tardi, a volte solo alzando il dito.
+ *
+ * Il tasto scende subito — la transizione vale solo per il ritorno — e quel che
+ * non ha una pressione sua scende di due punti, come i tasti dell'album. La
+ * regola non pesa niente (`:where`): un tasto con la sua pressione, o con un
+ * `transform` a riposo, tiene il suo. Non scendono i veli e i fondali che si
+ * toccano per chiudere, ne' quel che si trascina (`role="button"`: la ruota di
+ * Crazy Time, la leva della slot).
+ */
+:where(button, a[href], [role='button'], summary)[data-premuto] {
+  transition-duration: 0s !important;
+}
+
+:where(button, a[href], summary):where(:active, [data-premuto]):where(
+    :not(:disabled, [class*='velo'], [class*='scrim'])
+  ) {
+  transform: translateY(2px);
+}
+
 ::selection {
   background: color-mix(in srgb, var(--brand) 28%, transparent);
 }

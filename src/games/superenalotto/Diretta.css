@@ -734,7 +734,7 @@
   cursor: pointer;
 }
 
-.se-studio__salta:active {
+.se-studio__salta:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow: 0 1px 0 #120c2b;
 }
