@@ -32,7 +32,9 @@ import type { QuizEsito, QuizState, RispostaQuiz } from '@shared/types'
 import { caricaCitta } from './citta'
 import { caricaDatiQuiz } from './dati'
 import { fontiDelQuiz, giornoDellaPartita } from './fonti'
+import { CHIAVE_PARTITA, buttaPartitaQuiz, lasciaPartitaQuiz, leggiPartitaQuiz, salvaPartitaQuiz } from './sospesa'
 import { leggiStatistiche, registraStatistiche, type StatisticheLibere } from './statistiche'
+import { chiudiSospesa, riprendiSospesa, segnaSospesa, sospesaDi } from '@/games/sospese/registro'
 
 export type Fase = 'caricamento' | 'intro' | 'via' | 'domanda' | 'esito' | 'fine' | 'errore'
 
@@ -370,12 +372,59 @@ function cinquantaCinquanta(d: DomandaCompleta, caso: () => number): Set<string>
   return new Set(sbagliate.slice(0, via))
 }
 
+/** La risposta a una domanda, come la racconta la partita: la stessa quando si risponde e quando la si riprende. */
+function fattaDi(d: DomandaCompleta, scelta: string | null, ms: number, ripasso: boolean): Fatta {
+  return {
+    domanda: senzaRisposta(d),
+    risposta: {
+      scelta,
+      giusta: rispostaGiusta(d, scelta),
+      corretta: d.giusta,
+      risposta: d.risposta,
+      ms,
+      ...(d.luogo ? { luogo: d.luogo } : {}),
+      ...(d.cartina && d.accettate ? { accettate: d.accettate } : {}),
+      ...(d.spiegazione ? { spiegazione: d.spiegazione } : {}),
+    },
+    accettate: d.accettate ?? [],
+    ripasso,
+  }
+}
+
+/** Dove si riprende una libera lasciata, e come si chiama sul biglietto delle Libere. */
+export interface SospesaLibera {
+  /** L'indirizzo della partita, con le sue scelte. */
+  a: string
+  /** "Bandiere", "Capitali, Bandiere": la prima parte del biglietto. */
+  nome: string
+}
+
+/** Il tempo di una domanda fermo: quanto ne resta (null senza tempo) e da quando e' fermo. */
+interface Pausa {
+  restante: number | null
+  da: number
+}
+
+export interface PartitaLibera extends VistaPartita {
+  statistiche: StatisticheLibere
+  /** La partita e' cominciata e non e' finita: uscendo resta in sospeso. */
+  inSospeso: boolean
+  /** Lascia la partita: non resta in sospeso, e non conta nelle statistiche. */
+  lascia: () => void
+}
+
 /**
  * Una partita libera: le domande si fanno nel browser, con un seme a caso,
  * dagli stessi dati e con le stesse regole della classificata. Non va al server:
  * le statistiche restano nel telefono, perché non contano per niente.
+ *
+ * Con `sospesa` la partita cominciata resta in sospeso quando si esce, e si
+ * riprende dalla domanda a cui si era, con il tempo che le restava: uscendo,
+ * o con la pagina nascosta, l'orologio si ferma. Una partita ritrovata riparte
+ * dall'intro, e il tempo riprende al tre-due-uno; una lasciata a risposta data
+ * riparte dall'esito.
  */
-export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPartita & { statistiche: StatisticheLibere } {
+export function useQuizLibero(impostazioni: ImpostazioniLibera | null, sospesa?: SospesaLibera): PartitaLibera {
   const [domande, setDomande] = useState<DomandaCompleta[]>([])
   const [citta, setCitta] = useState<readonly CittaQuiz[] | null>(null)
   const [giorno, setGiorno] = useState<string | null>(null)
@@ -390,9 +439,21 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
   const [aiutiRimasti, setAiutiRimasti] = useState(0)
   const [esclusi, setEsclusi] = useState<ReadonlySet<string>>(NESSUNO)
   const [finita, setFinita] = useState(false)
+  const [inSospeso, setInSospeso] = useState(false)
   const aperta = useRef(0)
   const caso = useRef(mulberry32((Math.random() * 2 ** 32) >>> 0))
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const data = useRef(gameDate())
+  /** La partita va salvata: e' cominciata, o e' stata ritrovata, e non e' finita. */
+  const salvare = useRef(false)
+  /** Il tempo della domanda aperta, fermo finché la pagina e' nascosta. */
+  const pausa = useRef<Pausa | null>(null)
+  /** Il tempo della domanda a cui si era, per una partita ritrovata che non e' ancora ripartita. */
+  const daRiprendere = useRef<{ trascorso: number; restante: number | null } | null>(null)
+  const ripresaSegnata = useRef(false)
+  // Le stringhe e non l'oggetto, che chi chiama puo' rifare a ogni disegno.
+  const a = sospesa?.a
+  const nome = sospesa?.nome
 
   useEffect(
     () => () => {
@@ -408,16 +469,26 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     [secondi],
   )
 
+  /** Apre una domanda; con `ripresa`, con il tempo che le restava quando la si e' lasciata. */
   const apri = useCallback(
-    (i: number, elenco: DomandaCompleta[]) => {
+    (i: number, elenco: DomandaCompleta[], ripresa?: { trascorso: number; restante: number | null }) => {
       if (timer.current) clearTimeout(timer.current)
       setIndice(i)
       setUltima(null)
       setEsclusi(NESSUNO)
       setFase('domanda')
-      aperta.current = performance.now()
+      const ora = performance.now()
+      aperta.current = ora - (ripresa?.trascorso ?? 0)
       const l = limite(elenco[i])
-      setScade(l > 0 ? performance.now() + l : null)
+      const restante = l > 0 ? Math.max(0, ripresa?.restante ?? l) : null
+      // Il tre-due-uno finito con la pagina nascosta: la domanda si apre ferma, e parte quando la si guarda.
+      if (document.visibilityState === 'hidden') {
+        pausa.current = { restante, da: ora }
+        setScade(null)
+      } else {
+        pausa.current = null
+        setScade(restante === null ? null : ora + restante)
+      }
     },
     [limite],
   )
@@ -425,21 +496,61 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
   const prepara = useCallback(async () => {
     if (!impostazioni) return
     setFase('caricamento')
+    pausa.current = null
+    daRiprendere.current = null
     try {
       const categorie = categorieDi(impostazioni)
+      const salvata = a ? leggiPartitaQuiz(a) : null
+      if (salvata) {
+        // Le città servono alla cartina, che a risposta data mette il pallino: senza, mostra il paese.
+        const elenco = categorie.includes('citta')
+          ? await fontiDelQuiz(['citta'], impostazioni.area, salvata.data)
+              .then((f) => f.citta)
+              .catch(() => null)
+          : null
+        const giro = salvata.ripassoDa ?? Infinity
+        const rifatte = salvata.risposte.map((r, i) => fattaDi(salvata.domande[i], r.scelta, r.ms, i >= giro))
+        data.current = salvata.data
+        setCitta(elenco)
+        setGiorno(salvata.giorno)
+        setDomande(salvata.domande)
+        setFatte(rifatte)
+        setIndice(salvata.indice)
+        setRipassoDa(salvata.ripassoDa)
+        setFinita(salvata.finita)
+        setAiutiRimasti(salvata.aiutiRimasti)
+        setErrore(null)
+        salvare.current = true
+        setInSospeso(true)
+        if (!ripresaSegnata.current) {
+          ripresaSegnata.current = true
+          riprendiSospesa('quiz')
+        }
+        if (rifatte.length > salvata.indice) {
+          // Si era risposto: si ritrova l'esito, con la risposta e "Avanti".
+          setUltima(rifatte[salvata.indice])
+          setFase('esito')
+        } else {
+          daRiprendere.current = { trascorso: salvata.trascorsoMs, restante: salvata.restanteMs }
+          setFase('intro')
+        }
+        return
+      }
       const oggi = categorie.includes('oggi')
-      const data = oggi ? await giornoDellaPartita(impostazioni.giorno, false) : gameDate()
-      const { fonti, citta: elenco } = await fontiDelQuiz(categorie, impostazioni.area, data)
+      const quando = oggi ? await giornoDellaPartita(impostazioni.giorno, false) : gameDate()
+      const { fonti, citta: elenco } = await fontiDelQuiz(categorie, impostazioni.area, quando)
       const seme = (Math.random() * 2 ** 32) >>> 0
       caso.current = mulberry32(seme ^ 0x5bd1e995)
-      const nuove = generaPartita(fonti, { ...impostazioni, citta: elenco ?? undefined, data }, mulberry32(seme))
+      const richiesta = { ...impostazioni, citta: elenco ?? undefined, data: quando }
+      const nuove = generaPartita(fonti, richiesta, mulberry32(seme))
       if (nuove.length === 0) {
         setErrore('Nessuna domanda con queste scelte: prova una zona più grande.')
         setFase('errore')
         return
       }
+      data.current = quando
       setCitta(elenco)
-      setGiorno(oggi ? giornoDellAnno(data) : null)
+      setGiorno(oggi ? giornoDellAnno(quando) : null)
       setDomande(nuove)
       setFatte([])
       setIndice(0)
@@ -452,17 +563,118 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
       setErrore(e instanceof Error ? e.message : 'Non riesco a caricare i dati del quiz.')
       setFase('errore')
     }
-  }, [impostazioni])
+  }, [impostazioni, a])
 
   useEffect(() => {
     void prepara()
   }, [prepara])
 
+  /** Quel che serve a salvare la partita, sempre l'ultimo: lo leggono l'uscita e la pagina che si nasconde. */
+  const ora = useRef({ fase, scade, domande, fatte, indice, ripassoDa, finita, aiutiRimasti, giorno })
+  ora.current = { fase, scade, domande, fatte, indice, ripassoDa, finita, aiutiRimasti, giorno }
+
+  const salva = useCallback(() => {
+    const s = ora.current
+    if (!a || !salvare.current || s.domande.length === 0) return
+    let trascorso = 0
+    let restante: number | null = null
+    if (s.fase === 'domanda') {
+      const adesso = performance.now()
+      const p = pausa.current
+      trascorso = Math.max(0, (p ? p.da : adesso) - aperta.current)
+      restante = p ? p.restante : s.scade === null ? null : Math.max(0, s.scade - adesso)
+    } else if (daRiprendere.current) {
+      ;({ trascorso, restante } = daRiprendere.current)
+    }
+    salvaPartitaQuiz({
+      v: 1,
+      a,
+      data: data.current,
+      giorno: s.giorno,
+      domande: s.domande,
+      risposte: s.fatte.map((f) => ({ scelta: f.risposta.scelta, ms: f.risposta.ms })),
+      indice: s.indice,
+      ripassoDa: s.ripassoDa,
+      finita: s.finita,
+      aiutiRimasti: s.aiutiRimasti,
+      trascorsoMs: Math.round(trascorso),
+      restanteMs: restante === null ? null : Math.round(restante),
+    })
+  }, [a])
+
+  // A ogni passo la partita si salva, e il biglietto delle Libere dice a che domanda si e'.
+  useEffect(() => {
+    if (!a || !salvare.current || fase === 'fine' || fase === 'caricamento' || fase === 'errore') return
+    salva()
+    segnaSospesa('quiz', {
+      a,
+      dettaglio: `${nome} · domanda ${Math.min(indice + 1, domande.length)} di ${domande.length}`,
+      chiavi: [CHIAVE_PARTITA],
+    })
+    // Il biglietto cambia con la domanda e con la risposta, non con ogni disegno.
+  }, [fase, indice, fatte.length, domande.length, a, nome, salva])
+
+  // Uscendo l'orologio si ferma: la pagina nascosta, chiusa o lasciata salva il tempo che resta.
+  useEffect(() => {
+    if (!a) return
+    const ferma = () => {
+      const s = ora.current
+      if (s.fase === 'domanda' && !pausa.current) {
+        const adesso = performance.now()
+        pausa.current = { restante: s.scade === null ? null : Math.max(0, s.scade - adesso), da: adesso }
+        setScade(null)
+      }
+      salva()
+    }
+    const riparti = () => {
+      const p = pausa.current
+      if (!p || ora.current.fase !== 'domanda') return
+      pausa.current = null
+      const adesso = performance.now()
+      aperta.current += adesso - p.da
+      if (p.restante !== null) setScade(adesso + p.restante)
+    }
+    const cambia = () => (document.visibilityState === 'hidden' ? ferma() : riparti())
+    document.addEventListener('visibilitychange', cambia)
+    window.addEventListener('pagehide', salva)
+    return () => {
+      document.removeEventListener('visibilitychange', cambia)
+      window.removeEventListener('pagehide', salva)
+      salva()
+    }
+  }, [a, salva])
+
+  /** Fine della partita, giocandola o lasciandola: non c'e' piu' niente da riprendere. */
+  const chiudi = useCallback(
+    (esito: 'finita' | 'annullata') => {
+      if (!a || !salvare.current) return
+      salvare.current = false
+      setInSospeso(false)
+      buttaPartitaQuiz()
+      chiudiSospesa('quiz', esito)
+    },
+    [a],
+  )
+
   const comincia = useCallback(() => {
+    const ripresa = daRiprendere.current
+    if (a && !ripresa && !salvare.current) {
+      // Una partita nuova: quella di prima, se c'era, l'ha gia' lasciata chi ha scelto di cominciarla.
+      if (sospesaDi('quiz')) lasciaPartitaQuiz()
+      salvare.current = true
+      setInSospeso(true)
+    }
     setFase('via')
     if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => apri(0, domande), VIA_MS)
-  }, [apri, domande])
+    timer.current = setTimeout(() => {
+      if (ripresa) {
+        daRiprendere.current = null
+        apri(indice, domande, ripresa)
+      } else {
+        apri(0, domande)
+      }
+    }, VIA_MS)
+  }, [apri, domande, indice, a])
 
   /** La domanda dopo, il ripasso delle sbagliate, o la fine. */
   const avanti = useCallback(() => {
@@ -487,6 +699,7 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     }
     setUltima(null)
     setFase('fine')
+    chiudi('finita')
     const risposte = fatte.slice(0, primoGiro)
     // In una partita di piu' sezioni ogni domanda conta per la sua categoria.
     const conti = new Map<CategoriaQuiz, [number, number]>()
@@ -496,7 +709,7 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
       conti.set(categoria, [domande + 1, giuste + (f.risposta.giusta ? 1 : 0)])
     }
     setStatistiche(registraStatistiche([...conti].map(([categoria, [d, g]]) => [categoria, d, g] as const)))
-  }, [fase, impostazioni, ripassoDa, domande, finita, indice, fatte, apri])
+  }, [fase, impostazioni, ripassoDa, domande, finita, indice, fatte, apri, chiudi])
 
   const rispondi = useCallback(
     (scelta: string | null) => {
@@ -504,28 +717,14 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
       const d = domande[indice]
       if (!d) return
       setScade(null)
+      pausa.current = null
       const ms = Math.round(performance.now() - aperta.current)
-      const giusta = rispostaGiusta(d, scelta)
-      const fatta: Fatta = {
-        domanda: senzaRisposta(d),
-        risposta: {
-          scelta,
-          giusta,
-          corretta: d.giusta,
-          risposta: d.risposta,
-          ms,
-          ...(d.luogo ? { luogo: d.luogo } : {}),
-          ...(d.cartina && d.accettate ? { accettate: d.accettate } : {}),
-          ...(d.spiegazione ? { spiegazione: d.spiegazione } : {}),
-        },
-        accettate: d.accettate ?? [],
-        ripasso: ripassoDa !== null && indice >= ripassoDa,
-      }
+      const fatta = fattaDi(d, scelta, ms, ripassoDa !== null && indice >= ripassoDa)
       setFatte((prima) => [...prima, fatta])
       setUltima(fatta)
       setFase('esito')
       // Con la morte improvvisa, un errore del primo giro chiude la partita.
-      if (impostazioni.morteImprovvisa && !giusta && !fatta.ripasso) setFinita(true)
+      if (impostazioni.morteImprovvisa && !fatta.risposta.giusta && !fatta.ripasso) setFinita(true)
     },
     [fase, impostazioni, domande, indice, ripassoDa],
   )
@@ -545,8 +744,13 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     setAiutiRimasti((n) => n - 1)
   }, [domande, indice, fase, aiutiRimasti, esclusi])
 
+  const lascia = useCallback(() => {
+    if (timer.current) clearTimeout(timer.current)
+    chiudi('annullata')
+  }, [chiudi])
+
   const d = domande[indice]
-  const quale = fase === 'intro' || fase === 'via' ? 0 : indice + 1
+  const quale = fase === 'intro' || fase === 'via' ? (daRiprendere.current ? indice : 0) : indice + 1
   const prossima = useMemo(() => (domande[quale] ? senzaRisposta(domande[quale]) : null), [domande, quale])
   const primoGiro = ripassoDa ?? domande.length
   const restaRipasso =
@@ -585,5 +789,7 @@ export function useQuizLibero(impostazioni: ImpostazioniLibera | null): VistaPar
     usaAiuto,
     riprova: () => void prepara(),
     statistiche,
+    inSospeso,
+    lascia,
   }
 }
