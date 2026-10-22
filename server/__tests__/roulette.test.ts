@@ -235,15 +235,15 @@ describe('la roulette in compagnia', () => {
     expect(b.db.sqlite.prepare('SELECT COUNT(*) AS n FROM rl_tavoli').get()).toEqual({ n: 0 })
   })
 
-  it('la classifica della Fortuna conta la roulette', async () => {
+  it('la classifica della roulette conta la roulette', async () => {
     const { b, anna, bruno, t } = await inDue()
     numeri(36)
     await ok(punta(b, anna, t.id, 1, { '36': 1 }))
     await ok(punta(b, bruno, t.id, 1, { manque: 4 }))
-    const classifica = await ok(b.chiama<FortunaLeaderboard>('GET', '/leaderboard/fortuna?scope=today', bruno))
-    expect(classifica.rows.map((r) => [r.nickname, r.punti, r.netti.roulette])).toEqual([
-      ['anna', 35, 35],
-      ['bruno', -4, -4],
+    const classifica = await ok(b.chiama<FortunaLeaderboard>('GET', '/leaderboard/roulette?scope=today', bruno))
+    expect(classifica.rows.map((r) => [r.nickname, r.punti, r.giocate])).toEqual([
+      ['anna', 35, 1],
+      ['bruno', -4, 1],
     ])
   })
 })

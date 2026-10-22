@@ -34,7 +34,7 @@
   transition: transform 0.1s var(--ease-out);
 }
 
-.ct-fiches__fiche:active:not(:disabled) {
+.ct-fiches__fiche:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
 }
 
@@ -68,7 +68,7 @@
   transition: transform 0.1s var(--ease-out);
 }
 
-.ct-fiches__azzera:active:not(:disabled) {
+.ct-fiches__azzera:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow:
     0 1px 0 #120c2b,

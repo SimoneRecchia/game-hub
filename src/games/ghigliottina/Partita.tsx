@@ -166,12 +166,18 @@ export function PartitaGhigliottina({
   comandi,
   fine,
   subito = false,
+  adesso = Date.now,
 }: {
   vista: VistaGhigliottina
   comandi: ComandiGhigliottina
   fine: ReactNode
   /** Senza il Comincia: in una sfida il tre-due-uno l'ha gia' fatto. */
   subito?: boolean
+  /**
+   * L'ora su cui sono scritti i tempi della vista. Nella libera si ferma a
+   * pagina nascosta (`adessoVisibile`): lasciata, la partita aspetta.
+   */
+  adesso?: () => number
 }) {
   const [mostrata, setMostrata] = useState(vista)
   const [fase, setFase] = useState<Fase>(() => faseDi(vista))
@@ -460,6 +466,7 @@ export function PartitaGhigliottina({
             fase={fase}
             orologio={mostrata.orologioCoppia}
             tempoMs={mostrata.tempoSceltaMs}
+            adesso={adesso}
             onScegli={scegli}
           />
         )}
@@ -475,6 +482,7 @@ export function PartitaGhigliottina({
           <Finale
             scadenza={mostrata.scadenza}
             tempoMs={mostrata.tempoFinaleMs}
+            adesso={adesso}
             onRispondi={rispondi}
             onScade={comandi.scade}
           />
@@ -731,6 +739,7 @@ function Coppia({
   fase,
   orologio,
   tempoMs,
+  adesso,
   onScegli,
 }: {
   numero: number
@@ -743,6 +752,7 @@ function Coppia({
   fase: Fase
   orologio: { inizio: number; scadenza: number } | null
   tempoMs: number
+  adesso: () => number
   /** Una parola, o null quando il tempo finisce. */
   onScegli: (i: 0 | 1 | null) => void
 }) {
@@ -771,6 +781,7 @@ function Coppia({
           <Clessidra
             orologio={orologio}
             tempoMs={tempoMs}
+            adesso={adesso}
             attiva={libera}
             ferma={!libera}
             onScade={() => onScegli(null)}
@@ -863,17 +874,19 @@ function Anello({
 function Clessidra({
   orologio,
   tempoMs,
+  adesso: ora,
   attiva,
   ferma,
   onScade,
 }: {
   orologio: { inizio: number; scadenza: number }
   tempoMs: number
+  adesso: () => number
   attiva: boolean
   ferma: boolean
   onScade: () => void
 }) {
-  const [adesso, setAdesso] = useState(() => Date.now())
+  const [adesso, setAdesso] = useState(ora)
   const finita = useRef(false)
   const accesa = adesso >= orologio.inizio
   const resta = Math.max(0, Math.min(tempoMs, orologio.scadenza - adesso))
@@ -882,9 +895,9 @@ function Clessidra({
 
   useEffect(() => {
     if (ferma) return
-    const t = window.setInterval(() => setAdesso(Date.now()), 100)
+    const t = window.setInterval(() => setAdesso(ora()), 100)
     return () => window.clearInterval(t)
-  }, [ferma])
+  }, [ferma, ora])
 
   const ultimoTic = useRef<number | null>(null)
   useEffect(() => {
@@ -924,25 +937,27 @@ const MASSIMO_RISPOSTA = 16
 function Finale({
   scadenza,
   tempoMs,
+  adesso: ora,
   onRispondi,
   onScade,
 }: {
   scadenza: number | null
   tempoMs: number
+  adesso: () => number
   onRispondi: (parola: string) => void
   onScade: () => void
 }) {
   const [testo, setTesto] = useState('')
-  const [adesso, setAdesso] = useState(() => Date.now())
+  const [adesso, setAdesso] = useState(ora)
   const scaduto = useRef(false)
   const resta = scadenza === null ? tempoMs : Math.max(0, scadenza - adesso)
   const secondi = Math.ceil(resta / 1000)
   const libera = resta > 0
 
   useEffect(() => {
-    const t = window.setInterval(() => setAdesso(Date.now()), 200)
+    const t = window.setInterval(() => setAdesso(ora()), 200)
     return () => window.clearInterval(t)
-  }, [])
+  }, [ora])
 
   // Gli ultimi dieci secondi si sentono, e allo zero il tempo e' finito.
   const ultimoTic = useRef<number | null>(null)

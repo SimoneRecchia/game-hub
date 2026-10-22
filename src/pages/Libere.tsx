@@ -1,18 +1,21 @@
-import type { CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Avatar } from '@/components/Avatar'
 import { Biglietto } from '@/components/Biglietto'
 import { Copertina } from '@/components/Copertina'
 import { Sezione } from '@/components/Elementi'
-import { IconChevronRight } from '@/components/Icons'
+import { IconChevronRight, IconClose } from '@/components/Icons'
 import { Vetrina } from '@/components/Vetrina'
 import { useAmiciOnline } from '@/games/amici/amici'
 import { CATEGORIE_LIBERE, COLORE_FAMIGLIA, GIOCHI, giocoTavoloDi, type Gioco } from '@/games/catalog'
+import { FoglioLascia } from '@/games/sospese/Lascia'
+import { lasciaSospesa, useSospese, type Sospesa } from '@/games/sospese/registro'
 import { NOMI_AL_TAVOLO } from '@/games/tavolo/nomi'
 import { formatGameDate } from '@/lib/format'
 import { usePresenza } from '@/lib/presenza'
 import { gameDate } from '@shared/daily'
+import { SOSPESA_MS, type GiocoSospeso } from '@shared/sospese'
 import type { AmicoOnline, GiocatoreBreve, GiocoDaTavolo } from '@shared/types'
 import './Libere.css'
 
@@ -51,10 +54,32 @@ export default function Libere() {
   const amici = useAmiciOnline()
   const { dati: presenza } = usePresenza()
   const inCorso = partiteInCorso(presenza)
+  const sospese = useSospese()
+  const [daLasciare, setDaLasciare] = useState<Sospesa | null>(null)
 
   return (
     <Vetrina scheda="libere" titolo="Libere" sopra={formatGameDate(gameDate())} classifica={ROTTE.classifica()}>
       <ChiCe amici={amici} />
+
+      {sospese.length > 0 && (
+        <Sezione titolo="Da riprendere" conto={String(sospese.length)}>
+          <ul className="libere__in-corso">
+            {sospese.map((s, i) => (
+              <li key={s.gioco} className="entra libere__sospesa" style={{ '--n': i + 1 } as CSSProperties}>
+                <BigliettoPartita partita={partitaSospesa(s)} i={i} />
+                <button
+                  type="button"
+                  className="libere__lascia"
+                  aria-label={`Lascia la partita di ${nomeSospeso(s.gioco)}`}
+                  onClick={() => setDaLasciare(s)}
+                >
+                  <IconClose size={16} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Sezione>
+      )}
 
       {inCorso.length > 0 && (
         <Sezione titolo="In corso">
@@ -87,8 +112,36 @@ export default function Libere() {
           </Sezione>
         ))}
       </div>
+
+      <FoglioLascia
+        open={daLasciare !== null}
+        onClose={() => setDaLasciare(null)}
+        onLascia={() => daLasciare && lasciaSospesa(daLasciare.gioco)}
+        titolo={daLasciare ? `Lasciare ${nomeSospeso(daLasciare.gioco)}?` : undefined}
+        testo="La partita in sospeso se ne va."
+      />
     </Vetrina>
   )
+}
+
+/** Il nome di un gioco le cui libere restano in sospeso. */
+function nomeSospeso(gioco: GiocoSospeso): string {
+  return GIOCHI.find((g) => g.id === gioco)?.nome ?? giocoTavoloDi(gioco as GiocoDaTavolo).nome
+}
+
+/** Una partita in sospeso, come biglietto: dove si era rimasti, e quando se ne va se non la si apre. */
+function partitaSospesa(s: Sospesa): PartitaInCorso {
+  const restano = s.toccata + SOSPESA_MS - Date.now()
+  const ore = Math.max(1, Math.ceil(restano / 3_600_000))
+  const scade = ore <= 24 ? `Si chiude fra ${ore === 1 ? "un'ora" : `${ore} ore`}` : null
+  return {
+    gioco: s.gioco,
+    nome: nomeSospeso(s.gioco),
+    a: s.a,
+    sotto: [s.dettaglio, scade].filter(Boolean).join(' · ') || undefined,
+    tuoTurno: false,
+    talloncino: ['Riprendi', ''],
+  }
 }
 
 /** Un gioco della famiglia: il vetrino con l'adesivo, il nome, il motto e la freccia. */
@@ -126,7 +179,9 @@ function numeroDi(a: string): string {
 
 /** Una partita in corso: un biglietto nel colore del gioco, e sul talloncino di chi e' il turno. */
 function BigliettoPartita({ partita: p, i }: { partita: PartitaInCorso; i: number }) {
-  const talloncino = p.tuoTurno ? ['Tocca', 'a te'] : p.avversario ? ['Tocca', `a ${p.avversario.displayName}`] : ['Apri', '']
+  const talloncino =
+    p.talloncino ??
+    (p.tuoTurno ? ['Tocca', 'a te'] : p.avversario ? ['Tocca', `a ${p.avversario.displayName}`] : ['Apri', ''])
   return (
     <Collegamento
       to={p.a}
@@ -246,6 +301,8 @@ interface PartitaInCorso {
   avversario?: GiocatoreBreve
   sotto?: string
   tuoTurno: boolean
+  /** Che cosa dice il talloncino, se non e' di chi e' il turno. */
+  talloncino?: [string, string]
 }
 
 /**

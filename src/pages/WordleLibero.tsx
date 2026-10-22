@@ -16,6 +16,7 @@ import { HowToPlay } from '@/games/wordle/HowToPlay'
 import { Keyboard } from '@/games/wordle/Keyboard'
 import { useWordleLibero } from '@/games/wordle/useWordle'
 import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
+import { BottoneLascia } from '@/games/sospese/Lascia'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
 import { api } from '@/lib/api'
@@ -82,6 +83,19 @@ export default function WordleLibero() {
             <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setCompagniaAperta(true)} badge={dentro}>
               <IconPeople size={21} />
             </BottoneBarra>
+          )}
+          {avviata && !finita && (
+            <BottoneLascia
+              titolo="Lasciare la parola?"
+              testo="Conta come non indovinata."
+              conferma="Lascia la parola"
+              onLascia={() =>
+                void game
+                  .lascia()
+                  .then(() => indietro(ROTTE.libere))
+                  .catch(() => toast.show('Non riesco a lasciare la parola.', 'error'))
+              }
+            />
           )}
           {finita ? (
             <BottoneBarra etichetta="Rivedi il risultato" onClick={game.openResult}>

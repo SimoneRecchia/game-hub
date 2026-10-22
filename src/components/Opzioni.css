@@ -44,7 +44,7 @@
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 
-.opzione--riga:active {
+.opzione--riga:is(:active, [data-premuto]) {
   background: var(--fill-quaternary);
 }
 

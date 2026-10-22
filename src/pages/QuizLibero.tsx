@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Navigate, useParams, useSearchParams } from 'react-router-dom'
 import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
@@ -29,7 +29,10 @@ import {
   voceDi,
   type VoceMateria,
 } from '@/games/quiz/testi'
+import { lasciaPartitaQuiz } from '@/games/quiz/sospesa'
 import { leggiStatistiche } from '@/games/quiz/statistiche'
+import { BottoneLascia, FoglioNuova } from '@/games/sospese/Lascia'
+import { sospesaDi, useSospesa } from '@/games/sospese/registro'
 import { OPZIONI_PREDEFINITE, categorieDi, useQuizLibero, type ImpostazioniLibera } from '@/games/quiz/usePartita'
 import { useDati } from '@/lib/dati'
 import { formatPercent } from '@/lib/format'
@@ -387,6 +390,8 @@ function Menu() {
   const [regole, setRegole] = useState(false)
   const [ultima] = useState(scelteSalvate)
   const ix = useIndiceQuiz(!!ultima && diGeografia(ultima.categoria))
+  const sospesa = useSospesa('quiz')
+  const [nuova, setNuova] = useState<string | null>(null)
 
   // Dalla pagina del quiz, "Sfida un amico": si sfida con le scelte dell'ultima materia.
   const sfida = query.get('sfida') === '1'
@@ -421,12 +426,20 @@ function Menu() {
         </BottoneBarra>
       }
     >
+      {sospesa && (
+        <Sezione titolo="In corso">
+          <Elenco>
+            <RigaRiprendi sotto={sospesa.dettaglio} a={sospesa.a} />
+          </Elenco>
+        </Sezione>
+      )}
+
       {ultima && riassunto && (
         <Sezione titolo="Gioca ancora">
           <button
             type="button"
             className={`quiz-ancora quiz-colori--${materiaDi(ultima.categoria)}`}
-            onClick={() => vai(indirizzo(ultima))}
+            onClick={() => (sospesa ? setNuova(indirizzo(ultima)) : vai(indirizzo(ultima)))}
           >
             <span className="quiz-ancora__icona" aria-hidden="true">
               <IconaCategoria categoria={ultima.categoria} ambito={ultima.ambito} size={20} />
@@ -468,15 +481,76 @@ function Menu() {
           })}
         </nav>
       </Sezione>
+      <FoglioNuova
+        open={nuova !== null}
+        onClose={() => setNuova(null)}
+        onRiprendi={() => sospesa && vai(sospesa.a)}
+        onNuova={() => {
+          lasciaPartitaQuiz()
+          if (nuova) vai(nuova)
+        }}
+      />
       <ComeSiGiocaQuiz open={regole} onClose={() => setRegole(false)} />
     </Pagina>
   )
 }
 
+/** La partita in sospeso, da riprendere: nel menu e sopra la difficoltà, come nelle sale dei tavolieri. */
+function RigaRiprendi({ sotto, a }: { sotto?: string; a: string }) {
+  return <Riga icona={<IconPlay size={18} />} titolo="Riprendi la partita" sotto={sotto} a={a} />
+}
+
 /* ───────────────────────────────  La partita  ──────────────────────────── */
 
+/**
+ * La partita dell'indirizzo, se non ce n'e' un'altra in sospeso: un link o la
+ * cronologia possono portare a una partita nuova mentre un'altra aspetta, e
+ * prima si sceglie quale giocare.
+ */
 function Partita({ impostazioni }: { impostazioni: ImpostazioniLibera }) {
-  const p = useQuizLibero(impostazioni)
+  const a = indirizzo(impostazioni)
+  const [altra] = useState(() => {
+    const s = sospesaDi('quiz')
+    return s && s.a !== a ? s : null
+  })
+  const [libera, setLibera] = useState(!altra)
+  const { vai, indietro } = useNavigazione()
+  const deciso = useRef(false)
+  const materia = materiaDi(impostazioni.categoria)
+  const scelte = ROTTE.materiaQuiz(materia)
+  if (libera || !altra) return <PartitaInCorso impostazioni={impostazioni} a={a} />
+  return (
+    <Pagina
+      titolo="Quiz libero"
+      intera
+      indietro={{ a: scelte, etichetta: MATERIE.find((m) => m.id === materia)!.nome }}
+    >
+      <FoglioNuova
+        open
+        onClose={() => {
+          // Il foglio si chiude anche prima di una scelta: chiuso senza sceglierne, si torna alle scelte.
+          queueMicrotask(() => {
+            if (!deciso.current) indietro(scelte)
+          })
+        }}
+        onRiprendi={() => {
+          deciso.current = true
+          vai(altra.a, { replace: true })
+        }}
+        onNuova={() => {
+          deciso.current = true
+          lasciaPartitaQuiz()
+          setLibera(true)
+        }}
+      />
+    </Pagina>
+  )
+}
+
+function PartitaInCorso({ impostazioni, a }: { impostazioni: ImpostazioniLibera; a: string }) {
+  const nome = nomePartita(impostazioni)
+  const sospesa = useMemo(() => ({ a, nome }), [a, nome])
+  const p = useQuizLibero(impostazioni, sospesa)
   const { indietro } = useNavigazione()
   const geografia = diGeografia(impostazioni.categoria)
   const ix = useIndiceQuiz(geografia)
@@ -496,9 +570,19 @@ function Partita({ impostazioni }: { impostazioni: ImpostazioniLibera }) {
       intera
       indietro={{ a: scelte, etichetta: MATERIE.find((m) => m.id === materia)!.nome }}
       azioni={
-        <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
-          <IconInfo size={21} />
-        </BottoneBarra>
+        <>
+          {p.inSospeso && (
+            <BottoneLascia
+              onLascia={() => {
+                p.lascia()
+                indietro(scelte)
+              }}
+            />
+          )}
+          <BottoneBarra etichetta="Come si gioca" onClick={() => setRegole(true)}>
+            <IconInfo size={21} />
+          </BottoneBarra>
+        </>
       }
     >
       <PartitaQuiz
@@ -589,6 +673,8 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
   const [sfida, setSfida] = useState(false)
   const [regole, setRegole] = useState(false)
   const [statistiche] = useState(leggiStatistiche)
+  const sospesa = useSospesa('quiz')
+  const [nuova, setNuova] = useState<string | null>(null)
 
   const { categoria, modo = 'scelta' } = scelte
   const sezioni = sezioniDi(scelte)
@@ -718,7 +804,10 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
       return
     }
     // Se oggi non si puo', un giorno a caso: ma la scelta ricordata resta "oggi", che domani si potra'.
-    vai(indirizzo(oggiChiuso ? { ...pronte, giorno: 'caso' } : pronte))
+    const a = indirizzo(oggiChiuso ? { ...pronte, giorno: 'caso' } : pronte)
+    // Una partita in sospeso non se ne va senza chiederlo.
+    if (sospesa) setNuova(a)
+    else vai(a)
   }
 
   // La zona vale se vale per tutte le sezioni: gli oceani non hanno continenti, le bandiere non hanno paesi.
@@ -893,6 +982,16 @@ function Scelta({ materia }: { materia: MateriaQuiz }) {
         onComincia={() => comincia(scelte.notorieta ?? 'misti')}
         colore={colore}
         etichetta={conAmico ? 'Sfida un amico' : 'Comincia'}
+        sopra={!conAmico && sospesa && <RigaRiprendi sotto={sospesa.dettaglio} a={sospesa.a} />}
+      />
+      <FoglioNuova
+        open={nuova !== null}
+        onClose={() => setNuova(null)}
+        onRiprendi={() => sospesa && vai(sospesa.a)}
+        onNuova={() => {
+          lasciaPartitaQuiz()
+          if (nuova) vai(nuova)
+        }}
       />
 
       <SfidaQuiz open={sfida} onClose={() => setSfida(false)} scelte={{ ...scelte, quante, secondi }} />

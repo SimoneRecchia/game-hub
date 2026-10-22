@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { Button } from '@/components/Button'
 import { Cursore } from '@/components/Cursore'
-import { Sezione } from '@/components/Elementi'
+import { Elenco, Riga, Sezione } from '@/components/Elementi'
 import { IconPlay } from '@/components/Icons'
 import { Opzioni, Scelte } from '@/components/Opzioni'
 import { SegmentedControl } from '@/components/SegmentedControl'
@@ -148,6 +148,7 @@ export function SceltaFinale({
   titoloPasso,
   titoloTempo,
   onComincia,
+  sospesa,
   children,
 }: {
   gioco: 'ghigliottina' | 'catena'
@@ -156,6 +157,8 @@ export function SceltaFinale({
   /** "Tempo per la parola vincente". */
   titoloTempo: string
   onComincia: (opzioni: ImpostazioniFinale) => void
+  /** La partita lasciata a meta', da riprendere: il biglietto delle Libere dice a che punto e'. */
+  sospesa?: { dettaglio?: string; onRiprendi: () => void } | null
   /** Sotto il bottone: un guasto. */
   children?: ReactNode
 }) {
@@ -165,6 +168,16 @@ export function SceltaFinale({
   return (
     <>
       <InterruttoreContro value={contro} onChange={setContro} />
+      {sospesa && (
+        <Elenco>
+          <Riga
+            icona={<IconPlay size={16} />}
+            titolo="Riprendi la partita"
+            sotto={sospesa.dettaglio}
+            onClick={sospesa.onRiprendi}
+          />
+        </Elenco>
+      )}
       <Sezione titolo="Partita">
         <Opzioni>
           <Scelte titolo={titoloPasso} valore={`${opzioni.passo} secondi`}>

@@ -587,10 +587,14 @@ ognuna si apre per intero in un foglio sopra la pagina (vedi sotto). Non si
 normalizza per giornata ("il migliore prende tutto il tetto"): cambierebbe le
 classifiche di ieri ogni volta che qualcuno gioca. Alla generale si aggiungono
 solo i giochi della Fortuna, che non sono classificate (vedi sotto), con un
-tratto loro nella barra di ogni giocatore; e la Fortuna ha una classifica sua
-(`/classifica/fortuna`, `classificaFortuna`), che mette in fila quel che i tre
-giochi hanno dato o tolto nel periodo: si va sotto zero, e a pari conto passa
-avanti chi ha giocato meno.
+tratto loro nella barra di ogni giocatore; e ogni gioco della Fortuna ha una
+classifica sua (`/classifica/crazy-time`, `/classifica/slot`, ...,
+`classificheFortuna`, una lettura sola per tutti e cinque), che mette in fila
+quel che quel gioco ha dato o tolto nel periodo: si va sotto zero, e a pari
+conto passa avanti chi ha giocato meno. Era una classifica sola, con i cinque
+giochi sommati, e non si capiva a che cosa si fosse vinto; `/classifica/fortuna`
+apre la pagina delle classifiche sulle loro carte, ed e' dove porta il trofeo
+della Fortuna.
 
 **La Fortuna e' una scheda, e i suoi giochi puntano un saldo solo.**
 Crazy Time, la slot, il blackjack, la roulette e il SuperEnalotto stanno nella scheda Fortuna (`/fortuna`, il
@@ -755,7 +759,7 @@ lettera e suona pari, la slot dopo un giro a vuoto dice "Rigira", il lampo della
 puntata pagata sul tabellone e' lilla, e gli ultimi secondi dei tempi del
 blackjack e della roulette sono arancioni. Le regole dicono come si vince e
 quanto torna. Restano com'erano le regole del gioco, le rese, i conti del server
-e la classifica della Fortuna, che mette in fila il netto del periodo.
+e le classifiche della Fortuna, che mettono in fila il netto del periodo.
 
 **Il giro salva la disposizione delle ruote** (`disposizione`,
 `DISPOSIZIONE_RUOTA`): i giri di una disposizione di prima contano nel saldo e
@@ -1252,7 +1256,7 @@ del blackjack: due richieste insieme non pagano due volte. Una scheda costa al
 saldo del giorno in cui la si compra, e il premio va a quello dell'estrazione:
 `fortuna_giornate` si riconta dalle schede (`ricontaSql`), quindi chi vince
 lunedi' con una scheda comprata sabato ha il premio nella giornata di lunedi', e
-la classifica della Fortuna lo mostra anche se quel giorno non ha giocato. Un
+la classifica del SuperEnalotto lo mostra anche se quel giorno non ha giocato. Un
 concorso che nessuno ha guardato lo paga la prima richiesta dopo, nel suo
 giorno. Le vincite arrivano nel saldo da sole, e le schede servono solo a
 rivederle: il pagamento di un concorso butta via quelle dei concorsi pagati da
@@ -2156,16 +2160,35 @@ e' la giusta. Un'esca non deve legarsi alla vincente, e lo script lo sa dalle
 espressioni del Wikizionario e del Wiktionary (le estrazioni del dizionario
 dello Scarabeo), dalle parole composte di napolux e da quelle dell'elenco; le
 righe con il punto esclamativo ("!colpo duro") dicono quelle che le fonti non
-conoscono: senza, "duro" faceva da esca a COLPO. Le vincenti si dividono fra
-classificate (due terzi, `scripts/data/ghigliottina-classificate.json`, che legge
-solo la notte) e libere (`public/dati/ghigliottina/libere.json`, con l'impronta
-in `shared/ghigliottina-libere.ts`), e ognuna prende le esche dalla sua parte:
-il file del telefono non ha nessuna parola delle classificate. La notte
+conoscono: senza, "duro" faceva da esca a COLPO. Di quell'elenco un terzo fa
+le libere (`public/dati/ghigliottina/libere.json`, con l'impronta in
+`shared/ghigliottina-libere.ts`), che prendono le esche fra loro.
+
+**Le classificate della Ghigliottina sono un elenco a parte, piu' difficile, con
+le esche scritte a mano.** Fino al 22 ottobre 2026 erano gli altri due terzi di
+`ghigliottina.tsv`, ed erano quasi ovvie: "acqua santa", "acqua alta", "acqua
+passata" portano ognuna dritta alla vincente, e le esche prese da un'altra
+ghigliottina ("guida", "massima") non convincevano nessuno. Finché un errore
+dimezzava il montepremi la giornata sembrava difficile lo stesso; con i dieci
+punti a errore la si vinceva quasi intera. `scripts/data/ghigliottina-difficili.tsv`
+e' fatto come alla televisione: legami da sensi diversi della vincente, modi di
+dire, titoli e proverbi, al piu' uno che la richiama subito, e la vincente esce
+solo incrociando tre parole. Ogni parola giusta ha la sua esca scritta accanto
+(`giusta|esca=espressione`), della stessa forma, e le cinque esche insieme
+indicano un'altra vincente, la falsa pista scritta nel commento sopra la riga.
+`npm run ghigliottina:classificate` (`scripts/build-ghigliottina-classificate.mjs`)
+controlla la forma e che nessuna vincente sia anche una libera — il file del
+telefono non ha le risposte di nessun giorno — e scrive
+`scripts/data/ghigliottina-classificate.json`, che legge solo la notte. Le
+vincenti non sono quelle di `ghigliottina.tsv`. La notte
 (`scripts/genera-ghigliottina.ts`, il passo "La Ghigliottina" di
 `cruciverba.yml`, e il deploy per due settimane) scrive la giornata in
 `ghigliottina_giornate` con `INSERT OR IGNORE`: l'ordine delle coppie e da che
 parte sta la giusta vengono dal numero del giorno, e una giornata scritta non
-cambia. Se manca, `GHIGLIOTTINA_ASSENTE` (503): in locale
+cambia, tranne quelle di un formato vecchio (`FORMATO`, il 2 e' quello delle
+difficili) dopo oggi e che nessuno ha aperto, che si rifanno. Per questo la
+Catena, che salta la catena con la vincente dello stesso giorno, rifà anche lei
+una giornata futura mai aperta che ha fra le sue parole la vincente nuova. Se manca, `GHIGLIOTTINA_ASSENTE` (503): in locale
 `npm run ghigliottina:locale`.
 
 **Nella Ghigliottina il server dice la giusta solo dopo la scelta, e la vincente
@@ -2206,15 +2229,16 @@ i tempi che si scelgono.
 
 **La Catena e' l'ultima catena di Reazione a catena, e le catene vengono dalle
 espressioni.** Undici parole, ognuna legata alla successiva da un'espressione
-(spirito LIBERO, tiro libero): si vede una coppia e della parola in mezzo la
-prima lettera, trovata quella si scende alla coppia dopo, e le parole da
+(spirito LIBERO, tiro libero): si vede una coppia e della parola in mezzo le
+prime due lettere, trovata quella si scende alla coppia dopo, e le parole da
 indovinare sono cinque, l'ultima la finale (`shared/catena.ts`). Le catene le
 scrive `npm run catena:build` (`scripts/build-catena.mjs`) da una rete di
 parole: le espressioni scritte a mano della Ghigliottina e quelle di due parole
 del Wikizionario fra parole comuni. Ogni parola da indovinare ha almeno un
 legame scritto a mano — la finale proprio quello con la parola sopra, perché il
 terzo elemento si puo' non vedere —, e con le lettere che se ne vedono e' l'unica
-della rete che sta con le due accanto. Le classificate
+della rete che sta con le due accanto; la finale lo e' con il terzo elemento,
+non per forza senza (vedi sotto). Le classificate
 (`scripts/data/catena-classificate.json`, che legge solo la notte) e le libere
 (`public/dati/catena/libere.json`, con l'impronta in `shared/catena-libere.ts`)
 si scelgono insieme, e un'espressione di una parte non sta nell'altra. La notte
@@ -2238,9 +2262,16 @@ troverebbe ogni parola. Un errore e un jolly fanno ripartire il minuto
 (`riparteIlMinuto`, scritto in `parola_at` dopo `PREAMBOLO_RIPRESA_CATENA_MS`):
 c'e' una lettera nuova, e un minuto per pensarci. I jolly sono due, gratis, non
 si usano nella finale, e ne' un jolly ne' un errore mostrano l'ultima lettera.
-Della finale si vedono le prime due lettere e l'ultima; il terzo elemento
-dimezza il montepremi, come dice il suo bottone (÷2), e chi arriva con tutti e
-due i jolly lo ha in regalo. Il montepremi parte da cento come quello della
+Della finale si vede la prima lettera sola; il terzo elemento dimezza il
+montepremi, come dice il suo bottone (÷2), e chi arriva con tutti e due i jolly
+lo ha in regalo. Fino al 22 ottobre 2026 era al contrario: delle parole della
+catena si vedeva una lettera, e della finale le prime due e l'ultima, e chi
+giocava trovava difficili quelle in mezzo e indovinava la finale senza comprare
+niente. Adesso quelle in mezzo sono fatte per trovarsi, e la finale per farsi
+pensare: con la parola sopra e una lettera puo' essere piu' d'una, con il terzo
+elemento e' una sola, e lo controlla `scripts/build-catena.mjs`. Le regole
+valgono anche per le giornate gia' scritte, perché le lettere si ricavano
+rigiocando le mosse. Il montepremi parte da cento come quello della
 Ghigliottina, e lo conta `montepremiCatena` dagli errori di ogni parola: tutte
 sbagliate due volte lasciano trentasei punti, e dimezzati non
 scendono sotto i venti della finale sbagliata (`FONDO_CATENA`), perché una
@@ -2252,8 +2283,7 @@ niente, e il ÷2 sul bottone non era vero.
 
 **Nella Catena la parola scritta per intero vale.** Della parola da indovinare
 si scrive il resto, e il telefono ci mette ai capi le lettere che si vedono; ma
-capita di riscriverle, la parola intera, o nella finale anche l'ultima lettera,
-che sta gia' in fondo alla riga. `parolaVoluta` prova le lettere date che
+capita di riscriverle, la parola intera. `parolaVoluta` prova le lettere date che
 mancano ai capi di quel che si e' scritto, e se fanno la parola giusta vale la
 parola giusta, senza dire niente: era la tastiera, non la parola, e i giochi
 sono fatti per non stressarsi. Si applica quando la parola arriva — al server
@@ -2262,7 +2292,12 @@ giusta: rigiocare le mosse, con il confronto di sempre (`stessaParola`), da' la
 partita che si e' giocata, anche quelle di prima, in cui "llibero" era un
 errore.
 `vistaCatena` manda solo le parole fino alla coppia di adesso, e di quella da
-indovinare le lettere, non la lunghezza: con le caselle tutte in vista sbagliare
+indovinare le lettere, non la lunghezza; fra due parole che si vedono manda
+l'espressione che le lega, che la parola sia stata trovata o mostrata, e la
+pagina la scrive su un cartellino accanto alla maglia (`Giunto`): chi gioca
+impara perché le due parole stanno insieme, e non c'e' niente che non sia gia'
+sul palco. Il cartellino e' assoluto, perché il binario scorre di misure fisse.
+La lunghezza non si manda perché con le caselle tutte in vista sbagliare
 era quasi impossibile, e la parola ora cresce a ogni tasto. Prima di Comincia
 (`/inizia`, che fa nascere la partita) non si vede nessuna parola. I tempi li
 scrive il server con la mossa che ci porta, dopo il tempo della scena: il minuto
@@ -2277,8 +2312,7 @@ catena non si vedrebbe. La parola da indovinare non ha caselle: e' un riquadro
 sempre della stessa misura (`Scrittura` in `Partita.tsx`), con le lettere che si
 vedono, tessere d'oro, e accanto la riga su cui si scrive, con il cursore. Con
 una casella per lettera, una lettera data e la casella vuota della prossima
-sembravano una parola di due. Nella finale l'ultima lettera chiude la riga
-dall'altra parte, e si scrive in mezzo. Le caselle tornano a parola trovata o
+sembravano una parola di due. Le caselle tornano a parola trovata o
 mostrata, quando la lunghezza non e' piu' un segreto.
 
 **Il Paroliere e' il Boggle, con il dizionario dello Scarabeo.** Sedici dadi in
@@ -2422,6 +2456,29 @@ classificata. Lo Scarabeo con un amico sta sotto la
 sua libera: `/scarabeo/libera/partita/:id` e `/scarabeo/libera/invito/:codice`,
 e cosi' le sfide delle libere da soli: `/paroliere/libera/sfida/:id` e
 `/paroliere/libera/invito/:codice`.
+
+**Una libera lasciata a meta' resta in sospeso, anche il giorno dopo.** Le
+libere non sono le giornaliere: tornando indietro o chiudendo l'app la partita
+resta li', una per gioco, e si riprende dalla sua pagina o dalle Libere, che
+le mettono in cima come biglietti ("Da riprendere") con la crocetta per
+lasciarle; da dentro la si lascia con la bandierina (`BottoneLascia` in
+`src/games/sospese/Lascia.tsx`), e cominciarne un'altra dello stesso gioco
+chiede prima (`FoglioNuova`). Non toccata per tre giorni (`SOSPESA_MS`) se ne
+va da sola. Nei giochi a tempo il tempo si ferma quando si esce, e riparte da
+dove era (`src/lib/tempoVisibile.ts`, o il tempo che resta salvato): sono
+libere, non c'e' una classifica da proteggere. La partita sta dove stava gia'
+— nel `localStorage` del suo gioco, o sul server per il Wordle, il cruciverba
+e la battaglia contro il computer —, e il registro (`src/games/sospese/registro.ts`)
+dice che cosa c'e' da riprendere, dove, quando la si e' toccata e come la si
+butta via: le chiavi del salvataggio, o la rotta che la chiude
+(`/wordle/libera/:id/lascia`, `/cruciverba/libera/:id/lascia`, la resa della
+battaglia). Cosi' le Libere e la scadenza non devono conoscere i giochi. Un
+salvataggio senza la sua voce nel registro e' stato lasciato da fuori, e si
+butta. Al server va solo quel che succede — l'inizio, una ripresa, la fine, la
+rinuncia, la scadenza — in `libere_sospese` (migrazione `0056`), per il
+pannello di amministrazione, che conta quelle di adesso, quelle riprese e
+quelle scadute, e segna scadute anche quelle di chi non apre piu' l'app.
+Le sfide con un amico non ci entrano: hanno la loro lista, "In corso".
 
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
 esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso
@@ -3271,6 +3328,23 @@ porta al proprio profilo come lo vedono gli altri, dove ogni gioco apre "I tuoi
 numeri" — le classificate da sempre, le libere e le statistiche del Wordle
 (`classifica/Conti.tsx`) —, che si aprono anche dal foglio della classifica di
 ogni gioco.
+
+**Un tasto si vede premuto appena il dito lo tocca.** Ogni foglio scrive la
+pressione come `:is(:active, [data-premuto])`: Safari non accende `:active`
+senza un ascoltatore di `touchstart`, e Chrome in una pagina che scorre lo
+accende solo dopo un attimo, tanto che un tocco rapido si vedeva solo alzando
+il dito. `installaPremuto` (`src/lib/premuto.ts`) mette l'attributo al
+`pointerdown` e lo toglie al rilascio o quando la pagina comincia a scorrere
+(`pointercancel`). In `base.css` il tasto premuto non ha transizione — scende
+subito, torna su con la sua — e un bottone senza una pressione sua scende di
+due punti da solo, con una regola che non pesa niente (`:where`). Una
+pressione nuova si scrive allo stesso modo.
+
+**Nelle tre schede la barra scorre via con la pagina.** Niente vetro e niente
+titolo piccolo nelle Giornaliere, nelle Libere e nella Fortuna
+(`.pagina:has(.vetrina) .pagina__barra` in `Vetrina.css`): la fascia sfocata
+in cima non piaceva, e il titolo grande e' gia' li'. Le altre schermate tengono
+la barra ferma, con la freccia indietro.
 
 **La barra si fa vetro appena qualcosa le scorre sotto**, e il titolo piccolo
 compare quando il grande e' passato: sono due momenti diversi (`is-velata`,

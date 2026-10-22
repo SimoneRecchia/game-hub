@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ROTTE } from '@/app/rotte'
+import { chiudiSospesa, riprendiSospesa, segnaSospesa, sospesaDi } from '@/games/sospese/registro'
 import type { MossaAppena } from './adesivi'
 import { LATO, sacchettoDaSeme, type Mossa } from '@shared/scarabeo'
 import {
@@ -13,7 +15,7 @@ import { api } from '@/lib/api'
 import { haptic } from '@/lib/haptics'
 import { suona } from '@/lib/suoni'
 import { mossaDelComputer, preparaComputer } from './computer'
-import { leggiPartitaLibera, salvaPartitaLibera } from './libera'
+import { CHIAVE_SCARABEO_LIBERO, leggiPartitaLibera, salvaPartitaLibera } from './libera'
 import { ILLUMINATA_MS, PENSA_ALMENO_MS, annuncioDi, parolaDi } from './turni'
 import { nonNelDizionario, tessereCambiate, useParoleSconosciute } from './useScarabeo'
 import { useComposizione, type Composizione } from './useComposizione'
@@ -71,6 +73,26 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
   const sacchetto = useMemo(() => (partita ? sacchettoDaSeme(partita.seme) : null), [partita?.seme])
   const stato = useMemo(() => (partita && sacchetto ? statoLibera(partita, sacchetto) : null), [partita, sacchetto])
   const celle = useMemo(() => celleDa(stato), [stato])
+
+  // La partita in corso nelle libere in sospeso: con i punti sul biglietto, a ogni mossa.
+  const mieiPunti = stato?.mieiPunti
+  const puntiComputer = stato?.puntiComputer
+  const finita = stato?.finita ?? false
+  useEffect(() => {
+    if (!partita || finita || mieiPunti === undefined) return
+    segnaSospesa('scarabeo', {
+      a: ROTTE.libera('scarabeo'),
+      dettaglio: `Tu ${mieiPunti} · computer ${puntiComputer}`,
+      chiavi: [CHIAVE_SCARABEO_LIBERO],
+    })
+  }, [partita, finita, mieiPunti, puntiComputer])
+
+  // Una partita ritrovata aprendo la pagina e' una libera ripresa.
+  useEffect(() => {
+    if (partita && sospesaDi('scarabeo')) riprendiSospesa('scarabeo')
+    // Solo quando la pagina si apre: dopo, la partita e' quella che si sta giocando.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const composizione = useComposizione({
     celle,
@@ -141,6 +163,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     if (!partita || !stato?.finita || inviata.current === partita.seme) return
     inviata.current = partita.seme
     salvaPartitaLibera(null)
+    chiudiSospesa('scarabeo', 'finita')
     haptic(stato.esito === 'vinta' ? 'success' : 'tap')
     void api<StatisticheScarabeoLibero>('/scarabeo/libera', { method: 'POST', body: partita })
       .then(setStatistiche)
@@ -153,6 +176,8 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     (livello: Livello) => {
       const seme = crypto.getRandomValues(new Uint32Array(1))[0]
       const nuovaPartita: PartitaLibera = { seme, livello, mosse: [] }
+      // Quella lasciata a meta' se ne va: la nuova entra nelle libere in sospeso con il suo conto.
+      chiudiSospesa('scarabeo', 'annullata')
       salvaPartitaLibera(nuovaPartita)
       inviata.current = null
       annulla()
@@ -206,6 +231,7 @@ export function useScarabeoLibero(): ScarabeoLiberoController {
     nuova,
     abbandona: () => {
       salvaPartitaLibera(null)
+      chiudiSospesa('scarabeo', 'annullata')
       annulla()
       setPartita(null)
     },

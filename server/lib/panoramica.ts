@@ -15,7 +15,7 @@ import type {
   RigaAnteprima,
 } from '../../shared/types'
 import { classificaCruciverba } from './cruciverbaStore'
-import { classificaFortuna, classificaGenerale } from './generale'
+import { classificheFortuna, classificaGenerale } from './generale'
 import { nowIso } from './http'
 import { leaderboard } from './leaderboard'
 import { classificaQuiz } from './quizStore'
@@ -84,7 +84,7 @@ export async function panoramica(
     classificaParoliere(db, periodo, numeroDiOggi, viewerId),
     classificaCatena(db, periodo, numeroDiOggi, viewerId),
     classificaGenerale(db, periodo, viewerId),
-    classificaFortuna(db, periodo, viewerId),
+    classificheFortuna(db, periodo, viewerId),
   ])
 
   // "In corso" vuol dire una classificata di oggi ancora aperta: in un periodo passato non ce ne sono.
@@ -127,7 +127,11 @@ export async function panoramica(
       catena: anteprima(catena.rows, catena.me, colPunti, aperta),
       // I punti di Nomi, cose e città arrivano la notte: chi li aspetta e' "in corso".
       nomi: anteprima(nomi.rows, nomi.me, colPunti, (r) => oggi && r.inAttesa),
-      fortuna: anteprima(fortuna.rows, fortuna.me, colPunti, () => false),
+      ruota: anteprima(fortuna.ruota.rows, fortuna.ruota.me, colPunti, () => false),
+      slot: anteprima(fortuna.slot.rows, fortuna.slot.me, colPunti, () => false),
+      blackjack: anteprima(fortuna.blackjack.rows, fortuna.blackjack.me, colPunti, () => false),
+      roulette: anteprima(fortuna.roulette.rows, fortuna.roulette.me, colPunti, () => false),
+      superenalotto: anteprima(fortuna.superenalotto.rows, fortuna.superenalotto.me, colPunti, () => false),
     },
   }
 }

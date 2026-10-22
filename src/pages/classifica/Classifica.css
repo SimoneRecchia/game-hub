@@ -45,7 +45,7 @@
     transform var(--dur-fast) var(--ease-out);
 }
 
-.cl-periodo__freccia:active:not(:disabled) {
+.cl-periodo__freccia:is(:active, [data-premuto]):not(:disabled) {
   background: var(--fill-tertiary);
   transform: scale(0.9);
 }
@@ -168,7 +168,7 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.cl-carta:has(.cl-carta__tutta:active) {
+.cl-carta:has(.cl-carta__tutta:is(:active, [data-premuto])) {
   transform: translateY(4px);
   box-shadow: 0 1px 0 var(--ink);
 }
@@ -251,7 +251,7 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.cl-carta__gioca:active {
+.cl-carta__gioca:is(:active, [data-premuto]) {
   transform: translateY(2px);
   box-shadow: none;
 }
@@ -459,7 +459,7 @@
   }
 }
 
-.cl-gen__chi:active .cl-gen__avatar {
+.cl-gen__chi:is(:active, [data-premuto]) .cl-gen__avatar {
   transform: scale(0.94);
 }
 
@@ -640,7 +640,7 @@
   animation: cl-entra 420ms var(--ease-push) 1.1s both;
 }
 
-.cl-gen__mia:active {
+.cl-gen__mia:is(:active, [data-premuto]) {
   background: color-mix(in srgb, var(--brand) 16%, transparent);
 }
 
@@ -687,7 +687,7 @@
   font-weight: 900;
 }
 
-.cl-gen__tutta:active {
+.cl-gen__tutta:is(:active, [data-premuto]) {
   background: var(--fill-quaternary);
 }
 
@@ -916,7 +916,7 @@
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 
-.cl-riga__tocca:active {
+.cl-riga__tocca:is(:active, [data-premuto]) {
   background: var(--fill-quaternary);
 }
 

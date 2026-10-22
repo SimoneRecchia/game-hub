@@ -170,7 +170,7 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.pagina__indietro:active {
+.pagina__indietro:is(:active, [data-premuto]) {
   transform: translateY(2px);
   box-shadow: 0 1px 0 var(--ink), inset 0 2px 0 var(--carta-luce);
 }

@@ -39,7 +39,7 @@
   width: 100%;
 }
 
-.btn:active:not(:disabled) {
+.btn:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }
@@ -90,7 +90,7 @@
   background: var(--fill-quaternary);
 }
 
-.btn--plain:active:not(:disabled) {
+.btn--plain:is(:active, [data-premuto]):not(:disabled) {
   box-shadow: none;
 }
 

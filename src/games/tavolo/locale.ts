@@ -7,6 +7,8 @@
  * come le tiene il server: riaprendo la pagina si riprende da dove si era.
  */
 
+import { ROTTE } from '@/app/rotte'
+import { chiudiSospesa, segnaSospesa } from '@/games/sospese/registro'
 import { inizialeDi, regoleDi } from '@shared/tavolo-regole'
 import { TEMPO_DI_SEMPRE } from '@shared/tavolo-tempi'
 import {
@@ -95,8 +97,24 @@ export function leggiPartita(gioco: GiocoTavoliere): PartitaLocale | null {
   }
 }
 
+const NOME_LIVELLO: Record<LivelloTavoliere, string> = { facile: 'Facile', normale: 'Normale', difficile: 'Difficile' }
+
+/**
+ * Ogni salvataggio tiene d'accordo le libere in sospeso: una partita in cui si
+ * e' mosso almeno una volta ci sta, con il livello e la mossa sul biglietto, e
+ * una finita ne esce. Lasciata dalle Libere se ne va la sua chiave, e con lei
+ * la parte di chi comincia la prossima, che ricomincia dal bianco.
+ */
 export function salvaPartita(p: PartitaLocale) {
   scriviJson(chiavePartita(p.gioco), p)
+  if (p.esito) chiudiSospesa(p.gioco, 'finita')
+  else if (p.mosse.length > 0) {
+    segnaSospesa(p.gioco, {
+      a: ROTTE.computerTavolo(p.gioco),
+      dettaglio: `${NOME_LIVELLO[p.livello]} · mossa ${p.mosse.length + 1}`,
+      chiavi: [chiavePartita(p.gioco)],
+    })
+  }
 }
 
 /**
@@ -136,6 +154,7 @@ export function nuovaPartita(
 /** Lasciare una partita a meta' e' perderla: si conta come una resa. */
 export function abbandona(p: PartitaLocale): PartitaLocale {
   if (p.esito) return p
+  chiudiSospesa(p.gioco, 'annullata')
   return conta({ ...p, esito: { vincitore: p.mia === 0 ? 1 : 0, motivo: 'resa' } })
 }
 

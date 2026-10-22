@@ -452,7 +452,7 @@
   outline-offset: 2px;
 }
 
-.rl-gettone:active:not(:disabled) {
+.rl-gettone:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(1px) scale(0.95);
 }
 
@@ -500,7 +500,7 @@
   letter-spacing: -0.01em;
 }
 
-.rl-tasto:active:not(:disabled) {
+.rl-tasto:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow:
     0 1px 0 #120c2b,
@@ -549,7 +549,7 @@
   animation: rl-respira 2.4s ease-in-out infinite;
 }
 
-.rl-lancia.is-pronto:active:not(:disabled) {
+.rl-lancia.is-pronto:is(:active, [data-premuto]):not(:disabled) {
   animation: none;
   transform: translateY(3px);
   box-shadow:

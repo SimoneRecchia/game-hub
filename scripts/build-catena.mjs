@@ -20,10 +20,11 @@
  *
  * - le parole da indovinare (la seconda, la quarta, la sesta, l'ottava e la
  *   decima) sono parole note, di cinque lettere almeno, e non verbi; la
- *   finale di sei, perché se ne vedono tre lettere;
- * - con la sua prima lettera, una parola da indovinare e' l'unica della rete
- *   che sta con le due parole accanto; la finale, con le sue due prime e
- *   l'ultima, anche senza il terzo elemento;
+ *   finale di sei;
+ * - con le sue prime due lettere, una parola da indovinare e' l'unica della
+ *   rete che sta con le due parole accanto; la finale, che si vede con la sola
+ *   prima lettera, lo e' con il terzo elemento, e senza puo' non esserlo: e'
+ *   quella che deve far pensare, e il terzo elemento si compra per questo;
  * - nessuna parola ha la radice di un'altra della catena, e nessuna
  *   espressione contiene una terza parola della catena, che la direbbe;
  * - un'espressione sta in tre catene al piu', e una parola da indovinare in
@@ -229,21 +230,17 @@ async function main() {
   const rete = vicini(tutte.filter((k) => amano.has(k) || fonti.get(k) === 2))
   const accanto = (p) => rete.get(p) ?? new Set()
 
-  /** Un'altra parola della rete che, con le lettere che si vedono, starebbe al posto di quella giusta. */
+  /**
+   * Un'altra parola della rete che, con le lettere che si vedono, starebbe al posto di quella giusta: le prime
+   * due nella catena, la prima sola nella finale, che si cerca con il terzo elemento (vedi shared/catena.ts).
+   */
   function altra(c, i) {
     const w = piana(c[i])
-    const finale = i === FINALE
-    const somiglia = (x) => {
-      const p = piana(x)
-      return finale ? p.startsWith(w.slice(0, 2)) && p.at(-1) === w.at(-1) : p[0] === w[0]
-    }
+    const viste = i === FINALE ? 1 : 2
     const diverse = (x) => x !== c[i] && !c.includes(x)
-    const trovata = finale
-      ? [...accanto(c[i - 1])].find((x) => diverse(x) && somiglia(x))
-      : [...accanto(c[i - 1])].find((x) => diverse(x) && accanto(c[i + 1]).has(x) && somiglia(x))
-    if (trovata || !finale) return trovata
-    // Con il terzo elemento basta la prima lettera, come nella catena.
-    return [...accanto(c[i - 1])].find((x) => diverse(x) && accanto(c[i + 1]).has(x) && piana(x)[0] === w[0])
+    return [...accanto(c[i - 1])].find(
+      (x) => diverse(x) && accanto(c[i + 1]).has(x) && piana(x).startsWith(w.slice(0, viste)),
+    )
   }
 
   /** Una parola che puo' stare al posto `i`: da indovinare nei posti dispari, data in quelli pari. */

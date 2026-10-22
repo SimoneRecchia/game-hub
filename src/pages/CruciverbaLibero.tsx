@@ -1,3 +1,5 @@
+import { FoglioNuova } from '@/games/sospese/Lascia'
+import { chiudiSospesa } from '@/games/sospese/registro'
 import { useEffect, useState } from 'react'
 import { useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
@@ -22,6 +24,7 @@ export default function CruciverbaLibero() {
   const [regole, setRegole] = useState(false)
   const [apertura, setApertura] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
+  const [chiedi, setChiedi] = useState(false)
 
   useEffect(() => {
     let annullato = false
@@ -67,7 +70,7 @@ export default function CruciverbaLibero() {
         }))}
         scelto={livello}
         onScegli={setLivello}
-        onComincia={() => void comincia()}
+        onComincia={() => (aperta ? setChiedi(true) : void comincia())}
         occupato={apertura}
         colore="var(--cruciverba-1)"
         di={3}
@@ -90,6 +93,22 @@ export default function CruciverbaLibero() {
       >
         {errore && <p className="cru-guasto">{errore}</p>}
       </Difficolta>
+      <FoglioNuova
+        open={chiedi}
+        onClose={() => setChiedi(false)}
+        onRiprendi={() => aperta && vai(ROTTE.cruciverbaLibero(aperta.partitaId))}
+        onNuova={() => {
+          if (!aperta) return
+          // Lo schema lasciato se ne va prima di aprire il nuovo: uno in corso alla volta.
+          void api(`/cruciverba/libera/${aperta.partitaId}/lascia`, { method: 'POST' })
+            .then(() => {
+              chiudiSospesa('cruciverba', 'annullata')
+              return comincia()
+            })
+            .catch(() => setErrore('Non riesco a lasciare lo schema in corso.'))
+        }}
+        testo="Lo schema in corso e le lettere scritte se ne vanno."
+      />
       <ComeSiGiocaCruciverba open={regole} onClose={() => setRegole(false)} />
     </Pagina>
   )

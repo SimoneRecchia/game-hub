@@ -190,7 +190,7 @@
   font-weight: 900;
 }
 
-.ct-domanda__carta .quiz-opzione:active:not(:disabled) {
+.ct-domanda__carta .quiz-opzione:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: 0 1px 0 var(--ink);
 }

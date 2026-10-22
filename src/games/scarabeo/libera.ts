@@ -10,11 +10,11 @@
 
 import { LIVELLI, type PartitaLibera } from '@shared/scarabeo-computer'
 
-const CHIAVE = 'giochi.scarabeo.libera'
+export const CHIAVE_SCARABEO_LIBERO = 'giochi.scarabeo.libera'
 
 export function leggiPartitaLibera(): PartitaLibera | null {
   try {
-    const grezza = localStorage.getItem(CHIAVE)
+    const grezza = localStorage.getItem(CHIAVE_SCARABEO_LIBERO)
     if (!grezza) return null
     const p = JSON.parse(grezza) as PartitaLibera
     if (!Number.isInteger(p?.seme) || !LIVELLI.includes(p.livello) || !Array.isArray(p.mosse)) return null
@@ -26,8 +26,8 @@ export function leggiPartitaLibera(): PartitaLibera | null {
 
 export function salvaPartitaLibera(partita: PartitaLibera | null): void {
   try {
-    if (partita) localStorage.setItem(CHIAVE, JSON.stringify(partita))
-    else localStorage.removeItem(CHIAVE)
+    if (partita) localStorage.setItem(CHIAVE_SCARABEO_LIBERO, JSON.stringify(partita))
+    else localStorage.removeItem(CHIAVE_SCARABEO_LIBERO)
   } catch {
     /* Safari privato nega lo storage: la partita resta in memoria finché la pagina e' aperta */
   }

@@ -69,7 +69,7 @@
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 
-.persona:active {
+.persona:is(:active, [data-premuto]) {
   background: var(--fill-quaternary);
 }
 

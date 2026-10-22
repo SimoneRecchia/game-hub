@@ -147,7 +147,7 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.ana-tasto:active:not(:disabled) {
+.ana-tasto:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }
@@ -460,7 +460,7 @@
   animation-delay: calc(var(--k, 0) * 60ms);
 }
 
-.ana-tessera:not(:disabled):active {
+.ana-tessera:not(:disabled):is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow:
     0 1px 0 var(--ink),
@@ -528,7 +528,7 @@
   flex: none;
 }
 
-.ana-comando:active:not(:disabled) {
+.ana-comando:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

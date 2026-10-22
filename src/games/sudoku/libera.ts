@@ -7,7 +7,7 @@
 import { mulberry32 } from '@shared/daily'
 import { LIVELLI, eGriglia, generaSchema, type LivelloSudoku, type SchemaSudoku } from '@shared/sudoku'
 
-const CHIAVE = 'giochi.sudoku.libera'
+export const CHIAVE_SUDOKU_LIBERO = 'giochi.sudoku.libera'
 const CHIAVE_CONTI = 'giochi.sudoku.libera.conti'
 
 export interface PartitaSudokuLibera {
@@ -41,7 +41,7 @@ function contiVuoti(): ContiSudokuLibero {
 
 export function leggiPartitaSudoku(): PartitaSudokuLibera | null {
   try {
-    const grezza = localStorage.getItem(CHIAVE)
+    const grezza = localStorage.getItem(CHIAVE_SUDOKU_LIBERO)
     if (!grezza) return null
     const p = JSON.parse(grezza) as PartitaSudokuLibera
     const valida =
@@ -62,8 +62,8 @@ export function leggiPartitaSudoku(): PartitaSudokuLibera | null {
 
 export function salvaPartitaSudoku(partita: PartitaSudokuLibera | null): void {
   try {
-    if (partita) localStorage.setItem(CHIAVE, JSON.stringify(partita))
-    else localStorage.removeItem(CHIAVE)
+    if (partita) localStorage.setItem(CHIAVE_SUDOKU_LIBERO, JSON.stringify(partita))
+    else localStorage.removeItem(CHIAVE_SUDOKU_LIBERO)
   } catch {
     /* Safari privato nega lo storage: la partita resta in memoria finché la pagina e' aperta */
   }

@@ -291,17 +291,19 @@ export async function classificaGenerale(
 }
 
 /**
- * La classifica della Fortuna: quel che Crazy Time, la slot, il blackjack, la
- * roulette e il SuperEnalotto hanno dato o tolto nel periodo, tutti insieme. E' gia' dentro la generale;
- * qui si vede da solo, chi ha vinto di piu' e chi ha perso. Ci sta chi ha
- * giocato almeno una volta; a pari conto passa avanti chi ha giocato meno,
- * perché ha rischiato meno per lo stesso risultato.
+ * Le classifiche della Fortuna, una per gioco: quel che Crazy Time, la slot,
+ * il blackjack, la roulette e il SuperEnalotto hanno dato o tolto nel periodo.
+ * E' gia' dentro la generale; qui si vede gioco per gioco, chi ha vinto di
+ * piu' e chi ha perso. Erano una classifica sola, con i cinque giochi sommati,
+ * e non si capiva a che cosa si fosse vinto. Ci sta chi ha giocato almeno una
+ * volta; a pari conto passa avanti chi ha giocato meno, perché ha rischiato
+ * meno per lo stesso risultato. Una lettura sola per tutti e cinque.
  */
-export async function classificaFortuna(
+export async function classificheFortuna(
   db: D1Database,
   periodo: PeriodoClassifica,
   viewerId: string,
-): Promise<FortunaLeaderboard> {
+): Promise<Record<GiocoFortuna, FortunaLeaderboard>> {
   const { da, a } = periodo
   const { results } = await db
     .prepare(
@@ -325,42 +327,39 @@ export async function classificaFortuna(
       display_name: string
       avatar_color: string
     }>()
-  const righe = new Map<string, Omit<FortunaRow, 'rank'>>()
+  const giochi: GiocoFortuna[] = ['ruota', 'slot', 'blackjack', 'roulette', 'superenalotto']
+  const righe = new Map<GiocoFortuna, Omit<FortunaRow, 'rank'>[]>(giochi.map((g) => [g, []]))
   for (const r of results) {
-    let riga = righe.get(r.player_id)
-    if (!riga) {
-      riga = {
-        playerId: r.player_id,
-        nickname: r.nickname,
-        displayName: r.display_name || r.nickname,
-        avatarColor: r.avatar_color,
-        punti: 0,
-        netti: { ruota: 0, slot: 0, blackjack: 0, roulette: 0, superenalotto: 0 },
-        giocate: 0,
-      }
-      righe.set(r.player_id, riga)
-    }
-    riga.netti[r.gioco] += r.netto
-    riga.punti += r.netto
-    riga.giocate += r.giocate
-  }
-  const rows = [...righe.values()]
-    // Ci sta anche chi quel giorno non ha giocato e ha vinto: le schede del SuperEnalotto si pagano il giorno
-    // dell'estrazione, e si possono comprare prima.
-    .filter((r) => r.giocate > 0 || r.punti !== 0)
-    .sort((x, y) => {
-      if (x.punti !== y.punti) return y.punti - x.punti
-      if (x.giocate !== y.giocate) return x.giocate - y.giocate
-      return x.nickname.localeCompare(y.nickname, 'it', { sensitivity: 'base' })
+    righe.get(r.gioco)?.push({
+      playerId: r.player_id,
+      nickname: r.nickname,
+      displayName: r.display_name || r.nickname,
+      avatarColor: r.avatar_color,
+      punti: r.netto,
+      giocate: r.giocate,
     })
-    .map((r, i) => ({ rank: i + 1, ...r }))
-  return {
-    scope: periodo.scope,
-    periodo,
-    updatedAt: nowIso(),
-    rows,
-    me: rows.find((r) => r.playerId === viewerId) ?? null,
   }
+  const classifica = (gioco: GiocoFortuna): FortunaLeaderboard => {
+    const rows = (righe.get(gioco) ?? [])
+      // Ci sta anche chi quel giorno non ha giocato e ha vinto: le schede del SuperEnalotto si pagano il giorno
+      // dell'estrazione, e si possono comprare prima.
+      .filter((r) => r.giocate > 0 || r.punti !== 0)
+      .sort((x, y) => {
+        if (x.punti !== y.punti) return y.punti - x.punti
+        if (x.giocate !== y.giocate) return x.giocate - y.giocate
+        return x.nickname.localeCompare(y.nickname, 'it', { sensitivity: 'base' })
+      })
+      .map((r, i) => ({ rank: i + 1, ...r }))
+    return {
+      scope: periodo.scope,
+      periodo,
+      updatedAt: nowIso(),
+      gioco,
+      rows,
+      me: rows.find((r) => r.playerId === viewerId) ?? null,
+    }
+  }
+  return Object.fromEntries(giochi.map((g) => [g, classifica(g)])) as Record<GiocoFortuna, FortunaLeaderboard>
 }
 
 /**

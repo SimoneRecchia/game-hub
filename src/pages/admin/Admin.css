@@ -445,7 +445,7 @@ body:has(.adm-laterale) .pagina__corpo {
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.adm-cifra.is-tocca:active {
+.adm-cifra.is-tocca:is(:active, [data-premuto]) {
   transform: scale(0.98);
 }
 
@@ -639,7 +639,7 @@ body:has(.adm-laterale) .pagina__corpo {
   background: color-mix(in srgb, var(--brand) 20%, transparent);
 }
 
-.adm-bottoncino:active {
+.adm-bottoncino:is(:active, [data-premuto]) {
   transform: scale(0.95);
 }
 
@@ -1243,7 +1243,7 @@ body:has(.adm-laterale) .pagina__corpo {
   left: 0;
 }
 
-.adm-tabella-g__riga:active {
+.adm-tabella-g__riga:is(:active, [data-premuto]) {
   background: var(--fill-quaternary);
 }
 
@@ -1932,7 +1932,7 @@ body:has(.adm-laterale) .pagina__corpo {
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.adm-cella:active {
+.adm-cella:is(:active, [data-premuto]) {
   transform: scale(0.9);
 }
 

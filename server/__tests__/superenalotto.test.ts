@@ -141,10 +141,10 @@ describe('il SuperEnalotto', () => {
     expect(f.superenalotto).toMatchObject({ aperto: MERCOLEDI, mie: 0, diretta: null })
     const g = await ok(b.chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', anna))
     expect(g.me).toMatchObject({ superenalotto: vinto - 20 })
-    const cf = await ok(b.chiama<FortunaLeaderboard>('GET', '/leaderboard/fortuna?scope=today', bruno))
+    const cf = await ok(b.chiama<FortunaLeaderboard>('GET', '/leaderboard/superenalotto?scope=today', bruno))
     const b3 = premi[1].premio
     const b2 = premi[2].premio
-    expect(cf.me).toMatchObject({ netti: { superenalotto: b3 + b2 - 30 } })
+    expect(cf.me).toMatchObject({ punti: b3 + b2 - 30 })
 
     // Una seconda lettura non paga di nuovo.
     expect((await guarda(b, anna)).netto).toBe(vinto - 20)

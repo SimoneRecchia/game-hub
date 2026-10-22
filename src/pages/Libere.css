@@ -68,7 +68,7 @@
   top: 14px;
   width: 156px;
   height: 156px;
-  animation: chi-ce-gira 40s linear infinite;
+  animation: chi-ce-gira 24s linear infinite;
 }
 
 .chi-ce__raggi {
@@ -123,7 +123,7 @@
   display: block;
   width: 38px;
   height: 38px;
-  animation: chi-ce-gira 40s linear infinite reverse;
+  animation: chi-ce-gira 24s linear infinite reverse;
 }
 
 .chi-ce__cabina {
@@ -186,9 +186,10 @@
 .chi-ce__invita {
   display: grid;
   place-items: center;
-  height: 46px;
+  /* Accanto alla ruota il posto e' poco: la scritta va su due righe, dentro il tasto, invece di uscirne. */
+  min-height: 46px;
   margin-top: 6px;
-  padding: 0 12px;
+  padding: 7px 12px;
   border: var(--filo) solid var(--ink);
   border-radius: 15px;
   background: var(--giallo);
@@ -196,12 +197,15 @@
   color: var(--ink);
   font-family: var(--font-rounded);
   font-size: 1.0625rem;
+  line-height: 1.05;
   text-align: center;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
   animation: chi-ce-respira 2.6s ease-in-out infinite;
   transition: box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.chi-ce__invita:active {
+.chi-ce__invita:is(:active, [data-premuto]) {
   animation: none;
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
@@ -244,7 +248,7 @@
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.partita-biglietto:active {
+.partita-biglietto:is(:active, [data-premuto]) {
   animation: none;
   transform: rotate(var(--giro)) translateY(3px);
 }
@@ -335,6 +339,47 @@
   animation: chi-ce-respira 1.8s ease-in-out infinite;
 }
 
+/*
+ * Una libera in sospeso: lo stesso biglietto, e sul suo angolo la crocetta per
+ * lasciarla. Sta fuori dal biglietto, che e' tutto un collegamento: un bottone
+ * dentro un link non si potrebbe toccare da solo.
+ */
+.libere__sospesa {
+  position: relative;
+}
+
+.libere__lascia {
+  position: absolute;
+  top: -8px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: var(--filo) solid var(--ink);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: 0 2px 0 var(--ink);
+  color: var(--ink);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* L'area da toccare e' piu' grande del tondo: 44 punti, come ogni tasto. */
+.libere__lascia::before {
+  content: '';
+  position: absolute;
+  inset: -7px;
+}
+
+.libere__lascia svg {
+  stroke-width: 2.6;
+}
+
+.libere__lascia:is(:active, [data-premuto]) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
 /* ─────────────────────────────  Le famiglie  ───────────────────────────── */
 
 .libere__famiglie {
@@ -371,7 +416,7 @@
   transition: transform var(--dur-base) var(--ease-bounce);
 }
 
-.libere-gioco:active .libere-gioco__vetrino {
+.libere-gioco:is(:active, [data-premuto]) .libere-gioco__vetrino {
   transform: scale(0.92) rotate(var(--giro));
 }
 

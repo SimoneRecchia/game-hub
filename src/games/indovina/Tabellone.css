@@ -239,7 +239,7 @@
     0 0 0 3px #5edb84;
 }
 
-.ic-carta:active:not(:disabled) .ic-carta__dentro {
+.ic-carta:is(:active, [data-premuto]):not(:disabled) .ic-carta__dentro {
   translate: 0 2px;
 }
 

@@ -13,7 +13,7 @@
   transition: transform var(--dur-fast) var(--ease-out);
 }
 
-.saldo-fortuna:active {
+.saldo-fortuna:is(:active, [data-premuto]) {
   transform: translateY(3px);
 }
 
@@ -169,7 +169,7 @@
   height: 122px;
 }
 
-.fortuna-carta:active {
+.fortuna-carta:is(:active, [data-premuto]) {
   transform: rotate(var(--giro)) translate(3px, 3px);
   box-shadow:
     1px 1px 0 #120c2b,
@@ -183,9 +183,25 @@
 
 .fortuna-carta__nome {
   position: relative;
+  align-self: flex-start;
   font-family: var(--font-rounded);
   font-size: 1.3125rem;
   line-height: 1.05;
+  /*
+   * Il nome e' ritagliato dal fondo della carta, come un adesivo: dove il
+   * disegno gli scende dietro — il mobile blu della slot sopra "Slot" —
+   * l'alone del colore della carta lo stacca, e altrove non si vede.
+   */
+  text-shadow:
+    0 0 0 var(--alone),
+    2.5px 0 0 var(--alone),
+    -2.5px 0 0 var(--alone),
+    0 2.5px 0 var(--alone),
+    0 -2.5px 0 var(--alone),
+    1.8px 1.8px 0 var(--alone),
+    -1.8px 1.8px 0 var(--alone),
+    1.8px -1.8px 0 var(--alone),
+    -1.8px -1.8px 0 var(--alone);
 }
 
 .fortuna-carta--ruota .fortuna-carta__nome {

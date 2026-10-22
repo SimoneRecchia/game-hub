@@ -32,6 +32,8 @@ import { PannelloCompagnia } from '@/games/compagnia/PannelloCompagnia'
 import { etichettaCruciverba } from '@/games/compagnia/etichette'
 import { Suggerimenti } from '@/games/compagnia/Suggerimenti'
 import { useCompagniaHost } from '@/games/compagnia/useCompagniaHost'
+import { BottoneLascia } from '@/games/sospese/Lascia'
+import { chiudiSospesa, riprendiSospesa, segnaSospesa, sospesaDi } from '@/games/sospese/registro'
 import { useCountdown } from '@/games/wordle/useCountdown'
 import { formatCountdown, formatCronometro, inPunti, pluralize } from '@/lib/format'
 import { caselleDaPagare } from '@shared/aiuti'
@@ -185,6 +187,26 @@ export default function Cruciverba() {
   const altro = useUnAltroSchema(stato)
 
   const nomeLivello = stato ? NOMI_LIVELLI_CRUCIVERBA[stato.livello ?? 'facile'] : ''
+
+  // Lo schema libero in corso nelle libere in sospeso: si riprende da qui o dalle Libere, e lasciato da li'
+  // lo chiude la sua rotta.
+  const partitaId = libera ? stato?.partitaId : undefined
+  const finito = g.finita
+  const vista = useRef(false)
+  useEffect(() => {
+    if (!partitaId) return
+    if (finito) {
+      chiudiSospesa('cruciverba', 'finita')
+      return
+    }
+    if (!vista.current && sospesaDi('cruciverba')) riprendiSospesa('cruciverba')
+    vista.current = true
+    segnaSospesa('cruciverba', {
+      a: ROTTE.cruciverbaLibero(partitaId),
+      dettaglio: nomeLivello,
+      chiudi: `/cruciverba/libera/${partitaId}/lascia`,
+    })
+  }, [partitaId, finito, nomeLivello])
   const corrente = g.corrente
 
   return (
@@ -202,6 +224,21 @@ export default function Cruciverba() {
             <BottoneBarra etichetta="Gioca in compagnia" onClick={() => setCompagniaAperta(true)} badge={dentro}>
               <IconPeople size={21} />
             </BottoneBarra>
+          )}
+          {partitaId && !finito && (
+            <BottoneLascia
+              titolo="Lasciare lo schema?"
+              testo="Lo schema e le lettere scritte se ne vanno."
+              conferma="Lascia lo schema"
+              onLascia={() =>
+                void api(`/cruciverba/libera/${partitaId}/lascia`, { method: 'POST' })
+                  .then(() => {
+                    chiudiSospesa('cruciverba', 'annullata')
+                    vai(ROTTE.libera('cruciverba'), { replace: true, direzione: 'indietro' })
+                  })
+                  .catch(() => {})
+              }
+            />
           )}
           <BottoneBarra etichetta="Come si gioca" onClick={() => setAiuto(true)}>
             <IconInfo size={21} />

@@ -61,7 +61,7 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.quiz-materia:active {
+.quiz-materia:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow:
     inset 0 0 0 var(--filo) var(--ink),
@@ -135,7 +135,7 @@
   transition: transform 90ms var(--ease-out);
 }
 
-.quiz-ancora:active {
+.quiz-ancora:is(:active, [data-premuto]) {
   transform: translateY(2px);
 }
 
@@ -214,7 +214,7 @@
     box-shadow var(--dur-fast) var(--ease-out);
 }
 
-.quiz-tessera:active {
+.quiz-tessera:is(:active, [data-premuto]) {
   transform: translateY(3px);
   box-shadow:
     inset 0 0 0 var(--filo) var(--ink),
@@ -331,7 +331,7 @@
     transform 90ms var(--ease-out);
 }
 
-.quiz-zona-tessera:active:not(:disabled) {
+.quiz-zona-tessera:is(:active, [data-premuto]):not(:disabled) {
   transform: scale(0.97);
 }
 

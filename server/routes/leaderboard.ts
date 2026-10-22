@@ -3,6 +3,7 @@ import { PERIODI, periodoDi } from '../../shared/periodi'
 import type {
   AnagrammiLeaderboard,
   FortunaLeaderboard,
+  GiocoFortuna,
   GeneraleLeaderboard,
   GhigliottinaLeaderboard,
   CruciverbaLeaderboard,
@@ -29,7 +30,7 @@ import { classificaAnagrammi } from '../lib/anagrammiStore'
 import { classificaGhigliottina } from '../lib/ghigliottinaStore'
 import { classificaParoliere } from '../lib/paroliereStore'
 import { classificaCatena } from '../lib/catenaStore'
-import { classificaFortuna, classificaGenerale } from '../lib/generale'
+import { classificheFortuna, classificaGenerale } from '../lib/generale'
 import { panoramica } from '../lib/panoramica'
 import { today } from '../lib/wordleStore'
 
@@ -69,10 +70,10 @@ export const leaderboardRoutes = new Hono<AppEnv>()
     return c.json<GeneraleLeaderboard>(result)
   })
 
-  /** La classifica della Fortuna: quel che i giochi d'azzardo hanno dato o tolto nel periodo. */
-  .get('/fortuna', async (c) => {
-    const result = await classificaFortuna(c.env.DB, leggiPeriodo(c), c.get('player').id)
-    return c.json<FortunaLeaderboard>(result)
+  /** La classifica di un gioco della Fortuna: quel che ha dato o tolto nel periodo. */
+  .get('/:gioco{ruota|slot|blackjack|roulette|superenalotto}', async (c) => {
+    const tutte = await classificheFortuna(c.env.DB, leggiPeriodo(c), c.get('player').id)
+    return c.json<FortunaLeaderboard>(tutte[c.req.param('gioco') as GiocoFortuna])
   })
 
   /** La classifica dello Scarabeo: punti in rapporto al computer, poi il tabellone. */

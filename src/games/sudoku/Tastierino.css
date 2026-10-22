@@ -48,7 +48,7 @@
     background-color 150ms var(--ease-out);
 }
 
-.sud-strumento:active:not(:disabled) {
+.sud-strumento:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }
@@ -117,7 +117,7 @@
     box-shadow 80ms var(--ease-out);
 }
 
-.sud-cifra:active:not(:disabled) {
+.sud-cifra:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }

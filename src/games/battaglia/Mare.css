@@ -95,7 +95,7 @@ button.mare__cella:not(:disabled):hover {
   background: var(--mare-sopra);
 }
 
-button.mare__cella:not(:disabled):active {
+button.mare__cella:not(:disabled):is(:active, [data-premuto]) {
   background: var(--mare-premuta);
 }
 

@@ -41,7 +41,7 @@
 }
 
 /* Premuto scende sull'ombra, come i tasti. */
-.suggerimento:active:not(:disabled) {
+.suggerimento:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(2px);
   box-shadow: inset 0 0 0 2px var(--ink), 0 1px 0 var(--ink);
 }

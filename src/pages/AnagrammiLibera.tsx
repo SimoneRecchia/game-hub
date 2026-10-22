@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ROTTE } from '@/app/rotte'
 import { Cursore } from '@/components/Cursore'
 import { Difficolta } from '@/components/Difficolta'
-import { Coriandoli, Sezione, useFesta } from '@/components/Elementi'
-import { IconInfo, IconRefresh } from '@/components/Icons'
+import { Coriandoli, Riga, Sezione, useFesta } from '@/components/Elementi'
+import { IconInfo, IconPlay, IconRefresh } from '@/components/Icons'
 import { Opzioni, Scelte } from '@/components/Opzioni'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { ComeSiGiocaAnagrammi } from '@/games/anagrammi/ComeSiGioca'
@@ -14,6 +15,8 @@ import {
   NOMI_LIVELLI_ANAGRAMMI,
   useAnagrammiLiberi,
 } from '@/games/anagrammi/useAnagrammiLiberi'
+import { BottoneLascia, FoglioNuova } from '@/games/sospese/Lascia'
+import { useSospesa } from '@/games/sospese/registro'
 import { FoglioSfida, InterruttoreContro, useContro, useFoglioSfida, useOpzioniLibera } from '@/games/sfide/Scelta'
 import { SECONDI_ANAGRAMMI } from '@shared/sfide-libere'
 import '@/games/anagrammi/Anagrammi.css'
@@ -29,10 +32,14 @@ function lettereDi(lunghezze: readonly number[]): string {
  * Gli Anagrammi liberi: cinque parole a caso, della lunghezza del livello
  * scelto, con il tempo per parola che si sceglie. Tutto nel telefono, e non
  * conta per la classifica. Con un amico le stesse parole per tutti e due,
- * nella sfida.
+ * nella sfida. Una partita lasciata a meta' resta in sospeso: si riprende da
+ * qui, o dalle Libere, che la aprono con `?riprendi`.
  */
 export default function AnagrammiLibera() {
-  const g = useAnagrammiLiberi()
+  const [query] = useSearchParams()
+  const g = useAnagrammiLiberi({ salva: true, riprendi: query.has('riprendi') })
+  const sospesa = useSospesa('anagrammi')
+  const [nuova, setNuova] = useState(false)
   const [regole, setRegole] = useState(false)
   const [contro, setContro] = useContro('anagrammi')
   const [opzioni, cambia] = useOpzioniLibera('anagrammi')
@@ -79,13 +86,30 @@ export default function AnagrammiLibera() {
           }))}
           scelto={livello}
           onScegli={(l) => cambia({ livello: l })}
-          onComincia={() => (contro === 'amico' ? setSfida(true) : comincia(livello))}
+          onComincia={() => (contro === 'amico' ? setSfida(true) : sospesa ? setNuova(true) : comincia(livello))}
           colore="var(--anagrammi-1)"
           etichetta={contro === 'amico' ? 'Sfida un amico' : 'Comincia'}
+          sopra={
+            sospesa &&
+            contro !== 'amico' && (
+              <Riga
+                icona={<IconPlay size={18} />}
+                titolo="Riprendi la partita"
+                sotto={sospesa.dettaglio}
+                onClick={g.riprendi}
+              />
+            )
+          }
         >
           {g.errore && <p className="ana-piede">{g.errore}</p>}
         </Difficolta>
         <FoglioSfida open={sfida} onClose={() => setSfida(false)} gioco="anagrammi" impostazioni={opzioni} />
+        <FoglioNuova
+          open={nuova}
+          onClose={() => setNuova(false)}
+          onRiprendi={g.riprendi}
+          onNuova={() => comincia(livello)}
+        />
         <ComeSiGiocaAnagrammi open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )
@@ -98,7 +122,12 @@ export default function AnagrammiLibera() {
       sotto="Libera"
       intera
       indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
-      azioni={info}
+      azioni={
+        <>
+          {info}
+          {!v.finita && <BottoneLascia onLascia={g.lascia} />}
+        </>
+      }
     >
       <PartitaAnagrammi
         vista={v}

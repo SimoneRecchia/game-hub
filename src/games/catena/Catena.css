@@ -779,12 +779,15 @@
   z-index: 2;
   display: grid;
   place-items: center;
+  /* Larga quanto la riga, con gli anelli al centro: il cartellino accanto si misura su di lei. */
+  align-self: stretch;
   height: var(--giunto);
   transition: opacity 500ms ease;
 }
 
 .cat-giunto svg {
-  width: auto;
+  /* Le proporzioni del viewBox, 24 per 40: la maglia e' larga quanto la riga, gli anelli no. */
+  width: calc((var(--giunto) + 14px) * 0.6);
   height: calc(100% + 14px);
   overflow: visible;
 }
@@ -829,6 +832,45 @@
 @keyframes cat-scatta {
   40% {
     transform: scale(1.25);
+  }
+}
+
+/*
+ * Il perché di una maglia: l'espressione che lega le due parole, su un
+ * cartellino storto accanto agli anelli. E' assoluto, quindi la maglia resta
+ * alta com'era e il binario non si sposta; un'espressione lunga si tronca, e
+ * intera sta nel riepilogo della fine.
+ */
+.cat-giunto__perche {
+  position: absolute;
+  top: 50%;
+  left: calc(50% + 20px);
+  max-width: calc(50% - 24px);
+  overflow: hidden;
+  padding: 2px 9px;
+  border: 2px solid var(--cat-ink);
+  border-radius: 999px;
+  background: var(--giallo);
+  box-shadow: 0 2px 0 var(--cat-ink);
+  color: var(--cat-ink);
+  font-size: clamp(11px, 3.1cqw, 13px);
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transform: translateY(-50%) rotate(-2deg);
+  animation: cat-perche 520ms 280ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+/* Le maglie passate si fanno piccole con le loro parole, e il cartellino si spegne con loro. */
+.cat-anello.is-sopra .cat-giunto__perche {
+  background: #e9dfa8;
+}
+
+@keyframes cat-perche {
+  from {
+    opacity: 0;
+    transform: translate(-12px, -50%) rotate(-2deg) scale(0.7);
   }
 }
 
@@ -1144,7 +1186,7 @@
     box-shadow 0.1s;
 }
 
-.cat-comincia:active {
+.cat-comincia:is(:active, [data-premuto]) {
   box-shadow: var(--ombra-tasto-giu);
   transform: translateY(3px);
   animation: none;
@@ -1177,7 +1219,7 @@
     opacity 0.2s;
 }
 
-.cat-azione:active:not(:disabled) {
+.cat-azione:is(:active, [data-premuto]):not(:disabled) {
   box-shadow: var(--ombra-tasto-giu);
   transform: translateY(3px);
 }
@@ -1462,7 +1504,7 @@
     box-shadow 0.1s;
 }
 
-.cat-fine__bottone:active {
+.cat-fine__bottone:is(:active, [data-premuto]) {
   box-shadow:
     0 1px 0 #2a1f5c,
     inset 0 3px 0 rgba(255, 255, 255, 0.5);
@@ -1547,6 +1589,7 @@
   .cat-fine,
   .cat-fine__icona,
   .cat-espressione,
+  .cat-giunto__perche,
   .cat-fine__timbro {
     animation: none;
   }

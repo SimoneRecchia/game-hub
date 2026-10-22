@@ -72,7 +72,7 @@
   transition: transform 0.12s var(--ease-out);
 }
 
-.fortuna-tavolo__siedi:active:not(:disabled) {
+.fortuna-tavolo__siedi:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow:
     0 0 0 #120c2b,

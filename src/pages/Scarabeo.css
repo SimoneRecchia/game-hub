@@ -292,7 +292,7 @@
   font-weight: 400;
 }
 
-.scr-tab__risultato:active {
+.scr-tab__risultato:is(:active, [data-premuto]) {
   transform: translateY(2px);
   box-shadow: none;
 }
@@ -394,7 +394,7 @@
     box-shadow 100ms var(--ease-out);
 }
 
-.scr-tasto:active:not(:disabled) {
+.scr-tasto:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow: var(--ombra-tasto-giu);
 }
@@ -504,7 +504,7 @@
   font: inherit;
 }
 
-button.scr-ultime:active {
+button.scr-ultime:is(:active, [data-premuto]) {
   transform: translateY(2px);
 }
 

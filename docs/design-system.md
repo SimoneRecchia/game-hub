@@ -66,6 +66,11 @@ colore sta in un token (`--shadow-tint`, `--ink`) e la geometria resta fuori.
 **Un tasto premuto scende sulla sua ombra**, non si rimpicciolisce: lo `scale` fa sembrare il tasto
 un'immagine che si allontana.
 
+La pressione si scrive `:is(:active, [data-premuto])`, mai `:active` da solo: l'attributo lo mette
+`src/lib/premuto.ts` appena il dito tocca, e sul telefono `:active` arrivava tardi, a volte solo
+alzando il dito. Il tasto scende subito (la transizione vale solo per il ritorno), e un bottone o un
+link senza una pressione sua scende di due punti da solo (`base.css`).
+
 ### 2.4 I colori
 
 **I colori pieni dell'album** (uguali nei due temi, sopra sempre `--ink`):

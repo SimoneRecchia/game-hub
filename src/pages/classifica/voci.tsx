@@ -81,7 +81,11 @@ export const NOMI_CLASSIFICHE: Record<ChiaveClassifica, string> = {
   ghigliottina: 'Ghigliottina',
   paroliere: 'Paroliere',
   catena: 'Catena',
-  fortuna: 'Fortuna',
+  ruota: NOME_CRAZY_TIME,
+  slot: NOME_SLOT,
+  blackjack: NOME_BLACKJACK,
+  roulette: NOME_ROULETTE,
+  superenalotto: NOME_SUPERENALOTTO,
 }
 
 /** I giochi della Fortuna, nell'ordine in cui si mostrano, con il loro nome. */
@@ -92,6 +96,18 @@ export const GIOCHI_FORTUNA: ReadonlyArray<[GiocoFortuna, string]> = [
   ['roulette', NOME_ROULETTE],
   ['superenalotto', NOME_SUPERENALOTTO],
 ]
+
+export const eGiocoFortuna = (chiave: ChiaveClassifica): chiave is GiocoFortuna =>
+  GIOCHI_FORTUNA.some(([g]) => g === chiave)
+
+/** Come si chiama una giocata di ogni gioco della Fortuna, una e tante. */
+const GIOCATE: Record<GiocoFortuna, [string, string]> = {
+  ruota: ['giro', 'giri'],
+  slot: ['giro', 'giri'],
+  blackjack: ['mano', 'mani'],
+  roulette: ['giro', 'giri'],
+  superenalotto: ['scheda', 'schede'],
+}
 
 /** I giochi, nell'ordine in cui si mostrano. */
 export const ORDINE_GIOCHI: GiocoClassificato[] = [
@@ -211,24 +227,27 @@ export function vociDi(chiave: ChiaveClassifica, risposta: Risposta, { giorno, o
         }
       })
 
-    case 'fortuna':
+    case 'ruota':
+    case 'slot':
+    case 'blackjack':
+    case 'roulette':
+    case 'superenalotto': {
+      const [una, tante] = GIOCATE[chiave]
       return (risposta as FortunaLeaderboard).rows.map((r) => {
-        const giocate = `${formatNumber(r.giocate)} ${r.giocate === 1 ? 'giocata' : 'giocate'}`
-        const conti = GIOCHI_FORTUNA.filter(([g]) => r.netti[g] !== 0).map(
-          ([g, nome]) => `${nome} ${conSegno(r.netti[g])}`,
-        )
+        const giocate = `${formatNumber(r.giocate)} ${r.giocate === 1 ? una : tante}`
         return {
           ...r,
           conSegno: true,
-          sotto: [...conti, giocate].join(' · '),
+          sotto: giocate,
           breve: giocate,
           dettaglio: [
-            ...GIOCHI_FORTUNA.map(([g, nome]) => ({ etichetta: nome, valore: conSegno(r.netti[g]), gioco: g })),
-            { etichetta: 'Totale', valore: conSegno(r.punti), forte: true },
-            { etichetta: 'Giocate', valore: formatNumber(r.giocate) },
+            { etichetta: 'Dato o tolto', valore: conSegno(r.punti), forte: true },
+            { etichetta: tante[0].toUpperCase() + tante.slice(1), valore: formatNumber(r.giocate) },
           ],
+          nota: 'A pari conto passa avanti chi ha giocato meno.',
         }
       })
+    }
 
     case 'wordle':
       return (risposta as LeaderboardResponse).rows.map((r) => ({

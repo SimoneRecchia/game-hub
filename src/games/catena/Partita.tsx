@@ -108,9 +108,9 @@ interface AdesivoPalco {
 }
 
 /** La fase da cui riprende una partita riaperta. */
-function faseDi(v: VistaCatena): Fase {
+function faseDi(v: VistaCatena, adesso: number): Fase {
   if (v.finita) return 'fine'
-  if (v.passo >= PASSO_FINALE) return v.finale && Date.now() < v.finale.inizio ? 'preambolo' : 'finale'
+  if (v.passo >= PASSO_FINALE) return v.finale && adesso < v.finale.inizio ? 'preambolo' : 'finale'
   return v.nuova ? 'intro' : 'gioco'
 }
 
@@ -123,9 +123,9 @@ const correnteDi = (v: VistaCatena) => v.voci.find((x) => x.tipo === 'nascosta')
  */
 const MASSIMO_LETTERE = 16
 
-/** Le lettere che si possono ancora scrivere: dopo quelle che si vedono, e prima dell'ultima nella finale. */
+/** Le lettere che si possono ancora scrivere, dopo quelle che si vedono. */
 const spazioDi = (voce: VoceCatena | null) =>
-  voce ? Math.max(0, MASSIMO_LETTERE - voce.lettere.length - (voce.ultima ? 1 : 0)) : 0
+  voce ? Math.max(0, MASSIMO_LETTERE - voce.lettere.length) : 0
 
 /**
  * La Catena in scena: in cima il montepremi, le cinque maglie e i jolly; in
@@ -140,15 +140,21 @@ export function PartitaCatena({
   comandi,
   fine,
   subito = false,
+  adesso = Date.now,
 }: {
   vista: VistaCatena
   comandi: ComandiCatena
   fine: ReactNode
   /** Senza il Comincia: in una sfida il tre-due-uno l'ha gia' fatto. */
   subito?: boolean
+  /**
+   * L'ora su cui sono scritti i tempi della vista. Nella libera si ferma a
+   * pagina nascosta (`adessoVisibile`): lasciata, la partita aspetta.
+   */
+  adesso?: () => number
 }) {
   const [mostrata, setMostrata] = useState(vista)
-  const [fase, setFase] = useState<Fase>(() => faseDi(vista))
+  const [fase, setFase] = useState<Fase>(() => faseDi(vista, adesso()))
   /** La coppia su cui sta la catena: scende un passo dietro allo stato. */
   const [passoVisto, setPassoVisto] = useState(vista.passo)
   /** Le lettere scritte nelle caselle vuote. */
@@ -225,9 +231,9 @@ export function PartitaCatena({
       setMostrata(vista)
       setPassoVisto(vista.passo)
       setScritte('')
-      setFase(faseDi(vista) === 'intro' ? fase : faseDi(vista))
+      setFase(faseDi(vista, adesso()) === 'intro' ? fase : faseDi(vista, adesso()))
     }
-  }, [vista, mostrata.chiave, fase, attacca])
+  }, [vista, mostrata.chiave, fase, attacca, adesso])
 
   // Comincia: la prima coppia arriva dal server, e cade al suo posto, una maglia dopo l'altra.
   const comincia = useCallback(async () => {
@@ -238,14 +244,14 @@ export function PartitaCatena({
       if (!montata.current || !r) return
       setMostrata(r.vista)
       setPassoVisto(r.vista.passo)
-      setFase(faseDi(r.vista) === 'intro' ? 'gioco' : faseDi(r.vista))
+      setFase(faseDi(r.vista, adesso()) === 'intro' ? 'gioco' : faseDi(r.vista, adesso()))
       setEntra(true)
       window.setTimeout(() => montata.current && setEntra(false), tempi().entrata)
       for (let i = 0; i < 3; i += 1) suona('maglia', { ritardo: 0.15 + i * 0.28, altezza: 1 + i * 0.08 })
     } finally {
       inVolo.current = false
     }
-  }, [comandi])
+  }, [comandi, adesso])
 
   // In una sfida si comincia da soli, con la stessa entrata del Comincia.
   const partita = useRef(false)
@@ -262,7 +268,7 @@ export function PartitaCatena({
     const regalato = mostrata.terzo === 'regalato'
     setTerzoCoperto(regalato && !ridotto())
     suona('intermezzo')
-    const inizio = mostrata.finale?.inizio ?? Date.now()
+    const inizio = mostrata.finale?.inizio ?? adesso()
     const timer: number[] = []
     if (regalato) {
       timer.push(
@@ -272,7 +278,7 @@ export function PartitaCatena({
             setTerzoCoperto(false)
             suona('magia')
           },
-          ridotto() ? 0 : Math.max(0, Math.min(2000, inizio - Date.now() - 1500)),
+          ridotto() ? 0 : Math.max(0, Math.min(2000, inizio - adesso() - 1500)),
         ),
       )
     }
@@ -283,14 +289,14 @@ export function PartitaCatena({
           setFase('finale')
           suona('via')
         },
-        Math.max(0, inizio - Date.now()),
+        Math.max(0, inizio - adesso()),
       ),
     )
     return () => {
       fermo = true
       timer.forEach((t) => window.clearTimeout(t))
     }
-  }, [fase, mostrata.terzo, mostrata.finale])
+  }, [fase, mostrata.terzo, mostrata.finale, adesso])
 
   // Il verdetto: le lettere si girano, e poi la fine con le espressioni.
   useEffect(() => {
@@ -446,7 +452,7 @@ export function PartitaCatena({
     async (testo: string | null) => {
       if (fase !== 'finale' || !corrente) return
       const t = tempi()
-      const parola = testo === null ? '' : corrente.lettere.toLowerCase() + testo + (corrente.ultima ?? '').toLowerCase()
+      const parola = testo === null ? '' : corrente.lettere.toLowerCase() + testo
       inVolo.current = true
       setFase('busta')
       setStato(testo === null ? 'Nessuna risposta…' : 'Vediamo…')
@@ -536,13 +542,20 @@ export function PartitaCatena({
           attiva={giocando}
         />
         {finale && (fase === 'finale' || fase === 'busta') ? (
-          <Minuto finale={mostrata.finale} tempoMs={mostrata.tempoFinaleMs} fermo={fase === 'busta'} onScade={comandi.scade} />
+          <Minuto
+            finale={mostrata.finale}
+            tempoMs={mostrata.tempoFinaleMs}
+            adesso={adesso}
+            fermo={fase === 'busta'}
+            onScade={comandi.scade}
+          />
         ) : !finale && mostrata.parola && giocando ? (
           <Miccia
             // Una parola nuova ha il suo tempo, intero.
             key={`${mostrata.passo}-${mostrata.parola.inizio}`}
             orologio={mostrata.parola}
             tempoMs={mostrata.tempoParolaMs}
+            adesso={adesso}
             attiva={fase === 'gioco'}
             ferma={fase === 'scorre' || fase === 'esito'}
             onScade={() => void scadeParola()}
@@ -789,7 +802,7 @@ function Binario({
                 </span>
               )}
             </div>
-            {i < voci.length - 1 && <Giunto chiusa={chiusa} dopo={i >= ultimo} />}
+            {i < voci.length - 1 && <Giunto chiusa={chiusa} dopo={i >= ultimo} espressione={v.espressione} />}
           </li>
         )
       })}
@@ -859,8 +872,6 @@ function Riga({
  * le lettere che si vedono in tessere d'oro e accanto quel che si scrive, con
  * il cursore. Quanto e' lunga la parola non lo dice niente: con una casella per
  * lettera, una lettera data e la casella vuota sembravano una parola di due.
- * Nella finale l'ultima lettera chiude la riga dall'altra parte, e si scrive in
- * mezzo.
  */
 function Scrittura({
   voce,
@@ -873,7 +884,7 @@ function Scrittura({
   classi: string
   scritte: string
 }) {
-  const date = voce.lettere.length + (voce.ultima ? 1 : 0)
+  const date = voce.lettere.length
   const scritto = scritte.toUpperCase()
   return (
     <div
@@ -882,8 +893,7 @@ function Scrittura({
       style={{ '--n': Math.max(scritto.length, 8), '--date': date } as CSSProperties}
       role="img"
       aria-label={
-        `Comincia con ${voce.lettere}${voce.ultima ? `, finisce con ${voce.ultima}` : ''}` +
-        `${scritte ? `; hai scritto ${voce.lettere}${scritto}${voce.ultima ?? ''}` : ''}`
+        `Comincia con ${voce.lettere}${scritte ? `; hai scritto ${voce.lettere}${scritto}` : ''}`
       }
     >
       <span className="cat-scrivi__date" aria-hidden="true">
@@ -900,15 +910,10 @@ function Scrittura({
             {l}
           </span>
         ))}
-        {attiva && voce.lettere.length + scritto.length + (voce.ultima ? 1 : 0) < MASSIMO_LETTERE && (
+        {attiva && voce.lettere.length + scritto.length < MASSIMO_LETTERE && (
           <span className="cat-scrivi__cursore" />
         )}
       </span>
-      {voce.ultima && (
-        <span className="cat-scrivi__data is-ultima" aria-hidden="true">
-          {voce.ultima}
-        </span>
-      )}
     </div>
   )
 }
@@ -916,17 +921,25 @@ function Scrittura({
 /**
  * La maglia fra due parole: due anelli aperti finché una delle due manca, poi
  * si chiudono con un lampo. Quella sotto la coppia di adesso non si vede
- * ancora: la catena va avanti, ma non si sa per quanto.
+ * ancora: la catena va avanti, ma non si sa per quanto. Chiusa, accanto ha il
+ * perché: l'espressione che lega le due parole, che si trovi la parola o che la
+ * mostri il gioco. Sta di lato, fuori dal binario, cosi' la catena non cambia
+ * misura.
  */
-function Giunto({ chiusa, dopo }: { chiusa: boolean; dopo: boolean }) {
+function Giunto({ chiusa, dopo, espressione }: { chiusa: boolean; dopo: boolean; espressione: string | null }) {
   return (
-    <span className={`cat-giunto${chiusa ? ' is-chiusa' : ''}${dopo ? ' is-dopo' : ''}`} aria-hidden="true">
-      <svg viewBox="0 0 24 40">
+    <span className={`cat-giunto${chiusa ? ' is-chiusa' : ''}${dopo ? ' is-dopo' : ''}`}>
+      <svg viewBox="0 0 24 40" aria-hidden="true">
         <rect className="cat-giunto__filo" x="5" y="2" width="14" height="22" rx="7" />
         <rect className="cat-giunto__filo cat-giunto__sotto" x="5" y="16" width="14" height="22" rx="7" />
         <rect className="cat-giunto__metallo" x="5" y="2" width="14" height="22" rx="7" />
         <rect className="cat-giunto__metallo cat-giunto__sotto" x="5" y="16" width="14" height="22" rx="7" />
       </svg>
+      {chiusa && espressione && (
+        <span className="cat-giunto__perche" title={espressione}>
+          {espressione}
+        </span>
+      )}
     </span>
   )
 }
@@ -1069,24 +1082,26 @@ function Anello({
 function Minuto({
   finale,
   tempoMs,
+  adesso: ora,
   fermo,
   onScade,
 }: {
   finale: { inizio: number; scadenza: number } | null
   tempoMs: number
+  adesso: () => number
   fermo: boolean
   onScade: () => void
 }) {
-  const [adesso, setAdesso] = useState(() => Date.now())
+  const [adesso, setAdesso] = useState(ora)
   const scaduto = useRef(false)
   const resta = finale ? Math.max(0, Math.min(tempoMs, finale.scadenza - adesso)) : tempoMs
   const secondi = Math.ceil(resta / 1000)
 
   useEffect(() => {
     if (fermo) return
-    const t = window.setInterval(() => setAdesso(Date.now()), 200)
+    const t = window.setInterval(() => setAdesso(ora()), 200)
     return () => window.clearInterval(t)
-  }, [fermo])
+  }, [fermo, ora])
 
   const ultimoTic = useRef<number | null>(null)
   useEffect(() => {
@@ -1116,17 +1131,19 @@ function Minuto({
 function Miccia({
   orologio,
   tempoMs,
+  adesso: ora,
   attiva,
   ferma,
   onScade,
 }: {
   orologio: { inizio: number; scadenza: number }
   tempoMs: number
+  adesso: () => number
   attiva: boolean
   ferma: boolean
   onScade: () => void
 }) {
-  const [adesso, setAdesso] = useState(() => Date.now())
+  const [adesso, setAdesso] = useState(ora)
   const scaduta = useRef(false)
   const accesa = adesso >= orologio.inizio
   const resta = Math.max(0, Math.min(tempoMs, orologio.scadenza - adesso))
@@ -1135,9 +1152,9 @@ function Miccia({
 
   useEffect(() => {
     if (ferma) return
-    const t = window.setInterval(() => setAdesso(Date.now()), 100)
+    const t = window.setInterval(() => setAdesso(ora()), 100)
     return () => window.clearInterval(t)
-  }, [ferma])
+  }, [ferma, ora])
 
   const ultimoTic = useRef<number | null>(null)
   useEffect(() => {

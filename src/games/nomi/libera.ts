@@ -169,3 +169,70 @@ export function altrePossibili(
 ): string[] {
   return (file.note?.[categoria] ?? []).filter((w) => !usate.includes(normalizza(w))).slice(0, quante)
 }
+
+/**
+ * La partita lasciata a meta', nel telefono: la si riprende anche il giorno
+ * dopo (vedi `src/games/sospese/registro.ts`). Il tempo si salva come quel che
+ * ne e' passato, non come un'ora: mentre si e' via l'orologio sta fermo, per
+ * chi gioca e per il computer, perché una libera non ha una classifica da
+ * proteggere.
+ */
+export const CHIAVE_PARTITA_NOMI = 'giochi.nomi.libera.partita'
+
+export interface NomiSospesa {
+  partita: PartitaLibera
+  risposte: Partial<Record<CategoriaNomi, string>>
+  /** Il tempo gia' giocato, in millisecondi. */
+  trascorsi: number
+}
+
+export function salvaNomiSospesa(s: NomiSospesa | null): void {
+  try {
+    // JSON scrive come null l'infinito delle categorie in cui il computer non scrive: `leggiNomiSospesa` lo rimette.
+    if (s) localStorage.setItem(CHIAVE_PARTITA_NOMI, JSON.stringify(s))
+    else localStorage.removeItem(CHIAVE_PARTITA_NOMI)
+  } catch {
+    /* senza localStorage la partita vive finché la pagina e' aperta */
+  }
+}
+
+const numero = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x)
+
+/** La partita salvata, se c'e' e ha la forma giusta: un salvataggio che non si legge non c'e'. */
+export function leggiNomiSospesa(): NomiSospesa | null {
+  let s: { partita?: Partial<Record<keyof PartitaLibera, unknown>>; risposte?: unknown; trascorsi?: unknown } | null
+  try {
+    s = JSON.parse(localStorage.getItem(CHIAVE_PARTITA_NOMI) ?? 'null')
+  } catch {
+    return null
+  }
+  const p = s?.partita
+  if (!s || !p || !numero(s.trascorsi) || !s.risposte || typeof s.risposte !== 'object') return null
+  const { categorie, computer, tempi, stopMs, tempoMs } = p
+  if (
+    !(LETTERE_NOMI as readonly unknown[]).includes(p.lettera) ||
+    !(LIVELLI_NOMI as readonly unknown[]).includes(p.livello) ||
+    !Array.isArray(categorie) ||
+    !Array.isArray(computer) ||
+    !Array.isArray(tempi) ||
+    computer.length !== categorie.length ||
+    tempi.length !== categorie.length ||
+    !numero(stopMs) ||
+    !numero(tempoMs)
+  ) {
+    return null
+  }
+  return {
+    partita: {
+      lettera: p.lettera as LetteraNomi,
+      categorie: categorie as CategoriaNomi[],
+      livello: p.livello as LivelloNomi,
+      computer: computer.map((r: unknown) => (typeof r === 'string' ? r : null)),
+      tempi: tempi.map((t: unknown) => (numero(t) ? t : Number.POSITIVE_INFINITY)),
+      stopMs,
+      tempoMs,
+    },
+    risposte: s.risposte as Partial<Record<CategoriaNomi, string>>,
+    trascorsi: Math.max(0, Math.min(s.trascorsi, tempoMs)),
+  }
+}

@@ -157,7 +157,7 @@
     box-shadow 0.12s var(--ease-out);
 }
 
-.bj-sala__vai:active:not(:disabled) {
+.bj-sala__vai:is(:active, [data-premuto]):not(:disabled) {
   transform: translateY(3px);
   box-shadow:
     0 1px 0 #120c2b,

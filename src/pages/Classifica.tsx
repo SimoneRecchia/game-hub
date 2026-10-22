@@ -1,5 +1,5 @@
 import { Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom'
-import { ROTTE, SLUG, giocoDaSlug } from '@/app/rotte'
+import { ROTTE, SLUG, giocoDaSlug, giocoFortunaDaSlug } from '@/app/rotte'
 import type { ChiaveClassifica, GiocoClassificato } from '@shared/types'
 import { Panoramica } from './classifica/Panoramica'
 import { indietroDa, scopeDa } from './classifica/Periodo'
@@ -32,11 +32,10 @@ export default function Classifica() {
 
   const scope = scopeDa(query.get('periodo'))
   const indietro = indietroDa(query.get('indietro'))
-  const aperta: ChiaveClassifica | null = !slug
-    ? null
-    : slug === 'generale' || slug === 'fortuna'
-      ? slug
-      : giocoDaSlug(slug)
-  if (slug && !aperta) return <Navigate to={ROTTE.classifica()} replace />
-  return <Panoramica scope={scope} indietro={indietro} aperta={aperta} />
+  // /classifica/fortuna non apre un foglio: porta alle classifiche dei suoi giochi, una per gioco.
+  const fortuna = slug === 'fortuna'
+  const aperta: ChiaveClassifica | null =
+    !slug || fortuna ? null : slug === 'generale' ? slug : (giocoDaSlug(slug) ?? giocoFortunaDaSlug(slug))
+  if (slug && !fortuna && !aperta) return <Navigate to={ROTTE.classifica()} replace />
+  return <Panoramica scope={scope} indietro={indietro} aperta={aperta} fortuna={fortuna} />
 }

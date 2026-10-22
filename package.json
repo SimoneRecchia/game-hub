@@ -23,6 +23,7 @@
     "anagrammi:build": "node scripts/build-anagrammi.mjs",
     "ghigliottina:locale": "vite-node scripts/genera-ghigliottina.ts -- --local",
     "ghigliottina:build": "node scripts/build-ghigliottina.mjs",
+    "ghigliottina:classificate": "node scripts/build-ghigliottina-classificate.mjs",
     "paroliere:locale": "vite-node scripts/genera-paroliere.ts -- --local",
     "catena:locale": "vite-node scripts/genera-catena.ts -- --local",
     "catena:build": "node scripts/build-catena.mjs",

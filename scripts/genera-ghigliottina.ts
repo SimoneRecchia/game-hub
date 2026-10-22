@@ -3,11 +3,14 @@
  *
  * La partita di un giorno viene dall'elenco delle classificate
  * (scripts/data/ghigliottina-classificate.json, che fa
- * scripts/build-ghigliottina.mjs) e dal numero del giorno
+ * scripts/build-ghigliottina-classificate.mjs) e dal numero del giorno
  * (`ghigliottinaDelGiorno` in shared/ghigliottina.ts): la stessa parola
  * vincente, le stesse coppie nello stesso ordine per tutti. Si scrivono con
  * `INSERT OR IGNORE`, come le giornate degli Anagrammi: una giornata scritta non
- * cambia piu', anche se l'elenco si rifa'.
+ * cambia piu', anche se l'elenco si rifa'. Tranne quelle di un formato vecchio
+ * (`FORMATO`) nel futuro e che nessuno ha aperto, che si rifanno, come le
+ * giornate del quiz: nessuno le ha viste. Il 2 e' quello delle ghigliottine
+ * difficili, con le esche scritte a mano (scripts/build-ghigliottina-classificate.mjs).
  *
  *   npx vite-node scripts/genera-ghigliottina.ts                 anteprima di oggi, senza scrivere
  *   npx vite-node scripts/genera-ghigliottina.ts -- --local      D1 locale di wrangler
@@ -52,6 +55,13 @@ function interroga<T>(sql: string): T[] {
 
 const cita = (s: string) => `'${s.replace(/'/g, "''")}'`
 
+/** La forma delle ghigliottine: una giornata di un formato vecchio, nel futuro e mai aperta, si rifà. */
+const FORMATO = 2
+
+/** Una giornata che si puo' rifare: dopo oggi, di un formato vecchio, e che nessuno ha aperto. */
+const DA_RIFARE = `formato < ${FORMATO} AND puzzle_number > ${DA}
+  AND NOT EXISTS (SELECT 1 FROM ghigliottina_partite p WHERE p.puzzle_number = ghigliottina_giornate.puzzle_number)`
+
 const elenco = JSON.parse(
   readFileSync(join(HERE, 'data', 'ghigliottina-classificate.json'), 'utf8'),
 ) as GhigliottinaDellElenco[]
@@ -60,7 +70,8 @@ const numeri = Array.from({ length: GIORNI }, (_, i) => DA + i)
 const presenti = SCRIVE
   ? new Set(
       interroga<{ puzzle_number: number }>(
-        `SELECT puzzle_number FROM ghigliottina_giornate WHERE puzzle_number BETWEEN ${DA} AND ${DA + GIORNI - 1}`,
+        `SELECT puzzle_number FROM ghigliottina_giornate
+          WHERE puzzle_number BETWEEN ${DA} AND ${DA + GIORNI - 1} AND NOT (${DA_RIFARE})`,
       ).map((r) => r.puzzle_number),
     )
   : new Set<number>()
@@ -77,12 +88,13 @@ for (const numero of SCRIVE ? mancanti : numeri.slice(0, 1)) {
   const anteprima = giorno.coppie.map((c) => c.parole[c.giusta]).join(', ')
   console.log(`  #${numero} ${dateForPuzzleNumber(numero)}  ${giorno.soluzione.toUpperCase()}: ${anteprima}`)
   righe.push(
+    `DELETE FROM ghigliottina_giornate WHERE puzzle_number = ${numero} AND ${DA_RIFARE};`,
     `INSERT OR IGNORE INTO ghigliottina_giornate (puzzle_number, ghigliottina, formato, created_at) VALUES ` +
-      `(${numero}, ${cita(JSON.stringify(giorno))}, 1, ${cita(adesso)});`,
+      `(${numero}, ${cita(JSON.stringify(giorno))}, ${FORMATO}, ${cita(adesso)});`,
   )
 }
 
 if (SCRIVE) {
-  console.log(`  scrivo ${righe.length} giornate su ${REMOTO ? 'produzione' : 'locale'}…`)
+  console.log(`  scrivo ${mancanti.length} giornate su ${REMOTO ? 'produzione' : 'locale'}…`)
   wrangler(['--command', righe.join('\n')])
 }

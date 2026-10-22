@@ -107,7 +107,7 @@
   transition: background-color var(--dur-fast) var(--ease-out);
 }
 
-.riga--tocca:active {
+.riga--tocca:is(:active, [data-premuto]) {
   background: var(--fill-quaternary);
 }
 

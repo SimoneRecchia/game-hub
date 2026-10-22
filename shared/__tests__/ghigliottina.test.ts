@@ -56,7 +56,8 @@ describe('l’elenco delle ghigliottine', () => {
   it('le libere non hanno nessuna soluzione delle classificate: il telefono non ha le risposte di nessun giorno', () => {
     const delGiorno = new Set(classificate.map((g) => g.s))
     expect(libere.some((g) => delGiorno.has(g.s))).toBe(false)
-    expect(classificate.length).toBeGreaterThan(250)
+    // Le classificate scritte a mano: piu' di cinque mesi prima che una vincente torni.
+    expect(classificate.length).toBeGreaterThanOrEqual(150)
     expect(libere.length).toBeGreaterThan(100)
   })
 

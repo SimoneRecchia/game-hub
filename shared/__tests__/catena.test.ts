@@ -85,13 +85,13 @@ describe('le parole', () => {
 })
 
 describe('la catena', () => {
-  it('comincia dalla prima parola, con la prima lettera e il montepremi intero', () => {
+  it('comincia dalla prima parola, con le prime due lettere e il montepremi intero', () => {
     const s = inizio()
     expect(s.passo).toBe(0)
     expect(s.montepremi).toBe(MONTEPREMI_CATENA)
-    expect(s.parole[0].lettere).toBe(1)
-    // Della finale si vedono le prime due lettere.
-    expect(s.parole[PASSO_FINALE].lettere).toBe(2)
+    expect(s.parole[0].lettere).toBe(2)
+    // Della finale se ne vede una sola: e' quella che deve far pensare.
+    expect(s.parole[PASSO_FINALE].lettere).toBe(1)
   })
 
   it('una parola giusta fa scendere, e non costa niente', () => {
@@ -105,7 +105,7 @@ describe('la catena', () => {
     const una = applicaCatena(CATENA, inizio(), prova('lancio'))!
     expect(una.esito).toBe('sbagliata')
     expect(una.dopo.passo).toBe(0)
-    expect(una.dopo.parole[0].lettere).toBe(2)
+    expect(una.dopo.parole[0].lettere).toBe(3)
     expect(una.dopo.montepremi).toBe(MONTEPREMI_CATENA - ERRORE_CATENA)
     const due = applicaCatena(CATENA, una.dopo, prova('lavoro'))!
     expect(due.esito).toBe('rivelata')
@@ -139,20 +139,20 @@ describe('la catena', () => {
   it('i jolly sono due, mostrano la lettera dopo e non costano niente', () => {
     const s = gioca({ k: 'j' }, { k: 'j' })
     expect(s.jollyUsati).toBe(JOLLY_CATENA)
-    expect(s.parole[0].lettere).toBe(3)
+    expect(s.parole[0].lettere).toBe(4)
     expect(s.montepremi).toBe(MONTEPREMI_CATENA)
     expect(applicaCatena(CATENA, s, { k: 'j' })).toBeNull()
   })
 
   it('ne’ un jolly ne’ un errore mostrano l’ultima lettera: quella resta da trovare', () => {
-    // Una parola di quattro lettere: un errore e un jolly ne mostrano tre, e il secondo jolly non si puo' usare.
-    const corta: CatenaDelGiorno = { ...CATENA, parole: CATENA.parole.map((p, i) => (i === 1 ? 'lume' : p)) }
+    // Una parola di cinque lettere: un errore e un jolly ne mostrano quattro, e il secondo jolly non si puo' usare.
+    const corta: CatenaDelGiorno = { ...CATENA, parole: CATENA.parole.map((p, i) => (i === 1 ? 'lumen' : p)) }
     const s = svolgiCatena(corta, [prova('lama'), { k: 'j' }, { k: 'j' }])
-    expect(s.parole[0]).toMatchObject({ lettere: 3, errori: 1 })
+    expect(s.parole[0]).toMatchObject({ lettere: 4, errori: 1 })
     expect(s.jollyUsati).toBe(1)
-    // Con due jolly se ne vedono tre lo stesso, e un errore non mostra la quarta: la mostra il secondo.
+    // Con due jolly se ne vedono quattro lo stesso, e un errore non mostra la quinta: la mostra il secondo.
     const t = svolgiCatena(corta, [{ k: 'j' }, { k: 'j' }, prova('lama')])
-    expect(t.parole[0]).toMatchObject({ lettere: 3, errori: 1 })
+    expect(t.parole[0]).toMatchObject({ lettere: 4, errori: 1 })
   })
 
   it('arrivati alla finale con tutti e due i jolly, il terzo elemento c’e’ gia’', () => {
@@ -229,13 +229,14 @@ describe('la parola scritta per intero', () => {
     // Dopo un errore se ne vedono due: riscrivere la seconda, o tutte e due, vale lo stesso.
     expect(parolaVoluta('libero', 'liibero', { prime: 2, ultima: false })).toBe('libero')
     expect(parolaVoluta('libero', 'lilibero', { prime: 2, ultima: false })).toBe('libero')
-    const s = applicaCatena(CATENA, inizio(), prova(parolaRiconosciuta(CATENA, inizio(), 'llibero')))!
+    // All'inizio se ne vedono due: chi riscrive tutto manda "lilibero".
+    const s = applicaCatena(CATENA, inizio(), prova(parolaRiconosciuta(CATENA, inizio(), 'lilibero')))!
     expect(s.esito).toBe('giusta')
   })
 
-  it('nella finale vale anche scrivendo l’ultima lettera, o le prime due', () => {
-    // NA…E: si scrive VAL. Chi scrive VALE manda "navalee", chi scrive NAVALE "nanavalee", chi scrive NAVAL "nanavale".
-    for (const scritta of ['navale', 'navalee', 'nanavalee', 'nanavale', 'naavalee']) {
+  it('nella finale vale anche riscrivendo la prima lettera', () => {
+    // N…: si scrive AVALE. Chi scrive NAVALE manda "nnavale".
+    for (const scritta of ['navale', 'nnavale']) {
       expect(parolaRiconosciuta(CATENA, finale(), scritta), scritta).toBe('navale')
     }
   })
@@ -244,17 +245,18 @@ describe('la parola scritta per intero', () => {
     expect(parolaVoluta('libero', 'llibera', { prime: 1, ultima: false })).toBe('llibera')
     expect(parolaVoluta('libero', 'lancio', { prime: 1, ultima: false })).toBe('lancio')
     expect(parolaVoluta('libero', 'l', { prime: 1, ultima: false })).toBe('l')
-    expect(parolaRiconosciuta(CATENA, finale(), 'navigee')).toBe('navigee')
-    // Le lettere date al loro posto, ma niente in mezzo, non sono una parola.
-    expect(parolaRiconosciuta(CATENA, finale(), 'nae')).toBe('nae')
+    expect(parolaRiconosciuta(CATENA, finale(), 'nnavigare')).toBe('nnavigare')
+    // La lettera data da sola non e' una parola.
+    expect(parolaRiconosciuta(CATENA, finale(), 'n')).toBe('n')
   })
 })
 
 describe('quel che si vede', () => {
-  it('all’inizio la prima coppia, e della parola in mezzo la prima lettera', () => {
+  it('all’inizio la prima coppia, e della parola in mezzo le prime due lettere', () => {
     const voci = vistaCatena(CATENA, inizio(), { finita: false, indovinata: null })
     expect(voci.map((v) => v.parola)).toEqual(['spirito', null, 'tiro'])
-    expect(voci[1]).toMatchObject({ tipo: 'nascosta', lettere: 'L', espressione: null })
+    expect(voci[1]).toMatchObject({ tipo: 'nascosta', lettere: 'LI', espressione: null })
+    expect(voci.map((v) => v.espressione)).toEqual([null, null, null])
   })
 
   it('le parole dopo la coppia di adesso non escono', () => {
@@ -263,11 +265,19 @@ describe('quel che si vede', () => {
     expect(voci.map((v) => v.parola)).toEqual(['spirito', 'libero', 'tiro', null, 'dondolo'])
   })
 
-  it('della finale le prime due lettere e l’ultima, e il terzo elemento solo se c’e’', () => {
+  it('fra due parole che si vedono, l’espressione che le lega, che la parola sia trovata o mostrata', () => {
+    const trovata = vistaCatena(CATENA, gioca(prova('libero')), { finita: false, indovinata: null })
+    expect(trovata.map((v) => v.espressione)).toEqual(['spirito libero', 'tiro libero', null, null, null])
+    const mostrata = vistaCatena(CATENA, gioca(prova('lancio'), prova('lavoro')), { finita: false, indovinata: null })
+    expect(mostrata.map((v) => v.espressione)).toEqual(['spirito libero', 'tiro libero', null, null, null])
+  })
+
+  it('della finale la prima lettera sola, e il terzo elemento solo se c’e’', () => {
     const conJolly = gioca({ k: 'j' }, ...giuste)
     const voci = vistaCatena(CATENA, conJolly, { finita: false, indovinata: null })
     expect(voci).toHaveLength(PAROLE_CATENA)
-    expect(voci[NASCOSTE_CATENA[PASSO_FINALE]]).toMatchObject({ lettere: 'NA', ultima: 'E', parola: null })
+    expect(voci[NASCOSTE_CATENA[PASSO_FINALE]]).toMatchObject({ lettere: 'N', parola: null, espressione: null })
+    expect(voci[NASCOSTE_CATENA[PASSO_FINALE] - 1].espressione).toBeNull()
     expect(voci[POSTO_TERZO]).toMatchObject({ tipo: 'terzo', parola: null })
     const regalato = vistaCatena(CATENA, gioca(...giuste), { finita: false, indovinata: null })
     expect(regalato[POSTO_TERZO].parola).toBe('base')

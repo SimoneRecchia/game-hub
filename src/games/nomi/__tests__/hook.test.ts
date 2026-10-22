@@ -122,16 +122,143 @@ vi.mock('../libera', async (originale) => ({
 }))
 vi.mock('../conti', () => ({ registraPartitaNomi: () => {} }))
 
+// Il registro delle partite in sospeso, in memoria: niente server, niente eventi della pagina.
+const registro = vi.hoisted(() => ({ voci: new Map<string, { dettaglio?: string }>(), eventi: [] as string[] }))
+vi.mock('@/games/sospese/registro', () => ({
+  segnaSospesa: (gioco: string, info: { dettaglio?: string }) => {
+    if (!registro.voci.has(gioco)) registro.eventi.push('inizio')
+    registro.voci.set(gioco, info)
+  },
+  riprendiSospesa: () => registro.eventi.push('ripresa'),
+  chiudiSospesa: (gioco: string, esito = 'finita') => {
+    registro.voci.delete(gioco)
+    registro.eventi.push(esito)
+  },
+  sospesaDi: (gioco: string) => registro.voci.get(gioco) ?? null,
+}))
+
+/** Un `localStorage` e un `document` da banco: il salvataggio e la pagina che si nasconde. */
+function pagina() {
+  const dati = new Map<string, string>()
+  const ascolta = new Map<string, () => void>()
+  const doc = {
+    visibilityState: 'visible',
+    addEventListener: (tipo: string, fa: () => void) => ascolta.set(tipo, fa),
+    removeEventListener: (tipo: string) => ascolta.delete(tipo),
+  }
+  vi.stubGlobal('localStorage', {
+    getItem: (k: string) => dati.get(k) ?? null,
+    setItem: (k: string, v: string) => dati.set(k, v),
+    removeItem: (k: string) => dati.delete(k),
+  })
+  vi.stubGlobal('document', doc)
+  return {
+    dati,
+    nascondi(nascosta: boolean) {
+      doc.visibilityState = nascosta ? 'hidden' : 'visible'
+      ascolta.get('visibilitychange')?.()
+    },
+  }
+}
+
 describe('la libera contro il computer', () => {
+  let pag: ReturnType<typeof pagina>
   beforeEach(() => {
     banco.azzera()
     vi.useFakeTimers()
     // Gli orologi dell'hook sono quelli di `window`: qui sono quelli finti del test.
-    vi.stubGlobal('window', globalThis)
+    vi.stubGlobal('window', Object.assign(Object.create(globalThis), { addEventListener() {}, removeEventListener() {} }))
+    registro.voci.clear()
+    registro.eventi = []
+    pag = pagina()
   })
   afterEach(() => {
     vi.unstubAllGlobals()
     vi.useRealTimers()
+  })
+
+  it('lasciata a meta’ si riprende con le risposte e il tempo che restava, e a pagina nascosta l’orologio sta fermo', async () => {
+    const banco2 = pag
+    const h = banco.rendi(useNomiLibera)
+    h.corrente.nuova('normale')
+    h.aggiorna()
+    await vi.advanceTimersByTimeAsync(0)
+    h.aggiorna()
+    expect(registro.eventi).toEqual(['inizio'])
+    h.corrente.parti()
+    h.aggiorna()
+    const p = h.corrente.partita!
+    h.corrente.scrivi('nomi', 'Anna')
+    h.aggiorna()
+    await vi.advanceTimersByTimeAsync(10_000)
+    h.aggiorna()
+
+    // Nascosta: il tempo non corre, neanche per il computer.
+    banco2.nascondi(true)
+    h.aggiorna()
+    expect(h.corrente.scadenza).toBeNull()
+    await vi.advanceTimersByTimeAsync(p.stopMs + 60_000)
+    h.aggiorna()
+    expect(h.corrente.fase).toBe('gioco')
+    banco2.nascondi(false)
+    h.aggiorna()
+    expect(h.corrente.scadenza).toBe(Date.now() + p.tempoMs - 10_000)
+
+    // Un'altra pagina, il giorno dopo: si riprende da li', senza il rullo.
+    await vi.advanceTimersByTimeAsync(5_000)
+    h.aggiorna()
+    banco2.nascondi(true)
+    h.aggiorna()
+    expect(registro.voci.get('nomi')?.dettaglio).toBe('Lettera A · 2:45 rimasti')
+    banco.azzera()
+    vi.setSystemTime(Date.now() + 24 * 60 * 60 * 1000)
+    const r = banco.rendi(useNomiLibera)
+    expect(r.corrente.fase).toBe('scelta')
+    r.corrente.riprendi()
+    r.aggiorna()
+    expect(r.corrente.fase).toBe('riprende')
+    await vi.advanceTimersByTimeAsync(0)
+    r.aggiorna()
+    expect(r.corrente).toMatchObject({ fase: 'gioco', risposte: { nomi: 'Anna' }, partita: p })
+    expect(r.corrente.scadenza).toBe(Date.now() + p.tempoMs - 15_000)
+    expect(registro.eventi).toEqual(['inizio', 'ripresa'])
+
+    // Finita, se ne va: dal registro e dal telefono.
+    r.corrente.dicoStop()
+    r.aggiorna()
+    expect(r.corrente.fase).toBe('fine')
+    expect(registro.eventi).toEqual(['inizio', 'ripresa', 'finita'])
+    expect(banco2.dati.size).toBe(0)
+  })
+
+  it('lasciata, non si ritrova; e un salvataggio che il registro non ha piu’ si butta', async () => {
+    const banco2 = pag
+    const h = banco.rendi(useNomiLibera)
+    h.corrente.nuova('facile')
+    h.aggiorna()
+    await vi.advanceTimersByTimeAsync(0)
+    h.aggiorna()
+    h.corrente.parti()
+    h.aggiorna()
+    h.corrente.lascia()
+    h.aggiorna()
+    expect(h.corrente.fase).toBe('scelta')
+    expect(registro.eventi).toEqual(['inizio', 'annullata'])
+    expect(banco2.dati.size).toBe(0)
+
+    h.corrente.nuova('facile')
+    h.aggiorna()
+    await vi.advanceTimersByTimeAsync(0)
+    h.aggiorna()
+    expect(banco2.dati.size).toBe(1)
+    // Le Libere l'hanno lasciata da fuori: il registro non c'e' piu', e la pagina dopo non la riprende.
+    registro.voci.clear()
+    banco.azzera()
+    const r = banco.rendi(useNomiLibera)
+    expect(banco2.dati.size).toBe(0)
+    r.corrente.riprendi()
+    r.aggiorna()
+    expect(r.corrente.fase).toBe('scelta')
   })
 
   it('il tempo parte quando la lettera si vede, per tutti e due: il rullo non lo toglie a chi gioca', async () => {

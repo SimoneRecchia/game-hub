@@ -5,9 +5,12 @@ import App from './App'
 import { TransizioniProvider } from './app/navigazione'
 import { AuthProvider } from './lib/auth'
 import { ToastProvider } from './components/Toast'
+import { installaPremuto } from './lib/premuto'
 import './styles/fonts.css'
 import './styles/tokens.css'
 import './styles/base.css'
+
+installaPremuto()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('#root non trovato')

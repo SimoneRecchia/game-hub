@@ -1801,8 +1801,8 @@ export type GiocoClassificato =
  */
 export type GiocoDaTavolo = 'battaglia' | 'indovina' | 'lupus' | 'scarabocchi' | 'sequenze' | GiocoTavoliere
 
-/** Una classifica: quella di un gioco, o la generale che le somma. */
-export type ChiaveClassifica = GiocoClassificato | 'generale' | 'fortuna'
+/** Una classifica: la generale, quella di un gioco classificato, o quella di un gioco della Fortuna. */
+export type ChiaveClassifica = GiocoClassificato | 'generale' | GiocoFortuna
 
 /** Una riga dell'anteprima di una classifica: chi, e quanti punti. */
 export interface RigaAnteprima {
@@ -1875,17 +1875,16 @@ export interface GeneraleLeaderboard {
   me: GeneraleRow | null
 }
 
-/** Una riga della classifica della Fortuna: chi ha vinto di piu' ai giochi d'azzardo, nel periodo. */
+/** Una riga della classifica di un gioco della Fortuna: chi ci ha vinto di piu', nel periodo. */
 export interface FortunaRow {
   rank: number
   playerId: string
   nickname: string
   displayName: string
   avatarColor: string
-  /** Quel che i giochi della Fortuna hanno dato o tolto, insieme: puo' essere sotto zero. */
+  /** Quel che il gioco ha dato o tolto: puo' essere sotto zero. */
   punti: number
-  netti: Record<GiocoFortuna, number>
-  /** I giri della ruota, della slot e della roulette, le mani del blackjack e le schede del SuperEnalotto. */
+  /** I giri della ruota, della slot o della roulette, le mani del blackjack, le schede del SuperEnalotto. */
   giocate: number
 }
 
@@ -1893,6 +1892,7 @@ export interface FortunaLeaderboard {
   scope: LeaderboardScope
   periodo: PeriodoClassifica
   updatedAt: string
+  gioco: GiocoFortuna
   rows: FortunaRow[]
   me: FortunaRow | null
 }

@@ -15,9 +15,11 @@ export interface VistaParoliere {
   /** Le facce dei dadi, riga per riga: null finché la clessidra non si gira. */
   griglia: string[] | null
   lato: number
-  /** Quando finisce il tempo, sull'orologio del telefono: null finché non parte. */
+  /** Quando finisce il tempo, sull'orologio del telefono: null finché non parte, o mentre e' ferma. */
   scadenza: number | null
   tempoMs: number
+  /** Il tempo che resta a clessidra ferma, se non e' tutto: una libera ripresa, o a pagina nascosta. */
+  fermo?: number
   /** Le parole trovate, nell'ordine in cui sono arrivate. */
   trovate: string[]
   punteggio: number
@@ -103,7 +105,7 @@ interface Ultima {
 }
 
 /** Il tempo che resta, aggiornato quattro volte al secondo finché corre. */
-function useRestante(scadenza: number | null, tempoMs: number): number {
+function useRestante(scadenza: number | null, tempoMs: number, fermo = tempoMs): number {
   const [adesso, setAdesso] = useState(() => Date.now())
   useEffect(() => {
     if (scadenza === null) return
@@ -111,7 +113,7 @@ function useRestante(scadenza: number | null, tempoMs: number): number {
     const t = window.setInterval(() => setAdesso(Date.now()), 250)
     return () => window.clearInterval(t)
   }, [scadenza])
-  return scadenza === null ? tempoMs : Math.max(0, Math.min(tempoMs, scadenza - adesso))
+  return scadenza === null ? fermo : Math.max(0, Math.min(tempoMs, scadenza - adesso))
 }
 
 /**
@@ -164,7 +166,7 @@ export function PartitaParoliere({
   const vistaRef = useRef(vista)
   vistaRef.current = vista
 
-  const corrente = useRestante(vista.scadenza, vista.tempoMs)
+  const corrente = useRestante(vista.scadenza, vista.tempoMs, vista.fermo)
   // Finita la partita la clessidra si ferma dov'era: con un "basta" a meta', resta la sabbia di quel momento.
   const fermo = useRef<number | null>(null)
   if (scena === 'gioca' && vista.scadenza !== null) fermo.current = corrente
