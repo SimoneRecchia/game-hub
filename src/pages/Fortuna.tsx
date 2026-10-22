@@ -1,11 +1,9 @@
-import { useState, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { Biglietto } from '@/components/Biglietto'
 import { Numero, Sezione } from '@/components/Elementi'
-import { IconInfo, IconLock } from '@/components/Icons'
-import { BottoneBarra } from '@/components/Pagina'
-import { Sheet } from '@/components/Sheet'
+import { IconLock } from '@/components/Icons'
 import { Vetrina } from '@/components/Vetrina'
 import { TavoliDegliAmici } from '@/games/blackjack/Amici'
 import { PochiPunti } from '@/games/fortuna/Avvisi'
@@ -19,15 +17,14 @@ import {
   type StatoRuota,
 } from '@/games/stato'
 import { useDati } from '@/lib/dati'
-import { formatGameDate, inPunti } from '@/lib/format'
+import { formatGameDate } from '@/lib/format'
 import { NOME_BLACKJACK, PUNTATA_MINIMA_BJ } from '@shared/blackjack'
 import { gameDate } from '@shared/daily'
 import { NOME_ROULETTE, PUNTATA_MINIMA_RL } from '@shared/roulette'
-import { NOME_CRAZY_TIME, PUNTATA_MINIMA, resa } from '@shared/ruota'
+import { NOME_CRAZY_TIME, PUNTATA_MINIMA } from '@shared/ruota'
 import { NOME_SLOT, PUNTATA_MINIMA_SLOT } from '@shared/slot'
-import { COSTI, NOME_SUPERENALOTTO, QUOTA_PREMI, SCHEDE_MASSIME } from '@shared/superenalotto'
+import { COSTI, NOME_SUPERENALOTTO } from '@shared/superenalotto'
 import type { FortunaRisposta, GiocoFortuna } from '@shared/types'
-import '@/games/cruciverba/ComeSiGioca.css'
 import './Fortuna.css'
 
 /** I giochi della scheda, nell'ordine in cui si vedono. */
@@ -38,8 +35,6 @@ const GIOCHI: ReadonlyArray<{ id: GiocoFortuna; nome: string; a: string }> = [
   { id: 'roulette', nome: NOME_ROULETTE, a: ROTTE.roulette },
   { id: 'superenalotto', nome: NOME_SUPERENALOTTO, a: ROTTE.superenalotto },
 ]
-
-const RESA = Math.round(resa(1) * 100)
 
 /** Quanto serve per giocare a ognuno: la puntata minima, o la scheda piu' economica del SuperEnalotto. */
 const SERVONO: Record<GiocoFortuna, number> = {
@@ -67,7 +62,6 @@ const SERVE_PER_TUTTI = Math.min(...Object.values(SERVONO))
  */
 export default function Fortuna() {
   const { dati, ricarica } = useDati<FortunaRisposta>('/fortuna')
-  const [regole, setRegole] = useState(false)
   const stati: Record<GiocoFortuna, StatoRuota> | null = dati
     ? {
         ruota: statoRuota(dati.ruota),
@@ -84,11 +78,6 @@ export default function Fortuna() {
       titolo="Fortuna"
       sopra={formatGameDate(dati?.date ?? gameDate())}
       classifica={ROTTE.classifica('fortuna')}
-      azioni={
-        <BottoneBarra etichetta="Come funziona" onClick={() => setRegole(true)}>
-          <IconInfo size={21} />
-        </BottoneBarra>
-      }
     >
       <Saldo dati={dati ?? null} />
       {dati && dati.saldo < SERVE_PER_TUTTI && (
@@ -123,46 +112,6 @@ export default function Fortuna() {
         </Sezione>
       )}
 
-      <Sheet open={regole} onClose={() => setRegole(false)} title="Come funziona">
-        <div className="cru-aiuto">
-          <p className="cru-aiuto__lede">
-            Si puntano i punti fatti oggi nelle classificate. Il saldo è uno per tutti i giochi: quel che vinci a uno
-            lo puoi puntare a un altro, e il saldo con cui chiudi la giornata è il tuo punteggio di oggi nella
-            classifica generale.
-          </p>
-          <section className="cru-aiuto__sezione">
-            <h3 className="cru-aiuto__titolo">Quanto si punta</h3>
-            <ul className="cru-aiuto__elenco">
-              <li>
-                <strong>{NOME_CRAZY_TIME}</strong>: da {inPunti(PUNTATA_MINIMA)} a tutto il saldo.
-              </li>
-              <li>
-                <strong>{NOME_SLOT}</strong>: da {PUNTATA_MINIMA_SLOT} punto a tutto il saldo.
-              </li>
-              <li>
-                <strong>{NOME_BLACKJACK}</strong>: da {PUNTATA_MINIMA_BJ} punti a tutto il saldo, al tavolo con gli
-                amici o da solo.
-              </li>
-              <li>
-                <strong>{NOME_ROULETTE}</strong>: da {PUNTATA_MINIMA_RL} punto a tutto il saldo, al tavolo con gli
-                amici o da solo.
-              </li>
-              <li>
-                <strong>{NOME_SUPERENALOTTO}</strong>: una scheda costa {COSTI[4]} punti, il 4+1 {COSTI[5]}, fino a{' '}
-                {SCHEDE_MASSIME} per estrazione.
-              </li>
-            </ul>
-          </section>
-          <section className="cru-aiuto__sezione">
-            <h3 className="cru-aiuto__titolo">Quanto torna</h3>
-            <p className="cru-aiuto__testo">
-              In tutti i giochi, giocando al meglio, in media ti torna il {RESA}% di quel che punti. Al{' '}
-              {NOME_SUPERENALOTTO} va in premi il {QUOTA_PREMI}% delle giocate, come in quello vero. Domani si riparte
-              dalle classificate di domani.
-            </p>
-          </section>
-        </div>
-      </Sheet>
     </Vetrina>
   )
 }

@@ -486,13 +486,16 @@ describe('la classifica della Fortuna', () => {
     carte('Tc', '6q', '7f', 'Kp')
     await ok(muovi(b, bruno, await ok(punta(b, bruno, tb, 20)), 'carta'))
     // Carla non gioca alla Fortuna: non c'e'.
-    const classifica = await ok(b.chiama<FortunaLeaderboard>('GET', '/leaderboard/fortuna?scope=today', bruno))
+    const classifica = await ok(b.chiama<FortunaLeaderboard>('GET', '/leaderboard/blackjack?scope=today', bruno))
+    expect(classifica.gioco).toBe('blackjack')
     expect(classifica.rows.map((r) => [r.nickname, r.punti, r.giocate])).toEqual([
       ['anna', 40, 1],
       ['bruno', -20, 1],
     ])
-    expect(classifica.rows[0].netti).toEqual({ ruota: 0, slot: 0, blackjack: 40, roulette: 0, superenalotto: 0 })
     expect(classifica.me).toMatchObject({ rank: 2, punti: -20 })
+    // Le altre classifiche della Fortuna non li hanno: al blackjack si e' giocato, non alla slot.
+    const slot = await ok(b.chiama<FortunaLeaderboard>('GET', '/leaderboard/slot?scope=today', bruno))
+    expect(slot.rows).toEqual([])
     const generale = await ok(b.chiama<GeneraleLeaderboard>('GET', '/leaderboard/generale?scope=today', carla))
     expect(generale.rows.map((r) => [r.nickname, r.punti, r.blackjack])).toEqual([
       ['anna', 140, 40],
@@ -500,7 +503,8 @@ describe('la classifica della Fortuna', () => {
       ['bruno', 80, -20],
     ])
     const panoramica = await ok(b.chiama<PanoramicaClassifiche>('GET', '/leaderboard/panoramica?scope=today', carla))
-    expect(panoramica.classifiche.fortuna).toMatchObject({ giocatori: 2, me: null })
-    expect(panoramica.classifiche.fortuna.primi.map((r) => r.punti)).toEqual([40, -20])
+    expect(panoramica.classifiche.blackjack).toMatchObject({ giocatori: 2, me: null })
+    expect(panoramica.classifiche.blackjack.primi.map((r) => r.punti)).toEqual([40, -20])
+    expect(panoramica.classifiche.ruota).toMatchObject({ giocatori: 0 })
   })
 })

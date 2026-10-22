@@ -3,7 +3,7 @@
  * delle Libere, e a quali schermate appartiene ogni scheda.
  */
 
-import { ROTTE } from '@/app/rotte'
+import { ROTTE, SLUG_FORTUNA } from '@/app/rotte'
 import { CATEGORIE_LIBERE, GIOCHI, giocoTavoloDi } from '@/games/catalog'
 import { NOME_BLACKJACK } from '@shared/blackjack'
 import { NOME_ROULETTE } from '@shared/roulette'
@@ -25,6 +25,10 @@ export const GIOCHI_FORTUNA = [
 ] as const
 export const PERCORSI_FORTUNA = [ROTTE.fortuna, ...GIOCHI_FORTUNA.map((g) => g.a)]
 
+/** Le classifiche della Fortuna, quella di ogni suo gioco e la pagina aperta su di loro: sono della sua scheda. */
+export const classificaDellaFortuna = (p: string) =>
+  sotto(p, ROTTE.classifica('fortuna')) || Object.values(SLUG_FORTUNA).some((s) => sotto(p, `/classifica/${s}`))
+
 /**
  * Le classificate di oggi e quel che ci gira intorno: le partite, quelle in
  * compagnia, la classifica (tranne quella della Fortuna). Viene prima delle
@@ -34,7 +38,7 @@ export const delGiorno = (p: string) =>
   p === '/' ||
   GIOCHI.some((g) => sotto(p, ROTTE.classificata(g.id))) ||
   p.startsWith('/wordle/insieme/') ||
-  (sotto(p, ROTTE.classifica()) && !sotto(p, ROTTE.classifica('fortuna')))
+  (sotto(p, ROTTE.classifica()) && !classificaDellaFortuna(p))
 
 /** Una voce del menu laterale: un gioco, dove porta e in quali schermate e' acceso. */
 export interface Voce {

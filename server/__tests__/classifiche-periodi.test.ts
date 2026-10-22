@@ -112,16 +112,20 @@ describe('la panoramica delle classifiche', () => {
     expect(status).toBe(200)
     expect(Object.keys(dati.classifiche).sort()).toEqual([
       'anagrammi',
+      'blackjack',
       'catena',
       'cruciverba',
-      'fortuna',
       'generale',
       'ghigliottina',
       'nomi',
       'paroliere',
       'quiz',
+      'roulette',
+      'ruota',
       'scarabeo',
+      'slot',
       'sudoku',
+      'superenalotto',
       'wordle',
     ])
 

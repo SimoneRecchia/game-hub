@@ -1,6 +1,6 @@
 import { useId, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import { MENU_LATERALE, PERCORSI_FORTUNA, delGiorno, sotto, type Famiglia } from '@/app/menu'
+import { MENU_LATERALE, PERCORSI_FORTUNA, classificaDellaFortuna, delGiorno, sotto, type Famiglia } from '@/app/menu'
 import { Collegamento } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
 import { GIOCHI, GIOCHI_DA_TAVOLO } from '@/games/catalog'
@@ -70,7 +70,7 @@ const SCHEDE: Scheda[] = [
     Icona: IconFortuna,
     IconaPiena: IconFortunaFill,
     colore: 'var(--fortuna)',
-    sotto: (p) => PERCORSI_FORTUNA.some((g) => sotto(p, g)) || sotto(p, ROTTE.classifica('fortuna')),
+    sotto: (p) => PERCORSI_FORTUNA.some((g) => sotto(p, g)) || classificaDellaFortuna(p),
   },
 ]
 

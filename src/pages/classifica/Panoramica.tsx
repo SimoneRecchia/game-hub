@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react'
+import { useEffect, useRef, type CSSProperties } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Collegamento, useNavigazione } from '@/app/navigazione'
 import { ROTTE } from '@/app/rotte'
@@ -20,24 +20,27 @@ import type { AnteprimaClassifica, LeaderboardScope, PanoramicaClassifiche, Riga
 import { Completa } from './Completa'
 import { SceltaPeriodo, numeroDiOggi } from './Periodo'
 import { useUltimi } from './useUltimi'
-import { NOMI_CLASSIFICHE, ORDINE_GIOCHI } from './voci'
+import { GIOCHI_FORTUNA, NOMI_CLASSIFICHE, ORDINE_GIOCHI } from './voci'
 
 /**
  * Tutte le classifiche di un periodo in una pagina: in cima la generale, con
  * il podio grande che sale gradino dopo gradino e sotto il tuo posto se non
  * ci sei; poi, in carte strette, i primi tre di ogni gioco e in fondo quelli
- * della Fortuna. Toccandone una si apre per intero in un foglio, con lo stesso
+ * di ogni gioco della Fortuna, uno per uno. Toccandone una si apre per intero in un foglio, con lo stesso
  * periodo; toccando qualcuno si apre il suo profilo.
  */
 export function Panoramica({
   scope,
   indietro,
   aperta,
+  fortuna = false,
 }: {
   scope: LeaderboardScope
   indietro: number
   /** La classifica aperta nel foglio, dall'indirizzo. */
   aperta: ChiaveClassifica | null
+  /** Arrivando dalla Fortuna, la pagina si apre sulle classifiche dei suoi giochi. */
+  fortuna?: boolean
 }) {
   const { vai } = useNavigazione()
   const io = usePlayer().id
@@ -46,6 +49,11 @@ export function Panoramica({
   const da = (state as { da?: string } | null)?.da ?? 'Giornaliere'
   const { dati, errore, ricarica } = useDati<PanoramicaClassifiche>(percorsoPanoramica(scope, indietro))
   const { mostrati, vecchi } = useUltimi(dati)
+  const sezioneFortuna = useRef<HTMLDivElement>(null)
+  const pronta = mostrati !== undefined
+  useEffect(() => {
+    if (fortuna && pronta) sezioneFortuna.current?.scrollIntoView({ block: 'start' })
+  }, [fortuna, pronta])
 
   // Il periodo e il foglio aperto stanno nell'indirizzo: si sostituisce, e la pagina resta dov'e'.
   const vaiA = (chiave: ChiaveClassifica | null, s: LeaderboardScope, i: number) =>
@@ -101,20 +109,26 @@ export function Panoramica({
                   />
                 </li>
               ))}
-              {mostrati.classifiche.fortuna && (
-                <li className="entra" style={{ '--n': ORDINE_GIOCHI.length + 1 } as CSSProperties}>
-                  <CartaGioco
-                    chiave="fortuna"
-                    anteprima={mostrati.classifiche.fortuna}
-                    io={io}
-                    onApri={() => apri('fortuna')}
-                    gioca={vivo ? ROTTE.fortuna : null}
-                    segno
-                  />
-                </li>
-              )}
             </ul>
           </Sezione>
+          <div ref={sezioneFortuna} className="cl-pan__fortuna">
+            <Sezione titolo="La Fortuna">
+              <ul className="cl-pan__giochi">
+                {GIOCHI_FORTUNA.map(([g], i) => (
+                  <li key={g} className="entra" style={{ '--n': ORDINE_GIOCHI.length + i + 1 } as CSSProperties}>
+                    <CartaGioco
+                      chiave={g}
+                      anteprima={mostrati.classifiche[g]}
+                      io={io}
+                      onApri={() => apri(g)}
+                      gioca={vivo ? ROTTE[g] : null}
+                      segno
+                    />
+                  </li>
+                ))}
+              </ul>
+            </Sezione>
+          </div>
         </div>
       )}
 

@@ -94,7 +94,13 @@
 import type { MateriaQuiz } from '@shared/quiz'
 import type { GiocoSfidaLibera } from '@shared/sfide-libere'
 import type { GiocoAlTavolo, GiocoTavoliere } from '@shared/tavolo'
-import type { ChiaveClassifica, GiocoClassificato, GiocoLiberoInCompagnia, ModalitaCompagnia } from '@shared/types'
+import type {
+  ChiaveClassifica,
+  GiocoClassificato,
+  GiocoFortuna,
+  GiocoLiberoInCompagnia,
+  ModalitaCompagnia,
+} from '@shared/types'
 
 /** Il pezzo di indirizzo di ogni gioco: "nomi-cose-citta", non "nomi". */
 export const SLUG: Record<GiocoClassificato, string> = {
@@ -114,6 +120,21 @@ export function giocoDaSlug(slug: string | undefined): GiocoClassificato | null 
   const trovato = (Object.keys(SLUG) as GiocoClassificato[]).find((g) => SLUG[g] === slug)
   return trovato ?? null
 }
+
+/** Le classifiche dei giochi della Fortuna, con il nome che i giochi hanno nell'indirizzo: /classifica/crazy-time. */
+export const SLUG_FORTUNA: Record<GiocoFortuna, string> = {
+  ruota: 'crazy-time',
+  slot: 'slot',
+  blackjack: 'blackjack',
+  roulette: 'roulette',
+  superenalotto: 'superenalotto',
+}
+
+export function giocoFortunaDaSlug(slug: string | undefined): GiocoFortuna | null {
+  return (Object.keys(SLUG_FORTUNA) as GiocoFortuna[]).find((g) => SLUG_FORTUNA[g] === slug) ?? null
+}
+
+const eFortuna = (chiave: string): chiave is GiocoFortuna => chiave in SLUG_FORTUNA
 
 /**
  * Lo stesso per i giochi da tavoliere: "forza-4", non "forza4". La sala del
@@ -147,13 +168,18 @@ export const ROTTE = {
   roulette: '/roulette',
   tavoloRL: (id: string) => `/roulette/tavolo/${id}`,
   superenalotto: '/superenalotto',
-  /** Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero nel foglio. */
-  classifica: (chiave?: ChiaveClassifica) =>
+  /**
+   * Senza niente, tutte le classifiche; con un gioco o 'generale', quella per intero nel foglio;
+   * con 'fortuna', tutte le classifiche con in vista quelle della Fortuna.
+   */
+  classifica: (chiave?: ChiaveClassifica | 'fortuna') =>
     !chiave
       ? '/classifica'
       : chiave === 'generale' || chiave === 'fortuna'
         ? `/classifica/${chiave}`
-        : `/classifica/${SLUG[chiave]}`,
+        : eFortuna(chiave)
+          ? `/classifica/${SLUG_FORTUNA[chiave]}`
+          : `/classifica/${SLUG[chiave]}`,
   /** L'indirizzo del gioco, radice delle sue schermate: da solo porta alla classificata. */
   gioco: (gioco: GiocoClassificato) => `/${SLUG[gioco]}`,
   classificata: (gioco: GiocoClassificato) => `/${SLUG[gioco]}/classificata`,

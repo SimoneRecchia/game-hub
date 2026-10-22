@@ -587,10 +587,14 @@ ognuna si apre per intero in un foglio sopra la pagina (vedi sotto). Non si
 normalizza per giornata ("il migliore prende tutto il tetto"): cambierebbe le
 classifiche di ieri ogni volta che qualcuno gioca. Alla generale si aggiungono
 solo i giochi della Fortuna, che non sono classificate (vedi sotto), con un
-tratto loro nella barra di ogni giocatore; e la Fortuna ha una classifica sua
-(`/classifica/fortuna`, `classificaFortuna`), che mette in fila quel che i tre
-giochi hanno dato o tolto nel periodo: si va sotto zero, e a pari conto passa
-avanti chi ha giocato meno.
+tratto loro nella barra di ogni giocatore; e ogni gioco della Fortuna ha una
+classifica sua (`/classifica/crazy-time`, `/classifica/slot`, ...,
+`classificheFortuna`, una lettura sola per tutti e cinque), che mette in fila
+quel che quel gioco ha dato o tolto nel periodo: si va sotto zero, e a pari
+conto passa avanti chi ha giocato meno. Era una classifica sola, con i cinque
+giochi sommati, e non si capiva a che cosa si fosse vinto; `/classifica/fortuna`
+apre la pagina delle classifiche sulle loro carte, ed e' dove porta il trofeo
+della Fortuna.
 
 **La Fortuna e' una scheda, e i suoi giochi puntano un saldo solo.**
 Crazy Time, la slot, il blackjack, la roulette e il SuperEnalotto stanno nella scheda Fortuna (`/fortuna`, il
@@ -755,7 +759,7 @@ lettera e suona pari, la slot dopo un giro a vuoto dice "Rigira", il lampo della
 puntata pagata sul tabellone e' lilla, e gli ultimi secondi dei tempi del
 blackjack e della roulette sono arancioni. Le regole dicono come si vince e
 quanto torna. Restano com'erano le regole del gioco, le rese, i conti del server
-e la classifica della Fortuna, che mette in fila il netto del periodo.
+e le classifiche della Fortuna, che mettono in fila il netto del periodo.
 
 **Il giro salva la disposizione delle ruote** (`disposizione`,
 `DISPOSIZIONE_RUOTA`): i giri di una disposizione di prima contano nel saldo e
@@ -1252,7 +1256,7 @@ del blackjack: due richieste insieme non pagano due volte. Una scheda costa al
 saldo del giorno in cui la si compra, e il premio va a quello dell'estrazione:
 `fortuna_giornate` si riconta dalle schede (`ricontaSql`), quindi chi vince
 lunedi' con una scheda comprata sabato ha il premio nella giornata di lunedi', e
-la classifica della Fortuna lo mostra anche se quel giorno non ha giocato. Un
+la classifica del SuperEnalotto lo mostra anche se quel giorno non ha giocato. Un
 concorso che nessuno ha guardato lo paga la prima richiesta dopo, nel suo
 giorno. Le vincite arrivano nel saldo da sole, e le schede servono solo a
 rivederle: il pagamento di un concorso butta via quelle dei concorsi pagati da

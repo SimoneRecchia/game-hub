@@ -357,10 +357,16 @@ export const IconStar = (p: IconProps) => (
   </Svg>
 )
 
+/**
+ * Un libro aperto, con le pagine che si incurvano verso il dorso e le righe
+ * scritte: i due rettangoli dritti di prima, da piccoli, sembravano il tasto
+ * della pausa.
+ */
 export const IconBook = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15.5H5.5A1.5 1.5 0 0 1 4 18V5.5Z" />
-    <path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15.5h5.5A1.5 1.5 0 0 0 20 18V5.5Z" />
+    <path d="M12 7C10 5.4 7 4.8 3 5.2v13.3c4-.4 7 .2 9 1.8 2-1.6 5-2.2 9-1.8V5.2c-4-.4-7 .2-9 1.8Z" />
+    <path d="M12 7v13.3" />
+    <path d="M6 9c1.4 0 2.6.3 3.6.8M6 12.4c1.4 0 2.6.3 3.6.8M18 9c-1.4 0-2.6.3-3.6.8M18 12.4c-1.4 0-2.6.3-3.6.8" />
   </Svg>
 )
 

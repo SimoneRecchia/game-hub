@@ -27,6 +27,7 @@ import {
   GIOCHI_FORTUNA,
   NOMI_GENERALE,
   ORDINE_GENERALE,
+  eGiocoFortuna,
   vociDi,
   type GiocoDellaGenerale,
   type Risposta,
@@ -48,7 +49,11 @@ const LEDE: Record<ChiaveClassifica, string> = {
   ghigliottina: `Si parte da ${TETTI.ghigliottina} punti, ${ERRORE_GHIGLIOTTINA} in meno per ogni scelta sbagliata; ${PUNTI_GHIGLIOTTINA_PERSA} se sbagli la parola vincente.`,
   paroliere: `${PUNTI_GIOCATA_PAROLIERE} punti per aver giocato, fino a ${TETTI.paroliere} con le parole della griglia.`,
   catena: `Si parte da ${TETTI.catena} punti: ${ERRORE_CATENA} in meno per un errore, ${SECONDO_ERRORE_CATENA} per il secondo sulla stessa parola, e il terzo elemento dimezza; ${PUNTI_CATENA_PERSA} se sbagli la parola finale.`,
-  fortuna: 'Quel che Crazy Time, la slot, il blackjack, la roulette e il SuperEnalotto hanno dato o tolto.',
+  ruota: 'Quel che Crazy Time ha dato o tolto.',
+  slot: 'Quel che la slot ha dato o tolto.',
+  blackjack: 'Quel che il blackjack ha dato o tolto.',
+  roulette: 'Quel che la roulette ha dato o tolto.',
+  superenalotto: 'Quel che il SuperEnalotto ha dato o tolto: i premi arrivano il giorno dell\'estrazione.',
 }
 
 /**
@@ -75,7 +80,7 @@ export function Completa({
   const { mostrati, vecchi } = useUltimi(dati)
   const [conti, setConti] = useState(false)
   // I conti di ogni gioco, classificate e libere: sono le statistiche di chi guarda, e stanno con la sua classifica.
-  const gioco: GiocoClassificato | null = chiave === 'generale' || chiave === 'fortuna' ? null : chiave
+  const gioco: GiocoClassificato | null = chiave === 'generale' || eGiocoFortuna(chiave) ? null : chiave
 
   const oggi = numeroDiOggi()
   const periodo = mostrati?.periodo ?? periodoDi(scope, oggi, indietro)
@@ -119,7 +124,7 @@ export function Completa({
             chiave !== 'generale' && comprendeOggi(periodo, oggi) ? (
               <Button
                 variant="tinted"
-                onClick={() => vai(chiave === 'fortuna' ? ROTTE.fortuna : ROTTE.classificata(chiave))}
+                onClick={() => vai(eGiocoFortuna(chiave) ? ROTTE[chiave] : ROTTE.classificata(chiave))}
               >
                 Gioca
               </Button>
