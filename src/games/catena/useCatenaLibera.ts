@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   JOLLY_CATENA,
   MONTEPREMI_CATENA,
@@ -24,7 +24,19 @@ import {
 } from '@shared/catena'
 import { VERSIONE_LIBERE_CATENA } from '@shared/catena-libere'
 import { mulberry32 } from '@shared/daily'
+import { chiudiSospesa, riprendiSospesa, segnaSospesa, sospesaDi } from '@/games/sospese/registro'
+import { adessoVisibile } from '@/lib/tempoVisibile'
 import { leggiContiCatena, registraLiberaCatena } from './conti'
+import {
+  CHIAVE_PARTITA,
+  RIPRENDI,
+  daSalvare,
+  dettaglioDi,
+  leggiSalvata,
+  nomeDi,
+  partitaDa,
+  type CatenaSalvata,
+} from './sospesa'
 import type { ComandiCatena, RispostaCatena, VistaCatena } from './Partita'
 
 /** Il file delle libere: per ogni catena le undici parole e le dieci espressioni. */
@@ -46,9 +58,6 @@ function fileLibere(): Promise<FileLibere> {
   return caricato
 }
 
-/** Come il telefono ricorda una catena giocata: la prima parola e la finale. */
-const nomeDi = (parole: readonly string[]) => `${parole[0]}|${parole[NASCOSTE_CATENA[PASSO_FINALE]]}`
-
 /**
  * Come si gioca una partita: il seme della sfida, se e' una sfida, il tempo di
  * ogni parola e quello della finale, e se va nei conti.
@@ -62,8 +71,10 @@ export interface OpzioniPartita {
 
 type Orologio = { inizio: number; scadenza: number }
 
-interface Partita {
+export interface PartitaCatenaLibera {
   catena: CatenaDelGiorno
+  /** Quale catena del file (`nomeDi`), per salvarla. Null in una sfida, che non resta in sospeso. */
+  nome: string | null
   tempoParolaMs: number
   tempoFinaleMs: number
   conta: boolean
@@ -77,6 +88,32 @@ interface Partita {
   risposta: string | null
   indovinata: boolean | null
   finita: boolean
+}
+
+type Partita = PartitaCatenaLibera
+
+/**
+ * L'ora dei tempi di una partita: in una libera si ferma a pagina nascosta,
+ * perché lasciata resta in sospeso; in una sfida e' quella di tutti e due.
+ */
+const oraDi = (p: Partita) => (p.nome ? adessoVisibile() : Date.now())
+
+/** La partita salvata nel telefono, se c'e' ed e' buona. */
+function leggiDalTelefono(): CatenaSalvata | null {
+  try {
+    return leggiSalvata(localStorage.getItem(CHIAVE_PARTITA))
+  } catch {
+    return null
+  }
+}
+
+/** Toglie dal telefono la partita salvata. */
+function togliSalvata(): void {
+  try {
+    localStorage.removeItem(CHIAVE_PARTITA)
+  } catch {
+    /* senza localStorage non c'era niente da togliere */
+  }
 }
 
 function vistaDa(p: Partita): VistaCatena {
@@ -155,6 +192,7 @@ export function useCatenaLibera() {
         const [parole, espressioni] = elenco[Math.floor(caso() * elenco.length)]
         aggiorna({
           catena: { parole, espressioni },
+          nome: opzioni.seme === undefined ? nomeDi(parole) : null,
           tempoParolaMs: opzioni.tempoParolaMs ?? TEMPO_PAROLA_CATENA_MS,
           tempoFinaleMs: opzioni.tempoFinaleMs ?? TEMPO_FINALE_CATENA_MS,
           conta: opzioni.conta ?? true,
@@ -175,7 +213,7 @@ export function useCatenaLibera() {
   )
 
   /** Il tempo della finale e' finito: oltre non si gioca, come nella classificata. */
-  const scaduta = (p: Partita) => p.finale !== null && Date.now() > p.finale.scadenza
+  const scaduta = (p: Partita) => p.finale !== null && oraDi(p) > p.finale.scadenza
 
   const comandi = useMemo<ComandiCatena>(() => {
     const gioca = async (mossa: MossaCatena): Promise<RispostaCatena | null> => {
@@ -188,12 +226,12 @@ export function useCatenaLibera() {
       const vera: MossaCatena =
         mossa.k !== 'p'
           ? mossa
-          : p.parola && Date.now() > p.parola.scadenza
+          : p.parola && oraDi(p) > p.parola.scadenza
             ? { k: 't' }
             : { k: 'p', w: parolaRiconosciuta(p.catena, prima, mossa.w) }
       const fatta = applicaCatena(p.catena, prima, vera)
       if (!fatta) return null
-      const adesso = Date.now()
+      const adesso = oraDi(p)
       const cambia = fatta.dopo.passo !== prima.passo
       const finale = cambia && fatta.dopo.passo >= PASSO_FINALE
       // Un errore o un jolly fanno ripartire il minuto della parola, come nella classificata.
@@ -218,7 +256,7 @@ export function useCatenaLibera() {
         const p = ref.current
         if (!p || p.finita) return null
         if (p.iniziata) return { vista: vistaDa(p), esito: null }
-        const inizio = Date.now() + PREAMBOLO_PAROLA_CATENA_MS
+        const inizio = oraDi(p) + PREAMBOLO_PAROLA_CATENA_MS
         return {
           vista: aggiorna({ ...p, iniziata: true, parola: { inizio, scadenza: inizio + p.tempoParolaMs } }),
           esito: null,
@@ -240,10 +278,91 @@ export function useCatenaLibera() {
     }
   }, [aggiorna, chiudi])
 
+  /*
+   * Una libera cominciata resta in sospeso: si salva a ogni mossa, e quando la
+   * pagina si nasconde o si lascia, con quanto mancava al tempo di adesso.
+   * Finita, se ne va dal telefono e dal registro.
+   */
+  const salva = useCallback(() => {
+    const p = ref.current
+    const salvata = p && daSalvare(p, adessoVisibile())
+    if (!salvata) return
+    try {
+      localStorage.setItem(CHIAVE_PARTITA, JSON.stringify(salvata))
+    } catch {
+      /* Safari privato nega lo storage: la partita resta finché la pagina e' aperta */
+    }
+  }, [])
+  useEffect(() => {
+    if (!partita?.nome || !partita.iniziata) return
+    if (partita.finita) {
+      togliSalvata()
+      chiudiSospesa('catena', 'finita')
+      return
+    }
+    salva()
+    segnaSospesa('catena', { a: RIPRENDI, dettaglio: dettaglioDi(partita), chiavi: [CHIAVE_PARTITA] })
+  }, [partita, salva])
+  useEffect(() => {
+    const nascosta = () => document.hidden && salva()
+    document.addEventListener('visibilitychange', nascosta)
+    window.addEventListener('pagehide', salva)
+    return () => {
+      document.removeEventListener('visibilitychange', nascosta)
+      window.removeEventListener('pagehide', salva)
+      salva()
+    }
+  }, [salva])
+
+  const [riprendendo, setRiprendendo] = useState(false)
+  /**
+   * Riapre la partita lasciata, dov'era. Un salvataggio senza la sua voce nel
+   * registro e' stato lasciato dalle Libere, o e' scaduto: non c'e' piu'.
+   */
+  const riprendi = useCallback(async (): Promise<boolean> => {
+    const salvata = leggiDalTelefono()
+    if (!salvata || !sospesaDi('catena')) {
+      togliSalvata()
+      chiudiSospesa('catena', 'annullata')
+      return false
+    }
+    setErrore(null)
+    setRiprendendo(true)
+    try {
+      const file = await fileLibere()
+      const voce = file.catene.find(([parole]) => nomeDi(parole) === salvata.nome)
+      if (!voce) {
+        // Il file e' cambiato e quella catena non c'e' piu'.
+        togliSalvata()
+        chiudiSospesa('catena', 'annullata')
+        return false
+      }
+      aggiorna(partitaDa(salvata, { parole: voce[0], espressioni: voce[1] }, adessoVisibile()))
+      setNumero((n) => n + 1)
+      riprendiSospesa('catena')
+      return true
+    } catch {
+      setErrore('Non riesco a scaricare le catene. Riprova fra poco.')
+      return false
+    } finally {
+      setRiprendendo(false)
+    }
+  }, [aggiorna])
+
+  /** Lascia la partita in corso, o quella in sospeso prima di cominciarne un'altra: non si riprende piu'. */
+  const lascia = useCallback(() => {
+    togliSalvata()
+    chiudiSospesa('catena', 'annullata')
+    ref.current = null
+    setPartita(null)
+  }, [])
+
   const vista = useMemo(() => (partita ? vistaDa(partita) : null), [partita])
   const ricomincia = useCallback(() => {
     ref.current = null
     setPartita(null)
   }, [])
-  return { vista, comandi, comincia, ricomincia, errore, conti, numero }
+  /** L'ora dei tempi della scena: quella della partita, che da sola si ferma a pagina nascosta. */
+  const adesso = partita?.nome ? adessoVisibile : Date.now
+  return { vista, comandi, comincia, ricomincia, riprendi, riprendendo, lascia, errore, conti, numero, adesso }
 }
