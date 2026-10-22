@@ -1,0 +1,13 @@
+/* I fogli per lasciare una partita libera, o cominciarne un'altra. */
+.lascia-foglio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.lascia-foglio__testo {
+  margin-bottom: var(--sp-2);
+  color: var(--label-secondary);
+  font-size: var(--text-subhead);
+  font-weight: 700;
+}

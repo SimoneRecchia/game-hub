@@ -28,6 +28,7 @@ import { blackjackRoutes } from './routes/blackjack'
 import { rouletteRoutes } from './routes/roulette'
 import { superenalottoRoutes } from './routes/superenalotto'
 import { amiciRoutes } from './routes/amici'
+import { libereRoutes } from './routes/libere'
 import { lupusRoutes } from './routes/lupus'
 import { scarabocchiRoutes } from './routes/scarabocchi'
 import { sfideLibereRoutes } from './routes/sfideLibere'
@@ -91,6 +92,7 @@ export function createApp() {
   app.route('/roulette', rouletteRoutes)
   app.route('/superenalotto', superenalottoRoutes)
   app.route('/amici', amiciRoutes)
+  app.route('/libere', libereRoutes)
   app.route('/lupus', lupusRoutes)
   app.route('/scarabocchi', scarabocchiRoutes)
   app.route('/sfide', sfideLibereRoutes)
