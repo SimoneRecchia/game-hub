@@ -72,3 +72,8 @@ export async function rispostaDelComputer(numero: number, mosse: Mossa[], format
 export function grigliaDelParoliere(lato: number, seme?: number): Promise<GrigliaLibera> {
   return chiedi<GrigliaLibera>({ tipo: 'paroliere', lato, seme })
 }
+
+/** Le parole di una griglia gia' tirata: quella di un Paroliere lasciato a meta' e ripreso. */
+export function paroleDelParoliere(griglia: string[]): Promise<GrigliaLibera> {
+  return chiedi<GrigliaLibera>({ tipo: 'paroliere-dadi', griglia })
+}

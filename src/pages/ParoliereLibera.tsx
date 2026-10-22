@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { ROTTE } from '@/app/rotte'
 import { Cursore } from '@/components/Cursore'
 import { Difficolta } from '@/components/Difficolta'
-import { Sezione } from '@/components/Elementi'
-import { IconInfo, IconRefresh } from '@/components/Icons'
+import { Riga, Sezione } from '@/components/Elementi'
+import { IconInfo, IconPlay, IconRefresh } from '@/components/Icons'
 import { Opzioni, Scelte } from '@/components/Opzioni'
 import { BottoneBarra, Pagina } from '@/components/Pagina'
 import { ComeSiGiocaParoliere } from '@/games/paroliere/ComeSiGioca'
 import { PartitaParoliere } from '@/games/paroliere/Partita'
 import { LATI_LIBERI, useParoliereLibero, type LatoLibero } from '@/games/paroliere/useParoliereLibero'
 import { preparaComputer } from '@/games/scarabeo/computer'
+import { BottoneLascia, FoglioNuova } from '@/games/sospese/Lascia'
+import { useSospesa } from '@/games/sospese/registro'
 import { FoglioSfida, InterruttoreContro, useContro, useFoglioSfida, useOpzioniLibera } from '@/games/sfide/Scelta'
 import { formatNumber } from '@/lib/format'
 import { MINUTI_PAROLIERE, type LatoLibero as Lato } from '@shared/sfide-libere'
@@ -23,9 +26,14 @@ const minuti = (n: number) => (n === 1 ? 'Un minuto' : `${n} minuti`)
  * Il Paroliere libero: una griglia a caso, di sedici o di venticinque dadi,
  * con il tempo che si sceglie. Tutto nel telefono, e non conta per la
  * classifica. Con un amico la stessa griglia per tutti e due, nella sfida.
+ * Una partita lasciata a meta' resta in sospeso: si riprende da qui, o dalle
+ * Libere, che la aprono con `?riprendi`.
  */
 export default function ParoliereLibera() {
-  const g = useParoliereLibero()
+  const [query] = useSearchParams()
+  const g = useParoliereLibero({ salva: true, riprendi: query.has('riprendi') })
+  const sospesa = useSospesa('paroliere')
+  const [nuova, setNuova] = useState(false)
   const [regole, setRegole] = useState(false)
   const [contro, setContro] = useContro('paroliere')
   const [opzioni, cambia] = useOpzioniLibera('paroliere')
@@ -71,11 +79,28 @@ export default function ParoliereLibera() {
           }))}
           scelto={lato}
           onScegli={(l) => cambia({ lato: Number(l) as Lato })}
-          onComincia={() => (contro === 'amico' ? setSfida(true) : comincia(lato))}
+          onComincia={() => (contro === 'amico' ? setSfida(true) : sospesa ? setNuova(true) : comincia(lato))}
           colore="var(--paroliere-1)"
           etichetta={contro === 'amico' ? 'Sfida un amico' : 'Comincia'}
+          sopra={
+            sospesa &&
+            contro !== 'amico' && (
+              <Riga
+                icona={<IconPlay size={18} />}
+                titolo="Riprendi la partita"
+                sotto={sospesa.dettaglio}
+                onClick={g.riprendi}
+              />
+            )
+          }
         />
         <FoglioSfida open={sfida} onClose={() => setSfida(false)} gioco="paroliere" impostazioni={opzioni} />
+        <FoglioNuova
+          open={nuova}
+          onClose={() => setNuova(false)}
+          onRiprendi={g.riprendi}
+          onNuova={() => comincia(lato)}
+        />
         <ComeSiGiocaParoliere open={regole} onClose={() => setRegole(false)} />
       </Pagina>
     )
@@ -83,7 +108,19 @@ export default function ParoliereLibera() {
 
   const record = g.lato ? g.conti.migliore[g.lato] : 0
   return (
-    <Pagina key="partita" titolo="Paroliere" sotto="Libera" intera indietro={{ a: ROTTE.libere, etichetta: 'Libere' }} azioni={info}>
+    <Pagina
+      key="partita"
+      titolo="Paroliere"
+      sotto="Libera"
+      intera
+      indietro={{ a: ROTTE.libere, etichetta: 'Libere' }}
+      azioni={
+        <>
+          {info}
+          {v.fase !== 'finita' && <BottoneLascia onLascia={g.lascia} />}
+        </>
+      }
+    >
       <PartitaParoliere
         key={g.numero}
         vista={v}

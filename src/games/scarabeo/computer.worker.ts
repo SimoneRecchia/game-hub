@@ -10,8 +10,9 @@
  * a chi gioca che una parola non esiste, senza aspettare il server), qual e' la
  * mossa del computer in questa partita libera, e quale la risposta del computer
  * del giorno nella classificata, che va al server con la mossa di chi gioca.
- * E una del Paroliere libero, che usa lo stesso dizionario: una griglia, con
- * tutte le sue parole.
+ * E due del Paroliere libero, che usa lo stesso dizionario: una griglia, con
+ * tutte le sue parole, e le parole di una griglia gia' tirata, per una
+ * partita lasciata e ripresa.
  */
 
 import { Dawg } from '@shared/dawg'
@@ -19,7 +20,7 @@ import { sacchettoDaSeme, type Mossa } from '@shared/scarabeo'
 import { rispostaDelGiorno, turnoDelComputer, type PartitaLibera } from '@shared/scarabeo-computer'
 import { BYTE_DIZIONARIO, URL_DIZIONARIO, URL_DIZIONARIO_COMPRESSO } from '@shared/scarabeo-dizionario'
 import { mulberry32 } from '@shared/daily'
-import { grigliaLibera } from '@shared/paroliere'
+import { grigliaLibera, paroleDellaGriglia } from '@shared/paroliere'
 
 type Richiesta =
   | { id: number; tipo: 'prepara' }
@@ -27,6 +28,7 @@ type Richiesta =
   | { id: number; tipo: 'mossa'; partita: PartitaLibera }
   | { id: number; tipo: 'risposta'; numero: number; mosse: Mossa[]; formato: number }
   | { id: number; tipo: 'paroliere'; lato: number; seme?: number }
+  | { id: number; tipo: 'paroliere-dadi'; griglia: string[] }
 
 let dizionario: Promise<Dawg> | null = null
 
@@ -79,6 +81,10 @@ self.onmessage = async (evento: MessageEvent<Richiesta>) => {
       // Con il seme di una sfida i dadi cadono uguali sui due telefoni; senza, a caso.
       const caso = richiesta.seme !== undefined ? mulberry32(richiesta.seme) : Math.random
       self.postMessage({ id: richiesta.id, ok: true, ...grigliaLibera(dawg, richiesta.lato, caso) })
+    } else if (richiesta.tipo === 'paroliere-dadi') {
+      const { griglia } = richiesta
+      const comuni = paroleDellaGriglia(griglia, dawg.comuni())
+      self.postMessage({ id: richiesta.id, ok: true, griglia, comuni, tutte: paroleDellaGriglia(griglia, dawg) })
     } else if (richiesta.tipo === 'risposta') {
       const mossa = rispostaDelGiorno(dawg, richiesta.numero, richiesta.mosse, richiesta.formato)
       self.postMessage({ id: richiesta.id, ok: true, mossa })
