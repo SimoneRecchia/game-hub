@@ -2427,6 +2427,29 @@ sua libera: `/scarabeo/libera/partita/:id` e `/scarabeo/libera/invito/:codice`,
 e cosi' le sfide delle libere da soli: `/paroliere/libera/sfida/:id` e
 `/paroliere/libera/invito/:codice`.
 
+**Una libera lasciata a meta' resta in sospeso, anche il giorno dopo.** Le
+libere non sono le giornaliere: tornando indietro o chiudendo l'app la partita
+resta li', una per gioco, e si riprende dalla sua pagina o dalle Libere, che
+le mettono in cima come biglietti ("Da riprendere") con la crocetta per
+lasciarle; da dentro la si lascia con la bandierina (`BottoneLascia` in
+`src/games/sospese/Lascia.tsx`), e cominciarne un'altra dello stesso gioco
+chiede prima (`FoglioNuova`). Non toccata per tre giorni (`SOSPESA_MS`) se ne
+va da sola. Nei giochi a tempo il tempo si ferma quando si esce, e riparte da
+dove era (`src/lib/tempoVisibile.ts`, o il tempo che resta salvato): sono
+libere, non c'e' una classifica da proteggere. La partita sta dove stava gia'
+— nel `localStorage` del suo gioco, o sul server per il Wordle, il cruciverba
+e la battaglia contro il computer —, e il registro (`src/games/sospese/registro.ts`)
+dice che cosa c'e' da riprendere, dove, quando la si e' toccata e come la si
+butta via: le chiavi del salvataggio, o la rotta che la chiude
+(`/wordle/libera/:id/lascia`, `/cruciverba/libera/:id/lascia`, la resa della
+battaglia). Cosi' le Libere e la scadenza non devono conoscere i giochi. Un
+salvataggio senza la sua voce nel registro e' stato lasciato da fuori, e si
+butta. Al server va solo quel che succede — l'inizio, una ripresa, la fine, la
+rinuncia, la scadenza — in `libere_sospese` (migrazione `0056`), per il
+pannello di amministrazione, che conta quelle di adesso, quelle riprese e
+quelle scadute, e segna scadute anche quelle di chi non apre piu' l'app.
+Le sfide con un amico non ci entrano: hanno la loro lista, "In corso".
+
 **Il Wordle libero non pesca le parole dei prossimi giorni.** `wordleLibera.ts`
 esclude le soluzioni dei prossimi sessanta giorni: altrimenti giocare a caso
 diventerebbe un modo di vedere in anticipo la classificata di un giorno che

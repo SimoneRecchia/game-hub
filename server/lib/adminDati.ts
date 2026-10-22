@@ -440,8 +440,11 @@ export async function statisticheGiochi(db: D1Database, adesso = Date.now()): Pr
     db.prepare(`SELECT gioco, COUNT(*) AS n FROM libere_sospese WHERE stato = 'aperta' GROUP BY gioco ORDER BY n DESC`),
     db
       .prepare(
-        `SELECT substr(at, 1, 13) AS ora, evento, COUNT(*) AS n FROM libere_sospese_eventi
-          WHERE at >= ? AND evento IN ('inizio', 'ripresa', 'scaduta') GROUP BY ora, evento`,
+        // Gli eventi delle partite che ci sono ancora: con un account eliminato se ne vanno le sue partite, e il
+        // grafico deve dire quel che dicono le cifre.
+        `SELECT substr(e.at, 1, 13) AS ora, e.evento, COUNT(*) AS n
+           FROM libere_sospese_eventi e JOIN libere_sospese s ON s.id = e.sospesa_id
+          WHERE e.at >= ? AND e.evento IN ('inizio', 'ripresa', 'scaduta') GROUP BY ora, e.evento`,
       )
       .bind(daQuando),
   ]
