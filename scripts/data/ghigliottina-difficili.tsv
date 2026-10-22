@@ -1,0 +1,328 @@
+# Le Ghigliottine del giorno, scritte a mano: la parola vincente e, per ognuna delle cinque parole
+# giuste, l'esca e l'espressione che la lega (giusta|esca=espressione). Sopra ogni riga, la falsa pista
+# che le cinque esche indicano insieme. Le legge scripts/build-ghigliottina-classificate.mjs, che
+# scrive scripts/data/ghigliottina-classificate.json.
+#
+# Sono fatte come alla televisione: legami da sensi diversi della vincente, modi di dire, titoli e
+# proverbi, e al piu' uno che la richiama subito. Le vincenti non sono quelle di ghigliottina.tsv.
+
+# falsa pista delle esche: BRODO
+ala	delta|dado=ala delta	protettrice|vegetale=sotto l'ala protettrice	tarpare|allungare=tarpare le ali	pollo|manzo=ala di pollo	libertà|pastina=le ali della libertà
+# falsa pista delle esche: TESORO
+ago	bussola|mappa=l'ago della bussola	bilancia|caccia=l'ago della bilancia	pagliaio|scrigno=cercare un ago in un pagliaio	pino|pirata=aghi di pino	magnetico|nascosto=ago magnetico
+# falsa pista delle esche: PANE
+alba	tramonto|companatico=dall'alba al tramonto	viventi|integrali=l'alba dei morti viventi	tartufo|burro=tartufo d'Alba	luci|briciole=alle prime luci dell'alba	chiara|fresca=Albachiara
+# falsa pista delle esche: LAVORO
+arco	trionfo|contratto=arco di trionfo	giornata|festa=nell'arco della giornata	tiro|posto=tiro con l'arco	frecce|ferie=avere molte frecce al proprio arco	costituzionale|subordinato=arco costituzionale
+# falsa pista delle esche: MERCATO
+asta	salto|pesce=salto con l'asta	vendita|bancarella=vendita all'asta	base|piazza=base d'asta	bandiera|ricerca=bandiera a mezz'asta	battuto|coperto=battuto all'asta
+# falsa pista delle esche: CALCIO
+avvocato	diavolo|rigore=l'avvocato del diavolo	ufficio|angolo=avvocato d'ufficio	cause|punizioni=avvocato delle cause perse	difensore|mercato=avvocato difensore	albo|balilla=albo degli avvocati
+# falsa pista delle esche: PASTA
+aereo	carta|sfoglia=aereo di carta	ponte|forno=ponte aereo	spazio|brodo=spazio aereo	posta|frolla=posta aerea	pazzo|fresco=L'aereo più pazzo del mondo
+# falsa pista delle esche: ULTIMA
+ancora	salvezza|spiaggia=ancora di salvezza	domani|fila=C'è ancora domani	tu|moda=Ancora tu	levare|uscire=levare l'ancora	volta|cena=ancora una volta
+# falsa pista delle esche: PIANO
+asse	stiro|bar=asse da stiro	terrestre|inclinato=asse terrestre	cartesiano|regolatore=asse cartesiano	ereditario|superiore=asse ereditario	equilibrio|lavoro=asse di equilibrio
+# falsa pista delle esche: GUERRA
+accordo	amore|lampo=d'amore e d'accordo	pace|trincea=accordo di pace	prematrimoniale|civile=accordo prematrimoniale	chitarra|bomba=accordo di chitarra	andare|dichiarare=andare d'accordo
+# falsa pista delle esche: SAPONE
+barba	capelli|piatti=barba e capelli	noia|bolla=che barba, che noia	pennello|bucato=pennello da barba	schiuma|lavanda=schiuma da barba	rasoio|liquido=rasoio da barba
+# falsa pista delle esche: MARE
+bosco	frutti|pesci=frutti di bosco	verticale|aperto=Bosco Verticale	addormentata|agitata=La bella addormentata nel bosco	riviera|spiaggia=essere da bosco e da riviera	fragole|cozze=fragole di bosco
+# falsa pista delle esche: CAMPO
+brodo	tutto|santo=tutto fa brodo	coltura|semina=brodo di coltura	primordiale|minato=brodo primordiale	giuggiole|margherite=andare in brodo di giuggiole	gallina|battaglia=gallina vecchia fa buon brodo
+# falsa pista delle esche: SCATOLA
+busta	paga|cranica=busta paga	chiusa|nera=busta chiusa	plastica|cartone=busta di plastica	spesa|latta=busta della spesa	affrancare|svuotare=affrancare la busta
+# falsa pista delle esche: OLIO
+burro	arachidi|semi=burro di arachidi	coltello|gomito=come un coltello nel burro	salvia|palma=burro e salvia	cacao|ricino=burro di cacao	mani|olive=mani di burro
+# falsa pista delle esche: TELEFONO
+bottone	attaccare|squillare=attaccare un bottone	stanza|cabina=la stanza dei bottoni	pressione|bolletta=bottone a pressione	madreperla|segreteria=bottoni di madreperla	automatico|fisso=bottone automatico
+# falsa pista delle esche: CAVALLO
+bicchiere	pieno|selvaggio=bicchiere mezzo pieno	tempesta|criniera=tempesta in un bicchier d'acqua	affogare|cavalcare=affogare in un bicchier d'acqua	plastica|sella=bicchiere di plastica	staffa|briglia=il bicchiere della staffa
+# falsa pista delle esche: PIATTO
+bambola	pezza|pasta=bambola di pezza	porcellana|portata=bambola di porcellana	gonfiabile|fondo=bambola gonfiabile	casa|doccia=casa di bambola	lira|carne=Bambole, non c'è una lira
+# falsa pista delle esche: CAMERA
+bolla	sapone|letto=bolla di sapone	papale|oscura=bolla papale	speculativa|ardente=bolla speculativa	livella|sicurezza=livella a bolla	aria|tortura=bolla d'aria
+# falsa pista delle esche: LUNA
+candela	reggere|abbaiare=reggere la candela	gioco|miele=il gioco non vale la candela	lume|chiaro=a lume di candela	cera|falce=candela di cera	accensione|piena=candela di accensione
+# falsa pista delle esche: PASSO
+cappello	cilindro|valico=cappello a cilindro	tanto|doppio=tanto di cappello	introduttivo|carrabile=cappello introduttivo	prendere|allungare=prendere cappello	alpino|falso=cappello alpino
+# falsa pista delle esche: NATALE
+carbone	nero|magico=nero come il carbone	befana|stella=il carbone della Befana	ardenti|felici=stare sui carboni ardenti	miniera|vigilia=miniera di carbone	fossile|santo=carbone fossile
+# falsa pista delle esche: CARNEVALE
+cenere	mercoledì|martedì=mercoledì delle ceneri	ridurre|travestirsi=ridurre in cenere	risorgere|sfilare=risorgere dalle ceneri	fuoco|carro=fuoco sotto la cenere	cospargersi|mascherarsi=cospargersi il capo di cenere
+# falsa pista delle esche: VINO
+cerchio	testa|cantina=cerchio alla testa	quadratura|vendemmia=la quadratura del cerchio	vita|uva=il cerchio della vita	botte|bottiglia=un colpo al cerchio e uno alla botte	grano|tappo=cerchi nel grano
+# falsa pista delle esche: ZONA
+cintura	sicurezza|retrocessione=cintura di sicurezza	nera|rossa=cintura nera	castità|ombra=cintura di castità	sotto|fuori=colpo sotto la cintura	urbana|franca=cintura urbana
+# falsa pista delle esche: MARCIA
+colonna	sonora|nuziale=colonna sonora	vertebrale|funebre=colonna vertebrale	quinta|ridotta=quinta colonna	infame|trionfale=Storia della colonna infame	portante|forzata=colonna portante
+# falsa pista delle esche: ACQUA
+coperta	termica|minerale=coperta termica	corta|dolce=la coperta è corta	sotto|fuori=sotto le coperte	carte|bolle=giocare a carte coperte	lana|fonte=coperta di lana
+# falsa pista delle esche: PIEDE
+corda	tirare|pestare=tirare la corda	vocali|piatti=corde vocali	giù|scalzi=giù di corda	collo|dito=con la corda al collo	salto|porco=salto della corda
+# falsa pista delle esche: CAPO
+croce	testa|famiglia=testa o croce	sud|nord=Croce del Sud	sopra|sotto=farci una croce sopra	punto|lavoro=punto croce	delizia|stazione=croce e delizia
+# falsa pista delle esche: LANA
+campana	gonna|maglia=gonna a campana	vetro|gomitolo=campana di vetro	altra|vergine=sentire l'altra campana	sordo|caprino=sordo come una campana	suona|fila=Per chi suona la campana
+# falsa pista delle esche: GIACCA
+canale	manica|tasca=canale della Manica	grande|sportiva=Canal Grande	scolo|bavero=canale di scolo	diplomatici|eleganti=canali diplomatici	cambiare|abbottonare=cambiare canale
+# falsa pista delle esche: LATTE
+cavolo	merenda|tazza=come i cavoli a merenda	testa|panna=testa di cavolo	amari|freschi=cavoli amari	capra|mucca=salvare capra e cavoli	capire|mungere=non capire un cavolo
+# falsa pista delle esche: MIELE
+cera	api|arnie=cera d'api	bella|dolce=avere una bella cera	museo|barattolo=museo delle cere	lacca|acacia=ceralacca	pavimenti|vasetti=cera per pavimenti
+# falsa pista delle esche: TEATRO
+circo	equestre|lirico=circo equestre	massimo|comunale=Circo Massimo	mediatico|stabile=circo mediatico	tendone|sipario=il tendone del circo	domatore|attore=domatore del circo
+# falsa pista delle esche: PESTO
+cima	genovese|trapanese=cima alla genovese	fondo|mortaio=da cima a fondo	lista|ricetta=in cima alla lista	rapa|pasta=cime di rapa	tempestose|profumate=Cime tempestose
+# falsa pista delle esche: TORRE
+costa	smeralda|pendente=Costa Smeralda	libro|controllo=la costa del libro	occhio|faro=costa un occhio della testa	concordia|babele=Costa Concordia	avorio|eiffel=Costa d'Avorio
+# falsa pista delle esche: BALLO
+cena	ultima|lenta=l'Ultima Cena	beffe|scarpette=La cena delle beffe	indovina|invita=Indovina chi viene a cena	gala|sala=cena di gala	letto|liscio=a letto senza cena
+# falsa pista delle esche: FIORE
+colore	viola|margherita=Il colore viola	soldi|petali=Il colore dei soldi	pastello|vaso=colori pastello	primari|secchi=colori primari	tutti|freschi=dirne di tutti i colori
+# falsa pista delle esche: SEGNO
+corno	inglese|positivo=corno inglese	peste|croce=dire peste e corna	toro|zodiaco=prendere il toro per le corna	africa|pace=Corno d'Africa	portafortuna|vita=corno portafortuna
+# falsa pista delle esche: NEVE
+cristallo	notte|bufera=la Notte dei cristalli	boemia|slitta=cristallo di Boemia	liquidi|perenni=cristalli liquidi	scarpetta|valanga=scarpetta di cristallo	palla|tormenta=palla di cristallo
+# falsa pista delle esche: MANZO
+dado	tratto|bollito=il dado è tratto	brodo|filetto=dado da brodo	truccato|stufato=dado truccato	lancio|macinato=lancio dei dadi	bulloni|bocconcini=dadi e bulloni
+# falsa pista delle esche: ORO
+dito	piaga|miniera=mettere il dito nella piaga	medio|puro=dito medio	anello|lingotto=anello al dito	mano|vena=contare sulle dita di una mano	puntare|valere=puntare il dito
+# falsa pista delle esche: CANE
+dama	compagnia|guardia=dama di compagnia	picche|pulci=la dama di picche	ermellino|pastore=la dama con l'ermellino	corte|cuccia=dama di corte	bianca|fedele=dama bianca
+# falsa pista delle esche: CONTO
+data	scadenza|resa=data di scadenza	banca|spesa=banca dati	nascita|rovescia=data di nascita	storica|salata=data storica	fissare|saldare=fissare una data
+# falsa pista delle esche: MUSEO
+faro	guardiano|custode=il guardiano del faro	gita|visita=gita al faro	abbaglianti|vaticani=fari abbaglianti	alessandria|louvre=faro di Alessandria	nebbia|cera=un faro nella nebbia
+# falsa pista delle esche: MAGLIA
+febbre	sabato|titolare=la febbre del sabato sera	oro|ferro=la febbre dell'oro	cavallo|cotone=febbre da cavallo	gialla|rosa=febbre gialla	alta|nera=febbre alta
+# falsa pista delle esche: SQUADRA
+fede	nuziale|mobile=fede nuziale	buona|avversaria=in buona fede	atto|spirito=atto di fede	montagne|riserve=la fede sposta le montagne	calcistica|speciale=fede calcistica
+# falsa pista delle esche: PESCE
+fegato	veneziana|frittura=fegato alla veneziana	oca|palla=fegato d'oca	rodersi|abboccare=rodersi il fegato	merluzzo|persico=olio di fegato di merluzzo	avere|puzzare=avere fegato
+# falsa pista delle esche: BORSA
+finestra	cortile|ghiaccio=la finestra sul cortile	minestra|spesa=o mangi questa minestra o salti dalla finestra	soldi|titoli=buttare i soldi dalla finestra	dialogo|studio=finestra di dialogo	mercato|ribasso=finestra di mercato
+# falsa pista delle esche: CAFFÈ
+fiore	occhiello|filtro=fiore all'occhiello	anni|chicchi=nel fiore degli anni	latte|orzo=fior di latte	loto|ginseng=fiore di loto	arancio|espresso=fiori d'arancio
+# falsa pista delle esche: PANE
+foglia	tremare|impastare=tremare come una foglia	fico|burro=foglia di fico	mangiare|spezzare=mangiare la foglia	morte|briciole=foglie morte	oro|lievito=foglia d'oro
+# falsa pista delle esche: PRINCIPE
+fratello	grande|azzurro=Grande Fratello	italia|monaco=Fratelli d'Italia	coltelli|rospi=fratelli coltelli	sole|ranocchio=Fratello sole, sorella luna	grimm|machiavelli=fratelli Grimm
+# falsa pista delle esche: TORRE
+fumo	passivo|pendente=fumo passivo	arrosto|controllo=tanto fumo e niente arrosto	occhi|scacchi=fumo negli occhi	londra|pisa=Fumo di Londra	segnali|merli=segnali di fumo
+# falsa pista delle esche: VINO
+fungo	atomico|rosso=fungo atomico	crescere|invecchiare=crescere come funghi	porcini|novelli=funghi porcini	risotto|bicchiere=risotto ai funghi	velenoso|bianco=fungo velenoso
+# falsa pista delle esche: MANO
+gamba	tesa|libera=entrata a gamba tesa	levate|giunte=a gambe levate	spalla|vernice=gambe in spalla	corte|pulite=la bugia ha le gambe corte	legno|freno=gamba di legno
+# falsa pista delle esche: TORO
+gallo	cedrone|seduto=gallo cedrone	canto|rodeo=al canto del gallo	pollaio|segno=gallo nel pollaio	pesi|muscoli=pesi gallo	nero|scatenato=Gallo Nero
+# falsa pista delle esche: CAVALLO
+gioia	vivere|montare=gioia di vivere	inno|galoppo=Inno alla gioia	salti|ostacoli=salti di gioia	lacrime|briglie=lacrime di gioia	tauro|troia=Gioia Tauro
+# falsa pista delle esche: NOTTE
+gola	peccato|turno=peccato di gola	profonda|buia=Gola profonda	acqua|camicia=avere l'acqua alla gola	nodo|sogno=un nodo alla gola	prendere|passare=prendere per la gola
+# falsa pista delle esche: GUERRA
+goccia	vaso|lampo=la goccia che fa traboccare il vaso	oceano|golfo=una goccia nell'oceano	cioccolato|fuoco=goccia di cioccolato	ultima|santa=fino all'ultima goccia	pietra|trincea=la goccia scava la pietra
+# falsa pista delle esche: BARCA
+gomma	americana|capovolta=gomma americana	terra|vela=gomma a terra	piuma|deriva=gomma piuma	albero|remo=albero della gomma	masticare|remare=gomma da masticare
+# falsa pista delle esche: BANCA
+grazia	colpo|conto=colpo di grazia	stato|sportello=stato di grazia	ricevuta|rapina=per grazia ricevuta	troppa|centrale=troppa grazia, Sant'Antonio	anno|direttore=anno di grazia
+# falsa pista delle esche: SCARPA
+guanto	sfida|suola=guanto di sfida	calzare|allacciare=calzare come un guanto	velluto|tacco=pugno di ferro in guanto di velluto	bianchi|lacci=furto con i guanti bianchi	forno|numero=guanto da forno
+# falsa pista delle esche: MONTAGNA
+inferno	cristallo|ghiacciaio=L'inferno di cristallo	intenzioni|vette=la strada per l'inferno è lastricata di buone intenzioni	girone|sentiero=girone dell'inferno	paradiso|rifugio=dal paradiso all'inferno	scendere|scalare=scendere all'inferno
+# falsa pista delle esche: ACQUA
+lana	caprina|gassata=questioni di lana caprina	vetro|rubinetto=lana di vetro	gomitolo|bicchiere=gomitolo di lana	buona|potabile=una buona lana	vergine|frizzante=pura lana vergine
+# falsa pista delle esche: OROLOGIO
+leva	militare|svizzero=leva militare	mondo|polso=datemi una leva e solleverò il mondo	cambio|cucù=leva del cambio	finanziaria|biologica=leva finanziaria	braccio|quadrante=braccio di leva
+# falsa pista delle esche: MONETA
+lira	valere|coniare=non valere una lira	nerone|cesare=Nerone suonava la lira mentre Roma bruciava	sterlina|zecca=lira sterlina	turca|corrente=lira turca	orfeo|caronte=la lira di Orfeo
+# falsa pista delle esche: BICICLETTA
+lotto	ruota|sella=ruota del lotto	terno|telaio=un terno al lotto	edificabile|elettrica=lotto edificabile	lorenzo|coppi=Lorenzo Lotto	produzione|pedalata=lotto di produzione
+# falsa pista delle esche: SCUOLA
+favola	buonanotte|ricreazione=la favola della buonanotte	morale|maestra=morale della favola	esopo|atene=le favole di Esopo	paese|banco=la favola del paese	matrimonio|zaino=un matrimonio da favola
+# falsa pista delle esche: CANE
+fischio	inizio|guinzaglio=fischio d'inizio	fiaschi|cuccioli=prendere fischi per fiaschi	orecchie|zampe=fischio nelle orecchie	treno|collare=il fischio del treno	applausi|ossi=tra fischi e applausi
+# falsa pista delle esche: BANDIERA
+freccia	rossa|ammainata=Freccia Rossa	direzionale|spiegata=freccia direzionale	cupido|pirata=la freccia di Cupido	mettere|sventolare=mettere la freccia	scoccare|issare=scoccare una freccia
+# falsa pista delle esche: PIOMBO
+diamante	cascata|cappa=Una cascata di diamanti	grezzo|fuso=diamante grezzo	nozze|pallottole=nozze di diamante	punta|lastra=punta di diamante	sangue|soldatino=diamanti di sangue
+# falsa pista delle esche: LUNA
+estate	indiana|nuova=estate indiana	martino|astolfo=estate di San Martino	mare|miele=un'estate al mare	finendo|calando=l'estate sta finendo	mezza|crescente=Sogno di una notte di mezza estate
+# falsa pista delle esche: SPADA
+lancia	spezzare|sguainare=spezzare una lancia	termica|laser=lancia termica	delta|damocle=Lancia Delta	resta|lama=lancia in resta	salvataggio|duello=lancia di salvataggio
+# falsa pista delle esche: PINOCCHIO
+lume	candela|fata=a lume di candela	ragione|balena=perdere il lume della ragione	secolo|paese=il secolo dei Lumi	petrolio|geppetto=lume a petrolio	naso|legno=a lume di naso
+# falsa pista delle esche: TOPO
+grillo	parlante|campagnolo=il Grillo Parlante	testa|biblioteca=avere grilli per la testa	beppe|gigio=Beppe Grillo	marchese|formaggio=Il marchese del Grillo	talpa|trappola=grillotalpa
+# falsa pista delle esche: CASTELLO
+inverno	nucleare|incantato=inverno nucleare	scontento|fossato=l'inverno del nostro scontento	giardino|fantasma=giardino d'inverno	racconto|assedio=Il racconto d'inverno	palazzo|conte=Palazzo d'Inverno
+# falsa pista delle esche: SPESA
+desiderio	tram|carrello=Un tram che si chiama Desiderio	oggetto|scontrino=l'oscuro oggetto del desiderio	esprimere|pagare=esprimere un desiderio	pio|grosso=un pio desiderio	lista|borsa=la lista dei desideri
+# falsa pista delle esche: VENTO
+fiera	est|nord=Alla fiera dell'est	campionaria|favorevole=fiera campionaria	domatore|mulino=domatore di fiere	vanità|rosa=La fiera delle vanità	bestiame|soffio=fiera del bestiame
+# falsa pista delle esche: STELLA
+granchio	prendere|brillare=prendere un granchio	polpa|alpina=polpa di granchio	nebulosa|cometa=Nebulosa del Granchio	camminare|nascere=camminare come un granchio	reale|cadente=granchio reale
+# falsa pista delle esche: BIRRA
+doccia	fredda|chiara=doccia fredda	scozzese|artigianale=doccia scozzese	cantare|spillare=cantare sotto la doccia	piatto|boccale=piatto doccia	gel|malto=gel doccia
+# falsa pista delle esche: PORTA
+mente	fredda|santa=a mente fredda	aperta|blindata=mente aperta	criminale|principale=mente criminale	lucida|carraia=mente lucida	tornare|sbattere=tornare in mente
+# falsa pista delle esche: MARE
+nodo	gordiano|aperto=nodo gordiano	cravatta|stella=nodo alla cravatta	gola|acqua=nodo alla gola	pettine|porto=tutti i nodi vengono al pettine	scorsoio|mosso=nodo scorsoio
+# falsa pista delle esche: SCUOLA
+nido	asilo|obbligo=asilo nido	ape|danza=nido d'ape	cuculo|calcio=Qualcuno volò sul nido del cuculo	vespe|lingue=nido di vespe	amore|teatro=nido d'amore
+# falsa pista delle esche: FERRO
+nastro	adesivo|battuto=nastro adesivo	azzurro|vecchio=nastro azzurro	taglio|braccio=taglio del nastro	argento|stiro=Nastro d'Argento	isolante|zincato=nastro isolante
+# falsa pista delle esche: NOTTE
+nebbia	fitta|fonda=nebbia fitta	banco|giorno=banco di nebbia	gorilla|museo=Gorilla nella nebbia	colli|esami=La nebbia agli irti colli	padana|bianca=nebbia in Val Padana
+# falsa pista delle esche: FUOCO
+nuvola	testa|linea=avere la testa fra le nuvole	cadere|giocare=cadere dalle nuvole	fumo|amico=nuvola di fumo	polvere|prova=nuvola di polvere	fantozzi|prometeo=la nuvola di Fantozzi
+# falsa pista delle esche: CANE
+orecchio	assoluto|randagio=orecchio assoluto	mercante|pastore=fare orecchie da mercante	pulce|razza=mettere una pulce nell'orecchio	suonare|menare=suonare a orecchio	tirata|caccia=tirata d'orecchi
+# falsa pista delle esche: PASSO
+paura	delirio|gigante=Paura e delirio a Las Vegas	lupo|gambero=Chi ha paura del lupo cattivo?	novanta|cento=la paura fa novanta	macchia|danza=senza macchia e senza paura	morire|allungare=morire di paura
+# falsa pista delle esche: MAGLIA
+pecora	nera|rosa=pecora nera	smarrita|azzurra=la pecora smarrita	contare|sudare=contare le pecore	leone|punto=meglio vivere un giorno da leone che cento anni da pecora	elettriche|bianconere=Gli androidi sognano pecore elettriche?
+# falsa pista delle esche: COLPO
+palma	domenica|testa=Domenica delle Palme	olio|sole=olio di palma	mano|coda=palma della mano	oro|genio=Palma d'oro	vittoria|grazia=la palma della vittoria
+# falsa pista delle esche: STELLA
+pioggia	acida|polare=pioggia acida	cantando|ballando=Cantando sotto la pioggia	pineto|albergo=La pioggia nel pineto	uomo|mare=Rain Man - L'uomo della pioggia	gocce|strisce=gocce di pioggia
+# falsa pista delle esche: CAMPO
+paradiso	cinema|calcio=Nuovo Cinema Paradiso	fiscale|magnetico=paradiso fiscale	terrestre|minato=paradiso terrestre	uccello|grano=uccello del paradiso	perduto|santo=Paradiso perduto
+# falsa pista delle esche: CAFFÈ
+polvere	sparo|chicco=polvere da sparo	mordere|macinare=mordere la polvere	occhi|fondi=gettare polvere negli occhi	tappeto|filtro=nascondere la polvere sotto il tappeto	latte|orzo=latte in polvere
+# falsa pista delle esche: LETTO
+piuma	peso|vagone=peso piuma	leggero|singolo=leggero come una piuma	struzzo|castello=piume di struzzo	cuscino|divano=cuscino di piume	boa|fiume=boa di piume
+# falsa pista delle esche: GIOCO
+ospite	onore|azzardo=ospite d'onore	pesce|ruolo=l'ospite è come il pesce: dopo tre giorni puzza	inatteso|pulito=L'ospite inatteso	camera|squadra=camera degli ospiti	eccezione|società=ospite d'eccezione
+# falsa pista delle esche: GUARDIA
+occasione	ladro|cane=l'occasione fa l'uomo ladro	volo|turno=cogliere l'occasione al volo	auto|torre=auto d'occasione	oro|corpo=occasione d'oro	persa|svizzera=occasione persa
+# falsa pista delle esche: LUNA
+maschera	ferro|pozzo=L'uomo dalla maschera di ferro	ballo|chiaro=Un ballo in maschera	bellezza|falce=maschera di bellezza	veneziana|crescente=maschera veneziana	gettare|chiedere=gettare la maschera
+# falsa pista delle esche: LAMPADA
+montagna	maometto|aladino=se la montagna non va da Maometto, Maometto va alla montagna	russe|alogene=montagne russe	incantata|votiva=La montagna incantata	topolino|genio=la montagna ha partorito un topolino	rifugio|stelo=rifugio di montagna
+# falsa pista delle esche: ROMA
+moglie	buoi|colli=moglie e buoi dei paesi tuoi	ubriaca|aperta=la botte piena e la moglie ubriaca	dito|giorno=tra moglie e marito non mettere il dito	prendere|portare=prendere moglie	cesare|nerone=la moglie di Cesare
+# falsa pista delle esche: MARE
+pancia	capanna|stella=pancia mia fammi capanna	aria|acqua=pancia all'aria	grattarsi|solcare=grattarsi la pancia	mal|lupo=mal di pancia	balena|brezza=nella pancia della balena
+# falsa pista delle esche: FUOCO
+nervo	saldi|fatui=nervi saldi	guerra|linea=guerra dei nervi	crisi|arma=Donne sull'orlo di una crisi di nervi	scoperto|incrociato=nervo scoperto	ottico|greco=nervo ottico
+# falsa pista delle esche: TESTIMONE
+nemico	pubblico|falso=Nemico pubblico	giurato|oculare=nemico giurato	porte|nozze=Il nemico alle porte	numero|passaggio=nemico numero uno	fraternizzare|chiamare=fraternizzare con il nemico
+# falsa pista delle esche: CARTA
+paglia	fuoco|foglio=fuoco di paglia	cappello|castello=cappello di paglia	uomo|gioco=uomo di paglia	tetto|mazzo=tetto di paglia	balla|risma=balla di paglia
+# falsa pista delle esche: MARE
+mille	notte|stella=Le mille e una notte	spedizione|tempesta=la spedizione dei Mille	bolle|onde=Mille bolle blu	miglia|conchiglie=Mille Miglia	lire|acque=Mille lire al mese
+# falsa pista delle esche: BOCCA
+manica	larga|asciutta=essere di manica larga	paio|amaro=un altro paio di maniche	canale|lupo=Canale della Manica	rimboccarsi|sciacquarsi=rimboccarsi le maniche	asso|leone=avere un asso nella manica
+# falsa pista delle esche: GRANO
+martello	falce|spiga=falce e martello	incudine|farina=tra l'incudine e il martello	pesce|campo=pesce martello	colpo|covone=colpo di martello	lancio|chicco=lancio del martello
+# falsa pista delle esche: PANE
+minuto	silenzio|tozzo=minuto di silenzio	spaccare|spezzare=spaccare il minuto	ultimo|secco=all'ultimo minuto	calcio|burro=Tutto il calcio minuto per minuto	recupero|companatico=minuti di recupero
+# falsa pista delle esche: ONORE
+padre	nostro|vostro=Padre nostro	famiglia|parola=padre di famiglia	figlio|giro=tale padre, tale figlio	confessore|posto=padre confessore	patria|damigella=Padre della Patria
+# falsa pista delle esche: MERCATO
+paese	usanze|regole=paese che vai, usanze che trovi	bel|buon=il Bel Paese	balocchi|prezzi=il paese dei balocchi	mandare|chiedere=mandare a quel paese	mondo|pesce=tutto il mondo è paese
+# falsa pista delle esche: MURO
+patto	diavolo|pianto=patto col diavolo	sangue|suono=patto di sangue	varsavia|berlino=Patto di Varsavia	chiari|portanti=patti chiari, amicizia lunga	venire|alzare=venire a patti
+# falsa pista delle esche: CAVALIERE
+oggetto	smarriti|erranti=ufficio oggetti smarriti	oscuro|nero=Quell'oscuro oggetto del desiderio	volante|solitario=oggetto volante non identificato	complemento|zodiaco=complemento oggetto	culto|lavoro=oggetto di culto
+# falsa pista delle esche: GOLA
+pelo	uovo|nodo=cercare il pelo nell'uovo	vizio|peccato=il lupo perde il pelo ma non il vizio	stomaco|groppo=avere il pelo sullo stomaco	acqua|pastiglia=a pelo d'acqua	lisciare|schiarirsi=lisciare il pelo
+# falsa pista delle esche: VINO
+pollo	arrosto|bicchiere=pollo arrosto	ridere|versare=far ridere i polli	conoscere|degustare=conoscere i propri polli	diavola|botte=pollo alla diavola	batteria|bottiglia=polli in batteria
+# falsa pista delle esche: CINEMA
+premio	nobel|lumière=premio Nobel	consolazione|industria=premio di consolazione	strega|stella=premio Strega	fedeltà|storia=premio fedeltà	carriera|magia=premio alla carriera
+# falsa pista delle esche: SOLE
+pugno	ferro|tramonto=pugno di ferro	dollari|occhiali=Per un pugno di dollari	occhio|raggio=un pugno nell'occhio	mosche|giornate=restare con un pugno di mosche	scrivere|scottarsi=scrivere di proprio pugno
+# falsa pista delle esche: TORTA
+noce	moscata|rustica=noce moscata	cocco|forno=noce di cocco	burro|limone=una noce di burro	guscio|pezzo=guscio di noce	sacco|riso=una noce nel sacco non fa rumore
+# falsa pista delle esche: LAVORO
+orario	segnale|ritmo=segnale orario	senso|posto=senso orario	fuso|banco=fuso orario	continuato|interinale=orario continuato	ufficio|contratto=orario d'ufficio
+# falsa pista delle esche: PASTA
+pappa	reale|integrale=pappa reale	pomodoro|forno=Viva la pappa col pomodoro	pronta|frolla=trovare la pappa pronta	ciccia|sfoglia=pappa e ciccia	molle|fresca=pappa molle
+# falsa pista delle esche: PARTITA
+missione	impossibile|amichevole=Missione impossibile	pace|scopa=missione di pace	compiuta|truccata=missione compiuta	conto|pallone=in missione per conto di Dio	spaziale|doppia=missione spaziale
+# falsa pista delle esche: CENA
+pranzo	nozze|beffe=pranzo di nozze	domenica|candela=il pranzo della domenica	sacco|delitto=pranzo al sacco	pausa|classe=pausa pranzo	babette|emmaus=Il pranzo di Babette
+# falsa pista delle esche: ESAME
+quadro	clinico|orale=quadro clinico	svedese|scritto=quadro svedese	elettrico|pratico=quadro elettrico	camicia|maturità=camicia a quadri	situazione|coscienza=quadro della situazione
+# falsa pista delle esche: ORO
+quarto	ora|età=quarto d'ora	potere|cuore=Quarto potere	stato|pallone=Il quarto stato	finale|medaglia=quarti di finale	nobiltà|febbre=quarti di nobiltà
+# falsa pista delle esche: TESTA
+radice	quadrata|calda=radice quadrata	liquirizia|croce=radice di liquirizia	capelli|piedi=arrossire fino alla radice dei capelli	mettere|girare=mettere radici	dente|colpo=radice del dente
+# falsa pista delle esche: FIUME
+ramo	ulivo|corso=ramo d'ulivo	lago|letto=quel ramo del lago di Como	azienda|piena=ramo d'azienda	cadetto|sotterraneo=ramo cadetto	secco|carsico=ramo secco
+# falsa pista delle esche: MONDO
+resto	carlino|giro=il Resto del Carlino	noia|fine=il resto è noia	mortali|possibili=resti mortali	giorno|tetto=quel che resta del giorno	divisione|capitale=resto della divisione
+# falsa pista delle esche: PANE
+riso	amaro|duro=Riso amaro	bianco|quotidiano=riso in bianco	stolti|angeli=il riso abbonda sulla bocca degli stolti	carta|mollica=carta di riso	chicco|tozzo=chicco di riso
+# falsa pista delle esche: PASSO
+rotta	collo|gambero=a rotta di collo	collisione|danza=rotta di collisione	invertire|cedere=invertire la rotta	caporetto|stelvio=la rotta di Caporetto	tracciare|allungare=tracciare la rotta
+# falsa pista delle esche: GIOCO
+regola	oro|ruolo=regola d'oro	arte|squadra=a regola d'arte	eccezione|società=l'eccezione che conferma la regola	conti|dadi=regolare i conti	fuorigioco|azzardo=la regola del fuorigioco
+# falsa pista delle esche: TORTA
+salsa	tonnata|salata=salsa tonnata	tutte|candeline=in tutte le salse	merengue|compleanno=salsa e merengue	pomodoro|riso=salsa di pomodoro	tartara|nuziale=salsa tartara
+# falsa pista delle esche: CAVALLO
+salute	ferro|vapore=salute di ferro	casa|troia=casa di salute	stato|dondolo=stato di salute	maschi|bastoni=salute e figli maschi	brindare|montare=brindare alla salute
+# falsa pista delle esche: FUOCO
+sasso	restare|prendere=restare di sasso	mano|prova=tirare il sasso e nascondere la mano	forbice|arma=sasso carta forbice	matera|terra=i Sassi di Matera	gran|fatuo=Gran Sasso
+# falsa pista delle esche: CALCIO
+scarpa	cervello|rigore=scarpe grosse e cervello fino	fare|tirare=fare le scarpe a qualcuno	ginnastica|punizione=scarpe da ginnastica	lucido|angolo=lucido da scarpe	numero|rinvio=numero di scarpe
+# falsa pista delle esche: MESSA
+silenzio	stampa|piega=silenzio stampa	innocenti|defunti=Il silenzio degli innocenti	minuto|punto=minuto di silenzio	tomba|scena=silenzio di tomba	assenso|fuoco=silenzio assenso
+# falsa pista delle esche: CUORE
+specchio	retrovisore|leone=specchio retrovisore	acqua|pietra=specchio d'acqua	anima|mamma=gli occhi sono lo specchio dell'anima	brame|tenebre=specchio, specchio delle mie brame	sfortuna|panna=rompere uno specchio porta sette anni di sfortuna
+# falsa pista delle esche: FORTUNA
+spalla	comica|sfacciata=spalla comica	alzare|tentare=alzare le spalle	larghe|alterne=avere le spalle larghe	piangere|sorridere=una spalla su cui piangere	zaino|biscotto=zaino in spalla
+# falsa pista delle esche: LIBRO
+spesa	carrello|mastro=carrello della spesa	lista|giungla=lista della spesa	pubblica|aperta=spesa pubblica	imparare|parlare=imparare a proprie spese	nota|paga=nota spese
+# falsa pista delle esche: CASA
+stanza	bottoni|fantasmi=la stanza dei bottoni	letto|riposo=stanza da letto	figlio|fratello=La stanza del figlio	truppe|bambole=truppe di stanza	ospiti|spiriti=stanza degli ospiti
+# falsa pista delle esche: AMORE
+stile	libero|platonico=stile libero	vita|vista=stile di vita	grande|eterno=in grande stile	liberty|materno=stile liberty	questione|pozione=questione di stile
+# falsa pista delle esche: FILO
+tela	ragno|ferro=tela di ragno	penelope|arianna=la tela di Penelope	calare|perdere=calare la tela	olio|rame=olio su tela	cerata|interdentale=tela cerata
+# falsa pista delle esche: CAMICIA
+tenda	canadese|hawaiana=tenda canadese	levare|sudare=levare le tende	ossigeno|lino=tenda a ossigeno	doccia|forza=tenda della doccia	veneziana|notte=tende alla veneziana
+# falsa pista delle esche: GUERRA
+trappola	topi|bottoni=trappola per topi	cadere|dichiarare=cadere in trappola	cristallo|lampo=Trappola di cristallo	mortale|santa=trappola mortale	turisti|mondi=trappola per turisti
+# falsa pista delle esche: CASTELLO
+tromba	aria|sabbia=tromba d'aria	scale|carte=tromba delle scale	eustachio|fossato=tromba di Eustachio	partire|costruire=partire in tromba	marina|incantata=tromba marina
+# falsa pista delle esche: CANALE
+tubo	scappamento|suez=tubo di scappamento	catodico|televisivo=tubo catodico	capire|cambiare=non capire un tubo	digerente|navigabile=tubo digerente	neon|panama=tubo al neon
+# falsa pista delle esche: PESCE
+uccello	malaugurio|aprile=uccello del malaugurio	volo|martello=a volo d'uccello	paradiso|fiume=uccello del paradiso	gabbia|acqua=uccello in gabbia	rovo|barile=Uccelli di rovo
+# falsa pista delle esche: PAROLA
+unghia	denti|giochi=con le unghie e con i denti	smalto|onore=smalto per unghie	mangiarsi|rimangiarsi=mangiarsi le unghie	incarnita|magica=unghia incarnita	tirare|mantenere=tirare fuori le unghie
+# falsa pista delle esche: MURO
+vaso	pandora|berlino=il vaso di Pandora	goccia|gomma=la goccia che fa traboccare il vaso	notte|cinta=vaso da notte	comunicanti|portanti=vasi comunicanti	coccio|pianto=vaso di coccio tra vasi di ferro
+# falsa pista delle esche: CARTA
+vela	gonfie|bollate=a gonfie vele	barca|identità=barca a vela	volo|imbarco=volo a vela	ammainare|giocare=ammainare le vele	latina|igienica=vela latina
+# falsa pista delle esche: LICENZA
+vena	poetica|edilizia=vena poetica	varicosa|media=vena varicosa	tagliarsi|ritirare=tagliarsi le vene	follia|caccia=una vena di follia	cava|elementare=vena cava
+# falsa pista delle esche: VENTO
+vapore	ferro|colpo=ferro a vapore	cavalli|capelli=cavalli vapore	battello|strumento=battello a vapore	cuocere|parlare=cuocere a vapore	macchina|giacca=macchina a vapore
+# falsa pista delle esche: PASTA
+zucca	vuota|frolla=zucca vuota	fiori|ceci=fiori di zucca	sale|dente=avere sale in zucca	tortelli|broccoli=tortelli di zucca	carrozza|sfoglia=la carrozza che torna zucca
+# falsa pista delle esche: VOTO
+questione	principio|scambio=questione di principio	meridionale|palese=questione meridionale	pelle|castità=questione di pelle	privata|utile=Una questione privata	fiducia|condotta=questione di fiducia
+# falsa pista delle esche: IMPERO
+quartiere	generale|britannico=quartier generale	latino|romano=quartiere latino	lotta|caduta=lotta senza quartiere	spagnoli|ottomani=Quartieri Spagnoli	luci|sensi=quartiere a luci rosse
+# falsa pista delle esche: DISCO
+tappeto	volante|rotto=tappeto volante	mettere|incidere=mettere al tappeto	polvere|ernia=nascondere la polvere sotto il tappeto	persiano|orario=tappeto persiano	bombardamento|freno=bombardamento a tappeto
+# falsa pista delle esche: CORSO
+romanzo	criminale|serale=Romanzo criminale	appendice|laurea=romanzo d'appendice	rosa|acqua=romanzo rosa	storico|intensivo=romanzo storico	formazione|lingua=romanzo di formazione
+# falsa pista delle esche: CODICE
+segnale	stradale|penale=segnale stradale	orario|fiscale=segnale orario	fumo|barre=segnali di fumo	allarme|accesso=segnale d'allarme	occupato|civile=segnale di occupato
+# falsa pista delle esche: CANE
+stivale	gatto|lupo=Il gatto con gli stivali	leghe|pulci=stivali delle sette leghe	gomma|razza=stivali di gomma	leccare|svegliare=leccare gli stivali	tacco|pastore=il tacco dello Stivale
+# falsa pista delle esche: BOMBA
+tempesta	acqua|mano=tempesta in un bicchier d'acqua	quiete|orologeria=la quiete dopo la tempesta	neve|profondità=tempesta di neve	perfetta|atomica=La tempesta perfetta	ormonale|intelligente=tempesta ormonale
+# falsa pista delle esche: PORTA
+tamburo	battente|blindata=a tamburo battente	latta|servizio=Il tamburo di latta	rullo|soffietto=rullo di tamburi	lavatrice|finestra=tamburo della lavatrice	pistola|casa=pistola a tamburo
+# falsa pista delle esche: TERRA
+scimmia	pianeta|nessuno=Il pianeta delle scimmie	urlatrice|promessa=scimmia urlatrice	tre|mezzo=le tre scimmie	spalla|luna=avere la scimmia sulla spalla	nuda|bruciata=La scimmia nuda
+# falsa pista delle esche: NOTTE
+sposa	bambina|befana=sposa bambina	abito|camicia=abito da sposa	cadavere|turno=La sposa cadavere	fratelli|tempi=Sette spose per sette fratelli	bagnata|fonda=sposa bagnata, sposa fortunata

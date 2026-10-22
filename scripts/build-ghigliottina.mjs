@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 /**
- * Prepara le Ghigliottine dall'elenco scritto a mano.
+ * Prepara le Ghigliottine libere dall'elenco scritto a mano.
  *
  *   scripts/data/ghigliottina.tsv                 le ghigliottine: la parola vincente e le cinque parole
  *                                                 che la nascondono, con l'espressione che le lega
- *   scripts/data/ghigliottina-classificate.json   le classificate con le esche, che legge lo script della notte
  *   public/dati/ghigliottina/libere.json          le libere, che scarica il telefono
  *   shared/ghigliottina-libere.ts                 l'impronta del file delle libere, per l'indirizzo (?v=)
  *
@@ -23,9 +22,11 @@
  * Lo script dice anche quel che non torna: una parola che non sta nella sua
  * espressione, una soluzione che cinque parole indicano meno di un'altra.
  *
- * Classificate e libere si dividono le soluzioni, un terzo alle libere, e
- * ognuna prende le esche dalla sua parte: il file che scarica il telefono non
- * ha nessuna parola delle classificate.
+ * Un terzo delle soluzioni va alle libere, che prendono le esche fra loro. Gli
+ * altri due terzi erano le classificate, fino al 22 ottobre 2026: erano quasi
+ * ovvie, e le classificate adesso hanno un elenco loro, con le esche scritte a
+ * mano (scripts/build-ghigliottina-classificate.mjs). La divisione resta, perché
+ * le libere non cambino.
  *
  * Uso:  node scripts/build-ghigliottina.mjs            (scarica le fonti che mancano in scripts/.cache/)
  *       node scripts/build-ghigliottina.mjs --offline  (solo la cache)
@@ -61,7 +62,7 @@ const FONTI = {
   },
 }
 
-/** Le libere hanno un terzo delle soluzioni: le classificate ne vogliono di piu'. */
+/** Le libere hanno un terzo delle soluzioni dell'elenco. */
 const PARTI = 3
 
 /** Collante grammaticale: in un'espressione non lega niente a niente. */
@@ -325,7 +326,6 @@ async function main() {
     return migliore
   }
 
-  const classificate = tutte.filter((t) => fnv(t.soluzione) % PARTI !== 0)
   const libere = tutte.filter((t) => fnv(t.soluzione) % PARTI === 0)
   const conEsche = (parte) => {
     const usate = new Map()
@@ -336,13 +336,8 @@ async function main() {
       })
       .sort((a, b) => (a.s < b.s ? -1 : 1))
   }
-  const giornate = conEsche(classificate)
   const daGiocare = conEsche(libere)
 
-  await writeFile(
-    join(HERE, 'data', 'ghigliottina-classificate.json'),
-    JSON.stringify(giornate.map(({ s, c }) => ({ s, c })), null, 0).replace(/\},\{/g, '},\n{') + '\n',
-  )
   const json = JSON.stringify({ ghigliottine: daGiocare.map(({ s, c }) => [s, c]) })
   await mkdir(join(ROOT, 'public', 'dati', 'ghigliottina'), { recursive: true })
   await writeFile(join(ROOT, 'public', 'dati', 'ghigliottina', 'libere.json'), json)
@@ -353,11 +348,11 @@ async function main() {
       `export const VERSIONE_LIBERE_GHIGLIOTTINA = '${impronta}'\n`,
   )
 
-  console.log(`Ghigliottina: ${giornate.length} classificate, ${daGiocare.length} libere, impronta ${impronta}`)
+  console.log(`Ghigliottina: ${daGiocare.length} libere, impronta ${impronta}`)
   console.log(`  ${sconosciuti.length} legami che il Wiktionary non conosce (scritti a mano)`)
   if (process.argv.includes('--dettagli')) {
     console.log(`  sconosciuti: ${sconosciuti.join(', ')}`)
-    for (const g of [...giornate, ...daGiocare]) {
+    for (const g of daGiocare) {
       console.log(`  ${g.s.toUpperCase()} (esche da ${g.da}): ${g.c.map(([p, e]) => `${p}/${e}`).join('  ')}`)
     }
   }

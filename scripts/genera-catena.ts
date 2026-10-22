@@ -10,7 +10,10 @@
  * dalla giornata gia' scritta, e si calcola solo se manca — il passo della
  * Ghigliottina viene prima di questo, nella notte e nel deploy. Si scrivono con
  * `INSERT OR IGNORE`: una giornata scritta non cambia piu', anche se l'elenco
- * si rifa'.
+ * si rifa'. L'eccezione e' una giornata dopo oggi che nessuno ha aperto e che
+ * ha fra le sue parole la vincente della Ghigliottina dello stesso giorno: la
+ * Ghigliottina si rifà quando cambia formato, e la catena scritta prima non lo
+ * sapeva.
  *
  *   npx vite-node scripts/genera-catena.ts                 anteprima di oggi, senza scrivere
  *   npx vite-node scripts/genera-catena.ts -- --local      D1 locale di wrangler
@@ -63,18 +66,6 @@ const ghigliottine = JSON.parse(
 ) as GhigliottinaDellElenco[]
 
 const numeri = Array.from({ length: GIORNI }, (_, i) => DA + i)
-const presenti = SCRIVE
-  ? new Set(
-      interroga<{ puzzle_number: number }>(
-        `SELECT puzzle_number FROM catena_giornate WHERE puzzle_number BETWEEN ${DA} AND ${A}`,
-      ).map((r) => r.puzzle_number),
-    )
-  : new Set<number>()
-const mancanti = numeri.filter((n) => !presenti.has(n))
-if (SCRIVE && mancanti.length === 0) {
-  console.log(`Catena: le ${GIORNI} giornate ci sono già`)
-  process.exit(0)
-}
 
 /** Le vincenti della Ghigliottina gia' scritte; per i giorni che non le hanno, quelle che scriverebbe la notte. */
 const vincenti = new Map(
@@ -88,6 +79,34 @@ const vincenti = new Map(
 const vincenteDi = (numero: number) =>
   normalizzaCatena(vincenti.get(numero) ?? ghigliottinaDelGiorno(numero, ghigliottine).soluzione)
 
+/** Una giornata che si puo' rifare: dopo oggi, e che nessuno ha aperto. */
+const DA_RIFARE = (numero: number) =>
+  `puzzle_number = ${numero} AND puzzle_number > ${DA}
+   AND NOT EXISTS (SELECT 1 FROM catena_partite p WHERE p.puzzle_number = ${numero})`
+
+const scritte = SCRIVE
+  ? interroga<{ puzzle_number: number; catena: string; aperta: number }>(
+      `SELECT puzzle_number, catena,
+              EXISTS (SELECT 1 FROM catena_partite p WHERE p.puzzle_number = g.puzzle_number) AS aperta
+         FROM catena_giornate g WHERE puzzle_number BETWEEN ${DA} AND ${A}`,
+    )
+  : []
+// Una catena scritta resta, tranne quella di un giorno che deve venire, mai aperta, che direbbe la vincente.
+const presenti = new Set(
+  scritte
+    .filter((r) => {
+      if (r.puzzle_number <= DA || r.aperta) return true
+      const parole = (JSON.parse(r.catena) as { parole: string[] }).parole
+      return !parole.some((p) => normalizzaCatena(p) === vincenteDi(r.puzzle_number))
+    })
+    .map((r) => r.puzzle_number),
+)
+const mancanti = numeri.filter((n) => !presenti.has(n))
+if (SCRIVE && mancanti.length === 0) {
+  console.log(`Catena: le ${GIORNI} giornate ci sono già`)
+  process.exit(0)
+}
+
 const adesso = new Date().toISOString()
 const righe: string[] = []
 for (const numero of SCRIVE ? mancanti : numeri.slice(0, 1)) {
@@ -98,12 +117,13 @@ for (const numero of SCRIVE ? mancanti : numeri.slice(0, 1)) {
     .join(' ')
   console.log(`  #${numero} ${dateForPuzzleNumber(numero)}  ${anteprima}`)
   righe.push(
+    `DELETE FROM catena_giornate WHERE ${DA_RIFARE(numero)};`,
     `INSERT OR IGNORE INTO catena_giornate (puzzle_number, catena, formato, created_at) VALUES ` +
       `(${numero}, ${cita(JSON.stringify(catena))}, 1, ${cita(adesso)});`,
   )
 }
 
 if (SCRIVE) {
-  console.log(`  scrivo ${righe.length} giornate su ${REMOTO ? 'produzione' : 'locale'}…`)
+  console.log(`  scrivo ${mancanti.length} giornate su ${REMOTO ? 'produzione' : 'locale'}…`)
   wrangler(['--command', righe.join('\n')])
 }

@@ -2160,16 +2160,35 @@ e' la giusta. Un'esca non deve legarsi alla vincente, e lo script lo sa dalle
 espressioni del Wikizionario e del Wiktionary (le estrazioni del dizionario
 dello Scarabeo), dalle parole composte di napolux e da quelle dell'elenco; le
 righe con il punto esclamativo ("!colpo duro") dicono quelle che le fonti non
-conoscono: senza, "duro" faceva da esca a COLPO. Le vincenti si dividono fra
-classificate (due terzi, `scripts/data/ghigliottina-classificate.json`, che legge
-solo la notte) e libere (`public/dati/ghigliottina/libere.json`, con l'impronta
-in `shared/ghigliottina-libere.ts`), e ognuna prende le esche dalla sua parte:
-il file del telefono non ha nessuna parola delle classificate. La notte
+conoscono: senza, "duro" faceva da esca a COLPO. Di quell'elenco un terzo fa
+le libere (`public/dati/ghigliottina/libere.json`, con l'impronta in
+`shared/ghigliottina-libere.ts`), che prendono le esche fra loro.
+
+**Le classificate della Ghigliottina sono un elenco a parte, piu' difficile, con
+le esche scritte a mano.** Fino al 22 ottobre 2026 erano gli altri due terzi di
+`ghigliottina.tsv`, ed erano quasi ovvie: "acqua santa", "acqua alta", "acqua
+passata" portano ognuna dritta alla vincente, e le esche prese da un'altra
+ghigliottina ("guida", "massima") non convincevano nessuno. Finché un errore
+dimezzava il montepremi la giornata sembrava difficile lo stesso; con i dieci
+punti a errore la si vinceva quasi intera. `scripts/data/ghigliottina-difficili.tsv`
+e' fatto come alla televisione: legami da sensi diversi della vincente, modi di
+dire, titoli e proverbi, al piu' uno che la richiama subito, e la vincente esce
+solo incrociando tre parole. Ogni parola giusta ha la sua esca scritta accanto
+(`giusta|esca=espressione`), della stessa forma, e le cinque esche insieme
+indicano un'altra vincente, la falsa pista scritta nel commento sopra la riga.
+`npm run ghigliottina:classificate` (`scripts/build-ghigliottina-classificate.mjs`)
+controlla la forma e che nessuna vincente sia anche una libera — il file del
+telefono non ha le risposte di nessun giorno — e scrive
+`scripts/data/ghigliottina-classificate.json`, che legge solo la notte. Le
+vincenti non sono quelle di `ghigliottina.tsv`. La notte
 (`scripts/genera-ghigliottina.ts`, il passo "La Ghigliottina" di
 `cruciverba.yml`, e il deploy per due settimane) scrive la giornata in
 `ghigliottina_giornate` con `INSERT OR IGNORE`: l'ordine delle coppie e da che
 parte sta la giusta vengono dal numero del giorno, e una giornata scritta non
-cambia. Se manca, `GHIGLIOTTINA_ASSENTE` (503): in locale
+cambia, tranne quelle di un formato vecchio (`FORMATO`, il 2 e' quello delle
+difficili) dopo oggi e che nessuno ha aperto, che si rifanno. Per questo la
+Catena, che salta la catena con la vincente dello stesso giorno, rifà anche lei
+una giornata futura mai aperta che ha fra le sue parole la vincente nuova. Se manca, `GHIGLIOTTINA_ASSENTE` (503): in locale
 `npm run ghigliottina:locale`.
 
 **Nella Ghigliottina il server dice la giusta solo dopo la scelta, e la vincente
