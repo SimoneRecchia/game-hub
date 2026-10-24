@@ -10,7 +10,9 @@
  * cambia piu', anche se l'elenco si rifa'. Tranne quelle di un formato vecchio
  * (`FORMATO`) nel futuro e che nessuno ha aperto, che si rifanno, come le
  * giornate del quiz: nessuno le ha viste. Il 2 e' quello delle ghigliottine
- * difficili, con le esche scritte a mano (scripts/build-ghigliottina-classificate.mjs).
+ * difficili, con le esche scritte a mano (scripts/build-ghigliottina-classificate.mjs);
+ * il 3 quello in cui la vincente sta in ogni espressione com'e' scritta, senza
+ * plurali ne' forme tronche ("canali diplomatici", "Canal Grande" per CANALE).
  *
  *   npx vite-node scripts/genera-ghigliottina.ts                 anteprima di oggi, senza scrivere
  *   npx vite-node scripts/genera-ghigliottina.ts -- --local      D1 locale di wrangler
@@ -56,7 +58,7 @@ function interroga<T>(sql: string): T[] {
 const cita = (s: string) => `'${s.replace(/'/g, "''")}'`
 
 /** La forma delle ghigliottine: una giornata di un formato vecchio, nel futuro e mai aperta, si rifà. */
-const FORMATO = 2
+const FORMATO = 3
 
 /** Una giornata che si puo' rifare: dopo oggi, di un formato vecchio, e che nessuno ha aperto. */
 const DA_RIFARE = `formato < ${FORMATO} AND puzzle_number > ${DA}

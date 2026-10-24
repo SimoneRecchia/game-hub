@@ -278,7 +278,7 @@ materia	prima=materia prima	grigia=materia grigia	oscura=materia oscura	plastica
 frutto	proibito=frutto proibito	passione=frutto della passione	amore=frutto dell'amore	albero=albero da frutto	dare=dare frutto
 botta	risposta=botta e risposta	tenere=tenere botta	via=una botta e via	calda=a botta calda	sicura=a botta sicura
 fisso	posto=posto fisso	chiodo=chiodo fisso	prezzo=prezzo fisso	reddito=reddito fisso	telefono=telefono fisso
-grano	duro=grano duro	turco=granturco	cerchi=cerchi nel grano	campo=campo di grano	saraceno=grano saraceno
+grano	duro=grano duro	chicco=chicco di grano	cerchi=cerchi nel grano	campo=campo di grano	saraceno=grano saraceno
 freno	mano=freno a mano	tenere=tenere a freno	emergenza=freno d'emergenza	disco=freno a disco	mordere=mordere il freno
 cavallo	battaglia=cavallo di battaglia	coda=coda di cavallo	febbre=febbre da cavallo	troia=cavallo di Troia	dondolo=cavallo a dondolo
 inglese	chiave=chiave inglese	zuppa=zuppa inglese	colazione=colazione all'inglese	corno=corno inglese	giardino=giardino all'inglese
@@ -344,7 +344,7 @@ palazzo	giustizia=palazzo di giustizia	vecchio=Palazzo Vecchio	ducale=Palazzo Du
 chiesa	casa=casa e chiesa	cane=come un cane in chiesa	madre=chiesa madre	romana=Santa Romana Chiesa	sposarsi=sposarsi in chiesa
 ufficio	postale=ufficio postale	stampa=ufficio stampa	avvocato=avvocato d'ufficio	abuso=abuso d'ufficio	oggetti=ufficio oggetti smarriti
 teatro	colpo=colpo di teatro	burattini=teatro dei burattini	posa=teatro di posa	guerra=teatro di guerra	stabile=teatro stabile
-festa	mamma=festa della mamma	papà=festa del papà	donna=festa della donna	guasta=guastafeste	repubblica=festa della Repubblica
+festa	mamma=festa della mamma	papà=festa del papà	donna=festa della donna	rovinare=rovinare la festa	repubblica=festa della Repubblica
 natale	babbo=Babbo Natale	albero=albero di Natale	canto=Canto di Natale	vacanze=Vacanze di Natale	notte=notte di Natale
 pasqua	uovo=uovo di Pasqua	contento=contento come una Pasqua	isola=Isola di Pasqua	natale=Natale con i tuoi, Pasqua con chi vuoi	domenica=domenica di Pasqua
 regalo	carta=carta regalo	buono=buono regalo	idea=idea regalo	pacco=pacco regalo	natale=regalo di Natale
@@ -362,7 +362,7 @@ vittoria	pirro=vittoria di Pirro	tavolino=vittoria a tavolino	cantare=cantare vi
 battaglia	campo=campo di battaglia	cavallo=cavallo di battaglia	nome=nome di battaglia	navale=battaglia navale	algeri=La battaglia di Algeri
 soldato	semplice=soldato semplice	ignoto=il soldato ignoto	ryan=Salvate il soldato Ryan	ventura=soldato di ventura	blu=Soldato blu
 generale	quartiere=quartiere generale	sciopero=sciopero generale	prova=prova generale	anestesia=anestesia generale	segretario=segretario generale
-capitano	ventura=capitano di ventura	industria=capitano d'industria	fregata=capitano di fregata	corso=capitano di lungo corso	uncino=Capitan Uncino
+capitano	ventura=capitano di ventura	industria=capitano d'industria	fregata=capitano di fregata	corso=capitano di lungo corso	mio=O capitano! Mio capitano!
 penna	sfera=penna a sfera	amico=amico di penna	stilografica=penna stilografica	nome=nome di penna	tratto=un tratto di penna
 inchiostro	china=inchiostro di china	simpatico=inchiostro simpatico	fiumi=fiumi d'inchiostro	macchia=macchia d'inchiostro	cartuccia=cartuccia d'inchiostro
 pagina	bianca=pagina bianca	voltare=voltare pagina	prima=prima pagina	ultima=ultima pagina	piè=a piè di pagina
