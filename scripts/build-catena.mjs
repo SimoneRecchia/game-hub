@@ -102,6 +102,17 @@ function stessaRadice(a, b) {
   return x.slice(0, n) === y.slice(0, n) || x.includes(y) || y.includes(x)
 }
 
+/**
+ * `parola` sta nell'espressione com'e' scritta: una sua parola e' proprio lei, o una parola composta che ha
+ * intere lei e l'altra ("pianoforte"). Non "Cuor di Leone" per CUORE, ne' "fuga di cervelli" per CERVELLO.
+ */
+function esatta(espressione, parola, altra) {
+  const parole = (t) => piana(t).split(/[^a-z]+/).filter(Boolean)
+  const p = parole(parola).join('')
+  const q = parole(altra).join('')
+  return parole(espressione).some((t) => t === p || (t.includes(p) && t.includes(q)))
+}
+
 /** Un infinito: si lega a tutto ("dare", "mettere"), e da indovinare sarebbe un'altra cosa. */
 const verbo = (p) => /(are|ere|ire|rre)$/.test(piana(p))
 
@@ -189,6 +200,8 @@ async function main() {
     const [soluzione, ...legami] = riga.trim().split('\t')
     for (const l of legami) {
       const [parola, espressione] = l.split('=')
+      // Le due parole devono stare nell'espressione come si vedono: "fuga di cervelli" non lega FUGA a CERVELLO.
+      if (!esatta(espressione, parola.trim(), soluzione) || !esatta(espressione, soluzione, parola.trim())) continue
       espressioni.set(chiave(soluzione, parola.trim()), espressione.trim())
     }
   }

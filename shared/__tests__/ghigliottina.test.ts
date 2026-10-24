@@ -40,6 +40,17 @@ describe('la parola vincente', () => {
   })
 })
 
+/**
+ * `parola` sta nell'espressione com'e' scritta: una sua parola e' proprio lei, o una parola composta che ha
+ * intere lei e l'altra della coppia ("Albachiara" per ALBA e chiara).
+ */
+function parolaEsatta(espressione: string, parola: string, altra: string): boolean {
+  const parole = (t: string) => t.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').split(/[^a-z]+/).filter(Boolean)
+  const p = parole(parola).join('')
+  const q = parole(altra).join('')
+  return parole(espressione).some((t) => t === p || (t.includes(p) && t.includes(q)))
+}
+
 describe('l’elenco delle ghigliottine', () => {
   it('ha cinque coppie per ghigliottina, e nessuna esca e’ una parola giusta della stessa', () => {
     for (const g of [...classificate, ...libere]) {
@@ -49,6 +60,16 @@ describe('l’elenco delle ghigliottine', () => {
         expect(giuste.has(esca), `${g.s}: ${esca}`).toBe(false)
         expect(esca).not.toBe(giusta)
         expect(normalizzaGhigliottina(spiegazione)).toContain(normalizzaGhigliottina(giusta))
+      }
+    }
+  })
+
+  it('la vincente e la parola giusta stanno nell’espressione come sono scritte, senza plurali ne’ tronche', () => {
+    // "canali diplomatici" per CANALE, "Canal Grande": chi gioca scrive CANALE, e la spiegazione deve dire CANALE.
+    for (const g of [...classificate, ...libere]) {
+      for (const [giusta, , spiegazione] of g.c) {
+        expect(parolaEsatta(spiegazione, g.s, giusta), `${g.s}: ${spiegazione}`).toBe(true)
+        expect(parolaEsatta(spiegazione, giusta, g.s), `${g.s}: ${spiegazione}`).toBe(true)
       }
     }
   })

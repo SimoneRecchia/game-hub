@@ -294,16 +294,20 @@ describe('quel che si vede', () => {
 describe('l’elenco delle catene', () => {
   const tutte = [...classificate, ...libere]
 
-  it('ha undici parole e dieci espressioni per catena, e ogni espressione lega le sue due', () => {
+  it('ha undici parole e dieci espressioni per catena, e ogni espressione ha le sue due come sono scritte', () => {
+    // Non "Cuor di Leone" per CUORE, ne' "fuga di cervelli" per CERVELLO: la parola che si scrive e' quella.
+    const parole = (t: string) =>
+      t.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '').split(/[^a-z]+/).filter(Boolean)
+    const esatta = (espressione: string, parola: string, altra: string) => {
+      const p = normalizzaCatena(parola)
+      const q = normalizzaCatena(altra)
+      return parole(espressione).some((t) => t === p || (t.includes(p) && t.includes(q)))
+    }
     for (const c of tutte) {
       expect(giornataValida({ parole: c.p, espressioni: c.e }), c.p.join(' ')).toBe(true)
       for (let i = 0; i < PAROLE_CATENA - 1; i += 1) {
-        const e = normalizzaCatena(c.e[i])
-        for (const p of [c.p[i], c.p[i + 1]]) {
-          // "Cuor di Leone" lega CUORE: basta la radice.
-          const radice = normalizzaCatena(p).slice(0, Math.max(3, normalizzaCatena(p).length - 2))
-          expect(e, `${c.e[i]} / ${p}`).toContain(radice)
-        }
+        expect(esatta(c.e[i], c.p[i], c.p[i + 1]), `${c.e[i]} / ${c.p[i]}`).toBe(true)
+        expect(esatta(c.e[i], c.p[i + 1], c.p[i]), `${c.e[i]} / ${c.p[i + 1]}`).toBe(true)
       }
     }
   })

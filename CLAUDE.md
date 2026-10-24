@@ -2176,7 +2176,15 @@ dire, titoli e proverbi, al piu' uno che la richiama subito, e la vincente esce
 solo incrociando tre parole. Ogni parola giusta ha la sua esca scritta accanto
 (`giusta|esca=espressione`), della stessa forma, e le cinque esche insieme
 indicano un'altra vincente, la falsa pista scritta nel commento sopra la riga.
-`npm run ghigliottina:classificate` (`scripts/build-ghigliottina-classificate.mjs`)
+**La vincente e la parola giusta stanno nell'espressione come sono scritte**:
+niente plurali ("canali diplomatici" per CANALE, "aghi di pino" per AGO),
+niente forme tronche ("Canal Grande", "quartier generale"), niente parole
+vicine ("regolare i conti" per REGOLA). Chi gioca scrive CANALE, e la
+spiegazione deve dire CANALE; le prime classificate scritte a mano ne avevano
+un centinaio. Valgono le parole composte che le hanno intere tutte e due (ALBA
+e chiara in "Albachiara"). Lo controllano lo script e un test, per le
+classificate e per le libere, e la stessa regola vale per le espressioni della
+Catena. `npm run ghigliottina:classificate` (`scripts/build-ghigliottina-classificate.mjs`)
 controlla la forma e che nessuna vincente sia anche una libera — il file del
 telefono non ha le risposte di nessun giorno — e scrive
 `scripts/data/ghigliottina-classificate.json`, che legge solo la notte. Le
@@ -2186,7 +2194,8 @@ vincenti non sono quelle di `ghigliottina.tsv`. La notte
 `ghigliottina_giornate` con `INSERT OR IGNORE`: l'ordine delle coppie e da che
 parte sta la giusta vengono dal numero del giorno, e una giornata scritta non
 cambia, tranne quelle di un formato vecchio (`FORMATO`, il 2 e' quello delle
-difficili) dopo oggi e che nessuno ha aperto, che si rifanno. Per questo la
+difficili, il 3 quello delle parole esatte) dopo oggi e che nessuno ha aperto,
+che si rifanno. Per questo la
 Catena, che salta la catena con la vincente dello stesso giorno, rifà anche lei
 una giornata futura mai aperta che ha fra le sue parole la vincente nuova. Se manca, `GHIGLIOTTINA_ASSENTE` (503): in locale
 `npm run ghigliottina:locale`.
@@ -2246,8 +2255,12 @@ si scelgono insieme, e un'espressione di una parte non sta nell'altra. La notte
 deploy per due settimane, sempre dopo la Ghigliottina) scrive la giornata in
 `catena_giornate` con `INSERT OR IGNORE`, e salta la catena che ha fra le sue
 parole la vincente della Ghigliottina dello stesso giorno: le espressioni sono
-le stesse, e la direbbe. Se manca, `CATENA_ASSENTE` (503): in locale
-`npm run catena:locale`.
+le stesse, e la direbbe. Le due parole stanno nell'espressione come si vedono,
+come nella Ghigliottina: "Cuor di Leone" non lega CUORE, e
+`scripts/build-catena.mjs` scarta le espressioni che non le hanno intere; una
+catena tolta dall'elenco per questo si rifà anche nei giorni gia' scritti, se
+devono venire e nessuno li ha aperti. Se manca, `CATENA_ASSENTE` (503): in
+locale `npm run catena:locale`.
 
 **Nella Catena la verita' sono le mosse, e i tempi partono da soli.**
 `catena_partite.mosse` ha le parole provate, i jolly, il terzo elemento comprato

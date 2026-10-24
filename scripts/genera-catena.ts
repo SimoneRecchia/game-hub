@@ -13,7 +13,8 @@
  * si rifa'. L'eccezione e' una giornata dopo oggi che nessuno ha aperto e che
  * ha fra le sue parole la vincente della Ghigliottina dello stesso giorno: la
  * Ghigliottina si rifà quando cambia formato, e la catena scritta prima non lo
- * sapeva.
+ * sapeva; o che l'elenco non ha piu', perché era sbagliata (una parola che non
+ * stava com'e' nella sua espressione).
  *
  *   npx vite-node scripts/genera-catena.ts                 anteprima di oggi, senza scrivere
  *   npx vite-node scripts/genera-catena.ts -- --local      D1 locale di wrangler
@@ -91,13 +92,18 @@ const scritte = SCRIVE
          FROM catena_giornate g WHERE puzzle_number BETWEEN ${DA} AND ${A}`,
     )
   : []
-// Una catena scritta resta, tranne quella di un giorno che deve venire, mai aperta, che direbbe la vincente.
+/** Le catene dell'elenco di adesso: una che non c'e' piu' e' stata tolta perché non andava. */
+const nellElenco = new Set(elenco.map((c) => c.p.join(' ')))
+
+// Una catena scritta resta, tranne quella di un giorno che deve venire, mai aperta, che direbbe la vincente o
+// che l'elenco non ha piu'.
 const presenti = new Set(
   scritte
     .filter((r) => {
       if (r.puzzle_number <= DA || r.aperta) return true
       const parole = (JSON.parse(r.catena) as { parole: string[] }).parole
-      return !parole.some((p) => normalizzaCatena(p) === vincenteDi(r.puzzle_number))
+      const vincente = vincenteDi(r.puzzle_number)
+      return nellElenco.has(parole.join(' ')) && !parole.some((p) => normalizzaCatena(p) === vincente)
     })
     .map((r) => r.puzzle_number),
 )

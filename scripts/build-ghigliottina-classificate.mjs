@@ -19,9 +19,15 @@
  * vincente, una falsa pista (la riga di commento sopra ogni ghigliottina):
  * chi sbaglia strada segue un'idea che sta in piedi.
  *
- * Lo script controlla la forma — cinque coppie, la parola giusta e la vincente
- * dentro l'espressione, l'esca no, niente parole ripetute — e che nessuna
- * vincente sia anche una delle libere, che il telefono scarica.
+ * Lo script controlla la forma — cinque coppie, l'esca fuori dall'espressione,
+ * niente parole ripetute — e che nessuna vincente sia anche una delle libere,
+ * che il telefono scarica. E soprattutto che la vincente e la parola giusta
+ * stiano nell'espressione **esattamente come sono scritte** (`esatta`): niente
+ * plurali ("canali diplomatici" per CANALE), niente forme tronche ("Canal
+ * Grande", "quartier generale"), niente parole vicine ("regolare i conti" per
+ * REGOLA). Chi gioca scrive CANALE, e la spiegazione deve dire CANALE. Le
+ * parole composte valgono se le hanno intere tutte e due (ALBA e chiara in
+ * "Albachiara").
  *
  * Uso:  node scripts/build-ghigliottina-classificate.mjs
  */
@@ -35,7 +41,18 @@ const ROOT = join(HERE, '..')
 
 const ACCENTI = { à: 'a', á: 'a', è: 'e', é: 'e', ì: 'i', í: 'i', ò: 'o', ó: 'o', ù: 'u', ú: 'u' }
 const piana = (p) => p.toLowerCase().replace(/[àáèéìíòóùú]/g, (c) => ACCENTI[c])
-const lettere = (p) => piana(p).replace(/[^a-z]/g, '')
+const parole = (testo) => piana(testo).split(/[^a-z]+/).filter(Boolean)
+const lettere = (p) => parole(p).join('')
+
+/**
+ * `parola` sta nell'espressione com'e' scritta: una parola dell'espressione e'
+ * proprio lei, o una parola composta che ha intere lei e l'altra della coppia.
+ */
+function esatta(espressione, parola, altra) {
+  const p = lettere(parola)
+  const q = lettere(altra)
+  return parole(espressione).some((t) => t === p || (t.includes(p) && t.includes(q)))
+}
 
 async function main() {
   const libere = new Set(
@@ -53,8 +70,6 @@ async function main() {
     if (campi.length !== 5) sbaglia(`${campi.length} coppie invece di cinque`)
     if (/[jkwxy]/.test(piana(soluzione))) sbaglia('una lettera che la tastiera del gioco non ha')
     if (libere.has(soluzione)) sbaglia("e' anche fra le libere")
-    // La vincente puo' stare nell'espressione flessa ("aghi di pino"): bastano le lettere prima dell'ultima.
-    const radice = piana(soluzione).slice(0, Math.max(2, soluzione.length - 1))
     const coppie = []
     for (const campo of campi) {
       const m = campo.match(/^([^|=\s]+)\|([^=\s]+)=(.+)$/)
@@ -63,13 +78,13 @@ async function main() {
         continue
       }
       const [, giusta, esca, espressione] = m
-      if (!lettere(espressione).includes(lettere(giusta))) sbaglia(`«${giusta}» non sta in «${espressione}»`)
-      if (!piana(espressione).replace(/[^a-z ]/g, '').includes(radice)) sbaglia(`la vincente non sta in «${espressione}»`)
-      if (piana(espressione).split(/[^a-z]+/).includes(piana(esca))) sbaglia(`l'esca «${esca}» sta in «${espressione}»`)
+      if (!esatta(espressione, giusta, soluzione)) sbaglia(`«${giusta}» non sta com'e' in «${espressione}»`)
+      if (!esatta(espressione, soluzione, giusta)) sbaglia(`la vincente non sta com'e' in «${espressione}»`)
+      if (parole(espressione).includes(lettere(esca))) sbaglia(`l'esca «${esca}» sta in «${espressione}»`)
       coppie.push([giusta, esca, espressione])
     }
-    const parole = coppie.flatMap(([g, e]) => [g, e])
-    if (new Set(parole).size !== parole.length) sbaglia('parole ripetute')
+    const usate = coppie.flatMap(([g, e]) => [g, e])
+    if (new Set(usate).size !== usate.length) sbaglia('parole ripetute')
     tutte.push({ s: soluzione, c: coppie })
   }
   const doppie = tutte.map((t) => t.s).filter((s, i, a) => a.indexOf(s) !== i)
